@@ -1,7 +1,13 @@
 import {
-  CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
+  CURVE_BEZIER,
+  CURVE_CMPD,
+  CURVE_HAS_ENDPT,
+  CURVE_LOOP,
+  CURVE_MULTI,
+  CURVE_SEGMENTS,
   CURVE_TAXI,
-  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  SHAPE_RECTANGLE,
+  SHAPE_ROUND_RECTANGLE,
 } from './contract.mjs';
 
 /*
@@ -50,7 +56,7 @@ export const CURVE_SEGS = 24;
 
 /** v3's impossible-bezier guards (edge-control-points.mts). */
 export const AVOID_IMPOSSIBLE_BEZIER = 0.01;
-export const AVOID_IMPOSSIBLE_BEZIER_L = Math.sqrt( 2 * AVOID_IMPOSSIBLE_BEZIER );
+export const AVOID_IMPOSSIBLE_BEZIER_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER);
 
 /** v3's loop radius factor: ctrl radius = 1.4 × loopDist × (j/3 + 1). */
 const LOOP_RADIUS_FACTOR = 1.4;
@@ -62,38 +68,49 @@ const LOOP_RADIUS_FACTOR = 1.4;
  * (circle, ellipse, polygons) as the (inscribed) ellipse.
  */
 export const boundaryOffset = (
-  shape: number, halfW: number, halfH: number, dx: number, dy: number
+  shape: number,
+  halfW: number,
+  halfH: number,
+  dx: number,
+  dy: number,
 ): number => {
-  if( shape === SHAPE_RECTANGLE || shape === SHAPE_ROUND_RECTANGLE ){
-    const ix = halfW / Math.max( Math.abs( dx ), 1e-4 );
-    const iy = halfH / Math.max( Math.abs( dy ), 1e-4 );
+  if (shape === SHAPE_RECTANGLE || shape === SHAPE_ROUND_RECTANGLE) {
+    const ix = halfW / Math.max(Math.abs(dx), 1e-4);
+    const iy = halfH / Math.max(Math.abs(dy), 1e-4);
 
-    return Math.min( ix, iy );
+    return Math.min(ix, iy);
   }
 
-  const ex = dx / Math.max( halfW, 1e-4 );
-  const ey = dy / Math.max( halfH, 1e-4 );
+  const ex = dx / Math.max(halfW, 1e-4);
+  const ey = dy / Math.max(halfH, 1e-4);
 
-  return 1 / Math.max( Math.sqrt( ex * ex + ey * ey ), 1e-6 );
+  return 1 / Math.max(Math.sqrt(ex * ex + ey * ey), 1e-6);
 };
 
 /** The bundled-bezier stagger: the i-th of n bundle members offsets by
  * this (× the pair-orientation sign) from the weighted midpoint. */
-export const bundleOffset = ( n: number, i: number, stepSize: number ): number => {
-  return ( 0.5 - n / 2 + i ) * stepSize;
+export const bundleOffset = (
+  n: number,
+  i: number,
+  stepSize: number,
+): number => {
+  return (0.5 - n / 2 + i) * stepSize;
 };
 
 /** v3's loop-construction angles: the loop opens about loopDir - PI/2,
  * its two control rays loopSweep apart. */
-export const loopAngles = ( loopDir: number, loopSweep: number ): { out: number; in: number } => {
+export const loopAngles = (
+  loopDir: number,
+  loopSweep: number,
+): { out: number; in: number } => {
   const loopAngle = loopDir - Math.PI / 2;
 
   return { out: loopAngle - loopSweep / 2, in: loopAngle + loopSweep / 2 };
 };
 
 /** v3's loop control radius for the j-th same-(direction, sweep) loop on a node. */
-export const loopRadius = ( stepSize: number, j: number ): number => {
-  return LOOP_RADIUS_FACTOR * stepSize * ( j / 3 + 1 );
+export const loopRadius = (stepSize: number, j: number): number => {
+  return LOOP_RADIUS_FACTOR * stepSize * (j / 3 + 1);
 };
 
 /**
@@ -120,9 +137,12 @@ export interface ArrowTrim {
 }
 
 /** The trim of an edge with no heads — every term zero. */
-export const NO_ARROW_TRIM: ArrowTrim = Object.freeze( {
-  srcGap: 0, tgtGap: 0, srcSpacing: 0, tgtSpacing: 0
-} );
+export const NO_ARROW_TRIM: ArrowTrim = Object.freeze({
+  srcGap: 0,
+  tgtGap: 0,
+  srcSpacing: 0,
+  tgtSpacing: 0,
+});
 
 /**
  * v3's `shortenIntersection`, verbatim including its degenerate clamp:
@@ -141,14 +161,20 @@ export const NO_ARROW_TRIM: ArrowTrim = Object.freeze( {
  */
 export const shortenToward = (
   out: { x: number; y: number },
-  px: number, py: number, tx: number, ty: number, amount: number
+  px: number,
+  py: number,
+  tx: number,
+  ty: number,
+  amount: number,
 ): void => {
   const dx = px - tx;
   const dy = py - ty;
-  const len = Math.sqrt( dx * dx + dy * dy );
-  let ratio = ( len - amount ) / Math.max( len, 1e-6 );
+  const len = Math.sqrt(dx * dx + dy * dy);
+  let ratio = (len - amount) / Math.max(len, 1e-6);
 
-  if( ratio < 0 ){ ratio = 0.00001; }
+  if (ratio < 0) {
+    ratio = 0.00001;
+  }
 
   out.x = tx + dx * ratio;
   out.y = ty + dy * ratio;
@@ -159,29 +185,49 @@ export const shortenToward = (
 export interface CurveEval {
   kind: number;
   /** start point (source-boundary) */
-  sx: number; sy: number;
+  sx: number;
+  sy: number;
   /** end point (target-boundary) */
-  ex: number; ey: number;
+  ex: number;
+  ey: number;
   /** control point (bezier), or the loop's first control */
-  c1x: number; c1y: number;
+  c1x: number;
+  c1y: number;
   /** the loop's second control (loop only) */
-  c2x: number; c2y: number;
+  c2x: number;
+  c2y: number;
   /** curve midpoint: bezier Q(0.5); loop: the control midpoint */
-  mx: number; my: number;
+  mx: number;
+  my: number;
   /** the *arrow* points (round 56) — `spacing` behind each boundary,
    * where `sx/sy` and `ex/ey` are `gap` behind it.  v3 keeps both
    * (`rs.arrowStartX/Y` against `rs.startX/Y`) and the public endpoint
    * accessors report these, not the line ends. */
-  asx: number; asy: number;
-  aex: number; aey: number;
+  asx: number;
+  asy: number;
+  aex: number;
+  aey: number;
 }
 
 /** A zeroed `CurveEval` for callers to reuse as `evalCurve`'s `out`
  * scratch — the evaluators never allocate on the hot path. */
-export const emptyCurveEval = (): CurveEval => ( {
-  kind: 0, sx: 0, sy: 0, ex: 0, ey: 0, c1x: 0, c1y: 0, c2x: 0, c2y: 0, mx: 0, my: 0,
-  asx: 0, asy: 0, aex: 0, aey: 0
-} );
+export const emptyCurveEval = (): CurveEval => ({
+  kind: 0,
+  sx: 0,
+  sy: 0,
+  ex: 0,
+  ey: 0,
+  c1x: 0,
+  c1y: 0,
+  c2x: 0,
+  c2y: 0,
+  mx: 0,
+  my: 0,
+  asx: 0,
+  asy: 0,
+  aex: 0,
+  aey: 0,
+});
 
 /**
  * Evaluate one curved edge's geometry from live inputs.  `p0..p2` are the
@@ -191,22 +237,34 @@ export const emptyCurveEval = (): CurveEval => ( {
  * The WGSL vertex stage runs this same computation per vertex.
  */
 export const evalCurve = (
-  out: CurveEval, kind: number, p0: number, p1: number, p2: number,
-  sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number,
-  trim: ArrowTrim = NO_ARROW_TRIM
+  out: CurveEval,
+  kind: number,
+  p0: number,
+  p1: number,
+  p2: number,
+  sxC: number,
+  syC: number,
+  sHalfW: number,
+  sHalfH: number,
+  sShape: number,
+  txC: number,
+  tyC: number,
+  tHalfW: number,
+  tHalfH: number,
+  tShape: number,
+  trim: ArrowTrim = NO_ARROW_TRIM,
 ): CurveEval => {
   out.kind = kind;
 
-  if( kind === CURVE_CMPD ){
+  if (kind === CURVE_CMPD) {
     // v3's findCompoundLoopPoints: two controls off the endpoints' min
     // top-left corner, stretched by ln(outerWidth x 0.01) (min 0.5) to
     // avoid impossible beziers; p0 = loop distance, p1 = bundle index j
-    const minX = Math.min( sxC - sHalfW, txC - tHalfW );
-    const minY = Math.min( syC - sHalfH, tyC - tHalfH );
-    const factor = ( 1 + Math.pow( 50, 1.12 ) / 100 ) * p0 * ( p1 / 3 + 1 );
-    const stretchA = Math.max( 0.5, Math.log( 2 * sHalfW * 0.01 ) );
-    const stretchB = Math.max( 0.5, Math.log( 2 * tHalfW * 0.01 ) );
+    const minX = Math.min(sxC - sHalfW, txC - tHalfW);
+    const minY = Math.min(syC - sHalfH, tyC - tHalfH);
+    const factor = (1 + Math.pow(50, 1.12) / 100) * p0 * (p1 / 3 + 1);
+    const stretchA = Math.max(0.5, Math.log(2 * sHalfW * 0.01));
+    const stretchB = Math.max(0.5, Math.log(2 * tHalfW * 0.01));
     const c1x = minX;
     const c1y = minY - factor * stretchA;
     const c2x = minX - factor * stretchB;
@@ -216,32 +274,80 @@ export const evalCurve = (
     out.c1y = c1y;
     out.c2x = c2x;
     out.c2y = c2y;
-    out.mx = ( c1x + c2x ) / 2;
-    out.my = ( c1y + c2y ) / 2;
+    out.mx = (c1x + c2x) / 2;
+    out.my = (c1y + c2y) / 2;
 
-    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y, trim.srcGap, trim.srcSpacing );
-    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y, trim.tgtGap, trim.tgtSpacing );
+    setBoundaryPoint(
+      out,
+      false,
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      sShape,
+      c1x,
+      c1y,
+      trim.srcGap,
+      trim.srcSpacing,
+    );
+    setBoundaryPoint(
+      out,
+      true,
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+      tShape,
+      c2x,
+      c2y,
+      trim.tgtGap,
+      trim.tgtSpacing,
+    );
 
     return out;
   }
 
-  if( kind === CURVE_LOOP ){
+  if (kind === CURVE_LOOP) {
     // two control points at the stagger radius; the curve is two
     // quadratics through their midpoint (v3's storeAllpts insertion)
-    const c1x = sxC + Math.cos( p0 ) * p2;
-    const c1y = syC + Math.sin( p0 ) * p2;
-    const c2x = sxC + Math.cos( p1 ) * p2;
-    const c2y = syC + Math.sin( p1 ) * p2;
+    const c1x = sxC + Math.cos(p0) * p2;
+    const c1y = syC + Math.sin(p0) * p2;
+    const c2x = sxC + Math.cos(p1) * p2;
+    const c2y = syC + Math.sin(p1) * p2;
 
     out.c1x = c1x;
     out.c1y = c1y;
     out.c2x = c2x;
     out.c2y = c2y;
-    out.mx = ( c1x + c2x ) / 2;
-    out.my = ( c1y + c2y ) / 2;
+    out.mx = (c1x + c2x) / 2;
+    out.my = (c1y + c2y) / 2;
 
-    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y, trim.srcGap, trim.srcSpacing );
-    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y, trim.tgtGap, trim.tgtSpacing );
+    setBoundaryPoint(
+      out,
+      false,
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      sShape,
+      c1x,
+      c1y,
+      trim.srcGap,
+      trim.srcSpacing,
+    );
+    setBoundaryPoint(
+      out,
+      true,
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+      tShape,
+      c2x,
+      c2y,
+      trim.tgtGap,
+      trim.tgtSpacing,
+    );
 
     return out;
   }
@@ -251,13 +357,13 @@ export const evalCurve = (
   // the intersection frame: boundary points along the center line
   let ux = txC - sxC;
   let uy = tyC - syC;
-  const uL = Math.max( Math.sqrt( ux * ux + uy * uy ), 1e-6 );
+  const uL = Math.max(Math.sqrt(ux * ux + uy * uy), 1e-6);
 
   ux /= uL;
   uy /= uL;
 
-  const offS = boundaryOffset( sShape, sHalfW, sHalfH, ux, uy );
-  const offT = boundaryOffset( tShape, tHalfW, tHalfH, -ux, -uy );
+  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy);
+  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy);
   const six = sxC + ux * offS;
   const siy = syC + uy * offS;
   const tix = txC - ux * offT;
@@ -266,19 +372,20 @@ export const evalCurve = (
   // v3's impossible-bezier length clamp
   const dx = tix - six;
   const dy = tiy - siy;
-  let l = Math.sqrt( dx * dx + dy * dy );
+  let l = Math.sqrt(dx * dx + dy * dy);
 
-  if( !( l >= AVOID_IMPOSSIBLE_BEZIER_L ) ){
+  if (!(l >= AVOID_IMPOSSIBLE_BEZIER_L)) {
     l = Math.sqrt(
-      Math.max( dx * dx, AVOID_IMPOSSIBLE_BEZIER ) + Math.max( dy * dy, AVOID_IMPOSSIBLE_BEZIER )
+      Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER) +
+        Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER),
     );
   }
 
   // ctrl = weighted point between the intersections + perpendicular stagger
   const w2 = p1;
   const w1 = 1 - w2;
-  const cx = ( six * w1 + tix * w2 ) + ( -dy / l ) * p0;
-  const cy = ( siy * w1 + tiy * w2 ) + ( dx / l ) * p0;
+  const cx = six * w1 + tix * w2 + (-dy / l) * p0;
+  const cy = siy * w1 + tiy * w2 + (dx / l) * p0;
 
   out.c1x = cx;
   out.c1y = cy;
@@ -286,8 +393,32 @@ export const evalCurve = (
   out.c2y = cy;
 
   // endpoints on the boundary toward the control point
-  setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, cx, cy, trim.srcGap, trim.srcSpacing );
-  setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, cx, cy, trim.tgtGap, trim.tgtSpacing );
+  setBoundaryPoint(
+    out,
+    false,
+    sxC,
+    syC,
+    sHalfW,
+    sHalfH,
+    sShape,
+    cx,
+    cy,
+    trim.srcGap,
+    trim.srcSpacing,
+  );
+  setBoundaryPoint(
+    out,
+    true,
+    txC,
+    tyC,
+    tHalfW,
+    tHalfH,
+    tShape,
+    cx,
+    cy,
+    trim.tgtGap,
+    trim.tgtSpacing,
+  );
 
   // Q(0.5) — the label anchor
   out.mx = 0.25 * out.sx + 0.5 * cx + 0.25 * out.ex;
@@ -308,15 +439,23 @@ export const evalCurve = (
  * and using the chord there would tilt the trimmed end off the curve.
  */
 const setBoundaryPoint = (
-  out: CurveEval, isEnd: boolean,
-  cx: number, cy: number, halfW: number, halfH: number, shape: number,
-  towardX: number, towardY: number, gap: number, spacing: number
+  out: CurveEval,
+  isEnd: boolean,
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  shape: number,
+  towardX: number,
+  towardY: number,
+  gap: number,
+  spacing: number,
 ): void => {
   let dx = towardX - cx;
   let dy = towardY - cy;
-  const l = Math.sqrt( dx * dx + dy * dy );
+  const l = Math.sqrt(dx * dx + dy * dy);
 
-  if( l < 1e-6 ){
+  if (l < 1e-6) {
     dx = 1;
     dy = 0;
   } else {
@@ -324,13 +463,13 @@ const setBoundaryPoint = (
     dy /= l;
   }
 
-  const off = boundaryOffset( shape, halfW, halfH, dx, dy );
+  const off = boundaryOffset(shape, halfW, halfH, dx, dy);
   const bx = cx + dx * off;
   const by = cy + dy * off;
 
-  shortenToward( SCRATCH, bx, by, towardX, towardY, gap );
+  shortenToward(SCRATCH, bx, by, towardX, towardY, gap);
 
-  if( isEnd ){
+  if (isEnd) {
     out.ex = SCRATCH.x;
     out.ey = SCRATCH.y;
   } else {
@@ -338,9 +477,9 @@ const setBoundaryPoint = (
     out.sy = SCRATCH.y;
   }
 
-  shortenToward( SCRATCH, bx, by, towardX, towardY, spacing );
+  shortenToward(SCRATCH, bx, by, towardX, towardY, spacing);
 
-  if( isEnd ){
+  if (isEnd) {
     out.aex = SCRATCH.x;
     out.aey = SCRATCH.y;
   } else {
@@ -352,7 +491,7 @@ const setBoundaryPoint = (
 /** module-level scratch — the evaluators never allocate on the hot path */
 const SCRATCH = { x: 0, y: 0 };
 
-const qbezier = ( p0: number, c: number, p1: number, t: number ): number => {
+const qbezier = (p0: number, c: number, p1: number, t: number): number => {
   const s = 1 - t;
 
   return s * s * p0 + 2 * s * t * c + t * t * p1;
@@ -365,36 +504,43 @@ const qbezier = ( p0: number, c: number, p1: number, t: number ): number => {
  * t = (segment + corner) / CURVE_SEGS, so a CPU flatten at the same K
  * reproduces the drawn polyline exactly.
  */
-export const curvePointAt = ( ev: CurveEval, t: number, out: { x: number; y: number } ): void => {
-  if( ev.kind === CURVE_LOOP || ev.kind === CURVE_CMPD ){
-    if( t <= 0.5 ){
+export const curvePointAt = (
+  ev: CurveEval,
+  t: number,
+  out: { x: number; y: number },
+): void => {
+  if (ev.kind === CURVE_LOOP || ev.kind === CURVE_CMPD) {
+    if (t <= 0.5) {
       const tt = t * 2;
 
-      out.x = qbezier( ev.sx, ev.c1x, ev.mx, tt );
-      out.y = qbezier( ev.sy, ev.c1y, ev.my, tt );
+      out.x = qbezier(ev.sx, ev.c1x, ev.mx, tt);
+      out.y = qbezier(ev.sy, ev.c1y, ev.my, tt);
     } else {
       const tt = t * 2 - 1;
 
-      out.x = qbezier( ev.mx, ev.c2x, ev.ex, tt );
-      out.y = qbezier( ev.my, ev.c2y, ev.ey, tt );
+      out.x = qbezier(ev.mx, ev.c2x, ev.ex, tt);
+      out.y = qbezier(ev.my, ev.c2y, ev.ey, tt);
     }
   } else {
-    out.x = qbezier( ev.sx, ev.c1x, ev.ex, t );
-    out.y = qbezier( ev.sy, ev.c1y, ev.ey, t );
+    out.x = qbezier(ev.sx, ev.c1x, ev.ex, t);
+    out.y = qbezier(ev.sy, ev.c1y, ev.ey, t);
   }
 };
 
 /** Flatten the curve into 2·(segs + 1) interleaved coords (the polyline
  * the renderer draws at the same subdivision). */
-export const flattenCurve = ( ev: CurveEval, segs: number = CURVE_SEGS ): Float64Array => {
-  const pts = new Float64Array( ( segs + 1 ) * 2 );
+export const flattenCurve = (
+  ev: CurveEval,
+  segs: number = CURVE_SEGS,
+): Float64Array => {
+  const pts = new Float64Array((segs + 1) * 2);
   const p = { x: 0, y: 0 };
 
-  for( let i = 0; i <= segs; i++ ){
-    curvePointAt( ev, i / segs, p );
+  for (let i = 0; i <= segs; i++) {
+    curvePointAt(ev, i / segs, p);
 
-    pts[ i * 2 ] = p.x;
-    pts[ i * 2 + 1 ] = p.y;
+    pts[i * 2] = p.x;
+    pts[i * 2 + 1] = p.y;
   }
 
   return pts;
@@ -423,15 +569,21 @@ export const flattenCurve = ( ev: CurveEval, segs: number = CURVE_SEGS ): Float6
  * @returns whether segment and box intersect at all
  */
 export const segmentHitsBox = (
-  ax: number, ay: number, bx: number, by: number,
-  lx: number, ly: number, hx: number, hy: number
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  lx: number,
+  ly: number,
+  hx: number,
+  hy: number,
 ): boolean => {
   const dx = bx - ax;
   const dy = by - ay;
   let t0 = 0;
   let t1 = 1;
 
-  for( let axis = 0; axis < 2; axis++ ){
+  for (let axis = 0; axis < 2; axis++) {
     const d = axis === 0 ? dx : dy;
     const a = axis === 0 ? ax : ay;
     const lo = axis === 0 ? lx : ly;
@@ -440,18 +592,26 @@ export const segmentHitsBox = (
     // parallel to this axis: in or out, no clipping to do.  The epsilon
     // is the WGSL's, so a degenerate (zero-length) segment answers the
     // same on both sides — loops have exactly that chord.
-    if( Math.abs( d ) < 1e-6 ){
-      if( a < lo || a > hi ){ return false; }
+    if (Math.abs(d) < 1e-6) {
+      if (a < lo || a > hi) {
+        return false;
+      }
     } else {
-      let tNear = ( lo - a ) / d;
-      let tFar = ( hi - a ) / d;
+      let tNear = (lo - a) / d;
+      let tFar = (hi - a) / d;
 
-      if( tNear > tFar ){ const t = tNear; tNear = tFar; tFar = t; }
+      if (tNear > tFar) {
+        const t = tNear;
+        tNear = tFar;
+        tFar = t;
+      }
 
-      t0 = Math.max( t0, tNear );
-      t1 = Math.min( t1, tFar );
+      t0 = Math.max(t0, tNear);
+      t1 = Math.min(t1, tFar);
 
-      if( t0 > t1 ){ return false; }
+      if (t0 > t1) {
+        return false;
+      }
     }
   }
 
@@ -467,10 +627,20 @@ export const segmentHitsBox = (
  * sit on the node boundary, so consumers add the node half-extent
  * separately where it isn't already covered.
  */
-export const curveDeviation = ( kind: number, p0: number, p2: number ): number => {
-  if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }
-  if( kind === CURVE_LOOP ){ return Math.abs( p2 ); }
-  if( kind === CURVE_CMPD ){ return Math.abs( p2 ); } // the derivation-time excursion bound
+export const curveDeviation = (
+  kind: number,
+  p0: number,
+  p2: number,
+): number => {
+  if (kind === CURVE_BEZIER) {
+    return Math.abs(p0);
+  }
+  if (kind === CURVE_LOOP) {
+    return Math.abs(p2);
+  }
+  if (kind === CURVE_CMPD) {
+    return Math.abs(p2);
+  } // the derivation-time excursion bound
 
   return 0;
 };
@@ -482,14 +652,29 @@ export const curveDeviation = ( kind: number, p0: number, p2: number ): number =
  * callers add the node-half margin (and, for extrapolated weights, the
  * chord length) per FLAG_CURVED_BOX instead.
  */
-export const headerDeviation = ( kind: number, p0: number, p1: number, p2: number ): number => {
-  if( kind === CURVE_CMPD ){ return Math.abs( p2 ); } // raw kind: above the flag range
+export const headerDeviation = (
+  kind: number,
+  p0: number,
+  p1: number,
+  p2: number,
+): number => {
+  if (kind === CURVE_CMPD) {
+    return Math.abs(p2);
+  } // raw kind: above the flag range
 
-  if( kind >= CURVE_HAS_ENDPT ){ kind -= CURVE_HAS_ENDPT; } // 12c endpoint-block kinds
+  if (kind >= CURVE_HAS_ENDPT) {
+    kind -= CURVE_HAS_ENDPT;
+  } // 12c endpoint-block kinds
 
-  if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }
-  if( kind === CURVE_LOOP ){ return Math.abs( p2 ); }
-  if( kind === CURVE_MULTI || kind === CURVE_SEGMENTS ){ return p1; }
+  if (kind === CURVE_BEZIER) {
+    return Math.abs(p0);
+  }
+  if (kind === CURVE_LOOP) {
+    return Math.abs(p2);
+  }
+  if (kind === CURVE_MULTI || kind === CURVE_SEGMENTS) {
+    return p1;
+  }
 
   return 0;
 };
@@ -625,23 +810,28 @@ export interface CurveRoute {
   arcMode: Uint8Array;
   /** the *arrow* points (round 56): `spacing` behind each resolved
    * endpoint, where `q[0]`/`q[n+1]` are `gap` behind it. */
-  asx: number; asy: number;
-  aex: number; aey: number;
+  asx: number;
+  asy: number;
+  aex: number;
+  aey: number;
 }
 
 /** A zeroed `CurveRoute` for callers to reuse as an `out` scratch.  Its
  * typed arrays are sized for `MAX_CURVE_PTS` interior points once, so a
  * single instance serves every route the evaluators produce. */
-export const emptyCurveRoute = (): CurveRoute => ( {
+export const emptyCurveRoute = (): CurveRoute => ({
   kind: 0,
   n: 0,
-  qx: new Float64Array( MAX_CURVE_PTS + 2 ),
-  qy: new Float64Array( MAX_CURVE_PTS + 2 ),
+  qx: new Float64Array(MAX_CURVE_PTS + 2),
+  qy: new Float64Array(MAX_CURVE_PTS + 2),
   round: false,
-  radius: new Float64Array( MAX_CURVE_PTS ),
-  arcMode: new Uint8Array( MAX_CURVE_PTS ),
-  asx: 0, asy: 0, aex: 0, aey: 0
-} );
+  radius: new Float64Array(MAX_CURVE_PTS),
+  arcMode: new Uint8Array(MAX_CURVE_PTS),
+  asx: 0,
+  asy: 0,
+  aex: 0,
+  aey: 0,
+});
 
 /** The intersection frame shared by MULTI and SEGMENTS (and the 12a
  * bundled bezier): boundary points along the center line + the
@@ -649,18 +839,26 @@ export const emptyCurveRoute = (): CurveRoute => ( {
 const frameScratch = { six: 0, siy: 0, tix: 0, tiy: 0, nx: 0, ny: 0 };
 
 const computeFrame = (
-  sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number
+  sxC: number,
+  syC: number,
+  sHalfW: number,
+  sHalfH: number,
+  sShape: number,
+  txC: number,
+  tyC: number,
+  tHalfW: number,
+  tHalfH: number,
+  tShape: number,
 ): typeof frameScratch => {
   let ux = txC - sxC;
   let uy = tyC - syC;
-  const uL = Math.max( Math.sqrt( ux * ux + uy * uy ), 1e-6 );
+  const uL = Math.max(Math.sqrt(ux * ux + uy * uy), 1e-6);
 
   ux /= uL;
   uy /= uL;
 
-  const offS = boundaryOffset( sShape, sHalfW, sHalfH, ux, uy );
-  const offT = boundaryOffset( tShape, tHalfW, tHalfH, -ux, -uy );
+  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy);
+  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy);
 
   frameScratch.six = sxC + ux * offS;
   frameScratch.siy = syC + uy * offS;
@@ -669,11 +867,12 @@ const computeFrame = (
 
   const dx = frameScratch.tix - frameScratch.six;
   const dy = frameScratch.tiy - frameScratch.siy;
-  let l = Math.sqrt( dx * dx + dy * dy );
+  let l = Math.sqrt(dx * dx + dy * dy);
 
-  if( !( l >= AVOID_IMPOSSIBLE_BEZIER_L ) ){
+  if (!(l >= AVOID_IMPOSSIBLE_BEZIER_L)) {
     l = Math.sqrt(
-      Math.max( dx * dx, AVOID_IMPOSSIBLE_BEZIER ) + Math.max( dy * dy, AVOID_IMPOSSIBLE_BEZIER )
+      Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER) +
+        Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER),
     );
   }
 
@@ -684,8 +883,8 @@ const computeFrame = (
 };
 
 /** v3's subDWH: take the effective node body away from the delta. */
-const subDWH = ( dxy: number, dwh: number ): number => {
-  return dxy > 0 ? Math.max( dxy - dwh, 0 ) : Math.min( dxy + dwh, 0 );
+const subDWH = (dxy: number, dwh: number): number => {
+  return dxy > 0 ? Math.max(dxy - dwh, 0) : Math.min(dxy + dwh, 0);
 };
 
 /**
@@ -696,11 +895,22 @@ const subDWH = ( dxy: number, dwh: number ): number => {
  * node.outerHalf column), matching v3's outerWidth/outerHeight frame.
  */
 export const evalRoute = (
-  out: CurveRoute, kind: number,
-  blob: ArrayLike<number>, off: number, n: number,
-  sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number,
-  trim: ArrowTrim = NO_ARROW_TRIM
+  out: CurveRoute,
+  kind: number,
+  blob: ArrayLike<number>,
+  off: number,
+  n: number,
+  sxC: number,
+  syC: number,
+  sHalfW: number,
+  sHalfH: number,
+  sShape: number,
+  txC: number,
+  tyC: number,
+  tHalfW: number,
+  tHalfH: number,
+  tShape: number,
+  trim: ArrowTrim = NO_ARROW_TRIM,
 ): CurveRoute => {
   const hasEndpt = kind >= CURVE_HAS_ENDPT;
   const base = hasEndpt ? kind - CURVE_HAS_ENDPT : kind;
@@ -711,12 +921,25 @@ export const evalRoute = (
   out.n = 0;
 
   // the intersection-frame boundary points (kept for ENDPT_LINE)
-  let fSix = 0, fSiy = 0, fTix = 0, fTiy = 0;
+  let fSix = 0,
+    fSiy = 0,
+    fTix = 0,
+    fTiy = 0;
 
-  if( base === CURVE_MULTI || base === CURVE_SEGMENTS ){
-    const mode = blob[ body ];
+  if (base === CURVE_MULTI || base === CURVE_SEGMENTS) {
+    const mode = blob[body];
     const f = computeFrame(
-      sxC, syC, sHalfW, sHalfH, sShape, txC, tyC, tHalfW, tHalfH, tShape );
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      sShape,
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+      tShape,
+    );
 
     fSix = f.six;
     fSiy = f.siy;
@@ -734,48 +957,79 @@ export const evalRoute = (
     let nx = f.nx;
     let ny = f.ny;
 
-    if( mode === EDGE_DIST_ENDPOINTS && hasEndpt ){
-      rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
+    if (mode === EDGE_DIST_ENDPOINTS && hasEndpt) {
+      rawEndpointAnchor(
+        blob,
+        off,
+        false,
+        sxC,
+        syC,
+        sHalfW,
+        sHalfH,
+        sShape,
+        anchorScratch,
+      );
       bx1 = anchorScratch.x;
       by1 = anchorScratch.y;
-      rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
+      rawEndpointAnchor(
+        blob,
+        off,
+        true,
+        txC,
+        tyC,
+        tHalfW,
+        tHalfH,
+        tShape,
+        anchorScratch,
+      );
       bx2 = anchorScratch.x;
       by2 = anchorScratch.y;
 
       const dx = bx2 - bx1;
       const dy = by2 - by1;
-      const l = Math.max( Math.sqrt( dx * dx + dy * dy ), 1e-6 ); // v3 divides raw (NaN at 0)
+      const l = Math.max(Math.sqrt(dx * dx + dy * dy), 1e-6); // v3 divides raw (NaN at 0)
 
       nx = -dy / l;
       ny = dx / l;
     }
 
-    if( base === CURVE_MULTI ){
-      for( let b = 0; b < n; b++ ){
-        const d = blob[ body + 1 + b * 2 ];
-        const w = blob[ body + 2 + b * 2 ];
+    if (base === CURVE_MULTI) {
+      for (let b = 0; b < n; b++) {
+        const d = blob[body + 1 + b * 2];
+        const w = blob[body + 2 + b * 2];
 
-        out.qx[ b + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + nx * d;
-        out.qy[ b + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + ny * d;
+        out.qx[b + 1] = bx1 * (1 - w) + bx2 * w + nx * d;
+        out.qy[b + 1] = by1 * (1 - w) + by2 * w + ny * d;
       }
     } else {
-      out.round = blob[ body + 1 ] !== 0;
+      out.round = blob[body + 1] !== 0;
 
-      for( let s = 0; s < n; s++ ){
-        const d = blob[ body + 2 + s * 4 ];
-        const w = blob[ body + 3 + s * 4 ];
+      for (let s = 0; s < n; s++) {
+        const d = blob[body + 2 + s * 4];
+        const w = blob[body + 3 + s * 4];
 
-        out.qx[ s + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + nx * d;
-        out.qy[ s + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + ny * d;
-        out.radius[ s ] = blob[ body + 4 + s * 4 ];
-        out.arcMode[ s ] = blob[ body + 5 + s * 4 ] !== 0 ? 1 : 0;
+        out.qx[s + 1] = bx1 * (1 - w) + bx2 * w + nx * d;
+        out.qy[s + 1] = by1 * (1 - w) + by2 * w + ny * d;
+        out.radius[s] = blob[body + 4 + s * 4];
+        out.arcMode[s] = blob[body + 5 + s * 4] !== 0 ? 1 : 0;
       }
     }
 
     out.n = n;
-  } else if( base === CURVE_TAXI ){
-    evalTaxi( out, blob, body,
-      sxC, syC, sHalfW, sHalfH, txC, tyC, tHalfW, tHalfH );
+  } else if (base === CURVE_TAXI) {
+    evalTaxi(
+      out,
+      blob,
+      body,
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+    );
   }
 
   const qn = out.n + 2;
@@ -783,54 +1037,96 @@ export const evalRoute = (
   // route point — v3's `shortenIntersection( intersect, p1, ... )`
   let sAimX: number, sAimY: number, tAimX: number, tAimY: number;
 
-  if( !hasEndpt ){
+  if (!hasEndpt) {
     // endpoints on the node boundaries toward the first/last interior point
-    sAimX = out.qx[ 1 ];
-    sAimY = out.qy[ 1 ];
-    tAimX = out.qx[ qn - 2 ];
-    tAimY = out.qy[ qn - 2 ];
+    sAimX = out.qx[1];
+    sAimY = out.qy[1];
+    tAimX = out.qx[qn - 2];
+    tAimY = out.qy[qn - 2];
 
-    const s = setRouteBoundary(
-      sxC, syC, sHalfW, sHalfH, sShape, sAimX, sAimY );
+    const s = setRouteBoundary(sxC, syC, sHalfW, sHalfH, sShape, sAimX, sAimY);
 
-    out.qx[ 0 ] = s.x;
-    out.qy[ 0 ] = s.y;
+    out.qx[0] = s.x;
+    out.qy[0] = s.y;
 
-    const e = setRouteBoundary(
-      txC, tyC, tHalfW, tHalfH, tShape, tAimX, tAimY );
+    const e = setRouteBoundary(txC, tyC, tHalfW, tHalfH, tShape, tAimX, tAimY);
 
-    out.qx[ qn - 1 ] = e.x;
-    out.qy[ qn - 1 ] = e.y;
+    out.qx[qn - 1] = e.x;
+    out.qy[qn - 1] = e.y;
   } else {
     // 12c: resolve each end through its endpoint-block entry.  The "aim"
     // is the near interior point; with no interior points (n = 0, the
     // straight-with-endpoints chord) each end aims at the *other end's
     // raw anchor* (v3's lines path: tgtPos + tgtManEndptPt et al.)
-    if( out.n > 0 ){
-      sAimX = out.qx[ 1 ];
-      sAimY = out.qy[ 1 ];
-      tAimX = out.qx[ qn - 2 ];
-      tAimY = out.qy[ qn - 2 ];
+    if (out.n > 0) {
+      sAimX = out.qx[1];
+      sAimY = out.qy[1];
+      tAimX = out.qx[qn - 2];
+      tAimY = out.qy[qn - 2];
     } else {
-      rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
+      rawEndpointAnchor(
+        blob,
+        off,
+        true,
+        txC,
+        tyC,
+        tHalfW,
+        tHalfH,
+        tShape,
+        anchorScratch,
+      );
       sAimX = anchorScratch.x;
       sAimY = anchorScratch.y;
-      rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
+      rawEndpointAnchor(
+        blob,
+        off,
+        false,
+        sxC,
+        syC,
+        sHalfW,
+        sHalfH,
+        sShape,
+        anchorScratch,
+      );
       tAimX = anchorScratch.x;
       tAimY = anchorScratch.y;
     }
 
     resolveEndpoint(
-      blob, off, false, sxC, syC, sHalfW, sHalfH, sShape,
-      sAimX, sAimY, fSix, fSiy, anchorScratch );
-    out.qx[ 0 ] = anchorScratch.x;
-    out.qy[ 0 ] = anchorScratch.y;
+      blob,
+      off,
+      false,
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      sShape,
+      sAimX,
+      sAimY,
+      fSix,
+      fSiy,
+      anchorScratch,
+    );
+    out.qx[0] = anchorScratch.x;
+    out.qy[0] = anchorScratch.y;
 
     resolveEndpoint(
-      blob, off, true, txC, tyC, tHalfW, tHalfH, tShape,
-      tAimX, tAimY, fTix, fTiy, anchorScratch );
-    out.qx[ qn - 1 ] = anchorScratch.x;
-    out.qy[ qn - 1 ] = anchorScratch.y;
+      blob,
+      off,
+      true,
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+      tShape,
+      tAimX,
+      tAimY,
+      fTix,
+      fTiy,
+      anchorScratch,
+    );
+    out.qx[qn - 1] = anchorScratch.x;
+    out.qy[qn - 1] = anchorScratch.y;
   }
 
   // Round 56: v3's two shortenings, applied to whichever endpoints the
@@ -841,21 +1137,42 @@ export const evalRoute = (
   // midpoint, the flattened bound) follows.  The 12c distance shortening
   // has already been applied by `resolveEndpoint`; these compose, exactly
   // as v3's `gap( edge ) + tgtDist` does.
-  shortenToward( anchorScratch, out.qx[ 0 ], out.qy[ 0 ], sAimX, sAimY, trim.srcSpacing );
+  shortenToward(
+    anchorScratch,
+    out.qx[0],
+    out.qy[0],
+    sAimX,
+    sAimY,
+    trim.srcSpacing,
+  );
   out.asx = anchorScratch.x;
   out.asy = anchorScratch.y;
 
-  shortenToward( anchorScratch, out.qx[ qn - 1 ], out.qy[ qn - 1 ], tAimX, tAimY, trim.tgtSpacing );
+  shortenToward(
+    anchorScratch,
+    out.qx[qn - 1],
+    out.qy[qn - 1],
+    tAimX,
+    tAimY,
+    trim.tgtSpacing,
+  );
   out.aex = anchorScratch.x;
   out.aey = anchorScratch.y;
 
-  shortenToward( anchorScratch, out.qx[ 0 ], out.qy[ 0 ], sAimX, sAimY, trim.srcGap );
-  out.qx[ 0 ] = anchorScratch.x;
-  out.qy[ 0 ] = anchorScratch.y;
+  shortenToward(anchorScratch, out.qx[0], out.qy[0], sAimX, sAimY, trim.srcGap);
+  out.qx[0] = anchorScratch.x;
+  out.qy[0] = anchorScratch.y;
 
-  shortenToward( anchorScratch, out.qx[ qn - 1 ], out.qy[ qn - 1 ], tAimX, tAimY, trim.tgtGap );
-  out.qx[ qn - 1 ] = anchorScratch.x;
-  out.qy[ qn - 1 ] = anchorScratch.y;
+  shortenToward(
+    anchorScratch,
+    out.qx[qn - 1],
+    out.qy[qn - 1],
+    tAimX,
+    tAimY,
+    trim.tgtGap,
+  );
+  out.qx[qn - 1] = anchorScratch.x;
+  out.qy[qn - 1] = anchorScratch.y;
 
   return out;
 };
@@ -869,27 +1186,33 @@ const anchorScratch = { x: 0, y: 0 };
  * (v3's manualEndptToPx), and the node center otherwise.
  */
 export const rawEndpointAnchor = (
-  blob: ArrayLike<number>, off: number, isTarget: boolean,
-  cx: number, cy: number, halfW: number, halfH: number, shape: number,
-  out: { x: number; y: number }
+  blob: ArrayLike<number>,
+  off: number,
+  isTarget: boolean,
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  shape: number,
+  out: { x: number; y: number },
 ): void => {
   const at = isTarget ? off + 5 : off;
-  const mode = blob[ at ];
+  const mode = blob[at];
 
-  if( mode === ENDPT_POINT ){
-    const bits = blob[ at + 3 ];
+  if (mode === ENDPT_POINT) {
+    const bits = blob[at + 3];
 
-    out.x = cx + blob[ at + 1 ] * ( bits % 2 === 1 ? 2 * halfW : 1 );
-    out.y = cy + blob[ at + 2 ] * ( bits >= ENDPT_PCT_Y ? 2 * halfH : 1 );
+    out.x = cx + blob[at + 1] * (bits % 2 === 1 ? 2 * halfW : 1);
+    out.y = cy + blob[at + 2] * (bits >= ENDPT_PCT_Y ? 2 * halfH : 1);
 
     return;
   }
 
-  if( mode === ENDPT_ANGLE ){
-    const a = blob[ at + 1 ];
-    const dx = Math.cos( a );
-    const dy = Math.sin( a );
-    const bOff = boundaryOffset( shape, halfW, halfH, dx, dy );
+  if (mode === ENDPT_ANGLE) {
+    const a = blob[at + 1];
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    const bOff = boundaryOffset(shape, halfW, halfH, dx, dy);
 
     out.x = cx + dx * bOff;
     out.y = cy + dy * bOff;
@@ -909,40 +1232,51 @@ export const rawEndpointAnchor = (
  * shortenIntersection rule (clamped so it never passes the aim).
  */
 export const resolveEndpoint = (
-  blob: ArrayLike<number>, off: number, isTarget: boolean,
-  cx: number, cy: number, halfW: number, halfH: number, shape: number,
-  aimX: number, aimY: number, frameX: number, frameY: number,
-  out: { x: number; y: number }
+  blob: ArrayLike<number>,
+  off: number,
+  isTarget: boolean,
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  shape: number,
+  aimX: number,
+  aimY: number,
+  frameX: number,
+  frameY: number,
+  out: { x: number; y: number },
 ): void => {
   const at = isTarget ? off + 5 : off;
-  const mode = blob[ at ];
-  const dist = blob[ at + 4 ];
+  const mode = blob[at];
+  const dist = blob[at + 4];
 
-  if( mode === ENDPT_INSIDE ){
+  if (mode === ENDPT_INSIDE) {
     out.x = cx;
     out.y = cy;
-  } else if( mode === ENDPT_LINE ){
+  } else if (mode === ENDPT_LINE) {
     out.x = frameX;
     out.y = frameY;
-  } else if( mode === ENDPT_POINT || mode === ENDPT_ANGLE ){
-    rawEndpointAnchor( blob, off, isTarget, cx, cy, halfW, halfH, shape, out );
+  } else if (mode === ENDPT_POINT || mode === ENDPT_ANGLE) {
+    rawEndpointAnchor(blob, off, isTarget, cx, cy, halfW, halfH, shape, out);
   } else {
-    const b = setRouteBoundary( cx, cy, halfW, halfH, shape, aimX, aimY );
+    const b = setRouteBoundary(cx, cy, halfW, halfH, shape, aimX, aimY);
 
     out.x = b.x;
     out.y = b.y;
   }
 
-  if( dist !== 0 ){
+  if (dist !== 0) {
     // v3's shortenIntersection: p = aim + max((len - d)/len, 1e-5)·(p - aim)
     const dx = out.x - aimX;
     const dy = out.y - aimY;
-    const l = Math.sqrt( dx * dx + dy * dy );
+    const l = Math.sqrt(dx * dx + dy * dy);
 
-    if( l > 0 ){
-      let ratio = ( l - dist ) / l;
+    if (l > 0) {
+      let ratio = (l - dist) / l;
 
-      if( ratio < 0 ){ ratio = 0.00001; }
+      if (ratio < 0) {
+        ratio = 0.00001;
+      }
 
       out.x = aimX + ratio * dx;
       out.y = aimY + ratio * dy;
@@ -956,11 +1290,16 @@ export const resolveEndpoint = (
  * twin in the straight edge shader computes the same point.
  */
 export const haystackPoint = (
-  cx: number, cy: number, halfW: number, halfH: number,
-  angle: number, radius: number, out: { x: number; y: number }
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  angle: number,
+  radius: number,
+  out: { x: number; y: number },
 ): void => {
-  out.x = cx + Math.cos( angle ) * halfW * radius;
-  out.y = cy + Math.sin( angle ) * halfH * radius;
+  out.x = cx + Math.cos(angle) * halfW * radius;
+  out.y = cy + Math.sin(angle) * halfH * radius;
 };
 
 /**
@@ -968,27 +1307,32 @@ export const haystackPoint = (
  * edge's id hash (stable across sessions and machines, unlike v3's
  * Math.random()): a Wang-style integer mix folded to [0, 2π).
  */
-export const haystackAngle = ( idHash: number, isTarget: boolean ): number => {
-  let h = ( idHash ^ ( isTarget ? 0x9e3779b9 : 0x85ebca6b ) ) >>> 0;
+export const haystackAngle = (idHash: number, isTarget: boolean): number => {
+  let h = (idHash ^ (isTarget ? 0x9e3779b9 : 0x85ebca6b)) >>> 0;
 
-  h = Math.imul( h ^ ( h >>> 16 ), 0x45d9f3b ) >>> 0;
-  h = Math.imul( h ^ ( h >>> 16 ), 0x45d9f3b ) >>> 0;
-  h = ( h ^ ( h >>> 16 ) ) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
 
-  return ( h / 4294967296 ) * 2 * Math.PI;
+  return (h / 4294967296) * 2 * Math.PI;
 };
 
 const boundaryScratch = { x: 0, y: 0 };
 
 const setRouteBoundary = (
-  cx: number, cy: number, halfW: number, halfH: number, shape: number,
-  towardX: number, towardY: number
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  shape: number,
+  towardX: number,
+  towardY: number,
 ): { x: number; y: number } => {
   let dx = towardX - cx;
   let dy = towardY - cy;
-  const l = Math.sqrt( dx * dx + dy * dy );
+  const l = Math.sqrt(dx * dx + dy * dy);
 
-  if( l < 1e-6 ){
+  if (l < 1e-6) {
     dx = 1;
     dy = 0;
   } else {
@@ -996,7 +1340,7 @@ const setRouteBoundary = (
     dy /= l;
   }
 
-  const off = boundaryOffset( shape, halfW, halfH, dx, dy );
+  const off = boundaryOffset(shape, halfW, halfH, dx, dy);
 
   boundaryScratch.x = cx + dx * off;
   boundaryScratch.y = cy + dy * off;
@@ -1007,18 +1351,26 @@ const setRouteBoundary = (
 /** v3's findTaxiPoints, verbatim (blob record: dir, turn, turnIsPercent,
  * minD, bodyMode, round, radius, arcMode). */
 const evalTaxi = (
-  out: CurveRoute, blob: ArrayLike<number>, off: number,
-  sxC: number, syC: number, sHalfW: number, sHalfH: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number
+  out: CurveRoute,
+  blob: ArrayLike<number>,
+  off: number,
+  sxC: number,
+  syC: number,
+  sHalfW: number,
+  sHalfH: number,
+  txC: number,
+  tyC: number,
+  tHalfW: number,
+  tHalfH: number,
 ): void => {
-  const rawDir = blob[ off ];
-  const turnVal = blob[ off + 1 ];
-  const turnIsPercent = blob[ off + 2 ] !== 0;
-  const minD = blob[ off + 3 ];
-  const dIncludesNodeBody = blob[ off + 4 ] !== EDGE_DIST_NODE_POSITION;
-  const round = blob[ off + 5 ] !== 0;
-  const radiusVal = blob[ off + 6 ];
-  const arcFlag = blob[ off + 7 ] !== 0 ? 1 : 0;
+  const rawDir = blob[off];
+  const turnVal = blob[off + 1];
+  const turnIsPercent = blob[off + 2] !== 0;
+  const minD = blob[off + 3];
+  const dIncludesNodeBody = blob[off + 4] !== EDGE_DIST_NODE_POSITION;
+  const round = blob[off + 5] !== 0;
+  const radiusVal = blob[off + 6];
+  const arcFlag = blob[off + 7] !== 0 ? 1 : 0;
 
   const srcW = sHalfW * 2;
   const srcH = sHalfH * 2;
@@ -1026,22 +1378,22 @@ const evalTaxi = (
   const tgtH = tHalfH * 2;
 
   const turnIsNegative = turnVal < 0;
-  const dw = dIncludesNodeBody ? ( srcW + tgtW ) / 2 : 0;
-  const dh = dIncludesNodeBody ? ( srcH + tgtH ) / 2 : 0;
+  const dw = dIncludesNodeBody ? (srcW + tgtW) / 2 : 0;
+  const dh = dIncludesNodeBody ? (srcH + tgtH) / 2 : 0;
   const pdx = txC - sxC;
   const pdy = tyC - syC;
-  const dx = subDWH( pdx, dw );
-  const dy = subDWH( pdy, dh );
+  const dx = subDWH(pdx, dw);
+  const dy = subDWH(pdy, dh);
 
   let isVert: boolean;
   let isExplicitDir = false;
 
-  if( rawDir === TAXI_AUTO ){
-    isVert = !( Math.abs( dx ) > Math.abs( dy ) );
-  } else if( rawDir === TAXI_UPWARD || rawDir === TAXI_DOWNWARD ){
+  if (rawDir === TAXI_AUTO) {
+    isVert = !(Math.abs(dx) > Math.abs(dy));
+  } else if (rawDir === TAXI_UPWARD || rawDir === TAXI_DOWNWARD) {
     isVert = true;
     isExplicitDir = true;
-  } else if( rawDir === TAXI_LEFTWARD || rawDir === TAXI_RIGHTWARD ){
+  } else if (rawDir === TAXI_LEFTWARD || rawDir === TAXI_RIGHTWARD) {
     isVert = false;
     isExplicitDir = true;
   } else {
@@ -1050,27 +1402,25 @@ const evalTaxi = (
 
   let l = isVert ? dy : dx;
   const pl = isVert ? pdy : pdx;
-  let sgnL = Math.sign( pl );
+  let sgnL = Math.sign(pl);
 
   let forcedDir = false;
 
-  if(
-    !( isExplicitDir && ( turnIsPercent || turnIsNegative ) ) &&
-    (
-      ( rawDir === TAXI_DOWNWARD && pl < 0 ) ||
-      ( rawDir === TAXI_UPWARD && pl > 0 ) ||
-      ( rawDir === TAXI_LEFTWARD && pl > 0 ) ||
-      ( rawDir === TAXI_RIGHTWARD && pl < 0 )
-    )
-  ){
+  if (
+    !(isExplicitDir && (turnIsPercent || turnIsNegative)) &&
+    ((rawDir === TAXI_DOWNWARD && pl < 0) ||
+      (rawDir === TAXI_UPWARD && pl > 0) ||
+      (rawDir === TAXI_LEFTWARD && pl > 0) ||
+      (rawDir === TAXI_RIGHTWARD && pl < 0))
+  ) {
     sgnL *= -1;
-    l = sgnL * Math.abs( l );
+    l = sgnL * Math.abs(l);
     forcedDir = true;
   }
 
   let d: number;
 
-  if( turnIsPercent ){
+  if (turnIsPercent) {
     const p = turnVal < 0 ? 1 + turnVal : turnVal;
 
     d = p * l;
@@ -1080,93 +1430,129 @@ const evalTaxi = (
     d = k + turnVal * sgnL;
   }
 
-  const isTooClose = ( v: number ): boolean => Math.abs( v ) < minD || Math.abs( v ) >= Math.abs( l );
-  const tooClose = isTooClose( d ) || isTooClose( Math.abs( l ) - Math.abs( d ) );
+  const isTooClose = (v: number): boolean =>
+    Math.abs(v) < minD || Math.abs(v) >= Math.abs(l);
+  const tooClose = isTooClose(d) || isTooClose(Math.abs(l) - Math.abs(d));
 
-  if( tooClose && !forcedDir ){ // non-ideal routing: Z- and L-shape fallbacks
-    if( isVert ){
-      const lShapeInsideSrc = Math.abs( pl ) <= srcH / 2;
-      const lShapeInsideTgt = Math.abs( pdx ) <= tgtW / 2;
+  if (tooClose && !forcedDir) {
+    // non-ideal routing: Z- and L-shape fallbacks
+    if (isVert) {
+      const lShapeInsideSrc = Math.abs(pl) <= srcH / 2;
+      const lShapeInsideTgt = Math.abs(pdx) <= tgtW / 2;
 
-      if( lShapeInsideSrc ){ // horizontal Z-shape
-        const x = ( sxC + txC ) / 2;
-
-        out.n = 2;
-        out.qx[ 1 ] = x; out.qy[ 1 ] = syC;
-        out.qx[ 2 ] = x; out.qy[ 2 ] = tyC;
-      } else if( lShapeInsideTgt ){ // vertical Z-shape
-        const y = ( syC + tyC ) / 2;
+      if (lShapeInsideSrc) {
+        // horizontal Z-shape
+        const x = (sxC + txC) / 2;
 
         out.n = 2;
-        out.qx[ 1 ] = sxC; out.qy[ 1 ] = y;
-        out.qx[ 2 ] = txC; out.qy[ 2 ] = y;
-      } else { // L-shape
+        out.qx[1] = x;
+        out.qy[1] = syC;
+        out.qx[2] = x;
+        out.qy[2] = tyC;
+      } else if (lShapeInsideTgt) {
+        // vertical Z-shape
+        const y = (syC + tyC) / 2;
+
+        out.n = 2;
+        out.qx[1] = sxC;
+        out.qy[1] = y;
+        out.qx[2] = txC;
+        out.qy[2] = y;
+      } else {
+        // L-shape
         out.n = 1;
-        out.qx[ 1 ] = sxC; out.qy[ 1 ] = tyC;
+        out.qx[1] = sxC;
+        out.qy[1] = tyC;
       }
     } else {
-      const lShapeInsideSrc = Math.abs( pl ) <= srcW / 2;
-      const lShapeInsideTgt = Math.abs( pdy ) <= tgtH / 2;
+      const lShapeInsideSrc = Math.abs(pl) <= srcW / 2;
+      const lShapeInsideTgt = Math.abs(pdy) <= tgtH / 2;
 
-      if( lShapeInsideSrc ){ // vertical Z-shape
-        const y = ( syC + tyC ) / 2;
-
-        out.n = 2;
-        out.qx[ 1 ] = sxC; out.qy[ 1 ] = y;
-        out.qx[ 2 ] = txC; out.qy[ 2 ] = y;
-      } else if( lShapeInsideTgt ){ // horizontal Z-shape
-        const x = ( sxC + txC ) / 2;
+      if (lShapeInsideSrc) {
+        // vertical Z-shape
+        const y = (syC + tyC) / 2;
 
         out.n = 2;
-        out.qx[ 1 ] = x; out.qy[ 1 ] = syC;
-        out.qx[ 2 ] = x; out.qy[ 2 ] = tyC;
-      } else { // L-shape
+        out.qx[1] = sxC;
+        out.qy[1] = y;
+        out.qx[2] = txC;
+        out.qy[2] = y;
+      } else if (lShapeInsideTgt) {
+        // horizontal Z-shape
+        const x = (sxC + txC) / 2;
+
+        out.n = 2;
+        out.qx[1] = x;
+        out.qy[1] = syC;
+        out.qx[2] = x;
+        out.qy[2] = tyC;
+      } else {
+        // L-shape
         out.n = 1;
-        out.qx[ 1 ] = txC; out.qy[ 1 ] = syC;
+        out.qx[1] = txC;
+        out.qy[1] = syC;
       }
     }
-  } else { // ideal routing
-    if( isVert ){
-      const y = syC + d + ( dIncludesNodeBody ? srcH / 2 * sgnL : 0 );
+  } else {
+    // ideal routing
+    if (isVert) {
+      const y = syC + d + (dIncludesNodeBody ? (srcH / 2) * sgnL : 0);
 
       out.n = 2;
-      out.qx[ 1 ] = sxC; out.qy[ 1 ] = y;
-      out.qx[ 2 ] = txC; out.qy[ 2 ] = y;
+      out.qx[1] = sxC;
+      out.qy[1] = y;
+      out.qx[2] = txC;
+      out.qy[2] = y;
     } else {
-      const x = sxC + d + ( dIncludesNodeBody ? srcW / 2 * sgnL : 0 );
+      const x = sxC + d + (dIncludesNodeBody ? (srcW / 2) * sgnL : 0);
 
       out.n = 2;
-      out.qx[ 1 ] = x; out.qy[ 1 ] = syC;
-      out.qx[ 2 ] = x; out.qy[ 2 ] = tyC;
+      out.qx[1] = x;
+      out.qy[1] = syC;
+      out.qx[2] = x;
+      out.qy[2] = tyC;
     }
   }
 
   out.round = round;
 
-  if( round ){
-    for( let i = 0; i < out.n; i++ ){
-      out.radius[ i ] = radiusVal;
-      out.arcMode[ i ] = arcFlag;
+  if (round) {
+    for (let i = 0; i < out.n; i++) {
+      out.radius[i] = radiusVal;
+      out.arcMode[i] = arcFlag;
     }
   }
 };
 
 /** A round corner: the arc replacing an interior route point. */
 export interface RouteCorner {
-  cx: number; cy: number;
+  cx: number;
+  cy: number;
   r: number;
-  startX: number; startY: number;
-  stopX: number; stopY: number;
-  a0: number; a1: number;
+  startX: number;
+  startY: number;
+  stopX: number;
+  stopY: number;
+  a0: number;
+  a1: number;
   /** canvas-arc counterclockwise flag (v3's drawDirection) */
   ccw: boolean;
 }
 
 /** A zeroed `RouteCorner` for callers to reuse as `computeCorner`'s
  * `out` scratch. */
-export const emptyRouteCorner = (): RouteCorner => ( {
-  cx: 0, cy: 0, r: 0, startX: 0, startY: 0, stopX: 0, stopY: 0, a0: 0, a1: 0, ccw: false
-} );
+export const emptyRouteCorner = (): RouteCorner => ({
+  cx: 0,
+  cy: 0,
+  r: 0,
+  startX: 0,
+  startY: 0,
+  stopX: 0,
+  stopY: 0,
+  a0: 0,
+  a1: 0,
+  ccw: false,
+});
 
 /**
  * v3's getRoundCorner (src/round.mts) as a pure function — identical
@@ -1177,30 +1563,42 @@ export const emptyRouteCorner = (): RouteCorner => ( {
  */
 export const computeCorner = (
   out: RouteCorner,
-  prevX: number, prevY: number, curX: number, curY: number,
-  nextX: number, nextY: number, radiusMax: number, isArc: boolean
+  prevX: number,
+  prevY: number,
+  curX: number,
+  curY: number,
+  nextX: number,
+  nextY: number,
+  radiusMax: number,
+  isArc: boolean,
 ): RouteCorner => {
   /** The no-arc answer: the corner stays a corner. */
   const noArc = (): RouteCorner => {
-    out.cx = curX; out.cy = curY;
+    out.cx = curX;
+    out.cy = curY;
     out.r = 0;
-    out.startX = curX; out.startY = curY;
-    out.stopX = curX; out.stopY = curY;
-    out.a0 = 0; out.a1 = 0;
+    out.startX = curX;
+    out.startY = curY;
+    out.stopX = curX;
+    out.stopY = curY;
+    out.a0 = 0;
+    out.a1 = 0;
     out.ccw = false;
 
     return out;
   };
 
-  if( radiusMax === 0 ){ return noArc(); }
+  if (radiusMax === 0) {
+    return noArc();
+  }
 
   // vectors from the corner toward its neighbours (v3's asVec)
   const v1x = prevX - curX;
   const v1y = prevY - curY;
-  const v1l = Math.sqrt( v1x * v1x + v1y * v1y );
+  const v1l = Math.sqrt(v1x * v1x + v1y * v1y);
   const v2x = nextX - curX;
   const v2y = nextY - curY;
-  const v2l = Math.sqrt( v2x * v2x + v2y * v2y );
+  const v2l = Math.sqrt(v2x * v2x + v2y * v2y);
 
   // A zero-length leg has no direction, so there is no corner to round —
   // and normalizing it would put NaN into every value below.
@@ -1219,7 +1617,9 @@ export const computeCorner = (
   // was not an option: the NaN propagated out to `boundingBox()`, which
   // answered `{x1: null, y1: null, x2: null, y2: null}` — so the edge was
   // unpickable, uncullable and corrupted any bound that included it.
-  if( v1l === 0 || v2l === 0 ){ return noArc(); }
+  if (v1l === 0 || v2l === 0) {
+    return noArc();
+  }
 
   const v1nx = v1x / v1l;
   const v1ny = v1y / v1l;
@@ -1228,43 +1628,45 @@ export const computeCorner = (
 
   const sinA = v1nx * v2ny - v1ny * v2nx;
   const sinA90 = v1nx * v2nx - v1ny * -v2ny;
-  let angle = Math.asin( Math.max( -1, Math.min( 1, sinA ) ) );
+  let angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
 
-  if( Math.abs( angle ) < 1e-6 ){ return noArc(); } // collinear: no arc
+  if (Math.abs(angle) < 1e-6) {
+    return noArc();
+  } // collinear: no arc
 
   let radDirection = 1;
   let drawDirection = false;
 
-  if( sinA90 < 0 ){
-    if( angle < 0 ){
+  if (sinA90 < 0) {
+    if (angle < 0) {
       angle = Math.PI + angle;
     } else {
       angle = Math.PI - angle;
       radDirection = -1;
       drawDirection = true;
     }
-  } else if( angle > 0 ){
+  } else if (angle > 0) {
     radDirection = -1;
     drawDirection = true;
   }
 
   const halfAngle = angle / 2;
-  const limit = Math.min( v1l / 2, v2l / 2 );
+  const limit = Math.min(v1l / 2, v2l / 2);
   let lenOut: number;
   let cRadius: number;
 
-  if( isArc ){
-    lenOut = Math.abs( Math.cos( halfAngle ) * radiusMax / Math.sin( halfAngle ) );
+  if (isArc) {
+    lenOut = Math.abs((Math.cos(halfAngle) * radiusMax) / Math.sin(halfAngle));
 
-    if( lenOut > limit ){
+    if (lenOut > limit) {
       lenOut = limit;
-      cRadius = Math.abs( lenOut * Math.sin( halfAngle ) / Math.cos( halfAngle ) );
+      cRadius = Math.abs((lenOut * Math.sin(halfAngle)) / Math.cos(halfAngle));
     } else {
       cRadius = radiusMax;
     }
   } else {
-    lenOut = Math.min( limit, radiusMax );
-    cRadius = Math.abs( lenOut * Math.sin( halfAngle ) / Math.cos( halfAngle ) );
+    lenOut = Math.min(limit, radiusMax);
+    cRadius = Math.abs((lenOut * Math.sin(halfAngle)) / Math.cos(halfAngle));
   }
 
   out.stopX = curX + v2nx * lenOut;
@@ -1274,8 +1676,8 @@ export const computeCorner = (
   out.startX = curX + v1nx * lenOut;
   out.startY = curY + v1ny * lenOut;
   out.r = cRadius;
-  out.a0 = Math.atan2( v1ny, v1nx ) + Math.PI / 2 * radDirection;
-  out.a1 = Math.atan2( v2ny, v2nx ) - Math.PI / 2 * radDirection;
+  out.a0 = Math.atan2(v1ny, v1nx) + (Math.PI / 2) * radDirection;
+  out.a1 = Math.atan2(v2ny, v2nx) - (Math.PI / 2) * radDirection;
   out.ccw = drawDirection;
 
   return out;
@@ -1284,21 +1686,31 @@ export const computeCorner = (
 /** The corner at interior point j of a round route (raw polyline
  * neighbours, as v3 uses them — adjacent arcs can't overlap because
  * lenOut clamps at half of each leg). */
-export const routeCorner = ( route: CurveRoute, j: number, out: RouteCorner ): RouteCorner => {
+export const routeCorner = (
+  route: CurveRoute,
+  j: number,
+  out: RouteCorner,
+): RouteCorner => {
   return computeCorner(
     out,
-    route.qx[ j ], route.qy[ j ],
-    route.qx[ j + 1 ], route.qy[ j + 1 ],
-    route.qx[ j + 2 ], route.qy[ j + 2 ],
-    route.radius[ j ], route.arcMode[ j ] === 1
+    route.qx[j],
+    route.qy[j],
+    route.qx[j + 1],
+    route.qy[j + 1],
+    route.qx[j + 2],
+    route.qy[j + 2],
+    route.radius[j],
+    route.arcMode[j] === 1,
   );
 };
 
 /** Pieces the drawn strip must cover: multibezier has one quadratic per
  * control; polylines one leg per span, with an arc between legs when
  * round. */
-export const routePieceCount = ( route: CurveRoute ): number => {
-  if( route.kind === CURVE_MULTI ){ return Math.max( route.n, 1 ); }
+export const routePieceCount = (route: CurveRoute): number => {
+  if (route.kind === CURVE_MULTI) {
+    return Math.max(route.n, 1);
+  }
 
   return route.round ? 2 * route.n + 1 : route.n + 1;
 };
@@ -1312,41 +1724,48 @@ export const routePieceCount = ( route: CurveRoute ): number => {
  * form.
  */
 export const quadPiece = (
-  pieces: number, segs: number, idx: number, out: { piece: number; t: number }
+  pieces: number,
+  segs: number,
+  idx: number,
+  out: { piece: number; t: number },
 ): void => {
-  if( idx >= segs ){
+  if (idx >= segs) {
     out.piece = pieces - 1;
     out.t = 1;
 
     return;
   }
 
-  const base = Math.floor( segs / pieces );
+  const base = Math.floor(segs / pieces);
   const extra = segs % pieces;
-  const threshold = ( base + 1 ) * extra;
+  const threshold = (base + 1) * extra;
 
-  if( idx < threshold ){
-    const piece = Math.floor( idx / ( base + 1 ) );
+  if (idx < threshold) {
+    const piece = Math.floor(idx / (base + 1));
 
     out.piece = piece;
-    out.t = ( idx - piece * ( base + 1 ) ) / ( base + 1 );
+    out.t = (idx - piece * (base + 1)) / (base + 1);
   } else {
     const j = idx - threshold;
-    const piece = extra + Math.floor( j / base );
+    const piece = extra + Math.floor(j / base);
 
     out.piece = piece;
-    out.t = ( j - ( piece - extra ) * base ) / base;
+    out.t = (j - (piece - extra) * base) / base;
   }
 };
 
 /** Sweep from a0 to a1 in the canvas-arc direction (ccw = decreasing). */
-export const arcSweep = ( a0: number, a1: number, ccw: boolean ): number => {
+export const arcSweep = (a0: number, a1: number, ccw: boolean): number => {
   let d = a1 - a0;
 
-  if( ccw ){
-    while( d > 0 ){ d -= 2 * Math.PI; }
+  if (ccw) {
+    while (d > 0) {
+      d -= 2 * Math.PI;
+    }
   } else {
-    while( d < 0 ){ d += 2 * Math.PI; }
+    while (d < 0) {
+      d += 2 * Math.PI;
+    }
   }
 
   return d;
@@ -1362,60 +1781,69 @@ const cornerScratchB = emptyRouteCorner();
  * exact and corners sharp (or exactly the arc) by construction.
  */
 export const routeVertex = (
-  route: CurveRoute, idx: number, out: { x: number; y: number }, segs: number = CURVE_SEGS
+  route: CurveRoute,
+  idx: number,
+  out: { x: number; y: number },
+  segs: number = CURVE_SEGS,
 ): void => {
-  const P = routePieceCount( route );
+  const P = routePieceCount(route);
 
-  quadPiece( P, segs, idx, quadPieceScratch );
+  quadPiece(P, segs, idx, quadPieceScratch);
 
   const p = quadPieceScratch.piece;
   const t = quadPieceScratch.t;
 
-  if( route.kind === CURVE_MULTI ){
-    if( route.n === 0 ){ // degenerate: no controls, draw the chord
-      out.x = route.qx[ 0 ] + ( route.qx[ 1 ] - route.qx[ 0 ] ) * t;
-      out.y = route.qy[ 0 ] + ( route.qy[ 1 ] - route.qy[ 0 ] ) * t;
+  if (route.kind === CURVE_MULTI) {
+    if (route.n === 0) {
+      // degenerate: no controls, draw the chord
+      out.x = route.qx[0] + (route.qx[1] - route.qx[0]) * t;
+      out.y = route.qy[0] + (route.qy[1] - route.qy[0]) * t;
 
       return;
     }
 
     // spline piece p: qbez(A, c_p, B) with A/B the inserted midpoints
-    const cx = route.qx[ p + 1 ];
-    const cy = route.qy[ p + 1 ];
-    const ax = p === 0 ? route.qx[ 0 ] : ( route.qx[ p ] + cx ) / 2;
-    const ay = p === 0 ? route.qy[ 0 ] : ( route.qy[ p ] + cy ) / 2;
-    const bx = p === route.n - 1 ? route.qx[ route.n + 1 ] : ( cx + route.qx[ p + 2 ] ) / 2;
-    const by = p === route.n - 1 ? route.qy[ route.n + 1 ] : ( cy + route.qy[ p + 2 ] ) / 2;
+    const cx = route.qx[p + 1];
+    const cy = route.qy[p + 1];
+    const ax = p === 0 ? route.qx[0] : (route.qx[p] + cx) / 2;
+    const ay = p === 0 ? route.qy[0] : (route.qy[p] + cy) / 2;
+    const bx =
+      p === route.n - 1 ? route.qx[route.n + 1] : (cx + route.qx[p + 2]) / 2;
+    const by =
+      p === route.n - 1 ? route.qy[route.n + 1] : (cy + route.qy[p + 2]) / 2;
 
-    out.x = qbezier( ax, cx, bx, t );
-    out.y = qbezier( ay, cy, by, t );
+    out.x = qbezier(ax, cx, bx, t);
+    out.y = qbezier(ay, cy, by, t);
 
     return;
   }
 
-  if( !route.round ){ // sharp polyline: leg p runs q[p] -> q[p+1]
-    out.x = route.qx[ p ] + ( route.qx[ p + 1 ] - route.qx[ p ] ) * t;
-    out.y = route.qy[ p ] + ( route.qy[ p + 1 ] - route.qy[ p ] ) * t;
+  if (!route.round) {
+    // sharp polyline: leg p runs q[p] -> q[p+1]
+    out.x = route.qx[p] + (route.qx[p + 1] - route.qx[p]) * t;
+    out.y = route.qy[p] + (route.qy[p + 1] - route.qy[p]) * t;
 
     return;
   }
 
   // round polyline: pieces alternate leg, arc, leg, ..., leg
-  if( ( p & 1 ) === 1 ){ // arc piece for corner j
-    const j = ( p - 1 ) / 2;
-    const c = routeCorner( route, j, cornerScratchA );
+  if ((p & 1) === 1) {
+    // arc piece for corner j
+    const j = (p - 1) / 2;
+    const c = routeCorner(route, j, cornerScratchA);
 
-    if( c.r === 0 ){ // collinear corner: stay on the point
+    if (c.r === 0) {
+      // collinear corner: stay on the point
       out.x = c.cx;
       out.y = c.cy;
 
       return;
     }
 
-    const a = c.a0 + arcSweep( c.a0, c.a1, c.ccw ) * t;
+    const a = c.a0 + arcSweep(c.a0, c.a1, c.ccw) * t;
 
-    out.x = c.cx + Math.cos( a ) * c.r;
-    out.y = c.cy + Math.sin( a ) * c.r;
+    out.x = c.cx + Math.cos(a) * c.r;
+    out.y = c.cy + Math.sin(a) * c.r;
 
     return;
   }
@@ -1424,41 +1852,44 @@ export const routeVertex = (
   const j = p / 2;
   let ax: number, ay: number, bx: number, by: number;
 
-  if( j === 0 ){
-    ax = route.qx[ 0 ];
-    ay = route.qy[ 0 ];
+  if (j === 0) {
+    ax = route.qx[0];
+    ay = route.qy[0];
   } else {
-    const c = routeCorner( route, j - 1, cornerScratchA );
+    const c = routeCorner(route, j - 1, cornerScratchA);
 
     ax = c.stopX;
     ay = c.stopY;
   }
 
-  if( j === route.n ){
-    bx = route.qx[ route.n + 1 ];
-    by = route.qy[ route.n + 1 ];
+  if (j === route.n) {
+    bx = route.qx[route.n + 1];
+    by = route.qy[route.n + 1];
   } else {
-    const c = routeCorner( route, j, cornerScratchB );
+    const c = routeCorner(route, j, cornerScratchB);
 
     bx = c.startX;
     by = c.startY;
   }
 
-  out.x = ax + ( bx - ax ) * t;
-  out.y = ay + ( by - ay ) * t;
+  out.x = ax + (bx - ax) * t;
+  out.y = ay + (by - ay) * t;
 };
 
 /** Flatten the route at the drawn subdivision — 2·(segs + 1) interleaved
  * coords, exactly the strip's vertex centerline. */
-export const flattenRoute = ( route: CurveRoute, segs: number = CURVE_SEGS ): Float64Array => {
-  const pts = new Float64Array( ( segs + 1 ) * 2 );
+export const flattenRoute = (
+  route: CurveRoute,
+  segs: number = CURVE_SEGS,
+): Float64Array => {
+  const pts = new Float64Array((segs + 1) * 2);
   const p = { x: 0, y: 0 };
 
-  for( let i = 0; i <= segs; i++ ){
-    routeVertex( route, i, p, segs );
+  for (let i = 0; i <= segs; i++) {
+    routeVertex(route, i, p, segs);
 
-    pts[ i * 2 ] = p.x;
-    pts[ i * 2 + 1 ] = p.y;
+    pts[i * 2] = p.x;
+    pts[i * 2 + 1] = p.y;
   }
 
   return pts;
@@ -1481,38 +1912,39 @@ export const flattenRoute = ( route: CurveRoute, segs: number = CURVE_SEGS ): Fl
  *   with the tangent toward the next point.
  */
 export const routeMidpoint = (
-  route: CurveRoute, out: { x: number; y: number; tx: number; ty: number }
+  route: CurveRoute,
+  out: { x: number; y: number; tx: number; ty: number },
 ): void => {
   const n = route.n;
 
-  if( route.kind === CURVE_MULTI ){
-    if( n === 0 ){
-      out.x = ( route.qx[ 0 ] + route.qx[ 1 ] ) / 2;
-      out.y = ( route.qy[ 0 ] + route.qy[ 1 ] ) / 2;
-      out.tx = route.qx[ 1 ] - route.qx[ 0 ];
-      out.ty = route.qy[ 1 ] - route.qy[ 0 ];
+  if (route.kind === CURVE_MULTI) {
+    if (n === 0) {
+      out.x = (route.qx[0] + route.qx[1]) / 2;
+      out.y = (route.qy[0] + route.qy[1]) / 2;
+      out.tx = route.qx[1] - route.qx[0];
+      out.ty = route.qy[1] - route.qy[0];
 
       return;
     }
 
-    if( n % 2 === 0 ){
+    if (n % 2 === 0) {
       const i = n / 2; // interior indices i and i+1 are the middle controls
 
-      out.x = ( route.qx[ i ] + route.qx[ i + 1 ] ) / 2;
-      out.y = ( route.qy[ i ] + route.qy[ i + 1 ] ) / 2;
-      out.tx = route.qx[ i + 1 ] - route.qx[ i ];
-      out.ty = route.qy[ i + 1 ] - route.qy[ i ];
+      out.x = (route.qx[i] + route.qx[i + 1]) / 2;
+      out.y = (route.qy[i] + route.qy[i + 1]) / 2;
+      out.tx = route.qx[i + 1] - route.qx[i];
+      out.ty = route.qy[i + 1] - route.qy[i];
     } else {
-      const p = ( n - 1 ) / 2;
-      const cx = route.qx[ p + 1 ];
-      const cy = route.qy[ p + 1 ];
-      const ax = p === 0 ? route.qx[ 0 ] : ( route.qx[ p ] + cx ) / 2;
-      const ay = p === 0 ? route.qy[ 0 ] : ( route.qy[ p ] + cy ) / 2;
-      const bx = p === n - 1 ? route.qx[ n + 1 ] : ( cx + route.qx[ p + 2 ] ) / 2;
-      const by = p === n - 1 ? route.qy[ n + 1 ] : ( cy + route.qy[ p + 2 ] ) / 2;
+      const p = (n - 1) / 2;
+      const cx = route.qx[p + 1];
+      const cy = route.qy[p + 1];
+      const ax = p === 0 ? route.qx[0] : (route.qx[p] + cx) / 2;
+      const ay = p === 0 ? route.qy[0] : (route.qy[p] + cy) / 2;
+      const bx = p === n - 1 ? route.qx[n + 1] : (cx + route.qx[p + 2]) / 2;
+      const by = p === n - 1 ? route.qy[n + 1] : (cy + route.qy[p + 2]) / 2;
 
-      out.x = qbezier( ax, cx, bx, 0.5 );
-      out.y = qbezier( ay, cy, by, 0.5 );
+      out.x = qbezier(ax, cx, bx, 0.5);
+      out.y = qbezier(ay, cy, by, 0.5);
       out.tx = bx - ax;
       out.ty = by - ay;
     }
@@ -1521,56 +1953,58 @@ export const routeMidpoint = (
   }
 
   // segments / taxi (interior points are the segpts)
-  if( n % 2 === 0 && n > 0 ){
+  if (n % 2 === 0 && n > 0) {
     const i = n / 2;
 
-    out.x = ( route.qx[ i ] + route.qx[ i + 1 ] ) / 2;
-    out.y = ( route.qy[ i ] + route.qy[ i + 1 ] ) / 2;
-    out.tx = route.qx[ i + 1 ] - route.qx[ i ];
-    out.ty = route.qy[ i + 1 ] - route.qy[ i ];
+    out.x = (route.qx[i] + route.qx[i + 1]) / 2;
+    out.y = (route.qy[i] + route.qy[i + 1]) / 2;
+    out.tx = route.qx[i + 1] - route.qx[i];
+    out.ty = route.qy[i + 1] - route.qy[i];
 
     return;
   }
 
-  if( n === 0 ){ // no interior points: chord midpoint
-    out.x = ( route.qx[ 0 ] + route.qx[ 1 ] ) / 2;
-    out.y = ( route.qy[ 0 ] + route.qy[ 1 ] ) / 2;
-    out.tx = route.qx[ 1 ] - route.qx[ 0 ];
-    out.ty = route.qy[ 1 ] - route.qy[ 0 ];
+  if (n === 0) {
+    // no interior points: chord midpoint
+    out.x = (route.qx[0] + route.qx[1]) / 2;
+    out.y = (route.qy[0] + route.qy[1]) / 2;
+    out.tx = route.qx[1] - route.qx[0];
+    out.ty = route.qy[1] - route.qy[0];
 
     return;
   }
 
-  const mid = ( n - 1 ) / 2; // odd n: the middle interior point (0-based)
-  const px = route.qx[ mid + 1 ];
-  const py = route.qy[ mid + 1 ];
+  const mid = (n - 1) / 2; // odd n: the middle interior point (0-based)
+  const px = route.qx[mid + 1];
+  const py = route.qy[mid + 1];
 
-  if( !route.round ){
+  if (!route.round) {
     out.x = px;
     out.y = py;
-    out.tx = px - route.qx[ mid ];
-    out.ty = py - route.qy[ mid ];
+    out.tx = px - route.qx[mid];
+    out.ty = py - route.qy[mid];
 
     return;
   }
 
-  const c = routeCorner( route, mid, cornerScratchA );
+  const c = routeCorner(route, mid, cornerScratchA);
 
-  if( c.r === 0 ){ // collinear: v3 keeps the point, tangent toward the next
+  if (c.r === 0) {
+    // collinear: v3 keeps the point, tangent toward the next
     out.x = px;
     out.y = py;
-    out.tx = route.qx[ mid + 2 ] - px;
-    out.ty = route.qy[ mid + 2 ] - py;
+    out.tx = route.qx[mid + 2] - px;
+    out.ty = route.qy[mid + 2] - py;
 
     return;
   }
 
   let vx = px - c.cx;
   let vy = py - c.cy;
-  const vl = Math.sqrt( vx * vx + vy * vy );
+  const vl = Math.sqrt(vx * vx + vy * vy);
 
-  vx = vx / vl * c.r;
-  vy = vy / vl * c.r;
+  vx = (vx / vl) * c.r;
+  vy = (vy / vl) * c.r;
 
   out.x = c.cx + vx;
   out.y = c.cy + vy;

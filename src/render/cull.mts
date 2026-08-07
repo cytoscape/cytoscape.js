@@ -28,11 +28,26 @@ culling: pick draws stay O(region).
 
 const WG_SIZE = 256;
 
-export type CullKind = 'node' | 'edge' | 'curvedEdge' | 'glyph' | 'edgeGlyph' | 'ghost' | 'nodeLayer' | 'parentNode';
+export type CullKind =
+  | 'node'
+  | 'edge'
+  | 'curvedEdge'
+  | 'glyph'
+  | 'edgeGlyph'
+  | 'ghost'
+  | 'nodeLayer'
+  | 'parentNode';
 
 /** ordered storage-buffer inputs per kind (bindings 2..N-4 of the cull layout) */
 const INPUT_COUNTS: Record<CullKind, number> = {
-  node: 5, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5, ghost: 5, nodeLayer: 4, parentNode: 5
+  node: 5,
+  edge: 5,
+  curvedEdge: 5,
+  glyph: 3,
+  edgeGlyph: 5,
+  ghost: 5,
+  nodeLayer: 4,
+  parentNode: 5,
 };
 
 /**
@@ -42,7 +57,7 @@ const INPUT_COUNTS: Record<CullKind, number> = {
  * slot instead (round 14.9), so its visible list is already in paint
  * order (shallow parents under deep ones).
  */
-const scaffoldWriting = ( out: string ): string => `
+const scaffoldWriting = (out: string): string => `
 struct CullInfo { count: u32, indexCount: u32 }
 
 var<workgroup> wgLocal: atomic<u32>;
@@ -97,7 +112,7 @@ fn csScatter(
 }
 `;
 
-const SCAFFOLD = scaffoldWriting( 'gid.x' );
+const SCAFFOLD = scaffoldWriting('gid.x');
 
 const NODE_CULL = `
 ${COMMON}
@@ -177,7 +192,7 @@ fn isVisible(i: u32) -> bool {
   return !(c.x + ext.x < 0.0 || c.x - ext.x > frame.viewportPx.x ||
            c.y + ext.y < 0.0 || c.y - ext.y > frame.viewportPx.y);
 }
-${scaffoldWriting( 'parentOrder[gid.x]' )}
+${scaffoldWriting('parentOrder[gid.x]')}
 `;
 
 const EDGE_CULL = `
@@ -617,7 +632,7 @@ const CULL_SHADERS: Record<CullKind, string> = {
   glyph: GLYPH_CULL,
   edgeGlyph: EDGE_GLYPH_CULL,
   ghost: GHOST_CULL,
-  nodeLayer: NODE_LAYER_CULL
+  nodeLayer: NODE_LAYER_CULL,
 };
 
 /** Compiled cull pipelines + the group(1) visible-list layout shared with
@@ -653,74 +668,112 @@ export class CullKernels {
    *
    * @param device — the device that owns every layout and pipeline
    */
-  constructor( device: GPUDevice ){
+  constructor(device: GPUDevice) {
     this.device = device;
 
-    this.visibleLayout = device.createBindGroupLayout( {
+    this.visibleLayout = device.createBindGroupLayout({
       label: 'cy-gpu:visible-layout',
-      entries: [ {
-        binding: 0,
-        visibility: SHADER_STAGE.VERTEX,
-        buffer: { type: 'read-only-storage' }
-      } ]
-    } );
+      entries: [
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' },
+        },
+      ],
+    });
 
-    const storage = ( binding: number, type: GPUBufferBindingType ): GPUBindGroupLayoutEntry => ( {
+    const storage = (
+      binding: number,
+      type: GPUBufferBindingType,
+    ): GPUBindGroupLayoutEntry => ({
       binding,
       visibility: SHADER_STAGE.COMPUTE,
-      buffer: { type }
-    } );
+      buffer: { type },
+    });
 
     this.cullLayouts = {} as Record<CullKind, GPUBindGroupLayout>;
     this.countPipelines = {} as Record<CullKind, GPUComputePipeline>;
     this.scatterPipelines = {} as Record<CullKind, GPUComputePipeline>;
 
-    for( const kind of [ 'node', 'parentNode', 'edge', 'curvedEdge', 'glyph', 'edgeGlyph', 'ghost', 'nodeLayer' ] as CullKind[] ){
-      const inputs = INPUT_COUNTS[ kind ];
-      const layout = device.createBindGroupLayout( {
+    for (const kind of [
+      'node',
+      'parentNode',
+      'edge',
+      'curvedEdge',
+      'glyph',
+      'edgeGlyph',
+      'ghost',
+      'nodeLayer',
+    ] as CullKind[]) {
+      const inputs = INPUT_COUNTS[kind];
+      const layout = device.createBindGroupLayout({
         label: `cy-gpu:${kind}-cull-layout`,
         entries: [
-          { binding: 0, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
-          { binding: 1, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
-          ...Array.from( { length: inputs }, ( _, i ) => storage( 2 + i, 'read-only-storage' ) ),
-          storage( 2 + inputs, 'storage' ),     // wgCounts
-          storage( 3 + inputs, 'storage' ),     // wgOffsets
-          storage( 4 + inputs, 'storage' )      // visible
-        ]
-      } );
-      const module = device.createShaderModule( {
+          {
+            binding: 0,
+            visibility: SHADER_STAGE.COMPUTE,
+            buffer: { type: 'uniform' },
+          },
+          {
+            binding: 1,
+            visibility: SHADER_STAGE.COMPUTE,
+            buffer: { type: 'uniform' },
+          },
+          ...Array.from({ length: inputs }, (_, i) =>
+            storage(2 + i, 'read-only-storage'),
+          ),
+          storage(2 + inputs, 'storage'), // wgCounts
+          storage(3 + inputs, 'storage'), // wgOffsets
+          storage(4 + inputs, 'storage'), // visible
+        ],
+      });
+      const module = device.createShaderModule({
         label: `cy-gpu:${kind}-cull-shader`,
-        code: CULL_SHADERS[ kind ]
-      } );
-      const pipelineLayout = device.createPipelineLayout( { bindGroupLayouts: [ layout ] } );
+        code: CULL_SHADERS[kind],
+      });
+      const pipelineLayout = device.createPipelineLayout({
+        bindGroupLayouts: [layout],
+      });
 
-      this.cullLayouts[ kind ] = layout;
-      this.countPipelines[ kind ] = device.createComputePipeline( {
+      this.cullLayouts[kind] = layout;
+      this.countPipelines[kind] = device.createComputePipeline({
         label: `cy-gpu:${kind}-cull-count`,
         layout: pipelineLayout,
-        compute: { module, entryPoint: 'csCount' }
-      } );
-      this.scatterPipelines[ kind ] = device.createComputePipeline( {
+        compute: { module, entryPoint: 'csCount' },
+      });
+      this.scatterPipelines[kind] = device.createComputePipeline({
         label: `cy-gpu:${kind}-cull-scatter`,
         layout: pipelineLayout,
-        compute: { module, entryPoint: 'csScatter' }
-      } );
+        compute: { module, entryPoint: 'csScatter' },
+      });
     }
 
-    this.scanLayout = device.createBindGroupLayout( {
+    this.scanLayout = device.createBindGroupLayout({
       label: 'cy-gpu:cull-scan-layout',
       entries: [
-        { binding: 0, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
-        storage( 1, 'read-only-storage' ),
-        storage( 2, 'storage' ),
-        storage( 3, 'storage' )
-      ]
-    } );
-    this.scanPipeline = device.createComputePipeline( {
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'uniform' },
+        },
+        storage(1, 'read-only-storage'),
+        storage(2, 'storage'),
+        storage(3, 'storage'),
+      ],
+    });
+    this.scanPipeline = device.createComputePipeline({
       label: 'cy-gpu:cull-scan',
-      layout: device.createPipelineLayout( { bindGroupLayouts: [ this.scanLayout ] } ),
-      compute: { module: device.createShaderModule( { label: 'cy-gpu:cull-scan-shader', code: SCAN } ), entryPoint: 'csScan' }
-    } );
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [this.scanLayout],
+      }),
+      compute: {
+        module: device.createShaderModule({
+          label: 'cy-gpu:cull-scan-shader',
+          code: SCAN,
+        }),
+        entryPoint: 'csScan',
+      },
+    });
   }
 }
 
@@ -765,7 +818,12 @@ export class CulledGroup {
    * primary args block: 6 for a quad, 6 × CURVE_SEGS for a curved strip.
    * The single-quad block at QUAD_ARGS_OFFSET is always 6.
    */
-  constructor( kernels: CullKernels, kind: CullKind, label: string, indexCount: number = 6 ){
+  constructor(
+    kernels: CullKernels,
+    kind: CullKind,
+    label: string,
+    indexCount: number = 6,
+  ) {
     this.kernels = kernels;
     this.kind = kind;
     this.label = label;
@@ -783,16 +841,16 @@ export class CulledGroup {
 
     const device = kernels.device;
 
-    this.meta = device.createBuffer( {
+    this.meta = device.createBuffer({
       label: `cy-gpu:${label}-cull-meta`,
       size: 8, // { count, indexCount }
-      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
-    } );
-    this.indirect = device.createBuffer( {
+      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
+    });
+    this.indirect = device.createBuffer({
       label: `cy-gpu:${label}-indirect`,
       size: 40, // strip args + the single-quad args block
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT
-    } );
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT,
+    });
   }
 
   /** The render pipelines' @group(1) bind group (the visible list). */
@@ -806,99 +864,120 @@ export class CulledGroup {
    * `inputsKey` must change whenever any input buffer identity changes
    * (mirror/glyph version).
    */
-  ensure( uniform: GPUBuffer, capacity: number, inputs: GPUBuffer[], inputsKey: string ): void {
+  ensure(
+    uniform: GPUBuffer,
+    capacity: number,
+    inputs: GPUBuffer[],
+    inputsKey: string,
+  ): void {
     const device = this.kernels.device;
 
-    if( capacity > this.capacity ){
-      const old = [ this.visible, this.wgCounts, this.wgOffsets ];
-      const numWg = Math.ceil( capacity / WG_SIZE );
+    if (capacity > this.capacity) {
+      const old = [this.visible, this.wgCounts, this.wgOffsets];
+      const numWg = Math.ceil(capacity / WG_SIZE);
 
       this.capacity = capacity;
-      this.visible = device.createBuffer( {
+      this.visible = device.createBuffer({
         label: `cy-gpu:${this.label}-visible`,
         size: capacity * 4,
-        usage: BUFFER_USAGE.STORAGE
-      } );
-      this.wgCounts = device.createBuffer( {
+        usage: BUFFER_USAGE.STORAGE,
+      });
+      this.wgCounts = device.createBuffer({
         label: `cy-gpu:${this.label}-wg-counts`,
         size: numWg * 4,
-        usage: BUFFER_USAGE.STORAGE
-      } );
-      this.wgOffsets = device.createBuffer( {
+        usage: BUFFER_USAGE.STORAGE,
+      });
+      this.wgOffsets = device.createBuffer({
         label: `cy-gpu:${this.label}-wg-offsets`,
         size: numWg * 4,
-        usage: BUFFER_USAGE.STORAGE
-      } );
+        usage: BUFFER_USAGE.STORAGE,
+      });
 
       // the old buffers may still be referenced by in-flight work
-      void device.queue.onSubmittedWorkDone().then( () => {
-        for( const buffer of old ){ buffer?.destroy(); }
-      } );
+      void device.queue.onSubmittedWorkDone().then(() => {
+        for (const buffer of old) {
+          buffer?.destroy();
+        }
+      });
     }
 
     const key = `${inputsKey}|${this.capacity}`;
 
-    if( key === this.bindKey && this.cullBind != null ){ return; }
+    if (key === this.bindKey && this.cullBind != null) {
+      return;
+    }
 
     this.bindKey = key;
 
     const wgCounts = this.wgCounts as GPUBuffer;
     const visible = this.visible as GPUBuffer;
-    const inputCount = INPUT_COUNTS[ this.kind ];
+    const inputCount = INPUT_COUNTS[this.kind];
 
-    this.cullBind = device.createBindGroup( {
+    this.cullBind = device.createBindGroup({
       label: `cy-gpu:${this.label}-cull-bind`,
-      layout: this.kernels.cullLayouts[ this.kind ],
+      layout: this.kernels.cullLayouts[this.kind],
       entries: [
         { binding: 0, resource: { buffer: uniform } },
         { binding: 1, resource: { buffer: this.meta } },
-        ...inputs.map( ( buffer, i ) => ( { binding: 2 + i, resource: { buffer } } ) ),
+        ...inputs.map((buffer, i) => ({
+          binding: 2 + i,
+          resource: { buffer },
+        })),
         { binding: 2 + inputCount, resource: { buffer: wgCounts } },
-        { binding: 3 + inputCount, resource: { buffer: this.wgOffsets as GPUBuffer } },
-        { binding: 4 + inputCount, resource: { buffer: visible } }
-      ]
-    } );
-    this.scanBind = device.createBindGroup( {
+        {
+          binding: 3 + inputCount,
+          resource: { buffer: this.wgOffsets as GPUBuffer },
+        },
+        { binding: 4 + inputCount, resource: { buffer: visible } },
+      ],
+    });
+    this.scanBind = device.createBindGroup({
       label: `cy-gpu:${this.label}-scan-bind`,
       layout: this.kernels.scanLayout,
       entries: [
         { binding: 0, resource: { buffer: this.meta } },
         { binding: 1, resource: { buffer: wgCounts } },
         { binding: 2, resource: { buffer: this.wgOffsets as GPUBuffer } },
-        { binding: 3, resource: { buffer: this.indirect } }
-      ]
-    } );
-    this.visibleBind = device.createBindGroup( {
+        { binding: 3, resource: { buffer: this.indirect } },
+      ],
+    });
+    this.visibleBind = device.createBindGroup({
       label: `cy-gpu:${this.label}-visible-bind`,
       layout: this.kernels.visibleLayout,
-      entries: [ { binding: 0, resource: { buffer: visible } } ]
-    } );
+      entries: [{ binding: 0, resource: { buffer: visible } }],
+    });
   }
 
   /** Encode the three compaction dispatches.  No-op when highWater is 0
    * (the caller skips the draw as well). */
-  encode( pass: GPUComputePassEncoder, highWater: number ): void {
-    if( highWater === 0 || this.cullBind == null ){ return; }
-
-    if( this.lastCount !== highWater ){
-      this.lastCount = highWater;
-      this.kernels.device.queue.writeBuffer( this.meta, 0, Uint32Array.of( highWater, this.indexCount ) );
+  encode(pass: GPUComputePassEncoder, highWater: number): void {
+    if (highWater === 0 || this.cullBind == null) {
+      return;
     }
 
-    const numWg = Math.ceil( highWater / WG_SIZE );
+    if (this.lastCount !== highWater) {
+      this.lastCount = highWater;
+      this.kernels.device.queue.writeBuffer(
+        this.meta,
+        0,
+        Uint32Array.of(highWater, this.indexCount),
+      );
+    }
+
+    const numWg = Math.ceil(highWater / WG_SIZE);
     const kind = this.kind;
 
-    pass.setPipeline( this.kernels.countPipelines[ kind ] );
-    pass.setBindGroup( 0, this.cullBind );
-    pass.dispatchWorkgroups( numWg );
+    pass.setPipeline(this.kernels.countPipelines[kind]);
+    pass.setBindGroup(0, this.cullBind);
+    pass.dispatchWorkgroups(numWg);
 
-    pass.setPipeline( this.kernels.scanPipeline );
-    pass.setBindGroup( 0, this.scanBind );
-    pass.dispatchWorkgroups( 1 );
+    pass.setPipeline(this.kernels.scanPipeline);
+    pass.setBindGroup(0, this.scanBind);
+    pass.dispatchWorkgroups(1);
 
-    pass.setPipeline( this.kernels.scatterPipelines[ kind ] );
-    pass.setBindGroup( 0, this.cullBind );
-    pass.dispatchWorkgroups( numWg );
+    pass.setPipeline(this.kernels.scatterPipelines[kind]);
+    pass.setBindGroup(0, this.cullBind);
+    pass.dispatchWorkgroups(numWg);
   }
 
   /**
@@ -908,7 +987,9 @@ export class CulledGroup {
    * this group.  The shared kernels are not touched.
    */
   destroy(): void {
-    if( this.destroyed ){ return; }
+    if (this.destroyed) {
+      return;
+    }
 
     this.destroyed = true;
     this.meta.destroy();

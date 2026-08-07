@@ -8,11 +8,10 @@ import cytoscape from '../src/index.mjs';
 // is the gate, so it has to be true for every kind that reaches the curved
 // stream and false for the three that draw in the straight pipeline.
 
-describe('gpu/curve-stream gate', function(){
-
+describe('gpu/curve-stream gate', function () {
   var cy;
-  var make = ( elements, style ) => {
-    cy = cytoscape( { headless: true, elements, style } );
+  var make = (elements, style) => {
+    cy = cytoscape({ headless: true, elements, style });
     cy._store.flushDerived(); // the gate reads derived curve params
 
     return cy;
@@ -21,84 +20,90 @@ describe('gpu/curve-stream gate', function(){
   var pair = [
     { data: { id: 'a' }, position: { x: 0, y: 0 } },
     { data: { id: 'b' }, position: { x: 100, y: 0 } },
-    { data: { id: 'e', source: 'a', target: 'b' } }
+    { data: { id: 'e', source: 'a', target: 'b' } },
   ];
 
-  afterEach(function(){
-    if( cy != null ){ cy.destroy(); }
+  afterEach(function () {
+    if (cy != null) {
+      cy.destroy();
+    }
 
     cy = null;
   });
 
-  it('is false for a graph with no edge at all', function(){
-    make( [ { data: { id: 'a' } } ] );
+  it('is false for a graph with no edge at all', function () {
+    make([{ data: { id: 'a' } }]);
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( false );
+    expect(cy._store.hasCurvedEdges()).to.equal(false);
   });
 
-  it('is false for a lone straight edge', function(){
-    make( pair, { edges: { 'curve-style': 'straight' } } );
+  it('is false for a lone straight edge', function () {
+    make(pair, { edges: { 'curve-style': 'straight' } });
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( false );
+    expect(cy._store.hasCurvedEdges()).to.equal(false);
   });
 
-  it('is false for the two straight-stream kinds (12c)', function(){
-    for( const style of [ 'haystack', 'straight-triangle' ] ){
-      make( pair, { edges: { 'curve-style': style } } );
+  it('is false for the two straight-stream kinds (12c)', function () {
+    for (const style of ['haystack', 'straight-triangle']) {
+      make(pair, { edges: { 'curve-style': style } });
 
-      expect( cy._store.hasCurvedEdges(), style ).to.equal( false );
+      expect(cy._store.hasCurvedEdges(), style).to.equal(false);
 
       cy.destroy();
       cy = null;
     }
   });
 
-  it('is false for bezier on a single edge — it bundles only multi-edges', function(){
-    make( pair, { edges: { 'curve-style': 'bezier' } } );
+  it('is false for bezier on a single edge — it bundles only multi-edges', function () {
+    make(pair, { edges: { 'curve-style': 'bezier' } });
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( false );
+    expect(cy._store.hasCurvedEdges()).to.equal(false);
   });
 
-  it('is true for every kind that draws in the curved stream', function(){
-    for( const style of [ 'unbundled-bezier', 'segments', 'taxi', 'round-segments', 'round-taxi' ] ){
-      make( pair, { edges: { 'curve-style': style } } );
+  it('is true for every kind that draws in the curved stream', function () {
+    for (const style of [
+      'unbundled-bezier',
+      'segments',
+      'taxi',
+      'round-segments',
+      'round-taxi',
+    ]) {
+      make(pair, { edges: { 'curve-style': style } });
 
-      expect( cy._store.hasCurvedEdges(), style ).to.equal( true );
+      expect(cy._store.hasCurvedEdges(), style).to.equal(true);
 
       cy.destroy();
       cy = null;
     }
   });
 
-  it('is true once a parallel pair bundles under bezier', function(){
-    make( [
-      ...pair,
-      { data: { id: 'e2', source: 'a', target: 'b' } }
-    ], { edges: { 'curve-style': 'bezier' } } );
+  it('is true once a parallel pair bundles under bezier', function () {
+    make([...pair, { data: { id: 'e2', source: 'a', target: 'b' } }], {
+      edges: { 'curve-style': 'bezier' },
+    });
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( true );
+    expect(cy._store.hasCurvedEdges()).to.equal(true);
   });
 
-  it('is true for a self-loop', function(){
-    make( [
+  it('is true for a self-loop', function () {
+    make([
       { data: { id: 'a' }, position: { x: 0, y: 0 } },
-      { data: { id: 'loop', source: 'a', target: 'a' } }
-    ] );
+      { data: { id: 'loop', source: 'a', target: 'a' } },
+    ]);
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( true );
+    expect(cy._store.hasCurvedEdges()).to.equal(true);
   });
 
-  it('stays true after the last curved edge goes away', function(){
-    make( pair, { edges: { 'curve-style': 'unbundled-bezier' } } );
+  it('stays true after the last curved edge goes away', function () {
+    make(pair, { edges: { 'curve-style': 'unbundled-bezier' } });
 
-    expect( cy._store.hasCurvedEdges() ).to.equal( true );
+    expect(cy._store.hasCurvedEdges()).to.equal(true);
 
-    cy.$id( 'e' ).remove();
+    cy.$id('e').remove();
     cy._store.flushDerived();
 
     // monotone on purpose: recompiling the pipelines costs more than
     // holding them, and the gate is read once per frame
-    expect( cy._store.hasCurvedEdges() ).to.equal( true );
+    expect(cy._store.hasCurvedEdges()).to.equal(true);
   });
-
 });

@@ -33,7 +33,7 @@ import type { Collection } from '../collection.mjs';
 import type { CustomLayoutOptions, Position } from '../public-types.mjs';
 
 export interface LayoutImpl {
-  run( ctx: LayoutContext ): void | Promise<void>;
+  run(ctx: LayoutContext): void | Promise<void>;
   stop?(): void;
 }
 
@@ -64,7 +64,8 @@ export class LayoutContext {
    *   Materialized on first read and cached for the run
    */
   get eles(): Collection {
-    return ( this._eles ??= ( this.options.eles as Collection | undefined ) ?? this.cy.elements() );
+    return (this._eles ??=
+      (this.options.eles as Collection | undefined) ?? this.cy.elements());
   }
 
   /**
@@ -75,7 +76,7 @@ export class LayoutContext {
    *   layout iterating it must apply its own rules
    */
   get nodes(): Collection {
-    return ( this._nodes ??= this.eles.nodes() );
+    return (this._nodes ??= this.eles.nodes());
   }
 
   /** the discrete finisher ran: its lifecycle covers the run */
@@ -94,7 +95,7 @@ export class LayoutContext {
    * @param options — the resolved layout options; `eles` narrows the
    *   scope (from `eles.layout()`), defaulting to the whole graph
    */
-  constructor( cy: Core, layout: object, options: CustomLayoutOptions ){
+  constructor(cy: Core, layout: object, options: CustomLayoutOptions) {
     this.cy = cy;
     this.layout = layout;
     this.options = options;
@@ -115,13 +116,15 @@ export class LayoutContext {
    *   layout
    */
   nodeSlots(): number[] {
-    if( this.slots != null ){ return this.slots; }
+    if (this.slots != null) {
+      return this.slots;
+    }
 
     const store = this.cy._store;
     const scope = this.options.eles as Collection | undefined;
     const out: number[] = [];
 
-    if( scope == null ){
+    if (scope == null) {
       // Whole graph: walk the store's insertion-order list directly
       // (34.4).  This is the same walk `scanRefsInto` takes — and so the
       // same order `cy.nodes()` produces, which layouts depend on since
@@ -129,17 +132,29 @@ export class LayoutContext {
       // allocated and no handle interned.  The mask is the old
       // per-element filter in one test: alive, not a parent (parents
       // derive from their placed children), not locked.
-      store.scanSlotsInto( out, 0, 'nodes', FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED, FLAG_ALIVE );
+      store.scanSlotsInto(
+        out,
+        0,
+        'nodes',
+        FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED,
+        FLAG_ALIVE,
+      );
     } else {
       // Subset scope: the caller already holds the collection, so its
       // refs are the cheap path — still no handles.
-      for( const ref of scope._liveRefs() ){
-        if( ref.group !== 'nodes' ){ continue; }
+      for (const ref of scope._liveRefs()) {
+        if (ref.group !== 'nodes') {
+          continue;
+        }
 
-        if( store.hasFlag( 'nodes', ref.slot, FLAG_PARENT )
-          || store.hasFlag( 'nodes', ref.slot, FLAG_LOCKED ) ){ continue; }
+        if (
+          store.hasFlag('nodes', ref.slot, FLAG_PARENT) ||
+          store.hasFlag('nodes', ref.slot, FLAG_LOCKED)
+        ) {
+          continue;
+        }
 
-        out.push( ref.slot );
+        out.push(ref.slot);
       }
     }
 
@@ -158,12 +173,14 @@ export class LayoutContext {
     const scope = this.options.eles as Collection | undefined;
     const out: number[] = [];
 
-    if( scope == null ){
+    if (scope == null) {
       // whole graph: the order-list walk, as in nodeSlots (34.4)
-      this.cy._store.scanSlotsInto( out, 0, 'edges', FLAG_ALIVE, FLAG_ALIVE );
+      this.cy._store.scanSlotsInto(out, 0, 'edges', FLAG_ALIVE, FLAG_ALIVE);
     } else {
-      for( const ref of scope._liveRefs() ){
-        if( ref.group === 'edges' ){ out.push( ref.slot ); }
+      for (const ref of scope._liveRefs()) {
+        if (ref.group === 'edges') {
+          out.push(ref.slot);
+        }
       }
     }
 
@@ -179,7 +196,7 @@ export class LayoutContext {
    *   directly bypasses the dirty tracking the renderer depends on
    */
   positions(): Float32Array {
-    return this.cy._store.column( 'node.position' ) as Float32Array;
+    return this.cy._store.column('node.position') as Float32Array;
   }
 
   /**
@@ -189,7 +206,7 @@ export class LayoutContext {
    *   not ids, so it pairs directly with `positions()` without a lookup
    */
   endpoints(): Uint32Array {
-    return this.cy._store.column( 'edge.endpoints' ) as Uint32Array;
+    return this.cy._store.column('edge.endpoints') as Uint32Array;
   }
 
   /**
@@ -198,10 +215,10 @@ export class LayoutContext {
    * @param slot — a node slot, as handed out by `nodeSlots()`
    * @returns its whole-graph degree, loops counted as v3 counts them
    */
-  degreeOf( slot: number ): number {
+  degreeOf(slot: number): number {
     const adj = this.cy._store.adj;
 
-    return adj.outDegree( slot ) + adj.inDegree( slot );
+    return adj.outDegree(slot) + adj.inDegree(slot);
   }
 
   // -- bounds --
@@ -246,8 +263,8 @@ export class LayoutContext {
    * @param xy — the packed positions: `xy[i*2]`, `xy[i*2+1]` land on
    *   `slots[i]`
    */
-  setPositions( slots: number[], xy: number[] | Float32Array ): void {
-    this.cy._store.setPositions( slots, xy );
+  setPositions(slots: number[], xy: number[] | Float32Array): void {
+    this.cy._store.setPositions(slots, xy);
   }
 
   /**
@@ -260,13 +277,17 @@ export class LayoutContext {
    * @param fn — called per scoped node with the node and its index,
    *   returning the model position to place it at
    */
-  layoutPositions( fn: ( node: Collection, i: number ) => Position ): void {
+  layoutPositions(fn: (node: Collection, i: number) => Position): void {
     this._finisherUsed = true;
-    this.eles.layoutPositions( this.layout, {
-      ...this.options,
-      eles: this.eles,
-      _startEmitted: true
-    } as CustomLayoutOptions, fn );
+    this.eles.layoutPositions(
+      this.layout,
+      {
+        ...this.options,
+        eles: this.eles,
+        _startEmitted: true,
+      } as CustomLayoutOptions,
+      fn,
+    );
   }
 }
 
@@ -291,20 +312,20 @@ export class CustomLayout {
    *   arguments or a plain object, implementing `{ run( ctx ), stop?() }`
    * @throws if `impl` is missing, or does not implement `run( ctx )`
    */
-  constructor( cy: Core, options: CustomLayoutOptions ){
+  constructor(cy: Core, options: CustomLayoutOptions) {
     const provided = options.impl;
     let impl: LayoutImpl;
 
-    if( typeof provided === 'function' ){
-      impl = new ( provided as new () => LayoutImpl )();
-    } else if( provided != null && typeof provided === 'object' ){
+    if (typeof provided === 'function') {
+      impl = new (provided as new () => LayoutImpl)();
+    } else if (provided != null && typeof provided === 'object') {
       impl = provided as LayoutImpl;
     } else {
-      throw new Error( `A custom layout needs an impl class or object` );
+      throw new Error(`A custom layout needs an impl class or object`);
     }
 
-    if( typeof impl.run !== 'function' ){
-      throw new Error( `A layout impl must implement run( ctx )` );
+    if (typeof impl.run !== 'function') {
+      throw new Error(`A layout impl must implement run( ctx )`);
     }
 
     this.cy = cy;
@@ -329,28 +350,32 @@ export class CustomLayout {
     const cy = this.cy;
     let resolve!: () => void;
 
-    this.donePromise = new Promise<void>( r => { resolve = r; } );
+    this.donePromise = new Promise<void>((r) => {
+      resolve = r;
+    });
 
-    const ctx = new LayoutContext( cy, this, {
+    const ctx = new LayoutContext(cy, this, {
       ...this.options,
       // the finisher resolves the run promise at its stop callback
       stop: () => {
         this.options.stop?.();
         resolve();
-      }
-    } );
+      },
+    });
 
-    cy.emit( { type: 'layoutstart', layout: this } );
+    cy.emit({ type: 'layoutstart', layout: this });
 
-    Promise.resolve( this.impl.run( ctx ) ).then( () => {
-      if( ctx._finisherUsed ){ return; } // its lifecycle covers the run
+    Promise.resolve(this.impl.run(ctx)).then(() => {
+      if (ctx._finisherUsed) {
+        return;
+      } // its lifecycle covers the run
 
       this.options.ready?.();
-      cy.emit( { type: 'layoutready', layout: this } );
+      cy.emit({ type: 'layoutready', layout: this });
       this.options.stop?.();
-      cy.emit( { type: 'layoutstop', layout: this } );
+      cy.emit({ type: 'layoutstop', layout: this });
       resolve();
-    } );
+    });
 
     return this;
   }

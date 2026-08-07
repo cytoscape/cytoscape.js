@@ -12,10 +12,10 @@
 // there are unaffected and there is still one definition of each.
 
 /** Node count, overridable so a run can be scaled: `BENCH_N=5000 npm run benchmark` */
-export const N = Number( process.env.BENCH_N ) || 2000;
+export const N = Number(process.env.BENCH_N) || 2000;
 
 /** The index of the middle node — the one the single-element rows address. */
-export const MIDNUM = Math.floor( N / 2 );
+export const MIDNUM = Math.floor(N / 2);
 
 /** That node's id. */
 export const MID = 'n' + MIDNUM;

@@ -26,42 +26,37 @@ Never lower the floors.
 const PUBLIC_FLOOR = 100;
 const INTERNAL_FLOOR = 100;
 
-describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
-
+describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function () {
   const result = audit();
 
-  describe('every file stays complete', function(){
-
-    it('no src file has an undocumented public member', function(){
-      const offenders = result.files.filter( f => f.missing.length > 0 );
+  describe('every file stays complete', function () {
+    it('no src file has an undocumented public member', function () {
+      const offenders = result.files.filter((f) => f.missing.length > 0);
 
       expect(
-        offenders.map( f => f.file ),
+        offenders.map((f) => f.file),
         'undocumented public members:\n  ' +
-        offenders.flatMap( f => f.missing ).join( '\n  ' )
-      ).to.deep.equal( [] );
+          offenders.flatMap((f) => f.missing).join('\n  '),
+      ).to.deep.equal([]);
     });
-
   });
 
-  describe('the tier floors hold', function(){
-
-    it('the public API tier stays at or above its floor', function(){
+  describe('the tier floors hold', function () {
+    it('the public API tier stays at or above its floor', function () {
       expect(
         result.public.pct,
-        `public tier fell to ${result.public.pct.toFixed( 1 )}% ` +
-        `(${result.public.documented}/${result.public.total})`
-      ).to.be.at.least( PUBLIC_FLOOR );
+        `public tier fell to ${result.public.pct.toFixed(1)}% ` +
+          `(${result.public.documented}/${result.public.total})`,
+      ).to.be.at.least(PUBLIC_FLOOR);
     });
 
-    it('the internal tier stays at or above its floor', function(){
+    it('the internal tier stays at or above its floor', function () {
       expect(
         result.internal.pct,
-        `internal tier fell to ${result.internal.pct.toFixed( 1 )}% ` +
-        `(${result.internal.documented}/${result.internal.total})`
-      ).to.be.at.least( INTERNAL_FLOOR );
+        `internal tier fell to ${result.internal.pct.toFixed(1)}% ` +
+          `(${result.internal.documented}/${result.internal.total})`,
+      ).to.be.at.least(INTERNAL_FLOOR);
     });
-
   });
 
   /*
@@ -81,22 +76,20 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   The audit under-detects on purpose — a member that throws only through a
   helper is not flagged — so this never demands a tag a human would not.
   */
-  describe('a public member that throws says so', function(){
-
-    it('every throwing public-API member carries an @throws tag', function(){
+  describe('a public member that throws says so', function () {
+    it('every throwing public-API member carries an @throws tag', function () {
       expect(
         result.throwTags.missing,
         'public members that throw with no @throws tag:\n  ' +
-        result.throwTags.missing.join( '\n  ' )
-      ).to.deep.equal( [] );
+          result.throwTags.missing.join('\n  '),
+      ).to.deep.equal([]);
     });
 
-    it('finds a non-trivial number of throwing members to check', function(){
+    it('finds a non-trivial number of throwing members to check', function () {
       // the same guard as the coverage floors: a regex change that audits
       // nothing must not read as a pass
-      expect( result.throwTags.tagged ).to.be.at.least( 10 );
+      expect(result.throwTags.tagged).to.be.at.least(10);
     });
-
   });
 
   /*
@@ -117,30 +110,32 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   221 of the members it could see; `serializeElements` and its neighbours
   were outside the gate.  They are inside it now, at 229/229.
   */
-  describe('a public member that takes arguments describes them', function(){
-
-    it('every public-API member with parameters carries @param', function(){
+  describe('a public member that takes arguments describes them', function () {
+    it('every public-API member with parameters carries @param', function () {
       expect(
         result.paramTags.missing,
         'public members taking arguments with no @param:\n  ' +
-        result.paramTags.missing.join( '\n  ' )
-      ).to.deep.equal( [] );
+          result.paramTags.missing.join('\n  '),
+      ).to.deep.equal([]);
     });
 
-    it('finds a non-trivial number of parameterized members to check', function(){
-      expect( result.paramTags.tagged ).to.be.at.least( 150 );
+    it('finds a non-trivial number of parameterized members to check', function () {
+      expect(result.paramTags.tagged).to.be.at.least(150);
     });
 
-    it('audits exported functions, not only class members', function(){
+    it('audits exported functions, not only class members', function () {
       // wire.mts's whole public surface is exported functions, so its
       // count is 0 if the branch that walks them is ever dropped — which
       // is how round 32's audit missed them for four rounds
-      const wire = result.paramTags.files.find( f => f.file === 'src/wire.mts' );
+      const wire = result.paramTags.files.find(
+        (f) => f.file === 'src/wire.mts',
+      );
 
-      expect( wire, 'wire.mts was not audited for @param' ).to.not.equal( undefined );
-      expect( wire.tagged ).to.be.at.least( 2 );
+      expect(wire, 'wire.mts was not audited for @param').to.not.equal(
+        undefined,
+      );
+      expect(wire.tagged).to.be.at.least(2);
     });
-
   });
 
   /*
@@ -158,23 +153,21 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   displaced block, and "no benchmark calls this member" is often the right
   answer.  Gating a heuristic teaches people to work around it.
   */
-  describe('a public member that returns a value says what', function(){
-
-    it('every value-returning public-API member carries @returns', function(){
+  describe('a public member that returns a value says what', function () {
+    it('every value-returning public-API member carries @returns', function () {
       expect(
         result.returnTags.missing,
         'public members returning a value with no @returns:\n  ' +
-        result.returnTags.missing.join( '\n  ' )
-      ).to.deep.equal( [] );
+          result.returnTags.missing.join('\n  '),
+      ).to.deep.equal([]);
     });
 
-    it('finds a non-trivial number of value-returning members to check', function(){
+    it('finds a non-trivial number of value-returning members to check', function () {
       // the ratchet, moved with the surface: 276 at round 36's completion,
       // 277 once 37.3 brought the entry point inside the audit, 278 with
       // round 41's event and emitter
-      expect( result.returnTags.tagged ).to.be.at.least( 279 );
+      expect(result.returnTags.tagged).to.be.at.least(279);
     });
-
   });
 
   /*
@@ -190,39 +183,38 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   bodies only, round 36 widened it to exported functions, and this widens it
   again.  The lesson each time is that an audit's scope is part of its claim.
   */
-  describe('the entry point is inside the audit', function(){
-
-    it('src/index.mts contributes members to every tier of it', function(){
-      const inFile = ( files, file ) => files.find( f => f.file === file );
+  describe('the entry point is inside the audit', function () {
+    it('src/index.mts contributes members to every tier of it', function () {
+      const inFile = (files, file) => files.find((f) => f.file === file);
 
       expect(
-        inFile( result.files, 'src/index.mts' ).documented,
-        'index.mts contributes no documented members; is `export default function` matched?'
-      ).to.be.at.least( 1 );
+        inFile(result.files, 'src/index.mts').documented,
+        'index.mts contributes no documented members; is `export default function` matched?',
+      ).to.be.at.least(1);
 
-      expect( inFile( result.paramTags.files, 'src/index.mts' ).tagged ).to.be.at.least( 1 );
-      expect( inFile( result.returnTags.files, 'src/index.mts' ).tagged ).to.be.at.least( 1 );
+      expect(
+        inFile(result.paramTags.files, 'src/index.mts').tagged,
+      ).to.be.at.least(1);
+      expect(
+        inFile(result.returnTags.files, 'src/index.mts').tagged,
+      ).to.be.at.least(1);
     });
-
   });
 
-  describe('the audit itself', function(){
-
-    it('classifies every listed public-API file', function(){
-      for( const file of PUBLIC_API ){
+  describe('the audit itself', function () {
+    it('classifies every listed public-API file', function () {
+      for (const file of PUBLIC_API) {
         expect(
-          result.files.some( f => f.file === file ),
-          `${file} is listed in PUBLIC_API but was not audited`
-        ).to.equal( true );
+          result.files.some((f) => f.file === file),
+          `${file} is listed in PUBLIC_API but was not audited`,
+        ).to.equal(true);
       }
     });
 
-    it('finds a non-trivial number of public members to check', function(){
+    it('finds a non-trivial number of public members to check', function () {
       // guards against a regex change silently auditing nothing
-      expect( result.public.total ).to.be.at.least( 300 );
-      expect( result.internal.total ).to.be.at.least( 300 );
+      expect(result.public.total).to.be.at.least(300);
+      expect(result.internal.total).to.be.at.least(300);
     });
-
   });
-
 });

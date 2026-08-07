@@ -25,20 +25,21 @@
  * canvas, so `stats().frameCount` and the renderer's own scheduling still
  * reflect only real work.
  */
-( function(){
-  var probe = document.createElement( 'div' );
+(function () {
+  var probe = document.createElement('div');
 
   probe.id = '__frameProbe';
-  probe.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;'
-    + 'background:white;pointer-events:none;z-index:-1';
+  probe.style.cssText =
+    'position:fixed;right:0;bottom:0;width:1px;height:1px;' +
+    'background:white;pointer-events:none;z-index:-1';
 
-  document.body.appendChild( probe );
+  document.body.appendChild(probe);
 
   var i = 0;
 
-  ( function tick(){
-    probe.style.opacity = ( i++ % 2 ) ? '1' : '0.996';
+  (function tick() {
+    probe.style.opacity = i++ % 2 ? '1' : '0.996';
 
-    requestAnimationFrame( tick );
-  } )();
-} )();
+    requestAnimationFrame(tick);
+  })();
+})();

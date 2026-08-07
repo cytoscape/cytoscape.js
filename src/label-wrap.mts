@@ -66,73 +66,87 @@ export interface LaidBlock {
   lines: number;
 }
 
-const measure = ( text: string, advanceOf: ( ch: string ) => number ): number => {
+const measure = (text: string, advanceOf: (ch: string) => number): number => {
   let w = 0;
 
-  for( const ch of text ){ w += advanceOf( ch ); }
+  for (const ch of text) {
+    w += advanceOf(ch);
+  }
 
   return w;
 };
 
 /** Break text into lines per the wrap opts; widths via advanceOf. */
 export const breakLines = (
-  text: string, advanceOf: ( ch: string ) => number, opts: WrapOpts
+  text: string,
+  advanceOf: (ch: string) => number,
+  opts: WrapOpts,
 ): BrokenLine[] => {
-  const single = ( t: string ): string => t.replace( /[\n\t]/g, ' ' );
+  const single = (t: string): string => t.replace(/[\n\t]/g, ' ');
 
-  if( opts.wrap === WRAP_NONE || !( opts.maxWidth > 0 ) || opts.maxWidth === Infinity && opts.wrap === WRAP_ELLIPSIS ){
-    if( opts.wrap !== WRAP_WRAP ){
-      const t = single( text );
+  if (
+    opts.wrap === WRAP_NONE ||
+    !(opts.maxWidth > 0) ||
+    (opts.maxWidth === Infinity && opts.wrap === WRAP_ELLIPSIS)
+  ) {
+    if (opts.wrap !== WRAP_WRAP) {
+      const t = single(text);
 
-      if( opts.wrap === WRAP_ELLIPSIS && opts.maxWidth !== Infinity ){
-        return [ truncate( t, advanceOf, opts.maxWidth ) ];
+      if (opts.wrap === WRAP_ELLIPSIS && opts.maxWidth !== Infinity) {
+        return [truncate(t, advanceOf, opts.maxWidth)];
       }
 
-      return [ { text: t, width: measure( t, advanceOf ) } ];
+      return [{ text: t, width: measure(t, advanceOf) }];
     }
   }
 
-  if( opts.wrap === WRAP_ELLIPSIS ){
-    return [ truncate( single( text ), advanceOf, opts.maxWidth ) ];
+  if (opts.wrap === WRAP_ELLIPSIS) {
+    return [truncate(single(text), advanceOf, opts.maxWidth)];
   }
 
   // wrap: honor hard newlines, then wrap each hard line greedily
   const out: BrokenLine[] = [];
 
-  for( const hard of text.split( '\n' ) ){
-    if( hard === '' ){
-      out.push( { text: '', width: 0 } );
+  for (const hard of text.split('\n')) {
+    if (hard === '') {
+      out.push({ text: '', width: 0 });
 
       continue;
     }
 
-    if( !( opts.maxWidth > 0 ) || opts.maxWidth === Infinity ){
-      out.push( { text: hard, width: measure( hard, advanceOf ) } );
+    if (!(opts.maxWidth > 0) || opts.maxWidth === Infinity) {
+      out.push({ text: hard, width: measure(hard, advanceOf) });
 
       continue;
     }
 
-    wrapLine( hard, advanceOf, opts, out );
+    wrapLine(hard, advanceOf, opts, out);
   }
 
   return out;
 };
 
 const truncate = (
-  text: string, advanceOf: ( ch: string ) => number, maxWidth: number
+  text: string,
+  advanceOf: (ch: string) => number,
+  maxWidth: number,
 ): BrokenLine => {
-  const full = measure( text, advanceOf );
+  const full = measure(text, advanceOf);
 
-  if( full <= maxWidth ){ return { text, width: full }; }
+  if (full <= maxWidth) {
+    return { text, width: full };
+  }
 
-  const dots = advanceOf( ELLIPSIS );
+  const dots = advanceOf(ELLIPSIS);
   let width = 0;
   let kept = '';
 
-  for( const ch of text ){
-    const a = advanceOf( ch );
+  for (const ch of text) {
+    const a = advanceOf(ch);
 
-    if( width + a + dots > maxWidth ){ break; }
+    if (width + a + dots > maxWidth) {
+      break;
+    }
 
     kept += ch;
     width += a;
@@ -142,42 +156,49 @@ const truncate = (
 };
 
 const wrapLine = (
-  hard: string, advanceOf: ( ch: string ) => number, opts: WrapOpts, out: BrokenLine[]
+  hard: string,
+  advanceOf: (ch: string) => number,
+  opts: WrapOpts,
+  out: BrokenLine[],
 ): void => {
-  const tokens = hard.split( /(\s+)/ ).filter( t => t !== '' );
+  const tokens = hard.split(/(\s+)/).filter((t) => t !== '');
   let line = '';
   let width = 0;
 
   const flush = (): void => {
-    const trimmed = line.replace( /\s+$/, '' );
+    const trimmed = line.replace(/\s+$/, '');
 
-    out.push( { text: trimmed, width: measure( trimmed, advanceOf ) } );
+    out.push({ text: trimmed, width: measure(trimmed, advanceOf) });
     line = '';
     width = 0;
   };
 
-  for( const token of tokens ){
-    const isSpace = /^\s+$/.test( token );
-    const tw = measure( token, advanceOf );
+  for (const token of tokens) {
+    const isSpace = /^\s+$/.test(token);
+    const tw = measure(token, advanceOf);
 
-    if( isSpace ){
+    if (isSpace) {
       line += token;
       width += tw;
 
       continue;
     }
 
-    if( width + tw <= opts.maxWidth || line === '' ){
-      if( line === '' && tw > opts.maxWidth && opts.overflowWrap === OFLOW_ANYWHERE ){
+    if (width + tw <= opts.maxWidth || line === '') {
+      if (
+        line === '' &&
+        tw > opts.maxWidth &&
+        opts.overflowWrap === OFLOW_ANYWHERE
+      ) {
         // anywhere: split the over-long word to fit
         let piece = '';
         let pw = 0;
 
-        for( const ch of token ){
-          const a = advanceOf( ch );
+        for (const ch of token) {
+          const a = advanceOf(ch);
 
-          if( pw + a > opts.maxWidth && piece !== '' ){
-            out.push( { text: piece, width: pw } );
+          if (pw + a > opts.maxWidth && piece !== '') {
+            out.push({ text: piece, width: pw });
             piece = '';
             pw = 0;
           }
@@ -201,15 +222,15 @@ const wrapLine = (
 
     flush();
 
-    if( tw > opts.maxWidth && opts.overflowWrap === OFLOW_ANYWHERE ){
+    if (tw > opts.maxWidth && opts.overflowWrap === OFLOW_ANYWHERE) {
       let piece = '';
       let pw = 0;
 
-      for( const ch of token ){
-        const a = advanceOf( ch );
+      for (const ch of token) {
+        const a = advanceOf(ch);
 
-        if( pw + a > opts.maxWidth && piece !== '' ){
-          out.push( { text: piece, width: pw } );
+        if (pw + a > opts.maxWidth && piece !== '') {
+          out.push({ text: piece, width: pw });
           piece = '';
           pw = 0;
         }
@@ -226,7 +247,9 @@ const wrapLine = (
     }
   }
 
-  if( line !== '' || out.length === 0 ){ flush(); }
+  if (line !== '' || out.length === 0) {
+    flush();
+  }
 };
 
 /**
@@ -236,33 +259,38 @@ const wrapLine = (
  */
 export const layoutLabelBlock = (
   text: string,
-  metricsFor: ( ch: string ) => GlyphMetrics | null,
+  metricsFor: (ch: string) => GlyphMetrics | null,
   ascent: number,
   em: number,
-  opts: WrapOpts
+  opts: WrapOpts,
 ): LaidBlock => {
-  const advanceOf = ( ch: string ): number => metricsFor( ch )?.advance ?? 0;
-  const lines = breakLines( text, advanceOf, opts );
-  const blockW = lines.reduce( ( w, l ) => Math.max( w, l.width ), 0 );
+  const advanceOf = (ch: string): number => metricsFor(ch)?.advance ?? 0;
+  const lines = breakLines(text, advanceOf, opts);
+  const blockW = lines.reduce((w, l) => Math.max(w, l.width), 0);
   const lineAdvance = em * opts.lineHeight;
   const glyphs: LaidGlyph[] = [];
 
-  for( let li = 0; li < lines.length; li++ ){
-    const line = lines[ li ];
-    const x0 = opts.justification === JUSTIFY_LEFT ? -blockW / 2
-      : opts.justification === JUSTIFY_RIGHT ? blockW / 2 - line.width
-      : -line.width / 2;
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const x0 =
+      opts.justification === JUSTIFY_LEFT
+        ? -blockW / 2
+        : opts.justification === JUSTIFY_RIGHT
+          ? blockW / 2 - line.width
+          : -line.width / 2;
     const y0 = li * lineAdvance;
     let pen = 0;
 
-    for( const raw of line.text ){
+    for (const raw of line.text) {
       const ch = raw === '\t' ? ' ' : raw;
-      const m = metricsFor( ch );
+      const m = metricsFor(ch);
 
-      if( m == null ){ continue; }
+      if (m == null) {
+        continue;
+      }
 
-      if( m.w > 0 ){
-        glyphs.push( {
+      if (m.w > 0) {
+        glyphs.push({
           x: x0 + pen + m.planeX,
           y: y0 + ascent + m.planeY,
           w: m.w,
@@ -270,8 +298,8 @@ export const layoutLabelBlock = (
           u0: m.u0,
           v0: m.v0,
           u1: m.u1,
-          v1: m.v1
-        } );
+          v1: m.v1,
+        });
       }
 
       pen += m.advance;
@@ -281,8 +309,8 @@ export const layoutLabelBlock = (
   return {
     glyphs,
     width: blockW,
-    height: ( lines.length - 1 ) * lineAdvance + em,
-    lines: lines.length
+    height: (lines.length - 1) * lineAdvance + em,
+    lines: lines.length,
   };
 };
 
@@ -297,15 +325,17 @@ const EST_SPACE = 0.28;
  * (recorded).
  */
 export const estimateBlock = (
-  text: string, fontSize: number, opts: WrapOpts
+  text: string,
+  fontSize: number,
+  opts: WrapOpts,
 ): { width: number; height: number; lines: number } => {
-  const advanceOf = ( ch: string ): number =>
-    ( ch === ' ' ? EST_SPACE : EST_ADVANCE ) * fontSize;
-  const lines = breakLines( text, advanceOf, opts );
+  const advanceOf = (ch: string): number =>
+    (ch === ' ' ? EST_SPACE : EST_ADVANCE) * fontSize;
+  const lines = breakLines(text, advanceOf, opts);
 
   return {
-    width: lines.reduce( ( w, l ) => Math.max( w, l.width ), 0 ),
-    height: ( lines.length - 1 ) * fontSize * opts.lineHeight + fontSize,
-    lines: lines.length
+    width: lines.reduce((w, l) => Math.max(w, l.width), 0),
+    height: (lines.length - 1) * fontSize * opts.lineHeight + fontSize,
+    lines: lines.length,
   };
 };

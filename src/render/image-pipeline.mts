@@ -35,7 +35,7 @@ const IMAGE_COLUMNS: { id: ColumnId; visibility: number }[] = [
   { id: 'node.opacity', visibility: F },
   { id: 'node.borderGeom', visibility: F },
   { id: 'node.borderWidth', visibility: F },
-  { id: 'node.imageRef', visibility: V | F }
+  { id: 'node.imageRef', visibility: V | F },
 ];
 
 export class ImagePipeline {
@@ -43,7 +43,10 @@ export class ImagePipeline {
   private bindLayout: GPUBindGroupLayout;
   private texLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
-  private bindGroups = new Map<GPUBuffer, { group: GPUBindGroup; mv: number; av: number }>();
+  private bindGroups = new Map<
+    GPUBuffer,
+    { group: GPUBindGroup; mv: number; av: number }
+  >();
   private texGroup: { group: GPUBindGroup; version: number } | null = null;
 
   /**
@@ -57,30 +60,46 @@ export class ImagePipeline {
    * @param visibleLayout — the culler's @group(1) layout; images ride the
    * node visible lists, so this is the node culler's layout
    */
-  constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
-    const module = device.createShaderModule( { label: 'cy-gpu:image-shader', code: IMAGE_SHADER } );
+  constructor(
+    device: GPUDevice,
+    format: GPUTextureFormat,
+    visibleLayout: GPUBindGroupLayout,
+  ) {
+    const module = device.createShaderModule({
+      label: 'cy-gpu:image-shader',
+      code: IMAGE_SHADER,
+    });
 
-    this.quadIndex = createQuadIndexBuffer( device );
+    this.quadIndex = createQuadIndexBuffer(device);
 
-    this.bindLayout = device.createBindGroupLayout( {
+    this.bindLayout = device.createBindGroupLayout({
       label: 'cy-gpu:image-bind-layout',
       entries: [
         { binding: 0, visibility: V | F, buffer: { type: 'uniform' } },
-        ...IMAGE_COLUMNS.map( ( column, i ) => ( {
+        ...IMAGE_COLUMNS.map((column, i) => ({
           binding: i + 1,
           visibility: column.visibility,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
-        } ) ),
-        { binding: IMAGE_COLUMNS.length + 1, visibility: V | F,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType } }, // image blob
-        { binding: IMAGE_COLUMNS.length + 2, visibility: V | F,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType } }, // image table
-        { binding: IMAGE_COLUMNS.length + 3, visibility: F,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType } } // poly blob
-      ]
-    } );
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        })),
+        {
+          binding: IMAGE_COLUMNS.length + 1,
+          visibility: V | F,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        }, // image blob
+        {
+          binding: IMAGE_COLUMNS.length + 2,
+          visibility: V | F,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        }, // image table
+        {
+          binding: IMAGE_COLUMNS.length + 3,
+          visibility: F,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        }, // poly blob
+      ],
+    });
 
-    this.texLayout = device.createBindGroupLayout( {
+    this.texLayout = device.createBindGroupLayout({
       label: 'cy-gpu:image-tex-layout',
       entries: [
         { binding: 0, visibility: F, texture: { viewDimension: '2d-array' } },
@@ -88,69 +107,98 @@ export class ImagePipeline {
         { binding: 2, visibility: F, texture: { viewDimension: '2d-array' } },
         { binding: 3, visibility: F, sampler: {} },
         // the r8 sdf-icon array (round 15.5)
-        { binding: 4, visibility: F, texture: { viewDimension: '2d-array' } }
-      ]
-    } );
+        { binding: 4, visibility: F, texture: { viewDimension: '2d-array' } },
+      ],
+    });
 
-    const layout = device.createPipelineLayout( {
-      bindGroupLayouts: [ this.bindLayout, visibleLayout, this.texLayout ]
-    } );
+    const layout = device.createPipelineLayout({
+      bindGroupLayouts: [this.bindLayout, visibleLayout, this.texLayout],
+    });
 
-    this.pipeline = device.createRenderPipeline( {
+    this.pipeline = device.createRenderPipeline({
       label: 'cy-gpu:image-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsImage' },
-      fragment: { module, entryPoint: 'fsImage', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
+      fragment: {
+        module,
+        entryPoint: 'fsImage',
+        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+      },
       primitive: { topology: 'triangle-list' },
       // composites over the node bodies just drawn; never occludes
-      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'always' }
-    } );
+      depthStencil: {
+        format: DEPTH_FORMAT,
+        depthWriteEnabled: false,
+        depthCompare: 'always',
+      },
+    });
   }
 
   private ensureBindGroup(
-    device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror, arrays: ImageArrays
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+    arrays: ImageArrays,
   ): GPUBindGroup {
-    const cached = this.bindGroups.get( uniform );
+    const cached = this.bindGroups.get(uniform);
 
-    if( cached != null && cached.mv === mirror.version && cached.av === arrays.version ){
+    if (
+      cached != null &&
+      cached.mv === mirror.version &&
+      cached.av === arrays.version
+    ) {
       return cached.group;
     }
 
-    const group = device.createBindGroup( {
+    const group = device.createBindGroup({
       label: 'cy-gpu:image-bind-group',
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...IMAGE_COLUMNS.map( ( column, i ) => ( {
-          binding: i + 1, resource: { buffer: mirror.buffer( column.id ) }
-        } ) ),
-        { binding: IMAGE_COLUMNS.length + 1, resource: { buffer: mirror.imageBlobBuffer() } },
-        { binding: IMAGE_COLUMNS.length + 2, resource: { buffer: arrays.tableBuffer() } },
-        { binding: IMAGE_COLUMNS.length + 3, resource: { buffer: mirror.polyBlobBuffer() } }
-      ]
-    } );
+        ...IMAGE_COLUMNS.map((column, i) => ({
+          binding: i + 1,
+          resource: { buffer: mirror.buffer(column.id) },
+        })),
+        {
+          binding: IMAGE_COLUMNS.length + 1,
+          resource: { buffer: mirror.imageBlobBuffer() },
+        },
+        {
+          binding: IMAGE_COLUMNS.length + 2,
+          resource: { buffer: arrays.tableBuffer() },
+        },
+        {
+          binding: IMAGE_COLUMNS.length + 3,
+          resource: { buffer: mirror.polyBlobBuffer() },
+        },
+      ],
+    });
 
-    this.bindGroups.set( uniform, { group, mv: mirror.version, av: arrays.version } );
+    this.bindGroups.set(uniform, {
+      group,
+      mv: mirror.version,
+      av: arrays.version,
+    });
 
     return group;
   }
 
-  private ensureTexGroup( device: GPUDevice, arrays: ImageArrays ): GPUBindGroup {
-    if( this.texGroup != null && this.texGroup.version === arrays.version ){
+  private ensureTexGroup(device: GPUDevice, arrays: ImageArrays): GPUBindGroup {
+    if (this.texGroup != null && this.texGroup.version === arrays.version) {
       return this.texGroup.group;
     }
 
-    const group = device.createBindGroup( {
+    const group = device.createBindGroup({
       label: 'cy-gpu:image-tex-group',
       layout: this.texLayout,
       entries: [
-        { binding: 0, resource: arrays.view( 0 ) },
-        { binding: 1, resource: arrays.view( 1 ) },
-        { binding: 2, resource: arrays.view( 2 ) },
+        { binding: 0, resource: arrays.view(0) },
+        { binding: 1, resource: arrays.view(1) },
+        { binding: 2, resource: arrays.view(2) },
         { binding: 3, resource: arrays.sampler },
-        { binding: 4, resource: arrays.iconView() }
-      ]
-    } );
+        { binding: 4, resource: arrays.iconView() },
+      ],
+    });
 
     this.texGroup = { group, version: arrays.version };
 
@@ -177,16 +225,23 @@ export class ImagePipeline {
    * @param cull — the culled node group whose stream this draw shares
    */
   draw(
-    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    mirror: ColumnMirror, arrays: ImageArrays, instances: number, cull: CulledGroup
+    pass: GPURenderPassEncoder,
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+    arrays: ImageArrays,
+    instances: number,
+    cull: CulledGroup,
   ): void {
-    if( instances === 0 ){ return; }
+    if (instances === 0) {
+      return;
+    }
 
-    pass.setPipeline( this.pipeline );
-    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror, arrays ) );
-    pass.setBindGroup( 1, cull.visibleBindGroup() );
-    pass.setBindGroup( 2, this.ensureTexGroup( device, arrays ) );
-    pass.setIndexBuffer( this.quadIndex, 'uint16' );
-    pass.drawIndexedIndirect( cull.indirect, 0 );
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror, arrays));
+    pass.setBindGroup(1, cull.visibleBindGroup());
+    pass.setBindGroup(2, this.ensureTexGroup(device, arrays));
+    pass.setIndexBuffer(this.quadIndex, 'uint16');
+    pass.drawIndexedIndirect(cull.indirect, 0);
   }
 }

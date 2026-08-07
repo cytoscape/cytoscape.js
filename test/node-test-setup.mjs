@@ -1,17 +1,10 @@
-import {
-  after,
-  afterEach,
-  before,
-  beforeEach,
-  describe,
-  it
-} from 'node:test';
+import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
 
 const callbackContext = {
-  timeout() {}
+  timeout() {},
 };
 
-const supportDoneCallback = fn => {
+const supportDoneCallback = (fn) => {
   if (fn == null || fn.length === 0) {
     return fn;
   }
@@ -21,7 +14,7 @@ const supportDoneCallback = fn => {
   };
 };
 
-const wrap = testFunction => {
+const wrap = (testFunction) => {
   const wrapped = (name, options, fn) => {
     if (typeof options === 'function') {
       return testFunction(name, supportDoneCallback(options));
@@ -44,10 +37,10 @@ const wrap = testFunction => {
 };
 
 Object.assign(globalThis, {
-  after: fn => after(supportDoneCallback(fn)),
-  afterEach: fn => afterEach(supportDoneCallback(fn)),
-  before: fn => before(supportDoneCallback(fn)),
-  beforeEach: fn => beforeEach(supportDoneCallback(fn)),
+  after: (fn) => after(supportDoneCallback(fn)),
+  afterEach: (fn) => afterEach(supportDoneCallback(fn)),
+  before: (fn) => before(supportDoneCallback(fn)),
+  beforeEach: (fn) => beforeEach(supportDoneCallback(fn)),
   describe,
-  it: wrap(it)
+  it: wrap(it),
 });

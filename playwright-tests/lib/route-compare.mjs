@@ -48,27 +48,29 @@ before in another guise:
 export const TOL = { exact: 1e-6, derived: 1e-4, compound: 1e-3 };
 
 /** Values the probe tagged as non-finite (JSON has no NaN). */
-const NON_FINITE = new Set( [ 'NaN', 'Infinity', '-Infinity' ] );
+const NON_FINITE = new Set(['NaN', 'Infinity', '-Infinity']);
 
-const isNonFinite = v => typeof v === 'string' && NON_FINITE.has( v );
+const isNonFinite = (v) => typeof v === 'string' && NON_FINITE.has(v);
 
 /** Flatten one record into comparable `field -> value` pairs. */
-const fields = ( rec ) => {
+const fields = (rec) => {
   const out = new Map();
 
-  if( rec == null || rec.missing ){ return out; }
-
-  for( const key of [ 'src', 'tgt', 'mid' ] ){
-    const p = rec[ key ];
-
-    out.set( `${key}.x`, p == null ? null : p.x );
-    out.set( `${key}.y`, p == null ? null : p.y );
+  if (rec == null || rec.missing) {
+    return out;
   }
 
-  ( rec.interior ?? [] ).forEach( ( p, i ) => {
-    out.set( `interior[${i}].x`, p == null ? null : p.x );
-    out.set( `interior[${i}].y`, p == null ? null : p.y );
-  } );
+  for (const key of ['src', 'tgt', 'mid']) {
+    const p = rec[key];
+
+    out.set(`${key}.x`, p == null ? null : p.x);
+    out.set(`${key}.y`, p == null ? null : p.y);
+  }
+
+  (rec.interior ?? []).forEach((p, i) => {
+    out.set(`interior[${i}].x`, p == null ? null : p.x);
+    out.set(`interior[${i}].y`, p == null ? null : p.y);
+  });
 
   return out;
 };
@@ -81,100 +83,152 @@ const fields = ( rec ) => {
  * @param opts — `{ scene, tolClass, ledger }`
  * @returns `{ rows, diverged, ledgerHits, staleLedger, structural, maxDelta, tol }`
  */
-export const compareRoutes = ( v3, v4, opts = {} ) => {
+export const compareRoutes = (v3, v4, opts = {}) => {
   const scene = opts.scene ?? 'scene';
-  const tol = TOL[ opts.tolClass ?? 'derived' ];
+  const tol = TOL[opts.tolClass ?? 'derived'];
   const ledger = opts.ledger ?? [];
   const used = new Set();
 
   const rows = [];
   const structural = [];
 
-  const entryFor = ( key ) => {
-    const hit = ledger.find( e => e.key === key );
+  const entryFor = (key) => {
+    const hit = ledger.find((e) => e.key === key);
 
-    if( hit != null ){ used.add( hit.key ); }
+    if (hit != null) {
+      used.add(hit.key);
+    }
 
     return hit;
   };
 
-  for( const id of Object.keys( v4 ) ){
-    const a = v3[ id ];
-    const b = v4[ id ];
-    const key = ( field ) => `${scene}/${id}/${field}`;
+  for (const id of Object.keys(v4)) {
+    const a = v3[id];
+    const b = v4[id];
+    const key = (field) => `${scene}/${id}/${field}`;
 
-    if( a == null || a.missing ){ structural.push( `${scene}/${id}: missing on the v3 side` ); continue; }
-    if( b == null || b.missing ){ structural.push( `${scene}/${id}: missing on the v4 side` ); continue; }
+    if (a == null || a.missing) {
+      structural.push(`${scene}/${id}: missing on the v3 side`);
+      continue;
+    }
+    if (b == null || b.missing) {
+      structural.push(`${scene}/${id}: missing on the v4 side`);
+      continue;
+    }
 
     // the structural signature first: an interior-count or accessor
     // disagreement is a dispatch bug, not a delta, and must never be
     // absorbed by a tolerance
-    if( a.sig !== b.sig ){
-      const entry = entryFor( key( 'sig' ) );
+    if (a.sig !== b.sig) {
+      const entry = entryFor(key('sig'));
 
-      if( entry == null ){
-        structural.push( `${scene}/${id}: signature v3 ${a.sig} vs v4 ${b.sig}` );
+      if (entry == null) {
+        structural.push(`${scene}/${id}: signature v3 ${a.sig} vs v4 ${b.sig}`);
       } else {
-        rows.push( { key: key( 'sig' ), id, field: 'sig', v3: a.sig, v4: b.sig,
-          delta: null, tol, status: 'ledger', reason: entry.reason } );
+        rows.push({
+          key: key('sig'),
+          id,
+          field: 'sig',
+          v3: a.sig,
+          v4: b.sig,
+          delta: null,
+          tol,
+          status: 'ledger',
+          reason: entry.reason,
+        });
       }
 
       continue;
     }
 
-    const fa = fields( a );
-    const fb = fields( b );
+    const fa = fields(a);
+    const fb = fields(b);
 
-    for( const [ field, av ] of fa ){
-      const bv = fb.get( field );
-      const entry = entryFor( key( field ) );
-      const bothNonFinite = isNonFinite( av ) && isNonFinite( bv );
-      const eitherNonFinite = isNonFinite( av ) || isNonFinite( bv );
+    for (const [field, av] of fa) {
+      const bv = fb.get(field);
+      const entry = entryFor(key(field));
+      const bothNonFinite = isNonFinite(av) && isNonFinite(bv);
+      const eitherNonFinite = isNonFinite(av) || isNonFinite(bv);
 
       // A shared-bug entry asserts BOTH sides are non-finite.  It is the
       // only honest encoding when v3 is wrong in the same place v4 is —
       // there is no v3 number to match — and it fails loudly the moment
       // one side is fixed, which is what makes it the failing test the
       // fix has to satisfy rather than a note in a file.
-      if( entry != null && entry.kind === 'shared-bug' ){
-        rows.push( { key: key( field ), id, field, v3: av, v4: bv, delta: null, tol,
+      if (entry != null && entry.kind === 'shared-bug') {
+        rows.push({
+          key: key(field),
+          id,
+          field,
+          v3: av,
+          v4: bv,
+          delta: null,
+          tol,
           status: bothNonFinite ? 'ledger' : 'ledger-stale',
-          reason: entry.reason } );
+          reason: entry.reason,
+        });
         continue;
       }
 
       // A v3-bug entry asserts v3 is non-finite and v4 is not: v4 stays
       // finite where v3 does not, and that is all that can be pinned.
-      if( entry != null && entry.kind === 'v3-bug' ){
-        const ok = isNonFinite( av ) && !isNonFinite( bv ) && bv != null;
+      if (entry != null && entry.kind === 'v3-bug') {
+        const ok = isNonFinite(av) && !isNonFinite(bv) && bv != null;
 
-        rows.push( { key: key( field ), id, field, v3: av, v4: bv, delta: null, tol,
-          status: ok ? 'ledger' : 'ledger-stale', reason: entry.reason } );
+        rows.push({
+          key: key(field),
+          id,
+          field,
+          v3: av,
+          v4: bv,
+          delta: null,
+          tol,
+          status: ok ? 'ledger' : 'ledger-stale',
+          reason: entry.reason,
+        });
         continue;
       }
 
-      if( eitherNonFinite || av == null || bv == null ){
+      if (eitherNonFinite || av == null || bv == null) {
         structural.push(
-          `${scene}/${id}/${field}: v3 ${JSON.stringify( av )} vs v4 ${JSON.stringify( bv )}` );
+          `${scene}/${id}/${field}: v3 ${JSON.stringify(av)} vs v4 ${JSON.stringify(bv)}`,
+        );
         continue;
       }
 
-      const delta = Math.abs( av - bv );
+      const delta = Math.abs(av - bv);
 
-      if( entry != null && typeof entry.expect === 'number' ){
+      if (entry != null && typeof entry.expect === 'number') {
         // a numeric band: the divergence is known and bounded, and must
         // stay in its band in BOTH directions
         const lo = entry.expect * 0.5;
         const hi = entry.expect * 1.05 + tol;
 
-        rows.push( { key: key( field ), id, field, v3: av, v4: bv, delta, tol,
+        rows.push({
+          key: key(field),
+          id,
+          field,
+          v3: av,
+          v4: bv,
+          delta,
+          tol,
           status: delta >= lo && delta <= hi ? 'ledger' : 'ledger-stale',
-          reason: entry.reason, expect: entry.expect } );
+          reason: entry.reason,
+          expect: entry.expect,
+        });
         continue;
       }
 
-      rows.push( { key: key( field ), id, field, v3: av, v4: bv, delta, tol,
-        status: delta <= tol ? 'match' : 'diverged' } );
+      rows.push({
+        key: key(field),
+        id,
+        field,
+        v3: av,
+        v4: bv,
+        delta,
+        tol,
+        status: delta <= tol ? 'match' : 'diverged',
+      });
     }
   }
 
@@ -185,73 +239,88 @@ export const compareRoutes = ( v3, v4, opts = {} ) => {
   // The band is asserted against the edge's *worst* field, and it is
   // two-sided for the usual reason: a deviation that shrank is a decision
   // that changed, and the entry describing it is now wrong.
-  for( const entry of ledger.filter( e => e.key.endsWith( '/*' ) ) ){
-    const [ entryScene, id ] = entry.key.split( '/' );
+  for (const entry of ledger.filter((e) => e.key.endsWith('/*'))) {
+    const [entryScene, id] = entry.key.split('/');
 
-    if( entryScene !== scene ){ continue; }
+    if (entryScene !== scene) {
+      continue;
+    }
 
-    const mine = rows.filter( r => r.id === id && r.status === 'diverged' );
+    const mine = rows.filter((r) => r.id === id && r.status === 'diverged');
 
-    if( mine.length === 0 ){ continue; }
+    if (mine.length === 0) {
+      continue;
+    }
 
-    used.add( entry.key );
+    used.add(entry.key);
 
-    const worst = mine.reduce( ( m, r ) => Math.max( m, r.delta ), 0 );
+    const worst = mine.reduce((m, r) => Math.max(m, r.delta), 0);
     const lo = entry.expect * 0.5;
     const hi = entry.expect * 1.05 + tol;
     const ok = worst >= lo && worst <= hi;
 
-    for( const r of mine ){
+    for (const r of mine) {
       r.status = ok ? 'ledger' : 'ledger-stale';
       r.reason = entry.reason;
       r.expect = entry.expect;
     }
   }
 
-  const matching = rows.filter( r => r.status === 'match' );
-  const maxDelta = matching.reduce( ( m, r ) => Math.max( m, r.delta ), 0 );
+  const matching = rows.filter((r) => r.status === 'match');
+  const maxDelta = matching.reduce((m, r) => Math.max(m, r.delta), 0);
 
   const staleLedger = [
-    ...rows.filter( r => r.status === 'ledger-stale' ).map( r => r.key ),
-    ...ledger.filter( e => e.key.startsWith( `${scene}/` ) && !used.has( e.key ) )
-      .map( e => `${e.key} (names nothing this scene produces)` )
+    ...rows.filter((r) => r.status === 'ledger-stale').map((r) => r.key),
+    ...ledger
+      .filter((e) => e.key.startsWith(`${scene}/`) && !used.has(e.key))
+      .map((e) => `${e.key} (names nothing this scene produces)`),
   ];
 
   return {
     rows,
-    diverged: rows.filter( r => r.status === 'diverged' ),
-    ledgerHits: rows.filter( r => r.status === 'ledger' ),
+    diverged: rows.filter((r) => r.status === 'diverged'),
+    ledgerHits: rows.filter((r) => r.status === 'ledger'),
     staleLedger,
     structural,
     maxDelta,
-    tol
+    tol,
   };
 };
 
-const fmt = v => typeof v === 'number' ? v.toFixed( 6 ) : String( v );
+const fmt = (v) => (typeof v === 'number' ? v.toFixed(6) : String(v));
 
 /** A fixed-width report, most-diverged first, for the failure message. */
-export const formatRouteDiff = ( scene, result ) => {
+export const formatRouteDiff = (scene, result) => {
   const lines = [];
-  const bad = [ ...result.diverged ].sort( ( a, b ) => b.delta - a.delta );
+  const bad = [...result.diverged].sort((a, b) => b.delta - a.delta);
 
-  lines.push( `routing parity: ${scene} — ` +
-    `${bad.length} diverged, ${result.structural.length} structural, ` +
-    `${result.ledgerHits.length} known, ${result.rows.length} fields compared` );
+  lines.push(
+    `routing parity: ${scene} — ` +
+      `${bad.length} diverged, ${result.structural.length} structural, ` +
+      `${result.ledgerHits.length} known, ${result.rows.length} fields compared`,
+  );
 
-  for( const s of result.structural ){ lines.push( `  [structural] ${s}` ); }
+  for (const s of result.structural) {
+    lines.push(`  [structural] ${s}`);
+  }
 
-  if( bad.length > 0 ){
-    lines.push( '' );
-    lines.push( `  ${'edge'.padEnd( 18 )}${'field'.padEnd( 16 )}${'v3'.padStart( 14 )}` +
-      `${'v4'.padStart( 14 )}${'delta'.padStart( 14 )}` );
+  if (bad.length > 0) {
+    lines.push('');
+    lines.push(
+      `  ${'edge'.padEnd(18)}${'field'.padEnd(16)}${'v3'.padStart(14)}` +
+        `${'v4'.padStart(14)}${'delta'.padStart(14)}`,
+    );
 
-    for( const r of bad.slice( 0, 24 ) ){
-      lines.push( `  ${r.id.padEnd( 18 )}${r.field.padEnd( 16 )}` +
-        `${fmt( r.v3 ).padStart( 14 )}${fmt( r.v4 ).padStart( 14 )}${r.delta.toFixed( 6 ).padStart( 14 )}` );
+    for (const r of bad.slice(0, 24)) {
+      lines.push(
+        `  ${r.id.padEnd(18)}${r.field.padEnd(16)}` +
+          `${fmt(r.v3).padStart(14)}${fmt(r.v4).padStart(14)}${r.delta.toFixed(6).padStart(14)}`,
+      );
     }
 
-    if( bad.length > 24 ){ lines.push( `  … and ${bad.length - 24} more` ); }
+    if (bad.length > 24) {
+      lines.push(`  … and ${bad.length - 24} more`);
+    }
   }
 
   // The per-edge rollup, which the truncated table above cannot give.  It
@@ -262,34 +331,45 @@ export const formatRouteDiff = ( scene, result ) => {
   // the four rows that were supposed to diverge.
   const byEdge = new Map();
 
-  for( const r of result.rows ){
-    const e = byEdge.get( r.id ) ?? { total: 0, bad: 0, known: 0, worst: 0 };
+  for (const r of result.rows) {
+    const e = byEdge.get(r.id) ?? { total: 0, bad: 0, known: 0, worst: 0 };
 
     e.total++;
 
-    if( r.status === 'diverged' ){ e.bad++; e.worst = Math.max( e.worst, r.delta ); }
-    if( r.status === 'ledger' ){ e.known++; }
+    if (r.status === 'diverged') {
+      e.bad++;
+      e.worst = Math.max(e.worst, r.delta);
+    }
+    if (r.status === 'ledger') {
+      e.known++;
+    }
 
-    byEdge.set( r.id, e );
+    byEdge.set(r.id, e);
   }
 
-  lines.push( '' );
-  lines.push( '  per edge:' );
+  lines.push('');
+  lines.push('  per edge:');
 
-  for( const [ id, e ] of byEdge ){
-    const verdict = e.bad === 0
-      ? ( e.known > 0 ? `clean (${e.known} known)` : 'clean' )
-      : `${e.bad}/${e.total} diverged, worst ${e.worst.toFixed( 4 )}`;
+  for (const [id, e] of byEdge) {
+    const verdict =
+      e.bad === 0
+        ? e.known > 0
+          ? `clean (${e.known} known)`
+          : 'clean'
+        : `${e.bad}/${e.total} diverged, worst ${e.worst.toFixed(4)}`;
 
-    lines.push( `    ${id.padEnd( 20 )}${verdict}` );
+    lines.push(`    ${id.padEnd(20)}${verdict}`);
   }
 
-  const matching = result.rows.filter( r => r.status === 'match' ).length;
-  const headroom = result.maxDelta === 0 ? Infinity : result.tol / result.maxDelta;
+  const matching = result.rows.filter((r) => r.status === 'match').length;
+  const headroom =
+    result.maxDelta === 0 ? Infinity : result.tol / result.maxDelta;
 
-  lines.push( '' );
-  lines.push( `  ${matching} matching fields: max delta ${result.maxDelta.toExponential( 2 )} ` +
-    `(tol ${result.tol.toExponential( 0 )}, ${headroom === Infinity ? 'exact' : headroom.toFixed( 0 ) + 'x'} headroom)` );
+  lines.push('');
+  lines.push(
+    `  ${matching} matching fields: max delta ${result.maxDelta.toExponential(2)} ` +
+      `(tol ${result.tol.toExponential(0)}, ${headroom === Infinity ? 'exact' : headroom.toFixed(0) + 'x'} headroom)`,
+  );
 
-  return lines.join( '\n' );
+  return lines.join('\n');
 };

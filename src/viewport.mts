@@ -53,11 +53,19 @@ export class Viewport {
    *   the origin), plus the `minZoom`/`maxZoom` bounds, which default
    *   wide enough (1e-50 … 1e50) to be effectively unbounded
    */
-  constructor( host: ViewportHost, opts: { zoom?: number; pan?: Position; minZoom?: number; maxZoom?: number } = {} ){
+  constructor(
+    host: ViewportHost,
+    opts: {
+      zoom?: number;
+      pan?: Position;
+      minZoom?: number;
+      maxZoom?: number;
+    } = {},
+  ) {
     this.host = host;
     this.minZoom = opts.minZoom ?? 1e-50;
     this.maxZoom = opts.maxZoom ?? 1e50;
-    this._zoom = this.clampZoom( opts.zoom ?? 1 );
+    this._zoom = this.clampZoom(opts.zoom ?? 1);
     this._pan = { x: opts.pan?.x ?? 0, y: opts.pan?.y ?? 0 };
   }
 
@@ -88,28 +96,32 @@ export class Viewport {
    *   to keep that point stationary while zooming
    * @returns true when the state changed
    */
-  setZoom( zoom: number | ZoomOptions ): boolean {
+  setZoom(zoom: number | ZoomOptions): boolean {
     let level: number;
     let rendered: Position | null = null;
 
-    if( typeof zoom === 'number' ){
+    if (typeof zoom === 'number') {
       level = zoom;
     } else {
       level = zoom.level;
 
-      if( zoom.renderedPosition != null ){
+      if (zoom.renderedPosition != null) {
         rendered = zoom.renderedPosition;
-      } else if( zoom.position != null ){
-        rendered = this.modelToRendered( zoom.position );
+      } else if (zoom.position != null) {
+        rendered = this.modelToRendered(zoom.position);
       }
     }
 
-    if( typeof level !== 'number' || !isFinite( level ) || level <= 0 ){ return false; }
+    if (typeof level !== 'number' || !isFinite(level) || level <= 0) {
+      return false;
+    }
 
-    level = this.clampZoom( level );
+    level = this.clampZoom(level);
 
-    if( rendered == null ){
-      if( level === this._zoom ){ return false; }
+    if (rendered == null) {
+      if (level === this._zoom) {
+        return false;
+      }
 
       this._zoom = level;
 
@@ -117,13 +129,19 @@ export class Viewport {
     }
 
     // keep the model point under `rendered` fixed on screen
-    const model = this.renderedToModel( rendered );
+    const model = this.renderedToModel(rendered);
     const pan = {
       x: rendered.x - model.x * level,
-      y: rendered.y - model.y * level
+      y: rendered.y - model.y * level,
     };
 
-    if( level === this._zoom && pan.x === this._pan.x && pan.y === this._pan.y ){ return false; }
+    if (
+      level === this._zoom &&
+      pan.x === this._pan.x &&
+      pan.y === this._pan.y
+    ) {
+      return false;
+    }
 
     this._zoom = level;
     this._pan = pan;
@@ -138,9 +156,13 @@ export class Viewport {
    *   rejected rather than written
    * @returns true when the state changed
    */
-  setPan( pan: Position ): boolean {
-    if( typeof pan.x !== 'number' || typeof pan.y !== 'number' ){ return false; }
-    if( pan.x === this._pan.x && pan.y === this._pan.y ){ return false; }
+  setPan(pan: Position): boolean {
+    if (typeof pan.x !== 'number' || typeof pan.y !== 'number') {
+      return false;
+    }
+    if (pan.x === this._pan.x && pan.y === this._pan.y) {
+      return false;
+    }
 
     this._pan = { x: pan.x, y: pan.y };
 
@@ -153,8 +175,11 @@ export class Viewport {
    * @param delta — the offset to add; missing components count as 0
    * @returns true when the pan changed
    */
-  panBy( delta: Position ): boolean {
-    return this.setPan( { x: this._pan.x + ( delta.x || 0 ), y: this._pan.y + ( delta.y || 0 ) } );
+  panBy(delta: Position): boolean {
+    return this.setPan({
+      x: this._pan.x + (delta.x || 0),
+      y: this._pan.y + (delta.y || 0),
+    });
   }
 
   /**
@@ -163,7 +188,7 @@ export class Viewport {
    * @param min — the new lower bound
    * @returns true when the current zoom moved to satisfy it
    */
-  setMinZoom( min: number ): boolean {
+  setMinZoom(min: number): boolean {
     this.minZoom = min;
 
     return this.reclampZoom();
@@ -175,16 +200,18 @@ export class Viewport {
    * @param max — the new upper bound
    * @returns true when the current zoom moved to satisfy it
    */
-  setMaxZoom( max: number ): boolean {
+  setMaxZoom(max: number): boolean {
     this.maxZoom = max;
 
     return this.reclampZoom();
   }
 
   private reclampZoom(): boolean {
-    const clamped = this.clampZoom( this._zoom );
+    const clamped = this.clampZoom(this._zoom);
 
-    if( clamped === this._zoom ){ return false; }
+    if (clamped === this._zoom) {
+      return false;
+    }
 
     this._zoom = clamped;
 
@@ -199,20 +226,23 @@ export class Viewport {
    * @param padding — rendered px of margin on every side
    * @returns the fitting viewport, with the zoom clamped to the bounds
    */
-  fitViewport( bb: BoundsLike, padding: number = 0 ): { zoom: number; pan: Position } {
+  fitViewport(
+    bb: BoundsLike,
+    padding: number = 0,
+  ): { zoom: number; pan: Position } {
     const w = this.host.width();
     const h = this.host.height();
 
-    if( bb.w === 0 && bb.h === 0 ){
+    if (bb.w === 0 && bb.h === 0) {
       // nothing to scale to; keep zoom and just center on the point
-      return { zoom: this._zoom, pan: this.centerPan( bb, this._zoom ) };
+      return { zoom: this._zoom, pan: this.centerPan(bb, this._zoom) };
     }
 
-    const zoomW = bb.w === 0 ? Infinity : ( w - 2 * padding ) / bb.w;
-    const zoomH = bb.h === 0 ? Infinity : ( h - 2 * padding ) / bb.h;
-    const zoom = this.clampZoom( Math.min( zoomW, zoomH ) );
+    const zoomW = bb.w === 0 ? Infinity : (w - 2 * padding) / bb.w;
+    const zoomH = bb.h === 0 ? Infinity : (h - 2 * padding) / bb.h;
+    const zoom = this.clampZoom(Math.min(zoomW, zoomH));
 
-    return { zoom, pan: this.centerPan( bb, zoom ) };
+    return { zoom, pan: this.centerPan(bb, zoom) };
   }
 
   /**
@@ -222,9 +252,10 @@ export class Viewport {
    * @param padding — rendered px of margin on every side
    * @returns true when the state changed
    */
-  fit( bb: BoundsLike, padding: number = 0 ): boolean {
-    const { zoom, pan } = this.fitViewport( bb, padding );
-    const changed = zoom !== this._zoom || pan.x !== this._pan.x || pan.y !== this._pan.y;
+  fit(bb: BoundsLike, padding: number = 0): boolean {
+    const { zoom, pan } = this.fitViewport(bb, padding);
+    const changed =
+      zoom !== this._zoom || pan.x !== this._pan.x || pan.y !== this._pan.y;
 
     this._zoom = zoom;
     this._pan = pan;
@@ -239,10 +270,10 @@ export class Viewport {
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan
    */
-  centerPan( bb: BoundsLike, zoom: number = this._zoom ): Position {
+  centerPan(bb: BoundsLike, zoom: number = this._zoom): Position {
     return {
-      x: ( this.host.width() - zoom * ( bb.x1 + bb.x2 ) ) / 2,
-      y: ( this.host.height() - zoom * ( bb.y1 + bb.y2 ) ) / 2
+      x: (this.host.width() - zoom * (bb.x1 + bb.x2)) / 2,
+      y: (this.host.height() - zoom * (bb.y1 + bb.y2)) / 2,
     };
   }
 
@@ -252,8 +283,8 @@ export class Viewport {
    * @param bb — the model-space bounds to center
    * @returns true when the state changed
    */
-  centerOn( bb: BoundsLike ): boolean {
-    return this.setPan( this.centerPan( bb ) );
+  centerOn(bb: BoundsLike): boolean {
+    return this.setPan(this.centerPan(bb));
   }
 
   /**
@@ -282,8 +313,8 @@ export class Viewport {
     const pan = this._pan;
     const x1 = -pan.x / zoom;
     const y1 = -pan.y / zoom;
-    const x2 = ( this.host.width() - pan.x ) / zoom;
-    const y2 = ( this.host.height() - pan.y ) / zoom;
+    const x2 = (this.host.width() - pan.x) / zoom;
+    const y2 = (this.host.height() - pan.y) / zoom;
 
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
   }
@@ -294,8 +325,11 @@ export class Viewport {
    * @param pos — the model-space point
    * @returns the rendered-space point
    */
-  modelToRendered( pos: Position ): Position {
-    return { x: pos.x * this._zoom + this._pan.x, y: pos.y * this._zoom + this._pan.y };
+  modelToRendered(pos: Position): Position {
+    return {
+      x: pos.x * this._zoom + this._pan.x,
+      y: pos.y * this._zoom + this._pan.y,
+    };
   }
 
   /**
@@ -305,11 +339,14 @@ export class Viewport {
    * @param pos — the rendered-space point
    * @returns the model-space point
    */
-  renderedToModel( pos: Position ): Position {
-    return { x: ( pos.x - this._pan.x ) / this._zoom, y: ( pos.y - this._pan.y ) / this._zoom };
+  renderedToModel(pos: Position): Position {
+    return {
+      x: (pos.x - this._pan.x) / this._zoom,
+      y: (pos.y - this._pan.y) / this._zoom,
+    };
   }
 
-  private clampZoom( zoom: number ): number {
-    return Math.max( this.minZoom, Math.min( this.maxZoom, zoom ) );
+  private clampZoom(zoom: number): number {
+    return Math.max(this.minZoom, Math.min(this.maxZoom, zoom));
   }
 }

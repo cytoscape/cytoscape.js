@@ -1,65 +1,73 @@
 import { expect } from 'chai';
 import { GraphStore } from '../src/store/graph-store.mjs';
 import {
-  FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ALIVE,
+  FLAG_SELECTABLE,
+  FLAG_SELECTED,
+  FLAG_VISIBLE,
 } from '../src/contract.mjs';
 
-describe('gpu/store: GraphStore', function(){
-
+describe('gpu/store: GraphStore', function () {
   var store;
 
-  beforeEach(function(){
+  beforeEach(function () {
     store = new GraphStore();
   });
 
-  describe('adding elements', function(){
-    it('adds nodes with sequential slots', function(){
+  describe('adding elements', function () {
+    it('adds nodes with sequential slots', function () {
       var a = store.addNode('a', 1, 2);
       var b = store.addNode('b', 3, 4);
 
-      expect( a ).to.equal(0);
-      expect( b ).to.equal(1);
-      expect( store.count('nodes') ).to.equal(2);
-      expect( store.getX(a) ).to.equal(1);
-      expect( store.getY(a) ).to.equal(2);
+      expect(a).to.equal(0);
+      expect(b).to.equal(1);
+      expect(store.count('nodes')).to.equal(2);
+      expect(store.getX(a)).to.equal(1);
+      expect(store.getY(a)).to.equal(2);
     });
 
-    it('registers ids both ways', function(){
+    it('registers ids both ways', function () {
       var slot = store.addNode('a', 0, 0);
 
-      expect( store.lookup('a').slot ).to.equal(slot);
-      expect( store.lookup('a').group ).to.equal('nodes');
-      expect( store.idAt('nodes', slot) ).to.equal('a');
+      expect(store.lookup('a').slot).to.equal(slot);
+      expect(store.lookup('a').group).to.equal('nodes');
+      expect(store.idAt('nodes', slot)).to.equal('a');
     });
 
-    it('throws on a duplicate id', function(){
+    it('throws on a duplicate id', function () {
       store.addNode('a', 0, 0);
 
-      expect(function(){ store.addNode('a', 0, 0); }).to.throw();
+      expect(function () {
+        store.addNode('a', 0, 0);
+      }).to.throw();
     });
 
-    it('throws on a duplicate id across groups', function(){
+    it('throws on a duplicate id across groups', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
 
-      expect(function(){ store.addEdge('a', 'a', 'b'); }).to.throw();
+      expect(function () {
+        store.addEdge('a', 'a', 'b');
+      }).to.throw();
     });
 
-    it('adds edges with endpoint slots', function(){
+    it('adds edges with endpoint slots', function () {
       var a = store.addNode('a', 0, 0);
       var b = store.addNode('b', 0, 0);
       var e = store.addEdge('ab', 'a', 'b');
 
       var endpoints = store.column('edge.endpoints');
 
-      expect( endpoints[e * 2] ).to.equal(a);
-      expect( endpoints[e * 2 + 1] ).to.equal(b);
+      expect(endpoints[e * 2]).to.equal(a);
+      expect(endpoints[e * 2 + 1]).to.equal(b);
     });
 
-    it('throws on an edge with a missing endpoint', function(){
+    it('throws on an edge with a missing endpoint', function () {
       store.addNode('a', 0, 0);
 
-      expect(function(){ store.addEdge('ab', 'a', 'b'); }).to.throw();
+      expect(function () {
+        store.addEdge('ab', 'a', 'b');
+      }).to.throw();
     });
 
     // round 30.1: the spec above only ever exercised the *target* guard
@@ -67,48 +75,52 @@ describe('gpu/store: GraphStore', function(){
     // lines earlier in the same method — had never fired.  Each side
     // asserts the message names its own endpoint, which is what a
     // copy-paste swap between the two branches would break.
-    it('names the missing endpoint, on either side', function(){
+    it('names the missing endpoint, on either side', function () {
       store.addNode('a', 0, 0);
 
-      expect(function(){ store.addEdge('xa', 'nope', 'a'); })
-        .to.throw(/nonexistant source 'nope'/);
-      expect(function(){ store.addEdge('ax', 'a', 'nope'); })
-        .to.throw(/nonexistant target 'nope'/);
+      expect(function () {
+        store.addEdge('xa', 'nope', 'a');
+      }).to.throw(/nonexistant source 'nope'/);
+      expect(function () {
+        store.addEdge('ax', 'a', 'nope');
+      }).to.throw(/nonexistant target 'nope'/);
     });
 
-    it('rejects an endpoint id that resolves to an edge', function(){
+    it('rejects an endpoint id that resolves to an edge', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
       store.addEdge('ab', 'a', 'b');
 
       // the guard is group-aware, not just presence-aware
-      expect(function(){ store.addEdge('e2', 'ab', 'b'); })
-        .to.throw(/nonexistant source 'ab'/);
-      expect(function(){ store.addEdge('e3', 'a', 'ab'); })
-        .to.throw(/nonexistant target 'ab'/);
+      expect(function () {
+        store.addEdge('e2', 'ab', 'b');
+      }).to.throw(/nonexistant source 'ab'/);
+      expect(function () {
+        store.addEdge('e3', 'a', 'ab');
+      }).to.throw(/nonexistant target 'ab'/);
     });
 
-    it('sets initial flags', function(){
+    it('sets initial flags', function () {
       var n = store.addNode('a', 0, 0);
       var flags = store.flags('nodes', n);
 
-      expect( flags & FLAG_ALIVE ).to.not.equal(0);
-      expect( flags & FLAG_VISIBLE ).to.not.equal(0);
-      expect( flags & FLAG_SELECTABLE ).to.not.equal(0);
-      expect( flags & FLAG_SELECTED ).to.equal(0);
+      expect(flags & FLAG_ALIVE).to.not.equal(0);
+      expect(flags & FLAG_VISIBLE).to.not.equal(0);
+      expect(flags & FLAG_SELECTABLE).to.not.equal(0);
+      expect(flags & FLAG_SELECTED).to.equal(0);
     });
 
-    it('respects selected/selectable options', function(){
+    it('respects selected/selectable options', function () {
       var n = store.addNode('a', 0, 0, { selected: true, selectable: false });
       var flags = store.flags('nodes', n);
 
-      expect( flags & FLAG_SELECTED ).to.not.equal(0);
-      expect( flags & FLAG_SELECTABLE ).to.equal(0);
+      expect(flags & FLAG_SELECTED).to.not.equal(0);
+      expect(flags & FLAG_SELECTABLE).to.equal(0);
     });
   });
 
-  describe('adjacency', function(){
-    beforeEach(function(){
+  describe('adjacency', function () {
+    beforeEach(function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
       store.addNode('c', 0, 0);
@@ -116,121 +128,137 @@ describe('gpu/store: GraphStore', function(){
       store.addEdge('bc', 'b', 'c');
     });
 
-    it('tracks out and in edges', function(){
+    it('tracks out and in edges', function () {
       var a = store.lookup('a').slot;
       var b = store.lookup('b').slot;
 
-      expect( store.adj.outDegree(a) ).to.equal(1);
-      expect( store.adj.inDegree(a) ).to.equal(0);
-      expect( store.adj.outDegree(b) ).to.equal(1);
-      expect( store.adj.inDegree(b) ).to.equal(1);
+      expect(store.adj.outDegree(a)).to.equal(1);
+      expect(store.adj.inDegree(a)).to.equal(0);
+      expect(store.adj.outDegree(b)).to.equal(1);
+      expect(store.adj.inDegree(b)).to.equal(1);
     });
 
-    it('lists connected edges', function(){
+    it('lists connected edges', function () {
       var b = store.lookup('b').slot;
       var edges = store.adj.connectedEdges(b);
 
-      expect( edges ).to.have.length(2);
+      expect(edges).to.have.length(2);
     });
 
-    it('lists a loop edge once', function(){
+    it('lists a loop edge once', function () {
       store.addEdge('aa', 'a', 'a');
 
       var a = store.lookup('a').slot;
 
-      expect( store.adj.connectedEdges(a) ).to.have.length(2); // ab + aa
+      expect(store.adj.connectedEdges(a)).to.have.length(2); // ab + aa
     });
 
-    it('updates on edge removal', function(){
+    it('updates on edge removal', function () {
       var e = store.lookup('ab').slot;
       var a = store.lookup('a').slot;
 
       store.removeEdge(e);
 
-      expect( store.adj.outDegree(a) ).to.equal(0);
-      expect( store.lookup('ab') ).to.be.undefined;
+      expect(store.adj.outDegree(a)).to.equal(0);
+      expect(store.lookup('ab')).to.be.undefined;
     });
   });
 
-  describe('adjacency compaction', function(){
-    var wasteBounded = function( store ){
+  describe('adjacency compaction', function () {
+    var wasteBounded = function (store) {
       var waste = store.adj.csrStranded + store.adj.overlayEntries;
 
-      return waste <= Math.max( 64, store.count('edges') );
+      return waste <= Math.max(64, store.count('edges'));
     };
 
-    it('keeps waste bounded and queries correct under edge churn', function(){
+    it('keeps waste bounded and queries correct under edge churn', function () {
       var N = 64;
 
-      for( var i = 0; i < N; i++ ){ store.addNode('n' + i, i, 0); }
-      for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( ( i + 1 ) % N )); }
-
-      for( var round = 0; round < 10; round++ ){
-        for( var i = 0; i < N; i++ ){ store.removeEdge( store.lookup('e' + i).slot ); }
-        for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( ( i + 1 ) % N )); }
+      for (var i = 0; i < N; i++) {
+        store.addNode('n' + i, i, 0);
+      }
+      for (var i = 0; i < N; i++) {
+        store.addEdge('e' + i, 'n' + i, 'n' + ((i + 1) % N));
       }
 
-      expect( wasteBounded( store ) ).to.be.true;
+      for (var round = 0; round < 10; round++) {
+        for (var i = 0; i < N; i++) {
+          store.removeEdge(store.lookup('e' + i).slot);
+        }
+        for (var i = 0; i < N; i++) {
+          store.addEdge('e' + i, 'n' + i, 'n' + ((i + 1) % N));
+        }
+      }
 
-      for( var i = 0; i < N; i++ ){
+      expect(wasteBounded(store)).to.be.true;
+
+      for (var i = 0; i < N; i++) {
         var n = store.lookup('n' + i).slot;
 
-        expect( store.adj.outDegree(n), 'n' + i ).to.equal(1);
-        expect( store.adj.inDegree(n), 'n' + i ).to.equal(1);
-        expect( store.adj.outEdges(n)[0] ).to.equal( store.lookup('e' + i).slot );
+        expect(store.adj.outDegree(n), 'n' + i).to.equal(1);
+        expect(store.adj.inDegree(n), 'n' + i).to.equal(1);
+        expect(store.adj.outEdges(n)[0]).to.equal(store.lookup('e' + i).slot);
       }
     });
 
-    it('folds a purely incremental graph into CSR past the floor', function(){
+    it('folds a purely incremental graph into CSR past the floor', function () {
       var N = 200;
 
-      for( var i = 0; i <= N; i++ ){ store.addNode('n' + i, i, 0); }
-      for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( i + 1 )); }
+      for (var i = 0; i <= N; i++) {
+        store.addNode('n' + i, i, 0);
+      }
+      for (var i = 0; i < N; i++) {
+        store.addEdge('e' + i, 'n' + i, 'n' + (i + 1));
+      }
 
       // without a rebuild every edge would sit in the overlay (2N entries)
-      expect( wasteBounded( store ) ).to.be.true;
-      expect( store.adj.overlayEntries ).to.be.below( 2 * N );
+      expect(wasteBounded(store)).to.be.true;
+      expect(store.adj.overlayEntries).to.be.below(2 * N);
 
-      for( var i = 0; i < N; i++ ){
-        expect( store.adj.outEdges( store.lookup('n' + i).slot )[0] ).to.equal( store.lookup('e' + i).slot );
+      for (var i = 0; i < N; i++) {
+        expect(store.adj.outEdges(store.lookup('n' + i).slot)[0]).to.equal(
+          store.lookup('e' + i).slot,
+        );
       }
     });
   });
 
-  describe('removal and slot reuse', function(){
-    it('refuses to remove a node with incident edges', function(){
+  describe('removal and slot reuse', function () {
+    it('refuses to remove a node with incident edges', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
       store.addEdge('ab', 'a', 'b');
 
-      expect(function(){ store.removeNode( store.lookup('a').slot ); }).to.throw();
+      expect(function () {
+        store.removeNode(store.lookup('a').slot);
+      }).to.throw();
     });
 
-    it('clears flags on removal (tombstone)', function(){
+    it('clears flags on removal (tombstone)', function () {
       var n = store.addNode('a', 0, 0);
 
       store.removeNode(n);
 
-      expect( store.flags('nodes', n) ).to.equal(0);
-      expect( store.count('nodes') ).to.equal(0);
+      expect(store.flags('nodes', n)).to.equal(0);
+      expect(store.count('nodes')).to.equal(0);
     });
 
-    it('reuses freed slots with a bumped generation', function(){
+    it('reuses freed slots with a bumped generation', function () {
       var n = store.addNode('a', 0, 0);
       var ref = store.ref('nodes', n);
 
       store.removeNode(n);
 
-      expect( store.isCurrent(ref) ).to.be.false;
+      expect(store.isCurrent(ref)).to.be.false;
 
       var n2 = store.addNode('b', 0, 0);
 
-      expect( n2 ).to.equal(n); // slot reused
-      expect( store.isCurrent(ref) ).to.be.false; // old ref still stale
-      expect( store.isCurrent( store.ref('nodes', n2) ) ).to.be.true;
+      expect(n2).to.equal(n); // slot reused
+      expect(store.isCurrent(ref)).to.be.false; // old ref still stale
+      expect(store.isCurrent(store.ref('nodes', n2))).to.be.true;
     });
 
-    it('zeroes reused slots', function(){
+    it('zeroes reused slots', function () {
       var n = store.addNode('a', 5, 6);
 
       store.setScalar('node.opacity', n, 1);
@@ -238,75 +266,75 @@ describe('gpu/store: GraphStore', function(){
 
       var n2 = store.addNode('b', 0, 0);
 
-      expect( store.column('node.opacity')[n2] ).to.equal(0);
-      expect( store.getX(n2) ).to.equal(0);
+      expect(store.column('node.opacity')[n2]).to.equal(0);
+      expect(store.getX(n2)).to.equal(0);
     });
   });
 
-  describe('insertion order iteration', function(){
-    it('iterates in insertion order', function(){
+  describe('insertion order iteration', function () {
+    it('iterates in insertion order', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
       store.addNode('c', 0, 0);
 
-      var ids = store.slotsOrdered('nodes').map(function( slot ){
+      var ids = store.slotsOrdered('nodes').map(function (slot) {
         return store.idAt('nodes', slot);
       });
 
-      expect( ids ).to.deep.equal(['a', 'b', 'c']);
+      expect(ids).to.deep.equal(['a', 'b', 'c']);
     });
 
-    it('skips removed elements', function(){
+    it('skips removed elements', function () {
       store.addNode('a', 0, 0);
       var b = store.addNode('b', 0, 0);
       store.addNode('c', 0, 0);
 
       store.removeNode(b);
 
-      var ids = store.slotsOrdered('nodes').map(function( slot ){
+      var ids = store.slotsOrdered('nodes').map(function (slot) {
         return store.idAt('nodes', slot);
       });
 
-      expect( ids ).to.deep.equal(['a', 'c']);
+      expect(ids).to.deep.equal(['a', 'c']);
     });
 
-    it('re-inserts reused slots at their new position', function(){
+    it('re-inserts reused slots at their new position', function () {
       var a = store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
 
       store.removeNode(a);
       store.addNode('c', 0, 0); // reuses slot of a
 
-      var ids = store.slotsOrdered('nodes').map(function( slot ){
+      var ids = store.slotsOrdered('nodes').map(function (slot) {
         return store.idAt('nodes', slot);
       });
 
-      expect( ids ).to.deep.equal(['b', 'c']);
+      expect(ids).to.deep.equal(['b', 'c']);
     });
 
-    it('stays correct across many removals (compaction)', function(){
-      for( var i = 0; i < 100; i++ ){
+    it('stays correct across many removals (compaction)', function () {
+      for (var i = 0; i < 100; i++) {
         store.addNode('n' + i, i, 0);
       }
 
-      for( var j = 0; j < 100; j += 2 ){
-        store.removeNode( store.lookup('n' + j).slot );
+      for (var j = 0; j < 100; j += 2) {
+        store.removeNode(store.lookup('n' + j).slot);
       }
 
       var ids = store.slotsOrdered('nodes');
 
-      expect( ids ).to.have.length(50);
-      expect( store.idAt('nodes', ids[0]) ).to.equal('n1');
-      expect( store.idAt('nodes', ids[49]) ).to.equal('n99');
+      expect(ids).to.have.length(50);
+      expect(store.idAt('nodes', ids[0])).to.equal('n1');
+      expect(store.idAt('nodes', ids[49])).to.equal('n99');
     });
   });
 
-  describe('boundingBox', function(){
-    it('returns null for an empty store', function(){
-      expect( store.boundingBox() ).to.equal(null);
+  describe('boundingBox', function () {
+    it('returns null for an empty store', function () {
+      expect(store.boundingBox()).to.equal(null);
     });
 
-    it('bounds nodes by position, size and border', function(){
+    it('bounds nodes by position, size and border', function () {
       var a = store.addNode('a', 0, 0);
       var b = store.addNode('b', 100, 50);
 
@@ -316,15 +344,15 @@ describe('gpu/store: GraphStore', function(){
 
       var bb = store.boundingBox();
 
-      expect( bb.x1 ).to.equal(-15);
-      expect( bb.y1 ).to.equal(-15);
-      expect( bb.x2 ).to.equal(107); // 100 + 10/2 + 4/2
-      expect( bb.y2 ).to.equal(62);  // 50 + 20/2 + 4/2
-      expect( bb.w ).to.equal(122);
-      expect( bb.h ).to.equal(77);
+      expect(bb.x1).to.equal(-15);
+      expect(bb.y1).to.equal(-15);
+      expect(bb.x2).to.equal(107); // 100 + 10/2 + 4/2
+      expect(bb.y2).to.equal(62); // 50 + 20/2 + 4/2
+      expect(bb.w).to.equal(122);
+      expect(bb.h).to.equal(77);
     });
 
-    it('includes edge extent (endpoint centers for straight edges)', function(){
+    it('includes edge extent (endpoint centers for straight edges)', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 100, 50);
       store.addEdge('ab', 'a', 'b');
@@ -332,12 +360,12 @@ describe('gpu/store: GraphStore', function(){
       // straight edges span node centers, already inside the node bounds
       var bb = store.boundingBox();
 
-      expect( bb.x1 ).to.be.at.most(0);
-      expect( bb.x2 ).to.be.at.least(100);
-      expect( bb.y2 ).to.be.at.least(50);
+      expect(bb.x1).to.be.at.most(0);
+      expect(bb.x2).to.be.at.least(100);
+      expect(bb.y2).to.be.at.least(50);
     });
 
-    it('skips removed elements', function(){
+    it('skips removed elements', function () {
       var a = store.addNode('a', 0, 0);
       store.addNode('b', 10, 10);
       var far = store.addNode('far', 1000, 1000);
@@ -349,87 +377,91 @@ describe('gpu/store: GraphStore', function(){
 
       var bb = store.boundingBox();
 
-      expect( bb.x2 ).to.equal(10);
-      expect( bb.y2 ).to.equal(10);
+      expect(bb.x2).to.equal(10);
+      expect(bb.y2).to.equal(10);
     });
 
-    it('matches the collection bounding box through the core', async function(){
+    it('matches the collection bounding box through the core', async function () {
       var cytoscape = (await import('../src/index.mjs')).default;
       var cy = cytoscape({
         elements: [
           { data: { id: 'a' }, position: { x: -5, y: 8 } },
           { data: { id: 'b' }, position: { x: 40, y: -20 } },
-          { data: { id: 'ab', source: 'a', target: 'b' } }
-        ]
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
       });
 
-      expect( cy._store.boundingBox() ).to.deep.equal( cy.elements().boundingBox() );
+      expect(cy._store.boundingBox()).to.deep.equal(
+        cy.elements().boundingBox(),
+      );
     });
   });
 
-  describe('growth', function(){
-    it('grows capacity and preserves data', function(){
+  describe('growth', function () {
+    it('grows capacity and preserves data', function () {
       var initialCap = store.capacity('nodes');
 
-      for( var i = 0; i < initialCap + 1; i++ ){
+      for (var i = 0; i < initialCap + 1; i++) {
         store.addNode('n' + i, i * 10, i * 20);
       }
 
-      expect( store.capacity('nodes') ).to.equal(initialCap * 2);
-      expect( store.highWater('nodes') ).to.equal(initialCap + 1);
-      expect( store.getX(0) ).to.equal(0);
-      expect( store.getX(initialCap) ).to.equal(initialCap * 10);
-      expect( store.getY(3) ).to.equal(60);
+      expect(store.capacity('nodes')).to.equal(initialCap * 2);
+      expect(store.highWater('nodes')).to.equal(initialCap + 1);
+      expect(store.getX(0)).to.equal(0);
+      expect(store.getX(initialCap)).to.equal(initialCap * 10);
+      expect(store.getY(3)).to.equal(60);
     });
   });
 
-  describe('channel writers', function(){
-    it('writes positions in bulk', function(){
+  describe('channel writers', function () {
+    it('writes positions in bulk', function () {
       store.addNode('a', 0, 0);
       store.addNode('b', 0, 0);
 
       store.setPositions([0, 1], [10, 20, 30, 40]);
 
-      expect( store.getX(0) ).to.equal(10);
-      expect( store.getY(0) ).to.equal(20);
-      expect( store.getX(1) ).to.equal(30);
-      expect( store.getY(1) ).to.equal(40);
+      expect(store.getX(0)).to.equal(10);
+      expect(store.getY(0)).to.equal(20);
+      expect(store.getX(1)).to.equal(30);
+      expect(store.getY(1)).to.equal(40);
     });
 
-    it('writes colors as RGBA bytes', function(){
+    it('writes colors as RGBA bytes', function () {
       var n = store.addNode('a', 0, 0);
 
       store.setColor('node.fillColor', n, 255, 128, 0, 255);
 
       var arr = store.column('node.fillColor');
 
-      expect( Array.from( arr.slice(n * 4, n * 4 + 4) ) ).to.deep.equal([255, 128, 0, 255]);
+      expect(Array.from(arr.slice(n * 4, n * 4 + 4))).to.deep.equal([
+        255, 128, 0, 255,
+      ]);
     });
 
-    it('sets and clears flag bits', function(){
+    it('sets and clears flag bits', function () {
       var n = store.addNode('a', 0, 0);
 
       store.setFlag('nodes', n, FLAG_SELECTED, true);
-      expect( store.hasFlag('nodes', n, FLAG_SELECTED) ).to.be.true;
+      expect(store.hasFlag('nodes', n, FLAG_SELECTED)).to.be.true;
 
       store.setFlag('nodes', n, FLAG_SELECTED, false);
-      expect( store.hasFlag('nodes', n, FLAG_SELECTED) ).to.be.false;
+      expect(store.hasFlag('nodes', n, FLAG_SELECTED)).to.be.false;
     });
   });
 
-  describe('derived node.outerHalf column', function(){
-    it('follows size writes', function(){
+  describe('derived node.outerHalf column', function () {
+    it('follows size writes', function () {
       var n = store.addNode('a', 0, 0);
 
       store.setPair('node.size', n, 30, 20);
 
       var outer = store.column('node.outerHalf');
 
-      expect( outer[n * 2] ).to.equal(15);
-      expect( outer[n * 2 + 1] ).to.equal(10);
+      expect(outer[n * 2]).to.equal(15);
+      expect(outer[n * 2 + 1]).to.equal(10);
     });
 
-    it('follows border writes (size/2 + border/2 per axis)', function(){
+    it('follows border writes (size/2 + border/2 per axis)', function () {
       var n = store.addNode('a', 0, 0);
 
       store.setPair('node.size', n, 30, 20);
@@ -437,17 +469,17 @@ describe('gpu/store: GraphStore', function(){
 
       var outer = store.column('node.outerHalf');
 
-      expect( outer[n * 2] ).to.equal(17);
-      expect( outer[n * 2 + 1] ).to.equal(12);
+      expect(outer[n * 2]).to.equal(17);
+      expect(outer[n * 2 + 1]).to.equal(12);
 
       store.setPair('node.size', n, 10, 10);
-      expect( outer === store.column('node.outerHalf') || true ).to.be.true;
+      expect(outer === store.column('node.outerHalf') || true).to.be.true;
       outer = store.column('node.outerHalf');
-      expect( outer[n * 2] ).to.equal(7);
-      expect( outer[n * 2 + 1] ).to.equal(7);
+      expect(outer[n * 2]).to.equal(7);
+      expect(outer[n * 2 + 1]).to.equal(7);
     });
 
-    it('marks a dirty span for the derived column', function(){
+    it('marks a dirty span for the derived column', function () {
       var n = store.addNode('a', 0, 0);
 
       store.takeDelta(); // clear the add's spans
@@ -455,11 +487,13 @@ describe('gpu/store: GraphStore', function(){
       store.setScalar('node.borderWidth', n, 2);
 
       var delta = store.takeDelta();
-      var span = delta.spans.find(function( s ){ return s.column === 'node.outerHalf'; });
+      var span = delta.spans.find(function (s) {
+        return s.column === 'node.outerHalf';
+      });
 
-      expect( span ).to.exist;
-      expect( span.start ).to.equal(n);
-      expect( span.end ).to.equal(n + 1);
+      expect(span).to.exist;
+      expect(span.start).to.equal(n);
+      expect(span.end).to.equal(n + 1);
     });
   });
 
@@ -467,22 +501,24 @@ describe('gpu/store: GraphStore', function(){
   // exist to make a model/renderer divergence loud — contract.mts is
   // "the single place either side may learn a column's element type" —
   // and neither had ever fired in the suite.
-  describe('the column contract guards', function(){
-    it('columnSpec rejects an unknown column id', function(){
-      expect(function(){ store.column('node.nosuchcolumn'); })
-        .to.throw(/Unknown GPU column 'node.nosuchcolumn'/);
+  describe('the column contract guards', function () {
+    it('columnSpec rejects an unknown column id', function () {
+      expect(function () {
+        store.column('node.nosuchcolumn');
+      }).to.throw(/Unknown GPU column 'node.nosuchcolumn'/);
 
       // control: a real id resolves through the same path
-      expect( store.column('node.position') ).to.be.an.instanceOf( Float32Array );
+      expect(store.column('node.position')).to.be.an.instanceOf(Float32Array);
     });
 
-    it('a table rejects a column belonging to the other group', function(){
+    it('a table rejects a column belonging to the other group', function () {
       // node.position is a real column, but it lives in the nodes table
-      expect(function(){ store.table('edges').column('node.position'); })
-        .to.throw(/does not belong to the 'edges' table/);
-      expect(function(){ store.table('nodes').column('edge.endpoints'); })
-        .to.throw(/does not belong to the 'nodes' table/);
+      expect(function () {
+        store.table('edges').column('node.position');
+      }).to.throw(/does not belong to the 'edges' table/);
+      expect(function () {
+        store.table('nodes').column('edge.endpoints');
+      }).to.throw(/does not belong to the 'nodes' table/);
     });
   });
-
 });

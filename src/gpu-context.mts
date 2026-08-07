@@ -30,42 +30,47 @@ export interface GpuContext {
  */
 export const initGpuContext = async (
   canvas: HTMLCanvasElement,
-  onLost: ( info: GPUDeviceLostInfo ) => void
+  onLost: (info: GPUDeviceLostInfo) => void,
 ): Promise<GpuContext> => {
   const gpu = navigator.gpu;
 
-  if( gpu == null ){
-    throw new Error( 'WebGPU is required to render but is unavailable in this browser' );
+  if (gpu == null) {
+    throw new Error(
+      'WebGPU is required to render but is unavailable in this browser',
+    );
   }
 
   const adapter = await gpu.requestAdapter();
 
-  if( adapter == null ){
+  if (adapter == null) {
     throw new Error(
       'WebGPU is available but no adapter could be acquired; ' +
-      'the GPU may be blocklisted or unsupported'
+        'the GPU may be blocklisted or unsupported',
     );
   }
 
   // optional profiling feature: real GPU frame times for stats() (see gpu-timer.mts)
-  const requiredFeatures: GPUFeatureName[] =
-    adapter.features.has( 'timestamp-query' ) ? [ 'timestamp-query' ] : [];
+  const requiredFeatures: GPUFeatureName[] = adapter.features.has(
+    'timestamp-query',
+  )
+    ? ['timestamp-query']
+    : [];
 
-  const device = await adapter.requestDevice( { requiredFeatures } );
+  const device = await adapter.requestDevice({ requiredFeatures });
 
-  device.lost.then( info => {
-    onLost( info );
-  } );
+  device.lost.then((info) => {
+    onLost(info);
+  });
 
-  const context = canvas.getContext( 'webgpu' );
+  const context = canvas.getContext('webgpu');
 
-  if( context == null ){
-    throw new Error( 'Could not get a webgpu canvas context' );
+  if (context == null) {
+    throw new Error('Could not get a webgpu canvas context');
   }
 
   const format = gpu.getPreferredCanvasFormat();
 
-  context.configure( { device, format, alphaMode: 'premultiplied' } );
+  context.configure({ device, format, alphaMode: 'premultiplied' });
 
   return { device, context, format };
 };

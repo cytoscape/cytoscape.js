@@ -30,7 +30,7 @@ const defaults: Omit<GridLayoutOptions, 'name'> = {
   rows: undefined, // force num of rows in the grid
   cols: undefined, // force num of columns in the grid
   position: undefined, // returns { row, col } for element
-  sort: undefined // a sorting function to order the nodes
+  sort: undefined, // a sorting function to order the nodes
 };
 
 type RowCol = { row?: number; col?: number };
@@ -55,7 +55,7 @@ export class GridLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: Core, options: GridLayoutOptions ){
+  constructor(cy: Core, options: GridLayoutOptions) {
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -72,123 +72,145 @@ export class GridLayout {
     const cy = this.cy;
     const options = this.options;
 
-    cy.emit( { type: 'layoutstart', layout: this } );
+    cy.emit({ type: 'layoutstart', layout: this });
 
-    const bb = math.makeBoundingBox( options.boundingBox ?? {
-      x1: 0, y1: 0, w: cy.width(), h: cy.height()
-    } ) as BoundingBox;
+    const bb = math.makeBoundingBox(
+      options.boundingBox ?? {
+        x1: 0,
+        y1: 0,
+        w: cy.width(),
+        h: cy.height(),
+      },
+    ) as BoundingBox;
 
     // handles when a callback option demands them, or on a subset scope
-    if( options.sort != null || options.position != null || options.eles != null ){
-      this.runWithHandles( bb );
+    if (
+      options.sort != null ||
+      options.position != null ||
+      options.eles != null
+    ) {
+      this.runWithHandles(bb);
     } else {
-      this.runBySlot( bb );
+      this.runBySlot(bb);
     }
 
-    if( options.fit !== false ){
-      cy.fit( options.eles as Collection | undefined, options.padding ?? 30 );
+    if (options.fit !== false) {
+      cy.fit(options.eles as Collection | undefined, options.padding ?? 30);
     }
 
-    cy.emit( { type: 'layoutready', layout: this } );
-    cy.emit( { type: 'layoutstop', layout: this } );
+    cy.emit({ type: 'layoutready', layout: this });
+    cy.emit({ type: 'layoutstop', layout: this });
 
     return this;
   }
 
   /** Columnar path: cell sizes from the size/border columns, one bulk write. */
-  private runBySlot( bb: BoundingBox ): void {
+  private runBySlot(bb: BoundingBox): void {
     const cy = this.cy;
     const store = cy._store;
-    let slots = store.slotsOrdered( 'nodes' );
+    let slots = store.slotsOrdered('nodes');
 
-    if( store.hasCompounds() ){ // parents derive from their placed leaves
-      slots = slots.filter( slot => !store.hasFlag( 'nodes', slot, FLAG_PARENT ) );
+    if (store.hasCompounds()) {
+      // parents derive from their placed leaves
+      slots = slots.filter(
+        (slot) => !store.hasFlag('nodes', slot, FLAG_PARENT),
+      );
     }
 
-    const size = store.column( 'node.size' ) as Float32Array;
-    const border = store.column( 'node.borderWidth' ) as Float32Array;
+    const size = store.column('node.size') as Float32Array;
+    const border = store.column('node.borderWidth') as Float32Array;
 
     const positions = this.cellPositions(
-      slots.length, bb,
-      i => size[ slots[ i ] * 2 ] + border[ slots[ i ] ],
-      i => size[ slots[ i ] * 2 + 1 ] + border[ slots[ i ] ],
-      null
+      slots.length,
+      bb,
+      (i) => size[slots[i] * 2] + border[slots[i]],
+      (i) => size[slots[i] * 2 + 1] + border[slots[i]],
+      null,
     );
 
-    const xy = new Float32Array( slots.length * 2 );
+    const xy = new Float32Array(slots.length * 2);
 
-    for( let i = 0; i < slots.length; i++ ){
-      xy[ i * 2 ] = positions[ i ].x;
-      xy[ i * 2 + 1 ] = positions[ i ].y;
+    for (let i = 0; i < slots.length; i++) {
+      xy[i * 2] = positions[i].x;
+      xy[i * 2 + 1] = positions[i].y;
     }
 
-    store.setPositions( slots, xy );
+    store.setPositions(slots, xy);
 
-    if( hasListeners( cy._emitter, 'position' ) ){
-      for( const slot of slots ){
-        cy._emitOnEle( 'position', cy._ele( 'nodes', slot ) );
+    if (hasListeners(cy._emitter, 'position')) {
+      for (const slot of slots) {
+        cy._emitOnEle('position', cy._ele('nodes', slot));
       }
     }
   }
 
   /** Per-element path for the `sort`/`position` callback options and subset scopes. */
-  private runWithHandles( bb: BoundingBox ): void {
+  private runWithHandles(bb: BoundingBox): void {
     const cy = this.cy;
     const options = this.options;
-    const scope = ( options.eles as Collection | undefined ) ?? cy;
+    const scope = (options.eles as Collection | undefined) ?? cy;
 
-    let nodeList = scope.nodes().toArray().filter( node => !node.isParent() );
+    let nodeList = scope
+      .nodes()
+      .toArray()
+      .filter((node) => !node.isParent());
 
-    if( options.sort != null ){
-      nodeList = nodeList.sort( options.sort as ( a: Collection, b: Collection ) => number );
+    if (options.sort != null) {
+      nodeList = nodeList.sort(
+        options.sort as (a: Collection, b: Collection) => number,
+      );
     }
 
-    const manRaw = options.position != null
-      ? nodeList.map( node => options.position!( node ) ?? undefined )
-      : null;
+    const manRaw =
+      options.position != null
+        ? nodeList.map((node) => options.position!(node) ?? undefined)
+        : null;
 
     const positions = this.cellPositions(
-      nodeList.length, bb,
-      i => nodeList[ i ].outerWidth() ?? 0,
-      i => nodeList[ i ].outerHeight() ?? 0,
-      manRaw
+      nodeList.length,
+      bb,
+      (i) => nodeList[i].outerWidth() ?? 0,
+      (i) => nodeList[i].outerHeight() ?? 0,
+      manRaw,
     );
 
-    const indexOf = new Map<Collection, number>( nodeList.map( ( node, i ) => [ node, i ] ) );
+    const indexOf = new Map<Collection, number>(
+      nodeList.map((node, i) => [node, i]),
+    );
 
-    cy.nodes().positions( ( ele: Collection ) => {
-      const index = indexOf.get( ele );
+    cy.nodes().positions((ele: Collection) => {
+      const index = indexOf.get(ele);
 
-      return index == null ? false : positions[ index ];
-    } );
+      return index == null ? false : positions[index];
+    });
   }
 
   /** The ported v3 grid cell-packing math, indexed by node ordinal. */
   private cellPositions(
     cells: number,
     bb: BoundingBox,
-    outerWidth: ( i: number ) => number,
-    outerHeight: ( i: number ) => number,
-    manRaw: ( RowCol | undefined )[] | null
+    outerWidth: (i: number) => number,
+    outerHeight: (i: number) => number,
+    manRaw: (RowCol | undefined)[] | null,
   ): Position[] {
     const options = this.options;
 
-    if( bb.h === 0 || bb.w === 0 || cells === 0 ){
-      return Array.from( { length: cells }, () => ( { x: bb.x1, y: bb.y1 } ) );
+    if (bb.h === 0 || bb.w === 0 || cells === 0) {
+      return Array.from({ length: cells }, () => ({ x: bb.x1, y: bb.y1 }));
     }
 
     // width/height * splits^2 = cells where splits is number of times to split width
-    const splits = Math.sqrt( cells * bb.h / bb.w );
-    let rows = Math.round( splits );
-    let cols = Math.round( bb.w / bb.h * splits );
+    const splits = Math.sqrt((cells * bb.h) / bb.w);
+    let rows = Math.round(splits);
+    let cols = Math.round((bb.w / bb.h) * splits);
 
-    const small = ( val?: number ): number | undefined => {
-      if( val == null ){
-        return Math.min( rows, cols );
+    const small = (val?: number): number | undefined => {
+      if (val == null) {
+        return Math.min(rows, cols);
       } else {
-        const min = Math.min( rows, cols );
+        const min = Math.min(rows, cols);
 
-        if( min == rows ){
+        if (min == rows) {
           rows = val;
         } else {
           cols = val;
@@ -196,13 +218,13 @@ export class GridLayout {
       }
     };
 
-    const large = ( val?: number ): number | undefined => {
-      if( val == null ){
-        return Math.max( rows, cols );
+    const large = (val?: number): number | undefined => {
+      if (val == null) {
+        return Math.max(rows, cols);
       } else {
-        const max = Math.max( rows, cols );
+        const max = Math.max(rows, cols);
 
-        if( max == rows ){
+        if (max == rows) {
           rows = val;
         } else {
           cols = val;
@@ -214,42 +236,40 @@ export class GridLayout {
     const oCols = options.cols;
 
     // if rows or columns were set in options, use those values
-    if( oRows != null && oCols != null ){
+    if (oRows != null && oCols != null) {
       rows = oRows;
       cols = oCols;
-    } else if( oRows != null && oCols == null ){
+    } else if (oRows != null && oCols == null) {
       rows = oRows;
-      cols = Math.ceil( cells / rows );
-    } else if( oRows == null && oCols != null ){
+      cols = Math.ceil(cells / rows);
+    } else if (oRows == null && oCols != null) {
       cols = oCols;
-      rows = Math.ceil( cells / cols );
+      rows = Math.ceil(cells / cols);
     }
 
     // otherwise use the automatic values and adjust accordingly
-
     // if rounding was up, see if we can reduce rows or columns
-    else if( cols * rows > cells ){
+    else if (cols * rows > cells) {
       const sm = small() as number;
       const lg = large() as number;
 
       // reducing the small side takes away the most cells, so try it first
-      if( ( sm - 1 ) * lg >= cells ){
-        small( sm - 1 );
-      } else if( ( lg - 1 ) * sm >= cells ){
-        large( lg - 1 );
+      if ((sm - 1) * lg >= cells) {
+        small(sm - 1);
+      } else if ((lg - 1) * sm >= cells) {
+        large(lg - 1);
       }
     } else {
-
       // if rounding was too low, add rows or columns
-      while( cols * rows < cells ){
+      while (cols * rows < cells) {
         const sm = small() as number;
         const lg = large() as number;
 
         // try to add to larger side first (adds less in multiplication)
-        if( ( lg + 1 ) * sm >= cells ){
-          large( lg + 1 );
+        if ((lg + 1) * sm >= cells) {
+          large(lg + 1);
         } else {
-          small( sm + 1 );
+          small(sm + 1);
         }
       }
     }
@@ -257,28 +277,28 @@ export class GridLayout {
     let cellWidth = bb.w / cols;
     let cellHeight = bb.h / rows;
 
-    if( options.condense ){
+    if (options.condense) {
       cellWidth = 0;
       cellHeight = 0;
     }
 
-    if( options.avoidOverlap !== false ){
-      for( let i = 0; i < cells; i++ ){
+    if (options.avoidOverlap !== false) {
+      for (let i = 0; i < cells; i++) {
         const p = options.avoidOverlapPadding ?? 0;
 
-        cellWidth = Math.max( cellWidth, outerWidth( i ) + p );
-        cellHeight = Math.max( cellHeight, outerHeight( i ) + p );
+        cellWidth = Math.max(cellWidth, outerWidth(i) + p);
+        cellHeight = Math.max(cellHeight, outerHeight(i) + p);
       }
     }
 
     const cellUsed: Record<string, boolean> = {}; // e.g. 'c-0-2' => true
 
-    const used = ( row: number, col: number ): boolean => {
-      return cellUsed[ 'c-' + row + '-' + col ] ? true : false;
+    const used = (row: number, col: number): boolean => {
+      return cellUsed['c-' + row + '-' + col] ? true : false;
     };
 
-    const use = ( row: number, col: number ): void => {
-      cellUsed[ 'c-' + row + '-' + col ] = true;
+    const use = (row: number, col: number): void => {
+      cellUsed['c-' + row + '-' + col] = true;
     };
 
     // to keep track of current cell position
@@ -287,56 +307,69 @@ export class GridLayout {
     const moveToNextCell = (): void => {
       col++;
 
-      if( col >= cols ){
+      if (col >= cols) {
         col = 0;
         row++;
       }
     };
 
     // resolve the manual positions (marking their cells used)
-    const manPos: ( { row: number; col: number } | undefined )[] | null = manRaw == null ? null : manRaw.map( rcPos => {
-      if( !rcPos || ( rcPos.row === undefined && rcPos.col === undefined ) ){ return undefined; } // must have at least row or col def'd
+    const manPos: ({ row: number; col: number } | undefined)[] | null =
+      manRaw == null
+        ? null
+        : manRaw.map((rcPos) => {
+            if (
+              !rcPos ||
+              (rcPos.row === undefined && rcPos.col === undefined)
+            ) {
+              return undefined;
+            } // must have at least row or col def'd
 
-      const pos = { row: rcPos.row, col: rcPos.col } as { row: number; col: number };
+            const pos = { row: rcPos.row, col: rcPos.col } as {
+              row: number;
+              col: number;
+            };
 
-      if( pos.col === undefined ){ // find unused col
-        pos.col = 0;
+            if (pos.col === undefined) {
+              // find unused col
+              pos.col = 0;
 
-        while( used( pos.row, pos.col ) ){
-          pos.col++;
-        }
-      } else if( pos.row === undefined ){ // find unused row
-        pos.row = 0;
+              while (used(pos.row, pos.col)) {
+                pos.col++;
+              }
+            } else if (pos.row === undefined) {
+              // find unused row
+              pos.row = 0;
 
-        while( used( pos.row, pos.col ) ){
-          pos.row++;
-        }
-      }
+              while (used(pos.row, pos.col)) {
+                pos.row++;
+              }
+            }
 
-      use( pos.row, pos.col );
+            use(pos.row, pos.col);
 
-      return pos;
-    } );
+            return pos;
+          });
 
     const raw: Position[] = [];
 
-    for( let i = 0; i < cells; i++ ){
+    for (let i = 0; i < cells; i++) {
       let x: number;
       let y: number;
 
       // see if we have a manual position set
-      const rcPos = manPos?.[ i ];
+      const rcPos = manPos?.[i];
 
-      if( rcPos ){
+      if (rcPos) {
         x = rcPos.col * cellWidth + cellWidth / 2 + bb.x1;
         y = rcPos.row * cellHeight + cellHeight / 2 + bb.y1;
-
-      } else { // otherwise set automatically
+      } else {
+        // otherwise set automatically
 
         // without manual positions no cell is ever pre-used, so the
         // used-cell bookkeeping (string-keyed, O(cells) allocs) can be skipped
-        if( manPos != null ){
-          while( used( row, col ) ){
+        if (manPos != null) {
+          while (used(row, col)) {
             moveToNextCell();
           }
         }
@@ -344,40 +377,42 @@ export class GridLayout {
         x = col * cellWidth + cellWidth / 2 + bb.x1;
         y = row * cellHeight + cellHeight / 2 + bb.y1;
 
-        if( manPos != null ){ use( row, col ); }
+        if (manPos != null) {
+          use(row, col);
+        }
 
         moveToNextCell();
       }
 
-      raw.push( { x, y } );
+      raw.push({ x, y });
     }
 
-    return this.applySpacing( raw );
+    return this.applySpacing(raw);
   }
 
   /** Scale positions about their bounding-box center (as v3 layoutPositions does). */
-  private applySpacing( positions: Position[] ): Position[] {
+  private applySpacing(positions: Position[]): Position[] {
     const factor = this.options.spacingFactor;
 
-    if( factor == null || factor === 1 || positions.length === 0 ){
+    if (factor == null || factor === 1 || positions.length === 0) {
       return positions;
     }
 
-    const spacing = Math.abs( factor );
+    const spacing = Math.abs(factor);
     const bb = math.makeBoundingBox() as BoundingBox;
 
-    for( const pos of positions ){
-      math.expandBoundingBoxByPoint( bb, pos.x, pos.y );
+    for (const pos of positions) {
+      math.expandBoundingBoxByPoint(bb, pos.x, pos.y);
     }
 
     const center = {
       x: bb.x1 + bb.w / 2,
-      y: bb.y1 + bb.h / 2
+      y: bb.y1 + bb.h / 2,
     };
 
-    return positions.map( pos => ( {
-      x: center.x + ( pos.x - center.x ) * spacing,
-      y: center.y + ( pos.y - center.y ) * spacing
-    } ) );
+    return positions.map((pos) => ({
+      x: center.x + (pos.x - center.x) * spacing,
+      y: center.y + (pos.y - center.y) * spacing,
+    }));
   }
 }

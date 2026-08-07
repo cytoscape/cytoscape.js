@@ -10,7 +10,13 @@ import type { Position, BoundingBox } from '../types.mjs';
  * @param angleDegrees — rotation angle in degrees
  * @returns the rotated position
  */
-export function rotatePoint(x: number, y: number, centerX: number, centerY: number, angleDegrees: number): Position {
+export function rotatePoint(
+  x: number,
+  y: number,
+  centerX: number,
+  centerY: number,
+  angleDegrees: number,
+): Position {
   const angleRadians = (angleDegrees * Math.PI) / 180;
   const rotatedX =
     Math.cos(angleRadians) * (x - centerX) -
@@ -35,9 +41,16 @@ export function rotatePoint(x: number, y: number, centerX: number, centerY: numb
  * @param skewY — y scale factor
  * @returns the moved position
  */
-export const movePointByBoxAspect = (x: number, y: number, boxX: number, boxY: number, skewX: number, skewY: number): Position => ({
+export const movePointByBoxAspect = (
+  x: number,
+  y: number,
+  boxX: number,
+  boxY: number,
+  skewX: number,
+  skewY: number,
+): Position => ({
   x: (x - boxX) * skewX + boxX,
-  y: (y - boxY) * skewY + boxY
+  y: (y - boxY) * skewY + boxY,
 });
 
 /**
@@ -49,7 +62,11 @@ export const movePointByBoxAspect = (x: number, y: number, boxX: number, boxY: n
  * @param angleDegrees — rotation angle in degrees; 0 returns `pos` unchanged
  * @returns the transformed position
  */
-export function rotatePosAndSkewByBox(pos: Position, box: BoundingBox, angleDegrees: number): Position {
+export function rotatePosAndSkewByBox(
+  pos: Position,
+  box: BoundingBox,
+  angleDegrees: number,
+): Position {
   if (angleDegrees === 0) return pos;
   const centerX = (box.x1 + box.x2) / 2;
   const centerY = (box.y1 + box.y2) / 2;
@@ -57,10 +74,17 @@ export function rotatePosAndSkewByBox(pos: Position, box: BoundingBox, angleDegr
   const skewY = 1 / skewX;
 
   const rotated = rotatePoint(pos.x, pos.y, centerX, centerY, angleDegrees);
-  const skewed = movePointByBoxAspect(rotated.x, rotated.y, centerX, centerY, skewX, skewY);
+  const skewed = movePointByBoxAspect(
+    rotated.x,
+    rotated.y,
+    centerX,
+    centerY,
+    skewX,
+    skewY,
+  );
 
   return {
     x: skewed.x,
     y: skewed.y,
   };
-};
+}

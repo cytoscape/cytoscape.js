@@ -26,85 +26,114 @@ import { buildElements, N } from './graph.mjs';
 const elements = buildElements();
 
 const TRANSITION = {
-  'transition-property': [ 'opacity' ],
+  'transition-property': ['opacity'],
   'transition-duration': 1e9, // never completes inside the run
-  'transition-timing-function': 'linear'
+  'transition-timing-function': 'linear',
 };
 
-const makeCy = ( nodeStyle ) => cytoscape( {
-  elements: elements.map( e => ( {
-    data: { ...e.data },
-    position: e.position ? { ...e.position } : undefined
-  } ) ),
-  style: { nodes: nodeStyle }
-} );
+const makeCy = (nodeStyle) =>
+  cytoscape({
+    elements: elements.map((e) => ({
+      data: { ...e.data },
+      position: e.position ? { ...e.position } : undefined,
+    })),
+    style: { nodes: nodeStyle },
+  });
 
-console.log( `\n== transition sweep (N=${N} nodes, ${2 * N} edges) ==` );
+console.log(`\n== transition sweep (N=${N} nodes, ${2 * N} edges) ==`);
 
 // -- auto-extent shift: whole-channel re-derive, off vs on --
 // 'foo' spans 0..N-1; each iteration pushes the max further, so every
 // write moves the live extent and re-derives all N mappings.
 {
-  const off = makeCy( { opacity: { data: 'foo', range: [ 0, 1 ] } } );
-  const on = makeCy( { opacity: { data: 'foo', range: [ 0, 1 ] }, ...TRANSITION } );
-  const offNode = off.$id( 'n0' );
-  const onNode = on.$id( 'n0' );
+  const off = makeCy({ opacity: { data: 'foo', range: [0, 1] } });
+  const on = makeCy({ opacity: { data: 'foo', range: [0, 1] }, ...TRANSITION });
+  const offNode = off.$id('n0');
+  const onNode = on.$id('n0');
   let hi = N;
 
-  group( `transition: auto-extent shift, whole-channel re-derive (${N} slots)`, () => {
-    summary( () => {
-      bench( 'transitions off', () => { offNode.data( 'foo', ++hi ); } );
-      // on: the same re-derive + the stored-truth diff, the restore
-      // writes, and one bulk-tween spawn (which evicts its predecessor)
-      bench( 'transitions on', () => { onNode.data( 'foo', ++hi ); } );
-    } );
-  } );
+  group(
+    `transition: auto-extent shift, whole-channel re-derive (${N} slots)`,
+    () => {
+      summary(() => {
+        bench('transitions off', () => {
+          offNode.data('foo', ++hi);
+        });
+        // on: the same re-derive + the stored-truth diff, the restore
+        // writes, and one bulk-tween spawn (which evicts its predecessor)
+        bench('transitions on', () => {
+          onNode.data('foo', ++hi);
+        });
+      });
+    },
+  );
 
   // -- bulk tween tick: the spawned N-slot transition's per-frame cost --
   let t = 1;
 
-  group( `transition: bulk tween tick (${N} slots, one manager tick)`, () => {
-    bench( 'tick', () => { on._animations.tick( t++ ); } );
-  } );
+  group(`transition: bulk tween tick (${N} slots, one manager tick)`, () => {
+    bench('tick', () => {
+      on._animations.tick(t++);
+    });
+  });
 }
 
 // -- explicit domain: a data write stays O(changed), off vs on --
 {
-  const off = makeCy( { opacity: { data: 'foo', domain: [ 0, N ], range: [ 0, 1 ] } } );
-  const on = makeCy( { opacity: { data: 'foo', domain: [ 0, N ], range: [ 0, 1 ] }, ...TRANSITION } );
-  const offNode = off.$id( 'n1' );
-  const onNode = on.$id( 'n1' );
+  const off = makeCy({
+    opacity: { data: 'foo', domain: [0, N], range: [0, 1] },
+  });
+  const on = makeCy({
+    opacity: { data: 'foo', domain: [0, N], range: [0, 1] },
+    ...TRANSITION,
+  });
+  const offNode = off.$id('n1');
+  const onNode = on.$id('n1');
   let i = 0;
 
-  group( 'transition: explicit-domain write (O(changed) — one element)', () => {
-    summary( () => {
-      bench( 'transitions off', () => { offNode.data( 'foo', ( i++ & 1023 ) ); } );
-      bench( 'transitions on', () => { onNode.data( 'foo', ( i++ & 1023 ) ); } );
-    } );
-  } );
+  group('transition: explicit-domain write (O(changed) — one element)', () => {
+    summary(() => {
+      bench('transitions off', () => {
+        offNode.data('foo', i++ & 1023);
+      });
+      bench('transitions on', () => {
+        onNode.data('foo', i++ & 1023);
+      });
+    });
+  });
 }
 
 // -- sheet swap: whole-graph constant re-application, off vs on --
 {
-  const mk = extra => [
+  const mk = (extra) => [
     { 'background-color': 'rgb(10,20,30)', ...extra },
-    { 'background-color': 'rgb(200,210,220)', ...extra }
+    { 'background-color': 'rgb(200,210,220)', ...extra },
   ];
-  const COLOR_TRANSITION = { ...TRANSITION, 'transition-property': [ 'background-color' ] };
-  const off = makeCy( mk()[ 0 ] );
-  const on = makeCy( mk( COLOR_TRANSITION )[ 0 ] );
+  const COLOR_TRANSITION = {
+    ...TRANSITION,
+    'transition-property': ['background-color'],
+  };
+  const off = makeCy(mk()[0]);
+  const on = makeCy(mk(COLOR_TRANSITION)[0]);
   const offSheets = mk();
-  const onSheets = mk( COLOR_TRANSITION );
+  const onSheets = mk(COLOR_TRANSITION);
   let i = 0;
 
-  group( `transition: sheet swap, whole-graph apply (${N} slots diff + tween)`, () => {
-    summary( () => {
-      bench( 'transitions off', () => { off.style( { nodes: offSheets[ i++ & 1 ] } ); } );
-      bench( 'transitions on', () => { on.style( { nodes: onSheets[ i++ & 1 ] } ); } );
-    } );
-  } );
+  group(
+    `transition: sheet swap, whole-graph apply (${N} slots diff + tween)`,
+    () => {
+      summary(() => {
+        bench('transitions off', () => {
+          off.style({ nodes: offSheets[i++ & 1] });
+        });
+        bench('transitions on', () => {
+          on.style({ nodes: onSheets[i++ & 1] });
+        });
+      });
+    },
+  );
 }
 
-await finishRun( 'transitions' );
+await finishRun('transitions');
 
-process.exit( 0 );
+process.exit(0);

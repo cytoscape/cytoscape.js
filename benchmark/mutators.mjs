@@ -33,77 +33,112 @@ const elements = buildElements();
  */
 const OP = process.env.BENCH_OP;
 
-function cmpMut( name, setup, fn, v3opts, gpuFn = fn ){
-  if( OP != null && !name.includes( OP ) ){ return; }
+function cmpMut(name, setup, fn, v3opts, gpuFn = fn) {
+  if (OP != null && !name.includes(OP)) {
+    return;
+  }
 
-  const a = makeV3( elements, v3opts );
-  const b = makeGpu( elements );
-  const ta = setup( a );
-  const tb = setup( b );
+  const a = makeV3(elements, v3opts);
+  const b = makeGpu(elements);
+  const ta = setup(a);
+  const tb = setup(b);
   let i = 0;
 
-  group( name, () => {
-    summary( () => {
-      bench( 'v3',  () => { fn( ta, i++, a ); } );
-      bench( 'gpu', () => { gpuFn( tb, i++, b ); } );
-    } );
-  } );
+  group(name, () => {
+    summary(() => {
+      bench('v3', () => {
+        fn(ta, i++, a);
+      });
+      bench('gpu', () => {
+        gpuFn(tb, i++, b);
+      });
+    });
+  });
 }
 
-const nodes = cy => cy.nodes();
+const nodes = (cy) => cy.nodes();
 
-console.log( `\n== bulk mutation sweep (N=${N} nodes, ${2 * N} edges) ==` );
+console.log(`\n== bulk mutation sweep (N=${N} nodes, ${2 * N} edges) ==`);
 
 // -- flags --
-cmpMut( 'mut-bulk: select + unselect', nodes, n => { n.select(); n.unselect(); } );
+cmpMut('mut-bulk: select + unselect', nodes, (n) => {
+  n.select();
+  n.unselect();
+});
 // v3 hide/show is a style bypass (display: none), so its v3 instance needs
 // styleEnabled; the gpu side is a flag write either way.
-cmpMut( 'mut-bulk: hide + show', nodes, n => { n.hide(); n.show(); }, { styleEnabled: true } );
-cmpMut( 'mut-bulk: lock + unlock', nodes, n => { n.lock(); n.unlock(); } );
+cmpMut(
+  'mut-bulk: hide + show',
+  nodes,
+  (n) => {
+    n.hide();
+    n.show();
+  },
+  { styleEnabled: true },
+);
+cmpMut('mut-bulk: lock + unlock', nodes, (n) => {
+  n.lock();
+  n.unlock();
+});
 
 // -- positions --
-cmpMut( 'mut-bulk: positions(obj)', nodes, ( n, i ) => n.positions( { x: i & 1023, y: 7 } ) );
-cmpMut( 'mut-bulk: positions(fn)', nodes,
-  ( n, i ) => n.positions( ( ele, j ) => ( { x: j & 1023, y: i & 7 } ) ) );
-cmpMut( 'mut-bulk: shift', nodes,
-  ( n, i ) => n.shift( { x: ( i & 1 ) === 0 ? 1 : -1, y: 0 } ) );
+cmpMut('mut-bulk: positions(obj)', nodes, (n, i) =>
+  n.positions({ x: i & 1023, y: 7 }),
+);
+cmpMut('mut-bulk: positions(fn)', nodes, (n, i) =>
+  n.positions((ele, j) => ({ x: j & 1023, y: i & 7 })),
+);
+cmpMut('mut-bulk: shift', nodes, (n, i) =>
+  n.shift({ x: (i & 1) === 0 ? 1 : -1, y: 0 }),
+);
 
 // -- data --
-cmpMut( 'mut-bulk: data set', nodes, ( n, i ) => n.data( 'foo', i & 7 ) );
+cmpMut('mut-bulk: data set', nodes, (n, i) => n.data('foo', i & 7));
 
 // -- remove + re-add --
 // A fixed band of nodes (cascading to their incident edges), re-added from
 // defs captured up front; the band collection is re-resolved per iteration
 // (an id comma list — both sides have id fast paths) because a remove +
 // re-add cycle invalidates prior handles on both implementations.
-const BAND = Math.min( 256, Math.floor( N / 4 ) );
-const bandSel = Array.from( { length: BAND }, ( _, i ) => '#n' + i ).join( ', ' );
+const BAND = Math.min(256, Math.floor(N / 4));
+const bandSel = Array.from({ length: BAND }, (_, i) => '#n' + i).join(', ');
 
 // idiomatic v4 band resolution: per-id index lookups + union (no selector
 // strings in v4); both sides go through their id fast path either way
-const bandOf = cy => {
+const bandOf = (cy) => {
   let eles = cy.collection();
 
-  for( let i = 0; i < BAND; i++ ){ eles = eles.union( cy.$id( 'n' + i ) ); }
+  for (let i = 0; i < BAND; i++) {
+    eles = eles.union(cy.$id('n' + i));
+  }
 
   return eles;
 };
 
-function setupRemove( cy ){
+function setupRemove(cy) {
   // capture defs of the full removal closure (band + incident edges) up
   // front — jsons() after removal loses edge endpoints on the gpu side
-  const band = bandOf( cy );
-  const closure = band.union( band.connectedEdges() );
+  const band = bandOf(cy);
+  const closure = band.union(band.connectedEdges());
 
   return closure.jsons();
 }
 
-cmpMut( `mut-bulk: remove + re-add (${BAND} nodes + cascade)`, setupRemove,
-  ( defs, i, cy ) => { cy.$( bandSel ).remove(); cy.add( defs ); },
+cmpMut(
+  `mut-bulk: remove + re-add (${BAND} nodes + cascade)`,
+  setupRemove,
+  (defs, i, cy) => {
+    cy.$(bandSel).remove();
+    cy.add(defs);
+  },
   undefined,
-  ( defs, i, cy ) => { bandOf( cy ).remove(); cy.add( defs ); } );
+  (defs, i, cy) => {
+    bandOf(cy).remove();
+    cy.add(defs);
+  },
+);
 
-await finishRun( 'mutators' );
+await finishRun('mutators');
 
 // the styleEnabled v3 instance keeps an animation-loop timer alive
-process.exit( 0 );
+process.exit(0);

@@ -87,13 +87,13 @@ export class GlyphBuffer {
    * @param initialCap — glyph slots to preallocate; capacity doubles on
    * demand, so this only trades startup bytes against early reallocs
    */
-  constructor( device: MirrorDevice, initialCap: number = INITIAL_CAP ){
+  constructor(device: MirrorDevice, initialCap: number = INITIAL_CAP) {
     this.device = device;
     this.version = 0;
     this.highWater = 0;
     this.uploadedBytes = 0;
     this.cap = initialCap;
-    this.words = new Uint32Array( initialCap * GLYPH_WORDS );
+    this.words = new Uint32Array(initialCap * GLYPH_WORDS);
     this.ranges = new Map();
     this.garbage = 0;
     this.dirtyStart = Infinity;
@@ -101,7 +101,7 @@ export class GlyphBuffer {
     this.fullUpload = false;
     this.destroyed = false;
     this.gpuCap = initialCap;
-    this.gpu = this.createGpuBuffer( initialCap );
+    this.gpu = this.createGpuBuffer(initialCap);
   }
 
   /** live glyph count (for stats) */
@@ -128,7 +128,9 @@ export class GlyphBuffer {
    * pass rebuilds the live runs against the new slots.
    */
   clear(): void {
-    if( this.highWater === 0 && this.ranges.size === 0 ){ return; }
+    if (this.highWater === 0 && this.ranges.size === 0) {
+      return;
+    }
 
     this.ranges.clear();
     this.garbage = 0;
@@ -142,64 +144,70 @@ export class GlyphBuffer {
    * Replace (or clear, with null) a node's glyph run.  `glyphWords` is the
    * interleaved GLYPH_WORDS-per-glyph data (f32 fields bit-cast into u32).
    */
-  set( nodeSlot: number, glyphWords: Uint32Array | null ): void {
-    const old = this.ranges.get( nodeSlot );
+  set(nodeSlot: number, glyphWords: Uint32Array | null): void {
+    const old = this.ranges.get(nodeSlot);
 
     // round 25.5: a same-count replacement — the steady state of a
     // font-size tween's per-tick rebuild — rewrites the run in place:
     // no tombstones, no highWater growth, no compaction churn, and the
     // dirty span covers exactly the rewritten range
-    if( old != null && glyphWords != null && glyphWords.length === old.count * GLYPH_WORDS ){
-      this.words.set( glyphWords, old.start * GLYPH_WORDS );
-      this.markDirty( old.start, old.start + old.count );
+    if (
+      old != null &&
+      glyphWords != null &&
+      glyphWords.length === old.count * GLYPH_WORDS
+    ) {
+      this.words.set(glyphWords, old.start * GLYPH_WORDS);
+      this.markDirty(old.start, old.start + old.count);
 
       return;
     }
 
-    if( old != null ){
-      for( let i = 0; i < old.count; i++ ){
-        this.words[ ( old.start + i ) * GLYPH_WORDS ] = DEAD_GLYPH;
+    if (old != null) {
+      for (let i = 0; i < old.count; i++) {
+        this.words[(old.start + i) * GLYPH_WORDS] = DEAD_GLYPH;
       }
 
-      this.markDirty( old.start, old.start + old.count );
-      this.ranges.delete( nodeSlot );
+      this.markDirty(old.start, old.start + old.count);
+      this.ranges.delete(nodeSlot);
       this.garbage += old.count;
     }
 
-    if( glyphWords != null && glyphWords.length > 0 ){
+    if (glyphWords != null && glyphWords.length > 0) {
       const count = glyphWords.length / GLYPH_WORDS;
 
-      if( !Number.isInteger( count ) ){
-        throw new Error( 'Glyph data must be a whole number of glyphs' );
+      if (!Number.isInteger(count)) {
+        throw new Error('Glyph data must be a whole number of glyphs');
       }
 
-      this.ensureCapacity( this.highWater + count );
-      this.words.set( glyphWords, this.highWater * GLYPH_WORDS );
-      this.ranges.set( nodeSlot, { start: this.highWater, count } );
-      this.markDirty( this.highWater, this.highWater + count );
+      this.ensureCapacity(this.highWater + count);
+      this.words.set(glyphWords, this.highWater * GLYPH_WORDS);
+      this.ranges.set(nodeSlot, { start: this.highWater, count });
+      this.markDirty(this.highWater, this.highWater + count);
       this.highWater += count;
     }
 
-    if( this.garbage > COMPACT_MIN && this.garbage > this.highWater / 2 ){
+    if (this.garbage > COMPACT_MIN && this.garbage > this.highWater / 2) {
       this.compact();
     }
   }
 
   /** Upload pending changes; no-op when clean. */
   sync(): void {
-    if( this.destroyed ){ return; }
+    if (this.destroyed) {
+      return;
+    }
 
-    if( this.gpuCap !== this.cap ){
+    if (this.gpuCap !== this.cap) {
       const old = this.gpu;
 
-      this.gpu = this.createGpuBuffer( this.cap ); // uploads the full contents
+      this.gpu = this.createGpuBuffer(this.cap); // uploads the full contents
       this.gpuCap = this.cap;
       this.version++;
       this.fullUpload = false;
       this.dirtyStart = Infinity;
       this.dirtyEnd = 0;
 
-      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
 
       return;
     }
@@ -207,23 +215,26 @@ export class GlyphBuffer {
     let start: number;
     let end: number;
 
-    if( this.fullUpload ){
+    if (this.fullUpload) {
       start = 0;
       end = this.highWater;
-    } else if( this.dirtyStart < this.dirtyEnd ){
+    } else if (this.dirtyStart < this.dirtyEnd) {
       start = this.dirtyStart;
-      end = Math.min( this.dirtyEnd, this.highWater );
+      end = Math.min(this.dirtyEnd, this.highWater);
     } else {
       return;
     }
 
-    if( end > start ){
+    if (end > start) {
       const byteStart = start * GLYPH_BYTES;
-      const byteLength = ( end - start ) * GLYPH_BYTES;
+      const byteLength = (end - start) * GLYPH_BYTES;
 
       this.device.queue.writeBuffer(
-        this.gpu, byteStart,
-        this.words.buffer, this.words.byteOffset + byteStart, byteLength
+        this.gpu,
+        byteStart,
+        this.words.buffer,
+        this.words.byteOffset + byteStart,
+        byteLength,
       );
 
       this.uploadedBytes += byteLength;
@@ -245,37 +256,44 @@ export class GlyphBuffer {
     this.gpu.destroy();
   }
 
-  private markDirty( start: number, end: number ): void {
-    this.dirtyStart = Math.min( this.dirtyStart, start );
-    this.dirtyEnd = Math.max( this.dirtyEnd, end );
+  private markDirty(start: number, end: number): void {
+    this.dirtyStart = Math.min(this.dirtyStart, start);
+    this.dirtyEnd = Math.max(this.dirtyEnd, end);
   }
 
-  private ensureCapacity( needed: number ): void {
-    if( needed <= this.cap ){ return; }
+  private ensureCapacity(needed: number): void {
+    if (needed <= this.cap) {
+      return;
+    }
 
     let cap = this.cap;
 
-    while( cap < needed ){ cap *= 2; }
+    while (cap < needed) {
+      cap *= 2;
+    }
 
-    const grown = new Uint32Array( cap * GLYPH_WORDS );
+    const grown = new Uint32Array(cap * GLYPH_WORDS);
 
-    grown.set( this.words );
+    grown.set(this.words);
     this.words = grown;
     this.cap = cap;
     // the GPU-side realloc + full re-upload happens on the next sync()
   }
 
   private compact(): void {
-    const compacted = new Uint32Array( this.cap * GLYPH_WORDS );
+    const compacted = new Uint32Array(this.cap * GLYPH_WORDS);
     let write = 0;
 
-    for( const [ nodeSlot, range ] of this.ranges ){
+    for (const [nodeSlot, range] of this.ranges) {
       compacted.set(
-        this.words.subarray( range.start * GLYPH_WORDS, ( range.start + range.count ) * GLYPH_WORDS ),
-        write * GLYPH_WORDS
+        this.words.subarray(
+          range.start * GLYPH_WORDS,
+          (range.start + range.count) * GLYPH_WORDS,
+        ),
+        write * GLYPH_WORDS,
       );
 
-      this.ranges.set( nodeSlot, { start: write, count: range.count } );
+      this.ranges.set(nodeSlot, { start: write, count: range.count });
       write += range.count;
     }
 
@@ -285,18 +303,24 @@ export class GlyphBuffer {
     this.fullUpload = true; // stale tail beyond highWater is never drawn
   }
 
-  private createGpuBuffer( cap: number ): GPUBuffer {
-    const buffer = this.device.createBuffer( {
+  private createGpuBuffer(cap: number): GPUBuffer {
+    const buffer = this.device.createBuffer({
       label: 'cy-gpu:glyphs',
-      size: Math.max( cap * GLYPH_BYTES, 4 ),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+      size: Math.max(cap * GLYPH_BYTES, 4),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
     // full upload of current contents (mirrors ColumnMirror realloc behavior)
-    if( this.highWater > 0 ){
+    if (this.highWater > 0) {
       const byteLength = this.highWater * GLYPH_BYTES;
 
-      this.device.queue.writeBuffer( buffer, 0, this.words.buffer, this.words.byteOffset, byteLength );
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        this.words.buffer,
+        this.words.byteOffset,
+        byteLength,
+      );
       this.uploadedBytes += byteLength;
     }
 

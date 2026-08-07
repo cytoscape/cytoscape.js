@@ -1,0 +1,16 @@
+{
+  "singleQuote": true,
+  "printWidth": 80,
+  "ignorePatterns": [
+    "v3/**",
+    "dist/**",
+    "build/**",
+    "status/**",
+    "tests-examples/**",
+    "**/*.json",
+    "**/*.md",
+    "**/*.html",
+    "**/*.css",
+    "**/*.yml"
+  ]
+}

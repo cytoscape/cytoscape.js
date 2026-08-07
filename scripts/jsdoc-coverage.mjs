@@ -16,8 +16,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ROOT = fileURLToPath( new URL( '..', import.meta.url ) );
-const SRC_DIR = join( ROOT, 'src' );
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const SRC_DIR = join(ROOT, 'src');
 
 /**
  * The v4 public API: the files whose exported classes a consumer of
@@ -46,7 +46,7 @@ export const PUBLIC_API = [
   // `src/emitter.mts` is deliberately *not* here: `EventHandler` is exported
   // from it as a type, but `Emitter` itself is not a named export and a
   // consumer never holds one.
-  'src/event.mts'
+  'src/event.mts',
 ];
 
 // A member declaration at class-body indentation: an optional modifier run,
@@ -61,10 +61,20 @@ const MEMBER_RE =
   /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\??\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
-// MEMBER_RE with the argument list captured, for the @param audit. Members
-// declared with `:` or `=` (fields) are excluded: they take nothing.
-const PARAMS_RE =
-  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\(([^)]*)\)/;
+// The @param audit reads its argument list from the *joined* signature
+// (`signatureOf` + `argListOf`) rather than from the declaration line, so
+// CALL_MEMBER_RE below is all the line itself has to match.
+//
+// Round 57.2 is why. The audit used to capture the arguments inline with
+// `\(([^)]*)\)`, which needs the whole list on one line — and a member
+// whose parameters wrapped therefore matched nothing and was **skipped**,
+// silently, by an audit that gates at 100%. `Collection.boundingBoxAt`
+// wrapped and had no `@param` at all; adopting a formatter joined its
+// signature and the gate failed on the spot. That is the sixth time an
+// audit's *scope* has turned out to be part of its claim (rounds 32, 36,
+// 37.3, 45 twice), and the first time a tool other than a widening found
+// it. `exportedFns` had joined since round 36 and said so in its comment,
+// fifteen lines below the branch that did not.
 
 // Any other top-level declaration ends the class body we are inside. Without
 // this an `interface`'s members read as members of the class above it.
@@ -84,8 +94,31 @@ const TOP_LEVEL_RE =
 // This is round 36's widening (class bodies only → plus exported functions)
 // finding its third case, and the standing lesson with it: an audit's scope is
 // part of its claim, so check what it enumerates before quoting its 100%.
+//
+// The const branch is matched against the declaration line *joined with the
+// next one* (`declHead`), because a formatter breaks after the `=` when the
+// arrow head does not fit: `export const pointsEasing =\n  (points: …) =>`.
+// Round 57.2 adopted one and `pointsEasing` vanished from every audit — the
+// same failure as the four before it, arriving from the tool side rather
+// than from a widening.
 const EXPORTED_FN_RE =
   /^export\s+(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
+
+/**
+ * The declaration line at `i`, joined with the next when it ends at the `=`
+ * of an `export const` — the one wrap a formatter introduces ahead of the
+ * argument list.  Everything downstream (`signatureOf`, `memberBody`) still
+ * works from `i`, so this only widens what EXPORTED_FN_RE can recognise.
+ *
+ * @param {string[]} lines — the file's lines
+ * @param {number} i — index of the declaration line
+ * @returns {string} the line, or the two lines joined
+ */
+function declHead(lines, i) {
+  return /=\s*$/.test(lines[i]) && lines[i + 1] != null
+    ? `${lines[i]} ${lines[i + 1].trim()}`
+    : lines[i];
+}
 
 // MEMBER_RE narrowed to members declared with a *call* signature. A field
 // (`lastNow = 0;`) has no return annotation, and joining forward from one to
@@ -99,7 +132,8 @@ const CALL_MEMBER_RE =
 // body. The implementation signature that follows a run of these is not
 // separately documentable — TypeScript hides it from callers — so it is
 // skipped rather than counted as a miss.
-const OVERLOAD_SIG_RE = /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
+const OVERLOAD_SIG_RE =
+  /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
 
 // The section banner that groups a class body, e.g. `// -- viewport --`.
 // Round 26 chose these over a bespoke `@section` tag precisely because they
@@ -112,23 +146,44 @@ export const BANNER_RE = /^\s*\/\/ -- (.+?) --\s*$/;
 // name it would capture is `declare`), which is exactly why the alias surface
 // needed its own table in test/aliases.mjs — and why the docs generator needs
 // them from here rather than re-deriving them.
-const ALIAS_RE = /^ {2}declare\s+([A-Za-z_$][\w$]*)\s*:\s*this\[\s*'([^']+)'\s*\]/;
+const ALIAS_RE =
+  /^ {2}declare\s+([A-Za-z_$][\w$]*)\s*:\s*this\[\s*'([^']+)'\s*\]/;
 
 // Statement keywords that can appear at two-space indentation inside a class
 // body's methods and would otherwise read as member names.
-const KEYWORDS = new Set( [
-  'if', 'for', 'while', 'switch', 'return', 'case', 'catch', 'else', 'do',
-  'try', 'const', 'let', 'var', 'new', 'await', 'throw', 'typeof', 'delete',
-  'break', 'continue', 'yield', 'function', 'class'
-] );
+const KEYWORDS = new Set([
+  'if',
+  'for',
+  'while',
+  'switch',
+  'return',
+  'case',
+  'catch',
+  'else',
+  'do',
+  'try',
+  'const',
+  'let',
+  'var',
+  'new',
+  'await',
+  'throw',
+  'typeof',
+  'delete',
+  'break',
+  'continue',
+  'yield',
+  'function',
+  'class',
+]);
 
 /** A doc comment is the nearest non-blank line above, ending the block. */
-function hasDocAbove( lines, i ){
+function hasDocAbove(lines, i) {
   let j = i - 1;
 
-  while( j >= 0 && lines[j].trim() === '' ) j--;
+  while (j >= 0 && lines[j].trim() === '') j--;
 
-  return j >= 0 && lines[j].trim().endsWith( '*/' );
+  return j >= 0 && lines[j].trim().endsWith('*/');
 }
 
 /**
@@ -146,9 +201,9 @@ function hasDocAbove( lines, i ){
  * @returns {{ file: string, documented: number, missing: string[],
  *   members: object[], aliases: object[] }}
  */
-export function auditFile( file ){
-  const lines = readFileSync( file, 'utf8' ).split( '\n' );
-  const rel = relative( ROOT, file );
+export function auditFile(file) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const rel = relative(ROOT, file);
   const missing = [];
   // every public member this scan saw, for consumers that need the
   // surface itself rather than its documentation state (round 33.12's
@@ -164,116 +219,133 @@ export function auditFile( file ){
   let banner = null;
   let overloaded = new Set();
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
     // Prose inside a block comment can look like a member declaration
     // ("rgba(...,0); label channels ..."), so skip comment bodies outright.
-    if( inComment ){
-      if( line.includes( '*/' ) ) inComment = false;
+    if (inComment) {
+      if (line.includes('*/')) inComment = false;
       continue;
     }
 
-    const opened = line.lastIndexOf( '/*' );
+    const opened = line.lastIndexOf('/*');
 
-    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+    if (opened !== -1 && line.indexOf('*/', opened) === -1) {
       inComment = true;
       continue;
     }
 
-    const bannerMatch = line.match( BANNER_RE );
+    const bannerMatch = line.match(BANNER_RE);
 
-    if( bannerMatch ){
+    if (bannerMatch) {
       banner = bannerMatch[1];
       continue;
     }
 
-    const fn = line.match( EXPORTED_FN_RE );
+    const fn = declHead(lines, i).match(EXPORTED_FN_RE);
 
-    if( fn ){
+    if (fn) {
       currentClass = null;
 
       const name = fn[1] ?? fn[2];
 
-      members.push( {
-        name, owner: null, line: i + 1, isMethod: true,
-        banner: null, doc: docAbove( lines, i )
-      } );
+      members.push({
+        name,
+        owner: null,
+        line: i + 1,
+        isMethod: true,
+        banner: null,
+        doc: docAbove(lines, i),
+      });
 
-      if( hasDocAbove( lines, i ) ) documented++;
-      else missing.push( `${name}() (${rel}:${i + 1})` );
+      if (hasDocAbove(lines, i)) documented++;
+      else missing.push(`${name}() (${rel}:${i + 1})`);
 
       continue;
     }
 
-    const cls = line.match( CLASS_RE );
+    const cls = line.match(CLASS_RE);
 
-    if( cls ){
+    if (cls) {
       currentClass = cls[2];
-      exported = Boolean( cls[1] );
+      exported = Boolean(cls[1]);
       banner = null;
       overloaded = new Set();
       continue;
     }
 
-    const alias = line.match( ALIAS_RE );
+    const alias = line.match(ALIAS_RE);
 
-    if( alias && currentClass && exported ){
-      aliases.push( { name: alias[1], target: alias[2], owner: currentClass, line: i + 1 } );
+    if (alias && currentClass && exported) {
+      aliases.push({
+        name: alias[1],
+        target: alias[2],
+        owner: currentClass,
+        line: i + 1,
+      });
       continue;
     }
 
-    if( TOP_LEVEL_RE.test( line ) ){
+    if (TOP_LEVEL_RE.test(line)) {
       currentClass = null;
       continue;
     }
 
-    if( !currentClass || !exported ) continue;
+    if (!currentClass || !exported) continue;
 
-    const sig = line.match( OVERLOAD_SIG_RE );
-    const m = line.match( MEMBER_RE );
+    const sig = line.match(OVERLOAD_SIG_RE);
+    const m = line.match(MEMBER_RE);
 
-    if( !m ) continue;
+    if (!m) continue;
 
-    const [ , access, , name ] = m;
+    const [, access, , name] = m;
 
-    if( name.startsWith( '_' ) || KEYWORDS.has( name ) ) continue;
-    if( access === 'private' || access === 'protected' ) continue;
+    if (name.startsWith('_') || KEYWORDS.has(name)) continue;
+    if (access === 'private' || access === 'protected') continue;
 
     // The implementation signature closing a run of overloads: callers only
     // ever see the overloads, each of which carries its own doc block.
-    if( !sig && overloaded.has( name ) ) continue;
+    if (!sig && overloaded.has(name)) continue;
 
-    if( sig ) overloaded.add( name );
+    if (sig) overloaded.add(name);
 
     // MEMBER_RE's tail distinguishes a call signature from a field
     // (`(` vs `:`/`=`), which the benchmark audit needs: a field is not
     // something a benchmark can call
-    members.push( {
-      name, owner: currentClass, line: i + 1,
-      isMethod: /\(\s*$|\(/.test( line.slice( line.indexOf( name ) + name.length ).trimStart().charAt( 0 ) ),
-      banner, doc: docAbove( lines, i )
-    } );
+    members.push({
+      name,
+      owner: currentClass,
+      line: i + 1,
+      isMethod: /\(\s*$|\(/.test(
+        line
+          .slice(line.indexOf(name) + name.length)
+          .trimStart()
+          .charAt(0),
+      ),
+      banner,
+      doc: docAbove(lines, i),
+    });
 
-    if( hasDocAbove( lines, i ) ) documented++;
-    else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
+    if (hasDocAbove(lines, i)) documented++;
+    else missing.push(`${currentClass}.${name} (${rel}:${i + 1})`);
   }
 
   return { file: rel, documented, missing, members, aliases };
 }
 
 /** The doc block immediately above line `i`, or '' when there is none. */
-function docAbove( lines, i ){
+function docAbove(lines, i) {
   let end = i - 1;
 
-  while( end >= 0 && lines[end].trim() === '' ) end--;
-  if( end < 0 || !lines[end].trim().endsWith( '*/' ) ) return '';
+  while (end >= 0 && lines[end].trim() === '') end--;
+  if (end < 0 || !lines[end].trim().endsWith('*/')) return '';
 
   let start = end;
 
-  while( start >= 0 && !lines[start].includes( '/**' ) ) start--;
+  while (start >= 0 && !lines[start].includes('/**')) start--;
 
-  return start < 0 ? '' : lines.slice( start, end + 1 ).join( '\n' );
+  return start < 0 ? '' : lines.slice(start, end + 1).join('\n');
 }
 
 /**
@@ -281,24 +353,38 @@ function docAbove( lines, i ){
  * closes it (`}` at class-member indentation) or starts the next declaration.
  * The second bound matters for one-line members, which never close at two
  * spaces and would otherwise swallow the member below.
+ *
+ * The scan starts *after* the declaration's own signature, which round 57.2
+ * is the reason for. A wrapped parameter list puts `  coll: Collection,` at
+ * class-member indentation, and that matches MEMBER_RE — so the body ended
+ * at the first parameter and the `throw new` below it was never seen. Every
+ * exported arrow function in `src/algorithms/` lost its `@throws` detection
+ * that way the moment a formatter wrapped its arguments.
  */
-function memberBody( lines, i ){
-  const out = [ lines[i] ];
+function memberBody(lines, i) {
+  const out = [lines[i]];
+  const sigEnd = signatureEnd(lines, i);
 
-  for( let j = i + 1; j < lines.length; j++ ){
+  for (let j = sigEnd + 1; j < lines.length; j++) {
     const line = lines[j];
 
-    if( /^ {2}\}/.test( line ) ) break;
-    if( CLASS_RE.test( line ) || TOP_LEVEL_RE.test( line ) ) break;
+    // the member's own closing brace, and *only* that: a multi-line return
+    // type closes at `  } {`, which is the declaration ending and the body
+    // beginning on one line.  Breaking there stopped the scan before the
+    // body it was called to read — `Collection.boundingBox` lost its
+    // `@throws` detection to it when a formatter wrapped its return type
+    // (round 57.2).
+    if (/^ {2}\}[;,]?\s*$/.test(line)) break;
+    if (CLASS_RE.test(line) || TOP_LEVEL_RE.test(line)) break;
 
-    const m = line.match( MEMBER_RE );
+    const m = line.match(MEMBER_RE);
 
-    if( m && !KEYWORDS.has( m[3] ) ) break;
+    if (m && !KEYWORDS.has(m[3])) break;
 
-    out.push( line );
+    out.push(line);
   }
 
-  return out.join( '\n' );
+  return out.join('\n');
 }
 
 /**
@@ -315,58 +401,65 @@ function memberBody( lines, i ){
  * @param {string} file — absolute path to a `.mts` source file
  * @returns {{ file: string, tagged: number, missing: string[] }}
  */
-export function auditThrowTags( file ){
-  const lines = readFileSync( file, 'utf8' ).split( '\n' );
-  const rel = relative( ROOT, file );
+export function auditThrowTags(file) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const rel = relative(ROOT, file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
   let exported = false;
   let inComment = false;
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if( inComment ){
-      if( line.includes( '*/' ) ) inComment = false;
+    if (inComment) {
+      if (line.includes('*/')) inComment = false;
       continue;
     }
 
-    const opened = line.lastIndexOf( '/*' );
+    const opened = line.lastIndexOf('/*');
 
-    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+    if (opened !== -1 && line.indexOf('*/', opened) === -1) {
       inComment = true;
       continue;
     }
 
-    const fn = line.match( EXPORTED_FN_RE );
-    const cls = line.match( CLASS_RE );
+    const fn = declHead(lines, i).match(EXPORTED_FN_RE);
+    const cls = line.match(CLASS_RE);
 
-    if( cls ){ currentClass = cls[2]; exported = Boolean( cls[1] ); continue; }
-    if( !fn && TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
+    if (cls) {
+      currentClass = cls[2];
+      exported = Boolean(cls[1]);
+      continue;
+    }
+    if (!fn && TOP_LEVEL_RE.test(line)) {
+      currentClass = null;
+      continue;
+    }
 
     let name = null;
 
-    if( fn ){
+    if (fn) {
       currentClass = null;
       name = fn[1] ?? fn[2];
-    } else if( currentClass && exported ){
-      const m = line.match( MEMBER_RE );
+    } else if (currentClass && exported) {
+      const m = line.match(MEMBER_RE);
 
-      if( !m ) continue;
+      if (!m) continue;
 
-      const [ , access, , member ] = m;
+      const [, access, , member] = m;
 
-      if( member.startsWith( '_' ) || KEYWORDS.has( member ) ) continue;
-      if( access === 'private' || access === 'protected' ) continue;
+      if (member.startsWith('_') || KEYWORDS.has(member)) continue;
+      if (access === 'private' || access === 'protected') continue;
 
       name = `${currentClass}.${member}`;
     } else continue;
 
-    if( !/throw new/.test( memberBody( lines, i ) ) ) continue;
+    if (!/throw new/.test(memberBody(lines, i))) continue;
 
-    if( /@throws/.test( docAbove( lines, i ) ) ) tagged++;
-    else missing.push( `${name} (${rel}:${i + 1})` );
+    if (/@throws/.test(docAbove(lines, i))) tagged++;
+    else missing.push(`${name} (${rel}:${i + 1})`);
   }
 
   return { file: rel, tagged, missing };
@@ -388,9 +481,9 @@ export function auditThrowTags( file ){
  * @param file — absolute path to a `.mts` source file
  * @returns {{ file: string, tagged: number, missing: string[] }}
  */
-export function auditParamTags( file ){
-  const lines = readFileSync( file, 'utf8' ).split( '\n' );
-  const rel = relative( ROOT, file );
+export function auditParamTags(file) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const rel = relative(ROOT, file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
@@ -398,48 +491,52 @@ export function auditParamTags( file ){
   let inComment = false;
   let overloaded = new Set();
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if( inComment ){
-      if( line.includes( '*/' ) ) inComment = false;
+    if (inComment) {
+      if (line.includes('*/')) inComment = false;
       continue;
     }
 
-    const opened = line.lastIndexOf( '/*' );
+    const opened = line.lastIndexOf('/*');
 
-    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+    if (opened !== -1 && line.indexOf('*/', opened) === -1) {
       inComment = true;
       continue;
     }
 
-    const cls = line.match( CLASS_RE );
+    const cls = line.match(CLASS_RE);
 
-    if( cls ){
+    if (cls) {
       currentClass = cls[2];
-      exported = Boolean( cls[1] );
+      exported = Boolean(cls[1]);
       overloaded = new Set();
       continue;
     }
 
-    if( TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
-    if( !currentClass || !exported ) continue;
+    if (TOP_LEVEL_RE.test(line)) {
+      currentClass = null;
+      continue;
+    }
+    if (!currentClass || !exported) continue;
 
-    const sig = line.match( OVERLOAD_SIG_RE );
-    const m = line.match( PARAMS_RE );
+    const sig = line.match(OVERLOAD_SIG_RE);
+    const m = line.match(CALL_MEMBER_RE);
 
-    if( !m ) continue;
+    if (!m) continue;
 
-    const [ , access, , name, args ] = m;
+    const [, access, , name] = m;
+    const args = argListOf(signatureOf(lines, i));
 
-    if( name.startsWith( '_' ) || KEYWORDS.has( name ) ) continue;
-    if( access === 'private' || access === 'protected' ) continue;
-    if( !sig && overloaded.has( name ) ) continue;
-    if( sig ) overloaded.add( name );
-    if( !args.trim() ) continue; // takes nothing: nothing to describe
+    if (name.startsWith('_') || KEYWORDS.has(name)) continue;
+    if (access === 'private' || access === 'protected') continue;
+    if (!sig && overloaded.has(name)) continue;
+    if (sig) overloaded.add(name);
+    if (!args.trim()) continue; // takes nothing: nothing to describe
 
-    if( /@param/.test( docAbove( lines, i ) ) ) tagged++;
-    else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
+    if (/@param/.test(docAbove(lines, i))) tagged++;
+    else missing.push(`${currentClass}.${name} (${rel}:${i + 1})`);
   }
 
   // Top-level exported functions are public members by this script's own
@@ -448,11 +545,11 @@ export function auditParamTags( file ){
   // only, so `serializeElements` and its neighbours were outside the gate
   // that reports 221/221. Round 36 closed that: the parameters of an
   // exported function reach docmaker exactly as a method's do.
-  for( const fn of exportedFns( lines ) ){
-    if( !fn.args.trim() ) continue;
+  for (const fn of exportedFns(lines)) {
+    if (!fn.args.trim()) continue;
 
-    if( /@param/.test( docAbove( lines, fn.line ) ) ) tagged++;
-    else missing.push( `${fn.name} (${rel}:${fn.line + 1})` );
+    if (/@param/.test(docAbove(lines, fn.line))) tagged++;
+    else missing.push(`${fn.name} (${rel}:${fn.line + 1})`);
   }
 
   return { file: rel, tagged, missing };
@@ -469,47 +566,64 @@ export function auditParamTags( file ){
  * @returns {{ name: string, args: string, line: number }[]} one entry per
  *   exported function, in source order
  */
-function exportedFns( lines ){
+function exportedFns(lines) {
   const out = [];
   let inComment = false;
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if( inComment ){
-      if( line.includes( '*/' ) ) inComment = false;
+    if (inComment) {
+      if (line.includes('*/')) inComment = false;
       continue;
     }
 
-    const opened = line.lastIndexOf( '/*' );
+    const opened = line.lastIndexOf('/*');
 
-    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+    if (opened !== -1 && line.indexOf('*/', opened) === -1) {
       inComment = true;
       continue;
     }
 
-    const fn = line.match( EXPORTED_FN_RE );
+    const fn = declHead(lines, i).match(EXPORTED_FN_RE);
 
-    if( !fn ) continue;
+    if (!fn) continue;
 
-    const sig = signatureOf( lines, i );
-    const open = sig.indexOf( '(' );
-    let depth = 0;
-    let close = -1;
-
-    for( let k = open; k < sig.length && open !== -1; k++ ){
-      if( sig[k] === '(' ) depth++;
-      else if( sig[k] === ')' && --depth === 0 ){ close = k; break; }
-    }
-
-    out.push( {
+    out.push({
       name: fn[1] ?? fn[2],
-      args: close === -1 ? '' : sig.slice( open + 1, close ),
-      line: i
-    } );
+      args: argListOf(signatureOf(lines, i)),
+      line: i,
+    });
   }
 
   return out;
+}
+
+/**
+ * The text between a joined signature's *matching* parentheses.
+ *
+ * Balanced rather than lazy, for the reason `returnAnnotation` is: a
+ * parameter can be a function type, so `( fn: ( a: X ) => Y ): Z` has three
+ * parens and only the outer pair delimits the argument list. Both the
+ * `@param` audit and the exported-function walk read their arguments
+ * through here, so neither can be fooled by a wrapped or nested list.
+ *
+ * @param {string} sig — a joined declaration from `signatureOf`
+ * @returns {string} the argument text, or '' when the parens never close
+ */
+function argListOf(sig) {
+  const open = sig.indexOf('(');
+
+  if (open === -1) return '';
+
+  let depth = 0;
+
+  for (let k = open; k < sig.length; k++) {
+    if (sig[k] === '(') depth++;
+    else if (sig[k] === ')' && --depth === 0) return sig.slice(open + 1, k);
+  }
+
+  return '';
 }
 
 /**
@@ -525,23 +639,43 @@ function exportedFns( lines ){
  * @param {number} i — index of the declaration line
  * @returns {string} the joined declaration, or '' when the parens never close
  */
-function signatureOf( lines, i ){
+function signatureOf(lines, i) {
+  const end = signatureEnd(lines, i);
+
+  return end === i && !lines[i].includes('(')
+    ? ''
+    : lines.slice(i, end + 1).join(' ');
+}
+
+/**
+ * The index of the line on which the declaration at `i` closes its argument
+ * list — `i` itself when it does not have one, or does not close within the
+ * bound.
+ *
+ * Separated from `signatureOf` so `memberBody` can start *below* a wrapped
+ * signature without re-deriving where it ends; the two must agree, or a
+ * parameter line reads as the next member (round 57.2).
+ *
+ * @param {string[]} lines — the file's lines
+ * @param {number} i — index of the declaration line
+ * @returns {number} the index of the closing line, or `i`
+ */
+function signatureEnd(lines, i) {
   let depth = 0;
   let seen = false;
-  let out = '';
 
-  for( let j = i; j < lines.length && j < i + 16; j++ ){
-    out += ( j === i ? '' : ' ' ) + lines[j];
-
-    for( const ch of lines[j] ){
-      if( ch === '(' ){ depth++; seen = true; }
-      else if( ch === ')' ) depth--;
+  for (let j = i; j < lines.length && j < i + 16; j++) {
+    for (const ch of lines[j]) {
+      if (ch === '(') {
+        depth++;
+        seen = true;
+      } else if (ch === ')') depth--;
     }
 
-    if( seen && depth <= 0 ) return out;
+    if (seen && depth <= 0) return j;
   }
 
-  return '';
+  return i;
 }
 
 /**
@@ -553,23 +687,29 @@ function signatureOf( lines, i ){
  * @param {string} sig — a joined declaration from `signatureOf`
  * @returns {string|null} the annotation text, trimmed, or null
  */
-function returnAnnotation( sig ){
+function returnAnnotation(sig) {
   let depth = 0;
   let close = -1;
 
-  for( let k = 0; k < sig.length; k++ ){
-    if( sig[k] === '(' ) depth++;
-    else if( sig[k] === ')' && --depth === 0 ){ close = k; break; }
+  for (let k = 0; k < sig.length; k++) {
+    if (sig[k] === '(') depth++;
+    else if (sig[k] === ')' && --depth === 0) {
+      close = k;
+      break;
+    }
   }
 
-  if( close === -1 ) return null;
+  if (close === -1) return null;
 
-  const rest = sig.slice( close + 1 ).trim();
+  const rest = sig.slice(close + 1).trim();
 
-  if( !rest.startsWith( ':' ) ) return null;
+  if (!rest.startsWith(':')) return null;
 
   // stop at the body, the arrow, or the `;` of an overload signature
-  const type = rest.slice( 1 ).split( /\s=>|\{|;/ )[0].trim();
+  const type = rest
+    .slice(1)
+    .split(/\s=>|\{|;/)[0]
+    .trim();
 
   return type || null;
 }
@@ -605,9 +745,9 @@ const VOID_RETURN_RE = /^(?:void|Promise\s*<\s*void\s*>|undefined|never|this)$/;
  * @param {string} file — absolute path to a `.mts` source file
  * @returns {{ file: string, tagged: number, missing: string[] }}
  */
-export function auditReturnTags( file ){
-  const lines = readFileSync( file, 'utf8' ).split( '\n' );
-  const rel = relative( ROOT, file );
+export function auditReturnTags(file) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const rel = relative(ROOT, file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
@@ -615,60 +755,63 @@ export function auditReturnTags( file ){
   let inComment = false;
   let overloaded = new Set();
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if( inComment ){
-      if( line.includes( '*/' ) ) inComment = false;
+    if (inComment) {
+      if (line.includes('*/')) inComment = false;
       continue;
     }
 
-    const opened = line.lastIndexOf( '/*' );
+    const opened = line.lastIndexOf('/*');
 
-    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+    if (opened !== -1 && line.indexOf('*/', opened) === -1) {
       inComment = true;
       continue;
     }
 
-    const fn = line.match( EXPORTED_FN_RE );
-    const cls = line.match( CLASS_RE );
+    const fn = declHead(lines, i).match(EXPORTED_FN_RE);
+    const cls = line.match(CLASS_RE);
 
-    if( cls ){
+    if (cls) {
       currentClass = cls[2];
-      exported = Boolean( cls[1] );
+      exported = Boolean(cls[1]);
       overloaded = new Set();
       continue;
     }
 
-    if( !fn && TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
+    if (!fn && TOP_LEVEL_RE.test(line)) {
+      currentClass = null;
+      continue;
+    }
 
     let name = null;
 
-    if( fn ){
+    if (fn) {
       currentClass = null;
       name = fn[1] ?? fn[2];
-    } else if( currentClass && exported ){
-      const sig = line.match( OVERLOAD_SIG_RE );
-      const m = line.match( CALL_MEMBER_RE );
+    } else if (currentClass && exported) {
+      const sig = line.match(OVERLOAD_SIG_RE);
+      const m = line.match(CALL_MEMBER_RE);
 
-      if( !m ) continue;
+      if (!m) continue;
 
-      const [ , access, , member ] = m;
+      const [, access, , member] = m;
 
-      if( member.startsWith( '_' ) || KEYWORDS.has( member ) ) continue;
-      if( access === 'private' || access === 'protected' ) continue;
-      if( !sig && overloaded.has( member ) ) continue;
-      if( sig ) overloaded.add( member );
+      if (member.startsWith('_') || KEYWORDS.has(member)) continue;
+      if (access === 'private' || access === 'protected') continue;
+      if (!sig && overloaded.has(member)) continue;
+      if (sig) overloaded.add(member);
 
       name = `${currentClass}.${member}`;
     } else continue;
 
-    const ret = returnAnnotation( signatureOf( lines, i ) );
+    const ret = returnAnnotation(signatureOf(lines, i));
 
-    if( ret === null || VOID_RETURN_RE.test( ret ) ) continue;
+    if (ret === null || VOID_RETURN_RE.test(ret)) continue;
 
-    if( /@returns/.test( docAbove( lines, i ) ) ) tagged++;
-    else missing.push( `${name} (${rel}:${i + 1}) -> ${ret}` );
+    if (/@returns/.test(docAbove(lines, i))) tagged++;
+    else missing.push(`${name} (${rel}:${i + 1}) -> ${ret}`);
   }
 
   return { file: rel, tagged, missing };
@@ -709,22 +852,22 @@ export function auditReturnTags( file ){
  * @param {string} file — absolute path to a `.mts` source file
  * @returns {{ file: string, stranded: string[] }}
  */
-export function auditStrandedComments( file ){
-  const lines = readFileSync( file, 'utf8' ).split( '\n' );
-  const rel = relative( ROOT, file );
+export function auditStrandedComments(file) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const rel = relative(ROOT, file);
   const stranded = [];
   let openedAt = -1;
 
-  for( let i = 0; i < lines.length; i++ ){
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if( openedAt === -1 ){
+    if (openedAt === -1) {
       // a doc block opens; a one-line `/** x */` closes on the same line
-      if( /\/\*\*/.test( line ) ){
+      if (/\/\*\*/.test(line)) {
         openedAt = i;
 
-        if( line.includes( '*/' ) ){
-          if( isStranded( lines, i ) ) stranded.push( `${rel}:${openedAt + 1}` );
+        if (line.includes('*/')) {
+          if (isStranded(lines, i)) stranded.push(`${rel}:${openedAt + 1}`);
           openedAt = -1;
         }
       }
@@ -732,9 +875,9 @@ export function auditStrandedComments( file ){
       continue;
     }
 
-    if( !line.includes( '*/' ) ) continue;
+    if (!line.includes('*/')) continue;
 
-    if( isStranded( lines, i ) ) stranded.push( `${rel}:${openedAt + 1}` );
+    if (isStranded(lines, i)) stranded.push(`${rel}:${openedAt + 1}`);
 
     openedAt = -1;
   }
@@ -743,28 +886,28 @@ export function auditStrandedComments( file ){
 }
 
 /** Whether the doc block ending at line `i` documents nothing. */
-function isStranded( lines, i ){
+function isStranded(lines, i) {
   let j = i + 1;
 
-  while( j < lines.length && lines[j].trim() === '' ) j++;
-  if( j >= lines.length ) return true;
+  while (j < lines.length && lines[j].trim() === '') j++;
+  if (j >= lines.length) return true;
 
   const next = lines[j].trim();
 
   // another doc block: this one documents nothing, the next one does
-  if( next.startsWith( '/**' ) ) return true;
+  if (next.startsWith('/**')) return true;
 
   // a closing brace: the comment trails off the end of a class or block
-  return /^\}/.test( next );
+  return /^\}/.test(next);
 }
 
 /** Every `.mts` file under src, sorted, repo-relative. */
-function sources( dir = SRC_DIR, out = [] ){
-  for( const entry of readdirSync( dir ).sort() ){
-    const full = join( dir, entry );
+function sources(dir = SRC_DIR, out = []) {
+  for (const entry of readdirSync(dir).sort()) {
+    const full = join(dir, entry);
 
-    if( statSync( full ).isDirectory() ) sources( full, out );
-    else if( entry.endsWith( '.mts' ) ) out.push( full );
+    if (statSync(full).isDirectory()) sources(full, out);
+    else if (entry.endsWith('.mts')) out.push(full);
   }
 
   return out;
@@ -776,46 +919,53 @@ function sources( dir = SRC_DIR, out = [] ){
  * @returns {{ public: object, internal: object, files: object[] }} per-tier
  *   `{ documented, total, pct, missing }` plus the per-file breakdown.
  */
-export function audit(){
-  const files = sources().map( auditFile );
-  const tier = list => {
-    const documented = list.reduce( ( n, f ) => n + f.documented, 0 );
-    const total = list.reduce( ( n, f ) => n + f.documented + f.missing.length, 0 );
+export function audit() {
+  const files = sources().map(auditFile);
+  const tier = (list) => {
+    const documented = list.reduce((n, f) => n + f.documented, 0);
+    const total = list.reduce((n, f) => n + f.documented + f.missing.length, 0);
 
     return {
       documented,
       total,
-      pct: total === 0 ? 100 : ( documented / total ) * 100,
-      missing: list.flatMap( f => f.missing )
+      pct: total === 0 ? 100 : (documented / total) * 100,
+      missing: list.flatMap((f) => f.missing),
     };
   };
 
-  const isPublic = f => PUBLIC_API.includes( f.file );
-  const throwTags = sources().map( auditThrowTags ).filter( f => f.tagged + f.missing.length > 0 );
-  const publicSources = sources()
-    .filter( f => PUBLIC_API.includes( relative( ROOT, f ) ) );
-  const paramTags = publicSources.map( auditParamTags );
-  const returnTags = publicSources.map( auditReturnTags );
-  const strandedFiles = sources().map( auditStrandedComments ).filter( f => f.stranded.length > 0 );
+  const isPublic = (f) => PUBLIC_API.includes(f.file);
+  const throwTags = sources()
+    .map(auditThrowTags)
+    .filter((f) => f.tagged + f.missing.length > 0);
+  const publicSources = sources().filter((f) =>
+    PUBLIC_API.includes(relative(ROOT, f)),
+  );
+  const paramTags = publicSources.map(auditParamTags);
+  const returnTags = publicSources.map(auditReturnTags);
+  const strandedFiles = sources()
+    .map(auditStrandedComments)
+    .filter((f) => f.stranded.length > 0);
 
   return {
-    public: tier( files.filter( isPublic ) ),
-    internal: tier( files.filter( f => !isPublic( f ) ) ),
+    public: tier(files.filter(isPublic)),
+    internal: tier(files.filter((f) => !isPublic(f))),
     files,
     // round 31.2: `@throws` accuracy over the same members, public tier only
     // — the tier whose comments ship as `.d.ts` hover text
     throwTags: {
       files: throwTags,
-      tagged: throwTags.filter( f => PUBLIC_API.includes( f.file ) )
-        .reduce( ( n, f ) => n + f.tagged, 0 ),
-      missing: throwTags.filter( f => PUBLIC_API.includes( f.file ) )
-        .flatMap( f => f.missing )
+      tagged: throwTags
+        .filter((f) => PUBLIC_API.includes(f.file))
+        .reduce((n, f) => n + f.tagged, 0),
+      missing: throwTags
+        .filter((f) => PUBLIC_API.includes(f.file))
+        .flatMap((f) => f.missing),
     },
     // round 32: `@param` over the public tier, the tag docmaker emits
     paramTags: {
       files: paramTags,
-      tagged: paramTags.reduce( ( n, f ) => n + f.tagged, 0 ),
-      missing: paramTags.flatMap( f => f.missing )
+      tagged: paramTags.reduce((n, f) => n + f.tagged, 0),
+      missing: paramTags.flatMap((f) => f.missing),
     },
     // round 36: `@returns` over the same tier, **gated since round 37.1** at
     // the 276/276 round 36 reached.  Round 32 had drawn the gate's boundary at
@@ -826,74 +976,81 @@ export function audit(){
     // See `auditReturnTags`.
     returnTags: {
       files: returnTags,
-      tagged: returnTags.reduce( ( n, f ) => n + f.tagged, 0 ),
-      missing: returnTags.flatMap( f => f.missing )
+      tagged: returnTags.reduce((n, f) => n + f.tagged, 0),
+      missing: returnTags.flatMap((f) => f.missing),
     },
     // round 36.6: doc blocks that document nothing — the whole tree, not
     // just the public tier, since the pattern has struck store/ and
     // render/ as often as core/.  Reported, never gated.
     stranded: {
       files: strandedFiles,
-      all: strandedFiles.flatMap( f => f.stranded )
-    }
+      all: strandedFiles.flatMap((f) => f.stranded),
+    },
   };
 }
 
-if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href ){
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   const result = audit();
-  const verbose = process.argv.includes( '--verbose' );
-  const pct = t => `${t.documented}/${t.total} (${t.pct.toFixed( 1 )}%)`;
+  const verbose = process.argv.includes('--verbose');
+  const pct = (t) => `${t.documented}/${t.total} (${t.pct.toFixed(1)}%)`;
 
-  for( const f of [ ...result.files ].sort( ( a, b ) => b.missing.length - a.missing.length ) ){
+  for (const f of [...result.files].sort(
+    (a, b) => b.missing.length - a.missing.length,
+  )) {
     const total = f.documented + f.missing.length;
 
-    if( total === 0 ) continue;
+    if (total === 0) continue;
 
-    const mark = PUBLIC_API.includes( f.file ) ? '*' : ' ';
+    const mark = PUBLIC_API.includes(f.file) ? '*' : ' ';
 
     console.log(
       `${mark} ${f.file}: ${f.documented}/${total} ` +
-      `(${Math.round( ( f.documented / total ) * 100 )}%)`
+        `(${Math.round((f.documented / total) * 100)}%)`,
     );
 
-    if( verbose ) for( const m of f.missing ) console.log( `      MISSING  ${m}` );
+    if (verbose) for (const m of f.missing) console.log(`      MISSING  ${m}`);
   }
 
-  console.log( `\n* public API tier: ${pct( result.public )}` );
-  console.log( `  internal tier:   ${pct( result.internal )}` );
+  console.log(`\n* public API tier: ${pct(result.public)}`);
+  console.log(`  internal tier:   ${pct(result.internal)}`);
 
   const t = result.throwTags;
 
   console.log(
     `\n  @throws on public members that throw: ` +
-    `${t.tagged}/${t.tagged + t.missing.length}`
+      `${t.tagged}/${t.tagged + t.missing.length}`,
   );
 
-  if( verbose ) for( const m of t.missing ) console.log( `      NO @throws  ${m}` );
+  if (verbose) for (const m of t.missing) console.log(`      NO @throws  ${m}`);
 
   const pt = result.paramTags;
 
   console.log(
     `  @param on public members taking arguments: ` +
-    `${pt.tagged}/${pt.tagged + pt.missing.length}`
+      `${pt.tagged}/${pt.tagged + pt.missing.length}`,
   );
 
-  if( verbose ) for( const m of pt.missing ) console.log( `      NO @param   ${m}` );
+  if (verbose)
+    for (const m of pt.missing) console.log(`      NO @param   ${m}`);
 
   const rt = result.returnTags;
 
   console.log(
     `  @returns on value-returning public members: ` +
-    `${rt.tagged}/${rt.tagged + rt.missing.length}`
+      `${rt.tagged}/${rt.tagged + rt.missing.length}`,
   );
 
-  if( verbose ) for( const m of rt.missing ) console.log( `      NO @returns ${m}` );
+  if (verbose)
+    for (const m of rt.missing) console.log(`      NO @returns ${m}`);
 
   const st = result.stranded;
 
   console.log(
-    `  doc blocks documenting nothing: ${st.all.length}  (reported, not gated)`
+    `  doc blocks documenting nothing: ${st.all.length}  (reported, not gated)`,
   );
 
-  if( verbose ) for( const m of st.all ) console.log( `      STRANDED    ${m}` );
+  if (verbose) for (const m of st.all) console.log(`      STRANDED    ${m}`);
 }

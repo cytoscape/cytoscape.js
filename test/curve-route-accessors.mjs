@@ -4,166 +4,166 @@ import cytoscape from '../src/index.mjs';
 // round 12b: route-family accessors — segmentPoints, multibezier
 // controlPoints, midpoint/endpoints and the exact lazy bb
 
-describe('gpu/curve-route-accessors (12b)', function(){
-
+describe('gpu/curve-route-accessors (12b)', function () {
   var cy;
 
   // default 30x30 ellipse nodes compile to circles of radius 15; on the
   // x axis the intersection frame is si=(15,0), ti=(85,0), normal (0,1)
-  var makePair = edgeStyle => cytoscape({
-    elements: [
-      { data: { id: 'a' }, position: { x: 0, y: 0 } },
-      { data: { id: 'b' }, position: { x: 100, y: 0 } },
-      { data: { id: 'e', source: 'a', target: 'b' } }
-    ],
-    style: { edges: edgeStyle }
-  });
+  var makePair = (edgeStyle) =>
+    cytoscape({
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: 100, y: 0 } },
+        { data: { id: 'e', source: 'a', target: 'b' } },
+      ],
+      style: { edges: edgeStyle },
+    });
 
-  describe('segmentPoints', function(){
-    it('returns the derived segment points for segments edges', function(){
+  describe('segmentPoints', function () {
+    it('returns the derived segment points for segments edges', function () {
       cy = makePair({ 'curve-style': 'segments' }); // default d=20, w=0.5
 
       var pts = cy.$id('e').segmentPoints();
 
-      expect( pts ).to.have.length(1);
-      expect( pts[0].x ).to.be.closeTo(50, 1e-6);
-      expect( pts[0].y ).to.be.closeTo(20, 1e-6);
+      expect(pts).to.have.length(1);
+      expect(pts[0].x).to.be.closeTo(50, 1e-6);
+      expect(pts[0].y).to.be.closeTo(20, 1e-6);
     });
 
-    it('returns the taxi routing points (v3: taxi is a segments type)', function(){
+    it('returns the taxi routing points (v3: taxi is a segments type)', function () {
       cy = cytoscape({
         elements: [
           { data: { id: 'a' }, position: { x: 0, y: 0 } },
           { data: { id: 'b' }, position: { x: 10, y: 200 } },
-          { data: { id: 'e', source: 'a', target: 'b' } }
+          { data: { id: 'e', source: 'a', target: 'b' } },
         ],
-        style: { edges: { 'curve-style': 'taxi' } }
+        style: { edges: { 'curve-style': 'taxi' } },
       });
 
       var pts = cy.$id('e').segmentPoints();
 
       // dy = 170, d = 85, y = 85 + 15 = 100
-      expect( pts ).to.have.length(2);
-      expect( pts[0].x ).to.equal(0);
-      expect( pts[0].y ).to.equal(100);
-      expect( pts[1].x ).to.equal(10);
-      expect( pts[1].y ).to.equal(100);
+      expect(pts).to.have.length(2);
+      expect(pts[0].x).to.equal(0);
+      expect(pts[0].y).to.equal(100);
+      expect(pts[1].x).to.equal(10);
+      expect(pts[1].y).to.equal(100);
     });
 
-    it('is undefined for straight, bezier and unbundled-bezier edges', function(){
+    it('is undefined for straight, bezier and unbundled-bezier edges', function () {
       cy = makePair({ 'curve-style': 'unbundled-bezier' });
-      expect( cy.$id('e').segmentPoints() ).to.equal(undefined);
+      expect(cy.$id('e').segmentPoints()).to.equal(undefined);
 
       cy = makePair({});
-      expect( cy.$id('e').segmentPoints() ).to.equal(undefined);
+      expect(cy.$id('e').segmentPoints()).to.equal(undefined);
     });
 
-    it('renderedSegmentPoints applies the viewport transform', function(){
+    it('renderedSegmentPoints applies the viewport transform', function () {
       cy = makePair({ 'curve-style': 'segments' });
       cy.zoom(2);
       cy.pan({ x: 10, y: 20 });
 
       var pts = cy.$id('e').renderedSegmentPoints();
 
-      expect( pts[0].x ).to.be.closeTo(50 * 2 + 10, 1e-6);
-      expect( pts[0].y ).to.be.closeTo(20 * 2 + 20, 1e-6);
+      expect(pts[0].x).to.be.closeTo(50 * 2 + 10, 1e-6);
+      expect(pts[0].y).to.be.closeTo(20 * 2 + 20, 1e-6);
     });
   });
 
-  describe('controlPoints for unbundled bezier', function(){
-    it('returns the full control list', function(){
+  describe('controlPoints for unbundled bezier', function () {
+    it('returns the full control list', function () {
       cy = makePair({
         'curve-style': 'unbundled-bezier',
-        'control-point-distances': [ 40, -40 ],
-        'control-point-weights': [ 0.25, 0.75 ]
+        'control-point-distances': [40, -40],
+        'control-point-weights': [0.25, 0.75],
       });
 
       var pts = cy.$id('e').controlPoints();
 
-      expect( pts ).to.have.length(2);
-      expect( pts[0].x ).to.be.closeTo(32.5, 1e-6);
-      expect( pts[0].y ).to.be.closeTo(40, 1e-6);
-      expect( pts[1].x ).to.be.closeTo(67.5, 1e-6);
-      expect( pts[1].y ).to.be.closeTo(-40, 1e-6);
+      expect(pts).to.have.length(2);
+      expect(pts[0].x).to.be.closeTo(32.5, 1e-6);
+      expect(pts[0].y).to.be.closeTo(40, 1e-6);
+      expect(pts[1].x).to.be.closeTo(67.5, 1e-6);
+      expect(pts[1].y).to.be.closeTo(-40, 1e-6);
     });
 
-    it('stays undefined for segments/taxi (they answer segmentPoints)', function(){
+    it('stays undefined for segments/taxi (they answer segmentPoints)', function () {
       cy = makePair({ 'curve-style': 'segments' });
-      expect( cy.$id('e').controlPoints() ).to.equal(undefined);
+      expect(cy.$id('e').controlPoints()).to.equal(undefined);
 
       cy = makePair({ 'curve-style': 'taxi' });
-      expect( cy.$id('e').controlPoints() ).to.equal(undefined);
+      expect(cy.$id('e').controlPoints()).to.equal(undefined);
     });
   });
 
-  describe('midpoint and endpoints', function(){
-    it('midpoint of a single-point segments edge is the segment point (v3 odd rule)', function(){
+  describe('midpoint and endpoints', function () {
+    it('midpoint of a single-point segments edge is the segment point (v3 odd rule)', function () {
       cy = makePair({ 'curve-style': 'segments' });
 
       var m = cy.$id('e').midpoint();
 
-      expect( m.x ).to.be.closeTo(50, 1e-6);
-      expect( m.y ).to.be.closeTo(20, 1e-6);
+      expect(m.x).to.be.closeTo(50, 1e-6);
+      expect(m.y).to.be.closeTo(20, 1e-6);
     });
 
-    it('midpoint of an even multibezier is the inserted midpoint', function(){
+    it('midpoint of an even multibezier is the inserted midpoint', function () {
       cy = makePair({
         'curve-style': 'unbundled-bezier',
-        'control-point-distances': [ 40, -40 ],
-        'control-point-weights': [ 0.25, 0.75 ]
+        'control-point-distances': [40, -40],
+        'control-point-weights': [0.25, 0.75],
       });
 
       var m = cy.$id('e').midpoint();
 
-      expect( m.x ).to.be.closeTo(50, 1e-6);
-      expect( m.y ).to.be.closeTo(0, 1e-6);
+      expect(m.x).to.be.closeTo(50, 1e-6);
+      expect(m.y).to.be.closeTo(0, 1e-6);
     });
 
-    it('endpoints sit on the node boundary toward the first/last route point', function(){
+    it('endpoints sit on the node boundary toward the first/last route point', function () {
       cy = makePair({ 'curve-style': 'segments' });
 
       var s = cy.$id('e').sourceEndpoint();
       var t = cy.$id('e').targetEndpoint();
 
       // on the r=15 circle toward (50, 20)
-      expect( Math.hypot( s.x, s.y ) ).to.be.closeTo(15, 1e-6);
-      expect( s.y ).to.be.greaterThan(0);
-      expect( Math.hypot( t.x - 100, t.y ) ).to.be.closeTo(15, 1e-6);
+      expect(Math.hypot(s.x, s.y)).to.be.closeTo(15, 1e-6);
+      expect(s.y).to.be.greaterThan(0);
+      expect(Math.hypot(t.x - 100, t.y)).to.be.closeTo(15, 1e-6);
     });
   });
 
-  describe('exact lazy bounding box', function(){
-    it('the edge bb follows the drawn route polyline', function(){
+  describe('exact lazy bounding box', function () {
+    it('the edge bb follows the drawn route polyline', function () {
       cy = makePair({ 'curve-style': 'segments' });
 
       var bb = cy.$id('e').boundingBox();
 
       // the polyline peaks exactly at the segment point (a piece boundary)
-      expect( bb.y2 ).to.be.closeTo(20, 1e-6);
-      expect( bb.y1 ).to.be.closeTo(5.57, 0.02 ); // the boundary endpoints' y
-      expect( bb.x1 ).to.be.closeTo(13.93, 0.02);
-      expect( bb.x2 ).to.be.closeTo(86.07, 0.02);
+      expect(bb.y2).to.be.closeTo(20, 1e-6);
+      expect(bb.y1).to.be.closeTo(5.57, 0.02); // the boundary endpoints' y
+      expect(bb.x1).to.be.closeTo(13.93, 0.02);
+      expect(bb.x2).to.be.closeTo(86.07, 0.02);
     });
 
-    it('taxi bbs cover the full route', function(){
+    it('taxi bbs cover the full route', function () {
       cy = cytoscape({
         elements: [
           { data: { id: 'a' }, position: { x: 0, y: 0 } },
           { data: { id: 'b' }, position: { x: 10, y: 200 } },
-          { data: { id: 'e', source: 'a', target: 'b' } }
+          { data: { id: 'e', source: 'a', target: 'b' } },
         ],
-        style: { edges: { 'curve-style': 'taxi' } }
+        style: { edges: { 'curve-style': 'taxi' } },
       });
 
       var bb = cy.$id('e').boundingBox();
 
-      expect( bb.x1 ).to.be.closeTo(0, 1e-6);
-      expect( bb.x2 ).to.be.closeTo(10, 1e-6);
-      expect( bb.y1 ).to.be.closeTo(15, 1e-6); // launch boundary
-      expect( bb.y2 ).to.be.closeTo(185, 1e-6);
+      expect(bb.x1).to.be.closeTo(0, 1e-6);
+      expect(bb.x2).to.be.closeTo(10, 1e-6);
+      expect(bb.y1).to.be.closeTo(15, 1e-6); // launch boundary
+      expect(bb.y2).to.be.closeTo(185, 1e-6);
     });
 
-    it('the bb memo invalidates on position writes', function(){
+    it('the bb memo invalidates on position writes', function () {
       cy = makePair({ 'curve-style': 'segments' });
 
       var before = cy.$id('e').boundingBox();
@@ -172,7 +172,7 @@ describe('gpu/curve-route-accessors (12b)', function(){
 
       var after = cy.$id('e').boundingBox();
 
-      expect( after.x2 ).to.be.greaterThan( before.x2 );
+      expect(after.x2).to.be.greaterThan(before.x2);
     });
   });
 
@@ -205,57 +205,67 @@ describe('gpu/curve-route-accessors (12b)', function(){
    * future regression that does reach them — but they are not what makes
    * this block discriminate, and a reader should not assume they are.
    */
-  describe('degenerate rounded routes stay finite (round 55)', function(){
-    var aligned = ( style, dx, dy ) => cytoscape({
-      elements: [
-        { data: { id: 'a' }, position: { x: 0, y: 0 } },
-        { data: { id: 'b' }, position: { x: dx, y: dy } },
-        { data: { id: 'e', source: 'a', target: 'b' } }
-      ],
-      style: { edges: style }
-    });
+  describe('degenerate rounded routes stay finite (round 55)', function () {
+    var aligned = (style, dx, dy) =>
+      cytoscape({
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: dx, y: dy } },
+          { data: { id: 'e', source: 'a', target: 'b' } },
+        ],
+        style: { edges: style },
+      });
 
-    var finiteBox = bb => [ 'x1', 'y1', 'x2', 'y2', 'w', 'h' ]
-      .every( k => Number.isFinite( bb[ k ] ) );
+    var finiteBox = (bb) =>
+      ['x1', 'y1', 'x2', 'y2', 'w', 'h'].every((k) => Number.isFinite(bb[k]));
 
     var cases = [
-      [ 'round-taxi, vertical', { 'curve-style': 'round-taxi' }, 0, 160 ],
-      [ 'round-taxi, horizontal', { 'curve-style': 'round-taxi' }, 200, 0 ],
-      [ 'round-segments with coincident points',
-        { 'curve-style': 'round-segments',
-          'segment-distances': [ 20, 20 ], 'segment-weights': [ 0.5, 0.5 ] }, 200, 0 ]
+      ['round-taxi, vertical', { 'curve-style': 'round-taxi' }, 0, 160],
+      ['round-taxi, horizontal', { 'curve-style': 'round-taxi' }, 200, 0],
+      [
+        'round-segments with coincident points',
+        {
+          'curve-style': 'round-segments',
+          'segment-distances': [20, 20],
+          'segment-weights': [0.5, 0.5],
+        },
+        200,
+        0,
+      ],
     ];
 
-    cases.forEach( function( entry ){
-      var label = entry[ 0 ];
-      var style = entry[ 1 ];
-      var dx = entry[ 2 ];
-      var dy = entry[ 3 ];
+    cases.forEach(function (entry) {
+      var label = entry[0];
+      var style = entry[1];
+      var dx = entry[2];
+      var dy = entry[3];
 
-      it(`${label}: the bounding box is finite`, function(){
-        cy = aligned( style, dx, dy );
+      it(`${label}: the bounding box is finite`, function () {
+        cy = aligned(style, dx, dy);
 
         var bb = cy.$id('e').boundingBox();
 
-        expect( finiteBox( bb ), `bb was ${JSON.stringify( bb )}` ).to.equal( true );
+        expect(finiteBox(bb), `bb was ${JSON.stringify(bb)}`).to.equal(true);
 
         // and it actually spans the edge rather than collapsing
-        expect( bb.w + bb.h ).to.be.greaterThan( 100 );
+        expect(bb.w + bb.h).to.be.greaterThan(100);
       });
 
-      it(`${label}: the midpoint and endpoints are finite`, function(){
-        cy = aligned( style, dx, dy );
+      it(`${label}: the midpoint and endpoints are finite`, function () {
+        cy = aligned(style, dx, dy);
 
         var e = cy.$id('e');
 
-        for( var p of [ e.midpoint(), e.sourceEndpoint(), e.targetEndpoint() ] ){
-          expect( Number.isFinite( p.x ) && Number.isFinite( p.y ),
-            `got ${JSON.stringify( p )}` ).to.equal( true );
+        for (var p of [e.midpoint(), e.sourceEndpoint(), e.targetEndpoint()]) {
+          expect(
+            Number.isFinite(p.x) && Number.isFinite(p.y),
+            `got ${JSON.stringify(p)}`,
+          ).to.equal(true);
         }
       });
 
-      it(`${label}: the WHOLE GRAPH's bounding box stays finite`, function(){
-        cy = aligned( style, dx, dy );
+      it(`${label}: the WHOLE GRAPH's bounding box stays finite`, function () {
+        cy = aligned(style, dx, dy);
 
         var bb = cy.elements().boundingBox();
 
@@ -264,22 +274,23 @@ describe('gpu/curve-route-accessors (12b)', function(){
         // its own, because the min/max fold never took a comparable
         // value.  `cy.fit()` reads this, so one round-taxi edge between
         // two nodes sharing a row broke framing for the entire graph.
-        expect( finiteBox( bb ), `graph bb was ${JSON.stringify( bb )}` ).to.equal( true );
+        expect(finiteBox(bb), `graph bb was ${JSON.stringify(bb)}`).to.equal(
+          true,
+        );
       });
 
-      it(`${label}: it is still hit-testable`, function(){
-        cy = aligned( style, dx, dy );
+      it(`${label}: it is still hit-testable`, function () {
+        cy = aligned(style, dx, dy);
 
         var bb = cy.$id('e').boundingBox();
 
         // a box over the whole edge must find it — with NaN geometry the
         // comparison silently answered false and the edge vanished from
         // box selection
-        var hit = cy.elementsInBox( bb.x1 - 5, bb.y1 - 5, bb.x2 + 5, bb.y2 + 5 );
+        var hit = cy.elementsInBox(bb.x1 - 5, bb.y1 - 5, bb.x2 + 5, bb.y2 + 5);
 
-        expect( hit.filter( el => el.isEdge() ).length ).to.equal( 1 );
+        expect(hit.filter((el) => el.isEdge()).length).to.equal(1);
       });
-    } );
+    });
   });
-
 });

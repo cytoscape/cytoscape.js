@@ -36,104 +36,151 @@ const instances = [];
 // mixing one in here would make these rows measure the DSL instead of the
 // apply.  Same channels on both sides, so the same columns are written.
 const GPU_SHEETS = [
-  { nodes: { 'background-color': '#3366cc', width: 30, height: 30, 'border-width': 2, 'border-color': '#222' },
-    edges: { 'line-color': '#999', width: 2 } },
-  { nodes: { 'background-color': '#cc6633', width: 34, height: 34, 'border-width': 3, 'border-color': '#444' },
-    edges: { 'line-color': '#777', width: 3 } }
+  {
+    nodes: {
+      'background-color': '#3366cc',
+      width: 30,
+      height: 30,
+      'border-width': 2,
+      'border-color': '#222',
+    },
+    edges: { 'line-color': '#999', width: 2 },
+  },
+  {
+    nodes: {
+      'background-color': '#cc6633',
+      width: 34,
+      height: 34,
+      'border-width': 3,
+      'border-color': '#444',
+    },
+    edges: { 'line-color': '#777', width: 3 },
+  },
 ];
 
-const V3_SHEETS = GPU_SHEETS.map( sheet => [
+const V3_SHEETS = GPU_SHEETS.map((sheet) => [
   { selector: 'node', style: { ...sheet.nodes } },
-  { selector: 'edge', style: { ...sheet.edges } }
-] );
+  { selector: 'edge', style: { ...sheet.edges } },
+]);
 
-function v3Instance(){
-  const cy = makeV3( elements, { styleEnabled: true, layout: { name: 'preset' } } );
+function v3Instance() {
+  const cy = makeV3(elements, {
+    styleEnabled: true,
+    layout: { name: 'preset' },
+  });
 
-  instances.push( cy );
-
-  return cy;
-}
-
-function gpuInstance(){
-  const cy = makeGpu( elements );
-
-  instances.push( cy );
+  instances.push(cy);
 
   return cy;
 }
 
-function cmp( name, v3Op, gpuOp ){
-  if( OP != null && !name.includes( OP ) ){ return; }
+function gpuInstance() {
+  const cy = makeGpu(elements);
+
+  instances.push(cy);
+
+  return cy;
+}
+
+function cmp(name, v3Op, gpuOp) {
+  if (OP != null && !name.includes(OP)) {
+    return;
+  }
 
   const a = v3Instance();
   const b = gpuInstance();
   let i = 0;
 
-  group( name, () => {
-    summary( () => {
-      bench( 'v3',  () => { v3Op( a, i++ ); } );
-      bench( 'gpu', () => { gpuOp( b, i++ ); } );
-    } );
-  } );
+  group(name, () => {
+    summary(() => {
+      bench('v3', () => {
+        v3Op(a, i++);
+      });
+      bench('gpu', () => {
+        gpuOp(b, i++);
+      });
+    });
+  });
 }
 
-function cmpGpu( name, aLabel, aSetup, aFn, bLabel, bSetup, bFn ){
-  if( OP != null && !name.includes( OP ) ){ return; }
+function cmpGpu(name, aLabel, aSetup, aFn, bLabel, bSetup, bFn) {
+  if (OP != null && !name.includes(OP)) {
+    return;
+  }
 
   const a = aSetup();
   const b = bSetup();
   let i = 0;
 
-  group( name, () => {
-    summary( () => {
-      bench( aLabel, () => { aFn( a, i++ ); } );
-      bench( bLabel, () => { bFn( b, i++ ); } );
-    } );
-  } );
+  group(name, () => {
+    summary(() => {
+      bench(aLabel, () => {
+        aFn(a, i++);
+      });
+      bench(bLabel, () => {
+        bFn(b, i++);
+      });
+    });
+  });
 }
 
-console.log( `\n== style sweep (N=${N} nodes, ${2 * N} edges) ==` );
+console.log(`\n== style sweep (N=${N} nodes, ${2 * N} edges) ==`);
 
 // -- whole-sheet application --------------------------------------------------
 // The headline: compile + validate + apply every channel of every
 // element.  v3 re-applies its stylesheet the same way.
-cmp( 'style: sheet swap (compile + applyAll)',
-  ( cy, i ) => { cy.style( V3_SHEETS[ i & 1 ] ); },
-  ( cy, i ) => { cy.style( GPU_SHEETS[ i & 1 ] ); } );
+cmp(
+  'style: sheet swap (compile + applyAll)',
+  (cy, i) => {
+    cy.style(V3_SHEETS[i & 1]);
+  },
+  (cy, i) => {
+    cy.style(GPU_SHEETS[i & 1]);
+  },
+);
 
 // Compile alone, separated from apply through the public batching
 // semantics: inside a batch `cy.style( sheet )` compiles and validates
 // immediately and defers the apply to the outermost endBatch (round 6).
 // So the difference between these two rows is the applyAll.
-cmpGpu( 'style: compile vs compile + apply',
-  'compile only (in batch)', gpuInstance, ( cy, i ) => {
+cmpGpu(
+  'style: compile vs compile + apply',
+  'compile only (in batch)',
+  gpuInstance,
+  (cy, i) => {
     cy.startBatch();
-    cy.style( GPU_SHEETS[ i & 1 ] );
+    cy.style(GPU_SHEETS[i & 1]);
     // drop the apply the batch deferred, so this row is the compile alone
     // (the batch records it as `pending.sheet`, flushed as one applyAll)
     cy._batchPending.sheet = false;
     cy.endBatch();
   },
-  'compile + apply', gpuInstance, ( cy, i ) => { cy.style( GPU_SHEETS[ i & 1 ] ); } );
+  'compile + apply',
+  gpuInstance,
+  (cy, i) => {
+    cy.style(GPU_SHEETS[i & 1]);
+  },
+);
 
 // -- the first apply of newly added elements ----------------------------------
 // A band added and removed per iteration: the add pays the first style
 // application of its elements (v4 batches it; v3 applies per element).
 {
   const BAND = 256;
-  const band = Array.from( { length: BAND }, ( _, k ) => ( {
+  const band = Array.from({ length: BAND }, (_, k) => ({
     data: { id: 'add' + k, foo: k, weight: k % 7 },
-    position: { x: k * 3, y: k * 3 }
-  } ) );
+    position: { x: k * 3, y: k * 3 },
+  }));
 
-  const addRemove = cy => {
-    const added = cy.add( band.map( e => ( { data: { ...e.data }, position: { ...e.position } } ) ) );
+  const addRemove = (cy) => {
+    const added = cy.add(
+      band.map((e) => ({ data: { ...e.data }, position: { ...e.position } })),
+    );
 
     added.remove();
   };
 
-  cmp( `style: first apply on add (${BAND}-node band)`, addRemove, addRemove );
+  cmp(`style: first apply on add (${BAND}-node band)`, addRemove, addRemove);
 }
 
 // -- the parents overlay ------------------------------------------------------
@@ -153,41 +200,56 @@ cmpGpu( 'style: compile vs compile + apply',
 // engineered away.
 {
   const CLUSTER = 20;
-  const clusters = Math.max( 1, Math.floor( N / CLUSTER ) );
+  const clusters = Math.max(1, Math.floor(N / CLUSTER));
 
-  const withHierarchy = parents => {
+  const withHierarchy = (parents) => {
     const out = [];
 
-    if( parents ){
-      for( let c = 0; c < clusters; c++ ){ out.push( { data: { id: 'p' + c } } ); }
+    if (parents) {
+      for (let c = 0; c < clusters; c++) {
+        out.push({ data: { id: 'p' + c } });
+      }
     }
 
-    for( const e of elements ){
+    for (const e of elements) {
       const data = { ...e.data };
 
-      if( parents && data.source == null && /^n\d+$/.test( data.id ) ){
-        data.parent = 'p' + ( Number( data.id.slice( 1 ) ) % clusters );
+      if (parents && data.source == null && /^n\d+$/.test(data.id)) {
+        data.parent = 'p' + (Number(data.id.slice(1)) % clusters);
       }
 
-      out.push( { data, position: e.position ? { ...e.position } : undefined } );
+      out.push({ data, position: e.position ? { ...e.position } : undefined });
     }
 
     return out;
   };
 
-  const PARENT_SHEETS = GPU_SHEETS.map( sheet => ( { ...sheet, parents: { 'background-color': '#eee', padding: 10 } } ) );
+  const PARENT_SHEETS = GPU_SHEETS.map((sheet) => ({
+    ...sheet,
+    parents: { 'background-color': '#eee', padding: 10 },
+  }));
 
-  const instance = parents => () => {
-    const cy = makeGpu( withHierarchy( parents ) );
+  const instance = (parents) => () => {
+    const cy = makeGpu(withHierarchy(parents));
 
-    instances.push( cy );
+    instances.push(cy);
 
     return cy;
   };
 
-  cmpGpu( `style: applyAll, flat vs compound (${clusters} parents — the 14.6 partition)`,
-    'flat', instance( false ), ( cy, i ) => { cy.style( PARENT_SHEETS[ i & 1 ] ); },
-    'compound', instance( true ), ( cy, i ) => { cy.style( PARENT_SHEETS[ i & 1 ] ); } );
+  cmpGpu(
+    `style: applyAll, flat vs compound (${clusters} parents — the 14.6 partition)`,
+    'flat',
+    instance(false),
+    (cy, i) => {
+      cy.style(PARENT_SHEETS[i & 1]);
+    },
+    'compound',
+    instance(true),
+    (cy, i) => {
+      cy.style(PARENT_SHEETS[i & 1]);
+    },
+  );
 }
 
 // -- readback -----------------------------------------------------------------
@@ -210,34 +272,46 @@ cmpGpu( 'style: compile vs compile + apply',
   const K = 8;
   const MASK = K - 1;
 
-  function cmpRead( name, op ){
-    if( OP != null && !name.includes( OP ) ){ return; }
+  function cmpRead(name, op) {
+    if (OP != null && !name.includes(OP)) {
+      return;
+    }
 
     const a = v3Instance();
     const b = gpuInstance();
 
-    a.style( V3_SHEETS[ 0 ] );
-    b.style( GPU_SHEETS[ 0 ] );
+    a.style(V3_SHEETS[0]);
+    b.style(GPU_SHEETS[0]);
 
-    const vs = Array.from( { length: K }, ( _, k ) => a.getElementById( 'n' + ( MIDNUM + k ) ) );
-    const gs = Array.from( { length: K }, ( _, k ) => b.$id( 'n' + ( MIDNUM + k ) ) );
+    const vs = Array.from({ length: K }, (_, k) =>
+      a.getElementById('n' + (MIDNUM + k)),
+    );
+    const gs = Array.from({ length: K }, (_, k) => b.$id('n' + (MIDNUM + k)));
     let i = 0;
 
-    group( name, () => {
-      summary( () => {
-        bench( 'v3',  () => { const k = ( i++ ) & MASK; return do_not_optimize( op( vs[ k ] ) ); } );
-        bench( 'gpu', () => { const k = ( i++ ) & MASK; return do_not_optimize( op( gs[ k ] ) ); } );
-      } );
-    } );
+    group(name, () => {
+      summary(() => {
+        bench('v3', () => {
+          const k = i++ & MASK;
+          return do_not_optimize(op(vs[k]));
+        });
+        bench('gpu', () => {
+          const k = i++ & MASK;
+          return do_not_optimize(op(gs[k]));
+        });
+      });
+    });
   }
 
-  cmpRead( 'style: read one prop (color)', n => n.style( 'background-color' ) );
-  cmpRead( 'style: read one prop (width)', n => n.style( 'width' ) );
-  cmpRead( 'style: numericStyle', n => n.numericStyle( 'width' ) );
-  cmpRead( 'style: renderedStyle (one prop)', n => n.renderedStyle( 'width' ) );
-  cmpRead( 'style: whole-object style()', n => n.style() );
+  cmpRead('style: read one prop (color)', (n) => n.style('background-color'));
+  cmpRead('style: read one prop (width)', (n) => n.style('width'));
+  cmpRead('style: numericStyle', (n) => n.numericStyle('width'));
+  cmpRead('style: renderedStyle (one prop)', (n) => n.renderedStyle('width'));
+  cmpRead('style: whole-object style()', (n) => n.style());
 }
 
-await finishRun( 'style' );
+await finishRun('style');
 
-for( const cy of instances ){ cy.destroy(); }
+for (const cy of instances) {
+  cy.destroy();
+}

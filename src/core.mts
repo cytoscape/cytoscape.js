@@ -1,9 +1,18 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { Collection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
-import { deserializeElements, isSerializedElements, serializeElements } from './wire.mjs';
+import {
+  deserializeElements,
+  isSerializedElements,
+  serializeElements,
+} from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
-import { hasListeners, makeCoreEmitter, predicateQualifier, refKey } from './events.mjs';
+import {
+  hasListeners,
+  makeCoreEmitter,
+  predicateQualifier,
+  refKey,
+} from './events.mjs';
 import type { ElePredicate, Qualifier, PhasedEvent } from './events.mjs';
 import { Event } from './event.mjs';
 import { compileQuery } from './matcher.mjs';
@@ -27,8 +36,13 @@ import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
 import { RandomLayout } from './layout/random.mjs';
 
 export type Layout =
-  CustomLayout |
-  GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
+  | CustomLayout
+  | GridLayout
+  | PresetLayout
+  | CircleLayout
+  | ConcentricLayout
+  | BreadthFirstLayout
+  | RandomLayout;
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
@@ -36,9 +50,17 @@ import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
 import { NO_PARENT } from './public-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
-  BoxSelectionMode, CytoscapeOptions, ColumnarElements, ElementDefinition,
-  ElementsDefinition, ElementsInput, ExportOptions, LayoutOptions, Stylesheet,
-  Position, RendererStats
+  BoxSelectionMode,
+  CytoscapeOptions,
+  ColumnarElements,
+  ElementDefinition,
+  ElementsDefinition,
+  ElementsInput,
+  ExportOptions,
+  LayoutOptions,
+  Stylesheet,
+  Position,
+  RendererStats,
 } from './public-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -46,13 +68,17 @@ import type { EleFilterFn } from './collection.mjs';
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 export interface RendererLike {
   destroy(): void;
-  pick( x: number, y: number ): Promise<Collection | null>;
+  pick(x: number, y: number): Promise<Collection | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
   /** true while a GPU force-layout run owns the position column (18.3) */
   forceActive(): boolean;
-  exportImage( options: ExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
+  exportImage(options: ExportOptions): Promise<{
+    data: Uint8ClampedArray<ArrayBuffer>;
+    width: number;
+    height: number;
+  }>;
 }
 
 export interface LayoutLike {
@@ -100,7 +126,7 @@ export class Core {
   /** the pointer handler paired with the renderer (torn down on unmount) */
   _pointer: { destroy(): void } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
-  _attachFn: ( ( container: HTMLElement ) => void ) | null;
+  _attachFn: ((container: HTMLElement) => void) | null;
   private _recoveringDevice: boolean;
   _viewport: Viewport;
 
@@ -113,7 +139,10 @@ export class Core {
   _readyResolved: boolean;
 
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
-  _pool: { nodes: ( Collection | undefined )[]; edges: ( Collection | undefined )[] };
+  _pool: {
+    nodes: (Collection | undefined)[];
+    edges: (Collection | undefined)[];
+  };
   private _container: HTMLElement | null;
   private _options: CytoscapeOptions;
   private _headlessWidth: number;
@@ -171,37 +200,39 @@ export class Core {
    *   applied here, and `style` compiles immediately.  Unrecognized keys are
    *   kept as given and returned by `options()`, never validated.
    */
-  constructor( options: CytoscapeOptions = {} ){
+  constructor(options: CytoscapeOptions = {}) {
     this._store = new GraphStore();
-    this._emitter = makeCoreEmitter<Core>( this );
-    this._styleEngine = new StyleEngine( this._store );
+    this._emitter = makeCoreEmitter<Core>(this);
+    this._styleEngine = new StyleEngine(this._store);
 
     // the compounds 0 <-> >0 transitions change paint eval config (the
     // opacity fold demotes the GPU opacity mapper, round 14.4)
-    this._store.onCompoundsToggled = () => { this._styleEngine.paintVersion++; };
+    this._store.onCompoundsToggled = () => {
+      this._styleEngine.paintVersion++;
+    };
 
     // a leaf <-> parent flip restyles the slot against the right sheet
     // group (nodes vs the parents overlay, round 14.6); the label entry
     // re-bakes through the same apply
-    this._store.onParentFlip = ( slot ) => {
-      this._styleEngine.applyBulk( 'nodes', [ slot ] );
+    this._store.onParentFlip = (slot) => {
+      this._styleEngine.applyBulk('nodes', [slot]);
     };
 
     // a reparented node's structural case conditions ({ child: ... } /
     // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7),
     // and any live GPU tween settles to the CPU first — the moved slots
     // now sit under CPU-side derivations (auto-bounds, folds; 14.11)
-    this._store.onReparented = ( slot ) => {
+    this._store.onReparented = (slot) => {
       this._animations.settleGpuAll();
-      this._styleEngine.refreshMapped( 'nodes', [ slot ], [ '::parent', '::child' ] );
+      this._styleEngine.refreshMapped('nodes', [slot], ['::parent', '::child']);
     };
-    this._animations = new AnimationManager( () => this._afterAnimationTick() );
+    this._animations = new AnimationManager(() => this._afterAnimationTick());
 
     // round 24.1: the engine's transition diffs spawn preset bulk tweens
     // through the manager — the round-21 channel eviction gives uniform
     // latest-wins between transitions and user animations
-    this._styleEngine.transitionSink = ( refs, writes, opts ) => {
-      this._animations.start( Animation.preset( this._store, refs, writes, opts ) );
+    this._styleEngine.transitionSink = (refs, writes, opts) => {
+      this._animations.start(Animation.preset(this._store, refs, writes, opts));
     };
     this._renderer = null;
     this._pointer = null;
@@ -224,56 +255,57 @@ export class Core {
     this._zoomingEnabled = options.zoomingEnabled ?? true;
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
-    this._boxSelectionIncludesLabels = options.boxSelectionIncludesLabels ?? false;
+    this._boxSelectionIncludesLabels =
+      options.boxSelectionIncludesLabels ?? false;
     this._boxSelectionMode = 'contain';
     this._selectionType = 'single';
     this._multiClickDebounceTime = 250; // v3's default
     this._wheelSensitivity = 1; // v3's default (a multiplier on the zoom rate)
     this._wheelSensitivityWarned = false;
     this._desktopTapThreshold = 4; // v3's defaults: css px of movement
-    this._touchTapThreshold = 8;   // before a press stops being a tap
+    this._touchTapThreshold = 8; // before a press stops being a tap
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
     this._batchPending = null;
 
-    if( options.boxSelectionMode != null ){
-      this.boxSelectionMode( options.boxSelectionMode );
+    if (options.boxSelectionMode != null) {
+      this.boxSelectionMode(options.boxSelectionMode);
     }
 
-    if( options.selectionType != null ){
-      this.selectionType( options.selectionType );
+    if (options.selectionType != null) {
+      this.selectionType(options.selectionType);
     }
 
-    if( options.multiClickDebounceTime != null ){
-      this.multiClickDebounceTime( options.multiClickDebounceTime );
+    if (options.multiClickDebounceTime != null) {
+      this.multiClickDebounceTime(options.multiClickDebounceTime);
     }
 
-    if( options.wheelSensitivity != null ){
-      this.wheelSensitivity( options.wheelSensitivity );
+    if (options.wheelSensitivity != null) {
+      this.wheelSensitivity(options.wheelSensitivity);
     }
 
-    if( options.desktopTapThreshold != null ){
-      this.desktopTapThreshold( options.desktopTapThreshold );
+    if (options.desktopTapThreshold != null) {
+      this.desktopTapThreshold(options.desktopTapThreshold);
     }
 
-    if( options.touchTapThreshold != null ){
-      this.touchTapThreshold( options.touchTapThreshold );
+    if (options.touchTapThreshold != null) {
+      this.touchTapThreshold(options.touchTapThreshold);
     }
 
-    if( options.tapholdDuration != null ){
-      this.tapholdDuration( options.tapholdDuration );
+    if (options.tapholdDuration != null) {
+      this.tapholdDuration(options.tapholdDuration);
     }
     this._readyResolved = this._container == null; // headless is ready immediately
-    this._viewport = new Viewport( this, {
+    this._viewport = new Viewport(this, {
       zoom: options.zoom,
       pan: options.pan,
       minZoom: options.minZoom,
-      maxZoom: options.maxZoom
-    } );
-    this.ready = Promise.resolve( this );
+      maxZoom: options.maxZoom,
+    });
+    this.ready = Promise.resolve(this);
 
-    if( options.style != null ){
-      this._styleEngine.setSheet( options.style );
+    if (options.style != null) {
+      this._styleEngine.setSheet(options.style);
     }
   }
 
@@ -298,17 +330,17 @@ export class Core {
    * @throws if the sheet references an unknown property or an invalid
    *   value
    */
-  style( sheet?: Stylesheet ): StyleEngine {
-    if( sheet != null ){
-      if( this._batchPending != null ){
+  style(sheet?: Stylesheet): StyleEngine {
+    if (sheet != null) {
+      if (this._batchPending != null) {
         // compile (and validate) now; apply once at the outermost endBatch
-        this._styleEngine.setSheet( sheet, false );
+        this._styleEngine.setSheet(sheet, false);
         this._batchPending.sheet = true;
       } else {
-        this._styleEngine.setSheet( sheet );
+        this._styleEngine.setSheet(sheet);
       }
 
-      this.emit( 'style' );
+      this.emit('style');
     }
 
     return this._styleEngine;
@@ -375,14 +407,18 @@ export class Core {
    * silently while batching or while a GPU force run owns positions.
    */
   _maybeCompact(): void {
-    if( this._batchDepth > 0 || this._destroyed ){ return; }
-    if( this._renderer?.forceActive() ){ return; } // re-checked on the next boundary
+    if (this._batchDepth > 0 || this._destroyed) {
+      return;
+    }
+    if (this._renderer?.forceActive()) {
+      return;
+    } // re-checked on the next boundary
 
-    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
-      const table = this._store.table( group );
+    for (const group of ['nodes', 'edges'] as GroupName[]) {
+      const table = this._store.table(group);
       const dead = table.highWater - table.count;
 
-      if( dead > COMPACT_FLOOR && dead > table.count ){
+      if (dead > COMPACT_FLOOR && dead > table.count) {
         this._compact();
 
         return;
@@ -401,14 +437,14 @@ export class Core {
    * style refs hold slots and the flush must not straddle a remap.
    */
   _compact(): void {
-    if( this._batchDepth > 0 ){
-      throw new Error( 'Can not compact inside a batch' );
+    if (this._batchDepth > 0) {
+      throw new Error('Can not compact inside a batch');
     }
 
-    if( this._renderer?.forceActive() ){
+    if (this._renderer?.forceActive()) {
       // the sim owns node.position on-device (the 18.3 lease); moving
       // slots under it would scatter the integrator's writes — defer
-      console.warn( 'Deferring slot compaction: a GPU force layout is running' );
+      console.warn('Deferring slot compaction: a GPU force layout is running');
 
       return;
     }
@@ -419,45 +455,53 @@ export class Core {
 
     const result = this._store.compact();
 
-    if( result.nodes == null && result.edges == null ){ return; }
+    if (result.nodes == null && result.edges == null) {
+      return;
+    }
 
-    this._remapPool( 'nodes', result.nodes?.remap ?? null );
-    this._remapPool( 'edges', result.edges?.remap ?? null );
+    this._remapPool('nodes', result.nodes?.remap ?? null);
+    this._remapPool('edges', result.edges?.remap ?? null);
 
-    for( const listener of this._emitter.listeners ){
+    for (const listener of this._emitter.listeners) {
       const qualifier = listener.qualifier;
 
-      if( qualifier?.ref != null ){
-        this._store.isCurrent( qualifier.ref ); // repairs in place
-        qualifier.key = 'ref:' + refKey( qualifier.ref );
+      if (qualifier?.ref != null) {
+        this._store.isCurrent(qualifier.ref); // repairs in place
+        qualifier.key = 'ref:' + refKey(qualifier.ref);
       }
     }
 
-    this._animations.onCompacted( this._store );
+    this._animations.onCompacted(this._store);
     this._styleEngine.onCompacted(); // refresh the styled-generation marks (24.1)
   }
 
   /** Move the interned singleton handles to their elements' new slots
    * (dead slots' handles drop out of the pool; holders keep dead reads). */
-  private _remapPool( group: GroupName, remap: Uint32Array | null ): void {
-    if( remap == null ){ return; }
+  private _remapPool(group: GroupName, remap: Uint32Array | null): void {
+    if (remap == null) {
+      return;
+    }
 
-    const pool = this._pool[ group ];
-    const n = Math.min( remap.length, pool.length );
+    const pool = this._pool[group];
+    const n = Math.min(remap.length, pool.length);
 
-    for( let s = 0; s < n; s++ ){
-      const ele = pool[ s ];
+    for (let s = 0; s < n; s++) {
+      const ele = pool[s];
 
-      if( ele == null ){ continue; }
+      if (ele == null) {
+        continue;
+      }
 
-      pool[ s ] = undefined;
+      pool[s] = undefined;
 
-      const d = remap[ s ];
+      const d = remap[s];
 
-      if( d === NO_SLOT ){ continue; }
+      if (d === NO_SLOT) {
+        continue;
+      }
 
       void ele._refs; // the epoch-guarded getter repairs the singleton's ref
-      pool[ d ] = ele;
+      pool[d] = ele;
     }
   }
 
@@ -469,8 +513,13 @@ export class Core {
    * @returns this core, for chaining
    */
   startBatch(): this {
-    if( this._batchDepth === 0 ){
-      this._batchPending = { sheet: false, style: [], mapped: [], mappedKeys: new Set() };
+    if (this._batchDepth === 0) {
+      this._batchPending = {
+        sheet: false,
+        style: [],
+        mapped: [],
+        mappedKeys: new Set(),
+      };
     }
 
     this._batchDepth++;
@@ -491,17 +540,21 @@ export class Core {
    * @returns this core, for chaining
    */
   endBatch(): this {
-    if( this._batchDepth === 0 ){ return this; }
+    if (this._batchDepth === 0) {
+      return this;
+    }
 
     this._batchDepth--;
 
-    if( this._batchDepth > 0 ){ return this; }
+    if (this._batchDepth > 0) {
+      return this;
+    }
 
     const pending = this._batchPending as BatchPending;
 
     this._batchPending = null;
 
-    if( pending.sheet ){
+    if (pending.sheet) {
       this._styleEngine.applyAll(); // covers every live element, so the per-slot work is subsumed
       this._maybeCompact();
 
@@ -512,28 +565,32 @@ export class Core {
     const nodeSlots: number[] = [];
     const edgeSlots: number[] = [];
 
-    for( const ref of pending.style ){
-      if( !store.isCurrent( ref ) ){ continue; } // added then removed within the batch
+    for (const ref of pending.style) {
+      if (!store.isCurrent(ref)) {
+        continue;
+      } // added then removed within the batch
 
-      ( ref.group === 'nodes' ? nodeSlots : edgeSlots ).push( ref.slot );
+      (ref.group === 'nodes' ? nodeSlots : edgeSlots).push(ref.slot);
     }
 
-    this._styleEngine.applyBulk( 'nodes', nodeSlots );
-    this._styleEngine.applyBulk( 'edges', edgeSlots );
+    this._styleEngine.applyBulk('nodes', nodeSlots);
+    this._styleEngine.applyBulk('edges', edgeSlots);
 
     const mappedNodes: number[] = [];
     const mappedEdges: number[] = [];
 
-    for( const ref of pending.mapped ){
-      if( !store.isCurrent( ref ) ){ continue; }
+    for (const ref of pending.mapped) {
+      if (!store.isCurrent(ref)) {
+        continue;
+      }
 
-      ( ref.group === 'nodes' ? mappedNodes : mappedEdges ).push( ref.slot );
+      (ref.group === 'nodes' ? mappedNodes : mappedEdges).push(ref.slot);
     }
 
-    const keys = [ ...pending.mappedKeys ];
+    const keys = [...pending.mappedKeys];
 
-    this._styleEngine.refreshMapped( 'nodes', mappedNodes, keys );
-    this._styleEngine.refreshMapped( 'edges', mappedEdges, keys );
+    this._styleEngine.refreshMapped('nodes', mappedNodes, keys);
+    this._styleEngine.refreshMapped('edges', mappedEdges, keys);
 
     this._maybeCompact(); // removals inside the batch deferred to here
 
@@ -547,7 +604,7 @@ export class Core {
    * @param fn — the mutations to batch; its return value is discarded
    * @returns this core, for chaining
    */
-  batch( fn: () => void ): this {
+  batch(fn: () => void): this {
     this.startBatch();
 
     try {
@@ -565,12 +622,12 @@ export class Core {
    * @param map — element id → the data keys to merge into that element
    * @returns this core, for chaining
    */
-  batchData( map: Record<string, Record<string, unknown>> ): this {
-    return this.batch( () => {
-      for( const id of Object.keys( map ) ){
-        this.getElementById( id ).data( map[ id ] );
+  batchData(map: Record<string, Record<string, unknown>>): this {
+    return this.batch(() => {
+      for (const id of Object.keys(map)) {
+        this.getElementById(id).data(map[id]);
       }
-    } );
+    });
   }
 
   // -- layout --
@@ -597,33 +654,46 @@ export class Core {
    * @throws if neither a known `name` nor an `impl` is given
    * @see Collection#layout to lay out a subset
    */
-  layout( options: LayoutOptions ): Layout {
+  layout(options: LayoutOptions): Layout {
     // the extension contract (round 17.5): direct objects, no registry
-    if( ( options as { impl?: unknown } )?.impl != null ){
-      return new CustomLayout( this, options as CustomLayoutOptions );
+    if ((options as { impl?: unknown })?.impl != null) {
+      return new CustomLayout(this, options as CustomLayoutOptions);
     }
 
-    if( options?.name === 'grid' ){ return new GridLayout( this, options ); }
-    if( options?.name === 'preset' ){ return new PresetLayout( this, options ); }
-    if( options?.name === 'circle' ){ return new CircleLayout( this, options ); }
-    if( options?.name === 'concentric' ){ return new ConcentricLayout( this, options ); }
-    if( options?.name === 'breadthfirst' ){ return new BreadthFirstLayout( this, options ); }
-    if( options?.name === 'random' ){ return new RandomLayout( this, options ); }
+    if (options?.name === 'grid') {
+      return new GridLayout(this, options);
+    }
+    if (options?.name === 'preset') {
+      return new PresetLayout(this, options);
+    }
+    if (options?.name === 'circle') {
+      return new CircleLayout(this, options);
+    }
+    if (options?.name === 'concentric') {
+      return new ConcentricLayout(this, options);
+    }
+    if (options?.name === 'breadthfirst') {
+      return new BreadthFirstLayout(this, options);
+    }
+    if (options?.name === 'random') {
+      return new RandomLayout(this, options);
+    }
 
     // the built-in force layout (round 18.2) rides the extension
     // contract — exactly what an external layout would do
-    if( ( options as { name?: string } )?.name === 'force' ){
-      return new CustomLayout( this, {
-        ...( options as object ), impl: ForceLayoutImpl
-      } as CustomLayoutOptions );
+    if ((options as { name?: string })?.name === 'force') {
+      return new CustomLayout(this, {
+        ...(options as object),
+        impl: ForceLayoutImpl,
+      } as CustomLayoutOptions);
     }
 
-    const got = ( options as { name?: string } | null )?.name;
+    const got = (options as { name?: string } | null)?.name;
 
     throw new Error(
       `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
-      `'breadthfirst', 'random', 'force') or an impl (the extension contract)` +
-      ( got != null ? `; got name '${got}'` : '' )
+        `'breadthfirst', 'random', 'force') or an impl (the extension contract)` +
+        (got != null ? `; got name '${got}'` : ''),
     );
   }
 
@@ -655,16 +725,18 @@ export class Core {
    * @param input — elements in definition, columnar or wire form
    * @returns a collection of the added elements
    */
-  add( input: ElementsInput ): Collection {
-    const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
-    const refs = isColumnarElements( defs )
-      ? this._columnarRefs( this._addColumnar( defs ) )
-      : this._addDefs( defs );
-    const added = new Collection( this, refs, { unique: true } );
+  add(input: ElementsInput): Collection {
+    const defs = isSerializedElements(input)
+      ? deserializeElements(input)
+      : input;
+    const refs = isColumnarElements(defs)
+      ? this._columnarRefs(this._addColumnar(defs))
+      : this._addDefs(defs);
+    const added = new Collection(this, refs, { unique: true });
 
-    if( this._hasListeners( 'add' ) ){
-      for( let i = 0; i < added.length; i++ ){
-        this._emitOnEle( 'add', added[ i ] );
+    if (this._hasListeners('add')) {
+      for (let i = 0; i < added.length; i++) {
+        this._emitOnEle('add', added[i]);
       }
     }
 
@@ -678,120 +750,152 @@ export class Core {
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
    */
-  _bulkAdd( input: ElementsInput ): void {
-    const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
+  _bulkAdd(input: ElementsInput): void {
+    const defs = isSerializedElements(input)
+      ? deserializeElements(input)
+      : input;
 
-    if( isColumnarElements( defs ) ){
+    if (isColumnarElements(defs)) {
       // graph-level data rides the wire since round 39.2, and only this
       // path applies it: at construction the graph's data() is empty, so
       // there is nothing to clobber.  `add()` deliberately drops it.
-      if( defs.data != null ){ Object.assign( this._graphData, defs.data ); }
+      if (defs.data != null) {
+        Object.assign(this._graphData, defs.data);
+      }
 
-      const { nodeSlots, edgeSlots } = this._addColumnar( defs );
+      const { nodeSlots, edgeSlots } = this._addColumnar(defs);
 
-      if( this._hasListeners( 'add' ) ){
-        for( const slot of nodeSlots ){ this._emitOnEle( 'add', this._ele( 'nodes', slot ) ); }
-        for( const slot of edgeSlots ){ this._emitOnEle( 'add', this._ele( 'edges', slot ) ); }
+      if (this._hasListeners('add')) {
+        for (const slot of nodeSlots) {
+          this._emitOnEle('add', this._ele('nodes', slot));
+        }
+        for (const slot of edgeSlots) {
+          this._emitOnEle('add', this._ele('edges', slot));
+        }
       }
 
       return;
     }
 
-    const refs = this._addDefs( defs );
+    const refs = this._addDefs(defs);
 
-    if( this._hasListeners( 'add' ) ){
-      for( const ref of refs ){
-        this._emitOnEle( 'add', this._eleFromRef( ref ) );
+    if (this._hasListeners('add')) {
+      for (const ref of refs) {
+        this._emitOnEle('add', this._eleFromRef(ref));
       }
     }
   }
 
   /** Columnar ingest: store-level bulk adds + one bulk style pass. */
-  private _addColumnar( elements: ColumnarElements ): { nodeSlots: Uint32Array; edgeSlots: Uint32Array } {
+  private _addColumnar(elements: ColumnarElements): {
+    nodeSlots: Uint32Array;
+    edgeSlots: Uint32Array;
+  } {
     const newId = (): string => this._newId();
-    const nodeSlots = elements.nodes != null && elements.nodes.count > 0
-      ? this._store.addNodesColumnar( elements.nodes, newId )
-      : new Uint32Array( 0 );
-    const edgeSlots = elements.edges != null && elements.edges.count > 0
-      ? this._store.addEdgesColumnar( elements.edges, nodeSlots, newId )
-      : new Uint32Array( 0 );
+    const nodeSlots =
+      elements.nodes != null && elements.nodes.count > 0
+        ? this._store.addNodesColumnar(elements.nodes, newId)
+        : new Uint32Array(0);
+    const edgeSlots =
+      elements.edges != null && elements.edges.count > 0
+        ? this._store.addEdgesColumnar(elements.edges, nodeSlots, newId)
+        : new Uint32Array(0);
 
-    this._applyStyle( 'nodes', nodeSlots );
-    this._applyStyle( 'edges', edgeSlots );
+    this._applyStyle('nodes', nodeSlots);
+    this._applyStyle('edges', edgeSlots);
 
     return { nodeSlots, edgeSlots };
   }
 
-  private _columnarRefs( { nodeSlots, edgeSlots }: { nodeSlots: Uint32Array; edgeSlots: Uint32Array } ): Ref[] {
+  private _columnarRefs({
+    nodeSlots,
+    edgeSlots,
+  }: {
+    nodeSlots: Uint32Array;
+    edgeSlots: Uint32Array;
+  }): Ref[] {
     const refs: Ref[] = [];
 
-    for( const slot of nodeSlots ){ refs.push( this._store.ref( 'nodes', slot ) ); }
-    for( const slot of edgeSlots ){ refs.push( this._store.ref( 'edges', slot ) ); }
+    for (const slot of nodeSlots) {
+      refs.push(this._store.ref('nodes', slot));
+    }
+    for (const slot of edgeSlots) {
+      refs.push(this._store.ref('edges', slot));
+    }
 
     return refs;
   }
 
   /** Shared add loop: nodes first so edges can reference same-call nodes. */
-  private _addDefs( defs: ElementsDefinition | ElementDefinition ): Ref[] {
-    const { nodes: nodeDefs, edges: edgeDefs } = partitionDefs( defs );
+  private _addDefs(defs: ElementsDefinition | ElementDefinition): Ref[] {
+    const { nodes: nodeDefs, edges: edgeDefs } = partitionDefs(defs);
 
-    this._store.reserve( nodeDefs.length, edgeDefs.length );
+    this._store.reserve(nodeDefs.length, edgeDefs.length);
 
     const refs: Ref[] = [];
     const nodeSlots: number[] = [];
     const edgeSlots: number[] = [];
 
-    for( const def of nodeDefs ){
+    for (const def of nodeDefs) {
       const data = def.data ?? {};
-      const id = data.id != null ? String( data.id ) : this._newId();
+      const id = data.id != null ? String(data.id) : this._newId();
       const pos = def.position ?? { x: 0, y: 0 };
-      const slot = this._store.addNode( id, pos.x, pos.y, def );
+      const slot = this._store.addNode(id, pos.x, pos.y, def);
 
-      this._store.setDefData( 'nodes', slot, data );
-      nodeSlots.push( slot );
-      refs.push( this._store.ref( 'nodes', slot ) );
+      this._store.setDefData('nodes', slot, data);
+      nodeSlots.push(slot);
+      refs.push(this._store.ref('nodes', slot));
     }
 
     // second pass (round 14.2): resolve def parents once the batch's nodes
     // all exist, so forward references work in any def order; an unknown or
     // non-node parent warns and leaves the node an orphan (v3's rule, with
     // the silent-drop case upgraded to a warning)
-    for( let i = 0; i < nodeDefs.length; i++ ){
-      const parent = nodeDefs[ i ].data?.parent;
+    for (let i = 0; i < nodeDefs.length; i++) {
+      const parent = nodeDefs[i].data?.parent;
 
-      if( parent == null ){ continue; }
+      if (parent == null) {
+        continue;
+      }
 
-      const parentRef = this._store.lookup( String( parent ) );
+      const parentRef = this._store.lookup(String(parent));
 
-      if( parentRef == null || parentRef.group !== 'nodes' ){
+      if (parentRef == null || parentRef.group !== 'nodes') {
         console.warn(
-          `Node '${this._store.idAt( 'nodes', nodeSlots[ i ] )}' has nonexistant parent ` +
-          `'${String( parent )}'; added as an orphan`
+          `Node '${this._store.idAt('nodes', nodeSlots[i])}' has nonexistant parent ` +
+            `'${String(parent)}'; added as an orphan`,
         );
 
         continue;
       }
 
-      this._store.setParent( nodeSlots[ i ], parentRef.slot );
+      this._store.setParent(nodeSlots[i], parentRef.slot);
     }
 
-    for( const def of edgeDefs ){
+    for (const def of edgeDefs) {
       const data = def.data ?? {};
-      const id = data.id != null ? String( data.id ) : this._newId();
+      const id = data.id != null ? String(data.id) : this._newId();
 
-      if( data.source == null || data.target == null ){
-        throw new Error( `Can not create edge '${id}' without a source and target` );
+      if (data.source == null || data.target == null) {
+        throw new Error(
+          `Can not create edge '${id}' without a source and target`,
+        );
       }
 
-      const slot = this._store.addEdge( id, String( data.source ), String( data.target ), def );
+      const slot = this._store.addEdge(
+        id,
+        String(data.source),
+        String(data.target),
+        def,
+      );
 
-      this._store.setDefData( 'edges', slot, data );
-      edgeSlots.push( slot );
-      refs.push( this._store.ref( 'edges', slot ) );
+      this._store.setDefData('edges', slot, data);
+      edgeSlots.push(slot);
+      refs.push(this._store.ref('edges', slot));
     }
 
-    this._applyStyle( 'nodes', nodeSlots );
-    this._applyStyle( 'edges', edgeSlots );
+    this._applyStyle('nodes', nodeSlots);
+    this._applyStyle('edges', edgeSlots);
 
     return refs;
   }
@@ -804,7 +908,7 @@ export class Core {
    * @param eles — the elements to remove
    * @returns the removed elements
    */
-  remove( eles: Collection ): Collection {
+  remove(eles: Collection): Collection {
     return eles.remove();
   }
 
@@ -817,7 +921,7 @@ export class Core {
    * @returns a collection of zero elements
    */
   collection(): Collection {
-    return new Collection( this, [] );
+    return new Collection(this, []);
   }
 
   /**
@@ -827,10 +931,10 @@ export class Core {
    * @returns a collection of one element, or an empty collection when no
    *   element has that id
    */
-  getElementById( id: string ): Collection {
-    const ref = this._store.lookup( id );
+  getElementById(id: string): Collection {
+    const ref = this._store.lookup(id);
 
-    return ref == null ? this.collection() : this._ele( ref.group, ref.slot );
+    return ref == null ? this.collection() : this._ele(ref.group, ref.slot);
   }
 
   /**
@@ -854,8 +958,8 @@ export class Core {
    *   omit for everything
    * @returns the matching elements
    */
-  elements( query?: Query | EleFilterFn ): Collection {
-    return query === undefined ? this._allOf( null ) : this._query( query, null );
+  elements(query?: Query | EleFilterFn): Collection {
+    return query === undefined ? this._allOf(null) : this._query(query, null);
   }
 
   /**
@@ -866,8 +970,10 @@ export class Core {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
    */
-  nodes( query?: Query | EleFilterFn ): Collection {
-    return query === undefined ? this._allOf( 'nodes' ) : this._query( query, 'nodes' );
+  nodes(query?: Query | EleFilterFn): Collection {
+    return query === undefined
+      ? this._allOf('nodes')
+      : this._query(query, 'nodes');
   }
 
   /**
@@ -878,8 +984,10 @@ export class Core {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
    */
-  edges( query?: Query | EleFilterFn ): Collection {
-    return query === undefined ? this._allOf( 'edges' ) : this._query( query, 'edges' );
+  edges(query?: Query | EleFilterFn): Collection {
+    return query === undefined
+      ? this._allOf('edges')
+      : this._query(query, 'edges');
   }
 
   /**
@@ -889,8 +997,8 @@ export class Core {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching elements
    */
-  filter( query: Query | EleFilterFn ): Collection {
-    return this._query( query, null );
+  filter(query: Query | EleFilterFn): Collection {
+    return this._query(query, null);
   }
 
   /**
@@ -915,22 +1023,36 @@ export class Core {
    * immutable, so nothing can observe the difference except identity
    * itself.
    */
-  private _allOf( restrict: GroupName | null ): Collection {
+  private _allOf(restrict: GroupName | null): Collection {
     const epoch = this._store.structureEpoch;
     const cached = this._allCache;
 
-    if( cached != null && cached.epoch === epoch ){
-      const hit = restrict == null ? cached.all : restrict === 'nodes' ? cached.nodes : cached.edges;
+    if (cached != null && cached.epoch === epoch) {
+      const hit =
+        restrict == null
+          ? cached.all
+          : restrict === 'nodes'
+            ? cached.nodes
+            : cached.edges;
 
-      if( hit != null ){ return hit; }
+      if (hit != null) {
+        return hit;
+      }
     }
 
-    const fresh = this._query( undefined, restrict );
-    const slot = cached != null && cached.epoch === epoch
-      ? cached
-      : { epoch, all: null, nodes: null, edges: null } as AllCache;
+    const fresh = this._query(undefined, restrict);
+    const slot =
+      cached != null && cached.epoch === epoch
+        ? cached
+        : ({ epoch, all: null, nodes: null, edges: null } as AllCache);
 
-    if( restrict == null ){ slot.all = fresh; } else if( restrict === 'nodes' ){ slot.nodes = fresh; } else { slot.edges = fresh; }
+    if (restrict == null) {
+      slot.all = fresh;
+    } else if (restrict === 'nodes') {
+      slot.nodes = fresh;
+    } else {
+      slot.edges = fresh;
+    }
 
     this._allCache = slot;
 
@@ -944,14 +1066,17 @@ export class Core {
    * the group(s) and filter per element.  `restrict` narrows the result
    * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
    */
-  private _query( query: Query | EleFilterFn | undefined, restrict: GroupName | null ): Collection {
-    if( typeof query === 'function' ){
-      return this._query( undefined, restrict ).filter( query );
+  private _query(
+    query: Query | EleFilterFn | undefined,
+    restrict: GroupName | null,
+  ): Collection {
+    if (typeof query === 'function') {
+      return this._query(undefined, restrict).filter(query);
     }
 
-    const plan = compileQuery( query ?? {}, restrict );
+    const plan = compileQuery(query ?? {}, restrict);
 
-    return this._scanCollection( plan.nodes, plan.edges, plan.data );
+    return this._scanCollection(plan.nodes, plan.edges, plan.data);
   }
 
   /**
@@ -975,11 +1100,12 @@ export class Core {
    * @param y2 — that corner's model y
    * @returns the contained elements
    */
-  elementsInBox( x1: number, y1: number, x2: number, y2: number ): Collection {
+  elementsInBox(x1: number, y1: number, x2: number, y2: number): Collection {
     return new Collection(
       this,
-      this._store.refsInBox( x1, y1, x2, y2, this._boxSelectionIncludesLabels ),
-      { unique: true, live: true } );
+      this._store.refsInBox(x1, y1, x2, y2, this._boxSelectionIncludesLabels),
+      { unique: true, live: true },
+    );
   }
 
   /**
@@ -989,34 +1115,72 @@ export class Core {
    * both pointer paths (mouse/pen release and the three-finger touch box)
    * come through here so they cannot drift apart.
    */
-  _elementsInGestureBox( x1: number, y1: number, x2: number, y2: number ): Collection {
+  _elementsInGestureBox(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ): Collection {
     return new Collection(
       this,
       this._store.refsInBox(
-        x1, y1, x2, y2, this._boxSelectionIncludesLabels, this._boxSelectionMode ),
-      { unique: true, live: true } );
+        x1,
+        y1,
+        x2,
+        y2,
+        this._boxSelectionIncludesLabels,
+        this._boxSelectionMode,
+      ),
+      { unique: true, live: true },
+    );
   }
 
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
   private _scanCollection(
-    nodeTest: FlagTest | null, edgeTest: FlagTest | null,
-    dataConds: CompiledCondition[] | null = null
+    nodeTest: FlagTest | null,
+    edgeTest: FlagTest | null,
+    dataConds: CompiledCondition[] | null = null,
   ): Collection {
     const store = this._store;
-    const cap = ( nodeTest == null ? 0 : store.count( 'nodes' ) )
-      + ( edgeTest == null ? 0 : store.count( 'edges' ) );
-    const refs: Ref[] = new Array( cap );
-    const dataTests = dataConds == null
-      ? undefined
-      : dataConds.map( cond => ( { key: cond.key, test: ( v: unknown ) => testCondition( cond, v ) } ) );
+    const cap =
+      (nodeTest == null ? 0 : store.count('nodes')) +
+      (edgeTest == null ? 0 : store.count('edges'));
+    const refs: Ref[] = new Array(cap);
+    const dataTests =
+      dataConds == null
+        ? undefined
+        : dataConds.map((cond) => ({
+            key: cond.key,
+            test: (v: unknown) => testCondition(cond, v),
+          }));
     let n = 0;
 
-    if( nodeTest != null ){ n = store.scanRefsInto( refs, n, 'nodes', nodeTest.mask, nodeTest.want, dataTests ); }
-    if( edgeTest != null ){ n = store.scanRefsInto( refs, n, 'edges', edgeTest.mask, edgeTest.want, dataTests ); }
+    if (nodeTest != null) {
+      n = store.scanRefsInto(
+        refs,
+        n,
+        'nodes',
+        nodeTest.mask,
+        nodeTest.want,
+        dataTests,
+      );
+    }
+    if (edgeTest != null) {
+      n = store.scanRefsInto(
+        refs,
+        n,
+        'edges',
+        edgeTest.mask,
+        edgeTest.want,
+        dataTests,
+      );
+    }
 
-    if( n !== refs.length ){ refs.length = n; }
+    if (n !== refs.length) {
+      refs.length = n;
+    }
 
-    return new Collection( this, refs, { unique: true, live: true } );
+    return new Collection(this, refs, { unique: true, live: true });
   }
 
   // -- events --
@@ -1056,7 +1220,7 @@ export class Core {
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
-  on( events: string, callback: EventHandler ): this;
+  on(events: string, callback: EventHandler): this;
   /**
    * Listen with predicate delegation: the handler runs only for events
    * whose target satisfies `predicate`.
@@ -1067,12 +1231,20 @@ export class Core {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  on( events: string, predicate: ElePredicate, callback: EventHandler ): this;
-  on( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
-    if( callback != null ){
-      this._emitter.on( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
+  on(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  on(
+    events: string,
+    predicateOrCb?: ElePredicate | EventHandler,
+    callback?: EventHandler,
+  ): this {
+    if (callback != null) {
+      this._emitter.on(
+        events,
+        predicateQualifier(predicateOrCb as ElePredicate),
+        callback,
+      );
     } else {
-      this._emitter.on( events, null, predicateOrCb as EventHandler | undefined );
+      this._emitter.on(events, null, predicateOrCb as EventHandler | undefined);
     }
 
     return this;
@@ -1093,7 +1265,7 @@ export class Core {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  one( events: string, callback: EventHandler ): this;
+  one(events: string, callback: EventHandler): this;
   /**
    * Like `on()` with delegation, but the handler runs at most once.
    *
@@ -1102,12 +1274,24 @@ export class Core {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  one( events: string, predicate: ElePredicate, callback: EventHandler ): this;
-  one( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
-    if( callback != null ){
-      this._emitter.one( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
+  one(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  one(
+    events: string,
+    predicateOrCb?: ElePredicate | EventHandler,
+    callback?: EventHandler,
+  ): this {
+    if (callback != null) {
+      this._emitter.one(
+        events,
+        predicateQualifier(predicateOrCb as ElePredicate),
+        callback,
+      );
     } else {
-      this._emitter.one( events, null, predicateOrCb as EventHandler | undefined );
+      this._emitter.one(
+        events,
+        null,
+        predicateOrCb as EventHandler | undefined,
+      );
     }
 
     return this;
@@ -1128,7 +1312,7 @@ export class Core {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  off( events: string, callback?: EventHandler ): this;
+  off(events: string, callback?: EventHandler): this;
   /**
    * Remove a delegated handler.  The predicate must be the *same
    * function object* it was registered with — predicates compare by
@@ -1139,12 +1323,24 @@ export class Core {
    * @param callback — the handler to remove
    * @returns this core, for chaining
    */
-  off( events: string, predicate: ElePredicate, callback: EventHandler ): this;
-  off( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
-    if( callback != null ){
-      this._emitter.off( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
+  off(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  off(
+    events: string,
+    predicateOrCb?: ElePredicate | EventHandler,
+    callback?: EventHandler,
+  ): this {
+    if (callback != null) {
+      this._emitter.off(
+        events,
+        predicateQualifier(predicateOrCb as ElePredicate),
+        callback,
+      );
     } else {
-      this._emitter.off( events, null, predicateOrCb as EventHandler | undefined );
+      this._emitter.off(
+        events,
+        null,
+        predicateOrCb as EventHandler | undefined,
+      );
     }
 
     return this;
@@ -1181,8 +1377,8 @@ export class Core {
    *   event object
    * @returns this core, for chaining
    */
-  emit( events: string | EventProps, extraParams?: unknown[] ): this {
-    this._emitter.emit( events, extraParams );
+  emit(events: string | EventProps, extraParams?: unknown[]): this {
+    this._emitter.emit(events, extraParams);
 
     return this;
   }
@@ -1197,14 +1393,14 @@ export class Core {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn( events: string, predicate?: ElePredicate ): Promise<Event> {
-    return new Promise( resolve => {
-      if( predicate != null ){
-        this.one( events, predicate, event => resolve( event ) );
+  promiseOn(events: string, predicate?: ElePredicate): Promise<Event> {
+    return new Promise((resolve) => {
+      if (predicate != null) {
+        this.one(events, predicate, (event) => resolve(event));
       } else {
-        this.one( events, ( event: Event ) => resolve( event ) );
+        this.one(events, (event: Event) => resolve(event));
       }
-    } );
+    });
   }
 
   declare pon: this['promiseOn'];
@@ -1220,13 +1416,13 @@ export class Core {
    *   to zoom about a fixed point; omit to read
    * @returns the current zoom when reading, this core when setting
    */
-  zoom( zoom?: number | Parameters<Viewport['setZoom']>[0] ): number | this {
-    if( zoom === undefined ){
+  zoom(zoom?: number | Parameters<Viewport['setZoom']>[0]): number | this {
+    if (zoom === undefined) {
       return this._viewport.zoom();
     }
 
-    if( this._zoomingEnabled && this._viewport.setZoom( zoom ) ){
-      this._emitViewportEvents( [ 'zoom' ] );
+    if (this._zoomingEnabled && this._viewport.setZoom(zoom)) {
+      this._emitViewportEvents(['zoom']);
     }
 
     return this;
@@ -1239,13 +1435,13 @@ export class Core {
    * @param pan — the new rendered-space offset; omit to read
    * @returns the current pan when reading, this core when setting
    */
-  pan( pan?: Position ): Position | this {
-    if( pan === undefined ){
+  pan(pan?: Position): Position | this {
+    if (pan === undefined) {
       return this._viewport.pan();
     }
 
-    if( this._panningEnabled && this._viewport.setPan( pan ) ){
-      this._emitViewportEvents( [ 'pan' ] );
+    if (this._panningEnabled && this._viewport.setPan(pan)) {
+      this._emitViewportEvents(['pan']);
     }
 
     return this;
@@ -1257,9 +1453,9 @@ export class Core {
    * @param delta — the rendered-space offset to add
    * @returns this core, for chaining
    */
-  panBy( delta: Position ): this {
-    if( this._panningEnabled && this._viewport.panBy( delta ) ){
-      this._emitViewportEvents( [ 'pan' ] );
+  panBy(delta: Position): this {
+    if (this._panningEnabled && this._viewport.panBy(delta)) {
+      this._emitViewportEvents(['pan']);
     }
 
     return this;
@@ -1276,13 +1472,15 @@ export class Core {
    * @param padding — rendered-space padding around the box
    * @returns this core, for chaining
    */
-  fit( eles?: Collection, padding: number = 0 ): this {
-    const bb = this._boundsOf( eles );
+  fit(eles?: Collection, padding: number = 0): this {
+    const bb = this._boundsOf(eles);
 
-    if( bb == null ){ return this; }
+    if (bb == null) {
+      return this;
+    }
 
-    this._viewport.fit( bb, padding );
-    this._emitViewportEvents( [ 'zoom', 'pan', 'fit' ] );
+    this._viewport.fit(bb, padding);
+    this._emitViewportEvents(['zoom', 'pan', 'fit']);
 
     return this;
   }
@@ -1294,13 +1492,15 @@ export class Core {
    * @param eles — the elements to centre on; omit for the whole graph
    * @returns this core, for chaining
    */
-  center( eles?: Collection ): this {
-    const bb = this._boundsOf( eles );
+  center(eles?: Collection): this {
+    const bb = this._boundsOf(eles);
 
-    if( bb == null ){ return this; }
+    if (bb == null) {
+      return this;
+    }
 
-    if( this._viewport.centerOn( bb ) ){
-      this._emitViewportEvents( [ 'pan' ] );
+    if (this._viewport.centerOn(bb)) {
+      this._emitViewportEvents(['pan']);
     }
 
     return this;
@@ -1321,18 +1521,23 @@ export class Core {
    *   `center` beats `panBy` beats `pan`, and `panBy` with `pan` throws
    * @returns this core, for chaining
    */
-  animate( opts: AnimateOptions ): this {
+  animate(opts: AnimateOptions): this {
     // resolve first, so a `panBy` delta gates on panningEnabled exactly
     // as the absolute target it resolves to
-    const resolved = this._resolveViewportTargets( opts );
+    const resolved = this._resolveViewportTargets(opts);
 
-    if( opts.fit == null && opts.center == null ){
-      if( resolved.pan != null && !this._panningEnabled ){ return this; }
-      if( resolved.zoom != null && !this._zoomingEnabled ){ return this; }
+    if (opts.fit == null && opts.center == null) {
+      if (resolved.pan != null && !this._panningEnabled) {
+        return this;
+      }
+      if (resolved.zoom != null && !this._zoomingEnabled) {
+        return this;
+      }
     }
 
     this._animations.start(
-      new Animation( this._store, this._viewport, [], true, resolved ) );
+      new Animation(this._store, this._viewport, [], true, resolved),
+    );
 
     return this;
   }
@@ -1345,20 +1550,38 @@ export class Core {
    *   `play()`
    * @returns the handle
    */
-  animation( opts: AnimateOptions ): AnimationHandle {
-    const ani = new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) );
+  animation(opts: AnimateOptions): AnimationHandle {
+    const ani = new Animation(
+      this._store,
+      this._viewport,
+      [],
+      true,
+      this._resolveViewportTargets(opts),
+    );
 
     const handle: AnimationHandle = {
-      play: () => { this._animations.start( ani ); return ani.promise(); },
-      stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
+      play: () => {
+        this._animations.start(ani);
+        return ani.promise();
+      },
+      stop: (jumpToEnd = false) => ani.stop(jumpToEnd),
       promise: () => ani.promise(),
       playing: () => ani.running && !ani.paused,
       // round 24.3: the controls (progress is read-only — no scrubbing)
-      pause: () => { this._animations.pauseAni( ani ); return handle; },
-      resume: () => { this._animations.resumeAni( ani ); return handle; },
-      reverse: () => { this._animations.reverseAni( ani ); return handle; },
+      pause: () => {
+        this._animations.pauseAni(ani);
+        return handle;
+      },
+      resume: () => {
+        this._animations.resumeAni(ani);
+        return handle;
+      },
+      reverse: () => {
+        this._animations.reverseAni(ani);
+        return handle;
+      },
       progress: () => ani.progress,
-      paused: () => ani.paused
+      paused: () => ani.paused,
     };
 
     return handle;
@@ -1369,29 +1592,41 @@ export class Core {
    * creation time, as v3 does.  Precedence follows v3's override order:
    * `fit` beats `center` beats `panBy` beats an explicit `pan`.
    */
-  private _resolveViewportTargets( opts: AnimateOptions ): AnimateOptions {
-    if( opts.panBy != null && opts.pan != null ){
+  private _resolveViewportTargets(opts: AnimateOptions): AnimateOptions {
+    if (opts.panBy != null && opts.pan != null) {
       throw new Error(
         `'panBy' and 'pan' both target the viewport pan — pass one ` +
-        `(v3 silently preferred panBy; v4 does not guess)` );
+          `(v3 silently preferred panBy; v4 does not guess)`,
+      );
     }
 
-    if( opts.fit != null ){
+    if (opts.fit != null) {
       const fit = opts.fit;
       const padding = fit.padding ?? 0;
-      const fv = fit.boundingBox != null
-        ? this._viewport.fitViewport( math.makeBoundingBox( fit.boundingBox ) as BoundsLike, padding )
-        : this.getFitViewport( fit.eles as Collection | undefined, padding );
+      const fv =
+        fit.boundingBox != null
+          ? this._viewport.fitViewport(
+              math.makeBoundingBox(fit.boundingBox) as BoundsLike,
+              padding,
+            )
+          : this.getFitViewport(fit.eles as Collection | undefined, padding);
 
-      if( fv != null ){ return { ...opts, pan: fv.pan, zoom: fv.zoom }; }
-    } else if( opts.center != null ){
-      const pan = this.getCenterPan( opts.center.eles as Collection | undefined );
+      if (fv != null) {
+        return { ...opts, pan: fv.pan, zoom: fv.zoom };
+      }
+    } else if (opts.center != null) {
+      const pan = this.getCenterPan(opts.center.eles as Collection | undefined);
 
-      if( pan != null ){ return { ...opts, pan }; }
-    } else if( opts.panBy != null ){
+      if (pan != null) {
+        return { ...opts, pan };
+      }
+    } else if (opts.panBy != null) {
       const from = this._viewport.pan() as Position;
 
-      return { ...opts, pan: { x: from.x + opts.panBy.x, y: from.y + opts.panBy.y } };
+      return {
+        ...opts,
+        pan: { x: from.x + opts.panBy.x, y: from.y + opts.panBy.y },
+      };
     }
 
     return opts;
@@ -1416,16 +1651,16 @@ export class Core {
    *   freezing the viewport where the tween reached
    * @returns this core, for chaining
    */
-  stop( jumpToEnd: boolean = false ): this {
-    this._animations.stopViewport( jumpToEnd );
+  stop(jumpToEnd: boolean = false): this {
+    this._animations.stopViewport(jumpToEnd);
 
     return this;
   }
 
   /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. */
   private _afterAnimationTick(): void {
-    if( this._animations.isViewportAnimating() ){
-      this._emitViewportEvents( [ 'pan', 'zoom', 'viewport' ] );
+    if (this._animations.isViewportAnimating()) {
+      this._emitViewportEvents(['pan', 'zoom', 'viewport']);
     }
 
     this._renderer?.requestRender();
@@ -1466,10 +1701,14 @@ export class Core {
    * @param zoom — the new minimum; omit to read
    * @returns the current minimum when reading, this core when setting
    */
-  minZoom( zoom?: number ): number | this {
-    if( zoom === undefined ){ return this._viewport.minZoom; }
+  minZoom(zoom?: number): number | this {
+    if (zoom === undefined) {
+      return this._viewport.minZoom;
+    }
 
-    if( this._viewport.setMinZoom( zoom ) ){ this._emitViewportEvents( [ 'zoom' ] ); }
+    if (this._viewport.setMinZoom(zoom)) {
+      this._emitViewportEvents(['zoom']);
+    }
 
     return this;
   }
@@ -1480,10 +1719,14 @@ export class Core {
    * @param zoom — the new maximum; omit to read
    * @returns the current maximum when reading, this core when setting
    */
-  maxZoom( zoom?: number ): number | this {
-    if( zoom === undefined ){ return this._viewport.maxZoom; }
+  maxZoom(zoom?: number): number | this {
+    if (zoom === undefined) {
+      return this._viewport.maxZoom;
+    }
 
-    if( this._viewport.setMaxZoom( zoom ) ){ this._emitViewportEvents( [ 'zoom' ] ); }
+    if (this._viewport.setMaxZoom(zoom)) {
+      this._emitViewportEvents(['zoom']);
+    }
 
     return this;
   }
@@ -1495,15 +1738,21 @@ export class Core {
    * @param max — the maximum zoom, when `min` is a number
    * @returns this core, for chaining
    */
-  zoomRange( min: number | { min?: number; max?: number }, max?: number ): this {
+  zoomRange(min: number | { min?: number; max?: number }, max?: number): this {
     const lo = typeof min === 'object' ? min.min : min;
     const hi = typeof min === 'object' ? min.max : max;
     let changed = false;
 
-    if( lo != null && this._viewport.setMinZoom( lo ) ){ changed = true; }
-    if( hi != null && this._viewport.setMaxZoom( hi ) ){ changed = true; }
+    if (lo != null && this._viewport.setMinZoom(lo)) {
+      changed = true;
+    }
+    if (hi != null && this._viewport.setMaxZoom(hi)) {
+      changed = true;
+    }
 
-    if( changed ){ this._emitViewportEvents( [ 'zoom' ] ); }
+    if (changed) {
+      this._emitViewportEvents(['zoom']);
+    }
 
     return this;
   }
@@ -1515,20 +1764,26 @@ export class Core {
    *   as they are
    * @returns this core, for chaining
    */
-  viewport( opts: { zoom?: number; pan?: Position } ): this {
+  viewport(opts: { zoom?: number; pan?: Position }): this {
     const events: string[] = [];
 
-    if( opts.zoom != null && this._viewport.setZoom( opts.zoom ) ){ events.push( 'zoom' ); }
-    if( opts.pan != null && this._viewport.setPan( opts.pan ) ){ events.push( 'pan' ); }
+    if (opts.zoom != null && this._viewport.setZoom(opts.zoom)) {
+      events.push('zoom');
+    }
+    if (opts.pan != null && this._viewport.setPan(opts.pan)) {
+      events.push('pan');
+    }
 
-    if( events.length > 0 ){ this._emitViewportEvents( events ); }
+    if (events.length > 0) {
+      this._emitViewportEvents(events);
+    }
 
     return this;
   }
 
   /** Reset the viewport to zoom 1, pan (0, 0). */
   reset(): this {
-    return this.viewport( { zoom: 1, pan: { x: 0, y: 0 } } );
+    return this.viewport({ zoom: 1, pan: { x: 0, y: 0 } });
   }
 
   /**
@@ -1539,10 +1794,13 @@ export class Core {
    * @param padding — rendered px of margin to leave on every side
    * @returns the viewport, or null when there is nothing to fit
    */
-  getFitViewport( eles?: Collection, padding: number = 0 ): { zoom: number; pan: Position } | null {
-    const bb = this._boundsOf( eles );
+  getFitViewport(
+    eles?: Collection,
+    padding: number = 0,
+  ): { zoom: number; pan: Position } | null {
+    const bb = this._boundsOf(eles);
 
-    return bb == null ? null : this._viewport.fitViewport( bb, padding );
+    return bb == null ? null : this._viewport.fitViewport(bb, padding);
   }
 
   /**
@@ -1552,10 +1810,10 @@ export class Core {
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan, or null when there is nothing to center
    */
-  getCenterPan( eles?: Collection, zoom?: number ): Position | null {
-    const bb = this._boundsOf( eles );
+  getCenterPan(eles?: Collection, zoom?: number): Position | null {
+    const bb = this._boundsOf(eles);
 
-    return bb == null ? null : this._viewport.centerPan( bb, zoom );
+    return bb == null ? null : this._viewport.centerPan(bb, zoom);
   }
 
   /**
@@ -1566,8 +1824,10 @@ export class Core {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  pick( x: number, y: number ): Promise<Collection | null> {
-    return this._renderer != null ? this._renderer.pick( x, y ) : Promise.resolve( null );
+  pick(x: number, y: number): Promise<Collection | null> {
+    return this._renderer != null
+      ? this._renderer.pick(x, y)
+      : Promise.resolve(null);
   }
 
   // -- renderer --
@@ -1594,7 +1854,7 @@ export class Core {
   /** Re-measure the container and redraw (no-op when headless). */
   resize(): this {
     this._renderer?.resize();
-    this.emit( 'resize' );
+    this.emit('resize');
 
     return this;
   }
@@ -1609,8 +1869,8 @@ export class Core {
    * @param callback — the per-frame handler
    * @returns this core, for chaining
    */
-  onRender( callback: EventHandler ): this {
-    return this.on( 'render', callback );
+  onRender(callback: EventHandler): this {
+    return this.on('render', callback);
   }
 
   /**
@@ -1619,8 +1879,8 @@ export class Core {
    * @param callback — the handler to remove; omit to remove all of them
    * @returns this core, for chaining
    */
-  offRender( callback?: EventHandler ): this {
-    return this.off( 'render', callback );
+  offRender(callback?: EventHandler): this {
+    return this.off('render', callback);
   }
 
   // -- image export --
@@ -1637,8 +1897,8 @@ export class Core {
    * @param options — the v3 export options named above
    * @returns the encoded image in the requested output form
    */
-  png( options: ExportOptions = {} ): Promise<string | Blob> {
-    return this._exportImage( 'image/png', options );
+  png(options: ExportOptions = {}): Promise<string | Blob> {
+    return this._exportImage('image/png', options);
   }
 
   /**
@@ -1648,52 +1908,66 @@ export class Core {
    * @param options — as {@link png}, plus `quality`
    * @returns the encoded image in the requested output form
    */
-  jpg( options: ExportOptions = {} ): Promise<string | Blob> {
-    return this._exportImage( 'image/jpeg', { bg: '#fff', ...options } );
+  jpg(options: ExportOptions = {}): Promise<string | Blob> {
+    return this._exportImage('image/jpeg', { bg: '#fff', ...options });
   }
 
   declare jpeg: this['jpg'];
 
-  private async _exportImage( mime: string, options: ExportOptions ): Promise<string | Blob> {
+  private async _exportImage(
+    mime: string,
+    options: ExportOptions,
+  ): Promise<string | Blob> {
     const output = options.output ?? 'base64uri';
 
-    if( output !== 'base64uri' && output !== 'base64' && output !== 'blob' && output !== 'blob-promise' ){
+    if (
+      output !== 'base64uri' &&
+      output !== 'base64' &&
+      output !== 'blob' &&
+      output !== 'blob-promise'
+    ) {
       throw new Error(
-        `Invalid image export output '${String( output )}'; use 'base64uri', 'base64' or 'blob'`
+        `Invalid image export output '${String(output)}'; use 'base64uri', 'base64' or 'blob'`,
       );
     }
 
-    if( this._renderer == null ){
-      throw new Error( 'An image can only be exported from a rendered instance; this instance is headless' );
+    if (this._renderer == null) {
+      throw new Error(
+        'An image can only be exported from a rendered instance; this instance is headless',
+      );
     }
 
-    const { data, width, height } = await this._renderer.exportImage( options );
-    const doc = ( this._container as HTMLElement ).ownerDocument as Document;
-    const canvas = doc.createElement( 'canvas' );
+    const { data, width, height } = await this._renderer.exportImage(options);
+    const doc = (this._container as HTMLElement).ownerDocument as Document;
+    const canvas = doc.createElement('canvas');
 
     canvas.width = width;
     canvas.height = height;
 
-    const context = canvas.getContext( '2d' ) as CanvasRenderingContext2D;
+    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-    context.putImageData( new ImageData( data, width, height ), 0, 0 );
+    context.putImageData(new ImageData(data, width, height), 0, 0);
 
     const quality = options.quality;
 
-    if( output === 'blob' || output === 'blob-promise' ){
-      return new Promise( ( resolve, reject ) => {
+    if (output === 'blob' || output === 'blob-promise') {
+      return new Promise((resolve, reject) => {
         canvas.toBlob(
-          blob => blob != null
-            ? resolve( blob )
-            : reject( new Error( `Could not encode the exported image as ${mime}` ) ),
-          mime, quality
+          (blob) =>
+            blob != null
+              ? resolve(blob)
+              : reject(
+                  new Error(`Could not encode the exported image as ${mime}`),
+                ),
+          mime,
+          quality,
         );
-      } );
+      });
     }
 
-    const uri = canvas.toDataURL( mime, quality );
+    const uri = canvas.toDataURL(mime, quality);
 
-    return output === 'base64' ? uri.substring( uri.indexOf( ',' ) + 1 ) : uri;
+    return output === 'base64' ? uri.substring(uri.indexOf(',') + 1) : uri;
   }
 
   // -- graph-level data & scratch (plain objects, not columns) --
@@ -1710,8 +1984,10 @@ export class Core {
    * @returns the data object or value when reading, this core when
    *   writing
    */
-  data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
-    return this._objectAccess( this._graphData, args, 'data' );
+  data(
+    ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
+  ): unknown {
+    return this._objectAccess(this._graphData, args, 'data');
   }
 
   /**
@@ -1721,8 +1997,8 @@ export class Core {
    * @param names — space-separated key names; omit to clear everything
    * @returns this core, for chaining
    */
-  removeData( names?: string ): this {
-    return this._objectRemove( this._graphData, names, 'data' );
+  removeData(names?: string): this {
+    return this._objectRemove(this._graphData, names, 'data');
   }
 
   declare attr: this['data'];
@@ -1738,8 +2014,10 @@ export class Core {
    * @returns the scratch object or value when reading, this core when
    *   writing
    */
-  scratch( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
-    return this._objectAccess( this._scratch, args, null );
+  scratch(
+    ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
+  ): unknown {
+    return this._objectAccess(this._scratch, args, null);
   }
 
   /**
@@ -1748,35 +2026,55 @@ export class Core {
    * @param names — space-separated key names; omit to clear everything
    * @returns this core, for chaining
    */
-  removeScratch( names?: string ): this {
-    return this._objectRemove( this._scratch, names, null );
+  removeScratch(names?: string): this {
+    return this._objectRemove(this._scratch, names, null);
   }
 
   private _objectAccess(
     target: Record<string, unknown>,
-    args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ],
-    event: string | null
+    args: [] | [string] | [string, unknown] | [Record<string, unknown>],
+    event: string | null,
   ): unknown {
-    const [ key, value ] = args;
+    const [key, value] = args;
 
-    if( args.length === 0 ){ return target; }
-    if( typeof key === 'string' && args.length === 1 ){ return target[ key ]; }
+    if (args.length === 0) {
+      return target;
+    }
+    if (typeof key === 'string' && args.length === 1) {
+      return target[key];
+    }
 
-    const patch: Record<string, unknown> = typeof key === 'string' ? { [ key ]: value } : key as Record<string, unknown>;
+    const patch: Record<string, unknown> =
+      typeof key === 'string'
+        ? { [key]: value }
+        : (key as Record<string, unknown>);
 
-    Object.assign( target, patch );
+    Object.assign(target, patch);
 
-    if( event != null ){ this.emit( event ); }
+    if (event != null) {
+      this.emit(event);
+    }
 
     return this;
   }
 
-  private _objectRemove( target: Record<string, unknown>, names: string | undefined, event: string | null ): this {
-    const keys = names == null ? Object.keys( target ) : names.split( /\s+/ ).filter( n => n !== '' );
+  private _objectRemove(
+    target: Record<string, unknown>,
+    names: string | undefined,
+    event: string | null,
+  ): this {
+    const keys =
+      names == null
+        ? Object.keys(target)
+        : names.split(/\s+/).filter((n) => n !== '');
 
-    for( const k of keys ){ delete target[ k ]; }
+    for (const k of keys) {
+      delete target[k];
+    }
 
-    if( event != null && keys.length > 0 ){ this.emit( event ); }
+    if (event != null && keys.length > 0) {
+      this.emit(event);
+    }
 
     return this;
   }
@@ -1790,8 +2088,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  autolock( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._autolock; }
+  autolock(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._autolock;
+    }
 
     this._autolock = bool;
 
@@ -1806,8 +2106,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  autoungrabify( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._autoungrabify; }
+  autoungrabify(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._autoungrabify;
+    }
 
     this._autoungrabify = bool;
 
@@ -1821,8 +2123,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  autounselectify( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._autounselectify; }
+  autounselectify(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._autounselectify;
+    }
 
     this._autounselectify = bool;
 
@@ -1839,8 +2143,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  panningEnabled( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._panningEnabled; }
+  panningEnabled(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._panningEnabled;
+    }
 
     this._panningEnabled = bool;
 
@@ -1854,8 +2160,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  userPanningEnabled( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._userPanningEnabled; }
+  userPanningEnabled(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._userPanningEnabled;
+    }
 
     this._userPanningEnabled = bool;
 
@@ -1869,8 +2177,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  zoomingEnabled( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._zoomingEnabled; }
+  zoomingEnabled(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._zoomingEnabled;
+    }
 
     this._zoomingEnabled = bool;
 
@@ -1884,8 +2194,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  userZoomingEnabled( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._userZoomingEnabled; }
+  userZoomingEnabled(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._userZoomingEnabled;
+    }
 
     this._userZoomingEnabled = bool;
 
@@ -1902,8 +2214,10 @@ export class Core {
    * @param bool — the setting to apply; omit to read it
    * @returns the setting, or this when setting
    */
-  boxSelectionIncludesLabels( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._boxSelectionIncludesLabels; }
+  boxSelectionIncludesLabels(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._boxSelectionIncludesLabels;
+    }
 
     this._boxSelectionIncludesLabels = bool;
 
@@ -1930,12 +2244,15 @@ export class Core {
    * @returns the mode, or this when setting
    * @throws if `mode` is neither 'contain' nor 'overlap'
    */
-  boxSelectionMode( mode?: BoxSelectionMode ): BoxSelectionMode | this {
-    if( mode === undefined ){ return this._boxSelectionMode; }
+  boxSelectionMode(mode?: BoxSelectionMode): BoxSelectionMode | this {
+    if (mode === undefined) {
+      return this._boxSelectionMode;
+    }
 
-    if( mode !== 'contain' && mode !== 'overlap' ){
+    if (mode !== 'contain' && mode !== 'overlap') {
       throw new Error(
-        `Invalid box selection mode '${String( mode )}'; use 'contain' or 'overlap'` );
+        `Invalid box selection mode '${String(mode)}'; use 'contain' or 'overlap'`,
+      );
     }
 
     this._boxSelectionMode = mode;
@@ -1949,8 +2266,10 @@ export class Core {
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
    */
-  boxSelectionEnabled( bool?: boolean ): boolean | this {
-    if( bool === undefined ){ return this._boxSelectionEnabled; }
+  boxSelectionEnabled(bool?: boolean): boolean | this {
+    if (bool === undefined) {
+      return this._boxSelectionEnabled;
+    }
 
     this._boxSelectionEnabled = bool;
 
@@ -1966,11 +2285,15 @@ export class Core {
    * @returns the mode, or this when setting
    * @throws if `type` is neither 'single' nor 'additive'
    */
-  selectionType( type?: 'single' | 'additive' ): ( 'single' | 'additive' ) | this {
-    if( type === undefined ){ return this._selectionType; }
+  selectionType(type?: 'single' | 'additive'): ('single' | 'additive') | this {
+    if (type === undefined) {
+      return this._selectionType;
+    }
 
-    if( type !== 'single' && type !== 'additive' ){
-      throw new Error( `Invalid selection type '${String( type )}'; use 'single' or 'additive'` );
+    if (type !== 'single' && type !== 'additive') {
+      throw new Error(
+        `Invalid selection type '${String(type)}'; use 'single' or 'additive'`,
+      );
     }
 
     this._selectionType = type;
@@ -1984,11 +2307,15 @@ export class Core {
    * @returns the window, or this when setting
    * @throws if `ms` is not a finite non-negative number
    */
-  multiClickDebounceTime( ms?: number ): number | this {
-    if( ms === undefined ){ return this._multiClickDebounceTime; }
+  multiClickDebounceTime(ms?: number): number | this {
+    if (ms === undefined) {
+      return this._multiClickDebounceTime;
+    }
 
-    if( typeof ms !== 'number' || !isFinite( ms ) || ms < 0 ){
-      throw new Error( `multiClickDebounceTime must be a non-negative number; got '${String( ms )}'` );
+    if (typeof ms !== 'number' || !isFinite(ms) || ms < 0) {
+      throw new Error(
+        `multiClickDebounceTime must be a non-negative number; got '${String(ms)}'`,
+      );
     }
 
     this._multiClickDebounceTime = ms;
@@ -2007,16 +2334,22 @@ export class Core {
    * @throws if `mult` is not a finite positive number (0 would freeze the
    *   zoom, so the bound is strict where the threshold setters allow 0)
    */
-  wheelSensitivity( mult?: number ): number | this {
-    if( mult === undefined ){ return this._wheelSensitivity; }
-
-    if( typeof mult !== 'number' || !isFinite( mult ) || mult <= 0 ){
-      throw new Error( `wheelSensitivity must be a positive number; got '${String( mult )}'` );
+  wheelSensitivity(mult?: number): number | this {
+    if (mult === undefined) {
+      return this._wheelSensitivity;
     }
 
-    if( mult !== 1 && !this._wheelSensitivityWarned ){
+    if (typeof mult !== 'number' || !isFinite(mult) || mult <= 0) {
+      throw new Error(
+        `wheelSensitivity must be a positive number; got '${String(mult)}'`,
+      );
+    }
+
+    if (mult !== 1 && !this._wheelSensitivityWarned) {
       this._wheelSensitivityWarned = true;
-      console.warn( 'You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.' );
+      console.warn(
+        'You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.',
+      );
     }
 
     this._wheelSensitivity = mult;
@@ -2032,11 +2365,15 @@ export class Core {
    * @returns the threshold, or this when setting
    * @throws if `px` is not a finite non-negative number
    */
-  desktopTapThreshold( px?: number ): number | this {
-    if( px === undefined ){ return this._desktopTapThreshold; }
+  desktopTapThreshold(px?: number): number | this {
+    if (px === undefined) {
+      return this._desktopTapThreshold;
+    }
 
-    if( typeof px !== 'number' || !isFinite( px ) || px < 0 ){
-      throw new Error( `desktopTapThreshold must be a non-negative number; got '${String( px )}'` );
+    if (typeof px !== 'number' || !isFinite(px) || px < 0) {
+      throw new Error(
+        `desktopTapThreshold must be a non-negative number; got '${String(px)}'`,
+      );
     }
 
     this._desktopTapThreshold = px;
@@ -2052,11 +2389,15 @@ export class Core {
    * @returns the threshold, or this when setting
    * @throws if `px` is not a finite non-negative number
    */
-  touchTapThreshold( px?: number ): number | this {
-    if( px === undefined ){ return this._touchTapThreshold; }
+  touchTapThreshold(px?: number): number | this {
+    if (px === undefined) {
+      return this._touchTapThreshold;
+    }
 
-    if( typeof px !== 'number' || !isFinite( px ) || px < 0 ){
-      throw new Error( `touchTapThreshold must be a non-negative number; got '${String( px )}'` );
+    if (typeof px !== 'number' || !isFinite(px) || px < 0) {
+      throw new Error(
+        `touchTapThreshold must be a non-negative number; got '${String(px)}'`,
+      );
     }
 
     this._touchTapThreshold = px;
@@ -2072,18 +2413,21 @@ export class Core {
    * @returns the duration, or this when setting
    * @throws if `ms` is not a finite non-negative number
    */
-  tapholdDuration( ms?: number ): number | this {
-    if( ms === undefined ){ return this._tapholdDuration; }
+  tapholdDuration(ms?: number): number | this {
+    if (ms === undefined) {
+      return this._tapholdDuration;
+    }
 
-    if( typeof ms !== 'number' || !isFinite( ms ) || ms < 0 ){
-      throw new Error( `tapholdDuration must be a non-negative number; got '${String( ms )}'` );
+    if (typeof ms !== 'number' || !isFinite(ms) || ms < 0) {
+      throw new Error(
+        `tapholdDuration must be a non-negative number; got '${String(ms)}'`,
+      );
     }
 
     this._tapholdDuration = ms;
 
     return this;
   }
-
 
   // -- environment --
 
@@ -2148,8 +2492,8 @@ export class Core {
    * @param id — the element id
    * @returns true when the graph holds that element
    */
-  hasElementWithId( id: string ): boolean {
-    return this._store.lookup( id ) != null;
+  hasElementWithId(id: string): boolean {
+    return this._store.lookup(id) != null;
   }
 
   declare $id: this['getElementById'];
@@ -2170,7 +2514,7 @@ export class Core {
    *
    * @returns the global window, or null outside a browser
    */
-  window(): ( Window & typeof globalThis ) | null {
+  window(): (Window & typeof globalThis) | null {
     return typeof window !== 'undefined' ? window : null;
   }
 
@@ -2207,61 +2551,63 @@ export class Core {
 
     store.flushDerived(); // parent positions are derived (round 14.8)
 
-    const nodeSlots = store.slotsOrdered( 'nodes' );
-    const edgeSlots = store.slotsOrdered( 'edges' );
-    const pos = store.column( 'node.position' ) as Float32Array;
-    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
-    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const nodeSlots = store.slotsOrdered('nodes');
+    const edgeSlots = store.slotsOrdered('edges');
+    const pos = store.column('node.position') as Float32Array;
+    const nodeFlags = store.column('node.flags') as Uint32Array;
+    const edgeFlags = store.column('edge.flags') as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
 
-    const nodeIds: string[] = new Array( nodeSlots.length );
-    const positions = new Float32Array( nodeSlots.length * 2 );
-    const nodeSelected = new Uint8Array( nodeSlots.length );
-    const nodeSelectable = new Uint8Array( nodeSlots.length );
+    const nodeIds: string[] = new Array(nodeSlots.length);
+    const positions = new Float32Array(nodeSlots.length * 2);
+    const nodeSelected = new Uint8Array(nodeSlots.length);
+    const nodeSelectable = new Uint8Array(nodeSlots.length);
     const indexOfSlot = new Map<number, number>();
 
-    for( let i = 0; i < nodeSlots.length; i++ ){
-      const slot = nodeSlots[ i ];
+    for (let i = 0; i < nodeSlots.length; i++) {
+      const slot = nodeSlots[i];
 
-      indexOfSlot.set( slot, i );
-      nodeIds[ i ] = store.idAt( 'nodes', slot ) as string;
-      positions[ i * 2 ] = pos[ slot * 2 ];
-      positions[ i * 2 + 1 ] = pos[ slot * 2 + 1 ];
-      nodeSelected[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTED ) !== 0 ? 1 : 0;
-      nodeSelectable[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTABLE ) !== 0 ? 1 : 0;
+      indexOfSlot.set(slot, i);
+      nodeIds[i] = store.idAt('nodes', slot) as string;
+      positions[i * 2] = pos[slot * 2];
+      positions[i * 2 + 1] = pos[slot * 2 + 1];
+      nodeSelected[i] = (nodeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
+      nodeSelectable[i] = (nodeFlags[slot] & FLAG_SELECTABLE) !== 0 ? 1 : 0;
     }
 
     // hierarchy (round 14.8): parent slots -> payload indices (a second
     // pass — a parent may sit later in slot order than its children)
     let nodeParents: Uint32Array | undefined;
 
-    if( store.hasCompounds() ){
-      nodeParents = new Uint32Array( nodeSlots.length ).fill( NO_PARENT );
+    if (store.hasCompounds()) {
+      nodeParents = new Uint32Array(nodeSlots.length).fill(NO_PARENT);
 
-      for( let i = 0; i < nodeSlots.length; i++ ){
-        const parentSlot = store.parentOf( nodeSlots[ i ] );
+      for (let i = 0; i < nodeSlots.length; i++) {
+        const parentSlot = store.parentOf(nodeSlots[i]);
 
-        if( parentSlot >= 0 ){ nodeParents[ i ] = indexOfSlot.get( parentSlot ) as number; }
+        if (parentSlot >= 0) {
+          nodeParents[i] = indexOfSlot.get(parentSlot) as number;
+        }
       }
     }
 
-    const edgeIds: string[] = new Array( edgeSlots.length );
-    const sources = new Uint32Array( edgeSlots.length );
-    const targets = new Uint32Array( edgeSlots.length );
-    const edgeSelected = new Uint8Array( edgeSlots.length );
-    const edgeSelectable = new Uint8Array( edgeSlots.length );
+    const edgeIds: string[] = new Array(edgeSlots.length);
+    const sources = new Uint32Array(edgeSlots.length);
+    const targets = new Uint32Array(edgeSlots.length);
+    const edgeSelected = new Uint8Array(edgeSlots.length);
+    const edgeSelectable = new Uint8Array(edgeSlots.length);
 
-    for( let i = 0; i < edgeSlots.length; i++ ){
-      const slot = edgeSlots[ i ];
+    for (let i = 0; i < edgeSlots.length; i++) {
+      const slot = edgeSlots[i];
 
-      edgeIds[ i ] = store.idAt( 'edges', slot ) as string;
-      sources[ i ] = indexOfSlot.get( endpoints[ slot * 2 ] ) as number;
-      targets[ i ] = indexOfSlot.get( endpoints[ slot * 2 + 1 ] ) as number;
-      edgeSelected[ i ] = ( edgeFlags[ slot ] & FLAG_SELECTED ) !== 0 ? 1 : 0;
-      edgeSelectable[ i ] = ( edgeFlags[ slot ] & FLAG_SELECTABLE ) !== 0 ? 1 : 0;
+      edgeIds[i] = store.idAt('edges', slot) as string;
+      sources[i] = indexOfSlot.get(endpoints[slot * 2]) as number;
+      targets[i] = indexOfSlot.get(endpoints[slot * 2 + 1]) as number;
+      edgeSelected[i] = (edgeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
+      edgeSelectable[i] = (edgeFlags[slot] & FLAG_SELECTABLE) !== 0 ? 1 : 0;
     }
 
-    return serializeElements( {
+    return serializeElements({
       columnar: true,
       nodes: {
         count: nodeSlots.length,
@@ -2269,8 +2615,8 @@ export class Core {
         positions,
         selected: nodeSelected,
         selectable: nodeSelectable,
-        ...( nodeParents != null ? { parent: nodeParents } : {} ),
-        data: store.data.exportColumns( 'nodes', nodeSlots )
+        ...(nodeParents != null ? { parent: nodeParents } : {}),
+        data: store.data.exportColumns('nodes', nodeSlots),
       },
       edges: {
         count: edgeSlots.length,
@@ -2279,16 +2625,16 @@ export class Core {
         targets,
         selected: edgeSelected,
         selectable: edgeSelectable,
-        data: store.data.exportColumns( 'edges', edgeSlots )
+        data: store.data.exportColumns('edges', edgeSlots),
       },
       // graph-level data (round 39.2), copied rather than held by
       // reference: the buffer is a snapshot, and a later cy.data() write
       // must not reach back into a payload the caller may still be
       // serializing
-      ...( Object.keys( this._graphData ).length > 0
+      ...(Object.keys(this._graphData).length > 0
         ? { data: { ...this._graphData } }
-        : {} )
-    } );
+        : {}),
+    });
   }
 
   /**
@@ -2307,23 +2653,24 @@ export class Core {
    * @throws if given anything but a boolean — the guard that catches an
    *   attempted `json( obj )` import
    */
-  json( flat?: boolean ): Record<string, unknown> {
-    if( flat != null && typeof flat !== 'boolean' ){
+  json(flat?: boolean): Record<string, unknown> {
+    if (flat != null && typeof flat !== 'boolean') {
       throw new Error(
-        'cy.json() is export-only in the GPU prototype; the import/restore form is not supported'
+        'cy.json() is export-only in the GPU prototype; the import/restore form is not supported',
       );
     }
 
-    const elements = flat === true
-      ? this.elements().jsons()
-      : { nodes: this.nodes().jsons(), edges: this.edges().jsons() };
+    const elements =
+      flat === true
+        ? this.elements().jsons()
+        : { nodes: this.nodes().jsons(), edges: this.edges().jsons() };
 
     return {
       elements,
       style: this._styleEngine.json(),
       data: { ...this._graphData },
       zoom: this._viewport.zoom(),
-      pan: { ...( this._viewport.pan() as Position ) },
+      pan: { ...(this._viewport.pan() as Position) },
       minZoom: this._viewport.minZoom,
       maxZoom: this._viewport.maxZoom,
       zoomingEnabled: this._zoomingEnabled,
@@ -2336,7 +2683,7 @@ export class Core {
       autoungrabify: this._autoungrabify,
       autounselectify: this._autounselectify,
       headless: this.headless(),
-      styleEnabled: this.styleEnabled()
+      styleEnabled: this.styleEnabled(),
     };
   }
 
@@ -2345,7 +2692,9 @@ export class Core {
    * CPU-canonical, so nothing is lost).  No-op when already headless.
    */
   unmount(): this {
-    if( this._container == null ){ return this; }
+    if (this._container == null) {
+      return this;
+    }
 
     this._pointer?.destroy();
     this._pointer = null;
@@ -2353,7 +2702,7 @@ export class Core {
     this._renderer = null;
     this._container = null;
     this._readyResolved = true; // headless is ready by definition
-    this.ready = Promise.resolve( this );
+    this.ready = Promise.resolve(this);
 
     return this;
   }
@@ -2370,17 +2719,21 @@ export class Core {
    *   to attach), or if WebGPU is unavailable — mounting is the one way a
    *   headless instance can demand a GPU after construction
    */
-  mount( container: HTMLElement ): this {
-    if( container == null ){
-      throw new Error( 'mount() needs a container element' );
+  mount(container: HTMLElement): this {
+    if (container == null) {
+      throw new Error('mount() needs a container element');
     }
 
-    if( this._attachFn == null ){
-      throw new Error( 'This instance cannot mount (it was not created via the cytoscape factory)' );
+    if (this._attachFn == null) {
+      throw new Error(
+        'This instance cannot mount (it was not created via the cytoscape factory)',
+      );
     }
 
-    if( this._container != null ){
-      if( this._container === container ){ return this; }
+    if (this._container != null) {
+      if (this._container === container) {
+        return this;
+      }
 
       this.unmount();
     }
@@ -2390,7 +2743,7 @@ export class Core {
     // the old label layer consumed the dirty channel; a fresh one starts
     // empty, so every labelled slot must queue for a glyph rebuild
     this._store.markAllLabelsDirty();
-    this._attachFn( container );
+    this._attachFn(container);
 
     return this;
   }
@@ -2403,16 +2756,18 @@ export class Core {
    * in flight, or re-acquisition fails, the instance goes headless-dead
    * and emits 'error' (the pre-round-10 behavior).
    */
-  _handleDeviceLost( message: string ): void {
-    if( this._destroyed ){ return; }
+  _handleDeviceLost(message: string): void {
+    if (this._destroyed) {
+      return;
+    }
 
-    this.emit( { type: 'devicelost' }, [ message ] );
+    this.emit({ type: 'devicelost' }, [message]);
 
     const container = this._container;
 
-    if( this._recoveringDevice || container == null || this._attachFn == null ){
+    if (this._recoveringDevice || container == null || this._attachFn == null) {
       this.unmount();
-      this.emit( { type: 'error' }, [ `WebGPU device lost: ${message}` ] );
+      this.emit({ type: 'error' }, [`WebGPU device lost: ${message}`]);
 
       return;
     }
@@ -2421,22 +2776,29 @@ export class Core {
     this.unmount();
 
     try {
-      this.mount( container );
-    } catch ( err ){
+      this.mount(container);
+    } catch (err) {
       this._recoveringDevice = false;
-      this.emit( { type: 'error' }, [ `WebGPU device lost and could not recover: ${( err as Error ).message}` ] );
+      this.emit({ type: 'error' }, [
+        `WebGPU device lost and could not recover: ${(err as Error).message}`,
+      ]);
 
       return;
     }
 
-    this.ready.then( () => {
-      this._recoveringDevice = false;
-      this.emit( 'devicerestored' );
-    }, ( err: Error ) => {
-      this._recoveringDevice = false;
-      this.unmount();
-      this.emit( { type: 'error' }, [ `WebGPU device lost and could not recover: ${err.message}` ] );
-    } );
+    this.ready.then(
+      () => {
+        this._recoveringDevice = false;
+        this.emit('devicerestored');
+      },
+      (err: Error) => {
+        this._recoveringDevice = false;
+        this.unmount();
+        this.emit({ type: 'error' }, [
+          `WebGPU device lost and could not recover: ${err.message}`,
+        ]);
+      },
+    );
   }
 
   /**
@@ -2458,7 +2820,7 @@ export class Core {
    */
   width(): number {
     return this._container != null
-      ? ( this._container.clientWidth || this._headlessWidth )
+      ? this._container.clientWidth || this._headlessWidth
       : this._headlessWidth;
   }
 
@@ -2470,7 +2832,7 @@ export class Core {
    */
   height(): number {
     return this._container != null
-      ? ( this._container.clientHeight || this._headlessHeight )
+      ? this._container.clientHeight || this._headlessHeight
       : this._headlessHeight;
   }
 
@@ -2483,15 +2845,17 @@ export class Core {
    * @returns this core
    */
   destroy(): this {
-    if( this._destroyed ){ return this; }
+    if (this._destroyed) {
+      return this;
+    }
 
-    this.emit( 'destroy' );
+    this.emit('destroy');
     this._emitter.removeAllListeners();
 
     this._pointer?.destroy();
     this._pointer = null;
 
-    if( this._renderer != null ){
+    if (this._renderer != null) {
       this._renderer.destroy();
       this._renderer = null;
     }
@@ -2513,70 +2877,81 @@ export class Core {
   // -- internals --
 
   /** Interned singleton handle for a live slot. */
-  _ele( group: GroupName, slot: number ): Collection {
-    const pool = this._pool[ group ];
-    const gen = this._store.table( group ).gen[ slot ];
-    let ele = pool[ slot ];
+  _ele(group: GroupName, slot: number): Collection {
+    const pool = this._pool[group];
+    const gen = this._store.table(group).gen[slot];
+    let ele = pool[slot];
 
-    if( ele == null || ele._refs[0].gen !== gen ){
-      ele = new Collection( this, [ this._store.ref( group, slot ) ], { singleton: true } );
-      pool[ slot ] = ele;
+    if (ele == null || ele._refs[0].gen !== gen) {
+      ele = new Collection(this, [this._store.ref(group, slot)], {
+        singleton: true,
+      });
+      pool[slot] = ele;
     }
 
     return ele;
   }
 
   /** Handle for a ref that may be stale (prefers the interned pre-removal handle). */
-  _eleFromRef( ref: Ref ): Collection {
-    if( this._store.isCurrent( ref ) ){
-      return this._ele( ref.group, ref.slot );
+  _eleFromRef(ref: Ref): Collection {
+    if (this._store.isCurrent(ref)) {
+      return this._ele(ref.group, ref.slot);
     }
 
-    const pooled = this._pool[ ref.group ][ ref.slot ];
+    const pooled = this._pool[ref.group][ref.slot];
 
-    if( pooled != null && pooled._refs[0].gen === ref.gen ){
+    if (pooled != null && pooled._refs[0].gen === ref.gen) {
       return pooled;
     }
 
-    return new Collection( this, [ ref ], { singleton: true } );
+    return new Collection(this, [ref], { singleton: true });
   }
 
   /** True when writing any of these data() keys can change the group's computed style. */
-  _stylesDependOnData( group: GroupName, keys: string[] ): boolean {
-    return this._styleEngine.stylesDependOnData( group, keys );
+  _stylesDependOnData(group: GroupName, keys: string[]): boolean {
+    return this._styleEngine.stylesDependOnData(group, keys);
   }
 
   /** Refresh style channels computed from data() (mapped channels + labels), deferred while batching. */
-  _refreshMappedStyles( group: GroupName, slots: number[], keys: string[] ): void {
-    if( this._batchPending != null ){
-      for( const slot of slots ){
-        this._batchPending.mapped.push( this._store.ref( group, slot ) );
+  _refreshMappedStyles(
+    group: GroupName,
+    slots: number[],
+    keys: string[],
+  ): void {
+    if (this._batchPending != null) {
+      for (const slot of slots) {
+        this._batchPending.mapped.push(this._store.ref(group, slot));
       }
 
-      for( const key of keys ){
-        this._batchPending.mappedKeys.add( key );
+      for (const key of keys) {
+        this._batchPending.mappedKeys.add(key);
       }
 
       return;
     }
 
-    this._styleEngine.refreshMapped( group, slots, keys );
+    this._styleEngine.refreshMapped(group, slots, keys);
   }
 
   /** First style apply for freshly-added slots, deferred while batching. */
-  private _applyStyle( group: GroupName, slots: ArrayLike<number> ): void {
-    if( this._batchPending != null ){
-      for( let i = 0; i < slots.length; i++ ){
-        this._batchPending.style.push( this._store.ref( group, slots[ i ] ) );
+  private _applyStyle(group: GroupName, slots: ArrayLike<number>): void {
+    if (this._batchPending != null) {
+      for (let i = 0; i < slots.length; i++) {
+        this._batchPending.style.push(this._store.ref(group, slots[i]));
       }
 
       return;
     }
 
-    this._styleEngine.applyBulk( group, slots );
+    this._styleEngine.applyBulk(group, slots);
   }
 
-  _emitOnEle( type: string, ele: Collection, extraParams?: unknown[], props?: Partial<EventProps> ): void {
+  _emitOnEle(
+    type: string,
+    ele: Collection,
+    extraParams?: unknown[],
+    props?: Partial<EventProps>,
+  ): void {
     // Round 34.3: nothing listens for this type, so there is nothing to
     // do.  Sound because v4's emitter has no bubbling of its own (round
     // 41.2 dropped v3's `bubble`/`parent`; compound bubbling is the
@@ -2590,65 +2965,83 @@ export class Core {
     // handle per ancestor and emitted once per phase before discovering
     // that nobody cared: 338 ns for a node two ancestors deep against
     // 159 ns for an orphan.
-    if( !hasListeners( this._emitter, type ) ){ return; }
+    if (!hasListeners(this._emitter, type)) {
+      return;
+    }
 
     const store = this._store;
 
-    if( store.hasCompounds() ){
+    if (store.hasCompounds()) {
       const ref = ele._eventRef();
 
-      if( ref != null && ref.group === 'nodes' && store.parentOf( ref.slot ) >= 0 ){
+      if (
+        ref != null &&
+        ref.group === 'nodes' &&
+        store.parentOf(ref.slot) >= 0
+      ) {
         // compound bubbling (round 14.5): origin -> ancestors -> core in
         // phases on one shared Event, so stopPropagation carries between
         // them.  event.target stays the originator; each phase's element
         // rides _phaseRef/_phaseEle (see events.mts).
-        const eventObj = new Event( { type, target: ele, ...props } ) as PhasedEvent;
+        const eventObj = new Event({
+          type,
+          target: ele,
+          ...props,
+        }) as PhasedEvent;
 
         eventObj._phaseRef = ref;
         eventObj._phaseEle = ele;
-        this._emitter.emit( eventObj, extraParams );
+        this._emitter.emit(eventObj, extraParams);
 
-        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){
-          if( eventObj.isPropagationStopped() ){ return; }
+        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
+          if (eventObj.isPropagationStopped()) {
+            return;
+          }
 
-          const phaseEle = this._ele( 'nodes', p );
+          const phaseEle = this._ele('nodes', p);
 
           eventObj._phaseRef = phaseEle._eventRef();
           eventObj._phaseEle = phaseEle;
-          this._emitter.emit( eventObj, extraParams );
+          this._emitter.emit(eventObj, extraParams);
         }
 
-        if( eventObj.isPropagationStopped() ){ return; }
+        if (eventObj.isPropagationStopped()) {
+          return;
+        }
 
         eventObj._phaseRef = null;
         eventObj._phaseEle = null;
-        this._emitter.emit( eventObj, extraParams );
+        this._emitter.emit(eventObj, extraParams);
 
         return;
       }
     }
 
-    this._emitter.emit( { type, target: ele, ...props }, extraParams );
+    this._emitter.emit({ type, target: ele, ...props }, extraParams);
   }
 
-  _hasListeners( type: string ): boolean {
-    return hasListeners( this._emitter, type );
+  _hasListeners(type: string): boolean {
+    return hasListeners(this._emitter, type);
   }
 
-  _emitViewportEvents( types: string[] ): void {
-    for( const type of [ ...types, 'viewport' ] ){
-      this.emit( type );
+  _emitViewportEvents(types: string[]): void {
+    for (const type of [...types, 'viewport']) {
+      this.emit(type);
     }
   }
 
-  private _boundsOf( eles?: Collection ): ReturnType<Collection['boundingBox']> | null {
-    if( eles == null ){
+  private _boundsOf(
+    eles?: Collection,
+  ): ReturnType<Collection['boundingBox']> | null {
+    if (eles == null) {
       // whole-graph fast path: columnar scan in the store, skipping the
       // per-element handle layer entirely
       return this._store.boundingBox();
     }
 
-    if( eles.length === 0 ){ return null; }
+    if (eles.length === 0) {
+      return null;
+    }
 
     return eles.boundingBox();
   }
@@ -2664,7 +3057,7 @@ export class Core {
     do {
       id = 'cy-' + this._idCounter;
       this._idCounter++;
-    } while( this._store.ids.has( id ) );
+    } while (this._store.ids.has(id));
 
     return id;
   }
@@ -2690,4 +3083,3 @@ Core.prototype.autolockNodes = Core.prototype.autolock;
 Core.prototype.autoungrabifyNodes = Core.prototype.autoungrabify;
 Core.prototype.jpeg = Core.prototype.jpg;
 Core.prototype.gc = Core.prototype.compact;
-

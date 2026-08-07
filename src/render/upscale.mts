@@ -96,63 +96,86 @@ export class Upscaler {
    * @param format — the swapchain format this pass writes (it replaces,
    * never blends, so it must be the final target's format)
    */
-  constructor( device: GPUDevice, format: GPUTextureFormat ){
-    const module = device.createShaderModule( { label: 'cy-gpu:upscale-shader', code: UPSCALE_SHADER } );
+  constructor(device: GPUDevice, format: GPUTextureFormat) {
+    const module = device.createShaderModule({
+      label: 'cy-gpu:upscale-shader',
+      code: UPSCALE_SHADER,
+    });
 
-    this.layout = device.createBindGroupLayout( {
+    this.layout = device.createBindGroupLayout({
       label: 'cy-gpu:upscale-layout',
       entries: [
-        { binding: 0, visibility: SHADER_STAGE.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: SHADER_STAGE.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 2, visibility: SHADER_STAGE.FRAGMENT, sampler: { type: 'filtering' } }
-      ]
-    } );
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'uniform' },
+        },
+        {
+          binding: 1,
+          visibility: SHADER_STAGE.FRAGMENT,
+          texture: { sampleType: 'float' },
+        },
+        {
+          binding: 2,
+          visibility: SHADER_STAGE.FRAGMENT,
+          sampler: { type: 'filtering' },
+        },
+      ],
+    });
 
-    this.pipeline = device.createRenderPipeline( {
+    this.pipeline = device.createRenderPipeline({
       label: 'cy-gpu:upscale-pipeline',
-      layout: device.createPipelineLayout( { bindGroupLayouts: [ this.layout ] } ),
+      layout: device.createPipelineLayout({ bindGroupLayouts: [this.layout] }),
       vertex: { module, entryPoint: 'vsFullscreen' },
-      fragment: { module, entryPoint: 'fsUpscale', targets: [ { format } ] }, // replace-write
-      primitive: { topology: 'triangle-list' }
-    } );
+      fragment: { module, entryPoint: 'fsUpscale', targets: [{ format }] }, // replace-write
+      primitive: { topology: 'triangle-list' },
+    });
 
-    this.sampler = device.createSampler( {
+    this.sampler = device.createSampler({
       label: 'cy-gpu:upscale-sampler',
       magFilter: 'linear',
       minFilter: 'linear',
       addressModeU: 'clamp-to-edge',
-      addressModeV: 'clamp-to-edge'
-    } );
+      addressModeV: 'clamp-to-edge',
+    });
 
-    this.uniform = device.createBuffer( {
+    this.uniform = device.createBuffer({
       label: 'cy-gpu:upscale-uniform',
       size: 16,
-      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
-    } );
+      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
+    });
 
     this.bindGroup = null;
     this.boundTexture = null;
   }
 
   /** Draw the upscale pass sampling `source` (the low-res scene target). */
-  draw( pass: GPURenderPassEncoder, device: GPUDevice, source: GPUTexture ): void {
-    if( this.bindGroup == null || this.boundTexture !== source ){
+  draw(
+    pass: GPURenderPassEncoder,
+    device: GPUDevice,
+    source: GPUTexture,
+  ): void {
+    if (this.bindGroup == null || this.boundTexture !== source) {
       this.boundTexture = source;
-      this.bindGroup = device.createBindGroup( {
+      this.bindGroup = device.createBindGroup({
         label: 'cy-gpu:upscale-bind',
         layout: this.layout,
         entries: [
           { binding: 0, resource: { buffer: this.uniform } },
           { binding: 1, resource: source.createView() },
-          { binding: 2, resource: this.sampler }
-        ]
-      } );
-      device.queue.writeBuffer( this.uniform, 0, Float32Array.of( source.width, source.height, 0, 0 ) );
+          { binding: 2, resource: this.sampler },
+        ],
+      });
+      device.queue.writeBuffer(
+        this.uniform,
+        0,
+        Float32Array.of(source.width, source.height, 0, 0),
+      );
     }
 
-    pass.setPipeline( this.pipeline );
-    pass.setBindGroup( 0, this.bindGroup );
-    pass.draw( 3 );
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.draw(3);
   }
 
   /**

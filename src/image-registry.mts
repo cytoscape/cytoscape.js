@@ -27,7 +27,7 @@ their ceiling, as in v3.
 
 /** rgba tier sizes (px, longest side); the last entry is the cap tier
  * (`imageMaxSize` trims or extends this per renderer instance). */
-export const IMAGE_TIER_SIZES: readonly number[] = [ 128, 512, 1024 ];
+export const IMAGE_TIER_SIZES: readonly number[] = [128, 512, 1024];
 
 /** fixed raster size for sdf-icon entries (the glyph-EDT path, 15.5) */
 export const SDF_IMAGE_SIZE = 128;
@@ -57,7 +57,10 @@ export interface ImageDecodeOpts {
   sdf: boolean;
 }
 
-export type ImageDecoder = ( url: string, opts: ImageDecodeOpts ) => Promise<DecodedImage>;
+export type ImageDecoder = (
+  url: string,
+  opts: ImageDecodeOpts,
+) => Promise<DecodedImage>;
 
 export interface ImageEntry {
   id: number;
@@ -79,7 +82,7 @@ export interface ImageEntry {
 }
 
 export class ImageRegistry {
-  private entries: ( ImageEntry | null )[] = [];
+  private entries: (ImageEntry | null)[] = [];
   private freeIds: number[] = [];
   private byKey = new Map<string, number>();
   private decoder: ImageDecoder | null = null;
@@ -89,11 +92,11 @@ export class ImageRegistry {
   private tiers: readonly number[];
   /** decodes in flight (initial and promotion re-rasters alike) */
   private inFlight = 0;
-  private settleResolvers: ( () => void )[] = [];
+  private settleResolvers: (() => void)[] = [];
 
   /** fires when any entry changes state (ready, failed, freed) — the
    * store routes it to the dirty scheduler so a frame redraws */
-  onChange: ( () => void ) | null = null;
+  onChange: (() => void) | null = null;
 
   /**
    * @param tierSizes — the rgba tier ladder, ascending; the last entry is
@@ -101,14 +104,16 @@ export class ImageRegistry {
    *   `imageMaxSize`, so tier indices are only meaningful against the
    *   registry that produced them
    */
-  constructor( tierSizes: readonly number[] = IMAGE_TIER_SIZES ){
+  constructor(tierSizes: readonly number[] = IMAGE_TIER_SIZES) {
     this.tiers = tierSizes;
   }
 
   /** the smallest tier covering px, else the cap tier */
-  tierFor( px: number ): number {
-    for( let i = 0; i < this.tiers.length; i++ ){
-      if( px <= this.tiers[ i ] ){ return i; }
+  tierFor(px: number): number {
+    for (let i = 0; i < this.tiers.length; i++) {
+      if (px <= this.tiers[i]) {
+        return i;
+      }
     }
 
     return this.tiers.length - 1;
@@ -129,19 +134,27 @@ export class ImageRegistry {
    * @returns the entry id — a recycled slot, valid only until its last
    *   `release`
    */
-  acquire( url: string, kind: number, crossOrigin: string = 'anonymous' ): number {
+  acquire(
+    url: string,
+    kind: number,
+    crossOrigin: string = 'anonymous',
+  ): number {
     const key = `${kind}|${crossOrigin}|${url}`;
-    const existing = this.byKey.get( key );
+    const existing = this.byKey.get(key);
 
-    if( existing != null ){
-      this.entries[ existing ]!.refCount++;
+    if (existing != null) {
+      this.entries[existing]!.refCount++;
 
       return existing;
     }
 
-    const id = this.freeIds.length > 0 ? this.freeIds.pop()! : this.entries.length;
+    const id =
+      this.freeIds.length > 0 ? this.freeIds.pop()! : this.entries.length;
     const entry: ImageEntry = {
-      id, url, kind, crossOrigin,
+      id,
+      url,
+      kind,
+      crossOrigin,
       refCount: 1,
       status: IMAGE_PENDING,
       data: null,
@@ -149,17 +162,17 @@ export class ImageRegistry {
       height: 0,
       vector: false,
       tier: -1,
-      rasterPx: 0
+      rasterPx: 0,
     };
 
-    this.entries[ id ] = entry;
-    this.byKey.set( key, id );
+    this.entries[id] = entry;
+    this.byKey.set(key, id);
 
     // a url that already failed once stays failed: warn-once, no re-kick
-    if( this.warned.has( url ) ){
+    if (this.warned.has(url)) {
       entry.status = IMAGE_FAILED;
     } else {
-      this.kick( entry );
+      this.kick(entry);
     }
 
     return id;
@@ -173,17 +186,21 @@ export class ImageRegistry {
    *
    * @param id — an id from `acquire`
    */
-  release( id: number ): void {
-    const entry = this.entries[ id ];
+  release(id: number): void {
+    const entry = this.entries[id];
 
-    if( entry == null ){ return; }
+    if (entry == null) {
+      return;
+    }
 
-    if( --entry.refCount > 0 ){ return; }
+    if (--entry.refCount > 0) {
+      return;
+    }
 
-    this.byKey.delete( `${entry.kind}|${entry.crossOrigin}|${entry.url}` );
-    this.entries[ id ] = null;
-    this.freeIds.push( id );
-    this.freedQueue.push( id );
+    this.byKey.delete(`${entry.kind}|${entry.crossOrigin}|${entry.url}`);
+    this.entries[id] = null;
+    this.freeIds.push(id);
+    this.freedQueue.push(id);
     this.onChange?.();
   }
 
@@ -195,18 +212,22 @@ export class ImageRegistry {
    *
    * @param id — an id from `acquire`
    */
-  get( id: number ): ImageEntry | null {
-    return this.entries[ id ] ?? null;
+  get(id: number): ImageEntry | null {
+    return this.entries[id] ?? null;
   }
 
   /** Attach (or replace) the async rasterizer; kicks every pending entry. */
-  setDecoder( decoder: ImageDecoder | null ): void {
+  setDecoder(decoder: ImageDecoder | null): void {
     this.decoder = decoder;
 
-    if( decoder == null ){ return; }
+    if (decoder == null) {
+      return;
+    }
 
-    for( const entry of this.entries ){
-      if( entry != null && entry.status === IMAGE_PENDING ){ this.kick( entry ); }
+    for (const entry of this.entries) {
+      if (entry != null && entry.status === IMAGE_PENDING) {
+        this.kick(entry);
+      }
     }
   }
 
@@ -215,21 +236,27 @@ export class ImageRegistry {
    * side).  Snaps to the smallest tier covering the demand, clamped at
    * the cap tier; raster sources and already-covered demands no-op.
    */
-  promote( id: number, demandPx: number ): void {
-    const entry = this.entries[ id ];
+  promote(id: number, demandPx: number): void {
+    const entry = this.entries[id];
 
-    if( entry == null || !entry.vector || entry.status !== IMAGE_READY ){ return; }
+    if (entry == null || !entry.vector || entry.status !== IMAGE_READY) {
+      return;
+    }
 
-    const target = this.tiers[ this.tierFor( demandPx ) ];
+    const target = this.tiers[this.tierFor(demandPx)];
 
-    if( target <= entry.rasterPx ){ return; }
+    if (target <= entry.rasterPx) {
+      return;
+    }
 
-    this.kick( entry, target );
+    this.kick(entry, target);
   }
 
   /** entry ids decoded since the last call; returns-and-clears */
   takeReady(): number[] {
-    if( this.readyQueue.length === 0 ){ return []; }
+    if (this.readyQueue.length === 0) {
+      return [];
+    }
 
     const out = this.readyQueue;
 
@@ -240,7 +267,9 @@ export class ImageRegistry {
 
   /** entry ids freed since the last call; returns-and-clears */
   takeFreed(): number[] {
-    if( this.freedQueue.length === 0 ){ return []; }
+    if (this.freedQueue.length === 0) {
+      return [];
+    }
 
     const out = this.freedQueue;
 
@@ -262,20 +291,26 @@ export class ImageRegistry {
   /** Resolves once no decode is in flight (immediately when idle) —
    * the export path awaits this after promoting at export scale (15.6). */
   whenSettled(): Promise<void> {
-    if( this.inFlight === 0 ){ return Promise.resolve(); }
+    if (this.inFlight === 0) {
+      return Promise.resolve();
+    }
 
-    return new Promise( resolve => { this.settleResolvers.push( resolve ); } );
+    return new Promise((resolve) => {
+      this.settleResolvers.push(resolve);
+    });
   }
 
   private settle(): void {
     this.inFlight--;
 
-    if( this.inFlight === 0 && this.settleResolvers.length > 0 ){
+    if (this.inFlight === 0 && this.settleResolvers.length > 0) {
       const resolvers = this.settleResolvers;
 
       this.settleResolvers = [];
 
-      for( const resolve of resolvers ){ resolve(); }
+      for (const resolve of resolvers) {
+        resolve();
+      }
     }
   }
 
@@ -284,52 +319,65 @@ export class ImageRegistry {
   pendingCount(): number {
     let n = 0;
 
-    for( const entry of this.entries ){
-      if( entry != null && entry.status === IMAGE_PENDING ){ n++; }
+    for (const entry of this.entries) {
+      if (entry != null && entry.status === IMAGE_PENDING) {
+        n++;
+      }
     }
 
     return n;
   }
 
-  private kick( entry: ImageEntry, targetPx: number = 0 ): void {
-    if( this.decoder == null ){ return; }
+  private kick(entry: ImageEntry, targetPx: number = 0): void {
+    if (this.decoder == null) {
+      return;
+    }
 
     const sdf = entry.kind === IMAGE_KIND_SDF;
     const opts: ImageDecodeOpts = {
       crossOrigin: entry.crossOrigin,
       targetPx: sdf ? SDF_IMAGE_SIZE : targetPx,
-      sdf
+      sdf,
     };
 
     this.inFlight++;
-    this.decoder( entry.url, opts ).then( decoded => {
-      this.settle();
+    this.decoder(entry.url, opts).then(
+      (decoded) => {
+        this.settle();
 
-      // dropped if the entry was freed (or recycled) while in flight
-      if( this.entries[ entry.id ] !== entry ){ return; }
+        // dropped if the entry was freed (or recycled) while in flight
+        if (this.entries[entry.id] !== entry) {
+          return;
+        }
 
-      entry.data = decoded.data;
-      entry.width = decoded.width;
-      entry.height = decoded.height;
-      entry.vector = decoded.vector;
-      entry.rasterPx = Math.max( decoded.width, decoded.height );
-      entry.tier = sdf ? -1 : this.tierFor( entry.rasterPx );
-      entry.status = IMAGE_READY;
-      this.readyQueue.push( entry.id );
-      this.onChange?.();
-    }, ( err: unknown ) => {
-      this.settle();
+        entry.data = decoded.data;
+        entry.width = decoded.width;
+        entry.height = decoded.height;
+        entry.vector = decoded.vector;
+        entry.rasterPx = Math.max(decoded.width, decoded.height);
+        entry.tier = sdf ? -1 : this.tierFor(entry.rasterPx);
+        entry.status = IMAGE_READY;
+        this.readyQueue.push(entry.id);
+        this.onChange?.();
+      },
+      (err: unknown) => {
+        this.settle();
 
-      if( this.entries[ entry.id ] !== entry ){ return; }
+        if (this.entries[entry.id] !== entry) {
+          return;
+        }
 
-      if( !this.warned.has( entry.url ) ){
-        this.warned.add( entry.url );
-        console.warn( `The background image '${entry.url}' failed to load and will not render`,
-          err instanceof Error ? `(${err.message})` : '' );
-      }
+        if (!this.warned.has(entry.url)) {
+          this.warned.add(entry.url);
+          console.warn(
+            `The background image '${entry.url}' failed to load and will not render`,
+            err instanceof Error ? `(${err.message})` : '',
+          );
+        }
 
-      entry.status = IMAGE_FAILED;
-      this.onChange?.();
-    } );
+        entry.status = IMAGE_FAILED;
+        this.onChange?.();
+      },
+    );
   }
 }

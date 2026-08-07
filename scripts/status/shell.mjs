@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 
 import { THEME_CSS, esc } from '../theme.mjs';
 
-const require = createRequire( import.meta.url );
+const require = createRequire(import.meta.url);
 
 /**
  * highlight.js's GitHub themes, read from node_modules at build time and
@@ -17,17 +17,20 @@ const require = createRequire( import.meta.url );
  * upgrade carries through; a missing file degrades to unhighlighted code
  * rather than failing the build.
  */
-function hljsCss(){
-  const read = name => {
+function hljsCss() {
+  const read = (name) => {
     try {
-      return readFileSync( require.resolve( `highlight.js/styles/${name}.css` ), 'utf8' );
-    } catch{
+      return readFileSync(
+        require.resolve(`highlight.js/styles/${name}.css`),
+        'utf8',
+      );
+    } catch {
       return '';
     }
   };
 
-  return `${read( 'github' )}
-@media (prefers-color-scheme: dark) { ${read( 'github-dark' )} }
+  return `${read('github')}
+@media (prefers-color-scheme: dark) { ${read('github-dark')} }
 /* the theme's own background fights --surface; the block already has one */
 pre code.hljs { background: transparent; padding: 0; }`;
 }
@@ -138,7 +141,7 @@ export const NAV = [
   { id: 'api', href: '/api.html', label: 'API' },
   { id: 'plan', href: '/plan.html', label: 'Record' },
   { id: 'design', href: '/design.html', label: 'Design' },
-  { id: 'goldens', href: '/goldens.html', label: 'Goldens' }
+  { id: 'goldens', href: '/goldens.html', label: 'Goldens' },
 ];
 
 /**
@@ -151,16 +154,28 @@ export const NAV = [
  * @param state — the repo state, for the build stamp in the bar
  * @param prose — apply the document typography (false for index-like pages)
  */
-export function page( { title, body, toc = '', active = null, state = {}, prose = true } ){
-  const nav = NAV
-    .map( n => `<a href="${esc( n.href )}"${n.id === active ? ' aria-current="page"' : ''}>${esc( n.label )}</a>` )
-    .join( '' );
+export function page({
+  title,
+  body,
+  toc = '',
+  active = null,
+  state = {},
+  prose = true,
+}) {
+  const nav = NAV.map(
+    (n) =>
+      `<a href="${esc(n.href)}"${n.id === active ? ' aria-current="page"' : ''}>${esc(n.label)}</a>`,
+  ).join('');
 
   const stamp = [
-    state.branch != null ? esc( state.branch ) : null,
-    state.commit?.short != null ? esc( state.commit.short ) : null,
-    state.builtAt != null ? `built ${esc( state.builtAt.replace( 'T', ' ' ).slice( 0, 16 ) )}Z` : null
-  ].filter( v => v != null ).join( ' · ' );
+    state.branch != null ? esc(state.branch) : null,
+    state.commit?.short != null ? esc(state.commit.short) : null,
+    state.builtAt != null
+      ? `built ${esc(state.builtAt.replace('T', ' ').slice(0, 16))}Z`
+      : null,
+  ]
+    .filter((v) => v != null)
+    .join(' · ');
 
   return `<!doctype html>
 <html lang="en">
@@ -171,7 +186,7 @@ export function page( { title, body, toc = '', active = null, state = {}, prose 
 <!-- inline, like everything else here: a favicon file would be the site's one
      external request, and its absence is a 404 in every visitor's console -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='7' r='5' fill='%232a78d6'/%3E%3Ccircle cx='6' cy='25' r='5' fill='%232a78d6'/%3E%3Ccircle cx='26' cy='25' r='5' fill='%232a78d6'/%3E%3Cpath d='M16 7L6 25M16 7l10 18M6 25h20' stroke='%232a78d6' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
-<title>${esc( title )}</title>
+<title>${esc(title)}</title>
 <style>${THEME_CSS}
 ${SITE_CSS}
 ${hljsCss()}</style>

@@ -1,4 +1,9 @@
-import type { ColumnId, DirtySpan, GroupName, StoreDelta } from '../contract.mjs';
+import type {
+  ColumnId,
+  DirtySpan,
+  GroupName,
+  StoreDelta,
+} from '../contract.mjs';
 
 interface Span {
   start: number;
@@ -15,12 +20,12 @@ interface Span {
 export class DirtyTracker {
   private spans: Map<ColumnId, Span>;
   private resized: { nodes: boolean; edges: boolean };
-  private cbs: ( () => void )[];
+  private cbs: (() => void)[];
   private scheduled: boolean;
   private touched: boolean;
 
   /** Starts clean: no spans, neither group resized, no subscribers. */
-  constructor(){
+  constructor() {
     this.spans = new Map();
     this.resized = { nodes: false, edges: false };
     this.cbs = [];
@@ -49,14 +54,14 @@ export class DirtyTracker {
    * @param start — first slot touched
    * @param end — one past the last slot touched; defaults to one slot
    */
-  mark( column: ColumnId, start: number, end: number = start + 1 ): void {
-    const span = this.spans.get( column );
+  mark(column: ColumnId, start: number, end: number = start + 1): void {
+    const span = this.spans.get(column);
 
-    if( span == null ){
-      this.spans.set( column, { start, end } );
+    if (span == null) {
+      this.spans.set(column, { start, end });
     } else {
-      span.start = Math.min( span.start, start );
-      span.end = Math.max( span.end, end );
+      span.start = Math.min(span.start, start);
+      span.end = Math.max(span.end, end);
     }
 
     this.schedule();
@@ -70,14 +75,19 @@ export class DirtyTracker {
    *
    * @param group — the group whose capacity changed
    */
-  markResized( group: GroupName ): void {
-    this.resized[ group ] = true;
+  markResized(group: GroupName): void {
+    this.resized[group] = true;
     this.schedule();
   }
 
   /** Whether anything is pending — spans, a resize, or a bare touch(). */
   hasDirty(): boolean {
-    return this.spans.size > 0 || this.resized.nodes || this.resized.edges || this.touched;
+    return (
+      this.spans.size > 0 ||
+      this.resized.nodes ||
+      this.resized.edges ||
+      this.touched
+    );
   }
 
   /**
@@ -90,18 +100,18 @@ export class DirtyTracker {
    * @param edgeHighWater — the edge table's current high water mark
    * @returns the spans, resize flags and high water marks for this frame
    */
-  take( nodeHighWater: number, edgeHighWater: number ): StoreDelta {
+  take(nodeHighWater: number, edgeHighWater: number): StoreDelta {
     const spans: DirtySpan[] = [];
 
-    for( const [ column, span ] of this.spans ){
-      spans.push( { column, start: span.start, end: span.end } );
+    for (const [column, span] of this.spans) {
+      spans.push({ column, start: span.start, end: span.end });
     }
 
     const delta: StoreDelta = {
       resized: this.resized,
       spans,
       nodeHighWater,
-      edgeHighWater
+      edgeHighWater,
     };
 
     this.spans = new Map();
@@ -121,29 +131,35 @@ export class DirtyTracker {
    * @returns an unsubscribe function (safe to call from within `cb`;
    *   the callback list is snapshotted before dispatch)
    */
-  onInvalidate( cb: () => void ): () => void {
-    this.cbs.push( cb );
+  onInvalidate(cb: () => void): () => void {
+    this.cbs.push(cb);
 
     return () => {
-      const i = this.cbs.indexOf( cb );
+      const i = this.cbs.indexOf(cb);
 
-      if( i >= 0 ){ this.cbs.splice( i, 1 ); }
+      if (i >= 0) {
+        this.cbs.splice(i, 1);
+      }
     };
   }
 
   private schedule(): void {
-    if( this.scheduled ){ return; }
+    if (this.scheduled) {
+      return;
+    }
 
     this.scheduled = true;
 
-    queueMicrotask( () => {
+    queueMicrotask(() => {
       this.scheduled = false;
 
-      if( !this.hasDirty() ){ return; } // e.g. taken synchronously before the microtask ran
+      if (!this.hasDirty()) {
+        return;
+      } // e.g. taken synchronously before the microtask ran
 
-      for( const cb of this.cbs.slice() ){
+      for (const cb of this.cbs.slice()) {
         cb();
       }
-    } );
+    });
   }
 }

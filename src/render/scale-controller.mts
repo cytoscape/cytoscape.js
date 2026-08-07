@@ -61,19 +61,19 @@ export class ScaleController {
    * @param min — lowest pixel ratio the renderer may drop to
    * @param max — highest pixel ratio, and where idle frames settle
    */
-  constructor( min: number = 0.5, max: number = 1 ){
-    const lo = Math.min( 1, Math.max( 0.25, Math.min( min, max ) ) );
-    const hi = Math.min( 1, Math.max( lo, Math.max( min, max ) ) );
+  constructor(min: number = 0.5, max: number = 1) {
+    const lo = Math.min(1, Math.max(0.25, Math.min(min, max)));
+    const hi = Math.min(1, Math.max(lo, Math.max(min, max)));
 
     this.min = lo;
     this.max = hi;
     this.steps = [];
 
-    for( let s = hi; s > lo + 1e-9; s -= SCALE_STEP ){
-      this.steps.push( Math.round( s * 100 ) / 100 );
+    for (let s = hi; s > lo + 1e-9; s -= SCALE_STEP) {
+      this.steps.push(Math.round(s * 100) / 100);
     }
 
-    this.steps.push( lo );
+    this.steps.push(lo);
 
     this.idx = 0;
     this.windowStart = 0;
@@ -87,76 +87,82 @@ export class ScaleController {
   /** the current pixel ratio; changes only at the return of a frameDrawn(),
    * frameStalled() or settleToMax() call that reported a new value */
   get scale(): number {
-    return this.steps[ this.idx ];
+    return this.steps[this.idx];
   }
 
   /** A frame was drawn; gpuMs is 0 when GPU timing is unavailable.
    * Returns the new scale when this tick changed it, else null. */
-  frameDrawn( now: number, gpuMs: number ): number | null {
-    this.tick( now );
+  frameDrawn(now: number, gpuMs: number): number | null {
+    this.tick(now);
     this.drawn++;
 
-    if( gpuMs > 0 ){ this.samples.push( gpuMs ); }
+    if (gpuMs > 0) {
+      this.samples.push(gpuMs);
+    }
 
-    return this.evaluate( now );
+    return this.evaluate(now);
   }
 
   /** The render loop skipped encoding because the GPU was behind. */
-  frameStalled( now: number ): number | null {
-    this.tick( now );
+  frameStalled(now: number): number | null {
+    this.tick(now);
     this.stalls++;
 
-    return this.evaluate( now );
+    return this.evaluate(now);
   }
 
   /** Idle path: jump straight to max for a full-resolution still frame.
    * Returns the new scale, or null when already at max. */
   settleToMax(): number | null {
-    if( this.idx === 0 ){ return null; }
+    if (this.idx === 0) {
+      return null;
+    }
 
     this.idx = 0;
-    this.resetWindow( this.windowStart );
+    this.resetWindow(this.windowStart);
 
     return this.scale;
   }
 
-  private tick( now: number ): void {
-    if( this.drawn + this.stalls === 0 ){
+  private tick(now: number): void {
+    if (this.drawn + this.stalls === 0) {
       this.windowStart = now;
     }
   }
 
-  private evaluate( now: number ): number | null {
-    if( now - this.windowStart < EVAL_WINDOW_MS ){ return null; }
+  private evaluate(now: number): number | null {
+    if (now - this.windowStart < EVAL_WINDOW_MS) {
+      return null;
+    }
 
     const ticks = this.drawn + this.stalls;
     const stallRatio = this.stalls / ticks;
     const haveGpu = this.samples.length >= MIN_GPU_SAMPLES;
-    const med = median( this.samples );
+    const med = median(this.samples);
     let next: number | null = null;
 
-    if( ticks >= MIN_TICKS ){
-      if( ( haveGpu && med > DROP_MS ) || stallRatio > STALL_DROP_RATIO ){
-        if( this.idx < this.steps.length - 1 ){
+    if (ticks >= MIN_TICKS) {
+      if ((haveGpu && med > DROP_MS) || stallRatio > STALL_DROP_RATIO) {
+        if (this.idx < this.steps.length - 1) {
           this.idx++;
           next = this.scale;
         }
 
         this.cleanWindows = 0;
-      } else if( this.idx > 0 && now - this.lastRaiseAt >= RAISE_COOLDOWN_MS ){
-        if( haveGpu ){
-          const up = this.steps[ this.idx - 1 ];
-          const projected = med * ( up / this.scale ) * ( up / this.scale );
+      } else if (this.idx > 0 && now - this.lastRaiseAt >= RAISE_COOLDOWN_MS) {
+        if (haveGpu) {
+          const up = this.steps[this.idx - 1];
+          const projected = med * (up / this.scale) * (up / this.scale);
 
-          if( projected < RAISE_HEADROOM_MS ){
+          if (projected < RAISE_HEADROOM_MS) {
             this.idx--;
             next = this.scale;
             this.lastRaiseAt = now;
           }
-        } else if( stallRatio === 0 ){
+        } else if (stallRatio === 0) {
           this.cleanWindows++;
 
-          if( this.cleanWindows >= CLEAN_WINDOWS_TO_RAISE ){
+          if (this.cleanWindows >= CLEAN_WINDOWS_TO_RAISE) {
             this.idx--;
             next = this.scale;
             this.lastRaiseAt = now;
@@ -166,12 +172,12 @@ export class ScaleController {
       }
     }
 
-    this.resetWindow( now );
+    this.resetWindow(now);
 
     return next;
   }
 
-  private resetWindow( now: number ): void {
+  private resetWindow(now: number): void {
     this.windowStart = now;
     this.drawn = 0;
     this.stalls = 0;
@@ -179,10 +185,12 @@ export class ScaleController {
   }
 }
 
-function median( values: number[] ): number {
-  if( values.length === 0 ){ return 0; }
+function median(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
 
-  const sorted = values.slice().sort( ( a, b ) => a - b );
+  const sorted = values.slice().sort((a, b) => a - b);
 
-  return sorted[ Math.floor( sorted.length / 2 ) ];
+  return sorted[Math.floor(sorted.length / 2)];
 }

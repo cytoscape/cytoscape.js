@@ -18,7 +18,7 @@ const defaults: Omit<CircleLayoutOptions, 'name'> = {
   avoidOverlap: true,
   spacingFactor: undefined,
   radius: undefined,
-  startAngle: 3 / 2 * Math.PI,
+  startAngle: (3 / 2) * Math.PI,
   sweep: undefined,
   clockwise: true,
   sort: undefined,
@@ -28,7 +28,7 @@ const defaults: Omit<CircleLayoutOptions, 'name'> = {
   animateFilter: undefined,
   ready: undefined,
   stop: undefined,
-  transform: undefined
+  transform: undefined,
 };
 
 /**
@@ -51,7 +51,7 @@ export class CircleLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: Core, options: CircleLayoutOptions ){
+  constructor(cy: Core, options: CircleLayoutOptions) {
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -67,67 +67,81 @@ export class CircleLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
-    const clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
+    const eles = (options.eles as Collection | undefined) ?? cy.elements();
+    const clockwise =
+      options.counterclockwise !== undefined
+        ? !options.counterclockwise
+        : options.clockwise;
 
-    let nodes = eles.nodes().filter( ( n: Collection ) => !n.isParent() );
+    let nodes = eles.nodes().filter((n: Collection) => !n.isParent());
 
-    if( options.sort != null ){
-      nodes = nodes.sort( options.sort as ( a: Collection, b: Collection ) => number );
+    if (options.sort != null) {
+      nodes = nodes.sort(
+        options.sort as (a: Collection, b: Collection) => number,
+      );
     }
 
-    const bb = math.makeBoundingBox( options.boundingBox ?? {
-      x1: 0, y1: 0, w: cy.width(), h: cy.height()
-    } ) as BoundingBox;
+    const bb = math.makeBoundingBox(
+      options.boundingBox ?? {
+        x1: 0,
+        y1: 0,
+        w: cy.width(),
+        h: cy.height(),
+      },
+    ) as BoundingBox;
 
     const center = {
       x: bb.x1 + bb.w / 2,
-      y: bb.y1 + bb.h / 2
+      y: bb.y1 + bb.h / 2,
     };
 
-    const sweep = options.sweep === undefined
-      ? 2 * Math.PI - 2 * Math.PI / nodes.length
-      : options.sweep;
-    const dTheta = sweep / Math.max( 1, nodes.length - 1 );
+    const sweep =
+      options.sweep === undefined
+        ? 2 * Math.PI - (2 * Math.PI) / nodes.length
+        : options.sweep;
+    const dTheta = sweep / Math.max(1, nodes.length - 1);
     let r: number;
 
     let minDistance = 0;
 
-    for( let i = 0; i < nodes.length; i++ ){
-      const nbb = nodes[ i ].layoutDimensions( options );
+    for (let i = 0; i < nodes.length; i++) {
+      const nbb = nodes[i].layoutDimensions(options);
 
-      minDistance = Math.max( minDistance, nbb.w, nbb.h );
+      minDistance = Math.max(minDistance, nbb.w, nbb.h);
     }
 
-    if( typeof options.radius === 'number' ){
+    if (typeof options.radius === 'number') {
       r = options.radius;
-    } else if( nodes.length <= 1 ){
+    } else if (nodes.length <= 1) {
       r = 0;
     } else {
-      r = Math.min( bb.h, bb.w ) / 2 - minDistance;
+      r = Math.min(bb.h, bb.w) / 2 - minDistance;
     }
 
     // adjust the radius so nodes can't overlap
-    if( nodes.length > 1 && options.avoidOverlap ){
+    if (nodes.length > 1 && options.avoidOverlap) {
       minDistance *= 1.75; // just to have some nice spacing
 
-      const dcos = Math.cos( dTheta ) - Math.cos( 0 );
-      const dsin = Math.sin( dTheta ) - Math.sin( 0 );
-      const rMin = Math.sqrt( minDistance * minDistance / ( dcos * dcos + dsin * dsin ) );
+      const dcos = Math.cos(dTheta) - Math.cos(0);
+      const dsin = Math.sin(dTheta) - Math.sin(0);
+      const rMin = Math.sqrt(
+        (minDistance * minDistance) / (dcos * dcos + dsin * dsin),
+      );
 
-      r = Math.max( rMin, r );
+      r = Math.max(rMin, r);
     }
 
-    const getPos = ( _ele: Collection, i: number ): Position => {
-      const theta = ( options.startAngle as number ) + i * dTheta * ( clockwise ? 1 : -1 );
+    const getPos = (_ele: Collection, i: number): Position => {
+      const theta =
+        (options.startAngle as number) + i * dTheta * (clockwise ? 1 : -1);
 
       return {
-        x: center.x + r * Math.cos( theta ),
-        y: center.y + r * Math.sin( theta )
+        x: center.x + r * Math.cos(theta),
+        y: center.y + r * Math.sin(theta),
       };
     };
 
-    nodes.layoutPositions( this, { ...options, eles }, getPos );
+    nodes.layoutPositions(this, { ...options, eles }, getPos);
 
     return this;
   }

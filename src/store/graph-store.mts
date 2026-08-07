@@ -10,32 +10,86 @@ import type { CompoundStyle } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
   boundaryOffset,
-  CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
-  evalRoute, haystackPoint, headerDeviation, routeVertex, segmentHitsBox,
-  shortenToward
+  CURVE_SEGS,
+  curveDeviation,
+  curvePointAt,
+  emptyCurveEval,
+  emptyCurveRoute,
+  evalCurve,
+  evalRoute,
+  haystackPoint,
+  headerDeviation,
+  routeVertex,
+  segmentHitsBox,
+  shortenToward,
 } from '../curve-geometry.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
-  columnSpec, columnSpecsForGroup,
+  columnSpec,
+  columnSpecsForGroup,
   CHART_HEADER,
-  CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
+  CURVE_BEZIER,
+  CURVE_CMPD,
+  CURVE_HAS_ENDPT,
+  CURVE_HAYSTACK,
+  CURVE_LOOP,
+  CURVE_MULTI,
   CURVE_SEGMENTS,
-  CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
-  ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
-  ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_SRC_SHOWS_LINE,
-  ARROW_SHIFT_TARGET, ARROW_SHIFT_TGT_SHOWS_LINE,
-  FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
-  FLAG_DRAWN, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
-  FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT,
-  SHAPE_MASK, SHAPE_POLYGON_CUSTOM, SHAPE_SHIFT
+  CURVE_STRAIGHT,
+  CURVE_TAXI,
+  CURVE_TRIANGLE,
+  ARROW_SHAPE_MASK,
+  ARROW_SHIFT_HOLLOW_SOURCE,
+  ARROW_SHIFT_HOLLOW_TARGET,
+  ARROW_SHIFT_SCALE,
+  ARROW_SHIFT_SOURCE,
+  ARROW_SHIFT_SRC_SHOWS_LINE,
+  ARROW_SHIFT_TARGET,
+  ARROW_SHIFT_TGT_SHOWS_LINE,
+  FLAG_ALIVE,
+  FLAG_CHILD,
+  FLAG_CURVED,
+  FLAG_CURVED_BOX,
+  FLAG_GRABBABLE,
+  FLAG_LOCKED,
+  FLAG_DRAWN,
+  FLAG_PANNABLE,
+  FLAG_PARENT,
+  FLAG_SELECTABLE,
+  FLAG_SELECTED,
+  FLAG_SELF_HIDDEN,
+  FLAG_SELF_INVISIBLE,
+  FLAG_VISIBLE,
+  LABEL_MARGIN,
+  NO_SLOT,
+  SHAPE_MASK,
+  SHAPE_POLYGON_CUSTOM,
+  SHAPE_SHIFT,
 } from '../contract.mjs';
-import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
+import type {
+  LabelStream,
+  ColumnArray,
+  ColumnId,
+  GroupName,
+  LabelEntry,
+  ModelView,
+  Ref,
+  StoreDelta,
+} from '../contract.mjs';
 import { NO_PARENT } from '../public-types.mjs';
 import type {
-  BoxSelectionMode, ColumnarEdges, ColumnarNodes, DataColumn, PackedIds
+  BoxSelectionMode,
+  ColumnarEdges,
+  ColumnarNodes,
+  DataColumn,
+  PackedIds,
 } from '../public-types.mjs';
-import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
+import {
+  ImageRegistry,
+  IMAGE_KIND_AUTO,
+  IMAGE_KIND_SDF,
+} from '../image-registry.mjs';
 import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
 
 /** floats per image record in the image pool (round 15.2) */
@@ -46,9 +100,15 @@ export const IMG_STRIDE = 12;
 const shortenScratch = { x: 0, y: 0 };
 
 /** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
-export interface BgLen { v: number; pct: boolean; }
+export interface BgLen {
+  v: number;
+  pct: boolean;
+}
 /** A background-width/-height value: mode 0 auto, 1 px, 2 percent. */
-export interface BgSize { mode: number; v: number; }
+export interface BgSize {
+  mode: number;
+  v: number;
+}
 
 /** One styled background image, as the style engine hands it over. */
 export interface NodeImageSpec {
@@ -67,11 +127,14 @@ export interface NodeImageSpec {
   offY: BgLen;
   w: BgSize;
   h: BgSize;
-  tint: [ number, number, number, number ];
+  tint: [number, number, number, number];
 }
 
 /** A stored image record decoded back out of the pool (readback). */
-export interface NodeImageRecord extends Omit<NodeImageSpec, 'url' | 'crossOrigin'> {
+export interface NodeImageRecord extends Omit<
+  NodeImageSpec,
+  'url' | 'crossOrigin'
+> {
   entryId: number;
   url: string;
 }
@@ -93,7 +156,7 @@ interface OrderList {
   stale: number;
 }
 
-const emptyOrder = (): OrderList => ( { slots: [], gens: [], stale: 0 } );
+const emptyOrder = (): OrderList => ({ slots: [], gens: [], stale: 0 });
 
 /** A coalesced [start, end) span of data writes to one watched (group, key). */
 export interface MapperSpan {
@@ -137,16 +200,16 @@ export class GraphStore implements ModelView {
   private hierarchy: HierarchyIndex;
   /** per-parent stashed *style* size: the degenerate-children fallback,
    * restored to the column when the node becomes a leaf again (14.3) */
-  private parentFallback = new Map<number, [ number, number ]>();
+  private parentFallback = new Map<number, [number, number]>();
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
-  onCompoundsToggled: ( () => void ) | null = null;
+  onCompoundsToggled: (() => void) | null = null;
   /** fires when a node flips leaf <-> parent (the core restyles the slot
    * against the right sheet group, round 14.6) */
-  onParentFlip: ( ( slot: number ) => void ) | null = null;
+  onParentFlip: ((slot: number) => void) | null = null;
   /** fires when a node's parent changes (structural case conditions on
    * the moved node re-evaluate, round 14.7) */
-  onReparented: ( ( slot: number ) => void ) | null = null;
+  onReparented: ((slot: number) => void) | null = null;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -187,17 +250,23 @@ export class GraphStore implements ModelView {
   // Label writes deliberately do not bump it (25.5): the memo has no
   // label terms, and a font-size tween would otherwise nuke it per tick.
   private geoEpoch = 1;
-  private edgeBBEpoch = new Uint32Array( 0 );
-  private edgeBB = new Float64Array( 0 );
+  private edgeBBEpoch = new Uint32Array(0);
+  private edgeBB = new Float64Array(0);
   private curveScratch = emptyCurveEval();
   private routeScratch = emptyCurveRoute();
 
   private order: { nodes: OrderList; edges: OrderList };
-  private labels: Record<LabelStream, ( LabelEntry | undefined )[]>;
+  private labels: Record<LabelStream, (LabelEntry | undefined)[]>;
   private labelDirty: Record<LabelStream, Set<number>>;
   /** laid (or estimated) label block dims per stream (round 16.2) */
-  private labelDims: Record<LabelStream, Map<number, { w: number; h: number; exact: boolean }>> = {
-    nodes: new Map(), edges: new Map(), edgeSource: new Map(), edgeTarget: new Map()
+  private labelDims: Record<
+    LabelStream,
+    Map<number, { w: number; h: number; exact: boolean }>
+  > = {
+    nodes: new Map(),
+    edges: new Map(),
+    edgeSource: new Map(),
+    edgeTarget: new Map(),
   };
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
@@ -213,7 +282,8 @@ export class GraphStore implements ModelView {
   /** forwarding chains for refs staled by slot compaction (19.3):
    * packed (slot, gen) → packed (newSlot, newGen), per group */
   private forwards: Record<GroupName, Map<number, number>> = {
-    nodes: new Map(), edges: new Map()
+    nodes: new Map(),
+    edges: new Map(),
   };
   private _compactEpoch = 0;
   // Round 34.2: bumped whenever an element enters or leaves the
@@ -233,9 +303,9 @@ export class GraphStore implements ModelView {
    * geometry back into the columns.  Takes no arguments: the store is
    * headless and grows on demand.
    */
-  constructor(){
-    this.nodes = new ColumnTable( 'nodes', columnSpecsForGroup( 'nodes' ) );
-    this.edges = new ColumnTable( 'edges', columnSpecsForGroup( 'edges' ) );
+  constructor() {
+    this.nodes = new ColumnTable('nodes', columnSpecsForGroup('nodes'));
+    this.edges = new ColumnTable('edges', columnSpecsForGroup('edges'));
     this.ids = new IdMap();
     this.adj = new Adjacency();
     this.data = new DataStore();
@@ -243,7 +313,10 @@ export class GraphStore implements ModelView {
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
     this.labels = { nodes: [], edges: [], edgeSource: [], edgeTarget: [] };
     this.labelDirty = {
-      nodes: new Set(), edges: new Set(), edgeSource: new Set(), edgeTarget: new Set()
+      nodes: new Set(),
+      edges: new Set(),
+      edgeSource: new Set(),
+      edgeTarget: new Set(),
     };
     this.labelFont = 'sans-serif';
     this.labelFontStyle = 'normal';
@@ -254,119 +327,134 @@ export class GraphStore implements ModelView {
     // a dict compaction remaps every slot's stored index for that key:
     // a watched key must re-upload its whole column (and, via the bumped
     // dict epoch, repack the GPU ordinal LUT); unwatched keys no-op
-    this.data.onDictRemap = ( group, key ) => {
-      this.markDataWrite( group, key, 0, this.table( group ).highWater );
+    this.data.onDictRemap = (group, key) => {
+      this.markDataWrite(group, key, 0, this.table(group).highWater);
     };
 
-    this.curves = new CurveIndex( {
-      endpoints: () => this.edges.column( 'edge.endpoints' ) as Uint32Array,
-      aliveEdgeSlots: () => this.slotsOrdered( 'edges' ),
-      writeParams: ( slot, p0, p1, p2, kind ) => this.setCurveParams( slot, p0, p1, p2, kind ),
-      writeBlobParams: ( slot, kind, values, n, dev, box, endptPct ) =>
-        this.setCurveParamsBlob( slot, kind, values, n, dev, box, endptPct ),
-      idHash: ( slot ) => this.ids.hashAt( 'edges', slot ),
+    this.curves = new CurveIndex({
+      endpoints: () => this.edges.column('edge.endpoints') as Uint32Array,
+      aliveEdgeSlots: () => this.slotsOrdered('edges'),
+      writeParams: (slot, p0, p1, p2, kind) =>
+        this.setCurveParams(slot, p0, p1, p2, kind),
+      writeBlobParams: (slot, kind, values, n, dev, box, endptPct) =>
+        this.setCurveParamsBlob(slot, kind, values, n, dev, box, endptPct),
+      idHash: (slot) => this.ids.hashAt('edges', slot),
       schedule: () => this.dirty.touch(),
       // display tier (round 22.3): hidden members leave their bundles
-      edgeShown: ( slot ) =>
-        ( ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] & FLAG_VISIBLE ) !== 0,
+      edgeShown: (slot) =>
+        ((this.edges.column('edge.flags') as Uint32Array)[slot] &
+          FLAG_VISIBLE) !==
+        0,
       // compound relation (14.10): ancestor/descendant endpoints, or a
       // self-loop on a parent — such edges route around the outside
-      relation: ( a, b ) => a === b
-        ? this.hierarchy.childrenOf( a ).length > 0
-        : ( this.hierarchy.isAncestorOf( a, b ) || this.hierarchy.isAncestorOf( b, a ) ),
-      outerHalfW: ( slot ) => ( this.nodes.column( 'node.outerHalf' ) as Float32Array )[ slot * 2 ]
-    } );
+      relation: (a, b) =>
+        a === b
+          ? this.hierarchy.childrenOf(a).length > 0
+          : this.hierarchy.isAncestorOf(a, b) ||
+            this.hierarchy.isAncestorOf(b, a),
+      outerHalfW: (slot) =>
+        (this.nodes.column('node.outerHalf') as Float32Array)[slot * 2],
+    });
 
-    this.hierarchy = new HierarchyIndex( {
-      flags: () => this.nodes.column( 'node.flags' ) as Uint32Array,
+    this.hierarchy = new HierarchyIndex({
+      flags: () => this.nodes.column('node.flags') as Uint32Array,
       gen: () => this.nodes.gen,
-      markFlag: ( slot ) => this.dirty.mark( 'node.flags', slot ),
+      markFlag: (slot) => this.dirty.mark('node.flags', slot),
       schedule: () => this.dirty.touch(),
-      positions: () => this.nodes.column( 'node.position' ) as Float32Array,
-      outerHalf: () => this.nodes.column( 'node.outerHalf' ) as Float32Array,
-      readSize: ( slot ) => {
-        const stashed = this.parentFallback.get( slot );
+      positions: () => this.nodes.column('node.position') as Float32Array,
+      outerHalf: () => this.nodes.column('node.outerHalf') as Float32Array,
+      readSize: (slot) => {
+        const stashed = this.parentFallback.get(slot);
 
-        if( stashed != null ){ return stashed; }
+        if (stashed != null) {
+          return stashed;
+        }
 
-        const size = this.nodes.column( 'node.size' ) as Float32Array;
+        const size = this.nodes.column('node.size') as Float32Array;
 
-        return [ size[ slot * 2 ], size[ slot * 2 + 1 ] ];
+        return [size[slot * 2], size[slot * 2 + 1]];
       },
-      onFlip: ( slot, becameParent ) => {
-        if( becameParent ){
+      onFlip: (slot, becameParent) => {
+        if (becameParent) {
           // stash the style size: auto-bounds owns the column from here,
           // and the stash is both the degenerate fallback and what a
           // leaf-again node returns to
-          const size = this.nodes.column( 'node.size' ) as Float32Array;
+          const size = this.nodes.column('node.size') as Float32Array;
 
-          this.parentFallback.set( slot, [ size[ slot * 2 ], size[ slot * 2 + 1 ] ] );
+          this.parentFallback.set(slot, [size[slot * 2], size[slot * 2 + 1]]);
         } else {
-          const stashed = this.parentFallback.get( slot );
+          const stashed = this.parentFallback.get(slot);
 
-          this.parentFallback.delete( slot );
+          this.parentFallback.delete(slot);
 
-          if( stashed != null ){ this.setPair( 'node.size', slot, stashed[ 0 ], stashed[ 1 ] ); }
+          if (stashed != null) {
+            this.setPair('node.size', slot, stashed[0], stashed[1]);
+          }
         }
 
         // paint config depends on hasCompounds (the opacity-fold GPU
         // demotion, round 14.4): notify on the 0 <-> >0 transitions
-        if( becameParent ? this.hierarchy.parentCount() === 1 : this.hierarchy.parentCount() === 0 ){
+        if (
+          becameParent
+            ? this.hierarchy.parentCount() === 1
+            : this.hierarchy.parentCount() === 0
+        ) {
           this.onCompoundsToggled?.();
         }
 
         // a flipped node restyles against the right sheet group (14.6)
-        this.onParentFlip?.( slot );
+        this.onParentFlip?.(slot);
 
         // its self-loops flip between plain and compound routing (14.10)
-        const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+        const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
 
-        for( const edgeSlot of this.adj.connectedEdges( slot ) ){
-          if( endpoints[ edgeSlot * 2 ] === endpoints[ edgeSlot * 2 + 1 ] ){
-            this.curves.invalidateRelation( slot, slot );
+        for (const edgeSlot of this.adj.connectedEdges(slot)) {
+          if (endpoints[edgeSlot * 2] === endpoints[edgeSlot * 2 + 1]) {
+            this.curves.invalidateRelation(slot, slot);
           }
         }
       },
-      materialize: ( slot, x, y, w, h ) => this.materializeParentGeom( slot, x, y, w, h )
-    } );
+      materialize: (slot, x, y, w, h) =>
+        this.materializeParentGeom(slot, x, y, w, h),
+    });
 
     // a blob compaction moves records: rewrite the header offset (a
     // normal column write, so the renderer re-uploads it as a span).
     // Geometry is unchanged, so the bb memo epoch is left alone.
-    this.blob = new CurveBlob( ( slot, offset ) => {
-      const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    this.blob = new CurveBlob((slot, offset) => {
+      const params = this.edges.column('edge.curveParams') as Float32Array;
 
-      params[ slot * 4 ] = offset;
-      this.dirty.mark( 'edge.curveParams', slot );
-    } );
+      params[slot * 4] = offset;
+      this.dirty.mark('edge.curveParams', slot);
+    });
 
     // C3: the custom-polygon point pool (same slot-stable policy); a
     // relocation rewrites the borderGeom[0] ref in place
-    this.polyPool = new CurveBlob( ( slot, offset ) => {
-      const geom = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
-      const count = geom[ slot * 4 ] >>> 24;
+    this.polyPool = new CurveBlob((slot, offset) => {
+      const geom = this.nodes.column('node.borderGeom') as Uint32Array;
+      const count = geom[slot * 4] >>> 24;
 
-      geom[ slot * 4 ] = ( offset | ( count << 24 ) ) >>> 0;
-      this.dirty.mark( 'node.borderGeom', slot );
-    } );
+      geom[slot * 4] = (offset | (count << 24)) >>> 0;
+      this.dirty.mark('node.borderGeom', slot);
+    });
 
     // 15.2: the image-record pool; a relocation rewrites node.imageRef
-    this.imagePool = new CurveBlob( ( slot, offset ) => {
-      const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
-      const count = refs[ slot ] >>> 24;
+    this.imagePool = new CurveBlob((slot, offset) => {
+      const refs = this.nodes.column('node.imageRef') as Uint32Array;
+      const count = refs[slot] >>> 24;
 
-      refs[ slot ] = ( offset | ( count << 24 ) ) >>> 0;
-      this.dirty.mark( 'node.imageRef', slot );
-    } );
+      refs[slot] = (offset | (count << 24)) >>> 0;
+      this.dirty.mark('node.imageRef', slot);
+    });
 
     // round 23: the chart-record pool; a relocation rewrites node.chartRef
-    this.chartPool = new CurveBlob( ( slot, offset ) => {
-      const refs = this.nodes.column( 'node.chartRef' ) as Uint32Array;
-      const n = refs[ slot ] >>> 24;
+    this.chartPool = new CurveBlob((slot, offset) => {
+      const refs = this.nodes.column('node.chartRef') as Uint32Array;
+      const n = refs[slot] >>> 24;
 
-      refs[ slot ] = ( offset | ( n << 24 ) ) >>> 0;
-      this.dirty.mark( 'node.chartRef', slot );
-    } );
+      refs[slot] = (offset | (n << 24)) >>> 0;
+      this.dirty.mark('node.chartRef', slot);
+    });
 
     // an image decode landing (or an entry freeing) redraws the scene;
     // no column changes, so the pick-tile cache stays valid
@@ -382,7 +470,7 @@ export class GraphStore implements ModelView {
    * @returns the live table (not a copy; its columns are reallocated on
    * growth, so never cache the arrays across a mutation)
    */
-  table( group: GroupName ): ColumnTable {
+  table(group: GroupName): ColumnTable {
     return group === 'nodes' ? this.nodes : this.edges;
   }
 
@@ -393,8 +481,8 @@ export class GraphStore implements ModelView {
    * its GPU buffers to.  Always >= highWater(); grows by doubling and
    * shrinks only in a compaction.
    */
-  capacity( group: GroupName ): number {
-    return this.table( group ).cap;
+  capacity(group: GroupName): number {
+    return this.table(group).cap;
   }
 
   /**
@@ -403,8 +491,8 @@ export class GraphStore implements ModelView {
    * tombstones (flags 0, no FLAG_ALIVE), which collapse to degenerate
    * quads rather than being skipped.
    */
-  highWater( group: GroupName ): number {
-    return this.table( group ).highWater;
+  highWater(group: GroupName): number {
+    return this.table(group).highWater;
   }
 
   /**
@@ -413,8 +501,8 @@ export class GraphStore implements ModelView {
    * store's own storage — writing through it bypasses the dirty
    * tracker, so readers must not mutate it.
    */
-  column( id: ColumnId ): ColumnArray {
-    return this.table( columnSpec( id ).group ).column( id );
+  column(id: ColumnId): ColumnArray {
+    return this.table(columnSpec(id).group).column(id);
   }
 
   /** Whether any column write or touch() is pending a frame. */
@@ -436,22 +524,30 @@ export class GraphStore implements ModelView {
     // pending curve derivations land as column writes in this delta
     this.flushDerived();
 
-    const delta = this.dirty.take( this.nodes.highWater, this.edges.highWater );
+    const delta = this.dirty.take(this.nodes.highWater, this.edges.highWater);
     const blobDirty = this.blob.takeDirty();
 
-    if( blobDirty != null ){ delta.curveBlob = blobDirty; }
+    if (blobDirty != null) {
+      delta.curveBlob = blobDirty;
+    }
 
     const polyDirty = this.polyPool.takeDirty();
 
-    if( polyDirty != null ){ delta.polyBlob = polyDirty; }
+    if (polyDirty != null) {
+      delta.polyBlob = polyDirty;
+    }
 
     const imageDirty = this.imagePool.takeDirty();
 
-    if( imageDirty != null ){ delta.imageBlob = imageDirty; }
+    if (imageDirty != null) {
+      delta.imageBlob = imageDirty;
+    }
 
     const chartDirty = this.chartPool.takeDirty();
 
-    if( chartDirty != null ){ delta.chartBlob = chartDirty; }
+    if (chartDirty != null) {
+      delta.chartBlob = chartDirty;
+    }
 
     return delta;
   }
@@ -483,19 +579,19 @@ export class GraphStore implements ModelView {
    * [x, y, ...] pairs, or null to clear.  Returns the packed record
    * ref (offset | pointCount << 24) for borderGeom[0].
    */
-  setPolygonPoints( slot: number, points: number[] | null ): number {
-    if( points == null || points.length === 0 ){
-      this.polyPool.free( slot );
+  setPolygonPoints(slot: number, points: number[] | null): number {
+    if (points == null || points.length === 0) {
+      this.polyPool.free(slot);
 
       return 0;
     }
 
-    const offset = this.polyPool.write( slot, points );
+    const offset = this.polyPool.write(slot, points);
 
     this.geoEpoch++;
     this.dirty.touch();
 
-    return ( offset | ( ( points.length / 2 ) << 24 ) ) >>> 0;
+    return (offset | ((points.length / 2) << 24)) >>> 0;
   }
 
   /** The 15.2 background-image record pool's backing array. */
@@ -547,67 +643,87 @@ export class GraphStore implements ModelView {
    * @param specs — the styled images in paint order, or null/empty to
    * clear (clearing an already-imageless node is a no-op fast path)
    */
-  setNodeImages( slot: number, specs: NodeImageSpec[] | null ): void {
-    const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
-    const oldRef = refs[ slot ];
+  setNodeImages(slot: number, specs: NodeImageSpec[] | null): void {
+    const refs = this.nodes.column('node.imageRef') as Uint32Array;
+    const oldRef = refs[slot];
     const clearing = specs == null || specs.length === 0;
 
-    if( clearing && oldRef === 0 ){ return; } // the imageless fast path
+    if (clearing && oldRef === 0) {
+      return;
+    } // the imageless fast path
 
-    if( clearing ){ this.imagedNodes--; }
-    else if( oldRef === 0 ){ this.imagedNodes++; }
+    if (clearing) {
+      this.imagedNodes--;
+    } else if (oldRef === 0) {
+      this.imagedNodes++;
+    }
 
     const oldIds: number[] = [];
 
-    if( oldRef !== 0 ){
+    if (oldRef !== 0) {
       const pool = this.imagePool.data();
       const off = oldRef & 0xffffff;
       const count = oldRef >>> 24;
 
-      for( let i = 0; i < count; i++ ){ oldIds.push( pool[ off + i * IMG_STRIDE ] ); }
+      for (let i = 0; i < count; i++) {
+        oldIds.push(pool[off + i * IMG_STRIDE]);
+      }
     }
 
-    if( clearing ){
-      this.imagePool.free( slot );
-      refs[ slot ] = 0;
-      this.dirty.mark( 'node.imageRef', slot );
+    if (clearing) {
+      this.imagePool.free(slot);
+      refs[slot] = 0;
+      this.dirty.mark('node.imageRef', slot);
     } else {
-      const values = new Array<number>( specs.length * IMG_STRIDE );
+      const values = new Array<number>(specs.length * IMG_STRIDE);
 
-      for( let i = 0; i < specs.length; i++ ){
-        const s = specs[ i ];
+      for (let i = 0; i < specs.length; i++) {
+        const s = specs[i];
         const id = this.images.acquire(
-          s.url, s.sdf ? IMAGE_KIND_SDF : IMAGE_KIND_AUTO, s.crossOrigin );
+          s.url,
+          s.sdf ? IMAGE_KIND_SDF : IMAGE_KIND_AUTO,
+          s.crossOrigin,
+        );
         const base = i * IMG_STRIDE;
 
-        values[ base ] = id;
-        values[ base + 1 ] = s.fit | ( s.repeat << 2 ) | ( s.clip << 4 )
-          | ( s.containment << 5 ) | ( ( s.smoothing ? 1 : 0 ) << 6 )
-          | ( ( s.sdf ? 1 : 0 ) << 7 );
-        values[ base + 2 ] = s.opacity;
-        values[ base + 3 ] = s.posX.v;
-        values[ base + 4 ] = s.posY.v;
-        values[ base + 5 ] = s.offX.v;
-        values[ base + 6 ] = s.offY.v;
-        values[ base + 7 ] = s.w.v;
-        values[ base + 8 ] = s.h.v;
-        values[ base + 9 ] = ( s.posX.pct ? 1 : 0 ) | ( ( s.posY.pct ? 1 : 0 ) << 1 )
-          | ( ( s.offX.pct ? 1 : 0 ) << 2 ) | ( ( s.offY.pct ? 1 : 0 ) << 3 )
-          | ( s.w.mode << 4 ) | ( s.h.mode << 6 );
-        values[ base + 10 ] = s.tint[ 0 ] + s.tint[ 1 ] * 256;
-        values[ base + 11 ] = s.tint[ 2 ] + s.tint[ 3 ] * 256;
+        values[base] = id;
+        values[base + 1] =
+          s.fit |
+          (s.repeat << 2) |
+          (s.clip << 4) |
+          (s.containment << 5) |
+          ((s.smoothing ? 1 : 0) << 6) |
+          ((s.sdf ? 1 : 0) << 7);
+        values[base + 2] = s.opacity;
+        values[base + 3] = s.posX.v;
+        values[base + 4] = s.posY.v;
+        values[base + 5] = s.offX.v;
+        values[base + 6] = s.offY.v;
+        values[base + 7] = s.w.v;
+        values[base + 8] = s.h.v;
+        values[base + 9] =
+          (s.posX.pct ? 1 : 0) |
+          ((s.posY.pct ? 1 : 0) << 1) |
+          ((s.offX.pct ? 1 : 0) << 2) |
+          ((s.offY.pct ? 1 : 0) << 3) |
+          (s.w.mode << 4) |
+          (s.h.mode << 6);
+        values[base + 10] = s.tint[0] + s.tint[1] * 256;
+        values[base + 11] = s.tint[2] + s.tint[3] * 256;
       }
 
-      const offset = this.imagePool.write( slot, values );
-      const ref = ( offset | ( specs.length << 24 ) ) >>> 0;
+      const offset = this.imagePool.write(slot, values);
+      const ref = (offset | (specs.length << 24)) >>> 0;
 
-      if( refs[ slot ] !== ref ){
-        refs[ slot ] = ref;
-        this.dirty.mark( 'node.imageRef', slot );
+      if (refs[slot] !== ref) {
+        refs[slot] = ref;
+        this.dirty.mark('node.imageRef', slot);
       }
     }
 
-    for( const id of oldIds ){ this.images.release( id ); }
+    for (const id of oldIds) {
+      this.images.release(id);
+    }
 
     this.dirty.touch();
   }
@@ -623,150 +739,182 @@ export class GraphStore implements ModelView {
   setChart(
     slot: number,
     rec: {
-      kind: number; size: number; hole: number; startAngle: number;
-      direction: number; opacity: number;
-      values: number[]; colors: [ number, number, number, number ][];
-    } | null
+      kind: number;
+      size: number;
+      hole: number;
+      startAngle: number;
+      direction: number;
+      opacity: number;
+      values: number[];
+      colors: [number, number, number, number][];
+    } | null,
   ): void {
-    const refs = this.nodes.column( 'node.chartRef' ) as Uint32Array;
-    const oldRef = refs[ slot ];
+    const refs = this.nodes.column('node.chartRef') as Uint32Array;
+    const oldRef = refs[slot];
     const clearing = rec == null || rec.values.length === 0;
 
-    if( clearing && oldRef === 0 ){ return; } // the chartless fast path
+    if (clearing && oldRef === 0) {
+      return;
+    } // the chartless fast path
 
-    if( clearing ){
+    if (clearing) {
       this.chartedNodes--;
-      this.chartPool.free( slot );
-      refs[ slot ] = 0;
-      this.dirty.mark( 'node.chartRef', slot );
+      this.chartPool.free(slot);
+      refs[slot] = 0;
+      this.dirty.mark('node.chartRef', slot);
       this.dirty.touch();
 
       return;
     }
 
-    if( oldRef === 0 ){ this.chartedNodes++; }
+    if (oldRef === 0) {
+      this.chartedNodes++;
+    }
 
     const { values, colors } = rec;
     const n = values.length;
-    const record = new Array<number>( CHART_HEADER + n * 3 );
+    const record = new Array<number>(CHART_HEADER + n * 3);
 
-    record[ 0 ] = rec.kind;
-    record[ 1 ] = rec.size;
-    record[ 2 ] = rec.hole;
-    record[ 3 ] = rec.startAngle;
-    record[ 4 ] = rec.direction;
-    record[ 5 ] = rec.opacity;
-    record[ 6 ] = n;
+    record[0] = rec.kind;
+    record[1] = rec.size;
+    record[2] = rec.hole;
+    record[3] = rec.startAngle;
+    record[4] = rec.direction;
+    record[5] = rec.opacity;
+    record[6] = n;
 
-    for( let i = 0; i < n; i++ ){
-      const [ r, g, b, a ] = colors[ i ];
+    for (let i = 0; i < n; i++) {
+      const [r, g, b, a] = colors[i];
 
-      record[ CHART_HEADER + i * 3 ] = values[ i ];
-      record[ CHART_HEADER + i * 3 + 1 ] = r + g * 256;
-      record[ CHART_HEADER + i * 3 + 2 ] = b + a * 256;
+      record[CHART_HEADER + i * 3] = values[i];
+      record[CHART_HEADER + i * 3 + 1] = r + g * 256;
+      record[CHART_HEADER + i * 3 + 2] = b + a * 256;
     }
 
-    const offset = this.chartPool.write( slot, record );
-    const ref = ( offset | ( n << 24 ) ) >>> 0;
+    const offset = this.chartPool.write(slot, record);
+    const ref = (offset | (n << 24)) >>> 0;
 
-    if( refs[ slot ] !== ref ){
-      refs[ slot ] = ref;
-      this.dirty.mark( 'node.chartRef', slot );
+    if (refs[slot] !== ref) {
+      refs[slot] = ref;
+      this.dirty.mark('node.chartRef', slot);
     }
 
     this.dirty.touch();
   }
 
   /** A node's decoded chart record, or null when chartless (round 23). */
-  chartAt( slot: number ): {
-    kind: number; size: number; hole: number; startAngle: number;
-    direction: number; opacity: number;
-    values: number[]; colors: [ number, number, number, number ][];
+  chartAt(slot: number): {
+    kind: number;
+    size: number;
+    hole: number;
+    startAngle: number;
+    direction: number;
+    opacity: number;
+    values: number[];
+    colors: [number, number, number, number][];
   } | null {
-    const ref = ( this.nodes.column( 'node.chartRef' ) as Uint32Array )[ slot ];
+    const ref = (this.nodes.column('node.chartRef') as Uint32Array)[slot];
 
-    if( ref === 0 ){ return null; }
+    if (ref === 0) {
+      return null;
+    }
 
     const pool = this.chartPool.data();
     const off = ref & 0xffffff;
     const n = ref >>> 24;
     const values: number[] = [];
-    const colors: [ number, number, number, number ][] = [];
+    const colors: [number, number, number, number][] = [];
     // the pool is f32: snap fractions back to a friendly precision
-    const snap = ( v: number ): number => Math.round( v * 1e6 ) / 1e6;
+    const snap = (v: number): number => Math.round(v * 1e6) / 1e6;
 
-    for( let i = 0; i < n; i++ ){
+    for (let i = 0; i < n; i++) {
       const base = off + CHART_HEADER + i * 3;
-      const rg = pool[ base + 1 ];
-      const ba = pool[ base + 2 ];
+      const rg = pool[base + 1];
+      const ba = pool[base + 2];
 
-      values.push( snap( pool[ base ] ) );
-      colors.push( [ rg % 256, Math.floor( rg / 256 ), ba % 256, Math.floor( ba / 256 ) ] );
+      values.push(snap(pool[base]));
+      colors.push([
+        rg % 256,
+        Math.floor(rg / 256),
+        ba % 256,
+        Math.floor(ba / 256),
+      ]);
     }
 
     return {
-      kind: pool[ off ], size: snap( pool[ off + 1 ] ), hole: snap( pool[ off + 2 ] ),
-      startAngle: pool[ off + 3 ], direction: pool[ off + 4 ],
-      opacity: snap( pool[ off + 5 ] ), values, colors
+      kind: pool[off],
+      size: snap(pool[off + 1]),
+      hole: snap(pool[off + 2]),
+      startAngle: pool[off + 3],
+      direction: pool[off + 4],
+      opacity: snap(pool[off + 5]),
+      values,
+      colors,
     };
   }
 
   /** A node's decoded background-image records, or null when imageless. */
-  nodeImagesAt( slot: number ): NodeImageRecord[] | null {
-    const ref = ( this.nodes.column( 'node.imageRef' ) as Uint32Array )[ slot ];
+  nodeImagesAt(slot: number): NodeImageRecord[] | null {
+    const ref = (this.nodes.column('node.imageRef') as Uint32Array)[slot];
 
-    if( ref === 0 ){ return null; }
+    if (ref === 0) {
+      return null;
+    }
 
     const pool = this.imagePool.data();
     const off = ref & 0xffffff;
     const count = ref >>> 24;
     const out: NodeImageRecord[] = [];
 
-    for( let i = 0; i < count; i++ ){
+    for (let i = 0; i < count; i++) {
       const base = off + i * IMG_STRIDE;
-      const entryId = pool[ base ];
-      const flags = pool[ base + 1 ];
-      const units = pool[ base + 9 ];
-      const rg = pool[ base + 10 ];
-      const ba = pool[ base + 11 ];
+      const entryId = pool[base];
+      const flags = pool[base + 1];
+      const units = pool[base + 9];
+      const rg = pool[base + 10];
+      const ba = pool[base + 11];
 
-      out.push( {
+      out.push({
         entryId,
-        url: this.images.get( entryId )?.url ?? '',
+        url: this.images.get(entryId)?.url ?? '',
         fit: flags & 3,
-        repeat: ( flags >> 2 ) & 3,
-        clip: ( flags >> 4 ) & 1,
-        containment: ( flags >> 5 ) & 1,
-        smoothing: ( ( flags >> 6 ) & 1 ) === 1,
-        sdf: ( ( flags >> 7 ) & 1 ) === 1,
-        opacity: pool[ base + 2 ],
-        posX: { v: pool[ base + 3 ], pct: ( units & 1 ) === 1 },
-        posY: { v: pool[ base + 4 ], pct: ( ( units >> 1 ) & 1 ) === 1 },
-        offX: { v: pool[ base + 5 ], pct: ( ( units >> 2 ) & 1 ) === 1 },
-        offY: { v: pool[ base + 6 ], pct: ( ( units >> 3 ) & 1 ) === 1 },
-        w: { mode: ( units >> 4 ) & 3, v: pool[ base + 7 ] },
-        h: { mode: ( units >> 6 ) & 3, v: pool[ base + 8 ] },
-        tint: [ rg % 256, Math.floor( rg / 256 ), ba % 256, Math.floor( ba / 256 ) ]
-      } );
+        repeat: (flags >> 2) & 3,
+        clip: (flags >> 4) & 1,
+        containment: (flags >> 5) & 1,
+        smoothing: ((flags >> 6) & 1) === 1,
+        sdf: ((flags >> 7) & 1) === 1,
+        opacity: pool[base + 2],
+        posX: { v: pool[base + 3], pct: (units & 1) === 1 },
+        posY: { v: pool[base + 4], pct: ((units >> 1) & 1) === 1 },
+        offX: { v: pool[base + 5], pct: ((units >> 2) & 1) === 1 },
+        offY: { v: pool[base + 6], pct: ((units >> 3) & 1) === 1 },
+        w: { mode: (units >> 4) & 3, v: pool[base + 7] },
+        h: { mode: (units >> 6) & 3, v: pool[base + 8] },
+        tint: [rg % 256, Math.floor(rg / 256), ba % 256, Math.floor(ba / 256)],
+      });
     }
 
     return out;
   }
 
   /** A node's custom polygon points (unit pairs), or null. */
-  polygonPointsAt( slot: number ): Float64Array | null {
-    const geom = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
-    const shape = ( geom[ slot * 4 + 1 ] >>> 16 ) & 0xf;
+  polygonPointsAt(slot: number): Float64Array | null {
+    const geom = this.nodes.column('node.borderGeom') as Uint32Array;
+    const shape = (geom[slot * 4 + 1] >>> 16) & 0xf;
 
-    if( shape !== 14 ){ return null; }
+    if (shape !== 14) {
+      return null;
+    }
 
-    const ref = geom[ slot * 4 ];
+    const ref = geom[slot * 4];
     const off = ref & 0xffffff;
     const count = ref >>> 24;
     const pool = this.polyPool.data();
-    const out = new Float64Array( count * 2 );
+    const out = new Float64Array(count * 2);
 
-    for( let i = 0; i < count * 2; i++ ){ out[ i ] = pool[ off + i ]; }
+    for (let i = 0; i < count * 2; i++) {
+      out[i] = pool[off + i];
+    }
 
     return out;
   }
@@ -779,8 +927,8 @@ export class GraphStore implements ModelView {
    * @param cb — called when the store goes dirty
    * @returns an unsubscribe function
    */
-  onInvalidate( cb: () => void ): () => void {
-    return this.dirty.onInvalidate( cb );
+  onInvalidate(cb: () => void): () => void {
+    return this.dirty.onInvalidate(cb);
   }
 
   // -- mapper data-write spans (the GPU eval pass's dirty channel) --
@@ -791,14 +939,14 @@ export class GraphStore implements ModelView {
    * sheet).  Writes to unwatched keys cost one Set lookup and nothing
    * else.
    */
-  watchDataKeys( group: GroupName, keys: Iterable<string> ): void {
-    this.watchedKeys[ group ] = new Set( keys );
+  watchDataKeys(group: GroupName, keys: Iterable<string>): void {
+    this.watchedKeys[group] = new Set(keys);
   }
 
   /** Data write through the mapper-span choke point (the collection's data setter). */
-  setData( group: GroupName, slot: number, key: string, value: unknown ): void {
-    this.data.set( group, slot, key, value );
-    this.markDataWrite( group, key, slot, slot + 1 );
+  setData(group: GroupName, slot: number, key: string, value: unknown): void {
+    this.data.set(group, slot, key, value);
+    this.markDataWrite(group, key, slot, slot + 1);
   }
 
   /**
@@ -806,17 +954,24 @@ export class GraphStore implements ModelView {
    * deliberately not a column span, so paint-only data writes leave the
    * pick-tile cache valid.
    */
-  markDataWrite( group: GroupName, key: string, start: number, end: number ): void {
-    if( !this.watchedKeys[ group ].has( key ) ){ return; }
+  markDataWrite(
+    group: GroupName,
+    key: string,
+    start: number,
+    end: number,
+  ): void {
+    if (!this.watchedKeys[group].has(key)) {
+      return;
+    }
 
     const id = `${group}:${key}`;
-    const span = this.mapperSpans.get( id );
+    const span = this.mapperSpans.get(id);
 
-    if( span == null ){
-      this.mapperSpans.set( id, { group, key, start, end } );
+    if (span == null) {
+      this.mapperSpans.set(id, { group, key, start, end });
     } else {
-      span.start = Math.min( span.start, start );
-      span.end = Math.max( span.end, end );
+      span.start = Math.min(span.start, start);
+      span.end = Math.max(span.end, end);
     }
 
     this.dirty.touch();
@@ -824,9 +979,11 @@ export class GraphStore implements ModelView {
 
   /** Pending watched-key write spans, returned and cleared. */
   takeMapperSpans(): MapperSpan[] {
-    if( this.mapperSpans.size === 0 ){ return []; }
+    if (this.mapperSpans.size === 0) {
+      return [];
+    }
 
-    const spans = [ ...this.mapperSpans.values() ];
+    const spans = [...this.mapperSpans.values()];
 
     this.mapperSpans.clear();
 
@@ -842,8 +999,8 @@ export class GraphStore implements ModelView {
    * object); no validity check, so minting a ref for a dead slot yields
    * a ref that immediately reads as stale.
    */
-  ref( group: GroupName, slot: number ): Ref {
-    return { group, slot, gen: this.table( group ).gen[ slot ] };
+  ref(group: GroupName, slot: number): Ref {
+    return { group, slot, gen: this.table(group).gen[slot] };
   }
 
   /**
@@ -853,12 +1010,14 @@ export class GraphStore implements ModelView {
    * (fixing every holder of that ref object) and reads as current;
    * a removed element's ref stays dead — repair never resurrects.
    */
-  isCurrent( ref: Ref ): boolean {
-    const table = this.table( ref.group );
+  isCurrent(ref: Ref): boolean {
+    const table = this.table(ref.group);
 
-    if( ref.slot < table.cap && table.gen[ ref.slot ] === ref.gen ){ return true; }
+    if (ref.slot < table.cap && table.gen[ref.slot] === ref.gen) {
+      return true;
+    }
 
-    return this.repairStale( ref );
+    return this.repairStale(ref);
   }
 
   /** Bumped once per slot-moving compaction; collections use it to
@@ -883,28 +1042,36 @@ export class GraphStore implements ModelView {
    * identity, rewrite the ref in place.  Entries persist and compose, so
    * repair is total for any ref whose element still exists.
    */
-  private repairStale( ref: Ref ): boolean {
-    const fwd = this.forwards[ ref.group ];
+  private repairStale(ref: Ref): boolean {
+    const fwd = this.forwards[ref.group];
 
-    if( fwd.size === 0 ){ return false; }
+    if (fwd.size === 0) {
+      return false;
+    }
 
-    let cur = fwd.get( ref.slot * 0x1000000 + ref.gen );
+    let cur = fwd.get(ref.slot * 0x1000000 + ref.gen);
 
-    if( cur == null ){ return false; }
+    if (cur == null) {
+      return false;
+    }
 
-    for( ;; ){
-      const next = fwd.get( cur );
+    for (;;) {
+      const next = fwd.get(cur);
 
-      if( next == null ){ break; }
+      if (next == null) {
+        break;
+      }
 
       cur = next;
     }
 
-    const slot = Math.floor( cur / 0x1000000 );
+    const slot = Math.floor(cur / 0x1000000);
     const gen = cur % 0x1000000;
-    const table = this.table( ref.group );
+    const table = this.table(ref.group);
 
-    if( slot >= table.cap || table.gen[ slot ] !== gen ){ return false; } // moved, then removed
+    if (slot >= table.cap || table.gen[slot] !== gen) {
+      return false;
+    } // moved, then removed
 
     ref.slot = slot;
     ref.gen = gen;
@@ -918,10 +1085,10 @@ export class GraphStore implements ModelView {
    *
    * @returns undefined when no live element carries the id
    */
-  lookup( id: string ): Ref | undefined {
-    const entry = this.ids.get( id );
+  lookup(id: string): Ref | undefined {
+    const entry = this.ids.get(id);
 
-    return entry == null ? undefined : this.ref( entry.group, entry.slot );
+    return entry == null ? undefined : this.ref(entry.group, entry.slot);
   }
 
   /**
@@ -929,8 +1096,8 @@ export class GraphStore implements ModelView {
    * The reverse of lookup(); ids are stored out of line, so this is the
    * only string the columnar hot paths ever touch.
    */
-  idAt( group: GroupName, slot: number ): string | undefined {
-    return this.ids.idAt( group, slot );
+  idAt(group: GroupName, slot: number): string | undefined {
+    return this.ids.idAt(group, slot);
   }
 
   // -- mutation --
@@ -940,16 +1107,16 @@ export class GraphStore implements ModelView {
    * incoming element counts (net of reusable free slots), so the adds
    * themselves never hit the doubling cascade.
    */
-  reserve( nodeCount: number, edgeCount: number ): void {
-    const minCap = ( table: ColumnTable, adding: number ): number =>
-      table.highWater + Math.max( 0, adding - table.freeCount );
+  reserve(nodeCount: number, edgeCount: number): void {
+    const minCap = (table: ColumnTable, adding: number): number =>
+      table.highWater + Math.max(0, adding - table.freeCount);
 
-    if( this.nodes.reserve( minCap( this.nodes, nodeCount ) ) ){
-      this.dirty.markResized( 'nodes' );
+    if (this.nodes.reserve(minCap(this.nodes, nodeCount))) {
+      this.dirty.markResized('nodes');
     }
 
-    if( this.edges.reserve( minCap( this.edges, edgeCount ) ) ){
-      this.dirty.markResized( 'edges' );
+    if (this.edges.reserve(minCap(this.edges, edgeCount))) {
+      this.dirty.markResized('edges');
     }
   }
 
@@ -964,20 +1131,24 @@ export class GraphStore implements ModelView {
    * @returns the allocated slot
    * @throws when the id already exists
    */
-  addNode( id: string, x: number, y: number, opts: AddElementOpts = {} ): number {
-    const { slot, resized } = this.allocSlot( 'nodes', id );
+  addNode(id: string, x: number, y: number, opts: AddElementOpts = {}): number {
+    const { slot, resized } = this.allocSlot('nodes', id);
 
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
 
-    pos[ slot * 2 ] = x;
-    pos[ slot * 2 + 1 ] = y;
+    pos[slot * 2] = x;
+    pos[slot * 2 + 1] = y;
     this.geoEpoch++;
 
-    ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, false );
+    (this.nodes.column('node.flags') as Uint32Array)[slot] = initialFlags(
+      opts,
+      false,
+    );
 
-    if( !resized ){ // resized already implies a full re-upload
-      this.dirty.mark( 'node.position', slot );
-      this.dirty.mark( 'node.flags', slot );
+    if (!resized) {
+      // resized already implies a full re-upload
+      this.dirty.mark('node.position', slot);
+      this.dirty.mark('node.flags', slot);
     }
 
     return slot;
@@ -995,34 +1166,46 @@ export class GraphStore implements ModelView {
    * @throws when the id already exists, or either endpoint id is not a
    * live node
    */
-  addEdge( id: string, sourceId: string, targetId: string, opts: AddElementOpts = {} ): number {
-    const source = this.ids.get( sourceId );
-    const target = this.ids.get( targetId );
+  addEdge(
+    id: string,
+    sourceId: string,
+    targetId: string,
+    opts: AddElementOpts = {},
+  ): number {
+    const source = this.ids.get(sourceId);
+    const target = this.ids.get(targetId);
 
-    if( source == null || source.group !== 'nodes' ){
-      throw new Error( `Can not create edge '${id}' with nonexistant source '${sourceId}'` );
+    if (source == null || source.group !== 'nodes') {
+      throw new Error(
+        `Can not create edge '${id}' with nonexistant source '${sourceId}'`,
+      );
     }
 
-    if( target == null || target.group !== 'nodes' ){
-      throw new Error( `Can not create edge '${id}' with nonexistant target '${targetId}'` );
+    if (target == null || target.group !== 'nodes') {
+      throw new Error(
+        `Can not create edge '${id}' with nonexistant target '${targetId}'`,
+      );
     }
 
-    const { slot, resized } = this.allocSlot( 'edges', id );
+    const { slot, resized } = this.allocSlot('edges', id);
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
 
-    endpoints[ slot * 2 ] = source.slot;
-    endpoints[ slot * 2 + 1 ] = target.slot;
+    endpoints[slot * 2] = source.slot;
+    endpoints[slot * 2 + 1] = target.slot;
 
-    ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, true );
+    (this.edges.column('edge.flags') as Uint32Array)[slot] = initialFlags(
+      opts,
+      true,
+    );
 
-    this.adj.addEdge( slot, source.slot, target.slot );
+    this.adj.addEdge(slot, source.slot, target.slot);
     this.maybeRebuildAdjacency();
-    this.curves.onAddEdge( slot, source.slot, target.slot );
+    this.curves.onAddEdge(slot, source.slot, target.slot);
 
-    if( !resized ){
-      this.dirty.mark( 'edge.endpoints', slot );
-      this.dirty.mark( 'edge.flags', slot );
+    if (!resized) {
+      this.dirty.mark('edge.endpoints', slot);
+      this.dirty.mark('edge.flags', slot);
     }
 
     return slot;
@@ -1035,61 +1218,75 @@ export class GraphStore implements ModelView {
    * payload arrays.  On error the graph may be partially mutated (as with
    * a mid-list throw in the def path).
    */
-  addNodesColumnar( cols: ColumnarNodes, newId: () => string ): Uint32Array {
+  addNodesColumnar(cols: ColumnarNodes, newId: () => string): Uint32Array {
     const count = cols.count;
-    const { slots, resized, contiguousFrom } = this.nodes.allocBulk( count );
+    const { slots, resized, contiguousFrom } = this.nodes.allocBulk(count);
 
-    if( resized ){ this.dirty.markResized( 'nodes' ); }
+    if (resized) {
+      this.dirty.markResized('nodes');
+    }
 
-    this.registerBulk( 'nodes', slots, cols.ids, newId );
+    this.registerBulk('nodes', slots, cols.ids, newId);
 
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
 
-    if( cols.positions != null ){
-      if( cols.positions.length < count * 2 ){
-        throw new Error( `Columnar node positions must hold ${count * 2} floats; got ${cols.positions.length}` );
+    if (cols.positions != null) {
+      if (cols.positions.length < count * 2) {
+        throw new Error(
+          `Columnar node positions must hold ${count * 2} floats; got ${cols.positions.length}`,
+        );
       }
 
-      if( contiguousFrom < count ){ // fresh run: one memcpy
-        pos.set( cols.positions.subarray( contiguousFrom * 2, count * 2 ), slots[ contiguousFrom ] * 2 );
+      if (contiguousFrom < count) {
+        // fresh run: one memcpy
+        pos.set(
+          cols.positions.subarray(contiguousFrom * 2, count * 2),
+          slots[contiguousFrom] * 2,
+        );
       }
 
-      for( let i = 0; i < contiguousFrom; i++ ){ // reused slots: scattered
-        pos[ slots[ i ] * 2 ] = cols.positions[ i * 2 ];
-        pos[ slots[ i ] * 2 + 1 ] = cols.positions[ i * 2 + 1 ];
+      for (let i = 0; i < contiguousFrom; i++) {
+        // reused slots: scattered
+        pos[slots[i] * 2] = cols.positions[i * 2];
+        pos[slots[i] * 2 + 1] = cols.positions[i * 2 + 1];
       }
     }
 
     this.geoEpoch++;
-    this.writeBulkFlags( 'nodes', slots, contiguousFrom, cols );
+    this.writeBulkFlags('nodes', slots, contiguousFrom, cols);
 
     // parent column (round 14.8): payload indices, sentinel = orphan;
     // linked after the flags fill so the derived bits survive it
-    if( cols.parent != null ){
-      if( cols.parent.length < count ){
-        throw new Error( `Columnar node parent column must hold ${count} entries; got ${cols.parent.length}` );
+    if (cols.parent != null) {
+      if (cols.parent.length < count) {
+        throw new Error(
+          `Columnar node parent column must hold ${count} entries; got ${cols.parent.length}`,
+        );
       }
 
-      for( let i = 0; i < count; i++ ){
-        const at = cols.parent[ i ];
+      for (let i = 0; i < count; i++) {
+        const at = cols.parent[i];
 
-        if( at === NO_PARENT ){ continue; }
-
-        if( at >= count ){
-          throw new Error(
-            `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
-            `(columnar payloads are self-contained; use the definition form for cross-references)` );
+        if (at === NO_PARENT) {
+          continue;
         }
 
-        this.setParent( slots[ i ], slots[ at ] ); // cycle-guarded (warn + drop)
+        if (at >= count) {
+          throw new Error(
+            `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
+              `(columnar payloads are self-contained; use the definition form for cross-references)`,
+          );
+        }
+
+        this.setParent(slots[i], slots[at]); // cycle-guarded (warn + drop)
       }
     }
 
-    this.ingestDataColumns( 'nodes', slots, cols.data );
+    this.ingestDataColumns('nodes', slots, cols.data);
 
-    if( !resized ){
-      this.markBulk( 'node.position', slots );
-      this.markBulk( 'node.flags', slots );
+    if (!resized) {
+      this.markBulk('node.position', slots);
+      this.markBulk('node.flags', slots);
     }
 
     return slots;
@@ -1099,53 +1296,69 @@ export class GraphStore implements ModelView {
    * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
    * same payload's nodes) — no id lookups per edge.
    */
-  addEdgesColumnar( cols: ColumnarEdges, nodeSlots: Uint32Array, newId: () => string ): Uint32Array {
+  addEdgesColumnar(
+    cols: ColumnarEdges,
+    nodeSlots: Uint32Array,
+    newId: () => string,
+  ): Uint32Array {
     const count = cols.count;
 
-    if( cols.sources == null || cols.targets == null || cols.sources.length < count || cols.targets.length < count ){
-      throw new Error( `Columnar edges must provide ${count} sources and targets` );
+    if (
+      cols.sources == null ||
+      cols.targets == null ||
+      cols.sources.length < count ||
+      cols.targets.length < count
+    ) {
+      throw new Error(
+        `Columnar edges must provide ${count} sources and targets`,
+      );
     }
 
-    for( let i = 0; i < count; i++ ){
-      if( cols.sources[ i ] >= nodeSlots.length || cols.targets[ i ] >= nodeSlots.length ){
+    for (let i = 0; i < count; i++) {
+      if (
+        cols.sources[i] >= nodeSlots.length ||
+        cols.targets[i] >= nodeSlots.length
+      ) {
         throw new Error(
           `Columnar edge ${i} references node index ` +
-          `${Math.max( cols.sources[ i ], cols.targets[ i ] )} but the payload has ${nodeSlots.length} nodes ` +
-          `(columnar payloads are self-contained; use the definition form for cross-references)`
+            `${Math.max(cols.sources[i], cols.targets[i])} but the payload has ${nodeSlots.length} nodes ` +
+            `(columnar payloads are self-contained; use the definition form for cross-references)`,
         );
       }
     }
 
-    const { slots, resized, contiguousFrom } = this.edges.allocBulk( count );
+    const { slots, resized, contiguousFrom } = this.edges.allocBulk(count);
 
-    if( resized ){ this.dirty.markResized( 'edges' ); }
+    if (resized) {
+      this.dirty.markResized('edges');
+    }
 
-    this.registerBulk( 'edges', slots, cols.ids, newId );
+    this.registerBulk('edges', slots, cols.ids, newId);
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
 
-    for( let i = 0; i < count; i++ ){
-      const slot = slots[ i ];
-      const sourceSlot = nodeSlots[ cols.sources[ i ] ];
-      const targetSlot = nodeSlots[ cols.targets[ i ] ];
+    for (let i = 0; i < count; i++) {
+      const slot = slots[i];
+      const sourceSlot = nodeSlots[cols.sources[i]];
+      const targetSlot = nodeSlots[cols.targets[i]];
 
-      endpoints[ slot * 2 ] = sourceSlot;
-      endpoints[ slot * 2 + 1 ] = targetSlot;
+      endpoints[slot * 2] = sourceSlot;
+      endpoints[slot * 2 + 1] = targetSlot;
 
       // loop registration (and pair membership when the index is live)
-      this.curves.onAddEdge( slot, sourceSlot, targetSlot );
+      this.curves.onAddEdge(slot, sourceSlot, targetSlot);
     }
 
     // fresh index: builds CSR in two counting passes; otherwise overlays
-    this.adj.addBulk( slots, endpoints, this.nodes.cap );
+    this.adj.addBulk(slots, endpoints, this.nodes.cap);
     this.maybeRebuildAdjacency();
 
-    this.writeBulkFlags( 'edges', slots, contiguousFrom, cols );
-    this.ingestDataColumns( 'edges', slots, cols.data );
+    this.writeBulkFlags('edges', slots, contiguousFrom, cols);
+    this.ingestDataColumns('edges', slots, cols.data);
 
-    if( !resized ){
-      this.markBulk( 'edge.endpoints', slots );
-      this.markBulk( 'edge.flags', slots );
+    if (!resized) {
+      this.markBulk('edge.endpoints', slots);
+      this.markBulk('edge.flags', slots);
     }
 
     return slots;
@@ -1157,51 +1370,57 @@ export class GraphStore implements ModelView {
    * slot's generation bumps, so every outstanding ref to it goes stale
    * — and stays stale, since ref repair never resurrects a removal.
    */
-  removeEdge( slot: number ): void {
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+  removeEdge(slot: number): void {
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
 
-    this.adj.removeEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
-    this.curves.onRemoveEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
-    this.freeSlot( 'edges', slot );
+    this.adj.removeEdge(slot, endpoints[slot * 2], endpoints[slot * 2 + 1]);
+    this.curves.onRemoveEdge(
+      slot,
+      endpoints[slot * 2],
+      endpoints[slot * 2 + 1],
+    );
+    this.freeSlot('edges', slot);
     this.maybeRebuildAdjacency();
   }
 
   /** Re-point an existing edge at new endpoint node slots (updates adjacency in place). */
-  moveEdge( slot: number, source: number, target: number ): void {
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const oldSource = endpoints[ slot * 2 ];
-    const oldTarget = endpoints[ slot * 2 + 1 ];
+  moveEdge(slot: number, source: number, target: number): void {
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const oldSource = endpoints[slot * 2];
+    const oldTarget = endpoints[slot * 2 + 1];
 
-    if( oldSource === source && oldTarget === target ){ return; }
+    if (oldSource === source && oldTarget === target) {
+      return;
+    }
 
-    this.adj.removeEdge( slot, oldSource, oldTarget );
+    this.adj.removeEdge(slot, oldSource, oldTarget);
 
-    endpoints[ slot * 2 ] = source;
-    endpoints[ slot * 2 + 1 ] = target;
+    endpoints[slot * 2] = source;
+    endpoints[slot * 2 + 1] = target;
 
-    this.adj.addEdge( slot, source, target );
+    this.adj.addEdge(slot, source, target);
     this.maybeRebuildAdjacency();
-    this.curves.onMoveEdge( slot, oldSource, oldTarget, source, target );
+    this.curves.onMoveEdge(slot, oldSource, oldTarget, source, target);
     this.geoEpoch++;
-    this.dirty.mark( 'edge.endpoints', slot );
+    this.dirty.mark('edge.endpoints', slot);
   }
 
   /** The node must have no incident edges or children left; the caller cascades removal of them first. */
-  removeNode( slot: number ): void {
-    if( this.adj.outDegree( slot ) > 0 || this.adj.inDegree( slot ) > 0 ){
-      throw new Error( 'Can not remove a node before its incident edges' );
+  removeNode(slot: number): void {
+    if (this.adj.outDegree(slot) > 0 || this.adj.inDegree(slot) > 0) {
+      throw new Error('Can not remove a node before its incident edges');
     }
 
-    if( this.hierarchy.hasChildren( slot ) ){
-      throw new Error( 'Can not remove a node before its children' );
+    if (this.hierarchy.hasChildren(slot)) {
+      throw new Error('Can not remove a node before its children');
     }
 
-    this.hierarchy.onRemoveNode( slot );
-    this.adj.clearNode( slot );
-    this.polyPool.free( slot );
-    this.setNodeImages( slot, null ); // releases registry refs too (15.2)
-    this.setChart( slot, null ); // frees the chart record (round 23)
-    this.freeSlot( 'nodes', slot );
+    this.hierarchy.onRemoveNode(slot);
+    this.adj.clearNode(slot);
+    this.polyPool.free(slot);
+    this.setNodeImages(slot, null); // releases registry refs too (15.2)
+    this.setChart(slot, null); // frees the chart record (round 23)
+    this.freeSlot('nodes', slot);
   }
 
   // -- compound hierarchy (round 14) --
@@ -1227,43 +1446,57 @@ export class GraphStore implements ModelView {
    * (the sidecar entry bakes anchors from the node extents) and feeds
    * the monotone cull-slack meter.
    */
-  private materializeParentGeom( slot: number, x: number, y: number, w: number, h: number ): void {
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const size = this.nodes.column( 'node.size' ) as Float32Array;
-    const posChanged = pos[ slot * 2 ] !== x || pos[ slot * 2 + 1 ] !== y;
-    const sizeChanged = size[ slot * 2 ] !== w || size[ slot * 2 + 1 ] !== h;
+  private materializeParentGeom(
+    slot: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+  ): void {
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const size = this.nodes.column('node.size') as Float32Array;
+    const posChanged = pos[slot * 2] !== x || pos[slot * 2 + 1] !== y;
+    const sizeChanged = size[slot * 2] !== w || size[slot * 2 + 1] !== h;
 
-    if( !posChanged && !sizeChanged ){ return; }
-
-    if( posChanged ){
-      pos[ slot * 2 ] = x;
-      pos[ slot * 2 + 1 ] = y;
-      this.dirty.mark( 'node.position', slot );
+    if (!posChanged && !sizeChanged) {
+      return;
     }
 
-    if( sizeChanged ){
-      size[ slot * 2 ] = w;
-      size[ slot * 2 + 1 ] = h;
-      this.dirty.mark( 'node.size', slot );
+    if (posChanged) {
+      pos[slot * 2] = x;
+      pos[slot * 2 + 1] = y;
+      this.dirty.mark('node.position', slot);
+    }
 
-      const half = Math.max( w, h ) / 2;
+    if (sizeChanged) {
+      size[slot * 2] = w;
+      size[slot * 2 + 1] = h;
+      this.dirty.mark('node.size', slot);
 
-      if( half > this.nodeHalfMax ){ this.nodeHalfMax = half; }
+      const half = Math.max(w, h) / 2;
 
-      this.updateOuterHalf( slot );
-      this.reanchorLabel( slot, w, h );
+      if (half > this.nodeHalfMax) {
+        this.nodeHalfMax = half;
+      }
+
+      this.updateOuterHalf(slot);
+      this.reanchorLabel(slot, w, h);
 
       // compound-loop excursion bounds are derivation-time (14.10):
       // refresh them for the resized parent's incident edges (the
       // geometry itself always evaluates from live sizes)
-      const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+      const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
 
-      for( const edgeSlot of this.adj.connectedEdges( slot ) ){
-        const a = endpoints[ edgeSlot * 2 ];
-        const b = endpoints[ edgeSlot * 2 + 1 ];
+      for (const edgeSlot of this.adj.connectedEdges(slot)) {
+        const a = endpoints[edgeSlot * 2];
+        const b = endpoints[edgeSlot * 2 + 1];
 
-        if( ( this.edges.column( 'edge.curveParams' ) as Float32Array )[ edgeSlot * 4 + 3 ] === CURVE_CMPD ){
-          this.curves.invalidateRelation( a, b );
+        if (
+          (this.edges.column('edge.curveParams') as Float32Array)[
+            edgeSlot * 4 + 3
+          ] === CURVE_CMPD
+        ) {
+          this.curves.invalidateRelation(a, b);
         }
       }
     }
@@ -1277,77 +1510,91 @@ export class GraphStore implements ModelView {
    * reconstruct from the block-fraction shifts, and the anchor formulas
    * are the engine's own (see writeLabel) — no engine round trip needed.
    */
-  private reanchorLabel( slot: number, w: number, h: number ): void {
-    const entry = this.labels.nodes[ slot ];
+  private reanchorLabel(slot: number, w: number, h: number): void {
+    const entry = this.labels.nodes[slot];
 
-    if( entry == null ){ return; }
+    if (entry == null) {
+      return;
+    }
 
     const halign = entry.halignShift * 2 + 1;
     const valign = entry.valignShift * 2 + 2;
-    const anchorX = ( halign - 1 ) * w / 2;
-    const anchorY = ( valign === 0 ? -h / 2 - LABEL_MARGIN
-      : valign === 2 ? h / 2 + LABEL_MARGIN : 0 ) + entry.marginY;
+    const anchorX = ((halign - 1) * w) / 2;
+    const anchorY =
+      (valign === 0
+        ? -h / 2 - LABEL_MARGIN
+        : valign === 2
+          ? h / 2 + LABEL_MARGIN
+          : 0) + entry.marginY;
 
-    if( anchorX !== entry.anchorX || anchorY !== entry.anchorY ){
-      this.setLabel( slot, { ...entry, anchorX, anchorY }, 'nodes' );
+    if (anchorX !== entry.anchorX || anchorY !== entry.anchorY) {
+      this.setLabel(slot, { ...entry, anchorX, anchorY }, 'nodes');
     }
   }
 
   /** Shift a parent's whole subtree by a delta (raw writes, one span). */
-  private shiftSubtree( slot: number, dx: number, dy: number ): void {
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+  private shiftSubtree(slot: number, dx: number, dy: number): void {
+    const pos = this.nodes.column('node.position') as Float32Array;
     const stack: number[] = [];
     let min = Infinity;
     let max = -1;
 
-    for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
-
-    while( stack.length > 0 ){
-      const s = stack.pop() as number;
-
-      pos[ s * 2 ] += dx;
-      pos[ s * 2 + 1 ] += dy;
-
-      if( s < min ){ min = s; }
-      if( s > max ){ max = s; }
-
-      for( const kid of this.hierarchy.childrenOf( s ) ){ stack.push( kid ); }
+    for (const kid of this.hierarchy.childrenOf(slot)) {
+      stack.push(kid);
     }
 
-    if( max >= 0 ){
+    while (stack.length > 0) {
+      const s = stack.pop() as number;
+
+      pos[s * 2] += dx;
+      pos[s * 2 + 1] += dy;
+
+      if (s < min) {
+        min = s;
+      }
+      if (s > max) {
+        max = s;
+      }
+
+      for (const kid of this.hierarchy.childrenOf(s)) {
+        stack.push(kid);
+      }
+    }
+
+    if (max >= 0) {
       this.geoEpoch++;
-      this.dirty.mark( 'node.position', min, max + 1 );
+      this.dirty.mark('node.position', min, max + 1);
     }
   }
 
   /** Mark a node's ancestor chain (and its own derived bounds when it is
    * a parent) stale; flushed lazily by flushDerived(). */
-  markNodeGeo( slot: number ): void {
-    this.hierarchy.markGeo( slot );
+  markNodeGeo(slot: number): void {
+    this.hierarchy.markGeo(slot);
   }
 
   /** Store a parent's compound style inputs (padding / min size); the
    * StyleEngine's write path in 14.6, and testable directly. */
-  setCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
-    this.hierarchy.setCompoundStyle( slot, style );
+  setCompoundStyle(slot: number, style: Partial<CompoundStyle>): void {
+    this.hierarchy.setCompoundStyle(slot, style);
   }
 
   /** Partial compound-style update over the current record — the
    * padding tween's write (round 25.4; see HierarchyIndex). */
-  updateCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
-    this.hierarchy.updateCompoundStyle( slot, style );
+  updateCompoundStyle(slot: number, style: Partial<CompoundStyle>): void {
+    this.hierarchy.updateCompoundStyle(slot, style);
   }
 
   /** The parent's resolved px padding (0 for leaves); flush first. */
-  paddingOf( slot: number ): number {
+  paddingOf(slot: number): number {
     this.flushDerived();
 
-    return this.hierarchy.paddingOf( slot );
+    return this.hierarchy.paddingOf(slot);
   }
 
   /** The declared compound style record (the style readbacks' truth). */
-  compoundStyleOf( slot: number ): CompoundStyle {
-    return this.hierarchy.compoundStyleOf( slot );
+  compoundStyleOf(slot: number): CompoundStyle {
+    return this.hierarchy.compoundStyleOf(slot);
   }
 
   /**
@@ -1356,39 +1603,46 @@ export class GraphStore implements ModelView {
    * (v3's dropped-ref rule).  Maintains FLAG_PARENT/FLAG_CHILD, depths
    * and the parent draw permutation.
    */
-  setParent( slot: number, parentSlot: number ): void {
-    const before = this.hierarchy.parentOf( slot );
+  setParent(slot: number, parentSlot: number): void {
+    const before = this.hierarchy.parentOf(slot);
 
-    this.hierarchy.setParent( slot, parentSlot );
+    this.hierarchy.setParent(slot, parentSlot);
 
-    if( this.hierarchy.parentOf( slot ) === before ){ return; } // no-op or cycle drop
+    if (this.hierarchy.parentOf(slot) === before) {
+      return;
+    } // no-op or cycle drop
 
     // the moved subtree's ancestor-derived state re-resolves against the
     // new chain (round 14.4): effective visibility and the opacity fold
-    this.refreshEffectiveVisibility( slot );
-    this.refoldOpacitySubtree( slot );
+    this.refreshEffectiveVisibility(slot);
+    this.refoldOpacitySubtree(slot);
 
     // structural case conditions on the moved node re-evaluate (14.7)
-    this.onReparented?.( slot );
+    this.onReparented?.(slot);
 
     // compound-loop routing (14.10): the moved subtree's incident edges
     // may have entered or left an ancestor/descendant relation
-    this.invalidateSubtreeEdgeRelations( slot );
+    this.invalidateSubtreeEdgeRelations(slot);
   }
 
   /** Re-derive curve routing for every edge incident to a subtree (14.10). */
-  private invalidateSubtreeEdgeRelations( root: number ): void {
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const stack: number[] = [ root ];
+  private invalidateSubtreeEdgeRelations(root: number): void {
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const stack: number[] = [root];
 
-    while( stack.length > 0 ){
+    while (stack.length > 0) {
       const slot = stack.pop() as number;
 
-      for( const edgeSlot of this.adj.connectedEdges( slot ) ){
-        this.curves.invalidateRelation( endpoints[ edgeSlot * 2 ], endpoints[ edgeSlot * 2 + 1 ] );
+      for (const edgeSlot of this.adj.connectedEdges(slot)) {
+        this.curves.invalidateRelation(
+          endpoints[edgeSlot * 2],
+          endpoints[edgeSlot * 2 + 1],
+        );
       }
 
-      for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
+      for (const kid of this.hierarchy.childrenOf(slot)) {
+        stack.push(kid);
+      }
     }
   }
 
@@ -1399,23 +1653,27 @@ export class GraphStore implements ModelView {
    * subtree).  Hidden children leave their ancestors' auto-bounds.
    * Returns the refs-array indices whose own state changed.
    */
-  setVisibility( refs: readonly Ref[], visible: boolean, changedIdx: number[] | null = null ): number {
+  setVisibility(
+    refs: readonly Ref[],
+    visible: boolean,
+    changedIdx: number[] | null = null,
+  ): number {
     const changed: number[] = changedIdx ?? [];
-    const n = this.flagRefs( refs, FLAG_SELF_HIDDEN, !visible, 0, changed );
+    const n = this.flagRefs(refs, FLAG_SELF_HIDDEN, !visible, 0, changed);
 
-    for( const i of changed ){
-      const ref = refs[ i ];
+    for (const i of changed) {
+      const ref = refs[i];
 
-      if( ref.group === 'edges' ){
+      if (ref.group === 'edges') {
         // edges have no ancestors: effective = own state; DRAWN also
         // folds the visibility prop (round 22)
-        this.setFlag( 'edges', ref.slot, FLAG_VISIBLE, visible );
-        this.refreshEdgeDrawn( ref.slot );
+        this.setFlag('edges', ref.slot, FLAG_VISIBLE, visible);
+        this.refreshEdgeDrawn(ref.slot);
         // display-tier semantics (22.3): a hidden bezier-bundle member
         // leaves its bundle — siblings re-fan
-        this.curves.onEdgeShownChanged( ref.slot );
+        this.curves.onEdgeShownChanged(ref.slot);
       } else {
-        this.refreshEffectiveVisibility( ref.slot );
+        this.refreshEffectiveVisibility(ref.slot);
       }
     }
 
@@ -1430,48 +1688,55 @@ export class GraphStore implements ModelView {
    * consumers (bb, auto-bounds) and the curve bundles read FLAG_VISIBLE,
    * so an invisible element keeps its space and its bundle rank.
    */
-  setInvisibility( group: GroupName, slot: number, invisible: boolean ): void {
+  setInvisibility(group: GroupName, slot: number, invisible: boolean): void {
     const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
-    const flags = this.table( group ).column( id ) as Uint32Array;
-    const cur = ( flags[ slot ] & FLAG_SELF_INVISIBLE ) !== 0;
+    const flags = this.table(group).column(id) as Uint32Array;
+    const cur = (flags[slot] & FLAG_SELF_INVISIBLE) !== 0;
 
-    if( cur === invisible ){ return; }
+    if (cur === invisible) {
+      return;
+    }
 
-    this.setFlag( group, slot, FLAG_SELF_INVISIBLE, invisible );
+    this.setFlag(group, slot, FLAG_SELF_INVISIBLE, invisible);
 
-    if( group === 'edges' ){
-      this.refreshEdgeDrawn( slot );
+    if (group === 'edges') {
+      this.refreshEdgeDrawn(slot);
     } else {
-      this.refreshEffectiveVisibility( slot );
+      this.refreshEffectiveVisibility(slot);
     }
   }
 
   /** Re-derive an edge's FLAG_DRAWN from its shown + invisible state.
    * (Endpoint invisibility is folded by the consumers — the kernels'
    * endpoint tests and the edge `visible()` read — not stored here.) */
-  private refreshEdgeDrawn( slot: number ): void {
-    const flags = this.edges.column( 'edge.flags' ) as Uint32Array;
-    const drawn = ( flags[ slot ] & FLAG_VISIBLE ) !== 0
-      && ( flags[ slot ] & FLAG_SELF_INVISIBLE ) === 0;
+  private refreshEdgeDrawn(slot: number): void {
+    const flags = this.edges.column('edge.flags') as Uint32Array;
+    const drawn =
+      (flags[slot] & FLAG_VISIBLE) !== 0 &&
+      (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
 
-    this.setFlag( 'edges', slot, FLAG_DRAWN, drawn );
+    this.setFlag('edges', slot, FLAG_DRAWN, drawn);
   }
 
   /** Whether the element renders (round 22): the derived FLAG_DRAWN, with
    * edges additionally folding their endpoints (v3's visible() rule). */
-  isDrawn( ref: Ref ): boolean {
-    if( ref.group === 'nodes' ){
-      return this.hasFlag( 'nodes', ref.slot, FLAG_DRAWN );
+  isDrawn(ref: Ref): boolean {
+    if (ref.group === 'nodes') {
+      return this.hasFlag('nodes', ref.slot, FLAG_DRAWN);
     }
 
-    if( !this.hasFlag( 'edges', ref.slot, FLAG_DRAWN ) ){ return false; }
+    if (!this.hasFlag('edges', ref.slot, FLAG_DRAWN)) {
+      return false;
+    }
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const nodeFlags = this.nodes.column( 'node.flags' ) as Uint32Array;
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
     const drawnMask = FLAG_ALIVE | FLAG_DRAWN;
 
-    return ( nodeFlags[ endpoints[ ref.slot * 2 ] ] & drawnMask ) === drawnMask
-      && ( nodeFlags[ endpoints[ ref.slot * 2 + 1 ] ] & drawnMask ) === drawnMask;
+    return (
+      (nodeFlags[endpoints[ref.slot * 2]] & drawnMask) === drawnMask &&
+      (nodeFlags[endpoints[ref.slot * 2 + 1]] & drawnMask) === drawnMask
+    );
   }
 
   /**
@@ -1483,35 +1748,45 @@ export class GraphStore implements ModelView {
    * stale (it entered or left the bb); a drawn-only change is paint-only
    * (invisible elements keep their space).
    */
-  private refreshEffectiveVisibility( root: number ): void {
-    const flags = this.nodes.column( 'node.flags' ) as Uint32Array;
-    const stack: number[] = [ root ];
+  private refreshEffectiveVisibility(root: number): void {
+    const flags = this.nodes.column('node.flags') as Uint32Array;
+    const stack: number[] = [root];
 
-    while( stack.length > 0 ){
+    while (stack.length > 0) {
       const slot = stack.pop() as number;
-      const p = this.hierarchy.parentOf( slot );
-      const parentEff = p < 0 || ( flags[ p ] & FLAG_VISIBLE ) !== 0;
-      const parentDrawn = p < 0 || ( flags[ p ] & FLAG_DRAWN ) !== 0;
-      const eff = parentEff
-        && ( flags[ slot ] & FLAG_SELF_HIDDEN ) === 0
-        && ( flags[ slot ] & FLAG_ALIVE ) !== 0;
-      const drawn = eff && parentDrawn
-        && ( flags[ slot ] & FLAG_SELF_INVISIBLE ) === 0;
-      const cur = ( flags[ slot ] & FLAG_VISIBLE ) !== 0;
-      const curDrawn = ( flags[ slot ] & FLAG_DRAWN ) !== 0;
+      const p = this.hierarchy.parentOf(slot);
+      const parentEff = p < 0 || (flags[p] & FLAG_VISIBLE) !== 0;
+      const parentDrawn = p < 0 || (flags[p] & FLAG_DRAWN) !== 0;
+      const eff =
+        parentEff &&
+        (flags[slot] & FLAG_SELF_HIDDEN) === 0 &&
+        (flags[slot] & FLAG_ALIVE) !== 0;
+      const drawn =
+        eff && parentDrawn && (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
+      const cur = (flags[slot] & FLAG_VISIBLE) !== 0;
+      const curDrawn = (flags[slot] & FLAG_DRAWN) !== 0;
 
-      if( eff === cur && drawn === curDrawn ){ continue; }
-
-      flags[ slot ] = eff ? ( flags[ slot ] | FLAG_VISIBLE ) : ( flags[ slot ] & ~FLAG_VISIBLE );
-      flags[ slot ] = drawn ? ( flags[ slot ] | FLAG_DRAWN ) : ( flags[ slot ] & ~FLAG_DRAWN );
-      this.dirty.mark( 'node.flags', slot );
-
-      if( eff !== cur ){ // the space tier moved: bounds re-derive
-        this.geoEpoch++;
-        this.hierarchy.markGeo( slot );
+      if (eff === cur && drawn === curDrawn) {
+        continue;
       }
 
-      for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
+      flags[slot] = eff
+        ? flags[slot] | FLAG_VISIBLE
+        : flags[slot] & ~FLAG_VISIBLE;
+      flags[slot] = drawn
+        ? flags[slot] | FLAG_DRAWN
+        : flags[slot] & ~FLAG_DRAWN;
+      this.dirty.mark('node.flags', slot);
+
+      if (eff !== cur) {
+        // the space tier moved: bounds re-derive
+        this.geoEpoch++;
+        this.hierarchy.markGeo(slot);
+      }
+
+      for (const kid of this.hierarchy.childrenOf(slot)) {
+        stack.push(kid);
+      }
     }
   }
 
@@ -1522,17 +1797,23 @@ export class GraphStore implements ModelView {
   private opacityBase = new Map<number, number>();
 
   /** The node's declared (pre-fold) opacity — what style('opacity') reads. */
-  baseOpacityOf( slot: number ): number {
-    return this.opacityBase.get( slot )
-      ?? ( this.nodes.column( 'node.opacity' ) as Float32Array )[ slot ];
+  baseOpacityOf(slot: number): number {
+    return (
+      this.opacityBase.get(slot) ??
+      (this.nodes.column('node.opacity') as Float32Array)[slot]
+    );
   }
 
   /** The product of the strict ancestors' bases. */
-  private ancestorOpacityProduct( slot: number ): number {
+  private ancestorOpacityProduct(slot: number): number {
     let product = 1;
 
-    for( let p = this.hierarchy.parentOf( slot ); p >= 0; p = this.hierarchy.parentOf( p ) ){
-      product *= this.baseOpacityOf( p );
+    for (
+      let p = this.hierarchy.parentOf(slot);
+      p >= 0;
+      p = this.hierarchy.parentOf(p)
+    ) {
+      product *= this.baseOpacityOf(p);
     }
 
     return product;
@@ -1543,67 +1824,73 @@ export class GraphStore implements ModelView {
    * the stored column takes base x the ancestor product (v3's rendered
    * effectiveOpacity), and a parent's write refolds its subtree.
    */
-  private writeBaseOpacity( slot: number, base: number ): void {
-    const col = this.nodes.column( 'node.opacity' ) as Float32Array;
-    const product = this.ancestorOpacityProduct( slot );
+  private writeBaseOpacity(slot: number, base: number): void {
+    const col = this.nodes.column('node.opacity') as Float32Array;
+    const product = this.ancestorOpacityProduct(slot);
     const folded = base * product;
 
-    if( product !== 1 ){ this.opacityBase.set( slot, base ); }
-    else { this.opacityBase.delete( slot ); }
-
-    if( col[ slot ] !== folded ){
-      col[ slot ] = folded;
-      this.dirty.mark( 'node.opacity', slot );
+    if (product !== 1) {
+      this.opacityBase.set(slot, base);
+    } else {
+      this.opacityBase.delete(slot);
     }
 
-    if( this.hierarchy.childrenOf( slot ).length > 0 ){
-      this.refoldChildren( slot, base * product );
+    if (col[slot] !== folded) {
+      col[slot] = folded;
+      this.dirty.mark('node.opacity', slot);
+    }
+
+    if (this.hierarchy.childrenOf(slot).length > 0) {
+      this.refoldChildren(slot, base * product);
     }
   }
 
   /** Refold a whole subtree against its (possibly new) ancestor chain. */
-  private refoldOpacitySubtree( slot: number ): void {
-    this.writeBaseOpacity( slot, this.baseOpacityOf( slot ) );
+  private refoldOpacitySubtree(slot: number): void {
+    this.writeBaseOpacity(slot, this.baseOpacityOf(slot));
   }
 
   /** Recursive half of the fold: children of a node whose folded value is `parentFolded`. */
-  private refoldChildren( slot: number, parentFolded: number ): void {
-    const col = this.nodes.column( 'node.opacity' ) as Float32Array;
+  private refoldChildren(slot: number, parentFolded: number): void {
+    const col = this.nodes.column('node.opacity') as Float32Array;
 
-    for( const kid of this.hierarchy.childrenOf( slot ) ){
-      const base = this.baseOpacityOf( kid );
+    for (const kid of this.hierarchy.childrenOf(slot)) {
+      const base = this.baseOpacityOf(kid);
       const folded = base * parentFolded;
 
-      if( parentFolded !== 1 ){ this.opacityBase.set( kid, base ); }
-      else { this.opacityBase.delete( kid ); }
-
-      if( col[ kid ] !== folded ){
-        col[ kid ] = folded;
-        this.dirty.mark( 'node.opacity', kid );
+      if (parentFolded !== 1) {
+        this.opacityBase.set(kid, base);
+      } else {
+        this.opacityBase.delete(kid);
       }
 
-      this.refoldChildren( kid, folded );
+      if (col[kid] !== folded) {
+        col[kid] = folded;
+        this.dirty.mark('node.opacity', kid);
+      }
+
+      this.refoldChildren(kid, folded);
     }
   }
 
   /** The node's parent slot, or -1 for orphans. */
-  parentOf( slot: number ): number {
-    return this.hierarchy.parentOf( slot );
+  parentOf(slot: number): number {
+    return this.hierarchy.parentOf(slot);
   }
 
   /** The node's child slots in link order (read-only; empty for leaves). */
-  childrenOf( slot: number ): readonly number[] {
-    return this.hierarchy.childrenOf( slot );
+  childrenOf(slot: number): readonly number[] {
+    return this.hierarchy.childrenOf(slot);
   }
 
   /** Nesting depth (0 = top-level). */
-  depthOf( slot: number ): number {
-    return this.hierarchy.depthOf( slot );
+  depthOf(slot: number): number {
+    return this.hierarchy.depthOf(slot);
   }
 
   /** True when `ancestor` is on `slot`'s parent chain (not reflexive). */
-  isAncestorOf( ancestor: number, slot: number ): boolean {
-    return this.hierarchy.isAncestorOf( ancestor, slot );
+  isAncestorOf(ancestor: number, slot: number): boolean {
+    return this.hierarchy.isAncestorOf(ancestor, slot);
   }
 
   /** Count of live parent nodes. */
@@ -1625,13 +1912,13 @@ export class GraphStore implements ModelView {
 
   /** A node's model x.  Raw column read: a parent's derived position may
    * be stale, so call flushDerived() first when that matters. */
-  getX( slot: number ): number {
-    return ( this.nodes.column( 'node.position' ) as Float32Array )[ slot * 2 ];
+  getX(slot: number): number {
+    return (this.nodes.column('node.position') as Float32Array)[slot * 2];
   }
 
   /** A node's model y (raw column read; see getX on staleness). */
-  getY( slot: number ): number {
-    return ( this.nodes.column( 'node.position' ) as Float32Array )[ slot * 2 + 1 ];
+  getY(slot: number): number {
+    return (this.nodes.column('node.position') as Float32Array)[slot * 2 + 1];
   }
 
   /**
@@ -1642,13 +1929,13 @@ export class GraphStore implements ModelView {
    * bounds stale.  Bumps the geometry epoch, invalidating the exact
    * curve-bb memo.
    */
-  setPosition( slot: number, x: number, y: number ): void {
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+  setPosition(slot: number, x: number, y: number): void {
+    const pos = this.nodes.column('node.position') as Float32Array;
 
-    if( this.hierarchy.hasCompounds() ){
-      const flags = ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ];
+    if (this.hierarchy.hasCompounds()) {
+      const flags = (this.nodes.column('node.flags') as Uint32Array)[slot];
 
-      if( ( flags & FLAG_PARENT ) !== 0 ){
+      if ((flags & FLAG_PARENT) !== 0) {
         // the delta is against the parent's *derived* position, so any
         // pending auto-bounds settle first (materialize never re-enters
         // setPosition, so this can not recurse)
@@ -1658,74 +1945,82 @@ export class GraphStore implements ModelView {
         // the delta; the parent's own derived value then equals the
         // written position exactly (uniform translation), so only its
         // ancestors re-derive
-        const dx = x - pos[ slot * 2 ];
-        const dy = y - pos[ slot * 2 + 1 ];
+        const dx = x - pos[slot * 2];
+        const dy = y - pos[slot * 2 + 1];
 
-        if( dx !== 0 || dy !== 0 ){ this.shiftSubtree( slot, dx, dy ); }
+        if (dx !== 0 || dy !== 0) {
+          this.shiftSubtree(slot, dx, dy);
+        }
       }
 
-      if( ( flags & FLAG_CHILD ) !== 0 ){ this.hierarchy.markAncestors( slot ); }
+      if ((flags & FLAG_CHILD) !== 0) {
+        this.hierarchy.markAncestors(slot);
+      }
     }
 
-    pos[ slot * 2 ] = x;
-    pos[ slot * 2 + 1 ] = y;
+    pos[slot * 2] = x;
+    pos[slot * 2 + 1] = y;
     this.geoEpoch++;
 
-    this.dirty.mark( 'node.position', slot );
+    this.dirty.mark('node.position', slot);
   }
 
   /** Bulk position write (e.g. from a layout): one coalesced dirty span.
    * With compounds, each slot takes the sequential setPosition semantics
    * (a parent's write shifts its subtree first — v3's per-element order). */
-  setPositions( slots: number[], xy: number[] | Float32Array ): void {
-    if( slots.length === 0 ){ return; }
+  setPositions(slots: number[], xy: number[] | Float32Array): void {
+    if (slots.length === 0) {
+      return;
+    }
 
-    if( this.hierarchy.hasCompounds() ){
-      for( let i = 0; i < slots.length; i++ ){
-        this.setPosition( slots[ i ], xy[ i * 2 ], xy[ i * 2 + 1 ] );
+    if (this.hierarchy.hasCompounds()) {
+      for (let i = 0; i < slots.length; i++) {
+        this.setPosition(slots[i], xy[i * 2], xy[i * 2 + 1]);
       }
 
       return;
     }
 
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
     let min = Infinity;
     let max = -Infinity;
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      pos[ slot * 2 ] = xy[ i * 2 ];
-      pos[ slot * 2 + 1 ] = xy[ i * 2 + 1 ];
+      pos[slot * 2] = xy[i * 2];
+      pos[slot * 2 + 1] = xy[i * 2 + 1];
 
-      min = Math.min( min, slot );
-      max = Math.max( max, slot );
+      min = Math.min(min, slot);
+      max = Math.max(max, slot);
     }
 
     this.geoEpoch++;
-    this.dirty.mark( 'node.position', min, max + 1 );
+    this.dirty.mark('node.position', min, max + 1);
   }
 
   /**
    * Bulk constant/axis position write over node slots: sets x and/or y
    * (null leaves that axis unchanged) with one coalesced dirty span.
    */
-  setPositionsConst( slots: ArrayLike<number>, x: number | null, y: number | null ): void {
-    if( slots.length === 0 || ( x == null && y == null ) ){ return; }
+  setPositionsConst(
+    slots: ArrayLike<number>,
+    x: number | null,
+    y: number | null,
+  ): void {
+    if (slots.length === 0 || (x == null && y == null)) {
+      return;
+    }
 
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
 
-    if( this.hierarchy.hasCompounds() ){
+    if (this.hierarchy.hasCompounds()) {
       this.hierarchy.flush(); // the kept axis reads derived parent positions
 
-      for( let i = 0; i < slots.length; i++ ){
-        const slot = slots[ i ];
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
 
-        this.setPosition(
-          slot,
-          x ?? pos[ slot * 2 ],
-          y ?? pos[ slot * 2 + 1 ]
-        );
+        this.setPosition(slot, x ?? pos[slot * 2], y ?? pos[slot * 2 + 1]);
       }
 
       return;
@@ -1733,83 +2028,108 @@ export class GraphStore implements ModelView {
     let min = Infinity;
     let max = -1;
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      if( x != null ){ pos[ slot * 2 ] = x; }
-      if( y != null ){ pos[ slot * 2 + 1 ] = y; }
+      if (x != null) {
+        pos[slot * 2] = x;
+      }
+      if (y != null) {
+        pos[slot * 2 + 1] = y;
+      }
 
-      if( slot < min ){ min = slot; }
-      if( slot > max ){ max = slot; }
+      if (slot < min) {
+        min = slot;
+      }
+      if (slot > max) {
+        max = slot;
+      }
     }
 
     this.geoEpoch++;
-    this.dirty.mark( 'node.position', min, max + 1 );
+    this.dirty.mark('node.position', min, max + 1);
   }
 
   /** Bulk position offset over node slots: one coalesced dirty span.
    * With compounds, v3's shift dedupe applies: a slot whose ancestor is
    * also in the set is skipped (the ancestor's subtree shift moves it). */
-  shiftPositions( slots: ArrayLike<number>, dx: number, dy: number ): void {
-    if( slots.length === 0 ){ return; }
+  shiftPositions(slots: ArrayLike<number>, dx: number, dy: number): void {
+    if (slots.length === 0) {
+      return;
+    }
 
-    if( this.hierarchy.hasCompounds() ){
+    if (this.hierarchy.hasCompounds()) {
       this.hierarchy.flush(); // offsets apply to derived parent positions
 
       const inSet = new Set<number>();
 
-      for( let i = 0; i < slots.length; i++ ){ inSet.add( slots[ i ] ); }
+      for (let i = 0; i < slots.length; i++) {
+        inSet.add(slots[i]);
+      }
 
-      const pos = this.nodes.column( 'node.position' ) as Float32Array;
+      const pos = this.nodes.column('node.position') as Float32Array;
 
-      for( let i = 0; i < slots.length; i++ ){
-        const slot = slots[ i ];
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
         let ancestorInSet = false;
 
-        for( let p = this.hierarchy.parentOf( slot ); p >= 0; p = this.hierarchy.parentOf( p ) ){
-          if( inSet.has( p ) ){ ancestorInSet = true; break; }
+        for (
+          let p = this.hierarchy.parentOf(slot);
+          p >= 0;
+          p = this.hierarchy.parentOf(p)
+        ) {
+          if (inSet.has(p)) {
+            ancestorInSet = true;
+            break;
+          }
         }
 
-        if( ancestorInSet ){ continue; }
+        if (ancestorInSet) {
+          continue;
+        }
 
-        this.setPosition( slot, pos[ slot * 2 ] + dx, pos[ slot * 2 + 1 ] + dy );
+        this.setPosition(slot, pos[slot * 2] + dx, pos[slot * 2 + 1] + dy);
       }
 
       return;
     }
 
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
     let min = Infinity;
     let max = -1;
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      pos[ slot * 2 ] += dx;
-      pos[ slot * 2 + 1 ] += dy;
+      pos[slot * 2] += dx;
+      pos[slot * 2 + 1] += dy;
 
-      if( slot < min ){ min = slot; }
-      if( slot > max ){ max = slot; }
+      if (slot < min) {
+        min = slot;
+      }
+      if (slot > max) {
+        max = slot;
+      }
     }
 
     this.geoEpoch++;
-    this.dirty.mark( 'node.position', min, max + 1 );
+    this.dirty.mark('node.position', min, max + 1);
   }
 
   // -- flags --
 
   /** The whole flags word for a slot (see the FLAG_* bits in
    * contract.mts); 0 for a tombstoned slot. */
-  flags( group: GroupName, slot: number ): number {
+  flags(group: GroupName, slot: number): number {
     const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
 
-    return ( this.table( group ).column( id ) as Uint32Array )[ slot ];
+    return (this.table(group).column(id) as Uint32Array)[slot];
   }
 
   /** Whether every bit of `bit` is set — the single-bit tests read as
    * a predicate, not a mask compare. */
-  hasFlag( group: GroupName, slot: number, bit: number ): boolean {
-    return ( this.flags( group, slot ) & bit ) !== 0;
+  hasFlag(group: GroupName, slot: number, bit: number): boolean {
+    return (this.flags(group, slot) & bit) !== 0;
   }
 
   /**
@@ -1819,16 +2139,18 @@ export class GraphStore implements ModelView {
    * write those through setVisibility / setInvisibility / setParent /
    * the curve writers rather than here.
    */
-  setFlag( group: GroupName, slot: number, bit: number, on: boolean ): void {
+  setFlag(group: GroupName, slot: number, bit: number, on: boolean): void {
     const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
-    const arr = this.table( group ).column( id ) as Uint32Array;
-    const prev = arr[ slot ];
-    const next = on ? ( prev | bit ) : ( prev & ~bit );
+    const arr = this.table(group).column(id) as Uint32Array;
+    const prev = arr[slot];
+    const next = on ? prev | bit : prev & ~bit;
 
-    if( next === prev ){ return; }
+    if (next === prev) {
+      return;
+    }
 
-    arr[ slot ] = next;
-    this.dirty.mark( id, slot );
+    arr[slot] = next;
+    this.dirty.mark(id, slot);
   }
 
   /**
@@ -1841,11 +2163,14 @@ export class GraphStore implements ModelView {
    * Returns the changed count.
    */
   flagRefs(
-    refs: readonly Ref[], bit: number, on: boolean,
-    requireBit = 0, changedIdx: number[] | null = null
+    refs: readonly Ref[],
+    bit: number,
+    on: boolean,
+    requireBit = 0,
+    changedIdx: number[] | null = null,
   ): number {
-    const nodeFlags = this.nodes.column( 'node.flags' ) as Uint32Array;
-    const edgeFlags = this.edges.column( 'edge.flags' ) as Uint32Array;
+    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
+    const edgeFlags = this.edges.column('edge.flags') as Uint32Array;
     const nodeGen = this.nodes.gen;
     const edgeGen = this.edges.gen;
     let nMin = Infinity;
@@ -1854,39 +2179,59 @@ export class GraphStore implements ModelView {
     let eMax = -1;
     let changed = 0;
 
-    for( let i = 0; i < refs.length; i++ ){
-      const ref = refs[ i ];
+    for (let i = 0; i < refs.length; i++) {
+      const ref = refs[i];
       const slot = ref.slot;
       const isNode = ref.group === 'nodes';
       const gen = isNode ? nodeGen : edgeGen;
 
-      if( gen[ slot ] !== ref.gen ){ continue; }
-
-      const flags = isNode ? nodeFlags : edgeFlags;
-      const prev = flags[ slot ];
-
-      if( requireBit !== 0 && ( prev & requireBit ) === 0 ){ continue; }
-
-      const next = on ? ( prev | bit ) : ( prev & ~bit );
-
-      if( next === prev ){ continue; }
-
-      flags[ slot ] = next;
-      changed++;
-
-      if( isNode ){
-        if( slot < nMin ){ nMin = slot; }
-        if( slot > nMax ){ nMax = slot; }
-      } else {
-        if( slot < eMin ){ eMin = slot; }
-        if( slot > eMax ){ eMax = slot; }
+      if (gen[slot] !== ref.gen) {
+        continue;
       }
 
-      if( changedIdx != null ){ changedIdx.push( i ); }
+      const flags = isNode ? nodeFlags : edgeFlags;
+      const prev = flags[slot];
+
+      if (requireBit !== 0 && (prev & requireBit) === 0) {
+        continue;
+      }
+
+      const next = on ? prev | bit : prev & ~bit;
+
+      if (next === prev) {
+        continue;
+      }
+
+      flags[slot] = next;
+      changed++;
+
+      if (isNode) {
+        if (slot < nMin) {
+          nMin = slot;
+        }
+        if (slot > nMax) {
+          nMax = slot;
+        }
+      } else {
+        if (slot < eMin) {
+          eMin = slot;
+        }
+        if (slot > eMax) {
+          eMax = slot;
+        }
+      }
+
+      if (changedIdx != null) {
+        changedIdx.push(i);
+      }
     }
 
-    if( nMax >= 0 ){ this.dirty.mark( 'node.flags', nMin, nMax + 1 ); }
-    if( eMax >= 0 ){ this.dirty.mark( 'edge.flags', eMin, eMax + 1 ); }
+    if (nMax >= 0) {
+      this.dirty.mark('node.flags', nMin, nMax + 1);
+    }
+    if (eMax >= 0) {
+      this.dirty.mark('edge.flags', eMin, eMax + 1);
+    }
 
     return changed;
   }
@@ -1903,35 +2248,41 @@ export class GraphStore implements ModelView {
    * monotone cull slack, and marks the ancestors' auto-bounds stale.
    * Bumps the geometry epoch: scalar channels can move geometry.
    */
-  setScalar( id: ColumnId, slot: number, value: number ): void {
+  setScalar(id: ColumnId, slot: number, value: number): void {
     // round 14.4: under compounds a node opacity write is a *base* —
     // the column stores the ancestor-folded product
-    if( id === 'node.opacity' && this.hierarchy.hasCompounds() ){
-      this.writeBaseOpacity( slot, value );
+    if (id === 'node.opacity' && this.hierarchy.hasCompounds()) {
+      this.writeBaseOpacity(slot, value);
 
       return;
     }
 
-    const spec = columnSpec( id );
-    const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
+    const spec = columnSpec(id);
+    const arr = this.table(spec.group).column(id) as Float32Array | Uint32Array;
     // a scalar channel on a multi-component column addresses lane 0 and
     // leaves the rest alone: `edge.width` carries the arrow bits in lane 1
     // (round 56), and a scalar write must not clobber them
     const at = slot * spec.components;
 
-    if( id === 'node.borderWidth' && value > this.borderMax ){ this.borderMax = value; }
+    if (id === 'node.borderWidth' && value > this.borderMax) {
+      this.borderMax = value;
+    }
 
-    if( arr[ at ] === value ){ return; }
+    if (arr[at] === value) {
+      return;
+    }
 
-    arr[ at ] = value;
+    arr[at] = value;
     this.geoEpoch++;
-    this.dirty.mark( id, slot );
+    this.dirty.mark(id, slot);
 
-    if( id === 'node.borderWidth' ){
-      this.updateOuterHalf( slot );
+    if (id === 'node.borderWidth') {
+      this.updateOuterHalf(slot);
 
       // a border write changes the node's outer extent: stale ancestors
-      if( this.hierarchy.hasCompounds() ){ this.hierarchy.markGeo( slot ); }
+      if (this.hierarchy.hasCompounds()) {
+        this.hierarchy.markGeo(slot);
+      }
     }
   }
 
@@ -1944,40 +2295,48 @@ export class GraphStore implements ModelView {
    * the derived outerHalf write, the label re-anchor (25.1) and the
    * ancestors' auto-bounds staleness.
    */
-  setPair( id: ColumnId, slot: number, a: number, b: number ): void {
-    const spec = columnSpec( id );
-    const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
+  setPair(id: ColumnId, slot: number, a: number, b: number): void {
+    const spec = columnSpec(id);
+    const arr = this.table(spec.group).column(id) as Float32Array | Uint32Array;
 
-    if( id === 'node.size' ){
-      const half = Math.max( a, b ) / 2;
+    if (id === 'node.size') {
+      const half = Math.max(a, b) / 2;
 
-      if( half > this.nodeHalfMax ){ this.nodeHalfMax = half; }
+      if (half > this.nodeHalfMax) {
+        this.nodeHalfMax = half;
+      }
 
       // a style size write on a parent updates the stashed fallback
       // (auto-bounds owns the column and re-derives over the clobber);
       // tracked before the no-op check so the stash never goes stale
-      if( this.parentFallback.has( slot ) ){ this.parentFallback.set( slot, [ a, b ] ); }
+      if (this.parentFallback.has(slot)) {
+        this.parentFallback.set(slot, [a, b]);
+      }
     }
 
-    if( arr[ slot * 2 ] === a && arr[ slot * 2 + 1 ] === b ){ return; }
+    if (arr[slot * 2] === a && arr[slot * 2 + 1] === b) {
+      return;
+    }
 
-    arr[ slot * 2 ] = a;
-    arr[ slot * 2 + 1 ] = b;
+    arr[slot * 2] = a;
+    arr[slot * 2 + 1] = b;
     this.geoEpoch++;
-    this.dirty.mark( id, slot );
+    this.dirty.mark(id, slot);
 
-    if( id === 'node.size' ){
-      this.updateOuterHalf( slot );
+    if (id === 'node.size') {
+      this.updateOuterHalf(slot);
 
       // round 25.1: label anchors bake the node extents (the sidecar
       // entry + the glyph run's offsets), so a size write re-anchors —
       // previously only the style engine's same-pass writeLabel covered
       // this, leaving raw size writes (tween ticks) stale.  Early-outs
       // when unlabelled or the anchor is the center (the default).
-      this.reanchorLabel( slot, a, b );
+      this.reanchorLabel(slot, a, b);
 
       // stale ancestors (and the parent's own derived size, if any)
-      if( this.hierarchy.hasCompounds() ){ this.hierarchy.markGeo( slot ); }
+      if (this.hierarchy.hasCompounds()) {
+        this.hierarchy.markGeo(slot);
+      }
     }
   }
 
@@ -1988,39 +2347,50 @@ export class GraphStore implements ModelView {
    * compound auto-bounds staleness); other float columns write the lane
    * raw with a dirty mark.
    */
-  setLane( id: ColumnId, slot: number, lane: number, value: number ): void {
-    if( id === 'node.size' ){
-      const size = this.nodes.column( 'node.size' ) as Float32Array;
+  setLane(id: ColumnId, slot: number, lane: number, value: number): void {
+    if (id === 'node.size') {
+      const size = this.nodes.column('node.size') as Float32Array;
 
-      this.setPair( 'node.size', slot,
-        lane === 0 ? value : size[ slot * 2 ],
-        lane === 1 ? value : size[ slot * 2 + 1 ] );
+      this.setPair(
+        'node.size',
+        slot,
+        lane === 0 ? value : size[slot * 2],
+        lane === 1 ? value : size[slot * 2 + 1],
+      );
 
       return;
     }
 
     // the edge layer records store their stroke in lane 1 as ×256
     // fixed-point (see the contract) — encode on the way in
-    if( id === 'edge.casing' || id === 'edge.overlay' || id === 'edge.underlay' ){
-      const arr = this.edges.column( id ) as Uint32Array;
-      const enc = Math.max( 0, Math.round( value * 256 ) );
+    if (
+      id === 'edge.casing' ||
+      id === 'edge.overlay' ||
+      id === 'edge.underlay'
+    ) {
+      const arr = this.edges.column(id) as Uint32Array;
+      const enc = Math.max(0, Math.round(value * 256));
 
-      if( arr[ slot * 2 + 1 ] === enc ){ return; }
+      if (arr[slot * 2 + 1] === enc) {
+        return;
+      }
 
-      arr[ slot * 2 + 1 ] = enc;
-      this.dirty.mark( id, slot );
+      arr[slot * 2 + 1] = enc;
+      this.dirty.mark(id, slot);
 
       return;
     }
 
-    const spec = columnSpec( id );
-    const arr = this.table( spec.group ).column( id ) as Float32Array;
+    const spec = columnSpec(id);
+    const arr = this.table(spec.group).column(id) as Float32Array;
     const i = slot * spec.components + lane;
 
-    if( arr[ i ] === value ){ return; }
+    if (arr[i] === value) {
+      return;
+    }
 
-    arr[ i ] = value;
-    this.dirty.mark( id, slot );
+    arr[i] = value;
+    this.dirty.mark(id, slot);
   }
 
   /** `Uint32Array` alias of `edge.width`'s buffer, for the exact bit
@@ -2045,17 +2415,17 @@ export class GraphStore implements ModelView {
    * @param slot — the edge slot
    * @param word — the packed word (see `edge.arrowShapes` in the contract)
    */
-  setArrowShapes( slot: number, word: number ): void {
-    const shapes = this.edges.column( 'edge.arrowShapes' ) as Uint32Array;
+  setArrowShapes(slot: number, word: number): void {
+    const shapes = this.edges.column('edge.arrowShapes') as Uint32Array;
 
-    if( shapes[ slot ] !== word ){
-      shapes[ slot ] = word;
+    if (shapes[slot] !== word) {
+      shapes[slot] = word;
       // the gap shortens the drawn line, so this moves geometry
       this.geoEpoch++;
-      this.dirty.mark( 'edge.arrowShapes', slot );
+      this.dirty.mark('edge.arrowShapes', slot);
     }
 
-    this.updateArrowBits( slot );
+    this.updateArrowBits(slot);
   }
 
   /**
@@ -2078,30 +2448,38 @@ export class GraphStore implements ModelView {
    * on-device reads as opaque here.  The CPU column is what every other
    * CPU consumer reads too.
    */
-  private updateArrowBits( slot: number ): void {
-    const width = this.edges.column( 'edge.width' ) as Float32Array;
-    const word = ( this.edges.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ];
-    const src = this.edges.column( 'edge.sourceArrow' ) as Uint8Array;
-    const tgt = this.edges.column( 'edge.targetArrow' ) as Uint8Array;
+  private updateArrowBits(slot: number): void {
+    const width = this.edges.column('edge.width') as Float32Array;
+    const word = (this.edges.column('edge.arrowShapes') as Uint32Array)[slot];
+    const src = this.edges.column('edge.sourceArrow') as Uint8Array;
+    const tgt = this.edges.column('edge.targetArrow') as Uint8Array;
 
-    if( this.widthBitsView == null || this.widthBitsView.buffer !== width.buffer ){
-      this.widthBitsView = new Uint32Array( width.buffer );
+    if (
+      this.widthBitsView == null ||
+      this.widthBitsView.buffer !== width.buffer
+    ) {
+      this.widthBitsView = new Uint32Array(width.buffer);
     }
 
-    const shows = ( alpha: number, hollowShift: number ): number =>
-      ( alpha > 0 && alpha < 255 ) || ( ( word >>> hollowShift ) & 1 ) === 1 ? 1 : 0;
+    const shows = (alpha: number, hollowShift: number): number =>
+      (alpha > 0 && alpha < 255) || ((word >>> hollowShift) & 1) === 1 ? 1 : 0;
 
-    const bits = word
-      | ( shows( src[ slot * 4 + 3 ], ARROW_SHIFT_HOLLOW_SOURCE ) << ARROW_SHIFT_SRC_SHOWS_LINE )
-      | ( shows( tgt[ slot * 4 + 3 ], ARROW_SHIFT_HOLLOW_TARGET ) << ARROW_SHIFT_TGT_SHOWS_LINE );
+    const bits =
+      word |
+      (shows(src[slot * 4 + 3], ARROW_SHIFT_HOLLOW_SOURCE) <<
+        ARROW_SHIFT_SRC_SHOWS_LINE) |
+      (shows(tgt[slot * 4 + 3], ARROW_SHIFT_HOLLOW_TARGET) <<
+        ARROW_SHIFT_TGT_SHOWS_LINE);
 
     // the mirror can be stale even when its inputs are not: a growth or a
     // compaction reallocates edge.width
-    if( this.widthBitsView[ slot * 2 + 1 ] === bits ){ return; }
+    if (this.widthBitsView[slot * 2 + 1] === bits) {
+      return;
+    }
 
-    this.widthBitsView[ slot * 2 + 1 ] = bits;
+    this.widthBitsView[slot * 2 + 1] = bits;
     this.geoEpoch++;
-    this.dirty.mark( 'edge.width', slot );
+    this.dirty.mark('edge.width', slot);
   }
 
   /**
@@ -2111,15 +2489,15 @@ export class GraphStore implements ModelView {
    * curve evaluator both read this column, so the two sides agree on the
    * exact f32 half-extents by construction.
    */
-  private updateOuterHalf( slot: number ): void {
-    const size = this.nodes.column( 'node.size' ) as Float32Array;
-    const border = this.nodes.column( 'node.borderWidth' ) as Float32Array;
-    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
-    const halfBorder = border[ slot ] / 2;
+  private updateOuterHalf(slot: number): void {
+    const size = this.nodes.column('node.size') as Float32Array;
+    const border = this.nodes.column('node.borderWidth') as Float32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const halfBorder = border[slot] / 2;
 
-    outer[ slot * 2 ] = size[ slot * 2 ] / 2 + halfBorder;
-    outer[ slot * 2 + 1 ] = size[ slot * 2 + 1 ] / 2 + halfBorder;
-    this.dirty.mark( 'node.outerHalf', slot );
+    outer[slot * 2] = size[slot * 2] / 2 + halfBorder;
+    outer[slot * 2 + 1] = size[slot * 2 + 1] / 2 + halfBorder;
+    this.dirty.mark('node.outerHalf', slot);
   }
 
   // -- ghosts (round 13 A1) --
@@ -2139,22 +2517,36 @@ export class GraphStore implements ModelView {
    * enabled] (the StyleEngine's write path).  Offsets are geometry —
    * they grow the bb scans — so writes bump the geometry epoch.
    */
-  setGhost( slot: number, offX: number, offY: number, opacity: number, enabled: boolean ): void {
-    const arr = this.nodes.column( 'node.ghost' ) as Float32Array;
+  setGhost(
+    slot: number,
+    offX: number,
+    offY: number,
+    opacity: number,
+    enabled: boolean,
+  ): void {
+    const arr = this.nodes.column('node.ghost') as Float32Array;
     const at = slot * 4;
     const en = enabled ? 1 : 0;
 
-    if( arr[ at ] === offX && arr[ at + 1 ] === offY &&
-        arr[ at + 2 ] === opacity && arr[ at + 3 ] === en ){ return; }
+    if (
+      arr[at] === offX &&
+      arr[at + 1] === offY &&
+      arr[at + 2] === opacity &&
+      arr[at + 3] === en
+    ) {
+      return;
+    }
 
-    if( en !== arr[ at + 3 ] ){ this.ghosts += en === 1 ? 1 : -1; }
+    if (en !== arr[at + 3]) {
+      this.ghosts += en === 1 ? 1 : -1;
+    }
 
-    arr[ at ] = offX;
-    arr[ at + 1 ] = offY;
-    arr[ at + 2 ] = opacity;
-    arr[ at + 3 ] = en;
+    arr[at] = offX;
+    arr[at + 1] = offY;
+    arr[at + 2] = opacity;
+    arr[at + 3] = en;
     this.geoEpoch++;
-    this.dirty.mark( 'node.ghost', slot );
+    this.dirty.mark('node.ghost', slot);
   }
 
   // -- overlay / underlay (round 13 A2) --
@@ -2164,9 +2556,13 @@ export class GraphStore implements ModelView {
   private underlays = 0;
 
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
-  overlayCount(): number { return this.overlays; }
+  overlayCount(): number {
+    return this.overlays;
+  }
   /** Nodes with a visible underlay (13 A2) — the pass-skip gate. */
-  underlayCount(): number { return this.underlays; }
+  underlayCount(): number {
+    return this.underlays;
+  }
 
   /**
    * Write a node's overlay or underlay record (the StyleEngine's write
@@ -2175,32 +2571,46 @@ export class GraphStore implements ModelView {
    * so writes bump the geometry epoch.
    */
   setNodeLayer(
-    id: 'node.overlay' | 'node.underlay', slot: number,
-    rgba: number, padding: number, shape: number, radius: number
+    id: 'node.overlay' | 'node.underlay',
+    slot: number,
+    rgba: number,
+    padding: number,
+    shape: number,
+    radius: number,
   ): void {
-    const arr = this.nodes.column( id ) as Uint32Array;
+    const arr = this.nodes.column(id) as Uint32Array;
     const at = slot * 4;
-    const pad = Math.max( 0, Math.round( padding * 256 ) );
-    const rad = radius < 0 ? 0xffffffff : Math.max( 0, Math.round( radius * 256 ) );
+    const pad = Math.max(0, Math.round(padding * 256));
+    const rad = radius < 0 ? 0xffffffff : Math.max(0, Math.round(radius * 256));
 
-    if( arr[ at ] === rgba && arr[ at + 1 ] === pad &&
-        arr[ at + 2 ] === shape && arr[ at + 3 ] === rad ){ return; }
-
-    const wasOn = arr[ at ] >>> 24 !== 0;
-    const isOn = rgba >>> 24 !== 0;
-
-    if( wasOn !== isOn ){
-      const d = isOn ? 1 : -1;
-
-      if( id === 'node.overlay' ){ this.overlays += d; } else { this.underlays += d; }
+    if (
+      arr[at] === rgba &&
+      arr[at + 1] === pad &&
+      arr[at + 2] === shape &&
+      arr[at + 3] === rad
+    ) {
+      return;
     }
 
-    arr[ at ] = rgba;
-    arr[ at + 1 ] = pad;
-    arr[ at + 2 ] = shape;
-    arr[ at + 3 ] = rad;
+    const wasOn = arr[at] >>> 24 !== 0;
+    const isOn = rgba >>> 24 !== 0;
+
+    if (wasOn !== isOn) {
+      const d = isOn ? 1 : -1;
+
+      if (id === 'node.overlay') {
+        this.overlays += d;
+      } else {
+        this.underlays += d;
+      }
+    }
+
+    arr[at] = rgba;
+    arr[at + 1] = pad;
+    arr[at + 2] = shape;
+    arr[at + 3] = rad;
     this.geoEpoch++;
-    this.dirty.mark( id, slot );
+    this.dirty.mark(id, slot);
   }
 
   /** live counts of edges with a visible overlay / underlay / casing */
@@ -2209,11 +2619,17 @@ export class GraphStore implements ModelView {
   private casings = 0;
 
   /** Edges with a visible overlay (13 A2) — the pass-skip gate. */
-  edgeOverlayCount(): number { return this.edgeOverlays; }
+  edgeOverlayCount(): number {
+    return this.edgeOverlays;
+  }
   /** Edges with a visible underlay (13 A2) — the pass-skip gate. */
-  edgeUnderlayCount(): number { return this.edgeUnderlays; }
+  edgeUnderlayCount(): number {
+    return this.edgeUnderlays;
+  }
   /** Edges with a visible line casing — the pass-skip gate. */
-  casingCount(): number { return this.casings; }
+  casingCount(): number {
+    return this.casings;
+  }
 
   /**
    * Write an edge's overlay or underlay record (round 13 A2):
@@ -2221,29 +2637,37 @@ export class GraphStore implements ModelView {
    * edge width + 2 × padding, derived at style-write time.
    */
   setEdgeLayer(
-    id: 'edge.overlay' | 'edge.underlay' | 'edge.casing', slot: number,
-    rgba: number, strokeWidth: number
+    id: 'edge.overlay' | 'edge.underlay' | 'edge.casing',
+    slot: number,
+    rgba: number,
+    strokeWidth: number,
   ): void {
-    const arr = this.edges.column( id ) as Uint32Array;
+    const arr = this.edges.column(id) as Uint32Array;
     const at = slot * 2;
-    const sw = Math.max( 0, Math.round( strokeWidth * 256 ) );
+    const sw = Math.max(0, Math.round(strokeWidth * 256));
 
-    if( arr[ at ] === rgba && arr[ at + 1 ] === sw ){ return; }
-
-    const wasOn = arr[ at ] >>> 24 !== 0;
-    const isOn = rgba >>> 24 !== 0;
-
-    if( wasOn !== isOn ){
-      const d = isOn ? 1 : -1;
-
-      if( id === 'edge.overlay' ){ this.edgeOverlays += d; }
-      else if( id === 'edge.underlay' ){ this.edgeUnderlays += d; }
-      else { this.casings += d; }
+    if (arr[at] === rgba && arr[at + 1] === sw) {
+      return;
     }
 
-    arr[ at ] = rgba;
-    arr[ at + 1 ] = sw;
-    this.dirty.mark( id, slot );
+    const wasOn = arr[at] >>> 24 !== 0;
+    const isOn = rgba >>> 24 !== 0;
+
+    if (wasOn !== isOn) {
+      const d = isOn ? 1 : -1;
+
+      if (id === 'edge.overlay') {
+        this.edgeOverlays += d;
+      } else if (id === 'edge.underlay') {
+        this.edgeUnderlays += d;
+      } else {
+        this.casings += d;
+      }
+    }
+
+    arr[at] = rgba;
+    arr[at + 1] = sw;
+    this.dirty.mark(id, slot);
   }
 
   /** live count of edges with any visible mid arrow (round 13 C1) —
@@ -2258,18 +2682,25 @@ export class GraphStore implements ModelView {
 
   /** setColor wrapper for the mid-arrow columns that keeps the count. */
   setMidArrow(
-    id: 'edge.midSourceArrow' | 'edge.midTargetArrow', slot: number,
-    r: number, g: number, b: number, a: number, otherId: 'edge.midSourceArrow' | 'edge.midTargetArrow'
+    id: 'edge.midSourceArrow' | 'edge.midTargetArrow',
+    slot: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+    otherId: 'edge.midSourceArrow' | 'edge.midTargetArrow',
   ): void {
-    const arr = this.edges.column( id ) as Uint8Array;
-    const other = this.edges.column( otherId ) as Uint8Array;
-    const wasOn = arr[ slot * 4 + 3 ] > 0 || other[ slot * 4 + 3 ] > 0;
+    const arr = this.edges.column(id) as Uint8Array;
+    const other = this.edges.column(otherId) as Uint8Array;
+    const wasOn = arr[slot * 4 + 3] > 0 || other[slot * 4 + 3] > 0;
 
-    this.setColor( id, slot, r, g, b, a );
+    this.setColor(id, slot, r, g, b, a);
 
-    const isOn = a > 0 || other[ slot * 4 + 3 ] > 0;
+    const isOn = a > 0 || other[slot * 4 + 3] > 0;
 
-    if( wasOn !== isOn ){ this.midArrows += isOn ? 1 : -1; }
+    if (wasOn !== isOn) {
+      this.midArrows += isOn ? 1 : -1;
+    }
   }
 
   /** monotone (round 13 B7): the largest arrow-scale any edge styles —
@@ -2285,8 +2716,10 @@ export class GraphStore implements ModelView {
 
   /** Raise the monotone arrow-scale maximum (the style layer's report;
    * arrow scale is not a store column). */
-  noteArrowScale( scale: number ): void {
-    if( scale > this.arrowScaleMaxV ){ this.arrowScaleMaxV = scale; }
+  noteArrowScale(scale: number): void {
+    if (scale > this.arrowScaleMaxV) {
+      this.arrowScaleMaxV = scale;
+    }
   }
 
   private arrowWidthMaxV = 0;
@@ -2308,8 +2741,10 @@ export class GraphStore implements ModelView {
 
   /** Raise the monotone hollow-stroke maximum (the style layer's
    * report, after 'match-line' and percent forms are resolved). */
-  noteArrowWidth( width: number ): void {
-    if( width > this.arrowWidthMaxV ){ this.arrowWidthMaxV = width; }
+  noteArrowWidth(width: number): void {
+    if (width > this.arrowWidthMaxV) {
+      this.arrowWidthMaxV = width;
+    }
   }
 
   /** monotone (round 13 B5): the largest outline outward extent any
@@ -2332,51 +2767,67 @@ export class GraphStore implements ModelView {
    * (pick + bb read them), so writes bump the geometry epoch.
    */
   setBorderGeom(
-    slot: number, cornerRadius: number, borderPos: number,
-    outlineRgba: number, outlineWidth: number, outlineOffset: number,
-    shapeId: number = 0, polyRef: number = 0
+    slot: number,
+    cornerRadius: number,
+    borderPos: number,
+    outlineRgba: number,
+    outlineWidth: number,
+    outlineOffset: number,
+    shapeId: number = 0,
+    polyRef: number = 0,
   ): void {
-    const arr = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
+    const arr = this.nodes.column('node.borderGeom') as Uint32Array;
     const at = slot * 4;
     // C3: custom polygons carry their point-record ref (from
     // setPolygonPoints) in the radius word — the corner radius is
     // meaningless for polygons
-    const rad = shapeId === SHAPE_POLYGON_CUSTOM
-      ? polyRef >>> 0
-      : cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
+    const rad =
+      shapeId === SHAPE_POLYGON_CUSTOM
+        ? polyRef >>> 0
+        : cornerRadius < 0
+          ? 0xffffffff
+          : Math.max(0, Math.round(cornerRadius * 256));
 
-    if( shapeId > SHAPE_MASK ){
+    if (shapeId > SHAPE_MASK) {
       throw new Error(
         `Node shape id ${shapeId} does not fit the ${SHAPE_MASK + 1}-shape field; ` +
-        'widen SHAPE_SHIFT/SHAPE_MASK in contract.mts rather than truncating'
+          'widen SHAPE_SHIFT/SHAPE_MASK in contract.mts rather than truncating',
       );
     }
 
     // C2: the node FS reads the shape out of this word (its shapes
     // binding went to the gradient column); 27.1 widened the field from
     // a nibble to a byte
-    const posShape = ( borderPos | ( shapeId << SHAPE_SHIFT ) ) >>> 0;
+    const posShape = (borderPos | (shapeId << SHAPE_SHIFT)) >>> 0;
 
     borderPos = posShape;
     const packedWO =
-      ( Math.min( 0xffff, Math.max( 0, Math.round( outlineOffset * 256 ) ) ) << 16 ) |
-      Math.min( 0xffff, Math.max( 0, Math.round( outlineWidth * 256 ) ) );
+      (Math.min(0xffff, Math.max(0, Math.round(outlineOffset * 256))) << 16) |
+      Math.min(0xffff, Math.max(0, Math.round(outlineWidth * 256)));
 
-    if( outlineRgba >>> 24 !== 0 ){
+    if (outlineRgba >>> 24 !== 0) {
       const slack = outlineOffset / 2 + outlineWidth;
 
-      if( slack > this.outlineSlackMax ){ this.outlineSlackMax = slack; }
+      if (slack > this.outlineSlackMax) {
+        this.outlineSlackMax = slack;
+      }
     }
 
-    if( arr[ at ] === rad && arr[ at + 1 ] === borderPos &&
-        arr[ at + 2 ] === outlineRgba && arr[ at + 3 ] === packedWO ){ return; }
+    if (
+      arr[at] === rad &&
+      arr[at + 1] === borderPos &&
+      arr[at + 2] === outlineRgba &&
+      arr[at + 3] === packedWO
+    ) {
+      return;
+    }
 
-    arr[ at ] = rad;
-    arr[ at + 1 ] = borderPos;
-    arr[ at + 2 ] = outlineRgba;
-    arr[ at + 3 ] = packedWO;
+    arr[at] = rad;
+    arr[at + 1] = borderPos;
+    arr[at + 2] = outlineRgba;
+    arr[at + 3] = packedWO;
     this.geoEpoch++;
-    this.dirty.mark( 'node.borderGeom', slot );
+    this.dirty.mark('node.borderGeom', slot);
   }
 
   /** live count of elements carrying a gradient record (13 C2) */
@@ -2392,80 +2843,122 @@ export class GraphStore implements ModelView {
    * [rgba, pos-fraction] pairs, capped at 5 by the style layer.
    */
   setGradient(
-    id: 'node.gradient' | 'edge.gradient', slot: number,
-    kind: number, dir: number, stops: { rgba: number; pos: number }[]
+    id: 'node.gradient' | 'edge.gradient',
+    slot: number,
+    kind: number,
+    dir: number,
+    stops: { rgba: number; pos: number }[],
   ): void {
-    const arr = this.table( columnSpec( id ).group ).column( id ) as Uint32Array;
+    const arr = this.table(columnSpec(id).group).column(id) as Uint32Array;
     const at = slot * 8;
-    const count = Math.min( stops.length, 5 );
-    const meta = kind === 0 ? 0 : ( kind | ( dir << 2 ) | ( count << 5 ) ) >>> 0;
-    const words = [ meta, 0, 0, 0, 0, 0, 0, 0 ];
+    const count = Math.min(stops.length, 5);
+    const meta = kind === 0 ? 0 : (kind | (dir << 2) | (count << 5)) >>> 0;
+    const words = [meta, 0, 0, 0, 0, 0, 0, 0];
 
-    for( let i = 0; i < count; i++ ){
-      words[ 1 + i ] = stops[ i ].rgba;
+    for (let i = 0; i < count; i++) {
+      words[1 + i] = stops[i].rgba;
     }
 
     let pos03 = 0;
 
-    for( let i = 0; i < Math.min( count, 4 ); i++ ){
-      pos03 |= Math.max( 0, Math.min( 255, Math.round( stops[ i ].pos * 255 ) ) ) << ( i * 8 );
+    for (let i = 0; i < Math.min(count, 4); i++) {
+      pos03 |=
+        Math.max(0, Math.min(255, Math.round(stops[i].pos * 255))) << (i * 8);
     }
 
-    words[ 6 ] = pos03 >>> 0;
-    words[ 7 ] = count > 4 ? Math.max( 0, Math.min( 255, Math.round( stops[ 4 ].pos * 255 ) ) ) : 0;
+    words[6] = pos03 >>> 0;
+    words[7] =
+      count > 4
+        ? Math.max(0, Math.min(255, Math.round(stops[4].pos * 255)))
+        : 0;
 
     let changed = false;
 
-    for( let i = 0; i < 8; i++ ){
-      if( arr[ at + i ] !== words[ i ] ){ changed = true; break; }
+    for (let i = 0; i < 8; i++) {
+      if (arr[at + i] !== words[i]) {
+        changed = true;
+        break;
+      }
     }
 
-    if( !changed ){ return; }
-
-    const wasOn = arr[ at ] !== 0;
-    const isOn = meta !== 0;
-
-    if( wasOn !== isOn ){ this.gradients += isOn ? 1 : -1; }
-
-    for( let i = 0; i < 8; i++ ){ arr[ at + i ] = words[ i ]; }
-
-    this.dirty.mark( id, slot );
-  }
-
-  /** Four-component f32 write (dash patterns etc.). */
-  setVec4( id: ColumnId, slot: number, a: number, b: number, c: number, d: number ): void {
-    const arr = this.table( columnSpec( id ).group ).column( id ) as Float32Array;
-    const at = slot * 4;
-
-    if( arr[ at ] === a && arr[ at + 1 ] === b && arr[ at + 2 ] === c && arr[ at + 3 ] === d ){
+    if (!changed) {
       return;
     }
 
-    arr[ at ] = a;
-    arr[ at + 1 ] = b;
-    arr[ at + 2 ] = c;
-    arr[ at + 3 ] = d;
-    this.dirty.mark( id, slot );
+    const wasOn = arr[at] !== 0;
+    const isOn = meta !== 0;
+
+    if (wasOn !== isOn) {
+      this.gradients += isOn ? 1 : -1;
+    }
+
+    for (let i = 0; i < 8; i++) {
+      arr[at + i] = words[i];
+    }
+
+    this.dirty.mark(id, slot);
+  }
+
+  /** Four-component f32 write (dash patterns etc.). */
+  setVec4(
+    id: ColumnId,
+    slot: number,
+    a: number,
+    b: number,
+    c: number,
+    d: number,
+  ): void {
+    const arr = this.table(columnSpec(id).group).column(id) as Float32Array;
+    const at = slot * 4;
+
+    if (
+      arr[at] === a &&
+      arr[at + 1] === b &&
+      arr[at + 2] === c &&
+      arr[at + 3] === d
+    ) {
+      return;
+    }
+
+    arr[at] = a;
+    arr[at + 1] = b;
+    arr[at + 2] = c;
+    arr[at + 3] = d;
+    this.dirty.mark(id, slot);
   }
 
   /** RGBA bytes on [0, 255]. */
-  setColor( id: ColumnId, slot: number, r: number, g: number, b: number, a: number ): void {
-    const spec = columnSpec( id );
-    const arr = this.table( spec.group ).column( id ) as Uint8Array;
+  setColor(
+    id: ColumnId,
+    slot: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+  ): void {
+    const spec = columnSpec(id);
+    const arr = this.table(spec.group).column(id) as Uint8Array;
     const at = slot * 4;
 
-    if( arr[ at ] === r && arr[ at + 1 ] === g && arr[ at + 2 ] === b && arr[ at + 3 ] === a ){ return; }
+    if (
+      arr[at] === r &&
+      arr[at + 1] === g &&
+      arr[at + 2] === b &&
+      arr[at + 3] === a
+    ) {
+      return;
+    }
 
-    arr[ at ] = r;
-    arr[ at + 1 ] = g;
-    arr[ at + 2 ] = b;
-    arr[ at + 3 ] = a;
-    this.dirty.mark( id, slot );
+    arr[at] = r;
+    arr[at + 1] = g;
+    arr[at + 2] = b;
+    arr[at + 3] = a;
+    this.dirty.mark(id, slot);
 
     // round 56: an end arrow's alpha decides whether the head hides the
     // line under it, which decides how far the line is shortened
-    if( id === 'edge.sourceArrow' || id === 'edge.targetArrow' ){
-      this.updateArrowBits( slot );
+    if (id === 'edge.sourceArrow' || id === 'edge.targetArrow') {
+      this.updateArrowBits(slot);
     }
   }
 
@@ -2478,34 +2971,54 @@ export class GraphStore implements ModelView {
    * straight/bezier styles).
    */
   setCurveStyle(
-    slot: number, style: number, stepSize: number, weight: number,
-    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null,
-    haystackRadius: number = 0, endpoints: EndpointSpec | null = null
+    slot: number,
+    style: number,
+    stepSize: number,
+    weight: number,
+    loopDirection: number,
+    loopSweep: number,
+    extras: CurveStyleExtras | null = null,
+    haystackRadius: number = 0,
+    endpoints: EndpointSpec | null = null,
   ): void {
     this.curves.setStyle(
-      slot, style, stepSize, weight, loopDirection, loopSweep, extras, haystackRadius, endpoints );
+      slot,
+      style,
+      stepSize,
+      weight,
+      loopDirection,
+      loopSweep,
+      extras,
+      haystackRadius,
+      endpoints,
+    );
   }
 
   /** The styled curve record — the stored truth the style getters read. */
-  curveStyleAt( slot: number ): ReturnType<CurveIndex['styleAt']> {
-    return this.curves.styleAt( slot );
+  curveStyleAt(slot: number): ReturnType<CurveIndex['styleAt']> {
+    return this.curves.styleAt(slot);
   }
 
   /**
    * The derived curve params [p0, p1, p2, kind] for one edge, with any
    * pending derivation flushed first (the accessors' read path).
    */
-  curveParamsAt( slot: number ): [ number, number, number, number ] {
+  curveParamsAt(slot: number): [number, number, number, number] {
     this.flushDerived();
 
-    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
 
-    return [ params[ at ], params[ at + 1 ], params[ at + 2 ], params[ at + 3 ] ];
+    return [params[at], params[at + 1], params[at + 2], params[at + 3]];
   }
 
   /** scratch for `arrowTrimAt` — the geometry readers never allocate */
-  private trimScratch: ArrowTrim = { srcGap: 0, tgtGap: 0, srcSpacing: 0, tgtSpacing: 0 };
+  private trimScratch: ArrowTrim = {
+    srcGap: 0,
+    tgtGap: 0,
+    srcSpacing: 0,
+    tgtSpacing: 0,
+  };
 
   /**
    * v3's two per-end shortenings for one edge, resolved from the arrow
@@ -2523,29 +3036,29 @@ export class GraphStore implements ModelView {
    * @param slot — the edge slot
    * @returns a shared scratch — consume it before the next call
    */
-  arrowTrimAt( slot: number ): ArrowTrim {
+  arrowTrimAt(slot: number): ArrowTrim {
     const out = this.trimScratch;
-    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
 
-    if( params[ slot * 4 + 3 ] === CURVE_HAYSTACK ){
+    if (params[slot * 4 + 3] === CURVE_HAYSTACK) {
       out.srcGap = out.tgtGap = out.srcSpacing = out.tgtSpacing = 0;
 
       return out;
     }
 
-    const word = ( this.edges.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ];
-    const width = ( this.edges.column( 'edge.width' ) as Float32Array )[ slot * 2 ];
-    const src = ( word >>> ARROW_SHIFT_SOURCE ) & ARROW_SHAPE_MASK;
-    const tgt = ( word >>> ARROW_SHIFT_TARGET ) & ARROW_SHAPE_MASK;
+    const word = (this.edges.column('edge.arrowShapes') as Uint32Array)[slot];
+    const width = (this.edges.column('edge.width') as Float32Array)[slot * 2];
+    const src = (word >>> ARROW_SHIFT_SOURCE) & ARROW_SHAPE_MASK;
+    const tgt = (word >>> ARROW_SHIFT_TARGET) & ARROW_SHAPE_MASK;
     const q = word >>> ARROW_SHIFT_SCALE;
     // the *quantized* scale, deliberately: the head is drawn at it, so a
     // gap derived from the unquantized value would not meet the head
     const scale = q === 0 ? 1 : q / 16;
 
-    out.srcGap = arrowGap( src, width, scale );
-    out.tgtGap = arrowGap( tgt, width, scale );
-    out.srcSpacing = arrowSpacing( src, width, scale );
-    out.tgtSpacing = arrowSpacing( tgt, width, scale );
+    out.srcGap = arrowGap(src, width, scale);
+    out.tgtGap = arrowGap(tgt, width, scale);
+    out.srcSpacing = arrowSpacing(src, width, scale);
+    out.tgtSpacing = arrowSpacing(tgt, width, scale);
 
     return out;
   }
@@ -2557,32 +3070,47 @@ export class GraphStore implements ModelView {
    * twin of the curve vertex shader: same params, same boundary math,
    * same frame (see curve-geometry.mts).
    */
-  curveEvalAt( slot: number, out: CurveEval = this.curveScratch ): CurveEval | null {
+  curveEvalAt(
+    slot: number,
+    out: CurveEval = this.curveScratch,
+  ): CurveEval | null {
     this.flushDerived();
 
-    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
-    const kind = params[ at + 3 ];
+    const kind = params[at + 3];
 
     // blob-backed kinds evaluate as routes (curveRouteAt), not CurveEvals
-    if( kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD ){ return null; }
+    if (kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD) {
+      return null;
+    }
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
-    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
-    const s = endpoints[ at / 2 ];
-    const t = endpoints[ at / 2 + 1 ];
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const s = endpoints[at / 2];
+    const t = endpoints[at / 2 + 1];
 
     // the derived outerHalf column (size/2 + border/2) is what the WGSL
     // twin binds, so both sides read the exact same f32 half-extents
     return evalCurve(
-      out, kind, params[ at ], params[ at + 1 ], params[ at + 2 ],
-      pos[ s * 2 ], pos[ s * 2 + 1 ],
-      outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
-      pos[ t * 2 ], pos[ t * 2 + 1 ],
-      outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ],
-      this.arrowTrimAt( slot )
+      out,
+      kind,
+      params[at],
+      params[at + 1],
+      params[at + 2],
+      pos[s * 2],
+      pos[s * 2 + 1],
+      outer[s * 2],
+      outer[s * 2 + 1],
+      shape[s],
+      pos[t * 2],
+      pos[t * 2 + 1],
+      outer[t * 2],
+      outer[t * 2 + 1],
+      shape[t],
+      this.arrowTrimAt(slot),
     );
   }
 
@@ -2593,28 +3121,49 @@ export class GraphStore implements ModelView {
    * The CPU twin of the 12b route vertex shader: same blob record,
    * same outerHalf frame, same routing (see curve-geometry.mts).
    */
-  curveRouteAt( slot: number, out: CurveRoute = this.routeScratch ): CurveRoute | null {
+  curveRouteAt(
+    slot: number,
+    out: CurveRoute = this.routeScratch,
+  ): CurveRoute | null {
     this.flushDerived();
 
-    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
-    const kind = params[ at + 3 ];
+    const kind = params[at + 3];
     const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind; // 12c endpoint blocks
 
-    if( base !== CURVE_MULTI && base !== CURVE_SEGMENTS && base !== CURVE_TAXI ){ return null; }
+    if (
+      base !== CURVE_MULTI &&
+      base !== CURVE_SEGMENTS &&
+      base !== CURVE_TAXI
+    ) {
+      return null;
+    }
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
-    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
-    const s = endpoints[ at / 2 ];
-    const t = endpoints[ at / 2 + 1 ];
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const s = endpoints[at / 2];
+    const t = endpoints[at / 2 + 1];
 
     return evalRoute(
-      out, kind, this.blob.data(), params[ at ], params[ at + 2 ],
-      pos[ s * 2 ], pos[ s * 2 + 1 ], outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
-      pos[ t * 2 ], pos[ t * 2 + 1 ], outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ],
-      this.arrowTrimAt( slot )
+      out,
+      kind,
+      this.blob.data(),
+      params[at],
+      params[at + 2],
+      pos[s * 2],
+      pos[s * 2 + 1],
+      outer[s * 2],
+      outer[s * 2 + 1],
+      shape[s],
+      pos[t * 2],
+      pos[t * 2 + 1],
+      outer[t * 2],
+      outer[t * 2 + 1],
+      shape[t],
+      this.arrowTrimAt(slot),
     );
   }
 
@@ -2626,32 +3175,47 @@ export class GraphStore implements ModelView {
    * shader's haystack branch.
    */
   haystackPointsAt(
-    slot: number
+    slot: number,
   ): { sx: number; sy: number; tx: number; ty: number } | null {
     this.flushDerived();
 
-    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
 
-    if( params[ at + 3 ] !== CURVE_HAYSTACK ){ return null; }
+    if (params[at + 3] !== CURVE_HAYSTACK) {
+      return null;
+    }
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
-    const sN = endpoints[ slot * 2 ];
-    const tN = endpoints[ slot * 2 + 1 ];
-    const radius = params[ at + 2 ];
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const sN = endpoints[slot * 2];
+    const tN = endpoints[slot * 2 + 1];
+    const radius = params[at + 2];
     const p = { x: 0, y: 0 };
 
     haystackPoint(
-      pos[ sN * 2 ], pos[ sN * 2 + 1 ], outer[ sN * 2 ], outer[ sN * 2 + 1 ],
-      params[ at ], radius, p );
+      pos[sN * 2],
+      pos[sN * 2 + 1],
+      outer[sN * 2],
+      outer[sN * 2 + 1],
+      params[at],
+      radius,
+      p,
+    );
 
-    const sx = p.x, sy = p.y;
+    const sx = p.x,
+      sy = p.y;
 
     haystackPoint(
-      pos[ tN * 2 ], pos[ tN * 2 + 1 ], outer[ tN * 2 ], outer[ tN * 2 + 1 ],
-      params[ at + 1 ], radius, p );
+      pos[tN * 2],
+      pos[tN * 2 + 1],
+      outer[tN * 2],
+      outer[tN * 2 + 1],
+      params[at + 1],
+      radius,
+      p,
+    );
 
     return { sx, sy, tx: p.x, ty: p.y };
   }
@@ -2673,40 +3237,65 @@ export class GraphStore implements ModelView {
    * @param which — 0 for the source end, 1 for the target end
    * @returns the boundary point in model space
    */
-  straightEndpointAt( slot: number, which: 0 | 1, arrows: boolean = true ): { x: number; y: number } {
+  straightEndpointAt(
+    slot: number,
+    which: 0 | 1,
+    arrows: boolean = true,
+  ): { x: number; y: number } {
     this.flushDerived();
 
-    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
-    const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
-    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const shape = this.nodes.column('node.shape') as Uint32Array;
 
-    const self = endpoints[ slot * 2 + which ];
-    const other = endpoints[ slot * 2 + ( which === 0 ? 1 : 0 ) ];
-    const cx = pos[ self * 2 ];
-    const cy = pos[ self * 2 + 1 ];
+    const self = endpoints[slot * 2 + which];
+    const other = endpoints[slot * 2 + (which === 0 ? 1 : 0)];
+    const cx = pos[self * 2];
+    const cy = pos[self * 2 + 1];
 
-    let dx = pos[ other * 2 ] - cx;
-    let dy = pos[ other * 2 + 1 ] - cy;
-    const l = Math.sqrt( dx * dx + dy * dy );
+    let dx = pos[other * 2] - cx;
+    let dy = pos[other * 2 + 1] - cy;
+    const l = Math.sqrt(dx * dx + dy * dy);
 
     // coincident endpoints have no chord direction; `setBoundaryPoint`
     // picks +x in the same situation, so this matches it
-    if( l < 1e-6 ){ dx = 1; dy = 0; } else { dx /= l; dy /= l; }
+    if (l < 1e-6) {
+      dx = 1;
+      dy = 0;
+    } else {
+      dx /= l;
+      dy /= l;
+    }
 
-    const off = boundaryOffset( shape[ self ], outer[ self * 2 ], outer[ self * 2 + 1 ], dx, dy );
-    const trim = this.arrowTrimAt( slot );
+    const off = boundaryOffset(
+      shape[self],
+      outer[self * 2],
+      outer[self * 2 + 1],
+      dx,
+      dy,
+    );
+    const trim = this.arrowTrimAt(slot);
     const back = arrows
-      ? ( which === 0 ? trim.srcSpacing : trim.tgtSpacing )
-      : ( which === 0 ? trim.srcGap : trim.tgtGap );
+      ? which === 0
+        ? trim.srcSpacing
+        : trim.tgtSpacing
+      : which === 0
+        ? trim.srcGap
+        : trim.tgtGap;
 
     shortenScratch.x = cx + dx * off;
     shortenScratch.y = cy + dy * off;
     // v3's shortenIntersection, toward the far node centre — the clamp
     // matters when a head is larger than the chord it sits on
     shortenToward(
-      shortenScratch, shortenScratch.x, shortenScratch.y,
-      pos[ other * 2 ], pos[ other * 2 + 1 ], back );
+      shortenScratch,
+      shortenScratch.x,
+      shortenScratch.y,
+      pos[other * 2],
+      pos[other * 2 + 1],
+      back,
+    );
 
     return { x: shortenScratch.x, y: shortenScratch.y };
   }
@@ -2724,8 +3313,8 @@ export class GraphStore implements ModelView {
    * @param which — 0 for the source end, 1 for the target end
    * @returns the drawn line's end in model space
    */
-  straightLineEndAt( slot: number, which: 0 | 1 ): { x: number; y: number } {
-    return this.straightEndpointAt( slot, which, false );
+  straightLineEndAt(slot: number, which: 0 | 1): { x: number; y: number } {
+    return this.straightEndpointAt(slot, which, false);
   }
 
   /**
@@ -2735,52 +3324,69 @@ export class GraphStore implements ModelView {
    * expensive-geometry design (public `.bb()` reads this; fit and cull
    * use the conservative bounds instead).
    */
-  curveBBAt( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null {
-    const ev = this.curveEvalAt( slot );
-    const route = ev == null ? this.curveRouteAt( slot ) : null;
+  curveBBAt(
+    slot: number,
+  ): { x1: number; y1: number; x2: number; y2: number } | null {
+    const ev = this.curveEvalAt(slot);
+    const route = ev == null ? this.curveRouteAt(slot) : null;
 
-    if( ev == null && route == null ){ return null; }
+    if (ev == null && route == null) {
+      return null;
+    }
 
-    if( this.edgeBBEpoch.length < this.edges.cap ){
-      const epochs = new Uint32Array( this.edges.cap );
-      const boxes = new Float64Array( this.edges.cap * 4 );
+    if (this.edgeBBEpoch.length < this.edges.cap) {
+      const epochs = new Uint32Array(this.edges.cap);
+      const boxes = new Float64Array(this.edges.cap * 4);
 
-      epochs.set( this.edgeBBEpoch );
-      boxes.set( this.edgeBB );
+      epochs.set(this.edgeBBEpoch);
+      boxes.set(this.edgeBB);
       this.edgeBBEpoch = epochs;
       this.edgeBB = boxes;
     }
 
     const at = slot * 4;
 
-    if( this.edgeBBEpoch[ slot ] === this.geoEpoch ){
+    if (this.edgeBBEpoch[slot] === this.geoEpoch) {
       return {
-        x1: this.edgeBB[ at ], y1: this.edgeBB[ at + 1 ],
-        x2: this.edgeBB[ at + 2 ], y2: this.edgeBB[ at + 3 ]
+        x1: this.edgeBB[at],
+        y1: this.edgeBB[at + 1],
+        x2: this.edgeBB[at + 2],
+        y2: this.edgeBB[at + 3],
       };
     }
 
     const p = { x: 0, y: 0 };
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    let x1 = Infinity,
+      y1 = Infinity,
+      x2 = -Infinity,
+      y2 = -Infinity;
 
-    for( let i = 0; i <= CURVE_SEGS; i++ ){
-      if( ev != null ){
-        curvePointAt( ev, i / CURVE_SEGS, p );
+    for (let i = 0; i <= CURVE_SEGS; i++) {
+      if (ev != null) {
+        curvePointAt(ev, i / CURVE_SEGS, p);
       } else {
-        routeVertex( route as CurveRoute, i, p );
+        routeVertex(route as CurveRoute, i, p);
       }
 
-      if( p.x < x1 ){ x1 = p.x; }
-      if( p.y < y1 ){ y1 = p.y; }
-      if( p.x > x2 ){ x2 = p.x; }
-      if( p.y > y2 ){ y2 = p.y; }
+      if (p.x < x1) {
+        x1 = p.x;
+      }
+      if (p.y < y1) {
+        y1 = p.y;
+      }
+      if (p.x > x2) {
+        x2 = p.x;
+      }
+      if (p.y > y2) {
+        y2 = p.y;
+      }
     }
 
-    this.edgeBBEpoch[ slot ] = this.geoEpoch;
-    this.edgeBB[ at ] = x1;
-    this.edgeBB[ at + 1 ] = y1;
-    this.edgeBB[ at + 2 ] = x2;
-    this.edgeBB[ at + 3 ] = y2;
+    this.edgeBBEpoch[slot] = this.geoEpoch;
+    this.edgeBB[at] = x1;
+    this.edgeBB[at + 1] = y1;
+    this.edgeBB[at + 2] = x2;
+    this.edgeBB[at + 3] = y2;
 
     return { x1, y1, x2, y2 };
   }
@@ -2794,12 +3400,16 @@ export class GraphStore implements ModelView {
    * efficiency, never correctness; 0 while nothing is curved.
    */
   curveSlack(): number {
-    if( this.curveDevMax === 0 && !this.hasBoxCurves ){ return 0; }
+    if (this.curveDevMax === 0 && !this.hasBoxCurves) {
+      return 0;
+    }
 
     // 12c: pct endpoints stray up to pctMag × node-half from the node
     // center; the base node-half term covers pctMag ≤ 1, the monotone
     // excess covers the rest
-    const pctExcess = Math.max( 0, this.endptPctMax - 1 ) * ( this.nodeHalfMax + this.borderMax / 2 );
+    const pctExcess =
+      Math.max(0, this.endptPctMax - 1) *
+      (this.nodeHalfMax + this.borderMax / 2);
 
     return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2 + pctExcess;
   }
@@ -2830,9 +3440,11 @@ export class GraphStore implements ModelView {
    * styles haystack.  Monotone, like the curve slack.
    */
   haystackSlack(): number {
-    if( this.haystackRadiusMax === 0 ){ return 0; }
+    if (this.haystackRadiusMax === 0) {
+      return 0;
+    }
 
-    return this.haystackRadiusMax * ( this.nodeHalfMax + this.borderMax / 2 );
+    return this.haystackRadiusMax * (this.nodeHalfMax + this.borderMax / 2);
   }
 
   /** The conservative margin box-bounded routes (FLAG_CURVED_BOX) add
@@ -2845,37 +3457,57 @@ export class GraphStore implements ModelView {
   /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
    * Fixed-kind writes (straight/bezier/loop) release any blob record
    * the slot held from a previous blob-backed style. */
-  private setCurveParams( slot: number, p0: number, p1: number, p2: number, kind: number ): void {
-    const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
+  private setCurveParams(
+    slot: number,
+    p0: number,
+    p1: number,
+    p2: number,
+    kind: number,
+  ): void {
+    const arr = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
 
-    const dev = curveDeviation( kind, p0, p2 );
+    const dev = curveDeviation(kind, p0, p2);
 
-    if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
-    if( kind === CURVE_HAYSTACK && p2 > this.haystackRadiusMax ){ this.haystackRadiusMax = p2; }
+    if (dev > this.curveDevMax) {
+      this.curveDevMax = dev;
+    }
+    if (kind === CURVE_HAYSTACK && p2 > this.haystackRadiusMax) {
+      this.haystackRadiusMax = p2;
+    }
 
-    this.blob.free( slot );
+    this.blob.free(slot);
 
-    if( arr[ at ] === p0 && arr[ at + 1 ] === p1 && arr[ at + 2 ] === p2 && arr[ at + 3 ] === kind ){
+    if (
+      arr[at] === p0 &&
+      arr[at + 1] === p1 &&
+      arr[at + 2] === p2 &&
+      arr[at + 3] === kind
+    ) {
       return;
     }
 
-    arr[ at ] = p0;
-    arr[ at + 1 ] = p1;
-    arr[ at + 2 ] = p2;
-    arr[ at + 3 ] = kind;
+    arr[at] = p0;
+    arr[at + 1] = p1;
+    arr[at + 2] = p2;
+    arr[at + 3] = kind;
     this.geoEpoch++;
 
-    this.dirty.mark( 'edge.curveParams', slot );
+    this.dirty.mark('edge.curveParams', slot);
     // haystack/triangle are straight-stream kinds (12c): they draw in
     // the straight pipeline, so FLAG_CURVED stays clear
-    const curvedStream = kind !== CURVE_STRAIGHT && kind !== CURVE_HAYSTACK && kind !== CURVE_TRIANGLE;
+    const curvedStream =
+      kind !== CURVE_STRAIGHT &&
+      kind !== CURVE_HAYSTACK &&
+      kind !== CURVE_TRIANGLE;
 
-    if( curvedStream ){ this.curvedEver = true; } // gates the curved pipelines
-    this.setFlag( 'edges', slot, FLAG_CURVED, curvedStream );
+    if (curvedStream) {
+      this.curvedEver = true;
+    } // gates the curved pipelines
+    this.setFlag('edges', slot, FLAG_CURVED, curvedStream);
     // compound loops (14.10) are box-bounded: their excursion tracks the
     // (live) node sizes, so no frame constant alone can bound the chord
-    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, kind === CURVE_CMPD );
+    this.setFlag('edges', slot, FLAG_CURVED_BOX, kind === CURVE_CMPD);
   }
 
   /**
@@ -2886,27 +3518,38 @@ export class GraphStore implements ModelView {
    * extrapolated weights) for the AABB cull branch.
    */
   private setCurveParamsBlob(
-    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean,
-    endptPct: number = 0
+    slot: number,
+    kind: number,
+    values: ArrayLike<number>,
+    n: number,
+    dev: number,
+    box: boolean,
+    endptPct: number = 0,
   ): void {
-    const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const arr = this.edges.column('edge.curveParams') as Float32Array;
     const at = slot * 4;
-    const offset = this.blob.write( slot, values );
+    const offset = this.blob.write(slot, values);
 
-    if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
-    if( box ){ this.hasBoxCurves = true; }
-    if( endptPct > this.endptPctMax ){ this.endptPctMax = endptPct; }
+    if (dev > this.curveDevMax) {
+      this.curveDevMax = dev;
+    }
+    if (box) {
+      this.hasBoxCurves = true;
+    }
+    if (endptPct > this.endptPctMax) {
+      this.endptPctMax = endptPct;
+    }
 
-    arr[ at ] = offset;
-    arr[ at + 1 ] = dev;
-    arr[ at + 2 ] = n;
-    arr[ at + 3 ] = kind;
+    arr[at] = offset;
+    arr[at + 1] = dev;
+    arr[at + 2] = n;
+    arr[at + 3] = kind;
     this.geoEpoch++;
 
-    this.dirty.mark( 'edge.curveParams', slot );
+    this.dirty.mark('edge.curveParams', slot);
     this.curvedEver = true; // every blob-backed kind is curved-stream
-    this.setFlag( 'edges', slot, FLAG_CURVED, true );
-    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, box );
+    this.setFlag('edges', slot, FLAG_CURVED, true);
+    this.setFlag('edges', slot, FLAG_CURVED_BOX, box);
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
@@ -2923,8 +3566,8 @@ export class GraphStore implements ModelView {
    * @param group — which of the four label streams; defaults 'nodes'
    * so the node-side call sites read unchanged (round 10)
    */
-  labelAt( slot: number, group: LabelStream = 'nodes' ): LabelEntry | undefined {
-    return this.labels[ group ][ slot ];
+  labelAt(slot: number, group: LabelStream = 'nodes'): LabelEntry | undefined {
+    return this.labels[group][slot];
   }
 
   /**
@@ -2934,9 +3577,18 @@ export class GraphStore implements ModelView {
    * label-dirty channel; the renderer's atlas resets when it observes
    * the change.
    */
-  setLabelFont( font: string, style: string = 'normal', weight: string = 'normal' ): void {
-    if( font === this.labelFont && style === this.labelFontStyle
-        && weight === this.labelFontWeight ){ return; }
+  setLabelFont(
+    font: string,
+    style: string = 'normal',
+    weight: string = 'normal',
+  ): void {
+    if (
+      font === this.labelFont &&
+      style === this.labelFontStyle &&
+      weight === this.labelFontWeight
+    ) {
+      return;
+    }
 
     this.labelFont = font;
     this.labelFontStyle = style;
@@ -2946,12 +3598,19 @@ export class GraphStore implements ModelView {
 
   /** Queue every labelled slot (both groups) for a glyph-run rebuild. */
   markAllLabelsDirty(): void {
-    for( const group of [ 'nodes', 'edges', 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
-      const labels = this.labels[ group ];
-      const dirty = this.labelDirty[ group ];
+    for (const group of [
+      'nodes',
+      'edges',
+      'edgeSource',
+      'edgeTarget',
+    ] as LabelStream[]) {
+      const labels = this.labels[group];
+      const dirty = this.labelDirty[group];
 
-      for( let slot = 0; slot < labels.length; slot++ ){
-        if( labels[ slot ] != null ){ dirty.add( slot ); }
+      for (let slot = 0; slot < labels.length; slot++) {
+        if (labels[slot] != null) {
+          dirty.add(slot);
+        }
       }
     }
 
@@ -2959,75 +3618,106 @@ export class GraphStore implements ModelView {
   }
 
   /** Set or clear (null) an element's label; no-ops when nothing changed. */
-  setLabel( slot: number, entry: LabelEntry | null, group: LabelStream = 'nodes' ): void {
-    const labels = this.labels[ group ];
-    const prev = labels[ slot ];
+  setLabel(
+    slot: number,
+    entry: LabelEntry | null,
+    group: LabelStream = 'nodes',
+  ): void {
+    const labels = this.labels[group];
+    const prev = labels[slot];
 
-    if( entry == null ){
-      if( prev == null ){ return; }
+    if (entry == null) {
+      if (prev == null) {
+        return;
+      }
 
-      labels[ slot ] = undefined;
+      labels[slot] = undefined;
     } else {
-      if(
-        prev != null && prev.text === entry.text && prev.fontSize === entry.fontSize &&
-        prev.color === entry.color && prev.anchorY === entry.anchorY &&
-        prev.marginX === entry.marginX && prev.marginY === entry.marginY &&
-        prev.outlineWidth === entry.outlineWidth && prev.outlineColor === entry.outlineColor &&
-        prev.bgColor === entry.bgColor && prev.bgPadding === entry.bgPadding &&
-        prev.bgShape === entry.bgShape && prev.bgBorderColor === entry.bgBorderColor &&
+      if (
+        prev != null &&
+        prev.text === entry.text &&
+        prev.fontSize === entry.fontSize &&
+        prev.color === entry.color &&
+        prev.anchorY === entry.anchorY &&
+        prev.marginX === entry.marginX &&
+        prev.marginY === entry.marginY &&
+        prev.outlineWidth === entry.outlineWidth &&
+        prev.outlineColor === entry.outlineColor &&
+        prev.bgColor === entry.bgColor &&
+        prev.bgPadding === entry.bgPadding &&
+        prev.bgShape === entry.bgShape &&
+        prev.bgBorderColor === entry.bgBorderColor &&
         prev.bgBorderWidth === entry.bgBorderWidth &&
         prev.minZoomedFontSize === entry.minZoomedFontSize &&
-        prev.anchorX === entry.anchorX && prev.halignShift === entry.halignShift &&
-        prev.valignShift === entry.valignShift && prev.endOffset === entry.endOffset &&
+        prev.anchorX === entry.anchorX &&
+        prev.halignShift === entry.halignShift &&
+        prev.valignShift === entry.valignShift &&
+        prev.endOffset === entry.endOffset &&
         prev.rotate === entry.rotate &&
-        prev.wrap === entry.wrap && prev.maxWidth === entry.maxWidth &&
-        prev.lineHeight === entry.lineHeight && prev.overflowWrap === entry.overflowWrap &&
+        prev.wrap === entry.wrap &&
+        prev.maxWidth === entry.maxWidth &&
+        prev.lineHeight === entry.lineHeight &&
+        prev.overflowWrap === entry.overflowWrap &&
         prev.justification === entry.justification
-      ){ return; }
+      ) {
+        return;
+      }
 
-      labels[ slot ] = entry;
+      labels[slot] = entry;
     }
 
     // label dims (16.2): estimate immediately — the headless bb term —
     // and let the renderer's glyph build upgrade to exact laid dims.
-    if( entry == null ){
-      this.labelDims[ group ].delete( slot );
+    if (entry == null) {
+      this.labelDims[group].delete(slot);
     } else {
-      const prevDims = prev != null ? this.labelDims[ group ].get( slot ) : undefined;
+      const prevDims =
+        prev != null ? this.labelDims[group].get(slot) : undefined;
 
       // 25.5: a pure font-size delta with unchanged breaking is
       // scale-linear — under wrap 'none' (the default, where maxWidth
       // is ignored) the laid block scales with the em, so patch the
       // dims by the ratio (exactness preserved) instead of re-running
       // the estimator.  The font-size tween's per-tick path.
-      if(
-        prevDims != null && prev != null && prev.fontSize > 0
-        && entry.wrap === WRAP_NONE && prev.wrap === WRAP_NONE
-        && entry.text === prev.text && entry.lineHeight === prev.lineHeight
-        && entry.overflowWrap === prev.overflowWrap
-        && entry.justification === prev.justification
-      ){
+      if (
+        prevDims != null &&
+        prev != null &&
+        prev.fontSize > 0 &&
+        entry.wrap === WRAP_NONE &&
+        prev.wrap === WRAP_NONE &&
+        entry.text === prev.text &&
+        entry.lineHeight === prev.lineHeight &&
+        entry.overflowWrap === prev.overflowWrap &&
+        entry.justification === prev.justification
+      ) {
         const ratio = entry.fontSize / prev.fontSize;
 
-        this.labelDims[ group ].set( slot,
-          { w: prevDims.w * ratio, h: prevDims.h * ratio, exact: prevDims.exact } );
+        this.labelDims[group].set(slot, {
+          w: prevDims.w * ratio,
+          h: prevDims.h * ratio,
+          exact: prevDims.exact,
+        });
       } else {
-        const est = estimateBlock( entry.text, entry.fontSize, {
+        const est = estimateBlock(entry.text, entry.fontSize, {
           wrap: entry.wrap,
           maxWidth: entry.maxWidth,
           overflowWrap: entry.overflowWrap,
           justification: entry.justification,
-          lineHeight: entry.lineHeight
-        } );
+          lineHeight: entry.lineHeight,
+        });
 
-        this.labelDims[ group ].set( slot, { w: est.width, h: est.height, exact: false } );
+        this.labelDims[group].set(slot, {
+          w: est.width,
+          h: est.height,
+          exact: false,
+        });
       }
     }
 
     // 25.5: no geoEpoch bump — its only consumer is the per-edge exact
     // curve-bb memo, which has no label terms; the label bb terms read
     // the dims maps live
-    this.labelDirty[ group ].add( slot );
+    this.labelDirty[group].add(slot);
     this.dirty.touch();
   }
 
@@ -3039,25 +3729,30 @@ export class GraphStore implements ModelView {
    * anchors are size-derived, not font-derived.  One edge font-size
    * drives all three of its streams (mid + end labels).
    */
-  setLabelFontSize( slot: number, group: GroupName, fontSize: number ): void {
-    const streams: LabelStream[] = group === 'nodes'
-      ? [ 'nodes' ]
-      : [ 'edges', 'edgeSource', 'edgeTarget' ];
+  setLabelFontSize(slot: number, group: GroupName, fontSize: number): void {
+    const streams: LabelStream[] =
+      group === 'nodes' ? ['nodes'] : ['edges', 'edgeSource', 'edgeTarget'];
 
-    for( const stream of streams ){
-      const entry = this.labels[ stream ][ slot ];
+    for (const stream of streams) {
+      const entry = this.labels[stream][slot];
 
-      if( entry == null || entry.fontSize === fontSize ){ continue; }
+      if (entry == null || entry.fontSize === fontSize) {
+        continue;
+      }
 
-      const anchorY = stream === 'nodes' ? entry.anchorY : -fontSize / 2 + entry.marginY;
+      const anchorY =
+        stream === 'nodes' ? entry.anchorY : -fontSize / 2 + entry.marginY;
 
-      this.setLabel( slot, { ...entry, fontSize, anchorY }, stream );
+      this.setLabel(slot, { ...entry, fontSize, anchorY }, stream);
     }
   }
 
   /** A label's laid (or headless-estimated) block dims, model px. */
-  labelDimsAt( slot: number, group: LabelStream = 'nodes' ): { w: number; h: number; exact: boolean } | null {
-    return this.labelDims[ group ].get( slot ) ?? null;
+  labelDimsAt(
+    slot: number,
+    group: LabelStream = 'nodes',
+  ): { w: number; h: number; exact: boolean } | null {
+    return this.labelDims[group].get(slot) ?? null;
   }
 
   /**
@@ -3065,12 +3760,14 @@ export class GraphStore implements ModelView {
    * block with real atlas advances and reports the true extent.  Never
    * marks label-dirty (no rebuild loop) — only the bb consumers wake.
    */
-  setLabelDims( slot: number, group: LabelStream, w: number, h: number ): void {
-    const prev = this.labelDims[ group ].get( slot );
+  setLabelDims(slot: number, group: LabelStream, w: number, h: number): void {
+    const prev = this.labelDims[group].get(slot);
 
-    if( prev != null && prev.exact && prev.w === w && prev.h === h ){ return; }
+    if (prev != null && prev.exact && prev.w === w && prev.h === h) {
+      return;
+    }
 
-    this.labelDims[ group ].set( slot, { w, h, exact: true } );
+    this.labelDims[group].set(slot, { w, h, exact: true });
     this.dirty.touch(); // no geoEpoch bump (25.5) — see setLabel
   }
 
@@ -3081,12 +3778,14 @@ export class GraphStore implements ModelView {
    *
    * @returns the queued slots; an empty array when nothing is pending
    */
-  takeLabelDirty( group: LabelStream = 'nodes' ): number[] {
-    const dirty = this.labelDirty[ group ];
+  takeLabelDirty(group: LabelStream = 'nodes'): number[] {
+    const dirty = this.labelDirty[group];
 
-    if( dirty.size === 0 ){ return []; }
+    if (dirty.size === 0) {
+      return [];
+    }
 
-    const slots = [ ...dirty ];
+    const slots = [...dirty];
 
     dirty.clear();
 
@@ -3096,8 +3795,8 @@ export class GraphStore implements ModelView {
   // -- iteration (insertion order) --
 
   /** Live elements in the group (holes excluded) — not highWater(). */
-  count( group: GroupName ): number {
-    return this.table( group ).count;
+  count(group: GroupName): number {
+    return this.table(group).count;
   }
 
   /**
@@ -3106,15 +3805,15 @@ export class GraphStore implements ModelView {
    * position, not its original one.  The callback must not add or
    * remove elements in the group being walked.
    */
-  forEachAlive( group: GroupName, cb: ( slot: number ) => void ): void {
-    const order = this.order[ group ];
-    const gen = this.table( group ).gen;
+  forEachAlive(group: GroupName, cb: (slot: number) => void): void {
+    const order = this.order[group];
+    const gen = this.table(group).gen;
 
-    for( let i = 0; i < order.slots.length; i++ ){
-      const slot = order.slots[ i ];
+    for (let i = 0; i < order.slots.length; i++) {
+      const slot = order.slots[i];
 
-      if( gen[ slot ] === order.gens[ i ] ){
-        cb( slot );
+      if (gen[slot] === order.gens[i]) {
+        cb(slot);
       }
     }
   }
@@ -3138,20 +3837,30 @@ export class GraphStore implements ModelView {
    * @param want — the value those bits must have
    * @returns the index one past the last slot written
    */
-  scanSlotsInto( out: number[], at: number, group: GroupName, mask: number, want: number ): number {
-    const order = this.order[ group ];
+  scanSlotsInto(
+    out: number[],
+    at: number,
+    group: GroupName,
+    mask: number,
+    want: number,
+  ): number {
+    const order = this.order[group];
     const slots = order.slots;
     const gens = order.gens;
-    const gen = this.table( group ).gen;
-    const flags = this.column( group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array;
+    const gen = this.table(group).gen;
+    const flags = this.column(
+      group === 'nodes' ? 'node.flags' : 'edge.flags',
+    ) as Uint32Array;
     let n = at;
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      if( gen[ slot ] !== gens[ i ] || ( flags[ slot ] & mask ) !== want ){ continue; }
+      if (gen[slot] !== gens[i] || (flags[slot] & mask) !== want) {
+        continue;
+      }
 
-      out[ n++ ] = slot;
+      out[n++] = slot;
     }
 
     return n;
@@ -3167,38 +3876,55 @@ export class GraphStore implements ModelView {
    * a mask-0 scan, an upper bound otherwise) and trims afterwards.
    */
   scanRefsInto(
-    out: Ref[], at: number, group: GroupName, mask: number, want: number,
-    dataTests?: { test: ( v: unknown ) => boolean; key: string }[]
+    out: Ref[],
+    at: number,
+    group: GroupName,
+    mask: number,
+    want: number,
+    dataTests?: { test: (v: unknown) => boolean; key: string }[],
   ): number {
-    const order = this.order[ group ];
+    const order = this.order[group];
     const slots = order.slots;
     const gens = order.gens;
-    const gen = this.table( group ).gen;
-    const flags = this.column( group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array;
+    const gen = this.table(group).gen;
+    const flags = this.column(
+      group === 'nodes' ? 'node.flags' : 'edge.flags',
+    ) as Uint32Array;
     let n = at;
 
     // hoist a per-slot reader per condition key out of the scan loop
-    const readers = dataTests == null || dataTests.length === 0
-      ? null
-      : dataTests.map( t => ( { test: t.test, read: this.data.reader( group, t.key ) } ) );
+    const readers =
+      dataTests == null || dataTests.length === 0
+        ? null
+        : dataTests.map((t) => ({
+            test: t.test,
+            read: this.data.reader(group, t.key),
+          }));
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
-      const g = gens[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const g = gens[i];
 
-      if( gen[ slot ] !== g || ( flags[ slot ] & mask ) !== want ){ continue; }
-
-      if( readers != null ){
-        let pass = true;
-
-        for( let t = 0; t < readers.length; t++ ){
-          if( !readers[ t ].test( readers[ t ].read( slot ) ) ){ pass = false; break; }
-        }
-
-        if( !pass ){ continue; }
+      if (gen[slot] !== g || (flags[slot] & mask) !== want) {
+        continue;
       }
 
-      out[ n++ ] = { group, slot, gen: g };
+      if (readers != null) {
+        let pass = true;
+
+        for (let t = 0; t < readers.length; t++) {
+          if (!readers[t].test(readers[t].read(slot))) {
+            pass = false;
+            break;
+          }
+        }
+
+        if (!pass) {
+          continue;
+        }
+      }
+
+      out[n++] = { group, slot, gen: g };
     }
 
     return n;
@@ -3227,99 +3953,124 @@ export class GraphStore implements ModelView {
    * containment is an AND over parts, overlap an OR.
    */
   refsInBox(
-    x1: number, y1: number, x2: number, y2: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
     includeLabels: boolean = false,
-    mode: BoxSelectionMode = 'contain'
+    mode: BoxSelectionMode = 'contain',
   ): Ref[] {
     this.flushDerived(); // curved edges read derived params below
     const overlap = mode === 'overlap';
-    const lx = Math.min( x1, x2 );
-    const hx = Math.max( x1, x2 );
-    const ly = Math.min( y1, y2 );
-    const hy = Math.max( y1, y2 );
+    const lx = Math.min(x1, x2);
+    const hx = Math.max(x1, x2);
+    const ly = Math.min(y1, y2);
+    const hy = Math.max(y1, y2);
     const shown = FLAG_ALIVE | FLAG_VISIBLE;
     const out: Ref[] = [];
 
-    const pos = this.column( 'node.position' ) as Float32Array;
-    const size = this.column( 'node.size' ) as Float32Array;
-    const border = this.column( 'node.borderWidth' ) as Float32Array;
-    const nodeFlags = this.column( 'node.flags' ) as Uint32Array;
+    const pos = this.column('node.position') as Float32Array;
+    const size = this.column('node.size') as Float32Array;
+    const border = this.column('node.borderWidth') as Float32Array;
+    const nodeFlags = this.column('node.flags') as Uint32Array;
     const nodeOrder = this.order.nodes;
     const nodeGen = this.nodes.gen;
 
-    for( let i = 0; i < nodeOrder.slots.length; i++ ){
-      const slot = nodeOrder.slots[ i ];
-      const g = nodeOrder.gens[ i ];
+    for (let i = 0; i < nodeOrder.slots.length; i++) {
+      const slot = nodeOrder.slots[i];
+      const g = nodeOrder.gens[i];
 
-      if( nodeGen[ slot ] !== g || ( nodeFlags[ slot ] & shown ) !== shown ){ continue; }
+      if (nodeGen[slot] !== g || (nodeFlags[slot] & shown) !== shown) {
+        continue;
+      }
 
-      const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
-      const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
-      const x = pos[ slot * 2 ];
-      const y = pos[ slot * 2 + 1 ];
+      const hw = size[slot * 2] / 2 + border[slot] / 2;
+      const hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
+      const x = pos[slot * 2];
+      const y = pos[slot * 2 + 1];
 
-      if( overlap ){
+      if (overlap) {
         let hit = x + hw >= lx && x - hw <= hx && y + hh >= ly && y - hh <= hy;
 
         // the label *widens* an overlap (39.1), where it narrows a
         // containment: a node whose body misses the band but whose label
         // crosses it is touched by the band
-        if( !hit && includeLabels ){
-          const lb = this.nodeLabelBox( slot );
+        if (!hit && includeLabels) {
+          const lb = this.nodeLabelBox(slot);
 
-          hit = lb != null
-            && x + lb.x2 >= lx && x + lb.x1 <= hx && y + lb.y2 >= ly && y + lb.y1 <= hy;
+          hit =
+            lb != null &&
+            x + lb.x2 >= lx &&
+            x + lb.x1 <= hx &&
+            y + lb.y2 >= ly &&
+            y + lb.y1 <= hy;
         }
 
-        if( hit ){ out.push( { group: 'nodes', slot, gen: g } ); }
+        if (hit) {
+          out.push({ group: 'nodes', slot, gen: g });
+        }
 
         continue;
       }
 
-      if( x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy ){
+      if (x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy) {
         // boxSelectionIncludesLabels (16.5, default off — v3's default):
         // the label box must be contained too
-        if( includeLabels ){
-          const lb = this.nodeLabelBox( slot );
+        if (includeLabels) {
+          const lb = this.nodeLabelBox(slot);
 
-          if( lb != null && !(
-            x + lb.x1 >= lx && x + lb.x2 <= hx && y + lb.y1 >= ly && y + lb.y2 <= hy
-          ) ){ continue; }
+          if (
+            lb != null &&
+            !(
+              x + lb.x1 >= lx &&
+              x + lb.x2 <= hx &&
+              y + lb.y1 >= ly &&
+              y + lb.y2 <= hy
+            )
+          ) {
+            continue;
+          }
         }
 
-        out.push( { group: 'nodes', slot, gen: g } );
+        out.push({ group: 'nodes', slot, gen: g });
       }
     }
 
-    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
-    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
+    const endpoints = this.column('edge.endpoints') as Uint32Array;
+    const edgeFlags = this.column('edge.flags') as Uint32Array;
     const edgeOrder = this.order.edges;
     const edgeGen = this.edges.gen;
-    const centerIn = ( node: number ): boolean => {
-      const x = pos[ node * 2 ];
-      const y = pos[ node * 2 + 1 ];
+    const centerIn = (node: number): boolean => {
+      const x = pos[node * 2];
+      const y = pos[node * 2 + 1];
 
       return x >= lx && x <= hx && y >= ly && y <= hy;
     };
 
-    const pointIn = ( x: number, y: number ): boolean => {
+    const pointIn = (x: number, y: number): boolean => {
       return x >= lx && x <= hx && y >= ly && y <= hy;
     };
 
-    for( let i = 0; i < edgeOrder.slots.length; i++ ){
-      const slot = edgeOrder.slots[ i ];
-      const g = edgeOrder.gens[ i ];
+    for (let i = 0; i < edgeOrder.slots.length; i++) {
+      const slot = edgeOrder.slots[i];
+      const g = edgeOrder.gens[i];
 
-      if( edgeGen[ slot ] !== g || ( edgeFlags[ slot ] & shown ) !== shown ){ continue; }
+      if (edgeGen[slot] !== g || (edgeFlags[slot] & shown) !== shown) {
+        continue;
+      }
 
       // both endpoints must be shown — the drawn-edge rule the cull
       // kernels apply, which ancestor gating (round 14.4) also feeds
-      if( ( nodeFlags[ endpoints[ slot * 2 ] ] & shown ) !== shown
-        || ( nodeFlags[ endpoints[ slot * 2 + 1 ] ] & shown ) !== shown ){ continue; }
+      if (
+        (nodeFlags[endpoints[slot * 2]] & shown) !== shown ||
+        (nodeFlags[endpoints[slot * 2 + 1]] & shown) !== shown
+      ) {
+        continue;
+      }
 
-      if( overlap ){
-        if( this.edgeHitsBox( slot, lx, ly, hx, hy ) ){
-          out.push( { group: 'edges', slot, gen: g } );
+      if (overlap) {
+        if (this.edgeHitsBox(slot, lx, ly, hx, hy)) {
+          out.push({ group: 'edges', slot, gen: g });
         }
 
         continue;
@@ -3327,31 +4078,34 @@ export class GraphStore implements ModelView {
 
       let contained: boolean;
 
-      if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
+      if ((edgeFlags[slot] & FLAG_CURVED) !== 0) {
         // the curve's boundary endpoints — v3's exact 'contain' rule
-        const ev = this.curveEvalAt( slot );
+        const ev = this.curveEvalAt(slot);
 
-        if( ev != null ){
-          contained = pointIn( ev.sx, ev.sy ) && pointIn( ev.ex, ev.ey );
+        if (ev != null) {
+          contained = pointIn(ev.sx, ev.sy) && pointIn(ev.ex, ev.ey);
         } else {
-          const route = this.curveRouteAt( slot ) as CurveRoute;
+          const route = this.curveRouteAt(slot) as CurveRoute;
 
-          contained = pointIn( route.qx[ 0 ], route.qy[ 0 ] ) &&
-            pointIn( route.qx[ route.n + 1 ], route.qy[ route.n + 1 ] );
+          contained =
+            pointIn(route.qx[0], route.qy[0]) &&
+            pointIn(route.qx[route.n + 1], route.qy[route.n + 1]);
         }
       } else {
-        const hay = this.haystackPointsAt( slot );
+        const hay = this.haystackPointsAt(slot);
 
         // haystack edges (12c) test their offset endpoints — v3's
         // haystackPts; straight/triangle edges keep the
         // endpoint-center approximation (recorded deviation)
-        contained = hay != null
-          ? pointIn( hay.sx, hay.sy ) && pointIn( hay.tx, hay.ty )
-          : centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] );
+        contained =
+          hay != null
+            ? pointIn(hay.sx, hay.sy) && pointIn(hay.tx, hay.ty)
+            : centerIn(endpoints[slot * 2]) &&
+              centerIn(endpoints[slot * 2 + 1]);
       }
 
-      if( contained ){
-        out.push( { group: 'edges', slot, gen: g } );
+      if (contained) {
+        out.push({ group: 'edges', slot, gen: g });
       }
     }
 
@@ -3377,61 +4131,83 @@ export class GraphStore implements ModelView {
    * @param hy — the box's high y
    * @returns whether the drawn path meets the box
    */
-  edgeHitsBox( slot: number, lx: number, ly: number, hx: number, hy: number ): boolean {
-    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
-    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
+  edgeHitsBox(
+    slot: number,
+    lx: number,
+    ly: number,
+    hx: number,
+    hy: number,
+  ): boolean {
+    const endpoints = this.column('edge.endpoints') as Uint32Array;
+    const edgeFlags = this.column('edge.flags') as Uint32Array;
 
-    if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
-      const bb = this.curveBBAt( slot );
+    if ((edgeFlags[slot] & FLAG_CURVED) !== 0) {
+      const bb = this.curveBBAt(slot);
 
       // conservative reject on the memoized exact box
-      if( bb != null && ( bb.x2 < lx || bb.x1 > hx || bb.y2 < ly || bb.y1 > hy ) ){ return false; }
+      if (
+        bb != null &&
+        (bb.x2 < lx || bb.x1 > hx || bb.y2 < ly || bb.y1 > hy)
+      ) {
+        return false;
+      }
 
-      const ev = this.curveEvalAt( slot );
-      const route = ev == null ? this.curveRouteAt( slot ) : null;
+      const ev = this.curveEvalAt(slot);
+      const route = ev == null ? this.curveRouteAt(slot) : null;
 
-      if( ev == null && route == null ){ return false; }
+      if (ev == null && route == null) {
+        return false;
+      }
 
       const a = { x: 0, y: 0 };
       const b = { x: 0, y: 0 };
 
-      for( let i = 0; i < CURVE_SEGS; i++ ){
-        if( ev != null ){
-          curvePointAt( ev, i / CURVE_SEGS, a );
-          curvePointAt( ev, ( i + 1 ) / CURVE_SEGS, b );
+      for (let i = 0; i < CURVE_SEGS; i++) {
+        if (ev != null) {
+          curvePointAt(ev, i / CURVE_SEGS, a);
+          curvePointAt(ev, (i + 1) / CURVE_SEGS, b);
         } else {
-          routeVertex( route as CurveRoute, i, a );
-          routeVertex( route as CurveRoute, i + 1, b );
+          routeVertex(route as CurveRoute, i, a);
+          routeVertex(route as CurveRoute, i + 1, b);
         }
 
-        if( segmentHitsBox( a.x, a.y, b.x, b.y, lx, ly, hx, hy ) ){ return true; }
+        if (segmentHitsBox(a.x, a.y, b.x, b.y, lx, ly, hx, hy)) {
+          return true;
+        }
       }
 
       return false;
     }
 
-    const hay = this.haystackPointsAt( slot );
+    const hay = this.haystackPointsAt(slot);
 
-    if( hay != null ){
-      return segmentHitsBox( hay.sx, hay.sy, hay.tx, hay.ty, lx, ly, hx, hy );
+    if (hay != null) {
+      return segmentHitsBox(hay.sx, hay.sy, hay.tx, hay.ty, lx, ly, hx, hy);
     }
 
     // straight edges keep the endpoint-center approximation containment
     // uses, so the two modes agree about where the edge *is*
-    const pos = this.column( 'node.position' ) as Float32Array;
-    const s = endpoints[ slot * 2 ];
-    const t = endpoints[ slot * 2 + 1 ];
+    const pos = this.column('node.position') as Float32Array;
+    const s = endpoints[slot * 2];
+    const t = endpoints[slot * 2 + 1];
 
     return segmentHitsBox(
-      pos[ s * 2 ], pos[ s * 2 + 1 ], pos[ t * 2 ], pos[ t * 2 + 1 ], lx, ly, hx, hy
+      pos[s * 2],
+      pos[s * 2 + 1],
+      pos[t * 2],
+      pos[t * 2 + 1],
+      lx,
+      ly,
+      hx,
+      hy,
     );
   }
 
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */
-  slotsOrdered( group: GroupName ): number[] {
+  slotsOrdered(group: GroupName): number[] {
     const slots: number[] = [];
 
-    this.forEachAlive( group, slot => slots.push( slot ) );
+    this.forEachAlive(group, (slot) => slots.push(slot));
 
     return slots;
   }
@@ -3441,13 +4217,17 @@ export class GraphStore implements ModelView {
    * (or headless-estimated) block at its D3 anchor, grown by the
    * text-background padding when a box draws.  Null when unlabelled.
    */
-  nodeLabelBox( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null {
-    const entry = this.labels.nodes[ slot ];
-    const dims = this.labelDims.nodes.get( slot );
+  nodeLabelBox(
+    slot: number,
+  ): { x1: number; y1: number; x2: number; y2: number } | null {
+    const entry = this.labels.nodes[slot];
+    const dims = this.labelDims.nodes.get(slot);
 
-    if( entry == null || dims == null ){ return null; }
+    if (entry == null || dims == null) {
+      return null;
+    }
 
-    const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
+    const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
     const dx = entry.anchorX + entry.halignShift * dims.w + entry.marginX;
     const dy = entry.anchorY + entry.valignShift * dims.h;
 
@@ -3455,7 +4235,7 @@ export class GraphStore implements ModelView {
       x1: dx - dims.w / 2 - pad,
       y1: dy - pad,
       x2: dx + dims.w / 2 + pad,
-      y2: dy + dims.h + pad
+      y2: dy + dims.h + pad,
     };
   }
 
@@ -3464,20 +4244,32 @@ export class GraphStore implements ModelView {
    * label block wherever its anchor lands on the drawn path (mid or
    * end streams, rotation included), added to the edge term's growth.
    */
-  edgeLabelSlack( slot: number ): number {
+  edgeLabelSlack(slot: number): number {
     let r = 0;
 
-    for( const stream of [ 'edges', 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
-      const entry = this.labels[ stream ][ slot ];
-      const dims = this.labelDims[ stream ].get( slot );
+    for (const stream of [
+      'edges',
+      'edgeSource',
+      'edgeTarget',
+    ] as LabelStream[]) {
+      const entry = this.labels[stream][slot];
+      const dims = this.labelDims[stream].get(slot);
 
-      if( entry == null || dims == null ){ continue; }
+      if (entry == null || dims == null) {
+        continue;
+      }
 
-      const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
-      const vert = Math.max( Math.abs( entry.anchorY ), Math.abs( entry.anchorY + dims.h ) );
-      const own = dims.w / 2 + Math.abs( entry.marginX ) + vert + pad + entry.endOffset;
+      const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
+      const vert = Math.max(
+        Math.abs(entry.anchorY),
+        Math.abs(entry.anchorY + dims.h),
+      );
+      const own =
+        dims.w / 2 + Math.abs(entry.marginX) + vert + pad + entry.endOffset;
 
-      if( own > r ){ r = own; }
+      if (own > r) {
+        r = own;
+      }
     }
 
     return r;
@@ -3485,8 +4277,11 @@ export class GraphStore implements ModelView {
 
   /** true when any edge-stream label exists (the scan's cheap gate) */
   hasEdgeLabels(): boolean {
-    return this.labelDims.edges.size > 0
-      || this.labelDims.edgeSource.size > 0 || this.labelDims.edgeTarget.size > 0;
+    return (
+      this.labelDims.edges.size > 0 ||
+      this.labelDims.edgeSource.size > 0 ||
+      this.labelDims.edgeTarget.size > 0
+    );
   }
 
   /** true when any node label exists (the scan's cheap gate) */
@@ -3515,42 +4310,54 @@ export class GraphStore implements ModelView {
    * default, on)
    * @returns null when nothing visible remains
    */
-  boundingBox( includeLabels: boolean = true ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
+  boundingBox(includeLabels: boolean = true): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+    h: number;
+  } | null {
     this.flushDerived(); // the edge term reads derived curve params
 
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    let x1 = Infinity,
+      y1 = Infinity,
+      x2 = -Infinity,
+      y2 = -Infinity;
 
-    const pos = this.column( 'node.position' ) as Float32Array;
-    const size = this.column( 'node.size' ) as Float32Array;
-    const border = this.column( 'node.borderWidth' ) as Float32Array;
+    const pos = this.column('node.position') as Float32Array;
+    const size = this.column('node.size') as Float32Array;
+    const border = this.column('node.borderWidth') as Float32Array;
 
-    const ghost = this.column( 'node.ghost' ) as Float32Array;
+    const ghost = this.column('node.ghost') as Float32Array;
     const anyGhosts = this.ghosts > 0;
     const anyNodeLabels = includeLabels && this.hasNodeLabels();
     const anyEdgeLabels = includeLabels && this.hasEdgeLabels();
-    const over = this.column( 'node.overlay' ) as Uint32Array;
-    const under = this.column( 'node.underlay' ) as Uint32Array;
+    const over = this.column('node.overlay') as Uint32Array;
+    const under = this.column('node.underlay') as Uint32Array;
     const anyLayers = this.overlays > 0 || this.underlays > 0;
-    const bGeom = this.column( 'node.borderGeom' ) as Uint32Array;
+    const bGeom = this.column('node.borderGeom') as Uint32Array;
     const anyOutlines = this.outlineSlackMax > 0;
     // the space tier (round 22): display-hidden elements take no space
     // (v3's rule — previously the fit scan included them, a gap this
     // closed); `visibility: 'hidden'` ones keep theirs (VISIBLE, not DRAWN)
-    const nodeFlags = this.column( 'node.flags' ) as Uint32Array;
+    const nodeFlags = this.column('node.flags') as Uint32Array;
 
-    this.forEachAlive( 'nodes', slot => {
-      if( ( nodeFlags[ slot ] & FLAG_VISIBLE ) === 0 ){ return; }
+    this.forEachAlive('nodes', (slot) => {
+      if ((nodeFlags[slot] & FLAG_VISIBLE) === 0) {
+        return;
+      }
 
-      const x = pos[ slot * 2 ];
-      const y = pos[ slot * 2 + 1 ];
-      let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
-      let hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+      const x = pos[slot * 2];
+      const y = pos[slot * 2 + 1];
+      let hw = size[slot * 2] / 2 + border[slot] / 2;
+      let hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
 
       // an outline ring grows the body box (round 13 B5; conservative
       // for inside borders — the center convention, like the border term)
-      if( anyOutlines && bGeom[ slot * 4 + 2 ] >>> 24 !== 0 ){
-        const wo = bGeom[ slot * 4 + 3 ];
-        const extra = ( wo >>> 16 ) / 256 / 2 + ( wo & 0xffff ) / 256;
+      if (anyOutlines && bGeom[slot * 4 + 2] >>> 24 !== 0) {
+        const wo = bGeom[slot * 4 + 3];
+        const extra = (wo >>> 16) / 256 / 2 + (wo & 0xffff) / 256;
 
         hw += extra;
         hh += extra;
@@ -3559,56 +4366,88 @@ export class GraphStore implements ModelView {
       // overlay/underlay pads grow the body box (round 13 A2; v3's
       // overlay sits on the inner size, so border-inclusive halves +
       // padding are conservative)
-      if( anyLayers ){
+      if (anyLayers) {
         let pad = 0;
 
-        if( over[ slot * 4 ] >>> 24 !== 0 ){ pad = over[ slot * 4 + 1 ] / 256; }
-        if( under[ slot * 4 ] >>> 24 !== 0 ){ pad = Math.max( pad, under[ slot * 4 + 1 ] / 256 ); }
+        if (over[slot * 4] >>> 24 !== 0) {
+          pad = over[slot * 4 + 1] / 256;
+        }
+        if (under[slot * 4] >>> 24 !== 0) {
+          pad = Math.max(pad, under[slot * 4 + 1] / 256);
+        }
 
         hw += pad;
         hh += pad;
       }
 
-      if( x - hw < x1 ){ x1 = x - hw; }
-      if( y - hh < y1 ){ y1 = y - hh; }
-      if( x + hw > x2 ){ x2 = x + hw; }
-      if( y + hh > y2 ){ y2 = y + hh; }
+      if (x - hw < x1) {
+        x1 = x - hw;
+      }
+      if (y - hh < y1) {
+        y1 = y - hh;
+      }
+      if (x + hw > x2) {
+        x2 = x + hw;
+      }
+      if (y + hh > y2) {
+        y2 = y + hh;
+      }
 
       // a ghost duplicates the body at the offset (round 13 A1)
-      if( anyGhosts && ghost[ slot * 4 + 3 ] !== 0 ){
-        const gx = x + ghost[ slot * 4 ];
-        const gy = y + ghost[ slot * 4 + 1 ];
+      if (anyGhosts && ghost[slot * 4 + 3] !== 0) {
+        const gx = x + ghost[slot * 4];
+        const gy = y + ghost[slot * 4 + 1];
 
-        if( gx - hw < x1 ){ x1 = gx - hw; }
-        if( gy - hh < y1 ){ y1 = gy - hh; }
-        if( gx + hw > x2 ){ x2 = gx + hw; }
-        if( gy + hh > y2 ){ y2 = gy + hh; }
+        if (gx - hw < x1) {
+          x1 = gx - hw;
+        }
+        if (gy - hh < y1) {
+          y1 = gy - hh;
+        }
+        if (gx + hw > x2) {
+          x2 = gx + hw;
+        }
+        if (gy + hh > y2) {
+          y2 = gy + hh;
+        }
       }
 
       // labels join the box by default (round 16.4): the laid (or
       // headless-estimated) block at its anchor
-      if( anyNodeLabels ){
-        const lb = this.nodeLabelBox( slot );
+      if (anyNodeLabels) {
+        const lb = this.nodeLabelBox(slot);
 
-        if( lb != null ){
-          if( x + lb.x1 < x1 ){ x1 = x + lb.x1; }
-          if( y + lb.y1 < y1 ){ y1 = y + lb.y1; }
-          if( x + lb.x2 > x2 ){ x2 = x + lb.x2; }
-          if( y + lb.y2 > y2 ){ y2 = y + lb.y2; }
+        if (lb != null) {
+          if (x + lb.x1 < x1) {
+            x1 = x + lb.x1;
+          }
+          if (y + lb.y1 < y1) {
+            y1 = y + lb.y1;
+          }
+          if (x + lb.x2 > x2) {
+            x2 = x + lb.x2;
+          }
+          if (y + lb.y2 > y2) {
+            y2 = y + lb.y2;
+          }
         }
       }
-    } );
+    });
 
-    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
-    const curveParams = this.column( 'edge.curveParams' ) as Float32Array;
-    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
+    const endpoints = this.column('edge.endpoints') as Uint32Array;
+    const curveParams = this.column('edge.curveParams') as Float32Array;
+    const edgeFlags = this.column('edge.flags') as Uint32Array;
 
-    this.forEachAlive( 'edges', slot => {
+    this.forEachAlive('edges', (slot) => {
       // the space tier (round 22): hidden edges — or edges with a hidden
       // endpoint (the drawn-edge rule) — take no space
-      if( ( edgeFlags[ slot ] & FLAG_VISIBLE ) === 0
-        || ( nodeFlags[ endpoints[ slot * 2 ] ] & FLAG_VISIBLE ) === 0
-        || ( nodeFlags[ endpoints[ slot * 2 + 1 ] ] & FLAG_VISIBLE ) === 0 ){ return; }
+      if (
+        (edgeFlags[slot] & FLAG_VISIBLE) === 0 ||
+        (nodeFlags[endpoints[slot * 2]] & FLAG_VISIBLE) === 0 ||
+        (nodeFlags[endpoints[slot * 2 + 1]] & FLAG_VISIBLE) === 0
+      ) {
+        return;
+      }
 
       // curved edges: the conservative hull bound — the quadratic lies
       // within the endpoint/control hull, whose controls sit at most
@@ -3629,41 +4468,60 @@ export class GraphStore implements ModelView {
       // fixture: box 1718x1572 against an exact 802x637, so the graph
       // drew at half its size in a third of the viewport).
       const at = slot * 4;
-      const kind = curveParams[ at + 3 ];
-      let dev = kind === CURVE_STRAIGHT
-        ? 0
-        : headerDeviation( kind, curveParams[ at ], curveParams[ at + 1 ], curveParams[ at + 2 ] );
+      const kind = curveParams[at + 3];
+      let dev =
+        kind === CURVE_STRAIGHT
+          ? 0
+          : headerDeviation(
+              kind,
+              curveParams[at],
+              curveParams[at + 1],
+              curveParams[at + 2],
+            );
 
-      if( ( edgeFlags[ slot ] & FLAG_CURVED_BOX ) !== 0 ){
+      if ((edgeFlags[slot] & FLAG_CURVED_BOX) !== 0) {
         dev += this.curveBoxMargin();
 
-        if( kind !== CURVE_TAXI && kind !== CURVE_CMPD ){
-          const s = endpoints[ slot * 2 ];
-          const t = endpoints[ slot * 2 + 1 ];
+        if (kind !== CURVE_TAXI && kind !== CURVE_CMPD) {
+          const s = endpoints[slot * 2];
+          const t = endpoints[slot * 2 + 1];
 
-          dev += Math.hypot( pos[ t * 2 ] - pos[ s * 2 ], pos[ t * 2 + 1 ] - pos[ s * 2 + 1 ] );
+          dev += Math.hypot(
+            pos[t * 2] - pos[s * 2],
+            pos[t * 2 + 1] - pos[s * 2 + 1],
+          );
         }
       }
 
       // edge labels (16.4): conservative — the block-covering radius,
       // valid wherever the anchor lands along the drawn path
-      if( anyEdgeLabels ){
-        dev += this.edgeLabelSlack( slot );
+      if (anyEdgeLabels) {
+        dev += this.edgeLabelSlack(slot);
       }
 
-      for( let end = 0; end < 2; end++ ){
-        const node = endpoints[ slot * 2 + end ];
-        const x = pos[ node * 2 ];
-        const y = pos[ node * 2 + 1 ];
+      for (let end = 0; end < 2; end++) {
+        const node = endpoints[slot * 2 + end];
+        const x = pos[node * 2];
+        const y = pos[node * 2 + 1];
 
-        if( x - dev < x1 ){ x1 = x - dev; }
-        if( y - dev < y1 ){ y1 = y - dev; }
-        if( x + dev > x2 ){ x2 = x + dev; }
-        if( y + dev > y2 ){ y2 = y + dev; }
+        if (x - dev < x1) {
+          x1 = x - dev;
+        }
+        if (y - dev < y1) {
+          y1 = y - dev;
+        }
+        if (x + dev > x2) {
+          x2 = x + dev;
+        }
+        if (y + dev > y2) {
+          y2 = y + dev;
+        }
       }
-    } );
+    });
 
-    if( x1 === Infinity ){ return null; }
+    if (x1 === Infinity) {
+      return null;
+    }
 
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
   }
@@ -3671,59 +4529,80 @@ export class GraphStore implements ModelView {
   // -- internals --
 
   /** Sidecar data() values from a def's data object (id/source/target/parent stay first-class). */
-  setDefData( group: GroupName, slot: number, data: Record<string, unknown> | undefined ): void {
-    if( data == null ){ return; }
+  setDefData(
+    group: GroupName,
+    slot: number,
+    data: Record<string, unknown> | undefined,
+  ): void {
+    if (data == null) {
+      return;
+    }
 
-    for( const key of Object.keys( data ) ){
-      if( key === 'id' || key === 'source' || key === 'target' ){ continue; }
+    for (const key of Object.keys(data)) {
+      if (key === 'id' || key === 'source' || key === 'target') {
+        continue;
+      }
 
       // round 14: a node def's parent resolves as hierarchy (in a second
       // pass, once the batch's nodes all exist), never as sidecar data
-      if( key === 'parent' && group === 'nodes' ){ continue; }
+      if (key === 'parent' && group === 'nodes') {
+        continue;
+      }
 
-      this.data.set( group, slot, key, data[ key ] );
-      this.markDataWrite( group, key, slot, slot + 1 );
+      this.data.set(group, slot, key, data[key]);
+      this.markDataWrite(group, key, slot, slot + 1);
     }
   }
 
   private ingestDataColumns(
-    group: GroupName, slots: Uint32Array,
-    data: Record<string, DataColumn> | undefined
+    group: GroupName,
+    slots: Uint32Array,
+    data: Record<string, DataColumn> | undefined,
   ): void {
-    if( data == null ){ return; }
+    if (data == null) {
+      return;
+    }
 
     let min = Infinity;
     let max = -Infinity;
 
-    if( this.watchedKeys[ group ].size > 0 && slots.length > 0 ){
-      for( let i = 0; i < slots.length; i++ ){
-        if( slots[ i ] < min ){ min = slots[ i ]; }
-        if( slots[ i ] > max ){ max = slots[ i ]; }
+    if (this.watchedKeys[group].size > 0 && slots.length > 0) {
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i] < min) {
+          min = slots[i];
+        }
+        if (slots[i] > max) {
+          max = slots[i];
+        }
       }
     }
 
-    for( const key of Object.keys( data ) ){
-      this.data.ingestColumn( group, slots, key, data[ key ] );
+    for (const key of Object.keys(data)) {
+      this.data.ingestColumn(group, slots, key, data[key]);
 
-      if( max >= 0 ){ this.markDataWrite( group, key, min, max + 1 ); }
+      if (max >= 0) {
+        this.markDataWrite(group, key, min, max + 1);
+      }
     }
   }
 
   /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
   private registerBulk(
-    group: GroupName, slots: Uint32Array,
-    ids: ( string | undefined )[] | PackedIds | undefined, newId: () => string
+    group: GroupName,
+    slots: Uint32Array,
+    ids: (string | undefined)[] | PackedIds | undefined,
+    newId: () => string,
   ): void {
-    this.ids.setBulk( group, slots, ids, newId ); // throws on a duplicate id
+    this.ids.setBulk(group, slots, ids, newId); // throws on a duplicate id
 
-    const order = this.order[ group ];
-    const gen = this.table( group ).gen;
+    const order = this.order[group];
+    const gen = this.table(group).gen;
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      order.slots.push( slot );
-      order.gens.push( gen[ slot ] );
+      order.slots.push(slot);
+      order.gens.push(gen[slot]);
     }
 
     this._structureEpoch++;
@@ -3731,96 +4610,120 @@ export class GraphStore implements ModelView {
 
   /** Default flags for the whole bulk, then per-element deviations. */
   private writeBulkFlags(
-    group: GroupName, slots: Uint32Array, contiguousFrom: number,
-    cols: { selected?: Uint8Array; selectable?: Uint8Array }
+    group: GroupName,
+    slots: Uint32Array,
+    contiguousFrom: number,
+    cols: { selected?: Uint8Array; selectable?: Uint8Array },
   ): void {
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
-    const flags = this.table( group ).column( flagsId ) as Uint32Array;
-    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_DRAWN | FLAG_SELECTABLE | FLAG_GRABBABLE
-      | ( group === 'edges' ? FLAG_PANNABLE : 0 ); // edges default pannable, as in v3
+    const flags = this.table(group).column(flagsId) as Uint32Array;
+    const defaults =
+      FLAG_ALIVE |
+      FLAG_VISIBLE |
+      FLAG_DRAWN |
+      FLAG_SELECTABLE |
+      FLAG_GRABBABLE |
+      (group === 'edges' ? FLAG_PANNABLE : 0); // edges default pannable, as in v3
     const count = slots.length;
 
-    if( contiguousFrom < count ){ // fresh run: one fill
-      flags.fill( defaults, slots[ contiguousFrom ], slots[ count - 1 ] + 1 );
+    if (contiguousFrom < count) {
+      // fresh run: one fill
+      flags.fill(defaults, slots[contiguousFrom], slots[count - 1] + 1);
     }
 
-    for( let i = 0; i < contiguousFrom; i++ ){
-      flags[ slots[ i ] ] = defaults;
+    for (let i = 0; i < contiguousFrom; i++) {
+      flags[slots[i]] = defaults;
     }
 
-    if( cols.selected != null ){
-      for( let i = 0; i < count; i++ ){
-        if( cols.selected[ i ] !== 0 ){ flags[ slots[ i ] ] |= FLAG_SELECTED; }
+    if (cols.selected != null) {
+      for (let i = 0; i < count; i++) {
+        if (cols.selected[i] !== 0) {
+          flags[slots[i]] |= FLAG_SELECTED;
+        }
       }
     }
 
-    if( cols.selectable != null ){
-      for( let i = 0; i < count; i++ ){
-        if( cols.selectable[ i ] === 0 ){ flags[ slots[ i ] ] &= ~FLAG_SELECTABLE; }
+    if (cols.selectable != null) {
+      for (let i = 0; i < count; i++) {
+        if (cols.selectable[i] === 0) {
+          flags[slots[i]] &= ~FLAG_SELECTABLE;
+        }
       }
     }
   }
 
   /** One coalesced dirty span covering all of `slots`. */
-  private markBulk( id: ColumnId, slots: Uint32Array ): void {
-    if( slots.length === 0 ){ return; }
-
-    let min = slots[ 0 ];
-    let max = slots[ 0 ];
-
-    for( let i = 1; i < slots.length; i++ ){
-      const slot = slots[ i ];
-
-      if( slot < min ){ min = slot; }
-      if( slot > max ){ max = slot; }
+  private markBulk(id: ColumnId, slots: Uint32Array): void {
+    if (slots.length === 0) {
+      return;
     }
 
-    this.dirty.mark( id, min, max + 1 );
+    let min = slots[0];
+    let max = slots[0];
+
+    for (let i = 1; i < slots.length; i++) {
+      const slot = slots[i];
+
+      if (slot < min) {
+        min = slot;
+      }
+      if (slot > max) {
+        max = slot;
+      }
+    }
+
+    this.dirty.mark(id, min, max + 1);
   }
 
-  private allocSlot( group: GroupName, id: string ): { slot: number; resized: boolean } {
-    if( this.ids.has( id ) ){
-      throw new Error( `Can not create second element with id '${id}'` );
+  private allocSlot(
+    group: GroupName,
+    id: string,
+  ): { slot: number; resized: boolean } {
+    if (this.ids.has(id)) {
+      throw new Error(`Can not create second element with id '${id}'`);
     }
 
-    const table = this.table( group );
+    const table = this.table(group);
     const { slot, resized } = table.alloc();
 
-    if( resized ){
-      this.dirty.markResized( group );
+    if (resized) {
+      this.dirty.markResized(group);
     }
 
-    this.ids.set( id, group, slot );
+    this.ids.set(id, group, slot);
 
-    const order = this.order[ group ];
+    const order = this.order[group];
 
-    order.slots.push( slot );
-    order.gens.push( table.gen[ slot ] );
+    order.slots.push(slot);
+    order.gens.push(table.gen[slot]);
     this._structureEpoch++;
 
     return { slot, resized };
   }
 
-  private freeSlot( group: GroupName, slot: number ): void {
-    const id = this.ids.idAt( group, slot );
+  private freeSlot(group: GroupName, slot: number): void {
+    const id = this.ids.idAt(group, slot);
 
-    if( id != null ){ this.ids.remove( id ); }
-
-    if( group === 'nodes' ){ // recycled slots must not inherit compound state
-      this.parentFallback.delete( slot );
-      this.opacityBase.delete( slot );
+    if (id != null) {
+      this.ids.remove(id);
     }
 
-    this.data.clearSlot( group, slot );
-
-    if( this.labels[ group ][ slot ] != null ){
-      this.setLabel( slot, null, group );
+    if (group === 'nodes') {
+      // recycled slots must not inherit compound state
+      this.parentFallback.delete(slot);
+      this.opacityBase.delete(slot);
     }
 
-    if( group === 'edges' ){
-      for( const stream of [ 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
-        if( this.labels[ stream ][ slot ] != null ){
-          this.setLabel( slot, null, stream );
+    this.data.clearSlot(group, slot);
+
+    if (this.labels[group][slot] != null) {
+      this.setLabel(slot, null, group);
+    }
+
+    if (group === 'edges') {
+      for (const stream of ['edgeSource', 'edgeTarget'] as LabelStream[]) {
+        if (this.labels[stream][slot] != null) {
+          this.setLabel(slot, null, stream);
         }
       }
     }
@@ -3828,18 +4731,18 @@ export class GraphStore implements ModelView {
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
 
-    ( this.table( group ).column( flagsId ) as Uint32Array )[ slot ] = 0;
-    this.dirty.mark( flagsId, slot );
+    (this.table(group).column(flagsId) as Uint32Array)[slot] = 0;
+    this.dirty.mark(flagsId, slot);
 
-    this.table( group ).freeSlot( slot );
+    this.table(group).freeSlot(slot);
 
-    const order = this.order[ group ];
+    const order = this.order[group];
 
     order.stale++;
     this._structureEpoch++;
 
-    if( order.stale > order.slots.length / 2 ){
-      this.compactOrder( group );
+    if (order.stale > order.slots.length / 2) {
+      this.compactOrder(group);
     }
   }
 
@@ -3856,12 +4759,14 @@ export class GraphStore implements ModelView {
     const waste = this.adj.csrStranded + this.adj.overlayEntries;
 
     // live entries = 2 × edge count, so waste > count is waste > live/2
-    if( waste <= 64 || waste <= this.edges.count ){ return; }
+    if (waste <= 64 || waste <= this.edges.count) {
+      return;
+    }
 
     this.adj.rebuild(
-      this.slotsOrdered( 'edges' ),
-      this.edges.column( 'edge.endpoints' ) as Uint32Array,
-      this.nodes.cap
+      this.slotsOrdered('edges'),
+      this.edges.column('edge.endpoints') as Uint32Array,
+      this.nodes.cap,
     );
   }
 
@@ -3883,27 +4788,29 @@ export class GraphStore implements ModelView {
   compact(): { nodes: GroupCompaction | null; edges: GroupCompaction | null } {
     this.flushDerived(); // settle derived geometry before anything moves
 
-    const edgesRes = this.compactGroup( 'edges' );
-    const nodesRes = this.compactGroup( 'nodes' );
+    const edgesRes = this.compactGroup('edges');
+    const nodesRes = this.compactGroup('nodes');
 
-    if( nodesRes != null ){
+    if (nodesRes != null) {
       // endpoints hold node slots — the one column with cross-group slots
-      const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+      const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
       const remap = nodesRes.remap;
       const hw = this.edges.highWater;
 
-      for( let i = 0; i < hw * 2; i++ ){
-        endpoints[ i ] = remap[ endpoints[ i ] ];
+      for (let i = 0; i < hw * 2; i++) {
+        endpoints[i] = remap[endpoints[i]];
       }
 
-      if( hw > 0 ){ this.dirty.mark( 'edge.endpoints', 0, hw ); }
+      if (hw > 0) {
+        this.dirty.mark('edge.endpoints', 0, hw);
+      }
     }
 
-    if( nodesRes != null || edgesRes != null ){
+    if (nodesRes != null || edgesRes != null) {
       this.adj.rebuild(
-        this.slotsOrdered( 'edges' ),
-        this.edges.column( 'edge.endpoints' ) as Uint32Array,
-        this.nodes.cap
+        this.slotsOrdered('edges'),
+        this.edges.column('edge.endpoints') as Uint32Array,
+        this.nodes.cap,
       );
       this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
       this._compactEpoch++; // collections invalidate cached membership sets
@@ -3913,44 +4820,48 @@ export class GraphStore implements ModelView {
 
     // -- dependent store indexes (19.2) --
 
-    if( edgesRes != null ){
-      this.blob.remapSlots( edgesRes.remap );
-      this.data.remapSlots( 'edges', edgesRes.remap );
-      this.remapLabelStream( 'edges', edgesRes.remap );
-      this.remapLabelStream( 'edgeSource', edgesRes.remap );
-      this.remapLabelStream( 'edgeTarget', edgesRes.remap );
+    if (edgesRes != null) {
+      this.blob.remapSlots(edgesRes.remap);
+      this.data.remapSlots('edges', edgesRes.remap);
+      this.remapLabelStream('edges', edgesRes.remap);
+      this.remapLabelStream('edgeSource', edgesRes.remap);
+      this.remapLabelStream('edgeTarget', edgesRes.remap);
     }
 
-    if( nodesRes != null ){
-      this.polyPool.remapSlots( nodesRes.remap );
-      this.imagePool.remapSlots( nodesRes.remap );
-      this.chartPool.remapSlots( nodesRes.remap );
-      this.data.remapSlots( 'nodes', nodesRes.remap );
-      this.remapLabelStream( 'nodes', nodesRes.remap );
-      this.hierarchy.remapSlots( nodesRes.remap, this.nodes.gen );
-      this.opacityBase = rekeyMap( this.opacityBase, nodesRes.remap );
-      this.parentFallback = rekeyMap( this.parentFallback, nodesRes.remap );
+    if (nodesRes != null) {
+      this.polyPool.remapSlots(nodesRes.remap);
+      this.imagePool.remapSlots(nodesRes.remap);
+      this.chartPool.remapSlots(nodesRes.remap);
+      this.data.remapSlots('nodes', nodesRes.remap);
+      this.remapLabelStream('nodes', nodesRes.remap);
+      this.hierarchy.remapSlots(nodesRes.remap, this.nodes.gen);
+      this.opacityBase = rekeyMap(this.opacityBase, nodesRes.remap);
+      this.parentFallback = rekeyMap(this.parentFallback, nodesRes.remap);
     }
 
-    if( nodesRes != null || edgesRes != null ){
+    if (nodesRes != null || edgesRes != null) {
       // pair/loop keys are node slots and member lists edge slots — the
       // index rebuilds both from the rewritten endpoints; derived params
       // stay valid (the remap is monotone, so bundle order is unchanged)
-      this.curves.remapSlots( edgesRes?.remap ?? null );
+      this.curves.remapSlots(edgesRes?.remap ?? null);
 
       // stale mapper spans carry old-coordinate ranges: replace them
       // with whole-column spans per watched key of a compacted group
-      for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+      for (const group of ['nodes', 'edges'] as GroupName[]) {
         const res = group === 'nodes' ? nodesRes : edgesRes;
 
-        if( res == null ){ continue; }
-
-        for( const key of Array.from( this.mapperSpans.keys() ) ){
-          if( key.startsWith( `${group}:` ) ){ this.mapperSpans.delete( key ); }
+        if (res == null) {
+          continue;
         }
 
-        for( const key of this.watchedKeys[ group ] ){
-          this.markDataWrite( group, key, 0, this.table( group ).highWater );
+        for (const key of Array.from(this.mapperSpans.keys())) {
+          if (key.startsWith(`${group}:`)) {
+            this.mapperSpans.delete(key);
+          }
+        }
+
+        for (const key of this.watchedKeys[group]) {
+          this.markDataWrite(group, key, 0, this.table(group).highWater);
         }
       }
 
@@ -3963,140 +4874,175 @@ export class GraphStore implements ModelView {
   }
 
   /** Permute one label stream's entries, dims and dirty slots (19.2). */
-  private remapLabelStream( stream: LabelStream, remap: Uint32Array ): void {
-    const entries = this.labels[ stream ];
-    const n = Math.min( remap.length, entries.length );
+  private remapLabelStream(stream: LabelStream, remap: Uint32Array): void {
+    const entries = this.labels[stream];
+    const n = Math.min(remap.length, entries.length);
 
-    for( let s = 0; s < n; s++ ){
-      const d = remap[ s ];
+    for (let s = 0; s < n; s++) {
+      const d = remap[s];
 
-      if( d === NO_SLOT || d === s ){ continue; }
+      if (d === NO_SLOT || d === s) {
+        continue;
+      }
 
-      entries[ d ] = entries[ s ];
-      entries[ s ] = undefined;
+      entries[d] = entries[s];
+      entries[s] = undefined;
     }
 
-    this.labelDims[ stream ] = rekeyMap( this.labelDims[ stream ], remap );
+    this.labelDims[stream] = rekeyMap(this.labelDims[stream], remap);
 
     const dirty = new Set<number>();
 
-    for( const s of this.labelDirty[ stream ] ){
-      const d = s < remap.length ? remap[ s ] : NO_SLOT;
+    for (const s of this.labelDirty[stream]) {
+      const d = s < remap.length ? remap[s] : NO_SLOT;
 
-      if( d !== NO_SLOT ){ dirty.add( d ); }
-    }
-
-    this.labelDirty[ stream ] = dirty;
-  }
-
-  private compactGroup( group: GroupName ): GroupCompaction | null {
-    const table = this.table( group );
-    const hw = table.highWater;
-    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
-    const flags = table.column( flagsId ) as Uint32Array;
-    const remap = new Uint32Array( hw );
-    let next = 0;
-    let moved = 0;
-
-    for( let s = 0; s < hw; s++ ){
-      if( ( flags[ s ] & FLAG_ALIVE ) !== 0 ){
-        remap[ s ] = next;
-
-        if( next !== s ){ moved++; }
-
-        next++;
-      } else {
-        remap[ s ] = NO_SLOT;
+      if (d !== NO_SLOT) {
+        dirty.add(d);
       }
     }
 
-    if( moved === 0 && next === hw ){ return null; } // already dense
+    this.labelDirty[stream] = dirty;
+  }
+
+  private compactGroup(group: GroupName): GroupCompaction | null {
+    const table = this.table(group);
+    const hw = table.highWater;
+    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flags = table.column(flagsId) as Uint32Array;
+    const remap = new Uint32Array(hw);
+    let next = 0;
+    let moved = 0;
+
+    for (let s = 0; s < hw; s++) {
+      if ((flags[s] & FLAG_ALIVE) !== 0) {
+        remap[s] = next;
+
+        if (next !== s) {
+          moved++;
+        }
+
+        next++;
+      } else {
+        remap[s] = NO_SLOT;
+      }
+    }
+
+    if (moved === 0 && next === hw) {
+      return null;
+    } // already dense
 
     // table.compact swaps in a fresh gen array, so holding the old one
     // is the pre-move snapshot the order-list fusion validates against
     const oldGen = table.gen;
 
-    table.compact( remap, next );
+    table.compact(remap, next);
 
     // forwarding entries for every moved element (19.3): stale refs
     // chase these chains and repair in place; identity slots need none
-    const fwd = this.forwards[ group ];
+    const fwd = this.forwards[group];
 
-    for( let s = 0; s < hw; s++ ){
-      const d = remap[ s ];
+    for (let s = 0; s < hw; s++) {
+      const d = remap[s];
 
-      if( d === NO_SLOT || d === s ){ continue; }
+      if (d === NO_SLOT || d === s) {
+        continue;
+      }
 
-      fwd.set( s * 0x1000000 + oldGen[ s ], d * 0x1000000 + table.gen[ d ] );
+      fwd.set(s * 0x1000000 + oldGen[s], d * 0x1000000 + table.gen[d]);
     }
 
-    const order = this.order[ group ];
+    const order = this.order[group];
     const slots: number[] = [];
     const gens: number[] = [];
 
-    for( let i = 0; i < order.slots.length; i++ ){
-      const s = order.slots[ i ];
+    for (let i = 0; i < order.slots.length; i++) {
+      const s = order.slots[i];
 
-      if( order.gens[ i ] !== oldGen[ s ] ){ continue; } // tombstoned entry
+      if (order.gens[i] !== oldGen[s]) {
+        continue;
+      } // tombstoned entry
 
-      const d = remap[ s ];
+      const d = remap[s];
 
-      if( d === NO_SLOT ){ continue; }
+      if (d === NO_SLOT) {
+        continue;
+      }
 
-      slots.push( d );
-      gens.push( table.gen[ d ] );
+      slots.push(d);
+      gens.push(table.gen[d]);
     }
 
-    this.order[ group ] = { slots, gens, stale: 0 };
+    this.order[group] = { slots, gens, stale: 0 };
 
-    this.ids.remapSlots( group, remap );
-    this.dirty.markResized( group );
+    this.ids.remapSlots(group, remap);
+    this.dirty.markResized(group);
 
     return { remap, moved, oldHighWater: hw };
   }
 
-  private compactOrder( group: GroupName ): void {
-    const order = this.order[ group ];
-    const gen = this.table( group ).gen;
+  private compactOrder(group: GroupName): void {
+    const order = this.order[group];
+    const gen = this.table(group).gen;
     const slots: number[] = [];
     const gens: number[] = [];
 
-    for( let i = 0; i < order.slots.length; i++ ){
-      const slot = order.slots[ i ];
+    for (let i = 0; i < order.slots.length; i++) {
+      const slot = order.slots[i];
 
-      if( gen[ slot ] === order.gens[ i ] ){
-        slots.push( slot );
-        gens.push( order.gens[ i ] );
+      if (gen[slot] === order.gens[i]) {
+        slots.push(slot);
+        gens.push(order.gens[i]);
       }
     }
 
-    this.order[ group ] = { slots, gens, stale: 0 };
+    this.order[group] = { slots, gens, stale: 0 };
   }
 }
 
 /** Rebuild a slot-keyed map through a compaction remap (19.2). */
-const rekeyMap = <V,>( map: Map<number, V>, remap: Uint32Array ): Map<number, V> => {
+const rekeyMap = <V,>(
+  map: Map<number, V>,
+  remap: Uint32Array,
+): Map<number, V> => {
   const next = new Map<number, V>();
 
-  for( const [ slot, value ] of map ){
-    const d = slot < remap.length ? remap[ slot ] : NO_SLOT;
+  for (const [slot, value] of map) {
+    const d = slot < remap.length ? remap[slot] : NO_SLOT;
 
-    if( d !== NO_SLOT ){ next.set( d, value ); }
+    if (d !== NO_SLOT) {
+      next.set(d, value);
+    }
   }
 
   return next;
 };
 
-const initialFlags = ( opts: AddElementOpts, pannableDefault: boolean ): number => {
+const initialFlags = (
+  opts: AddElementOpts,
+  pannableDefault: boolean,
+): number => {
   let flags = FLAG_ALIVE;
 
-  if( opts.visible !== false ){ flags |= FLAG_VISIBLE | FLAG_DRAWN; }
-  else { flags |= FLAG_SELF_HIDDEN; }
-  if( opts.selectable !== false ){ flags |= FLAG_SELECTABLE; }
-  if( opts.selected === true ){ flags |= FLAG_SELECTED; }
-  if( opts.grabbable !== false ){ flags |= FLAG_GRABBABLE; }
-  if( opts.locked === true ){ flags |= FLAG_LOCKED; }
-  if( opts.pannable ?? pannableDefault ){ flags |= FLAG_PANNABLE; }
+  if (opts.visible !== false) {
+    flags |= FLAG_VISIBLE | FLAG_DRAWN;
+  } else {
+    flags |= FLAG_SELF_HIDDEN;
+  }
+  if (opts.selectable !== false) {
+    flags |= FLAG_SELECTABLE;
+  }
+  if (opts.selected === true) {
+    flags |= FLAG_SELECTED;
+  }
+  if (opts.grabbable !== false) {
+    flags |= FLAG_GRABBABLE;
+  }
+  if (opts.locked === true) {
+    flags |= FLAG_LOCKED;
+  }
+  if (opts.pannable ?? pannableDefault) {
+    flags |= FLAG_PANNABLE;
+  }
 
   return flags;
 };

@@ -39,13 +39,19 @@
 //   node scripts/throw-coverage.mjs --verbose   # list every dead site
 //   node scripts/throw-coverage.mjs --lcov cov.lcov   # reuse a report
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ROOT = fileURLToPath( new URL( '..', import.meta.url ) );
-const SRC_DIR = join( ROOT, 'src' );
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const SRC_DIR = join(ROOT, 'src');
 
 /**
  * Directories whose throws the Node suite *cannot* reach: they need a GPU
@@ -53,7 +59,11 @@ const SRC_DIR = join( ROOT, 'src' );
  * Playwright project instead (round 30.2), so they are reported separately
  * rather than counted as gaps.
  */
-export const BROWSER_ONLY = [ 'src/render/', 'src/interact/', 'src/gpu-context.mts' ];
+export const BROWSER_ONLY = [
+  'src/render/',
+  'src/interact/',
+  'src/gpu-context.mts',
+];
 
 /**
  * Throws that exist to make an internal invariant loud and are unreachable
@@ -65,9 +75,9 @@ export const BROWSER_ONLY = [ 'src/render/', 'src/interact/', 'src/gpu-context.m
  * site and still carries a reason.
  */
 export const UNREACHABLE = {
-  'src/wire.mts:78':
+  'src/wire.mts:88':
     'big-endian platform guard — every supported platform is little-endian',
-  'src/store/graph-store.mts:2349':
+  'src/store/graph-store.mts:2792':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
 
   // Round 36.4 classified the browser-only tier the same way 30.4
@@ -76,19 +86,19 @@ export const UNREACHABLE = {
   // are not, and saying so is better than a spec that fakes its
   // precondition.
   'src/gpu-context.mts:38':
-    'shadowed: index.mts\'s _attachFn checks navigator.gpu and then '
-    + 'constructs the Renderer synchronously, whose ctor calls init() '
-    + 'whose first statement reads navigator.gpu again — nothing can run '
-    + 'between the two, so no caller can pass one and fail the other',
-  'src/render/column-mirror.mts:113':
-    'column spec/group mismatch — an internal invariant; every caller '
-    + 'passes a ColumnId the mirror was built from, and no public input '
-    + 'chooses the id',
-  'src/render/gpu-tween.mts:408':
-    'geometry write-kind invariant — barred one layer up by the '
-    + 'all-or-nothing eligibility rule (round 25.1), which keeps a lane/'
-    + 'padding/fontSize write off the device by refusing the whole '
-    + 'animation; the guard exists so a future eligibility bug is loud'
+    "shadowed: index.mts's _attachFn checks navigator.gpu and then " +
+    'constructs the Renderer synchronously, whose ctor calls init() ' +
+    'whose first statement reads navigator.gpu again — nothing can run ' +
+    'between the two, so no caller can pass one and fail the other',
+  'src/render/column-mirror.mts:125':
+    'column spec/group mismatch — an internal invariant; every caller ' +
+    'passes a ColumnId the mirror was built from, and no public input ' +
+    'chooses the id',
+  'src/render/gpu-tween.mts:470':
+    'geometry write-kind invariant — barred one layer up by the ' +
+    'all-or-nothing eligibility rule (round 25.1), which keeps a lane/' +
+    'padding/fontSize write off the device by refusing the whole ' +
+    'animation; the guard exists so a future eligibility bug is loud',
 };
 
 // Keys here are `file:line`, which **moves when the file above the site
@@ -122,17 +132,20 @@ export const UNREACHABLE = {
  * here suppresses a *covered* reading, which is the direction that hides work.
  */
 export const MISATTRIBUTED = {
-  'src/render/renderer.mts:144':
-    'inside the module-level exportScale const; its body reads as module-eval count'
+  'src/render/renderer.mts:153':
+    'inside the module-level exportScale const; its body reads as module-eval count',
 };
 
 /** Every .mts file under src, repo-relative. */
-const gpuFiles = ( dir = SRC_DIR, out = [] ) => {
-  for( const name of readdirSync( dir ) ){
-    const p = join( dir, name );
+const gpuFiles = (dir = SRC_DIR, out = []) => {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
 
-    if( statSync( p ).isDirectory() ){ gpuFiles( p, out ); }
-    else if( name.endsWith( '.mts' ) ){ out.push( relative( ROOT, p ) ); }
+    if (statSync(p).isDirectory()) {
+      gpuFiles(p, out);
+    } else if (name.endsWith('.mts')) {
+      out.push(relative(ROOT, p));
+    }
   }
 
   return out;
@@ -140,46 +153,59 @@ const gpuFiles = ( dir = SRC_DIR, out = [] ) => {
 
 /** Collect source-mapped line counts by running the Node suite under coverage. */
 const collectLcov = () => {
-  const dir = mkdtempSync( join( tmpdir(), 'throw-cov-' ) );
-  const out = join( dir, 'cov.lcov' );
+  const dir = mkdtempSync(join(tmpdir(), 'throw-cov-'));
+  const out = join(dir, 'cov.lcov');
 
   try {
-    execFileSync( process.execPath, [
-      '--import', 'tsx',
-      '--import', './test/node-test-setup.mjs',
-      '--enable-source-maps',
-      '--experimental-test-coverage',
-      '--test-reporter=lcov',
-      `--test-reporter-destination=${out}`,
-      '--test', 'test/!(types-*|node-test-setup).mjs'
-    ], { cwd: ROOT, stdio: [ 'ignore', 'ignore', 'inherit' ], maxBuffer: 256 * 1024 * 1024 } );
+    execFileSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        '--import',
+        './test/node-test-setup.mjs',
+        '--enable-source-maps',
+        '--experimental-test-coverage',
+        '--test-reporter=lcov',
+        `--test-reporter-destination=${out}`,
+        '--test',
+        'test/!(types-*|node-test-setup).mjs',
+      ],
+      {
+        cwd: ROOT,
+        stdio: ['ignore', 'ignore', 'inherit'],
+        maxBuffer: 256 * 1024 * 1024,
+      },
+    );
   } catch {
     // a failing suite still produces a usable report; the caller sees the
     // failures from the normal test run, not from here
   }
 
-  const text = readFileSync( out, 'utf8' );
+  const text = readFileSync(out, 'utf8');
 
-  rmSync( dir, { recursive: true, force: true } );
+  rmSync(dir, { recursive: true, force: true });
 
   return text;
 };
 
 /** file (repo-relative) -> Map( 1-based line -> execution count ) */
-const parseLcov = text => {
+const parseLcov = (text) => {
   const perFile = new Map();
   let cur = null;
 
-  for( const line of text.split( '\n' ) ){
-    if( line.startsWith( 'SF:' ) ){
-      cur = relative( ROOT, resolve( ROOT, line.slice( 3 ).trim() ) );
+  for (const line of text.split('\n')) {
+    if (line.startsWith('SF:')) {
+      cur = relative(ROOT, resolve(ROOT, line.slice(3).trim()));
 
-      if( !perFile.has( cur ) ){ perFile.set( cur, new Map() ); }
-    } else if( line.startsWith( 'DA:' ) && cur != null ){
-      const [ ln, count ] = line.slice( 3 ).split( ',' ).map( Number );
-      const counts = perFile.get( cur );
+      if (!perFile.has(cur)) {
+        perFile.set(cur, new Map());
+      }
+    } else if (line.startsWith('DA:') && cur != null) {
+      const [ln, count] = line.slice(3).split(',').map(Number);
+      const counts = perFile.get(cur);
 
-      counts.set( ln, Math.max( counts.get( ln ) ?? 0, count ) );
+      counts.set(ln, Math.max(counts.get(ln) ?? 0, count));
     }
   }
 
@@ -194,48 +220,64 @@ const parseLcov = text => {
  * @returns per-site records plus the three tallies (`covered`, `dead`,
  *   `browser`), where `dead` counts only Node-reachable sites
  */
-export function audit( lcovText ){
-  const perFile = parseLcov( lcovText ?? collectLcov() );
+export function audit(lcovText) {
+  const perFile = parseLcov(lcovText ?? collectLcov());
   const sites = [];
 
-  for( const file of gpuFiles() ){
-    const counts = perFile.get( file );
-    const lines = readFileSync( join( ROOT, file ), 'utf8' ).split( '\n' );
+  for (const file of gpuFiles()) {
+    const counts = perFile.get(file);
+    const lines = readFileSync(join(ROOT, file), 'utf8').split('\n');
 
-    lines.forEach( ( text, i ) => {
-      if( !text.includes( 'throw new' ) ){ return; }
+    lines.forEach((text, i) => {
+      if (!text.includes('throw new')) {
+        return;
+      }
 
       const line = i + 1;
       // the throw's own line, else the next instrumented line of its body
-      let count = counts?.get( line );
+      let count = counts?.get(line);
 
-      for( let j = line + 1; count === undefined && j <= line + 3; j++ ){ count = counts?.get( j ); }
+      for (let j = line + 1; count === undefined && j <= line + 3; j++) {
+        count = counts?.get(j);
+      }
 
       const at = `${file}:${line}`;
-      const browser = BROWSER_ONLY.some( prefix => file.startsWith( prefix ) );
-      const unreachable = UNREACHABLE[ at ];
-      const misattributed = MISATTRIBUTED[ at ];
+      const browser = BROWSER_ONLY.some((prefix) => file.startsWith(prefix));
+      const unreachable = UNREACHABLE[at];
+      const misattributed = MISATTRIBUTED[at];
 
-      sites.push( {
-        file, line, text: text.trim(), browser, unreachable, misattributed,
-        covered: misattributed != null ? false : count == null ? null : count > 0
-      } );
-    } );
+      sites.push({
+        file,
+        line,
+        text: text.trim(),
+        browser,
+        unreachable,
+        misattributed,
+        covered:
+          misattributed != null ? false : count == null ? null : count > 0,
+      });
+    });
   }
 
-  const dead = sites.filter( s => s.covered === false && !s.browser && s.unreachable == null );
+  const dead = sites.filter(
+    (s) => s.covered === false && !s.browser && s.unreachable == null,
+  );
 
   return {
     sites,
-    covered: sites.filter( s => s.covered === true ).length,
+    covered: sites.filter((s) => s.covered === true).length,
     dead,
     // `unreachable` wins over `browser`, matching how --verbose labels a
     // site: a browser-only file can still hold a guard no input reaches,
     // and round 36.4 classified three of them.  Counting a site in both
     // tallies made them sum past the site total, which is how this was
     // noticed.
-    browser: sites.filter( s => s.covered !== true && s.browser && s.unreachable == null ).length,
-    unreachable: sites.filter( s => s.covered !== true && s.unreachable != null ).length
+    browser: sites.filter(
+      (s) => s.covered !== true && s.browser && s.unreachable == null,
+    ).length,
+    unreachable: sites.filter(
+      (s) => s.covered !== true && s.unreachable != null,
+    ).length,
   };
 }
 
@@ -256,22 +298,30 @@ export function audit( lcovText ){
  *   validation itself, since a stale entry cannot be staged any other way
  * @returns one string per failure; an empty array means the gate passes
  */
-export function gateFailures( result, allowlists = [
-  [ 'UNREACHABLE', UNREACHABLE ], [ 'MISATTRIBUTED', MISATTRIBUTED ]
-] ){
+export function gateFailures(
+  result,
+  allowlists = [
+    ['UNREACHABLE', UNREACHABLE],
+    ['MISATTRIBUTED', MISATTRIBUTED],
+  ],
+) {
   const failures = [];
-  const known = new Set( result.sites.map( s => `${s.file}:${s.line}` ) );
+  const known = new Set(result.sites.map((s) => `${s.file}:${s.line}`));
 
-  for( const s of result.dead ){
-    failures.push( `never run by the Node suite: ${s.file}:${s.line}  ${s.text.slice( 0, 80 )}` );
+  for (const s of result.dead) {
+    failures.push(
+      `never run by the Node suite: ${s.file}:${s.line}  ${s.text.slice(0, 80)}`,
+    );
   }
 
-  for( const [ name, list ] of allowlists ){
-    for( const [ at, reason ] of Object.entries( list ) ){
-      if( !known.has( at ) ){
-        failures.push( `${name} exempts ${at}, which is not a throw site — did the code above it move?` );
-      } else if( typeof reason !== 'string' || reason.trim() === '' ){
-        failures.push( `${name}'s entry for ${at} carries no reason` );
+  for (const [name, list] of allowlists) {
+    for (const [at, reason] of Object.entries(list)) {
+      if (!known.has(at)) {
+        failures.push(
+          `${name} exempts ${at}, which is not a throw site — did the code above it move?`,
+        );
+      } else if (typeof reason !== 'string' || reason.trim() === '') {
+        failures.push(`${name}'s entry for ${at} carries no reason`);
       }
     }
   }
@@ -279,35 +329,47 @@ export function gateFailures( result, allowlists = [
   return failures;
 }
 
-if( process.argv[ 1 ] && import.meta.url === pathToFileURL( process.argv[ 1 ] ).href ){
-  const flag = process.argv.indexOf( '--lcov' );
-  const result = audit( flag < 0 ? undefined : readFileSync( process.argv[ flag + 1 ], 'utf8' ) );
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const flag = process.argv.indexOf('--lcov');
+  const result = audit(
+    flag < 0 ? undefined : readFileSync(process.argv[flag + 1], 'utf8'),
+  );
 
-  console.log( `throw sites in src: ${result.sites.length}` );
-  console.log( `  run by the Node suite: ${result.covered}` );
-  console.log( `  browser-only (pinned in the renderer project): ${result.browser}` );
-  console.log( `  unreachable by design: ${result.unreachable}` );
-  console.log( `  NODE-REACHABLE AND NEVER RUN: ${result.dead.length}` );
+  console.log(`throw sites in src: ${result.sites.length}`);
+  console.log(`  run by the Node suite: ${result.covered}`);
+  console.log(
+    `  browser-only (pinned in the renderer project): ${result.browser}`,
+  );
+  console.log(`  unreachable by design: ${result.unreachable}`);
+  console.log(`  NODE-REACHABLE AND NEVER RUN: ${result.dead.length}`);
 
-  if( process.argv.includes( '--verbose' ) ){
-    for( const s of result.sites.filter( x => x.covered !== true ) ){
-      const why = s.unreachable != null ? 'unreachable' : s.browser ? 'browser' : 'DEAD';
+  if (process.argv.includes('--verbose')) {
+    for (const s of result.sites.filter((x) => x.covered !== true)) {
+      const why =
+        s.unreachable != null ? 'unreachable' : s.browser ? 'browser' : 'DEAD';
 
-      console.log( `  ${why.padEnd( 12 )} ${s.file}:${s.line}  ${s.text.slice( 0, 90 )}` );
+      console.log(
+        `  ${why.padEnd(12)} ${s.file}:${s.line}  ${s.text.slice(0, 90)}`,
+      );
     }
   }
 
-  const failures = gateFailures( result );
+  const failures = gateFailures(result);
 
-  if( failures.length > 0 ){
-    console.error( `\nthrow-coverage gate failed (${failures.length}):` );
+  if (failures.length > 0) {
+    console.error(`\nthrow-coverage gate failed (${failures.length}):`);
 
-    for( const f of failures ){ console.error( `  ${f}` ); }
+    for (const f of failures) {
+      console.error(`  ${f}`);
+    }
 
     console.error(
-      '\nAdd a spec that fires the guard (a message assertion when several '
-      + 'guards share a method), or — if no caller can reach it — classify it '
-      + 'in UNREACHABLE with the reason.'
+      '\nAdd a spec that fires the guard (a message assertion when several ' +
+        'guards share a method), or — if no caller can reach it — classify it ' +
+        'in UNREACHABLE with the reason.',
     );
 
     process.exitCode = 1;

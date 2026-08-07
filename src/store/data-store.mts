@@ -31,9 +31,16 @@ column for watched keys.  Slot-stable: no element data changes, only
 the private index space.
 */
 
-interface NumberCol { kind: 'number'; values: Float64Array; present: Uint8Array }
+interface NumberCol {
+  kind: 'number';
+  values: Float64Array;
+  present: Uint8Array;
+}
 interface StringCol {
-  kind: 'string'; indices: Uint32Array; dict: string[]; index: Map<string, number>;
+  kind: 'string';
+  indices: Uint32Array;
+  dict: string[];
+  index: Map<string, number>;
   /** live references per dict entry (indices[slot] hits), dict-aligned */
   refs: number[];
   /** entries with zero refs (the compaction meter) */
@@ -41,7 +48,10 @@ interface StringCol {
   /** bumped by every compaction remap (consumers of raw indices must repack) */
   epoch: number;
 }
-interface MixedCol { kind: 'mixed'; values: unknown[] }
+interface MixedCol {
+  kind: 'mixed';
+  values: unknown[];
+}
 type Col = NumberCol | StringCol | MixedCol;
 
 /** dicts smaller than this never compact */
@@ -72,24 +82,31 @@ const DICT_COMPACT_FLOOR = 8;
  * @param dictLength — how many entries the dictionary actually has
  * @throws when the index is past the end of its dictionary
  */
-const assertDictIndex = ( key: string, i: number, at: number, dictLength: number ): void => {
-  if( at > dictLength ){
+const assertDictIndex = (
+  key: string,
+  i: number,
+  at: number,
+  dictLength: number,
+): void => {
+  if (at > dictLength) {
     throw new Error(
       `Data column '${key}' has dictionary index ${at} at element ${i}, ` +
-      `beyond its ${dictLength}-entry dictionary — the payload is corrupt` );
+        `beyond its ${dictLength}-entry dictionary — the payload is corrupt`,
+    );
   }
 };
 
 export class DataStore {
   private cols: Record<GroupName, Map<string, Col>> = {
-    nodes: new Map(), edges: new Map()
+    nodes: new Map(),
+    edges: new Map(),
   };
 
   /** Fires when a column promotes to mixed (a GPU-mirrored key must demote to CPU eval). */
-  onPromote: ( ( group: GroupName, key: string ) => void ) | null = null;
+  onPromote: ((group: GroupName, key: string) => void) | null = null;
 
   /** Fires after a dict compaction remapped a column's indices (see the header note). */
-  onDictRemap: ( ( group: GroupName, key: string ) => void ) | null = null;
+  onDictRemap: ((group: GroupName, key: string) => void) | null = null;
 
   /**
    * One element's value for one data key.  Absence and a stored
@@ -103,21 +120,23 @@ export class DataStore {
    * @param slot — the slot within that group
    * @param key — the data key
    */
-  get( group: GroupName, slot: number, key: string ): unknown {
-    const col = this.cols[ group ].get( key );
+  get(group: GroupName, slot: number, key: string): unknown {
+    const col = this.cols[group].get(key);
 
-    if( col == null ){ return undefined; }
+    if (col == null) {
+      return undefined;
+    }
 
-    switch( col.kind ){
+    switch (col.kind) {
       case 'number':
-        return col.present[ slot ] ? col.values[ slot ] : undefined;
+        return col.present[slot] ? col.values[slot] : undefined;
       case 'string': {
-        const i = slot < col.indices.length ? col.indices[ slot ] : 0;
+        const i = slot < col.indices.length ? col.indices[slot] : 0;
 
-        return i === 0 ? undefined : col.dict[ i - 1 ];
+        return i === 0 ? undefined : col.dict[i - 1];
       }
       case 'mixed':
-        return col.values[ slot ];
+        return col.values[slot];
     }
   }
 
@@ -125,33 +144,37 @@ export class DataStore {
    * A per-slot value reader for one key, with the column resolution
    * hoisted out of the loop — for columnar scans over data conditions.
    */
-  reader( group: GroupName, key: string ): ( slot: number ) => unknown {
-    const col = this.cols[ group ].get( key );
+  reader(group: GroupName, key: string): (slot: number) => unknown {
+    const col = this.cols[group].get(key);
 
-    if( col == null ){ return () => undefined; }
+    if (col == null) {
+      return () => undefined;
+    }
 
-    switch( col.kind ){
+    switch (col.kind) {
       case 'number':
-        return slot => ( col.present[ slot ] ? col.values[ slot ] : undefined );
+        return (slot) => (col.present[slot] ? col.values[slot] : undefined);
       case 'string':
-        return slot => {
-          const i = slot < col.indices.length ? col.indices[ slot ] : 0;
+        return (slot) => {
+          const i = slot < col.indices.length ? col.indices[slot] : 0;
 
-          return i === 0 ? undefined : col.dict[ i - 1 ];
+          return i === 0 ? undefined : col.dict[i - 1];
         };
       case 'mixed':
-        return slot => col.values[ slot ];
+        return (slot) => col.values[slot];
     }
   }
 
   /** All present values at a slot, as a fresh object. */
-  object( group: GroupName, slot: number ): Record<string, unknown> {
+  object(group: GroupName, slot: number): Record<string, unknown> {
     const out: Record<string, unknown> = {};
 
-    for( const [ key ] of this.cols[ group ] ){
-      const value = this.get( group, slot, key );
+    for (const [key] of this.cols[group]) {
+      const value = this.get(group, slot, key);
 
-      if( value !== undefined ){ out[ key ] = value; }
+      if (value !== undefined) {
+        out[key] = value;
+      }
     }
 
     return out;
@@ -165,8 +188,8 @@ export class DataStore {
    *
    * @param group — the element group
    */
-  keys( group: GroupName ): string[] {
-    return [ ...this.cols[ group ].keys() ];
+  keys(group: GroupName): string[] {
+    return [...this.cols[group].keys()];
   }
 
   /**
@@ -175,37 +198,48 @@ export class DataStore {
    * dictionary column, mixed as a plain array — the shapes `ingestColumn`
    * and the wire already accept.  Undefined when there are no columns.
    */
-  exportColumns( group: GroupName, slots: ArrayLike<number> ): Record<string, DataColumn> | undefined {
-    const cols = this.cols[ group ];
+  exportColumns(
+    group: GroupName,
+    slots: ArrayLike<number>,
+  ): Record<string, DataColumn> | undefined {
+    const cols = this.cols[group];
 
-    if( cols.size === 0 ){ return undefined; }
+    if (cols.size === 0) {
+      return undefined;
+    }
 
     const out: Record<string, DataColumn> = {};
 
-    for( const [ key, col ] of cols ){
-      switch( col.kind ){
+    for (const [key, col] of cols) {
+      switch (col.kind) {
         case 'number': {
-          const values = new Float64Array( slots.length ).fill( NaN );
+          const values = new Float64Array(slots.length).fill(NaN);
 
-          for( let i = 0; i < slots.length; i++ ){
-            if( col.present[ slots[ i ] ] ){ values[ i ] = col.values[ slots[ i ] ]; }
+          for (let i = 0; i < slots.length; i++) {
+            if (col.present[slots[i]]) {
+              values[i] = col.values[slots[i]];
+            }
           }
 
-          out[ key ] = values;
+          out[key] = values;
           break;
         }
         case 'string': {
-          const indices = new Uint32Array( slots.length );
+          const indices = new Uint32Array(slots.length);
 
-          for( let i = 0; i < slots.length; i++ ){
-            indices[ i ] = slots[ i ] < col.indices.length ? col.indices[ slots[ i ] ] : 0;
+          for (let i = 0; i < slots.length; i++) {
+            indices[i] =
+              slots[i] < col.indices.length ? col.indices[slots[i]] : 0;
           }
 
-          out[ key ] = { dict: [ ...col.dict ], indices };
+          out[key] = { dict: [...col.dict], indices };
           break;
         }
         case 'mixed':
-          out[ key ] = Array.from( slots as ArrayLike<number>, slot => col.values[ slot ] );
+          out[key] = Array.from(
+            slots as ArrayLike<number>,
+            (slot) => col.values[slot],
+          );
           break;
       }
     }
@@ -226,24 +260,24 @@ export class DataStore {
    * @param key — the data key
    * @param value — the value; `undefined` clears
    */
-  set( group: GroupName, slot: number, key: string, value: unknown ): void {
-    if( value === undefined ){
-      this.clearValue( group, slot, key );
+  set(group: GroupName, slot: number, key: string, value: unknown): void {
+    if (value === undefined) {
+      this.clearValue(group, slot, key);
 
       return;
     }
 
-    const cols = this.cols[ group ];
-    let col = cols.get( key );
+    const cols = this.cols[group];
+    let col = cols.get(key);
 
-    if( col == null ){
-      col = this.emptyColFor( value );
-      cols.set( key, col );
-    } else if( !this.fits( col, value ) ){
-      col = this.promote( group, key, col );
+    if (col == null) {
+      col = this.emptyColFor(value);
+      cols.set(key, col);
+    } else if (!this.fits(col, value)) {
+      col = this.promote(group, key, col);
     }
 
-    this.write( group, key, col, slot, value );
+    this.write(group, key, col, slot, value);
   }
 
   /**
@@ -252,51 +286,57 @@ export class DataStore {
    * is already a dictionary column, which is adopted index-for-index.
    */
   ingestColumn(
-    group: GroupName, slots: Uint32Array,
-    key: string, column: ArrayLike<unknown> | DictColumn
+    group: GroupName,
+    slots: Uint32Array,
+    key: string,
+    column: ArrayLike<unknown> | DictColumn,
   ): void {
-    const cols = this.cols[ group ];
-    const existing = cols.get( key );
+    const cols = this.cols[group];
+    const existing = cols.get(key);
 
-    if( isDictColumn( column ) ){
-      if( existing == null ){
+    if (isDictColumn(column)) {
+      if (existing == null) {
         const col: StringCol = {
           kind: 'string',
-          indices: new Uint32Array( 0 ),
-          dict: [ ...column.dict ],
-          index: new Map( column.dict.map( ( v, i ) => [ v, i + 1 ] ) ),
-          refs: new Array( column.dict.length ).fill( 0 ),
+          indices: new Uint32Array(0),
+          dict: [...column.dict],
+          index: new Map(column.dict.map((v, i) => [v, i + 1])),
+          refs: new Array(column.dict.length).fill(0),
           dead: 0,
-          epoch: 0
+          epoch: 0,
         };
 
-        cols.set( key, col );
+        cols.set(key, col);
 
-        for( let i = 0; i < slots.length; i++ ){
-          const at = column.indices[ i ];
+        for (let i = 0; i < slots.length; i++) {
+          const at = column.indices[i];
 
-          if( at === 0 ){ continue; }
+          if (at === 0) {
+            continue;
+          }
 
-          assertDictIndex( key, i, at, column.dict.length );
+          assertDictIndex(key, i, at, column.dict.length);
 
-          const slot = slots[ i ];
+          const slot = slots[i];
 
-          if( slot >= col.indices.length ){ col.indices = growU32( col.indices, slot ); }
+          if (slot >= col.indices.length) {
+            col.indices = growU32(col.indices, slot);
+          }
 
-          col.indices[ slot ] = at; // dictionaries align, so indices adopt directly
-          col.refs[ at - 1 ]++;
+          col.indices[slot] = at; // dictionaries align, so indices adopt directly
+          col.refs[at - 1]++;
         }
 
         // an adopted wire dict may carry entries nothing references
-        col.dead = col.refs.reduce( ( n, r ) => n + ( r === 0 ? 1 : 0 ), 0 );
-        this.maybeCompactDict( group, key, col );
+        col.dead = col.refs.reduce((n, r) => n + (r === 0 ? 1 : 0), 0);
+        this.maybeCompactDict(group, key, col);
       } else {
-        for( let i = 0; i < slots.length; i++ ){
-          const at = column.indices[ i ];
+        for (let i = 0; i < slots.length; i++) {
+          const at = column.indices[i];
 
-          if( at !== 0 ){
-            assertDictIndex( key, i, at, column.dict.length );
-            this.set( group, slots[ i ], key, column.dict[ at - 1 ] );
+          if (at !== 0) {
+            assertDictIndex(key, i, at, column.dict.length);
+            this.set(group, slots[i], key, column.dict[at - 1]);
           }
         }
       }
@@ -304,13 +344,15 @@ export class DataStore {
       return;
     }
 
-    for( let i = 0; i < slots.length; i++ ){
-      const value = column[ i ];
+    for (let i = 0; i < slots.length; i++) {
+      const value = column[i];
 
       // NaN means absent in numeric columns (JSON can't carry NaN)
-      if( value == null || ( typeof value === 'number' && Number.isNaN( value ) ) ){ continue; }
+      if (value == null || (typeof value === 'number' && Number.isNaN(value))) {
+        continue;
+      }
 
-      this.set( group, slots[ i ], key, value );
+      this.set(group, slots[i], key, value);
     }
   }
 
@@ -321,48 +363,58 @@ export class DataStore {
    * must keep their identity.  Dictionary refcounts are untouched: the
    * values are the same, only their slots moved.
    */
-  remapSlots( group: GroupName, remap: Uint32Array ): void {
-    for( const col of this.cols[ group ].values() ){
-      switch( col.kind ){
+  remapSlots(group: GroupName, remap: Uint32Array): void {
+    for (const col of this.cols[group].values()) {
+      switch (col.kind) {
         case 'number': {
-          const n = Math.min( remap.length, col.present.length, col.values.length );
+          const n = Math.min(
+            remap.length,
+            col.present.length,
+            col.values.length,
+          );
 
-          for( let s = 0; s < n; s++ ){
-            const d = remap[ s ];
+          for (let s = 0; s < n; s++) {
+            const d = remap[s];
 
-            if( d === NO_SLOT || d === s ){ continue; }
+            if (d === NO_SLOT || d === s) {
+              continue;
+            }
 
-            col.values[ d ] = col.values[ s ];
-            col.present[ d ] = col.present[ s ];
-            col.present[ s ] = 0;
+            col.values[d] = col.values[s];
+            col.present[d] = col.present[s];
+            col.present[s] = 0;
           }
 
           break;
         }
         case 'string': {
-          const n = Math.min( remap.length, col.indices.length );
+          const n = Math.min(remap.length, col.indices.length);
 
-          for( let s = 0; s < n; s++ ){
-            const d = remap[ s ];
+          for (let s = 0; s < n; s++) {
+            const d = remap[s];
 
-            if( d === NO_SLOT || d === s ){ continue; }
+            if (d === NO_SLOT || d === s) {
+              continue;
+            }
 
-            col.indices[ d ] = col.indices[ s ];
-            col.indices[ s ] = 0;
+            col.indices[d] = col.indices[s];
+            col.indices[s] = 0;
           }
 
           break;
         }
         case 'mixed': {
-          const n = Math.min( remap.length, col.values.length );
+          const n = Math.min(remap.length, col.values.length);
 
-          for( let s = 0; s < n; s++ ){
-            const d = remap[ s ];
+          for (let s = 0; s < n; s++) {
+            const d = remap[s];
 
-            if( d === NO_SLOT || d === s ){ continue; }
+            if (d === NO_SLOT || d === s) {
+              continue;
+            }
 
-            col.values[ d ] = col.values[ s ];
-            col.values[ s ] = undefined;
+            col.values[d] = col.values[s];
+            col.values[s] = undefined;
           }
 
           break;
@@ -372,173 +424,231 @@ export class DataStore {
   }
 
   /** Clear every data value at a slot (element removal). */
-  clearSlot( group: GroupName, slot: number ): void {
-    for( const key of this.cols[ group ].keys() ){
-      this.clearValue( group, slot, key );
+  clearSlot(group: GroupName, slot: number): void {
+    for (const key of this.cols[group].keys()) {
+      this.clearValue(group, slot, key);
     }
   }
 
   /** The column in wire-facing shape, for serialization. */
-  column( group: GroupName, key: string ):
+  column(
+    group: GroupName,
+    key: string,
+  ):
     | { kind: 'number'; values: Float64Array; present: Uint8Array }
     | { kind: 'string'; indices: Uint32Array; dict: string[]; epoch: number }
     | { kind: 'mixed'; values: unknown[] }
     | undefined {
-    return this.cols[ group ].get( key );
+    return this.cols[group].get(key);
   }
 
   // -- internals --
 
-  private emptyColFor( value: unknown ): Col {
-    if( typeof value === 'number' && !Number.isNaN( value ) ){
-      return { kind: 'number', values: new Float64Array( 0 ), present: new Uint8Array( 0 ) };
+  private emptyColFor(value: unknown): Col {
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+      return {
+        kind: 'number',
+        values: new Float64Array(0),
+        present: new Uint8Array(0),
+      };
     }
 
-    if( typeof value === 'string' ){
-      return { kind: 'string', indices: new Uint32Array( 0 ), dict: [], index: new Map(), refs: [], dead: 0, epoch: 0 };
+    if (typeof value === 'string') {
+      return {
+        kind: 'string',
+        indices: new Uint32Array(0),
+        dict: [],
+        index: new Map(),
+        refs: [],
+        dead: 0,
+        epoch: 0,
+      };
     }
 
     return { kind: 'mixed', values: [] };
   }
 
-  private fits( col: Col, value: unknown ): boolean {
-    switch( col.kind ){
-      case 'number': return typeof value === 'number' && !Number.isNaN( value );
-      case 'string': return typeof value === 'string';
-      case 'mixed': return true;
+  private fits(col: Col, value: unknown): boolean {
+    switch (col.kind) {
+      case 'number':
+        return typeof value === 'number' && !Number.isNaN(value);
+      case 'string':
+        return typeof value === 'string';
+      case 'mixed':
+        return true;
     }
   }
 
-  private promote( group: GroupName, key: string, col: Col ): MixedCol {
+  private promote(group: GroupName, key: string, col: Col): MixedCol {
     const values: unknown[] = [];
-    const len = col.kind === 'number' ? col.values.length : col.kind === 'string' ? col.indices.length : 0;
+    const len =
+      col.kind === 'number'
+        ? col.values.length
+        : col.kind === 'string'
+          ? col.indices.length
+          : 0;
 
-    for( let slot = 0; slot < len; slot++ ){
-      const value = this.get( group, slot, key );
+    for (let slot = 0; slot < len; slot++) {
+      const value = this.get(group, slot, key);
 
-      if( value !== undefined ){ values[ slot ] = value; }
+      if (value !== undefined) {
+        values[slot] = value;
+      }
     }
 
     const mixed: MixedCol = { kind: 'mixed', values };
 
-    this.cols[ group ].set( key, mixed );
-    this.onPromote?.( group, key );
+    this.cols[group].set(key, mixed);
+    this.onPromote?.(group, key);
 
     return mixed;
   }
 
-  private write( group: GroupName, key: string, col: Col, slot: number, value: unknown ): void {
-    switch( col.kind ){
+  private write(
+    group: GroupName,
+    key: string,
+    col: Col,
+    slot: number,
+    value: unknown,
+  ): void {
+    switch (col.kind) {
       case 'number': {
-        if( slot >= col.values.length ){
-          col.values = growF64( col.values, slot );
-          col.present = growU8( col.present, slot );
+        if (slot >= col.values.length) {
+          col.values = growF64(col.values, slot);
+          col.present = growU8(col.present, slot);
         }
 
-        col.values[ slot ] = value as number;
-        col.present[ slot ] = 1;
+        col.values[slot] = value as number;
+        col.present[slot] = 1;
         break;
       }
       case 'string':
-        this.writeString( group, key, col, slot, value as string );
+        this.writeString(group, key, col, slot, value as string);
         break;
       case 'mixed': {
-        col.values[ slot ] = value;
+        col.values[slot] = value;
         break;
       }
     }
   }
 
-  private writeString( group: GroupName, key: string, col: StringCol, slot: number, str: string ): void {
-    if( slot >= col.indices.length ){
-      col.indices = growU32( col.indices, slot );
+  private writeString(
+    group: GroupName,
+    key: string,
+    col: StringCol,
+    slot: number,
+    str: string,
+  ): void {
+    if (slot >= col.indices.length) {
+      col.indices = growU32(col.indices, slot);
     }
 
-    let at = col.index.get( str );
+    let at = col.index.get(str);
 
-    if( at == null ){
-      col.dict.push( str );
+    if (at == null) {
+      col.dict.push(str);
       at = col.dict.length;
-      col.index.set( str, at );
-      col.refs.push( 0 );
-    } else if( col.refs[ at - 1 ] === 0 ){
+      col.index.set(str, at);
+      col.refs.push(0);
+    } else if (col.refs[at - 1] === 0) {
       col.dead--; // a dead entry resurrects
     }
 
-    const prev = col.indices[ slot ];
+    const prev = col.indices[slot];
 
-    if( prev === at ){ return; }
+    if (prev === at) {
+      return;
+    }
 
-    col.refs[ at - 1 ]++;
-    col.indices[ slot ] = at;
+    col.refs[at - 1]++;
+    col.indices[slot] = at;
 
-    if( prev !== 0 && --col.refs[ prev - 1 ] === 0 ){
+    if (prev !== 0 && --col.refs[prev - 1] === 0) {
       col.dead++;
-      this.maybeCompactDict( group, key, col );
+      this.maybeCompactDict(group, key, col);
     }
   }
 
-  private clearValue( group: GroupName, slot: number, key: string ): void {
-    const col = this.cols[ group ].get( key );
+  private clearValue(group: GroupName, slot: number, key: string): void {
+    const col = this.cols[group].get(key);
 
-    if( col == null ){ return; }
+    if (col == null) {
+      return;
+    }
 
-    switch( col.kind ){
+    switch (col.kind) {
       case 'number':
-        if( slot < col.present.length ){ col.present[ slot ] = 0; }
+        if (slot < col.present.length) {
+          col.present[slot] = 0;
+        }
         break;
       case 'string': {
-        if( slot >= col.indices.length ){ break; }
+        if (slot >= col.indices.length) {
+          break;
+        }
 
-        const prev = col.indices[ slot ];
+        const prev = col.indices[slot];
 
-        if( prev === 0 ){ break; }
+        if (prev === 0) {
+          break;
+        }
 
-        col.indices[ slot ] = 0;
+        col.indices[slot] = 0;
 
-        if( --col.refs[ prev - 1 ] === 0 ){
+        if (--col.refs[prev - 1] === 0) {
           col.dead++;
-          this.maybeCompactDict( group, key, col );
+          this.maybeCompactDict(group, key, col);
         }
 
         break;
       }
       case 'mixed':
-        if( slot < col.values.length ){ col.values[ slot ] = undefined; }
+        if (slot < col.values.length) {
+          col.values[slot] = undefined;
+        }
         break;
     }
   }
 
-  private maybeCompactDict( group: GroupName, key: string, col: StringCol ): void {
-    if( col.dead * 2 <= col.dict.length || col.dict.length < DICT_COMPACT_FLOOR ){ return; }
+  private maybeCompactDict(
+    group: GroupName,
+    key: string,
+    col: StringCol,
+  ): void {
+    if (
+      col.dead * 2 <= col.dict.length ||
+      col.dict.length < DICT_COMPACT_FLOOR
+    ) {
+      return;
+    }
 
     // order-preserving remap of the live entries; index 0 (absent) is fixed
-    const remap = new Uint32Array( col.dict.length + 1 );
+    const remap = new Uint32Array(col.dict.length + 1);
     const dict: string[] = [];
     const refs: number[] = [];
 
-    for( let i = 0; i < col.dict.length; i++ ){
-      if( col.refs[ i ] > 0 ){
-        dict.push( col.dict[ i ] );
-        refs.push( col.refs[ i ] );
-        remap[ i + 1 ] = dict.length;
+    for (let i = 0; i < col.dict.length; i++) {
+      if (col.refs[i] > 0) {
+        dict.push(col.dict[i]);
+        refs.push(col.refs[i]);
+        remap[i + 1] = dict.length;
       }
     }
 
     const indices = col.indices;
 
     // in place: bound evaluators hold this array (and this col) by reference
-    for( let i = 0; i < indices.length; i++ ){
-      indices[ i ] = remap[ indices[ i ] ];
+    for (let i = 0; i < indices.length; i++) {
+      indices[i] = remap[indices[i]];
     }
 
     col.dict = dict;
     col.refs = refs;
-    col.index = new Map( dict.map( ( v, i ) => [ v, i + 1 ] ) );
+    col.index = new Map(dict.map((v, i) => [v, i + 1]));
     col.dead = 0;
     col.epoch++;
 
-    this.onDictRemap?.( group, key );
+    this.onDictRemap?.(group, key);
   }
 }
 
@@ -550,31 +660,37 @@ export class DataStore {
  *
  * @param column — the candidate column
  */
-export const isDictColumn = ( column: ArrayLike<unknown> | DictColumn ): column is DictColumn => {
-  return !Array.isArray( column ) && !ArrayBuffer.isView( column )
-    && ( column as DictColumn ).dict != null && ( column as DictColumn ).indices != null;
+export const isDictColumn = (
+  column: ArrayLike<unknown> | DictColumn,
+): column is DictColumn => {
+  return (
+    !Array.isArray(column) &&
+    !ArrayBuffer.isView(column) &&
+    (column as DictColumn).dict != null &&
+    (column as DictColumn).indices != null
+  );
 };
 
-const growF64 = ( old: Float64Array, slot: number ): Float64Array => {
-  const next = new Float64Array( Math.max( 64, old.length * 2, slot + 1 ) );
+const growF64 = (old: Float64Array, slot: number): Float64Array => {
+  const next = new Float64Array(Math.max(64, old.length * 2, slot + 1));
 
-  next.set( old );
+  next.set(old);
 
   return next;
 };
 
-const growU8 = ( old: Uint8Array, slot: number ): Uint8Array => {
-  const next = new Uint8Array( Math.max( 64, old.length * 2, slot + 1 ) );
+const growU8 = (old: Uint8Array, slot: number): Uint8Array => {
+  const next = new Uint8Array(Math.max(64, old.length * 2, slot + 1));
 
-  next.set( old );
+  next.set(old);
 
   return next;
 };
 
-const growU32 = ( old: Uint32Array, slot: number ): Uint32Array => {
-  const next = new Uint32Array( Math.max( 64, old.length * 2, slot + 1 ) );
+const growU32 = (old: Uint32Array, slot: number): Uint32Array => {
+  const next = new Uint32Array(Math.max(64, old.length * 2, slot + 1));
 
-  next.set( old );
+  next.set(old);
 
   return next;
 };

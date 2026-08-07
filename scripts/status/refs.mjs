@@ -26,21 +26,28 @@ import { posix } from 'node:path';
  *
  * @returns `[ { url, kind: 'resource' | 'link' } ]`
  */
-export function markupRefs( html ){
+export function markupRefs(html) {
   const refs = [];
 
-  for( const tag of html.matchAll( /<(a|img|script|link|source|iframe)\b([^>]*)>/gi ) ){
-    const name = tag[ 1 ].toLowerCase();
-    const attrs = tag[ 2 ];
+  for (const tag of html.matchAll(
+    /<(a|img|script|link|source|iframe)\b([^>]*)>/gi,
+  )) {
+    const name = tag[1].toLowerCase();
+    const attrs = tag[2];
 
-    for( const attr of attrs.matchAll( /\b(src|href)\s*=\s*"([^"]*)"/g ) ){
-      const url = attr[ 2 ];
+    for (const attr of attrs.matchAll(/\b(src|href)\s*=\s*"([^"]*)"/g)) {
+      const url = attr[2];
 
-      if( url === '' || url.startsWith( '#' ) || url.startsWith( 'data:' ) || url.startsWith( 'mailto:' ) ){
+      if (
+        url === '' ||
+        url.startsWith('#') ||
+        url.startsWith('data:') ||
+        url.startsWith('mailto:')
+      ) {
         continue;
       }
 
-      refs.push( { url, kind: name === 'a' ? 'link' : 'resource' } );
+      refs.push({ url, kind: name === 'a' ? 'link' : 'resource' });
     }
   }
 
@@ -52,20 +59,26 @@ export function markupRefs( html ){
  * `networks.js` — so the generated patch is what is exercised, not the source
  * file.  Same technique as `test/modules/debug-harness.mjs`.
  */
-export function networkRefs( networksSource, wireManifestSource = null ){
-  const ctx = createContext( { module: undefined, window: {} } );
+export function networkRefs(networksSource, wireManifestSource = null) {
+  const ctx = createContext({ module: undefined, window: {} });
 
-  runInContext( networksSource, ctx );
+  runInContext(networksSource, ctx);
 
   // the status build ships a manifest naming each network's binary fixture;
   // `init.js` prefers it, so it is what the deployed page actually requests
-  if( wireManifestSource != null ){ runInContext( wireManifestSource, ctx ); }
+  if (wireManifestSource != null) {
+    runInContext(wireManifestSource, ctx);
+  }
 
   const wire = ctx.window?.DEBUG_FIXTURE_WIRE ?? {};
 
-  return Object.entries( ctx.networks )
-    .filter( ( [ , def ] ) => !def.generated && def.url != null )
-    .map( ( [ id, def ] ) => ( { id, url: wire[ id ] ?? def.url, wire: wire[ id ] != null } ) );
+  return Object.entries(ctx.networks)
+    .filter(([, def]) => !def.generated && def.url != null)
+    .map(([id, def]) => ({
+      id,
+      url: wire[id] ?? def.url,
+      wire: wire[id] != null,
+    }));
 }
 
 /**
@@ -75,14 +88,16 @@ export function networkRefs( networksSource, wireManifestSource = null ){
  * @returns `[ { page, url, resolved, external } ]` where `resolved` is the
  *   site-relative path a local reference points at
  */
-export function enumerateRefs( ops ){
+export function enumerateRefs(ops) {
   const refs = [];
-  const written = new Map( ops.filter( op => op.kind === 'write' ).map( op => [ op.to, op.text ] ) );
+  const written = new Map(
+    ops.filter((op) => op.kind === 'write').map((op) => [op.to, op.text]),
+  );
 
-  const add = ( from, url, source, kind = 'resource' ) => {
-    const external = /^[a-z]+:/i.test( url ) || url.startsWith( '//' );
+  const add = (from, url, source, kind = 'resource') => {
+    const external = /^[a-z]+:/i.test(url) || url.startsWith('//');
 
-    refs.push( {
+    refs.push({
       page: from,
       url,
       source,
@@ -90,25 +105,36 @@ export function enumerateRefs( ops ){
       external,
       // a leading slash is site-absolute; anything else resolves against the
       // directory of the page that wrote it
-      resolved: external ? null
-        : url.startsWith( '/' ) ? url.slice( 1 )
-          : posix.normalize( posix.join( posix.dirname( from ), url ) )
-    } );
+      resolved: external
+        ? null
+        : url.startsWith('/')
+          ? url.slice(1)
+          : posix.normalize(posix.join(posix.dirname(from), url)),
+    });
   };
 
-  for( const [ to, text ] of written ){
-    if( to.endsWith( '.html' ) ){
-      for( const ref of markupRefs( text ) ){ add( to, ref.url, 'markup', ref.kind ); }
+  for (const [to, text] of written) {
+    if (to.endsWith('.html')) {
+      for (const ref of markupRefs(text)) {
+        add(to, ref.url, 'markup', ref.kind);
+      }
     }
 
-    if( to === 'debug/networks.js' ){
+    if (to === 'debug/networks.js') {
       // *One* url per network, and it must be the one the deployed page will
       // actually request: `init.js` prefers the wire manifest's entry where
       // there is one, so enumerating `network.url` as well would demand a JSON
       // file the hosted page never asks for, and enumerating only `network.url`
       // would miss the request it does make.
-      for( const net of networkRefs( text, written.get( 'debug/status-config.js' ) ) ){
-        add( 'debug/networks.js', net.url, `runtime:${net.id}${net.wire ? ':wire' : ''}` );
+      for (const net of networkRefs(
+        text,
+        written.get('debug/status-config.js'),
+      )) {
+        add(
+          'debug/networks.js',
+          net.url,
+          `runtime:${net.id}${net.wire ? ':wire' : ''}`,
+        );
       }
     }
   }

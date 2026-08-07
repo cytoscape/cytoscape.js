@@ -16,7 +16,7 @@ const defaults: Omit<RandomLayoutOptions, 'name'> = {
   animateFilter: undefined,
   ready: undefined,
   stop: undefined,
-  transform: undefined
+  transform: undefined,
 };
 
 /**
@@ -39,7 +39,7 @@ export class RandomLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: Core, options: RandomLayoutOptions ){
+  constructor(cy: Core, options: RandomLayoutOptions) {
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -55,18 +55,23 @@ export class RandomLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
+    const eles = (options.eles as Collection | undefined) ?? cy.elements();
 
-    const bb = math.makeBoundingBox( options.boundingBox ?? {
-      x1: 0, y1: 0, w: cy.width(), h: cy.height()
-    } ) as BoundingBox;
+    const bb = math.makeBoundingBox(
+      options.boundingBox ?? {
+        x1: 0,
+        y1: 0,
+        w: cy.width(),
+        h: cy.height(),
+      },
+    ) as BoundingBox;
 
-    const getPos = (): { x: number; y: number } => ( {
-      x: bb.x1 + Math.round( Math.random() * bb.w ),
-      y: bb.y1 + Math.round( Math.random() * bb.h )
-    } );
+    const getPos = (): { x: number; y: number } => ({
+      x: bb.x1 + Math.round(Math.random() * bb.w),
+      y: bb.y1 + Math.round(Math.random() * bb.h),
+    });
 
-    eles.nodes().layoutPositions( this, { ...options, eles }, getPos );
+    eles.nodes().layoutPositions(this, { ...options, eles }, getPos);
 
     return this;
   }

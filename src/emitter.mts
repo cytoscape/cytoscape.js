@@ -36,7 +36,11 @@ removing before the callback runs, and a handler returning `false` meaning
 
 /** An event handler.  `this` is the callback context the emitter's options
  * choose — the core, or the phase element during compound bubbling. */
-export type EventHandler = ( this: unknown, event: Event, ...extraParams: unknown[] ) => unknown;
+export type EventHandler = (
+  this: unknown,
+  event: Event,
+  ...extraParams: unknown[]
+) => unknown;
 
 /** A registered listener. */
 export interface Listener<TQualifier = unknown> {
@@ -55,13 +59,24 @@ export interface EmitterOptions<TContext, TQualifier> {
   /** the emitter context — the core */
   context: TContext;
   /** whether two qualifiers denote the same restriction, for `off()` */
-  qualifierCompare( q1: TQualifier | null | undefined, q2: TQualifier | null | undefined ): boolean;
+  qualifierCompare(
+    q1: TQualifier | null | undefined,
+    q2: TQualifier | null | undefined,
+  ): boolean;
   /** whether this listener should fire for this event (the phase rules) */
-  eventMatches( context: TContext, listener: Listener<TQualifier>, event: Event ): boolean;
+  eventMatches(
+    context: TContext,
+    listener: Listener<TQualifier>,
+    event: Event,
+  ): boolean;
   /** fill in fields every event carries (`cy`, a default `target`) */
-  addEventFields( context: TContext, props: EventProps ): void;
+  addEventFields(context: TContext, props: EventProps): void;
   /** what `this` is inside the callback (v3's currentTarget semantics) */
-  callbackContext( context: TContext, listener: Listener<TQualifier>, event: Event ): unknown;
+  callbackContext(
+    context: TContext,
+    listener: Listener<TQualifier>,
+    event: Event,
+  ): unknown;
 }
 
 /** Anything `emit()` accepts: one or more space-separated type names, a
@@ -69,8 +84,8 @@ export interface EmitterOptions<TContext, TQualifier> {
 export type EmitInput = string | EventProps | Event;
 
 /** Split a `'tap drag'` list into names, ignoring empty entries. */
-const typesOf = ( events: string ): string[] => {
-  return events.split( /\s+/ ).filter( s => s.length > 0 );
+const typesOf = (events: string): string[] => {
+  return events.split(/\s+/).filter((s) => s.length > 0);
 };
 
 /**
@@ -89,7 +104,7 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
   /**
    * @param opts — the context and the four matching hooks
    */
-  constructor( opts: EmitterOptions<TContext, TQualifier> ){
+  constructor(opts: EmitterOptions<TContext, TQualifier>) {
     this.opts = opts;
   }
 
@@ -105,12 +120,17 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    * @returns this emitter
    */
   on(
-    events: string, qualifier?: TQualifier | null, callback?: EventHandler, one?: boolean
+    events: string,
+    qualifier?: TQualifier | null,
+    callback?: EventHandler,
+    one?: boolean,
   ): this {
-    if( typeof callback !== 'function' ){ return this; }
+    if (typeof callback !== 'function') {
+      return this;
+    }
 
-    for( const type of typesOf( events ) ){
-      this.listeners.push( { type, callback, qualifier, one } );
+    for (const type of typesOf(events)) {
+      this.listeners.push({ type, callback, qualifier, one });
     }
 
     return this;
@@ -124,8 +144,12 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    * @param callback — the handler
    * @returns this emitter
    */
-  one( events: string, qualifier?: TQualifier | null, callback?: EventHandler ): this {
-    return this.on( events, qualifier, callback, true );
+  one(
+    events: string,
+    qualifier?: TQualifier | null,
+    callback?: EventHandler,
+  ): this {
+    return this.on(events, qualifier, callback, true);
   }
 
   /**
@@ -138,25 +162,38 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    * @param callback — restrict the removal to this handler
    * @returns this emitter
    */
-  off( events: string, qualifier?: TQualifier | null, callback?: EventHandler ): this {
+  off(
+    events: string,
+    qualifier?: TQualifier | null,
+    callback?: EventHandler,
+  ): this {
     // a handler removing listeners mid-emit must not shrink the array the
     // emit loop is walking
-    if( this.emitting !== 0 ){ this.listeners = this.listeners.slice(); }
+    if (this.emitting !== 0) {
+      this.listeners = this.listeners.slice();
+    }
 
     const all = events === '*';
-    const types = all ? [] : typesOf( events );
+    const types = all ? [] : typesOf(events);
 
-    this.listeners = this.listeners.filter( listener => {
-      const typeMatches = all || types.includes( listener.type );
+    this.listeners = this.listeners.filter((listener) => {
+      const typeMatches = all || types.includes(listener.type);
 
-      if( !typeMatches ){ return true; }
-      if( qualifier != null && !this.opts.qualifierCompare( listener.qualifier, qualifier ) ){
+      if (!typeMatches) {
         return true;
       }
-      if( callback != null && listener.callback !== callback ){ return true; }
+      if (
+        qualifier != null &&
+        !this.opts.qualifierCompare(listener.qualifier, qualifier)
+      ) {
+        return true;
+      }
+      if (callback != null && listener.callback !== callback) {
+        return true;
+      }
 
       return false; // matched: drop it
-    } );
+    });
 
     return this;
   }
@@ -167,7 +204,7 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    * @returns this emitter
    */
   removeAllListeners(): this {
-    return this.off( '*' );
+    return this.off('*');
   }
 
   /**
@@ -178,20 +215,23 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    *   event; a non-array is wrapped
    * @returns this emitter
    */
-  emit( events: EmitInput, extraParams?: unknown ): this {
-    const extra = Array.isArray( extraParams ) ? extraParams
-      : extraParams === undefined ? [] : [ extraParams ];
+  emit(events: EmitInput, extraParams?: unknown): this {
+    const extra = Array.isArray(extraParams)
+      ? extraParams
+      : extraParams === undefined
+        ? []
+        : [extraParams];
 
     this.emitting++;
 
     try {
-      if( events instanceof Event ){
-        this.emitOne( events, extra );
-      } else if( typeof events === 'object' && events !== null ){
-        this.emitOne( this.build( events ), extra );
+      if (events instanceof Event) {
+        this.emitOne(events, extra);
+      } else if (typeof events === 'object' && events !== null) {
+        this.emitOne(this.build(events), extra);
       } else {
-        for( const type of typesOf( events ) ){
-          this.emitOne( this.build( { type } ), extra );
+        for (const type of typesOf(events)) {
+          this.emitOne(this.build({ type }), extra);
         }
       }
     } finally {
@@ -202,33 +242,43 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
   }
 
   /** Build an event from props, letting the options fill in `cy`/`target`. */
-  private build( props: EventProps ): Event {
-    this.opts.addEventFields( this.opts.context, props );
+  private build(props: EventProps): Event {
+    this.opts.addEventFields(this.opts.context, props);
 
-    return new Event( props );
+    return new Event(props);
   }
 
   /** Run one event past the listener list as it stood when the emit began. */
-  private emitOne( event: Event, extra: unknown[] ): void {
+  private emitOne(event: Event, extra: unknown[]): void {
     const listeners = this.listeners;
     // the snapshot: a handler registering another listener for the same type
     // does not have it fire for *this* event (v3's semantics, and what keeps
     // an `on` inside a handler from looping)
     const count = listeners.length;
 
-    for( let i = 0; i < count; i++ ){
-      const listener = listeners[ i ];
+    for (let i = 0; i < count; i++) {
+      const listener = listeners[i];
 
-      if( listener.type !== event.type ){ continue; }
-      if( !this.opts.eventMatches( this.opts.context, listener, event ) ){ continue; }
+      if (listener.type !== event.type) {
+        continue;
+      }
+      if (!this.opts.eventMatches(this.opts.context, listener, event)) {
+        continue;
+      }
 
       // `one` removes before the call, so a handler that re-registers works
-      if( listener.one ){ this.listeners = this.listeners.filter( l => l !== listener ); }
+      if (listener.one) {
+        this.listeners = this.listeners.filter((l) => l !== listener);
+      }
 
-      const context = this.opts.callbackContext( this.opts.context, listener, event );
-      const ret = listener.callback.apply( context, [ event, ...extra ] );
+      const context = this.opts.callbackContext(
+        this.opts.context,
+        listener,
+        event,
+      );
+      const ret = listener.callback.apply(context, [event, ...extra]);
 
-      if( ret === false ){
+      if (ret === false) {
         event.stopPropagation();
         event.preventDefault();
       }

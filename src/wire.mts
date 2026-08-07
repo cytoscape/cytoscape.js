@@ -1,8 +1,17 @@
-import { isColumnarElements, isPackedIds, toColumnarElements } from './columnar.mjs';
+import {
+  isColumnarElements,
+  isPackedIds,
+  toColumnarElements,
+} from './columnar.mjs';
 import { isDictColumn } from './store/data-store.mjs';
 import type {
-  ColumnarEdges, ColumnarElements, ColumnarNodes, DataColumn,
-  ElementDefinition, ElementsDefinition, PackedIds
+  ColumnarEdges,
+  ColumnarElements,
+  ColumnarNodes,
+  DataColumn,
+  ElementDefinition,
+  ElementsDefinition,
+  PackedIds,
 } from './public-types.mjs';
 
 /*
@@ -71,11 +80,14 @@ const KIND_JSON = 2;
 
 type Section = Float32Array | Float64Array | Uint32Array | Uint8Array;
 
-const alignTo = ( n: number, width: number ): number => ( n + width - 1 ) & ~( width - 1 );
+const alignTo = (n: number, width: number): number =>
+  (n + width - 1) & ~(width - 1);
 
 const assertLittleEndian = (): void => {
-  if( new Uint8Array( new Uint32Array( [ 1 ] ).buffer )[ 0 ] !== 1 ){
-    throw new Error( 'Serialized elements buffers are little-endian; this platform is big-endian' );
+  if (new Uint8Array(new Uint32Array([1]).buffer)[0] !== 1) {
+    throw new Error(
+      'Serialized elements buffers are little-endian; this platform is big-endian',
+    );
   }
 };
 
@@ -88,8 +100,10 @@ const assertLittleEndian = (): void => {
  *   one, so an arbitrary ArrayBuffer passes here and then throws in
  *   `deserializeElements` on its header
  */
-export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBufferView => {
-  return x instanceof ArrayBuffer || ArrayBuffer.isView( x );
+export const isSerializedElements = (
+  x: unknown,
+): x is ArrayBuffer | ArrayBufferView => {
+  return x instanceof ArrayBuffer || ArrayBuffer.isView(x);
 };
 
 /**
@@ -107,11 +121,13 @@ export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBuff
  *   names an edge endpoint that is not a node in the same payload
  */
 export const serializeElements = (
-  elements: ElementsDefinition | ElementDefinition | ColumnarElements
+  elements: ElementsDefinition | ElementDefinition | ColumnarElements,
 ): ArrayBuffer => {
   assertLittleEndian();
 
-  const payload = isColumnarElements( elements ) ? elements : toColumnarElements( elements );
+  const payload = isColumnarElements(elements)
+    ? elements
+    : toColumnarElements(elements);
   const nodes = payload.nodes;
   const edges = payload.edges;
   const nodeCount = nodes?.count ?? 0;
@@ -119,96 +135,124 @@ export const serializeElements = (
 
   let flags = 0;
   const sections: Section[] = [];
-  const push = ( bit: number, ...views: Section[] ): void => {
+  const push = (bit: number, ...views: Section[]): void => {
     flags |= bit;
-    sections.push( ...views );
+    sections.push(...views);
   };
 
-  if( nodes?.positions != null && nodeCount > 0 ){
-    if( nodes.positions.length < nodeCount * 2 ){
-      throw new Error( `Columnar nodes must provide ${nodeCount * 2} position values (x,y per node)` );
+  if (nodes?.positions != null && nodeCount > 0) {
+    if (nodes.positions.length < nodeCount * 2) {
+      throw new Error(
+        `Columnar nodes must provide ${nodeCount * 2} position values (x,y per node)`,
+      );
     }
 
-    push( F_NODE_POSITIONS, nodes.positions.subarray( 0, nodeCount * 2 ) );
+    push(F_NODE_POSITIONS, nodes.positions.subarray(0, nodeCount * 2));
   }
 
-  if( nodes?.parent != null && nodeCount > 0 ){
-    if( nodes.parent.length < nodeCount ){
-      throw new Error( `Columnar node parent column must hold ${nodeCount} entries` );
+  if (nodes?.parent != null && nodeCount > 0) {
+    if (nodes.parent.length < nodeCount) {
+      throw new Error(
+        `Columnar node parent column must hold ${nodeCount} entries`,
+      );
     }
 
-    push( F_NODE_PARENT, nodes.parent.subarray( 0, nodeCount ) );
+    push(F_NODE_PARENT, nodes.parent.subarray(0, nodeCount));
   }
 
-  if( edgeCount > 0 ){
-    if( edges!.sources == null || edges!.targets == null
-        || edges!.sources.length < edgeCount || edges!.targets.length < edgeCount ){
-      throw new Error( `Columnar edges must provide ${edgeCount} sources and targets` );
+  if (edgeCount > 0) {
+    if (
+      edges!.sources == null ||
+      edges!.targets == null ||
+      edges!.sources.length < edgeCount ||
+      edges!.targets.length < edgeCount
+    ) {
+      throw new Error(
+        `Columnar edges must provide ${edgeCount} sources and targets`,
+      );
     }
 
-    sections.push( edges!.sources.subarray( 0, edgeCount ), edges!.targets.subarray( 0, edgeCount ) );
+    sections.push(
+      edges!.sources.subarray(0, edgeCount),
+      edges!.targets.subarray(0, edgeCount),
+    );
   }
 
-  const nodeIds = encodeIds( nodes?.ids, nodeCount );
-  const edgeIds = encodeIds( edges?.ids, edgeCount );
+  const nodeIds = encodeIds(nodes?.ids, nodeCount);
+  const edgeIds = encodeIds(edges?.ids, edgeCount);
 
-  if( nodeIds != null ){ push( F_NODE_IDS, nodeIds.offsets, nodeIds.blob ); }
-  if( edgeIds != null ){ push( F_EDGE_IDS, edgeIds.offsets, edgeIds.blob ); }
+  if (nodeIds != null) {
+    push(F_NODE_IDS, nodeIds.offsets, nodeIds.blob);
+  }
+  if (edgeIds != null) {
+    push(F_EDGE_IDS, edgeIds.offsets, edgeIds.blob);
+  }
 
-  const u8 = ( bit: number, column: Uint8Array | undefined, count: number, what: string ): void => {
-    if( column == null || count === 0 ){ return; }
-
-    if( column.length < count ){
-      throw new Error( `Columnar ${what} column must have ${count} entries` );
+  const u8 = (
+    bit: number,
+    column: Uint8Array | undefined,
+    count: number,
+    what: string,
+  ): void => {
+    if (column == null || count === 0) {
+      return;
     }
 
-    push( bit, column.subarray( 0, count ) );
+    if (column.length < count) {
+      throw new Error(`Columnar ${what} column must have ${count} entries`);
+    }
+
+    push(bit, column.subarray(0, count));
   };
 
-  u8( F_NODE_SELECTED, nodes?.selected, nodeCount, 'node selected' );
-  u8( F_NODE_SELECTABLE, nodes?.selectable, nodeCount, 'node selectable' );
-  u8( F_EDGE_SELECTED, edges?.selected, edgeCount, 'edge selected' );
-  u8( F_EDGE_SELECTABLE, edges?.selectable, edgeCount, 'edge selectable' );
+  u8(F_NODE_SELECTED, nodes?.selected, nodeCount, 'node selected');
+  u8(F_NODE_SELECTABLE, nodes?.selectable, nodeCount, 'node selectable');
+  u8(F_EDGE_SELECTED, edges?.selected, edgeCount, 'edge selected');
+  u8(F_EDGE_SELECTABLE, edges?.selectable, edgeCount, 'edge selectable');
 
-  const nodeData = encodeDataBlock( nodes?.data, nodeCount );
-  const edgeData = encodeDataBlock( edges?.data, edgeCount );
+  const nodeData = encodeDataBlock(nodes?.data, nodeCount);
+  const edgeData = encodeDataBlock(edges?.data, edgeCount);
 
-  if( nodeData != null ){ push( F_NODE_DATA, ...nodeData ); }
-  if( edgeData != null ){ push( F_EDGE_DATA, ...edgeData ); }
+  if (nodeData != null) {
+    push(F_NODE_DATA, ...nodeData);
+  }
+  if (edgeData != null) {
+    push(F_EDGE_DATA, ...edgeData);
+  }
 
   // graph-level data (round 39.2): one JSON string, written last so the
   // whole element payload keeps the byte layout v2/v3 readers expect
-  const graphData = isColumnarElements( elements ) ? elements.data : undefined;
+  const graphData = isColumnarElements(elements) ? elements.data : undefined;
 
-  if( graphData != null && Object.keys( graphData ).length > 0 ){
-    const json = new TextEncoder().encode( JSON.stringify( graphData ) );
+  if (graphData != null && Object.keys(graphData).length > 0) {
+    const json = new TextEncoder().encode(JSON.stringify(graphData));
 
-    push( F_GRAPH_DATA, new Uint32Array( [ json.length ] ), json );
+    push(F_GRAPH_DATA, new Uint32Array([json.length]), json);
   }
 
   let size = HEADER_BYTES;
 
-  for( const s of sections ){
-    size = alignTo( size, s.BYTES_PER_ELEMENT );
+  for (const s of sections) {
+    size = alignTo(size, s.BYTES_PER_ELEMENT);
     size += s.byteLength;
   }
 
-  const buffer = new ArrayBuffer( size );
-  const dv = new DataView( buffer );
-  const bytes = new Uint8Array( buffer );
+  const buffer = new ArrayBuffer(size);
+  const dv = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
 
-  dv.setUint32( 0, MAGIC, true );
-  dv.setUint32( 4, VERSION, true );
-  dv.setUint32( 8, nodeCount, true );
-  dv.setUint32( 12, edgeCount, true );
-  dv.setUint32( 16, flags, true );
-  dv.setUint32( 20, size, true );
+  dv.setUint32(0, MAGIC, true);
+  dv.setUint32(4, VERSION, true);
+  dv.setUint32(8, nodeCount, true);
+  dv.setUint32(12, edgeCount, true);
+  dv.setUint32(16, flags, true);
+  dv.setUint32(20, size, true);
 
   let off = HEADER_BYTES;
 
-  for( const s of sections ){
-    off = alignTo( off, s.BYTES_PER_ELEMENT );
-    bytes.set( new Uint8Array( s.buffer, s.byteOffset, s.byteLength ), off );
+  for (const s of sections) {
+    off = alignTo(off, s.BYTES_PER_ELEMENT);
+    bytes.set(new Uint8Array(s.buffer, s.byteOffset, s.byteLength), off);
     off += s.byteLength;
   }
 
@@ -230,14 +274,16 @@ export const serializeElements = (
  * @throws if the platform is big-endian, or the buffer is too short,
  *   truncated or of an unsupported format version
  */
-export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): ColumnarElements => {
+export const deserializeElements = (
+  input: ArrayBuffer | ArrayBufferView,
+): ColumnarElements => {
   assertLittleEndian();
 
   let buffer: ArrayBuffer;
   let base: number;
   let byteLength: number;
 
-  if( ArrayBuffer.isView( input ) ){
+  if (ArrayBuffer.isView(input)) {
     buffer = input.buffer as ArrayBuffer;
     base = input.byteOffset;
     byteLength = input.byteLength;
@@ -247,60 +293,67 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
     byteLength = input.byteLength;
   }
 
-  if( base % 8 !== 0 ){
+  if (base % 8 !== 0) {
     // typed-array views need element-aligned byte offsets (f64 columns need 8)
-    const copy = new Uint8Array( byteLength );
+    const copy = new Uint8Array(byteLength);
 
-    copy.set( new Uint8Array( buffer, base, byteLength ) );
+    copy.set(new Uint8Array(buffer, base, byteLength));
     buffer = copy.buffer;
     base = 0;
   }
 
-  const dv = new DataView( buffer, base, byteLength );
+  const dv = new DataView(buffer, base, byteLength);
 
-  if( byteLength < HEADER_BYTES || dv.getUint32( 0, true ) !== MAGIC ){
-    throw new Error( 'Not a serialized elements buffer (see cytoscape.serializeElements)' );
+  if (byteLength < HEADER_BYTES || dv.getUint32(0, true) !== MAGIC) {
+    throw new Error(
+      'Not a serialized elements buffer (see cytoscape.serializeElements)',
+    );
   }
 
-  const version = dv.getUint32( 4, true );
+  const version = dv.getUint32(4, true);
 
-  if( version < MIN_VERSION || version > VERSION ){
+  if (version < MIN_VERSION || version > VERSION) {
     throw new Error(
       `Unsupported serialized elements version ${version} ` +
-      `(this build reads versions ${MIN_VERSION}-${VERSION})` );
+        `(this build reads versions ${MIN_VERSION}-${VERSION})`,
+    );
   }
 
-  const nodeCount = dv.getUint32( 8, true );
-  const edgeCount = dv.getUint32( 12, true );
-  const flags = dv.getUint32( 16, true );
-  const total = dv.getUint32( 20, true );
+  const nodeCount = dv.getUint32(8, true);
+  const edgeCount = dv.getUint32(12, true);
+  const flags = dv.getUint32(16, true);
+  const total = dv.getUint32(20, true);
 
-  if( byteLength < total ){
-    throw new Error( `Serialized elements buffer is truncated: expected ${total} bytes, got ${byteLength}` );
+  if (byteLength < total) {
+    throw new Error(
+      `Serialized elements buffer is truncated: expected ${total} bytes, got ${byteLength}`,
+    );
   }
 
   let off = HEADER_BYTES;
 
-  const readU8 = ( len: number ): Uint8Array => {
-    const view = new Uint8Array( buffer, base + off, len );
+  const readU8 = (len: number): Uint8Array => {
+    const view = new Uint8Array(buffer, base + off, len);
 
     off += len;
 
     return view;
   };
   const read4 = <T extends Float32Array | Float64Array | Uint32Array>(
-    Ctor: ( new ( b: ArrayBuffer, o: number, l: number ) => T ) & { BYTES_PER_ELEMENT: number },
-    len: number
+    Ctor: (new (b: ArrayBuffer, o: number, l: number) => T) & {
+      BYTES_PER_ELEMENT: number;
+    },
+    len: number,
   ): T => {
-    off = alignTo( off, Ctor.BYTES_PER_ELEMENT );
+    off = alignTo(off, Ctor.BYTES_PER_ELEMENT);
 
-    const view = new Ctor( buffer, base + off, len );
+    const view = new Ctor(buffer, base + off, len);
 
     off += len * Ctor.BYTES_PER_ELEMENT;
 
     return view;
   };
-  const readScalar = (): number => read4( Uint32Array, 1 )[ 0 ];
+  const readScalar = (): number => read4(Uint32Array, 1)[0];
 
   /**
    * Round 48.3: bound a count read *out of the payload* against the bytes
@@ -320,13 +373,18 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
    * that cannot be describing this buffer. That check is O(1) per count and
    * turns "allocate two billion and find out" into an immediate error.
    */
-  const bounded = ( count: number, bytesPerItem: number, what: string ): number => {
+  const bounded = (
+    count: number,
+    bytesPerItem: number,
+    what: string,
+  ): number => {
     const remaining = byteLength - off;
 
-    if( count * bytesPerItem > remaining ){
+    if (count * bytesPerItem > remaining) {
       throw new Error(
         `Serialized elements buffer declares ${count} ${what} but has only ` +
-        `${remaining} bytes left — the payload is corrupt` );
+          `${remaining} bytes left — the payload is corrupt`,
+      );
     }
 
     return count;
@@ -336,95 +394,132 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
   let sources: Uint32Array | null = null;
   let targets: Uint32Array | null = null;
 
-  if( flags & F_NODE_POSITIONS ){ nodes.positions = read4( Float32Array, nodeCount * 2 ); }
-  if( flags & F_NODE_PARENT ){ nodes.parent = read4( Uint32Array, nodeCount ); }
+  if (flags & F_NODE_POSITIONS) {
+    nodes.positions = read4(Float32Array, nodeCount * 2);
+  }
+  if (flags & F_NODE_PARENT) {
+    nodes.parent = read4(Uint32Array, nodeCount);
+  }
 
-  if( edgeCount > 0 ){
-    sources = read4( Uint32Array, edgeCount );
-    targets = read4( Uint32Array, edgeCount );
+  if (edgeCount > 0) {
+    sources = read4(Uint32Array, edgeCount);
+    targets = read4(Uint32Array, edgeCount);
   }
 
   // ids stay packed (blob + offsets): the store ingests the bytes
   // directly and decodes id strings lazily, per element touched
-  const readPacked = ( count: number ): PackedIds => {
-    const offsets = read4( Uint32Array, count + 1 );
+  const readPacked = (count: number): PackedIds => {
+    const offsets = read4(Uint32Array, count + 1);
 
-    return { offsets, blob: readU8( offsets[ count ] ) };
+    return { offsets, blob: readU8(offsets[count]) };
   };
 
-  if( flags & F_NODE_IDS ){ nodes.ids = readPacked( nodeCount ); }
+  if (flags & F_NODE_IDS) {
+    nodes.ids = readPacked(nodeCount);
+  }
 
-  const edgeIds = ( flags & F_EDGE_IDS ) ? readPacked( edgeCount ) : undefined;
+  const edgeIds = flags & F_EDGE_IDS ? readPacked(edgeCount) : undefined;
 
-  if( flags & F_NODE_SELECTED ){ nodes.selected = readU8( nodeCount ); }
-  if( flags & F_NODE_SELECTABLE ){ nodes.selectable = readU8( nodeCount ); }
+  if (flags & F_NODE_SELECTED) {
+    nodes.selected = readU8(nodeCount);
+  }
+  if (flags & F_NODE_SELECTABLE) {
+    nodes.selectable = readU8(nodeCount);
+  }
 
-  const edgeSelected = ( flags & F_EDGE_SELECTED ) ? readU8( edgeCount ) : undefined;
-  const edgeSelectable = ( flags & F_EDGE_SELECTABLE ) ? readU8( edgeCount ) : undefined;
+  const edgeSelected = flags & F_EDGE_SELECTED ? readU8(edgeCount) : undefined;
+  const edgeSelectable =
+    flags & F_EDGE_SELECTABLE ? readU8(edgeCount) : undefined;
 
-  const readDataBlock = ( count: number ): Record<string, DataColumn> => {
+  const readDataBlock = (count: number): Record<string, DataColumn> => {
     // a key costs at least its u32 name length and its u32 kind
-    const keyCount = bounded( readScalar(), 8, 'data keys' );
+    const keyCount = bounded(readScalar(), 8, 'data keys');
     const data: Record<string, DataColumn> = {};
     const decoder = new TextDecoder();
 
-    for( let k = 0; k < keyCount; k++ ){
-      const name = decoder.decode( readU8( bounded( readScalar(), 1, 'key name bytes' ) ) );
+    for (let k = 0; k < keyCount; k++) {
+      const name = decoder.decode(
+        readU8(bounded(readScalar(), 1, 'key name bytes')),
+      );
       const kind = readScalar();
 
-      if( kind === KIND_NUMBER ){
-        data[ name ] = read4( Float64Array, count ); // zero-copy; NaN = absent
-      } else if( kind === KIND_DICT ){
+      if (kind === KIND_NUMBER) {
+        data[name] = read4(Float64Array, count); // zero-copy; NaN = absent
+      } else if (kind === KIND_DICT) {
         // a dictionary entry costs at least its u32 offset
-        const dictCount = bounded( readScalar(), 4, `entries in dictionary '${name}'` );
-        const dictOffsets = read4( Uint32Array, dictCount + 1 );
-        const dictBlob = readU8( dictOffsets[ dictCount ] );
-        const dict = new Array<string>( dictCount );
+        const dictCount = bounded(
+          readScalar(),
+          4,
+          `entries in dictionary '${name}'`,
+        );
+        const dictOffsets = read4(Uint32Array, dictCount + 1);
+        const dictBlob = readU8(dictOffsets[dictCount]);
+        const dict = new Array<string>(dictCount);
 
-        for( let i = 0; i < dictCount; i++ ){
-          dict[ i ] = decoder.decode( dictBlob.subarray( dictOffsets[ i ], dictOffsets[ i + 1 ] ) );
+        for (let i = 0; i < dictCount; i++) {
+          dict[i] = decoder.decode(
+            dictBlob.subarray(dictOffsets[i], dictOffsets[i + 1]),
+          );
         }
 
-        data[ name ] = { dict, indices: read4( Uint32Array, count ) }; // indices zero-copy
-      } else if( kind === KIND_JSON ){
-        const offsets = read4( Uint32Array, count + 1 );
-        const blob = readU8( offsets[ count ] );
-        const values = new Array<unknown>( count );
+        data[name] = { dict, indices: read4(Uint32Array, count) }; // indices zero-copy
+      } else if (kind === KIND_JSON) {
+        const offsets = read4(Uint32Array, count + 1);
+        const blob = readU8(offsets[count]);
+        const values = new Array<unknown>(count);
 
-        for( let i = 0; i < count; i++ ){
-          if( offsets[ i + 1 ] > offsets[ i ] ){
-            values[ i ] = JSON.parse( decoder.decode( blob.subarray( offsets[ i ], offsets[ i + 1 ] ) ) );
+        for (let i = 0; i < count; i++) {
+          if (offsets[i + 1] > offsets[i]) {
+            values[i] = JSON.parse(
+              decoder.decode(blob.subarray(offsets[i], offsets[i + 1])),
+            );
           }
         }
 
-        data[ name ] = values;
+        data[name] = values;
       } else {
-        throw new Error( `Unknown serialized data column kind ${kind}` );
+        throw new Error(`Unknown serialized data column kind ${kind}`);
       }
     }
 
     return data;
   };
 
-  if( flags & F_NODE_DATA ){ nodes.data = readDataBlock( nodeCount ); }
+  if (flags & F_NODE_DATA) {
+    nodes.data = readDataBlock(nodeCount);
+  }
 
-  const edgeData = ( flags & F_EDGE_DATA ) ? readDataBlock( edgeCount ) : undefined;
+  const edgeData = flags & F_EDGE_DATA ? readDataBlock(edgeCount) : undefined;
 
   const out: ColumnarElements = { columnar: true, nodes };
 
   // graph-level data (round 39.2).  A pre-v4 buffer simply lacks the
   // flag, so nothing here reads the version number.
-  if( flags & F_GRAPH_DATA ){
-    out.data = JSON.parse( new TextDecoder().decode( readU8( readScalar() ) ) ) as Record<string, unknown>;
+  if (flags & F_GRAPH_DATA) {
+    out.data = JSON.parse(
+      new TextDecoder().decode(readU8(readScalar())),
+    ) as Record<string, unknown>;
   }
 
-  if( edgeCount > 0 ){
-    const edges: ColumnarEdges = { count: edgeCount, sources: sources!, targets: targets! };
+  if (edgeCount > 0) {
+    const edges: ColumnarEdges = {
+      count: edgeCount,
+      sources: sources!,
+      targets: targets!,
+    };
 
-    if( edgeIds != null ){ edges.ids = edgeIds; }
-    if( edgeSelected != null ){ edges.selected = edgeSelected; }
-    if( edgeSelectable != null ){ edges.selectable = edgeSelectable; }
-    if( edgeData != null ){ edges.data = edgeData; }
+    if (edgeIds != null) {
+      edges.ids = edgeIds;
+    }
+    if (edgeSelected != null) {
+      edges.selected = edgeSelected;
+    }
+    if (edgeSelectable != null) {
+      edges.selectable = edgeSelectable;
+    }
+    if (edgeData != null) {
+      edges.data = edgeData;
+    }
 
     out.edges = edges;
   }
@@ -434,44 +529,49 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
 
 /** UTF-8 blob + prefix byte offsets; holes (and empty strings) get zero length. */
 const encodeIds = (
-  ids: ( string | undefined )[] | PackedIds | undefined,
-  count: number
+  ids: (string | undefined)[] | PackedIds | undefined,
+  count: number,
 ): { offsets: Uint32Array; blob: Uint8Array } | null => {
-  if( ids == null || count === 0 ){ return null; }
+  if (ids == null || count === 0) {
+    return null;
+  }
 
-  if( isPackedIds( ids ) ){ // already the wire representation
-    if( ids.offsets.length < count + 1 ){
-      throw new Error( `Packed ids must have ${count + 1} offsets` );
+  if (isPackedIds(ids)) {
+    // already the wire representation
+    if (ids.offsets.length < count + 1) {
+      throw new Error(`Packed ids must have ${count + 1} offsets`);
     }
 
-    const offsets = ids.offsets.subarray( 0, count + 1 );
+    const offsets = ids.offsets.subarray(0, count + 1);
 
-    return { offsets, blob: ids.blob.subarray( 0, offsets[ count ] ) };
+    return { offsets, blob: ids.blob.subarray(0, offsets[count]) };
   }
 
   const encoder = new TextEncoder();
-  const offsets = new Uint32Array( count + 1 );
-  const joined = ids.join( '' ); // holes join as ''
-  const blob = encoder.encode( joined );
+  const offsets = new Uint32Array(count + 1);
+  const joined = ids.join(''); // holes join as ''
+  const blob = encoder.encode(joined);
 
-  if( blob.length === joined.length ){
+  if (blob.length === joined.length) {
     // ASCII: per-id byte length === string length
     let end = 0;
 
-    for( let i = 0; i < count; i++ ){
-      end += ids[ i ]?.length ?? 0;
-      offsets[ i + 1 ] = end;
+    for (let i = 0; i < count; i++) {
+      end += ids[i]?.length ?? 0;
+      offsets[i + 1] = end;
     }
   } else {
     // non-ASCII: measure each id's UTF-8 length for exact byte offsets
     let end = 0;
 
-    for( let i = 0; i < count; i++ ){
-      const id = ids[ i ];
+    for (let i = 0; i < count; i++) {
+      const id = ids[i];
 
-      if( id != null && id.length > 0 ){ end += encoder.encode( id ).length; }
+      if (id != null && id.length > 0) {
+        end += encoder.encode(id).length;
+      }
 
-      offsets[ i + 1 ] = end;
+      offsets[i + 1] = end;
     }
   }
 
@@ -481,43 +581,51 @@ const encodeIds = (
 /** One data() block: keyCount, then (name, kind, column) per key. */
 const encodeDataBlock = (
   data: Record<string, DataColumn> | undefined,
-  count: number
+  count: number,
 ): Section[] | null => {
-  if( data == null || count === 0 ){ return null; }
+  if (data == null || count === 0) {
+    return null;
+  }
 
-  const keys = Object.keys( data );
+  const keys = Object.keys(data);
 
-  if( keys.length === 0 ){ return null; }
+  if (keys.length === 0) {
+    return null;
+  }
 
   const encoder = new TextEncoder();
-  const scalar = ( n: number ): Uint32Array => Uint32Array.of( n );
-  const sections: Section[] = [ scalar( keys.length ) ];
+  const scalar = (n: number): Uint32Array => Uint32Array.of(n);
+  const sections: Section[] = [scalar(keys.length)];
 
-  for( const key of keys ){
-    const name = encoder.encode( key );
-    const column = data[ key ];
+  for (const key of keys) {
+    const name = encoder.encode(key);
+    const column = data[key];
 
-    sections.push( scalar( name.length ), name );
+    sections.push(scalar(name.length), name);
 
-    if( isDictColumn( column ) ){
-      if( column.indices.length < count ){
-        throw new Error( `Columnar data column '${key}' must have ${count} entries` );
+    if (isDictColumn(column)) {
+      if (column.indices.length < count) {
+        throw new Error(
+          `Columnar data column '${key}' must have ${count} entries`,
+        );
       }
 
       sections.push(
-        scalar( KIND_DICT ),
-        ...dictSections( column.dict, encoder ),
-        column.indices.subarray( 0, count )
+        scalar(KIND_DICT),
+        ...dictSections(column.dict, encoder),
+        column.indices.subarray(0, count),
       );
       continue;
     }
 
-    if( column instanceof Float64Array ){
-      if( column.length < count ){
-        throw new Error( `Columnar data column '${key}' must have ${count} entries` );
+    if (column instanceof Float64Array) {
+      if (column.length < count) {
+        throw new Error(
+          `Columnar data column '${key}' must have ${count} entries`,
+        );
       }
 
-      sections.push( scalar( KIND_NUMBER ), column.subarray( 0, count ) );
+      sections.push(scalar(KIND_NUMBER), column.subarray(0, count));
       continue;
     }
 
@@ -525,88 +633,101 @@ const encodeDataBlock = (
     let allNumber = true;
     let allString = true;
 
-    for( let i = 0; i < count; i++ ){
-      const v = column[ i ];
+    for (let i = 0; i < count; i++) {
+      const v = column[i];
 
-      if( v == null || ( typeof v === 'number' && Number.isNaN( v ) ) ){ continue; }
-      if( typeof v !== 'number' ){ allNumber = false; }
-      if( typeof v !== 'string' ){ allString = false; }
+      if (v == null || (typeof v === 'number' && Number.isNaN(v))) {
+        continue;
+      }
+      if (typeof v !== 'number') {
+        allNumber = false;
+      }
+      if (typeof v !== 'string') {
+        allString = false;
+      }
     }
 
-    if( allNumber ){
-      const values = new Float64Array( count ).fill( NaN ); // NaN = absent
+    if (allNumber) {
+      const values = new Float64Array(count).fill(NaN); // NaN = absent
 
-      for( let i = 0; i < count; i++ ){
-        const v = column[ i ];
+      for (let i = 0; i < count; i++) {
+        const v = column[i];
 
-        if( typeof v === 'number' && !Number.isNaN( v ) ){ values[ i ] = v; }
+        if (typeof v === 'number' && !Number.isNaN(v)) {
+          values[i] = v;
+        }
       }
 
-      sections.push( scalar( KIND_NUMBER ), values );
-    } else if( allString ){
+      sections.push(scalar(KIND_NUMBER), values);
+    } else if (allString) {
       const dict: string[] = [];
       const index = new Map<string, number>();
-      const indices = new Uint32Array( count );
+      const indices = new Uint32Array(count);
 
-      for( let i = 0; i < count; i++ ){
-        const v = column[ i ];
+      for (let i = 0; i < count; i++) {
+        const v = column[i];
 
-        if( v == null ){ continue; }
-
-        let at = index.get( v as string );
-
-        if( at == null ){
-          dict.push( v as string );
-          at = dict.length;
-          index.set( v as string, at );
+        if (v == null) {
+          continue;
         }
 
-        indices[ i ] = at;
+        let at = index.get(v as string);
+
+        if (at == null) {
+          dict.push(v as string);
+          at = dict.length;
+          index.set(v as string, at);
+        }
+
+        indices[i] = at;
       }
 
-      sections.push( scalar( KIND_DICT ), ...dictSections( dict, encoder ), indices );
+      sections.push(scalar(KIND_DICT), ...dictSections(dict, encoder), indices);
     } else {
       // JSON fallback for booleans/objects/mixed; zero length = absent
-      const offsets = new Uint32Array( count + 1 );
-      const parts: ( Uint8Array | null )[] = new Array( count );
+      const offsets = new Uint32Array(count + 1);
+      const parts: (Uint8Array | null)[] = new Array(count);
       let total = 0;
 
-      for( let i = 0; i < count; i++ ){
-        const v = column[ i ];
-        const json = v === undefined ? undefined : JSON.stringify( v );
+      for (let i = 0; i < count; i++) {
+        const v = column[i];
+        const json = v === undefined ? undefined : JSON.stringify(v);
 
-        parts[ i ] = json === undefined ? null : encoder.encode( json );
-        total += parts[ i ]?.length ?? 0;
-        offsets[ i + 1 ] = total;
+        parts[i] = json === undefined ? null : encoder.encode(json);
+        total += parts[i]?.length ?? 0;
+        offsets[i + 1] = total;
       }
 
-      const blob = new Uint8Array( total );
+      const blob = new Uint8Array(total);
 
-      for( let i = 0; i < count; i++ ){
-        if( parts[ i ] != null ){ blob.set( parts[ i ]!, offsets[ i ] ); }
+      for (let i = 0; i < count; i++) {
+        if (parts[i] != null) {
+          blob.set(parts[i]!, offsets[i]);
+        }
       }
 
-      sections.push( scalar( KIND_JSON ), offsets, blob );
+      sections.push(scalar(KIND_JSON), offsets, blob);
     }
   }
 
   return sections;
 };
 
-const dictSections = ( dict: string[], encoder: TextEncoder ): Section[] => {
-  const offsets = new Uint32Array( dict.length + 1 );
-  const parts = dict.map( v => encoder.encode( v ) );
+const dictSections = (dict: string[], encoder: TextEncoder): Section[] => {
+  const offsets = new Uint32Array(dict.length + 1);
+  const parts = dict.map((v) => encoder.encode(v));
   let total = 0;
 
-  for( let i = 0; i < parts.length; i++ ){
-    total += parts[ i ].length;
-    offsets[ i + 1 ] = total;
+  for (let i = 0; i < parts.length; i++) {
+    total += parts[i].length;
+    offsets[i + 1] = total;
   }
 
-  const blob = new Uint8Array( total );
+  const blob = new Uint8Array(total);
 
-  for( let i = 0; i < parts.length; i++ ){ blob.set( parts[ i ], offsets[ i ] ); }
+  for (let i = 0; i < parts.length; i++) {
+    blob.set(parts[i], offsets[i]);
+  }
 
-  return [ Uint32Array.of( dict.length ), offsets, blob ];
+  return [Uint32Array.of(dict.length), offsets, blob];
 };
-

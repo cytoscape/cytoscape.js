@@ -10,12 +10,13 @@
 // wired: a seeded CPU run is bit-reproducible (round 18), while an animated
 // run on a flat rendered graph hands the integrator to the GPU.
 
-(function(){
-
-  window.onCy(cy => {
+(function () {
+  window.onCy((cy) => {
     let start = 0;
 
-    cy.on('layoutstart', () => { start = performance.now(); });
+    cy.on('layoutstart', () => {
+      start = performance.now();
+    });
     cy.on('layoutstop', () => {
       const ms = performance.now() - start;
 
@@ -26,13 +27,17 @@
   $('#layout-button').addEventListener('click', () => {
     const cy = window.cy;
 
-    if(cy == null) { return; }
+    if (cy == null) {
+      return;
+    }
 
     const name = $('#layout-select').value;
 
-    if(name === '') { return; }
+    if (name === '') {
+      return;
+    }
 
-    if(name === 'spiral') {
+    if (name === 'spiral') {
       // the round-17 extension contract: a plain class, no registry
       cy.layout({ impl: window.SpiralLayout }).run();
 
@@ -41,15 +46,16 @@
 
     const options = { name };
 
-    if(name === 'force') {
+    if (name === 'force') {
       options.animate = $('#layout-animate-check').checked;
       options.seed = parseInt($('#seed-input').value || '1', 10);
     }
 
     console.time('layout ' + name);
-    cy.layout(options).run().promise()
+    cy.layout(options)
+      .run()
+      .promise()
       .then(() => console.timeEnd('layout ' + name))
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   });
-
 })();

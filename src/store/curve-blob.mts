@@ -43,7 +43,7 @@ export class CurveBlob {
   private dirtyStart: number;
   private dirtyEnd: number;
   private resized: boolean;
-  private onRelocate: ( slot: number, offset: number ) => void;
+  private onRelocate: (slot: number, offset: number) => void;
 
   /**
    * @param onRelocate — called for every record a compaction moves, so
@@ -51,11 +51,11 @@ export class CurveBlob {
    *   is otherwise self-contained, and this is the only way the header
    *   and the record can be kept in agreement
    */
-  constructor( onRelocate: ( slot: number, offset: number ) => void ){
-    this.pool = new Float32Array( 0 );
+  constructor(onRelocate: (slot: number, offset: number) => void) {
+    this.pool = new Float32Array(0);
     this.used = 0;
-    this.offsets = new Int32Array( 0 );
-    this.lengths = new Int32Array( 0 );
+    this.offsets = new Int32Array(0);
+    this.lengths = new Int32Array(0);
     this.liveFloats = 0;
     this.wasteFloats = 0;
     this.dirtyStart = -1;
@@ -80,8 +80,8 @@ export class CurveBlob {
   }
 
   /** the record offset for a slot, or -1 */
-  offsetOf( slot: number ): number {
-    return slot < this.offsets.length ? this.offsets[ slot ] : -1;
+  offsetOf(slot: number): number {
+    return slot < this.offsets.length ? this.offsets[slot] : -1;
   }
 
   /**
@@ -89,54 +89,62 @@ export class CurveBlob {
    * free the old range and append.  Returns the record's offset (which
    * the caller stores in the params-column header).
    */
-  write( slot: number, values: ArrayLike<number> ): number {
-    this.ensureSlot( slot );
+  write(slot: number, values: ArrayLike<number>): number {
+    this.ensureSlot(slot);
 
     const len = values.length;
-    let off = this.offsets[ slot ];
+    let off = this.offsets[slot];
 
-    if( off >= 0 && this.lengths[ slot ] === len ){
+    if (off >= 0 && this.lengths[slot] === len) {
       // in-place rewrite
-      for( let i = 0; i < len; i++ ){ this.pool[ off + i ] = values[ i ]; }
+      for (let i = 0; i < len; i++) {
+        this.pool[off + i] = values[i];
+      }
 
-      this.mark( off, off + len );
+      this.mark(off, off + len);
 
       return off;
     }
 
-    if( off >= 0 ){ this.freeRange( slot ); }
+    if (off >= 0) {
+      this.freeRange(slot);
+    }
 
     off = this.used;
-    this.ensureCapacity( off + len );
+    this.ensureCapacity(off + len);
 
-    for( let i = 0; i < len; i++ ){ this.pool[ off + i ] = values[ i ]; }
+    for (let i = 0; i < len; i++) {
+      this.pool[off + i] = values[i];
+    }
 
     this.used = off + len;
-    this.offsets[ slot ] = off;
-    this.lengths[ slot ] = len;
+    this.offsets[slot] = off;
+    this.lengths[slot] = len;
     this.liveFloats += len;
-    this.mark( off, off + len );
+    this.mark(off, off + len);
     this.maybeCompact();
 
-    return this.offsets[ slot ];
+    return this.offsets[slot];
   }
 
   /** Slot compaction (19.2): permute the slot-indexed offset/length
    * tables through the monotone remap.  Pool bytes and waste metering
    * are offset-space and untouched; record headers riding element
    * columns moved with their table, so both sides stay aligned. */
-  remapSlots( remap: Uint32Array ): void {
-    const n = Math.min( remap.length, this.offsets.length );
+  remapSlots(remap: Uint32Array): void {
+    const n = Math.min(remap.length, this.offsets.length);
 
-    for( let s = 0; s < n; s++ ){
-      const d = remap[ s ];
+    for (let s = 0; s < n; s++) {
+      const d = remap[s];
 
-      if( d === NO_SLOT || d === s ){ continue; }
+      if (d === NO_SLOT || d === s) {
+        continue;
+      }
 
-      this.offsets[ d ] = this.offsets[ s ];
-      this.lengths[ d ] = this.lengths[ s ];
-      this.offsets[ s ] = -1;
-      this.lengths[ s ] = 0;
+      this.offsets[d] = this.offsets[s];
+      this.lengths[d] = this.lengths[s];
+      this.offsets[s] = -1;
+      this.lengths[s] = 0;
     }
   }
 
@@ -148,21 +156,25 @@ export class CurveBlob {
    *
    * @param slot — the edge slot whose record is released
    */
-  free( slot: number ): void {
-    if( slot >= this.offsets.length || this.offsets[ slot ] < 0 ){ return; }
+  free(slot: number): void {
+    if (slot >= this.offsets.length || this.offsets[slot] < 0) {
+      return;
+    }
 
-    this.freeRange( slot );
+    this.freeRange(slot);
     this.maybeCompact();
   }
 
   /** The blob's dirty state since the last call; returns-and-clears. */
   takeDirty(): { resized: boolean; start: number; end: number } | null {
-    if( !this.resized && this.dirtyStart < 0 ){ return null; }
+    if (!this.resized && this.dirtyStart < 0) {
+      return null;
+    }
 
     const out = {
       resized: this.resized,
       start: this.resized ? 0 : this.dirtyStart,
-      end: this.resized ? this.used : this.dirtyEnd
+      end: this.resized ? this.used : this.dirtyEnd,
     };
 
     this.resized = false;
@@ -178,57 +190,65 @@ export class CurveBlob {
       used: this.used,
       live: this.liveFloats,
       waste: this.wasteFloats,
-      capacity: this.pool.length
+      capacity: this.pool.length,
     };
   }
 
-  private freeRange( slot: number ): void {
-    const len = this.lengths[ slot ];
+  private freeRange(slot: number): void {
+    const len = this.lengths[slot];
 
-    this.offsets[ slot ] = -1;
-    this.lengths[ slot ] = 0;
+    this.offsets[slot] = -1;
+    this.lengths[slot] = 0;
     this.liveFloats -= len;
     this.wasteFloats += len;
   }
 
-  private mark( start: number, end: number ): void {
-    if( this.dirtyStart < 0 ){
+  private mark(start: number, end: number): void {
+    if (this.dirtyStart < 0) {
       this.dirtyStart = start;
       this.dirtyEnd = end;
     } else {
-      this.dirtyStart = Math.min( this.dirtyStart, start );
-      this.dirtyEnd = Math.max( this.dirtyEnd, end );
+      this.dirtyStart = Math.min(this.dirtyStart, start);
+      this.dirtyEnd = Math.max(this.dirtyEnd, end);
     }
   }
 
-  private ensureSlot( slot: number ): void {
-    if( slot < this.offsets.length ){ return; }
+  private ensureSlot(slot: number): void {
+    if (slot < this.offsets.length) {
+      return;
+    }
 
-    let cap = Math.max( 16, this.offsets.length );
+    let cap = Math.max(16, this.offsets.length);
 
-    while( cap <= slot ){ cap *= 2; }
+    while (cap <= slot) {
+      cap *= 2;
+    }
 
-    const offsets = new Int32Array( cap );
-    const lengths = new Int32Array( cap );
+    const offsets = new Int32Array(cap);
+    const lengths = new Int32Array(cap);
 
-    offsets.fill( -1 );
-    offsets.set( this.offsets );
-    lengths.set( this.lengths );
+    offsets.fill(-1);
+    offsets.set(this.offsets);
+    lengths.set(this.lengths);
 
     this.offsets = offsets;
     this.lengths = lengths;
   }
 
-  private ensureCapacity( floats: number ): void {
-    if( floats <= this.pool.length ){ return; }
+  private ensureCapacity(floats: number): void {
+    if (floats <= this.pool.length) {
+      return;
+    }
 
-    let cap = Math.max( FLOOR_FLOATS, this.pool.length );
+    let cap = Math.max(FLOOR_FLOATS, this.pool.length);
 
-    while( cap < floats ){ cap *= 2; }
+    while (cap < floats) {
+      cap *= 2;
+    }
 
-    const pool = new Float32Array( cap );
+    const pool = new Float32Array(cap);
 
-    pool.set( this.pool );
+    pool.set(this.pool);
     this.pool = pool;
     this.resized = true;
   }
@@ -236,27 +256,33 @@ export class CurveBlob {
   /** Round-11 policy: reclaim when waste exceeds half the live floats
    * (with a floor so tiny pools never churn). */
   private maybeCompact(): void {
-    if( this.wasteFloats <= Math.max( this.liveFloats, FLOOR_FLOATS ) / 2 ){ return; }
+    if (this.wasteFloats <= Math.max(this.liveFloats, FLOOR_FLOATS) / 2) {
+      return;
+    }
 
     let cap = FLOOR_FLOATS;
 
-    while( cap < this.liveFloats ){ cap *= 2; }
+    while (cap < this.liveFloats) {
+      cap *= 2;
+    }
 
-    const pool = new Float32Array( cap );
+    const pool = new Float32Array(cap);
     let cursor = 0;
 
-    for( let slot = 0; slot < this.offsets.length; slot++ ){
-      const off = this.offsets[ slot ];
+    for (let slot = 0; slot < this.offsets.length; slot++) {
+      const off = this.offsets[slot];
 
-      if( off < 0 ){ continue; }
+      if (off < 0) {
+        continue;
+      }
 
-      const len = this.lengths[ slot ];
+      const len = this.lengths[slot];
 
-      pool.set( this.pool.subarray( off, off + len ), cursor );
+      pool.set(this.pool.subarray(off, off + len), cursor);
 
-      if( cursor !== off ){
-        this.offsets[ slot ] = cursor;
-        this.onRelocate( slot, cursor );
+      if (cursor !== off) {
+        this.offsets[slot] = cursor;
+        this.onRelocate(slot, cursor);
       }
 
       cursor += len;

@@ -69,7 +69,7 @@ export type DataColumn = ArrayLike<unknown> | Float64Array | DictColumn;
 export interface ColumnarNodes {
   count: number;
   /** unique ids; missing entries (or the whole array) are auto-generated */
-  ids?: ( string | undefined )[] | PackedIds;
+  ids?: (string | undefined)[] | PackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
   /** 1 = selected; omitted = all unselected */
@@ -90,7 +90,7 @@ export const NO_PARENT = 0xffffffff;
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
 export interface ColumnarEdges {
   count: number;
-  ids?: ( string | undefined )[] | PackedIds;
+  ids?: (string | undefined)[] | PackedIds;
   /** source node index per edge (into the payload's nodes), length count */
   sources: Uint32Array;
   /** target node index per edge (into the payload's nodes), length count */
@@ -157,12 +157,20 @@ export type ElementsInput =
 export interface Mapper {
   /** data() sidecar key to read */
   data: string;
-  scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog'
-    | 'diverging' | 'ordinal' | 'threshold' | 'quantize';
+  scale?:
+    | 'linear'
+    | 'log'
+    | 'sqrt'
+    | 'pow'
+    | 'symlog'
+    | 'diverging'
+    | 'ordinal'
+    | 'threshold'
+    | 'quantize';
   /** ascending numeric stops (categories for 'ordinal'); 'auto'/omitted = live data extent */
-  domain?: ( string | number )[] | 'auto';
+  domain?: (string | number)[] | 'auto';
   /** output stops (numbers, colors, or keywords), or a named color scheme */
-  range?: ( string | number )[] | string;
+  range?: (string | number)[] | string;
   /** clamp input to the domain (default true) */
   clamp?: boolean;
   /** pow only (default 2) */
@@ -194,7 +202,7 @@ export interface Condition {
   lte?: number;
   gt?: number;
   gte?: number;
-  in?: ( string | number )[];
+  in?: (string | number)[];
   /** structural (round 14.7, nodes only): the element has >= 1 child.
    * A structural condition stands alone — AND it with data conditions
    * via the `when` array form. */
@@ -302,7 +310,14 @@ export interface ExportOptions {
   quality?: number;
 }
 
-export type BoundingBoxInput = { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+export type BoundingBoxInput = {
+  x1: number;
+  y1: number;
+  x2?: number;
+  y2?: number;
+  w?: number;
+  h?: number;
+};
 
 /** Options shared by the discrete layouts (scope, fit, spacing, animation). */
 export interface LayoutBaseOptions {
@@ -318,13 +333,13 @@ export interface LayoutBaseOptions {
   nodeDimensionsIncludeLabels?: boolean;
   spacingFactor?: number;
   /** transform a computed position (e.g. to flip an axis) */
-  transform?: ( node: unknown, position: Position ) => Position;
+  transform?: (node: unknown, position: Position) => Position;
   /** whether to animate node positions into place */
   animate?: boolean;
   animationDuration?: number;
   animationEasing?: string;
   /** which nodes animate (others jump); all by default */
-  animateFilter?: ( node: unknown, i: number ) => boolean;
+  animateFilter?: (node: unknown, i: number) => boolean;
   /** callback on layoutready */
   ready?: () => void;
   /** callback on layoutstop */
@@ -343,15 +358,17 @@ export interface GridLayoutOptions extends LayoutBaseOptions {
   rows?: number;
   cols?: number;
   /** returns a fixed { row, col } for a node handle */
-  position?: ( node: unknown ) => { row?: number; col?: number } | undefined;
+  position?: (node: unknown) => { row?: number; col?: number } | undefined;
   /** comparator over node handles */
-  sort?: ( a: unknown, b: unknown ) => number;
+  sort?: (a: unknown, b: unknown) => number;
 }
 
 export interface PresetLayoutOptions extends LayoutBaseOptions {
   name: 'preset';
   /** node id → position map, or a function of a node handle; absent nodes keep their position */
-  positions?: Record<string, Position> | ( ( node: unknown ) => Position | null | undefined );
+  positions?:
+    | Record<string, Position>
+    | ((node: unknown) => Position | null | undefined);
 }
 
 export interface CircleLayoutOptions extends LayoutBaseOptions {
@@ -366,7 +383,7 @@ export interface CircleLayoutOptions extends LayoutBaseOptions {
   clockwise?: boolean;
   counterclockwise?: boolean;
   /** comparator over node handles ordering the nodes around the circle */
-  sort?: ( a: unknown, b: unknown ) => number;
+  sort?: (a: unknown, b: unknown) => number;
 }
 
 export interface ConcentricLayoutOptions extends LayoutBaseOptions {
@@ -384,9 +401,9 @@ export interface ConcentricLayoutOptions extends LayoutBaseOptions {
   height?: number;
   width?: number;
   /** numeric value per node handle; higher values sit closer to the center (default: degree) */
-  concentric?: ( node: unknown ) => number;
+  concentric?: (node: unknown) => number;
   /** the variation of concentric values per level (default: maxDegree / 4) */
-  levelWidth?: ( nodes: unknown ) => number;
+  levelWidth?: (nodes: unknown) => number;
 }
 
 export interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
@@ -403,7 +420,7 @@ export interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
   /** the tree roots: a collection, or an array of node ids */
   roots?: unknown;
   /** comparator ordering nodes within a depth */
-  depthSort?: ( a: unknown, b: unknown ) => number;
+  depthSort?: (a: unknown, b: unknown) => number;
   /** shift nodes down to their maximal depths (DAGs only) */
   maximal?: boolean;
   /** with maximal: the graph is known acyclic (no cycle bail-out) */
@@ -421,7 +438,7 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   name: 'force';
   /** ideal edge length: number, or a plain fn of the edge handle
    * (resolved once at start) */
-  edgeLength?: number | ( ( edge: unknown ) => number );
+  edgeLength?: number | ((edge: unknown) => number);
   repulsion?: number;
   stiffness?: number;
   gravity?: number;
@@ -447,13 +464,18 @@ export interface CustomLayoutOptions extends LayoutBaseOptions {
   name?: undefined;
   /** internal (round 17.5): the wrapper already emitted layoutstart */
   _startEmitted?: boolean;
-  [ key: string ]: unknown;
+  [key: string]: unknown;
 }
 
 export type LayoutOptions =
-  GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions |
-  ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions |
-  ForceLayoutOptions | CustomLayoutOptions;
+  | GridLayoutOptions
+  | PresetLayoutOptions
+  | CircleLayoutOptions
+  | ConcentricLayoutOptions
+  | BreadthFirstLayoutOptions
+  | RandomLayoutOptions
+  | ForceLayoutOptions
+  | CustomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface RendererOptions {

@@ -7,24 +7,26 @@
 // be a new instance of exactly that, so it says so, in the warning colour.
 import { esc, fmtBytes, fmtAge } from '../theme.mjs';
 
-function tile( label, value, sub, cls = '' ){
-  if( value == null ){ return ''; }
+function tile(label, value, sub, cls = '') {
+  if (value == null) {
+    return '';
+  }
 
   return `<div class="tile ${cls}">
-    <span class="tile-label">${esc( label )}</span>
+    <span class="tile-label">${esc(label)}</span>
     <span class="tile-value">${value}</span>
     ${sub != null ? `<span class="tile-sub">${sub}</span>` : ''}
   </div>`;
 }
 
-function card( { title, href, blurb, available, reason, badges = [] } ){
-  const body = `<span class="card-title">${esc( title )}</span>
+function card({ title, href, blurb, available, reason, badges = [] }) {
+  const body = `<span class="card-title">${esc(title)}</span>
     <span class="card-blurb">${blurb}</span>
-    ${badges.length > 0 ? `<span class="card-badges">${badges.map( b => `<b>${esc( b )}</b>` ).join( '' )}</span>` : ''}
-    ${available ? '' : `<span class="card-reason">${esc( reason ?? 'not available in this build' )}</span>`}`;
+    ${badges.length > 0 ? `<span class="card-badges">${badges.map((b) => `<b>${esc(b)}</b>`).join('')}</span>` : ''}
+    ${available ? '' : `<span class="card-reason">${esc(reason ?? 'not available in this build')}</span>`}`;
 
   return available
-    ? `<a class="card" href="${esc( href )}">${body}</a>`
+    ? `<a class="card" href="${esc(href)}">${body}</a>`
     : `<div class="card unavailable">${body}</div>`;
 }
 
@@ -32,33 +34,64 @@ function card( { title, href, blurb, available, reason, badges = [] } ){
  * @param state — from `repoState()`
  * @param parts — `[ { id, title, href, blurb, available, reason, badges } ]`
  */
-export function indexPage( { state, parts } ){
+export function indexPage({ state, parts }) {
   const stale = state.staleness.staleByMs;
-  const bundles = state.bundles.filter( b => /min|umd/.test( b.file ) );
+  const bundles = state.bundles.filter((b) => /min|umd/.test(b.file));
 
   const tiles = [
-    tile( 'branch', `<code>${esc( state.branch ?? '?' )}</code>`,
+    tile(
+      'branch',
+      `<code>${esc(state.branch ?? '?')}</code>`,
       state.commit.short != null
-        ? `${esc( state.commit.short )}${state.commit.pushed ? '' : ' · not pushed'}` : null ),
-    tile( 'last commit', esc( state.commit.ageMs != null ? fmtAge( state.commit.ageMs ) ?? '?' : '?' ),
-      state.commit.subject != null ? esc( state.commit.subject ) : null ),
-    tile( 'working tree', state.dirty.count === 0 ? 'clean' : `${state.dirty.count} changed`,
-      state.dirty.count === 0 ? null : esc( state.dirty.files.slice( 0, 3 ).map( f => f.trim() ).join( ', ' ) ),
-      state.dirty.count === 0 ? '' : 'warn' ),
-    ...bundles.map( b => tile( b.file.replace( 'cytoscape.', '' ),
-      esc( fmtBytes( b.bytes ) ?? '?' ),
-      b.gzipBytes != null ? `${esc( fmtBytes( b.gzipBytes ) ?? '' )} gzipped` : null ) ),
+        ? `${esc(state.commit.short)}${state.commit.pushed ? '' : ' · not pushed'}`
+        : null,
+    ),
+    tile(
+      'last commit',
+      esc(
+        state.commit.ageMs != null ? (fmtAge(state.commit.ageMs) ?? '?') : '?',
+      ),
+      state.commit.subject != null ? esc(state.commit.subject) : null,
+    ),
+    tile(
+      'working tree',
+      state.dirty.count === 0 ? 'clean' : `${state.dirty.count} changed`,
+      state.dirty.count === 0
+        ? null
+        : esc(
+            state.dirty.files
+              .slice(0, 3)
+              .map((f) => f.trim())
+              .join(', '),
+          ),
+      state.dirty.count === 0 ? '' : 'warn',
+    ),
+    ...bundles.map((b) =>
+      tile(
+        b.file.replace('cytoscape.', ''),
+        esc(fmtBytes(b.bytes) ?? '?'),
+        b.gzipBytes != null
+          ? `${esc(fmtBytes(b.gzipBytes) ?? '')} gzipped`
+          : null,
+      ),
+    ),
     // a bundle older than src/ means every page below is showing yesterday
     stale != null && stale > 60e3
-      ? tile( 'bundle', 'stale', `${esc( fmtAge( stale )?.replace( ' ago', '' ) ?? '' )} older than src/ — run <code>npm run build</code>`, 'warn' )
-      : tile( 'bundle', 'current', 'newer than every file in src/' )
-  ].join( '' );
+      ? tile(
+          'bundle',
+          'stale',
+          `${esc(fmtAge(stale)?.replace(' ago', '') ?? '')} older than src/ — run <code>npm run build</code>`,
+          'warn',
+        )
+      : tile('bundle', 'current', 'newer than every file in src/'),
+  ].join('');
 
-  const machine = state.machine != null
-    ? `<p class="note">Built on ${esc( state.machine.cpu?.model ?? 'an unknown machine' )} ·
-       ${esc( state.machine.os?.distro ?? state.machine.os?.platform ?? '' )} ·
-       node ${esc( state.machine.node?.version ?? '?' )}</p>`
-    : '';
+  const machine =
+    state.machine != null
+      ? `<p class="note">Built on ${esc(state.machine.cpu?.model ?? 'an unknown machine')} ·
+       ${esc(state.machine.os?.distro ?? state.machine.os?.platform ?? '')} ·
+       node ${esc(state.machine.node?.version ?? '?')}</p>`
+      : '';
 
   return `<h1>cytoscape.js v4 — status</h1>
   <p class="lede">A live preview of the <code>v4</code> branch: the development harness running on the
@@ -69,7 +102,7 @@ export function indexPage( { state, parts } ){
   <div class="tiles">${tiles}</div>
   ${machine}
 
-  <div class="cards">${parts.map( card ).join( '' )}</div>`;
+  <div class="cards">${parts.map(card).join('')}</div>`;
 }
 
 export const INDEX_CSS = `

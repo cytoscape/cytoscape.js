@@ -38,13 +38,21 @@ export const TWEEN_PARAMS_BYTES = 48;
 
 /** Narrow device surface (mock-testable, matching MapperRuntime). */
 export interface TweenDevice {
-  createBuffer( d: { size: number; usage: number; label?: string } ): GPUBuffer;
-  createBindGroupLayout( d: GPUBindGroupLayoutDescriptor ): GPUBindGroupLayout;
-  createPipelineLayout( d: GPUPipelineLayoutDescriptor ): GPUPipelineLayout;
-  createShaderModule( d: GPUShaderModuleDescriptor ): GPUShaderModule;
-  createComputePipeline( d: GPUComputePipelineDescriptor ): GPUComputePipeline;
-  createBindGroup( d: GPUBindGroupDescriptor ): GPUBindGroup;
-  queue: { writeBuffer( b: GPUBuffer, off: number, data: ArrayBufferLike | ArrayBufferView, dOff?: number, size?: number ): void };
+  createBuffer(d: { size: number; usage: number; label?: string }): GPUBuffer;
+  createBindGroupLayout(d: GPUBindGroupLayoutDescriptor): GPUBindGroupLayout;
+  createPipelineLayout(d: GPUPipelineLayoutDescriptor): GPUPipelineLayout;
+  createShaderModule(d: GPUShaderModuleDescriptor): GPUShaderModule;
+  createComputePipeline(d: GPUComputePipelineDescriptor): GPUComputePipeline;
+  createBindGroup(d: GPUBindGroupDescriptor): GPUBindGroup;
+  queue: {
+    writeBuffer(
+      b: GPUBuffer,
+      off: number,
+      data: ArrayBufferLike | ArrayBufferView,
+      dOff?: number,
+      size?: number,
+    ): void;
+  };
 }
 
 /*
@@ -207,7 +215,9 @@ fn progress() -> f32 {
 }
 `;
 
-const POSITION_SHADER = TWEEN_COMMON + `
+const POSITION_SHADER =
+  TWEEN_COMMON +
+  `
 @group(0) @binding(2) var<storage, read> fromTo: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<vec2f>;
 
@@ -229,7 +239,9 @@ overshoots its endpoints and the renderer should never see an opacity of
 per-channel bounds in the per-slot data, *not* in the shared params buffer,
 for the same reason the dispatch count doesn't live there.
 */
-const SCALAR_SHADER = TWEEN_COMMON + `
+const SCALAR_SHADER =
+  TWEEN_COMMON +
+  `
 @group(0) @binding(2) var<storage, read> fromTo: array<vec2f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<f32>;
 
@@ -244,7 +256,10 @@ fn csTween(@builtin(global_invocation_id) gid: vec3u) {
 `;
 
 // two vec4f per slot: (L, a, b, alpha) OKLab endpoints, alpha normalized
-const COLOR_SHADER = TWEEN_COMMON + OKLAB_TO_SRGB_WGSL + `
+const COLOR_SHADER =
+  TWEEN_COMMON +
+  OKLAB_TO_SRGB_WGSL +
+  `
 @group(0) @binding(2) var<storage, read> fromTo: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<u32>;
 
@@ -267,10 +282,10 @@ export type GpuWriteKind = Exclude<WriteKind, 'lane' | 'padding' | 'fontSize'>;
 export const TWEEN_SHADERS: Record<GpuWriteKind, string> = {
   position: POSITION_SHADER,
   scalar: SCALAR_SHADER,
-  color: COLOR_SHADER
+  color: COLOR_SHADER,
 };
 
-const KINDS = Object.keys( TWEEN_SHADERS ) as GpuWriteKind[];
+const KINDS = Object.keys(TWEEN_SHADERS) as GpuWriteKind[];
 
 /** One column's dispatch within a registered animation. */
 interface Channel {
@@ -298,7 +313,7 @@ interface Batch {
 
 export class GpuTweenRuntime {
   private device: TweenDevice;
-  private columnBuffer: ( id: ColumnId ) => GPUBuffer;
+  private columnBuffer: (id: ColumnId) => GPUBuffer;
   private mirrorVersion: () => number;
   private layout: GPUBindGroupLayout;
   private pipelines: Record<GpuWriteKind, GPUComputePipeline>;
@@ -320,51 +335,89 @@ export class GpuTweenRuntime {
    * buffer; called only when a bind group is (re)built
    * @param mirrorVersion — the mirror's realloc counter
    */
-  constructor( device: TweenDevice, columnBuffer: ( id: ColumnId ) => GPUBuffer, mirrorVersion: () => number ){
+  constructor(
+    device: TweenDevice,
+    columnBuffer: (id: ColumnId) => GPUBuffer,
+    mirrorVersion: () => number,
+  ) {
     this.device = device;
     this.columnBuffer = columnBuffer;
     this.mirrorVersion = mirrorVersion;
 
     // one layout for all three kinds: only the WGSL types of bindings 2/3
     // differ, not their binding kinds
-    this.layout = device.createBindGroupLayout( {
+    this.layout = device.createBindGroupLayout({
       label: 'cy-gpu:tween-layout',
       entries: [
-        { binding: 0, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } },
-        { binding: 2, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } },
-        { binding: 3, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'storage' } },
-        { binding: 4, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } }
-      ]
-    } );
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'uniform' },
+        },
+        {
+          binding: 1,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'read-only-storage' },
+        },
+        {
+          binding: 2,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'read-only-storage' },
+        },
+        {
+          binding: 3,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'storage' },
+        },
+        {
+          binding: 4,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'read-only-storage' },
+        },
+      ],
+    });
 
-    this.dummyPoints = device.createBuffer( {
-      label: 'cy-gpu:tween-points-none', size: 8,
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+    this.dummyPoints = device.createBuffer({
+      label: 'cy-gpu:tween-points-none',
+      size: 8,
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
-    const pipelineLayout = device.createPipelineLayout( { bindGroupLayouts: [ this.layout ] } );
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [this.layout],
+    });
 
-    this.pipelines = Object.fromEntries( KINDS.map( kind => [ kind, device.createComputePipeline( {
-      label: `cy-gpu:tween-${kind}`,
-      layout: pipelineLayout,
-      compute: {
-        module: device.createShaderModule( {
-          label: `cy-gpu:tween-${kind}-shader`, code: TWEEN_SHADERS[ kind ] } ),
-        entryPoint: 'csTween'
-      }
-    } ) ] ) ) as Record<GpuWriteKind, GPUComputePipeline>;
+    this.pipelines = Object.fromEntries(
+      KINDS.map((kind) => [
+        kind,
+        device.createComputePipeline({
+          label: `cy-gpu:tween-${kind}`,
+          layout: pipelineLayout,
+          compute: {
+            module: device.createShaderModule({
+              label: `cy-gpu:tween-${kind}-shader`,
+              code: TWEEN_SHADERS[kind],
+            }),
+            entryPoint: 'csTween',
+          },
+        }),
+      ]),
+    ) as Record<GpuWriteKind, GPUComputePipeline>;
   }
 
   /** Whether any batch is registered.  Registration, not the clock,
    * decides this: a batch past its end time still counts until the
    * caller unregisters it. */
-  active(): boolean { return this.batches.size > 0; }
+  active(): boolean {
+    return this.batches.size > 0;
+  }
 
   /** True when some batch tweens node position (needs the pre-cull pass). */
   hasPositions(): boolean {
-    for( const b of this.batches.values() ){
-      if( b.channels.some( c => c.kind === 'position' ) ){ return true; }
+    for (const b of this.batches.values()) {
+      if (b.channels.some((c) => c.kind === 'position')) {
+        return true;
+      }
     }
 
     return false;
@@ -377,11 +430,13 @@ export class GpuTweenRuntime {
   ownedColumns(): ColumnId[] {
     const owned = new Set<ColumnId>();
 
-    for( const b of this.batches.values() ){
-      for( const c of b.channels ){ owned.add( c.column ); }
+    for (const b of this.batches.values()) {
+      for (const c of b.channels) {
+        owned.add(c.column);
+      }
     }
 
-    return [ ...owned ];
+    return [...owned];
   }
 
   /**
@@ -389,66 +444,107 @@ export class GpuTweenRuntime {
    * `data` endpoints over [start, start + duration].
    */
   register(
-    id: number, writes: readonly ChannelWrite[],
-    start: number, duration: number, easing: EasingProgram
+    id: number,
+    writes: readonly ChannelWrite[],
+    start: number,
+    duration: number,
+    easing: EasingProgram,
   ): void {
-    if( this.destroyed ){ return; }
+    if (this.destroyed) {
+      return;
+    }
 
-    this.unregister( id );
+    this.unregister(id);
 
     const dev = this.device;
     const channels: Channel[] = [];
 
-    for( const w of writes ){
-      if( w.slots.length === 0 ){ continue; }
-
-      if( w.kind === 'lane' || w.kind === 'padding' || w.kind === 'fontSize' ){
-        // unreachable by the eligibility rule (a geometry write bars the
-        // whole animation from the device); guard the invariant anyway
-        throw new Error( `${w.kind} writes never register on the GPU (column ${w.column})` );
+    for (const w of writes) {
+      if (w.slots.length === 0) {
+        continue;
       }
 
-      const slotBuffer = dev.createBuffer( {
-        label: `cy-gpu:tween-slots:${id}:${w.column}`, size: Math.max( 4, w.slots.byteLength ),
-        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-      } );
-      const dataBuffer = dev.createBuffer( {
-        label: `cy-gpu:tween-data:${id}:${w.column}`, size: Math.max( 16, w.data.byteLength ),
-        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-      } );
+      if (w.kind === 'lane' || w.kind === 'padding' || w.kind === 'fontSize') {
+        // unreachable by the eligibility rule (a geometry write bars the
+        // whole animation from the device); guard the invariant anyway
+        throw new Error(
+          `${w.kind} writes never register on the GPU (column ${w.column})`,
+        );
+      }
 
-      dev.queue.writeBuffer( slotBuffer, 0, w.slots.buffer, w.slots.byteOffset, w.slots.byteLength );
-      dev.queue.writeBuffer( dataBuffer, 0, w.data.buffer, w.data.byteOffset, w.data.byteLength );
+      const slotBuffer = dev.createBuffer({
+        label: `cy-gpu:tween-slots:${id}:${w.column}`,
+        size: Math.max(4, w.slots.byteLength),
+        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+      });
+      const dataBuffer = dev.createBuffer({
+        label: `cy-gpu:tween-data:${id}:${w.column}`,
+        size: Math.max(16, w.data.byteLength),
+        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+      });
 
-      channels.push( {
-        column: w.column as ColumnId, kind: w.kind, count: w.slots.length,
-        slotBuffer, dataBuffer, bindGroup: null, bindVersion: -1
-      } );
+      dev.queue.writeBuffer(
+        slotBuffer,
+        0,
+        w.slots.buffer,
+        w.slots.byteOffset,
+        w.slots.byteLength,
+      );
+      dev.queue.writeBuffer(
+        dataBuffer,
+        0,
+        w.data.buffer,
+        w.data.byteOffset,
+        w.data.byteLength,
+      );
+
+      channels.push({
+        column: w.column as ColumnId,
+        kind: w.kind,
+        count: w.slots.length,
+        slotBuffer,
+        dataBuffer,
+        bindGroup: null,
+        bindVersion: -1,
+      });
     }
 
-    if( channels.length === 0 ){ return; }
+    if (channels.length === 0) {
+      return;
+    }
 
     const points = easing.points;
     let pointsBuffer = this.dummyPoints;
 
-    if( points != null ){
-      pointsBuffer = dev.createBuffer( {
-        label: `cy-gpu:tween-points:${id}`, size: points.byteLength,
-        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-      } );
+    if (points != null) {
+      pointsBuffer = dev.createBuffer({
+        label: `cy-gpu:tween-points:${id}`,
+        size: points.byteLength,
+        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+      });
 
-      dev.queue.writeBuffer( pointsBuffer, 0, points.buffer, points.byteOffset, points.byteLength );
+      dev.queue.writeBuffer(
+        pointsBuffer,
+        0,
+        points.buffer,
+        points.byteOffset,
+        points.byteLength,
+      );
     }
 
-    this.batches.set( id, {
+    this.batches.set(id, {
       channels,
-      paramsBuffer: dev.createBuffer( {
-        label: `cy-gpu:tween-params:${id}`, size: TWEEN_PARAMS_BYTES,
-        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
-      } ),
-      pointsBuffer, ownsPoints: points != null,
-      start, duration, easing
-    } );
+      paramsBuffer: dev.createBuffer({
+        label: `cy-gpu:tween-params:${id}`,
+        size: TWEEN_PARAMS_BYTES,
+        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
+      }),
+      pointsBuffer,
+      ownsPoints: points != null,
+      start,
+      duration,
+      easing,
+    });
   }
 
   /**
@@ -462,21 +558,25 @@ export class GpuTweenRuntime {
    *
    * @param id — the animation id passed to register()
    */
-  unregister( id: number ): void {
-    const b = this.batches.get( id );
+  unregister(id: number): void {
+    const b = this.batches.get(id);
 
-    if( b == null ){ return; }
+    if (b == null) {
+      return;
+    }
 
-    for( const c of b.channels ){
+    for (const c of b.channels) {
       c.slotBuffer.destroy();
       c.dataBuffer.destroy();
     }
 
     b.paramsBuffer.destroy();
 
-    if( b.ownsPoints ){ b.pointsBuffer.destroy(); }
+    if (b.ownsPoints) {
+      b.pointsBuffer.destroy();
+    }
 
-    this.batches.delete( id );
+    this.batches.delete(id);
   }
 
   /**
@@ -486,52 +586,62 @@ export class GpuTweenRuntime {
    * `'paint'` in the cull pass after the mapper eval, so a tween outranks a
    * mapper writing the same channel.
    */
-  encode( pass: GPUComputePassEncoder, now: number, tier: 'position' | 'paint' ): void {
-    if( this.destroyed ){ return; }
+  encode(
+    pass: GPUComputePassEncoder,
+    now: number,
+    tier: 'position' | 'paint',
+  ): void {
+    if (this.destroyed) {
+      return;
+    }
 
     const version = this.mirrorVersion();
-    const params = new Uint32Array( TWEEN_PARAMS_BYTES / 4 );
-    const f32 = new Float32Array( params.buffer );
+    const params = new Uint32Array(TWEEN_PARAMS_BYTES / 4);
+    const f32 = new Float32Array(params.buffer);
 
-    for( const b of this.batches.values() ){
-      const channels = b.channels.filter( c => ( c.kind === 'position' ) === ( tier === 'position' ) );
+    for (const b of this.batches.values()) {
+      const channels = b.channels.filter(
+        (c) => (c.kind === 'position') === (tier === 'position'),
+      );
 
-      if( channels.length === 0 ){ continue; }
+      if (channels.length === 0) {
+        continue;
+      }
 
       // the whole curve plus the clock (see TweenParams) — per batch, so one
       // write covers every channel dispatched below
       const bez = b.easing.bezier;
 
-      f32[ 0 ] = b.start;
-      f32[ 1 ] = b.duration;
-      f32[ 2 ] = now;
-      params[ 3 ] = b.easing.kind;
-      f32[ 4 ] = bez == null ? 0 : bez[ 0 ];   // bez is vec4f, so 16-byte aligned
-      f32[ 5 ] = bez == null ? 0 : bez[ 1 ];
-      f32[ 6 ] = bez == null ? 0 : bez[ 2 ];
-      f32[ 7 ] = bez == null ? 0 : bez[ 3 ];
-      params[ 8 ] = b.easing.points == null ? 0 : b.easing.points.length / 2;
-      this.device.queue.writeBuffer( b.paramsBuffer, 0, params );
+      f32[0] = b.start;
+      f32[1] = b.duration;
+      f32[2] = now;
+      params[3] = b.easing.kind;
+      f32[4] = bez == null ? 0 : bez[0]; // bez is vec4f, so 16-byte aligned
+      f32[5] = bez == null ? 0 : bez[1];
+      f32[6] = bez == null ? 0 : bez[2];
+      f32[7] = bez == null ? 0 : bez[3];
+      params[8] = b.easing.points == null ? 0 : b.easing.points.length / 2;
+      this.device.queue.writeBuffer(b.paramsBuffer, 0, params);
 
-      for( const c of channels ){
-        if( c.bindGroup == null || c.bindVersion !== version ){
-          c.bindGroup = this.device.createBindGroup( {
+      for (const c of channels) {
+        if (c.bindGroup == null || c.bindVersion !== version) {
+          c.bindGroup = this.device.createBindGroup({
             label: `cy-gpu:tween-bind:${c.column}`,
             layout: this.layout,
             entries: [
               { binding: 0, resource: { buffer: b.paramsBuffer } },
               { binding: 1, resource: { buffer: c.slotBuffer } },
               { binding: 2, resource: { buffer: c.dataBuffer } },
-              { binding: 3, resource: { buffer: this.columnBuffer( c.column ) } },
-              { binding: 4, resource: { buffer: b.pointsBuffer } }
-            ]
-          } );
+              { binding: 3, resource: { buffer: this.columnBuffer(c.column) } },
+              { binding: 4, resource: { buffer: b.pointsBuffer } },
+            ],
+          });
           c.bindVersion = version;
         }
 
-        pass.setPipeline( this.pipelines[ c.kind ] );
-        pass.setBindGroup( 0, c.bindGroup );
-        pass.dispatchWorkgroups( Math.ceil( c.count / WG_SIZE ) );
+        pass.setPipeline(this.pipelines[c.kind]);
+        pass.setBindGroup(0, c.bindGroup);
+        pass.dispatchWorkgroups(Math.ceil(c.count / WG_SIZE));
       }
     }
   }
@@ -544,7 +654,9 @@ export class GpuTweenRuntime {
   destroy(): void {
     this.destroyed = true;
 
-    for( const id of [ ...this.batches.keys() ] ){ this.unregister( id ); }
+    for (const id of [...this.batches.keys()]) {
+      this.unregister(id);
+    }
 
     this.dummyPoints.destroy();
   }

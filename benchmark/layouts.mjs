@@ -39,59 +39,78 @@ const elements = buildElements();
 const instances = [];
 
 // the shared area both sides pack into (see the header)
-const BOX = { x1: 0, y1: 0, w: 100 * Math.ceil( Math.sqrt( N ) ), h: 100 * Math.ceil( Math.sqrt( N ) ) };
+const BOX = {
+  x1: 0,
+  y1: 0,
+  w: 100 * Math.ceil(Math.sqrt(N)),
+  h: 100 * Math.ceil(Math.sqrt(N)),
+};
 
 const V3_OPTS = { styleEnabled: true, layout: { name: 'preset' } };
 
-function v3Instance(){
-  const cy = makeV3( elements, V3_OPTS );
+function v3Instance() {
+  const cy = makeV3(elements, V3_OPTS);
 
-  instances.push( cy );
+  instances.push(cy);
 
   return cy;
 }
 
-function gpuInstance(){
-  const cy = makeGpu( elements );
+function gpuInstance() {
+  const cy = makeGpu(elements);
 
-  instances.push( cy );
+  instances.push(cy);
 
   return cy;
 }
 
 /** A v3-comparative row: the same layout name run on both sides. */
-function cmpLayout( name, options, label = name ){
-  if( OP != null && !label.includes( OP ) ){ return; }
+function cmpLayout(name, options, label = name) {
+  if (OP != null && !label.includes(OP)) {
+    return;
+  }
 
   const a = v3Instance();
   const b = gpuInstance();
   const opts = { fit: false, boundingBox: BOX, ...options };
 
-  group( `layout: ${label}`, () => {
-    summary( () => {
+  group(`layout: ${label}`, () => {
+    summary(() => {
       // v3 discrete layouts run synchronously under animate: false
-      bench( 'v3',  () => { a.layout( { name, animate: false, ...opts } ).run(); } );
-      bench( 'gpu', () => { b.layout( { name, ...opts } ).run(); } );
-    } );
-  } );
+      bench('v3', () => {
+        a.layout({ name, animate: false, ...opts }).run();
+      });
+      bench('gpu', () => {
+        b.layout({ name, ...opts }).run();
+      });
+    });
+  });
 }
 
 /** A gpu-only row: two v4 spellings of the same work. */
-function cmpGpu( name, aLabel, aFn, bLabel, bFn ){
-  if( OP != null && !name.includes( OP ) ){ return; }
+function cmpGpu(name, aLabel, aFn, bLabel, bFn) {
+  if (OP != null && !name.includes(OP)) {
+    return;
+  }
 
   const a = gpuInstance();
   const b = gpuInstance();
 
-  group( name, () => {
-    summary( () => {
-      bench( aLabel, () => { aFn( a ); } );
-      bench( bLabel, () => { bFn( b ); } );
-    } );
-  } );
+  group(name, () => {
+    summary(() => {
+      bench(aLabel, () => {
+        aFn(a);
+      });
+      bench(bLabel, () => {
+        bFn(b);
+      });
+    });
+  });
 }
 
-console.log( `\n== layout sweep (N=${N} nodes, ${2 * N} edges; box ${BOX.w}x${BOX.h}) ==` );
+console.log(
+  `\n== layout sweep (N=${N} nodes, ${2 * N} edges; box ${BOX.w}x${BOX.h}) ==`,
+);
 
 // -- the six built-ins -------------------------------------------------------
 // `preset` needs a real `positions` map or the row measures nothing: with
@@ -105,17 +124,21 @@ console.log( `\n== layout sweep (N=${N} nodes, ${2 * N} edges; box ${BOX.w}x${BO
 // so it gets its own row.
 const savedPositions = {};
 
-for( let i = 0; i < N; i++ ){
-  savedPositions[ 'n' + i ] = { x: ( i % 100 ) * 25, y: Math.floor( i / 100 ) * 25 };
+for (let i = 0; i < N; i++) {
+  savedPositions['n' + i] = { x: (i % 100) * 25, y: Math.floor(i / 100) * 25 };
 }
 
-cmpLayout( 'grid' );
-cmpLayout( 'preset', { positions: savedPositions } );
-cmpLayout( 'preset', { positions: node => savedPositions[ node.id() ] }, 'preset (fn form)' );
-cmpLayout( 'circle' );
-cmpLayout( 'concentric' );
-cmpLayout( 'breadthfirst' );
-cmpLayout( 'random' );
+cmpLayout('grid');
+cmpLayout('preset', { positions: savedPositions });
+cmpLayout(
+  'preset',
+  { positions: (node) => savedPositions[node.id()] },
+  'preset (fn form)',
+);
+cmpLayout('circle');
+cmpLayout('concentric');
+cmpLayout('breadthfirst');
+cmpLayout('random');
 
 // -- the force layout --------------------------------------------------------
 // The CPU executor is what the Node specs pin and what headless and
@@ -123,17 +146,23 @@ cmpLayout( 'random' );
 // bench's --layout mode.  A fixed iteration cap keeps the row a
 // measurement of the integrator rather than of how fast this particular
 // graph happens to converge.
-if( OP == null || 'force'.includes( OP ) ){
+if (OP == null || 'force'.includes(OP)) {
   const force = gpuInstance();
 
-  group( 'layout: force (CPU executor, 20 iterations)', () => {
-    bench( 'gpu', () => {
-      force.layout( {
-        name: 'force', animate: false, fit: false,
-        iterations: 20, randomize: true, seed: 1
-      } ).run();
-    } );
-  } );
+  group('layout: force (CPU executor, 20 iterations)', () => {
+    bench('gpu', () => {
+      force
+        .layout({
+          name: 'force',
+          animate: false,
+          fit: false,
+          iterations: 20,
+          randomize: true,
+          seed: 1,
+        })
+        .run();
+    });
+  });
 }
 
 // v3's cose is the classic baseline, and it is a different algorithm with
@@ -141,18 +170,33 @@ if( OP == null || 'force'.includes( OP ) ){
 // experience, not of layout quality (the round-18.5 framing).  It is also
 // superlinear: 4.5 s per iteration at 25k on the hardware-pass box, so
 // this row gates hard on N and caps iterations on both sides.
-if( N <= 500 && ( OP == null || 'cose'.includes( OP ) ) ){
+if (N <= 500 && (OP == null || 'cose'.includes(OP))) {
   const a = v3Instance();
   const b = gpuInstance();
 
-  group( 'layout: force vs cose (10 iterations)', () => {
-    summary( () => {
-      bench( 'v3',  () => { a.layout( { name: 'cose', animate: false, fit: false, numIter: 10, randomize: false } ).run(); } );
-      bench( 'gpu', () => {
-        b.layout( { name: 'force', animate: false, fit: false, iterations: 10, randomize: true, seed: 1 } ).run();
-      } );
-    } );
-  } );
+  group('layout: force vs cose (10 iterations)', () => {
+    summary(() => {
+      bench('v3', () => {
+        a.layout({
+          name: 'cose',
+          animate: false,
+          fit: false,
+          numIter: 10,
+          randomize: false,
+        }).run();
+      });
+      bench('gpu', () => {
+        b.layout({
+          name: 'force',
+          animate: false,
+          fit: false,
+          iterations: 10,
+          randomize: true,
+          seed: 1,
+        }).run();
+      });
+    });
+  });
 }
 
 // -- the plumbing ------------------------------------------------------------
@@ -160,35 +204,43 @@ if( N <= 500 && ( OP == null || 'cose'.includes( OP ) ) ){
 // lifecycle) against the bulk slot write underneath it — the overhead an
 // extension author pays for the v3-shaped conveniences.  Both sides
 // place identical positions.
-const gridPos = ( i ) => ( { x: ( i % 100 ) * 20, y: Math.floor( i / 100 ) * 20 } );
+const gridPos = (i) => ({ x: (i % 100) * 20, y: Math.floor(i / 100) * 20 });
 
 class FinisherLayout {
-  run( ctx ){
+  run(ctx) {
     let i = 0;
 
-    ctx.layoutPositions( () => gridPos( i++ ) );
+    ctx.layoutPositions(() => gridPos(i++));
   }
 }
 
 class BulkLayout {
-  run( ctx ){
+  run(ctx) {
     const slots = ctx.nodeSlots();
-    const xy = new Float64Array( slots.length * 2 );
+    const xy = new Float64Array(slots.length * 2);
 
-    for( let i = 0; i < slots.length; i++ ){
-      const p = gridPos( i );
+    for (let i = 0; i < slots.length; i++) {
+      const p = gridPos(i);
 
-      xy[ i * 2 ] = p.x;
-      xy[ i * 2 + 1 ] = p.y;
+      xy[i * 2] = p.x;
+      xy[i * 2 + 1] = p.y;
     }
 
-    ctx.setPositions( slots, xy );
+    ctx.setPositions(slots, xy);
   }
 }
 
-cmpGpu( 'layout: plumbing (layoutPositions vs setPositions)',
-  'finisher', cy => { cy.layout( { impl: FinisherLayout, fit: false } ).run(); },
-  'bulk',     cy => { cy.layout( { impl: BulkLayout, fit: false } ).run(); } );
+cmpGpu(
+  'layout: plumbing (layoutPositions vs setPositions)',
+  'finisher',
+  (cy) => {
+    cy.layout({ impl: FinisherLayout, fit: false }).run();
+  },
+  'bulk',
+  (cy) => {
+    cy.layout({ impl: BulkLayout, fit: false }).run();
+  },
+);
 
 // The contract's own fixed cost — the number an external layout author
 // needs, since it is what the wrapper charges before their code runs:
@@ -212,32 +264,53 @@ cmpGpu( 'layout: plumbing (layoutPositions vs setPositions)',
 // walking handles: **333 µs → 795 ns** through the bundle.  The row
 // stays as the thing that would notice it coming back.
 class NoopLayout {
-  run(){}
+  run() {}
 }
 
-cmpGpu( 'layout: contract fixed cost (empty impl vs bulk placement)',
-  'wrapper only', cy => { cy.layout( { impl: NoopLayout, fit: false } ).run(); },
-  'wrapper + bulk write', cy => { cy.layout( { impl: BulkLayout, fit: false } ).run(); } );
+cmpGpu(
+  'layout: contract fixed cost (empty impl vs bulk placement)',
+  'wrapper only',
+  (cy) => {
+    cy.layout({ impl: NoopLayout, fit: false }).run();
+  },
+  'wrapper + bulk write',
+  (cy) => {
+    cy.layout({ impl: BulkLayout, fit: false }).run();
+  },
+);
 
 // -- subset scopes -----------------------------------------------------------
 // eles.layout() simulates the subset only (17.5); the row shows what a
 // scope costs against the whole-graph run of the same layout.
-if( OP == null || 'scope'.includes( OP ) ){
+if (OP == null || 'scope'.includes(OP)) {
   const a = v3Instance();
   const b = gpuInstance();
-  const scopeA = a.nodes().slice( 0, Math.max( 1, Math.floor( N / 10 ) ) );
-  const scopeB = b.nodes().slice( 0, Math.max( 1, Math.floor( N / 10 ) ) );
+  const scopeA = a.nodes().slice(0, Math.max(1, Math.floor(N / 10)));
+  const scopeB = b.nodes().slice(0, Math.max(1, Math.floor(N / 10)));
 
-  group( 'layout: scope (eles.layout, 10% of nodes)', () => {
-    summary( () => {
-      bench( 'v3',  () => { scopeA.layout( { name: 'grid', animate: false, fit: false, boundingBox: BOX } ).run(); } );
-      bench( 'gpu', () => { scopeB.layout( { name: 'grid', fit: false, boundingBox: BOX } ).run(); } );
-    } );
-  } );
+  group('layout: scope (eles.layout, 10% of nodes)', () => {
+    summary(() => {
+      bench('v3', () => {
+        scopeA
+          .layout({
+            name: 'grid',
+            animate: false,
+            fit: false,
+            boundingBox: BOX,
+          })
+          .run();
+      });
+      bench('gpu', () => {
+        scopeB.layout({ name: 'grid', fit: false, boundingBox: BOX }).run();
+      });
+    });
+  });
 }
 
-await finishRun( 'layouts' );
+await finishRun('layouts');
 
 // v3 styleEnabled instances leave live timers behind (the compound.mjs
 // lesson), so the process would not exit on its own
-for( const cy of instances ){ cy.destroy(); }
+for (const cy of instances) {
+  cy.destroy();
+}

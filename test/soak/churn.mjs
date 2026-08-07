@@ -29,105 +29,118 @@ const BASE = 4000;
 const BAND = 400;
 const ROUNDS = 40;
 
-function seedGraph(){
+function seedGraph() {
   const elements = [];
 
-  for( let i = 0; i < BASE; i++ ){
-    elements.push( {
+  for (let i = 0; i < BASE; i++) {
+    elements.push({
       data: { id: `base${i}`, tag: `g${i % 8}` },
-      position: { x: i % 100, y: ( i / 100 ) | 0 }
-    } );
+      position: { x: i % 100, y: (i / 100) | 0 },
+    });
   }
 
-  for( let i = 1; i < BASE; i++ ){
-    elements.push( { data: { id: `be${i}`, source: `base${i - 1}`, target: `base${i}` } } );
+  for (let i = 1; i < BASE; i++) {
+    elements.push({
+      data: { id: `be${i}`, source: `base${i - 1}`, target: `base${i}` },
+    });
   }
 
   return elements;
 }
 
-describe( 'soak: sustained add/remove churn', () => {
+describe('soak: sustained add/remove churn', () => {
   let cy;
   let baseline;
 
-  before( () => {
-    cy = cytoscape( { elements: seedGraph() } );
+  before(() => {
+    cy = cytoscape({ elements: seedGraph() });
     baseline = {
       blobCapacity: cy._store.ids.blobCapacity,
-      highWater: cy._store.highWater( 'nodes' ),
-      nodes: cy.nodes().length
+      highWater: cy._store.highWater('nodes'),
+      nodes: cy.nodes().length,
     };
 
-    for( let round = 1; round <= ROUNDS; round++ ){
+    for (let round = 1; round <= ROUNDS; round++) {
       const add = [];
 
-      for( let i = 0; i < BAND; i++ ){
-        add.push( {
+      for (let i = 0; i < BAND; i++) {
+        add.push({
           // ids never repeat: a re-added id would reuse its stranded bytes
-          data: { id: `r${round}n${i}`, note: `value-${round}-${i}-with-some-padding` },
-          position: { x: i, y: round }
-        } );
+          data: {
+            id: `r${round}n${i}`,
+            note: `value-${round}-${i}-with-some-padding`,
+          },
+          position: { x: i, y: round },
+        });
       }
 
-      cy.add( add );
+      cy.add(add);
       // force the deferred derivations rather than measuring a flag write
       // (round 29.4's lesson, in a soak)
-      cy.nodes( { data: { note: { ne: null } } } );
-      cy.nodes().slice( 0, BAND ).remove();
+      cy.nodes({ data: { note: { ne: null } } });
+      cy.nodes().slice(0, BAND).remove();
     }
-  } );
+  });
 
-  after( () => cy.destroy() );
+  after(() => cy.destroy());
 
-  it( 'ran a churn worth measuring', () => {
+  it('ran a churn worth measuring', () => {
     // The control every bound below needs: a loop that added nothing would
     // satisfy all of them.
-    expect( ROUNDS * BAND ).to.be.at.least( 16000 );
-    expect( cy.nodes().length ).to.equal( baseline.nodes );
-  } );
+    expect(ROUNDS * BAND).to.be.at.least(16000);
+    expect(cy.nodes().length).to.equal(baseline.nodes);
+  });
 
-  it( 'keeps the id blob bounded rather than growing per round', () => {
+  it('keeps the id blob bounded rather than growing per round', () => {
     // ~16k ids of ~10 bytes have passed through. Without the round-11
     // reclaim the blob strands all of them and grows past 160 KB on top of
     // the ~53 KB the base graph needs; with it, it stays flat.
     const { blobCapacity } = cy._store.ids;
 
-    expect( blobCapacity, 'the id blob grew with churn — the round-11 reclaim is not firing' )
-      .to.be.at.most( baseline.blobCapacity * 4 );
+    expect(
+      blobCapacity,
+      'the id blob grew with churn — the round-11 reclaim is not firing',
+    ).to.be.at.most(baseline.blobCapacity * 4);
 
     // and the live bytes must be a real fraction of the capacity, i.e. the
     // blob is holding ids rather than having been emptied by a broken remove
-    expect( cy._store.ids.blobBytes ).to.be.greaterThan( 10000 );
-  } );
+    expect(cy._store.ids.blobBytes).to.be.greaterThan(10000);
+  });
 
-  it( 'recycles slots instead of extending the tables', () => {
+  it('recycles slots instead of extending the tables', () => {
     // The free list is what keeps highWater flat; if removal stopped
     // returning slots, this grows by BAND every round.
-    expect( cy._store.highWater( 'nodes' ), 'node slots grew with churn' )
-      .to.be.at.most( baseline.highWater + BAND * 2 );
-  } );
+    expect(
+      cy._store.highWater('nodes'),
+      'node slots grew with churn',
+    ).to.be.at.most(baseline.highWater + BAND * 2);
+  });
 
-  it( 'still answers correctly after the churn', () => {
+  it('still answers correctly after the churn', () => {
     // Bounded memory is worth nothing if the graph is wrong. Every surviving
     // element must be one the last rounds added, and traversal must still
     // work across the recycled slots.
-    const ids = cy.nodes().map( n => n.id() );
+    const ids = cy.nodes().map((n) => n.id());
 
-    expect( new Set( ids ).size, 'duplicate ids after slot recycling' ).to.equal( ids.length );
-    expect( cy.nodes().length ).to.equal( baseline.nodes );
-    expect( cy.$id( ids[ 0 ] ).id() ).to.equal( ids[ 0 ] );
+    expect(new Set(ids).size, 'duplicate ids after slot recycling').to.equal(
+      ids.length,
+    );
+    expect(cy.nodes().length).to.equal(baseline.nodes);
+    expect(cy.$id(ids[0]).id()).to.equal(ids[0]);
 
-    const withNote = cy.nodes( { data: { note: { ne: null } } } );
+    const withNote = cy.nodes({ data: { note: { ne: null } } });
 
-    expect( withNote.length ).to.be.greaterThan( 0 );
-    expect( withNote.length ).to.be.at.most( cy.nodes().length );
-  } );
+    expect(withNote.length).to.be.greaterThan(0);
+    expect(withNote.length).to.be.at.most(cy.nodes().length);
+  });
 
-  it( 'compacts to the live graph when asked', () => {
+  it('compacts to the live graph when asked', () => {
     cy.compact();
 
-    expect( cy._store.highWater( 'nodes' ), 'compact() left dead slots behind' )
-      .to.equal( cy.nodes().length );
-    expect( cy.nodes().length ).to.equal( baseline.nodes );
-  } );
-} );
+    expect(
+      cy._store.highWater('nodes'),
+      'compact() left dead slots behind',
+    ).to.equal(cy.nodes().length);
+    expect(cy.nodes().length).to.equal(baseline.nodes);
+  });
+});

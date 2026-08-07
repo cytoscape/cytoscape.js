@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import { createContext, runInContext } from 'node:vm';
 import { createRequire } from 'node:module';
 
-const require = createRequire( import.meta.url );
+const require = createRequire(import.meta.url);
 
 /** The file extension the wire form ships under. */
 export const WIRE_EXT = '.cyge'; // the format's magic is 'CYGE'
@@ -48,18 +48,27 @@ let lib = null;
  * build otherwise surfaces as `cy.toColumnarElements is not a function`
  * deep in the encoder, which reads as a defect rather than as "rebuild"
  */
-export function wireLib( root ){
-  if( lib !== null ){ return lib; }
+export function wireLib(root) {
+  if (lib !== null) {
+    return lib;
+  }
 
-  const path = join( root, 'build', 'cytoscape.cjs.js' );
+  const path = join(root, 'build', 'cytoscape.cjs.js');
 
-  if( !existsSync( path ) ){ return null; }
+  if (!existsSync(path)) {
+    return null;
+  }
 
-  const mod = require( path );
+  const mod = require(path);
   const cy = mod.default ?? mod;
 
-  if( typeof cy.toColumnarElements !== 'function' || typeof cy.serializeElements !== 'function' ){
-    throw new Error( 'build/cytoscape.cjs.js is stale — it lacks the wire helpers; run `npm run build`' );
+  if (
+    typeof cy.toColumnarElements !== 'function' ||
+    typeof cy.serializeElements !== 'function'
+  ) {
+    throw new Error(
+      'build/cytoscape.cjs.js is stale — it lacks the wire helpers; run `npm run build`',
+    );
   }
 
   lib = cy;
@@ -68,10 +77,12 @@ export function wireLib( root ){
 }
 
 /** `wireLib`, but a missing bundle is an error with its one fix in the message. */
-function requireWireLib( root ){
-  const cy = wireLib( root );
+function requireWireLib(root) {
+  const cy = wireLib(root);
 
-  if( cy == null ){ throw new Error( 'build/cytoscape.cjs.js is missing — run `npm run build`' ); }
+  if (cy == null) {
+    throw new Error('build/cytoscape.cjs.js is missing — run `npm run build`');
+  }
 
   return cy;
 }
@@ -81,15 +92,17 @@ function requireWireLib( root ){
  * `test/modules/debug-harness.mjs` loads them: it is a plain browser script
  * declaring a global, not a module.
  */
-export function harnessFixtures( root ){
-  if( cached != null ){ return cached; }
+export function harnessFixtures(root) {
+  if (cached != null) {
+    return cached;
+  }
 
   // TextDecoder is a browser global `fromColumnar` uses; a bare vm context
   // lacks it, and the failure reads like a defect in the harness rather than
   // a missing sandbox global
-  const ctx = createContext( { window: {}, console, TextDecoder } );
+  const ctx = createContext({ window: {}, console, TextDecoder });
 
-  runInContext( readFileSync( join( root, 'debug', 'fixtures.js' ), 'utf8' ), ctx );
+  runInContext(readFileSync(join(root, 'debug', 'fixtures.js'), 'utf8'), ctx);
 
   cached = ctx.fixtures;
 
@@ -103,13 +116,13 @@ export function harnessFixtures( root ){
  * @param path — the fixture's absolute path
  * @returns a `Uint8Array` of the wire buffer
  */
-export function encodeFixture( root, path ){
-  const cy = requireWireLib( root );
+export function encodeFixture(root, path) {
+  const cy = requireWireLib(root);
 
-  const json = JSON.parse( readFileSync( path, 'utf8' ) );
-  const elements = harnessFixtures( root ).toGpuElements( json.elements );
+  const json = JSON.parse(readFileSync(path, 'utf8'));
+  const elements = harnessFixtures(root).toGpuElements(json.elements);
 
-  return new Uint8Array( cy.serializeElements( cy.toColumnarElements( elements ) ) );
+  return new Uint8Array(cy.serializeElements(cy.toColumnarElements(elements)));
 }
 
 /**
@@ -120,12 +133,12 @@ export function encodeFixture( root, path ){
  * once turned a stale bundle into "the fixture could not be encoded at all"
  * two layers up (2026-08-06).
  */
-export function wireSize( root, path ){
-  requireWireLib( root ); // throws with the rebuild instruction before the try can eat it
+export function wireSize(root, path) {
+  requireWireLib(root); // throws with the rebuild instruction before the try can eat it
 
   try {
-    return encodeFixture( root, path ).byteLength;
-  } catch{
+    return encodeFixture(root, path).byteLength;
+  } catch {
     return null;
   }
 }

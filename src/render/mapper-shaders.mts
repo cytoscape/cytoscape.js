@@ -272,6 +272,11 @@ export const EDGE_EVAL_SHADER = EVAL_COMMON + EDGE_TARGETS + EDGE_WRITE + MAIN;
 
 /** write-target storage bindings per group, after the 5 shared ones */
 export const TARGET_BINDINGS: Record<'nodes' | 'edges', readonly string[]> = {
-  nodes: [ 'node.fillColor', 'node.borderColor', 'node.opacity' ],
-  edges: [ 'edge.lineColor', 'edge.opacity', 'edge.sourceArrow', 'edge.targetArrow' ]
+  nodes: ['node.fillColor', 'node.borderColor', 'node.opacity'],
+  edges: [
+    'edge.lineColor',
+    'edge.opacity',
+    'edge.sourceArrow',
+    'edge.targetArrow',
+  ],
 };

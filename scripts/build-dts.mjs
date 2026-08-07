@@ -16,22 +16,25 @@ const out = 'dist/cytoscape.d.ts';
  * Finalize the declaration.  Idempotent: a declaration that already carries
  * the global-name line is returned unchanged.
  */
-export function finalizeDts( source ){
-  if( !/\bcytoscape as default\b/.test( source ) ){
-    throw new Error( 'Generated declaration has no default factory export' );
+export function finalizeDts(source) {
+  if (!/\bcytoscape as default\b/.test(source)) {
+    throw new Error('Generated declaration has no default factory export');
   }
 
-  if( /^export as namespace cytoscape;$/m.test( source ) ){
+  if (/^export as namespace cytoscape;$/m.test(source)) {
     return source;
   }
 
   return `${source.trimEnd()}\nexport as namespace cytoscape;\n`;
 }
 
-if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href ){
-  const dts = finalizeDts( readFileSync( src, 'utf8' ) );
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const dts = finalizeDts(readFileSync(src, 'utf8'));
 
-  mkdirSync( 'dist', { recursive: true } );
-  writeFileSync( out, dts );
-  console.log( `wrote ${out} (${dts.split( '\n' ).length} lines)` );
+  mkdirSync('dist', { recursive: true });
+  writeFileSync(out, dts);
+  console.log(`wrote ${out} (${dts.split('\n').length} lines)`);
 }

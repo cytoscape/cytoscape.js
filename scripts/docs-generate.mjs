@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 
 import { auditFile, PUBLIC_API } from './jsdoc-coverage.mjs';
 
-const ROOT = fileURLToPath( new URL( '..', import.meta.url ) );
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /**
  * The consumer-reachable namespaces, and the docmaker prefix each takes.
@@ -57,7 +57,7 @@ export const NAMESPACES = {
   Animation: 'ani',
   CustomLayout: 'layout',
   LayoutContext: 'ctx',
-  Event: 'event'
+  Event: 'event',
 };
 
 /**
@@ -72,10 +72,14 @@ export const NAMESPACES = {
  * API reference are different questions.
  */
 export const NOT_PUBLISHED = {
-  Viewport: 'the engine half of the core viewport methods; a consumer reaches every one of these through `cy` (cy.zoom, cy.pan, cy.fit, …), so publishing it would document the same surface twice under two names',
-  StyleEngine: 'the sheet compiler behind `cy.style()` and the read-only style getters; not constructible or reachable from a consumer',
-  AnimationManager: 'the per-core scheduler behind `eles.animate()`; the handle a caller holds is Animation',
-  Emitter: 'the listener store behind `on`/`off`/`emit`; a consumer never holds one'
+  Viewport:
+    'the engine half of the core viewport methods; a consumer reaches every one of these through `cy` (cy.zoom, cy.pan, cy.fit, …), so publishing it would document the same surface twice under two names',
+  StyleEngine:
+    'the sheet compiler behind `cy.style()` and the read-only style getters; not constructible or reachable from a consumer',
+  AnimationManager:
+    'the per-core scheduler behind `eles.animate()`; the handle a caller holds is Animation',
+  Emitter:
+    'the listener store behind `on`/`off`/`emit`; a consumer never holds one',
 };
 
 /** `@tag` at the start of a doc-comment line. */
@@ -94,26 +98,26 @@ const TAG_RE = /^@(\w+)\s*(.*)$/;
  * @returns {{ descr: string, params: object[], returns: string|null,
  *   throws: string[], see: string[] }}
  */
-export function parseDoc( block ){
+export function parseDoc(block) {
   const body = block
-    .replace( /^\s*\/\*\*/, '' )
-    .replace( /\*\/\s*$/, '' )
-    .split( '\n' )
-    .map( line => line.replace( /^\s*\* ?/, '' ) );
+    .replace(/^\s*\/\*\*/, '')
+    .replace(/\*\/\s*$/, '')
+    .split('\n')
+    .map((line) => line.replace(/^\s*\* ?/, ''));
 
   const descrLines = [];
   const tags = [];
 
-  for( const line of body ){
-    const m = line.trim().match( TAG_RE );
+  for (const line of body) {
+    const m = line.trim().match(TAG_RE);
 
-    if( m ){
-      tags.push( { tag: m[1], text: m[2] } );
-    } else if( tags.length > 0 ){
+    if (m) {
+      tags.push({ tag: m[1], text: m[2] });
+    } else if (tags.length > 0) {
       // a continuation of the tag above (indented under it)
-      tags[ tags.length - 1 ].text += ` ${line.trim()}`;
+      tags[tags.length - 1].text += ` ${line.trim()}`;
     } else {
-      descrLines.push( line );
+      descrLines.push(line);
     }
   }
 
@@ -122,48 +126,54 @@ export function parseDoc( block ){
   const see = [];
   let returns = null;
 
-  for( const { tag, text } of tags ){
-    const clean = text.replace( /\s+/g, ' ' ).trim();
+  for (const { tag, text } of tags) {
+    const clean = text.replace(/\s+/g, ' ').trim();
 
-    if( tag === 'param' ){
+    if (tag === 'param') {
       // `name — description`, with the em dash as the separator
-      const split = clean.match( /^(\[?[\w$.]+\]?)\s*(?:—|--|-)?\s*(.*)$/ );
+      const split = clean.match(/^(\[?[\w$.]+\]?)\s*(?:—|--|-)?\s*(.*)$/);
 
-      if( split ) params.push( { name: split[1], descr: split[2] } );
-    } else if( tag === 'returns' || tag === 'return' ){
+      if (split) params.push({ name: split[1], descr: split[2] });
+    } else if (tag === 'returns' || tag === 'return') {
       returns = clean;
-    } else if( tag === 'throws' ){
-      throwsList.push( clean );
-    } else if( tag === 'see' ){
-      see.push( clean );
+    } else if (tag === 'throws') {
+      throwsList.push(clean);
+    } else if (tag === 'see') {
+      see.push(clean);
     }
   }
 
-  return { descr: paragraphs( descrLines ), params, returns, throws: throwsList, see };
+  return {
+    descr: paragraphs(descrLines),
+    params,
+    returns,
+    throws: throwsList,
+    see,
+  };
 }
 
 /** Join wrapped lines into paragraphs, preserving blank-line breaks. */
-function paragraphs( lines ){
+function paragraphs(lines) {
   const out = [];
   let current = [];
 
-  for( const line of lines ){
-    if( line.trim() === '' ){
-      if( current.length ) out.push( current.join( ' ' ).trim() );
+  for (const line of lines) {
+    if (line.trim() === '') {
+      if (current.length) out.push(current.join(' ').trim());
       current = [];
     } else {
-      current.push( line.trim() );
+      current.push(line.trim());
     }
   }
 
-  if( current.length ) out.push( current.join( ' ' ).trim() );
+  if (current.length) out.push(current.join(' ').trim());
 
-  return out.join( '\n\n' ).trim();
+  return out.join('\n\n').trim();
 }
 
 /** The first paragraph of a summary — docmaker's one-sentence `descr` role. */
-function firstParagraph( descr ){
-  return descr.split( '\n\n' )[0] ?? '';
+function firstParagraph(descr) {
+  return descr.split('\n\n')[0] ?? '';
 }
 
 /**
@@ -178,11 +188,11 @@ function firstParagraph( descr ){
  *
  * @returns {Set<string>} the names assigned as `cytoscape.<name> = …`
  */
-export function factoryStatics(){
-  const src = readFileSync( join( ROOT, 'src/index.mts' ), 'utf8' );
+export function factoryStatics() {
+  const src = readFileSync(join(ROOT, 'src/index.mts'), 'utf8');
 
   return new Set(
-    [ ...src.matchAll( /^cytoscape\.([A-Za-z_$][\w$]*)\s*=/gm ) ].map( m => m[1] )
+    [...src.matchAll(/^cytoscape\.([A-Za-z_$][\w$]*)\s*=/gm)].map((m) => m[1]),
   );
 }
 
@@ -191,7 +201,7 @@ export function factoryStatics(){
  *
  * @returns {{ sections: object[], stats: object }}
  */
-export function generate(){
+export function generate() {
   const statics = factoryStatics();
   const byPrefix = new Map();
   const aliasesFor = new Map(); // `${owner}.${target}` -> alias names
@@ -199,74 +209,77 @@ export function generate(){
 
   // aliases first: a fn needs every alias that points at it, and they can be
   // declared above or below their target
-  for( const rel of PUBLIC_API ){
-    for( const a of auditFile( join( ROOT, rel ) ).aliases ){
+  for (const rel of PUBLIC_API) {
+    for (const a of auditFile(join(ROOT, rel)).aliases) {
       const key = `${a.owner}.${a.target}`;
 
-      if( !aliasesFor.has( key ) ) aliasesFor.set( key, [] );
-      aliasesFor.get( key ).push( a.name );
+      if (!aliasesFor.has(key)) aliasesFor.set(key, []);
+      aliasesFor.get(key).push(a.name);
     }
   }
 
-  for( const rel of PUBLIC_API ){
-    const { members } = auditFile( join( ROOT, rel ) );
+  for (const rel of PUBLIC_API) {
+    const { members } = auditFile(join(ROOT, rel));
 
-    for( const m of members ){
-      const prefix = prefixFor( m, statics );
+    for (const m of members) {
+      const prefix = prefixFor(m, statics);
 
-      if( prefix == null ){
-        skipped.push( `${m.owner ?? '(module)'}.${m.name} (${rel}:${m.line})` );
+      if (prefix == null) {
+        skipped.push(`${m.owner ?? '(module)'}.${m.name} (${rel}:${m.line})`);
         continue;
       }
 
-      const bucket = get( byPrefix, prefix, () => new Map() );
-      const section = m.banner ?? defaultSection( prefix );
-      const fns = get( bucket, section, () => new Map() );
+      const bucket = get(byPrefix, prefix, () => new Map());
+      const section = m.banner ?? defaultSection(prefix);
+      const fns = get(bucket, section, () => new Map());
       // members are visited in source order, so overload signatures of one
       // name arrive consecutively and merge into one fn with several formats
       const key = m.name;
-      const fn = get( fns, key, () => ( {
-        name: prefix === 'cytoscape' && m.owner == null && m.name === 'cytoscape'
-          ? 'cytoscape'
-          : `${prefix}.${m.name}`,
+      const fn = get(fns, key, () => ({
+        name:
+          prefix === 'cytoscape' && m.owner == null && m.name === 'cytoscape'
+            ? 'cytoscape'
+            : `${prefix}.${m.name}`,
         blocks: [],
         src: `${rel}:${m.line}`,
-        pureAliases: ( aliasesFor.get( `${m.owner}.${m.name}` ) ?? [] )
-          .map( a => `${prefix}.${a}` )
-      } ) );
+        pureAliases: (aliasesFor.get(`${m.owner}.${m.name}`) ?? []).map(
+          (a) => `${prefix}.${a}`,
+        ),
+      }));
 
-      fn.blocks.push( parseDoc( m.doc ) );
+      fn.blocks.push(parseDoc(m.doc));
     }
   }
 
   const sections = [];
 
-  for( const [ prefix, bucket ] of byPrefix ){
+  for (const [prefix, bucket] of byPrefix) {
     const children = [];
 
-    for( const [ banner, fns ] of bucket ){
-      children.push( {
-        name: sectionTitle( banner ),
+    for (const [banner, fns] of bucket) {
+      children.push({
+        name: sectionTitle(banner),
         banner,
-        fns: [ ...fns.values() ].map( toDocmakerFn )
-      } );
+        fns: [...fns.values()].map(toDocmakerFn),
+      });
     }
 
-    sections.push( { name: titleFor( prefix ), prefix, sections: children } );
+    sections.push({ name: titleFor(prefix), prefix, sections: children });
   }
 
   const count = sections.reduce(
-    ( n, s ) => n + s.sections.reduce( ( m, c ) => m + c.fns.length, 0 ), 0
+    (n, s) => n + s.sections.reduce((m, c) => m + c.fns.length, 0),
+    0,
   );
 
   return {
     sections,
     stats: {
       namespaces: sections.length,
-      sections: sections.reduce( ( n, s ) => n + s.sections.length, 0 ),
+      sections: sections.reduce((n, s) => n + s.sections.length, 0),
       fns: count,
-      skipped
-    }
+      skipped,
+    },
   };
 }
 
@@ -280,29 +293,35 @@ export function generate(){
  * the description: docmaker has no field for them, but folding is lossy and a
  * template can ignore a field it does not know.
  */
-function toDocmakerFn( fn ){
-  const formats = fn.blocks.map( b => ( {
+function toDocmakerFn(fn) {
+  const formats = fn.blocks.map((b) => ({
     descr: b.descr,
-    args: b.params
-  } ) );
+    args: b.params,
+  }));
 
-  const primary = fn.blocks[0] ?? { descr: '', params: [], returns: null, throws: [], see: [] };
+  const primary = fn.blocks[0] ?? {
+    descr: '',
+    params: [],
+    returns: null,
+    throws: [],
+    see: [],
+  };
   const out = {
     name: fn.name,
-    descr: firstParagraph( primary.descr ),
-    formats
+    descr: firstParagraph(primary.descr),
+    formats,
   };
 
-  if( fn.pureAliases.length ) out.pureAliases = fn.pureAliases;
-  if( primary.returns ) out.returns = primary.returns;
+  if (fn.pureAliases.length) out.pureAliases = fn.pureAliases;
+  if (primary.returns) out.returns = primary.returns;
 
-  const throwsList = fn.blocks.flatMap( b => b.throws );
+  const throwsList = fn.blocks.flatMap((b) => b.throws);
 
-  if( throwsList.length ) out.throws = [ ...new Set( throwsList ) ];
+  if (throwsList.length) out.throws = [...new Set(throwsList)];
 
-  const see = fn.blocks.flatMap( b => b.see );
+  const see = fn.blocks.flatMap((b) => b.see);
 
-  if( see.length ) out.see = [ ...new Set( see ) ];
+  if (see.length) out.see = [...new Set(see)];
 
   out.src = fn.src;
 
@@ -310,20 +329,20 @@ function toDocmakerFn( fn ){
 }
 
 /** The docmaker prefix a member belongs under, or null when unpublished. */
-function prefixFor( member, statics ){
-  if( member.owner == null ){
+function prefixFor(member, statics) {
+  if (member.owner == null) {
     // a top-level exported function: published iff the factory hangs it on
     // itself, plus the factory itself
-    if( member.name === 'cytoscape' ) return 'cytoscape';
+    if (member.name === 'cytoscape') return 'cytoscape';
 
-    return statics.has( member.name ) ? 'cytoscape' : null;
+    return statics.has(member.name) ? 'cytoscape' : null;
   }
 
-  return NAMESPACES[ member.owner ] ?? null;
+  return NAMESPACES[member.owner] ?? null;
 }
 
 /** Members above the first banner in a class body. */
-function defaultSection( prefix ){
+function defaultSection(prefix) {
   return prefix === 'cytoscape' ? 'entry point' : 'general';
 }
 
@@ -336,10 +355,10 @@ function defaultSection( prefix ){
  * not something a reader of the API reference wants in a heading. Any other
  * parenthetical is the author's and survives verbatim.
  */
-export function sectionTitle( banner ){
-  const stripped = banner.replace( /\s*\((?:round\s+[\d.]+)\)\s*$/i, '' ).trim();
+export function sectionTitle(banner) {
+  const stripped = banner.replace(/\s*\((?:round\s+[\d.]+)\)\s*$/i, '').trim();
 
-  return stripped.charAt( 0 ).toUpperCase() + stripped.slice( 1 );
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 }
 
 const TITLES = {
@@ -349,55 +368,55 @@ const TITLES = {
   ani: 'Animation',
   layout: 'Layout',
   ctx: 'Layout context',
-  event: 'Event'
+  event: 'Event',
 };
 
-function titleFor( prefix ){
-  return TITLES[ prefix ] ?? prefix;
+function titleFor(prefix) {
+  return TITLES[prefix] ?? prefix;
 }
 
-function get( map, key, make ){
-  if( !map.has( key ) ) map.set( key, make() );
+function get(map, key, make) {
+  if (!map.has(key)) map.set(key, make());
 
-  return map.get( key );
+  return map.get(key);
 }
 
 // -- cli --
 
-if( import.meta.url === `file://${process.argv[1]}` ){
-  const args = process.argv.slice( 2 );
-  const outIdx = args.indexOf( '--out' );
-  const verbose = args.includes( '--verbose' );
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const outIdx = args.indexOf('--out');
+  const verbose = args.includes('--verbose');
   const model = generate();
-  const json = JSON.stringify( { sections: model.sections }, null, 2 );
+  const json = JSON.stringify({ sections: model.sections }, null, 2);
 
-  if( outIdx !== -1 ){
-    const out = join( ROOT, args[ outIdx + 1 ] );
+  if (outIdx !== -1) {
+    const out = join(ROOT, args[outIdx + 1]);
 
-    mkdirSync( dirname( out ), { recursive: true } );
-    writeFileSync( out, `${json}\n` );
-    console.log( `wrote ${args[ outIdx + 1 ]}` );
-  } else if( !verbose ){
-    console.log( json );
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, `${json}\n`);
+    console.log(`wrote ${args[outIdx + 1]}`);
+  } else if (!verbose) {
+    console.log(json);
   }
 
   const { stats } = model;
 
   console.error(
-    `\n  ${stats.fns} documented members over ${stats.sections} sections in ${stats.namespaces} namespaces`
+    `\n  ${stats.fns} documented members over ${stats.sections} sections in ${stats.namespaces} namespaces`,
   );
 
-  if( verbose ){
-    for( const s of model.sections ){
-      console.error( `\n  ${s.name} (${s.prefix})` );
+  if (verbose) {
+    for (const s of model.sections) {
+      console.error(`\n  ${s.name} (${s.prefix})`);
 
-      for( const c of s.sections ){
-        console.error( `    ${c.name}: ${c.fns.length}` );
+      for (const c of s.sections) {
+        console.error(`    ${c.name}: ${c.fns.length}`);
       }
     }
 
-    console.error( `\n  not published (${stats.skipped.length}):` );
+    console.error(`\n  not published (${stats.skipped.length}):`);
 
-    for( const name of stats.skipped ) console.error( `    ${name}` );
+    for (const name of stats.skipped) console.error(`    ${name}`);
   }
 }

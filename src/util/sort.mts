@@ -5,10 +5,10 @@
  * @param b — right value
  * @returns -1, 0 or 1
  */
-export const ascending = <T extends string | number,>( a: T, b: T ): number => {
-  if( a < b ){
+export const ascending = <T extends string | number>(a: T, b: T): number => {
+  if (a < b) {
     return -1;
-  } else if( a > b ){
+  } else if (a > b) {
     return 1;
   } else {
     return 0;
@@ -22,6 +22,6 @@ export const ascending = <T extends string | number,>( a: T, b: T ): number => {
  * @param b — right value
  * @returns -1, 0 or 1
  */
-export const descending = <T extends string | number,>( a: T, b: T ): number => {
-  return -1 * ascending( a, b );
+export const descending = <T extends string | number>(a: T, b: T): number => {
+  return -1 * ascending(a, b);
 };

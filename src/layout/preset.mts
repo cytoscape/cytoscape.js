@@ -20,7 +20,7 @@ const defaults: Omit<PresetLayoutOptions, 'name'> = {
   zoom: undefined, // the zoom level to set (prob want fit = false if set)
   pan: undefined, // the pan level to set (prob want fit = false if set)
   fit: true, // whether to fit to viewport
-  padding: 30 // padding on fit
+  padding: 30, // padding on fit
 };
 
 /**
@@ -43,7 +43,7 @@ export class PresetLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: Core, options: PresetLayoutOptions ){
+  constructor(cy: Core, options: PresetLayoutOptions) {
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -61,52 +61,66 @@ export class PresetLayout {
     const options = this.options;
     const positions = options.positions;
 
-    cy.emit( { type: 'layoutstart', layout: this } );
+    cy.emit({ type: 'layoutstart', layout: this });
 
-    const scope = ( options.eles as Collection | undefined ) ?? cy;
+    const scope = (options.eles as Collection | undefined) ?? cy;
 
-    if( typeof positions === 'function' ){
+    if (typeof positions === 'function') {
       // function form takes handles by contract
-      scope.nodes().positions( ( ele: Collection ) => {
-        if( ele.isParent() ){ return false; } // parents derive (14.11)
+      scope.nodes().positions((ele: Collection) => {
+        if (ele.isParent()) {
+          return false;
+        } // parents derive (14.11)
 
-        return ( positions as ( node: Collection ) => Position | null | undefined )( ele ) ?? false;
-      } );
-    } else if( positions != null ){
+        return (
+          (positions as (node: Collection) => Position | null | undefined)(
+            ele,
+          ) ?? false
+        );
+      });
+    } else if (positions != null) {
       // map form: resolve ids to slots directly; absent ids keep their position
       const store = cy._store;
       const slots: number[] = [];
       const xy: number[] = [];
 
-      for( const id of Object.keys( positions ) ){
-        const entry = store.lookup( id );
-        const pos = positions[ id ];
+      for (const id of Object.keys(positions)) {
+        const entry = store.lookup(id);
+        const pos = positions[id];
 
-        if( entry == null || entry.group !== 'nodes' || pos == null ){ continue; }
-        if( store.hasFlag( 'nodes', entry.slot, FLAG_PARENT ) ){ continue; } // parents derive (14.11)
+        if (entry == null || entry.group !== 'nodes' || pos == null) {
+          continue;
+        }
+        if (store.hasFlag('nodes', entry.slot, FLAG_PARENT)) {
+          continue;
+        } // parents derive (14.11)
 
-        slots.push( entry.slot );
-        xy.push( pos.x, pos.y );
+        slots.push(entry.slot);
+        xy.push(pos.x, pos.y);
       }
 
-      store.setPositions( slots, xy );
+      store.setPositions(slots, xy);
 
-      if( hasListeners( cy._emitter, 'position' ) ){
-        for( const slot of slots ){
-          cy._emitOnEle( 'position', cy._ele( 'nodes', slot ) );
+      if (hasListeners(cy._emitter, 'position')) {
+        for (const slot of slots) {
+          cy._emitOnEle('position', cy._ele('nodes', slot));
         }
       }
     }
 
-    if( options.fit !== false ){
-      cy.fit( options.eles as Collection | undefined, options.padding ?? 30 );
+    if (options.fit !== false) {
+      cy.fit(options.eles as Collection | undefined, options.padding ?? 30);
     } else {
-      if( options.zoom != null ){ cy.zoom( options.zoom ); }
-      if( options.pan != null ){ cy.pan( options.pan ); }
+      if (options.zoom != null) {
+        cy.zoom(options.zoom);
+      }
+      if (options.pan != null) {
+        cy.pan(options.pan);
+      }
     }
 
-    cy.emit( { type: 'layoutready', layout: this } );
-    cy.emit( { type: 'layoutstop', layout: this } );
+    cy.emit({ type: 'layoutready', layout: this });
+    cy.emit({ type: 'layoutstop', layout: this });
 
     return this;
   }

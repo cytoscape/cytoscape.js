@@ -19,7 +19,11 @@ export type { EventHandler } from './emitter.mjs';
 // the one surface the contract exists to make obvious was the one with no
 // types.  `LayoutContext` was in no declaration at all (round 34.6 recorded
 // it appearing only inside a doc comment).
-export type { LayoutContext, LayoutImpl, CustomLayout } from './layout/contract.mjs';
+export type {
+  LayoutContext,
+  LayoutImpl,
+  CustomLayout,
+} from './layout/contract.mjs';
 
 /**
  * Create a GPU-prototype cytoscape instance (issue #3486, pass 1): a
@@ -49,59 +53,59 @@ export type { LayoutContext, LayoutImpl, CustomLayout } from './layout/contract.
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-export default function cytoscape( options: CytoscapeOptions = {} ): Core {
-  if( options.container != null ){
-    const nav = ( globalThis as { navigator?: { gpu?: unknown } } ).navigator;
+export default function cytoscape(options: CytoscapeOptions = {}): Core {
+  if (options.container != null) {
+    const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
 
-    if( nav?.gpu == null ){
+    if (nav?.gpu == null) {
       throw new Error(
         'WebGPU is required to render but is unavailable in this browser; ' +
-        'omit the container option to run headless'
+          'omit the container option to run headless',
       );
     }
   }
 
-  const cy = new Core( options );
+  const cy = new Core(options);
 
-  if( options.elements != null ){
+  if (options.elements != null) {
     // bulk path: no per-element handles, no add events (nobody can be
     // listening yet), one preallocation instead of a growth cascade
-    cy._bulkAdd( options.elements );
+    cy._bulkAdd(options.elements);
   }
 
-  if( options.layout != null ){
-    cy.layout( options.layout ).run();
+  if (options.layout != null) {
+    cy.layout(options.layout).run();
   }
 
   // (re)attach a renderer + pointer to a container — used at creation and
   // by cy.mount() after an unmount()
-  cy._attachFn = ( container: HTMLElement ) => {
-    const nav = ( globalThis as { navigator?: { gpu?: unknown } } ).navigator;
+  cy._attachFn = (container: HTMLElement) => {
+    const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
 
-    if( nav?.gpu == null ){
+    if (nav?.gpu == null) {
       throw new Error(
         'WebGPU is required to render but is unavailable in this browser; ' +
-        'omit the container option to run headless'
+          'omit the container option to run headless',
       );
     }
 
-    const renderer = new Renderer( cy, container, {
+    const renderer = new Renderer(cy, container, {
       pixelRatio: options.pixelRatio,
-      ...options.renderer
-    } );
+      ...options.renderer,
+    });
 
-    renderer.onDeviceLost = message => cy._handleDeviceLost( message );
-    cy._pointer = new PointerHandler( cy, renderer );
+    renderer.onDeviceLost = (message) => cy._handleDeviceLost(message);
+    cy._pointer = new PointerHandler(cy, renderer);
     cy._renderer = renderer;
-    cy.ready = renderer.ready.then( () => {
+    cy.ready = renderer.ready.then(() => {
       cy._readyResolved = true;
 
       return cy;
-    } );
+    });
   };
 
-  if( options.container != null ){
-    cy._attachFn( options.container );
+  if (options.container != null) {
+    cy._attachFn(options.container);
   }
 
   return cy;

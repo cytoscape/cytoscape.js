@@ -26,75 +26,84 @@ import { buildElements, makeGpu, N } from './graph.mjs';
 const elements = buildElements();
 
 const COLOR_SHEET = {
-  nodes: { 'background-color': { data: 'weight', domain: [ 0, 7 ], range: 'viridis' } }
+  nodes: {
+    'background-color': { data: 'weight', domain: [0, 7], range: 'viridis' },
+  },
 };
 
 const COLOR_SIZE_SHEET = {
   nodes: {
-    'background-color': { data: 'weight', domain: [ 0, 7 ], range: 'viridis' },
-    'width': { data: 'weight', domain: [ 0, 7 ], range: [ 10, 40 ] },
-    'height': { data: 'weight', domain: [ 0, 7 ], range: [ 10, 40 ] }
-  }
+    'background-color': { data: 'weight', domain: [0, 7], range: 'viridis' },
+    width: { data: 'weight', domain: [0, 7], range: [10, 40] },
+    height: { data: 'weight', domain: [0, 7], range: [10, 40] },
+  },
 };
 
 const LABEL_SHEET = { nodes: { label: { data: 'foo' } } };
 
-function writeBench( name, sheet, key, owned ){
-  const cy = makeGpu( elements );
+function writeBench(name, sheet, key, owned) {
+  const cy = makeGpu(elements);
 
-  cy.style( sheet );
+  cy.style(sheet);
 
-  if( owned != null ){ cy._styleEngine.setGpuOwned( 'nodes', owned ); }
+  if (owned != null) {
+    cy._styleEngine.setGpuOwned('nodes', owned);
+  }
 
   const nodes = cy.nodes();
   const store = cy._store;
   let i = 0;
 
-  bench( name, () => {
-    nodes.data( key, ( i++ % 7 ) + 0.5 );
+  bench(name, () => {
+    nodes.data(key, (i++ % 7) + 0.5);
     store.takeMapperSpans(); // a frame's consumption
-  } );
+  });
 }
 
-console.log( `\n== mapper bulk-write sweep (N=${N} nodes, ${2 * N} edges) ==` );
+console.log(`\n== mapper bulk-write sweep (N=${N} nodes, ${2 * N} edges) ==`);
 
-group( 'mapper: bulk write, color', () => {
-  summary( () => {
-    writeBench( 'cpu eval', COLOR_SHEET, 'weight', null );
-    writeBench( 'gpu path', COLOR_SHEET, 'weight', [ 'background-color' ] );
-  } );
-} );
+group('mapper: bulk write, color', () => {
+  summary(() => {
+    writeBench('cpu eval', COLOR_SHEET, 'weight', null);
+    writeBench('gpu path', COLOR_SHEET, 'weight', ['background-color']);
+  });
+});
 
-group( 'mapper: bulk write, color + size', () => {
-  summary( () => {
-    writeBench( 'cpu eval', COLOR_SIZE_SHEET, 'weight', null );
-    writeBench( 'gpu color / cpu size', COLOR_SIZE_SHEET, 'weight', [ 'background-color' ] );
-  } );
-} );
+group('mapper: bulk write, color + size', () => {
+  summary(() => {
+    writeBench('cpu eval', COLOR_SIZE_SHEET, 'weight', null);
+    writeBench('gpu color / cpu size', COLOR_SIZE_SHEET, 'weight', [
+      'background-color',
+    ]);
+  });
+});
 
-group( 'mapper: bulk write, mapped labels (round-5 path)', () => {
-  summary( () => {
-    writeBench( 'label refresh', LABEL_SHEET, 'foo', null );
-  } );
-} );
+group('mapper: bulk write, mapped labels (round-5 path)', () => {
+  summary(() => {
+    writeBench('label refresh', LABEL_SHEET, 'foo', null);
+  });
+});
 
 // one-off upload accounting for the gpu path (bytes a frame would writeBuffer)
 {
-  const cy = makeGpu( elements );
+  const cy = makeGpu(elements);
 
-  cy.style( COLOR_SHEET );
-  cy._styleEngine.setGpuOwned( 'nodes', [ 'background-color' ] );
+  cy.style(COLOR_SHEET);
+  cy._styleEngine.setGpuOwned('nodes', ['background-color']);
   cy._store.takeMapperSpans();
-  cy.nodes().data( 'weight', 1.5 );
+  cy.nodes().data('weight', 1.5);
 
   const spans = cy._store.takeMapperSpans();
-  const dataBytes = spans.reduce( ( sum, span ) => sum + ( span.end - span.start ) * 5, 0 );
+  const dataBytes = spans.reduce(
+    (sum, span) => sum + (span.end - span.start) * 5,
+    0,
+  );
 
   console.log(
     `gpu-path upload per bulk color write: ~${dataBytes} B ` +
-    `(f32 values + present bytes, ${spans.length} span(s)) ` +
-    `vs ~${N * 4} B of fillColor column restyle on the cpu path`
+      `(f32 values + present bytes, ${spans.length} span(s)) ` +
+      `vs ~${N * 4} B of fillColor column restyle on the cpu path`,
   );
 }
 
-await finishRun( 'mappers' );
+await finishRun('mappers');

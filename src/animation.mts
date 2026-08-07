@@ -58,11 +58,11 @@ evaluate.  A spring's `duration` is perceptual, so `durationMs` is the
 requested duration times the easing's `durationScale`.
 */
 
-const clamp01 = ( t: number ): number => t < 0 ? 0 : t > 1 ? 1 : t;
+const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
 
-export type RGBA = [ number, number, number, number ];
+export type RGBA = [number, number, number, number];
 
-const GROUPS: GroupName[] = [ 'nodes', 'edges' ];
+const GROUPS: GroupName[] = ['nodes', 'edges'];
 
 /**
  * Where an animatable style prop lands, per group — a shared name like
@@ -95,11 +95,34 @@ interface StyleChannel {
 }
 
 const STYLE_CHANNELS: Record<string, StyleChannel> = {
-  'opacity': { columns: { nodes: 'node.opacity', edges: 'edge.opacity' }, kind: 'scalar', tier: 'paint', min: 0, max: 1 },
-  'background-color': { columns: { nodes: 'node.fillColor' }, kind: 'color', tier: 'paint' },
-  'border-color': { columns: { nodes: 'node.borderColor' }, kind: 'color', tier: 'paint' },
-  'line-color': { columns: { edges: 'edge.lineColor' }, kind: 'color', tier: 'paint' },
-  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry', min: 0 },
+  opacity: {
+    columns: { nodes: 'node.opacity', edges: 'edge.opacity' },
+    kind: 'scalar',
+    tier: 'paint',
+    min: 0,
+    max: 1,
+  },
+  'background-color': {
+    columns: { nodes: 'node.fillColor' },
+    kind: 'color',
+    tier: 'paint',
+  },
+  'border-color': {
+    columns: { nodes: 'node.borderColor' },
+    kind: 'color',
+    tier: 'paint',
+  },
+  'line-color': {
+    columns: { edges: 'edge.lineColor' },
+    kind: 'color',
+    tier: 'paint',
+  },
+  'border-width': {
+    columns: { nodes: 'node.borderWidth' },
+    kind: 'scalar',
+    tier: 'geometry',
+    min: 0,
+  },
   // round 25.1: node size — two lanes of one pair column.  Sharing the
   // column means width and height share the round-21 eviction channel
   // (recorded).  Compound parents are skipped at capture *and* per tick
@@ -110,44 +133,74 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // the arrow-bits mirror), so this is a lane write on both groups now.
   // It costs nothing: lane writes never offload, and the geometry tier
   // never did.
-  'width': { columns: { nodes: 'node.size', edges: 'edge.width' }, lanes: { nodes: 0, edges: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
-  'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 },
+  width: {
+    columns: { nodes: 'node.size', edges: 'edge.width' },
+    lanes: { nodes: 0, edges: 0 },
+    kind: 'scalar',
+    tier: 'geometry',
+    min: 0,
+  },
+  height: {
+    columns: { nodes: 'node.size' },
+    lanes: { nodes: 1 },
+    kind: 'scalar',
+    tier: 'geometry',
+    min: 0,
+  },
   // round 25.4: compound padding — the declared value in its declared
   // unit (px, or a fraction under '%'); parents only, resolved by the
   // auto-bounds flush per tick
-  'padding': { columns: { nodes: 'node.padding' }, kind: 'scalar', tier: 'geometry', min: 0 },
+  padding: {
+    columns: { nodes: 'node.padding' },
+    kind: 'scalar',
+    tier: 'geometry',
+    min: 0,
+  },
   // round 25.5: label font-size — the sidecar, patched per tick;
   // unlabelled elements are filtered at capture
-  'font-size': { columns: { nodes: 'node.fontSize', edges: 'edge.fontSize' }, kind: 'scalar', tier: 'geometry', min: 0 }
+  'font-size': {
+    columns: { nodes: 'node.fontSize', edges: 'edge.fontSize' },
+    kind: 'scalar',
+    tier: 'geometry',
+    min: 0,
+  },
 };
 
-const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
+const normalizeProp = (prop: string): string =>
+  prop.replace(/([A-Z])/g, '-$1').toLowerCase();
 
-const parseColor = ( value: unknown ): RGBA => {
-  const tuple = color2tuple( value as string );
+const parseColor = (value: unknown): RGBA => {
+  const tuple = color2tuple(value as string);
 
-  if( tuple == null ){ throw new Error( `Invalid animation colour '${String( value )}'` ); }
+  if (tuple == null) {
+    throw new Error(`Invalid animation colour '${String(value)}'`);
+  }
 
-  const [ r, g, b, a ] = tuple;
+  const [r, g, b, a] = tuple;
 
-  return [ r, g, b, Math.round( ( a ?? 1 ) * 255 ) ];
+  return [r, g, b, Math.round((a ?? 1) * 255)];
 };
 
-const parseNumber = ( value: unknown ): number => {
-  const n = typeof value === 'number' ? value : parseFloat( String( value ) );
+const parseNumber = (value: unknown): number => {
+  const n = typeof value === 'number' ? value : parseFloat(String(value));
 
-  if( !isFinite( n ) ){ throw new Error( `Invalid animation number '${String( value )}'` ); }
+  if (!isFinite(n)) {
+    throw new Error(`Invalid animation number '${String(value)}'`);
+  }
 
   return n;
 };
 
-export interface Position { x: number; y: number }
+export interface Position {
+  x: number;
+  y: number;
+}
 
 /** A handle to a built-but-controllable animation (from `animation()`). */
 export interface AnimationHandle {
   /** Enqueue and start; resolves when it completes. */
   play(): Promise<void>;
-  stop( jumpToEnd?: boolean ): void;
+  stop(jumpToEnd?: boolean): void;
   promise(): Promise<void>;
   playing(): boolean;
   /** Round 24.3: freeze in place — values hold, the promise stays
@@ -184,7 +237,14 @@ export interface AnimateOptions {
    */
   fit?: {
     eles?: unknown;
-    boundingBox?: { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+    boundingBox?: {
+      x1: number;
+      y1: number;
+      x2?: number;
+      y2?: number;
+      w?: number;
+      h?: number;
+    };
     padding?: number;
   };
   /** viewport target: animate the pan that centers the given elements */
@@ -208,7 +268,13 @@ interface CompiledStyle {
   toColor?: RGBA;
 }
 
-export type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize';
+export type WriteKind =
+  | 'position'
+  | 'scalar'
+  | 'color'
+  | 'lane'
+  | 'padding'
+  | 'fontSize';
 
 /**
  * Tween write targets: the real columns plus the pseudo-columns of the
@@ -219,7 +285,11 @@ export type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding' | '
  * write drives its end-label streams and fontSize-derived anchorY
  * along).
  */
-export type TweenColumn = ColumnId | 'node.padding' | 'node.fontSize' | 'edge.fontSize';
+export type TweenColumn =
+  | ColumnId
+  | 'node.padding'
+  | 'node.fontSize'
+  | 'edge.fontSize';
 
 /**
  * One column's worth of resolved tween data, captured once at start.
@@ -248,51 +318,77 @@ export interface ChannelWrite {
   lane?: number;
 }
 
-const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
-const clampTo = ( v: number, lo: number, hi: number ): number => v < lo ? lo : v > hi ? hi : v;
+const clampTo = (v: number, lo: number, hi: number): number =>
+  v < lo ? lo : v > hi ? hi : v;
 
 /** Floats per slot in `ChannelWrite.data`, by kind. */
-export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2, padding: 2, fontSize: 2 };
+export const STRIDE: Record<WriteKind, number> = {
+  position: 4,
+  scalar: 2,
+  color: 8,
+  lane: 2,
+  padding: 2,
+  fontSize: 2,
+};
 
 const blankWrite = (
-  column: TweenColumn, kind: WriteKind, paint: boolean, refs: Ref[],
-  min = -Infinity, max = Infinity
-): ChannelWrite => ( {
-  column, kind, paint, refs, min, max,
-  slots: Uint32Array.from( refs, r => r.slot ),
-  data: new Float32Array( refs.length * STRIDE[ kind ] )
-} );
+  column: TweenColumn,
+  kind: WriteKind,
+  paint: boolean,
+  refs: Ref[],
+  min = -Infinity,
+  max = Infinity,
+): ChannelWrite => ({
+  column,
+  kind,
+  paint,
+  refs,
+  min,
+  max,
+  slots: Uint32Array.from(refs, (r) => r.slot),
+  data: new Float32Array(refs.length * STRIDE[kind]),
+});
 
-const readScalar = ( store: GraphStore, column: ColumnId, slot: number ): number =>
-  ( store.column( column ) as Float32Array )[ slot ];
+const readScalar = (
+  store: GraphStore,
+  column: ColumnId,
+  slot: number,
+): number => (store.column(column) as Float32Array)[slot];
 
-const readColor = ( store: GraphStore, column: ColumnId, slot: number ): RGBA => {
-  const bytes = store.column( column ) as Uint8Array;
+const readColor = (store: GraphStore, column: ColumnId, slot: number): RGBA => {
+  const bytes = store.column(column) as Uint8Array;
   const i = slot * 4;
 
-  return [ bytes[ i ], bytes[ i + 1 ], bytes[ i + 2 ], bytes[ i + 3 ] ];
+  return [bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]];
 };
 
 /** Write an sRGB byte tuple into `out` at `i` as OKLab + normalized alpha. */
-const packOklab = ( out: Float32Array, i: number, rgba: RGBA ): void => {
-  const [ L, a, b ] = srgbToOklab( rgba[ 0 ], rgba[ 1 ], rgba[ 2 ] );
+const packOklab = (out: Float32Array, i: number, rgba: RGBA): void => {
+  const [L, a, b] = srgbToOklab(rgba[0], rgba[1], rgba[2]);
 
-  out[ i ] = L;
-  out[ i + 1 ] = a;
-  out[ i + 2 ] = b;
-  out[ i + 3 ] = rgba[ 3 ] / 255;
+  out[i] = L;
+  out[i + 1] = a;
+  out[i + 2] = b;
+  out[i + 3] = rgba[3] / 255;
 };
 
 /** Interpolate one colour slot of `data` in OKLab, back to sRGB bytes. */
-const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
-  const [ r, g, b ] = oklabToSrgb(
-    lerp( data[ i ], data[ i + 4 ], e ),
-    lerp( data[ i + 1 ], data[ i + 5 ], e ),
-    lerp( data[ i + 2 ], data[ i + 6 ], e ) );
+const mixOklab = (data: Float32Array, i: number, e: number): RGBA => {
+  const [r, g, b] = oklabToSrgb(
+    lerp(data[i], data[i + 4], e),
+    lerp(data[i + 1], data[i + 5], e),
+    lerp(data[i + 2], data[i + 6], e),
+  );
 
   // the rgb conversion clamps on its own; alpha would wrap in a byte column
-  return [ r, g, b, Math.round( clampTo( lerp( data[ i + 3 ], data[ i + 7 ], e ), 0, 1 ) * 255 ) ];
+  return [
+    r,
+    g,
+    b,
+    Math.round(clampTo(lerp(data[i + 3], data[i + 7], e), 0, 1) * 255),
+  ];
 };
 
 /**
@@ -322,21 +418,30 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  *   Animation per element
  */
 export const buildChannelWrite = (
-  column: TweenColumn, kind: 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize', paint: boolean, refs: Ref[],
-  from: ( number | RGBA )[], to: ( number | RGBA )[],
-  min = -Infinity, max = Infinity, lane?: number
+  column: TweenColumn,
+  kind: 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize',
+  paint: boolean,
+  refs: Ref[],
+  from: (number | RGBA)[],
+  to: (number | RGBA)[],
+  min = -Infinity,
+  max = Infinity,
+  lane?: number,
 ): ChannelWrite => {
-  const write = blankWrite( column, kind, paint, refs, min, max );
+  const write = blankWrite(column, kind, paint, refs, min, max);
 
-  if( lane != null ){ write.lane = lane; }
+  if (lane != null) {
+    write.lane = lane;
+  }
 
-  for( let i = 0; i < refs.length; i++ ){
-    if( kind === 'color' ){
-      packOklab( write.data, i * 8, from[ i ] as RGBA );
-      packOklab( write.data, i * 8 + 4, to[ i ] as RGBA );
-    } else { // scalar and lane share the (from, to) stride
-      write.data[ i * 2 ] = from[ i ] as number;
-      write.data[ i * 2 + 1 ] = to[ i ] as number;
+  for (let i = 0; i < refs.length; i++) {
+    if (kind === 'color') {
+      packOklab(write.data, i * 8, from[i] as RGBA);
+      packOklab(write.data, i * 8 + 4, to[i] as RGBA);
+    } else {
+      // scalar and lane share the (from, to) stride
+      write.data[i * 2] = from[i] as number;
+      write.data[i * 2 + 1] = to[i] as number;
     }
   }
 
@@ -367,7 +472,7 @@ export class Animation {
   private position: Partial<Position> | null;
   private pan: Position | null;
   private zoom: number | null;
-  private onComplete: ( () => void ) | null;
+  private onComplete: (() => void) | null;
 
   private startTime: number | null = null; // set on first post-delay tick
   private started = false;
@@ -376,7 +481,7 @@ export class Animation {
   private fromPan: Position | null = null;
   private fromZoom: number | null = null;
   private _done = false;
-  private resolvers: ( () => void )[] = [];
+  private resolvers: (() => void)[] = [];
   /**
    * The animation's real length: the requested duration times the easing's
    * `durationScale`, which is 1 for every curve except a spring (whose
@@ -410,15 +515,23 @@ export class Animation {
    * A transition animation (round 24.1): the style engine diffed stored
    * truth around a restyle into per-column writes; nothing to capture.
    *
+   * @param store — the store whose columns the writes address
+   * @param refs — the elements the transition covers, for eviction and
+   *   ref repair; the writes carry their own slot lists
+   * @param writes — the diffed per-column from/to records
+   * @param opts — `duration`, and the `delay`/`easing` the sheet's
+   *   `transition-*` config resolved to
    * @returns an animation whose values are already resolved — it never
    *   reads the columns at play time, so the restyle's own diff is the
    *   only place stored truth is consulted
    */
   static preset(
-    store: GraphStore, refs: Ref[], writes: ChannelWrite[],
-    opts: { duration: number; delay?: number; easing?: string }
+    store: GraphStore,
+    refs: Ref[],
+    writes: ChannelWrite[],
+    opts: { duration: number; delay?: number; easing?: string },
   ): Animation {
-    const ani = new Animation( store, null, refs, false, opts );
+    const ani = new Animation(store, null, refs, false, opts);
 
     ani.writes = writes;
     ani.captured = true;
@@ -444,20 +557,24 @@ export class Animation {
    *   the animation got offloaded
    */
   constructor(
-    store: GraphStore, viewport: Viewport | null,
-    refs: Ref[], isViewport: boolean, opts: AnimateOptions,
-    styleEngine: StyleEngine | null = null
-  ){
+    store: GraphStore,
+    viewport: Viewport | null,
+    refs: Ref[],
+    isViewport: boolean,
+    opts: AnimateOptions,
+    styleEngine: StyleEngine | null = null,
+  ) {
     this.store = store;
     this.styleEngine = styleEngine;
     this.viewport = viewport;
     this.refs = refs;
     this.isViewport = isViewport;
-    this.easingProgram = compileEasing( opts.easing );
+    this.easingProgram = compileEasing(opts.easing);
     this.easing = this.easingProgram.fn;
-    this.duration = Math.max( 0, opts.duration ?? 400 ) * this.easingProgram.durationScale;
+    this.duration =
+      Math.max(0, opts.duration ?? 400) * this.easingProgram.durationScale;
     this.durationMs = this.duration;
-    this.delay = Math.max( 0, opts.delay ?? 0 );
+    this.delay = Math.max(0, opts.delay ?? 0);
     this.position = opts.position ?? null;
     this.pan = opts.pan ?? null;
     this.zoom = opts.zoom ?? null;
@@ -466,30 +583,38 @@ export class Animation {
 
     // round 21: v4 has no animation queue and no step callback — reject
     // the v3 spellings loudly rather than silently ignoring them
-    if( 'queue' in ( opts as Record<string, unknown> ) ){
-      throw new Error( `v4 animations have no queue (the 'queue' option does not exist) — ` +
-        `sequence animations with 'await animation.promise()' instead` );
+    if ('queue' in (opts as Record<string, unknown>)) {
+      throw new Error(
+        `v4 animations have no queue (the 'queue' option does not exist) — ` +
+          `sequence animations with 'await animation.promise()' instead`,
+      );
     }
 
-    if( 'step' in ( opts as Record<string, unknown> ) ){
-      throw new Error( `The 'step' callback is not supported in v4 — ` +
-        `observe progress via 'onRender' or poll between awaits` );
+    if ('step' in (opts as Record<string, unknown>)) {
+      throw new Error(
+        `The 'step' callback is not supported in v4 — ` +
+          `observe progress via 'onRender' or poll between awaits`,
+      );
     }
 
-    for( const prop of Object.keys( opts.style ?? {} ) ){
-      const norm = normalizeProp( prop );
-      const channel = STYLE_CHANNELS[ norm ];
+    for (const prop of Object.keys(opts.style ?? {})) {
+      const norm = normalizeProp(prop);
+      const channel = STYLE_CHANNELS[norm];
 
-      if( channel == null ){
-        throw new Error( `Animating '${norm}' is unsupported in the GPU prototype ` +
-          `(animatable: ${Object.keys( STYLE_CHANNELS ).join( ', ' )}, position)` );
+      if (channel == null) {
+        throw new Error(
+          `Animating '${norm}' is unsupported in the GPU prototype ` +
+            `(animatable: ${Object.keys(STYLE_CHANNELS).join(', ')}, position)`,
+        );
       }
 
-      const value = ( opts.style as Record<string, unknown> )[ prop ];
+      const value = (opts.style as Record<string, unknown>)[prop];
 
-      this.style.push( channel.kind === 'color'
-        ? { prop: norm, channel, toColor: parseColor( value ) }
-        : { prop: norm, channel, toScalar: parseNumber( value ) } );
+      this.style.push(
+        channel.kind === 'color'
+          ? { prop: norm, channel, toColor: parseColor(value) }
+          : { prop: norm, channel, toScalar: parseNumber(value) },
+      );
     }
   }
 
@@ -500,7 +625,9 @@ export class Animation {
    *   a natural completion are the same answer here, and both resolve
    *   the promise
    */
-  get done(): boolean { return this._done; }
+  get done(): boolean {
+    return this._done;
+  }
 
   /** Columns this animation writes (round 21: the concurrency contract —
    * animations sharing an element may run together iff these are
@@ -516,17 +643,23 @@ export class Animation {
    * @returns the set of column ids, computed once and cached
    */
   touchedColumns(): ReadonlySet<string> {
-    if( this._columns == null ){
+    if (this._columns == null) {
       const cols = new Set<string>();
 
-      if( this.position != null ){ cols.add( 'node.position' ); }
+      if (this.position != null) {
+        cols.add('node.position');
+      }
 
-      for( const s of this.style ){
-        for( const col of Object.values( s.channel.columns ) ){ cols.add( col ); }
+      for (const s of this.style) {
+        for (const col of Object.values(s.channel.columns)) {
+          cols.add(col);
+        }
       }
 
       // a preset transition's channels live in its pre-resolved writes
-      for( const w of this.writes ){ cols.add( w.column ); }
+      for (const w of this.writes) {
+        cols.add(w.column);
+      }
 
       this._columns = cols;
     }
@@ -541,7 +674,9 @@ export class Animation {
    *   separate channels, so a pan animation and a zoom animation run
    *   together rather than evicting each other
    */
-  get hasPan(): boolean { return this.pan != null; }
+  get hasPan(): boolean {
+    return this.pan != null;
+  }
 
   /**
    * Whether this viewport animation tweens the zoom.
@@ -549,7 +684,9 @@ export class Animation {
    * @returns whether the zoom channel is claimed; see `hasPan` for why
    *   the two are tracked apart
    */
-  get hasZoom(): boolean { return this.zoom != null; }
+  get hasZoom(): boolean {
+    return this.zoom != null;
+  }
 
   /**
    * Slot compaction (19.3): repair the target and channel-write refs
@@ -560,13 +697,15 @@ export class Animation {
    * @param store — the store that just compacted, whose forwarding chain
    *   resolves the pre-move refs
    */
-  repairRefs( store: GraphStore ): void {
-    for( const ref of this.refs ){ store.isCurrent( ref ); }
+  repairRefs(store: GraphStore): void {
+    for (const ref of this.refs) {
+      store.isCurrent(ref);
+    }
 
-    for( const w of this.writes ){
-      for( let i = 0; i < w.refs.length; i++ ){
-        store.isCurrent( w.refs[ i ] );
-        w.slots[ i ] = w.refs[ i ].slot;
+    for (const w of this.writes) {
+      for (let i = 0; i < w.refs.length; i++) {
+        store.isCurrent(w.refs[i]);
+        w.slots[i] = w.refs[i].slot;
       }
     }
   }
@@ -580,13 +719,19 @@ export class Animation {
    *   delay, when the animation is live and owns its channels but has
    *   not started interpolating
    */
-  get running(): boolean { return this.started && !this._done; }
+  get running(): boolean {
+    return this.started && !this._done;
+  }
 
   /** A promise that resolves when the animation completes (or is stopped). */
   promise(): Promise<void> {
-    if( this._done ){ return Promise.resolve(); }
+    if (this._done) {
+      return Promise.resolve();
+    }
 
-    return new Promise( resolve => { this.resolvers.push( resolve ); } );
+    return new Promise((resolve) => {
+      this.resolvers.push(resolve);
+    });
   }
 
   /**
@@ -595,25 +740,40 @@ export class Animation {
    * @param now — the shared clock in ms
    * @returns true when the animation finished on this tick
    */
-  tick( now: number ): boolean {
+  tick(now: number): boolean {
     this.lastNow = now;
 
-    if( this._done ){ return true; }
+    if (this._done) {
+      return true;
+    }
 
-    if( this._paused ){ return false; } // frozen — the clock still stamps lastNow
+    if (this._paused) {
+      return false;
+    } // frozen — the clock still stamps lastNow
 
-    if( this.startTime == null ){ this.startTime = now + this.delay; }
+    if (this.startTime == null) {
+      this.startTime = now + this.delay;
+    }
 
-    if( now < this.startTime ){ return false; } // still in the delay
+    if (now < this.startTime) {
+      return false;
+    } // still in the delay
 
-    if( !this.started ){ this.capture(); this.started = true; }
+    if (!this.started) {
+      this.capture();
+      this.started = true;
+    }
 
-    const t = this.duration === 0 ? 1 : clamp01( ( now - this.startTime ) / this.duration );
-    const e = this.easing( t );
+    const t =
+      this.duration === 0 ? 1 : clamp01((now - this.startTime) / this.duration);
+    const e = this.easing(t);
 
-    this.apply( e );
+    this.apply(e);
 
-    if( t >= 1 ){ this.finish(); return true; }
+    if (t >= 1) {
+      this.finish();
+      return true;
+    }
 
     return false;
   }
@@ -624,13 +784,18 @@ export class Animation {
    * @param jumpToEnd — apply the final frame first, instead of freezing
    *   at the value the tween reached
    */
-  stop( jumpToEnd: boolean ): void {
-    if( this._done ){ return; }
+  stop(jumpToEnd: boolean): void {
+    if (this._done) {
+      return;
+    }
 
-    if( jumpToEnd ){
-      if( !this.started ){ this.capture(); this.started = true; }
+    if (jumpToEnd) {
+      if (!this.started) {
+        this.capture();
+        this.started = true;
+      }
 
-      this.apply( 1 );
+      this.apply(1);
     }
 
     this.finish();
@@ -646,7 +811,9 @@ export class Animation {
    * @returns whether the clock is frozen; a paused animation is not a
    *   stopped one — it still holds its channels against everything else
    */
-  get paused(): boolean { return this._paused; }
+  get paused(): boolean {
+    return this._paused;
+  }
 
   /**
    * Elapsed fraction of the duration (0 before start, 1 when done;
@@ -657,13 +824,20 @@ export class Animation {
    *   tweened
    */
   get progress(): number {
-    if( this._done ){ return 1; }
-    if( this.startTime == null ){ return 0; }
-    if( this.duration === 0 ){ return this.started ? 1 : 0; }
+    if (this._done) {
+      return 1;
+    }
+    if (this.startTime == null) {
+      return 0;
+    }
+    if (this.duration === 0) {
+      return this.started ? 1 : 0;
+    }
 
-    const basis = this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
+    const basis =
+      this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
 
-    return clamp01( ( basis - this.startTime ) / this.duration );
+    return clamp01((basis - this.startTime) / this.duration);
   }
 
   /**
@@ -671,8 +845,10 @@ export class Animation {
    *
    * @param now — the clock to freeze against; defaults to the last tick
    */
-  pause( now: number = this.lastNow ): void {
-    if( this._done || this._paused ){ return; }
+  pause(now: number = this.lastNow): void {
+    if (this._done || this._paused) {
+      return;
+    }
 
     this._paused = true;
     this.pausedAt = now;
@@ -683,10 +859,12 @@ export class Animation {
    *
    * @param now — the clock to resume against; defaults to the last tick
    */
-  resume( now: number = this.lastNow ): void {
-    if( !this._paused ){ return; }
+  resume(now: number = this.lastNow): void {
+    if (!this._paused) {
+      return;
+    }
 
-    if( this.startTime != null && this.pausedAt != null ){
+    if (this.startTime != null && this.pausedAt != null) {
       this.startTime += now - this.pausedAt;
     }
 
@@ -702,18 +880,29 @@ export class Animation {
    * paused (the frozen value is the pivot) — resume plays backward.
    */
   reverse(): void {
-    if( this._done ){ return; }
+    if (this._done) {
+      return;
+    }
 
-    const nowMs = this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
+    const nowMs =
+      this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
 
-    if( this.startTime == null ){ this.startTime = nowMs + this.delay; }
+    if (this.startTime == null) {
+      this.startTime = nowMs + this.delay;
+    }
 
-    if( !this.started ){ this.capture(); this.started = true; }
+    if (!this.started) {
+      this.capture();
+      this.started = true;
+    }
 
-    const t = this.duration === 0 ? 1 : clamp01( ( nowMs - this.startTime ) / this.duration );
+    const t =
+      this.duration === 0
+        ? 1
+        : clamp01((nowMs - this.startTime) / this.duration);
 
     this.swapEnds();
-    this.startTime = nowMs - ( 1 - t ) * this.duration;
+    this.startTime = nowMs - (1 - t) * this.duration;
   }
 
   /** Write the value reached at `now` onto the CPU columns without
@@ -722,43 +911,51 @@ export class Animation {
    *
    * @param now — the clock to evaluate at; defaults to the last tick
    */
-  applyNow( now: number = this.lastNow ): void {
-    if( this._done ){ return; }
+  applyNow(now: number = this.lastNow): void {
+    if (this._done) {
+      return;
+    }
 
-    if( !this.started ){ this.capture(); this.started = true; }
+    if (!this.started) {
+      this.capture();
+      this.started = true;
+    }
 
-    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+    const t =
+      this.duration === 0
+        ? 1
+        : clamp01((now - (this.startTime ?? now)) / this.duration);
 
-    this.apply( this.easing( t ) );
+    this.apply(this.easing(t));
   }
 
   /** Swap every write's from/to halves (and the viewport targets). */
   private swapEnds(): void {
-    for( const w of this.writes ){
-      const stride = STRIDE[ w.kind ];
+    for (const w of this.writes) {
+      const stride = STRIDE[w.kind];
       const half = stride / 2;
       const data = w.data;
 
-      for( let i = 0; i < w.refs.length; i++ ){
+      for (let i = 0; i < w.refs.length; i++) {
         const base = i * stride;
 
-        for( let j = 0; j < half; j++ ){
-          const a = data[ base + j ];
+        for (let j = 0; j < half; j++) {
+          const a = data[base + j];
 
-          data[ base + j ] = data[ base + half + j ];
-          data[ base + half + j ] = a;
+          data[base + j] = data[base + half + j];
+          data[base + half + j] = a;
         }
       }
     }
 
-    if( this.pan != null && this.fromPan != null ){
+    if (this.pan != null && this.fromPan != null) {
       const p = this.pan;
 
       this.pan = this.fromPan;
       this.fromPan = p;
     }
 
-    if( this.zoom != null && this.fromZoom != null ){
+    if (this.zoom != null && this.fromZoom != null) {
       const z = this.zoom;
 
       this.zoom = this.fromZoom;
@@ -787,31 +984,40 @@ export class Animation {
    *   animation on the CPU rather than splitting it
    */
   get gpuEligible(): boolean {
-    if( this._barred ){ return false; }
-    if( this.isViewport ){ return false; }
+    if (this._barred) {
+      return false;
+    }
+    if (this.isViewport) {
+      return false;
+    }
 
     // a preset transition's tier is per write: all-paint may offload
     // (24.2's territory); a geometry write (border-width) keeps it CPU
-    if( this.preset ){
-      return this.writes.length > 0 && this.writes.every( w => w.paint );
+    if (this.preset) {
+      return this.writes.length > 0 && this.writes.every((w) => w.paint);
     }
 
-    if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
+    if (this.position == null && this.style.length === 0) {
+      return false;
+    } // a bare delay
 
     // compounds (round 14.11): a GPU position lease leaves the CPU
     // columns stale, which the auto-bounds derivation reads — and a
     // tweened parent must shift its subtree per tick, which only the
     // CPU path does.  Compound-related targets stay CPU-driven.
-    if( this.position != null && this.store.hasCompounds() ){
-      for( const ref of this.refs ){
-        if( ref.group === 'nodes'
-          && ( this.store.flags( 'nodes', ref.slot ) & ( FLAG_PARENT | FLAG_CHILD ) ) !== 0 ){
+    if (this.position != null && this.store.hasCompounds()) {
+      for (const ref of this.refs) {
+        if (
+          ref.group === 'nodes' &&
+          (this.store.flags('nodes', ref.slot) & (FLAG_PARENT | FLAG_CHILD)) !==
+            0
+        ) {
           return false;
         }
       }
     }
 
-    return this.style.every( s => s.channel.tier === 'paint' );
+    return this.style.every((s) => s.channel.tier === 'paint');
   }
 
   /**
@@ -822,8 +1028,10 @@ export class Animation {
    * @param now — the clock the batch's params are anchored to
    * @returns one ChannelWrite per tweened column
    */
-  gpuBatches( now: number ): ChannelWrite[] {
-    if( this.startTime == null ){ this.startTime = now + this.delay; }
+  gpuBatches(now: number): ChannelWrite[] {
+    if (this.startTime == null) {
+      this.startTime = now + this.delay;
+    }
 
     this.capture();
     this.started = true;
@@ -837,8 +1045,10 @@ export class Animation {
    *
    * @param now — the clock of that first tick
    */
-  schedule( now: number ): void {
-    if( this.startTime == null ){ this.startTime = now + this.delay; }
+  schedule(now: number): void {
+    if (this.startTime == null) {
+      this.startTime = now + this.delay;
+    }
   }
 
   /**
@@ -848,7 +1058,9 @@ export class Animation {
    *   added in, so this is not the moment `play()` was called; 0 before
    *   the animation has been scheduled at all
    */
-  get startMs(): number { return this.startTime ?? 0; }
+  get startMs(): number {
+    return this.startTime ?? 0;
+  }
 
   /**
    * Settle a GPU-driven animation onto the CPU columns at `now` and finish
@@ -860,14 +1072,22 @@ export class Animation {
    *
    * @param now — the clock to settle at; t = 1 on natural completion
    */
-  settleGpu( now: number ): void {
-    if( this._done ){ return; }
+  settleGpu(now: number): void {
+    if (this._done) {
+      return;
+    }
 
-    if( !this.started ){ this.capture(); this.started = true; }
+    if (!this.started) {
+      this.capture();
+      this.started = true;
+    }
 
-    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+    const t =
+      this.duration === 0
+        ? 1
+        : clamp01((now - (this.startTime ?? now)) / this.duration);
 
-    this.apply( this.easing( t ) );
+    this.apply(this.easing(t));
     this.finish();
   }
 
@@ -880,19 +1100,27 @@ export class Animation {
    *
    * @param now — the clock whose value is written to the CPU columns
    */
-  demoteGpu( now: number ): void {
+  demoteGpu(now: number): void {
     this._barred = true;
 
-    if( this._done || this.gpuId == null ){ return; }
+    if (this._done || this.gpuId == null) {
+      return;
+    }
 
     this.gpuId = null;
     this.gpuDriven = false;
 
-    if( !this.started ){ this.capture(); this.started = true; }
+    if (!this.started) {
+      this.capture();
+      this.started = true;
+    }
 
-    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+    const t =
+      this.duration === 0
+        ? 1
+        : clamp01((now - (this.startTime ?? now)) / this.duration);
 
-    this.apply( this.easing( t ) );
+    this.apply(this.easing(t));
   }
 
   // -- internals --
@@ -904,99 +1132,162 @@ export class Animation {
    * against the values it registered with.
    */
   private capture(): void {
-    if( this.captured ){ return; }
+    if (this.captured) {
+      return;
+    }
 
     this.captured = true;
 
-    for( const s of this.style ){
-      for( const group of GROUPS ){
-        const column = s.channel.columns[ group ];
+    for (const s of this.style) {
+      for (const group of GROUPS) {
+        const column = s.channel.columns[group];
 
-        if( column == null ){ continue; }
+        if (column == null) {
+          continue;
+        }
 
-        let refs = this.refs.filter( r => r.group === group && this.store.isCurrent( r ) );
+        let refs = this.refs.filter(
+          (r) => r.group === group && this.store.isCurrent(r),
+        );
 
         // round 25.1: a compound parent's size is auto-bounds-derived —
         // width/height tweens skip parent slots (padding is the parent
         // knob; recorded); 25.4: padding conversely is parents-only
-        const lane = s.channel.lanes?.[ group ];
+        const lane = s.channel.lanes?.[group];
 
-        if( column === 'node.size' ){
-          refs = refs.filter( r =>
-            ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) === 0 );
-        } else if( column === 'node.padding' ){
-          refs = refs.filter( r =>
-            ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) !== 0 );
-        } else if( column === 'node.fontSize' || column === 'edge.fontSize' ){
+        if (column === 'node.size') {
+          refs = refs.filter(
+            (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) === 0,
+          );
+        } else if (column === 'node.padding') {
+          refs = refs.filter(
+            (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) !== 0,
+          );
+        } else if (column === 'node.fontSize' || column === 'edge.fontSize') {
           // 25.5: only labelled elements have a fontSize to tween
-          refs = refs.filter( r =>
-            this.store.labelAt( r.slot, r.group === 'nodes' ? 'nodes' : 'edges' ) != null );
+          refs = refs.filter(
+            (r) =>
+              this.store.labelAt(
+                r.slot,
+                r.group === 'nodes' ? 'nodes' : 'edges',
+              ) != null,
+          );
         }
 
-        if( refs.length === 0 ){ continue; }
+        if (refs.length === 0) {
+          continue;
+        }
 
         const paint = s.channel.tier === 'paint';
 
-        this.writes.push( s.channel.kind === 'color'
-          ? this.colorWrite( column as ColumnId, refs, paint, () => s.toColor as RGBA )
-          : column === 'node.padding'
-            ? this.paddingWrite( refs, s.toScalar as number, s.channel )
-            : column === 'node.fontSize' || column === 'edge.fontSize'
-              ? this.fontSizeWrite( column, group, refs, s.toScalar as number, s.channel )
-              : lane != null
-                ? this.laneWrite( column as ColumnId, refs, lane, s.toScalar as number, s.channel )
-                : this.scalarWrite( column as ColumnId, refs, paint, s.toScalar as number, s.channel ) );
+        this.writes.push(
+          s.channel.kind === 'color'
+            ? this.colorWrite(
+                column as ColumnId,
+                refs,
+                paint,
+                () => s.toColor as RGBA,
+              )
+            : column === 'node.padding'
+              ? this.paddingWrite(refs, s.toScalar as number, s.channel)
+              : column === 'node.fontSize' || column === 'edge.fontSize'
+                ? this.fontSizeWrite(
+                    column,
+                    group,
+                    refs,
+                    s.toScalar as number,
+                    s.channel,
+                  )
+                : lane != null
+                  ? this.laneWrite(
+                      column as ColumnId,
+                      refs,
+                      lane,
+                      s.toScalar as number,
+                      s.channel,
+                    )
+                  : this.scalarWrite(
+                      column as ColumnId,
+                      refs,
+                      paint,
+                      s.toScalar as number,
+                      s.channel,
+                    ),
+        );
 
         // edge opacity is pre-folded into the stored arrow alpha (the arrow
         // vertex stage has no spare storage binding for the opacity column),
         // so tweening it has to carry the arrows along.  The fold is linear
         // in opacity, so each arrow rides as a plain colour tween from its
         // stored bytes to base × the target opacity.
-        if( column === 'edge.opacity' ){ this.captureArrowFold( refs, s.toScalar as number ); }
+        if (column === 'edge.opacity') {
+          this.captureArrowFold(refs, s.toScalar as number);
+        }
 
         // 25.2: three derived channels bake the edge width at style-write
         // (all linear in width), so a width tween carries them along
-        if( column === 'edge.width' ){ this.captureEdgeWidthRides( refs, s.toScalar as number ); }
+        if (column === 'edge.width') {
+          this.captureEdgeWidthRides(refs, s.toScalar as number);
+        }
       }
     }
 
-    if( this.position != null ){
-      const refs = this.refs.filter( r => r.group === 'nodes' && this.store.isCurrent( r ) );
+    if (this.position != null) {
+      const refs = this.refs.filter(
+        (r) => r.group === 'nodes' && this.store.isCurrent(r),
+      );
 
-      if( refs.length > 0 ){ this.writes.push( this.positionWrite( refs ) ); }
+      if (refs.length > 0) {
+        this.writes.push(this.positionWrite(refs));
+      }
     }
 
-    if( this.viewport != null ){
-      if( this.pan != null ){ this.fromPan = { ...this.viewport.pan() }; }
-      if( this.zoom != null ){ this.fromZoom = this.viewport.zoom(); }
+    if (this.viewport != null) {
+      if (this.pan != null) {
+        this.fromPan = { ...this.viewport.pan() };
+      }
+      if (this.zoom != null) {
+        this.fromZoom = this.viewport.zoom();
+      }
     }
   }
 
-  private positionWrite( refs: Ref[] ): ChannelWrite {
-    const pos = this.store.column( 'node.position' ) as Float32Array;
-    const write = blankWrite( 'node.position', 'position', true, refs );
+  private positionWrite(refs: Ref[]): ChannelWrite {
+    const pos = this.store.column('node.position') as Float32Array;
+    const write = blankWrite('node.position', 'position', true, refs);
 
-    for( let i = 0; i < refs.length; i++ ){
-      const x = pos[ refs[ i ].slot * 2 ];
-      const y = pos[ refs[ i ].slot * 2 + 1 ];
+    for (let i = 0; i < refs.length; i++) {
+      const x = pos[refs[i].slot * 2];
+      const y = pos[refs[i].slot * 2 + 1];
 
-      write.data[ i * 4 ] = x;
-      write.data[ i * 4 + 1 ] = y;
-      write.data[ i * 4 + 2 ] = this.position?.x ?? x;
-      write.data[ i * 4 + 3 ] = this.position?.y ?? y;
+      write.data[i * 4] = x;
+      write.data[i * 4 + 1] = y;
+      write.data[i * 4 + 2] = this.position?.x ?? x;
+      write.data[i * 4 + 3] = this.position?.y ?? y;
     }
 
     return write;
   }
 
   private scalarWrite(
-    column: ColumnId, refs: Ref[], paint: boolean, to: number, channel: StyleChannel
+    column: ColumnId,
+    refs: Ref[],
+    paint: boolean,
+    to: number,
+    channel: StyleChannel,
   ): ChannelWrite {
-    const write = blankWrite( column, 'scalar', paint, refs, channel.min, channel.max );
+    const write = blankWrite(
+      column,
+      'scalar',
+      paint,
+      refs,
+      channel.min,
+      channel.max,
+    );
 
-    for( let i = 0; i < refs.length; i++ ){
-      write.data[ i * 2 ] = readScalar( this.store, column, refs[ i ].slot );
-      write.data[ i * 2 + 1 ] = to;
+    for (let i = 0; i < refs.length; i++) {
+      write.data[i * 2] = readScalar(this.store, column, refs[i].slot);
+      write.data[i * 2 + 1] = to;
     }
 
     return write;
@@ -1005,12 +1296,23 @@ export class Animation {
   /** Round 25.4: tween a parent's declared compound padding — from is
    * the stored declaration in its declared unit; the auto-bounds flush
    * resolves it per tick. */
-  private paddingWrite( refs: Ref[], to: number, channel: StyleChannel ): ChannelWrite {
-    const write = blankWrite( 'node.padding', 'padding', false, refs, channel.min, channel.max );
+  private paddingWrite(
+    refs: Ref[],
+    to: number,
+    channel: StyleChannel,
+  ): ChannelWrite {
+    const write = blankWrite(
+      'node.padding',
+      'padding',
+      false,
+      refs,
+      channel.min,
+      channel.max,
+    );
 
-    for( let i = 0; i < refs.length; i++ ){
-      write.data[ i * 2 ] = this.store.compoundStyleOf( refs[ i ].slot ).padding;
-      write.data[ i * 2 + 1 ] = to;
+    for (let i = 0; i < refs.length; i++) {
+      write.data[i * 2] = this.store.compoundStyleOf(refs[i].slot).padding;
+      write.data[i * 2 + 1] = to;
     }
 
     return write;
@@ -1019,14 +1321,26 @@ export class Animation {
   /** Round 25.5: tween a label's font-size — from is the sidecar
    * entry's current value (refs are pre-filtered to labelled slots). */
   private fontSizeWrite(
-    column: TweenColumn, group: GroupName, refs: Ref[], to: number, channel: StyleChannel
+    column: TweenColumn,
+    group: GroupName,
+    refs: Ref[],
+    to: number,
+    channel: StyleChannel,
   ): ChannelWrite {
-    const write = blankWrite( column, 'fontSize', false, refs, channel.min, channel.max );
+    const write = blankWrite(
+      column,
+      'fontSize',
+      false,
+      refs,
+      channel.min,
+      channel.max,
+    );
     const stream = group === 'nodes' ? 'nodes' : 'edges';
 
-    for( let i = 0; i < refs.length; i++ ){
-      write.data[ i * 2 ] = this.store.labelAt( refs[ i ].slot, stream )?.fontSize ?? to;
-      write.data[ i * 2 + 1 ] = to;
+    for (let i = 0; i < refs.length; i++) {
+      write.data[i * 2] =
+        this.store.labelAt(refs[i].slot, stream)?.fontSize ?? to;
+      write.data[i * 2 + 1] = to;
     }
 
     return write;
@@ -1035,28 +1349,44 @@ export class Animation {
   /** Round 25: tween one component of a multi-lane column (node size).
    * Geometry-tier by construction — lane writes never offload. */
   private laneWrite(
-    column: ColumnId, refs: Ref[], lane: number, to: number, channel: StyleChannel
+    column: ColumnId,
+    refs: Ref[],
+    lane: number,
+    to: number,
+    channel: StyleChannel,
   ): ChannelWrite {
-    const write = blankWrite( column, 'lane', false, refs, channel.min, channel.max );
-    const arr = this.store.column( column ) as Float32Array;
-    const comps = columnSpec( column ).components;
+    const write = blankWrite(
+      column,
+      'lane',
+      false,
+      refs,
+      channel.min,
+      channel.max,
+    );
+    const arr = this.store.column(column) as Float32Array;
+    const comps = columnSpec(column).components;
 
     write.lane = lane;
 
-    for( let i = 0; i < refs.length; i++ ){
-      write.data[ i * 2 ] = arr[ refs[ i ].slot * comps + lane ];
-      write.data[ i * 2 + 1 ] = to;
+    for (let i = 0; i < refs.length; i++) {
+      write.data[i * 2] = arr[refs[i].slot * comps + lane];
+      write.data[i * 2 + 1] = to;
     }
 
     return write;
   }
 
-  private colorWrite( column: ColumnId, refs: Ref[], paint: boolean, to: ( ref: Ref ) => RGBA ): ChannelWrite {
-    const write = blankWrite( column, 'color', paint, refs );
+  private colorWrite(
+    column: ColumnId,
+    refs: Ref[],
+    paint: boolean,
+    to: (ref: Ref) => RGBA,
+  ): ChannelWrite {
+    const write = blankWrite(column, 'color', paint, refs);
 
-    for( let i = 0; i < refs.length; i++ ){
-      packOklab( write.data, i * 8, readColor( this.store, column, refs[ i ].slot ) );
-      packOklab( write.data, i * 8 + 4, to( refs[ i ] ) );
+    for (let i = 0; i < refs.length; i++) {
+      packOklab(write.data, i * 8, readColor(this.store, column, refs[i].slot));
+      packOklab(write.data, i * 8 + 4, to(refs[i]));
     }
 
     return write;
@@ -1073,138 +1403,187 @@ export class Animation {
    * the width, so they stay).  Arrow-width modes are constants-only
    * sheet props, answered by the engine.
    */
-  private captureEdgeWidthRides( refs: Ref[], toWidth: number ): void {
+  private captureEdgeWidthRides(refs: Ref[], toWidth: number): void {
     const store = this.store;
-    const width = store.column( 'edge.width' ) as Float32Array;
+    const width = store.column('edge.width') as Float32Array;
 
-    for( const column of [ 'edge.casing', 'edge.overlay', 'edge.underlay' ] as const ){
-      const rec = store.column( column ) as Uint32Array;
-      const enabled = refs.filter( r => rec[ r.slot * 2 ] !== 0 );
+    for (const column of [
+      'edge.casing',
+      'edge.overlay',
+      'edge.underlay',
+    ] as const) {
+      const rec = store.column(column) as Uint32Array;
+      const enabled = refs.filter((r) => rec[r.slot * 2] !== 0);
 
-      if( enabled.length === 0 ){ continue; }
+      if (enabled.length === 0) {
+        continue;
+      }
 
-      const write = blankWrite( column, 'lane', false, enabled, 0, Infinity );
+      const write = blankWrite(column, 'lane', false, enabled, 0, Infinity);
 
       write.lane = 1;
 
-      for( let i = 0; i < enabled.length; i++ ){
-        const slot = enabled[ i ].slot;
-        const stroke = rec[ slot * 2 + 1 ] / 256;
+      for (let i = 0; i < enabled.length; i++) {
+        const slot = enabled[i].slot;
+        const stroke = rec[slot * 2 + 1] / 256;
 
-        write.data[ i * 2 ] = stroke;
-        write.data[ i * 2 + 1 ] = stroke + ( toWidth - width[ slot * 2 ] );
+        write.data[i * 2] = stroke;
+        write.data[i * 2 + 1] = stroke + (toWidth - width[slot * 2]);
       }
 
-      this.writes.push( write );
+      this.writes.push(write);
     }
 
     const modes = this.styleEngine?.arrowWidthModes();
 
-    if( modes == null ){ return; }
+    if (modes == null) {
+      return;
+    }
 
-    const aw = store.column( 'edge.arrowWidths' ) as Float32Array;
+    const aw = store.column('edge.arrowWidths') as Float32Array;
 
-    for( const [ mode, lane ] of [ [ modes.source, 0 ], [ modes.target, 1 ] ] as const ){
-      if( typeof mode === 'number' ){ continue; }
+    for (const [mode, lane] of [
+      [modes.source, 0],
+      [modes.target, 1],
+    ] as const) {
+      if (typeof mode === 'number') {
+        continue;
+      }
 
       const to = mode === 'match-line' ? toWidth : mode.percent * toWidth;
-      const write = blankWrite( 'edge.arrowWidths', 'lane', false, refs, 0, Infinity );
+      const write = blankWrite(
+        'edge.arrowWidths',
+        'lane',
+        false,
+        refs,
+        0,
+        Infinity,
+      );
 
       write.lane = lane;
 
-      for( let i = 0; i < refs.length; i++ ){
-        write.data[ i * 2 ] = aw[ refs[ i ].slot * 2 + lane ];
-        write.data[ i * 2 + 1 ] = to;
+      for (let i = 0; i < refs.length; i++) {
+        write.data[i * 2] = aw[refs[i].slot * 2 + lane];
+        write.data[i * 2 + 1] = to;
       }
 
-      this.writes.push( write );
+      this.writes.push(write);
     }
   }
 
   /** Arrow colour writes that keep the pre-folded alpha in step with an edge-opacity tween. */
-  private captureArrowFold( refs: Ref[], toOpacity: number ): void {
+  private captureArrowFold(refs: Ref[], toOpacity: number): void {
     const engine = this.styleEngine;
     const ends = engine?.arrowEnds;
 
-    if( engine == null || ends == null ){ return; }
+    if (engine == null || ends == null) {
+      return;
+    }
 
-    for( const [ enabled, column, colorProp ] of [
-      [ ends.source, 'edge.sourceArrow', 'source-arrow-color' ],
-      [ ends.target, 'edge.targetArrow', 'target-arrow-color' ]
-    ] as const ){
-      if( !enabled ){ continue; }
+    for (const [enabled, column, colorProp] of [
+      [ends.source, 'edge.sourceArrow', 'source-arrow-color'],
+      [ends.target, 'edge.targetArrow', 'target-arrow-color'],
+    ] as const) {
+      if (!enabled) {
+        continue;
+      }
 
-      this.writes.push( this.colorWrite( column, refs, true, ref => {
-        const [ r, g, b, baseAlpha ] = engine.arrowBase( ref, colorProp );
-        // B1: the stored fold is base.a × opacity × line-opacity
-        const lineOp = engine.lineOpacityConst();
+      this.writes.push(
+        this.colorWrite(column, refs, true, (ref) => {
+          const [r, g, b, baseAlpha] = engine.arrowBase(ref, colorProp);
+          // B1: the stored fold is base.a × opacity × line-opacity
+          const lineOp = engine.lineOpacityConst();
 
-        return [ r, g, b, Math.round( baseAlpha * toOpacity * lineOp ) ];
-      } ) );
+          return [r, g, b, Math.round(baseAlpha * toOpacity * lineOp)];
+        }),
+      );
     }
   }
 
-  private apply( e: number ): void {
+  private apply(e: number): void {
     const store = this.store;
 
-    for( const w of this.writes ){
-      for( let i = 0; i < w.refs.length; i++ ){
-        const slot = w.slots[ i ];
+    for (const w of this.writes) {
+      for (let i = 0; i < w.refs.length; i++) {
+        const slot = w.slots[i];
 
-        if( !store.isCurrent( w.refs[ i ] ) ){ continue; }
+        if (!store.isCurrent(w.refs[i])) {
+          continue;
+        }
 
-        switch( w.kind ){
+        switch (w.kind) {
           case 'position':
-            store.setPosition( slot,
-              lerp( w.data[ i * 4 ], w.data[ i * 4 + 2 ], e ),
-              lerp( w.data[ i * 4 + 1 ], w.data[ i * 4 + 3 ], e ) );
+            store.setPosition(
+              slot,
+              lerp(w.data[i * 4], w.data[i * 4 + 2], e),
+              lerp(w.data[i * 4 + 1], w.data[i * 4 + 3], e),
+            );
             break;
           case 'scalar':
-            store.setScalar( w.column as ColumnId, slot,
-              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
+            store.setScalar(
+              w.column as ColumnId,
+              slot,
+              clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+            );
             break;
           case 'color': {
-            const [ r, g, b, a ] = mixOklab( w.data, i * 8, e );
+            const [r, g, b, a] = mixOklab(w.data, i * 8, e);
 
-            store.setColor( w.column as ColumnId, slot, r, g, b, a );
+            store.setColor(w.column as ColumnId, slot, r, g, b, a);
             break;
           }
           case 'lane':
             // a mid-tween leaf→parent flip hands the slot to auto-bounds
             // rather than fighting the derivation (round 25.1)
-            if( w.column === 'node.size'
-              && ( store.flags( 'nodes', slot ) & FLAG_PARENT ) !== 0 ){ break; }
+            if (
+              w.column === 'node.size' &&
+              (store.flags('nodes', slot) & FLAG_PARENT) !== 0
+            ) {
+              break;
+            }
 
-            store.setLane( w.column as ColumnId, slot, w.lane as number,
-              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
+            store.setLane(
+              w.column as ColumnId,
+              slot,
+              w.lane as number,
+              clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+            );
             break;
           case 'padding':
             // parents only — a mid-tween parent→leaf flip drops the slot
-            if( ( store.flags( 'nodes', slot ) & FLAG_PARENT ) === 0 ){ break; }
+            if ((store.flags('nodes', slot) & FLAG_PARENT) === 0) {
+              break;
+            }
 
-            store.updateCompoundStyle( slot, {
-              padding: clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max )
-            } );
+            store.updateCompoundStyle(slot, {
+              padding: clampTo(
+                lerp(w.data[i * 2], w.data[i * 2 + 1], e),
+                w.min,
+                w.max,
+              ),
+            });
             break;
           case 'fontSize':
-            store.setLabelFontSize( slot,
+            store.setLabelFontSize(
+              slot,
               w.column === 'node.fontSize' ? 'nodes' : 'edges',
-              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
+              clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+            );
             break;
         }
       }
     }
 
-    if( this.viewport != null ){
-      if( this.pan != null && this.fromPan != null ){
-        this.viewport.setPan( {
-          x: lerp( this.fromPan.x, this.pan.x, e ),
-          y: lerp( this.fromPan.y, this.pan.y, e )
-        } );
+    if (this.viewport != null) {
+      if (this.pan != null && this.fromPan != null) {
+        this.viewport.setPan({
+          x: lerp(this.fromPan.x, this.pan.x, e),
+          y: lerp(this.fromPan.y, this.pan.y, e),
+        });
       }
 
-      if( this.zoom != null && this.fromZoom != null ){
-        this.viewport.setZoom( lerp( this.fromZoom, this.zoom, e ) );
+      if (this.zoom != null && this.fromZoom != null) {
+        this.viewport.setZoom(lerp(this.fromZoom, this.zoom, e));
       }
     }
   }
@@ -1213,7 +1592,9 @@ export class Animation {
     this._done = true;
     this.onComplete?.();
 
-    for( const resolve of this.resolvers ){ resolve(); }
+    for (const resolve of this.resolvers) {
+      resolve();
+    }
 
     this.resolvers.length = 0;
   }
@@ -1222,10 +1603,13 @@ export class Animation {
 /** The renderer's GPU tween executor, seen by the manager. */
 export interface GpuTweenSink {
   register(
-    id: number, writes: readonly ChannelWrite[],
-    start: number, duration: number, easing: EasingProgram
+    id: number,
+    writes: readonly ChannelWrite[],
+    start: number,
+    duration: number,
+    easing: EasingProgram,
   ): void;
-  unregister( id: number ): void;
+  unregister(id: number): void;
 }
 
 /**
@@ -1244,7 +1628,7 @@ export class AnimationManager {
   private viewportRunning: Animation[] = [];
   private onTick: () => void;
   private ticking = false;
-  private raf: ( ( cb: ( t: number ) => void ) => void ) | null;
+  private raf: ((cb: (t: number) => void) => void) | null;
   /** the renderer's GPU tween runtime (position animations offload here) */
   private sink: GpuTweenSink | null = null;
   /** true while the renderer drives ticks (its frame clock replaces the auto-loop) */
@@ -1256,14 +1640,19 @@ export class AnimationManager {
    *   redraw and to emit viewport events while a viewport animation
    *   pans or zooms
    */
-  constructor( onTick: () => void ){
+  constructor(onTick: () => void) {
     this.onTick = onTick;
 
-    const g = globalThis as { requestAnimationFrame?: ( cb: ( t: number ) => void ) => void };
+    const g = globalThis as {
+      requestAnimationFrame?: (cb: (t: number) => void) => void;
+    };
 
-    this.raf = typeof g.requestAnimationFrame === 'function'
-      ? cb => g.requestAnimationFrame!( cb )
-      : cb => { setTimeout( () => cb( now() ), 16 ); };
+    this.raf =
+      typeof g.requestAnimationFrame === 'function'
+        ? (cb) => g.requestAnimationFrame!(cb)
+        : (cb) => {
+            setTimeout(() => cb(now()), 16);
+          };
   }
 
   /**
@@ -1272,7 +1661,7 @@ export class AnimationManager {
    * @param sink — the renderer's tween sink; the manager cedes its
    *   auto-loop to the render loop while it is attached
    */
-  attachDriver( sink: GpuTweenSink ): void {
+  attachDriver(sink: GpuTweenSink): void {
     this.sink = sink;
     this.driven = true;
   }
@@ -1292,8 +1681,10 @@ export class AnimationManager {
    * auto-bounds/fold derivations, which read the CPU columns — the
    * store's reparent hook settles active leases before they go stale. */
   settleGpuAll(): void {
-    for( const ani of this.allRunning() ){
-      if( ani.gpuId != null ){ ani.settleGpu( now() ); }
+    for (const ani of this.allRunning()) {
+      if (ani.gpuId != null) {
+        ani.settleGpu(now());
+      }
     }
   }
 
@@ -1302,8 +1693,10 @@ export class AnimationManager {
   private allRunning(): Set<Animation> {
     const seen = new Set<Animation>();
 
-    for( const arr of this.running.values() ){
-      for( const ani of arr ){ seen.add( ani ); }
+    for (const arr of this.running.values()) {
+      for (const ani of arr) {
+        seen.add(ani);
+      }
     }
 
     return seen;
@@ -1318,12 +1711,14 @@ export class AnimationManager {
    * reparent path), the animation is *not* finished early.
    */
   demoteGpuAll(): void {
-    if( this.sink == null ){ return; }
+    if (this.sink == null) {
+      return;
+    }
 
-    for( const ani of this.allRunning() ){
-      if( ani.gpuId != null ){
-        this.sink.unregister( ani.gpuId );
-        ani.demoteGpu( now() );
+    for (const ani of this.allRunning()) {
+      if (ani.gpuId != null) {
+        this.sink.unregister(ani.gpuId);
+        ani.demoteGpu(now());
       }
     }
   }
@@ -1336,15 +1731,15 @@ export class AnimationManager {
    *
    * @param store — the store that just compacted
    */
-  onCompacted( store: GraphStore ): void {
+  onCompacted(store: GraphStore): void {
     const next = new Map<number, Animation[]>();
     const repaired = new Set<Animation>();
 
-    for( const [ key, arr ] of this.running ){
-      for( const ani of arr ){
-        if( !repaired.has( ani ) ){
-          repaired.add( ani );
-          ani.repairRefs( store );
+    for (const [key, arr] of this.running) {
+      for (const ani of arr) {
+        if (!repaired.has(ani)) {
+          repaired.add(ani);
+          ani.repairRefs(store);
         }
       }
 
@@ -1352,12 +1747,12 @@ export class AnimationManager {
       const rem = isEdge ? key - 0x10000000000000 : key;
       const ref: Ref = {
         group: isEdge ? 'edges' : 'nodes',
-        slot: Math.floor( rem / 0x1000000 ),
-        gen: rem % 0x1000000
+        slot: Math.floor(rem / 0x1000000),
+        gen: rem % 0x1000000,
       };
 
-      store.isCurrent( ref ); // repairs a forwarded identity in place
-      next.set( packRef( ref ), arr );
+      store.isCurrent(ref); // repairs a forwarded identity in place
+      next.set(packRef(ref), arr);
     }
 
     this.running = next;
@@ -1371,61 +1766,82 @@ export class AnimationManager {
    *
    * @param ani — the animation to run
    */
-  start( ani: Animation ): void {
-    if( ani.isViewport ){
-      for( const other of [ ...this.viewportRunning ] ){
-        if( ( ani.hasPan && other.hasPan ) || ( ani.hasZoom && other.hasZoom ) ){
-          other.stop( false );
+  start(ani: Animation): void {
+    if (ani.isViewport) {
+      for (const other of [...this.viewportRunning]) {
+        if ((ani.hasPan && other.hasPan) || (ani.hasZoom && other.hasZoom)) {
+          other.stop(false);
         }
       }
 
-      this.viewportRunning = this.viewportRunning.filter( a => !a.done );
-      this.viewportRunning.push( ani );
+      this.viewportRunning = this.viewportRunning.filter((a) => !a.done);
+      this.viewportRunning.push(ani);
     } else {
       const cols = ani.touchedColumns();
       const evicted = new Set<Animation>();
 
-      for( const ref of ani.refs ){
-        const arr = this.running.get( packRef( ref ) );
+      for (const ref of ani.refs) {
+        const arr = this.running.get(packRef(ref));
 
-        if( arr == null ){ continue; }
+        if (arr == null) {
+          continue;
+        }
 
-        for( const other of arr ){
-          if( evicted.has( other ) ){ continue; }
+        for (const other of arr) {
+          if (evicted.has(other)) {
+            continue;
+          }
 
-          for( const col of other.touchedColumns() ){
-            if( cols.has( col ) ){ evicted.add( other ); break; }
+          for (const col of other.touchedColumns()) {
+            if (cols.has(col)) {
+              evicted.add(other);
+              break;
+            }
           }
         }
       }
 
-      for( const other of evicted ){
-        this.stopOne( other, false );
-        this.remove( other );
+      for (const other of evicted) {
+        this.stopOne(other, false);
+        this.remove(other);
       }
 
-      for( const ref of ani.refs ){
-        const key = packRef( ref );
-        const arr = this.running.get( key );
+      for (const ref of ani.refs) {
+        const key = packRef(ref);
+        const arr = this.running.get(key);
 
-        if( arr == null ){ this.running.set( key, [ ani ] ); } else { arr.push( ani ); }
+        if (arr == null) {
+          this.running.set(key, [ani]);
+        } else {
+          arr.push(ani);
+        }
       }
     }
 
-    if( this.driven ){ this.onTick(); } else { this.schedule(); } // wake the renderer, or auto-loop
+    if (this.driven) {
+      this.onTick();
+    } else {
+      this.schedule();
+    } // wake the renderer, or auto-loop
   }
 
   /** Drop an animation from every ref's running set. */
-  private remove( ani: Animation ): void {
-    for( const ref of ani.refs ){
-      const key = packRef( ref );
-      const arr = this.running.get( key );
+  private remove(ani: Animation): void {
+    for (const ref of ani.refs) {
+      const key = packRef(ref);
+      const arr = this.running.get(key);
 
-      if( arr == null ){ continue; }
+      if (arr == null) {
+        continue;
+      }
 
-      const filtered = arr.filter( a => a !== ani );
+      const filtered = arr.filter((a) => a !== ani);
 
-      if( filtered.length === 0 ){ this.running.delete( key ); } else { this.running.set( key, filtered ); }
+      if (filtered.length === 0) {
+        this.running.delete(key);
+      } else {
+        this.running.set(key, filtered);
+      }
     }
   }
 
@@ -1446,8 +1862,8 @@ export class AnimationManager {
    * @param ref — the element to check
    * @returns whether anything is tweening it
    */
-  isAnimating( ref: Ref ): boolean {
-    const arr = this.running.get( packRef( ref ) );
+  isAnimating(ref: Ref): boolean {
+    const arr = this.running.get(packRef(ref));
 
     return arr != null && arr.length > 0;
   }
@@ -1469,20 +1885,24 @@ export class AnimationManager {
    * @param refs — the elements whose animations stop
    * @param jumpToEnd — apply each animation's final frame first
    */
-  stop( refs: Ref[], jumpToEnd: boolean ): void {
+  stop(refs: Ref[], jumpToEnd: boolean): void {
     const toStop = new Set<Animation>();
 
-    for( const ref of refs ){
-      const arr = this.running.get( packRef( ref ) );
+    for (const ref of refs) {
+      const arr = this.running.get(packRef(ref));
 
-      if( arr == null ){ continue; }
+      if (arr == null) {
+        continue;
+      }
 
-      for( const ani of arr ){ toStop.add( ani ); }
+      for (const ani of arr) {
+        toStop.add(ani);
+      }
     }
 
-    for( const ani of toStop ){
-      this.stopOne( ani, jumpToEnd );
-      this.remove( ani );
+    for (const ani of toStop) {
+      this.stopOne(ani, jumpToEnd);
+      this.remove(ani);
     }
   }
 
@@ -1492,12 +1912,15 @@ export class AnimationManager {
    * actually reached back onto the CPU (v3 leaves a stopped animation where
    * it got to) or the two would diverge with nothing to reconcile them.
    */
-  private stopOne( ani: Animation, jumpToEnd: boolean ): void {
-    if( ani.gpuId == null ){ ani.stop( jumpToEnd ); return; }
+  private stopOne(ani: Animation, jumpToEnd: boolean): void {
+    if (ani.gpuId == null) {
+      ani.stop(jumpToEnd);
+      return;
+    }
 
-    this.sink?.unregister( ani.gpuId );
+    this.sink?.unregister(ani.gpuId);
     ani.gpuId = null;
-    ani.settleGpu( jumpToEnd ? ani.startMs + ani.durationMs : now() );
+    ani.settleGpu(jumpToEnd ? ani.startMs + ani.durationMs : now());
   }
 
   /**
@@ -1506,8 +1929,10 @@ export class AnimationManager {
    * @param jumpToEnd — finish at the target instead of freezing at the
    *   current value
    */
-  stopViewport( jumpToEnd: boolean ): void {
-    for( const ani of this.viewportRunning ){ ani.stop( jumpToEnd ); }
+  stopViewport(jumpToEnd: boolean): void {
+    for (const ani of this.viewportRunning) {
+      ani.stop(jumpToEnd);
+    }
 
     this.viewportRunning.length = 0;
   }
@@ -1522,11 +1947,13 @@ export class AnimationManager {
    *
    * @param ani — the animation to freeze
    */
-  pauseAni( ani: Animation ): void {
-    if( ani.done || ani.paused ){ return; }
+  pauseAni(ani: Animation): void {
+    if (ani.done || ani.paused) {
+      return;
+    }
 
-    if( ani.gpuId != null ){
-      this.sink?.unregister( ani.gpuId );
+    if (ani.gpuId != null) {
+      this.sink?.unregister(ani.gpuId);
       ani.gpuId = null;
       ani.gpuDriven = false;
       ani.applyNow();
@@ -1543,12 +1970,18 @@ export class AnimationManager {
    *
    * @param ani — the animation to resume
    */
-  resumeAni( ani: Animation ): void {
-    if( ani.done || !ani.paused ){ return; }
+  resumeAni(ani: Animation): void {
+    if (ani.done || !ani.paused) {
+      return;
+    }
 
     ani.resume();
 
-    if( this.driven ){ this.onTick(); } else { this.schedule(); }
+    if (this.driven) {
+      this.onTick();
+    } else {
+      this.schedule();
+    }
   }
 
   /**
@@ -1558,11 +1991,13 @@ export class AnimationManager {
    *
    * @param ani — the animation to reverse
    */
-  reverseAni( ani: Animation ): void {
-    if( ani.done ){ return; }
+  reverseAni(ani: Animation): void {
+    if (ani.done) {
+      return;
+    }
 
-    if( ani.gpuId != null ){
-      this.sink?.unregister( ani.gpuId );
+    if (ani.gpuId != null) {
+      this.sink?.unregister(ani.gpuId);
       ani.gpuId = null;
       ani.gpuDriven = false;
       ani.applyNow();
@@ -1570,8 +2005,12 @@ export class AnimationManager {
 
     ani.reverse();
 
-    if( !ani.paused ){
-      if( this.driven ){ this.onTick(); } else { this.schedule(); }
+    if (!ani.paused) {
+      if (this.driven) {
+        this.onTick();
+      } else {
+        this.schedule();
+      }
     }
   }
 
@@ -1584,87 +2023,109 @@ export class AnimationManager {
    * @param now — the shared clock in ms
    * @returns true while any animation remains active
    */
-  tick( now: number ): boolean {
+  tick(now: number): boolean {
     const advanced = new Set<Animation>();
 
-    for( const [ key, arr ] of this.running ){
-      for( const ani of arr ){
-        if( !advanced.has( ani ) ){
-          advanced.add( ani );
-          this.advanceOne( ani, now );
+    for (const [key, arr] of this.running) {
+      for (const ani of arr) {
+        if (!advanced.has(ani)) {
+          advanced.add(ani);
+          this.advanceOne(ani, now);
         }
       }
 
-      const alive = arr.filter( a => !a.done );
+      const alive = arr.filter((a) => !a.done);
 
-      if( alive.length === 0 ){ this.running.delete( key ); }
-      else if( alive.length !== arr.length ){ this.running.set( key, alive ); }
+      if (alive.length === 0) {
+        this.running.delete(key);
+      } else if (alive.length !== arr.length) {
+        this.running.set(key, alive);
+      }
     }
 
-    if( this.viewportRunning.length > 0 ){
-      for( const ani of this.viewportRunning ){ this.advanceOne( ani, now ); }
+    if (this.viewportRunning.length > 0) {
+      for (const ani of this.viewportRunning) {
+        this.advanceOne(ani, now);
+      }
 
-      this.viewportRunning = this.viewportRunning.filter( a => !a.done );
+      this.viewportRunning = this.viewportRunning.filter((a) => !a.done);
     }
 
     return this.active();
   }
 
   /** Advance one animation; returns true when it is finished. */
-  private advanceOne( ani: Animation, now: number ): boolean {
+  private advanceOne(ani: Animation, now: number): boolean {
     ani.lastNow = now; // the controls' clock (pause/resume/reverse/progress)
 
-    if( ani.done ){ return true; } // completed (possibly via another queue, or stopped)
+    if (ani.done) {
+      return true;
+    } // completed (possibly via another queue, or stopped)
 
-    if( ani.paused ){ return false; } // frozen — and never (re-)registered on the GPU
+    if (ani.paused) {
+      return false;
+    } // frozen — and never (re-)registered on the GPU
 
-    if( this.sink != null && ani.gpuEligible ){
-      if( ani.gpuId == null ){
-        ani.schedule( now );
+    if (this.sink != null && ani.gpuEligible) {
+      if (ani.gpuId == null) {
+        ani.schedule(now);
 
         // capture after the delay, as the CPU path does
-        if( now < ani.startMs ){ return false; }
+        if (now < ani.startMs) {
+          return false;
+        }
 
-        const writes = ani.gpuBatches( now );
+        const writes = ani.gpuBatches(now);
 
         ani.gpuId = ++this.gpuCounter;
         ani.gpuDriven = true;
-        this.sink.register( ani.gpuId, writes, ani.startMs, ani.durationMs, ani.easingProgram );
+        this.sink.register(
+          ani.gpuId,
+          writes,
+          ani.startMs,
+          ani.durationMs,
+          ani.easingProgram,
+        );
       }
 
-      if( now >= ani.startMs + ani.durationMs ){
-        this.sink.unregister( ani.gpuId );
+      if (now >= ani.startMs + ani.durationMs) {
+        this.sink.unregister(ani.gpuId);
         ani.gpuId = null;
-        ani.settleGpu( now ); // writes the exact final onto the CPU columns
+        ani.settleGpu(now); // writes the exact final onto the CPU columns
         return true;
       }
 
       return false;
     }
 
-    return ani.tick( now );
+    return ani.tick(now);
   }
 
   private schedule(): void {
-    if( this.ticking || this.raf == null ){ return; }
+    if (this.ticking || this.raf == null) {
+      return;
+    }
 
     this.ticking = true;
 
-    const loop = ( t: number ): void => {
-      if( this.driven ){ this.ticking = false; return; } // renderer took over the clock
+    const loop = (t: number): void => {
+      if (this.driven) {
+        this.ticking = false;
+        return;
+      } // renderer took over the clock
 
-      const stillActive = this.tick( t );
+      const stillActive = this.tick(t);
 
       this.onTick();
 
-      if( stillActive ){
-        this.raf!( loop );
+      if (stillActive) {
+        this.raf!(loop);
       } else {
         this.ticking = false;
       }
     };
 
-    this.raf( loop );
+    this.raf(loop);
   }
 }
 
@@ -1674,5 +2135,5 @@ const now = (): number => {
   return p.performance != null ? p.performance.now() : Date.now();
 };
 
-const packRef = ( r: Ref ): number =>
-  ( r.group === 'nodes' ? 0 : 0x10000000000000 ) + r.slot * 0x1000000 + r.gen;
+const packRef = (r: Ref): number =>
+  (r.group === 'nodes' ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;

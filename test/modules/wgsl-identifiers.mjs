@@ -1,9 +1,17 @@
 import { expect } from 'chai';
 
 import { TWEEN_SHADERS } from '../../src/render/gpu-tween.mjs';
-import { NODE_EVAL_SHADER, EDGE_EVAL_SHADER } from '../../src/render/mapper-shaders.mjs';
 import {
-  NODE_SHADER, EDGE_SHADER, CURVED_EDGE_SHADER, ARROW_SHADER, CURVED_ARROW_SHADER, LABEL_SHADER
+  NODE_EVAL_SHADER,
+  EDGE_EVAL_SHADER,
+} from '../../src/render/mapper-shaders.mjs';
+import {
+  NODE_SHADER,
+  EDGE_SHADER,
+  CURVED_EDGE_SHADER,
+  ARROW_SHADER,
+  CURVED_ARROW_SHADER,
+  LABEL_SHADER,
 } from '../../src/render/shaders.mjs';
 
 /*
@@ -17,13 +25,55 @@ Only the words plausibly reachable as a shader variable name are listed; the
 full reserved set is long and mostly exotic.
 */
 const RESERVED = [
-  'target', 'sample', 'filter', 'buffer', 'shared', 'input', 'output',
-  'texture', 'typedef', 'template', 'union', 'enum', 'class', 'interface',
-  'private', 'public', 'protected', 'static', 'virtual', 'inline', 'namespace',
-  'new', 'delete', 'do', 'goto', 'try', 'catch', 'throw', 'auto', 'extern',
-  'friend', 'operator', 'signed', 'unsigned', 'typename', 'using', 'where',
-  'match', 'std', 'get', 'set', 'as', 'asm', 'become', 'binding', 'cast',
-  'unless', 'until', 'yield'
+  'target',
+  'sample',
+  'filter',
+  'buffer',
+  'shared',
+  'input',
+  'output',
+  'texture',
+  'typedef',
+  'template',
+  'union',
+  'enum',
+  'class',
+  'interface',
+  'private',
+  'public',
+  'protected',
+  'static',
+  'virtual',
+  'inline',
+  'namespace',
+  'new',
+  'delete',
+  'do',
+  'goto',
+  'try',
+  'catch',
+  'throw',
+  'auto',
+  'extern',
+  'friend',
+  'operator',
+  'signed',
+  'unsigned',
+  'typename',
+  'using',
+  'where',
+  'match',
+  'std',
+  'get',
+  'set',
+  'as',
+  'asm',
+  'become',
+  'binding',
+  'cast',
+  'unless',
+  'until',
+  'yield',
 ];
 
 const SHADERS = {
@@ -37,35 +87,41 @@ const SHADERS = {
   'render:curved-edge': CURVED_EDGE_SHADER,
   'render:arrow': ARROW_SHADER,
   'render:curved-arrow': CURVED_ARROW_SHADER,
-  'render:label': LABEL_SHADER
+  'render:label': LABEL_SHADER,
 };
 
 /** every name the source declares: var/let/const/fn/struct and struct members */
-const declaredNames = src => {
+const declaredNames = (src) => {
   const names = [];
-  const decl = /(?:var(?:<[^>]*>)?|let|const|fn|struct|alias)\s+([A-Za-z_]\w*)/g;
+  const decl =
+    /(?:var(?:<[^>]*>)?|let|const|fn|struct|alias)\s+([A-Za-z_]\w*)/g;
   // struct members and fn params: `name: type`, at a line start or after a comma
   const field = /(?:^|[(,]\s*)\s*([A-Za-z_]\w*)\s*:/gm;
 
-  for( const m of src.matchAll( decl ) ){ names.push( m[ 1 ] ); }
-  for( const m of src.matchAll( field ) ){ names.push( m[ 1 ] ); }
+  for (const m of src.matchAll(decl)) {
+    names.push(m[1]);
+  }
+  for (const m of src.matchAll(field)) {
+    names.push(m[1]);
+  }
 
   return names;
 };
 
-describe('gpu/wgsl identifiers', function(){
+describe('gpu/wgsl identifiers', function () {
+  for (const [name, src] of Object.entries(SHADERS)) {
+    it(`${name} declares no WGSL reserved word`, function () {
+      const offenders = declaredNames(src).filter((n) => RESERVED.includes(n));
 
-  for( const [ name, src ] of Object.entries( SHADERS ) ){
-    it(`${name} declares no WGSL reserved word`, function(){
-      const offenders = declaredNames( src ).filter( n => RESERVED.includes( n ) );
-
-      expect( [ ...new Set( offenders ) ] ).to.deep.equal( [] );
+      expect([...new Set(offenders)]).to.deep.equal([]);
     });
   }
 
-  it('the guard actually catches one', function(){
+  it('the guard actually catches one', function () {
     const bad = 'var<storage, read_write> target: array<f32>;';
 
-    expect( declaredNames( bad ).filter( n => RESERVED.includes( n ) ) ).to.deep.equal( [ 'target' ] );
+    expect(
+      declaredNames(bad).filter((n) => RESERVED.includes(n)),
+    ).to.deep.equal(['target']);
   });
 });

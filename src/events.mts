@@ -50,7 +50,7 @@ namespace parsing — see `emitter.mts`.
 */
 
 /** A delegation predicate over an element event target. */
-export type ElePredicate = ( ele: Collection ) => boolean;
+export type ElePredicate = (ele: Collection) => boolean;
 
 /** What a listener is restricted to: a single element ref, or a predicate. */
 export interface Qualifier {
@@ -68,12 +68,16 @@ export interface EleEventTarget {
 
 /** A ref's identity as a string, generation included — so a recycled
  * slot never collides with the listeners of the element it replaced. */
-export const refKey = ( ref: Ref ): string => `${ref.group}:${ref.slot}:${ref.gen}`;
+export const refKey = (ref: Ref): string =>
+  `${ref.group}:${ref.slot}:${ref.gen}`;
 
 /** Element qualifier for `eles.on()`.  Ref qualifiers compare by `key`,
  * so `off()` matches a listener registered through a different handle
  * for the same element. */
-export const refQualifier = ( ref: Ref ): Qualifier => ( { key: 'ref:' + refKey( ref ), ref } );
+export const refQualifier = (ref: Ref): Qualifier => ({
+  key: 'ref:' + refKey(ref),
+  ref,
+});
 
 /**
  * Predicate qualifiers compare by function identity (for off()).
@@ -84,22 +88,28 @@ export const refQualifier = ( ref: Ref ): Qualifier => ( { key: 'ref:' + refKey(
  *   and then throw a TypeError inside the emitter on the *next* event of
  *   that type, which is both late and somewhere else (29.3)
  */
-export const predicateQualifier = ( fn: ElePredicate ): Qualifier => {
-  if( typeof fn !== 'function' ){
+export const predicateQualifier = (fn: ElePredicate): Qualifier => {
+  if (typeof fn !== 'function') {
     throw new Error(
-      `Event delegation takes a predicate function, not ${typeof fn === 'string'
-        ? `the selector string '${fn}'` : `a ${typeof fn}`} — ` +
-      `v4 has no selector strings; use e.g. cy.on( 'tap', ele => ele.isNode(), handler )` );
+      `Event delegation takes a predicate function, not ${
+        typeof fn === 'string'
+          ? `the selector string '${fn}'`
+          : `a ${typeof fn}`
+      } — ` +
+        `v4 has no selector strings; use e.g. cy.on( 'tap', ele => ele.isNode(), handler )`,
+    );
   }
 
   return { fn };
 };
 
-const isEleTarget = ( target: unknown ): target is EleEventTarget => {
-  return target != null && typeof ( target as EleEventTarget )._eventRef === 'function';
+const isEleTarget = (target: unknown): target is EleEventTarget => {
+  return (
+    target != null && typeof (target as EleEventTarget)._eventRef === 'function'
+  );
 };
 
-const sameRef = ( a: Ref, b: Ref ): boolean => {
+const sameRef = (a: Ref, b: Ref): boolean => {
   return a.group === b.group && a.slot === b.slot && a.gen === b.gen;
 };
 
@@ -128,85 +138,106 @@ export interface CoreLike {
  *   `event.target`
  * @returns the emitter, to be stored on the core
  */
-export const makeCoreEmitter = <TCy extends CoreLike>( cy: TCy ): Emitter<TCy, Qualifier> => {
-  return new Emitter<TCy, Qualifier>( {
+export const makeCoreEmitter = <TCy extends CoreLike>(
+  cy: TCy,
+): Emitter<TCy, Qualifier> => {
+  return new Emitter<TCy, Qualifier>({
     context: cy,
 
-    qualifierCompare: ( q1, q2 ) => {
-      if( q1 == null || q2 == null ){
+    qualifierCompare: (q1, q2) => {
+      if (q1 == null || q2 == null) {
         return q1 == null && q2 == null;
       }
 
-      if( q1.fn != null || q2.fn != null ){
+      if (q1.fn != null || q2.fn != null) {
         return q1.fn === q2.fn;
       }
 
       return q1.key === q2.key;
     },
 
-    eventMatches: ( ctx: TCy, listener: Listener<Qualifier>, eventObj: Event ): boolean => {
+    eventMatches: (
+      ctx: TCy,
+      listener: Listener<Qualifier>,
+      eventObj: Event,
+    ): boolean => {
       const qualifier = listener.qualifier;
-      const phaseRef = ( eventObj as PhasedEvent )._phaseRef;
+      const phaseRef = (eventObj as PhasedEvent)._phaseRef;
 
-      if( qualifier == null ){
+      if (qualifier == null) {
         // unqualified listeners fire once: in the core phase (or flat mode)
         return phaseRef === undefined || phaseRef === null;
       }
 
       const target = eventObj.target;
 
-      if( !isEleTarget( target ) ){ return false; }
+      if (!isEleTarget(target)) {
+        return false;
+      }
 
       const ref = target._eventRef();
 
-      if( ref == null ){ return false; }
-
-      if( qualifier.ref != null ){
-        // phased mode: an element listener fires in its element's phase
-        if( phaseRef !== undefined ){
-          return phaseRef != null && sameRef( qualifier.ref, phaseRef );
-        }
-
-        return sameRef( qualifier.ref, ref );
+      if (ref == null) {
+        return false;
       }
 
-      if( qualifier.fn != null ){
+      if (qualifier.ref != null) {
+        // phased mode: an element listener fires in its element's phase
+        if (phaseRef !== undefined) {
+          return phaseRef != null && sameRef(qualifier.ref, phaseRef);
+        }
+
+        return sameRef(qualifier.ref, ref);
+      }
+
+      if (qualifier.fn != null) {
         // predicates keep v3 delegation: once, against the originator,
         // when the event reaches the core
-        if( phaseRef !== undefined && phaseRef !== null ){ return false; }
+        if (phaseRef !== undefined && phaseRef !== null) {
+          return false;
+        }
 
-        return qualifier.fn( target as unknown as Collection );
+        return qualifier.fn(target as unknown as Collection);
       }
 
       return false;
     },
 
-    addEventFields: ( ctx: TCy, evt: EventProps ) => {
+    addEventFields: (ctx: TCy, evt: EventProps) => {
       evt.cy = ctx as unknown as Core;
 
-      if( evt.target == null ){
+      if (evt.target == null) {
         evt.target = ctx as unknown as EventTarget;
       }
     },
 
-    callbackContext: ( ctx: TCy, listener: Listener<Qualifier>, eventObj: Event ) => {
-      if( listener.qualifier != null ){
+    callbackContext: (
+      ctx: TCy,
+      listener: Listener<Qualifier>,
+      eventObj: Event,
+    ) => {
+      if (listener.qualifier != null) {
         // during an ancestor phase the context is the phase element
         // (v3's currentTarget); event.target stays the originator
-        return ( eventObj as PhasedEvent )._phaseEle ?? eventObj.target;
+        return (eventObj as PhasedEvent)._phaseEle ?? eventObj.target;
       }
 
       return ctx;
-    }
-  } );
+    },
+  });
 };
 
 /** Whether any listener is registered for the given event type (used to skip hot-path emits). */
-export const hasListeners = ( emitter: { listeners: { type: string }[] }, type: string ): boolean => {
+export const hasListeners = (
+  emitter: { listeners: { type: string }[] },
+  type: string,
+): boolean => {
   const listeners = emitter.listeners;
 
-  for( let i = 0; i < listeners.length; i++ ){
-    if( listeners[ i ].type === type ){ return true; }
+  for (let i = 0; i < listeners.length; i++) {
+    if (listeners[i].type === type) {
+      return true;
+    }
   }
 
   return false;

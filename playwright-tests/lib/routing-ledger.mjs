@@ -63,17 +63,19 @@ export const DIVERGENCES = [
   {
     key: 'shapes/triangle/*',
     expect: 8.462,
-    reason: 'polygon boundary approximated by its inscribed ellipse — the worst case of the tier'
+    reason:
+      'polygon boundary approximated by its inscribed ellipse — the worst case of the tier',
   },
   {
     key: 'shapes/diamond/*',
     expect: 3.293,
-    reason: 'polygon boundary approximated by its inscribed ellipse'
+    reason: 'polygon boundary approximated by its inscribed ellipse',
   },
   {
     key: 'shapes/round-rectangle/*',
     expect: 0.008,
-    reason: 'round-rectangle boundary approximated by its box; 2.25 px at a corner, 0.008 on this chord'
+    reason:
+      'round-rectangle boundary approximated by its box; 2.25 px at a corner, 0.008 on this chord',
   },
 
   // -- the arrow-scale quantization (round 56, measured here) --------------
@@ -104,39 +106,45 @@ export const DIVERGENCES = [
   {
     key: 'asym-arrows/none-triangle/mid.x',
     expect: 0.0875,
-    reason: 'arrow-scale 1.4 quantizes to 22/16 = 1.375, shrinking the target gap by 0.35 px'
+    reason:
+      'arrow-scale 1.4 quantizes to 22/16 = 1.375, shrinking the target gap by 0.35 px',
   },
   {
     key: 'asym-arrows/triangle-none/mid.x',
     expect: 0.0875,
-    reason: 'arrow-scale quantization, source end'
+    reason: 'arrow-scale quantization, source end',
   },
   {
     key: 'asym-arrows/tee-triangle-tee/mid.x',
     expect: 0.0875,
-    reason: 'arrow-scale quantization on the triangle-tee end (tee is a constant gap, unaffected)'
+    reason:
+      'arrow-scale quantization on the triangle-tee end (tee is a constant gap, unaffected)',
   },
   {
     key: 'asym-arrows/diamond-chevron/mid.x',
     expect: 0.0022,
-    reason: 'arrow-scale quantization, mostly cancelling between two heads of similar gap'
+    reason:
+      'arrow-scale quantization, mostly cancelling between two heads of similar gap',
   },
   {
     key: 'asym-arrows/vee-circle/tgt.x',
     expect: 0.2229,
-    reason: 'arrow-scale quantization inside circle spacing = getArrowWidth x 0.15'
+    reason:
+      'arrow-scale quantization inside circle spacing = getArrowWidth x 0.15',
   },
   {
     key: 'asym-arrows/vee-circle/mid.x',
     expect: 0.0973,
-    reason: 'arrow-scale quantization, the circle end contributing its spacing to the mid average'
+    reason:
+      'arrow-scale quantization, the circle end contributing its spacing to the mid average',
   },
   {
     key: 'curved-arrows/unbundled-bezier/mid.y',
     expect: 0.0269,
-    reason: 'arrow-scale quantization moving the gap-shortened bezier endpoint'
-  }
+    reason: 'arrow-scale quantization moving the gap-shortened bezier endpoint',
+  },
 ];
 
 /** Entries that apply to a scene, for the staleness check. */
-export const ledgerFor = ( scene ) => DIVERGENCES.filter( e => e.key.startsWith( `${scene}/` ) );
+export const ledgerFor = (scene) =>
+  DIVERGENCES.filter((e) => e.key.startsWith(`${scene}/`));

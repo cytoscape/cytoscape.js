@@ -1,7 +1,20 @@
 import {
-  CURVE_CMPD, CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
-  FLAG_ACTIVE, FLAG_ALIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED,
-  FLAG_NO_EVENTS, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  CURVE_CMPD,
+  CURVE_MULTI,
+  CURVE_STRAIGHT,
+  CURVE_TAXI,
+  FLAG_ACTIVE,
+  FLAG_ALIVE,
+  FLAG_CURVED_BOX,
+  FLAG_GRABBABLE,
+  FLAG_GRABBED,
+  FLAG_LOCKED,
+  FLAG_NO_EVENTS,
+  FLAG_PANNABLE,
+  FLAG_PARENT,
+  FLAG_SELECTABLE,
+  FLAG_SELECTED,
+  FLAG_VISIBLE,
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
@@ -17,36 +30,74 @@ import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
 import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
 import {
-  search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
-  bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl,
-  tarjanStronglyConnected as tarjanImpl, hopcroftTarjanBiconnected as hopcroftTarjanImpl,
-  hierholzer as hierholzerImpl, kargerStein as kargerSteinImpl,
-  pageRank as pageRankImpl, degreeCentrality as degreeCentralityImpl,
+  search as searchImpl,
+  dijkstra as dijkstraImpl,
+  aStar as aStarImpl,
+  bellmanFord as bellmanFordImpl,
+  floydWarshall as floydWarshallImpl,
+  kruskal as kruskalImpl,
+  tarjanStronglyConnected as tarjanImpl,
+  hopcroftTarjanBiconnected as hopcroftTarjanImpl,
+  hierholzer as hierholzerImpl,
+  kargerStein as kargerSteinImpl,
+  pageRank as pageRankImpl,
+  degreeCentrality as degreeCentralityImpl,
   degreeCentralityNormalized as degreeCentralityNormalizedImpl,
   closenessCentrality as closenessCentralityImpl,
   closenessCentralityNormalized as closenessCentralityNormalizedImpl,
   betweennessCentrality as betweennessCentralityImpl,
-  kMeans as kMeansImpl, kMedoids as kMedoidsImpl, fuzzyCMeans as fuzzyCMeansImpl,
+  kMeans as kMeansImpl,
+  kMedoids as kMedoidsImpl,
+  fuzzyCMeans as fuzzyCMeansImpl,
   hierarchicalClustering as hierarchicalClusteringImpl,
-  markovClustering as markovClusteringImpl, affinityPropagation as affinityPropagationImpl
+  markovClustering as markovClusteringImpl,
+  affinityPropagation as affinityPropagationImpl,
 } from './algorithms/index.mjs';
 import type {
-  SearchArgs, SearchResult, DijkstraArgs, DijkstraResult, AStarOptions, AStarResult,
-  BellmanFordOptions, BellmanFordResult, FloydWarshallOptions, FloydWarshallResult, WeightFn,
-  TarjanStronglyConnectedResult, HopcroftTarjanBiconnectedResult, HierholzerArgs,
-  HierholzerResult, KargerSteinResult, PageRankOptions, PageRankResult,
-  DegreeCentralityOptions, DegreeCentralityResult, DegreeCentralityNormalizedResult,
-  ClosenessCentralityOptions, ClosenessCentralityNormalizedResult,
-  BetweennessCentralityOptions, BetweennessCentralityResult,
-  KClusteringOptions, FuzzyCMeansResult, HierarchicalClusteringOptions,
-  MarkovClusteringOptions, AffinityPropagationOptions
+  SearchArgs,
+  SearchResult,
+  DijkstraArgs,
+  DijkstraResult,
+  AStarOptions,
+  AStarResult,
+  BellmanFordOptions,
+  BellmanFordResult,
+  FloydWarshallOptions,
+  FloydWarshallResult,
+  WeightFn,
+  TarjanStronglyConnectedResult,
+  HopcroftTarjanBiconnectedResult,
+  HierholzerArgs,
+  HierholzerResult,
+  KargerSteinResult,
+  PageRankOptions,
+  PageRankResult,
+  DegreeCentralityOptions,
+  DegreeCentralityResult,
+  DegreeCentralityNormalizedResult,
+  ClosenessCentralityOptions,
+  ClosenessCentralityNormalizedResult,
+  BetweennessCentralityOptions,
+  BetweennessCentralityResult,
+  KClusteringOptions,
+  FuzzyCMeansResult,
+  HierarchicalClusteringOptions,
+  MarkovClusteringOptions,
+  AffinityPropagationOptions,
 } from './algorithms/index.mjs';
 import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { Event } from './event.mjs';
 
-export type EleFilterFn = ( ele: Collection, i: number, eles: Collection ) => boolean;
-export type ElePositionFn = ( ele: Collection, i: number ) => Position | false | undefined;
+export type EleFilterFn = (
+  ele: Collection,
+  i: number,
+  eles: Collection,
+) => boolean;
+export type ElePositionFn = (
+  ele: Collection,
+  i: number,
+) => Position | false | undefined;
 
 /** A subset criterion: a structured query or a per-element predicate. */
 type FilterLike = Query | EleFilterFn;
@@ -56,11 +107,16 @@ type FilterLike = Query | EleFilterFn;
 // allocation of refKey() in the hot dedupe and set-operation paths, while still
 // keying on the full {group, slot, gen} identity. Safe for slot < 2^28 and
 // gen < 2^24 — far beyond any practical graph.
-const packRef = ( r: Ref ): number =>
-  ( r.group === 'nodes' ? 0 : 0x10000000000000 ) + r.slot * 0x1000000 + r.gen;
+const packRef = (r: Ref): number =>
+  (r.group === 'nodes' ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;
 
 /** Model-px style props that renderedStyle() scales by the zoom. */
-const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height', 'border-width', 'font-size' ] );
+const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set([
+  'width',
+  'height',
+  'border-width',
+  'font-size',
+]);
 
 /**
  * Guard for the methods that take another collection (29.3).  v4 has no
@@ -73,13 +129,17 @@ const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height',
  * @param method — the method name, for the message
  * @throws when `other` is not a collection
  */
-const assertCollection = ( other: unknown, method: string, cy?: Core ): void => {
-  if( other == null || !Array.isArray( ( other as Collection )._refs ) ){
+const assertCollection = (other: unknown, method: string, cy?: Core): void => {
+  if (other == null || !Array.isArray((other as Collection)._refs)) {
     throw new Error(
-      `${method}() takes a collection, not ${typeof other === 'string'
-        ? `the selector string '${other}'` : `a ${other === null ? 'null' : typeof other}`} — ` +
-      `v4 has no selector strings; use cy.$id( id ), a query object like ` +
-      `cy.nodes({ selected: true }), or a predicate` );
+      `${method}() takes a collection, not ${
+        typeof other === 'string'
+          ? `the selector string '${other}'`
+          : `a ${other === null ? 'null' : typeof other}`
+      } — ` +
+        `v4 has no selector strings; use cy.$id( id ), a query object like ` +
+        `cy.nodes({ selected: true }), or a predicate`,
+    );
   }
 
   // Round 48.4, found by the multi-instance soak. A ref is
@@ -99,11 +159,12 @@ const assertCollection = ( other: unknown, method: string, cy?: Core ): void => 
   // non-collection *or, in `same()`'s case, quietly returned false, which
   // reads as working code*. This is that sentence again with a different
   // wrong answer.
-  if( cy != null && ( other as Collection )._cy !== cy ){
+  if (cy != null && (other as Collection)._cy !== cy) {
     throw new Error(
       `${method}() takes a collection from the same instance — element ` +
-      'identity is per instance in v4 (a ref is a slot in *this* store), so ' +
-      'comparing across two cytoscape instances has no meaning' );
+        'identity is per instance in v4 (a ref is a slot in *this* store), so ' +
+        'comparing across two cytoscape instances has no meaning',
+    );
   }
 };
 
@@ -113,15 +174,17 @@ const assertCollection = ( other: unknown, method: string, cy?: Core ): void => 
 // instead of a linear scan that re-packs every ref (3.63 µs over a
 // 2000-element collection, against v3's 45 ns).  One cache, two
 // consumers — the shape this codebase reaches for elsewhere.
-const refIndex = ( refs: Ref[] ): Map<number, number> => {
+const refIndex = (refs: Ref[]): Map<number, number> => {
   const index = new Map<number, number>();
 
-  for( let i = 0; i < refs.length; i++ ){
-    const key = packRef( refs[ i ] );
+  for (let i = 0; i < refs.length; i++) {
+    const key = packRef(refs[i]);
 
     // first index wins: collections are unique by construction, so this
     // only matters if one ever is not
-    if( !index.has( key ) ){ index.set( key, i ); }
+    if (!index.has(key)) {
+      index.set(key, i);
+    }
   }
 
   return index;
@@ -164,12 +227,14 @@ export class Collection {
   get _refs(): Ref[] {
     const store = this._cy._store;
 
-    if( this._syncEpoch !== store.compactEpoch ){
+    if (this._syncEpoch !== store.compactEpoch) {
       this._syncEpoch = store.compactEpoch;
 
       const refs = this.__refs;
 
-      for( let i = 0; i < refs.length; i++ ){ store.isCurrent( refs[ i ] ); }
+      for (let i = 0; i < refs.length; i++) {
+        store.isCurrent(refs[i]);
+      }
 
       this._keys = undefined;
     }
@@ -177,7 +242,7 @@ export class Collection {
     return this.__refs;
   }
 
-  set _refs( refs: Ref[] ){
+  set _refs(refs: Ref[]) {
     this.__refs = refs;
     this._syncEpoch = this._cy._store.compactEpoch;
   }
@@ -194,14 +259,18 @@ export class Collection {
    *   when the refs are already deduped, `live` when they are also known
    *   current (both skip work on the hot path)
    */
-  constructor( cy: Core, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
+  constructor(
+    cy: Core,
+    refs: Ref[],
+    opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {},
+  ) {
     this._cy = cy;
 
-    if( opts.singleton ){
+    if (opts.singleton) {
       const ref = refs[0];
 
-      this._refs = [ ref ];
-      this._id = cy._store.idAt( ref.group, ref.slot );
+      this._refs = [ref];
+      this._id = cy._store.idAt(ref.group, ref.slot);
       this._group = ref.group;
       this[0] = this;
       this.length = 1;
@@ -211,33 +280,33 @@ export class Collection {
 
     let deduped: Ref[];
 
-    if( opts.unique ){
+    if (opts.unique) {
       // trusted internal path: the refs are known distinct (fresh adds,
       // ordered-slot iteration), so skip the refKey/Set dedupe pass
       deduped = refs;
 
-      if( opts.live ){
+      if (opts.live) {
         // trusted further: the refs are current (store-scan / id-index
         // output), so intern with the pool and gen lookups hoisted out of
         // the per-element path instead of going through _eleFromRef
         const nodePool = cy._pool.nodes;
         const edgePool = cy._pool.edges;
 
-        for( let i = 0; i < refs.length; i++ ){
-          const ref = refs[ i ];
+        for (let i = 0; i < refs.length; i++) {
+          const ref = refs[i];
           const pool = ref.group === 'nodes' ? nodePool : edgePool;
-          let ele = pool[ ref.slot ];
+          let ele = pool[ref.slot];
 
-          if( ele == null || ele._refs[0].gen !== ref.gen ){
-            ele = new Collection( cy, [ ref ], { singleton: true } );
-            pool[ ref.slot ] = ele;
+          if (ele == null || ele._refs[0].gen !== ref.gen) {
+            ele = new Collection(cy, [ref], { singleton: true });
+            pool[ref.slot] = ele;
           }
 
-          this[ i ] = ele;
+          this[i] = ele;
         }
       } else {
-        for( let i = 0; i < refs.length; i++ ){
-          this[ i ] = cy._eleFromRef( refs[ i ] );
+        for (let i = 0; i < refs.length; i++) {
+          this[i] = cy._eleFromRef(refs[i]);
         }
       }
     } else {
@@ -248,17 +317,19 @@ export class Collection {
 
       let i = 0;
 
-      for( const ref of refs ){
+      for (const ref of refs) {
         // intern first: _eleFromRef repairs a compaction-forwarded stale
         // ref in place, so the packed key below is its current identity
-        const ele = cy._eleFromRef( ref );
-        const key = packRef( ref );
+        const ele = cy._eleFromRef(ref);
+        const key = packRef(ref);
 
-        if( seen.has( key ) ){ continue; }
+        if (seen.has(key)) {
+          continue;
+        }
 
-        seen.add( key );
-        deduped.push( ref );
-        this[ i ] = ele;
+        seen.add(key);
+        deduped.push(ref);
+        this[i] = ele;
         i++;
       }
     }
@@ -266,7 +337,7 @@ export class Collection {
     this._refs = deduped;
     this.length = deduped.length;
 
-    if( deduped.length === 1 ){
+    if (deduped.length === 1) {
       this._id = this[0]._id;
       this._group = deduped[0].group;
     }
@@ -274,7 +345,7 @@ export class Collection {
 
   // -- internals --
 
-  get _store(){
+  get _store() {
     return this._cy._store;
   }
 
@@ -288,19 +359,19 @@ export class Collection {
   }
 
   _liveRefs(): Ref[] {
-    return this._refs.filter( ref => this._store.isCurrent( ref ) );
+    return this._refs.filter((ref) => this._store.isCurrent(ref));
   }
 
-  _spawn( refs: Ref[] ): Collection {
-    return new Collection( this._cy, refs );
+  _spawn(refs: Ref[]): Collection {
+    return new Collection(this._cy, refs);
   }
 
   /**
    * Like `_spawn`, but for refs already known to be distinct (a subset of this
    * collection's deduped refs). Skips the dedupe Set build.
    */
-  _spawnUnique( refs: Ref[] ): Collection {
-    return new Collection( this._cy, refs, { unique: true } );
+  _spawnUnique(refs: Ref[]): Collection {
+    return new Collection(this._cy, refs, { unique: true });
   }
 
   /**
@@ -308,8 +379,8 @@ export class Collection {
    * read off the store, e.g. traversal output): interning skips the
    * per-element gen re-validation of `_eleFromRef`.
    */
-  _spawnLive( refs: Ref[] ): Collection {
-    return new Collection( this._cy, refs, { unique: true, live: true } );
+  _spawnLive(refs: Ref[]): Collection {
+    return new Collection(this._cy, refs, { unique: true, live: true });
   }
 
   /**
@@ -321,7 +392,7 @@ export class Collection {
    * `indexOf` pay nothing.
    */
   _keySet(): Map<number, number> {
-    return ( this._keys ??= refIndex( this._refs ) );
+    return (this._keys ??= refIndex(this._refs));
   }
 
   // -- core reference & identity --
@@ -365,7 +436,7 @@ export class Collection {
    *   element type, so this narrows rather than unwraps
    */
   element(): Collection {
-    return this.eq( 0 );
+    return this.eq(0);
   }
 
   /**
@@ -384,8 +455,8 @@ export class Collection {
    * @param id — the element id
    * @returns true when a member has that id
    */
-  hasElementWithId( id: string ): boolean {
-    return this.getElementById( id ).nonempty();
+  hasElementWithId(id: string): boolean {
+    return this.getElementById(id).nonempty();
   }
 
   /**
@@ -394,16 +465,18 @@ export class Collection {
    * @param ele — the element to find; only its first element is used
    * @returns the index, or -1 when it is not in this collection
    */
-  indexOf( ele: Collection ): number {
-    assertCollection( ele, 'indexOf', this._cy );
+  indexOf(ele: Collection): number {
+    assertCollection(ele, 'indexOf', this._cy);
 
     const ref = ele._first();
 
-    if( ref == null ){ return -1; }
+    if (ref == null) {
+      return -1;
+    }
 
     // O(1) off the shared packed-key cache (34.1), which set membership
     // builds anyway; a linear re-packing scan was 81× v3 here
-    return this._keySet().get( packRef( ref ) ) ?? -1;
+    return this._keySet().get(packRef(ref)) ?? -1;
   }
 
   /**
@@ -412,9 +485,11 @@ export class Collection {
    * @param id — the element id
    * @returns the index, or -1 when absent
    */
-  indexOfId( id: string ): number {
-    for( let i = 0; i < this.length; i++ ){
-      if( this[ i ]._id === id ){ return i; }
+  indexOfId(id: string): number {
+    for (let i = 0; i < this.length; i++) {
+      if (this[i]._id === id) {
+        return i;
+      }
     }
 
     return -1;
@@ -461,16 +536,27 @@ export class Collection {
    * @param thisArg — optional receiver for the callback
    * @returns this collection, for chaining
    */
-  forEach( fn: ( ele: Collection, i: number, eles: Collection ) => void | false, thisArg?: unknown ): this {
+  forEach(
+    fn: (ele: Collection, i: number, eles: Collection) => void | false,
+    thisArg?: unknown,
+  ): this {
     const n = this.length;
 
     // exit early like v3 when the callback returns false; a plain call when
     // there is no thisArg, like v3 — rebinding the receiver per element via
     // fn.call() costs ~2x on large collections
-    if( thisArg == null ){
-      for( let i = 0; i < n; i++ ){ if( fn( this[ i ], i, this ) === false ){ break; } }
+    if (thisArg == null) {
+      for (let i = 0; i < n; i++) {
+        if (fn(this[i], i, this) === false) {
+          break;
+        }
+      }
     } else {
-      for( let i = 0; i < n; i++ ){ if( fn.call( thisArg, this[ i ], i, this ) === false ){ break; } }
+      for (let i = 0; i < n; i++) {
+        if (fn.call(thisArg, this[i], i, this) === false) {
+          break;
+        }
+      }
     }
 
     return this;
@@ -486,8 +572,8 @@ export class Collection {
   toArray(): Collection[] {
     const array: Collection[] = [];
 
-    for( let i = 0; i < this.length; i++ ){
-      array.push( this[ i ] );
+    for (let i = 0; i < this.length; i++) {
+      array.push(this[i]);
     }
 
     return array;
@@ -501,11 +587,15 @@ export class Collection {
    * @param end — last index, exclusive
    * @returns the sub-range as a new collection
    */
-  slice( start: number = 0, end: number = this.length ): Collection {
-    if( start < 0 ){ start = this.length + start; }
-    if( end < 0 ){ end = this.length + end; }
+  slice(start: number = 0, end: number = this.length): Collection {
+    if (start < 0) {
+      start = this.length + start;
+    }
+    if (end < 0) {
+      end = this.length + end;
+    }
 
-    return this._spawnUnique( this._refs.slice( start, end ) );
+    return this._spawnUnique(this._refs.slice(start, end));
   }
 
   /**
@@ -517,12 +607,14 @@ export class Collection {
    *   non-function is ignored and returns this collection unchanged
    * @returns a new, sorted collection
    */
-  sort( sortFn: ( a: Collection, b: Collection ) => number ): Collection {
-    if( typeof sortFn !== 'function' ){ return this; }
+  sort(sortFn: (a: Collection, b: Collection) => number): Collection {
+    if (typeof sortFn !== 'function') {
+      return this;
+    }
 
-    const sorted = this.toArray().sort( sortFn );
+    const sorted = this.toArray().sort(sortFn);
 
-    return this._spawn( sorted.map( ele => ele._refs[ 0 ] ) );
+    return this._spawn(sorted.map((ele) => ele._refs[0]));
   }
 
   /**
@@ -531,8 +623,8 @@ export class Collection {
    * @param i — the index
    * @returns that element, or an empty collection when out of range
    */
-  eq( i: number ): Collection {
-    return this[ i ] ?? this._spawn( [] );
+  eq(i: number): Collection {
+    return this[i] ?? this._spawn([]);
   }
 
   /**
@@ -541,7 +633,7 @@ export class Collection {
    * @returns the first element, or an empty collection
    */
   first(): Collection {
-    return this.eq( 0 );
+    return this.eq(0);
   }
 
   /**
@@ -550,7 +642,7 @@ export class Collection {
    * @returns the last element, or an empty collection
    */
   last(): Collection {
-    return this.eq( this.length - 1 );
+    return this.eq(this.length - 1);
   }
 
   /**
@@ -560,14 +652,21 @@ export class Collection {
    * @param thisArg — optional receiver for the callback
    * @returns an array of the results
    */
-  map<T>( fn: ( ele: Collection, i: number, eles: Collection ) => T, thisArg?: unknown ): T[] {
+  map<T>(
+    fn: (ele: Collection, i: number, eles: Collection) => T,
+    thisArg?: unknown,
+  ): T[] {
     const n = this.length;
-    const array: T[] = new Array( n );
+    const array: T[] = new Array(n);
 
-    if( thisArg == null ){
-      for( let i = 0; i < n; i++ ){ array[ i ] = fn( this[ i ], i, this ); }
+    if (thisArg == null) {
+      for (let i = 0; i < n; i++) {
+        array[i] = fn(this[i], i, this);
+      }
     } else {
-      for( let i = 0; i < n; i++ ){ array[ i ] = fn.call( thisArg, this[ i ], i, this ); }
+      for (let i = 0; i < n; i++) {
+        array[i] = fn.call(thisArg, this[i], i, this);
+      }
     }
 
     return array;
@@ -580,11 +679,16 @@ export class Collection {
    * @param thisArg — optional receiver for the callback
    * @returns true when at least one element matches
    */
-  some( fn: EleFilterFn, thisArg?: unknown ): boolean {
-    for( let i = 0; i < this.length; i++ ){
-      const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
+  some(fn: EleFilterFn, thisArg?: unknown): boolean {
+    for (let i = 0; i < this.length; i++) {
+      const ret =
+        thisArg == null
+          ? fn(this[i], i, this)
+          : fn.call(thisArg, this[i], i, this);
 
-      if( ret ){ return true; }
+      if (ret) {
+        return true;
+      }
     }
 
     return false;
@@ -598,11 +702,16 @@ export class Collection {
    * @param thisArg — optional receiver for the callback
    * @returns true when all elements match
    */
-  every( fn: EleFilterFn, thisArg?: unknown ): boolean {
-    for( let i = 0; i < this.length; i++ ){
-      const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
+  every(fn: EleFilterFn, thisArg?: unknown): boolean {
+    for (let i = 0; i < this.length; i++) {
+      const ret =
+        thisArg == null
+          ? fn(this[i], i, this)
+          : fn.call(thisArg, this[i], i, this);
 
-      if( !ret ){ return false; }
+      if (!ret) {
+        return false;
+      }
     }
 
     return true;
@@ -641,10 +750,12 @@ export class Collection {
   json(): Record<string, unknown> | undefined {
     const ref = this._first();
 
-    if( ref == null ){ return undefined; }
+    if (ref == null) {
+      return undefined;
+    }
 
     const group = this._group ?? ref.group;
-    const data = ( this.data() as Record<string, unknown> ) ?? { id: this.id() };
+    const data = (this.data() as Record<string, unknown>) ?? { id: this.id() };
     const json: Record<string, unknown> = {
       group,
       data,
@@ -653,13 +764,16 @@ export class Collection {
       selectable: this.selectable(),
       locked: this.locked(),
       // the raw grabbable field, not the pannable-overridden getter (as in v3 json)
-      grabbable: this._hasBit( FLAG_GRABBABLE ),
+      grabbable: this._hasBit(FLAG_GRABBABLE),
       pannable: this.pannable(),
-      classes: ''
+      classes: '',
     };
 
-    if( group === 'nodes' ){
-      json.position = ( this.position() as Position | undefined ) ?? { x: 0, y: 0 };
+    if (group === 'nodes') {
+      json.position = (this.position() as Position | undefined) ?? {
+        x: 0,
+        y: 0,
+      };
     }
 
     return json;
@@ -671,11 +785,11 @@ export class Collection {
    * @returns one object per element, in collection order — the plural of
    *   `json()`, not a graph-level export
    */
-  jsons(): ( Record<string, unknown> | undefined )[] {
-    const out: ( Record<string, unknown> | undefined )[] = [];
+  jsons(): (Record<string, unknown> | undefined)[] {
+    const out: (Record<string, unknown> | undefined)[] = [];
 
-    for( let i = 0; i < this.length; i++ ){
-      out.push( this[ i ].json() );
+    for (let i = 0; i < this.length; i++) {
+      out.push(this[i].json());
     }
 
     return out;
@@ -706,7 +820,7 @@ export class Collection {
    * @returns true for a loop edge; false for nodes and removed elements
    */
   isLoop(): boolean {
-    return this._isLoop( true );
+    return this._isLoop(true);
   }
 
   /**
@@ -715,16 +829,18 @@ export class Collection {
    * @returns true for an edge between two distinct nodes
    */
   isSimple(): boolean {
-    return this._isLoop( false );
+    return this._isLoop(false);
   }
 
-  private _isLoop( wantLoop: boolean ): boolean {
+  private _isLoop(wantLoop: boolean): boolean {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return false; }
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return false;
+    }
 
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
-    const isLoop = endpoints[ ref.slot * 2 ] === endpoints[ ref.slot * 2 + 1 ];
+    const endpoints = this._store.column('edge.endpoints') as Uint32Array;
+    const isLoop = endpoints[ref.slot * 2] === endpoints[ref.slot * 2 + 1];
 
     return wantLoop ? isLoop : !isLoop;
   }
@@ -739,7 +855,7 @@ export class Collection {
   removed(): boolean {
     const ref = this._first();
 
-    return ref == null ? false : !this._store.isCurrent( ref );
+    return ref == null ? false : !this._store.isCurrent(ref);
   }
 
   /**
@@ -751,7 +867,7 @@ export class Collection {
   inside(): boolean {
     const ref = this._first();
 
-    return ref == null ? false : this._store.isCurrent( ref );
+    return ref == null ? false : this._store.isCurrent(ref);
   }
 
   // -- comparison --
@@ -763,17 +879,23 @@ export class Collection {
    * @param other — the collection to compare against
    * @returns true when the element sets are equal
    */
-  same( other: Collection ): boolean {
-    assertCollection( other, 'same', this._cy );
+  same(other: Collection): boolean {
+    assertCollection(other, 'same', this._cy);
 
-    if( this === other ){ return true; }
-    if( this.length !== other.length ){ return false; }
+    if (this === other) {
+      return true;
+    }
+    if (this.length !== other.length) {
+      return false;
+    }
 
     const keys = this._keySet();
     const or = other._refs;
 
-    for( let i = 0; i < or.length; i++ ){
-      if( !keys.has( packRef( or[ i ] ) ) ){ return false; }
+    for (let i = 0; i < or.length; i++) {
+      if (!keys.has(packRef(or[i]))) {
+        return false;
+      }
     }
 
     return true;
@@ -785,16 +907,20 @@ export class Collection {
    * @param other — the collection to compare against
    * @returns true when the sets intersect
    */
-  anySame( other: Collection ): boolean {
-    assertCollection( other, 'anySame', this._cy );
+  anySame(other: Collection): boolean {
+    assertCollection(other, 'anySame', this._cy);
 
-    if( this === other ){ return this.length > 0; }
+    if (this === other) {
+      return this.length > 0;
+    }
 
     const keys = this._keySet();
     const or = other._refs;
 
-    for( let i = 0; i < or.length; i++ ){
-      if( keys.has( packRef( or[ i ] ) ) ){ return true; }
+    for (let i = 0; i < or.length; i++) {
+      if (keys.has(packRef(or[i]))) {
+        return true;
+      }
     }
 
     return false;
@@ -806,17 +932,23 @@ export class Collection {
    * @param other — the candidate subset
    * @returns true when `other` is contained
    */
-  contains( other: Collection ): boolean {
-    assertCollection( other, 'contains', this._cy );
+  contains(other: Collection): boolean {
+    assertCollection(other, 'contains', this._cy);
 
-    if( this === other ){ return true; }
-    if( other.length > this.length ){ return false; }
+    if (this === other) {
+      return true;
+    }
+    if (other.length > this.length) {
+      return false;
+    }
 
     const keys = this._keySet();
     const or = other._refs;
 
-    for( let i = 0; i < or.length; i++ ){
-      if( !keys.has( packRef( or[ i ] ) ) ){ return false; }
+    for (let i = 0; i < or.length; i++) {
+      if (!keys.has(packRef(or[i]))) {
+        return false;
+      }
     }
 
     return true;
@@ -832,12 +964,12 @@ export class Collection {
    * @param other — the elements to test
    * @returns true when all of them are neighbors
    */
-  allAreNeighbors( other: Collection ): boolean {
-    assertCollection( other, 'allAreNeighbors', this._cy );
+  allAreNeighbors(other: Collection): boolean {
+    assertCollection(other, 'allAreNeighbors', this._cy);
 
     const nhood = this.neighborhood();
 
-    return other.every( ele => nhood.hasElementWithId( ele.id() as string ) );
+    return other.every((ele) => nhood.hasElementWithId(ele.id() as string));
   }
 
   declare allAreNeighbours: this['allAreNeighbors'];
@@ -849,14 +981,14 @@ export class Collection {
    *   predicate (there are no selector strings in v4)
    * @returns true when all elements match
    */
-  allAre( criterion: FilterLike ): boolean {
-    if( typeof criterion === 'function' ){
-      return this.every( criterion );
+  allAre(criterion: FilterLike): boolean {
+    if (typeof criterion === 'function') {
+      return this.every(criterion);
     }
 
-    const plan = compileQuery( criterion );
+    const plan = compileQuery(criterion);
 
-    return this._refs.every( ref => planMatchesRef( this._store, ref, plan ) );
+    return this._refs.every((ref) => planMatchesRef(this._store, ref, plan));
   }
 
   /**
@@ -866,14 +998,14 @@ export class Collection {
    *   predicate
    * @returns true when at least one element matches
    */
-  is( criterion: FilterLike ): boolean {
-    if( typeof criterion === 'function' ){
-      return this.some( criterion );
+  is(criterion: FilterLike): boolean {
+    if (typeof criterion === 'function') {
+      return this.some(criterion);
     }
 
-    const plan = compileQuery( criterion );
+    const plan = compileQuery(criterion);
 
-    return this._refs.some( ref => planMatchesRef( this._store, ref, plan ) );
+    return this._refs.some((ref) => planMatchesRef(this._store, ref, plan));
   }
 
   // -- building and filtering --
@@ -884,10 +1016,10 @@ export class Collection {
    * @param other — the collection to add
    * @returns a new collection holding both sets
    */
-  union( other: Collection ): Collection {
-    assertCollection( other, 'union', this._cy );
+  union(other: Collection): Collection {
+    assertCollection(other, 'union', this._cy);
 
-    return this._spawn( [ ...this._refs, ...other._refs ] );
+    return this._spawn([...this._refs, ...other._refs]);
   }
 
   declare u: this['union'];
@@ -901,12 +1033,14 @@ export class Collection {
    * @param other — the collection to subtract
    * @returns a new collection
    */
-  difference( other: Collection ): Collection {
-    assertCollection( other, 'difference', this._cy );
+  difference(other: Collection): Collection {
+    assertCollection(other, 'difference', this._cy);
 
     const keys = other._keySet();
 
-    return this._spawnUnique( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
+    return this._spawnUnique(
+      this._refs.filter((ref) => !keys.has(packRef(ref))),
+    );
   }
 
   declare not: this['difference'];
@@ -920,12 +1054,14 @@ export class Collection {
    * @param other — the collection to intersect with
    * @returns a new collection
    */
-  intersection( other: Collection ): Collection {
-    assertCollection( other, 'intersection', this._cy );
+  intersection(other: Collection): Collection {
+    assertCollection(other, 'intersection', this._cy);
 
     const keys = other._keySet();
 
-    return this._spawnUnique( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
+    return this._spawnUnique(
+      this._refs.filter((ref) => keys.has(packRef(ref))),
+    );
   }
 
   declare intersect: this['intersection'];
@@ -937,18 +1073,18 @@ export class Collection {
    * @param other — the other collection
    * @returns a new collection
    */
-  symmetricDifference( other: Collection ): Collection {
-    assertCollection( other, 'symmetricDifference', this._cy );
+  symmetricDifference(other: Collection): Collection {
+    assertCollection(other, 'symmetricDifference', this._cy);
 
     const otherEles = other;
     const mine = this._keySet();
     const theirs = otherEles._keySet();
 
     // the two parts are disjoint by construction, so the result is unique
-    return this._spawnUnique( [
-      ...this._refs.filter( ref => !theirs.has( packRef( ref ) ) ),
-      ...otherEles._refs.filter( ref => !mine.has( packRef( ref ) ) )
-    ] );
+    return this._spawnUnique([
+      ...this._refs.filter((ref) => !theirs.has(packRef(ref))),
+      ...otherEles._refs.filter((ref) => !mine.has(packRef(ref))),
+    ]);
   }
 
   declare symdiff: this['symmetricDifference'];
@@ -970,63 +1106,79 @@ export class Collection {
    * @throws if a query object carries an unknown key — a typo must not
    *   silently match everything
    */
-  filter( criterion: FilterLike, thisArg?: unknown ): Collection {
+  filter(criterion: FilterLike, thisArg?: unknown): Collection {
     // the result is a subset of this collection's (already unique) refs
-    if( typeof criterion === 'function' ){
+    if (typeof criterion === 'function') {
       const refs: Ref[] = [];
       const n = this.length;
 
-      for( let i = 0; i < n; i++ ){
-        const include = thisArg == null ? criterion( this[ i ], i, this ) : criterion.call( thisArg, this[ i ], i, this );
+      for (let i = 0; i < n; i++) {
+        const include =
+          thisArg == null
+            ? criterion(this[i], i, this)
+            : criterion.call(thisArg, this[i], i, this);
 
-        if( include ){
-          refs.push( this._refs[ i ] );
+        if (include) {
+          refs.push(this._refs[i]);
         }
       }
 
-      return this._spawnUnique( refs );
+      return this._spawnUnique(refs);
     }
 
     // structured query: test each ref against its group's (mask, want)
     // directly on the flags column — no per-ref handles or closures
     const store = this._store;
-    const plan = compileQuery( criterion );
+    const plan = compileQuery(criterion);
     const nodeTest = plan.nodes;
     const edgeTest = plan.edges;
     const nodeGen = store.nodes.gen;
     const edgeGen = store.edges.gen;
-    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
-    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const nodeFlags = store.column('node.flags') as Uint32Array;
+    const edgeFlags = store.column('edge.flags') as Uint32Array;
     const dataConds = plan.data;
     const refs: Ref[] = [];
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
       const isNode = ref.group === 'nodes';
       const test = isNode ? nodeTest : edgeTest;
 
-      if( test == null ){ continue; }
-
-      if( ( isNode ? nodeGen : edgeGen )[ ref.slot ] !== ref.gen ){ continue; } // stale
-
-      const flags = ( isNode ? nodeFlags : edgeFlags )[ ref.slot ];
-
-      if( ( flags & test.mask ) !== test.want ){ continue; }
-
-      if( dataConds != null ){
-        let pass = true;
-
-        for( const cond of dataConds ){
-          if( !testCondition( cond, store.data.get( ref.group, ref.slot, cond.key ) ) ){ pass = false; break; }
-        }
-
-        if( !pass ){ continue; }
+      if (test == null) {
+        continue;
       }
 
-      refs.push( ref );
+      if ((isNode ? nodeGen : edgeGen)[ref.slot] !== ref.gen) {
+        continue;
+      } // stale
+
+      const flags = (isNode ? nodeFlags : edgeFlags)[ref.slot];
+
+      if ((flags & test.mask) !== test.want) {
+        continue;
+      }
+
+      if (dataConds != null) {
+        let pass = true;
+
+        for (const cond of dataConds) {
+          if (
+            !testCondition(cond, store.data.get(ref.group, ref.slot, cond.key))
+          ) {
+            pass = false;
+            break;
+          }
+        }
+
+        if (!pass) {
+          continue;
+        }
+      }
+
+      refs.push(ref);
     }
 
-    return this._spawnUnique( refs );
+    return this._spawnUnique(refs);
   }
 
   /**
@@ -1035,10 +1187,12 @@ export class Collection {
    * @param criterion — a query object or predicate; omit for all nodes
    * @returns a new collection of nodes
    */
-  nodes( criterion?: FilterLike ): Collection {
-    const nodes = this._spawnUnique( this._refs.filter( ref => ref.group === 'nodes' ) );
+  nodes(criterion?: FilterLike): Collection {
+    const nodes = this._spawnUnique(
+      this._refs.filter((ref) => ref.group === 'nodes'),
+    );
 
-    return criterion == null ? nodes : nodes.filter( criterion );
+    return criterion == null ? nodes : nodes.filter(criterion);
   }
 
   /**
@@ -1047,10 +1201,12 @@ export class Collection {
    * @param criterion — a query object or predicate; omit for all edges
    * @returns a new collection of edges
    */
-  edges( criterion?: FilterLike ): Collection {
-    const edges = this._spawnUnique( this._refs.filter( ref => ref.group === 'edges' ) );
+  edges(criterion?: FilterLike): Collection {
+    const edges = this._spawnUnique(
+      this._refs.filter((ref) => ref.group === 'edges'),
+    );
 
-    return criterion == null ? edges : edges.filter( criterion );
+    return criterion == null ? edges : edges.filter(criterion);
   }
 
   /**
@@ -1060,12 +1216,14 @@ export class Collection {
    * @param id — the element id
    * @returns a collection of one element, or an empty collection
    */
-  getElementById( id: string ): Collection {
-    for( let i = 0; i < this.length; i++ ){
-      if( this[ i ]._id === id ){ return this[ i ]; }
+  getElementById(id: string): Collection {
+    for (let i = 0; i < this.length; i++) {
+      if (this[i]._id === id) {
+        return this[i];
+      }
     }
 
-    return this._spawn( [] );
+    return this._spawn([]);
   }
 
   /** Split into { nodes, edges }. */
@@ -1081,7 +1239,7 @@ export class Collection {
    *   distinguishing
    */
   absoluteComplement(): Collection {
-    return this._cy.elements().difference( this );
+    return this._cy.elements().difference(this);
   }
 
   declare complement: this['absoluteComplement'];
@@ -1093,19 +1251,27 @@ export class Collection {
    * @param other — the collection to compare with
    * @returns `{ left: only in this, right: only in other, both: in both }`
    */
-  diff( other: Collection ): {
-    left: Collection; right: Collection; both: Collection;
+  diff(other: Collection): {
+    left: Collection;
+    right: Collection;
+    both: Collection;
   } {
-    assertCollection( other, 'diff', this._cy );
+    assertCollection(other, 'diff', this._cy);
 
     const otherColl = other;
     const mine = this._keySet();
     const theirs = otherColl._keySet();
 
     return {
-      left: this._spawnUnique( this._refs.filter( ref => !theirs.has( packRef( ref ) ) ) ),
-      right: this._spawnUnique( otherColl._refs.filter( ref => !mine.has( packRef( ref ) ) ) ),
-      both: this._spawnUnique( this._refs.filter( ref => theirs.has( packRef( ref ) ) ) )
+      left: this._spawnUnique(
+        this._refs.filter((ref) => !theirs.has(packRef(ref))),
+      ),
+      right: this._spawnUnique(
+        otherColl._refs.filter((ref) => !mine.has(packRef(ref))),
+      ),
+      both: this._spawnUnique(
+        this._refs.filter((ref) => theirs.has(packRef(ref))),
+      ),
     };
   }
 
@@ -1117,21 +1283,32 @@ export class Collection {
    *   `Array#reduce`)
    * @returns the final accumulator
    */
-  reduce<T>( fn: ( acc: T, ele: Collection, i: number, eles: Collection ) => T, initial: T ): T {
+  reduce<T>(
+    fn: (acc: T, ele: Collection, i: number, eles: Collection) => T,
+    initial: T,
+  ): T {
     let val = initial;
 
-    for( let i = 0; i < this.length; i++ ){
-      val = fn( val, this[ i ], i, this );
+    for (let i = 0; i < this.length; i++) {
+      val = fn(val, this[i], i, this);
     }
 
     return val;
   }
 
-  /** The element maximizing `valFn`, with its value ({ value: -Infinity, ele: undefined } when empty). */
+  /**
+   * The element maximizing `valFn`, with its value.
+   *
+   * @param valFn — `( ele, i, eles ) => number`
+   * @param thisArg — optional receiver for the callback
+   * @returns `{ value, ele }`, or `{ value: -Infinity, ele: undefined }`
+   *   when the collection is empty
+   */
   max(
-    valFn: ( ele: Collection, i: number, eles: Collection ) => number, thisArg?: unknown
+    valFn: (ele: Collection, i: number, eles: Collection) => number,
+    thisArg?: unknown,
   ): { value: number; ele: Collection | undefined } {
-    return this._extremum( valFn, thisArg, 1 );
+    return this._extremum(valFn, thisArg, 1);
   }
 
   /**
@@ -1143,24 +1320,29 @@ export class Collection {
    *   when the collection is empty
    */
   min(
-    valFn: ( ele: Collection, i: number, eles: Collection ) => number, thisArg?: unknown
+    valFn: (ele: Collection, i: number, eles: Collection) => number,
+    thisArg?: unknown,
   ): { value: number; ele: Collection | undefined } {
-    return this._extremum( valFn, thisArg, -1 );
+    return this._extremum(valFn, thisArg, -1);
   }
 
   private _extremum(
-    valFn: ( ele: Collection, i: number, eles: Collection ) => number,
-    thisArg: unknown, sign: 1 | -1
+    valFn: (ele: Collection, i: number, eles: Collection) => number,
+    thisArg: unknown,
+    sign: 1 | -1,
   ): { value: number; ele: Collection | undefined } {
     let best = sign * -Infinity;
     let bestEle: Collection | undefined;
 
-    for( let i = 0; i < this.length; i++ ){
-      const val = thisArg == null ? valFn( this[ i ], i, this ) : valFn.call( thisArg, this[ i ], i, this );
+    for (let i = 0; i < this.length; i++) {
+      const val =
+        thisArg == null
+          ? valFn(this[i], i, this)
+          : valFn.call(thisArg, this[i], i, this);
 
-      if( sign * val > sign * best ){
+      if (sign * val > sign * best) {
         best = val;
-        bestEle = this[ i ];
+        bestEle = this[i];
       }
     }
 
@@ -1185,8 +1367,11 @@ export class Collection {
    * @returns the position or coordinate when reading (undefined for
    *   edges and removed elements), this collection when writing
    */
-  position( dim?: string | Position, value?: number ): Position | number | undefined | this {
-    return this._positionImpl( dim, value, false );
+  position(
+    dim?: string | Position,
+    value?: number,
+  ): Position | number | undefined | this {
+    return this._positionImpl(dim, value, false);
   }
 
   /**
@@ -1198,40 +1383,49 @@ export class Collection {
    * @param value — the new coordinate, with the `'x'`/`'y'` form
    * @returns the position when reading, this collection when writing
    */
-  silentPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
-    return this._positionImpl( dim, value, true );
+  silentPosition(
+    dim?: string | Position,
+    value?: number,
+  ): Position | number | undefined | this {
+    return this._positionImpl(dim, value, true);
   }
 
   declare modelPosition: this['position'];
   declare point: this['position'];
 
   private _positionImpl(
-    dim: string | Position | undefined, value: number | undefined, silent: boolean
+    dim: string | Position | undefined,
+    value: number | undefined,
+    silent: boolean,
   ): Position | number | undefined | this {
     // getter forms
-    if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
-      const ref = this._refs[ 0 ];
+    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
+      const ref = this._refs[0];
       const store = this._store;
 
-      if( ref == null || ref.group !== 'nodes' || !store.isCurrent( ref ) ){ return undefined; }
+      if (ref == null || ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        return undefined;
+      }
 
       // parent positions are derived: settle pending auto-bounds first
-      if( store.hasCompounds() ){ store.flushDerived(); }
+      if (store.hasCompounds()) {
+        store.flushDerived();
+      }
 
       // one column fetch instead of getX()+getY() (two Map.gets)
-      const xy = store.nodes.column( 'node.position' ) as Float32Array;
+      const xy = store.nodes.column('node.position') as Float32Array;
       const slot = ref.slot;
-      const pos = { x: xy[ slot * 2 ], y: xy[ slot * 2 + 1 ] };
+      const pos = { x: xy[slot * 2], y: xy[slot * 2 + 1] };
 
-      return typeof dim === 'string' ? pos[ dim as 'x' | 'y' ] : pos;
+      return typeof dim === 'string' ? pos[dim as 'x' | 'y'] : pos;
     }
 
     // setter forms
-    if( typeof dim === 'string' ){
-      return this._positions( dim === 'x' ? { x: value } : { y: value }, silent );
+    if (typeof dim === 'string') {
+      return this._positions(dim === 'x' ? { x: value } : { y: value }, silent);
     }
 
-    return this._positions( dim, silent );
+    return this._positions(dim, silent);
   }
 
   /**
@@ -1241,8 +1435,8 @@ export class Collection {
    *   `( ele, i ) => ( { x, y } )`
    * @returns this collection, for chaining
    */
-  positions( pos: Position | ElePositionFn ): this {
-    return this._positions( pos, false );
+  positions(pos: Position | ElePositionFn): this {
+    return this._positions(pos, false);
   }
 
   /**
@@ -1251,8 +1445,8 @@ export class Collection {
    * @param pos — a `{ x, y }` for all of them, or `( ele, i ) => pos`
    * @returns this collection, for chaining
    */
-  silentPositions( pos: Position | ElePositionFn ): this {
-    return this._positions( pos, true );
+  silentPositions(pos: Position | ElePositionFn): this {
+    return this._positions(pos, true);
   }
 
   declare modelPositions: this['positions'];
@@ -1291,8 +1485,8 @@ export class Collection {
    * @see Collection#animation for the handle form with
    *   `promise`/`pause`/`resume`/`reverse`
    */
-  animate( opts: AnimateOptions ): this {
-    this.animation( opts ).play();
+  animate(opts: AnimateOptions): this {
+    this.animation(opts).play();
 
     return this;
   }
@@ -1304,21 +1498,40 @@ export class Collection {
    *   `duration`, `delay`, `easing` and `complete`
    * @returns the handle; nothing runs until `play()`
    */
-  animation( opts: AnimateOptions ): AnimationHandle {
+  animation(opts: AnimateOptions): AnimationHandle {
     const cy = this._cy;
-    const ani = new Animation( cy._store, null, this._liveRefs(), false, opts, cy._styleEngine );
+    const ani = new Animation(
+      cy._store,
+      null,
+      this._liveRefs(),
+      false,
+      opts,
+      cy._styleEngine,
+    );
 
     const handle: AnimationHandle = {
-      play: () => { cy._animations.start( ani ); return ani.promise(); },
-      stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
+      play: () => {
+        cy._animations.start(ani);
+        return ani.promise();
+      },
+      stop: (jumpToEnd = false) => ani.stop(jumpToEnd),
       promise: () => ani.promise(),
       playing: () => ani.running && !ani.paused,
       // round 24.3: the controls (progress is read-only — no scrubbing)
-      pause: () => { cy._animations.pauseAni( ani ); return handle; },
-      resume: () => { cy._animations.resumeAni( ani ); return handle; },
-      reverse: () => { cy._animations.reverseAni( ani ); return handle; },
+      pause: () => {
+        cy._animations.pauseAni(ani);
+        return handle;
+      },
+      resume: () => {
+        cy._animations.resumeAni(ani);
+        return handle;
+      },
+      reverse: () => {
+        cy._animations.reverseAni(ani);
+        return handle;
+      },
       progress: () => ani.progress,
-      paused: () => ani.paused
+      paused: () => ani.paused,
     };
 
     return handle;
@@ -1333,8 +1546,8 @@ export class Collection {
    * @param complete — called when it elapses
    * @returns this collection, for chaining
    */
-  delay( duration: number, complete?: () => void ): this {
-    return this.animate( { duration, complete } );
+  delay(duration: number, complete?: () => void): this {
+    return this.animate({ duration, complete });
   }
 
   /**
@@ -1344,8 +1557,8 @@ export class Collection {
    * @param complete — called when it elapses
    * @returns the handle; nothing runs until `play()`
    */
-  delayAnimation( duration: number, complete?: () => void ): AnimationHandle {
-    return this.animation( { duration, complete } );
+  delayAnimation(duration: number, complete?: () => void): AnimationHandle {
+    return this.animation({ duration, complete });
   }
 
   /**
@@ -1355,8 +1568,10 @@ export class Collection {
    *   are, and not whether the viewport is (that is `cy.animated()`)
    */
   animated(): boolean {
-    for( const ref of this._refs ){
-      if( this._cy._animations.isAnimating( ref ) ){ return true; }
+    for (const ref of this._refs) {
+      if (this._cy._animations.isAnimating(ref)) {
+        return true;
+      }
     }
 
     return false;
@@ -1370,84 +1585,99 @@ export class Collection {
    *   freezing each channel where its tween reached
    * @returns this collection, for chaining
    */
-  stop( jumpToEnd: boolean = false ): this {
-    this._cy._animations.stop( this._liveRefs(), jumpToEnd );
+  stop(jumpToEnd: boolean = false): this {
+    this._cy._animations.stop(this._liveRefs(), jumpToEnd);
 
     return this;
   }
 
-  private _positions( pos: Partial<Position> | ElePositionFn, silent: boolean ): this {
+  private _positions(
+    pos: Partial<Position> | ElePositionFn,
+    silent: boolean,
+  ): this {
     const store = this._store;
-    const wantEmit = !silent && hasListeners( this._cy._emitter, 'position' );
+    const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
 
     // constant (possibly partial) object: direct columnar write — no
     // per-element handles, callbacks, or Position allocations
-    if( typeof pos !== 'function' ){
+    if (typeof pos !== 'function') {
       const x = pos.x ?? null;
       const y = pos.y ?? null;
 
-      if( x == null && y == null ){ return this; }
+      if (x == null && y == null) {
+        return this;
+      }
 
       const slots: number[] = [];
       const emitIdx: number[] | null = wantEmit ? [] : null;
 
-      for( let i = 0; i < this.length; i++ ){
-        const ref = this._refs[ i ];
+      for (let i = 0; i < this.length; i++) {
+        const ref = this._refs[i];
 
-        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
-
-        slots.push( ref.slot );
-
-        if( emitIdx != null ){ emitIdx.push( i ); }
-      }
-
-      store.setPositionsConst( slots, x, y );
-
-      if( emitIdx != null ){
-        for( const i of emitIdx ){
-          this._cy._emitOnEle( 'position', this[ i ] );
+        if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+          continue;
         }
 
-        this._emitSubtreePositions( emitIdx );
+        slots.push(ref.slot);
+
+        if (emitIdx != null) {
+          emitIdx.push(i);
+        }
+      }
+
+      store.setPositionsConst(slots, x, y);
+
+      if (emitIdx != null) {
+        for (const i of emitIdx) {
+          this._cy._emitOnEle('position', this[i]);
+        }
+
+        this._emitSubtreePositions(emitIdx);
       }
 
       return this;
     }
 
-    const posCol = store.column( 'node.position' ) as Float32Array;
+    const posCol = store.column('node.position') as Float32Array;
     const slots: number[] = [];
     const xy: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const p = pos( this[ i ], i );
+      const p = pos(this[i], i);
 
-      if( p == null || ( p as unknown ) === false ){ continue; }
+      if (p == null || (p as unknown) === false) {
+        continue;
+      }
 
       // a partial object (e.g. { y: 3 }) leaves the omitted axis unchanged,
       // matching v3's position() merge semantics
       const pp = p as { x?: number; y?: number };
-      const px = pp.x ?? posCol[ ref.slot * 2 ];
-      const py = pp.y ?? posCol[ ref.slot * 2 + 1 ];
+      const px = pp.x ?? posCol[ref.slot * 2];
+      const py = pp.y ?? posCol[ref.slot * 2 + 1];
 
-      slots.push( ref.slot );
-      xy.push( px, py );
+      slots.push(ref.slot);
+      xy.push(px, py);
 
-      if( emitIdx != null ){ emitIdx.push( i ); }
+      if (emitIdx != null) {
+        emitIdx.push(i);
+      }
     }
 
-    store.setPositions( slots, xy );
+    store.setPositions(slots, xy);
 
-    if( emitIdx != null ){
-      for( const i of emitIdx ){
-        this._cy._emitOnEle( 'position', this[ i ] );
+    if (emitIdx != null) {
+      for (const i of emitIdx) {
+        this._cy._emitOnEle('position', this[i]);
       }
 
-      this._emitSubtreePositions( emitIdx );
+      this._emitSubtreePositions(emitIdx);
     }
 
     return this;
@@ -1458,34 +1688,45 @@ export class Collection {
    * 'position' too — once each (members that already emitted are skipped).
    * Only called when position listeners exist.
    */
-  private _emitSubtreePositions( emitIdx: number[] ): void {
+  private _emitSubtreePositions(emitIdx: number[]): void {
     const store = this._store;
 
-    if( !store.hasCompounds() ){ return; }
+    if (!store.hasCompounds()) {
+      return;
+    }
 
     const emitted = new Set<number>();
 
-    for( const i of emitIdx ){
-      const ref = this._refs[ i ];
+    for (const i of emitIdx) {
+      const ref = this._refs[i];
 
-      if( ref.group === 'nodes' ){ emitted.add( ref.slot ); }
+      if (ref.group === 'nodes') {
+        emitted.add(ref.slot);
+      }
     }
 
-    for( const i of emitIdx ){
-      const ref = this._refs[ i ];
+    for (const i of emitIdx) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){ continue; }
+      if (
+        ref.group !== 'nodes' ||
+        !store.hasFlag('nodes', ref.slot, FLAG_PARENT)
+      ) {
+        continue;
+      }
 
-      const stack: number[] = [ ...store.childrenOf( ref.slot ) ];
+      const stack: number[] = [...store.childrenOf(ref.slot)];
 
-      while( stack.length > 0 ){
+      while (stack.length > 0) {
         const s = stack.pop() as number;
 
-        for( const kid of store.childrenOf( s ) ){ stack.push( kid ); }
+        for (const kid of store.childrenOf(s)) {
+          stack.push(kid);
+        }
 
-        if( !emitted.has( s ) ){
-          emitted.add( s );
-          this._cy._emitOnEle( 'position', this._cy._ele( 'nodes', s ) );
+        if (!emitted.has(s)) {
+          emitted.add(s);
+          this._cy._emitOnEle('position', this._cy._ele('nodes', s));
         }
       }
     }
@@ -1498,8 +1739,8 @@ export class Collection {
    * @param value — the offset, when `dim` names an axis
    * @returns this collection, for chaining
    */
-  shift( dim: string | Position, value?: number ): this {
-    return this._shift( dim, value, false );
+  shift(dim: string | Position, value?: number): this {
+    return this._shift(dim, value, false);
   }
 
   /**
@@ -1509,19 +1750,35 @@ export class Collection {
    * @param value — the offset, with the `'x'`/`'y'` form
    * @returns this collection, for chaining
    */
-  silentShift( dim: string | Position, value?: number ): this {
-    return this._shift( dim, value, true );
+  silentShift(dim: string | Position, value?: number): this {
+    return this._shift(dim, value, true);
   }
 
-  private _shift( dim: string | Position, value: number | undefined, silent: boolean ): this {
-    const dx = typeof dim === 'string' ? ( dim === 'x' ? ( value as number ) : 0 ) : ( dim.x || 0 );
-    const dy = typeof dim === 'string' ? ( dim === 'y' ? ( value as number ) : 0 ) : ( dim.y || 0 );
+  private _shift(
+    dim: string | Position,
+    value: number | undefined,
+    silent: boolean,
+  ): this {
+    const dx =
+      typeof dim === 'string'
+        ? dim === 'x'
+          ? (value as number)
+          : 0
+        : dim.x || 0;
+    const dy =
+      typeof dim === 'string'
+        ? dim === 'y'
+          ? (value as number)
+          : 0
+        : dim.y || 0;
 
-    if( dx === 0 && dy === 0 ){ return this; }
+    if (dx === 0 && dy === 0) {
+      return this;
+    }
 
     // direct columnar offset — no callbacks or per-element Position objects
     const store = this._store;
-    const wantEmit = !silent && hasListeners( this._cy._emitter, 'position' );
+    const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
     const slots: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
 
@@ -1529,40 +1786,51 @@ export class Collection {
     // skipped — the ancestor's subtree shift moves it exactly once
     const inSet: Set<number> | null = store.hasCompounds() ? new Set() : null;
 
-    if( inSet != null ){
-      for( const ref of this._refs ){
-        if( ref.group === 'nodes' && store.isCurrent( ref ) ){ inSet.add( ref.slot ); }
+    if (inSet != null) {
+      for (const ref of this._refs) {
+        if (ref.group === 'nodes' && store.isCurrent(ref)) {
+          inSet.add(ref.slot);
+        }
       }
     }
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      if( inSet != null ){
+      if (inSet != null) {
         let ancestorInSet = false;
 
-        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){
-          if( inSet.has( p ) ){ ancestorInSet = true; break; }
+        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
+          if (inSet.has(p)) {
+            ancestorInSet = true;
+            break;
+          }
         }
 
-        if( ancestorInSet ){ continue; }
+        if (ancestorInSet) {
+          continue;
+        }
       }
 
-      slots.push( ref.slot );
+      slots.push(ref.slot);
 
-      if( emitIdx != null ){ emitIdx.push( i ); }
+      if (emitIdx != null) {
+        emitIdx.push(i);
+      }
     }
 
-    store.shiftPositions( slots, dx, dy );
+    store.shiftPositions(slots, dx, dy);
 
-    if( emitIdx != null ){
-      for( const i of emitIdx ){
-        this._cy._emitOnEle( 'position', this[ i ] );
+    if (emitIdx != null) {
+      for (const i of emitIdx) {
+        this._cy._emitOnEle('position', this[i]);
       }
 
-      this._emitSubtreePositions( emitIdx );
+      this._emitSubtreePositions(emitIdx);
     }
 
     return this;
@@ -1578,55 +1846,69 @@ export class Collection {
    * @param value — the relative coordinate to write, when `dim` names an axis
    * @returns the position or coordinate when reading, this when writing
    */
-  relativePosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
+  relativePosition(
+    dim?: string | Position,
+    value?: number,
+  ): Position | number | undefined | this {
     const store = this._store;
 
-    if( !store.hasCompounds() ){ return this._positionImpl( dim, value, false ); }
+    if (!store.hasCompounds()) {
+      return this._positionImpl(dim, value, false);
+    }
 
     // getter forms
-    if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
-      const pos = this._positionImpl( undefined, undefined, false ) as Position | undefined;
+    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
+      const pos = this._positionImpl(undefined, undefined, false) as
+        | Position
+        | undefined;
 
-      if( pos == null ){ return undefined; }
+      if (pos == null) {
+        return undefined;
+      }
 
-      const origin = this._relOrigin( this._refs[ 0 ] );
+      const origin = this._relOrigin(this._refs[0]);
       const rel = { x: pos.x - origin.x, y: pos.y - origin.y };
 
-      return typeof dim === 'string' ? rel[ dim as 'x' | 'y' ] : rel;
+      return typeof dim === 'string' ? rel[dim as 'x' | 'y'] : rel;
     }
 
     // setter forms: model = parent origin + rel, resolved per element
-    if( typeof dim === 'string' ){
-      return this._positions( ( ele ) => {
+    if (typeof dim === 'string') {
+      return this._positions((ele) => {
         const prev = ele.relativePosition() as Position;
-        const origin = ele._relOrigin( ele._refs[ 0 ] );
-        const rx = dim === 'x' ? ( value as number ) : prev.x;
-        const ry = dim === 'y' ? ( value as number ) : prev.y;
+        const origin = ele._relOrigin(ele._refs[0]);
+        const rx = dim === 'x' ? (value as number) : prev.x;
+        const ry = dim === 'y' ? (value as number) : prev.y;
 
         return { x: origin.x + rx, y: origin.y + ry };
-      }, false );
+      }, false);
     }
 
-    return this._positions( ( ele ) => {
-      const origin = ele._relOrigin( ele._refs[ 0 ] );
+    return this._positions((ele) => {
+      const origin = ele._relOrigin(ele._refs[0]);
 
-      return { x: origin.x + ( dim as Position ).x, y: origin.y + ( dim as Position ).y };
-    }, false );
+      return {
+        x: origin.x + (dim as Position).x,
+        y: origin.y + (dim as Position).y,
+      };
+    }, false);
   }
 
   /** The immediate parent's position ({0, 0} for orphans); flushes first. */
-  private _relOrigin( ref: Ref ): Position {
+  private _relOrigin(ref: Ref): Position {
     const store = this._store;
 
     store.flushDerived();
 
-    const p = store.parentOf( ref.slot );
+    const p = store.parentOf(ref.slot);
 
-    if( p < 0 ){ return { x: 0, y: 0 }; }
+    if (p < 0) {
+      return { x: 0, y: 0 };
+    }
 
-    const xy = store.column( 'node.position' ) as Float32Array;
+    const xy = store.column('node.position') as Float32Array;
 
-    return { x: xy[ p * 2 ], y: xy[ p * 2 + 1 ] };
+    return { x: xy[p * 2], y: xy[p * 2 + 1] };
   }
 
   declare relativePoint: this['relativePosition'];
@@ -1643,35 +1925,43 @@ export class Collection {
    * @returns the rendered position when reading, this collection when
    *   writing
    */
-  renderedPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
+  renderedPosition(
+    dim?: string | Position,
+    value?: number,
+  ): Position | number | undefined | this {
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
 
     // getter forms
-    if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
+    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
       const pos = this.position() as Position | undefined;
 
-      if( pos == null ){ return undefined; }
+      if (pos == null) {
+        return undefined;
+      }
 
       const rendered = { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
 
-      return typeof dim === 'string' ? rendered[ dim as 'x' | 'y' ] : rendered;
+      return typeof dim === 'string' ? rendered[dim as 'x' | 'y'] : rendered;
     }
 
     // setter forms: rendered → model
-    const toModel = ( rx: number, ry: number ): Position => ( { x: ( rx - pan.x ) / zoom, y: ( ry - pan.y ) / zoom } );
+    const toModel = (rx: number, ry: number): Position => ({
+      x: (rx - pan.x) / zoom,
+      y: (ry - pan.y) / zoom,
+    });
 
-    if( typeof dim === 'string' ){
-      return this._positions( ele => {
+    if (typeof dim === 'string') {
+      return this._positions((ele) => {
         const prev = ele.renderedPosition() as Position;
-        const rx = dim === 'x' ? ( value as number ) : prev.x;
-        const ry = dim === 'y' ? ( value as number ) : prev.y;
+        const rx = dim === 'x' ? (value as number) : prev.x;
+        const ry = dim === 'y' ? (value as number) : prev.y;
 
-        return toModel( rx, ry );
-      }, false );
+        return toModel(rx, ry);
+      }, false);
     }
 
-    return this._positions( toModel( dim.x, dim.y ), false );
+    return this._positions(toModel(dim.x, dim.y), false);
   }
 
   declare renderedPoint: this['renderedPosition'];
@@ -1692,11 +1982,13 @@ export class Collection {
   width(): number | undefined {
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
     return ref.group === 'nodes'
-      ? this._nodeDim( ref, 0 )
-      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot * 2 ];
+      ? this._nodeDim(ref, 0)
+      : (this._store.column('edge.width') as Float32Array)[ref.slot * 2];
   }
 
   /**
@@ -1715,28 +2007,30 @@ export class Collection {
   height(): number | undefined {
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
     return ref.group === 'nodes'
-      ? this._nodeDim( ref, 1 )
-      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot * 2 ];
+      ? this._nodeDim(ref, 1)
+      : (this._store.column('edge.width') as Float32Array)[ref.slot * 2];
   }
 
   /** A node's core width/height: for parents the column stores the
    * padded/drawn box (auto-bounds, round 14.3), so the readback
    * subtracts the padding — v3's autoWidth/autoHeight. */
-  private _nodeDim( ref: Ref, axis: 0 | 1 ): number {
+  private _nodeDim(ref: Ref, axis: 0 | 1): number {
     const store = this._store;
 
-    if( store.hasCompounds() && store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){
+    if (store.hasCompounds() && store.hasFlag('nodes', ref.slot, FLAG_PARENT)) {
       store.flushDerived();
 
-      const size = store.column( 'node.size' ) as Float32Array;
+      const size = store.column('node.size') as Float32Array;
 
-      return size[ ref.slot * 2 + axis ] - 2 * store.paddingOf( ref.slot );
+      return size[ref.slot * 2 + axis] - 2 * store.paddingOf(ref.slot);
     }
 
-    return ( store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 + axis ];
+    return (store.column('node.size') as Float32Array)[ref.slot * 2 + axis];
   }
 
   /**
@@ -1749,111 +2043,132 @@ export class Collection {
    *   (read it), a key and a value, or an object of keys to merge
    * @returns the read value, or this collection when writing
    */
-  data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
-    const [ key, value ] = args;
+  data(
+    ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
+  ): unknown {
+    const [key, value] = args;
 
     // whole-object getter
-    if( args.length === 0 ){
+    if (args.length === 0) {
       const ref = this._first();
 
-      if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+      if (ref == null || !this._store.isCurrent(ref)) {
+        return undefined;
+      }
 
-      const out: Record<string, unknown> = { id: this._store.idAt( ref.group, ref.slot ) };
+      const out: Record<string, unknown> = {
+        id: this._store.idAt(ref.group, ref.slot),
+      };
 
-      if( ref.group === 'edges' ){
+      if (ref.group === 'edges') {
         out.source = this.source().id();
         out.target = this.target().id();
       } else {
         // parent is first-class hierarchy state, synthesized on read
         // like edge source/target (round 14); absent for orphans
-        const parentSlot = this._store.parentOf( ref.slot );
+        const parentSlot = this._store.parentOf(ref.slot);
 
-        if( parentSlot >= 0 ){ out.parent = this._store.idAt( 'nodes', parentSlot ); }
+        if (parentSlot >= 0) {
+          out.parent = this._store.idAt('nodes', parentSlot);
+        }
       }
 
-      return Object.assign( out, this._store.data.object( ref.group, ref.slot ) );
+      return Object.assign(out, this._store.data.object(ref.group, ref.slot));
     }
 
     // single-key getter
-    if( typeof key === 'string' && args.length === 1 ){
+    if (typeof key === 'string' && args.length === 1) {
       const ref = this._first();
 
-      if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
-      if( key === 'id' ){ return this._store.idAt( ref.group, ref.slot ); }
-
-      if( ref.group === 'edges' && ( key === 'source' || key === 'target' ) ){
-        return ( key === 'source' ? this.source() : this.target() ).id();
+      if (ref == null || !this._store.isCurrent(ref)) {
+        return undefined;
+      }
+      if (key === 'id') {
+        return this._store.idAt(ref.group, ref.slot);
       }
 
-      if( ref.group === 'nodes' && key === 'parent' ){
-        const parentSlot = this._store.parentOf( ref.slot );
-
-        return parentSlot < 0 ? undefined : this._store.idAt( 'nodes', parentSlot );
+      if (ref.group === 'edges' && (key === 'source' || key === 'target')) {
+        return (key === 'source' ? this.source() : this.target()).id();
       }
 
-      return this._store.data.get( ref.group, ref.slot, key );
+      if (ref.group === 'nodes' && key === 'parent') {
+        const parentSlot = this._store.parentOf(ref.slot);
+
+        return parentSlot < 0
+          ? undefined
+          : this._store.idAt('nodes', parentSlot);
+      }
+
+      return this._store.data.get(ref.group, ref.slot, key);
     }
 
     // setter forms: one key (undefined clears it) or an object of keys
-    const patch: Record<string, unknown> = typeof key === 'string'
-      ? { [ key ]: value }
-      : key as Record<string, unknown>;
+    const patch: Record<string, unknown> =
+      typeof key === 'string'
+        ? { [key]: value }
+        : (key as Record<string, unknown>);
 
-    return this._setData( patch );
+    return this._setData(patch);
   }
 
-  private _setData( patch: Record<string, unknown> ): this {
+  private _setData(patch: Record<string, unknown>): this {
     const store = this._store;
     const cy = this._cy;
-    const keys = Object.keys( patch );
-    const wantEmit = hasListeners( cy._emitter, 'data' );
+    const keys = Object.keys(patch);
+    const wantEmit = hasListeners(cy._emitter, 'data');
     // a data write can only change computed style through a mapper (or a
     // mapped label) on one of the written keys — decided once per group,
     // not per element
     const touched: Record<'nodes' | 'edges', number[] | null> = {
-      nodes: cy._stylesDependOnData( 'nodes', keys ) ? [] : null,
-      edges: cy._stylesDependOnData( 'edges', keys ) ? [] : null
+      nodes: cy._stylesDependOnData('nodes', keys) ? [] : null,
+      edges: cy._stylesDependOnData('edges', keys) ? [] : null,
     };
 
-    for( const k of keys ){
-      if( k === 'id' ){
-        throw new Error( `Can not change the immutable data field 'id'` );
+    for (const k of keys) {
+      if (k === 'id') {
+        throw new Error(`Can not change the immutable data field 'id'`);
       }
     }
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( !store.isCurrent( ref ) ){ continue; }
-
-      for( const k of keys ){
-        if( ref.group === 'edges' && ( k === 'source' || k === 'target' ) ){
-          throw new Error( `Can not change the immutable data field '${k}' of an edge` );
-        }
-
-        if( ref.group === 'nodes' && k === 'parent' ){
-          throw new Error( `Can not change the immutable data field 'parent' of a node; reparent with move()` );
-        }
-
-        store.setData( ref.group, ref.slot, k, patch[ k ] );
+      if (!store.isCurrent(ref)) {
+        continue;
       }
 
-      touched[ ref.group ]?.push( ref.slot );
+      for (const k of keys) {
+        if (ref.group === 'edges' && (k === 'source' || k === 'target')) {
+          throw new Error(
+            `Can not change the immutable data field '${k}' of an edge`,
+          );
+        }
+
+        if (ref.group === 'nodes' && k === 'parent') {
+          throw new Error(
+            `Can not change the immutable data field 'parent' of a node; reparent with move()`,
+          );
+        }
+
+        store.setData(ref.group, ref.slot, k, patch[k]);
+      }
+
+      touched[ref.group]?.push(ref.slot);
     }
 
     // mapped style refreshes before emits so data listeners observe fresh state
-    for( const group of [ 'nodes', 'edges' ] as const ){
-      const slots = touched[ group ];
+    for (const group of ['nodes', 'edges'] as const) {
+      const slots = touched[group];
 
-      if( slots != null && slots.length > 0 ){
-        cy._refreshMappedStyles( group, slots, keys );
+      if (slots != null && slots.length > 0) {
+        cy._refreshMappedStyles(group, slots, keys);
       }
     }
 
-    if( wantEmit ){
-      for( let i = 0; i < this.length; i++ ){
-        if( store.isCurrent( this._refs[ i ] ) ){
-          cy._emitOnEle( 'data', this[ i ] );
+    if (wantEmit) {
+      for (let i = 0; i < this.length; i++) {
+        if (store.isCurrent(this._refs[i])) {
+          cy._emitOnEle('data', this[i]);
         }
       }
     }
@@ -1867,21 +2182,29 @@ export class Collection {
    * @param names — space-separated key names; omit to clear every key
    * @returns this collection, for chaining
    */
-  removeData( names?: string ): this {
+  removeData(names?: string): this {
     const store = this._store;
-    const requested = names == null ? null : names.split( /\s+/ ).filter( n => n !== '' );
+    const requested =
+      names == null ? null : names.split(/\s+/).filter((n) => n !== '');
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( !store.isCurrent( ref ) ){ continue; }
+      if (!store.isCurrent(ref)) {
+        continue;
+      }
 
-      const keys = requested ?? Object.keys( store.data.object( ref.group, ref.slot ) );
+      const keys =
+        requested ?? Object.keys(store.data.object(ref.group, ref.slot));
       const patch: Record<string, unknown> = {};
 
-      for( const k of keys ){ patch[ k ] = undefined; }
+      for (const k of keys) {
+        patch[k] = undefined;
+      }
 
-      if( Object.keys( patch ).length > 0 ){ this[ i ]._setData( patch ); }
+      if (Object.keys(patch).length > 0) {
+        this[i]._setData(patch);
+      }
     }
 
     return this;
@@ -1895,35 +2218,39 @@ export class Collection {
    * first element's whole object, `scratch(ns)` one namespace, `scratch(ns,
    * val)` / `scratch(obj)` write to every element.
    *
+   * @param args — the form to take: nothing (read the whole object), a
+   *   namespace (read it), a namespace and a value (write it to every
+   *   element), or one object (merge its keys into every element)
    * @returns the reader forms answer the first element — the whole
    *   scratch object under no argument, one namespace's value under
    *   `scratch(ns)`, undefined when the collection is empty — while the
    *   writer forms return this collection for chaining
    */
   scratch(
-    ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ]
+    ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
   ): unknown {
-    const [ ns, value ] = args;
+    const [ns, value] = args;
 
     // whole-object getter
-    if( args.length === 0 ){
-      return this[ 0 ]?._scratch ?? {};
+    if (args.length === 0) {
+      return this[0]?._scratch ?? {};
     }
 
     // single-namespace getter
-    if( typeof ns === 'string' && args.length === 1 ){
-      return this[ 0 ]?._scratch?.[ ns ];
+    if (typeof ns === 'string' && args.length === 1) {
+      return this[0]?._scratch?.[ns];
     }
 
-    const patch: Record<string, unknown> = typeof ns === 'string'
-      ? { [ ns ]: value }
-      : ns as Record<string, unknown>;
+    const patch: Record<string, unknown> =
+      typeof ns === 'string'
+        ? { [ns]: value }
+        : (ns as Record<string, unknown>);
 
-    for( let i = 0; i < this.length; i++ ){
-      const ele = this[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ele = this[i];
 
       ele._scratch ??= {};
-      Object.assign( ele._scratch, patch );
+      Object.assign(ele._scratch, patch);
     }
 
     return this;
@@ -1936,16 +2263,18 @@ export class Collection {
    *   whole scratchpad
    * @returns this collection, for chaining
    */
-  removeScratch( namespace?: string ): this {
-    for( let i = 0; i < this.length; i++ ){
-      const ele = this[ i ];
+  removeScratch(namespace?: string): this {
+    for (let i = 0; i < this.length; i++) {
+      const ele = this[i];
 
-      if( ele._scratch == null ){ continue; }
+      if (ele._scratch == null) {
+        continue;
+      }
 
-      if( namespace == null ){
+      if (namespace == null) {
         ele._scratch = {};
       } else {
-        delete ele._scratch[ namespace ];
+        delete ele._scratch[namespace];
       }
     }
 
@@ -1974,22 +2303,24 @@ export class Collection {
    * @returns one resolved value, or the whole group's props
    * @throws if called in any setter form
    */
-  style( name?: string | Record<string, unknown>, value?: unknown ): unknown {
-    if( value !== undefined || ( name != null && typeof name !== 'string' ) ){
+  style(name?: string | Record<string, unknown>, value?: unknown): unknown {
+    if (value !== undefined || (name != null && typeof name !== 'string')) {
       throw new Error(
         'Per-element style bypass is not supported in v4; per-element styling ' +
-        "is declarative: use a 'case' mapper for conditionals and 'data(key)' " +
-        'scales for per-element values'
+          "is declarative: use a 'case' mapper for conditionals and 'data(key)' " +
+          'scales for per-element values',
       );
     }
 
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
     const engine = this._cy.style();
 
-    return name == null ? engine.readProps( ref ) : engine.readProp( ref, name );
+    return name == null ? engine.readProps(ref) : engine.readProp(ref, name);
   }
 
   declare css: this['style'];
@@ -2001,21 +2332,27 @@ export class Collection {
    * @param name — a property name; omit for the whole group
    * @returns the rendered-space value, or the whole group's props
    */
-  renderedStyle( name?: string ): unknown {
-    const value = this.style( name );
+  renderedStyle(name?: string): unknown {
+    const value = this.style(name);
 
-    if( value === undefined ){ return undefined; }
+    if (value === undefined) {
+      return undefined;
+    }
 
     const zoom = this._cy.zoom() as number;
 
-    if( name != null ){
-      return RENDERED_LENGTH_PROPS.has( normalizeCss( name ) ) ? ( value as number ) * zoom : value;
+    if (name != null) {
+      return RENDERED_LENGTH_PROPS.has(normalizeCss(name))
+        ? (value as number) * zoom
+        : value;
     }
 
     const props = value as Record<string, string | number>;
 
-    for( const prop of RENDERED_LENGTH_PROPS ){
-      if( typeof props[ prop ] === 'number' ){ props[ prop ] = ( props[ prop ] as number ) * zoom; }
+    for (const prop of RENDERED_LENGTH_PROPS) {
+      if (typeof props[prop] === 'number') {
+        props[prop] = (props[prop] as number) * zoom;
+      }
     }
 
     return props;
@@ -2031,13 +2368,15 @@ export class Collection {
    *   prop belongs to the other group
    * @throws if the prop resolves to a colour or a keyword rather than a number
    */
-  numericStyle( name: string ): number | undefined {
-    const value = this.style( name );
+  numericStyle(name: string): number | undefined {
+    const value = this.style(name);
 
-    if( value === undefined ){ return undefined; }
+    if (value === undefined) {
+      return undefined;
+    }
 
-    if( typeof value !== 'number' ){
-      throw new Error( `The style property '${name}' is not numeric` );
+    if (typeof value !== 'number') {
+      throw new Error(`The style property '${name}' is not numeric`);
     }
 
     return value;
@@ -2054,13 +2393,15 @@ export class Collection {
   effectiveOpacity(): number | undefined {
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
-
-    if( ref.group === 'nodes' && this._store.hasCompounds() ){
-      return ( this._store.column( 'node.opacity' ) as Float32Array )[ ref.slot ];
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
     }
 
-    return this.numericStyle( 'opacity' );
+    if (ref.group === 'nodes' && this._store.hasCompounds()) {
+      return (this._store.column('node.opacity') as Float32Array)[ref.slot];
+    }
+
+    return this.numericStyle('opacity');
   }
 
   /**
@@ -2081,7 +2422,7 @@ export class Collection {
    *   differ from `visible()`, which is the paint tier
    */
   takesUpSpace(): boolean {
-    return this._hasBit( FLAG_VISIBLE );
+    return this._hasBit(FLAG_VISIBLE);
   }
 
   /** Whether the element can be interacted with: visible and not
@@ -2091,7 +2432,7 @@ export class Collection {
    *   rides `visible()`, so an element hidden either way is inert
    */
   interactive(): boolean {
-    return this.visible() && !this._hasBit( FLAG_NO_EVENTS );
+    return this.visible() && !this._hasBit(FLAG_NO_EVENTS);
   }
 
   /**
@@ -2104,9 +2445,11 @@ export class Collection {
   label(): string | undefined {
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
-    return this._store.labelAt( ref.slot, ref.group )?.text ?? '';
+    return this._store.labelAt(ref.slot, ref.group)?.text ?? '';
   }
 
   /**
@@ -2121,13 +2464,19 @@ export class Collection {
   padding(): number | undefined {
     const ref = this._first();
 
-    if( ref == null ){ return undefined; }
+    if (ref == null) {
+      return undefined;
+    }
 
-    if( ref.group !== 'nodes' || !this._store.isCurrent( ref ) || !this._store.hasCompounds() ){
+    if (
+      ref.group !== 'nodes' ||
+      !this._store.isCurrent(ref) ||
+      !this._store.hasCompounds()
+    ) {
       return 0;
     }
 
-    return this._store.paddingOf( ref.slot );
+    return this._store.paddingOf(ref.slot);
   }
 
   /**
@@ -2137,7 +2486,7 @@ export class Collection {
    *   have no padding; undefined when empty or removed
    */
   paddedWidth(): number | undefined {
-    return this._paddedDim( 0 );
+    return this._paddedDim(0);
   }
 
   /**
@@ -2148,20 +2497,27 @@ export class Collection {
    * @returns the padded height, or undefined when empty or removed
    */
   paddedHeight(): number | undefined {
-    return this._paddedDim( 1 );
+    return this._paddedDim(1);
   }
 
-  private _paddedDim( axis: 0 | 1 ): number | undefined {
+  private _paddedDim(axis: 0 | 1): number | undefined {
     const ref = this._first();
 
-    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
-    if( ref.group === 'nodes' && this._store.hasCompounds()
-      && this._store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){
+    if (
+      ref.group === 'nodes' &&
+      this._store.hasCompounds() &&
+      this._store.hasFlag('nodes', ref.slot, FLAG_PARENT)
+    ) {
       this._store.flushDerived();
 
       // the size column stores the padded/drawn box for parents
-      return ( this._store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 + axis ];
+      return (this._store.column('node.size') as Float32Array)[
+        ref.slot * 2 + axis
+      ];
     }
 
     return axis === 0 ? this.width() : this.height();
@@ -2193,9 +2549,11 @@ export class Collection {
   private _borderWidth(): number {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'nodes' ){ return 0; }
+    if (ref == null || ref.group !== 'nodes') {
+      return 0;
+    }
 
-    return ( this._store.column( 'node.borderWidth' ) as Float32Array )[ ref.slot ];
+    return (this._store.column('node.borderWidth') as Float32Array)[ref.slot];
   }
 
   /**
@@ -2214,33 +2572,50 @@ export class Collection {
    *   fit semantics
    * @see Collection#labelBoundingBox for the label box alone
    */
-  boundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+  boundingBox(options?: { includeLabels?: boolean }): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+    h: number;
+  } {
     // labels join the box by default (round 16.4); unknown keys throw —
     // a typo must not silently change fit semantics
-    if( options != null ){
-      for( const key of Object.keys( options ) ){
-        if( key !== 'includeLabels' ){
-          throw new Error( `Unknown boundingBox() option '${key}'; supported: includeLabels` );
+    if (options != null) {
+      for (const key of Object.keys(options)) {
+        if (key !== 'includeLabels') {
+          throw new Error(
+            `Unknown boundingBox() option '${key}'; supported: includeLabels`,
+          );
         }
       }
     }
 
     const includeLabels = options?.includeLabels !== false;
     const store = this._store;
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    let x1 = Infinity,
+      y1 = Infinity,
+      x2 = -Infinity,
+      y2 = -Infinity;
 
-    const expandPoint = ( x: number, y: number, halfW: number = 0, halfH: number = 0 ): void => {
-      x1 = Math.min( x1, x - halfW );
-      y1 = Math.min( y1, y - halfH );
-      x2 = Math.max( x2, x + halfW );
-      y2 = Math.max( y2, y + halfH );
+    const expandPoint = (
+      x: number,
+      y: number,
+      halfW: number = 0,
+      halfH: number = 0,
+    ): void => {
+      x1 = Math.min(x1, x - halfW);
+      y1 = Math.min(y1, y - halfH);
+      x2 = Math.max(x2, x + halfW);
+      y2 = Math.max(y2, y + halfH);
     };
 
-    const size = store.column( 'node.size' ) as Float32Array;
-    const border = store.column( 'node.borderWidth' ) as Float32Array;
-    const ghost = store.column( 'node.ghost' ) as Float32Array;
-    const bGeom = store.column( 'node.borderGeom' ) as Uint32Array;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const size = store.column('node.size') as Float32Array;
+    const border = store.column('node.borderWidth') as Float32Array;
+    const ghost = store.column('node.ghost') as Float32Array;
+    const bGeom = store.column('node.borderGeom') as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
 
     store.flushDerived(); // parent auto-bounds + curved-edge params derive below
 
@@ -2248,86 +2623,112 @@ export class Collection {
     // (v3's rule; the whole-graph fit scan already excluded them), while
     // `visibility: 'hidden'` elements keep theirs — the mask is VISIBLE,
     // not DRAWN.  An edge needs both endpoints shown (the drawn-edge rule).
-    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
-    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const nodeFlags = store.column('node.flags') as Uint32Array;
+    const edgeFlags = store.column('edge.flags') as Uint32Array;
     const shownMask = FLAG_ALIVE | FLAG_VISIBLE;
-    const shown = ( flags: Uint32Array, slot: number ): boolean =>
-      ( flags[ slot ] & shownMask ) === shownMask;
+    const shown = (flags: Uint32Array, slot: number): boolean =>
+      (flags[slot] & shownMask) === shownMask;
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group === 'nodes' && !shown( nodeFlags, ref.slot ) ){ continue; }
+    for (const ref of this._liveRefs()) {
+      if (ref.group === 'nodes' && !shown(nodeFlags, ref.slot)) {
+        continue;
+      }
 
-      if( ref.group === 'edges' && !( shown( edgeFlags, ref.slot )
-        && shown( nodeFlags, endpoints[ ref.slot * 2 ] )
-        && shown( nodeFlags, endpoints[ ref.slot * 2 + 1 ] ) ) ){ continue; }
+      if (
+        ref.group === 'edges' &&
+        !(
+          shown(edgeFlags, ref.slot) &&
+          shown(nodeFlags, endpoints[ref.slot * 2]) &&
+          shown(nodeFlags, endpoints[ref.slot * 2 + 1])
+        )
+      ) {
+        continue;
+      }
 
-      if( ref.group === 'nodes' ){
+      if (ref.group === 'nodes') {
         const slot = ref.slot;
-        let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
-        let hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+        let hw = size[slot * 2] / 2 + border[slot] / 2;
+        let hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
 
         // an outline ring grows the box (round 13 B5)
-        if( bGeom[ slot * 4 + 2 ] >>> 24 !== 0 ){
-          const wo = bGeom[ slot * 4 + 3 ];
-          const extra = ( wo >>> 16 ) / 256 / 2 + ( wo & 0xffff ) / 256;
+        if (bGeom[slot * 4 + 2] >>> 24 !== 0) {
+          const wo = bGeom[slot * 4 + 3];
+          const extra = (wo >>> 16) / 256 / 2 + (wo & 0xffff) / 256;
 
           hw += extra;
           hh += extra;
         }
 
-        expandPoint( store.getX( slot ), store.getY( slot ), hw, hh );
+        expandPoint(store.getX(slot), store.getY(slot), hw, hh);
 
         // a ghost duplicates the body at the offset (round 13 A1)
-        if( ghost[ slot * 4 + 3 ] !== 0 ){
+        if (ghost[slot * 4 + 3] !== 0) {
           expandPoint(
-            store.getX( slot ) + ghost[ slot * 4 ],
-            store.getY( slot ) + ghost[ slot * 4 + 1 ],
-            hw, hh
+            store.getX(slot) + ghost[slot * 4],
+            store.getY(slot) + ghost[slot * 4 + 1],
+            hw,
+            hh,
           );
         }
 
         // the node label's laid box at its anchor (round 16.4)
-        if( includeLabels ){
-          const lb = store.nodeLabelBox( slot );
+        if (includeLabels) {
+          const lb = store.nodeLabelBox(slot);
 
-          if( lb != null ){
-            expandPoint( store.getX( slot ) + lb.x1, store.getY( slot ) + lb.y1 );
-            expandPoint( store.getX( slot ) + lb.x2, store.getY( slot ) + lb.y2 );
+          if (lb != null) {
+            expandPoint(store.getX(slot) + lb.x1, store.getY(slot) + lb.y1);
+            expandPoint(store.getX(slot) + lb.x2, store.getY(slot) + lb.y2);
           }
         }
       } else {
         // curved edges use the exact lazy bound (memoized flattened
         // polyline); straight edges span their endpoint centers
-        const curveBB = store.curveBBAt( ref.slot );
-        const hay = curveBB == null ? store.haystackPointsAt( ref.slot ) : null;
+        const curveBB = store.curveBBAt(ref.slot);
+        const hay = curveBB == null ? store.haystackPointsAt(ref.slot) : null;
 
-        if( curveBB != null ){
-          expandPoint( curveBB.x1, curveBB.y1 );
-          expandPoint( curveBB.x2, curveBB.y2 );
-        } else if( hay != null ){
+        if (curveBB != null) {
+          expandPoint(curveBB.x1, curveBB.y1);
+          expandPoint(curveBB.x2, curveBB.y2);
+        } else if (hay != null) {
           // haystack edges (12c) span their offset points (v3's allpts)
-          expandPoint( hay.sx, hay.sy );
-          expandPoint( hay.tx, hay.ty );
+          expandPoint(hay.sx, hay.sy);
+          expandPoint(hay.tx, hay.ty);
         } else {
-          expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ) );
-          expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ) );
+          expandPoint(
+            store.getX(endpoints[ref.slot * 2]),
+            store.getY(endpoints[ref.slot * 2]),
+          );
+          expandPoint(
+            store.getX(endpoints[ref.slot * 2 + 1]),
+            store.getY(endpoints[ref.slot * 2 + 1]),
+          );
         }
 
         // edge labels (16.4): the conservative block-covering radius
         // about both endpoints (the anchor lies on the drawn path) — a
         // recorded approximation; node labels are exact above
-        if( includeLabels ){
-          const r = store.edgeLabelSlack( ref.slot );
+        if (includeLabels) {
+          const r = store.edgeLabelSlack(ref.slot);
 
-          if( r > 0 ){
-            expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ), r, r );
-            expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ), r, r );
+          if (r > 0) {
+            expandPoint(
+              store.getX(endpoints[ref.slot * 2]),
+              store.getY(endpoints[ref.slot * 2]),
+              r,
+              r,
+            );
+            expandPoint(
+              store.getX(endpoints[ref.slot * 2 + 1]),
+              store.getY(endpoints[ref.slot * 2 + 1]),
+              r,
+              r,
+            );
           }
         }
       }
     }
 
-    if( x1 === Infinity ){
+    if (x1 === Infinity) {
       return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 };
     }
 
@@ -2341,26 +2742,41 @@ export class Collection {
    * end labels conservatively about their endpoint.  Empty (zero) when
    * nothing is labelled.  Headless dims are estimates (recorded).
    */
-  labelBoundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+  labelBoundingBox(): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+    h: number;
+  } {
     const store = this._store;
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    let x1 = Infinity,
+      y1 = Infinity,
+      x2 = -Infinity,
+      y2 = -Infinity;
 
-    const expand = ( bx1: number, by1: number, bx2: number, by2: number ): void => {
-      x1 = Math.min( x1, bx1 );
-      y1 = Math.min( y1, by1 );
-      x2 = Math.max( x2, bx2 );
-      y2 = Math.max( y2, by2 );
+    const expand = (
+      bx1: number,
+      by1: number,
+      bx2: number,
+      by2: number,
+    ): void => {
+      x1 = Math.min(x1, bx1);
+      y1 = Math.min(y1, by1);
+      x2 = Math.max(x2, bx2);
+      y2 = Math.max(y2, by2);
     };
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group === 'nodes' ){
-        const lb = store.nodeLabelBox( ref.slot );
+    for (const ref of this._liveRefs()) {
+      if (ref.group === 'nodes') {
+        const lb = store.nodeLabelBox(ref.slot);
 
-        if( lb != null ){
-          const x = store.getX( ref.slot );
-          const y = store.getY( ref.slot );
+        if (lb != null) {
+          const x = store.getX(ref.slot);
+          const y = store.getY(ref.slot);
 
-          expand( x + lb.x1, y + lb.y1, x + lb.x2, y + lb.y2 );
+          expand(x + lb.x1, y + lb.y1, x + lb.x2, y + lb.y2);
         }
 
         continue;
@@ -2368,36 +2784,51 @@ export class Collection {
 
       // edge mid-labels: the block about the drawn midpoint; end labels
       // ride the conservative endpoint radius
-      const entry = store.labelAt( ref.slot, 'edges' );
-      const dims = store.labelDimsAt( ref.slot, 'edges' );
+      const entry = store.labelAt(ref.slot, 'edges');
+      const dims = store.labelDimsAt(ref.slot, 'edges');
 
-      if( entry != null && dims != null ){
-        const m = this._cy._ele( ref.group, ref.slot ).midpoint() ?? { x: 0, y: 0 };
+      if (entry != null && dims != null) {
+        const m = this._cy._ele(ref.group, ref.slot).midpoint() ?? {
+          x: 0,
+          y: 0,
+        };
         const dx = entry.marginX;
-        const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
+        const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
 
         expand(
-          m.x + dx - dims.w / 2 - pad, m.y + entry.anchorY - pad,
-          m.x + dx + dims.w / 2 + pad, m.y + entry.anchorY + dims.h + pad );
+          m.x + dx - dims.w / 2 - pad,
+          m.y + entry.anchorY - pad,
+          m.x + dx + dims.w / 2 + pad,
+          m.y + entry.anchorY + dims.h + pad,
+        );
       }
 
       const r = Math.max(
-        store.labelDimsAt( ref.slot, 'edgeSource' ) != null ? store.edgeLabelSlack( ref.slot ) : 0,
-        store.labelDimsAt( ref.slot, 'edgeTarget' ) != null ? store.edgeLabelSlack( ref.slot ) : 0 );
+        store.labelDimsAt(ref.slot, 'edgeSource') != null
+          ? store.edgeLabelSlack(ref.slot)
+          : 0,
+        store.labelDimsAt(ref.slot, 'edgeTarget') != null
+          ? store.edgeLabelSlack(ref.slot)
+          : 0,
+      );
 
-      if( r > 0 ){
-        const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+      if (r > 0) {
+        const endpoints = store.column('edge.endpoints') as Uint32Array;
 
-        for( let end = 0; end < 2; end++ ){
-          const node = endpoints[ ref.slot * 2 + end ];
+        for (let end = 0; end < 2; end++) {
+          const node = endpoints[ref.slot * 2 + end];
 
-          expand( store.getX( node ) - r, store.getY( node ) - r,
-            store.getX( node ) + r, store.getY( node ) + r );
+          expand(
+            store.getX(node) - r,
+            store.getY(node) - r,
+            store.getX(node) + r,
+            store.getY(node) + r,
+          );
         }
       }
     }
 
-    if( x1 === Infinity ){
+    if (x1 === Infinity) {
       return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 };
     }
 
@@ -2411,8 +2842,15 @@ export class Collection {
    *   true; an unknown key throws
    * @returns the rendered-space box
    */
-  renderedBoundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
-    const bb = this.boundingBox( options );
+  renderedBoundingBox(options?: { includeLabels?: boolean }): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+    h: number;
+  } {
+    const bb = this.boundingBox(options);
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
     const x1 = bb.x1 * zoom + pan.x;
@@ -2431,7 +2869,7 @@ export class Collection {
    * @returns the rendered width, or undefined when empty or removed
    */
   renderedWidth(): number | undefined {
-    return this._rendered( this.width() );
+    return this._rendered(this.width());
   }
 
   /**
@@ -2440,7 +2878,7 @@ export class Collection {
    * @returns the rendered height, or undefined when empty or removed
    */
   renderedHeight(): number | undefined {
-    return this._rendered( this.height() );
+    return this._rendered(this.height());
   }
 
   /**
@@ -2450,7 +2888,7 @@ export class Collection {
    *   removed
    */
   renderedOuterWidth(): number | undefined {
-    return this._rendered( this.outerWidth() );
+    return this._rendered(this.outerWidth());
   }
 
   /**
@@ -2460,11 +2898,13 @@ export class Collection {
    *   removed
    */
   renderedOuterHeight(): number | undefined {
-    return this._rendered( this.outerHeight() );
+    return this._rendered(this.outerHeight());
   }
 
-  private _rendered( modelLength: number | undefined ): number | undefined {
-    return modelLength == null ? undefined : modelLength * ( this._cy.zoom() as number );
+  private _rendered(modelLength: number | undefined): number | undefined {
+    return modelLength == null
+      ? undefined
+      : modelLength * (this._cy.zoom() as number);
   }
 
   /** Midpoint of the edge: the curve/route midpoint for curved edges
@@ -2478,29 +2918,31 @@ export class Collection {
   midpoint(): Position | undefined {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
-    const ev = this._store.curveEvalAt( ref.slot );
+    const ev = this._store.curveEvalAt(ref.slot);
 
-    if( ev != null ){
+    if (ev != null) {
       return { x: ev.mx, y: ev.my };
     }
 
-    const route = this._store.curveRouteAt( ref.slot );
+    const route = this._store.curveRouteAt(ref.slot);
 
-    if( route != null ){
+    if (route != null) {
       const m = { x: 0, y: 0, tx: 0, ty: 0 };
 
-      routeMidpoint( route, m );
+      routeMidpoint(route, m);
 
       return { x: m.x, y: m.y };
     }
 
     // haystack edges (12c): the offset-point average, v3's rs.mid
-    const hay = this._store.haystackPointsAt( ref.slot );
+    const hay = this._store.haystackPointsAt(ref.slot);
 
-    if( hay != null ){
-      return { x: ( hay.sx + hay.tx ) / 2, y: ( hay.sy + hay.ty ) / 2 };
+    if (hay != null) {
+      return { x: (hay.sx + hay.tx) / 2, y: (hay.sy + hay.ty) / 2 };
     }
 
     // Straight edges: v3's `storeAllpts` does *not* answer the chord
@@ -2515,14 +2957,14 @@ export class Collection {
     // different heads and it stops cancelling.  It matters beyond the
     // accessor: this is where a mid-arrow sits and an edge label
     // anchors.
-    const line = this._store.straightLineEndAt( ref.slot, 0 );
-    const lineEnd = this._store.straightLineEndAt( ref.slot, 1 );
-    const arrow = this._store.straightEndpointAt( ref.slot, 0 );
-    const arrowEnd = this._store.straightEndpointAt( ref.slot, 1 );
+    const line = this._store.straightLineEndAt(ref.slot, 0);
+    const lineEnd = this._store.straightLineEndAt(ref.slot, 1);
+    const arrow = this._store.straightEndpointAt(ref.slot, 0);
+    const arrowEnd = this._store.straightEndpointAt(ref.slot, 1);
 
     return {
-      x: ( line.x + lineEnd.x + arrow.x + arrowEnd.x ) / 4,
-      y: ( line.y + lineEnd.y + arrow.y + arrowEnd.y ) / 4
+      x: (line.x + lineEnd.x + arrow.x + arrowEnd.x) / 4,
+      y: (line.y + lineEnd.y + arrow.y + arrowEnd.y) / 4,
     };
   }
 
@@ -2532,7 +2974,7 @@ export class Collection {
    * @returns the rendered midpoint, or undefined for non-edges
    */
   renderedMidpoint(): Position | undefined {
-    return this._toRenderedPoint( this.midpoint() );
+    return this._toRenderedPoint(this.midpoint());
   }
 
   /**
@@ -2550,7 +2992,7 @@ export class Collection {
    * @returns the endpoint, or undefined for non-edges
    */
   sourceEndpoint(): Position | undefined {
-    return this._endpointPoint( 0 );
+    return this._endpointPoint(0);
   }
 
   /**
@@ -2568,7 +3010,7 @@ export class Collection {
    * @returns the endpoint, or undefined for non-edges
    */
   targetEndpoint(): Position | undefined {
-    return this._endpointPoint( 1 );
+    return this._endpointPoint(1);
   }
 
   /**
@@ -2577,7 +3019,7 @@ export class Collection {
    * @returns the rendered endpoint, or undefined for non-edges
    */
   renderedSourceEndpoint(): Position | undefined {
-    return this._toRenderedPoint( this.sourceEndpoint() );
+    return this._toRenderedPoint(this.sourceEndpoint());
   }
 
   /**
@@ -2586,7 +3028,7 @@ export class Collection {
    * @returns the rendered endpoint, or undefined for non-edges
    */
   renderedTargetEndpoint(): Position | undefined {
-    return this._toRenderedPoint( this.targetEndpoint() );
+    return this._toRenderedPoint(this.targetEndpoint());
   }
 
   /** Whether the edge participates in bezier bundling — v3 semantics:
@@ -2601,9 +3043,11 @@ export class Collection {
   isBundledBezier(): boolean {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return false; }
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return false;
+    }
 
-    return this._store.curveStyleAt( ref.slot ).style === CURVE_STYLE_BEZIER;
+    return this._store.curveStyleAt(ref.slot).style === CURVE_STYLE_BEZIER;
   }
 
   /** The edge's curve control points (model coords): one for a bundled
@@ -2619,23 +3063,30 @@ export class Collection {
   controlPoints(): Position[] | undefined {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
-
-    const ev = this._store.curveEvalAt( ref.slot );
-
-    if( ev != null ){
-      return ev.c1x === ev.c2x && ev.c1y === ev.c2y
-        ? [ { x: ev.c1x, y: ev.c1y } ]
-        : [ { x: ev.c1x, y: ev.c1y }, { x: ev.c2x, y: ev.c2y } ];
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return undefined;
     }
 
-    const route = this._store.curveRouteAt( ref.slot );
+    const ev = this._store.curveEvalAt(ref.slot);
+
+    if (ev != null) {
+      return ev.c1x === ev.c2x && ev.c1y === ev.c2y
+        ? [{ x: ev.c1x, y: ev.c1y }]
+        : [
+            { x: ev.c1x, y: ev.c1y },
+            { x: ev.c2x, y: ev.c2y },
+          ];
+    }
+
+    const route = this._store.curveRouteAt(ref.slot);
 
     // a straight-styled edge with manual endpoints derives as the
     // MULTI n = 0 chord (12c) — it has no control points
-    if( route == null || route.kind !== CURVE_MULTI || route.n === 0 ){ return undefined; }
+    if (route == null || route.kind !== CURVE_MULTI || route.n === 0) {
+      return undefined;
+    }
 
-    return this._routeInteriorPoints( route );
+    return this._routeInteriorPoints(route);
   }
 
   /**
@@ -2647,9 +3098,11 @@ export class Collection {
   renderedControlPoints(): Position[] | undefined {
     const pts = this.controlPoints();
 
-    if( pts == null ){ return undefined; }
+    if (pts == null) {
+      return undefined;
+    }
 
-    return pts.map( p => this._toRenderedPoint( p ) as Position );
+    return pts.map((p) => this._toRenderedPoint(p) as Position);
   }
 
   /** The edge's segment points (model coords) — v3's getSegmentPoints:
@@ -2663,13 +3116,17 @@ export class Collection {
   segmentPoints(): Position[] | undefined {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
-    const route = this._store.curveRouteAt( ref.slot );
+    const route = this._store.curveRouteAt(ref.slot);
 
-    if( route == null || route.kind === CURVE_MULTI ){ return undefined; }
+    if (route == null || route.kind === CURVE_MULTI) {
+      return undefined;
+    }
 
-    return this._routeInteriorPoints( route );
+    return this._routeInteriorPoints(route);
   }
 
   /**
@@ -2681,45 +3138,51 @@ export class Collection {
   renderedSegmentPoints(): Position[] | undefined {
     const pts = this.segmentPoints();
 
-    if( pts == null ){ return undefined; }
+    if (pts == null) {
+      return undefined;
+    }
 
-    return pts.map( p => this._toRenderedPoint( p ) as Position );
+    return pts.map((p) => this._toRenderedPoint(p) as Position);
   }
 
-  private _routeInteriorPoints( route: CurveRoute ): Position[] {
+  private _routeInteriorPoints(route: CurveRoute): Position[] {
     const pts: Position[] = [];
 
-    for( let i = 0; i < route.n; i++ ){
-      pts.push( { x: route.qx[ i + 1 ], y: route.qy[ i + 1 ] } );
+    for (let i = 0; i < route.n; i++) {
+      pts.push({ x: route.qx[i + 1], y: route.qy[i + 1] });
     }
 
     return pts;
   }
 
-  private _endpointPoint( which: 0 | 1 ): Position | undefined {
+  private _endpointPoint(which: 0 | 1): Position | undefined {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+      return undefined;
+    }
 
     // v3 answers its *arrow* points here (`rs.arrowStartX/Y`), which sit
     // `spacing` behind the boundary — not the drawn line's ends, which
     // sit `gap` behind it.  The evaluators carry both since round 56.
-    const ev = this._store.curveEvalAt( ref.slot );
+    const ev = this._store.curveEvalAt(ref.slot);
 
-    if( ev != null ){
+    if (ev != null) {
       return which === 0 ? { x: ev.asx, y: ev.asy } : { x: ev.aex, y: ev.aey };
     }
 
-    const route = this._store.curveRouteAt( ref.slot );
+    const route = this._store.curveRouteAt(ref.slot);
 
-    if( route != null ){
-      return which === 0 ? { x: route.asx, y: route.asy } : { x: route.aex, y: route.aey };
+    if (route != null) {
+      return which === 0
+        ? { x: route.asx, y: route.asy }
+        : { x: route.aex, y: route.aey };
     }
 
     // haystack edges (12c): the offset points — v3's haystackPts
-    const hay = this._store.haystackPointsAt( ref.slot );
+    const hay = this._store.haystackPointsAt(ref.slot);
 
-    if( hay != null ){
+    if (hay != null) {
       return which === 0 ? { x: hay.sx, y: hay.sy } : { x: hay.tx, y: hay.ty };
     }
 
@@ -2731,11 +3194,13 @@ export class Collection {
     // `spacing`, which is zero for every head except `tee`; that term
     // lands with the gap/trim port, so that the accessor never describes
     // a point the renderer does not draw.
-    return this._store.straightEndpointAt( ref.slot, which );
+    return this._store.straightEndpointAt(ref.slot, which);
   }
 
-  private _toRenderedPoint( pos: Position | undefined ): Position | undefined {
-    if( pos == null ){ return undefined; }
+  private _toRenderedPoint(pos: Position | undefined): Position | undefined {
+    if (pos == null) {
+      return undefined;
+    }
 
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
@@ -2753,8 +3218,11 @@ export class Collection {
   selected(): boolean {
     const ref = this._first();
 
-    return ref != null && this._store.isCurrent( ref )
-      && this._store.hasFlag( ref.group, ref.slot, FLAG_SELECTED );
+    return (
+      ref != null &&
+      this._store.isCurrent(ref) &&
+      this._store.hasFlag(ref.group, ref.slot, FLAG_SELECTED)
+    );
   }
 
   /**
@@ -2766,8 +3234,11 @@ export class Collection {
   selectable(): boolean {
     const ref = this._first();
 
-    return ref != null && this._store.isCurrent( ref )
-      && this._store.hasFlag( ref.group, ref.slot, FLAG_SELECTABLE );
+    return (
+      ref != null &&
+      this._store.isCurrent(ref) &&
+      this._store.hasFlag(ref.group, ref.slot, FLAG_SELECTABLE)
+    );
   }
 
   /**
@@ -2777,7 +3248,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   select(): this {
-    return this._setSelected( true );
+    return this._setSelected(true);
   }
 
   /**
@@ -2787,7 +3258,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unselect(): this {
-    return this._setSelected( false );
+    return this._setSelected(false);
   }
 
   declare deselect: this['unselect'];
@@ -2798,7 +3269,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   selectify(): this {
-    return this._setBit( FLAG_SELECTABLE, true );
+    return this._setBit(FLAG_SELECTABLE, true);
   }
 
   /**
@@ -2808,7 +3279,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unselectify(): this {
-    return this._setBit( FLAG_SELECTABLE, false );
+    return this._setBit(FLAG_SELECTABLE, false);
   }
 
   // -- grab / lock --
@@ -2822,7 +3293,7 @@ export class Collection {
    *   here while `json()` reports the raw field
    */
   grabbable(): boolean {
-    return this._hasBit( FLAG_GRABBABLE ) && !this._hasBit( FLAG_PANNABLE );
+    return this._hasBit(FLAG_GRABBABLE) && !this._hasBit(FLAG_PANNABLE);
   }
 
   /**
@@ -2831,7 +3302,7 @@ export class Collection {
    * @returns true while grabbed
    */
   grabbed(): boolean {
-    return this._hasBit( FLAG_GRABBED );
+    return this._hasBit(FLAG_GRABBED);
   }
 
   /**
@@ -2840,7 +3311,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   grabify(): this {
-    return this._setBit( FLAG_GRABBABLE, true );
+    return this._setBit(FLAG_GRABBABLE, true);
   }
 
   /**
@@ -2850,7 +3321,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   ungrabify(): this {
-    return this._setBit( FLAG_GRABBABLE, false );
+    return this._setBit(FLAG_GRABBABLE, false);
   }
 
   // -- visibility --
@@ -2871,7 +3342,9 @@ export class Collection {
   visible(): boolean {
     const ref = this._first();
 
-    return ref != null && this._store.isCurrent( ref ) && this._store.isDrawn( ref );
+    return (
+      ref != null && this._store.isCurrent(ref) && this._store.isDrawn(ref)
+    );
   }
 
   /**
@@ -2895,7 +3368,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   show(): this {
-    return this._setVisibility( true );
+    return this._setVisibility(true);
   }
 
   /**
@@ -2907,15 +3380,15 @@ export class Collection {
    * @returns this collection, for chaining
    */
   hide(): this {
-    return this._setVisibility( false );
+    return this._setVisibility(false);
   }
 
   /** show/hide (round 14.4): the store records the own state in
    * FLAG_SELF_HIDDEN and recomputes the effective FLAG_VISIBLE over
    * affected subtrees — descendants gate on hidden ancestors, and
    * hidden children leave their ancestors' auto-bounds. */
-  private _setVisibility( on: boolean ): this {
-    this._store.setVisibility( this._refs, on );
+  private _setVisibility(on: boolean): this {
+    this._store.setVisibility(this._refs, on);
 
     return this;
   }
@@ -2928,7 +3401,7 @@ export class Collection {
    * @returns true when locked
    */
   locked(): boolean {
-    return this._hasBit( FLAG_LOCKED );
+    return this._hasBit(FLAG_LOCKED);
   }
 
   /**
@@ -2937,7 +3410,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   lock(): this {
-    return this._setBit( FLAG_LOCKED, true );
+    return this._setBit(FLAG_LOCKED, true);
   }
 
   /**
@@ -2946,7 +3419,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unlock(): this {
-    return this._setBit( FLAG_LOCKED, false );
+    return this._setBit(FLAG_LOCKED, false);
   }
 
   // -- active / pannable --
@@ -2958,7 +3431,7 @@ export class Collection {
    *   held — transient interaction state, not a persisted property
    */
   active(): boolean {
-    return this._hasBit( FLAG_ACTIVE );
+    return this._hasBit(FLAG_ACTIVE);
   }
 
   /**
@@ -2970,8 +3443,11 @@ export class Collection {
   inactive(): boolean {
     const ref = this._first();
 
-    return ref != null && this._store.isCurrent( ref )
-      && !this._store.hasFlag( ref.group, ref.slot, FLAG_ACTIVE );
+    return (
+      ref != null &&
+      this._store.isCurrent(ref) &&
+      !this._store.hasFlag(ref.group, ref.slot, FLAG_ACTIVE)
+    );
   }
 
   /**
@@ -2981,7 +3457,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   activate(): this {
-    return this._setBit( FLAG_ACTIVE, true );
+    return this._setBit(FLAG_ACTIVE, true);
   }
 
   /**
@@ -2990,7 +3466,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unactivate(): this {
-    return this._setBit( FLAG_ACTIVE, false );
+    return this._setBit(FLAG_ACTIVE, false);
   }
 
   /**
@@ -3000,7 +3476,7 @@ export class Collection {
    *   a true here forces `grabbable()` false
    */
   pannable(): boolean {
-    return this._hasBit( FLAG_PANNABLE );
+    return this._hasBit(FLAG_PANNABLE);
   }
 
   /**
@@ -3010,7 +3486,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   panify(): this {
-    return this._setBit( FLAG_PANNABLE, true );
+    return this._setBit(FLAG_PANNABLE, true);
   }
 
   /**
@@ -3020,28 +3496,40 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unpanify(): this {
-    return this._setBit( FLAG_PANNABLE, false );
+    return this._setBit(FLAG_PANNABLE, false);
   }
 
-  private _hasBit( bit: number ): boolean {
+  private _hasBit(bit: number): boolean {
     const ref = this._first();
 
-    return ref != null && this._store.isCurrent( ref ) && this._store.hasFlag( ref.group, ref.slot, bit );
+    return (
+      ref != null &&
+      this._store.isCurrent(ref) &&
+      this._store.hasFlag(ref.group, ref.slot, bit)
+    );
   }
 
-  private _setBit( bit: number, on: boolean ): this {
-    this._store.flagRefs( this._refs, bit, on );
+  private _setBit(bit: number, on: boolean): this {
+    this._store.flagRefs(this._refs, bit, on);
 
     return this;
   }
 
-  private _setSelected( selected: boolean ): this {
+  private _setSelected(selected: boolean): this {
     const cy = this._cy;
     const changedIdx: number[] = [];
 
-    this._store.flagRefs( this._refs, FLAG_SELECTED, selected, FLAG_SELECTABLE, changedIdx );
+    this._store.flagRefs(
+      this._refs,
+      FLAG_SELECTED,
+      selected,
+      FLAG_SELECTABLE,
+      changedIdx,
+    );
 
-    if( changedIdx.length === 0 ){ return this; }
+    if (changedIdx.length === 0) {
+      return this;
+    }
 
     // a selection change never restyles: the v4 sheet has no selection
     // terms (the accent ring is shader-drawn), and fn styles by policy
@@ -3049,9 +3537,9 @@ export class Collection {
 
     const type = selected ? 'select' : 'unselect';
 
-    if( cy._hasListeners( type ) ){
-      for( const i of changedIdx ){
-        cy._emitOnEle( type, this[ i ] );
+    if (cy._hasListeners(type)) {
+      for (const i of changedIdx) {
+        cy._emitOnEle(type, this[i]);
       }
     }
 
@@ -3081,64 +3569,72 @@ export class Collection {
     const nodeHandles: Collection[] = [];
     const seen = new Set<number>();
 
-    const addEdge = ( ele: Collection ): void => {
-      const key = packRef( ele._refs[0] );
+    const addEdge = (ele: Collection): void => {
+      const key = packRef(ele._refs[0]);
 
-      if( !seen.has( key ) ){
-        seen.add( key );
-        edgeHandles.push( ele );
+      if (!seen.has(key)) {
+        seen.add(key);
+        edgeHandles.push(ele);
       }
     };
 
-    const addNode = ( ele: Collection ): void => {
-      const key = packRef( ele._refs[0] );
+    const addNode = (ele: Collection): void => {
+      const key = packRef(ele._refs[0]);
 
-      if( seen.has( key ) ){ return; }
+      if (seen.has(key)) {
+        return;
+      }
 
-      seen.add( key );
-      nodeHandles.push( ele );
+      seen.add(key);
+      nodeHandles.push(ele);
 
       const slot = ele._refs[0].slot;
 
-      for( const edgeSlot of store.adj.connectedEdges( slot ) ){
-        addEdge( cy._ele( 'edges', edgeSlot ) );
+      for (const edgeSlot of store.adj.connectedEdges(slot)) {
+        addEdge(cy._ele('edges', edgeSlot));
       }
 
-      for( const childSlot of store.childrenOf( slot ) ){
-        addNode( cy._ele( 'nodes', childSlot ) );
+      for (const childSlot of store.childrenOf(slot)) {
+        addNode(cy._ele('nodes', childSlot));
       }
     };
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( !store.isCurrent( ref ) ){ continue; }
+      if (!store.isCurrent(ref)) {
+        continue;
+      }
 
-      if( ref.group === 'edges' ){
-        addEdge( this[ i ] );
+      if (ref.group === 'edges') {
+        addEdge(this[i]);
       } else {
-        addNode( this[ i ] );
+        addNode(this[i]);
       }
     }
 
     // children before parents: the store refuses to remove a node whose
     // children are still alive (depths are strictly increasing down a chain)
-    nodeHandles.sort( ( a, b ) => store.depthOf( b._refs[0].slot ) - store.depthOf( a._refs[0].slot ) );
+    nodeHandles.sort(
+      (a, b) => store.depthOf(b._refs[0].slot) - store.depthOf(a._refs[0].slot),
+    );
 
     // edges first, then nodes; emit remove per element after the store mutation
-    for( const edge of edgeHandles ){
-      store.removeEdge( edge._refs[0].slot );
+    for (const edge of edgeHandles) {
+      store.removeEdge(edge._refs[0].slot);
     }
 
-    for( const node of nodeHandles ){
-      store.removeNode( node._refs[0].slot );
+    for (const node of nodeHandles) {
+      store.removeNode(node._refs[0].slot);
     }
 
-    for( const ele of [ ...edgeHandles, ...nodeHandles ] ){
-      cy._emitOnEle( 'remove', ele );
+    for (const ele of [...edgeHandles, ...nodeHandles]) {
+      cy._emitOnEle('remove', ele);
     }
 
-    const removed = this._spawn( [ ...edgeHandles, ...nodeHandles ].map( ele => ele._refs[0] ) );
+    const removed = this._spawn(
+      [...edgeHandles, ...nodeHandles].map((ele) => ele._refs[0]),
+    );
 
     cy._maybeCompact(); // the auto dead-slot trigger's safe boundary (19.5)
 
@@ -3159,73 +3655,97 @@ export class Collection {
    *   given
    * @returns this collection, for chaining
    */
-  move( opts: { source?: string; target?: string; parent?: string | null } ): this {
+  move(opts: {
+    source?: string;
+    target?: string;
+    parent?: string | null;
+  }): this {
     const store = this._store;
 
-    if( opts.parent !== undefined ){
+    if (opts.parent !== undefined) {
       let parentSlot = -1;
 
-      if( opts.parent != null ){
-        const parentRef = store.lookup( String( opts.parent ) );
+      if (opts.parent != null) {
+        const parentRef = store.lookup(String(opts.parent));
 
-        if( parentRef == null || parentRef.group !== 'nodes' ){ return this; } // v3: silent no-op
+        if (parentRef == null || parentRef.group !== 'nodes') {
+          return this;
+        } // v3: silent no-op
 
         parentSlot = parentRef.slot;
       }
 
-      const wantEmit = hasListeners( this._cy._emitter, 'moveout' )
-        || hasListeners( this._cy._emitter, 'move' );
+      const wantEmit =
+        hasListeners(this._cy._emitter, 'moveout') ||
+        hasListeners(this._cy._emitter, 'move');
 
-      for( let i = 0; i < this.length; i++ ){
-        const ref = this._refs[ i ];
+      for (let i = 0; i < this.length; i++) {
+        const ref = this._refs[i];
 
-        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
-        if( store.parentOf( ref.slot ) === parentSlot ){ continue; }
+        if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+          continue;
+        }
+        if (store.parentOf(ref.slot) === parentSlot) {
+          continue;
+        }
 
         // a cyclic assignment is dropped by setParent (with its warning);
         // it gets no events since nothing changes
-        const cyclic = parentSlot >= 0
-          && ( parentSlot === ref.slot || store.isAncestorOf( ref.slot, parentSlot ) );
+        const cyclic =
+          parentSlot >= 0 &&
+          (parentSlot === ref.slot || store.isAncestorOf(ref.slot, parentSlot));
 
-        if( !cyclic && wantEmit ){ this._cy._emitOnEle( 'moveout', this[ i ] ); }
+        if (!cyclic && wantEmit) {
+          this._cy._emitOnEle('moveout', this[i]);
+        }
 
-        store.setParent( ref.slot, parentSlot );
+        store.setParent(ref.slot, parentSlot);
 
-        if( !cyclic && wantEmit ){ this._cy._emitOnEle( 'move', this[ i ] ); }
+        if (!cyclic && wantEmit) {
+          this._cy._emitOnEle('move', this[i]);
+        }
       }
 
       return this;
     }
 
-    if( opts.source == null && opts.target == null ){ return this; }
+    if (opts.source == null && opts.target == null) {
+      return this;
+    }
 
-    const newSource = opts.source != null ? this._resolveNode( opts.source, 'source' ) : null;
-    const newTarget = opts.target != null ? this._resolveNode( opts.target, 'target' ) : null;
+    const newSource =
+      opts.source != null ? this._resolveNode(opts.source, 'source') : null;
+    const newTarget =
+      opts.target != null ? this._resolveNode(opts.target, 'target') : null;
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+      const endpoints = store.column('edge.endpoints') as Uint32Array;
 
       store.moveEdge(
         ref.slot,
-        newSource ?? endpoints[ ref.slot * 2 ],
-        newTarget ?? endpoints[ ref.slot * 2 + 1 ]
+        newSource ?? endpoints[ref.slot * 2],
+        newTarget ?? endpoints[ref.slot * 2 + 1],
       );
 
-      if( hasListeners( this._cy._emitter, 'move' ) ){ this._cy._emitOnEle( 'move', this[ i ] ); }
+      if (hasListeners(this._cy._emitter, 'move')) {
+        this._cy._emitOnEle('move', this[i]);
+      }
     }
 
     return this;
   }
 
-  private _resolveNode( id: string, role: string ): number {
-    const ref = this._store.lookup( id );
+  private _resolveNode(id: string, role: string): number {
+    const ref = this._store.lookup(id);
 
-    if( ref == null || ref.group !== 'nodes' ){
-      throw new Error( `Can not move edge to nonexistant ${role} node '${id}'` );
+    if (ref == null || ref.group !== 'nodes') {
+      throw new Error(`Can not move edge to nonexistant ${role} node '${id}'`);
     }
 
     return ref.slot;
@@ -3239,7 +3759,7 @@ export class Collection {
    * @returns the source node, or an empty collection for a non-edge
    */
   source(): Collection {
-    return this._endpoint( 0 );
+    return this._endpoint(0);
   }
 
   /**
@@ -3248,7 +3768,7 @@ export class Collection {
    * @returns the target node, or an empty collection for a non-edge
    */
   target(): Collection {
-    return this._endpoint( 1 );
+    return this._endpoint(1);
   }
 
   /**
@@ -3257,7 +3777,7 @@ export class Collection {
    * @returns the source nodes
    */
   sources(): Collection {
-    return this._endpoints( 0 );
+    return this._endpoints(0);
   }
 
   /**
@@ -3266,39 +3786,43 @@ export class Collection {
    * @returns the target nodes
    */
   targets(): Collection {
-    return this._endpoints( 1 );
+    return this._endpoints(1);
   }
 
-  private _endpoint( which: 0 | 1 ): Collection {
+  private _endpoint(which: 0 | 1): Collection {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'edges' ){ return this._spawn( [] ); }
+    if (ref == null || ref.group !== 'edges') {
+      return this._spawn([]);
+    }
 
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = this._store.column('edge.endpoints') as Uint32Array;
 
-    return this._cy._ele( 'nodes', endpoints[ ref.slot * 2 + which ] );
+    return this._cy._ele('nodes', endpoints[ref.slot * 2 + which]);
   }
 
-  private _endpoints( which: 0 | 1 ): Collection {
+  private _endpoints(which: 0 | 1): Collection {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const nodeSlot = endpoints[ ref.slot * 2 + which ];
+      const nodeSlot = endpoints[ref.slot * 2 + which];
 
-      if( !seen.has( nodeSlot ) ){
-        seen.add( nodeSlot );
-        refs.push( store.ref( 'nodes', nodeSlot ) );
+      if (!seen.has(nodeSlot)) {
+        seen.add(nodeSlot);
+        refs.push(store.ref('nodes', nodeSlot));
       }
     }
 
-    return this._spawnLive( refs );
+    return this._spawnLive(refs);
   }
 
   /**
@@ -3310,42 +3834,44 @@ export class Collection {
    *   the result
    * @returns the incident edges
    */
-  connectedEdges( criterion?: FilterLike ): Collection {
+  connectedEdges(criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
     const refs: Ref[] = [];
     const seen = new Set<number>(); // edge slots: dedupes loops and shared edges alike
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const out = adj.outEdges( ref.slot );
-      const inn = adj.inEdges( ref.slot );
+      const out = adj.outEdges(ref.slot);
+      const inn = adj.inEdges(ref.slot);
 
-      for( let j = 0; j < out.length; j++ ){
-        const edgeSlot = out[ j ];
+      for (let j = 0; j < out.length; j++) {
+        const edgeSlot = out[j];
 
-        if( !seen.has( edgeSlot ) ){
-          seen.add( edgeSlot );
-          refs.push( store.ref( 'edges', edgeSlot ) );
+        if (!seen.has(edgeSlot)) {
+          seen.add(edgeSlot);
+          refs.push(store.ref('edges', edgeSlot));
         }
       }
 
-      for( let j = 0; j < inn.length; j++ ){
-        const edgeSlot = inn[ j ];
+      for (let j = 0; j < inn.length; j++) {
+        const edgeSlot = inn[j];
 
-        if( !seen.has( edgeSlot ) ){
-          seen.add( edgeSlot );
-          refs.push( store.ref( 'edges', edgeSlot ) );
+        if (!seen.has(edgeSlot)) {
+          seen.add(edgeSlot);
+          refs.push(store.ref('edges', edgeSlot));
         }
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3355,34 +3881,36 @@ export class Collection {
    *   the result
    * @returns the endpoint nodes
    */
-  connectedNodes( criterion?: FilterLike ): Collection {
+  connectedNodes(criterion?: FilterLike): Collection {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
-
-      const source = endpoints[ ref.slot * 2 ];
-      const target = endpoints[ ref.slot * 2 + 1 ];
-
-      if( !seen.has( source ) ){
-        seen.add( source );
-        refs.push( store.ref( 'nodes', source ) );
+      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+        continue;
       }
 
-      if( !seen.has( target ) ){
-        seen.add( target );
-        refs.push( store.ref( 'nodes', target ) );
+      const source = endpoints[ref.slot * 2];
+      const target = endpoints[ref.slot * 2 + 1];
+
+      if (!seen.has(source)) {
+        seen.add(source);
+        refs.push(store.ref('nodes', source));
+      }
+
+      if (!seen.has(target)) {
+        seen.add(target);
+        refs.push(store.ref('nodes', target));
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3394,8 +3922,8 @@ export class Collection {
    *   the result
    * @returns the outgoing edges and their target nodes
    */
-  outgoers( criterion?: FilterLike ): Collection {
-    return this._goers( 'out', criterion );
+  outgoers(criterion?: FilterLike): Collection {
+    return this._goers('out', criterion);
   }
 
   /**
@@ -3407,44 +3935,50 @@ export class Collection {
    *   the result
    * @returns the incoming edges and their source nodes
    */
-  incomers( criterion?: FilterLike ): Collection {
-    return this._goers( 'in', criterion );
+  incomers(criterion?: FilterLike): Collection {
+    return this._goers('in', criterion);
   }
 
-  private _goers( direction: 'out' | 'in', criterion?: FilterLike ): Collection {
+  private _goers(direction: 'out' | 'in', criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
     // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const edgeSlots = direction === 'out' ? adj.outEdges( ref.slot ) : adj.inEdges( ref.slot );
+      const edgeSlots =
+        direction === 'out' ? adj.outEdges(ref.slot) : adj.inEdges(ref.slot);
 
-      for( let j = 0; j < edgeSlots.length; j++ ){
-        const edgeSlot = edgeSlots[ j ];
-        const otherSlot = direction === 'out' ? endpoints[ edgeSlot * 2 + 1 ] : endpoints[ edgeSlot * 2 ];
+      for (let j = 0; j < edgeSlots.length; j++) {
+        const edgeSlot = edgeSlots[j];
+        const otherSlot =
+          direction === 'out'
+            ? endpoints[edgeSlot * 2 + 1]
+            : endpoints[edgeSlot * 2];
 
-        if( !seen.has( edgeSlot * 2 + 1 ) ){
-          seen.add( edgeSlot * 2 + 1 );
-          refs.push( store.ref( 'edges', edgeSlot ) );
+        if (!seen.has(edgeSlot * 2 + 1)) {
+          seen.add(edgeSlot * 2 + 1);
+          refs.push(store.ref('edges', edgeSlot));
         }
 
-        if( !seen.has( otherSlot * 2 ) ){
-          seen.add( otherSlot * 2 );
-          refs.push( store.ref( 'nodes', otherSlot ) );
+        if (!seen.has(otherSlot * 2)) {
+          seen.add(otherSlot * 2);
+          refs.push(store.ref('nodes', otherSlot));
         }
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3457,56 +3991,58 @@ export class Collection {
    * @returns the neighbouring edges and nodes
    * @see Collection#closedNeighborhood to include these nodes
    */
-  neighborhood( criterion?: FilterLike ): Collection {
+  neighborhood(criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
     // packed (group, slot) keys; the collection's own live elements are
     // pre-seeded so the open neighborhood excludes them during the walk
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( store.isCurrent( ref ) ){
-        seen.add( ref.group === 'nodes' ? ref.slot * 2 : ref.slot * 2 + 1 );
+      if (store.isCurrent(ref)) {
+        seen.add(ref.group === 'nodes' ? ref.slot * 2 : ref.slot * 2 + 1);
       }
     }
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const out = adj.outEdges( ref.slot );
-      const inn = adj.inEdges( ref.slot );
+      const out = adj.outEdges(ref.slot);
+      const inn = adj.inEdges(ref.slot);
 
-      for( let pass = 0; pass < 2; pass++ ){
+      for (let pass = 0; pass < 2; pass++) {
         const edgeSlots = pass === 0 ? out : inn;
 
-        for( let j = 0; j < edgeSlots.length; j++ ){
-          const edgeSlot = edgeSlots[ j ];
-          const source = endpoints[ edgeSlot * 2 ];
-          const target = endpoints[ edgeSlot * 2 + 1 ];
+        for (let j = 0; j < edgeSlots.length; j++) {
+          const edgeSlot = edgeSlots[j];
+          const source = endpoints[edgeSlot * 2];
+          const target = endpoints[edgeSlot * 2 + 1];
           const otherSlot = source === ref.slot ? target : source;
 
-          if( !seen.has( edgeSlot * 2 + 1 ) ){
-            seen.add( edgeSlot * 2 + 1 );
-            refs.push( store.ref( 'edges', edgeSlot ) );
+          if (!seen.has(edgeSlot * 2 + 1)) {
+            seen.add(edgeSlot * 2 + 1);
+            refs.push(store.ref('edges', edgeSlot));
           }
 
-          if( !seen.has( otherSlot * 2 ) ){
-            seen.add( otherSlot * 2 );
-            refs.push( store.ref( 'nodes', otherSlot ) );
+          if (!seen.has(otherSlot * 2)) {
+            seen.add(otherSlot * 2);
+            refs.push(store.ref('nodes', otherSlot));
           }
         }
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   declare openNeighborhood: this['neighborhood'];
@@ -3518,10 +4054,10 @@ export class Collection {
    *   the result
    * @returns the closed neighbourhood
    */
-  closedNeighborhood( criterion?: FilterLike ): Collection {
-    const eles = this.neighborhood().union( this.nodes() );
+  closedNeighborhood(criterion?: FilterLike): Collection {
+    const eles = this.neighborhood().union(this.nodes());
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   // -- compound hierarchy (round 14.2) --
@@ -3533,27 +4069,29 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the immediate parents
    */
-  parent( criterion?: FilterLike ): Collection {
+  parent(criterion?: FilterLike): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      const p = store.parentOf( ref.slot );
+      const p = store.parentOf(ref.slot);
 
-      if( p >= 0 && !seen.has( p ) ){
-        seen.add( p );
-        refs.push( store.ref( 'nodes', p ) );
+      if (p >= 0 && !seen.has(p)) {
+        seen.add(p);
+        refs.push(store.ref('nodes', p));
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3563,37 +4101,39 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the ancestors, nearest first
    */
-  parents( criterion?: FilterLike ): Collection {
+  parents(criterion?: FilterLike): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
     let level: number[] = [];
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group === 'nodes' && store.isCurrent( ref ) ){ level.push( ref.slot ); }
+      if (ref.group === 'nodes' && store.isCurrent(ref)) {
+        level.push(ref.slot);
+      }
     }
 
-    while( level.length > 0 ){
+    while (level.length > 0) {
       const next: number[] = [];
 
-      for( const slot of level ){
-        const p = store.parentOf( slot );
+      for (const slot of level) {
+        const p = store.parentOf(slot);
 
-        if( p >= 0 && !seen.has( p ) ){
-          seen.add( p );
-          refs.push( store.ref( 'nodes', p ) );
-          next.push( p );
+        if (p >= 0 && !seen.has(p)) {
+          seen.add(p);
+          refs.push(store.ref('nodes', p));
+          next.push(p);
         }
       }
 
       level = next;
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   declare ancestors: this['parents'];
@@ -3604,27 +4144,29 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the children
    */
-  children( criterion?: FilterLike ): Collection {
+  children(criterion?: FilterLike): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      for( const child of store.childrenOf( ref.slot ) ){
-        if( !seen.has( child ) ){
-          seen.add( child );
-          refs.push( store.ref( 'nodes', child ) );
+      for (const child of store.childrenOf(ref.slot)) {
+        if (!seen.has(child)) {
+          seen.add(child);
+          refs.push(store.ref('nodes', child));
         }
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3634,39 +4176,45 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the descendants
    */
-  descendants( criterion?: FilterLike ): Collection {
+  descendants(criterion?: FilterLike): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
     const stack: number[] = [];
 
-    const pushChildren = ( slot: number ): void => {
-      const kids = store.childrenOf( slot );
+    const pushChildren = (slot: number): void => {
+      const kids = store.childrenOf(slot);
 
-      for( let j = kids.length - 1; j >= 0; j-- ){ stack.push( kids[ j ] ); }
+      for (let j = kids.length - 1; j >= 0; j--) {
+        stack.push(kids[j]);
+      }
     };
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      pushChildren( ref.slot );
+      pushChildren(ref.slot);
 
-      while( stack.length > 0 ){
+      while (stack.length > 0) {
         const slot = stack.pop() as number;
 
-        if( seen.has( slot ) ){ continue; }
+        if (seen.has(slot)) {
+          continue;
+        }
 
-        seen.add( slot );
-        refs.push( store.ref( 'nodes', slot ) );
-        pushChildren( slot );
+        seen.add(slot);
+        refs.push(store.ref('nodes', slot));
+        pushChildren(slot);
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3676,10 +4224,10 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the siblings
    */
-  siblings( criterion?: FilterLike ): Collection {
-    const eles = this.parent().children().difference( this );
+  siblings(criterion?: FilterLike): Collection {
+    const eles = this.parent().children().difference(this);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3688,8 +4236,8 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the parentless nodes
    */
-  orphans( criterion?: FilterLike ): Collection {
-    return this._byParentedness( false, criterion );
+  orphans(criterion?: FilterLike): Collection {
+    return this._byParentedness(false, criterion);
   }
 
   /**
@@ -3698,27 +4246,32 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the parented nodes
    */
-  nonorphans( criterion?: FilterLike ): Collection {
-    return this._byParentedness( true, criterion );
+  nonorphans(criterion?: FilterLike): Collection {
+    return this._byParentedness(true, criterion);
   }
 
-  private _byParentedness( wantChild: boolean, criterion?: FilterLike ): Collection {
+  private _byParentedness(
+    wantChild: boolean,
+    criterion?: FilterLike,
+  ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
+      }
 
-      if( ( store.parentOf( ref.slot ) >= 0 ) === wantChild ){
-        refs.push( store.ref( 'nodes', ref.slot ) );
+      if (store.parentOf(ref.slot) >= 0 === wantChild) {
+        refs.push(store.ref('nodes', ref.slot));
       }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3728,35 +4281,43 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the shared ancestors, closest first
    */
-  commonAncestors( criterion?: FilterLike ): Collection {
+  commonAncestors(criterion?: FilterLike): Collection {
     const store = this._store;
     let chain: number[] | null = null;
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( !store.isCurrent( ref ) ){ continue; }
+      if (!store.isCurrent(ref)) {
+        continue;
+      }
 
       const own: number[] = [];
 
-      if( ref.group === 'nodes' ){
-        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){ own.push( p ); }
+      if (ref.group === 'nodes') {
+        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
+          own.push(p);
+        }
       }
 
-      if( chain == null ){
+      if (chain == null) {
         chain = own;
       } else {
-        const keep = new Set( own );
+        const keep = new Set(own);
 
-        chain = chain.filter( slot => keep.has( slot ) );
+        chain = chain.filter((slot) => keep.has(slot));
       }
 
-      if( chain.length === 0 ){ break; }
+      if (chain.length === 0) {
+        break;
+      }
     }
 
-    const eles = this._spawnLive( ( chain ?? [] ).map( slot => store.ref( 'nodes', slot ) ) );
+    const eles = this._spawnLive(
+      (chain ?? []).map((slot) => store.ref('nodes', slot)),
+    );
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3768,7 +4329,7 @@ export class Collection {
   isParent(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.childrenOf( ref.slot ).length > 0;
+    return ref != null && this._store.childrenOf(ref.slot).length > 0;
   }
 
   /**
@@ -3780,7 +4341,7 @@ export class Collection {
   isChildless(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.childrenOf( ref.slot ).length === 0;
+    return ref != null && this._store.childrenOf(ref.slot).length === 0;
   }
 
   /**
@@ -3791,7 +4352,7 @@ export class Collection {
   isChild(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.parentOf( ref.slot ) >= 0;
+    return ref != null && this._store.parentOf(ref.slot) >= 0;
   }
 
   /**
@@ -3803,13 +4364,15 @@ export class Collection {
   isOrphan(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.parentOf( ref.slot ) < 0;
+    return ref != null && this._store.parentOf(ref.slot) < 0;
   }
 
   private _liveNodeRef(): Ref | null {
     const ref = this._first();
 
-    return ref != null && ref.group === 'nodes' && this._store.isCurrent( ref ) ? ref : null;
+    return ref != null && ref.group === 'nodes' && this._store.isCurrent(ref)
+      ? ref
+      : null;
   }
 
   // -- DAG traversal --
@@ -3821,8 +4384,8 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the source nodes
    */
-  roots( criterion?: FilterLike ): Collection {
-    return this._dagExtremity( 'in', criterion );
+  roots(criterion?: FilterLike): Collection {
+    return this._dagExtremity('in', criterion);
   }
 
   /**
@@ -3831,37 +4394,48 @@ export class Collection {
    *   the result, exactly as `filter()` takes it
    * @returns the sink nodes
    */
-  leaves( criterion?: FilterLike ): Collection {
-    return this._dagExtremity( 'out', criterion );
+  leaves(criterion?: FilterLike): Collection {
+    return this._dagExtremity('out', criterion);
   }
 
-  private _dagExtremity( direction: 'in' | 'out', criterion?: FilterLike ): Collection {
+  private _dagExtremity(
+    direction: 'in' | 'out',
+    criterion?: FilterLike,
+  ): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
-
-      const edges = direction === 'in' ? adj.inEdges( ref.slot ) : adj.outEdges( ref.slot );
-      let disqualified = false;
-
-      for( let j = 0; j < edges.length; j++ ){
-        const edgeSlot = edges[ j ];
-
-        // a loop (source === target) never disqualifies
-        if( endpoints[ edgeSlot * 2 ] !== endpoints[ edgeSlot * 2 + 1 ] ){ disqualified = true; break; }
+      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        continue;
       }
 
-      if( !disqualified ){ refs.push( ref ); }
+      const edges =
+        direction === 'in' ? adj.inEdges(ref.slot) : adj.outEdges(ref.slot);
+      let disqualified = false;
+
+      for (let j = 0; j < edges.length; j++) {
+        const edgeSlot = edges[j];
+
+        // a loop (source === target) never disqualifies
+        if (endpoints[edgeSlot * 2] !== endpoints[edgeSlot * 2 + 1]) {
+          disqualified = true;
+          break;
+        }
+      }
+
+      if (!disqualified) {
+        refs.push(ref);
+      }
     }
 
-    const eles = this._spawnLive( refs );
+    const eles = this._spawnLive(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   /**
@@ -3873,8 +4447,8 @@ export class Collection {
    *   the result
    * @returns the reachable edges and nodes
    */
-  successors( criterion?: FilterLike ): Collection {
-    return this._dagAllHops( 'out', criterion );
+  successors(criterion?: FilterLike): Collection {
+    return this._dagAllHops('out', criterion);
   }
 
   /**
@@ -3885,46 +4459,55 @@ export class Collection {
    *   the result
    * @returns the edges and nodes of the backward closure
    */
-  predecessors( criterion?: FilterLike ): Collection {
-    return this._dagAllHops( 'in', criterion );
+  predecessors(criterion?: FilterLike): Collection {
+    return this._dagAllHops('in', criterion);
   }
 
-  private _dagAllHops( direction: 'out' | 'in', criterion?: FilterLike ): Collection {
+  private _dagAllHops(
+    direction: 'out' | 'in',
+    criterion?: FilterLike,
+  ): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const acc: Ref[] = [];
     // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1;
     // a raw slot BFS — no per-hop collection spawns or handle interning
     const seen = new Set<number>();
     let frontier: number[] = [];
 
-    for( let i = 0; i < this._refs.length; i++ ){
-      const ref = this._refs[ i ];
+    for (let i = 0; i < this._refs.length; i++) {
+      const ref = this._refs[i];
 
-      if( ref.group === 'nodes' && store.isCurrent( ref ) ){ frontier.push( ref.slot ); }
+      if (ref.group === 'nodes' && store.isCurrent(ref)) {
+        frontier.push(ref.slot);
+      }
     }
 
-    while( frontier.length > 0 ){
+    while (frontier.length > 0) {
       const next: number[] = [];
 
-      for( let i = 0; i < frontier.length; i++ ){
-        const nodeSlot = frontier[ i ];
-        const edgeSlots = direction === 'out' ? adj.outEdges( nodeSlot ) : adj.inEdges( nodeSlot );
+      for (let i = 0; i < frontier.length; i++) {
+        const nodeSlot = frontier[i];
+        const edgeSlots =
+          direction === 'out' ? adj.outEdges(nodeSlot) : adj.inEdges(nodeSlot);
 
-        for( let j = 0; j < edgeSlots.length; j++ ){
-          const edgeSlot = edgeSlots[ j ];
-          const otherSlot = direction === 'out' ? endpoints[ edgeSlot * 2 + 1 ] : endpoints[ edgeSlot * 2 ];
+        for (let j = 0; j < edgeSlots.length; j++) {
+          const edgeSlot = edgeSlots[j];
+          const otherSlot =
+            direction === 'out'
+              ? endpoints[edgeSlot * 2 + 1]
+              : endpoints[edgeSlot * 2];
 
-          if( !seen.has( edgeSlot * 2 + 1 ) ){
-            seen.add( edgeSlot * 2 + 1 );
-            acc.push( store.ref( 'edges', edgeSlot ) );
+          if (!seen.has(edgeSlot * 2 + 1)) {
+            seen.add(edgeSlot * 2 + 1);
+            acc.push(store.ref('edges', edgeSlot));
           }
 
-          if( !seen.has( otherSlot * 2 ) ){
-            seen.add( otherSlot * 2 );
-            acc.push( store.ref( 'nodes', otherSlot ) );
-            next.push( otherSlot );
+          if (!seen.has(otherSlot * 2)) {
+            seen.add(otherSlot * 2);
+            acc.push(store.ref('nodes', otherSlot));
+            next.push(otherSlot);
           }
         }
       }
@@ -3932,9 +4515,9 @@ export class Collection {
       frontier = next;
     }
 
-    const out = this._spawnLive( acc );
+    const out = this._spawnLive(acc);
 
-    return criterion == null ? out : out.filter( criterion );
+    return criterion == null ? out : out.filter(criterion);
   }
 
   // -- edge relations --
@@ -3947,10 +4530,10 @@ export class Collection {
    *   selector string)
    * @returns the connecting edges
    */
-  edgesWith( others: Collection ): Collection {
-    assertCollection( others, 'edgesWith', this._cy );
+  edgesWith(others: Collection): Collection {
+    assertCollection(others, 'edgesWith', this._cy);
 
-    return this._edgesWith( others, false );
+    return this._edgesWith(others, false);
   }
 
   /**
@@ -3960,38 +4543,44 @@ export class Collection {
    * @param others — the target-side nodes
    * @returns the directed connecting edges
    */
-  edgesTo( others: Collection ): Collection {
-    assertCollection( others, 'edgesTo', this._cy );
+  edgesTo(others: Collection): Collection {
+    assertCollection(others, 'edgesTo', this._cy);
 
-    return this._edgesWith( others, true );
+    return this._edgesWith(others, true);
   }
 
-  private _edgesWith( others: Collection, thisIsSrc: boolean ): Collection {
+  private _edgesWith(others: Collection, thisIsSrc: boolean): Collection {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const otherColl = others;
 
     const thisNodes = this._nodeSlotSet();
     const otherNodes = otherColl._nodeSlotSet();
     const refs: Ref[] = [];
 
-    for( const oref of otherColl._liveRefs() ){
-      if( oref.group !== 'nodes' ){ continue; }
+    for (const oref of otherColl._liveRefs()) {
+      if (oref.group !== 'nodes') {
+        continue;
+      }
 
-      for( const edgeSlot of store.adj.connectedEdges( oref.slot ) ){
-        const s = endpoints[ edgeSlot * 2 ];
-        const t = endpoints[ edgeSlot * 2 + 1 ];
-        const thisToOther = thisNodes.has( s ) && otherNodes.has( t );
-        const otherToThis = otherNodes.has( s ) && thisNodes.has( t );
+      for (const edgeSlot of store.adj.connectedEdges(oref.slot)) {
+        const s = endpoints[edgeSlot * 2];
+        const t = endpoints[edgeSlot * 2 + 1];
+        const thisToOther = thisNodes.has(s) && otherNodes.has(t);
+        const otherToThis = otherNodes.has(s) && thisNodes.has(t);
 
-        if( !( thisToOther || otherToThis ) ){ continue; }
-        if( thisIsSrc && !thisToOther ){ continue; }
+        if (!(thisToOther || otherToThis)) {
+          continue;
+        }
+        if (thisIsSrc && !thisToOther) {
+          continue;
+        }
 
-        refs.push( store.ref( 'edges', edgeSlot ) );
+        refs.push(store.ref('edges', edgeSlot));
       }
     }
 
-    return this._spawn( refs );
+    return this._spawn(refs);
   }
 
   /**
@@ -4003,8 +4592,8 @@ export class Collection {
    *   the result
    * @returns the parallel edges
    */
-  parallelEdges( criterion?: FilterLike ): Collection {
-    return this._parallelEdges( false, criterion );
+  parallelEdges(criterion?: FilterLike): Collection {
+    return this._parallelEdges(false, criterion);
   }
 
   /**
@@ -4015,37 +4604,45 @@ export class Collection {
    *   the result
    * @returns the codirected edges
    */
-  codirectedEdges( criterion?: FilterLike ): Collection {
-    return this._parallelEdges( true, criterion );
+  codirectedEdges(criterion?: FilterLike): Collection {
+    return this._parallelEdges(true, criterion);
   }
 
-  private _parallelEdges( codirectedOnly: boolean, criterion?: FilterLike ): Collection {
+  private _parallelEdges(
+    codirectedOnly: boolean,
+    criterion?: FilterLike,
+  ): Collection {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const refs: Ref[] = [];
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'edges' ){ continue; }
+    for (const ref of this._liveRefs()) {
+      if (ref.group !== 'edges') {
+        continue;
+      }
 
-      const src1 = endpoints[ ref.slot * 2 ];
-      const tgt1 = endpoints[ ref.slot * 2 + 1 ];
+      const src1 = endpoints[ref.slot * 2];
+      const tgt1 = endpoints[ref.slot * 2 + 1];
 
       // every edge parallel to this one is incident to its source node
-      for( const e2 of store.adj.connectedEdges( src1 ) ){
-        const s2 = endpoints[ e2 * 2 ];
-        const t2 = endpoints[ e2 * 2 + 1 ];
+      for (const e2 of store.adj.connectedEdges(src1)) {
+        const s2 = endpoints[e2 * 2];
+        const t2 = endpoints[e2 * 2 + 1];
         const codirected = s2 === src1 && t2 === tgt1;
         const opposed = s2 === tgt1 && t2 === src1;
 
-        if( ( codirectedOnly && codirected ) || ( !codirectedOnly && ( codirected || opposed ) ) ){
-          refs.push( store.ref( 'edges', e2 ) );
+        if (
+          (codirectedOnly && codirected) ||
+          (!codirectedOnly && (codirected || opposed))
+        ) {
+          refs.push(store.ref('edges', e2));
         }
       }
     }
 
-    const eles = this._spawn( refs );
+    const eles = this._spawn(refs);
 
-    return criterion == null ? eles : eles.filter( criterion );
+    return criterion == null ? eles : eles.filter(criterion);
   }
 
   // -- connected components --
@@ -4058,75 +4655,89 @@ export class Collection {
    * @param root — restricts the seed nodes; omit to seed from every node
    * @returns one collection per component
    */
-  components( root?: Collection | null ): Collection[] {
+  components(root?: Collection | null): Collection[] {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const endpoints = store.column('edge.endpoints') as Uint32Array;
     const nodeSlots = this._nodeSlotSet();
     const edgeSlots: number[] = [];
     const edgeSlotSet = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group === 'edges' ){ edgeSlots.push( ref.slot ); edgeSlotSet.add( ref.slot ); }
+    for (const ref of this._liveRefs()) {
+      if (ref.group === 'edges') {
+        edgeSlots.push(ref.slot);
+        edgeSlotSet.add(ref.slot);
+      }
     }
 
     let seeds: number[];
 
-    if( root == null ){
-      seeds = [ ...nodeSlots ];
+    if (root == null) {
+      seeds = [...nodeSlots];
     } else {
       const rootColl = root;
       const rootNodes = rootColl._nodeSlotSet();
 
-      seeds = rootNodes.size > 0
-        ? [ ...rootNodes ].filter( s => nodeSlots.has( s ) )
-        // root has only edges: seed from their source-side nodes
-        : rootColl._liveRefs()
-          .filter( r => r.group === 'edges' )
-          .map( r => endpoints[ r.slot * 2 ] )
-          .filter( s => nodeSlots.has( s ) );
+      seeds =
+        rootNodes.size > 0
+          ? [...rootNodes].filter((s) => nodeSlots.has(s))
+          : // root has only edges: seed from their source-side nodes
+            rootColl
+              ._liveRefs()
+              .filter((r) => r.group === 'edges')
+              .map((r) => endpoints[r.slot * 2])
+              .filter((s) => nodeSlots.has(s));
     }
 
     const visited = new Set<number>();
     const comps: Collection[] = [];
 
-    for( const seed of seeds ){
-      if( visited.has( seed ) ){ continue; }
+    for (const seed of seeds) {
+      if (visited.has(seed)) {
+        continue;
+      }
 
       const compNodes = new Set<number>();
-      const stack = [ seed ];
+      const stack = [seed];
 
-      visited.add( seed );
+      visited.add(seed);
 
-      while( stack.length > 0 ){
+      while (stack.length > 0) {
         const n = stack.pop() as number;
 
-        compNodes.add( n );
+        compNodes.add(n);
 
-        for( const edgeSlot of store.adj.connectedEdges( n ) ){
-          if( !edgeSlotSet.has( edgeSlot ) ){ continue; } // only walk edges within this collection
+        for (const edgeSlot of store.adj.connectedEdges(n)) {
+          if (!edgeSlotSet.has(edgeSlot)) {
+            continue;
+          } // only walk edges within this collection
 
-          const s = endpoints[ edgeSlot * 2 ];
-          const t = endpoints[ edgeSlot * 2 + 1 ];
+          const s = endpoints[edgeSlot * 2];
+          const t = endpoints[edgeSlot * 2 + 1];
           const other = s === n ? t : s;
 
-          if( nodeSlots.has( other ) && !visited.has( other ) ){
-            visited.add( other );
-            stack.push( other );
+          if (nodeSlots.has(other) && !visited.has(other)) {
+            visited.add(other);
+            stack.push(other);
           }
         }
       }
 
       const refs: Ref[] = [];
 
-      for( const s of compNodes ){ refs.push( store.ref( 'nodes', s ) ); }
+      for (const s of compNodes) {
+        refs.push(store.ref('nodes', s));
+      }
 
-      for( const edgeSlot of edgeSlots ){
-        if( compNodes.has( endpoints[ edgeSlot * 2 ] ) && compNodes.has( endpoints[ edgeSlot * 2 + 1 ] ) ){
-          refs.push( store.ref( 'edges', edgeSlot ) );
+      for (const edgeSlot of edgeSlots) {
+        if (
+          compNodes.has(endpoints[edgeSlot * 2]) &&
+          compNodes.has(endpoints[edgeSlot * 2 + 1])
+        ) {
+          refs.push(store.ref('edges', edgeSlot));
         }
       }
 
-      comps.push( this._spawn( refs ) );
+      comps.push(this._spawn(refs));
     }
 
     return comps;
@@ -4142,16 +4753,20 @@ export class Collection {
    *   collection when this one is empty
    */
   component(): Collection {
-    if( this._first() == null ){ return this._spawn( [] ); }
+    if (this._first() == null) {
+      return this._spawn([]);
+    }
 
-    return this._cy.elements().components( this )[ 0 ] ?? this._spawn( [] );
+    return this._cy.elements().components(this)[0] ?? this._spawn([]);
   }
 
   private _nodeSlotSet(): Set<number> {
     const set = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group === 'nodes' ){ set.add( ref.slot ); }
+    for (const ref of this._liveRefs()) {
+      if (ref.group === 'nodes') {
+        set.add(ref.slot);
+      }
     }
 
     return set;
@@ -4163,58 +4778,76 @@ export class Collection {
    * v3's boundingBoxAt, computed directly with no store writes.  Edges
    * span their endpoints' hypothetical (or, outside the collection,
    * current) positions.
+   *
+   * @param fn — one position shared by every node, or `( node, i ) =>
+   *   position` evaluated per node in this collection's order
+   * @returns the hypothetical box, in model coordinates
    */
-  boundingBoxAt(
-    fn: Position | ( ( node: Collection, i: number ) => Position )
-  ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+  boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    w: number;
+    h: number;
+  } {
     const nodes = this.nodes();
     const posFn = typeof fn === 'function' ? fn : () => fn;
     const posMap = new Map<Collection, Position>();
 
-    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    let x1 = Infinity,
+      y1 = Infinity,
+      x2 = -Infinity,
+      y2 = -Infinity;
 
-    const expandPoint = ( x: number, y: number ): void => {
-      x1 = Math.min( x1, x ); x2 = Math.max( x2, x );
-      y1 = Math.min( y1, y ); y2 = Math.max( y2, y );
+    const expandPoint = (x: number, y: number): void => {
+      x1 = Math.min(x1, x);
+      x2 = Math.max(x2, x);
+      y1 = Math.min(y1, y);
+      y2 = Math.max(y2, y);
     };
 
-    for( let i = 0; i < nodes.length; i++ ){
-      const node = nodes[ i ];
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
 
       // parents derive from their children (14.11): the leaves'
       // hypothetical boxes stand in for the parent body (the padding
       // margin is not modeled — a recorded fit-target approximation)
-      if( node.isParent() ){ continue; }
+      if (node.isParent()) {
+        continue;
+      }
 
-      const pos = posFn( node, i );
+      const pos = posFn(node, i);
 
-      posMap.set( node, pos );
+      posMap.set(node, pos);
 
-      const halfW = ( node.outerWidth() ?? 0 ) / 2;
-      const halfH = ( node.outerHeight() ?? 0 ) / 2;
+      const halfW = (node.outerWidth() ?? 0) / 2;
+      const halfH = (node.outerHeight() ?? 0) / 2;
 
-      expandPoint( pos.x - halfW, pos.y - halfH );
-      expandPoint( pos.x + halfW, pos.y + halfH );
+      expandPoint(pos.x - halfW, pos.y - halfH);
+      expandPoint(pos.x + halfW, pos.y + halfH);
 
       // the node-relative label box comes along (round 16.4): an
       // animated layout's fit target covers the labels too
-      const lb = this._store.nodeLabelBox( node._refs[ 0 ].slot );
+      const lb = this._store.nodeLabelBox(node._refs[0].slot);
 
-      if( lb != null ){
-        expandPoint( pos.x + lb.x1, pos.y + lb.y1 );
-        expandPoint( pos.x + lb.x2, pos.y + lb.y2 );
+      if (lb != null) {
+        expandPoint(pos.x + lb.x1, pos.y + lb.y1);
+        expandPoint(pos.x + lb.x2, pos.y + lb.y2);
       }
     }
 
-    const curveParams = this._store.column( 'edge.curveParams' ) as Float32Array;
-    const edgeFlags = this._store.column( 'edge.flags' ) as Uint32Array;
+    const curveParams = this._store.column('edge.curveParams') as Float32Array;
+    const edgeFlags = this._store.column('edge.flags') as Uint32Array;
 
     this._store.flushDerived();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'edges' ){ continue; }
+    for (const ref of this._liveRefs()) {
+      if (ref.group !== 'edges') {
+        continue;
+      }
 
-      const edge = this._cy._ele( 'edges', ref.slot );
+      const edge = this._cy._ele('edges', ref.slot);
 
       // curved edges expand by the conservative hull deviation — exact
       // eval at hypothetical positions isn't needed for a fit target.
@@ -4223,30 +4856,38 @@ export class Collection {
       // are already contained by the grown endpoint AABB (see the twin
       // of this comment in `GraphStore.boundingBox`).
       const at = ref.slot * 4;
-      const kind = curveParams[ at + 3 ];
-      let dev = kind === CURVE_STRAIGHT
-        ? 0
-        : headerDeviation( kind, curveParams[ at ], curveParams[ at + 1 ], curveParams[ at + 2 ] );
+      const kind = curveParams[at + 3];
+      let dev =
+        kind === CURVE_STRAIGHT
+          ? 0
+          : headerDeviation(
+              kind,
+              curveParams[at],
+              curveParams[at + 1],
+              curveParams[at + 2],
+            );
       const source = edge.source();
       const target = edge.target();
-      const sPos = posMap.get( source ) ?? ( source.position() as Position );
-      const tPos = posMap.get( target ) ?? ( target.position() as Position );
+      const sPos = posMap.get(source) ?? (source.position() as Position);
+      const tPos = posMap.get(target) ?? (target.position() as Position);
 
-      if( ( edgeFlags[ ref.slot ] & FLAG_CURVED_BOX ) !== 0 ){
+      if ((edgeFlags[ref.slot] & FLAG_CURVED_BOX) !== 0) {
         dev += this._store.curveBoxMargin();
 
-        if( kind !== CURVE_TAXI && kind !== CURVE_CMPD ){
-          dev += Math.hypot( tPos.x - sPos.x, tPos.y - sPos.y );
+        if (kind !== CURVE_TAXI && kind !== CURVE_CMPD) {
+          dev += Math.hypot(tPos.x - sPos.x, tPos.y - sPos.y);
         }
       }
 
-      for( const pos of [ sPos, tPos ] ){
-        expandPoint( pos.x - dev, pos.y - dev );
-        expandPoint( pos.x + dev, pos.y + dev );
+      for (const pos of [sPos, tPos]) {
+        expandPoint(pos.x - dev, pos.y - dev);
+        expandPoint(pos.x + dev, pos.y + dev);
       }
     }
 
-    if( x1 === Infinity ){ x1 = y1 = x2 = y2 = 0; }
+    if (x1 === Infinity) {
+      x1 = y1 = x2 = y2 = 0;
+    }
 
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
   }
@@ -4260,12 +4901,15 @@ export class Collection {
    *   label box too rather than the node body alone
    * @returns the first element's `{ w, h }`
    */
-  layoutDimensions( options: { nodeDimensionsIncludeLabels?: boolean } = {} ): { w: number; h: number } {
+  layoutDimensions(options: { nodeDimensionsIncludeLabels?: boolean } = {}): {
+    w: number;
+    h: number;
+  } {
     let dims: { w: number; h: number };
 
-    if( !this.takesUpSpace() ){
+    if (!this.takesUpSpace()) {
       dims = { w: 0, h: 0 };
-    } else if( options.nodeDimensionsIncludeLabels ){
+    } else if (options.nodeDimensionsIncludeLabels) {
       const bb = this.boundingBox();
 
       dims = { w: bb.w, h: bb.h };
@@ -4274,7 +4918,7 @@ export class Collection {
     }
 
     // sanitise for layouts (avoid division by zero)
-    if( dims.w === 0 || dims.h === 0 ){
+    if (dims.w === 0 || dims.h === 0) {
       dims.w = dims.h = 1;
     }
 
@@ -4287,35 +4931,44 @@ export class Collection {
    * and the layoutstart/layoutready/layoutstop event flow — v3's helper.
    * With `animate: true` the viewport animates concurrently (a fit targets
    * the bounding box at the *final* positions, as v3 does).
+   *
+   * @param layout — the layout instance the lifecycle events carry as
+   *   `event.layout`; it is not called back, only reported
+   * @param options — the standard layout options (`spacingFactor`,
+   *   `transform`, `fit`/`padding`, `zoom`/`pan`, `animate`,
+   *   `animationDuration`, `animateFilter`)
+   * @param fn — `( node, i ) => position`, evaluated once per positioned
+   *   node; parents are excluded (auto-bounds derive them)
+   * @returns this collection, for chaining
    */
   layoutPositions(
     layout: object,
     options: LayoutBaseOptions,
-    fn: ( node: Collection, i: number ) => Position
+    fn: (node: Collection, i: number) => Position,
   ): this {
     const cy = this._cy;
     // v3: parents are excluded from layout positioning (auto-bounds
     // derive them from their placed leaves, round 14.11)
     const nodes = cy._store.hasCompounds()
-      ? this.nodes().filter( ( n: Collection ) => !n.isParent() )
+      ? this.nodes().filter((n: Collection) => !n.isParent())
       : this.nodes();
-    const eles = ( options.eles as Collection | undefined ) ?? this;
+    const eles = (options.eles as Collection | undefined) ?? this;
 
     // the extension wrapper emits its own layoutstart before run()
     // (round 17.5); the finisher folds into that lifecycle
-    if( ( options as { _startEmitted?: boolean } )._startEmitted !== true ){
-      cy.emit( { type: 'layoutstart', layout } );
+    if ((options as { _startEmitted?: boolean })._startEmitted !== true) {
+      cy.emit({ type: 'layoutstart', layout });
     }
 
     // memoize by handle: handles are interned singletons
     const rawMemo = new Map<Collection, Position>();
 
-    const rawPos = ( node: Collection, i: number ): Position => {
-      let p = rawMemo.get( node );
+    const rawPos = (node: Collection, i: number): Position => {
+      let p = rawMemo.get(node);
 
-      if( p == null ){
-        p = fn( node, i );
-        rawMemo.set( node, p );
+      if (p == null) {
+        p = fn(node, i);
+        rawMemo.set(node, p);
       }
 
       return p;
@@ -4325,109 +4978,132 @@ export class Collection {
     const useSpacing = factor != null && factor !== 1 && nodes.length > 0;
     let center: Position | null = null;
 
-    if( useSpacing ){
-      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    if (useSpacing) {
+      let x1 = Infinity,
+        y1 = Infinity,
+        x2 = -Infinity,
+        y2 = -Infinity;
 
-      for( let i = 0; i < nodes.length; i++ ){
-        const p = rawPos( nodes[ i ], i );
+      for (let i = 0; i < nodes.length; i++) {
+        const p = rawPos(nodes[i], i);
 
-        x1 = Math.min( x1, p.x ); x2 = Math.max( x2, p.x );
-        y1 = Math.min( y1, p.y ); y2 = Math.max( y2, p.y );
+        x1 = Math.min(x1, p.x);
+        x2 = Math.max(x2, p.x);
+        y1 = Math.min(y1, p.y);
+        y2 = Math.max(y2, p.y);
       }
 
-      center = { x: ( x1 + x2 ) / 2, y: ( y1 + y2 ) / 2 };
+      center = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
     }
 
     const finalMemo = new Map<Collection, Position>();
 
-    const getFinalPos = ( node: Collection, i: number ): Position => {
-      let p = finalMemo.get( node );
+    const getFinalPos = (node: Collection, i: number): Position => {
+      let p = finalMemo.get(node);
 
-      if( p != null ){ return p; }
+      if (p != null) {
+        return p;
+      }
 
-      p = rawPos( node, i );
+      p = rawPos(node, i);
 
-      if( useSpacing && center != null ){
-        const spacing = Math.abs( factor as number );
+      if (useSpacing && center != null) {
+        const spacing = Math.abs(factor as number);
 
         p = {
-          x: center.x + ( p.x - center.x ) * spacing,
-          y: center.y + ( p.y - center.y ) * spacing
+          x: center.x + (p.x - center.x) * spacing,
+          y: center.y + (p.y - center.y) * spacing,
         };
       }
 
-      if( options.transform != null ){
-        p = options.transform( node, p );
+      if (options.transform != null) {
+        p = options.transform(node, p);
       }
 
-      finalMemo.set( node, p );
+      finalMemo.set(node, p);
 
       return p;
     };
 
     const applyViewport = (): void => {
-      if( options.fit ){
-        cy.fit( eles, options.padding ?? 30 );
+      if (options.fit) {
+        cy.fit(eles, options.padding ?? 30);
       } else {
-        if( options.zoom != null ){ cy.zoom( options.zoom ); }
-        if( options.pan != null ){ cy.pan( options.pan ); }
+        if (options.zoom != null) {
+          cy.zoom(options.zoom);
+        }
+        if (options.pan != null) {
+          cy.pan(options.pan);
+        }
       }
     };
 
-    if( options.animate ){
+    if (options.animate) {
       const anis: AnimationHandle[] = [];
 
-      for( let i = 0; i < nodes.length; i++ ){
-        const node = nodes[ i ];
-        const newPos = getFinalPos( node, i );
-        const animateNode = options.animateFilter == null || options.animateFilter( node, i );
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const newPos = getFinalPos(node, i);
+        const animateNode =
+          options.animateFilter == null || options.animateFilter(node, i);
 
-        if( animateNode ){
-          anis.push( node.animation( {
-            position: newPos,
-            duration: options.animationDuration ?? 500,
-            easing: options.animationEasing
-          } ) );
+        if (animateNode) {
+          anis.push(
+            node.animation({
+              position: newPos,
+              duration: options.animationDuration ?? 500,
+              easing: options.animationEasing,
+            }),
+          );
         } else {
-          node.position( newPos );
+          node.position(newPos);
         }
       }
 
       // the viewport animates alongside the nodes: a fit targets the box at
       // the final positions (v3 semantics)
-      if( options.fit ){
-        anis.push( cy.animation( {
-          fit: { boundingBox: eles.boundingBoxAt( getFinalPos ), padding: options.padding ?? 30 },
-          duration: options.animationDuration ?? 500,
-          easing: options.animationEasing
-        } ) );
-      } else if( options.zoom != null && options.pan != null ){
-        anis.push( cy.animation( {
-          zoom: options.zoom,
-          pan: options.pan,
-          duration: options.animationDuration ?? 500,
-          easing: options.animationEasing
-        } ) );
+      if (options.fit) {
+        anis.push(
+          cy.animation({
+            fit: {
+              boundingBox: eles.boundingBoxAt(getFinalPos),
+              padding: options.padding ?? 30,
+            },
+            duration: options.animationDuration ?? 500,
+            easing: options.animationEasing,
+          }),
+        );
+      } else if (options.zoom != null && options.pan != null) {
+        anis.push(
+          cy.animation({
+            zoom: options.zoom,
+            pan: options.pan,
+            duration: options.animationDuration ?? 500,
+            easing: options.animationEasing,
+          }),
+        );
       }
 
-      for( const ani of anis ){ ani.play(); }
+      for (const ani of anis) {
+        ani.play();
+      }
 
       options.ready?.();
-      cy.emit( { type: 'layoutready', layout } );
+      cy.emit({ type: 'layoutready', layout });
 
-      Promise.all( anis.map( ani => ani.promise() ) ).then( () => {
+      Promise.all(anis.map((ani) => ani.promise())).then(() => {
         options.stop?.();
-        cy.emit( { type: 'layoutstop', layout } );
-      } );
+        cy.emit({ type: 'layoutstop', layout });
+      });
     } else {
-      nodes.positions( getFinalPos );
+      nodes.positions(getFinalPos);
       applyViewport();
 
       options.ready?.();
-      cy.emit( { type: 'layoutready', layout } );
+      cy.emit({ type: 'layoutready', layout });
 
       options.stop?.();
-      cy.emit( { type: 'layoutstop', layout } );
+      cy.emit({ type: 'layoutstop', layout });
     }
 
     return this;
@@ -4440,8 +5116,8 @@ export class Collection {
    *   to this collection
    * @returns the layout instance; nothing runs until `run()`
    */
-  layout( options: LayoutOptions ): ReturnType<Core['layout']> {
-    return this._cy.layout( { ...options, eles: this } );
+  layout(options: LayoutOptions): ReturnType<Core['layout']> {
+    return this._cy.layout({ ...options, eles: this });
   }
 
   declare makeLayout: this['layout'];
@@ -4459,8 +5135,8 @@ export class Collection {
    *   selector strings
    * @returns `{ path, found }`
    */
-  breadthFirstSearch( ...args: SearchArgs ): SearchResult {
-    return searchImpl( this, true, args );
+  breadthFirstSearch(...args: SearchArgs): SearchResult {
+    return searchImpl(this, true, args);
   }
 
   /**
@@ -4470,8 +5146,8 @@ export class Collection {
    * @param args — `{ roots, visit, directed }` or the positional form
    * @returns `{ path, found }`
    */
-  depthFirstSearch( ...args: SearchArgs ): SearchResult {
-    return searchImpl( this, false, args );
+  depthFirstSearch(...args: SearchArgs): SearchResult {
+    return searchImpl(this, false, args);
   }
 
   declare bfs: this['breadthFirstSearch'];
@@ -4484,8 +5160,8 @@ export class Collection {
    *   function `( edge ) => number`
    * @returns `{ distanceTo, pathTo }`
    */
-  dijkstra( ...args: DijkstraArgs ): DijkstraResult {
-    return dijkstraImpl( this, args );
+  dijkstra(...args: DijkstraArgs): DijkstraResult {
+    return dijkstraImpl(this, args);
   }
 
   /**
@@ -4495,8 +5171,8 @@ export class Collection {
    *   `weight` and `heuristic` as plain functions
    * @returns `{ found, distance, path }`
    */
-  aStar( options?: AStarOptions ): AStarResult {
-    return aStarImpl( this, options );
+  aStar(options?: AStarOptions): AStarResult {
+    return aStarImpl(this, options);
   }
 
   /**
@@ -4506,8 +5182,8 @@ export class Collection {
    * @param options — `{ root, weight, directed }`
    * @returns `{ distanceTo, pathTo, hasNegativeWeightCycle, negativeWeightCycles }`
    */
-  bellmanFord( options?: BellmanFordOptions ): BellmanFordResult {
-    return bellmanFordImpl( this, options );
+  bellmanFord(options?: BellmanFordOptions): BellmanFordResult {
+    return bellmanFordImpl(this, options);
   }
 
   /**
@@ -4517,8 +5193,8 @@ export class Collection {
    * @param options — `{ weight, directed }`
    * @returns `{ distance, path }` accessors
    */
-  floydWarshall( options?: FloydWarshallOptions ): FloydWarshallResult {
-    return floydWarshallImpl( this, options );
+  floydWarshall(options?: FloydWarshallOptions): FloydWarshallResult {
+    return floydWarshallImpl(this, options);
   }
 
   /**
@@ -4527,8 +5203,8 @@ export class Collection {
    * @param weight — `( edge ) => number`; defaults to unit weights
    * @returns the spanning forest's nodes and edges
    */
-  kruskal( weight?: WeightFn ): Collection {
-    return kruskalImpl( this, weight );
+  kruskal(weight?: WeightFn): Collection {
+    return kruskalImpl(this, weight);
   }
 
   /**
@@ -4538,7 +5214,7 @@ export class Collection {
    * @returns `{ components, cut }`
    */
   tarjanStronglyConnected(): TarjanStronglyConnectedResult {
-    return tarjanImpl( this );
+    return tarjanImpl(this);
   }
 
   declare tsc: this['tarjanStronglyConnected'];
@@ -4551,7 +5227,7 @@ export class Collection {
    * @returns `{ components, cut }`
    */
   hopcroftTarjanBiconnected(): HopcroftTarjanBiconnectedResult {
-    return hopcroftTarjanImpl( this );
+    return hopcroftTarjanImpl(this);
   }
 
   declare htbc: this['hopcroftTarjanBiconnected'];
@@ -4564,8 +5240,8 @@ export class Collection {
    * @param args — `{ root }` or the positional form
    * @returns `{ found, trail }`
    */
-  hierholzer( ...args: HierholzerArgs ): HierholzerResult {
-    return hierholzerImpl( this, args );
+  hierholzer(...args: HierholzerArgs): HierholzerResult {
+    return hierholzerImpl(this, args);
   }
 
   /**
@@ -4575,7 +5251,7 @@ export class Collection {
    * @returns `{ cut, components, partition1, partition2 }`
    */
   kargerStein(): KargerSteinResult {
-    return kargerSteinImpl( this );
+    return kargerSteinImpl(this);
   }
 
   /**
@@ -4584,8 +5260,8 @@ export class Collection {
    * @param options — `{ dampingFactor, precision, iterations }`
    * @returns `{ rank }`, a per-node accessor
    */
-  pageRank( options?: PageRankOptions ): PageRankResult {
-    return pageRankImpl( this, options );
+  pageRank(options?: PageRankOptions): PageRankResult {
+    return pageRankImpl(this, options);
   }
 
   /**
@@ -4594,8 +5270,8 @@ export class Collection {
    * @param options — `{ root, weight, alpha, directed }`
    * @returns `{ degree }`, or `{ indegree, outdegree }` when directed
    */
-  degreeCentrality( options?: DegreeCentralityOptions ): DegreeCentralityResult {
-    return degreeCentralityImpl( this, options );
+  degreeCentrality(options?: DegreeCentralityOptions): DegreeCentralityResult {
+    return degreeCentralityImpl(this, options);
   }
 
   declare dc: this['degreeCentrality'];
@@ -4607,8 +5283,10 @@ export class Collection {
    * @returns a `degree` accessor, or `indegree`/`outdegree` when
    *   directed
    */
-  degreeCentralityNormalized( options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
-    return degreeCentralityNormalizedImpl( this, options );
+  degreeCentralityNormalized(
+    options?: DegreeCentralityOptions,
+  ): DegreeCentralityNormalizedResult {
+    return degreeCentralityNormalizedImpl(this, options);
   }
 
   declare dcn: this['degreeCentralityNormalized'];
@@ -4621,8 +5299,8 @@ export class Collection {
    * @param options — `{ root, weight, directed, harmonic }`
    * @returns the closeness score
    */
-  closenessCentrality( options?: ClosenessCentralityOptions ): number {
-    return closenessCentralityImpl( this, options );
+  closenessCentrality(options?: ClosenessCentralityOptions): number {
+    return closenessCentralityImpl(this, options);
   }
 
   declare cc: this['closenessCentrality'];
@@ -4633,8 +5311,10 @@ export class Collection {
    * @param options — `{ weight, directed, harmonic }`
    * @returns a `closeness` accessor
    */
-  closenessCentralityNormalized( options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
-    return closenessCentralityNormalizedImpl( this, options );
+  closenessCentralityNormalized(
+    options?: ClosenessCentralityOptions,
+  ): ClosenessCentralityNormalizedResult {
+    return closenessCentralityNormalizedImpl(this, options);
   }
 
   declare ccn: this['closenessCentralityNormalized'];
@@ -4647,8 +5327,10 @@ export class Collection {
    * @param options — `{ weight, directed }`
    * @returns `{ betweenness, betweennessNormalized }` accessors
    */
-  betweennessCentrality( options?: BetweennessCentralityOptions ): BetweennessCentralityResult {
-    return betweennessCentralityImpl( this, options );
+  betweennessCentrality(
+    options?: BetweennessCentralityOptions,
+  ): BetweennessCentralityResult {
+    return betweennessCentralityImpl(this, options);
   }
 
   declare bc: this['betweennessCentrality'];
@@ -4662,8 +5344,8 @@ export class Collection {
    *   sensitivityThreshold }`, with `attributes` as plain functions
    * @returns one collection per cluster
    */
-  kMeans( options?: KClusteringOptions ): Collection[] {
-    return kMeansImpl( this, options );
+  kMeans(options?: KClusteringOptions): Collection[] {
+    return kMeansImpl(this, options);
   }
 
   /**
@@ -4673,8 +5355,8 @@ export class Collection {
    * @param options — as `kMeans`
    * @returns one collection per cluster
    */
-  kMedoids( options?: KClusteringOptions ): Collection[] {
-    return kMedoidsImpl( this, options );
+  kMedoids(options?: KClusteringOptions): Collection[] {
+    return kMedoidsImpl(this, options);
   }
 
   /**
@@ -4684,8 +5366,8 @@ export class Collection {
    * @param options — as `kMeans`, plus the fuzziness exponent
    * @returns `{ clusters, degreeOfMembership }`
    */
-  fuzzyCMeans( options?: KClusteringOptions ): FuzzyCMeansResult {
-    return fuzzyCMeansImpl( this, options );
+  fuzzyCMeans(options?: KClusteringOptions): FuzzyCMeansResult {
+    return fuzzyCMeansImpl(this, options);
   }
 
   declare fcm: this['fuzzyCMeans'];
@@ -4697,8 +5379,10 @@ export class Collection {
    *   dendrogramDepth }`
    * @returns one collection per cluster
    */
-  hierarchicalClustering( options?: HierarchicalClusteringOptions ): Collection[] {
-    return hierarchicalClusteringImpl( this, options );
+  hierarchicalClustering(
+    options?: HierarchicalClusteringOptions,
+  ): Collection[] {
+    return hierarchicalClusteringImpl(this, options);
   }
 
   declare hca: this['hierarchicalClustering'];
@@ -4711,8 +5395,8 @@ export class Collection {
    *   multFactor, maxIterations }`
    * @returns one collection per cluster
    */
-  markovClustering( options?: MarkovClusteringOptions ): Collection[] {
-    return markovClusteringImpl( this, options );
+  markovClustering(options?: MarkovClusteringOptions): Collection[] {
+    return markovClusteringImpl(this, options);
   }
 
   declare mcl: this['markovClustering'];
@@ -4725,8 +5409,8 @@ export class Collection {
    *   minIterations, maxIterations }`
    * @returns one collection per cluster
    */
-  affinityPropagation( options?: AffinityPropagationOptions ): Collection[] {
-    return affinityPropagationImpl( this, options );
+  affinityPropagation(options?: AffinityPropagationOptions): Collection[] {
+    return affinityPropagationImpl(this, options);
   }
 
   declare ap: this['affinityPropagation'];
@@ -4748,9 +5432,11 @@ export class Collection {
    * @returns the degree, or undefined when the first element is not a
    *   live node
    */
-  degree( includeLoops: boolean = true ): number | undefined {
-    return this._degree( includeLoops, ( store, slot ) =>
-      store.adj.outDegree( slot ) + store.adj.inDegree( slot ) );
+  degree(includeLoops: boolean = true): number | undefined {
+    return this._degree(
+      includeLoops,
+      (store, slot) => store.adj.outDegree(slot) + store.adj.inDegree(slot),
+    );
   }
 
   /**
@@ -4759,8 +5445,12 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the out-degree, or undefined when not a live node
    */
-  outdegree( includeLoops: boolean = true ): number | undefined {
-    return this._degree( includeLoops, ( store, slot ) => store.adj.outDegree( slot ), 'out' );
+  outdegree(includeLoops: boolean = true): number | undefined {
+    return this._degree(
+      includeLoops,
+      (store, slot) => store.adj.outDegree(slot),
+      'out',
+    );
   }
 
   /**
@@ -4769,8 +5459,12 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the in-degree, or undefined when not a live node
    */
-  indegree( includeLoops: boolean = true ): number | undefined {
-    return this._degree( includeLoops, ( store, slot ) => store.adj.inDegree( slot ), 'in' );
+  indegree(includeLoops: boolean = true): number | undefined {
+    return this._degree(
+      includeLoops,
+      (store, slot) => store.adj.inDegree(slot),
+      'in',
+    );
   }
 
   /**
@@ -4779,8 +5473,8 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the minimum degree, or undefined when there are no nodes
    */
-  minDegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'degree', includeLoops, -1 );
+  minDegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('degree', includeLoops, -1);
   }
 
   /**
@@ -4789,8 +5483,8 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the maximum degree, or undefined when there are no nodes
    */
-  maxDegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'degree', includeLoops, 1 );
+  maxDegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('degree', includeLoops, 1);
   }
 
   /**
@@ -4799,8 +5493,8 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the minimum in-degree, or undefined when there are no nodes
    */
-  minIndegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'indegree', includeLoops, -1 );
+  minIndegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('indegree', includeLoops, -1);
   }
 
   /**
@@ -4809,8 +5503,8 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the maximum in-degree, or undefined when there are no nodes
    */
-  maxIndegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'indegree', includeLoops, 1 );
+  maxIndegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('indegree', includeLoops, 1);
   }
 
   /**
@@ -4820,8 +5514,8 @@ export class Collection {
    * @returns the minimum out-degree, or undefined when there are no
    *   nodes
    */
-  minOutdegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'outdegree', includeLoops, -1 );
+  minOutdegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('outdegree', includeLoops, -1);
   }
 
   /**
@@ -4831,8 +5525,8 @@ export class Collection {
    * @returns the maximum out-degree, or undefined when there are no
    *   nodes
    */
-  maxOutdegree( includeLoops: boolean = true ): number | undefined {
-    return this._degreeBound( 'outdegree', includeLoops, 1 );
+  maxOutdegree(includeLoops: boolean = true): number | undefined {
+    return this._degreeBound('outdegree', includeLoops, 1);
   }
 
   /**
@@ -4842,33 +5536,46 @@ export class Collection {
    * @param includeLoops — whether self-loops count
    * @returns the total degree (0 when there are no nodes)
    */
-  totalDegree( includeLoops: boolean = true ): number {
+  totalDegree(includeLoops: boolean = true): number {
     let total = 0;
 
-    for( let i = 0; i < this.length; i++ ){
-      const d = this[ i ].degree( includeLoops );
+    for (let i = 0; i < this.length; i++) {
+      const d = this[i].degree(includeLoops);
 
-      if( d !== undefined ){ total += d; }
+      if (d !== undefined) {
+        total += d;
+      }
     }
 
     return total;
   }
 
   private _degreeBound(
-    fn: 'degree' | 'indegree' | 'outdegree', includeLoops: boolean, sign: 1 | -1
+    fn: 'degree' | 'indegree' | 'outdegree',
+    includeLoops: boolean,
+    sign: 1 | -1,
   ): number | undefined {
     let ret: number | undefined;
 
-    for( let i = 0; i < this.length; i++ ){
-      if( !this[ i ].isNode() ){ continue; }
+    for (let i = 0; i < this.length; i++) {
+      if (!this[i].isNode()) {
+        continue;
+      }
 
-      const degree = fn === 'degree'
-        ? this[ i ].degree( includeLoops )
-        : fn === 'indegree' ? this[ i ].indegree( includeLoops ) : this[ i ].outdegree( includeLoops );
+      const degree =
+        fn === 'degree'
+          ? this[i].degree(includeLoops)
+          : fn === 'indegree'
+            ? this[i].indegree(includeLoops)
+            : this[i].outdegree(includeLoops);
 
-      if( degree === undefined ){ continue; }
+      if (degree === undefined) {
+        continue;
+      }
 
-      if( ret === undefined || sign * degree > sign * ret ){ ret = degree; }
+      if (ret === undefined || sign * degree > sign * ret) {
+        ret = degree;
+      }
     }
 
     return ret;
@@ -4876,23 +5583,25 @@ export class Collection {
 
   private _degree(
     includeLoops: boolean,
-    count: ( store: Core['_store'], slot: number ) => number,
-    direction?: 'out' | 'in'
+    count: (store: Core['_store'], slot: number) => number,
+    direction?: 'out' | 'in',
   ): number | undefined {
     const store = this._store;
     const ref = this._first();
 
     // first element must be a live node, else undefined (as in v3)
-    if( ref == null || ref.group !== 'nodes' || !store.isCurrent( ref ) ){ return undefined; }
+    if (ref == null || ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      return undefined;
+    }
 
-    let total = count( store, ref.slot );
+    let total = count(store, ref.slot);
 
-    if( !includeLoops ){
-      const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    if (!includeLoops) {
+      const endpoints = store.column('edge.endpoints') as Uint32Array;
 
       // a loop contributes 1 to outdegree, 1 to indegree, 2 to degree
-      for( const edgeSlot of store.adj.outEdges( ref.slot ) ){
-        if( endpoints[ edgeSlot * 2 ] === endpoints[ edgeSlot * 2 + 1 ] ){
+      for (const edgeSlot of store.adj.outEdges(ref.slot)) {
+        if (endpoints[edgeSlot * 2] === endpoints[edgeSlot * 2 + 1]) {
           total -= direction == null ? 2 : 1;
         }
       }
@@ -4922,9 +5631,9 @@ export class Collection {
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  on( events: string, callback?: EventHandler ): this {
-    for( const ref of this._refs ){
-      this._cy._emitter.on( events, refQualifier( ref ), callback );
+  on(events: string, callback?: EventHandler): this {
+    for (const ref of this._refs) {
+      this._cy._emitter.on(events, refQualifier(ref), callback);
     }
 
     return this;
@@ -4939,9 +5648,9 @@ export class Collection {
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  one( events: string, callback?: EventHandler ): this {
-    for( const ref of this._refs ){
-      this._cy._emitter.one( events, refQualifier( ref ), callback );
+  one(events: string, callback?: EventHandler): this {
+    for (const ref of this._refs) {
+      this._cy._emitter.one(events, refQualifier(ref), callback);
     }
 
     return this;
@@ -4959,9 +5668,9 @@ export class Collection {
    *   handler these elements have for `events`
    * @returns this collection, for chaining
    */
-  off( events: string, callback?: EventHandler ): this {
-    for( const ref of this._refs ){
-      this._cy._emitter.off( events, refQualifier( ref ), callback );
+  off(events: string, callback?: EventHandler): this {
+    for (const ref of this._refs) {
+      this._cy._emitter.off(events, refQualifier(ref), callback);
     }
 
     return this;
@@ -4980,12 +5689,12 @@ export class Collection {
    *   the event object
    * @returns this collection, for chaining
    */
-  emit( events: string, extraParams?: unknown[] ): this {
+  emit(events: string, extraParams?: unknown[]): this {
     // v4 does not support event namespaces (see PLAN.md); types are emitted verbatim
-    for( let i = 0; i < this.length; i++ ){
-      for( const type of events.split( /\s+/ ) ){
-        if( type !== '' ){
-          this._cy._emitOnEle( type, this[ i ], extraParams );
+    for (let i = 0; i < this.length; i++) {
+      for (const type of events.split(/\s+/)) {
+        if (type !== '') {
+          this._cy._emitOnEle(type, this[i], extraParams);
         }
       }
     }
@@ -5002,10 +5711,10 @@ export class Collection {
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn( events: string ): Promise<Event> {
-    return new Promise( resolve => {
-      this.one( events, event => resolve( event ) );
-    } );
+  promiseOn(events: string): Promise<Event> {
+    return new Promise((resolve) => {
+      this.one(events, (event) => resolve(event));
+    });
   }
 
   declare pon: this['promiseOn'];
@@ -5032,7 +5741,8 @@ Collection.prototype.modelPositions = Collection.prototype.positions;
 Collection.prototype.points = Collection.prototype.positions;
 Collection.prototype.relativePoint = Collection.prototype.relativePosition;
 Collection.prototype.renderedPoint = Collection.prototype.renderedPosition;
-Collection.prototype.renderedBoundingbox = Collection.prototype.renderedBoundingBox;
+Collection.prototype.renderedBoundingbox =
+  Collection.prototype.renderedBoundingBox;
 Collection.prototype.intersect = Collection.prototype.intersection;
 Collection.prototype.and = Collection.prototype.intersection;
 Collection.prototype.symdiff = Collection.prototype.symmetricDifference;
@@ -5047,16 +5757,20 @@ Collection.prototype.bfs = Collection.prototype.breadthFirstSearch;
 Collection.prototype.dfs = Collection.prototype.depthFirstSearch;
 Collection.prototype.tsc = Collection.prototype.tarjanStronglyConnected;
 Collection.prototype.tscc = Collection.prototype.tarjanStronglyConnected;
-Collection.prototype.tarjanStronglyConnectedComponents = Collection.prototype.tarjanStronglyConnected;
+Collection.prototype.tarjanStronglyConnectedComponents =
+  Collection.prototype.tarjanStronglyConnected;
 Collection.prototype.htbc = Collection.prototype.hopcroftTarjanBiconnected;
 Collection.prototype.htb = Collection.prototype.hopcroftTarjanBiconnected;
-Collection.prototype.hopcroftTarjanBiconnectedComponents = Collection.prototype.hopcroftTarjanBiconnected;
+Collection.prototype.hopcroftTarjanBiconnectedComponents =
+  Collection.prototype.hopcroftTarjanBiconnected;
 Collection.prototype.dc = Collection.prototype.degreeCentrality;
 Collection.prototype.dcn = Collection.prototype.degreeCentralityNormalized;
-Collection.prototype.degreeCentralityNormalised = Collection.prototype.degreeCentralityNormalized;
+Collection.prototype.degreeCentralityNormalised =
+  Collection.prototype.degreeCentralityNormalized;
 Collection.prototype.cc = Collection.prototype.closenessCentrality;
 Collection.prototype.ccn = Collection.prototype.closenessCentralityNormalized;
-Collection.prototype.closenessCentralityNormalised = Collection.prototype.closenessCentralityNormalized;
+Collection.prototype.closenessCentralityNormalised =
+  Collection.prototype.closenessCentralityNormalized;
 Collection.prototype.bc = Collection.prototype.betweennessCentrality;
 Collection.prototype.fcm = Collection.prototype.fuzzyCMeans;
 Collection.prototype.hca = Collection.prototype.hierarchicalClustering;

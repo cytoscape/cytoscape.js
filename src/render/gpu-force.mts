@@ -246,7 +246,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
   // displacement -> monotonic u32 bits (positive f32s order-preserve)
   atomicMax(&fmeta[1], bitcast<u32>(abs(dx) + abs(dy)));
-}`
+}`,
 };
 
 export interface ForceInputs {
@@ -304,141 +304,187 @@ export class GpuForceRuntime {
    * @param inputs — the compacted simulation: participating leaves, edge
    * list, initial positions, pins, publish map, params and grid frame
    */
-  constructor( device: GPUDevice, inputs: ForceInputs ){
+  constructor(device: GPUDevice, inputs: ForceInputs) {
     this.device = device;
     this.inputs = inputs;
 
     const cellSize = inputs.cutoff;
 
-    this.gridCols = Math.max( 1, Math.min( MAX_GRID, Math.ceil( inputs.frame.w / cellSize ) ) );
-    this.gridRows = Math.max( 1, Math.min( MAX_GRID, Math.ceil( inputs.frame.h / cellSize ) ) );
+    this.gridCols = Math.max(
+      1,
+      Math.min(MAX_GRID, Math.ceil(inputs.frame.w / cellSize)),
+    );
+    this.gridRows = Math.max(
+      1,
+      Math.min(MAX_GRID, Math.ceil(inputs.frame.h / cellSize)),
+    );
     this.cells = this.gridCols * this.gridRows;
 
     const SU = BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST;
     const n = inputs.n;
     const m = inputs.edges.length / 2;
 
-    const mk = ( name: string, size: number, usage: number, data?: ArrayBufferView ): GPUBuffer => {
-      const buffer = device.createBuffer( {
-        label: `cy-gpu:force-${name}`, size: Math.max( 4, size ), usage
-      } );
+    const mk = (
+      name: string,
+      size: number,
+      usage: number,
+      data?: ArrayBufferView,
+    ): GPUBuffer => {
+      const buffer = device.createBuffer({
+        label: `cy-gpu:force-${name}`,
+        size: Math.max(4, size),
+        usage,
+      });
 
-      if( data != null ){
-        device.queue.writeBuffer( buffer, 0, data.buffer as ArrayBuffer, data.byteOffset, data.byteLength );
+      if (data != null) {
+        device.queue.writeBuffer(
+          buffer,
+          0,
+          data.buffer as ArrayBuffer,
+          data.byteOffset,
+          data.byteLength,
+        );
       }
 
-      this.buffersByName.set( name, buffer );
+      this.buffersByName.set(name, buffer);
 
       return buffer;
     };
 
-    mk( 'simPos', n * 8, SU | BUFFER_USAGE.COPY_SRC, inputs.positions );
-    mk( 'forces', n * 8, SU );
-    mk( 'cellOf', n * 4, SU );
-    mk( 'cellCount', this.cells * 4, SU );
-    mk( 'cellStart', ( this.cells + 1 ) * 4, SU );
-    mk( 'cellItems', n * 4, SU );
+    mk('simPos', n * 8, SU | BUFFER_USAGE.COPY_SRC, inputs.positions);
+    mk('forces', n * 8, SU);
+    mk('cellOf', n * 4, SU);
+    mk('cellCount', this.cells * 4, SU);
+    mk('cellStart', (this.cells + 1) * 4, SU);
+    mk('cellItems', n * 4, SU);
 
     // packed incident CSR: [n+1 starts][edge indices]
-    const csr = new Uint32Array( n + 1 + m * 2 );
+    const csr = new Uint32Array(n + 1 + m * 2);
 
-    for( let e = 0; e < m; e++ ){
-      csr[ inputs.edges[ e * 2 ] + 1 ]++;
-      csr[ inputs.edges[ e * 2 + 1 ] + 1 ]++;
+    for (let e = 0; e < m; e++) {
+      csr[inputs.edges[e * 2] + 1]++;
+      csr[inputs.edges[e * 2 + 1] + 1]++;
     }
 
-    for( let i = 0; i < n; i++ ){ csr[ i + 1 ] += csr[ i ]; }
-
-    const cursor = csr.slice( 0, n );
-
-    for( let e = 0; e < m; e++ ){
-      csr[ n + 1 + cursor[ inputs.edges[ e * 2 ] ]++ ] = e;
-      csr[ n + 1 + cursor[ inputs.edges[ e * 2 + 1 ] ]++ ] = e;
+    for (let i = 0; i < n; i++) {
+      csr[i + 1] += csr[i];
     }
 
-    mk( 'csr', csr.byteLength, SU, csr );
+    const cursor = csr.slice(0, n);
+
+    for (let e = 0; e < m; e++) {
+      csr[n + 1 + cursor[inputs.edges[e * 2]]++] = e;
+      csr[n + 1 + cursor[inputs.edges[e * 2 + 1]]++] = e;
+    }
+
+    mk('csr', csr.byteLength, SU, csr);
 
     // edges at stride 3: [source, target, bitcast(length)]
-    const packed = new Uint32Array( m * 3 );
-    const lengthBits = new Uint32Array( inputs.edgeLength.buffer,
-      inputs.edgeLength.byteOffset, inputs.edgeLength.length );
+    const packed = new Uint32Array(m * 3);
+    const lengthBits = new Uint32Array(
+      inputs.edgeLength.buffer,
+      inputs.edgeLength.byteOffset,
+      inputs.edgeLength.length,
+    );
 
-    for( let e = 0; e < m; e++ ){
-      packed[ e * 3 ] = inputs.edges[ e * 2 ];
-      packed[ e * 3 + 1 ] = inputs.edges[ e * 2 + 1 ];
-      packed[ e * 3 + 2 ] = lengthBits[ e ];
+    for (let e = 0; e < m; e++) {
+      packed[e * 3] = inputs.edges[e * 2];
+      packed[e * 3 + 1] = inputs.edges[e * 2 + 1];
+      packed[e * 3 + 2] = lengthBits[e];
     }
 
-    mk( 'edgesPacked', packed.byteLength, SU, packed );
+    mk('edgesPacked', packed.byteLength, SU, packed);
 
     // slot | pinned << 31
-    const slotPin = new Uint32Array( n );
+    const slotPin = new Uint32Array(n);
 
-    for( let i = 0; i < n; i++ ){
-      slotPin[ i ] = ( inputs.slots[ i ] | ( inputs.pinned[ i ] === 1 ? 0x80000000 : 0 ) ) >>> 0;
+    for (let i = 0; i < n; i++) {
+      slotPin[i] =
+        (inputs.slots[i] | (inputs.pinned[i] === 1 ? 0x80000000 : 0)) >>> 0;
     }
 
-    mk( 'slotPin', slotPin.byteLength, SU, slotPin );
+    mk('slotPin', slotPin.byteLength, SU, slotPin);
 
     // meta: [tick, maxDispBits, alpha window]
-    mk( 'meta', ( META_ALPHA0 + ALPHA_WINDOW ) * 4, SU | BUFFER_USAGE.COPY_SRC );
+    mk('meta', (META_ALPHA0 + ALPHA_WINDOW) * 4, SU | BUFFER_USAGE.COPY_SRC);
 
-    this.dispStaging = device.createBuffer( {
-      label: 'cy-gpu:force-disp-staging', size: 8,
-      usage: BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ
-    } );
+    this.dispStaging = device.createBuffer({
+      label: 'cy-gpu:force-disp-staging',
+      size: 8,
+      usage: BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ,
+    });
 
     const p = inputs.params;
-    const uniform = mk( 'params', 48, BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST );
-    const u = new ArrayBuffer( 48 );
-    const u32 = new Uint32Array( u );
-    const f32 = new Float32Array( u );
+    const uniform = mk(
+      'params',
+      48,
+      BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
+    );
+    const u = new ArrayBuffer(48);
+    const u32 = new Uint32Array(u);
+    const f32 = new Float32Array(u);
 
-    u32[ 0 ] = n;
-    u32[ 1 ] = this.gridCols;
-    u32[ 2 ] = this.gridRows;
-    u32[ 3 ] = this.cells;
-    f32[ 4 ] = inputs.frame.x;
-    f32[ 5 ] = inputs.frame.y;
-    f32[ 6 ] = cellSize;
-    f32[ 7 ] = inputs.cutoff;
-    f32[ 8 ] = p.repulsion;
-    f32[ 9 ] = p.stiffness;
-    f32[ 10 ] = p.gravity;
-    device.queue.writeBuffer( uniform, 0, u );
+    u32[0] = n;
+    u32[1] = this.gridCols;
+    u32[2] = this.gridRows;
+    u32[3] = this.cells;
+    f32[4] = inputs.frame.x;
+    f32[5] = inputs.frame.y;
+    f32[6] = cellSize;
+    f32[7] = inputs.cutoff;
+    f32[8] = p.repulsion;
+    f32[9] = p.stiffness;
+    f32[10] = p.gravity;
+    device.queue.writeBuffer(uniform, 0, u);
 
     // per-kernel pipelines (layout 'auto' — each kernel's bindings are
     // exactly its own; the apply group rebinds when the mirror reallocs)
-    for( const name of Object.keys( KERNELS ) ){
-      this.pipelines[ name ] = device.createComputePipeline( {
+    for (const name of Object.keys(KERNELS)) {
+      this.pipelines[name] = device.createComputePipeline({
         label: `cy-gpu:force-${name}`,
         layout: 'auto',
         compute: {
-          module: device.createShaderModule( {
-            label: `cy-gpu:force-${name}`, code: KERNELS[ name ]
-          } ),
-          entryPoint: 'main'
-        }
-      } );
+          module: device.createShaderModule({
+            label: `cy-gpu:force-${name}`,
+            code: KERNELS[name],
+          }),
+          entryPoint: 'main',
+        },
+      });
     }
 
-    const bind = ( name: string, buffers: string[] ): void => {
-      this.groups[ name ] = device.createBindGroup( {
+    const bind = (name: string, buffers: string[]): void => {
+      this.groups[name] = device.createBindGroup({
         label: `cy-gpu:force-${name}-group`,
-        layout: this.pipelines[ name ].getBindGroupLayout( 0 ),
-        entries: buffers.map( ( buf, i ) => ( {
-          binding: i, resource: { buffer: this.buffersByName.get( buf ) as GPUBuffer }
-        } ) )
-      } );
+        layout: this.pipelines[name].getBindGroupLayout(0),
+        entries: buffers.map((buf, i) => ({
+          binding: i,
+          resource: { buffer: this.buffersByName.get(buf) as GPUBuffer },
+        })),
+      });
     };
 
-    bind( 'clearGrid', [ 'params', 'cellCount' ] );
-    bind( 'binCount', [ 'params', 'simPos', 'cellOf', 'cellCount' ] );
-    bind( 'scanCells', [ 'params', 'cellCount', 'cellStart' ] );
-    bind( 'scatter', [ 'params', 'cellOf', 'cellCount', 'cellStart', 'cellItems' ] );
-    bind( 'force', [
-      'params', 'simPos', 'forces', 'cellStart', 'cellItems', 'csr', 'edgesPacked', 'slotPin', 'meta'
-    ] );
+    bind('clearGrid', ['params', 'cellCount']);
+    bind('binCount', ['params', 'simPos', 'cellOf', 'cellCount']);
+    bind('scanCells', ['params', 'cellCount', 'cellStart']);
+    bind('scatter', [
+      'params',
+      'cellOf',
+      'cellCount',
+      'cellStart',
+      'cellItems',
+    ]);
+    bind('force', [
+      'params',
+      'simPos',
+      'forces',
+      'cellStart',
+      'cellItems',
+      'csr',
+      'edgesPacked',
+      'slotPin',
+      'meta',
+    ]);
   }
 
   /**
@@ -448,9 +494,11 @@ export class GpuForceRuntime {
    * run and hand ownership back rather than keep encoding.
    */
   converged(): boolean {
-    return this.iterations >= this.inputs.params.iterations
-      || this.alpha < 0.001
-      || this.settledRuns >= 3;
+    return (
+      this.iterations >= this.inputs.params.iterations ||
+      this.alpha < 0.001 ||
+      this.settledRuns >= 3
+    );
   }
 
   /**
@@ -461,7 +509,7 @@ export class GpuForceRuntime {
    * be released once readPositions() has settled the values back.
    */
   ownedColumns(): string[] {
-    return [ 'node.position' ];
+    return ['node.position'];
   }
 
   /**
@@ -469,109 +517,147 @@ export class GpuForceRuntime {
    * apply group rebinds when the mirror reallocates).  Precomputes the
    * alpha window for the device tick and advances the CPU bookkeeping.
    */
-  encode( encoder: GPUCommandEncoder, columnPos: GPUBuffer, k: number ): void {
-    if( this.destroyed || this.converged() ){ return; }
+  encode(encoder: GPUCommandEncoder, columnPos: GPUBuffer, k: number): void {
+    if (this.destroyed || this.converged()) {
+      return;
+    }
 
-    if( this.columnPos !== columnPos || this.applyGroup == null ){
+    if (this.columnPos !== columnPos || this.applyGroup == null) {
       this.columnPos = columnPos;
-      this.applyGroup = this.device.createBindGroup( {
+      this.applyGroup = this.device.createBindGroup({
         label: 'cy-gpu:force-apply-group',
-        layout: this.pipelines.apply.getBindGroupLayout( 0 ),
-        entries: [ 'params', 'simPos', 'forces', 'slotPin' ].map( ( buf, i ) => ( {
-          binding: i, resource: { buffer: this.buffersByName.get( buf ) as GPUBuffer }
-        } ) ).concat( [
-          { binding: 4, resource: { buffer: columnPos } },
-          { binding: 5, resource: { buffer: this.buffersByName.get( 'meta' ) as GPUBuffer } }
-        ] )
-      } );
+        layout: this.pipelines.apply.getBindGroupLayout(0),
+        entries: ['params', 'simPos', 'forces', 'slotPin']
+          .map((buf, i) => ({
+            binding: i,
+            resource: { buffer: this.buffersByName.get(buf) as GPUBuffer },
+          }))
+          .concat([
+            { binding: 4, resource: { buffer: columnPos } },
+            {
+              binding: 5,
+              resource: { buffer: this.buffersByName.get('meta') as GPUBuffer },
+            },
+          ]),
+      });
     }
 
     // the alpha window for the iterations this frame will execute,
     // and a rewound displacement max for the batch
-    const meta = new Uint32Array( META_ALPHA0 + ALPHA_WINDOW );
-    const metaF = new Float32Array( meta.buffer );
+    const meta = new Uint32Array(META_ALPHA0 + ALPHA_WINDOW);
+    const metaF = new Float32Array(meta.buffer);
 
-    meta[ 0 ] = this.iterations;
-    meta[ 1 ] = 0;
+    meta[0] = this.iterations;
+    meta[1] = 0;
 
     let a = this.alpha;
 
-    for( let i = 0; i < ALPHA_WINDOW; i++ ){
-      metaF[ META_ALPHA0 + ( this.iterations + i ) % ALPHA_WINDOW ] = a;
-      a += ( 0 - a ) * this.inputs.params.decay;
+    for (let i = 0; i < ALPHA_WINDOW; i++) {
+      metaF[META_ALPHA0 + ((this.iterations + i) % ALPHA_WINDOW)] = a;
+      a += (0 - a) * this.inputs.params.decay;
     }
 
     this.device.queue.writeBuffer(
-      this.buffersByName.get( 'meta' ) as GPUBuffer, 0, meta.buffer );
+      this.buffersByName.get('meta') as GPUBuffer,
+      0,
+      meta.buffer,
+    );
 
     const n = this.inputs.n;
-    const pass = encoder.beginComputePass( { label: 'cy-gpu:force' } );
-    const run = ( name: string, groups: number ): void => {
-      pass.setPipeline( this.pipelines[ name ] );
-      pass.setBindGroup( 0, name === 'apply' ? this.applyGroup as GPUBindGroup : this.groups[ name ] );
-      pass.dispatchWorkgroups( groups );
+    const pass = encoder.beginComputePass({ label: 'cy-gpu:force' });
+    const run = (name: string, groups: number): void => {
+      pass.setPipeline(this.pipelines[name]);
+      pass.setBindGroup(
+        0,
+        name === 'apply'
+          ? (this.applyGroup as GPUBindGroup)
+          : this.groups[name],
+      );
+      pass.dispatchWorkgroups(groups);
     };
 
-    for( let i = 0; i < k; i++ ){
-      run( 'clearGrid', Math.ceil( this.cells / WG ) );
-      run( 'binCount', Math.ceil( n / WG ) );
-      run( 'scanCells', 1 );
-      run( 'scatter', Math.ceil( n / WG ) );
-      run( 'force', Math.ceil( n / WG ) );
-      run( 'apply', Math.ceil( n / WG ) );
+    for (let i = 0; i < k; i++) {
+      run('clearGrid', Math.ceil(this.cells / WG));
+      run('binCount', Math.ceil(n / WG));
+      run('scanCells', 1);
+      run('scatter', Math.ceil(n / WG));
+      run('force', Math.ceil(n / WG));
+      run('apply', Math.ceil(n / WG));
     }
 
     pass.end();
 
-    for( let i = 0; i < k; i++ ){
-      this.alpha += ( 0 - this.alpha ) * this.inputs.params.decay;
+    for (let i = 0; i < k; i++) {
+      this.alpha += (0 - this.alpha) * this.inputs.params.decay;
       this.iterations++;
     }
 
     // skip the copy while the staging buffer is mapped (latest-wins)
-    if( !this.dispInFlight ){
+    if (!this.dispInFlight) {
       encoder.copyBufferToBuffer(
-        this.buffersByName.get( 'meta' ) as GPUBuffer, 0, this.dispStaging, 0, 8 );
+        this.buffersByName.get('meta') as GPUBuffer,
+        0,
+        this.dispStaging,
+        0,
+        8,
+      );
     }
   }
 
   /** Poll the batch's max displacement (latest-wins; drives the settle). */
   pollConvergence(): void {
-    if( this.dispInFlight || this.destroyed ){ return; }
+    if (this.dispInFlight || this.destroyed) {
+      return;
+    }
 
     this.dispInFlight = true;
-    this.dispStaging.mapAsync( MAP_MODE.READ ).then( () => {
-      if( this.destroyed ){ return; }
+    this.dispStaging.mapAsync(MAP_MODE.READ).then(
+      () => {
+        if (this.destroyed) {
+          return;
+        }
 
-      const words = new Uint32Array( this.dispStaging.getMappedRange() );
-      const buffer = new ArrayBuffer( 4 );
+        const words = new Uint32Array(this.dispStaging.getMappedRange());
+        const buffer = new ArrayBuffer(4);
 
-      new Uint32Array( buffer )[ 0 ] = words[ 1 ];
-      this.lastMaxDisp = new Float32Array( buffer )[ 0 ];
-      this.dispStaging.unmap();
-      this.dispInFlight = false;
+        new Uint32Array(buffer)[0] = words[1];
+        this.lastMaxDisp = new Float32Array(buffer)[0];
+        this.dispStaging.unmap();
+        this.dispInFlight = false;
 
-      this.settledRuns = this.lastMaxDisp < this.inputs.params.threshold
-        ? this.settledRuns + 1 : 0;
-    }, () => { this.dispInFlight = false; } );
+        this.settledRuns =
+          this.lastMaxDisp < this.inputs.params.threshold
+            ? this.settledRuns + 1
+            : 0;
+      },
+      () => {
+        this.dispInFlight = false;
+      },
+    );
   }
 
   /** The one readback (round 9): the final sim positions, for the
    * layout to settle into the CPU columns and reclaim ownership. */
   async readPositions(): Promise<Float32Array> {
-    const staging = this.device.createBuffer( {
-      label: 'cy-gpu:force-settle', size: this.inputs.n * 8,
-      usage: BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ
-    } );
+    const staging = this.device.createBuffer({
+      label: 'cy-gpu:force-settle',
+      size: this.inputs.n * 8,
+      usage: BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ,
+    });
     const encoder = this.device.createCommandEncoder();
 
     encoder.copyBufferToBuffer(
-      this.buffersByName.get( 'simPos' ) as GPUBuffer, 0, staging, 0, this.inputs.n * 8 );
-    this.device.queue.submit( [ encoder.finish() ] );
+      this.buffersByName.get('simPos') as GPUBuffer,
+      0,
+      staging,
+      0,
+      this.inputs.n * 8,
+    );
+    this.device.queue.submit([encoder.finish()]);
 
-    await staging.mapAsync( MAP_MODE.READ );
+    await staging.mapAsync(MAP_MODE.READ);
 
-    const out = new Float32Array( staging.getMappedRange().slice( 0 ) );
+    const out = new Float32Array(staging.getMappedRange().slice(0));
 
     staging.unmap();
     staging.destroy();
@@ -589,7 +675,9 @@ export class GpuForceRuntime {
   destroy(): void {
     this.destroyed = true;
 
-    for( const buffer of this.buffersByName.values() ){ buffer.destroy(); }
+    for (const buffer of this.buffersByName.values()) {
+      buffer.destroy();
+    }
 
     this.dispStaging.destroy();
   }

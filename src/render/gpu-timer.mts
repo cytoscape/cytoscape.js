@@ -48,8 +48,8 @@ export class GpuTimer {
    *
    * @param device — the device to test
    */
-  static isSupported( device: GPUDevice ): boolean {
-    return device.features.has( 'timestamp-query' );
+  static isSupported(device: GPUDevice): boolean {
+    return device.features.has('timestamp-query');
   }
 
   /**
@@ -60,31 +60,31 @@ export class GpuTimer {
    *
    * @param device — the device that owns the query set and buffers
    */
-  constructor( device: GPUDevice ){
+  constructor(device: GPUDevice) {
     this.lastMs = 0;
     this.destroyed = false;
 
-    this.querySet = device.createQuerySet( {
+    this.querySet = device.createQuerySet({
       label: 'cy-gpu:frame-timestamps',
       type: 'timestamp',
-      count: 6 // render, cull-compute and upscale begin/end pairs
-    } );
+      count: 6, // render, cull-compute and upscale begin/end pairs
+    });
 
-    this.resolveBuffer = device.createBuffer( {
+    this.resolveBuffer = device.createBuffer({
       label: 'cy-gpu:timestamp-resolve',
       size: 48, // six u64 timestamps
-      usage: BUFFER_USAGE.QUERY_RESOLVE | BUFFER_USAGE.COPY_SRC
-    } );
+      usage: BUFFER_USAGE.QUERY_RESOLVE | BUFFER_USAGE.COPY_SRC,
+    });
 
-    this.ring = Array.from( { length: RING }, ( _, i ) => ( {
-      buffer: device.createBuffer( {
+    this.ring = Array.from({ length: RING }, (_, i) => ({
+      buffer: device.createBuffer({
         label: `cy-gpu:timestamp-staging-${i}`,
         size: 48,
-        usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST
-      } ),
+        usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST,
+      }),
       busy: false,
-      post: false
-    } ) );
+      post: false,
+    }));
   }
 
   /** Attach to the scene render pass descriptor. */
@@ -92,7 +92,7 @@ export class GpuTimer {
     return {
       querySet: this.querySet,
       beginningOfPassWriteIndex: 0,
-      endOfPassWriteIndex: 1
+      endOfPassWriteIndex: 1,
     };
   }
 
@@ -101,7 +101,7 @@ export class GpuTimer {
     return {
       querySet: this.querySet,
       beginningOfPassWriteIndex: 2,
-      endOfPassWriteIndex: 3
+      endOfPassWriteIndex: 3,
     };
   }
 
@@ -110,7 +110,7 @@ export class GpuTimer {
     return {
       querySet: this.querySet,
       beginningOfPassWriteIndex: 4,
-      endOfPassWriteIndex: 5
+      endOfPassWriteIndex: 5,
     };
   }
 
@@ -121,19 +121,28 @@ export class GpuTimer {
    * after-submit finisher, or null when the ring is busy (that frame just
    * goes unmeasured).
    */
-  encodeResolve( encoder: GPUCommandEncoder, hasPost: boolean = false ): ( () => void ) | null {
-    if( this.destroyed ){ return null; }
+  encodeResolve(
+    encoder: GPUCommandEncoder,
+    hasPost: boolean = false,
+  ): (() => void) | null {
+    if (this.destroyed) {
+      return null;
+    }
 
-    const slot = this.ring.find( s => !s.busy );
+    const slot = this.ring.find((s) => !s.busy);
 
-    if( slot == null ){ return null; }
+    if (slot == null) {
+      return null;
+    }
 
     slot.busy = true;
     slot.post = hasPost;
-    encoder.resolveQuerySet( this.querySet, 0, 6, this.resolveBuffer, 0 );
-    encoder.copyBufferToBuffer( this.resolveBuffer, 0, slot.buffer, 0, 48 );
+    encoder.resolveQuerySet(this.querySet, 0, 6, this.resolveBuffer, 0);
+    encoder.copyBufferToBuffer(this.resolveBuffer, 0, slot.buffer, 0, 48);
 
-    return () => { void this.read( slot ); };
+    return () => {
+      void this.read(slot);
+    };
   }
 
   /**
@@ -147,16 +156,16 @@ export class GpuTimer {
     this.querySet.destroy();
     this.resolveBuffer.destroy();
 
-    for( const slot of this.ring ){
+    for (const slot of this.ring) {
       slot.buffer.destroy();
     }
   }
 
-  private async read( slot: RingSlot ): Promise<void> {
+  private async read(slot: RingSlot): Promise<void> {
     try {
-      await slot.buffer.mapAsync( MAP_MODE.READ );
+      await slot.buffer.mapAsync(MAP_MODE.READ);
 
-      const stamps = new BigUint64Array( slot.buffer.getMappedRange() );
+      const stamps = new BigUint64Array(slot.buffer.getMappedRange());
 
       // Report the span from the earliest begin to the latest end across
       // the frame's timed passes.  Summing per-pass deltas would double
@@ -165,25 +174,32 @@ export class GpuTimer {
       // serializes the passes, so the span is the honest frame GPU time
       // under either implementation.
       const pairs = slot.post ? 3 : 2;
-      const zero = BigInt( 0 ); // no 0n literal: predates the build target
+      const zero = BigInt(0); // no 0n literal: predates the build target
       let begin = zero;
       let end = zero;
 
-      for( let i = 0; i < pairs; i++ ){
-        const b = stamps[ 2 * i ];
-        const e = stamps[ 2 * i + 1 ];
+      for (let i = 0; i < pairs; i++) {
+        const b = stamps[2 * i];
+        const e = stamps[2 * i + 1];
 
-        if( b === zero && e === zero ){ continue; } // pass unavailable this frame
+        if (b === zero && e === zero) {
+          continue;
+        } // pass unavailable this frame
 
-        if( begin === zero || b < begin ){ begin = b; }
-        if( e > end ){ end = e; }
+        if (begin === zero || b < begin) {
+          begin = b;
+        }
+        if (e > end) {
+          end = e;
+        }
       }
 
-      const ns = begin === zero ? 0 : Number( end - begin );
+      const ns = begin === zero ? 0 : Number(end - begin);
 
       slot.buffer.unmap();
 
-      if( ns > 0 ){ // quantization can yield 0/negative deltas; keep the last real reading
+      if (ns > 0) {
+        // quantization can yield 0/negative deltas; keep the last real reading
         this.lastMs = ns / 1e6;
       }
     } catch {

@@ -39,73 +39,97 @@ Node sizes are 30x30 unless a scene needs otherwise, matching the
 existing parity scenes.
 */
 
-const NODE = { 'width': 30, 'height': 30, 'shape': 'ellipse', 'background-color': '#c0392b' };
+const NODE = {
+  width: 30,
+  height: 30,
+  shape: 'ellipse',
+  'background-color': '#c0392b',
+};
 
 /** v3 wants a selector list; v4 wants one object with a `data` mapper. */
-const sheets = ( shared, families ) => ( {
+const sheets = (shared, families) => ({
   v3Style: [
     { selector: 'node', style: { ...NODE } },
     { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
-    ...families.map( fam => ( {
-      selector: `edge[fam = '${fam}']`, style: { 'curve-style': fam }
-    } ) )
+    ...families.map((fam) => ({
+      selector: `edge[fam = '${fam}']`,
+      style: { 'curve-style': fam },
+    })),
   ],
   v4Style: {
-    nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
-    edges: { 'curve-style': { data: 'fam' }, ...shared }
-  }
-} );
+    nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
+    edges: { 'curve-style': { data: 'fam' }, ...shared },
+  },
+});
 
-const node = ( id, x, y, extra = {} ) => ( { data: { id, ...extra }, position: { x, y } } );
-const edge = ( id, source, target, fam, extra = {} ) =>
-  ( { data: { id, source, target, fam, ...extra } } );
+const node = (id, x, y, extra = {}) => ({
+  data: { id, ...extra },
+  position: { x, y },
+});
+const edge = (id, source, target, fam, extra = {}) => ({
+  data: { id, source, target, fam, ...extra },
+});
 
 /** R0 — the wiring control.  One straight edge, no arrows, generic slope.
  * If this diverges, nothing else in the matrix means anything. */
 const base = () => {
-  const { v3Style, v4Style } = sheets( {}, [ 'straight' ] );
+  const { v3Style, v4Style } = sheets({}, ['straight']);
 
   return {
     name: 'base',
     tolClass: 'exact',
     note: 'the control: a single straight edge on a generic slope',
-    elements: [ node( 'a', -137, -61 ), node( 'b', 123, 79 ), edge( 'e', 'a', 'b', 'straight' ) ],
-    edges: [ 'e' ],
-    v3Style, v4Style
+    elements: [
+      node('a', -137, -61),
+      node('b', 123, 79),
+      edge('e', 'a', 'b', 'straight'),
+    ],
+    edges: ['e'],
+    v3Style,
+    v4Style,
   };
 };
 
 /** R1 — one edge per curve family, at one generic orientation. */
 const families = () => {
   const fams = [
-    'straight', 'unbundled-bezier', 'segments', 'round-segments',
-    'taxi', 'round-taxi', 'straight-triangle'
+    'straight',
+    'unbundled-bezier',
+    'segments',
+    'round-segments',
+    'taxi',
+    'round-taxi',
+    'straight-triangle',
   ];
   const shared = {
-    'control-point-distances': [ 40, -30 ],
-    'control-point-weights': [ 0.25, 0.75 ],
-    'segment-distances': [ 40, -40 ],
-    'segment-weights': [ 0.3, 0.7 ],
+    'control-point-distances': [40, -30],
+    'control-point-weights': [0.25, 0.75],
+    'segment-distances': [40, -40],
+    'segment-weights': [0.3, 0.7],
     'segment-radii': 18,
     'taxi-turn': 30,
-    'taxi-radius': 12
+    'taxi-radius': 12,
   };
-  const { v3Style, v4Style } = sheets( shared, fams );
+  const { v3Style, v4Style } = sheets(shared, fams);
   const elements = [];
   const edges = [];
 
-  fams.forEach( ( fam, i ) => {
+  fams.forEach((fam, i) => {
     const y = i * 120;
 
-    elements.push( node( `s${i}`, 0, y ), node( `t${i}`, 220, y + 70 ) );
-    elements.push( edge( fam, `s${i}`, `t${i}`, fam ) );
-    edges.push( fam );
-  } );
+    elements.push(node(`s${i}`, 0, y), node(`t${i}`, 220, y + 70));
+    elements.push(edge(fam, `s${i}`, `t${i}`, fam));
+    edges.push(fam);
+  });
 
   return {
-    name: 'families', tolClass: 'derived',
+    name: 'families',
+    tolClass: 'derived',
     note: 'one edge per curve family at a generic orientation',
-    elements, edges, v3Style, v4Style
+    elements,
+    edges,
+    v3Style,
+    v4Style,
   };
 };
 
@@ -121,33 +145,44 @@ const families = () => {
  * rather than expected matches.
  */
 const taxiOrientations = () => {
-  const fams = [ 'taxi', 'round-taxi' ];
-  const shared = { 'taxi-turn': '50%', 'taxi-turn-min-distance': 10, 'taxi-radius': 15 };
-  const { v3Style, v4Style } = sheets( shared, fams );
+  const fams = ['taxi', 'round-taxi'];
+  const shared = {
+    'taxi-turn': '50%',
+    'taxi-turn-min-distance': 10,
+    'taxi-radius': 15,
+  };
+  const { v3Style, v4Style } = sheets(shared, fams);
   const elements = [];
   const edges = [];
 
   // ( label, dx, dy ) — vertical and horizontal are the degenerates
   const dirs = [
-    [ 'vert', 0, 160 ], [ 'horiz', 200, 0 ], [ 'diag', 160, 160 ], [ 'back', -160, 120 ]
+    ['vert', 0, 160],
+    ['horiz', 200, 0],
+    ['diag', 160, 160],
+    ['back', -160, 120],
   ];
 
-  fams.forEach( ( fam, f ) => {
-    dirs.forEach( ( [ label, dx, dy ], d ) => {
+  fams.forEach((fam, f) => {
+    dirs.forEach(([label, dx, dy], d) => {
       const x = d * 320;
       const y = f * 400;
       const id = `${fam}-${label}`;
 
-      elements.push( node( `${id}-s`, x, y ), node( `${id}-t`, x + dx, y + dy ) );
-      elements.push( edge( id, `${id}-s`, `${id}-t`, fam ) );
-      edges.push( id );
-    } );
-  } );
+      elements.push(node(`${id}-s`, x, y), node(`${id}-t`, x + dx, y + dy));
+      elements.push(edge(id, `${id}-s`, `${id}-t`, fam));
+      edges.push(id);
+    });
+  });
 
   return {
-    name: 'taxi', tolClass: 'derived',
+    name: 'taxi',
+    tolClass: 'derived',
     note: 'taxi + round-taxi across four orientations, two of them axis-aligned',
-    elements, edges, v3Style, v4Style
+    elements,
+    edges,
+    v3Style,
+    v4Style,
   };
 };
 
@@ -155,30 +190,39 @@ const taxiOrientations = () => {
  * Separate from taxi because segments *declare* their points where taxi
  * derives them, so a divergence here is a weight/distance frame bug. */
 const segments = () => {
-  const fams = [ 'segments', 'round-segments' ];
+  const fams = ['segments', 'round-segments'];
   const shared = {
-    'segment-distances': [ 30, -50 ], 'segment-weights': [ 0.25, 0.75 ], 'segment-radii': 14
+    'segment-distances': [30, -50],
+    'segment-weights': [0.25, 0.75],
+    'segment-radii': 14,
   };
-  const { v3Style, v4Style } = sheets( shared, fams );
+  const { v3Style, v4Style } = sheets(shared, fams);
   const elements = [];
   const edges = [];
 
-  fams.forEach( ( fam, f ) => {
-    [ [ 'aligned', 220, 0 ], [ 'diag', 180, 140 ] ].forEach( ( [ label, dx, dy ], d ) => {
+  fams.forEach((fam, f) => {
+    [
+      ['aligned', 220, 0],
+      ['diag', 180, 140],
+    ].forEach(([label, dx, dy], d) => {
       const x = d * 320;
       const y = f * 260;
       const id = `${fam}-${label}`;
 
-      elements.push( node( `${id}-s`, x, y ), node( `${id}-t`, x + dx, y + dy ) );
-      elements.push( edge( id, `${id}-s`, `${id}-t`, fam ) );
-      edges.push( id );
-    } );
-  } );
+      elements.push(node(`${id}-s`, x, y), node(`${id}-t`, x + dx, y + dy));
+      elements.push(edge(id, `${id}-s`, `${id}-t`, fam));
+      edges.push(id);
+    });
+  });
 
   return {
-    name: 'segments', tolClass: 'derived',
+    name: 'segments',
+    tolClass: 'derived',
     note: 'declared segment points, axis-aligned and diagonal chords',
-    elements, edges, v3Style, v4Style
+    elements,
+    edges,
+    v3Style,
+    v4Style,
   };
 };
 
@@ -191,22 +235,33 @@ const segments = () => {
  * end of a real edge, which is the number an application sees.
  */
 const shapes = () => {
-  const shapes_ = [ 'ellipse', 'rectangle', 'round-rectangle', 'diamond', 'triangle' ];
+  const shapes_ = [
+    'ellipse',
+    'rectangle',
+    'round-rectangle',
+    'diamond',
+    'triangle',
+  ];
   const elements = [];
   const edges = [];
 
-  shapes_.forEach( ( shape, i ) => {
+  shapes_.forEach((shape, i) => {
     const y = i * 120;
 
     elements.push(
       { data: { id: `${shape}-s`, shp: shape }, position: { x: 0, y } },
-      { data: { id: `${shape}-t`, shp: shape }, position: { x: 200, y: y + 60 } } );
-    elements.push( edge( shape, `${shape}-s`, `${shape}-t`, 'unbundled-bezier' ) );
-    edges.push( shape );
-  } );
+      {
+        data: { id: `${shape}-t`, shp: shape },
+        position: { x: 200, y: y + 60 },
+      },
+    );
+    elements.push(edge(shape, `${shape}-s`, `${shape}-t`, 'unbundled-bezier'));
+    edges.push(shape);
+  });
 
   return {
-    name: 'shapes', tolClass: 'derived',
+    name: 'shapes',
+    tolClass: 'derived',
     // `unbundled-bezier`, not `bezier`, and the distinction is the whole
     // scene: a *lone* `bezier` edge renders straight (v3's odd-bundle rule,
     // ported), and a straight edge resolves no boundary point at all — so
@@ -214,22 +269,36 @@ const shapes = () => {
     // the code this scene is named for.  Verified before shipping: with
     // `bezier` every edge here reported signature `none`.
     note: 'unbundled-bezier endpoints against each node shape — the approximation tier',
-    elements, edges,
+    elements,
+    edges,
     v3Style: [
-      { selector: 'node', style: { ...NODE, 'width': 40, 'height': 24 } },
-      ...shapes_.map( shape => ( { selector: `node[shp = '${shape}']`, style: { shape } } ) ),
-      { selector: 'edge', style: {
-        'curve-style': 'unbundled-bezier',
-        'control-point-distances': [ 45 ], 'control-point-weights': [ 0.5 ]
-      } }
+      { selector: 'node', style: { ...NODE, width: 40, height: 24 } },
+      ...shapes_.map((shape) => ({
+        selector: `node[shp = '${shape}']`,
+        style: { shape },
+      })),
+      {
+        selector: 'edge',
+        style: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [45],
+          'control-point-weights': [0.5],
+        },
+      },
     ],
     v4Style: {
-      nodes: { 'width': 40, 'height': 24, 'background-color': '#c0392b', 'shape': { data: 'shp' } },
+      nodes: {
+        width: 40,
+        height: 24,
+        'background-color': '#c0392b',
+        shape: { data: 'shp' },
+      },
       edges: {
         'curve-style': 'unbundled-bezier',
-        'control-point-distances': [ 45 ], 'control-point-weights': [ 0.5 ]
-      }
-    }
+        'control-point-distances': [45],
+        'control-point-weights': [0.5],
+      },
+    },
   };
 };
 
@@ -248,47 +317,69 @@ const shapes = () => {
  * power law never runs.
  */
 const arrows = () => {
-  const heads = [ 'none', 'triangle', 'vee', 'diamond', 'chevron', 'tee', 'circle' ];
+  const heads = [
+    'none',
+    'triangle',
+    'vee',
+    'diamond',
+    'chevron',
+    'tee',
+    'circle',
+  ];
   const elements = [];
   const edges = [];
 
-  heads.forEach( ( head, i ) => {
+  heads.forEach((head, i) => {
     const y = i * 110;
 
     elements.push(
-      { data: { id: `${head}-s`, }, position: { x: 0, y } },
-      { data: { id: `${head}-t`, }, position: { x: 240, y } } );
-    elements.push( { data: { id: head, source: `${head}-s`, target: `${head}-t`, head } } );
-    edges.push( head );
-  } );
+      { data: { id: `${head}-s` }, position: { x: 0, y } },
+      { data: { id: `${head}-t` }, position: { x: 240, y } },
+    );
+    elements.push({
+      data: { id: head, source: `${head}-s`, target: `${head}-t`, head },
+    });
+    edges.push(head);
+  });
 
   return {
-    name: 'arrows', tolClass: 'derived',
+    name: 'arrows',
+    tolClass: 'derived',
     // 14 diverged -> 4 (round 55's boundary endpoint) -> **0** (round
     // 56's spacing).  The last two were circle by 9.880383, which is
     // getArrowWidth(5, 1.5) x 0.15, and tee by its constant 1.0; both
     // are now exact.  `arrow-scale: 1.5` is 24/16, so this scene is
     // clean of the quantization the asymmetric scene pins.
-    note: 'one edge per arrow shape — the spacing half of v3\'s gap/spacing pair',
-    elements, edges,
+    note: "one edge per arrow shape — the spacing half of v3's gap/spacing pair",
+    elements,
+    edges,
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: {
-        'curve-style': 'straight', 'width': 5, 'arrow-scale': 1.5, 'line-color': '#2c3e50'
-      } },
-      ...heads.map( head => ( {
+      {
+        selector: 'edge',
+        style: {
+          'curve-style': 'straight',
+          width: 5,
+          'arrow-scale': 1.5,
+          'line-color': '#2c3e50',
+        },
+      },
+      ...heads.map((head) => ({
         selector: `edge[head = '${head}']`,
-        style: { 'source-arrow-shape': head, 'target-arrow-shape': head }
-      } ) )
+        style: { 'source-arrow-shape': head, 'target-arrow-shape': head },
+      })),
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
       edges: {
-        'curve-style': 'straight', 'width': 5, 'arrow-scale': 1.5, 'line-color': '#2c3e50',
+        'curve-style': 'straight',
+        width: 5,
+        'arrow-scale': 1.5,
+        'line-color': '#2c3e50',
         'source-arrow-shape': { data: 'head' },
-        'target-arrow-shape': { data: 'head' }
-      }
-    }
+        'target-arrow-shape': { data: 'head' },
+      },
+    },
   };
 };
 
@@ -314,13 +405,13 @@ const compounds = () => {
   const elements = [
     { data: { id: 'A' } },
     { data: { id: 'B' } },
-    node( 'a1', 0, 0, { parent: 'A' } ),
-    node( 'a2', 90, 0, { parent: 'A' } ),
+    node('a1', 0, 0, { parent: 'A' }),
+    node('a2', 90, 0, { parent: 'A' }),
     { data: { id: 'G', parent: 'A' } },
-    node( 'g1', 45, 90, { parent: 'G' } ),
-    node( 'b1', 400, 0, { parent: 'B' } ),
-    node( 'b2', 490, 0, { parent: 'B' } ),
-    node( 'lone', 250, 300 ),
+    node('g1', 45, 90, { parent: 'G' }),
+    node('b1', 400, 0, { parent: 'B' }),
+    node('b2', 490, 0, { parent: 'B' }),
+    node('lone', 250, 300),
 
     // The four ancestry edges keep `bezier`: v3 preempts them to its
     // `compound` routing regardless of the declared style, so the style
@@ -330,23 +421,36 @@ const compounds = () => {
     // controls would have compared node centres and proved nothing.
     // They deliberately avoid v3's own unbundled-plus-compound defect,
     // which only fires on ancestry edges.
-    edge( 'p-child', 'A', 'a1', 'bezier' ),
-    edge( 'p-grandchild', 'A', 'g1', 'bezier' ),
-    edge( 'child-p', 'a2', 'A', 'bezier' ),
-    edge( 'sibling', 'a1', 'a2', 'unbundled-bezier' ),
-    edge( 'cross', 'a1', 'b1', 'unbundled-bezier' ),
-    edge( 'parent-parent', 'A', 'B', 'unbundled-bezier' ),
-    edge( 'leaf-parent', 'lone', 'B', 'unbundled-bezier' )
+    edge('p-child', 'A', 'a1', 'bezier'),
+    edge('p-grandchild', 'A', 'g1', 'bezier'),
+    edge('child-p', 'a2', 'A', 'bezier'),
+    edge('sibling', 'a1', 'a2', 'unbundled-bezier'),
+    edge('cross', 'a1', 'b1', 'unbundled-bezier'),
+    edge('parent-parent', 'A', 'B', 'unbundled-bezier'),
+    edge('leaf-parent', 'lone', 'B', 'unbundled-bezier'),
   ];
 
-  const shared = { 'control-point-distances': [ 45 ], 'control-point-weights': [ 0.5 ] };
+  const shared = {
+    'control-point-distances': [45],
+    'control-point-weights': [0.5],
+  };
 
   return {
-    name: 'compound', tolClass: 'compound',
-    expectFail: 'round 55 finding, open call — v3\'s derived parent box is 1.0 model px larger per side than the children\'s union, independent of border width; every divergence here traces to that',
+    name: 'compound',
+    tolClass: 'compound',
+    expectFail:
+      "round 55 finding, open call — v3's derived parent box is 1.0 model px larger per side than the children's union, independent of border width; every divergence here traces to that",
     note: 'the seven compound arrangements, three of them controls that must match',
     elements,
-    edges: [ 'p-child', 'p-grandchild', 'child-p', 'sibling', 'cross', 'parent-parent', 'leaf-parent' ],
+    edges: [
+      'p-child',
+      'p-grandchild',
+      'child-p',
+      'sibling',
+      'cross',
+      'parent-parent',
+      'leaf-parent',
+    ],
     // `border-width: 0` on both sides is not decoration.  src/README.md
     // attributes v4's smaller parent boxes to v3's node bb picking up the
     // border's miter-corner overshoot, so the obvious reading of any gap
@@ -356,67 +460,85 @@ const compounds = () => {
     // border-width 0, 1 and 4 alike.
     v3Style: [
       { selector: 'node', style: { ...NODE, 'border-width': 0 } },
-      { selector: ':parent', style: { 'padding': 10, 'shape': 'rectangle', 'border-width': 0 } },
+      {
+        selector: ':parent',
+        style: { padding: 10, shape: 'rectangle', 'border-width': 0 },
+      },
       { selector: 'edge', style: { 'curve-style': 'bezier', ...shared } },
-      { selector: 'edge[fam = \'unbundled-bezier\']', style: { 'curve-style': 'unbundled-bezier' } }
+      {
+        selector: "edge[fam = 'unbundled-bezier']",
+        style: { 'curve-style': 'unbundled-bezier' },
+      },
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b', 'border-width': 0 },
-      parents: { 'padding': 10, 'shape': 'rectangle', 'border-width': 0 },
-      edges: { 'curve-style': { data: 'fam' }, ...shared }
-    }
+      nodes: {
+        width: 30,
+        height: 30,
+        'background-color': '#c0392b',
+        'border-width': 0,
+      },
+      parents: { padding: 10, shape: 'rectangle', 'border-width': 0 },
+      edges: { 'curve-style': { data: 'fam' }, ...shared },
+    },
   };
 };
 
 /** R7 — bundles: stagger index and the pair-orientation sign. */
 const bundles = () => {
   const elements = [
-    node( 'u1', 0, 0 ), node( 'u2', 200, 0 ),
-    node( 'v1', 0, 160 ), node( 'v2', 200, 160 ),
-    edge( 'two-a', 'u1', 'u2', 'bezier' ), edge( 'two-b', 'u1', 'u2', 'bezier' ),
-    edge( 'three-a', 'v1', 'v2', 'bezier' ), edge( 'three-b', 'v1', 'v2', 'bezier' ),
+    node('u1', 0, 0),
+    node('u2', 200, 0),
+    node('v1', 0, 160),
+    node('v2', 200, 160),
+    edge('two-a', 'u1', 'u2', 'bezier'),
+    edge('two-b', 'u1', 'u2', 'bezier'),
+    edge('three-a', 'v1', 'v2', 'bezier'),
+    edge('three-b', 'v1', 'v2', 'bezier'),
     // reversed: v3 normalizes the pair and mirrors the frame, so this
     // member's stagger sign is the thing being checked
-    edge( 'three-rev', 'v2', 'v1', 'bezier' )
+    edge('three-rev', 'v2', 'v1', 'bezier'),
   ];
 
   return {
-    name: 'bundles', tolClass: 'derived',
+    name: 'bundles',
+    tolClass: 'derived',
     note: 'a 2-bundle and a 3-bundle with one reversed member',
     elements,
-    edges: [ 'two-a', 'two-b', 'three-a', 'three-b', 'three-rev' ],
+    edges: ['two-a', 'two-b', 'three-a', 'three-b', 'three-rev'],
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: { 'curve-style': 'bezier' } }
+      { selector: 'edge', style: { 'curve-style': 'bezier' } },
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
-      edges: { 'curve-style': 'bezier' }
-    }
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
+      edges: { 'curve-style': 'bezier' },
+    },
   };
 };
 
 /** R8 — self-loops: the per-node stagger index. */
 const loops = () => {
   const elements = [
-    node( 'n', 0, 0 ),
-    edge( 'loop1', 'n', 'n', 'bezier' ),
-    edge( 'loop2', 'n', 'n', 'bezier' ),
-    edge( 'loop3', 'n', 'n', 'bezier' )
+    node('n', 0, 0),
+    edge('loop1', 'n', 'n', 'bezier'),
+    edge('loop2', 'n', 'n', 'bezier'),
+    edge('loop3', 'n', 'n', 'bezier'),
   ];
 
   return {
-    name: 'loops', tolClass: 'derived',
+    name: 'loops',
+    tolClass: 'derived',
     note: 'three self-loops on one node — the stagger index',
-    elements, edges: [ 'loop1', 'loop2', 'loop3' ],
+    elements,
+    edges: ['loop1', 'loop2', 'loop3'],
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: { 'curve-style': 'bezier' } }
+      { selector: 'edge', style: { 'curve-style': 'bezier' } },
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
-      edges: { 'curve-style': 'bezier' }
-    }
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
+      edges: { 'curve-style': 'bezier' },
+    },
   };
 };
 
@@ -434,44 +556,56 @@ const loops = () => {
  * anchor" passes every pixel scene at zoom 1 and diverges here.
  */
 const curvedArrows = () => {
-  const fams = [ 'unbundled-bezier', 'segments', 'taxi', 'bezier' ];
+  const fams = ['unbundled-bezier', 'segments', 'taxi', 'bezier'];
   const elements = [];
   const edges = [];
 
-  fams.forEach( ( fam, i ) => {
+  fams.forEach((fam, i) => {
     const y = i * 130;
 
     elements.push(
       { data: { id: `${fam}-s` }, position: { x: 0, y } },
       { data: { id: `${fam}-t` }, position: { x: 260, y } },
-      { data: { id: fam, source: `${fam}-s`, target: `${fam}-t`, fam } } );
-    edges.push( fam );
-  } );
+      { data: { id: fam, source: `${fam}-s`, target: `${fam}-t`, fam } },
+    );
+    edges.push(fam);
+  });
 
   const shared = {
-    'width': 6, 'arrow-scale': 1.2, 'line-color': '#2c3e50',
-    'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
-    'control-point-distances': [ 50 ], 'control-point-weights': [ 0.5 ],
-    'segment-distances': [ 30, -30 ], 'segment-weights': [ 0.3, 0.7 ],
-    'taxi-direction': 'horizontal', 'taxi-turn': '50%'
+    width: 6,
+    'arrow-scale': 1.2,
+    'line-color': '#2c3e50',
+    'source-arrow-shape': 'triangle',
+    'target-arrow-shape': 'triangle',
+    'control-point-distances': [50],
+    'control-point-weights': [0.5],
+    'segment-distances': [30, -30],
+    'segment-weights': [0.3, 0.7],
+    'taxi-direction': 'horizontal',
+    'taxi-turn': '50%',
   };
 
   return {
-    name: 'curved-arrows', tolClass: 'derived',
+    name: 'curved-arrows',
+    tolClass: 'derived',
     // Before round 56 the unbundled bezier's mid.y diverged by 2.585 px:
     // the head shortens the *curve*, not just the paint.  It is now 0.027,
     // which is the arrow-scale quantization alone (ledger).
     note: 'four curve families with heads on both ends — the gap as routing, not paint',
-    elements, edges,
+    elements,
+    edges,
     v3Style: [
       { selector: 'node', style: { ...NODE } },
       { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
-      ...fams.map( fam => ( { selector: `edge[fam = '${fam}']`, style: { 'curve-style': fam } } ) )
+      ...fams.map((fam) => ({
+        selector: `edge[fam = '${fam}']`,
+        style: { 'curve-style': fam },
+      })),
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
-      edges: { ...shared, 'curve-style': { data: 'fam' } }
-    }
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
+      edges: { ...shared, 'curve-style': { data: 'fam' } },
+    },
   };
 };
 
@@ -493,58 +627,79 @@ const curvedArrows = () => {
  */
 const asymmetricArrows = () => {
   const pairs = [
-    [ 'none', 'triangle' ],
-    [ 'triangle', 'none' ],
-    [ 'vee', 'circle' ],
-    [ 'tee', 'triangle-tee' ],
-    [ 'diamond', 'chevron' ]
+    ['none', 'triangle'],
+    ['triangle', 'none'],
+    ['vee', 'circle'],
+    ['tee', 'triangle-tee'],
+    ['diamond', 'chevron'],
   ];
   const elements = [];
   const edges = [];
 
-  pairs.forEach( ( [ src, tgt ], i ) => {
+  pairs.forEach(([src, tgt], i) => {
     const id = `${src}-${tgt}`;
     const y = i * 110;
 
     elements.push(
       { data: { id: `${id}-s` }, position: { x: 0, y } },
       { data: { id: `${id}-t` }, position: { x: 250, y } },
-      { data: { id, source: `${id}-s`, target: `${id}-t`, src, tgt } } );
-    edges.push( id );
-  } );
+      { data: { id, source: `${id}-s`, target: `${id}-t`, src, tgt } },
+    );
+    edges.push(id);
+  });
 
   return {
-    name: 'asym-arrows', tolClass: 'derived',
+    name: 'asym-arrows',
+    tolClass: 'derived',
     // Before round 56 this diverged by up to 12.48 px and every mid.x by
     // ~4.9; v4 answered the chord midpoint where v3 averages four
     // shortened points.  The residual is the arrow-scale quantization
     // alone, pinned entry by entry in the ledger.
     note: 'different heads per end — the midpoint term that a symmetric scene cancels',
-    elements, edges,
+    elements,
+    edges,
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: {
-        'curve-style': 'straight', 'width': 7, 'arrow-scale': 1.4, 'line-color': '#2c3e50'
-      } },
-      ...pairs.map( ( [ src, tgt ] ) => ( {
+      {
+        selector: 'edge',
+        style: {
+          'curve-style': 'straight',
+          width: 7,
+          'arrow-scale': 1.4,
+          'line-color': '#2c3e50',
+        },
+      },
+      ...pairs.map(([src, tgt]) => ({
         selector: `edge[src = '${src}'][tgt = '${tgt}']`,
-        style: { 'source-arrow-shape': src, 'target-arrow-shape': tgt }
-      } ) )
+        style: { 'source-arrow-shape': src, 'target-arrow-shape': tgt },
+      })),
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
       edges: {
-        'curve-style': 'straight', 'width': 7, 'arrow-scale': 1.4, 'line-color': '#2c3e50',
+        'curve-style': 'straight',
+        width: 7,
+        'arrow-scale': 1.4,
+        'line-color': '#2c3e50',
         'source-arrow-shape': { data: 'src' },
-        'target-arrow-shape': { data: 'tgt' }
-      }
-    }
+        'target-arrow-shape': { data: 'tgt' },
+      },
+    },
   };
 };
 
 export const SCENES = [
-  base(), families(), taxiOrientations(), segments(), shapes(), arrows(), compounds(), bundles(), loops(),
-  curvedArrows(), asymmetricArrows()
+  base(),
+  families(),
+  taxiOrientations(),
+  segments(),
+  shapes(),
+  arrows(),
+  compounds(),
+  bundles(),
+  loops(),
+  curvedArrows(),
+  asymmetricArrows(),
 ];
 
-export const sceneByName = ( name ) => SCENES.find( s => s.name === name );
+export const sceneByName = (name) => SCENES.find((s) => s.name === name);

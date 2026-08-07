@@ -26,7 +26,7 @@ import type { GpuForceRuntime } from '../render/gpu-force.mjs';
 export interface ForceRunOptions {
   /** ideal edge length: a number, or a plain function of the edge
    * handle, resolved once at start (the algorithms-round rule) */
-  edgeLength?: number | ( ( edge: Collection ) => number );
+  edgeLength?: number | ((edge: Collection) => number);
   repulsion?: number;
   stiffness?: number;
   gravity?: number;
@@ -84,45 +84,66 @@ export class ForceLayoutImpl implements LayoutImpl {
    *   views, O(1) CSR degrees and the bulk `setPositions` write
    * @returns a promise that resolves at convergence when animating
    */
-  run( ctx: LayoutContext ): void | Promise<void> {
+  run(ctx: LayoutContext): void | Promise<void> {
     const cy = ctx.cy;
     const store = cy._store;
     const options = ctx.options as ForceRunOptions;
     const params = { ...defaultForceParams() };
 
-    if( options.repulsion != null ){ params.repulsion = options.repulsion; }
-    if( options.stiffness != null ){ params.stiffness = options.stiffness; }
-    if( options.gravity != null ){ params.gravity = options.gravity; }
-    if( options.decay != null ){ params.decay = options.decay; }
-    if( options.iterations != null ){ params.iterations = options.iterations; }
-    if( options.threshold != null ){ params.threshold = options.threshold; }
+    if (options.repulsion != null) {
+      params.repulsion = options.repulsion;
+    }
+    if (options.stiffness != null) {
+      params.stiffness = options.stiffness;
+    }
+    if (options.gravity != null) {
+      params.gravity = options.gravity;
+    }
+    if (options.decay != null) {
+      params.decay = options.decay;
+    }
+    if (options.iterations != null) {
+      params.iterations = options.iterations;
+    }
+    if (options.threshold != null) {
+      params.threshold = options.threshold;
+    }
 
     // the sim set: every leaf in scope — unlocked ones move, locked
     // ones pin in place as obstacles
-    const flags = store.column( 'node.flags' ) as Uint32Array;
+    const flags = store.column('node.flags') as Uint32Array;
     const simSlots: number[] = [];
     const simIndex = new Map<number, number>();
 
-    for( let i = 0; i < ctx.nodes.length; i++ ){
-      const ref = ctx.nodes[ i ]._eventRef();
+    for (let i = 0; i < ctx.nodes.length; i++) {
+      const ref = ctx.nodes[i]._eventRef();
 
-      if( ref == null || !ctx.nodes[ i ].inside() ){ continue; }
-      if( ( flags[ ref.slot ] & FLAG_PARENT ) !== 0 ){ continue; }
+      if (ref == null || !ctx.nodes[i].inside()) {
+        continue;
+      }
+      if ((flags[ref.slot] & FLAG_PARENT) !== 0) {
+        continue;
+      }
 
-      simIndex.set( ref.slot, simSlots.length );
-      simSlots.push( ref.slot );
+      simIndex.set(ref.slot, simSlots.length);
+      simSlots.push(ref.slot);
     }
 
     const n = simSlots.length;
 
-    if( n === 0 ){ return; }
+    if (n === 0) {
+      return;
+    }
 
-    const pinned = new Uint8Array( n );
+    const pinned = new Uint8Array(n);
     const movable: number[] = [];
 
-    for( let i = 0; i < n; i++ ){
-      if( ( flags[ simSlots[ i ] ] & FLAG_LOCKED ) !== 0 ){ pinned[ i ] = 1; }
-      else { movable.push( i ); }
+    for (let i = 0; i < n; i++) {
+      if ((flags[simSlots[i]] & FLAG_LOCKED) !== 0) {
+        pinned[i] = 1;
+      } else {
+        movable.push(i);
+      }
     }
 
     // scope edges whose both endpoints simulate
@@ -131,64 +152,72 @@ export class ForceLayoutImpl implements LayoutImpl {
     const lengths: number[] = [];
     const lengthOf = options.edgeLength;
 
-    for( const edgeSlot of ctx.edgeSlots() ){
-      const s = simIndex.get( endpoints[ edgeSlot * 2 ] );
-      const t = simIndex.get( endpoints[ edgeSlot * 2 + 1 ] );
+    for (const edgeSlot of ctx.edgeSlots()) {
+      const s = simIndex.get(endpoints[edgeSlot * 2]);
+      const t = simIndex.get(endpoints[edgeSlot * 2 + 1]);
 
-      if( s == null || t == null || s === t ){ continue; }
+      if (s == null || t == null || s === t) {
+        continue;
+      }
 
-      simEdges.push( s, t );
+      simEdges.push(s, t);
       lengths.push(
-        typeof lengthOf === 'function' ? lengthOf( cy._ele( 'edges', edgeSlot ) )
-          : lengthOf ?? DEFAULT_EDGE_LENGTH );
+        typeof lengthOf === 'function'
+          ? lengthOf(cy._ele('edges', edgeSlot))
+          : (lengthOf ?? DEFAULT_EDGE_LENGTH),
+      );
     }
 
     // seed: a fresh deterministic scatter, or the current positions
-    const positions = new Float32Array( n * 2 );
+    const positions = new Float32Array(n * 2);
     const column = ctx.positions();
 
-    if( options.randomize !== false ){
-      seedPositions( n, options.seed ?? 1,
-        Math.max( 100, Math.sqrt( n ) * DEFAULT_EDGE_LENGTH * 0.5 ), positions );
+    if (options.randomize !== false) {
+      seedPositions(
+        n,
+        options.seed ?? 1,
+        Math.max(100, Math.sqrt(n) * DEFAULT_EDGE_LENGTH * 0.5),
+        positions,
+      );
 
       // pinned nodes keep their real coordinates even under randomize
-      for( let i = 0; i < n; i++ ){
-        if( pinned[ i ] === 1 ){
-          positions[ i * 2 ] = column[ simSlots[ i ] * 2 ];
-          positions[ i * 2 + 1 ] = column[ simSlots[ i ] * 2 + 1 ];
+      for (let i = 0; i < n; i++) {
+        if (pinned[i] === 1) {
+          positions[i * 2] = column[simSlots[i] * 2];
+          positions[i * 2 + 1] = column[simSlots[i] * 2 + 1];
         }
       }
     } else {
-      for( let i = 0; i < n; i++ ){
-        positions[ i * 2 ] = column[ simSlots[ i ] * 2 ];
-        positions[ i * 2 + 1 ] = column[ simSlots[ i ] * 2 + 1 ];
+      for (let i = 0; i < n; i++) {
+        positions[i * 2] = column[simSlots[i] * 2];
+        positions[i * 2 + 1] = column[simSlots[i] * 2 + 1];
       }
     }
 
-    const sim = new ForceSim( {
+    const sim = new ForceSim({
       n,
-      edges: Uint32Array.from( simEdges ),
-      edgeLength: Float32Array.from( lengths ),
+      edges: Uint32Array.from(simEdges),
+      edgeLength: Float32Array.from(lengths),
       positions,
       pinned,
-      ...params
-    } );
+      ...params,
+    });
 
-    const movableSlots = movable.map( i => simSlots[ i ] );
+    const movableSlots = movable.map((i) => simSlots[i]);
     const writeBack = (): void => {
-      const xy = new Array<number>( movable.length * 2 );
+      const xy = new Array<number>(movable.length * 2);
 
-      for( let k = 0; k < movable.length; k++ ){
-        xy[ k * 2 ] = positions[ movable[ k ] * 2 ];
-        xy[ k * 2 + 1 ] = positions[ movable[ k ] * 2 + 1 ];
+      for (let k = 0; k < movable.length; k++) {
+        xy[k * 2] = positions[movable[k] * 2];
+        xy[k * 2 + 1] = positions[movable[k] * 2 + 1];
       }
 
-      ctx.setPositions( movableSlots, xy );
+      ctx.setPositions(movableSlots, xy);
     };
 
     const applyViewport = (): void => {
-      if( options.fit !== false ){
-        cy.fit( ctx.eles, options.padding ?? 30 );
+      if (options.fit !== false) {
+        cy.fit(ctx.eles, options.padding ?? 30);
       }
     };
 
@@ -200,56 +229,76 @@ export class ForceLayoutImpl implements LayoutImpl {
     // reads are stale mid-run, and one readback settles on convergence
     // (the round-9 design).  Compounds demote to the CPU executor (a
     // lease would starve the auto-bounds derivation — the 14.11 rule).
-    if( options.animate === true && !store.hasCompounds() ){
+    if (options.animate === true && !store.hasCompounds()) {
       const renderer = cy.renderer() as Renderer | null;
 
-      if( renderer != null && typeof renderer.startForce === 'function' ){
+      if (renderer != null && typeof renderer.startForce === 'function') {
         // the fixed grid frame for the whole run: the seed bounds grown
         // generously (outliers clamp into edge cells — sound, recorded)
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
 
-        for( let i = 0; i < n; i++ ){
-          minX = Math.min( minX, positions[ i * 2 ] );
-          maxX = Math.max( maxX, positions[ i * 2 ] );
-          minY = Math.min( minY, positions[ i * 2 + 1 ] );
-          maxY = Math.max( maxY, positions[ i * 2 + 1 ] );
+        for (let i = 0; i < n; i++) {
+          minX = Math.min(minX, positions[i * 2]);
+          maxX = Math.max(maxX, positions[i * 2]);
+          minY = Math.min(minY, positions[i * 2 + 1]);
+          maxY = Math.max(maxY, positions[i * 2 + 1]);
         }
 
-        const spanW = Math.max( 1000, ( maxX - minX ) * 3 );
-        const spanH = Math.max( 1000, ( maxY - minY ) * 3 );
+        const spanW = Math.max(1000, (maxX - minX) * 3);
+        const spanH = Math.max(1000, (maxY - minY) * 3);
 
         let sum = 0;
 
-        for( const L of lengths ){ sum += L; }
+        for (const L of lengths) {
+          sum += L;
+        }
 
-        const cutoff = Math.max( 40, lengths.length > 0 ? sum / lengths.length : DEFAULT_EDGE_LENGTH );
+        const cutoff = Math.max(
+          40,
+          lengths.length > 0 ? sum / lengths.length : DEFAULT_EDGE_LENGTH,
+        );
 
-        const runtime = renderer.startForce( {
-          n,
-          edges: Uint32Array.from( simEdges ),
-          edgeLength: Float32Array.from( lengths ),
-          positions,
-          pinned,
-          slots: simSlots,
-          params,
-          cutoff,
-          frame: {
-            x: ( minX + maxX ) / 2 - spanW / 2,
-            y: ( minY + maxY ) / 2 - spanH / 2,
-            w: spanW,
-            h: spanH
-          }
-        }, options.stepsPerFrame ?? 3 );
+        const runtime = renderer.startForce(
+          {
+            n,
+            edges: Uint32Array.from(simEdges),
+            edgeLength: Float32Array.from(lengths),
+            positions,
+            pinned,
+            slots: simSlots,
+            params,
+            cutoff,
+            frame: {
+              x: (minX + maxX) / 2 - spanW / 2,
+              y: (minY + maxY) / 2 - spanH / 2,
+              w: spanW,
+              h: spanH,
+            },
+          },
+          options.stepsPerFrame ?? 3,
+        );
 
-        if( runtime != null ){
-          return this.runGpu( runtime, ctx, renderer, movableSlots, movable, applyViewport );
+        if (runtime != null) {
+          return this.runGpu(
+            runtime,
+            ctx,
+            renderer,
+            movableSlots,
+            movable,
+            applyViewport,
+          );
         }
       }
     }
 
-    if( options.animate !== true ){
+    if (options.animate !== true) {
       // settle-then-draw: run to convergence synchronously, apply once
-      while( !sim.converged() && !this.stopped ){ sim.step( 50 ); }
+      while (!sim.converged() && !this.stopped) {
+        sim.step(50);
+      }
 
       writeBack();
       applyViewport();
@@ -260,13 +309,14 @@ export class ForceLayoutImpl implements LayoutImpl {
     // live mode: the sim streams positions to the store per frame — the
     // watchable-layout path (the 18.3 GPU integrator hooks in here)
     const stepsPerFrame = options.stepsPerFrame ?? 3;
-    const tick = typeof requestAnimationFrame !== 'undefined'
-      ? ( cb: () => void ) => requestAnimationFrame( cb )
-      : ( cb: () => void ) => setTimeout( cb, 16 );
+    const tick =
+      typeof requestAnimationFrame !== 'undefined'
+        ? (cb: () => void) => requestAnimationFrame(cb)
+        : (cb: () => void) => setTimeout(cb, 16);
 
-    return new Promise<void>( resolve => {
+    return new Promise<void>((resolve) => {
       const frame = (): void => {
-        if( this.stopped || sim.converged() ){
+        if (this.stopped || sim.converged()) {
           writeBack();
           applyViewport();
           resolve();
@@ -274,48 +324,52 @@ export class ForceLayoutImpl implements LayoutImpl {
           return;
         }
 
-        sim.step( stepsPerFrame );
+        sim.step(stepsPerFrame);
         writeBack();
-        tick( frame );
+        tick(frame);
       };
 
       frame();
-    } );
+    });
   }
 
   /** Poll the device sim to convergence, then the one settle readback. */
   private runGpu(
-    runtime: GpuForceRuntime, ctx: LayoutContext, renderer: Renderer,
-    movableSlots: number[], movable: number[], applyViewport: () => void
+    runtime: GpuForceRuntime,
+    ctx: LayoutContext,
+    renderer: Renderer,
+    movableSlots: number[],
+    movable: number[],
+    applyViewport: () => void,
   ): Promise<void> {
-    return new Promise<void>( resolve => {
+    return new Promise<void>((resolve) => {
       const poll = (): void => {
-        if( !this.stopped && !runtime.converged() ){
-          setTimeout( poll, 60 );
+        if (!this.stopped && !runtime.converged()) {
+          setTimeout(poll, 60);
 
           return;
         }
 
-        runtime.readPositions().then( finalPositions => {
+        runtime.readPositions().then((finalPositions) => {
           // release the lease before the CPU write, so the settle
           // uploads through the normal dirty-span path
           renderer.finishForce();
 
-          const xy = new Array<number>( movable.length * 2 );
+          const xy = new Array<number>(movable.length * 2);
 
-          for( let k = 0; k < movable.length; k++ ){
-            xy[ k * 2 ] = finalPositions[ movable[ k ] * 2 ];
-            xy[ k * 2 + 1 ] = finalPositions[ movable[ k ] * 2 + 1 ];
+          for (let k = 0; k < movable.length; k++) {
+            xy[k * 2] = finalPositions[movable[k] * 2];
+            xy[k * 2 + 1] = finalPositions[movable[k] * 2 + 1];
           }
 
-          ctx.setPositions( movableSlots, xy );
+          ctx.setPositions(movableSlots, xy);
           applyViewport();
           resolve();
-        } );
+        });
       };
 
       poll();
-    } );
+    });
   }
 
   /**

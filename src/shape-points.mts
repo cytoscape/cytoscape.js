@@ -1,17 +1,42 @@
 import {
-  fitPolygonToSquare, generateUnitNgonPoints, generateUnitNgonPointsFitToSquare
+  fitPolygonToSquare,
+  generateUnitNgonPoints,
+  generateUnitNgonPointsFitToSquare,
 } from './math.mjs';
 import {
-  ARROW_BACKCURVE_SEGMENTS, ARROW_CHEVRON, ARROW_CIRCLE, ARROW_CIRCLE_TRIANGLE,
-  ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_DIAMOND, ARROW_NONE,
-  ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_TRIANGLE_BACKCURVE,
-  ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE, ARROW_VEE,
-  SHAPE_CONCAVE_HEXAGON, SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON,
-  SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
-  SHAPE_ROUND_DIAMOND, SHAPE_ROUND_HEPTAGON, SHAPE_ROUND_HEXAGON,
-  SHAPE_ROUND_OCTAGON, SHAPE_ROUND_PENTAGON, SHAPE_ROUND_TAG,
+  ARROW_BACKCURVE_SEGMENTS,
+  ARROW_CHEVRON,
+  ARROW_CIRCLE,
+  ARROW_CIRCLE_TRIANGLE,
+  ARROW_CIRCLE_TRIANGLE_RADIUS,
+  ARROW_DIAMOND,
+  ARROW_NONE,
+  ARROW_SQUARE,
+  ARROW_TEE,
+  ARROW_TRIANGLE,
+  ARROW_TRIANGLE_BACKCURVE,
+  ARROW_TRIANGLE_CROSS,
+  ARROW_TRIANGLE_TEE,
+  ARROW_VEE,
+  SHAPE_CONCAVE_HEXAGON,
+  SHAPE_DIAMOND,
+  SHAPE_HEPTAGON,
+  SHAPE_HEXAGON,
+  SHAPE_OCTAGON,
+  SHAPE_PENTAGON,
+  SHAPE_RHOMBOID,
+  SHAPE_RIGHT_RHOMBOID,
+  SHAPE_ROUND_DIAMOND,
+  SHAPE_ROUND_HEPTAGON,
+  SHAPE_ROUND_HEXAGON,
+  SHAPE_ROUND_OCTAGON,
+  SHAPE_ROUND_PENTAGON,
+  SHAPE_ROUND_TAG,
   SHAPE_ROUND_TRIANGLE,
-  SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
+  SHAPE_STAR,
+  SHAPE_TAG,
+  SHAPE_TRIANGLE,
+  SHAPE_VEE,
 } from './contract.mjs';
 
 /*
@@ -25,26 +50,26 @@ exact, AA-fringe width approximate under anisotropy) and the CPU pick
 */
 
 const star5 = (): number[] => {
-  const points = new Array<number>( 20 );
-  const outerPoints = generateUnitNgonPoints( 5, 0 );
-  const innerPoints = generateUnitNgonPoints( 5, Math.PI / 5 );
+  const points = new Array<number>(20);
+  const outerPoints = generateUnitNgonPoints(5, 0);
+  const innerPoints = generateUnitNgonPoints(5, Math.PI / 5);
 
   // outer radius 1; the star's inner radius is smaller (v3's constant)
-  const innerRadius = 0.5 * ( 3 - Math.sqrt( 5 ) ) * 1.57;
+  const innerRadius = 0.5 * (3 - Math.sqrt(5)) * 1.57;
 
-  for( let i = 0; i < innerPoints.length / 2; i++ ){
-    innerPoints[ i * 2 ] *= innerRadius;
-    innerPoints[ i * 2 + 1 ] *= innerRadius;
+  for (let i = 0; i < innerPoints.length / 2; i++) {
+    innerPoints[i * 2] *= innerRadius;
+    innerPoints[i * 2 + 1] *= innerRadius;
   }
 
-  for( let i = 0; i < 5; i++ ){
-    points[ i * 4 ] = outerPoints[ i * 2 ];
-    points[ i * 4 + 1 ] = outerPoints[ i * 2 + 1 ];
-    points[ i * 4 + 2 ] = innerPoints[ i * 2 ];
-    points[ i * 4 + 3 ] = innerPoints[ i * 2 + 1 ];
+  for (let i = 0; i < 5; i++) {
+    points[i * 4] = outerPoints[i * 2];
+    points[i * 4 + 1] = outerPoints[i * 2 + 1];
+    points[i * 4 + 2] = innerPoints[i * 2];
+    points[i * 4 + 3] = innerPoints[i * 2 + 1];
   }
 
-  return fitPolygonToSquare( points );
+  return fitPolygonToSquare(points);
 };
 
 /**
@@ -52,18 +77,18 @@ const star5 = (): number[] => {
  * corner, then the quadratic base sampled back to the left corner.
  */
 const backcurvePoints = (): number[] => {
-  const pts = [ 0, 0, 0.15, -0.3 ];
-  const [ ax, ay ] = [ 0.15, -0.3 ];
-  const [ cx, cy ] = [ 0, -0.15 ]; // v3's controlPoint
-  const [ bx, by ] = [ -0.15, -0.3 ];
+  const pts = [0, 0, 0.15, -0.3];
+  const [ax, ay] = [0.15, -0.3];
+  const [cx, cy] = [0, -0.15]; // v3's controlPoint
+  const [bx, by] = [-0.15, -0.3];
 
-  for( let i = 1; i <= ARROW_BACKCURVE_SEGMENTS; i++ ){
+  for (let i = 1; i <= ARROW_BACKCURVE_SEGMENTS; i++) {
     const t = i / ARROW_BACKCURVE_SEGMENTS;
     const u = 1 - t;
 
     pts.push(
       ax * u * u + cx * 2 * u * t + bx * t * t,
-      ay * u * u + cy * 2 * u * t + by * t * t
+      ay * u * u + cy * 2 * u * t + by * t * t,
     );
   }
 
@@ -76,11 +101,17 @@ const backcurvePoints = (): number[] => {
  * union is `min( sdA, sdB )` — the parts need no stitching.
  * `circle-triangle`'s disc is analytic and lives in the shader.
  */
-export const ARROW_COMPOUND_POINTS: ReadonlyMap<number, readonly ( readonly number[] )[]> = new Map( [
-  [ ARROW_TRIANGLE_TEE, [
-    [ 0, 0, 0.15, -0.3, -0.15, -0.3 ],
-    [ -0.15, -0.4, -0.15, -0.5, 0.15, -0.5, 0.15, -0.4 ]
-  ] ],
+export const ARROW_COMPOUND_POINTS: ReadonlyMap<
+  number,
+  readonly (readonly number[])[]
+> = new Map([
+  [
+    ARROW_TRIANGLE_TEE,
+    [
+      [0, 0, 0.15, -0.3, -0.15, -0.3],
+      [-0.15, -0.4, -0.15, -0.5, 0.15, -0.5, 0.15, -0.4],
+    ],
+  ],
   // v3's `pointsTr`, verbatim.  Until round 56 this table was shifted
   // 0.15 back and the disc centre with it, to bake in the shape's
   // `spacing` without any runtime offset logic.  That was exact, but it
@@ -88,33 +119,31 @@ export const ARROW_COMPOUND_POINTS: ReadonlyMap<number, readonly ( readonly numb
   // v3's value to the accessors — and the endpoint accessors have to
   // report v3's.  56 applies `spacing` to the *tip* for every shape
   // instead, so one table serves both and the arrow frame is v3's.
-  [ ARROW_CIRCLE_TRIANGLE, [
-    [ 0, -0.15, 0.15, -0.45, -0.15, -0.45 ]
-  ] ],
-  [ ARROW_TRIANGLE_CROSS, [
-    [ 0, 0, 0.15, -0.3, -0.15, -0.3 ]
-  ] ]
-] );
+  [ARROW_CIRCLE_TRIANGLE, [[0, -0.15, 0.15, -0.45, -0.15, -0.45]]],
+  [ARROW_TRIANGLE_CROSS, [[0, 0, 0.15, -0.3, -0.15, -0.3]]],
+]);
 
 /** shape id → flat [x0, y0, x1, y1, ...] unit points (matching v3's tables) */
-export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
-  [ SHAPE_TRIANGLE, generateUnitNgonPointsFitToSquare( 3, 0 ) ],
-  [ SHAPE_PENTAGON, generateUnitNgonPointsFitToSquare( 5, 0 ) ],
-  [ SHAPE_HEXAGON, generateUnitNgonPointsFitToSquare( 6, 0 ) ],
-  [ SHAPE_HEPTAGON, generateUnitNgonPointsFitToSquare( 7, 0 ) ],
-  [ SHAPE_OCTAGON, generateUnitNgonPointsFitToSquare( 8, 0 ) ],
-  [ SHAPE_DIAMOND, [ 0, 1, 1, 0, 0, -1, -1, 0 ] ],
-  [ SHAPE_RHOMBOID, [ -1, -1, 0.333, -1, 1, 1, -0.333, 1 ] ],
-  [ SHAPE_VEE, [ -1, -1, 0, -0.333, 1, -1, 0, 1 ] ],
-  [ SHAPE_STAR, star5() ],
-  [ SHAPE_TAG, [ -1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1 ] ],
+export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map([
+  [SHAPE_TRIANGLE, generateUnitNgonPointsFitToSquare(3, 0)],
+  [SHAPE_PENTAGON, generateUnitNgonPointsFitToSquare(5, 0)],
+  [SHAPE_HEXAGON, generateUnitNgonPointsFitToSquare(6, 0)],
+  [SHAPE_HEPTAGON, generateUnitNgonPointsFitToSquare(7, 0)],
+  [SHAPE_OCTAGON, generateUnitNgonPointsFitToSquare(8, 0)],
+  [SHAPE_DIAMOND, [0, 1, 1, 0, 0, -1, -1, 0]],
+  [SHAPE_RHOMBOID, [-1, -1, 0.333, -1, 1, 1, -0.333, 1]],
+  [SHAPE_VEE, [-1, -1, 0, -0.333, 1, -1, 0, 1]],
+  [SHAPE_STAR, star5()],
+  [SHAPE_TAG, [-1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1]],
   // round 27.2 — v3's tables verbatim.  right-rhomboid slants the other
   // way from `rhomboid`; concave-hexagon's waist is the mid-side pair
   // pulled inward to ±0.75.
-  [ SHAPE_RIGHT_RHOMBOID, [ -0.333, -1, 1, -1, 0.333, 1, -1, 1 ] ],
-  [ SHAPE_CONCAVE_HEXAGON,
-    [ -1, -0.95, -0.75, 0, -1, 0.95, 1, 0.95, 0.75, 0, 1, -0.95 ] ]
-] );
+  [SHAPE_RIGHT_RHOMBOID, [-0.333, -1, 1, -1, 0.333, 1, -1, 1]],
+  [
+    SHAPE_CONCAVE_HEXAGON,
+    [-1, -0.95, -0.75, 0, -1, 0.95, 1, 0.95, 0.75, 0, 1, -0.95],
+  ],
+]);
 
 /**
  * Round-corner shape id → the sharp shape whose point table it reuses
@@ -123,15 +152,15 @@ export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
  * so the family costs one shared rounded-polygon SDF rather than seven
  * new tables.
  */
-export const ROUND_POLYGON_SOURCE: ReadonlyMap<number, number> = new Map( [
-  [ SHAPE_ROUND_TRIANGLE, SHAPE_TRIANGLE ],
-  [ SHAPE_ROUND_DIAMOND, SHAPE_DIAMOND ],
-  [ SHAPE_ROUND_PENTAGON, SHAPE_PENTAGON ],
-  [ SHAPE_ROUND_HEXAGON, SHAPE_HEXAGON ],
-  [ SHAPE_ROUND_HEPTAGON, SHAPE_HEPTAGON ],
-  [ SHAPE_ROUND_OCTAGON, SHAPE_OCTAGON ],
-  [ SHAPE_ROUND_TAG, SHAPE_TAG ]
-] );
+export const ROUND_POLYGON_SOURCE: ReadonlyMap<number, number> = new Map([
+  [SHAPE_ROUND_TRIANGLE, SHAPE_TRIANGLE],
+  [SHAPE_ROUND_DIAMOND, SHAPE_DIAMOND],
+  [SHAPE_ROUND_PENTAGON, SHAPE_PENTAGON],
+  [SHAPE_ROUND_HEXAGON, SHAPE_HEXAGON],
+  [SHAPE_ROUND_HEPTAGON, SHAPE_HEPTAGON],
+  [SHAPE_ROUND_OCTAGON, SHAPE_OCTAGON],
+  [SHAPE_ROUND_TAG, SHAPE_TAG],
+]);
 
 /**
  * The unit point table a shape draws from, following the round-corner
@@ -141,8 +170,10 @@ export const ROUND_POLYGON_SOURCE: ReadonlyMap<number, number> = new Map( [
  * @returns the flat unit point list, or undefined for shapes that are
  *   not polygon-backed (circle, the rectangles, custom polygons)
  */
-export const pointsForShape = ( shape: number ): readonly number[] | undefined => {
-  return POLYGON_POINTS.get( ROUND_POLYGON_SOURCE.get( shape ) ?? shape );
+export const pointsForShape = (
+  shape: number,
+): readonly number[] | undefined => {
+  return POLYGON_POINTS.get(ROUND_POLYGON_SOURCE.get(shape) ?? shape);
 };
 
 /**
@@ -151,20 +182,23 @@ export const pointsForShape = ( shape: number ): readonly number[] | undefined =
  * exactly v3's arrow-shapes tables.  ARROW_CIRCLE is analytic (radius 0.15
  * centered at (0, -0.15)) and has no entry here.
  */
-export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
-  [ ARROW_TRIANGLE, [ -0.15, -0.3, 0, 0, 0.15, -0.3 ] ],
-  [ ARROW_VEE, [ -0.15, -0.3, 0, 0, 0.15, -0.3, 0, -0.15 ] ],
-  [ ARROW_CHEVRON, [ 0, 0, -0.15, -0.15, -0.1, -0.2, 0, -0.1, 0.1, -0.2, 0.15, -0.15 ] ],
-  [ ARROW_SQUARE, [ -0.15, 0, 0.15, 0, 0.15, -0.3, -0.15, -0.3 ] ],
-  [ ARROW_DIAMOND, [ -0.15, -0.15, 0, -0.3, 0.15, -0.15, 0, 0 ] ],
-  [ ARROW_TEE, [ -0.15, 0, -0.15, -0.1, 0.15, -0.1, 0.15, 0 ] ],
+export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map([
+  [ARROW_TRIANGLE, [-0.15, -0.3, 0, 0, 0.15, -0.3]],
+  [ARROW_VEE, [-0.15, -0.3, 0, 0, 0.15, -0.3, 0, -0.15]],
+  [
+    ARROW_CHEVRON,
+    [0, 0, -0.15, -0.15, -0.1, -0.2, 0, -0.1, 0.1, -0.2, 0.15, -0.15],
+  ],
+  [ARROW_SQUARE, [-0.15, 0, 0.15, 0, 0.15, -0.3, -0.15, -0.3]],
+  [ARROW_DIAMOND, [-0.15, -0.15, 0, -0.3, 0.15, -0.15, 0, 0]],
+  [ARROW_TEE, [-0.15, 0, -0.15, -0.1, 0.15, -0.1, 0.15, 0]],
   // round 27.6: triangle-backcurve is v3's triangle with its base edge
   // drawn as a quadratic through the control point (0, -0.15).  Sampling
   // that curve at codegen turns it into an ordinary point table, so it
   // needs no per-fragment curve maths and no new SDF — the same finding
   // round 27.5 measured for barrel.
-  [ ARROW_TRIANGLE_BACKCURVE, backcurvePoints() ]
-] );
+  [ARROW_TRIANGLE_BACKCURVE, backcurvePoints()],
+]);
 
 /**
  * How far behind the tip any arrowhead reaches, in arrow-frame units —
@@ -176,19 +210,27 @@ export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
  * they drew clipped until this became a computed bound.  Deriving it
  * keeps the next added head from repeating that.
  */
-export const ARROW_MAX_BACK: number = ( () => {
+export const ARROW_MAX_BACK: number = (() => {
   let max = 0;
 
-  const scan = ( pts: readonly number[] ): void => {
-    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, -pts[ i ] ); }
+  const scan = (pts: readonly number[]): void => {
+    for (let i = 1; i < pts.length; i += 2) {
+      max = Math.max(max, -pts[i]);
+    }
   };
 
-  for( const pts of ARROW_POINTS.values() ){ scan( pts ); }
-  for( const parts of ARROW_COMPOUND_POINTS.values() ){ for( const pts of parts ){ scan( pts ); } }
+  for (const pts of ARROW_POINTS.values()) {
+    scan(pts);
+  }
+  for (const parts of ARROW_COMPOUND_POINTS.values()) {
+    for (const pts of parts) {
+      scan(pts);
+    }
+  }
 
   // the analytic circle reaches 2 x its radius behind the tip
-  return Math.max( max, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS );
-} )();
+  return Math.max(max, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS);
+})();
 
 /**
  * How far **in front of** the tip any arrowhead reaches, in arrow-frame
@@ -205,19 +247,27 @@ export const ARROW_MAX_BACK: number = ( () => {
  * heads behind a hardcoded 0.3): a new head with a forward extent must
  * grow the quad without anyone remembering to.
  */
-export const ARROW_MAX_FRONT: number = ( () => {
+export const ARROW_MAX_FRONT: number = (() => {
   let max = 0;
 
-  const scan = ( pts: readonly number[] ): void => {
-    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, pts[ i ] ); }
+  const scan = (pts: readonly number[]): void => {
+    for (let i = 1; i < pts.length; i += 2) {
+      max = Math.max(max, pts[i]);
+    }
   };
 
-  for( const pts of ARROW_POINTS.values() ){ scan( pts ); }
-  for( const parts of ARROW_COMPOUND_POINTS.values() ){ for( const pts of parts ){ scan( pts ); } }
+  for (const pts of ARROW_POINTS.values()) {
+    scan(pts);
+  }
+  for (const parts of ARROW_COMPOUND_POINTS.values()) {
+    for (const pts of parts) {
+      scan(pts);
+    }
+  }
 
   // the disc heads are centred on the origin, so they reach a radius forward
-  return Math.max( max, ARROW_CIRCLE_TRIANGLE_RADIUS );
-} )();
+  return Math.max(max, ARROW_CIRCLE_TRIANGLE_RADIUS);
+})();
 
 /**
  * How far behind the tip **each** arrowhead reaches, in arrow-frame
@@ -229,34 +279,40 @@ export const ARROW_MAX_FRONT: number = ( () => {
  * where over-shortening would leave a visible gap between the line and
  * the head, so it has to be per shape.
  */
-export const ARROW_BACK: ReadonlyMap<number, number> = ( () => {
+export const ARROW_BACK: ReadonlyMap<number, number> = (() => {
   const back = new Map<number, number>();
 
-  const scan = ( pts: readonly number[] ): number => {
+  const scan = (pts: readonly number[]): number => {
     let max = 0;
 
-    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, -pts[ i ] ); }
+    for (let i = 1; i < pts.length; i += 2) {
+      max = Math.max(max, -pts[i]);
+    }
 
     return max;
   };
 
-  for( const [ id, pts ] of ARROW_POINTS ){ back.set( id, scan( pts ) ); }
-
-  for( const [ id, parts ] of ARROW_COMPOUND_POINTS ){
-    let max = 0;
-
-    for( const pts of parts ){ max = Math.max( max, scan( pts ) ); }
-
-    back.set( id, max );
+  for (const [id, pts] of ARROW_POINTS) {
+    back.set(id, scan(pts));
   }
 
-  back.set( ARROW_NONE, 0 );
+  for (const [id, parts] of ARROW_COMPOUND_POINTS) {
+    let max = 0;
+
+    for (const pts of parts) {
+      max = Math.max(max, scan(pts));
+    }
+
+    back.set(id, max);
+  }
+
+  back.set(ARROW_NONE, 0);
   // analytic, so it has no point table: the disc is centred a radius
   // behind the tip and reaches a radius further again
-  back.set( ARROW_CIRCLE, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS );
+  back.set(ARROW_CIRCLE, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS);
 
   return back;
-} )();
+})();
 
 /**
  * v3's `arrowShapes[shape].gap(edge)` as a multiple of
@@ -309,21 +365,21 @@ export const ARROW_BACK: ReadonlyMap<number, number> = ( () => {
  * round 53's `ci-node` split protects).  The behavioural gate is the
  * `parity-arrow-*` scenes: a wrong constant here moves their ratios.
  */
-export const ARROW_GAP_K: ReadonlyMap<number, number> = new Map( [
-  [ ARROW_NONE, 0 ],
-  [ ARROW_VEE, 1.05 ],                 // v3: standardGap x 0.525
-  [ ARROW_TRIANGLE_BACKCURVE, 1.6 ],   // v3: standardGap x 0.8
-  [ ARROW_DIAMOND, 1 ],                // v3: width x scale, not doubled
-  [ ARROW_CHEVRON, 0.95 ]
-] );
+export const ARROW_GAP_K: ReadonlyMap<number, number> = new Map([
+  [ARROW_NONE, 0],
+  [ARROW_VEE, 1.05], // v3: standardGap x 0.525
+  [ARROW_TRIANGLE_BACKCURVE, 1.6], // v3: standardGap x 0.8
+  [ARROW_DIAMOND, 1], // v3: width x scale, not doubled
+  [ARROW_CHEVRON, 0.95],
+]);
 
 /** v3's default gap: `width x arrow-scale x 2`. */
 export const ARROW_GAP_K_DEFAULT = 2;
 
 /** Shapes whose gap is a constant in model px rather than width-scaled. */
-export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map( [
-  [ ARROW_TEE, 1 ]
-] );
+export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map([
+  [ARROW_TEE, 1],
+]);
 
 /**
  * v3's `getArrowWidth( width, scale )` — the arrowhead's size unit in
@@ -337,8 +393,8 @@ export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map( [
  * @param scale — the edge's `arrow-scale`
  * @returns the size unit v3's arrow point tables are multiplied by
  */
-export const arrowSizeModel = ( width: number, scale: number ): number =>
-  Math.max( Math.pow( width * 13.37, 0.9 ), 29 ) * scale;
+export const arrowSizeModel = (width: number, scale: number): number =>
+  Math.max(Math.pow(width * 13.37, 0.9), 29) * scale;
 
 /**
  * v3's `arrowShapes[shape].gap( edge )` — how far behind the node
@@ -349,12 +405,18 @@ export const arrowSizeModel = ( width: number, scale: number ): number =>
  * @param scale — the edge's `arrow-scale`
  * @returns the gap in model px (0 for `none`)
  */
-export const arrowGap = ( shape: number, width: number, scale: number ): number => {
-  const constant = ARROW_GAP_CONST.get( shape );
+export const arrowGap = (
+  shape: number,
+  width: number,
+  scale: number,
+): number => {
+  const constant = ARROW_GAP_CONST.get(shape);
 
-  if( constant != null ){ return constant; }
+  if (constant != null) {
+    return constant;
+  }
 
-  return ( ARROW_GAP_K.get( shape ) ?? ARROW_GAP_K_DEFAULT ) * width * scale;
+  return (ARROW_GAP_K.get(shape) ?? ARROW_GAP_K_DEFAULT) * width * scale;
 };
 
 /**
@@ -370,31 +432,42 @@ export const arrowGap = ( shape: number, width: number, scale: number ): number 
  * @param scale — the edge's `arrow-scale`
  * @returns the spacing in model px
  */
-export const arrowSpacing = ( shape: number, width: number, scale: number ): number => {
-  if( shape === ARROW_TEE ){ return 1; }
+export const arrowSpacing = (
+  shape: number,
+  width: number,
+  scale: number,
+): number => {
+  if (shape === ARROW_TEE) {
+    return 1;
+  }
 
-  if( shape === ARROW_CIRCLE || shape === ARROW_CIRCLE_TRIANGLE ){
-    return arrowSizeModel( width, scale ) * ARROW_CIRCLE_TRIANGLE_RADIUS;
+  if (shape === ARROW_CIRCLE || shape === ARROW_CIRCLE_TRIANGLE) {
+    return arrowSizeModel(width, scale) * ARROW_CIRCLE_TRIANGLE_RADIUS;
   }
 
   return 0;
 };
-
 
 /**
  * Even-odd point-in-polygon over a flat unit point list.  The shapes above
  * are simple (non-self-intersecting) polygons, so even-odd agrees with
  * nonzero winding — and with the WGSL SDF's sign.
  */
-export const insideUnitPolygon = ( points: ArrayLike<number>, x: number, y: number ): boolean => {
+export const insideUnitPolygon = (
+  points: ArrayLike<number>,
+  x: number,
+  y: number,
+): boolean => {
   const n = points.length / 2;
   let inside = false;
 
-  for( let i = 0, j = n - 1; i < n; j = i, i++ ){
-    const xi = points[ i * 2 ], yi = points[ i * 2 + 1 ];
-    const xj = points[ j * 2 ], yj = points[ j * 2 + 1 ];
+  for (let i = 0, j = n - 1; i < n; j = i, i++) {
+    const xi = points[i * 2],
+      yi = points[i * 2 + 1];
+    const xj = points[j * 2],
+      yj = points[j * 2 + 1];
 
-    if( ( yi > y ) !== ( yj > y ) && x < ( xj - xi ) * ( y - yi ) / ( yj - yi ) + xi ){
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
       inside = !inside;
     }
   }
@@ -430,58 +503,72 @@ export const insideUnitPolygon = ( points: ArrayLike<number>, x: number, y: numb
  * round 27.6 made `ARROW_MAX_BACK` computed: a hand-written table is a
  * silent clip (or a silent over-trim) the next time a head is added.
  */
-export const ARROW_AXIAL_DEPTH: ReadonlyMap<number, number> = ( () => {
+export const ARROW_AXIAL_DEPTH: ReadonlyMap<number, number> = (() => {
   const depth = new Map<number, number>();
   const STEP = 1 / 2048;
 
   /** is the axis point (0, -k) inside any part of this head? */
-  const covered = ( id: number, k: number ): boolean => {
-    if( id === ARROW_CIRCLE || id === ARROW_CIRCLE_TRIANGLE ){
+  const covered = (id: number, k: number): boolean => {
+    if (id === ARROW_CIRCLE || id === ARROW_CIRCLE_TRIANGLE) {
       // the disc is centred on the arrow origin (v3's frame)
-      if( k <= ARROW_CIRCLE_TRIANGLE_RADIUS ){ return true; }
+      if (k <= ARROW_CIRCLE_TRIANGLE_RADIUS) {
+        return true;
+      }
     }
 
-    const simple = ARROW_POINTS.get( id );
+    const simple = ARROW_POINTS.get(id);
 
-    if( simple != null && insideUnitPolygon( simple, 0, -k ) ){ return true; }
+    if (simple != null && insideUnitPolygon(simple, 0, -k)) {
+      return true;
+    }
 
-    const parts = ARROW_COMPOUND_POINTS.get( id );
+    const parts = ARROW_COMPOUND_POINTS.get(id);
 
-    if( parts != null ){
-      for( const pts of parts ){
-        if( insideUnitPolygon( pts, 0, -k ) ){ return true; }
+    if (parts != null) {
+      for (const pts of parts) {
+        if (insideUnitPolygon(pts, 0, -k)) {
+          return true;
+        }
       }
     }
 
     return false;
   };
 
-  const ids = new Set<number>( [
-    ...ARROW_POINTS.keys(), ...ARROW_COMPOUND_POINTS.keys(), ARROW_CIRCLE
-  ] );
+  const ids = new Set<number>([
+    ...ARROW_POINTS.keys(),
+    ...ARROW_COMPOUND_POINTS.keys(),
+    ARROW_CIRCLE,
+  ]);
 
-  for( const id of ids ){
+  for (const id of ids) {
     let k = 0;
 
     // walk out from just inside the tip until the axis leaves the shape
-    while( k < ARROW_MAX_BACK && covered( id, k + STEP ) ){ k += STEP; }
+    while (k < ARROW_MAX_BACK && covered(id, k + STEP)) {
+      k += STEP;
+    }
 
     // then bisect the last step, so the answer is the true boundary and
     // not the sampling grid — half a step of under-trim is a hairline of
     // line left showing inside a hollow head, which is the whole defect
     let lo = k;
-    let hi = Math.min( k + STEP, ARROW_MAX_BACK );
+    let hi = Math.min(k + STEP, ARROW_MAX_BACK);
 
-    for( let i = 0; i < 40; i++ ){
-      const mid = ( lo + hi ) / 2;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
 
-      if( covered( id, mid ) ){ lo = mid; } else { hi = mid; }
+      if (covered(id, mid)) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
     }
 
-    depth.set( id, lo );
+    depth.set(id, lo);
   }
 
-  depth.set( ARROW_NONE, 0 );
+  depth.set(ARROW_NONE, 0);
 
   return depth;
-} )();
+})();

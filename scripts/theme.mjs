@@ -33,24 +33,32 @@ body {
  * HTML-escape.  Stringifies, so callers with nullable values want a wrapper:
  * `esc( null )` is the text "null", which is a bug every time.
  */
-export const esc = s => String( s )
-  .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' ).replace( />/g, '&gt;' )
-  .replace( /"/g, '&quot;' );
+export const esc = (s) =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 /** `esc`, but `null` for anything empty — the form most call sites want. */
-export const escOr = v => v == null || v === '' ? null : esc( v );
+export const escOr = (v) => (v == null || v === '' ? null : esc(v));
 
 /** Bytes as the nearest binary unit; `null` for anything not a positive size. */
-export function fmtBytes( n ){
-  if( !Number.isFinite( n ) || n <= 0 ){ return null; }
+export function fmtBytes(n) {
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
 
-  const units = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB' ];
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
   let i = 0;
   let v = n;
 
-  while( v >= 1024 && i < units.length - 1 ){ v /= 1024; i++; }
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
 
-  return `${v >= 100 || i === 0 ? Math.round( v ) : v.toFixed( 1 )} ${units[ i ]}`;
+  return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
 }
 
 /**
@@ -59,18 +67,25 @@ export function fmtBytes( n ){
  * The status site prints a benchmark's *age* rather than only its date, so a
  * stale number looks stale at a glance instead of requiring arithmetic.
  */
-export function fmtAge( ms ){
-  if( !Number.isFinite( ms ) || ms < 0 ){ return null; }
+export function fmtAge(ms) {
+  if (!Number.isFinite(ms) || ms < 0) {
+    return null;
+  }
 
   const units = [
-    [ 'year', 365 * 24 * 3600e3 ], [ 'month', 30 * 24 * 3600e3 ],
-    [ 'day', 24 * 3600e3 ], [ 'hour', 3600e3 ], [ 'minute', 60e3 ]
+    ['year', 365 * 24 * 3600e3],
+    ['month', 30 * 24 * 3600e3],
+    ['day', 24 * 3600e3],
+    ['hour', 3600e3],
+    ['minute', 60e3],
   ];
 
-  for( const [ name, size ] of units ){
-    const n = Math.floor( ms / size );
+  for (const [name, size] of units) {
+    const n = Math.floor(ms / size);
 
-    if( n >= 1 ){ return `${n} ${name}${n === 1 ? '' : 's'} ago`; }
+    if (n >= 1) {
+      return `${n} ${name}${n === 1 ? '' : 's'} ago`;
+    }
   }
 
   return 'just now';

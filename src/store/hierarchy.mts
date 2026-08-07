@@ -1,4 +1,10 @@
-import { FLAG_ALIVE, FLAG_CHILD, FLAG_PARENT, FLAG_VISIBLE, NO_SLOT } from '../contract.mjs';
+import {
+  FLAG_ALIVE,
+  FLAG_CHILD,
+  FLAG_PARENT,
+  FLAG_VISIBLE,
+  NO_SLOT,
+} from '../contract.mjs';
 
 const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
 
@@ -19,7 +25,11 @@ export interface CompoundStyle {
 }
 
 const COMPOUND_STYLE_DEFAULTS: CompoundStyle = {
-  padding: 0, paddingUnit: 'px', relativeTo: 'width', minWidth: 0, minHeight: 0
+  padding: 0,
+  paddingUnit: 'px',
+  relativeTo: 'width',
+  minWidth: 0,
+  minHeight: 0,
 };
 
 /*
@@ -56,7 +66,7 @@ export interface HierarchyHost {
   /** the node table's per-slot generation counters */
   gen(): Uint32Array;
   /** mark a node.flags slot dirty (renderer upload span) */
-  markFlag( slot: number ): void;
+  markFlag(slot: number): void;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
   /** the node.position column (auto-bounds inputs) */
@@ -64,11 +74,11 @@ export interface HierarchyHost {
   /** the node.outerHalf column (border-inclusive child half-extents) */
   outerHalf(): Float32Array;
   /** the node's current style size (stashed as the degenerate fallback) */
-  readSize( slot: number ): [ number, number ];
+  readSize(slot: number): [number, number];
   /** a node flipped leaf<->parent (the store stashes/restores its style size) */
-  onFlip( slot: number, becameParent: boolean ): void;
+  onFlip(slot: number, becameParent: boolean): void;
   /** write derived parent geometry into the real columns (never re-marks) */
-  materialize( slot: number, x: number, y: number, w: number, h: number ): void;
+  materialize(slot: number, x: number, y: number, w: number, h: number): void;
 }
 
 export class HierarchyIndex {
@@ -101,11 +111,11 @@ export class HierarchyIndex {
    *   touches columns directly, so the store keeps sole ownership of
    *   dirty tracking and the index stays testable against a stub
    */
-  constructor( host: HierarchyHost ){
+  constructor(host: HierarchyHost) {
     this.host = host;
-    this.parent = new Int32Array( 0 );
-    this.parentGen = new Uint32Array( 0 );
-    this.depth = new Uint16Array( 0 );
+    this.parent = new Int32Array(0);
+    this.parentGen = new Uint32Array(0);
+    this.depth = new Uint16Array(0);
     this.children = new Map();
     this.nParents = 0;
     this.order = null;
@@ -139,18 +149,24 @@ export class HierarchyIndex {
    *
    * @param slot — the node's slot
    */
-  parentOf( slot: number ): number {
-    if( slot >= this.parent.length ){ return -1; }
+  parentOf(slot: number): number {
+    if (slot >= this.parent.length) {
+      return -1;
+    }
 
-    const p = this.parent[ slot ];
+    const p = this.parent[slot];
 
-    if( p < 0 ){ return -1; }
+    if (p < 0) {
+      return -1;
+    }
 
-    if( this.host.gen()[ p ] !== this.parentGen[ slot ] ){
+    if (this.host.gen()[p] !== this.parentGen[slot]) {
       // unreachable while removal severs links eagerly; guard anyway
-      if( !this.warnedGen ){
+      if (!this.warnedGen) {
         this.warnedGen = true;
-        console.warn( 'A compound parent slot was recycled under a live link; treating the child as an orphan' );
+        console.warn(
+          'A compound parent slot was recycled under a live link; treating the child as an orphan',
+        );
       }
 
       return -1;
@@ -167,8 +183,8 @@ export class HierarchyIndex {
    *
    * @param slot — the node's slot
    */
-  childrenOf( slot: number ): readonly number[] {
-    return this.children.get( slot ) ?? EMPTY;
+  childrenOf(slot: number): readonly number[] {
+    return this.children.get(slot) ?? EMPTY;
   }
 
   /**
@@ -178,14 +194,18 @@ export class HierarchyIndex {
    *
    * @param slot — the node's slot
    */
-  depthOf( slot: number ): number {
-    return slot < this.depth.length && this.parent[ slot ] >= 0 ? this.depth[ slot ] : 0;
+  depthOf(slot: number): number {
+    return slot < this.depth.length && this.parent[slot] >= 0
+      ? this.depth[slot]
+      : 0;
   }
 
   /** True when `ancestor` is on `slot`'s parent chain (not reflexive). */
-  isAncestorOf( ancestor: number, slot: number ): boolean {
-    for( let p = this.parentOf( slot ); p >= 0; p = this.parentOf( p ) ){
-      if( p === ancestor ){ return true; }
+  isAncestorOf(ancestor: number, slot: number): boolean {
+    for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
+      if (p === ancestor) {
+        return true;
+      }
     }
 
     return false;
@@ -197,13 +217,15 @@ export class HierarchyIndex {
    * read-only and re-fetch after hierarchy changes.
    */
   parentOrder(): Uint32Array {
-    if( this.order == null ){
+    if (this.order == null) {
       const slots: number[] = [];
 
-      for( const slot of this.children.keys() ){ slots.push( slot ); }
+      for (const slot of this.children.keys()) {
+        slots.push(slot);
+      }
 
-      slots.sort( ( a, b ) => ( this.depthOf( a ) - this.depthOf( b ) ) || ( a - b ) );
-      this.order = Uint32Array.from( slots );
+      slots.sort((a, b) => this.depthOf(a) - this.depthOf(b) || a - b);
+      this.order = Uint32Array.from(slots);
     }
 
     return this.order;
@@ -218,21 +240,23 @@ export class HierarchyIndex {
    * already-pending ancestor — markGeo always marks whole chains, so a
    * pending ancestor implies a pending chain above it.
    */
-  markGeo( slot: number ): void {
-    if( this.children.has( slot ) && !this.pending.has( slot ) ){
-      this.pending.add( slot );
+  markGeo(slot: number): void {
+    if (this.children.has(slot) && !this.pending.has(slot)) {
+      this.pending.add(slot);
       this.host.schedule();
     }
 
-    this.markAncestors( slot );
+    this.markAncestors(slot);
   }
 
   /** Mark only the ancestor chain (a moved parent's own value stays exact). */
-  markAncestors( slot: number ): void {
-    for( let p = this.parentOf( slot ); p >= 0; p = this.parentOf( p ) ){
-      if( this.pending.has( p ) ){ break; }
+  markAncestors(slot: number): void {
+    for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
+      if (this.pending.has(p)) {
+        break;
+      }
 
-      this.pending.add( p );
+      this.pending.add(p);
       this.host.schedule();
     }
   }
@@ -248,28 +272,32 @@ export class HierarchyIndex {
 
   /** Store a parent's compound style inputs (partial; merged over
    * defaults — a sheet write's omitted fields deliberately reset). */
-  setCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
-    this.compoundStyle.set( slot, { ...COMPOUND_STYLE_DEFAULTS, ...style } );
-    this.markGeo( slot );
+  setCompoundStyle(slot: number, style: Partial<CompoundStyle>): void {
+    this.compoundStyle.set(slot, { ...COMPOUND_STYLE_DEFAULTS, ...style });
+    this.markGeo(slot);
   }
 
   /** Merge a partial update over the *current* record (round 25.4: a
    * padding tween tick writes `{ padding }` alone and must not reset
    * the unit or min sizes — unlike a sheet write, which resets what it
    * omits). */
-  updateCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
-    this.compoundStyle.set( slot, { ...COMPOUND_STYLE_DEFAULTS, ...this.compoundStyle.get( slot ), ...style } );
-    this.markGeo( slot );
+  updateCompoundStyle(slot: number, style: Partial<CompoundStyle>): void {
+    this.compoundStyle.set(slot, {
+      ...COMPOUND_STYLE_DEFAULTS,
+      ...this.compoundStyle.get(slot),
+      ...style,
+    });
+    this.markGeo(slot);
   }
 
   /** The px padding resolved at the last flush (0 for non-parents). */
-  paddingOf( slot: number ): number {
-    return this.resolvedPad.get( slot ) ?? 0;
+  paddingOf(slot: number): number {
+    return this.resolvedPad.get(slot) ?? 0;
   }
 
   /** The declared compound style record (defaults for leaves). */
-  compoundStyleOf( slot: number ): CompoundStyle {
-    return this.compoundStyle.get( slot ) ?? COMPOUND_STYLE_DEFAULTS;
+  compoundStyleOf(slot: number): CompoundStyle {
+    return this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
   }
 
   /**
@@ -286,10 +314,13 @@ export class HierarchyIndex {
    * re-trigger itself.
    */
   flush(): void {
-    if( this.pending.size === 0 ){ return; }
+    if (this.pending.size === 0) {
+      return;
+    }
 
-    const order = Array.from( this.pending )
-      .sort( ( a, b ) => this.depthOf( b ) - this.depthOf( a ) );
+    const order = Array.from(this.pending).sort(
+      (a, b) => this.depthOf(b) - this.depthOf(a),
+    );
 
     this.pending.clear();
 
@@ -297,25 +328,40 @@ export class HierarchyIndex {
     const outer = this.host.outerHalf();
     const flags = this.host.flags();
 
-    for( const slot of order ){
-      const kids = this.children.get( slot );
+    for (const slot of order) {
+      const kids = this.children.get(slot);
 
-      if( kids == null || kids.length === 0 ){ continue; } // stale entry
+      if (kids == null || kids.length === 0) {
+        continue;
+      } // stale entry
 
-      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      let x1 = Infinity,
+        y1 = Infinity,
+        x2 = -Infinity,
+        y2 = -Infinity;
 
-      for( const kid of kids ){
-        if( ( flags[ kid ] & SHOWN ) !== SHOWN ){ continue; }
+      for (const kid of kids) {
+        if ((flags[kid] & SHOWN) !== SHOWN) {
+          continue;
+        }
 
-        const kx = pos[ kid * 2 ];
-        const ky = pos[ kid * 2 + 1 ];
-        const hw = outer[ kid * 2 ];
-        const hh = outer[ kid * 2 + 1 ];
+        const kx = pos[kid * 2];
+        const ky = pos[kid * 2 + 1];
+        const hw = outer[kid * 2];
+        const hh = outer[kid * 2 + 1];
 
-        if( kx - hw < x1 ){ x1 = kx - hw; }
-        if( kx + hw > x2 ){ x2 = kx + hw; }
-        if( ky - hh < y1 ){ y1 = ky - hh; }
-        if( ky + hh > y2 ){ y2 = ky + hh; }
+        if (kx - hw < x1) {
+          x1 = kx - hw;
+        }
+        if (kx + hw > x2) {
+          x2 = kx + hw;
+        }
+        if (ky - hh < y1) {
+          y1 = ky - hh;
+        }
+        if (ky + hh > y2) {
+          y2 = ky + hh;
+        }
       }
 
       let bbW = x2 - x1;
@@ -323,25 +369,26 @@ export class HierarchyIndex {
       let cx: number;
       let cy: number;
 
-      if( !( bbW > 0 ) || !( bbH > 0 ) ){ // no shown children / zero area
-        const [ fw, fh ] = this.host.readSize( slot );
+      if (!(bbW > 0) || !(bbH > 0)) {
+        // no shown children / zero area
+        const [fw, fh] = this.host.readSize(slot);
 
         bbW = fw;
         bbH = fh;
-        cx = pos[ slot * 2 ];
-        cy = pos[ slot * 2 + 1 ];
+        cx = pos[slot * 2];
+        cy = pos[slot * 2 + 1];
       } else {
-        cx = ( x1 + x2 ) / 2;
-        cy = ( y1 + y2 ) / 2;
+        cx = (x1 + x2) / 2;
+        cy = (y1 + y2) / 2;
       }
 
-      const style = this.compoundStyle.get( slot ) ?? COMPOUND_STYLE_DEFAULTS;
-      const pad = resolvePadding( style, bbW, bbH );
-      const coreW = Math.max( bbW, style.minWidth );
-      const coreH = Math.max( bbH, style.minHeight );
+      const style = this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
+      const pad = resolvePadding(style, bbW, bbH);
+      const coreW = Math.max(bbW, style.minWidth);
+      const coreH = Math.max(bbH, style.minHeight);
 
-      this.resolvedPad.set( slot, pad );
-      this.host.materialize( slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad );
+      this.resolvedPad.set(slot, pad);
+      this.host.materialize(slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad);
     }
   }
 
@@ -353,122 +400,128 @@ export class HierarchyIndex {
    * depths, FLAG_PARENT/FLAG_CHILD, the draw permutation, and the
    * pending sets of both affected chains.
    */
-  setParent( slot: number, parentSlot: number ): void {
-    const current = this.parentOf( slot );
+  setParent(slot: number, parentSlot: number): void {
+    const current = this.parentOf(slot);
     const next = parentSlot < 0 ? -1 : parentSlot;
 
-    if( current === next ){ return; }
+    if (current === next) {
+      return;
+    }
 
-    if( next >= 0 && ( next === slot || this.isAncestorOf( slot, next ) ) ){
-      console.warn( 'Node can not be made its own ancestor; parent assignment dropped' );
+    if (next >= 0 && (next === slot || this.isAncestorOf(slot, next))) {
+      console.warn(
+        'Node can not be made its own ancestor; parent assignment dropped',
+      );
 
       return;
     }
 
-    this.ensure( Math.max( slot, next ) );
+    this.ensure(Math.max(slot, next));
 
-    if( current >= 0 ){
-      this.markGeo( current ); // the old chain re-derives (it lost a child)
-      this.unlink( slot, current );
+    if (current >= 0) {
+      this.markGeo(current); // the old chain re-derives (it lost a child)
+      this.unlink(slot, current);
     }
 
-    if( next >= 0 ){
-      let list = this.children.get( next );
+    if (next >= 0) {
+      let list = this.children.get(next);
 
-      if( list == null ){
+      if (list == null) {
         list = [];
-        this.children.set( next, list );
-        this.setFlag( next, FLAG_PARENT, true );
+        this.children.set(next, list);
+        this.setFlag(next, FLAG_PARENT, true);
         this.nParents++;
-        this.host.onFlip( next, true );
+        this.host.onFlip(next, true);
       }
 
-      list.push( slot );
-      this.parent[ slot ] = next;
-      this.parentGen[ slot ] = this.host.gen()[ next ];
-      this.setFlag( slot, FLAG_CHILD, true );
-      this.markGeo( next ); // the new chain re-derives (it gained a child)
+      list.push(slot);
+      this.parent[slot] = next;
+      this.parentGen[slot] = this.host.gen()[next];
+      this.setFlag(slot, FLAG_CHILD, true);
+      this.markGeo(next); // the new chain re-derives (it gained a child)
     } else {
-      this.parent[ slot ] = -1;
-      this.setFlag( slot, FLAG_CHILD, false );
+      this.parent[slot] = -1;
+      this.setFlag(slot, FLAG_CHILD, false);
     }
 
-    this.updateDepths( slot );
+    this.updateDepths(slot);
     this.order = null;
     this.host.schedule();
   }
 
   /** Sever the node's own link and assert it has no children left. */
-  onRemoveNode( slot: number ): void {
-    const p = this.parentOf( slot );
+  onRemoveNode(slot: number): void {
+    const p = this.parentOf(slot);
 
-    if( p >= 0 ){
-      this.markGeo( p ); // the chain re-derives (it lost a child)
-      this.unlink( slot, p );
-      this.parent[ slot ] = -1;
-      this.setFlag( slot, FLAG_CHILD, false );
+    if (p >= 0) {
+      this.markGeo(p); // the chain re-derives (it lost a child)
+      this.unlink(slot, p);
+      this.parent[slot] = -1;
+      this.setFlag(slot, FLAG_CHILD, false);
       this.order = null;
       this.host.schedule();
     }
   }
 
   /** Whether the node still has children (removal must cascade them first). */
-  hasChildren( slot: number ): boolean {
-    return ( this.children.get( slot )?.length ?? 0 ) > 0;
+  hasChildren(slot: number): boolean {
+    return (this.children.get(slot)?.length ?? 0) > 0;
   }
 
   // -- internals --
 
-  private unlink( slot: number, parentSlot: number ): void {
-    const list = this.children.get( parentSlot );
+  private unlink(slot: number, parentSlot: number): void {
+    const list = this.children.get(parentSlot);
 
-    if( list != null ){
-      const i = list.indexOf( slot );
+    if (list != null) {
+      const i = list.indexOf(slot);
 
-      if( i >= 0 ){ list.splice( i, 1 ); }
+      if (i >= 0) {
+        list.splice(i, 1);
+      }
 
-      if( list.length === 0 ){
-        this.children.delete( parentSlot );
-        this.setFlag( parentSlot, FLAG_PARENT, false );
+      if (list.length === 0) {
+        this.children.delete(parentSlot);
+        this.setFlag(parentSlot, FLAG_PARENT, false);
         this.nParents--;
         this.order = null;
-        this.pending.delete( parentSlot );
-        this.resolvedPad.delete( parentSlot );
-        this.host.onFlip( parentSlot, false ); // restore the style size
+        this.pending.delete(parentSlot);
+        this.resolvedPad.delete(parentSlot);
+        this.host.onFlip(parentSlot, false); // restore the style size
       }
     }
   }
 
   /** Recompute the subtree's depths from the (already-linked) root. */
-  private updateDepths( root: number ): void {
-    const p = this.parent[ root ];
-    const queue: number[] = [ root ];
-    const depths: number[] = [ p < 0 ? 0 : this.depth[ p ] + 1 ];
+  private updateDepths(root: number): void {
+    const p = this.parent[root];
+    const queue: number[] = [root];
+    const depths: number[] = [p < 0 ? 0 : this.depth[p] + 1];
 
-    while( queue.length > 0 ){
+    while (queue.length > 0) {
       const slot = queue.pop() as number;
       const d = depths.pop() as number;
 
-      this.depth[ slot ] = d;
+      this.depth[slot] = d;
 
-      const kids = this.children.get( slot );
+      const kids = this.children.get(slot);
 
-      if( kids != null ){
-        for( const kid of kids ){
-          queue.push( kid );
-          depths.push( d + 1 );
+      if (kids != null) {
+        for (const kid of kids) {
+          queue.push(kid);
+          depths.push(d + 1);
         }
       }
     }
   }
 
-  private setFlag( slot: number, bit: number, on: boolean ): void {
+  private setFlag(slot: number, bit: number, on: boolean): void {
     const flags = this.host.flags();
-    const next = on ? ( flags[ slot ] | bit ) : ( flags[ slot ] & ~bit );
+    const next = on ? flags[slot] | bit : flags[slot] & ~bit;
 
-    if( next !== flags[ slot ] ){
-      flags[ slot ] = next;
-      this.host.markFlag( slot );
+    if (next !== flags[slot]) {
+      flags[slot] = next;
+      this.host.markFlag(slot);
     }
   }
 
@@ -480,49 +533,54 @@ export class HierarchyIndex {
    * draw permutation regenerates lazily.  Call with derived geometry
    * flushed (`pending` is remapped defensively all the same).
    */
-  remapSlots( remap: Uint32Array, gen: Uint32Array ): void {
+  remapSlots(remap: Uint32Array, gen: Uint32Array): void {
     const oldLen = this.parent.length;
-    const n = Math.min( remap.length, oldLen );
-    const parent = new Int32Array( oldLen ).fill( -1 );
-    const parentGen = new Uint32Array( oldLen );
-    const depth = new Uint16Array( oldLen );
+    const n = Math.min(remap.length, oldLen);
+    const parent = new Int32Array(oldLen).fill(-1);
+    const parentGen = new Uint32Array(oldLen);
+    const depth = new Uint16Array(oldLen);
 
-    for( let s = 0; s < n; s++ ){
-      const d = remap[ s ];
+    for (let s = 0; s < n; s++) {
+      const d = remap[s];
 
-      if( d === NO_SLOT ){ continue; }
+      if (d === NO_SLOT) {
+        continue;
+      }
 
-      const p = this.parent[ s ];
+      const p = this.parent[s];
 
-      if( p >= 0 ){
-        const dp = p < remap.length ? remap[ p ] : NO_SLOT;
+      if (p >= 0) {
+        const dp = p < remap.length ? remap[p] : NO_SLOT;
 
-        if( dp !== NO_SLOT ){
-          parent[ d ] = dp;
-          parentGen[ d ] = gen[ dp ];
+        if (dp !== NO_SLOT) {
+          parent[d] = dp;
+          parentGen[d] = gen[dp];
         }
       }
 
-      depth[ d ] = this.depth[ s ];
+      depth[d] = this.depth[s];
     }
 
     this.parent = parent;
     this.parentGen = parentGen;
     this.depth = depth;
 
-    const rekey = ( old: number ): number =>
-      old < remap.length ? remap[ old ] : NO_SLOT;
+    const rekey = (old: number): number =>
+      old < remap.length ? remap[old] : NO_SLOT;
 
     const children = new Map<number, number[]>();
 
-    for( const [ p, kids ] of this.children ){
-      const dp = rekey( p );
+    for (const [p, kids] of this.children) {
+      const dp = rekey(p);
 
-      if( dp === NO_SLOT ){ continue; }
+      if (dp === NO_SLOT) {
+        continue;
+      }
 
-      children.set( dp, kids
-        .map( rekey )
-        .filter( d => d !== NO_SLOT ) );
+      children.set(
+        dp,
+        kids.map(rekey).filter((d) => d !== NO_SLOT),
+      );
     }
 
     this.children = children;
@@ -530,46 +588,54 @@ export class HierarchyIndex {
 
     const pending = new Set<number>();
 
-    for( const p of this.pending ){
-      const dp = rekey( p );
+    for (const p of this.pending) {
+      const dp = rekey(p);
 
-      if( dp !== NO_SLOT ){ pending.add( dp ); }
+      if (dp !== NO_SLOT) {
+        pending.add(dp);
+      }
     }
 
     this.pending = pending;
 
     const styles = new Map<number, CompoundStyle>();
 
-    for( const [ p, style ] of this.compoundStyle ){
-      const dp = rekey( p );
+    for (const [p, style] of this.compoundStyle) {
+      const dp = rekey(p);
 
-      if( dp !== NO_SLOT ){ styles.set( dp, style ); }
+      if (dp !== NO_SLOT) {
+        styles.set(dp, style);
+      }
     }
 
     this.compoundStyle = styles;
 
     const pads = new Map<number, number>();
 
-    for( const [ p, pad ] of this.resolvedPad ){
-      const dp = rekey( p );
+    for (const [p, pad] of this.resolvedPad) {
+      const dp = rekey(p);
 
-      if( dp !== NO_SLOT ){ pads.set( dp, pad ); }
+      if (dp !== NO_SLOT) {
+        pads.set(dp, pad);
+      }
     }
 
     this.resolvedPad = pads;
   }
 
-  private ensure( slot: number ): void {
-    if( slot < this.parent.length ){ return; }
+  private ensure(slot: number): void {
+    if (slot < this.parent.length) {
+      return;
+    }
 
-    const cap = Math.max( 32, slot + 1, this.parent.length * 2 );
-    const parent = new Int32Array( cap ).fill( -1 );
-    const parentGen = new Uint32Array( cap );
-    const depth = new Uint16Array( cap );
+    const cap = Math.max(32, slot + 1, this.parent.length * 2);
+    const parent = new Int32Array(cap).fill(-1);
+    const parentGen = new Uint32Array(cap);
+    const depth = new Uint16Array(cap);
 
-    parent.set( this.parent );
-    parentGen.set( this.parentGen );
-    depth.set( this.depth );
+    parent.set(this.parent);
+    parentGen.set(this.parentGen);
+    depth.set(this.depth);
 
     this.parent = parent;
     this.parentGen = parentGen;
@@ -581,15 +647,28 @@ const EMPTY: readonly number[] = [];
 
 /** v3's computePaddingValues: px verbatim; '%' is a fraction (pfValue)
  * of the children bb per padding-relative-to (zero-guarded like v3). */
-const resolvePadding = ( style: CompoundStyle, bbW: number, bbH: number ): number => {
-  if( style.padding === 0 ){ return 0; }
-  if( style.paddingUnit === 'px' ){ return style.padding; }
+const resolvePadding = (
+  style: CompoundStyle,
+  bbW: number,
+  bbH: number,
+): number => {
+  if (style.padding === 0) {
+    return 0;
+  }
+  if (style.paddingUnit === 'px') {
+    return style.padding;
+  }
 
-  switch( style.relativeTo ){
-    case 'width': return bbW > 0 ? style.padding * bbW : 0;
-    case 'height': return bbH > 0 ? style.padding * bbH : 0;
-    case 'average': return bbW > 0 && bbH > 0 ? style.padding * ( bbW + bbH ) / 2 : 0;
-    case 'min': return bbW > 0 && bbH > 0 ? style.padding * Math.min( bbW, bbH ) : 0;
-    case 'max': return bbW > 0 && bbH > 0 ? style.padding * Math.max( bbW, bbH ) : 0;
+  switch (style.relativeTo) {
+    case 'width':
+      return bbW > 0 ? style.padding * bbW : 0;
+    case 'height':
+      return bbH > 0 ? style.padding * bbH : 0;
+    case 'average':
+      return bbW > 0 && bbH > 0 ? (style.padding * (bbW + bbH)) / 2 : 0;
+    case 'min':
+      return bbW > 0 && bbH > 0 ? style.padding * Math.min(bbW, bbH) : 0;
+    case 'max':
+      return bbW > 0 && bbH > 0 ? style.padding * Math.max(bbW, bbH) : 0;
   }
 };

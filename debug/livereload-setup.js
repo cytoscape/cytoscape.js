@@ -8,7 +8,7 @@
 // page at `127.0.0.1:3333`: the two never met and the client 404'd on every
 // reload with nothing but a console line to say so.
 
-window.addEventListener('DOMContentLoaded', function(){
+window.addEventListener('DOMContentLoaded', function () {
   var script = document.createElement('script');
 
   script.src = 'http://' + location.hostname + ':35729/livereload.js?snipver=1';
@@ -17,13 +17,15 @@ window.addEventListener('DOMContentLoaded', function(){
   // serve debug/ from anything), so this is a note rather than a failure —
   // but it says *which* command starts it, because the browser's own
   // ERR_CONNECTION_REFUSED does not
-  script.onerror = function(){
+  script.onerror = function () {
     console.info(
-      'LiveReload is not running at ' + location.hostname + ':35729 — '
-      + 'reloads will not happen. Start it with `npm run watch` (or '
-      + '`npm run watch:sync`) from the repo root.'
+      'LiveReload is not running at ' +
+        location.hostname +
+        ':35729 — ' +
+        'reloads will not happen. Start it with `npm run watch` (or ' +
+        '`npm run watch:sync`) from the repo root.',
     );
   };
 
-  document.head.appendChild( script );
+  document.head.appendChild(script);
 });

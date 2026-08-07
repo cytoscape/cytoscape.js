@@ -26,137 +26,177 @@ import { buildElements, N } from './graph.mjs';
 
 const elements = buildElements();
 
-const makeCy = ( style ) => cytoscape( {
-  elements: elements.map( e => ( {
-    data: { ...e.data },
-    position: e.position ? { ...e.position } : undefined
-  } ) ),
-  style
-} );
+const makeCy = (style) =>
+  cytoscape({
+    elements: elements.map((e) => ({
+      data: { ...e.data },
+      position: e.position ? { ...e.position } : undefined,
+    })),
+    style,
+  });
 
 // an endless tween so every tick lands mid-flight
 const DUR = { duration: 1e9, easing: 'linear' };
 
-console.log( `\n== geometry-tween sweep (N=${N} nodes, ${2 * N} edges) ==` );
+console.log(`\n== geometry-tween sweep (N=${N} nodes, ${2 * N} edges) ==`);
 
 // -- node size tick: the re-anchor term, by label anchoring --
 {
   const scenes = [
-    [ 'unlabelled', {} ],
+    ['unlabelled', {}],
     // center/center anchors are size-independent (0, marginY): the
     // re-anchor diff early-outs and never rewrites the sidecar entry
-    [ 'labelled, center/center (re-anchor early-out)',
-      { nodes: { label: { data: 'id' }, 'text-halign': 'center', 'text-valign': 'center' } } ],
+    [
+      'labelled, center/center (re-anchor early-out)',
+      {
+        nodes: {
+          label: { data: 'id' },
+          'text-halign': 'center',
+          'text-valign': 'center',
+        },
+      },
+    ],
     // the default bottom valign (and any non-center anchor) moves with
     // the size: a sidecar rewrite per tick — riding the 25.5 dims fast
     // path (ratio 1), never the estimator
-    [ 'labelled, hanging (sidecar rewrite per tick)',
-      { nodes: { label: { data: 'id' }, 'text-halign': 'left', 'text-valign': 'top' } } ]
+    [
+      'labelled, hanging (sidecar rewrite per tick)',
+      {
+        nodes: {
+          label: { data: 'id' },
+          'text-halign': 'left',
+          'text-valign': 'top',
+        },
+      },
+    ],
   ];
 
-  for( const [ name, style ] of scenes ){
-    const cy = makeCy( style );
+  for (const [name, style] of scenes) {
+    const cy = makeCy(style);
 
-    cy.nodes().animate( { style: { width: 500, height: 400 }, ...DUR } );
+    cy.nodes().animate({ style: { width: 500, height: 400 }, ...DUR });
 
     let t = 1;
 
-    group( `size tick: ${name} (${N} slots)`, () => {
-      bench( 'tick', () => { cy._animations.tick( t++ ); } );
-    } );
+    group(`size tick: ${name} (${N} slots)`, () => {
+      bench('tick', () => {
+        cy._animations.tick(t++);
+      });
+    });
   }
 }
 
 // -- edge width tick: bare vs riding the baked derivatives --
 {
-  const bare = makeCy( {} );
-  const riding = makeCy( { edges: {
-    'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
-    'source-arrow-width': 'match-line', 'target-arrow-width': 'match-line',
-    'line-outline-width': 2, 'line-outline-color': 'black'
-  } } );
+  const bare = makeCy({});
+  const riding = makeCy({
+    edges: {
+      'source-arrow-shape': 'triangle',
+      'target-arrow-shape': 'triangle',
+      'source-arrow-width': 'match-line',
+      'target-arrow-width': 'match-line',
+      'line-outline-width': 2,
+      'line-outline-color': 'black',
+    },
+  });
 
-  bare.edges().animate( { style: { width: 30 }, ...DUR } );
-  riding.edges().animate( { style: { width: 30 }, ...DUR } );
+  bare.edges().animate({ style: { width: 30 }, ...DUR });
+  riding.edges().animate({ style: { width: 30 }, ...DUR });
 
   let t1 = 1;
   let t2 = 1;
 
-  group( `edge width tick (${2 * N} slots)`, () => {
-    bench( 'bare', () => { bare._animations.tick( t1++ ); } );
+  group(`edge width tick (${2 * N} slots)`, () => {
+    bench('bare', () => {
+      bare._animations.tick(t1++);
+    });
     // + the casing stroke lane and both arrow-width lanes per slot
-    bench( 'with rides (casing + match-line arrows)', () => { riding._animations.tick( t2++ ); } );
-  } );
+    bench('with rides (casing + match-line arrows)', () => {
+      riding._animations.tick(t2++);
+    });
+  });
 }
 
 // -- compound padding tick: the auto-bounds re-derive it stales --
 {
   // N/8 parents × 8 children (the compound scene is built, not reused
   // from the flat fixture)
-  const parents = Math.max( 1, Math.floor( N / 8 ) );
+  const parents = Math.max(1, Math.floor(N / 8));
   const els = [];
 
-  for( let p = 0; p < parents; p++ ){
-    els.push( { data: { id: 'p' + p } } );
+  for (let p = 0; p < parents; p++) {
+    els.push({ data: { id: 'p' + p } });
 
-    for( let c = 0; c < 8; c++ ){
-      els.push( {
+    for (let c = 0; c < 8; c++) {
+      els.push({
         data: { id: 'p' + p + 'c' + c, parent: 'p' + p },
-        position: { x: c * 20, y: p * 40 }
-      } );
+        position: { x: c * 20, y: p * 40 },
+      });
     }
   }
 
-  const cy = cytoscape( { elements: els, style: { parents: { padding: 10 } } } );
+  const cy = cytoscape({ elements: els, style: { parents: { padding: 10 } } });
 
   cy._store.flushDerived();
-  cy.nodes().animate( { style: { padding: 60 }, ...DUR } );
+  cy.nodes().animate({ style: { padding: 60 }, ...DUR });
 
   let t = 1;
 
-  group( `padding tick + auto-bounds flush (${parents} parents × 8 children)`, () => {
-    bench( 'tick + flush', () => {
-      cy._animations.tick( t++ );
-      cy._store.flushDerived();
-    } );
-  } );
+  group(
+    `padding tick + auto-bounds flush (${parents} parents × 8 children)`,
+    () => {
+      bench('tick + flush', () => {
+        cy._animations.tick(t++);
+        cy._store.flushDerived();
+      });
+    },
+  );
 }
 
 // -- font-size tick: the wrap-none fast path vs an honest re-break --
 {
-  const none = makeCy( { nodes: { label: 'a moderately long node label' } } );
-  const wrapped = makeCy( { nodes: {
-    label: 'a moderately long node label',
-    'text-wrap': 'wrap', 'text-max-width': 60
-  } } );
+  const none = makeCy({ nodes: { label: 'a moderately long node label' } });
+  const wrapped = makeCy({
+    nodes: {
+      label: 'a moderately long node label',
+      'text-wrap': 'wrap',
+      'text-max-width': 60,
+    },
+  });
 
-  none.nodes().animate( { style: { 'font-size': 64 }, ...DUR } );
-  wrapped.nodes().animate( { style: { 'font-size': 64 }, ...DUR } );
+  none.nodes().animate({ style: { 'font-size': 64 }, ...DUR });
+  wrapped.nodes().animate({ style: { 'font-size': 64 }, ...DUR });
 
   let t1 = 1;
   let t2 = 1;
 
-  group( `font-size tick (${N} labels)`, () => {
-    bench( 'wrap none (dims scale-patch)', () => { none._animations.tick( t1++ ); } );
+  group(`font-size tick (${N} labels)`, () => {
+    bench('wrap none (dims scale-patch)', () => {
+      none._animations.tick(t1++);
+    });
     // breaking genuinely moves with the em under a fixed model-px
     // maxWidth, so every tick re-estimates the block
-    bench( 'wrapped (re-break per tick)', () => { wrapped._animations.tick( t2++ ); } );
-  } );
+    bench('wrapped (re-break per tick)', () => {
+      wrapped._animations.tick(t2++);
+    });
+  });
 }
 
 // -- baseline: the round-24 paint tick for reference --
 {
-  const cy = makeCy( {} );
+  const cy = makeCy({});
 
-  cy.nodes().animate( { style: { opacity: 0.1 }, ...DUR } );
+  cy.nodes().animate({ style: { opacity: 0.1 }, ...DUR });
 
   let t = 1;
 
-  group( `baseline: paint (opacity) tick (${N} slots)`, () => {
-    bench( 'tick', () => { cy._animations.tick( t++ ); } );
-  } );
+  group(`baseline: paint (opacity) tick (${N} slots)`, () => {
+    bench('tick', () => {
+      cy._animations.tick(t++);
+    });
+  });
 }
 
-await finishRun( 'geometry-tween' );
+await finishRun('geometry-tween');
 
-process.exit( 0 );
+process.exit(0);

@@ -27,11 +27,11 @@ import { wireSize, WIRE_EXT } from './wire-fixtures.mjs';
 /** Cloudflare Pages refuses a file larger than this. */
 export const PAGES_MAX_BYTES = 25 * 1024 * 1024;
 
-export const copy = ( from, to ) => ( { kind: 'copy', from, to } );
-export const jsonmin = ( from, to ) => ( { kind: 'jsonmin', from, to } );
-export const wire = ( from, to ) => ( { kind: 'wire', from, to } );
-export const write = ( to, text ) => ( { kind: 'write', to, text } );
-export const omit = ( to, reason ) => ( { kind: 'omit', to, reason } );
+export const copy = (from, to) => ({ kind: 'copy', from, to });
+export const jsonmin = (from, to) => ({ kind: 'jsonmin', from, to });
+export const wire = (from, to) => ({ kind: 'wire', from, to });
+export const write = (to, text) => ({ kind: 'write', to, text });
+export const omit = (to, reason) => ({ kind: 'omit', to, reason });
 
 /**
  * How a fixture gets to the site.
@@ -54,10 +54,17 @@ export const omit = ( to, reason ) => ( { kind: 'omit', to, reason } );
  *
  * @returns 'wire' | 'jsonmin' | 'copy' | 'omit'
  */
-export function fixturePolicy( { bytes, minifiedBytes, wireBytes = null, max = PAGES_MAX_BYTES } ){
-  if( wireBytes != null && wireBytes <= max ){ return 'wire'; }
+export function fixturePolicy({
+  bytes,
+  minifiedBytes,
+  wireBytes = null,
+  max = PAGES_MAX_BYTES,
+}) {
+  if (wireBytes != null && wireBytes <= max) {
+    return 'wire';
+  }
 
-  if( minifiedBytes != null && minifiedBytes < bytes ){
+  if (minifiedBytes != null && minifiedBytes < bytes) {
     return minifiedBytes <= max ? 'jsonmin' : 'omit';
   }
 
@@ -65,19 +72,21 @@ export function fixturePolicy( { bytes, minifiedBytes, wireBytes = null, max = P
 }
 
 /** Byte length of a file, or null. */
-export function sizeOf( path ){
+export function sizeOf(path) {
   try {
-    return statSync( path ).size;
-  } catch{
+    return statSync(path).size;
+  } catch {
     return null;
   }
 }
 
 /** Byte length after re-serializing, or null when it is not JSON. */
-export function minifiedSize( path ){
+export function minifiedSize(path) {
   try {
-    return Buffer.byteLength( JSON.stringify( JSON.parse( readFileSync( path, 'utf8' ) ) ) );
-  } catch{
+    return Buffer.byteLength(
+      JSON.stringify(JSON.parse(readFileSync(path, 'utf8'))),
+    );
+  } catch {
     return null;
   }
 }
@@ -90,141 +99,186 @@ export function minifiedSize( path ){
  * Everything else is byte-for-byte, because a transform applied to a copy is
  * invisible to `test/modules/debug-harness.mjs`.
  */
-export function planDebug( { root, networks, wireEnabled = true } ){
+export function planDebug({ root, networks, wireEnabled = true }) {
   const ops = [];
   const warnings = [];
-  const dir = join( root, 'debug' );
+  const dir = join(root, 'debug');
 
-  if( !existsSync( join( dir, 'index.html' ) ) ){
-    return { ops, warnings, available: false, reason: 'debug/index.html is missing' };
+  if (!existsSync(join(dir, 'index.html'))) {
+    return {
+      ops,
+      warnings,
+      available: false,
+      reason: 'debug/index.html is missing',
+    };
   }
 
   // -- the harness's own files --
-  for( const file of readdirSync( dir ) ){
-    if( file.endsWith( '.json' ) || file.endsWith( '.mjs' ) ){ continue; } // fixtures and tooling
-    if( file === 'index.html' || file === 'networks.js' || file === 'livereload-setup.js' ){ continue; }
+  for (const file of readdirSync(dir)) {
+    if (file.endsWith('.json') || file.endsWith('.mjs')) {
+      continue;
+    } // fixtures and tooling
+    if (
+      file === 'index.html' ||
+      file === 'networks.js' ||
+      file === 'livereload-setup.js'
+    ) {
+      continue;
+    }
 
-    ops.push( copy( join( dir, file ), `debug/${file}` ) );
+    ops.push(copy(join(dir, file), `debug/${file}`));
   }
 
   // edit 1 of 2: livereload injects an http:// script that an https deploy
   // blocks as mixed content, and there is nothing to reload anyway
-  ops.push( write( 'debug/livereload-setup.js',
-    '// Round 46.5: stubbed by scripts/status-build.mjs.  The hosted harness has\n'
-    + '// no livereload server, and the original injects an http:// script that an\n'
-    + '// https deploy blocks as mixed content.  Run `npm run watch` for the live one.\n'
-    + "console.info( 'status site: livereload disabled (this is a static build)' );\n" ) );
+  ops.push(
+    write(
+      'debug/livereload-setup.js',
+      '// Round 46.5: stubbed by scripts/status-build.mjs.  The hosted harness has\n' +
+        '// no livereload server, and the original injects an http:// script that an\n' +
+        '// https deploy blocks as mixed content.  Run `npm run watch` for the live one.\n' +
+        "console.info( 'status site: livereload disabled (this is a static build)' );\n",
+    ),
+  );
 
-  const indexHtml = readFileSync( join( dir, 'index.html' ), 'utf8' );
+  const indexHtml = readFileSync(join(dir, 'index.html'), 'utf8');
 
-  ops.push( write( 'debug/index.html', patchDebugHtml( indexHtml ) ) );
+  ops.push(write('debug/index.html', patchDebugHtml(indexHtml)));
 
   // -- the fixtures --
   const dropped = [];
   const wireUrls = {};
   const byPath = new Map(); // two networks share em-web; encode it once
 
-  for( const [ id, def ] of Object.entries( networks ) ){
-    if( def.generated || def.url == null ){ continue; }
+  for (const [id, def] of Object.entries(networks)) {
+    if (def.generated || def.url == null) {
+      continue;
+    }
 
-    const from = def.url.startsWith( '../' )
-      ? join( root, def.url.replace( /^\.\.\//, '' ) )
-      : join( dir, def.url );
-    const jsonTo = def.url.startsWith( '../' ) ? def.url.replace( /^\.\.\//, '' ) : `debug/${def.url}`;
+    const from = def.url.startsWith('../')
+      ? join(root, def.url.replace(/^\.\.\//, ''))
+      : join(dir, def.url);
+    const jsonTo = def.url.startsWith('../')
+      ? def.url.replace(/^\.\.\//, '')
+      : `debug/${def.url}`;
 
     // a fixture two networks share is planned once but named by both
-    if( byPath.has( from ) ){
-      const already = byPath.get( from );
+    if (byPath.has(from)) {
+      const already = byPath.get(from);
 
-      if( already != null ){ wireUrls[ id ] = already; }
+      if (already != null) {
+        wireUrls[id] = already;
+      }
 
       continue;
     }
 
-    const bytes = sizeOf( from );
+    const bytes = sizeOf(from);
 
-    if( bytes == null ){
-      warnings.push( `${id}: ${def.url} does not exist` );
-      ops.push( omit( jsonTo, 'the fixture is missing from this checkout' ) );
-      dropped.push( id );
-      byPath.set( from, null );
+    if (bytes == null) {
+      warnings.push(`${id}: ${def.url} does not exist`);
+      ops.push(omit(jsonTo, 'the fixture is missing from this checkout'));
+      dropped.push(id);
+      byPath.set(from, null);
       continue;
     }
 
-    const encoded = wireEnabled ? wireSize( root, from ) : null;
-    const policy = fixturePolicy( { bytes, minifiedBytes: minifiedSize( from ), wireBytes: encoded } );
+    const encoded = wireEnabled ? wireSize(root, from) : null;
+    const policy = fixturePolicy({
+      bytes,
+      minifiedBytes: minifiedSize(from),
+      wireBytes: encoded,
+    });
 
-    if( policy === 'wire' ){
-      const to = `${jsonTo.replace( /\.json$/, '' )}${WIRE_EXT}`;
+    if (policy === 'wire') {
+      const to = `${jsonTo.replace(/\.json$/, '')}${WIRE_EXT}`;
       // the url the page fetches, relative to debug/index.html
-      const url = jsonTo.startsWith( 'debug/' ) ? to.slice( 'debug/'.length ) : `../${to}`;
+      const url = jsonTo.startsWith('debug/')
+        ? to.slice('debug/'.length)
+        : `../${to}`;
 
-      ops.push( wire( from, to ) );
-      wireUrls[ id ] = url;
-      byPath.set( from, url );
+      ops.push(wire(from, to));
+      wireUrls[id] = url;
+      byPath.set(from, url);
       continue;
     }
 
-    byPath.set( from, null );
+    byPath.set(from, null);
 
-    if( policy === 'omit' ){
-      const why = `${( bytes / 1048576 ).toFixed( 1 )} MiB, over the 25 MiB Pages cap,`
-        + ' and neither the binary encoding nor minifying brings it under';
+    if (policy === 'omit') {
+      const why =
+        `${(bytes / 1048576).toFixed(1)} MiB, over the 25 MiB Pages cap,` +
+        ' and neither the binary encoding nor minifying brings it under';
 
-      warnings.push( `${id}: omitted — ${why}` );
-      ops.push( omit( jsonTo, why ) );
-      dropped.push( id );
+      warnings.push(`${id}: omitted — ${why}`);
+      ops.push(omit(jsonTo, why));
+      dropped.push(id);
       continue;
     }
 
-    ops.push( policy === 'jsonmin' ? jsonmin( from, jsonTo ) : copy( from, jsonTo ) );
+    ops.push(policy === 'jsonmin' ? jsonmin(from, jsonTo) : copy(from, jsonTo));
   }
 
   // edit 2 of 2: the wire manifest, injected as a script tag.  It names only
   // the networks whose fixture was encoded, so a network that fell back to
   // JSON simply is not in it and `init.js` reads its `url` as before.
-  ops.push( write( 'debug/status-config.js',
-    '// Round 46.5: generated by scripts/status-build.mjs.\n'
-    + '// Maps a network id to its binary wire fixture.  Absent under\n'
-    + '// `npm run watch`, so local development reads the JSON unchanged.\n'
-    + `window.DEBUG_FIXTURE_WIRE = ${JSON.stringify( wireUrls, null, 2 )};\n` ) );
+  ops.push(
+    write(
+      'debug/status-config.js',
+      '// Round 46.5: generated by scripts/status-build.mjs.\n' +
+        '// Maps a network id to its binary wire fixture.  Absent under\n' +
+        '// `npm run watch`, so local development reads the JSON unchanged.\n' +
+        `window.DEBUG_FIXTURE_WIRE = ${JSON.stringify(wireUrls, null, 2)};\n`,
+    ),
+  );
 
   // networks.js is appended to, never rewritten: `var networks` is in scope
   // after the source's trailing export hook, so the patch is plain assignment
   // and no regex has to understand the file
-  ops.push( write( 'debug/networks.js',
-    readFileSync( join( dir, 'networks.js' ), 'utf8' ) + networksPatch( dropped ) ) );
+  ops.push(
+    write(
+      'debug/networks.js',
+      readFileSync(join(dir, 'networks.js'), 'utf8') + networksPatch(dropped),
+    ),
+  );
 
   // the bundle the page loads, at the path it looks for it
-  const umd = join( root, 'build', 'cytoscape.umd.js' );
+  const umd = join(root, 'build', 'cytoscape.umd.js');
 
-  if( existsSync( umd ) ){
-    ops.push( copy( umd, 'build/cytoscape.umd.js' ) );
+  if (existsSync(umd)) {
+    ops.push(copy(umd, 'build/cytoscape.umd.js'));
   } else {
-    return { ops, warnings, available: false, reason: 'build/cytoscape.umd.js is missing — run `npm run build`' };
+    return {
+      ops,
+      warnings,
+      available: false,
+      reason: 'build/cytoscape.umd.js is missing — run `npm run build`',
+    };
   }
 
   return { ops, warnings, available: true, reason: null, dropped };
 }
 
 /** The two — and only two — edits made to the harness's page. */
-export function patchDebugHtml( html ){
+export function patchDebugHtml(html) {
   return html.replace(
     '<script src="livereload-setup.js"></script>',
-    '<script src="livereload-setup.js"></script>\n    <script src="status-config.js"></script>'
+    '<script src="livereload-setup.js"></script>\n    <script src="status-config.js"></script>',
   );
 }
 
 /** The tail appended to the copied `networks.js`. */
-export function networksPatch( dropped ){
-  if( dropped.length === 0 ){
+export function networksPatch(dropped) {
+  if (dropped.length === 0) {
     return '\n// -- generated by scripts/status-build.mjs: every network is available --\n';
   }
 
-  return `\n// -- generated by scripts/status-build.mjs (do not edit) --\n`
-    + `// These networks are not available in the hosted preview.  Removing the\n`
-    + `// entry is deliberate: a dropdown option that 404s is worse than one that\n`
-    + `// is absent, and round 42 shipped four of exactly that.\n`
-    + dropped.map( id => `delete networks[${JSON.stringify( id )}];` ).join( '\n' )
-    + '\n';
+  return (
+    `\n// -- generated by scripts/status-build.mjs (do not edit) --\n` +
+    `// These networks are not available in the hosted preview.  Removing the\n` +
+    `// entry is deliberate: a dropdown option that 404s is worse than one that\n` +
+    `// is absent, and round 42 shipped four of exactly that.\n` +
+    dropped.map((id) => `delete networks[${JSON.stringify(id)}];`).join('\n') +
+    '\n'
+  );
 }

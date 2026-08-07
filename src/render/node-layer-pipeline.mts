@@ -37,68 +37,88 @@ export class NodeLayerPipeline {
    * labels and bind groups
    */
   constructor(
-    device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout,
-    column: 'node.overlay' | 'node.underlay'
-  ){
-    const module = device.createShaderModule( {
-      label: 'cy-gpu:node-layer-shader', code: NODE_LAYER_SHADER
-    } );
+    device: GPUDevice,
+    format: GPUTextureFormat,
+    visibleLayout: GPUBindGroupLayout,
+    column: 'node.overlay' | 'node.underlay',
+  ) {
+    const module = device.createShaderModule({
+      label: 'cy-gpu:node-layer-shader',
+      code: NODE_LAYER_SHADER,
+    });
 
     this.column = column;
-    this.quadIndex = createQuadIndexBuffer( device );
+    this.quadIndex = createQuadIndexBuffer(device);
 
-    this.bindLayout = device.createBindGroupLayout( {
+    this.bindLayout = device.createBindGroupLayout({
       label: `cy-gpu:${column}-bind-layout`,
       entries: [
         {
           binding: 0,
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'uniform' }
+          buffer: { type: 'uniform' },
         },
-        ...[ 1, 2, 3 ].map( binding => ( {
+        ...[1, 2, 3].map((binding) => ({
           binding,
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
-        } ) )
-      ]
-    } );
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        })),
+      ],
+    });
 
-    const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } );
-    const make = ( label: string, depthCompare: GPUCompareFunction ): GPURenderPipeline =>
-      device.createRenderPipeline( {
+    const layout = device.createPipelineLayout({
+      bindGroupLayouts: [this.bindLayout, visibleLayout],
+    });
+    const make = (
+      label: string,
+      depthCompare: GPUCompareFunction,
+    ): GPURenderPipeline =>
+      device.createRenderPipeline({
         label,
         layout,
         vertex: { module, entryPoint: 'vsLayer' },
-        fragment: { module, entryPoint: 'fsLayer', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
+        fragment: {
+          module,
+          entryPoint: 'fsLayer',
+          targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+        },
         primitive: { topology: 'triangle-list' },
-        depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare }
-      } );
+        depthStencil: {
+          format: DEPTH_FORMAT,
+          depthWriteEnabled: false,
+          depthCompare,
+        },
+      });
 
     // overlay: over the bodies (no test); underlay: early-z applies
-    this.pipeline = make( `cy-gpu:${column}-pipeline`, 'always' );
-    this.testedPipeline = make( `cy-gpu:${column}-tested-pipeline`, 'less' );
+    this.pipeline = make(`cy-gpu:${column}-pipeline`, 'always');
+    this.testedPipeline = make(`cy-gpu:${column}-tested-pipeline`, 'less');
     this.bindGroups = new Map();
   }
 
-  private ensureBindGroup( device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror ): GPUBindGroup {
-    const cached = this.bindGroups.get( uniform );
+  private ensureBindGroup(
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+  ): GPUBindGroup {
+    const cached = this.bindGroups.get(uniform);
 
-    if( cached != null && cached.version === mirror.version ){
+    if (cached != null && cached.version === mirror.version) {
       return cached.group;
     }
 
-    const group = device.createBindGroup( {
+    const group = device.createBindGroup({
       label: `cy-gpu:${this.column}-bind-group`,
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        { binding: 1, resource: { buffer: mirror.buffer( 'node.position' ) } },
-        { binding: 2, resource: { buffer: mirror.buffer( 'node.size' ) } },
-        { binding: 3, resource: { buffer: mirror.buffer( this.column ) } }
-      ]
-    } );
+        { binding: 1, resource: { buffer: mirror.buffer('node.position') } },
+        { binding: 2, resource: { buffer: mirror.buffer('node.size') } },
+        { binding: 3, resource: { buffer: mirror.buffer(this.column) } },
+      ],
+    });
 
-    this.bindGroups.set( uniform, { group, version: mirror.version } );
+    this.bindGroups.set(uniform, { group, version: mirror.version });
 
     return group;
   }
@@ -121,15 +141,22 @@ export class NodeLayerPipeline {
    * interiors (the underlay's layering), false to wash over them
    */
   draw(
-    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    mirror: ColumnMirror, instances: number, cull: CulledGroup, depthTested: boolean
+    pass: GPURenderPassEncoder,
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+    instances: number,
+    cull: CulledGroup,
+    depthTested: boolean,
   ): void {
-    if( instances === 0 ){ return; }
+    if (instances === 0) {
+      return;
+    }
 
-    pass.setPipeline( depthTested ? this.testedPipeline : this.pipeline );
-    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
-    pass.setBindGroup( 1, cull.visibleBindGroup() );
-    pass.setIndexBuffer( this.quadIndex, 'uint16' );
-    pass.drawIndexedIndirect( cull.indirect, 0 );
+    pass.setPipeline(depthTested ? this.testedPipeline : this.pipeline);
+    pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror));
+    pass.setBindGroup(1, cull.visibleBindGroup());
+    pass.setIndexBuffer(this.quadIndex, 'uint16');
+    pass.drawIndexedIndirect(cull.indirect, 0);
   }
 }

@@ -6,20 +6,24 @@ import cytoscape from '../src/index.mjs';
 // and the kargerStein spec of test/collection-algorithms.mjs.  Where v3
 // asserted traversal-order-dependent sequences, these specs assert the
 // order-independent graph-theoretic results instead.
-describe('gpu/algorithms: structure', function(){
+describe('gpu/algorithms: structure', function () {
+  var ids = (eles) => eles.map((ele) => ele.id());
+  var sortedIds = (eles) => ids(eles).sort();
 
-  var ids = eles => eles.map( ele => ele.id() );
-  var sortedIds = eles => ids( eles ).sort();
-
-  describe('eles.tarjanStronglyConnected()', function(){
+  describe('eles.tarjanStronglyConnected()', function () {
     var cy;
 
-    beforeEach(function(){
+    beforeEach(function () {
       cy = cytoscape({
         elements: [
-          { data: { id: '1' } }, { data: { id: '2' } }, { data: { id: '3' } },
-          { data: { id: '4' } }, { data: { id: '5' } }, { data: { id: '6' } },
-          { data: { id: '7' } }, { data: { id: '8' } },
+          { data: { id: '1' } },
+          { data: { id: '2' } },
+          { data: { id: '3' } },
+          { data: { id: '4' } },
+          { data: { id: '5' } },
+          { data: { id: '6' } },
+          { data: { id: '7' } },
+          { data: { id: '8' } },
           { data: { id: '1-2', source: '1', target: '2' } },
           { data: { id: '2-3', source: '2', target: '3' } },
           { data: { id: '3-1', source: '3', target: '1' } },
@@ -33,62 +37,121 @@ describe('gpu/algorithms: structure', function(){
           { data: { id: '8-8', source: '8', target: '8' } },
           { data: { id: '6-7', source: '6', target: '7' } },
           { data: { id: '7-6', source: '7', target: '6' } },
-          { data: { id: '8-7', source: '8', target: '7' } }
-        ]
+          { data: { id: '8-7', source: '8', target: '7' } },
+        ],
       });
     });
 
-    it('weakly connected collection', function(){
+    it('weakly connected collection', function () {
       var res = cy.elements().tsc();
 
-      expect( ids( res.cut ) ).to.deep.equal([ '4-2', '4-3', '6-3', '5-6', '8-5', '8-7' ]);
-      expect( res.components.length ).to.equal( 4 );
-      expect( sortedIds( res.components[0] ) ).to.deep.equal([ '1', '1-2', '2', '2-3', '3', '3-1' ]);
-      expect( sortedIds( res.components[1] ) ).to.deep.equal([ '6', '6-7', '7', '7-6' ]);
-      expect( sortedIds( res.components[2] ) ).to.deep.equal([ '4', '4-5', '5', '5-4' ]);
-      expect( sortedIds( res.components[3] ) ).to.deep.equal([ '8', '8-8' ]);
+      expect(ids(res.cut)).to.deep.equal([
+        '4-2',
+        '4-3',
+        '6-3',
+        '5-6',
+        '8-5',
+        '8-7',
+      ]);
+      expect(res.components.length).to.equal(4);
+      expect(sortedIds(res.components[0])).to.deep.equal([
+        '1',
+        '1-2',
+        '2',
+        '2-3',
+        '3',
+        '3-1',
+      ]);
+      expect(sortedIds(res.components[1])).to.deep.equal([
+        '6',
+        '6-7',
+        '7',
+        '7-6',
+      ]);
+      expect(sortedIds(res.components[2])).to.deep.equal([
+        '4',
+        '4-5',
+        '5',
+        '5-4',
+      ]);
+      expect(sortedIds(res.components[3])).to.deep.equal(['8', '8-8']);
     });
 
-    it('disconnected subcollection', function(){
-      var eles = cy.elements().difference(
-        cy.$id('6-3').union( cy.$id('4-5') ).union( cy.$id('5-4') ) );
+    it('disconnected subcollection', function () {
+      var eles = cy
+        .elements()
+        .difference(cy.$id('6-3').union(cy.$id('4-5')).union(cy.$id('5-4')));
       var res = eles.tsc();
 
-      expect( ids( res.cut ) ).to.deep.equal([ '4-2', '4-3', '5-6', '8-5', '8-7' ]);
-      expect( res.components.length ).to.equal( 5 );
-      expect( sortedIds( res.components[0] ) ).to.deep.equal([ '1', '1-2', '2', '2-3', '3', '3-1' ]);
-      expect( sortedIds( res.components[1] ) ).to.deep.equal([ '4' ]);
-      expect( sortedIds( res.components[2] ) ).to.deep.equal([ '6', '6-7', '7', '7-6' ]);
-      expect( sortedIds( res.components[3] ) ).to.deep.equal([ '5' ]);
-      expect( sortedIds( res.components[4] ) ).to.deep.equal([ '8', '8-8' ]);
+      expect(ids(res.cut)).to.deep.equal(['4-2', '4-3', '5-6', '8-5', '8-7']);
+      expect(res.components.length).to.equal(5);
+      expect(sortedIds(res.components[0])).to.deep.equal([
+        '1',
+        '1-2',
+        '2',
+        '2-3',
+        '3',
+        '3-1',
+      ]);
+      expect(sortedIds(res.components[1])).to.deep.equal(['4']);
+      expect(sortedIds(res.components[2])).to.deep.equal([
+        '6',
+        '6-7',
+        '7',
+        '7-6',
+      ]);
+      expect(sortedIds(res.components[3])).to.deep.equal(['5']);
+      expect(sortedIds(res.components[4])).to.deep.equal(['8', '8-8']);
     });
 
-    it('aliases resolve', function(){
-      expect( cy.elements().tarjanStronglyConnected().components.length ).to.equal( 4 );
-      expect( cy.elements().tscc().components.length ).to.equal( 4 );
-      expect( cy.elements().tarjanStronglyConnectedComponents().components.length ).to.equal( 4 );
+    it('aliases resolve', function () {
+      expect(
+        cy.elements().tarjanStronglyConnected().components.length,
+      ).to.equal(4);
+      expect(cy.elements().tscc().components.length).to.equal(4);
+      expect(
+        cy.elements().tarjanStronglyConnectedComponents().components.length,
+      ).to.equal(4);
     });
   });
 
-  describe('eles.hopcroftTarjanBiconnected()', function(){
+  describe('eles.hopcroftTarjanBiconnected()', function () {
     var cy;
-    var sub = prefix => cy.elements().filter( ele => ele.id().startsWith( prefix ) );
+    var sub = (prefix) =>
+      cy.elements().filter((ele) => ele.id().startsWith(prefix));
 
-    beforeEach(function(){
+    beforeEach(function () {
       cy = cytoscape({
         elements: [
-          { data: { id: '0-0' } }, { data: { id: '0-1' } }, { data: { id: '0-2' } },
-          { data: { id: '0-3' } }, { data: { id: '0-4' } },
+          { data: { id: '0-0' } },
+          { data: { id: '0-1' } },
+          { data: { id: '0-2' } },
+          { data: { id: '0-3' } },
+          { data: { id: '0-4' } },
 
-          { data: { id: '1-0' } }, { data: { id: '1-1' } }, { data: { id: '1-2' } },
-          { data: { id: '1-3' } }, { data: { id: '1-4' } }, { data: { id: '1-5' } },
-          { data: { id: '1-6' } }, { data: { id: '1-7' } }, { data: { id: '1-8' } },
-          { data: { id: '1-9' } }, { data: { id: '1-10' } }, { data: { id: '1-11' } },
-          { data: { id: '1-12' } }, { data: { id: '1-13' } }, { data: { id: '1-14' } },
-          { data: { id: '1-15' } }, { data: { id: '1-16' } }, { data: { id: '1-17' } },
+          { data: { id: '1-0' } },
+          { data: { id: '1-1' } },
+          { data: { id: '1-2' } },
+          { data: { id: '1-3' } },
+          { data: { id: '1-4' } },
+          { data: { id: '1-5' } },
+          { data: { id: '1-6' } },
+          { data: { id: '1-7' } },
+          { data: { id: '1-8' } },
+          { data: { id: '1-9' } },
+          { data: { id: '1-10' } },
+          { data: { id: '1-11' } },
+          { data: { id: '1-12' } },
+          { data: { id: '1-13' } },
+          { data: { id: '1-14' } },
+          { data: { id: '1-15' } },
+          { data: { id: '1-16' } },
+          { data: { id: '1-17' } },
           { data: { id: '1-18' } },
 
-          { data: { id: '2-0' } }, { data: { id: '2-1' } }, { data: { id: '2-2' } },
+          { data: { id: '2-0' } },
+          { data: { id: '2-1' } },
+          { data: { id: '2-2' } },
 
           { data: { source: '0-0', target: '0-1', id: '0-5' } },
           { data: { source: '0-1', target: '0-2', id: '0-6' } },
@@ -130,40 +193,40 @@ describe('gpu/algorithms: structure', function(){
           { data: { id: '2-5', source: '2-1', target: '2-1' } },
           { data: { id: '2-6', source: '2-0', target: '2-1' } },
           { data: { id: '2-7', source: '2-0', target: '2-2' } },
-          { data: { id: '2-8', source: '2-0', target: '2-0' } }
-        ]
+          { data: { id: '2-8', source: '2-0', target: '2-0' } },
+        ],
       });
     });
 
-    it('no cut vertices, one biconnected component', function(){
+    it('no cut vertices, one biconnected component', function () {
       var cy0 = sub('0-');
       var cy2 = sub('2-');
       var res0 = cy0.htbc();
       var res2 = cy2.htbc();
 
-      expect( ids( res0.cut ) ).to.deep.equal( [] );
-      expect( res0.components.length ).to.equal( 1 );
-      expect( res0.components[0].length ).to.equal( cy0.length );
-      expect( sortedIds( res0.components[0] ) ).to.deep.equal( sortedIds( cy0 ) );
+      expect(ids(res0.cut)).to.deep.equal([]);
+      expect(res0.components.length).to.equal(1);
+      expect(res0.components[0].length).to.equal(cy0.length);
+      expect(sortedIds(res0.components[0])).to.deep.equal(sortedIds(cy0));
 
-      expect( ids( res2.cut ) ).to.deep.equal( [] );
-      expect( res2.components.length ).to.equal( 1 );
-      expect( res2.components[0].length ).to.equal( cy2.length );
-      expect( sortedIds( res2.components[0] ) ).to.deep.equal( sortedIds( cy2 ) );
+      expect(ids(res2.cut)).to.deep.equal([]);
+      expect(res2.components.length).to.equal(1);
+      expect(res2.components[0].length).to.equal(cy2.length);
+      expect(sortedIds(res2.components[0])).to.deep.equal(sortedIds(cy2));
     });
 
-    it('multiple biconnected components', function(){
+    it('multiple biconnected components', function () {
       var res = sub('1-').htbc();
 
-      expect( sortedIds( res.cut ) ).to.deep.equal([ '1-10', '1-2', '1-7', '1-8' ]);
-      expect( res.components.length ).to.equal( 8 );
+      expect(sortedIds(res.cut)).to.deep.equal(['1-10', '1-2', '1-7', '1-8']);
+      expect(res.components.length).to.equal(8);
 
       // the components' node sets are the graph's blocks (order-independent)
       var blocks = res.components
-        .map( comp => sortedIds( comp.nodes() ).join(' ') )
+        .map((comp) => sortedIds(comp.nodes()).join(' '))
         .sort();
 
-      expect( blocks ).to.deep.equal([
+      expect(blocks).to.deep.equal([
         '1-0',
         '1-1 1-2',
         '1-10 1-11 1-7 1-8 1-9',
@@ -171,20 +234,25 @@ describe('gpu/algorithms: structure', function(){
         '1-10 1-17 1-18',
         '1-12 1-13 1-14 1-15 1-8',
         '1-2 1-3 1-4',
-        '1-2 1-5 1-6 1-7'
+        '1-2 1-5 1-6 1-7',
       ]);
     });
   });
 
-  describe('eles.hierholzer()', function(){
+  describe('eles.hierholzer()', function () {
     var cy;
 
-    beforeEach(function(){
+    beforeEach(function () {
       cy = cytoscape({
         elements: [
-          { data: { id: '0' } }, { data: { id: '1' } }, { data: { id: '2' } },
-          { data: { id: '3' } }, { data: { id: '4' } }, { data: { id: '5' } },
-          { data: { id: '6' } }, { data: { id: '7' } },
+          { data: { id: '0' } },
+          { data: { id: '1' } },
+          { data: { id: '2' } },
+          { data: { id: '3' } },
+          { data: { id: '4' } },
+          { data: { id: '5' } },
+          { data: { id: '6' } },
+          { data: { id: '7' } },
           { data: { id: 'e0', source: '0', target: '1' } },
           { data: { id: 'e1', source: '0', target: '1' } },
           { data: { id: 'e2', source: '1', target: '2' } },
@@ -200,65 +268,73 @@ describe('gpu/algorithms: structure', function(){
           { data: { id: 'e12', source: '4', target: '5' } },
           { data: { id: 'e13', source: '5', target: '0' } },
           { data: { id: 'e14', source: '5', target: '0' } },
-          { data: { id: 'e15', source: '6', target: '4' } }
-        ]
+          { data: { id: 'e15', source: '6', target: '4' } },
+        ],
       });
     });
 
-    it('directed: finds an Eulerian circuit from the root', function(){
+    it('directed: finds an Eulerian circuit from the root', function () {
       var res = cy.elements().hierholzer({ root: cy.$id('0'), directed: true });
 
-      expect( res.found ).to.equal( true );
-      expect( res.trail.edges().same( cy.edges() ) ).to.be.true; // every edge used
-      expect( res.trail.nodes().length ).to.equal( 7 ); // node 7 is isolated
-      expect( res.trail[0].id() ).to.equal('0');
+      expect(res.found).to.equal(true);
+      expect(res.trail.edges().same(cy.edges())).to.be.true; // every edge used
+      expect(res.trail.nodes().length).to.equal(7); // node 7 is isolated
+      expect(res.trail[0].id()).to.equal('0');
     });
 
-    it('undirected: finds an Eulerian circuit from the root', function(){
-      var res = cy.elements().hierholzer({ root: cy.$id('0'), directed: false });
+    it('undirected: finds an Eulerian circuit from the root', function () {
+      var res = cy
+        .elements()
+        .hierholzer({ root: cy.$id('0'), directed: false });
 
-      expect( res.found ).to.equal( true );
-      expect( res.trail.edges().same( cy.edges() ) ).to.be.true;
-      expect( res.trail[0].id() ).to.equal('0');
+      expect(res.found).to.equal(true);
+      expect(res.trail.edges().same(cy.edges())).to.be.true;
+      expect(res.trail[0].id()).to.equal('0');
     });
 
-    it('positional form (root, directed)', function(){
-      var res = cy.elements().hierholzer( cy.$id('0'), true );
+    it('positional form (root, directed)', function () {
+      var res = cy.elements().hierholzer(cy.$id('0'), true);
 
-      expect( res.found ).to.equal( true );
+      expect(res.found).to.equal(true);
     });
 
-    it('reports not found when degrees forbid a trail', function(){
+    it('reports not found when degrees forbid a trail', function () {
       var cy2 = cytoscape({
         elements: [
-          { data: { id: 'a' } }, { data: { id: 'b' } },
-          { data: { id: 'c' } }, { data: { id: 'd' } },
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'd' } },
           // a star: three odd-degree leaves — no Eulerian trail
           { data: { id: 'ab', source: 'a', target: 'b' } },
           { data: { id: 'ac', source: 'a', target: 'c' } },
-          { data: { id: 'ad', source: 'a', target: 'd' } }
-        ]
+          { data: { id: 'ad', source: 'a', target: 'd' } },
+        ],
       });
 
       var res = cy2.elements().hierholzer({});
 
-      expect( res.found ).to.equal( false );
-      expect( res.trail ).to.equal( undefined );
+      expect(res.found).to.equal(false);
+      expect(res.trail).to.equal(undefined);
     });
 
-    it('throws on a selector-string root', function(){
-      expect( () => cy.elements().hierholzer({ root: '#0' }) ).to.throw();
+    it('throws on a selector-string root', function () {
+      expect(() => cy.elements().hierholzer({ root: '#0' })).to.throw();
     });
   });
 
-  describe('eles.kargerStein()', function(){
+  describe('eles.kargerStein()', function () {
     var cy;
 
-    beforeEach(function(){
+    beforeEach(function () {
       cy = cytoscape({
         elements: [
-          { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
-          { data: { id: 'd' } }, { data: { id: 'e' } }, { data: { id: 'f' } },
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'd' } },
+          { data: { id: 'e' } },
+          { data: { id: 'f' } },
           { data: { id: 'ae', source: 'a', target: 'e' } },
           { data: { id: 'ab', source: 'a', target: 'b' } },
           { data: { id: 'be', source: 'b', target: 'e' } },
@@ -267,30 +343,31 @@ describe('gpu/algorithms: structure', function(){
           { data: { id: 'cd', source: 'c', target: 'd' } },
           { data: { id: 'cf', source: 'c', target: 'f' } },
           { data: { id: 'de', source: 'd', target: 'e' } },
-          { data: { id: 'df', source: 'd', target: 'f' } }
-        ]
+          { data: { id: 'df', source: 'd', target: 'f' } },
+        ],
       });
     });
 
-    it('finds a minimum cut', function(){
+    it('finds a minimum cut', function () {
       var res = cy.elements().kargerStein();
 
       // cut size between 2 and 4 (randomized, high probability), as v3 asserts
-      expect( res.cut.length ).to.be.within( 2, 4 );
+      expect(res.cut.length).to.be.within(2, 4);
 
       // nodes and edges of both components plus the cut cover the collection
-      expect( res.components[0].length + res.components[1].length + res.cut.length )
-        .to.equal( 15 );
+      expect(
+        res.components[0].length + res.components[1].length + res.cut.length,
+      ).to.equal(15);
 
       // partitions split the nodes
-      expect( res.partition1.length + res.partition2.length ).to.equal( 6 );
-      expect( res.partition1.intersection( res.partition2 ).length ).to.equal( 0 );
+      expect(res.partition1.length + res.partition2.length).to.equal(6);
+      expect(res.partition1.intersection(res.partition2).length).to.equal(0);
     });
 
-    it('throws on fewer than 2 nodes', function(){
-      var cy2 = cytoscape({ elements: [ { data: { id: 'a' } } ] });
+    it('throws on fewer than 2 nodes', function () {
+      var cy2 = cytoscape({ elements: [{ data: { id: 'a' } }] });
 
-      expect( () => cy2.elements().kargerStein() ).to.throw();
+      expect(() => cy2.elements().kargerStein()).to.throw();
     });
 
     // round 30.1: the *other* precondition.  The node-count guard above
@@ -304,27 +381,32 @@ describe('gpu/algorithms: structure', function(){
     // a result, so what the guard actually catches is a contraction
     // that runs dry — reachable whenever a *subgraph* scope holds
     // nodes it has no edges to collapse.
-    it('throws when the contraction runs out of edges', function(){
-      var cy2 = cytoscape({ elements: [
-        { data: { id: 'a' } }, { data: { id: 'b' } }
-      ] });
+    it('throws when the contraction runs out of edges', function () {
+      var cy2 = cytoscape({
+        elements: [{ data: { id: 'a' } }, { data: { id: 'b' } }],
+      });
 
-      expect( () => cy2.elements().kargerStein() )
-        .to.throw( /connected \(sub\)graph/ );
+      expect(() => cy2.elements().kargerStein()).to.throw(
+        /connected \(sub\)graph/,
+      );
 
       // the subgraph form: nodes selected without their edge
-      var cy3 = cytoscape({ elements: [
-        { data: { id: 'a' } }, { data: { id: 'b' } },
-        { data: { id: 'ab', source: 'a', target: 'b' } }
-      ] });
+      var cy3 = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
+      });
 
-      expect( () => cy3.nodes().kargerStein() )
-        .to.throw( /connected \(sub\)graph/ );
+      expect(() => cy3.nodes().kargerStein()).to.throw(
+        /connected \(sub\)graph/,
+      );
 
       // control: the same nodes *with* the edge answer instead
       var res = cy3.elements().kargerStein();
 
-      expect( res.partition1.length + res.partition2.length ).to.equal( 2 );
+      expect(res.partition1.length + res.partition2.length).to.equal(2);
     });
   });
 });

@@ -15,7 +15,7 @@ export const BUFFER_USAGE = {
   UNIFORM: 0x0040,
   STORAGE: 0x0080,
   INDIRECT: 0x0100,
-  QUERY_RESOLVE: 0x0200
+  QUERY_RESOLVE: 0x0200,
 } as const;
 
 export const TEXTURE_USAGE = {
@@ -23,16 +23,16 @@ export const TEXTURE_USAGE = {
   COPY_DST: 0x02,
   TEXTURE_BINDING: 0x04,
   STORAGE_BINDING: 0x08,
-  RENDER_ATTACHMENT: 0x10
+  RENDER_ATTACHMENT: 0x10,
 } as const;
 
 export const SHADER_STAGE = {
   VERTEX: 0x1,
   FRAGMENT: 0x2,
-  COMPUTE: 0x4
+  COMPUTE: 0x4,
 } as const;
 
 export const MAP_MODE = {
   READ: 0x1,
-  WRITE: 0x2
+  WRITE: 0x2,
 } as const;

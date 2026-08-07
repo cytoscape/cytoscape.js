@@ -18,11 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 import { describeMachine } from '../scripts/machine-info.mjs';
 
-const DIR = dirname( fileURLToPath( import.meta.url ) );
+const DIR = dirname(fileURLToPath(import.meta.url));
 
 /** git, or `null` for any failure — a benchmark outside a checkout still runs. */
-export function git( ...args ){
-  const r = spawnSync( 'git', args, { cwd: DIR, encoding: 'utf8' } );
+export function git(...args) {
+  const r = spawnSync('git', args, { cwd: DIR, encoding: 'utf8' });
 
   return r.status === 0 ? r.stdout.trim() : null;
 }
@@ -38,16 +38,21 @@ export function git( ...args ){
  * @param adapter — the WebGPU adapter actually used, for a browser run
  * @param machine — override the probe (testing); defaults to a real probe
  */
-export function buildMeta( {
-  startedAt, profile, suiteFilter = null, failures = [], context = {},
-  adapter = null, machine = describeMachine()
-} ){
-  const dirty = git( 'status', '--porcelain' );
+export function buildMeta({
+  startedAt,
+  profile,
+  suiteFilter = null,
+  failures = [],
+  context = {},
+  adapter = null,
+  machine = describeMachine(),
+}) {
+  const dirty = git('status', '--porcelain');
 
   return {
-    date: new Date( startedAt ).toISOString(),
-    commit: git( 'rev-parse', '--short', 'HEAD' ),
-    branch: git( 'rev-parse', '--abbrev-ref', 'HEAD' ),
+    date: new Date(startedAt).toISOString(),
+    commit: git('rev-parse', '--short', 'HEAD'),
+    branch: git('rev-parse', '--abbrev-ref', 'HEAD'),
     nodeVersion: process.version,
     cpu: context.cpu ?? null,
     arch: context.arch ?? null,
@@ -58,12 +63,12 @@ export function buildMeta( {
     failures,
 
     // -- round 46.5 --
-    commitDate: git( 'log', '-1', '--format=%aI' ),
-    commitSubject: git( 'log', '-1', '--format=%s' ),
+    commitDate: git('log', '-1', '--format=%aI'),
+    commitSubject: git('log', '-1', '--format=%s'),
     // a measurement from a dirty tree is not attributable to its sha, and a
     // report that does not say so invites exactly that attribution
     dirty: dirty == null ? null : dirty !== '',
     machine,
-    adapter
+    adapter,
   };
 }

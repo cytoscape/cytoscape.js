@@ -31,22 +31,22 @@ without listing it here fails, and so does removing one silently.
 
 /** [ alias, target ] for every alias declared on Core. */
 const CORE_ALIASES = [
-  [ 'makeLayout', 'layout' ],
-  [ 'createLayout', 'layout' ],
-  [ 'addListener', 'on' ],
-  [ 'listen', 'on' ],
-  [ 'bind', 'on' ],
-  [ 'once', 'one' ],
-  [ 'removeListener', 'off' ],
-  [ 'unlisten', 'off' ],
-  [ 'unbind', 'off' ],
-  [ 'trigger', 'emit' ],
-  [ 'pon', 'promiseOn' ],
-  [ 'centre', 'center' ],
-  [ 'invalidateSize', 'resize' ],
-  [ 'jpeg', 'jpg' ],
-  [ 'attr', 'data' ],
-  [ 'removeAttr', 'removeData' ],
+  ['makeLayout', 'layout'],
+  ['createLayout', 'layout'],
+  ['addListener', 'on'],
+  ['listen', 'on'],
+  ['bind', 'on'],
+  ['once', 'one'],
+  ['removeListener', 'off'],
+  ['unlisten', 'off'],
+  ['unbind', 'off'],
+  ['trigger', 'emit'],
+  ['pon', 'promiseOn'],
+  ['centre', 'center'],
+  ['invalidateSize', 'resize'],
+  ['jpeg', 'jpg'],
+  ['attr', 'data'],
+  ['removeAttr', 'removeData'],
   // These two were listed as dropped by the 2026-07-29 "one name per
   // concept" triage and were nonetheless wired and working — an open call
   // until the fifth design sitting, which **kept them** as deliberate,
@@ -54,142 +54,144 @@ const CORE_ALIASES = [
   // `roundrectangle` (round 37.2).  So these rows are now the pinned
   // contract rather than a pinned inconsistency; the exception is written
   // into the ledger's legacy-alias line.
-  [ 'autolockNodes', 'autolock' ],
-  [ 'autoungrabifyNodes', 'autoungrabify' ],
-  [ '$id', 'getElementById' ],
+  ['autolockNodes', 'autolock'],
+  ['autoungrabifyNodes', 'autoungrabify'],
+  ['$id', 'getElementById'],
   // round 39.3: v3's name for what round 19 built.  Kept because an
   // upgrading app already types it, and because v4 has no separate
   // garbage-collection concept for it to mean instead.
-  [ 'gc', 'compact' ]
+  ['gc', 'compact'],
 ];
 
 /** [ alias, target ] for every alias declared on Collection. */
 const COLLECTION_ALIASES = [
-  [ 'each', 'forEach' ],
-  [ 'has', 'contains' ],
-  [ 'equal', 'same' ],
-  [ 'equals', 'same' ],
-  [ 'allAreNeighbours', 'allAreNeighbors' ],
-  [ 'u', 'union' ],
-  [ 'or', 'union' ],
-  [ 'add', 'union' ],
-  [ 'merge', 'union' ],
-  [ 'not', 'difference' ],
-  [ 'subtract', 'difference' ],
-  [ 'unmerge', 'difference' ],
-  [ 'relativeComplement', 'difference' ],
-  [ 'intersect', 'intersection' ],
-  [ 'and', 'intersection' ],
-  [ 'symdiff', 'symmetricDifference' ],
-  [ 'xor', 'symmetricDifference' ],
-  [ 'complement', 'absoluteComplement' ],
-  [ 'abscomp', 'absoluteComplement' ],
-  [ 'modelPosition', 'position' ],
-  [ 'point', 'position' ],
-  [ 'modelPositions', 'positions' ],
-  [ 'points', 'positions' ],
-  [ 'relativePoint', 'relativePosition' ],
-  [ 'renderedPoint', 'renderedPosition' ],
-  [ 'attr', 'data' ],
-  [ 'removeAttr', 'removeData' ],
-  [ 'css', 'style' ],
-  [ 'renderedCss', 'renderedStyle' ],
-  [ 'renderedBoundingbox', 'renderedBoundingBox' ],
-  [ 'deselect', 'unselect' ],
-  [ 'openNeighborhood', 'neighborhood' ],
-  [ 'ancestors', 'parents' ],
-  [ 'componentsOf', 'components' ],
-  [ 'makeLayout', 'layout' ],
-  [ 'createLayout', 'layout' ],
-  [ 'bfs', 'breadthFirstSearch' ],
-  [ 'dfs', 'depthFirstSearch' ],
-  [ 'tsc', 'tarjanStronglyConnected' ],
-  [ 'tscc', 'tarjanStronglyConnected' ],
-  [ 'tarjanStronglyConnectedComponents', 'tarjanStronglyConnected' ],
-  [ 'htbc', 'hopcroftTarjanBiconnected' ],
-  [ 'htb', 'hopcroftTarjanBiconnected' ],
-  [ 'hopcroftTarjanBiconnectedComponents', 'hopcroftTarjanBiconnected' ],
-  [ 'dc', 'degreeCentrality' ],
-  [ 'dcn', 'degreeCentralityNormalized' ],
-  [ 'degreeCentralityNormalised', 'degreeCentralityNormalized' ],
-  [ 'cc', 'closenessCentrality' ],
-  [ 'ccn', 'closenessCentralityNormalized' ],
-  [ 'closenessCentralityNormalised', 'closenessCentralityNormalized' ],
-  [ 'bc', 'betweennessCentrality' ],
-  [ 'fcm', 'fuzzyCMeans' ],
-  [ 'hca', 'hierarchicalClustering' ],
-  [ 'mcl', 'markovClustering' ],
-  [ 'ap', 'affinityPropagation' ],
-  [ 'addListener', 'on' ],
-  [ 'once', 'one' ],
-  [ 'listen', 'on' ],
-  [ 'bind', 'on' ],
-  [ 'removeListener', 'off' ],
-  [ 'unlisten', 'off' ],
-  [ 'unbind', 'off' ],
-  [ 'trigger', 'emit' ],
-  [ 'pon', 'promiseOn' ]
+  ['each', 'forEach'],
+  ['has', 'contains'],
+  ['equal', 'same'],
+  ['equals', 'same'],
+  ['allAreNeighbours', 'allAreNeighbors'],
+  ['u', 'union'],
+  ['or', 'union'],
+  ['add', 'union'],
+  ['merge', 'union'],
+  ['not', 'difference'],
+  ['subtract', 'difference'],
+  ['unmerge', 'difference'],
+  ['relativeComplement', 'difference'],
+  ['intersect', 'intersection'],
+  ['and', 'intersection'],
+  ['symdiff', 'symmetricDifference'],
+  ['xor', 'symmetricDifference'],
+  ['complement', 'absoluteComplement'],
+  ['abscomp', 'absoluteComplement'],
+  ['modelPosition', 'position'],
+  ['point', 'position'],
+  ['modelPositions', 'positions'],
+  ['points', 'positions'],
+  ['relativePoint', 'relativePosition'],
+  ['renderedPoint', 'renderedPosition'],
+  ['attr', 'data'],
+  ['removeAttr', 'removeData'],
+  ['css', 'style'],
+  ['renderedCss', 'renderedStyle'],
+  ['renderedBoundingbox', 'renderedBoundingBox'],
+  ['deselect', 'unselect'],
+  ['openNeighborhood', 'neighborhood'],
+  ['ancestors', 'parents'],
+  ['componentsOf', 'components'],
+  ['makeLayout', 'layout'],
+  ['createLayout', 'layout'],
+  ['bfs', 'breadthFirstSearch'],
+  ['dfs', 'depthFirstSearch'],
+  ['tsc', 'tarjanStronglyConnected'],
+  ['tscc', 'tarjanStronglyConnected'],
+  ['tarjanStronglyConnectedComponents', 'tarjanStronglyConnected'],
+  ['htbc', 'hopcroftTarjanBiconnected'],
+  ['htb', 'hopcroftTarjanBiconnected'],
+  ['hopcroftTarjanBiconnectedComponents', 'hopcroftTarjanBiconnected'],
+  ['dc', 'degreeCentrality'],
+  ['dcn', 'degreeCentralityNormalized'],
+  ['degreeCentralityNormalised', 'degreeCentralityNormalized'],
+  ['cc', 'closenessCentrality'],
+  ['ccn', 'closenessCentralityNormalized'],
+  ['closenessCentralityNormalised', 'closenessCentralityNormalized'],
+  ['bc', 'betweennessCentrality'],
+  ['fcm', 'fuzzyCMeans'],
+  ['hca', 'hierarchicalClustering'],
+  ['mcl', 'markovClustering'],
+  ['ap', 'affinityPropagation'],
+  ['addListener', 'on'],
+  ['once', 'one'],
+  ['listen', 'on'],
+  ['bind', 'on'],
+  ['removeListener', 'off'],
+  ['unlisten', 'off'],
+  ['unbind', 'off'],
+  ['trigger', 'emit'],
+  ['pon', 'promiseOn'],
 ];
 
 /** The `declare x: this['y']` pairs actually written in a source file. */
-const declaredIn = relPath => {
-  const src = readFileSync( fileURLToPath( new URL( relPath, import.meta.url ) ), 'utf8' );
+const declaredIn = (relPath) => {
+  const src = readFileSync(
+    fileURLToPath(new URL(relPath, import.meta.url)),
+    'utf8',
+  );
   const out = [];
 
-  for( const m of src.matchAll( /declare ([a-zA-Z_$][\w$]*): this\['([^']+)'\]/g ) ){
-    out.push( `${m[ 1 ]} -> ${m[ 2 ]}` );
+  for (const m of src.matchAll(
+    /declare ([a-zA-Z_$][\w$]*): this\['([^']+)'\]/g,
+  )) {
+    out.push(`${m[1]} -> ${m[2]}`);
   }
 
   return out;
 };
 
-const key = pairs => pairs.map( ( [ a, b ] ) => `${a} -> ${b}` ).sort();
+const key = (pairs) => pairs.map(([a, b]) => `${a} -> ${b}`).sort();
 
-describe('gpu/aliases: the alias surface (29.1)', function(){
-
-  describe('Core', function(){
-
-    for( const [ alias, target ] of CORE_ALIASES ){
-      it(`cy.${alias} is wired to ${target}`, function(){
-        expect( typeof Core.prototype[ alias ], alias ).to.equal( 'function' );
-        expect( Core.prototype[ alias ], alias ).to.equal( Core.prototype[ target ] );
+describe('gpu/aliases: the alias surface (29.1)', function () {
+  describe('Core', function () {
+    for (const [alias, target] of CORE_ALIASES) {
+      it(`cy.${alias} is wired to ${target}`, function () {
+        expect(typeof Core.prototype[alias], alias).to.equal('function');
+        expect(Core.prototype[alias], alias).to.equal(Core.prototype[target]);
       });
     }
-
   });
 
-  describe('Collection', function(){
-
-    for( const [ alias, target ] of COLLECTION_ALIASES ){
-      it(`eles.${alias} is wired to ${target}`, function(){
-        expect( typeof Collection.prototype[ alias ], alias ).to.equal( 'function' );
-        expect( Collection.prototype[ alias ], alias )
-          .to.equal( Collection.prototype[ target ] );
+  describe('Collection', function () {
+    for (const [alias, target] of COLLECTION_ALIASES) {
+      it(`eles.${alias} is wired to ${target}`, function () {
+        expect(typeof Collection.prototype[alias], alias).to.equal('function');
+        expect(Collection.prototype[alias], alias).to.equal(
+          Collection.prototype[target],
+        );
       });
     }
-
   });
 
-  describe('reaching them through an instance', function(){
-
+  describe('reaching them through an instance', function () {
     // the prototype identity above is the contract; these confirm the
     // aliases are reachable and behave on a live graph, since a class
     // field or an own property could in principle shadow the prototype
     var cy;
 
-    beforeEach(function(){
+    beforeEach(function () {
       cy = cytoscape({
         elements: [
           { data: { id: 'a' }, position: { x: 0, y: 0 } },
           { data: { id: 'b' }, position: { x: 100, y: 0 } },
-          { data: { id: 'ab', source: 'a', target: 'b' } }
-        ]
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
       });
     });
 
-    afterEach(function(){ cy.destroy(); });
+    afterEach(function () {
+      cy.destroy();
+    });
 
-    it('cy.centre() centres like cy.center()', function(){
+    it('cy.centre() centres like cy.center()', function () {
       cy.pan({ x: 500, y: 500 });
       cy.centre();
 
@@ -198,55 +200,54 @@ describe('gpu/aliases: the alias surface (29.1)', function(){
       cy.pan({ x: 500, y: 500 });
       cy.center();
 
-      expect( cy.pan() ).to.deep.equal( after );
+      expect(cy.pan()).to.deep.equal(after);
     });
 
-    it('cy.$id() is the id lookup', function(){
-      expect( cy.$id('a').id() ).to.equal( 'a' );
-      expect( cy.$id('a').same( cy.getElementById('a') ) ).to.equal( true );
+    it('cy.$id() is the id lookup', function () {
+      expect(cy.$id('a').id()).to.equal('a');
+      expect(cy.$id('a').same(cy.getElementById('a'))).to.equal(true);
     });
 
-    it('eles.each() iterates like forEach', function(){
+    it('eles.each() iterates like forEach', function () {
       var seen = [];
 
-      cy.nodes().each( n => seen.push( n.id() ) );
+      cy.nodes().each((n) => seen.push(n.id()));
 
-      expect( seen.sort() ).to.deep.equal( [ 'a', 'b' ] );
+      expect(seen.sort()).to.deep.equal(['a', 'b']);
     });
 
-    it('eles.deselect() unselects', function(){
+    it('eles.deselect() unselects', function () {
       cy.nodes().select();
       cy.nodes().deselect();
 
-      expect( cy.nodes().filter({ selected: true }).length ).to.equal( 0 );
+      expect(cy.nodes().filter({ selected: true }).length).to.equal(0);
     });
 
-    it('eles.bc() is betweennessCentrality', function(){
+    it('eles.bc() is betweennessCentrality', function () {
       var viaAlias = cy.elements().bc();
       var viaName = cy.elements().betweennessCentrality();
 
-      expect( viaAlias.betweenness( cy.$id('a') ) )
-        .to.equal( viaName.betweenness( cy.$id('a') ) );
+      expect(viaAlias.betweenness(cy.$id('a'))).to.equal(
+        viaName.betweenness(cy.$id('a')),
+      );
     });
 
-    it('eles.point() reads the model position', function(){
-      expect( cy.$id('b').point() ).to.deep.equal( cy.$id('b').position() );
+    it('eles.point() reads the model position', function () {
+      expect(cy.$id('b').point()).to.deep.equal(cy.$id('b').position());
     });
-
   });
 
-  describe('the table and the sources agree', function(){
-
-    it('every alias declared on Core is tabled here', function(){
-      expect( declaredIn( '../src/core.mts' ).sort() )
-        .to.deep.equal( key( CORE_ALIASES ) );
+  describe('the table and the sources agree', function () {
+    it('every alias declared on Core is tabled here', function () {
+      expect(declaredIn('../src/core.mts').sort()).to.deep.equal(
+        key(CORE_ALIASES),
+      );
     });
 
-    it('every alias declared on Collection is tabled here', function(){
-      expect( declaredIn( '../src/collection.mts' ).sort() )
-        .to.deep.equal( key( COLLECTION_ALIASES ) );
+    it('every alias declared on Collection is tabled here', function () {
+      expect(declaredIn('../src/collection.mts').sort()).to.deep.equal(
+        key(COLLECTION_ALIASES),
+      );
     });
-
   });
-
 });

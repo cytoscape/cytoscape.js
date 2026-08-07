@@ -35,14 +35,22 @@ import diff from 'highlight.js/lib/languages/diff';
 
 import { esc } from '../theme.mjs';
 
-for( const [ name, lang ] of Object.entries( { javascript, typescript, bash, json, xml, css, diff } ) ){
-  hljs.registerLanguage( name, lang );
+for (const [name, lang] of Object.entries({
+  javascript,
+  typescript,
+  bash,
+  json,
+  xml,
+  css,
+  diff,
+})) {
+  hljs.registerLanguage(name, lang);
 }
 
-hljs.registerAliases( [ 'js', 'mjs', 'mts' ], { languageName: 'javascript' } );
-hljs.registerAliases( [ 'ts' ], { languageName: 'typescript' } );
-hljs.registerAliases( [ 'sh', 'shell', 'console' ], { languageName: 'bash' } );
-hljs.registerAliases( [ 'html' ], { languageName: 'xml' } );
+hljs.registerAliases(['js', 'mjs', 'mts'], { languageName: 'javascript' });
+hljs.registerAliases(['ts'], { languageName: 'typescript' });
+hljs.registerAliases(['sh', 'shell', 'console'], { languageName: 'bash' });
+hljs.registerAliases(['html'], { languageName: 'xml' });
 
 /**
  * A rooted path into this repo, as the documents spell them.  Anchored at both
@@ -52,7 +60,8 @@ hljs.registerAliases( [ 'html' ], { languageName: 'xml' } );
 // `dist/` and `build/` are deliberately absent: they are build outputs, not
 // present in a source checkout, so testing them reports every correct
 // reference to a shipped artifact as broken.
-const ROOTED = /^(?:src|test|benchmark|scripts|debug|playwright-tests|playwright-page|typescript|v3)\/[\w./@-]+$|^[A-Z][A-Z_]*\.md$/;
+const ROOTED =
+  /^(?:src|test|benchmark|scripts|debug|playwright-tests|playwright-page|typescript|v3)\/[\w./@-]+$|^[A-Z][A-Z_]*\.md$/;
 
 /**
  * A path spelling that names a *set* of files, not one file.
@@ -71,21 +80,22 @@ const GLOB = /[*?]|\/$/;
  * `PLAN.md` repeats headings, and two independent counters would number them
  * differently, leaving TOC entries pointing at anchors that do not exist.
  */
-export function slugify( text, seen ){
-  const base = String( text )
-    .toLowerCase()
-    .replace( /<[^>]*>/g, '' )
-    .replace( /[^\w\s-]/g, '' )
-    .trim()
-    // one hyphen per space, not per run: GitHub does not collapse, and an
-    // em dash between words leaves two spaces and so two hyphens.  Matching
-    // it exactly is what makes a link written against GitHub's rendering of
-    // PLAN.md resolve here too.
-    .replace( /\s/g, '-' ) || 'section';
+export function slugify(text, seen) {
+  const base =
+    String(text)
+      .toLowerCase()
+      .replace(/<[^>]*>/g, '')
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      // one hyphen per space, not per run: GitHub does not collapse, and an
+      // em dash between words leaves two spaces and so two hyphens.  Matching
+      // it exactly is what makes a link written against GitHub's rendering of
+      // PLAN.md resolve here too.
+      .replace(/\s/g, '-') || 'section';
 
-  const n = seen.get( base ) ?? 0;
+  const n = seen.get(base) ?? 0;
 
-  seen.set( base, n + 1 );
+  seen.set(base, n + 1);
 
   return n === 0 ? base : `${base}-${n}`;
 }
@@ -98,18 +108,24 @@ export function slugify( text, seen ){
  * @param maxDepth — 3 by default; `src/README.md` needs h3 to be navigable at
  *   all, its longest h2 section being about a third of the file
  */
-export function buildToc( tokens, seen, { maxDepth = 3 } = {} ){
+export function buildToc(tokens, seen, { maxDepth = 3 } = {}) {
   return tokens
-    .filter( t => t.type === 'heading' && t.depth > 1 && t.depth <= maxDepth )
-    .map( t => ( { depth: t.depth, text: t.text, slug: slugify( t.text, seen ) } ) );
+    .filter((t) => t.type === 'heading' && t.depth > 1 && t.depth <= maxDepth)
+    .map((t) => ({
+      depth: t.depth,
+      text: t.text,
+      slug: slugify(t.text, seen),
+    }));
 }
 
 /** Resolve a documented path against the tree, honouring `.mjs` -> `.mts`. */
-export function resolveRepoPath( path, root ){
-  const candidates = [ path, path.replace( /\.mjs$/, '.mts' ) ];
+export function resolveRepoPath(path, root) {
+  const candidates = [path, path.replace(/\.mjs$/, '.mts')];
 
-  for( const c of candidates ){
-    if( existsSync( join( root, c ) ) ){ return c; }
+  for (const c of candidates) {
+    if (existsSync(join(root, c))) {
+      return c;
+    }
   }
 
   return null;
@@ -126,11 +142,20 @@ export function resolveRepoPath( path, root ){
  * @returns `{ html, toc, title, paths }` — `paths` is every rooted repo path
  *   found in a code span with whether it resolved, which `audits` reports on
  */
-export function renderMarkdown( md, { root, sha = null, pageFor = () => null, maxDepth = 3, sectioned = true } = {} ){
-  const marked = new Marked( { gfm: true } );
-  const tokens = marked.lexer( md );
+export function renderMarkdown(
+  md,
+  {
+    root,
+    sha = null,
+    pageFor = () => null,
+    maxDepth = 3,
+    sectioned = true,
+  } = {},
+) {
+  const marked = new Marked({ gfm: true });
+  const tokens = marked.lexer(md);
   const seen = new Map();
-  const toc = buildToc( tokens, seen, { maxDepth } );
+  const toc = buildToc(tokens, seen, { maxDepth });
   const paths = [];
 
   // the heading renderer walks the same headings in the same order, so it must
@@ -138,77 +163,85 @@ export function renderMarkdown( md, { root, sha = null, pageFor = () => null, ma
   const headingSeen = new Map();
 
   const renderer = {
-    heading( token ){
-      const text = this.parser.parseInline( token.tokens );
-      const slug = slugify( token.text, headingSeen );
+    heading(token) {
+      const text = this.parser.parseInline(token.tokens);
+      const slug = slugify(token.text, headingSeen);
 
-      return `<h${token.depth} id="${esc( slug )}">`
-        + `<a class="anchor" href="#${esc( slug )}" aria-hidden="true" tabindex="-1">#</a>`
-        + `${text}</h${token.depth}>\n`;
+      return (
+        `<h${token.depth} id="${esc(slug)}">` +
+        `<a class="anchor" href="#${esc(slug)}" aria-hidden="true" tabindex="-1">#</a>` +
+        `${text}</h${token.depth}>\n`
+      );
     },
 
-    code( token ){
-      const lang = ( token.lang ?? '' ).trim().split( /\s+/ )[ 0 ];
+    code(token) {
+      const lang = (token.lang ?? '').trim().split(/\s+/)[0];
 
       // an unlabelled fence is escaped, never guessed at.  PLAN.md's one fence
       // has no language, and `highlightAuto` on it would colour prose as code
-      if( lang !== '' && hljs.getLanguage( lang ) ){
-        const { value } = hljs.highlight( token.text, { language: lang, ignoreIllegals: true } );
+      if (lang !== '' && hljs.getLanguage(lang)) {
+        const { value } = hljs.highlight(token.text, {
+          language: lang,
+          ignoreIllegals: true,
+        });
 
-        return `<pre><code class="hljs language-${esc( lang )}">${value}</code></pre>\n`;
+        return `<pre><code class="hljs language-${esc(lang)}">${value}</code></pre>\n`;
       }
 
-      return `<pre><code class="hljs">${esc( token.text )}</code></pre>\n`;
+      return `<pre><code class="hljs">${esc(token.text)}</code></pre>\n`;
     },
 
-    codespan( token ){
+    codespan(token) {
       // `token.text` is the RAW span content — marked does not escape it, and
       // overriding this renderer takes its escaping with it.  PLAN.md contains
       // a code span holding `<script>`, so an unescaped one opened a real
       // script element and every page after it stopped working.
       const raw = token.text;
-      const safe = esc( raw );
+      const safe = esc(raw);
 
-      if( !ROOTED.test( raw ) || GLOB.test( raw ) ){ return `<code>${safe}</code>`; }
+      if (!ROOTED.test(raw) || GLOB.test(raw)) {
+        return `<code>${safe}</code>`;
+      }
 
-      const hit = resolveRepoPath( raw, root );
+      const hit = resolveRepoPath(raw, root);
 
-      paths.push( { path: raw, resolved: hit } );
+      paths.push({ path: raw, resolved: hit });
 
-      if( hit == null ){
+      if (hit == null) {
         return `<code class="path-missing" title="does not resolve in this tree">${safe}</code>`;
       }
 
       return sha != null
-        ? `<a class="path" href="https://github.com/cytoscape/cytoscape.js/blob/${esc( sha )}/${esc( hit )}"><code>${safe}</code></a>`
+        ? `<a class="path" href="https://github.com/cytoscape/cytoscape.js/blob/${esc(sha)}/${esc(hit)}"><code>${safe}</code></a>`
         : `<code class="path">${safe}</code>`;
     },
 
-    table( token ){
+    table(token) {
       // a wide table must scroll inside its own box; the page body must never
       // scroll horizontally.  MIGRATING.md's property tables are the wide ones
-      const html = Renderer.prototype.table.call( this, token );
+      const html = Renderer.prototype.table.call(this, token);
 
       return `<div class="table-wrap">${html}</div>`;
     },
 
-    link( token ){
-      const page = pageFor( token.href );
+    link(token) {
+      const page = pageFor(token.href);
       const href = page ?? token.href;
-      const text = this.parser.parseInline( token.tokens );
-      const external = /^https?:/.test( href );
+      const text = this.parser.parseInline(token.tokens);
+      const external = /^https?:/.test(href);
 
-      return `<a href="${esc( href )}"${external ? ' rel="noreferrer"' : ''}>${text}</a>`;
-    }
+      return `<a href="${esc(href)}"${external ? ' rel="noreferrer"' : ''}>${text}</a>`;
+    },
   };
 
-  marked.use( { renderer } );
+  marked.use({ renderer });
 
   // a member's doc comment is a paragraph or two, not a document: wrapping it
   // in `<section class="doc-section">` makes it a block and puts
   // `content-visibility` on a two-line description
-  const html = sectioned ? sectionize( tokens, marked ) : marked.parser( tokens );
-  const title = tokens.find( t => t.type === 'heading' && t.depth === 1 )?.text ?? null;
+  const html = sectioned ? sectionize(tokens, marked) : marked.parser(tokens);
+  const title =
+    tokens.find((t) => t.type === 'heading' && t.depth === 1)?.text ?? null;
 
   return { html, toc, title, paths };
 }
@@ -222,41 +255,48 @@ export function renderMarkdown( md, { root, sha = null, pageFor = () => null, ma
  * search).  `content-visibility: auto` on each section is what makes one page
  * affordable: the browser skips layout and paint for everything offscreen.
  */
-function sectionize( tokens, marked ){
+function sectionize(tokens, marked) {
   const groups = [];
   let current = [];
 
-  for( const token of tokens ){
-    if( token.type === 'heading' && token.depth === 2 && current.length > 0 ){
-      groups.push( current );
+  for (const token of tokens) {
+    if (token.type === 'heading' && token.depth === 2 && current.length > 0) {
+      groups.push(current);
       current = [];
     }
 
-    current.push( token );
+    current.push(token);
   }
 
-  if( current.length > 0 ){ groups.push( current ); }
+  if (current.length > 0) {
+    groups.push(current);
+  }
 
   return groups
-    .map( group => {
+    .map((group) => {
       // marked's parser needs the `links` bag the lexer attached to the full
       // stream, or reference-style links silently render as literal text
       const slice = group;
 
       slice.links = tokens.links ?? {};
 
-      return `<section class="doc-section">${marked.parser( slice )}</section>`;
-    } )
-    .join( '\n' );
+      return `<section class="doc-section">${marked.parser(slice)}</section>`;
+    })
+    .join('\n');
 }
 
 /** The TOC markup: a flat list, indented by depth, filterable client-side. */
-export function tocHtml( toc ){
-  if( toc.length === 0 ){ return ''; }
+export function tocHtml(toc) {
+  if (toc.length === 0) {
+    return '';
+  }
 
   const items = toc
-    .map( t => `<li class="d${t.depth}"><a href="#${esc( t.slug )}">${esc( t.text )}</a></li>` )
-    .join( '' );
+    .map(
+      (t) =>
+        `<li class="d${t.depth}"><a href="#${esc(t.slug)}">${esc(t.text)}</a></li>`,
+    )
+    .join('');
 
   return `<nav class="toc" aria-label="Contents">
     <input type="search" id="toc-filter" placeholder="Filter ${toc.length} sections" aria-label="Filter contents">

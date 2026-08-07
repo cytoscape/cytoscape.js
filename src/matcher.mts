@@ -30,7 +30,7 @@ export interface DataCondition {
   lte?: number;
   gt?: number;
   gte?: number;
-  in?: ( string | number )[];
+  in?: (string | number)[];
 }
 
 /** A structured element query; every present key must hold. */
@@ -66,46 +66,71 @@ export interface FlagPlan {
 /** The flags test every live slot passes (whole-group scans). */
 export const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
 
-const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected', 'parent', 'child', 'data' ] );
-const CONDITION_OPS: ReadonlySet<string> = new Set( [ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in' ] );
+const QUERY_KEYS: ReadonlySet<string> = new Set([
+  'group',
+  'selected',
+  'parent',
+  'child',
+  'data',
+]);
+const CONDITION_OPS: ReadonlySet<string> = new Set([
+  'eq',
+  'ne',
+  'lt',
+  'lte',
+  'gt',
+  'gte',
+  'in',
+]);
 
-const isBareValue = ( v: unknown ): boolean =>
-  v == null || typeof v !== 'object';
+const isBareValue = (v: unknown): boolean => v == null || typeof v !== 'object';
 
 /** Compile one query data entry into a condition (case-mapper rules). */
-const compileDataCondition = ( key: string, spec: DataCondition | string | number | boolean | null ): CompiledCondition => {
-  if( isBareValue( spec ) ){
+const compileDataCondition = (
+  key: string,
+  spec: DataCondition | string | number | boolean | null,
+): CompiledCondition => {
+  if (isBareValue(spec)) {
     return { key, op: 'eq', value: spec as string | number };
   }
 
   const cond = spec as DataCondition;
-  const ops = Object.keys( cond );
+  const ops = Object.keys(cond);
 
-  for( const op of ops ){
-    if( !CONDITION_OPS.has( op ) ){
-      throw new Error( `Unknown data condition op '${op}' for key '${key}'; ` +
-        `supported: ${[ ...CONDITION_OPS ].join( ', ' )}` );
+  for (const op of ops) {
+    if (!CONDITION_OPS.has(op)) {
+      throw new Error(
+        `Unknown data condition op '${op}' for key '${key}'; ` +
+          `supported: ${[...CONDITION_OPS].join(', ')}`,
+      );
     }
   }
 
-  if( ops.length !== 1 ){
-    throw new Error( `A data condition needs exactly one comparison ` +
-      `(${[ ...CONDITION_OPS ].join( ', ' )}); got ${ops.length} for key '${key}'` );
+  if (ops.length !== 1) {
+    throw new Error(
+      `A data condition needs exactly one comparison ` +
+        `(${[...CONDITION_OPS].join(', ')}); got ${ops.length} for key '${key}'`,
+    );
   }
 
-  const op = ops[ 0 ] as CompiledCondition['op'];
-  const raw = cond[ op as keyof DataCondition ];
+  const op = ops[0] as CompiledCondition['op'];
+  const raw = cond[op as keyof DataCondition];
 
-  if( op === 'in' ){
-    if( !Array.isArray( raw ) || raw.length === 0 ){
-      throw new Error( `'in' needs a non-empty array of values for key '${key}'` );
+  if (op === 'in') {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new Error(
+        `'in' needs a non-empty array of values for key '${key}'`,
+      );
     }
 
-    return { key, op, value: raw as ( string | number )[] };
+    return { key, op, value: raw as (string | number)[] };
   }
 
-  if( ( op === 'lt' || op === 'lte' || op === 'gt' || op === 'gte' ) && typeof raw !== 'number' ){
-    throw new Error( `'${op}' needs a numeric value for key '${key}'` );
+  if (
+    (op === 'lt' || op === 'lte' || op === 'gt' || op === 'gte') &&
+    typeof raw !== 'number'
+  ) {
+    throw new Error(`'${op}' needs a numeric value for key '${key}'`);
   }
 
   return { key, op, value: raw as string | number };
@@ -118,44 +143,52 @@ const compileDataCondition = ( key: string, spec: DataCondition | string | numbe
  * with no string language left, a typo'd key must fail loudly rather than
  * silently match everything.
  */
-export const compileQuery = ( query: Query, restrict: GroupName | null = null ): FlagPlan => {
+export const compileQuery = (
+  query: Query,
+  restrict: GroupName | null = null,
+): FlagPlan => {
   // 29.3: a v3 selector string used to reach the key loop, where its
   // character indices read as keys and the error came back as
   // "Unknown query key '0'" — true, but not the thing that went wrong
-  if( typeof query === 'string' ){
+  if (typeof query === 'string') {
     throw new Error(
       `Queries take an object, not the selector string '${query}' — v4 has no ` +
-      `selector language; use a query object like cy.nodes({ selected: true }), ` +
-      `a predicate function, or cy.$id( id )` );
+        `selector language; use a query object like cy.nodes({ selected: true }), ` +
+        `a predicate function, or cy.$id( id )`,
+    );
   }
 
-  for( const key of Object.keys( query ) ){
-    if( !QUERY_KEYS.has( key ) ){
-      throw new Error( `Unknown query key '${key}'; supported keys: group, selected, parent, child, data` );
+  for (const key of Object.keys(query)) {
+    if (!QUERY_KEYS.has(key)) {
+      throw new Error(
+        `Unknown query key '${key}'; supported keys: group, selected, parent, child, data`,
+      );
     }
   }
 
   const group = query.group ?? null;
 
-  if( group != null && group !== 'nodes' && group !== 'edges' ){
-    throw new Error( `Unknown query group '${String( group )}'; use 'nodes' or 'edges'` );
+  if (group != null && group !== 'nodes' && group !== 'edges') {
+    throw new Error(
+      `Unknown query group '${String(group)}'; use 'nodes' or 'edges'`,
+    );
   }
 
   // boolean flag terms compose by OR-ing (mask, want) pairs
   let mask = 0;
   let want = 0;
 
-  if( query.selected != null ){
+  if (query.selected != null) {
     mask |= FLAG_SELECTED;
     want |= query.selected ? FLAG_SELECTED : 0;
   }
 
-  if( query.parent != null ){
+  if (query.parent != null) {
     mask |= FLAG_PARENT;
     want |= query.parent ? FLAG_PARENT : 0;
   }
 
-  if( query.child != null ){
+  if (query.child != null) {
     mask |= FLAG_CHILD;
     want |= query.child ? FLAG_CHILD : 0;
   }
@@ -167,42 +200,61 @@ export const compileQuery = ( query: Query, restrict: GroupName | null = null ):
   // unrestricted one just never matches edges
   const structural = query.parent != null || query.child != null;
 
-  if( structural && ( group === 'edges' || restrict === 'edges' ) ){
-    throw new Error( `The 'parent'/'child' query keys apply to nodes only` );
+  if (structural && (group === 'edges' || restrict === 'edges')) {
+    throw new Error(`The 'parent'/'child' query keys apply to nodes only`);
   }
 
-  const allows = ( g: GroupName ): boolean =>
-    ( group == null || group === g ) && ( restrict == null || restrict === g )
-    && !( structural && g === 'edges' );
+  const allows = (g: GroupName): boolean =>
+    (group == null || group === g) &&
+    (restrict == null || restrict === g) &&
+    !(structural && g === 'edges');
 
   let data: CompiledCondition[] | null = null;
 
-  if( query.data != null ){
-    data = Object.keys( query.data ).map( key => compileDataCondition( key, query.data![ key ] ) );
+  if (query.data != null) {
+    data = Object.keys(query.data).map((key) =>
+      compileDataCondition(key, query.data![key]),
+    );
 
-    if( data.length === 0 ){ data = null; }
+    if (data.length === 0) {
+      data = null;
+    }
   }
 
   return {
-    nodes: allows( 'nodes' ) ? test : null,
-    edges: allows( 'edges' ) ? test : null,
-    data
+    nodes: allows('nodes') ? test : null,
+    edges: allows('edges') ? test : null,
+    data,
   };
 };
 
 /** Test one ref against a compiled plan (stale refs never match). */
-export const planMatchesRef = ( store: GraphStore, ref: Ref, plan: FlagPlan ): boolean => {
+export const planMatchesRef = (
+  store: GraphStore,
+  ref: Ref,
+  plan: FlagPlan,
+): boolean => {
   const test = ref.group === 'nodes' ? plan.nodes : plan.edges;
 
-  if( test == null || !store.isCurrent( ref ) ){ return false; }
+  if (test == null || !store.isCurrent(ref)) {
+    return false;
+  }
 
-  const flags = ( store.column( ref.group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array )[ ref.slot ];
+  const flags = (
+    store.column(
+      ref.group === 'nodes' ? 'node.flags' : 'edge.flags',
+    ) as Uint32Array
+  )[ref.slot];
 
-  if( ( flags & test.mask ) !== test.want ){ return false; }
+  if ((flags & test.mask) !== test.want) {
+    return false;
+  }
 
-  if( plan.data != null ){
-    for( const cond of plan.data ){
-      if( !testCondition( cond, store.data.get( ref.group, ref.slot, cond.key ) ) ){ return false; }
+  if (plan.data != null) {
+    for (const cond of plan.data) {
+      if (!testCondition(cond, store.data.get(ref.group, ref.slot, cond.key))) {
+        return false;
+      }
     }
   }
 

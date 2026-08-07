@@ -1,5 +1,10 @@
 import { COLUMN_SPECS, columnSpec } from '../contract.mjs';
-import type { ColumnId, GroupName, ModelView, StoreDelta } from '../contract.mjs';
+import type {
+  ColumnId,
+  GroupName,
+  ModelView,
+  StoreDelta,
+} from '../contract.mjs';
 import { BUFFER_USAGE } from './webgpu-constants.mjs';
 
 /*
@@ -16,11 +21,18 @@ GPU storage-buffer mirror of the CPU-canonical columns.
 
 /** The subset of GPUDevice the mirror needs (kept narrow for mock-based unit tests). */
 export interface MirrorDevice {
-  createBuffer( descriptor: { size: number; usage: number; label?: string } ): GPUBuffer;
+  createBuffer(descriptor: {
+    size: number;
+    usage: number;
+    label?: string;
+  }): GPUBuffer;
   queue: {
     writeBuffer(
-      buffer: GPUBuffer, bufferOffset: number,
-      data: ArrayBufferLike | ArrayBufferView, dataOffset?: number, size?: number
+      buffer: GPUBuffer,
+      bufferOffset: number,
+      data: ArrayBufferLike | ArrayBufferView,
+      dataOffset?: number,
+      size?: number,
     ): void;
     onSubmittedWorkDone(): Promise<undefined>;
   };
@@ -57,7 +69,7 @@ export class ColumnMirror {
    * @param view — the CPU-canonical columns this mirror shadows; held by
    * reference, so later capacity growth is picked up by sync()
    */
-  constructor( device: MirrorDevice, view: ModelView ){
+  constructor(device: MirrorDevice, view: ModelView) {
     this.device = device;
     this.view = view;
     this.version = 0;
@@ -73,8 +85,8 @@ export class ColumnMirror {
     this.image = this.reallocImageBlob();
     this.chart = this.reallocChartBlob();
 
-    this.realloc( 'nodes' );
-    this.realloc( 'edges' );
+    this.realloc('nodes');
+    this.realloc('edges');
   }
 
   /**
@@ -83,8 +95,8 @@ export class ColumnMirror {
    * realloc() still uploads the CPU base in full — the caller schedules a
    * full re-eval for owned columns whenever a group resizes.
    */
-  setGpuOwned( ids: Iterable<ColumnId> ): void {
-    this.gpuOwned = new Set( ids );
+  setGpuOwned(ids: Iterable<ColumnId>): void {
+    this.gpuOwned = new Set(ids);
   }
 
   /**
@@ -92,8 +104,8 @@ export class ColumnMirror {
    * separate set from the mapper-owned one so the two can't clobber each
    * other); span uploads skip a column owned by either.
    */
-  setTweenOwned( ids: Iterable<ColumnId> ): void {
-    this.tweenOwned = new Set( ids );
+  setTweenOwned(ids: Iterable<ColumnId>): void {
+    this.tweenOwned = new Set(ids);
   }
 
   /**
@@ -106,11 +118,11 @@ export class ColumnMirror {
    * @throws if the column has no mirror buffer — a spec/group mismatch,
    * never a capacity condition
    */
-  buffer( id: ColumnId ): GPUBuffer {
-    const buffer = this.buffers.get( id );
+  buffer(id: ColumnId): GPUBuffer {
+    const buffer = this.buffers.get(id);
 
-    if( buffer == null ){
-      throw new Error( `No mirror buffer for column '${id}'` );
+    if (buffer == null) {
+      throw new Error(`No mirror buffer for column '${id}'`);
     }
 
     return buffer;
@@ -137,86 +149,118 @@ export class ColumnMirror {
   }
 
   /** Apply a StoreDelta: reallocate resized groups, upload dirty spans for the rest. */
-  sync( delta: StoreDelta ): void {
-    if( this.destroyed ){ return; }
+  sync(delta: StoreDelta): void {
+    if (this.destroyed) {
+      return;
+    }
 
-    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
-      if( delta.resized[ group ] || this.view.capacity( group ) !== this.capacities[ group ] ){
-        this.realloc( group );
+    for (const group of ['nodes', 'edges'] as GroupName[]) {
+      if (
+        delta.resized[group] ||
+        this.view.capacity(group) !== this.capacities[group]
+      ) {
+        this.realloc(group);
       }
     }
 
-    for( const span of delta.spans ){
-      const spec = columnSpec( span.column );
+    for (const span of delta.spans) {
+      const spec = columnSpec(span.column);
 
-      if( delta.resized[ spec.group ] ){ continue; } // covered by the full re-upload
+      if (delta.resized[spec.group]) {
+        continue;
+      } // covered by the full re-upload
 
-      if( this.gpuOwned.has( span.column ) || this.tweenOwned.has( span.column ) ){ continue; } // owned on-GPU
+      if (this.gpuOwned.has(span.column) || this.tweenOwned.has(span.column)) {
+        continue;
+      } // owned on-GPU
 
-      const arr = this.view.column( span.column );
+      const arr = this.view.column(span.column);
       const byteStart = span.start * spec.bytesPerSlot;
-      const byteLength = ( span.end - span.start ) * spec.bytesPerSlot;
+      const byteLength = (span.end - span.start) * spec.bytesPerSlot;
 
       this.device.queue.writeBuffer(
-        this.buffer( span.column ), byteStart,
-        arr.buffer, arr.byteOffset + byteStart, byteLength
+        this.buffer(span.column),
+        byteStart,
+        arr.buffer,
+        arr.byteOffset + byteStart,
+        byteLength,
       );
 
       this.uploadedBytes += byteLength;
     }
 
-    if( delta.curveBlob != null ){
-      if( delta.curveBlob.resized ){
+    if (delta.curveBlob != null) {
+      if (delta.curveBlob.resized) {
         this.blob = this.reallocBlob();
       } else {
         const data = this.view.curveBlob();
         const byteStart = delta.curveBlob.start * 4;
-        const byteLength = ( delta.curveBlob.end - delta.curveBlob.start ) * 4;
+        const byteLength = (delta.curveBlob.end - delta.curveBlob.start) * 4;
 
         this.device.queue.writeBuffer(
-          this.blob, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+          this.blob,
+          byteStart,
+          data.buffer,
+          data.byteOffset + byteStart,
+          byteLength,
+        );
         this.uploadedBytes += byteLength;
       }
     }
 
-    if( delta.polyBlob != null ){
-      if( delta.polyBlob.resized ){
+    if (delta.polyBlob != null) {
+      if (delta.polyBlob.resized) {
         this.poly = this.reallocPolyBlob();
       } else {
         const data = this.view.polyBlob();
         const byteStart = delta.polyBlob.start * 4;
-        const byteLength = ( delta.polyBlob.end - delta.polyBlob.start ) * 4;
+        const byteLength = (delta.polyBlob.end - delta.polyBlob.start) * 4;
 
         this.device.queue.writeBuffer(
-          this.poly, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+          this.poly,
+          byteStart,
+          data.buffer,
+          data.byteOffset + byteStart,
+          byteLength,
+        );
         this.uploadedBytes += byteLength;
       }
     }
 
-    if( delta.imageBlob != null ){
-      if( delta.imageBlob.resized ){
+    if (delta.imageBlob != null) {
+      if (delta.imageBlob.resized) {
         this.image = this.reallocImageBlob();
       } else {
         const data = this.view.imageBlob();
         const byteStart = delta.imageBlob.start * 4;
-        const byteLength = ( delta.imageBlob.end - delta.imageBlob.start ) * 4;
+        const byteLength = (delta.imageBlob.end - delta.imageBlob.start) * 4;
 
         this.device.queue.writeBuffer(
-          this.image, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+          this.image,
+          byteStart,
+          data.buffer,
+          data.byteOffset + byteStart,
+          byteLength,
+        );
         this.uploadedBytes += byteLength;
       }
     }
 
-    if( delta.chartBlob != null ){
-      if( delta.chartBlob.resized ){
+    if (delta.chartBlob != null) {
+      if (delta.chartBlob.resized) {
         this.chart = this.reallocChartBlob();
       } else {
         const data = this.view.chartBlob();
         const byteStart = delta.chartBlob.start * 4;
-        const byteLength = ( delta.chartBlob.end - delta.chartBlob.start ) * 4;
+        const byteLength = (delta.chartBlob.end - delta.chartBlob.start) * 4;
 
         this.device.queue.writeBuffer(
-          this.chart, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+          this.chart,
+          byteStart,
+          data.buffer,
+          data.byteOffset + byteStart,
+          byteLength,
+        );
         this.uploadedBytes += byteLength;
       }
     }
@@ -231,7 +275,7 @@ export class ColumnMirror {
   destroy(): void {
     this.destroyed = true;
 
-    for( const buffer of this.buffers.values() ){
+    for (const buffer of this.buffers.values()) {
       buffer.destroy();
     }
 
@@ -247,22 +291,28 @@ export class ColumnMirror {
   private reallocBlob(): GPUBuffer {
     const data = this.view.curveBlob();
     const old = this.blobCapacity > 0 || this.blob != null ? this.blob : null;
-    const buffer = this.device.createBuffer( {
+    const buffer = this.device.createBuffer({
       label: 'cy-gpu:curve-blob',
-      size: Math.max( data.byteLength, 4 ),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+      size: Math.max(data.byteLength, 4),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
-    if( data.byteLength > 0 ){
-      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+    if (data.byteLength > 0) {
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        data.buffer,
+        data.byteOffset,
+        data.byteLength,
+      );
       this.uploadedBytes += data.byteLength;
     }
 
     this.blobCapacity = data.length;
     this.version++;
 
-    if( old != null ){
-      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
     }
 
     return buffer;
@@ -272,21 +322,27 @@ export class ColumnMirror {
   private reallocPolyBlob(): GPUBuffer {
     const data = this.view.polyBlob();
     const old = this.poly;
-    const buffer = this.device.createBuffer( {
+    const buffer = this.device.createBuffer({
       label: 'cy-gpu:poly-blob',
-      size: Math.max( data.byteLength, 4 ),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+      size: Math.max(data.byteLength, 4),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
-    if( data.byteLength > 0 ){
-      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+    if (data.byteLength > 0) {
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        data.buffer,
+        data.byteOffset,
+        data.byteLength,
+      );
       this.uploadedBytes += data.byteLength;
     }
 
     this.version++;
 
-    if( old != null ){
-      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
     }
 
     return buffer;
@@ -296,21 +352,27 @@ export class ColumnMirror {
   private reallocChartBlob(): GPUBuffer {
     const data = this.view.chartBlob();
     const old = this.chart;
-    const buffer = this.device.createBuffer( {
+    const buffer = this.device.createBuffer({
       label: 'cy-gpu:chart-blob',
-      size: Math.max( data.byteLength, 4 ),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+      size: Math.max(data.byteLength, 4),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
-    if( data.byteLength > 0 ){
-      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+    if (data.byteLength > 0) {
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        data.buffer,
+        data.byteOffset,
+        data.byteLength,
+      );
       this.uploadedBytes += data.byteLength;
     }
 
     this.version++;
 
-    if( old != null ){
-      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
     }
 
     return buffer;
@@ -320,63 +382,79 @@ export class ColumnMirror {
   private reallocImageBlob(): GPUBuffer {
     const data = this.view.imageBlob();
     const old = this.image;
-    const buffer = this.device.createBuffer( {
+    const buffer = this.device.createBuffer({
       label: 'cy-gpu:image-blob',
-      size: Math.max( data.byteLength, 4 ),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-    } );
+      size: Math.max(data.byteLength, 4),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
 
-    if( data.byteLength > 0 ){
-      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+    if (data.byteLength > 0) {
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        data.buffer,
+        data.byteOffset,
+        data.byteLength,
+      );
       this.uploadedBytes += data.byteLength;
     }
 
     this.version++;
 
-    if( old != null ){
-      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
     }
 
     return buffer;
   }
 
-  private realloc( group: GroupName ): void {
-    const cap = this.view.capacity( group );
+  private realloc(group: GroupName): void {
+    const cap = this.view.capacity(group);
     const olds: GPUBuffer[] = [];
 
-    for( const spec of COLUMN_SPECS ){
-      if( spec.group !== group ){ continue; }
+    for (const spec of COLUMN_SPECS) {
+      if (spec.group !== group) {
+        continue;
+      }
 
-      const old = this.buffers.get( spec.id );
+      const old = this.buffers.get(spec.id);
 
-      if( old != null ){ olds.push( old ); }
+      if (old != null) {
+        olds.push(old);
+      }
 
-      const size = Math.max( cap * spec.bytesPerSlot, 4 );
-      const buffer = this.device.createBuffer( {
+      const size = Math.max(cap * spec.bytesPerSlot, 4);
+      const buffer = this.device.createBuffer({
         label: `cy-gpu:${spec.id}`,
         size,
-        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
-      } );
+        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+      });
 
       // full upload of the backing array (byte-identical, sized to capacity)
-      const arr = this.view.column( spec.id );
+      const arr = this.view.column(spec.id);
 
-      this.device.queue.writeBuffer( buffer, 0, arr.buffer, arr.byteOffset, arr.byteLength );
+      this.device.queue.writeBuffer(
+        buffer,
+        0,
+        arr.buffer,
+        arr.byteOffset,
+        arr.byteLength,
+      );
       this.uploadedBytes += arr.byteLength;
 
-      this.buffers.set( spec.id, buffer );
+      this.buffers.set(spec.id, buffer);
     }
 
-    this.capacities[ group ] = cap;
+    this.capacities[group] = cap;
     this.version++;
 
-    if( olds.length > 0 ){
+    if (olds.length > 0) {
       // defer destroy until submitted work (still binding the old buffers) completes
-      this.device.queue.onSubmittedWorkDone().then( () => {
-        for( const old of olds ){
+      this.device.queue.onSubmittedWorkDone().then(() => {
+        for (const old of olds) {
           old.destroy();
         }
-      } );
+      });
     }
   }
 }

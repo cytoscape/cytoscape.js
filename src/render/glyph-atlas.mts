@@ -21,7 +21,7 @@ export const SDF_RADIUS = 8;
 export const SDF_CUTOFF = 0.5;
 
 const ATLAS_SIZE = 1024;
-const ROW_HEIGHT = Math.ceil( SDF_FONT_SIZE * 1.4 ) + 2 * SDF_PAD;
+const ROW_HEIGHT = Math.ceil(SDF_FONT_SIZE * 1.4) + 2 * SDF_PAD;
 const INF = 1e20;
 
 /** How a glyph is placed: sizes/offsets in SDF px, uvs normalized. */
@@ -45,30 +45,36 @@ export interface GlyphMetrics {
  * Convert a rasterized alpha grid to SDF bytes (pure; exported for Node
  * tests).  255 = deep inside, ~128 at the edge, 0 = far outside.
  */
-export const computeSdf = ( alpha: ArrayLike<number>, w: number, h: number ): Uint8Array => {
+export const computeSdf = (
+  alpha: ArrayLike<number>,
+  w: number,
+  h: number,
+): Uint8Array => {
   const n = w * h;
-  const gridOuter = new Float64Array( n );
-  const gridInner = new Float64Array( n );
+  const gridOuter = new Float64Array(n);
+  const gridInner = new Float64Array(n);
 
-  for( let i = 0; i < n; i++ ){
-    const a = alpha[ i ] / 255;
+  for (let i = 0; i < n; i++) {
+    const a = alpha[i] / 255;
 
     // antialiased edge pixels seed fractional squared distances
-    gridOuter[ i ] = a >= 1 ? 0 : a <= 0 ? INF : Math.pow( Math.max( 0, 0.5 - a ), 2 );
-    gridInner[ i ] = a >= 1 ? INF : a <= 0 ? 0 : Math.pow( Math.max( 0, a - 0.5 ), 2 );
+    gridOuter[i] =
+      a >= 1 ? 0 : a <= 0 ? INF : Math.pow(Math.max(0, 0.5 - a), 2);
+    gridInner[i] =
+      a >= 1 ? INF : a <= 0 ? 0 : Math.pow(Math.max(0, a - 0.5), 2);
   }
 
-  edt2d( gridOuter, w, h );
-  edt2d( gridInner, w, h );
+  edt2d(gridOuter, w, h);
+  edt2d(gridInner, w, h);
 
-  const out = new Uint8Array( n );
+  const out = new Uint8Array(n);
 
-  for( let i = 0; i < n; i++ ){
-    const d = Math.sqrt( gridOuter[ i ] ) - Math.sqrt( gridInner[ i ] );
+  for (let i = 0; i < n; i++) {
+    const d = Math.sqrt(gridOuter[i]) - Math.sqrt(gridInner[i]);
     // edge (d = 0) lands at SDF_CUTOFF; ±SDF_RADIUS/2 px covers the full byte range
-    const byte = Math.round( 255 - 255 * ( d / SDF_RADIUS + SDF_CUTOFF ) );
+    const byte = Math.round(255 - 255 * (d / SDF_RADIUS + SDF_CUTOFF));
 
-    out[ i ] = Math.max( 0, Math.min( 255, byte ) );
+    out[i] = Math.max(0, Math.min(255, byte));
   }
 
   return out;
@@ -76,57 +82,73 @@ export const computeSdf = ( alpha: ArrayLike<number>, w: number, h: number ): Ui
 
 // 2D squared Euclidean distance transform: 1D passes over columns then rows
 // (Felzenszwalb & Huttenlocher, "Distance Transforms of Sampled Functions")
-const edt2d = ( grid: Float64Array, w: number, h: number ): void => {
-  const size = Math.max( w, h );
-  const f = new Float64Array( size );
-  const d = new Float64Array( size );
-  const z = new Float64Array( size + 1 );
-  const v = new Uint32Array( size );
+const edt2d = (grid: Float64Array, w: number, h: number): void => {
+  const size = Math.max(w, h);
+  const f = new Float64Array(size);
+  const d = new Float64Array(size);
+  const z = new Float64Array(size + 1);
+  const v = new Uint32Array(size);
 
-  for( let x = 0; x < w; x++ ){
-    for( let y = 0; y < h; y++ ){ f[ y ] = grid[ y * w + x ]; }
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      f[y] = grid[y * w + x];
+    }
 
-    edt1d( f, d, v, z, h );
+    edt1d(f, d, v, z, h);
 
-    for( let y = 0; y < h; y++ ){ grid[ y * w + x ] = d[ y ]; }
+    for (let y = 0; y < h; y++) {
+      grid[y * w + x] = d[y];
+    }
   }
 
-  for( let y = 0; y < h; y++ ){
-    for( let x = 0; x < w; x++ ){ f[ x ] = grid[ y * w + x ]; }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      f[x] = grid[y * w + x];
+    }
 
-    edt1d( f, d, v, z, w );
+    edt1d(f, d, v, z, w);
 
-    for( let x = 0; x < w; x++ ){ grid[ y * w + x ] = d[ x ]; }
+    for (let x = 0; x < w; x++) {
+      grid[y * w + x] = d[x];
+    }
   }
 };
 
-const edt1d = ( f: Float64Array, d: Float64Array, v: Uint32Array, z: Float64Array, n: number ): void => {
+const edt1d = (
+  f: Float64Array,
+  d: Float64Array,
+  v: Uint32Array,
+  z: Float64Array,
+  n: number,
+): void => {
   let k = 0;
 
   v[0] = 0;
   z[0] = -INF;
   z[1] = INF;
 
-  for( let q = 1; q < n; q++ ){
-    let s = ( f[ q ] + q * q - ( f[ v[ k ] ] + v[ k ] * v[ k ] ) ) / ( 2 * q - 2 * v[ k ] );
+  for (let q = 1; q < n; q++) {
+    let s = (f[q] + q * q - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
 
-    while( s <= z[ k ] ){
+    while (s <= z[k]) {
       k--;
-      s = ( f[ q ] + q * q - ( f[ v[ k ] ] + v[ k ] * v[ k ] ) ) / ( 2 * q - 2 * v[ k ] );
+      s = (f[q] + q * q - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
     }
 
     k++;
-    v[ k ] = q;
-    z[ k ] = s;
-    z[ k + 1 ] = INF;
+    v[k] = q;
+    z[k] = s;
+    z[k + 1] = INF;
   }
 
   k = 0;
 
-  for( let q = 0; q < n; q++ ){
-    while( z[ k + 1 ] < q ){ k++; }
+  for (let q = 0; q < n; q++) {
+    while (z[k + 1] < q) {
+      k++;
+    }
 
-    d[ q ] = ( q - v[ k ] ) * ( q - v[ k ] ) + f[ v[ k ] ];
+    d[q] = (q - v[k]) * (q - v[k]) + f[v[k]];
   }
 };
 
@@ -162,35 +184,37 @@ export class GlyphAtlas {
    * @param device — the device that owns the texture and sampler
    * @throws if a 2D canvas context cannot be obtained
    */
-  constructor( device: GPUDevice ){
+  constructor(device: GPUDevice) {
     this.device = device;
     this.cache = new Map();
     this.penX = 0;
     this.penY = 0;
     this.full = false;
 
-    this.texture = device.createTexture( {
+    this.texture = device.createTexture({
       label: 'cy-gpu:glyph-atlas',
       size: { width: ATLAS_SIZE, height: ATLAS_SIZE },
       format: 'r8unorm',
-      usage: TEXTURE_USAGE.TEXTURE_BINDING | TEXTURE_USAGE.COPY_DST
-    } );
+      usage: TEXTURE_USAGE.TEXTURE_BINDING | TEXTURE_USAGE.COPY_DST,
+    });
 
-    this.sampler = device.createSampler( {
+    this.sampler = device.createSampler({
       label: 'cy-gpu:glyph-sampler',
       magFilter: 'linear',
-      minFilter: 'linear'
-    } );
+      minFilter: 'linear',
+    });
 
-    const canvas = document.createElement( 'canvas' );
+    const canvas = document.createElement('canvas');
 
     canvas.width = SDF_FONT_SIZE * 4;
     canvas.height = ROW_HEIGHT;
 
-    const ctx = canvas.getContext( '2d', { willReadFrequently: true } );
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-    if( ctx == null ){
-      throw new Error( 'Could not get a 2d canvas context for glyph rasterization' );
+    if (ctx == null) {
+      throw new Error(
+        'Could not get a 2d canvas context for glyph rasterization',
+      );
     }
 
     this.ctx = ctx;
@@ -201,7 +225,7 @@ export class GlyphAtlas {
     this.fontStyle = 'normal';
     this.fontWeight = 'normal';
     this.ascent = 0;
-    this.setFont( 'sans-serif' );
+    this.setFont('sans-serif');
   }
 
   /**
@@ -211,9 +235,18 @@ export class GlyphAtlas {
    * same label-dirty pass, so no run references old UVs.  No-op when
    * family, style and weight are all unchanged.
    */
-  setFont( family: string, style: string = 'normal', weight: string = 'normal' ): void {
-    if( family === this.fontFamily && style === this.fontStyle
-        && weight === this.fontWeight ){ return; }
+  setFont(
+    family: string,
+    style: string = 'normal',
+    weight: string = 'normal',
+  ): void {
+    if (
+      family === this.fontFamily &&
+      style === this.fontStyle &&
+      weight === this.fontWeight
+    ) {
+      return;
+    }
 
     this.fontFamily = family;
     this.fontStyle = style;
@@ -237,80 +270,108 @@ export class GlyphAtlas {
     this.penY = 0;
     this.full = false;
 
-    const m = this.ctx.measureText( 'Mg' );
+    const m = this.ctx.measureText('Mg');
 
-    this.ascent = Math.ceil( m.fontBoundingBoxAscent ?? m.actualBoundingBoxAscent );
+    this.ascent = Math.ceil(
+      m.fontBoundingBoxAscent ?? m.actualBoundingBoxAscent,
+    );
   }
 
   /** Metrics for a glyph, rasterizing it into the atlas on first use.  Null when the atlas is full. */
-  metrics( ch: string ): GlyphMetrics | null {
-    const cached = this.cache.get( ch );
+  metrics(ch: string): GlyphMetrics | null {
+    const cached = this.cache.get(ch);
 
-    if( cached !== undefined ){ return cached; }
+    if (cached !== undefined) {
+      return cached;
+    }
 
-    const built = this.build( ch );
+    const built = this.build(ch);
 
-    this.cache.set( ch, built );
+    this.cache.set(ch, built);
 
     return built;
   }
 
-  private build( ch: string ): GlyphMetrics | null {
+  private build(ch: string): GlyphMetrics | null {
     const ctx = this.ctx;
-    const measured = ctx.measureText( ch );
+    const measured = ctx.measureText(ch);
     const advance = measured.width;
 
     // whitespace and zero-ink glyphs advance the pen without a quad
-    if( ch.trim() === '' ){
-      return { advance, planeX: 0, planeY: 0, w: 0, h: 0, u0: 0, v0: 0, u1: 0, v1: 0 };
+    if (ch.trim() === '') {
+      return {
+        advance,
+        planeX: 0,
+        planeY: 0,
+        w: 0,
+        h: 0,
+        u0: 0,
+        v0: 0,
+        u1: 0,
+        v1: 0,
+      };
     }
 
-    const left = Math.ceil( measured.actualBoundingBoxLeft );
-    const right = Math.ceil( measured.actualBoundingBoxRight );
-    const asc = Math.ceil( measured.actualBoundingBoxAscent );
-    const desc = Math.ceil( measured.actualBoundingBoxDescent );
+    const left = Math.ceil(measured.actualBoundingBoxLeft);
+    const right = Math.ceil(measured.actualBoundingBoxRight);
+    const asc = Math.ceil(measured.actualBoundingBoxAscent);
+    const desc = Math.ceil(measured.actualBoundingBoxDescent);
     const inkW = left + right;
     const inkH = asc + desc;
 
-    if( inkW <= 0 || inkH <= 0 ){
-      return { advance, planeX: 0, planeY: 0, w: 0, h: 0, u0: 0, v0: 0, u1: 0, v1: 0 };
+    if (inkW <= 0 || inkH <= 0) {
+      return {
+        advance,
+        planeX: 0,
+        planeY: 0,
+        w: 0,
+        h: 0,
+        u0: 0,
+        v0: 0,
+        u1: 0,
+        v1: 0,
+      };
     }
 
     const cellW = inkW + 2 * SDF_PAD;
-    const cellH = Math.min( inkH + 2 * SDF_PAD, ROW_HEIGHT );
+    const cellH = Math.min(inkH + 2 * SDF_PAD, ROW_HEIGHT);
 
-    if( this.full ){ return null; }
+    if (this.full) {
+      return null;
+    }
 
-    if( this.penX + cellW > ATLAS_SIZE ){
+    if (this.penX + cellW > ATLAS_SIZE) {
       this.penX = 0;
       this.penY += ROW_HEIGHT;
     }
 
-    if( this.penY + ROW_HEIGHT > ATLAS_SIZE ){
+    if (this.penY + ROW_HEIGHT > ATLAS_SIZE) {
       this.full = true;
       // eslint-disable-next-line no-console
-      console.warn( 'cytoscape: the glyph atlas is full; further new glyphs will not render' );
+      console.warn(
+        'cytoscape: the glyph atlas is full; further new glyphs will not render',
+      );
 
       return null;
     }
 
-    ctx.clearRect( 0, 0, cellW, cellH );
-    ctx.fillText( ch, SDF_PAD + left, SDF_PAD + asc );
+    ctx.clearRect(0, 0, cellW, cellH);
+    ctx.fillText(ch, SDF_PAD + left, SDF_PAD + asc);
 
-    const image = ctx.getImageData( 0, 0, cellW, cellH ).data;
-    const alpha = new Uint8Array( cellW * cellH );
+    const image = ctx.getImageData(0, 0, cellW, cellH).data;
+    const alpha = new Uint8Array(cellW * cellH);
 
-    for( let i = 0; i < alpha.length; i++ ){
-      alpha[ i ] = image[ i * 4 + 3 ];
+    for (let i = 0; i < alpha.length; i++) {
+      alpha[i] = image[i * 4 + 3];
     }
 
-    const sdf = computeSdf( alpha, cellW, cellH );
+    const sdf = computeSdf(alpha, cellW, cellH);
 
     this.device.queue.writeTexture(
       { texture: this.texture, origin: { x: this.penX, y: this.penY } },
       sdf,
       { bytesPerRow: cellW },
-      { width: cellW, height: cellH }
+      { width: cellW, height: cellH },
     );
 
     const metrics: GlyphMetrics = {
@@ -321,8 +382,8 @@ export class GlyphAtlas {
       h: cellH,
       u0: this.penX / ATLAS_SIZE,
       v0: this.penY / ATLAS_SIZE,
-      u1: ( this.penX + cellW ) / ATLAS_SIZE,
-      v1: ( this.penY + cellH ) / ATLAS_SIZE
+      u1: (this.penX + cellW) / ATLAS_SIZE,
+      v1: (this.penY + cellH) / ATLAS_SIZE,
     };
 
     this.penX += cellW;

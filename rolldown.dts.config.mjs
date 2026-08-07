@@ -6,8 +6,8 @@ import { dts } from 'rolldown-plugin-dts';
 
 const resolve = {
   extensionAlias: {
-    '.mjs': ['.mts', '.mjs']
-  }
+    '.mjs': ['.mts', '.mjs'],
+  },
 };
 
 export default {
@@ -17,11 +17,11 @@ export default {
     dts({
       // type-check happens in `npm run typecheck`; here we just roll up
       emitDtsOnly: true,
-      tsconfig: './tsconfig.dts.json'
-    })
+      tsconfig: './tsconfig.dts.json',
+    }),
   ],
   output: {
     dir: 'build/dts',
-    format: 'es'
-  }
+    format: 'es',
+  },
 };

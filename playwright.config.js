@@ -4,9 +4,10 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const parallelism = typeof os.availableParallelism === 'function'
-  ? os.availableParallelism()
-  : os.cpus().length;
+const parallelism =
+  typeof os.availableParallelism === 'function'
+    ? os.availableParallelism()
+    : os.cpus().length;
 
 /*
  * Half the cores, not one worker per core.
@@ -30,13 +31,14 @@ const parallelism = typeof os.availableParallelism === 'function'
  * not the answer either: it is 6× the wall clock and the long tail brings its
  * own timeouts.
  */
-const workers = Math.max( 1, Math.floor( parallelism / 2 ) );
+const workers = Math.max(1, Math.floor(parallelism / 2));
 
 /* See the renderer project comment: Linux needs ANGLE-on-Vulkan compositing
  * for WebGPU canvases to present; macOS (Metal) must not get these flags. */
-const linuxVulkanCompositingArgs = process.platform === 'linux'
-  ? ['--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan']
-  : [];
+const linuxVulkanCompositingArgs =
+  process.platform === 'linux'
+    ? ['--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan']
+    : [];
 
 /* GPU_DEBUG=1: dump the GPU process log to stderr for CI diagnosis. */
 const gpuDebugArgs = process.env.GPU_DEBUG
@@ -54,11 +56,14 @@ const gpuDebugArgs = process.env.GPU_DEBUG
  * independent of runner-image Mesa churn.  CI-gated so local runs keep
  * using the real GPU.
  */
-if( process.platform === 'linux' && process.env.CI ){
+if (process.platform === 'linux' && process.env.CI) {
   try {
-    const icd = path.join( path.dirname( chromium.executablePath() ), 'vk_swiftshader_icd.json' );
+    const icd = path.join(
+      path.dirname(chromium.executablePath()),
+      'vk_swiftshader_icd.json',
+    );
 
-    if( fs.existsSync( icd ) ){
+    if (fs.existsSync(icd)) {
       process.env.VK_ICD_FILENAMES = icd; // legacy loader var
       process.env.VK_DRIVER_FILES = icd;
     }
@@ -81,7 +86,11 @@ if( process.platform === 'linux' && process.env.CI ){
  * Fedora's libjpeg-turbo does not build (it ships libjpeg.so.62).  No config
  * can supply that; see AGENTS.md for the one-line local fix.
  */
-if( process.platform === 'linux' && !process.env.CI && !fs.existsSync( '/etc/debian_version' ) ){
+if (
+  process.platform === 'linux' &&
+  !process.env.CI &&
+  !fs.existsSync('/etc/debian_version')
+) {
   process.env.PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = '1';
 }
 
@@ -127,8 +136,12 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         channel: 'chromium',
         launchOptions: {
-          args: ['--enable-unsafe-webgpu', '--enable-unsafe-swiftshader',
-            ...linuxVulkanCompositingArgs, ...gpuDebugArgs],
+          args: [
+            '--enable-unsafe-webgpu',
+            '--enable-unsafe-swiftshader',
+            ...linuxVulkanCompositingArgs,
+            ...gpuDebugArgs,
+          ],
         },
       },
     },
@@ -173,7 +186,8 @@ export default defineConfig({
           args: [
             '--enable-unsafe-webgpu',
             '--enable-unsafe-swiftshader',
-            ...linuxVulkanCompositingArgs, ...gpuDebugArgs,
+            ...linuxVulkanCompositingArgs,
+            ...gpuDebugArgs,
             '--use-webgpu-adapter=swiftshader',
           ],
         },

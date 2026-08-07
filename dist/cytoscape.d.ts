@@ -3887,6 +3887,12 @@ declare class Animation {
    * A transition animation (round 24.1): the style engine diffed stored
    * truth around a restyle into per-column writes; nothing to capture.
    *
+   * @param store — the store whose columns the writes address
+   * @param refs — the elements the transition covers, for eviction and
+   *   ref repair; the writes carry their own slot lists
+   * @param writes — the diffed per-column from/to records
+   * @param opts — `duration`, and the `delay`/`easing` the sheet's
+   *   `transition-*` config resolved to
    * @returns an animation whose values are already resolved — it never
    *   reads the columns at play time, so the restyle's own diff is the
    *   only place stored truth is consulted
@@ -5200,7 +5206,14 @@ declare class Collection {
    * @returns the final accumulator
    */
   reduce<T>(fn: (acc: T, ele: Collection, i: number, eles: Collection) => T, initial: T): T;
-  /** The element maximizing `valFn`, with its value ({ value: -Infinity, ele: undefined } when empty). */
+  /**
+   * The element maximizing `valFn`, with its value.
+   *
+   * @param valFn — `( ele, i, eles ) => number`
+   * @param thisArg — optional receiver for the callback
+   * @returns `{ value, ele }`, or `{ value: -Infinity, ele: undefined }`
+   *   when the collection is empty
+   */
   max(valFn: (ele: Collection, i: number, eles: Collection) => number, thisArg?: unknown): {
     value: number;
     ele: Collection | undefined;
@@ -5449,6 +5462,9 @@ declare class Collection {
    * first element's whole object, `scratch(ns)` one namespace, `scratch(ns,
    * val)` / `scratch(obj)` write to every element.
    *
+   * @param args — the form to take: nothing (read the whole object), a
+   *   namespace (read it), a namespace and a value (write it to every
+   *   element), or one object (merge its keys into every element)
    * @returns the reader forms answer the first element — the whole
    *   scratch object under no argument, one namespace's value under
    *   `scratch(ns)`, undefined when the collection is empty — while the
@@ -6265,6 +6281,10 @@ declare class Collection {
    * v3's boundingBoxAt, computed directly with no store writes.  Edges
    * span their endpoints' hypothetical (or, outside the collection,
    * current) positions.
+   *
+   * @param fn — one position shared by every node, or `( node, i ) =>
+   *   position` evaluated per node in this collection's order
+   * @returns the hypothetical box, in model coordinates
    */
   boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
     x1: number;
@@ -6293,6 +6313,15 @@ declare class Collection {
    * and the layoutstart/layoutready/layoutstop event flow — v3's helper.
    * With `animate: true` the viewport animates concurrently (a fit targets
    * the bounding box at the *final* positions, as v3 does).
+   *
+   * @param layout — the layout instance the lifecycle events carry as
+   *   `event.layout`; it is not called back, only reported
+   * @param options — the standard layout options (`spacingFactor`,
+   *   `transform`, `fit`/`padding`, `zoom`/`pan`, `animate`,
+   *   `animationDuration`, `animateFilter`)
+   * @param fn — `( node, i ) => position`, evaluated once per positioned
+   *   node; parents are excluded (auto-bounds derive them)
+   * @returns this collection, for chaining
    */
   layoutPositions(layout: object, options: LayoutBaseOptions, fn: (node: Collection, i: number) => Position): this;
   /**

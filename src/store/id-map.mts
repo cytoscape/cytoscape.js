@@ -34,12 +34,12 @@ const BASE = 2; // live entries encode as ((slot << 1) | groupBit) + BASE
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
-const fnv = ( bytes: Uint8Array, lo: number, hi: number ): number => {
+const fnv = (bytes: Uint8Array, lo: number, hi: number): number => {
   let h = 0x811c9dc5;
 
-  for( let i = lo; i < hi; i++ ){
-    h ^= bytes[ i ];
-    h = Math.imul( h, 0x01000193 );
+  for (let i = lo; i < hi; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193);
   }
 
   return h >>> 0;
@@ -51,24 +51,30 @@ interface GroupMeta {
   end: Uint32Array;
   hash: Uint32Array;
   /** lazily decoded string cache */
-  names: ( string | undefined )[];
+  names: (string | undefined)[];
 }
 
-const makeMeta = (): GroupMeta => ( {
-  start: new Uint32Array( 0 ), end: new Uint32Array( 0 ), hash: new Uint32Array( 0 ), names: []
-} );
+const makeMeta = (): GroupMeta => ({
+  start: new Uint32Array(0),
+  end: new Uint32Array(0),
+  hash: new Uint32Array(0),
+  names: [],
+});
 
 const BLOB_MIN = 1024;
 /** blobs smaller than this never compact (nothing worth reclaiming) */
 const BLOB_COMPACT_FLOOR = 4096;
 
 export class IdMap {
-  private blob = new Uint8Array( BLOB_MIN );
+  private blob = new Uint8Array(BLOB_MIN);
   private blobLen = 0;
-  private table = new Uint32Array( 64 );
+  private table = new Uint32Array(64);
   private tombs = 0;
-  private scratch = new Uint8Array( 256 );
-  private meta: Record<GroupName, GroupMeta> = { nodes: makeMeta(), edges: makeMeta() };
+  private scratch = new Uint8Array(256);
+  private meta: Record<GroupName, GroupMeta> = {
+    nodes: makeMeta(),
+    edges: makeMeta(),
+  };
   private _size = 0;
   private waste = 0;
 
@@ -93,8 +99,8 @@ export class IdMap {
    *
    * @param id — the id to look up
    */
-  has( id: string ): boolean {
-    return this.findEntry( id ) !== EMPTY;
+  has(id: string): boolean {
+    return this.findEntry(id) !== EMPTY;
   }
 
   /**
@@ -105,12 +111,17 @@ export class IdMap {
    * @param id — the id to look up
    * @returns the entry, or undefined when no element holds the id
    */
-  get( id: string ): IdEntry | undefined {
-    const entry = this.findEntry( id );
+  get(id: string): IdEntry | undefined {
+    const entry = this.findEntry(id);
 
-    if( entry === EMPTY ){ return undefined; }
+    if (entry === EMPTY) {
+      return undefined;
+    }
 
-    return { group: ( entry - BASE ) & 1 ? 'edges' : 'nodes', slot: ( entry - BASE ) >>> 1 };
+    return {
+      group: (entry - BASE) & 1 ? 'edges' : 'nodes',
+      slot: (entry - BASE) >>> 1,
+    };
   }
 
   /**
@@ -123,16 +134,20 @@ export class IdMap {
    * @param slot — the slot within that group
    * @returns the id, or undefined when the slot holds none
    */
-  idAt( group: GroupName, slot: number ): string | undefined {
-    const m = this.meta[ group ];
-    const cached = m.names[ slot ];
+  idAt(group: GroupName, slot: number): string | undefined {
+    const m = this.meta[group];
+    const cached = m.names[slot];
 
-    if( cached != null ){ return cached; }
-    if( slot >= m.start.length || m.start[ slot ] === 0 ){ return undefined; }
+    if (cached != null) {
+      return cached;
+    }
+    if (slot >= m.start.length || m.start[slot] === 0) {
+      return undefined;
+    }
 
-    const name = this.decode( m.start[ slot ] - 1, m.end[ slot ] - 1 );
+    const name = this.decode(m.start[slot] - 1, m.end[slot] - 1);
 
-    m.names[ slot ] = name;
+    m.names[slot] = name;
 
     return name;
   }
@@ -140,10 +155,10 @@ export class IdMap {
   /** The stored id hash for a slot (0 when none) — stable across
    * sessions and machines for a given id string; the curve derivation
    * seeds hash-stable haystack angles from it (12c). */
-  hashAt( group: GroupName, slot: number ): number {
-    const m = this.meta[ group ];
+  hashAt(group: GroupName, slot: number): number {
+    const m = this.meta[group];
 
-    return slot < m.hash.length ? m.hash[ slot ] : 0;
+    return slot < m.hash.length ? m.hash[slot] : 0;
   }
 
   /**
@@ -156,20 +171,20 @@ export class IdMap {
    * @param slot — the slot within that group
    * @throws if another element already holds this id
    */
-  set( id: string, group: GroupName, slot: number ): void {
-    this.ensure( this._size + 1 );
+  set(id: string, group: GroupName, slot: number): void {
+    this.ensure(this._size + 1);
 
-    const len = this.encodeScratch( id );
-    const h = fnv( this.scratch, 0, len );
-    const { found, at } = this.probe( h, this.scratch, 0, len );
+    const len = this.encodeScratch(id);
+    const h = fnv(this.scratch, 0, len);
+    const { found, at } = this.probe(h, this.scratch, 0, len);
 
-    if( found !== EMPTY ){
-      throw new Error( `Can not create second element with id '${id}'` );
+    if (found !== EMPTY) {
+      throw new Error(`Can not create second element with id '${id}'`);
     }
 
-    const lo = this.append( this.scratch, 0, len );
+    const lo = this.append(this.scratch, 0, len);
 
-    this.place( at, group, slot, lo, lo + len, h );
+    this.place(at, group, slot, lo, lo + len, h);
   }
 
   /**
@@ -178,14 +193,15 @@ export class IdMap {
    * strings.  Holes (zero-length / undefined ids) get `newId()`.
    */
   setBulk(
-    group: GroupName, slots: Uint32Array,
-    ids: ( string | undefined )[] | PackedIds | undefined,
-    newId: () => string
+    group: GroupName,
+    slots: Uint32Array,
+    ids: (string | undefined)[] | PackedIds | undefined,
+    newId: () => string,
   ): void {
-    this.ensure( this._size + slots.length );
+    this.ensure(this._size + slots.length);
 
-    if( ids != null && isPackedIds( ids ) ){
-      const total = ids.offsets[ slots.length ];
+    if (ids != null && isPackedIds(ids)) {
+      const total = ids.offsets[slots.length];
 
       // Round 48.3, found by fuzzing: the offsets are prefix sums into
       // `blob`, and they arrive from the wire format zero-copy, so nothing
@@ -198,48 +214,52 @@ export class IdMap {
       //
       // The declared total cannot exceed the blob that is supposed to carry
       // it. That is O(1), and it is the whole fix.
-      if( total > ids.blob.length ){
+      if (total > ids.blob.length) {
         throw new Error(
           `Packed ids declare ${total} bytes but the blob holds ` +
-          `${ids.blob.length} — the payload is corrupt` );
+            `${ids.blob.length} — the payload is corrupt`,
+        );
       }
 
-      const base = this.append( ids.blob, 0, total );
+      const base = this.append(ids.blob, 0, total);
 
-      for( let i = 0; i < slots.length; i++ ){
-        const lo = base + ids.offsets[ i ];
-        const hi = base + ids.offsets[ i + 1 ];
+      for (let i = 0; i < slots.length; i++) {
+        const lo = base + ids.offsets[i];
+        const hi = base + ids.offsets[i + 1];
 
-        if( hi <= lo ){
-          this.set( newId(), group, slots[ i ] );
+        if (hi <= lo) {
+          this.set(newId(), group, slots[i]);
           continue;
         }
 
         // and no id may run past the blob: offsets are only prefix sums if
         // the payload says so
-        if( hi > base + total ){
+        if (hi > base + total) {
           throw new Error(
             `Packed id ${i} ends at ${hi - base}, past the ${total}-byte blob ` +
-            '— the payload is corrupt' );
+              '— the payload is corrupt',
+          );
         }
 
-        const h = fnv( this.blob, lo, hi );
-        const { found, at } = this.probe( h, this.blob, lo, hi );
+        const h = fnv(this.blob, lo, hi);
+        const { found, at } = this.probe(h, this.blob, lo, hi);
 
-        if( found !== EMPTY ){
-          throw new Error( `Can not create second element with id '${this.decode( lo, hi )}'` );
+        if (found !== EMPTY) {
+          throw new Error(
+            `Can not create second element with id '${this.decode(lo, hi)}'`,
+          );
         }
 
-        this.place( at, group, slots[ i ], lo, hi, h );
+        this.place(at, group, slots[i], lo, hi, h);
       }
 
       return;
     }
 
-    const list = ids as ( string | undefined )[] | undefined;
+    const list = ids as (string | undefined)[] | undefined;
 
-    for( let i = 0; i < slots.length; i++ ){
-      this.set( list?.[ i ] ?? newId(), group, slots[ i ] );
+    for (let i = 0; i < slots.length; i++) {
+      this.set(list?.[i] ?? newId(), group, slots[i]);
     }
   }
 
@@ -251,24 +271,26 @@ export class IdMap {
    *
    * @param id — the id to unbind
    */
-  remove( id: string ): void {
-    const len = this.encodeScratch( id );
-    const h = fnv( this.scratch, 0, len );
-    const { found, at } = this.probe( h, this.scratch, 0, len );
+  remove(id: string): void {
+    const len = this.encodeScratch(id);
+    const h = fnv(this.scratch, 0, len);
+    const { found, at } = this.probe(h, this.scratch, 0, len);
 
-    if( found === EMPTY ){ return; }
+    if (found === EMPTY) {
+      return;
+    }
 
-    const slot = ( found - BASE ) >>> 1;
-    const m = this.meta[ ( found - BASE ) & 1 ? 'edges' : 'nodes' ];
+    const slot = (found - BASE) >>> 1;
+    const m = this.meta[(found - BASE) & 1 ? 'edges' : 'nodes'];
 
-    this.table[ at ] = TOMB;
+    this.table[at] = TOMB;
     this.tombs++;
     this._size--;
-    this.waste += m.end[ slot ] - m.start[ slot ];
-    m.start[ slot ] = 0;
-    m.names[ slot ] = undefined;
+    this.waste += m.end[slot] - m.start[slot];
+    m.start[slot] = 0;
+    m.names[slot] = undefined;
 
-    if( this.waste * 2 > this.blobLen && this.blobLen >= BLOB_COMPACT_FLOOR ){
+    if (this.waste * 2 > this.blobLen && this.blobLen >= BLOB_COMPACT_FLOOR) {
       this.compactBlob();
     }
   }
@@ -288,21 +310,23 @@ export class IdMap {
    * was a hole whose start offset is 0).  Blob offsets are untouched
    * (they key on bytes, not slots).
    */
-  remapSlots( group: GroupName, remap: Uint32Array ): void {
-    const m = this.meta[ group ];
-    const n = Math.min( remap.length, m.start.length );
+  remapSlots(group: GroupName, remap: Uint32Array): void {
+    const m = this.meta[group];
+    const n = Math.min(remap.length, m.start.length);
 
-    for( let s = 0; s < n; s++ ){
-      const d = remap[ s ];
+    for (let s = 0; s < n; s++) {
+      const d = remap[s];
 
-      if( d === NO_SLOT || d === s ){ continue; }
+      if (d === NO_SLOT || d === s) {
+        continue;
+      }
 
-      m.start[ d ] = m.start[ s ];
-      m.end[ d ] = m.end[ s ];
-      m.hash[ d ] = m.hash[ s ];
-      m.names[ d ] = m.names[ s ];
-      m.start[ s ] = 0;
-      m.names[ s ] = undefined;
+      m.start[d] = m.start[s];
+      m.end[d] = m.end[s];
+      m.hash[d] = m.hash[s];
+      m.names[d] = m.names[s];
+      m.start[s] = 0;
+      m.names[s] = undefined;
     }
 
     this.rehashFromMeta();
@@ -313,160 +337,202 @@ export class IdMap {
   /** Rebuild the probe table from the per-slot meta of both groups
    * (entry codes embed slots, so a slot remap invalidates them all). */
   private rehashFromMeta(): void {
-    this.table = new Uint32Array( this.table.length );
+    this.table = new Uint32Array(this.table.length);
     this.tombs = 0;
 
     const mask = this.table.length - 1;
 
-    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
-      const m = this.meta[ group ];
+    for (const group of ['nodes', 'edges'] as GroupName[]) {
+      const m = this.meta[group];
       const bit = group === 'edges' ? 1 : 0;
 
-      for( let slot = 0; slot < m.start.length; slot++ ){
-        if( m.start[ slot ] === 0 ){ continue; }
+      for (let slot = 0; slot < m.start.length; slot++) {
+        if (m.start[slot] === 0) {
+          continue;
+        }
 
-        let at = m.hash[ slot ] & mask;
+        let at = m.hash[slot] & mask;
 
-        while( this.table[ at ] !== EMPTY ){ at = ( at + 1 ) & mask; }
+        while (this.table[at] !== EMPTY) {
+          at = (at + 1) & mask;
+        }
 
-        this.table[ at ] = ( ( slot << 1 ) | bit ) + BASE;
+        this.table[at] = ((slot << 1) | bit) + BASE;
       }
     }
   }
 
   /** Linear probe: EMPTY table code when absent (`at` = insertion point), else the entry code. */
-  private probe( h: number, bytes: Uint8Array, lo: number, hi: number ): { found: number; at: number } {
+  private probe(
+    h: number,
+    bytes: Uint8Array,
+    lo: number,
+    hi: number,
+  ): { found: number; at: number } {
     const mask = this.table.length - 1;
     let at = h & mask;
     let insertAt = -1;
 
-    for( ;; ){
-      const entry = this.table[ at ];
+    for (;;) {
+      const entry = this.table[at];
 
-      if( entry === EMPTY ){
+      if (entry === EMPTY) {
         return { found: EMPTY, at: insertAt === -1 ? at : insertAt };
       }
 
-      if( entry === TOMB ){
-        if( insertAt === -1 ){ insertAt = at; }
+      if (entry === TOMB) {
+        if (insertAt === -1) {
+          insertAt = at;
+        }
       } else {
-        const slot = ( entry - BASE ) >>> 1;
-        const m = this.meta[ ( entry - BASE ) & 1 ? 'edges' : 'nodes' ];
+        const slot = (entry - BASE) >>> 1;
+        const m = this.meta[(entry - BASE) & 1 ? 'edges' : 'nodes'];
 
-        if( m.hash[ slot ] === h ){
-          const elo = m.start[ slot ] - 1;
-          const ehi = m.end[ slot ] - 1;
+        if (m.hash[slot] === h) {
+          const elo = m.start[slot] - 1;
+          const ehi = m.end[slot] - 1;
 
-          if( ehi - elo === hi - lo ){
+          if (ehi - elo === hi - lo) {
             let eq = true;
 
-            for( let i = elo, j = lo; i < ehi; i++, j++ ){
-              if( this.blob[ i ] !== bytes[ j ] ){ eq = false; break; }
+            for (let i = elo, j = lo; i < ehi; i++, j++) {
+              if (this.blob[i] !== bytes[j]) {
+                eq = false;
+                break;
+              }
             }
 
-            if( eq ){ return { found: entry, at }; }
+            if (eq) {
+              return { found: entry, at };
+            }
           }
         }
       }
 
-      at = ( at + 1 ) & mask;
+      at = (at + 1) & mask;
     }
   }
 
-  private findEntry( id: string ): number {
-    const len = this.encodeScratch( id );
+  private findEntry(id: string): number {
+    const len = this.encodeScratch(id);
 
-    return this.probe( fnv( this.scratch, 0, len ), this.scratch, 0, len ).found;
+    return this.probe(fnv(this.scratch, 0, len), this.scratch, 0, len).found;
   }
 
-  private place( at: number, group: GroupName, slot: number, lo: number, hi: number, h: number ): void {
-    if( this.table[ at ] === TOMB ){ this.tombs--; }
+  private place(
+    at: number,
+    group: GroupName,
+    slot: number,
+    lo: number,
+    hi: number,
+    h: number,
+  ): void {
+    if (this.table[at] === TOMB) {
+      this.tombs--;
+    }
 
-    this.table[ at ] = ( ( slot << 1 ) | ( group === 'edges' ? 1 : 0 ) ) + BASE;
+    this.table[at] = ((slot << 1) | (group === 'edges' ? 1 : 0)) + BASE;
 
-    const m = this.meta[ group ];
+    const m = this.meta[group];
 
-    if( slot >= m.start.length ){
-      const newLen = Math.max( 64, m.start.length * 2, slot + 1 );
-      const grow = ( old: Uint32Array ): Uint32Array => {
-        const next = new Uint32Array( newLen );
+    if (slot >= m.start.length) {
+      const newLen = Math.max(64, m.start.length * 2, slot + 1);
+      const grow = (old: Uint32Array): Uint32Array => {
+        const next = new Uint32Array(newLen);
 
-        next.set( old );
+        next.set(old);
 
         return next;
       };
 
-      m.start = grow( m.start );
-      m.end = grow( m.end );
-      m.hash = grow( m.hash );
+      m.start = grow(m.start);
+      m.end = grow(m.end);
+      m.hash = grow(m.hash);
     }
 
-    m.start[ slot ] = lo + 1;
-    m.end[ slot ] = hi + 1;
-    m.hash[ slot ] = h;
-    m.names[ slot ] = undefined;
+    m.start[slot] = lo + 1;
+    m.end[slot] = hi + 1;
+    m.hash[slot] = h;
+    m.names[slot] = undefined;
     this._size++;
   }
 
   /** Grow + rehash so live entries + tombstones stay under half the table. */
-  private ensure( entries: number ): void {
-    if( ( entries + this.tombs ) * 2 <= this.table.length ){ return; }
+  private ensure(entries: number): void {
+    if ((entries + this.tombs) * 2 <= this.table.length) {
+      return;
+    }
 
     let cap = this.table.length;
 
-    while( entries * 2 > cap ){ cap *= 2; }
+    while (entries * 2 > cap) {
+      cap *= 2;
+    }
 
     const old = this.table;
 
-    this.table = new Uint32Array( cap );
+    this.table = new Uint32Array(cap);
     this.tombs = 0;
 
     const mask = cap - 1;
 
-    for( const entry of old ){
-      if( entry === EMPTY || entry === TOMB ){ continue; }
+    for (const entry of old) {
+      if (entry === EMPTY || entry === TOMB) {
+        continue;
+      }
 
-      const slot = ( entry - BASE ) >>> 1;
-      const m = this.meta[ ( entry - BASE ) & 1 ? 'edges' : 'nodes' ];
-      let at = m.hash[ slot ] & mask;
+      const slot = (entry - BASE) >>> 1;
+      const m = this.meta[(entry - BASE) & 1 ? 'edges' : 'nodes'];
+      let at = m.hash[slot] & mask;
 
-      while( this.table[ at ] !== EMPTY ){ at = ( at + 1 ) & mask; }
+      while (this.table[at] !== EMPTY) {
+        at = (at + 1) & mask;
+      }
 
-      this.table[ at ] = entry;
+      this.table[at] = entry;
     }
   }
 
   /** UTF-8 encode into the scratch buffer; returns the byte length. */
-  private encodeScratch( id: string ): number {
-    if( this.scratch.length < id.length * 3 ){
-      this.scratch = new Uint8Array( Math.max( id.length * 3, this.scratch.length * 2 ) );
+  private encodeScratch(id: string): number {
+    if (this.scratch.length < id.length * 3) {
+      this.scratch = new Uint8Array(
+        Math.max(id.length * 3, this.scratch.length * 2),
+      );
     }
 
     // ASCII fast path: charCode == byte
-    for( let i = 0; i < id.length; i++ ){
-      const c = id.charCodeAt( i );
+    for (let i = 0; i < id.length; i++) {
+      const c = id.charCodeAt(i);
 
-      if( c > 127 ){ return encoder.encodeInto( id, this.scratch ).written; }
+      if (c > 127) {
+        return encoder.encodeInto(id, this.scratch).written;
+      }
 
-      this.scratch[ i ] = c;
+      this.scratch[i] = c;
     }
 
     return id.length;
   }
 
-  private decode( lo: number, hi: number ): string {
+  private decode(lo: number, hi: number): string {
     // ASCII fast path: fromCharCode beats a TextDecoder call for short ids
-    if( hi - lo <= 64 ){
+    if (hi - lo <= 64) {
       let ascii = true;
 
-      for( let i = lo; i < hi; i++ ){
-        if( this.blob[ i ] > 127 ){ ascii = false; break; }
+      for (let i = lo; i < hi; i++) {
+        if (this.blob[i] > 127) {
+          ascii = false;
+          break;
+        }
       }
 
-      if( ascii ){ return String.fromCharCode( ...this.blob.subarray( lo, hi ) ); }
+      if (ascii) {
+        return String.fromCharCode(...this.blob.subarray(lo, hi));
+      }
     }
 
-    return decoder.decode( this.blob.subarray( lo, hi ) );
+    return decoder.decode(this.blob.subarray(lo, hi));
   }
 
   /**
@@ -482,24 +548,28 @@ export class IdMap {
     const liveLen = this.blobLen - this.waste;
     let cap = BLOB_MIN;
 
-    while( cap < liveLen ){ cap *= 2; }
+    while (cap < liveLen) {
+      cap *= 2;
+    }
 
-    const next = new Uint8Array( cap );
+    const next = new Uint8Array(cap);
     let at = 0;
 
-    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
-      const m = this.meta[ group ];
+    for (const group of ['nodes', 'edges'] as GroupName[]) {
+      const m = this.meta[group];
 
-      for( let slot = 0; slot < m.start.length; slot++ ){
-        const lo = m.start[ slot ];
+      for (let slot = 0; slot < m.start.length; slot++) {
+        const lo = m.start[slot];
 
-        if( lo === 0 ){ continue; }
+        if (lo === 0) {
+          continue;
+        }
 
-        const len = m.end[ slot ] - lo;
+        const len = m.end[slot] - lo;
 
-        next.set( this.blob.subarray( lo - 1, lo - 1 + len ), at );
-        m.start[ slot ] = at + 1;
-        m.end[ slot ] = at + 1 + len;
+        next.set(this.blob.subarray(lo - 1, lo - 1 + len), at);
+        m.start[slot] = at + 1;
+        m.end[slot] = at + 1 + len;
         at += len;
       }
     }
@@ -510,17 +580,19 @@ export class IdMap {
   }
 
   /** Append bytes to the blob (amortized-doubling growth); returns their offset. */
-  private append( src: Uint8Array, lo: number, hi: number ): number {
+  private append(src: Uint8Array, lo: number, hi: number): number {
     const len = hi - lo;
 
-    if( this.blobLen + len > this.blob.length ){
-      const next = new Uint8Array( Math.max( this.blob.length * 2, this.blobLen + len ) );
+    if (this.blobLen + len > this.blob.length) {
+      const next = new Uint8Array(
+        Math.max(this.blob.length * 2, this.blobLen + len),
+      );
 
-      next.set( this.blob.subarray( 0, this.blobLen ) );
+      next.set(this.blob.subarray(0, this.blobLen));
       this.blob = next;
     }
 
-    this.blob.set( src.subarray( lo, hi ), this.blobLen );
+    this.blob.set(src.subarray(lo, hi), this.blobLen);
 
     const at = this.blobLen;
 

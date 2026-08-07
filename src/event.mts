@@ -110,7 +110,7 @@ export class Event {
    *   defaults to the empty string so a malformed emit is inert rather than
    *   throwing inside a handler loop
    */
-  constructor( props: EventProps = {} ){
+  constructor(props: EventProps = {}) {
     this.type = props.type ?? '';
     this.target = props.target;
     this.cy = props.cy;
@@ -121,13 +121,17 @@ export class Event {
 
     // the rendered position follows from the model one and the viewport, so
     // an emitter only has to supply the model position it actually knows
-    if( this.cy != null && this.position != null && this.renderedPosition == null ){
+    if (
+      this.cy != null &&
+      this.position != null &&
+      this.renderedPosition == null
+    ) {
       const zoom = this.cy.zoom() as number;
       const pan = this.cy.pan() as Position;
 
       this.renderedPosition = {
         x: this.position.x * zoom + pan.x,
-        y: this.position.y * zoom + pan.y
+        y: this.position.y * zoom + pan.y,
       };
     }
 

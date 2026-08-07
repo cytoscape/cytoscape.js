@@ -384,27 +384,33 @@ export const ARROW_SHIFT_SCALE = 24;
  *   that went unnoticed before 27.1
  */
 export const packArrowShapes = (
-  source: number, target: number, midSource: number, midTarget: number,
-  hollowSource: number, hollowTarget: number, scaleQ: number
+  source: number,
+  target: number,
+  midSource: number,
+  midTarget: number,
+  hollowSource: number,
+  hollowTarget: number,
+  scaleQ: number,
 ): number => {
-  for( const id of [ source, target, midSource, midTarget ] ){
-    if( id > ARROW_SHAPE_MASK ){
+  for (const id of [source, target, midSource, midTarget]) {
+    if (id > ARROW_SHAPE_MASK) {
       throw new Error(
         `Arrow shape id ${id} does not fit the ${ARROW_SHAPE_MASK + 1}-shape field; ` +
-        'widen the packing in contract.mts rather than truncating'
+          'widen the packing in contract.mts rather than truncating',
       );
     }
   }
 
   return (
-    ( source << ARROW_SHIFT_SOURCE ) |
-    ( target << ARROW_SHIFT_TARGET ) |
-    ( midSource << ARROW_SHIFT_MID_SOURCE ) |
-    ( midTarget << ARROW_SHIFT_MID_TARGET ) |
-    ( hollowSource << ARROW_SHIFT_HOLLOW_SOURCE ) |
-    ( hollowTarget << ARROW_SHIFT_HOLLOW_TARGET ) |
-    ( scaleQ << ARROW_SHIFT_SCALE )
-  ) >>> 0;
+    ((source << ARROW_SHIFT_SOURCE) |
+      (target << ARROW_SHIFT_TARGET) |
+      (midSource << ARROW_SHIFT_MID_SOURCE) |
+      (midTarget << ARROW_SHIFT_MID_TARGET) |
+      (hollowSource << ARROW_SHIFT_HOLLOW_SOURCE) |
+      (hollowTarget << ARROW_SHIFT_HOLLOW_TARGET) |
+      (scaleQ << ARROW_SHIFT_SCALE)) >>>
+    0
+  );
 };
 
 /**
@@ -415,8 +421,8 @@ export const packArrowShapes = (
  * @param shift — one of the `ARROW_SHIFT_*` end constants
  * @returns the shape id
  */
-export const unpackArrowShape = ( packed: number, shift: number ): number =>
-  ( packed >>> shift ) & ARROW_SHAPE_MASK;
+export const unpackArrowShape = (packed: number, shift: number): number =>
+  (packed >>> shift) & ARROW_SHAPE_MASK;
 
 // -- columns --
 
@@ -622,7 +628,10 @@ export type ColumnId =
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
-export type ColumnCtor = Float32ArrayConstructor | Uint32ArrayConstructor | Uint8ArrayConstructor;
+export type ColumnCtor =
+  | Float32ArrayConstructor
+  | Uint32ArrayConstructor
+  | Uint8ArrayConstructor;
 
 export interface ColumnSpec {
   id: ColumnId;
@@ -634,50 +643,60 @@ export interface ColumnSpec {
   bytesPerSlot: number;
 }
 
-const spec = ( id: ColumnId, group: GroupName, ctor: ColumnCtor, components: number ): ColumnSpec => ( {
-  id, group, ctor, components,
-  bytesPerSlot: components * ctor.BYTES_PER_ELEMENT
-} );
+const spec = (
+  id: ColumnId,
+  group: GroupName,
+  ctor: ColumnCtor,
+  components: number,
+): ColumnSpec => ({
+  id,
+  group,
+  ctor,
+  components,
+  bytesPerSlot: components * ctor.BYTES_PER_ELEMENT,
+});
 
 export const COLUMN_SPECS: ColumnSpec[] = [
-  spec( 'node.position', 'nodes', Float32Array, 2 ),
-  spec( 'node.size', 'nodes', Float32Array, 2 ),
-  spec( 'node.fillColor', 'nodes', Uint8Array, 4 ),
-  spec( 'node.borderColor', 'nodes', Uint8Array, 4 ),
-  spec( 'node.borderWidth', 'nodes', Float32Array, 1 ),
-  spec( 'node.opacity', 'nodes', Float32Array, 1 ),
-  spec( 'node.shape', 'nodes', Uint32Array, 1 ),
-  spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
-  spec( 'node.ghost', 'nodes', Float32Array, 4 ),
-  spec( 'node.borderGeom', 'nodes', Uint32Array, 4 ),
-  spec( 'node.gradient', 'nodes', Uint32Array, 8 ),
-  spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
-  spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
-  spec( 'node.imageRef', 'nodes', Uint32Array, 1 ),
-  spec( 'node.chartRef', 'nodes', Uint32Array, 1 ),
-  spec( 'node.flags', 'nodes', Uint32Array, 1 ),
-  spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
-  spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),
-  spec( 'edge.width', 'edges', Float32Array, 2 ),
-  spec( 'edge.opacity', 'edges', Float32Array, 1 ),
-  spec( 'edge.flags', 'edges', Uint32Array, 1 ),
-  spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
-  spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
-  spec( 'edge.arrowWidths', 'edges', Float32Array, 2 ),
-  spec( 'edge.midSourceArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.midTargetArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
-  spec( 'edge.gradient', 'edges', Uint32Array, 8 ),
-  spec( 'edge.casing', 'edges', Uint32Array, 2 ),
-  spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),
-  spec( 'edge.dashMeta', 'edges', Float32Array, 2 ),
-  spec( 'edge.underlay', 'edges', Uint32Array, 2 ),
-  spec( 'edge.curveParams', 'edges', Float32Array, 4 )
+  spec('node.position', 'nodes', Float32Array, 2),
+  spec('node.size', 'nodes', Float32Array, 2),
+  spec('node.fillColor', 'nodes', Uint8Array, 4),
+  spec('node.borderColor', 'nodes', Uint8Array, 4),
+  spec('node.borderWidth', 'nodes', Float32Array, 1),
+  spec('node.opacity', 'nodes', Float32Array, 1),
+  spec('node.shape', 'nodes', Uint32Array, 1),
+  spec('node.outerHalf', 'nodes', Float32Array, 2),
+  spec('node.ghost', 'nodes', Float32Array, 4),
+  spec('node.borderGeom', 'nodes', Uint32Array, 4),
+  spec('node.gradient', 'nodes', Uint32Array, 8),
+  spec('node.overlay', 'nodes', Uint32Array, 4),
+  spec('node.underlay', 'nodes', Uint32Array, 4),
+  spec('node.imageRef', 'nodes', Uint32Array, 1),
+  spec('node.chartRef', 'nodes', Uint32Array, 1),
+  spec('node.flags', 'nodes', Uint32Array, 1),
+  spec('edge.endpoints', 'edges', Uint32Array, 2),
+  spec('edge.lineColor', 'edges', Uint8Array, 4),
+  spec('edge.width', 'edges', Float32Array, 2),
+  spec('edge.opacity', 'edges', Float32Array, 1),
+  spec('edge.flags', 'edges', Uint32Array, 1),
+  spec('edge.sourceArrow', 'edges', Uint8Array, 4),
+  spec('edge.targetArrow', 'edges', Uint8Array, 4),
+  spec('edge.lineStyle', 'edges', Uint32Array, 1),
+  spec('edge.arrowShapes', 'edges', Uint32Array, 1),
+  spec('edge.arrowWidths', 'edges', Float32Array, 2),
+  spec('edge.midSourceArrow', 'edges', Uint8Array, 4),
+  spec('edge.midTargetArrow', 'edges', Uint8Array, 4),
+  spec('edge.overlay', 'edges', Uint32Array, 2),
+  spec('edge.gradient', 'edges', Uint32Array, 8),
+  spec('edge.casing', 'edges', Uint32Array, 2),
+  spec('edge.dashPattern', 'edges', Float32Array, 4),
+  spec('edge.dashMeta', 'edges', Float32Array, 2),
+  spec('edge.underlay', 'edges', Uint32Array, 2),
+  spec('edge.curveParams', 'edges', Float32Array, 4),
 ];
 
-const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );
+const specsById = new Map<ColumnId, ColumnSpec>(
+  COLUMN_SPECS.map((s) => [s.id, s]),
+);
 
 /**
  * The co-signed spec for one column.  Store and renderer both size their
@@ -689,11 +708,11 @@ const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, 
  * @throws if the id is not in `COLUMN_SPECS`, which means the two halves
  *   have gone out of sync
  */
-export const columnSpec = ( id: ColumnId ): ColumnSpec => {
-  const s = specsById.get( id );
+export const columnSpec = (id: ColumnId): ColumnSpec => {
+  const s = specsById.get(id);
 
-  if( s == null ){
-    throw new Error( `Unknown GPU column '${id}'` );
+  if (s == null) {
+    throw new Error(`Unknown GPU column '${id}'`);
   }
 
   return s;
@@ -708,8 +727,8 @@ export const columnSpec = ( id: ColumnId ): ColumnSpec => {
  * @param group — 'nodes' or 'edges'
  * @returns a fresh array of the shared spec objects
  */
-export const columnSpecsForGroup = ( group: GroupName ): ColumnSpec[] => {
-  return COLUMN_SPECS.filter( s => s.group === group );
+export const columnSpecsForGroup = (group: GroupName): ColumnSpec[] => {
+  return COLUMN_SPECS.filter((s) => s.group === group);
 };
 
 // -- per-frame delta --
@@ -840,14 +859,14 @@ export interface LabelEntry {
  * byte-for-byte copies of the dirty spans.
  */
 export interface ModelView {
-  capacity( group: GroupName ): number;
-  highWater( group: GroupName ): number;
-  column( id: ColumnId ): ColumnArray;
+  capacity(group: GroupName): number;
+  highWater(group: GroupName): number;
+  column(id: ColumnId): ColumnArray;
   hasDirty(): boolean;
   /** Returns the accumulated delta and clears it. */
   takeDelta(): StoreDelta;
   /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
-  onInvalidate( cb: () => void ): () => void;
+  onInvalidate(cb: () => void): () => void;
   /** The 12b curve param blob backing the params-column headers; the
    * renderer mirrors [0, curveBlobLength()) into a storage buffer. */
   curveBlob(): Float32Array;
@@ -864,11 +883,11 @@ export interface ModelView {
   chartBlobLength(): number;
   /** The unique-image pool (round 15.1) — the renderer uploads ready
    * entries into its tier arrays and reclaims freed layers from it. */
-  images: import( './image-registry.mjs' ).ImageRegistry;
+  images: import('./image-registry.mjs').ImageRegistry;
   /** The element's label on the given stream, or undefined. */
-  labelAt( slot: number, group?: LabelStream ): LabelEntry | undefined;
+  labelAt(slot: number, group?: LabelStream): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */
-  takeLabelDirty( group?: LabelStream ): number[];
+  takeLabelDirty(group?: LabelStream): number[];
   /** The compound parent draw permutation (round 14.9): live parent
    * slots sorted (depth asc, slot asc) — the paint order of the parent
    * stream, and the reverse of the CPU pick's parent pass.  Owned by
@@ -876,7 +895,9 @@ export interface ModelView {
   parentOrder(): Uint32Array;
   /** A node label's box in node-local model px (round 16.4), or null
    * when unlabelled — the CPU pick's text-events test (round 20.3). */
-  nodeLabelBox( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null;
+  nodeLabelBox(
+    slot: number,
+  ): { x1: number; y1: number; x2: number; y2: number } | null;
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

@@ -31,14 +31,18 @@ export interface InputBoundingBox {
  * @param end — index to stop before (default `arr.length`)
  * @returns the minimum, or `Infinity` when the range holds no finite value
  */
-export const min = ( arr: number[], begin: number = 0, end: number = arr.length ): number => {
+export const min = (
+  arr: number[],
+  begin: number = 0,
+  end: number = arr.length,
+): number => {
   let min = Infinity;
 
-  for( let i = begin; i < end; i++ ){
+  for (let i = begin; i < end; i++) {
     let val = arr[i];
 
-    if( isFinite(val) ){
-      min = Math.min( val, min );
+    if (isFinite(val)) {
+      min = Math.min(val, min);
     }
   }
 
@@ -54,14 +58,18 @@ export const min = ( arr: number[], begin: number = 0, end: number = arr.length 
  * @param end — index to stop before (default `arr.length`)
  * @returns the maximum, or `-Infinity` when the range holds no finite value
  */
-export const max = ( arr: number[], begin: number = 0, end: number = arr.length ): number => {
+export const max = (
+  arr: number[],
+  begin: number = 0,
+  end: number = arr.length,
+): number => {
   let max = -Infinity;
 
-  for( let i = begin; i < end; i++ ){
+  for (let i = begin; i < end; i++) {
     let val = arr[i];
 
-    if( isFinite(val) ){
-      max = Math.max( val, max );
+    if (isFinite(val)) {
+      max = Math.max(val, max);
     }
   }
 
@@ -76,14 +84,18 @@ export const max = ( arr: number[], begin: number = 0, end: number = arr.length 
  * @param end — index to stop before (default `arr.length`)
  * @returns the mean, or `NaN` when the range holds no finite value
  */
-export const mean = ( arr: number[], begin: number = 0, end: number = arr.length ): number => {
+export const mean = (
+  arr: number[],
+  begin: number = 0,
+  end: number = arr.length,
+): number => {
   let total = 0;
   let n = 0;
 
-  for( let i = begin; i < end; i++ ){
+  for (let i = begin; i < end; i++) {
     let val = arr[i];
 
-    if( isFinite(val) ){
+    if (isFinite(val)) {
       total += val;
       n++;
     }
@@ -106,52 +118,60 @@ export const mean = ( arr: number[], begin: number = 0, end: number = arr.length
  *   instead of splicing them out
  * @returns the median value
  */
-export const median = ( arr: number[], begin: number = 0, end: number = arr.length, copy: boolean = true, sort: boolean = true, includeHoles: boolean = true ): number => {
-  if( copy ){
-    arr = arr.slice( begin, end );
+export const median = (
+  arr: number[],
+  begin: number = 0,
+  end: number = arr.length,
+  copy: boolean = true,
+  sort: boolean = true,
+  includeHoles: boolean = true,
+): number => {
+  if (copy) {
+    arr = arr.slice(begin, end);
   } else {
-    if( end < arr.length ){
-      arr.splice( end, arr.length - end );
+    if (end < arr.length) {
+      arr.splice(end, arr.length - end);
     }
 
-    if( begin > 0 ){
-      arr.splice( 0, begin );
+    if (begin > 0) {
+      arr.splice(0, begin);
     }
   }
 
   // all non finite (e.g. Infinity, NaN) elements must be -Infinity so they go to the start
-  let off  = 0; // offset from non-finite values
-  for( let i = arr.length - 1; i >= 0; i-- ){
+  let off = 0; // offset from non-finite values
+  for (let i = arr.length - 1; i >= 0; i--) {
     let v = arr[i];
 
-    if( includeHoles ){
-      if( !isFinite(v) ){
+    if (includeHoles) {
+      if (!isFinite(v)) {
         arr[i] = -Infinity;
         off++;
       }
-    } else { // just remove it if we don't want to consider holes
+    } else {
+      // just remove it if we don't want to consider holes
       arr.splice(i, 1);
     }
   }
 
-  if( sort ){
-    arr.sort( (a, b) => a - b ); // requires copy = true if you don't want to change the orig
+  if (sort) {
+    arr.sort((a, b) => a - b); // requires copy = true if you don't want to change the orig
   }
 
   let len = arr.length;
-  let mid = Math.floor( len / 2 );
+  let mid = Math.floor(len / 2);
 
-  if( len % 2 !== 0 ){
+  if (len % 2 !== 0) {
     return arr[mid + 1 + off];
   } else {
-    return ( arr[mid - 1 + off] + arr[mid + off] )/2;
+    return (arr[mid - 1 + off] + arr[mid + off]) / 2;
   }
 };
 
 /** Called with no (or nullish) input, returns a default (cleared) bb; otherwise full bb or undefined for invalid input. */
 interface MakeBoundingBoxFn {
   (): BoundingBox;
-  ( bb: InputBoundingBox | null | undefined ): BoundingBox | undefined;
+  (bb: InputBoundingBox | null | undefined): BoundingBox | undefined;
 }
 
 /**
@@ -161,34 +181,36 @@ interface MakeBoundingBoxFn {
  *   cleared box (infinite extents, zero size) ready to be expanded into
  * @returns the full box, or `undefined` when the spec is neither form
  */
-export const makeBoundingBox = (( bb?: InputBoundingBox | null ): BoundingBox | undefined => {
-  if( bb == null ){
+export const makeBoundingBox = ((
+  bb?: InputBoundingBox | null,
+): BoundingBox | undefined => {
+  if (bb == null) {
     return {
       x1: Infinity,
       y1: Infinity,
       x2: -Infinity,
       y2: -Infinity,
       w: 0,
-      h: 0
+      h: 0,
     };
-  } else if( bb.x1 != null && bb.y1 != null ){
-    if( bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1 ){
+  } else if (bb.x1 != null && bb.y1 != null) {
+    if (bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1) {
       return {
         x1: bb.x1,
         y1: bb.y1,
         x2: bb.x2,
         y2: bb.y2,
         w: bb.x2 - bb.x1,
-        h: bb.y2 - bb.y1
+        h: bb.y2 - bb.y1,
       };
-    } else if( bb.w != null && bb.h != null && bb.w >= 0 && bb.h >= 0 ){
+    } else if (bb.w != null && bb.h != null && bb.w >= 0 && bb.h >= 0) {
       return {
         x1: bb.x1,
         y1: bb.y1,
         x2: bb.x1 + bb.w,
         y2: bb.y1 + bb.h,
         w: bb.w,
-        h: bb.h
+        h: bb.h,
       };
     }
   }
@@ -202,13 +224,17 @@ export const makeBoundingBox = (( bb?: InputBoundingBox | null ): BoundingBox | 
  * @param y — the point's y
  * @returns nothing; the box is updated in place
  */
-export const expandBoundingBoxByPoint = ( bb: BoundingBox, x: number, y: number ): void => {
-  bb.x1 = Math.min( bb.x1, x );
-  bb.x2 = Math.max( bb.x2, x );
+export const expandBoundingBoxByPoint = (
+  bb: BoundingBox,
+  x: number,
+  y: number,
+): void => {
+  bb.x1 = Math.min(bb.x1, x);
+  bb.x2 = Math.max(bb.x2, x);
   bb.w = bb.x2 - bb.x1;
 
-  bb.y1 = Math.min( bb.y1, y );
-  bb.y2 = Math.max( bb.y2, y );
+  bb.y1 = Math.min(bb.y1, y);
+  bb.y2 = Math.max(bb.y2, y);
   bb.h = bb.y2 - bb.y1;
 };
 
@@ -220,9 +246,12 @@ export const expandBoundingBoxByPoint = ( bb: BoundingBox, x: number, y: number 
  * @param rotationRadians — rotation applied before fitting
  * @returns flat `[x0, y0, x1, y1, ...]` pairs
  */
-export const generateUnitNgonPointsFitToSquare = ( sides: number, rotationRadians: number ): number[] => {
-  let points = generateUnitNgonPoints( sides, rotationRadians );
-  points = fitPolygonToSquare( points );
+export const generateUnitNgonPointsFitToSquare = (
+  sides: number,
+  rotationRadians: number,
+): number[] => {
+  let points = generateUnitNgonPoints(sides, rotationRadians);
+  points = fitPolygonToSquare(points);
 
   return points;
 };
@@ -234,37 +263,40 @@ export const generateUnitNgonPointsFitToSquare = ( sides: number, rotationRadian
  * @param points — flat `[x0, y0, ...]` pairs, mutated
  * @returns the same array, for chaining
  */
-export const fitPolygonToSquare = ( points: number[] ): number[] => {
+export const fitPolygonToSquare = (points: number[]): number[] => {
   let x: number, y: number;
   let sides = points.length / 2;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
 
-  for( let i = 0; i < sides; i++ ){
-    x = points[2 * i ];
+  for (let i = 0; i < sides; i++) {
+    x = points[2 * i];
     y = points[2 * i + 1];
 
-    minX = Math.min( minX, x );
-    maxX = Math.max( maxX, x );
-    minY = Math.min( minY, y );
-    maxY = Math.max( maxY, y );
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
   }
 
   // stretch factors
   let sx = 2 / (maxX - minX);
   let sy = 2 / (maxY - minY);
 
-  for( let i = 0; i < sides; i++ ){
-    x = points[2 * i ] = points[2 * i ] * sx;
+  for (let i = 0; i < sides; i++) {
+    x = points[2 * i] = points[2 * i] * sx;
     y = points[2 * i + 1] = points[2 * i + 1] * sy;
 
-    minX = Math.min( minX, x );
-    maxX = Math.max( maxX, x );
-    minY = Math.min( minY, y );
-    maxY = Math.max( maxY, y );
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
   }
 
-  if( minY < -1 ){
-    for( let i = 0; i < sides; i++ ){
+  if (minY < -1) {
+    for (let i = 0; i < sides; i++) {
       points[2 * i + 1] = points[2 * i + 1] + (-1 - minY);
     }
   }
@@ -280,22 +312,24 @@ export const fitPolygonToSquare = ( points: number[] ): number[] => {
  * @param rotationRadians — rotation added to the start angle
  * @returns flat `[x0, y0, x1, y1, ...]` pairs
  */
-export const generateUnitNgonPoints = ( sides: number, rotationRadians: number ): number[] => {
-
-  let increment = 1.0 / sides * 2 * Math.PI;
-  let startAngle = sides % 2 === 0 ?
-    Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
+export const generateUnitNgonPoints = (
+  sides: number,
+  rotationRadians: number,
+): number[] => {
+  let increment = (1.0 / sides) * 2 * Math.PI;
+  let startAngle =
+    sides % 2 === 0 ? Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
 
   startAngle += rotationRadians;
 
-  let points: number[] = new Array( sides * 2 );
+  let points: number[] = new Array(sides * 2);
 
   let currentAngle: number;
-  for( let i = 0; i < sides; i++ ){
+  for (let i = 0; i < sides; i++) {
     currentAngle = i * increment + startAngle;
 
-    points[2 * i ] = Math.cos( currentAngle ); // x
-    points[2 * i + 1] = Math.sin( -currentAngle ); // y
+    points[2 * i] = Math.cos(currentAngle); // x
+    points[2 * i + 1] = Math.sin(-currentAngle); // y
   }
 
   return points;

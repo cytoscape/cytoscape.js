@@ -72,6 +72,8 @@
   "jsdelivr": "dist/cytoscape.min.js",
   "scripts": {
     "lint": "oxlint src scripts",
+    "format": "oxfmt src test benchmark scripts debug playwright-tests playwright-page typescript rolldown.config.mjs rolldown.dts.config.mjs playwright.config.js",
+    "format:check": "oxfmt --check src test benchmark scripts debug playwright-tests playwright-page typescript rolldown.config.mjs rolldown.dts.config.mjs playwright.config.js",
     "typecheck": "tsc --noEmit",
     "build:types": "rolldown -c rolldown.dts.config.mjs && node scripts/build-dts.mjs",
     "test:types": "run-s build:types test:types:run",
@@ -140,6 +142,7 @@
     "marked": "^18.0.6",
     "mitata": "^1.0.34",
     "npm-run-all": "^4.1.5",
+    "oxfmt": "^0.62.0",
     "oxlint": "^1.73.0",
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",

@@ -26,7 +26,7 @@ var networks = {
     edges: 6899,
     url: '../v3/debug/webgl/network-em-web.json',
     labelKey: 'label',
-    note: 'The enrichmentmap.org style ported to v4: a diverging NES colour mapper, wrapped labels in a matching text outline, haystack edges.'
+    note: 'The enrichmentmap.org style ported to v4: a diverging NES colour mapper, wrapped labels in a matching text outline, haystack edges.',
   },
   'em-web-clustered': {
     desc: 'EnrichmentMap web, clustered',
@@ -35,7 +35,7 @@ var networks = {
     url: '../v3/debug/webgl/network-em-web.json',
     derive: 'mcode-parents',
     labelKey: 'label',
-    note: 'The same network with its 41 MCODE clusters materialised as compound parents — a real compound graph from real data.'
+    note: 'The same network with its 41 MCODE clusters materialised as compound parents — a real compound graph from real data.',
   },
   'em-desktop': {
     desc: 'EnrichmentMap desktop',
@@ -43,7 +43,7 @@ var networks = {
     edges: 16030,
     url: '../v3/debug/webgl/network-em-desktop.json',
     labelKey: 'EM1_GS_DESCR',
-    note: 'The Cytoscape desktop export: gene-set size drives node size, the two-tailed enrichment colouring drives fill.'
+    note: 'The Cytoscape desktop export: gene-set size drives node size, the two-tailed enrichment colouring drives fill.',
   },
   'white-matter': {
     desc: 'White Matter',
@@ -51,7 +51,7 @@ var networks = {
     edges: 18288,
     url: '../v3/debug/webgl/network-white-matter.json',
     labelKey: 'alias',
-    note: 'A `case` mapper over the Classification column — what v3 spells as three [attr = value] selector blocks.'
+    note: 'A `case` mapper over the Classification column — what v3 spells as three [attr = value] selector blocks.',
   },
   'ndex-large': {
     desc: 'NDEx large',
@@ -59,7 +59,7 @@ var networks = {
     edges: 68641,
     url: '../v3/debug/webgl/network-ndex-large.json',
     labelKey: 'name',
-    note: 'MCL cluster ids (1..30) through an ordinal colour scheme; edge correlation drives width and opacity.'
+    note: 'MCL cluster ids (1..30) through an ordinal colour scheme; edge correlation drives width and opacity.',
   },
   'ndex-x-large': {
     // Re-slimmed in round 43 from the full-fat original at
@@ -71,7 +71,7 @@ var networks = {
     edges: 464657,
     url: 'network-ndex-x-large.json',
     labelKey: 'name',
-    note: 'The scale fixture, and now the mapper-at-scale one: a diverging colour mapper evaluated on the GPU across 465k edges.'
+    note: 'The scale fixture, and now the mapper-at-scale one: a diverging colour mapper evaluated on the GPU across 465k edges.',
   },
   'v3-default': {
     desc: 'v3 default debug graph',
@@ -82,7 +82,7 @@ var networks = {
     // v3's own page runs grid at cols 3, and the order in fixtures.js is v3's
     // declaration order, so this reproduces its arrangement
     layout: { name: 'grid', cols: 3 },
-    note: 'The graph v3\'s debug page opens on: three self-loops, two multi-edge fans, a compound parent, and a different curve-style on almost every edge. The one to open for arrows and edge routing.'
+    note: "The graph v3's debug page opens on: three self-loops, two multi-edge fans, a compound parent, and a different curve-style on almost every edge. The one to open for arrows and edge routing.",
   },
   'compound-fixture': {
     desc: 'Compound fixture (v3 debug graph)',
@@ -97,17 +97,17 @@ var networks = {
     // grid picks 2, which interleaves the families and nests every box inside
     // n1's — the graph the maintainer could not read.
     layout: { name: 'grid', cols: 3 },
-    note: 'Ported from v3/debug/compound.js: three levels of nesting, a self-loop on a parent, parent-to-descendant edges, one very long label. Awkward on purpose.'
+    note: 'Ported from v3/debug/compound.js: three levels of nesting, a self-loop on a parent, parent-to-descendant edges, one very long label. Awkward on purpose.',
   },
-  'gen': {
+  gen: {
     desc: 'Random generated (?gen=NxM)',
     nodes: '?',
     edges: '?',
     generated: true,
     labelKey: 'id',
-    note: 'A uniform random scatter at whatever size you ask for. The scale knob.'
+    note: 'A uniform random scatter at whatever size you ask for. The scale knob.',
   },
-  'compound': {
+  compound: {
     // round 14: clustered compound scene — leaves grouped under parents
     // (1 per ~20 leaves, every 4th parent nested), intra-cluster edges
     // plus a sprinkle of child->parent edges (compound loops)
@@ -116,9 +116,11 @@ var networks = {
     edges: '?',
     generated: 'compound',
     labelKey: 'id',
-    note: 'Compound nodes at scale: auto-sized parents, nested parents, and compound loop edges.'
-  }
+    note: 'Compound nodes at scale: auto-sized parents, nested parents, and compound loop edges.',
+  },
 };
 
 // see debug/fixtures.js — the module suite loads these as scripts
-if( typeof module !== 'undefined' && module.exports ){ module.exports = networks; }
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = networks;
+}

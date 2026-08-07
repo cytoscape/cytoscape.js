@@ -9,4 +9,4 @@ import { finishRun } from './bench-run.mjs';
 import './core.mjs';
 import './collection.mjs';
 
-await finishRun( 'core+collection' );
+await finishRun('core+collection');

@@ -7,109 +7,134 @@
 // real fixture, which is the check that would have caught both the round-42
 // path breakage and a style property the engine no longer accepts.
 
-var fixtures = ( function(){
-
+var fixtures = (function () {
   // EnrichmentMap stores `name` and `description` as one-element arrays, and
   // its own nodeLabel() prefers label -> description -> name.  Same rule here,
   // so the fixture's label key is a plain string by the time it reaches the
   // style engine.
-  function unwrap( v ){
-    return Array.isArray( v ) ? v[ 0 ] : v;
+  function unwrap(v) {
+    return Array.isArray(v) ? v[0] : v;
   }
 
-  function deriveLabel( data ){
-    var first = unwrap( data.label ) || unwrap( data.description ) || unwrap( data.name );
+  function deriveLabel(data) {
+    var first =
+      unwrap(data.label) || unwrap(data.description) || unwrap(data.name);
 
-    return first == null ? undefined : String( first );
+    return first == null ? undefined : String(first);
   }
 
   /** A v3 `{ nodes, edges }` (or flat array) export in v4 definition form. */
-  function toGpuElements( elements ){
-    var list = Array.isArray( elements )
+  function toGpuElements(elements) {
+    var list = Array.isArray(elements)
       ? elements
-      : ( elements.nodes || [] ).concat( elements.edges || [] );
+      : (elements.nodes || []).concat(elements.edges || []);
     var nodes = [];
     var edges = [];
 
-    for( var i = 0; i < list.length; i++ ){
-      var ele = list[ i ];
+    for (var i = 0; i < list.length; i++) {
+      var ele = list[i];
       var data = ele.data || {};
 
-      if( data.source != null && data.target != null ){
-        edges.push( { data: Object.assign( {}, data, { // sidecar data() keys flow through
-          id: data.id != null ? String( data.id ) : undefined,
-          source: String( data.source ),
-          target: String( data.target )
-        } ) } );
+      if (data.source != null && data.target != null) {
+        edges.push({
+          data: Object.assign({}, data, {
+            // sidecar data() keys flow through
+            id: data.id != null ? String(data.id) : undefined,
+            source: String(data.source),
+            target: String(data.target),
+          }),
+        });
       } else {
-        var label = deriveLabel( data );
-        var out = Object.assign( {}, data, { id: data.id != null ? String( data.id ) : undefined } );
+        var label = deriveLabel(data);
+        var out = Object.assign({}, data, {
+          id: data.id != null ? String(data.id) : undefined,
+        });
 
         // array-valued name/description would stringify as "a,b" in a label
-        if( Array.isArray( out.name ) ){ out.name = unwrap( out.name ); }
-        if( Array.isArray( out.description ) ){ out.description = unwrap( out.description ); }
-        if( label != null ){ out.label = label; }
+        if (Array.isArray(out.name)) {
+          out.name = unwrap(out.name);
+        }
+        if (Array.isArray(out.description)) {
+          out.description = unwrap(out.description);
+        }
+        if (label != null) {
+          out.label = label;
+        }
 
-        nodes.push( { data: out, position: ele.position } );
+        nodes.push({ data: out, position: ele.position });
       }
     }
 
-    return { nodes: nodes, edges: edges, hasPositions: nodes.some( function( n ){ return n.position != null; } ) };
+    return {
+      nodes: nodes,
+      edges: edges,
+      hasPositions: nodes.some(function (n) {
+        return n.position != null;
+      }),
+    };
   }
 
   // round 43.4: materialise EnrichmentMap's MCODE clusters as compound
   // parents.  The fixture ships `mcode_cluster_id` on 354 of its 569 nodes
   // (41 clusters, the rest 'None'), which is a real compound structure sitting
   // in real data — better than a synthesised one for eyeballing auto-sizing.
-  function mcodeParents( gpuElements ){
+  function mcodeParents(gpuElements) {
     var parents = new Map();
 
-    for( var i = 0; i < gpuElements.nodes.length; i++ ){
-      var node = gpuElements.nodes[ i ];
+    for (var i = 0; i < gpuElements.nodes.length; i++) {
+      var node = gpuElements.nodes[i];
       var cluster = node.data.mcode_cluster_id;
 
-      if( cluster == null || cluster === 'None' ){ continue; }
+      if (cluster == null || cluster === 'None') {
+        continue;
+      }
 
       var id = 'cluster:' + cluster;
 
-      if( !parents.has( id ) ){ parents.set( id, { data: { id: id, name: String( cluster ) } } ); }
+      if (!parents.has(id)) {
+        parents.set(id, { data: { id: id, name: String(cluster) } });
+      }
 
       node.data.parent = id;
     }
 
-    return Object.assign( {}, gpuElements, {
+    return Object.assign({}, gpuElements, {
       // parents first: they carry no position and are auto-sized from children
-      nodes: Array.from( parents.values() ).concat( gpuElements.nodes )
-    } );
+      nodes: Array.from(parents.values()).concat(gpuElements.nodes),
+    });
   }
 
   var derivations = { 'mcode-parents': mcodeParents };
 
   // a small ordinal band so the generated scenes have something to map a
   // colour from (an unlabelled monochrome scatter demos only fill rate)
-  function band( i ){ return i % 5; }
+  function band(i) {
+    return i % 5;
+  }
 
-  function generateNetwork( spec ){
-    var match = /^(\d+)x(\d+)$/.exec( spec ) || [ null, '10000', '30000' ];
-    var n = parseInt( match[ 1 ], 10 );
-    var m = parseInt( match[ 2 ], 10 );
-    var side = Math.ceil( Math.sqrt( n ) ) * 50;
+  function generateNetwork(spec) {
+    var match = /^(\d+)x(\d+)$/.exec(spec) || [null, '10000', '30000'];
+    var n = parseInt(match[1], 10);
+    var m = parseInt(match[2], 10);
+    var side = Math.ceil(Math.sqrt(n)) * 50;
     var nodes = [];
     var edges = [];
 
-    for( var i = 0; i < n; i++ ){
-      nodes.push( {
-        data: { id: 'n' + i, band: band( i ) },
-        position: { x: Math.random() * side, y: Math.random() * side }
-      } );
+    for (var i = 0; i < n; i++) {
+      nodes.push({
+        data: { id: 'n' + i, band: band(i) },
+        position: { x: Math.random() * side, y: Math.random() * side },
+      });
     }
 
-    for( var j = 0; j < m; j++ ){
-      edges.push( { data: {
-        id: 'e' + j,
-        source: 'n' + Math.floor( Math.random() * n ),
-        target: 'n' + Math.floor( Math.random() * n )
-      } } );
+    for (var j = 0; j < m; j++) {
+      edges.push({
+        data: {
+          id: 'e' + j,
+          source: 'n' + Math.floor(Math.random() * n),
+          target: 'n' + Math.floor(Math.random() * n),
+        },
+      });
     }
 
     return { nodes: nodes, edges: edges, hasPositions: true };
@@ -119,55 +144,75 @@ var fixtures = ( function(){
   // (every 4th parent nested under the previous one), leaves blobbed per
   // cluster, mostly intra-cluster edges plus a sprinkle of child->parent edges
   // to exercise the compound loops
-  function generateCompoundNetwork( spec ){
-    var match = /^(\d+)x(\d+)$/.exec( spec ) || [ null, '10000', '20000' ];
-    var n = parseInt( match[ 1 ], 10 );
-    var m = parseInt( match[ 2 ], 10 );
-    var clusters = Math.max( 1, Math.floor( n / 20 ) );
+  function generateCompoundNetwork(spec) {
+    var match = /^(\d+)x(\d+)$/.exec(spec) || [null, '10000', '20000'];
+    var n = parseInt(match[1], 10);
+    var m = parseInt(match[2], 10);
+    var clusters = Math.max(1, Math.floor(n / 20));
     var nodes = [];
     var edges = [];
     var c, i, j;
 
-    for( c = 0; c < clusters; c++ ){
-      var parentDef = { data: { id: 'p' + c, band: band( c ) } };
+    for (c = 0; c < clusters; c++) {
+      var parentDef = { data: { id: 'p' + c, band: band(c) } };
 
-      if( c % 4 === 3 ){ parentDef.data.parent = 'p' + ( c - 1 ); } // every 4th nests
+      if (c % 4 === 3) {
+        parentDef.data.parent = 'p' + (c - 1);
+      } // every 4th nests
 
-      nodes.push( parentDef );
+      nodes.push(parentDef);
     }
 
-    var cols = Math.ceil( Math.sqrt( clusters ) );
-    var cx = function( k ){ return ( k % cols ) * 400; };
-    var cyy = function( k ){ return Math.floor( k / cols ) * 400; };
+    var cols = Math.ceil(Math.sqrt(clusters));
+    var cx = function (k) {
+      return (k % cols) * 400;
+    };
+    var cyy = function (k) {
+      return Math.floor(k / cols) * 400;
+    };
 
-    for( i = 0; i < n; i++ ){
+    for (i = 0; i < n; i++) {
       c = i % clusters;
 
-      nodes.push( {
-        data: { id: 'n' + i, parent: 'p' + c, band: band( c ) },
-        position: { x: cx( c ) + Math.random() * 220, y: cyy( c ) + Math.random() * 220 }
-      } );
+      nodes.push({
+        data: { id: 'n' + i, parent: 'p' + c, band: band(c) },
+        position: {
+          x: cx(c) + Math.random() * 220,
+          y: cyy(c) + Math.random() * 220,
+        },
+      });
     }
 
-    for( j = 0; j < m; j++ ){
-      if( j % 50 === 49 ){ // a sprinkle of child->parent edges (compound loops)
-        i = Math.floor( Math.random() * n );
-        edges.push( { data: { id: 'e' + j, source: 'n' + i, target: 'p' + ( i % clusters ) } } );
+    for (j = 0; j < m; j++) {
+      if (j % 50 === 49) {
+        // a sprinkle of child->parent edges (compound loops)
+        i = Math.floor(Math.random() * n);
+        edges.push({
+          data: { id: 'e' + j, source: 'n' + i, target: 'p' + (i % clusters) },
+        });
         continue;
       }
 
-      c = Math.floor( Math.random() * clusters );
+      c = Math.floor(Math.random() * clusters);
 
-      var perCluster = Math.floor( n / clusters );
+      var perCluster = Math.floor(n / clusters);
       // leaves of cluster c are the ids i with i % clusters === c
-      var pick = function(){ return c + Math.min( perCluster - 1, Math.floor( Math.random() * perCluster ) ) * clusters; };
+      var pick = function () {
+        return (
+          c +
+          Math.min(perCluster - 1, Math.floor(Math.random() * perCluster)) *
+            clusters
+        );
+      };
       var intra = j % 5 !== 0; // 4 in 5 edges stay inside a cluster
 
-      edges.push( { data: {
-        id: 'e' + j,
-        source: 'n' + ( intra ? pick() : Math.floor( Math.random() * n ) ),
-        target: 'n' + ( intra ? pick() : Math.floor( Math.random() * n ) )
-      } } );
+      edges.push({
+        data: {
+          id: 'e' + j,
+          source: 'n' + (intra ? pick() : Math.floor(Math.random() * n)),
+          target: 'n' + (intra ? pick() : Math.floor(Math.random() * n)),
+        },
+      });
     }
 
     return { nodes: nodes, edges: edges, hasPositions: true };
@@ -187,7 +232,7 @@ var fixtures = ( function(){
   // grid rows, so n1's auto-box swallowed n2's and the graph was unreadable.
   // v3's order interleaves the ids deliberately — n8, n9, n4, n5, n1, … — so
   // that each parent's children land adjacent.  Keep it.
-  function compoundFixture(){
+  function compoundFixture() {
     return {
       nodes: [
         { data: { id: 'n8', parent: 'n4' } },
@@ -199,7 +244,7 @@ var fixtures = ( function(){
         { data: { id: 'node-really-long-name-6', parent: 'n2' } },
         { data: { id: 'n7', parent: 'n2', shape: 'square' } },
         { data: { id: 'n3', parent: 'non-auto', shape: 'rectangle' } },
-        { data: { id: 'non-auto' } }
+        { data: { id: 'non-auto' } },
       ],
       edges: [
         { data: { id: 'e1', source: 'n1', target: 'n3' } },
@@ -212,9 +257,9 @@ var fixtures = ( function(){
         { data: { id: 'e8', source: 'n8', target: 'n8' } }, // self-loop
         { data: { id: 'e9', source: 'n1', target: 'n1' } }, // self-loop on a parent
         { data: { id: 'e10', source: 'n1', target: 'n9' } }, // parent -> descendant
-        { data: { id: 'e11', source: 'n4', target: 'n1' } } // child -> ancestor
+        { data: { id: 'e11', source: 'n4', target: 'n1' } }, // child -> ancestor
       ],
-      hasPositions: false
+      hasPositions: false,
     };
   }
 
@@ -236,10 +281,13 @@ var fixtures = ( function(){
   // functions and no per-element bypass, so v3's per-id label overrides have
   // to be data.  The zero-width spaces (\u200b) are v3's, and they are the
   // point of those three labels: they mark where wrapping is allowed.
-  function v3DefaultFixture(){
-    var LONG_C = 'c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt';
-    var LONG_D = 'd has a long label over-\u200bflowing and its rotated by 45deg';
-    var LONG_B = 'b has a long label over-\u200bflowing and its rotated by 38deg';
+  function v3DefaultFixture() {
+    var LONG_C =
+      'c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt';
+    var LONG_D =
+      'd has a long label over-\u200bflowing and its rotated by 45deg';
+    var LONG_B =
+      'b has a long label over-\u200bflowing and its rotated by 38deg';
 
     return {
       nodes: [
@@ -252,7 +300,7 @@ var fixtures = ( function(){
         { data: { id: 'g', weight: 40, label: 'g' } },
         { data: { id: 'h', weight: 16, parent: 'p', label: 'h' } },
         { data: { id: 'i', weight: 16, parent: 'p', label: 'i' } },
-        { data: { id: 'p', label: 'p' } }
+        { data: { id: 'p', label: 'p' } },
       ],
       edges: [
         { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
@@ -277,18 +325,24 @@ var fixtures = ( function(){
         { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
         { data: { id: 'ep', weight: 3, source: 'e', target: 'p' } },
         { data: { id: 'fi', weight: 3, source: 'f', target: 'i' } },
-        { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } }
+        { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } },
       ],
-      hasPositions: false
+      hasPositions: false,
     };
   }
 
-  function generate( kind, spec ){
-    if( kind === 'v3-default' ){ return v3DefaultFixture(); }
-    if( kind === 'compound' ){ return generateCompoundNetwork( spec ); }
-    if( kind === 'fixture' ){ return compoundFixture(); }
+  function generate(kind, spec) {
+    if (kind === 'v3-default') {
+      return v3DefaultFixture();
+    }
+    if (kind === 'compound') {
+      return generateCompoundNetwork(spec);
+    }
+    if (kind === 'fixture') {
+      return compoundFixture();
+    }
 
-    return generateNetwork( spec );
+    return generateNetwork(spec);
   }
 
   // -- the binary wire form (round 46.5) --
@@ -305,18 +359,20 @@ var fixtures = ( function(){
   // the `derive` transforms below — is unchanged.
 
   /** Decode a PackedIds `{ offsets, blob }` into a plain string array. */
-  function unpackIds( ids, count ){
-    var out = new Array( count );
+  function unpackIds(ids, count) {
+    var out = new Array(count);
     var dec = new TextDecoder();
     var i, a, b;
 
-    if( ids == null ){ return out; }
+    if (ids == null) {
+      return out;
+    }
 
-    for( i = 0; i < count; i++ ){
-      a = ids.offsets[ i ];
-      b = ids.offsets[ i + 1 ];
+    for (i = 0; i < count; i++) {
+      a = ids.offsets[i];
+      b = ids.offsets[i + 1];
       // a zero-length id is a hole: the store generates one on ingest
-      out[ i ] = b > a ? dec.decode( ids.blob.subarray( a, b ) ) : undefined;
+      out[i] = b > a ? dec.decode(ids.blob.subarray(a, b)) : undefined;
     }
 
     return out;
@@ -327,32 +383,38 @@ var fixtures = ( function(){
   // meaning absent; reading it as an array yields `undefined` for every
   // element, which is what a first version of this did to every string column
   // in every fixture — silently, since the labels simply vanished.
-  function valueAt( col, i ){
+  function valueAt(col, i) {
     var idx;
 
-    if( col == null ){ return undefined; }
-
-    if( col.dict != null && col.indices != null ){
-      idx = col.indices[ i ];
-
-      return idx === 0 ? undefined : col.dict[ idx - 1 ];
+    if (col == null) {
+      return undefined;
     }
 
-    return col[ i ];
+    if (col.dict != null && col.indices != null) {
+      idx = col.indices[i];
+
+      return idx === 0 ? undefined : col.dict[idx - 1];
+    }
+
+    return col[i];
   }
 
-  function readData( data, i ){
+  function readData(data, i) {
     var out = {};
-    var keys = Object.keys( data || {} );
+    var keys = Object.keys(data || {});
     var k, v;
 
-    for( k = 0; k < keys.length; k++ ){
-      v = valueAt( data[ keys[ k ] ], i );
+    for (k = 0; k < keys.length; k++) {
+      v = valueAt(data[keys[k]], i);
 
-      if( v === undefined || v === null ){ continue; }
-      if( typeof v === 'number' && isNaN( v ) ){ continue; }
+      if (v === undefined || v === null) {
+        continue;
+      }
+      if (typeof v === 'number' && isNaN(v)) {
+        continue;
+      }
 
-      out[ keys[ k ] ] = v;
+      out[keys[k]] = v;
     }
 
     return out;
@@ -362,48 +424,59 @@ var fixtures = ( function(){
    * Columnar elements (from `cytoscape.deserializeElements`) back into the
    * `{ nodes, edges, hasPositions }` shape `toGpuElements` produces.
    */
-  function fromColumnar( columnar ){
+  function fromColumnar(columnar) {
     var n = columnar.nodes || { count: 0 };
     var e = columnar.edges || { count: 0 };
-    var nIds = unpackIds( n.ids, n.count );
-    var eIds = unpackIds( e.ids, e.count );
+    var nIds = unpackIds(n.ids, n.count);
+    var eIds = unpackIds(e.ids, e.count);
     var nodes = [];
     var edges = [];
     var i, data;
 
-    for( i = 0; i < n.count; i++ ){
-      data = readData( n.data, i );
+    for (i = 0; i < n.count; i++) {
+      data = readData(n.data, i);
 
-      if( nIds[ i ] !== undefined ){ data.id = nIds[ i ]; }
+      if (nIds[i] !== undefined) {
+        data.id = nIds[i];
+      }
 
-      nodes.push( n.positions != null
-        ? { data: data, position: { x: n.positions[ i * 2 ], y: n.positions[ i * 2 + 1 ] } }
-        : { data: data } );
+      nodes.push(
+        n.positions != null
+          ? {
+              data: data,
+              position: { x: n.positions[i * 2], y: n.positions[i * 2 + 1] },
+            }
+          : { data: data },
+      );
     }
 
-    for( i = 0; i < e.count; i++ ){
-      data = readData( e.data, i );
+    for (i = 0; i < e.count; i++) {
+      data = readData(e.data, i);
 
-      if( eIds[ i ] !== undefined ){ data.id = eIds[ i ]; }
+      if (eIds[i] !== undefined) {
+        data.id = eIds[i];
+      }
 
       // sources/targets are node *indices* on the wire, not ids
-      data.source = nIds[ e.sources[ i ] ];
-      data.target = nIds[ e.targets[ i ] ];
-      edges.push( { data: data } );
+      data.source = nIds[e.sources[i]];
+      data.target = nIds[e.targets[i]];
+      edges.push({ data: data });
     }
 
     return {
       nodes: nodes,
       edges: edges,
-      hasPositions: nodes.some( function( x ){ return x.position != null; } )
+      hasPositions: nodes.some(function (x) {
+        return x.position != null;
+      }),
     };
   }
 
   /** Apply a network's `derive`, if it declares one. */
-  function derive( name, gpuElements ){
-    var fn = name != null ? derivations[ name ] : null;
+  function derive(name, gpuElements) {
+    var fn = name != null ? derivations[name] : null;
 
-    return fn != null ? fn( gpuElements ) : gpuElements;
+    return fn != null ? fn(gpuElements) : gpuElements;
   }
 
   return {
@@ -411,11 +484,12 @@ var fixtures = ( function(){
     fromColumnar: fromColumnar,
     deriveLabel: deriveLabel,
     derive: derive,
-    generate: generate
+    generate: generate,
   };
-
-} )();
+})();
 
 // Node (the module suite) loads this file as a script and reads the global;
 // the browser just gets the global.
-if( typeof module !== 'undefined' && module.exports ){ module.exports = fixtures; }
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = fixtures;
+}

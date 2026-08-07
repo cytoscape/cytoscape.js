@@ -12,29 +12,63 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
 import {
-  ARROW_AXIAL_DEPTH, ARROW_COMPOUND_POINTS, ARROW_GAP_CONST, ARROW_GAP_K,
-  ARROW_GAP_K_DEFAULT, ARROW_MAX_BACK, ARROW_MAX_FRONT, ARROW_POINTS,
-  POLYGON_POINTS, ROUND_POLYGON_SOURCE
+  ARROW_AXIAL_DEPTH,
+  ARROW_COMPOUND_POINTS,
+  ARROW_GAP_CONST,
+  ARROW_GAP_K,
+  ARROW_GAP_K_DEFAULT,
+  ARROW_MAX_BACK,
+  ARROW_MAX_FRONT,
+  ARROW_POINTS,
+  POLYGON_POINTS,
+  ROUND_POLYGON_SOURCE,
 } from '../shape-points.mjs';
-import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL } from '../image-registry.mjs';
 import {
-  AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
+  IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL,
+  SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL,
+} from '../image-registry.mjs';
+import {
+  AVOID_IMPOSSIBLE_BEZIER,
+  AVOID_IMPOSSIBLE_BEZIER_L,
+  CURVE_SEGS,
+  MAX_CURVE_PTS,
 } from '../curve-geometry.mjs';
 // the packing constants are interpolated into the WGSL below, so the
 // shaders and the store read one source of truth (round 27.1)
 import {
-  ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
-  ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
-  ARROW_SHIFT_SOURCE, ARROW_SHIFT_SRC_SHOWS_LINE, ARROW_SHIFT_TARGET,
-  ARROW_SHIFT_TGT_SHOWS_LINE, CUT_RECTANGLE_CORNER,
-  ARROW_CIRCLE, ARROW_CIRCLE_TRIANGLE, ARROW_CIRCLE_TRIANGLE_RADIUS,
-  ARROW_TEE, ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE,
-  BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
-  BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
-  BARREL_WIDTH_OFFSET_MAX, BARREL_WIDTH_OFFSET_PCT,
-  ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX, SHAPE_BARREL,
-  SHAPE_BOTTOM_ROUND_RECTANGLE, SHAPE_CUT_RECTANGLE, SHAPE_MASK,
-  SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE, SHAPE_SHIFT
+  ARROW_SHAPE_MASK,
+  ARROW_SHIFT_HOLLOW_SOURCE,
+  ARROW_SHIFT_HOLLOW_TARGET,
+  ARROW_SHIFT_MID_SOURCE,
+  ARROW_SHIFT_MID_TARGET,
+  ARROW_SHIFT_SCALE,
+  ARROW_SHIFT_SOURCE,
+  ARROW_SHIFT_SRC_SHOWS_LINE,
+  ARROW_SHIFT_TARGET,
+  ARROW_SHIFT_TGT_SHOWS_LINE,
+  CUT_RECTANGLE_CORNER,
+  ARROW_CIRCLE,
+  ARROW_CIRCLE_TRIANGLE,
+  ARROW_CIRCLE_TRIANGLE_RADIUS,
+  ARROW_TEE,
+  ARROW_TRIANGLE_CROSS,
+  ARROW_TRIANGLE_TEE,
+  BARREL_CTRL_OFFSET_PCT,
+  BARREL_CURVE_SEGMENTS,
+  BARREL_HEIGHT_OFFSET_MAX,
+  BARREL_HEIGHT_OFFSET_PCT,
+  BARREL_WIDTH_OFFSET_MAX,
+  BARREL_WIDTH_OFFSET_PCT,
+  ROUND_POLYGON_RADIUS_DIV,
+  ROUND_POLYGON_RADIUS_MAX,
+  SHAPE_BARREL,
+  SHAPE_BOTTOM_ROUND_RECTANGLE,
+  SHAPE_CUT_RECTANGLE,
+  SHAPE_MASK,
+  SHAPE_POLYGON_CUSTOM,
+  SHAPE_ROUND_TAG,
+  SHAPE_ROUND_TRIANGLE,
+  SHAPE_SHIFT,
 } from '../contract.mjs';
 
 /**
@@ -291,9 +325,9 @@ fn dashCoverage(u: f32, v: f32, halfW: f32, pat: vec4f, offset: f32, cap: f32, z
  * math here and in curve-geometry.mts together.  Requires BOUNDARY_WGSL.
  */
 export const CURVE_WGSL = `
-const CURVE_SEGS_F: f32 = ${ CURVE_SEGS }.0;
-const AVOID_BEZ: f32 = ${ AVOID_IMPOSSIBLE_BEZIER };
-const AVOID_BEZ_L: f32 = ${ AVOID_IMPOSSIBLE_BEZIER_L.toFixed( 9 ) };
+const CURVE_SEGS_F: f32 = ${CURVE_SEGS}.0;
+const AVOID_BEZ: f32 = ${AVOID_IMPOSSIBLE_BEZIER};
+const AVOID_BEZ_L: f32 = ${AVOID_IMPOSSIBLE_BEZIER_L.toFixed(9)};
 
 struct CurveGeom {
   s: vec2f,   // start point (source boundary)
@@ -438,8 +472,8 @@ fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
  * BOUNDARY_WGSL + CURVE_WGSL (boundary points, AVOID_BEZ, qbez).
  */
 export const ROUTE_WGSL = `
-const CURVE_SEGS_U: u32 = ${ CURVE_SEGS }u;
-const MAX_ROUTE_PTS: u32 = ${ MAX_CURVE_PTS }u;
+const CURVE_SEGS_U: u32 = ${CURVE_SEGS}u;
+const MAX_ROUTE_PTS: u32 = ${MAX_CURVE_PTS}u;
 const ROUTE_PI: f32 = 3.14159265358979;
 // 12c manual endpoints: kinds >= 8 prefix their blob record with the
 // 10-float endpoint block [mode, a, b, pctBits, dist] x 2 (see
@@ -512,9 +546,9 @@ struct Route {
   kind: f32,
   n: u32,
   round: u32,
-  q: array<vec2f, ${ MAX_CURVE_PTS + 2 }>, // start, interior points, end
-  radius: array<f32, ${ MAX_CURVE_PTS }>,
-  arcMode: array<u32, ${ MAX_CURVE_PTS }>,
+  q: array<vec2f, ${MAX_CURVE_PTS + 2}>, // start, interior points, end
+  radius: array<f32, ${MAX_CURVE_PTS}>,
+  arcMode: array<u32, ${MAX_CURVE_PTS}>,
   aS: vec2f, // 56: the source arrow point (spacing behind the endpoint)
   aE: vec2f, // 56: the target arrow point
 }
@@ -1022,26 +1056,28 @@ fn routeMidpointW(r: ptr<function, Route>) -> vec4f {
 // WGSL geometry is identical to the CPU pick's.  The unit vertices are
 // scaled by the node's half-size and the distance evaluated in device
 // space, so it is exact under anisotropy (crisp AA, uniform borders).
-const fmtF32 = ( x: number ): string => x.toFixed( 8 );
+const fmtF32 = (x: number): string => x.toFixed(8);
 
 const polygonSdFns = (): { fns: string; cases: string } => {
   let fns = '';
   let cases = '';
 
-  for( const [ id, pts ] of POLYGON_POINTS ){
+  for (const [id, pts] of POLYGON_POINTS) {
     const n = pts.length / 2;
-    const lits = Array.from( { length: n }, ( _, i ) =>
-      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+    const lits = Array.from(
+      { length: n },
+      (_, i) => `vec2f(${fmtF32(pts[i * 2])}, ${fmtF32(pts[i * 2 + 1])})`,
+    ).join(', ');
 
     // https://iquilezles.org/articles/distfunctions2d/ sdPolygon
     fns += `
-fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
-  var v = array<vec2f, ${ n }>(${ lits });
-  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * half; }
+fn poly${id}SD(p: vec2f, half: vec2f) -> f32 {
+  var v = array<vec2f, ${n}>(${lits});
+  for (var k = 0; k < ${n}; k++) { v[k] = v[k] * half; }
   var d = dot(p - v[0], p - v[0]);
   var s = 1.0;
-  var j = ${ n - 1 };
-  for (var i = 0; i < ${ n }; i++) {
+  var j = ${n - 1};
+  for (var i = 0; i < ${n}; i++) {
     let e = v[j] - v[i];
     let w = p - v[i];
     let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -1055,7 +1091,7 @@ fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
   return s * sqrt(d);
 }
 `;
-    cases += `    case ${ id }u: { return poly${ id }SD(p, half); }\n`;
+    cases += `    case ${id}u: { return poly${id}SD(p, half); }\n`;
   }
 
   // Round-corner shapes (27.4).  A polygon with every corner replaced by
@@ -1069,46 +1105,48 @@ fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
   //   o = v + r * (n1 + n2) / (1 + dot(n1, n2))
   // with n1/n2 the inward edge normals.  The winding sign is folded in
   // at codegen (signed area), so the shader does no orientation test.
-  for( const [ id, source ] of ROUND_POLYGON_SOURCE ){
-    const pts = POLYGON_POINTS.get( source ) as readonly number[];
+  for (const [id, source] of ROUND_POLYGON_SOURCE) {
+    const pts = POLYGON_POINTS.get(source) as readonly number[];
     const n = pts.length / 2;
-    const lits = Array.from( { length: n }, ( _, i ) =>
-      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+    const lits = Array.from(
+      { length: n },
+      (_, i) => `vec2f(${fmtF32(pts[i * 2])}, ${fmtF32(pts[i * 2 + 1])})`,
+    ).join(', ');
 
     // signed area in unit space: positive means counter-clockwise, which
     // decides which perpendicular of an edge points into the shape
     let area2 = 0;
 
-    for( let i = 0; i < n; i++ ){
-      const j = ( i + 1 ) % n;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
 
-      area2 += pts[ i * 2 ] * pts[ j * 2 + 1 ] - pts[ j * 2 ] * pts[ i * 2 + 1 ];
+      area2 += pts[i * 2] * pts[j * 2 + 1] - pts[j * 2] * pts[i * 2 + 1];
     }
 
     const wind = area2 > 0 ? '1.0' : '-1.0';
 
     fns += `
-fn roundPoly${ id }SD(p: vec2f, half: vec2f, r: f32) -> f32 {
-  var v = array<vec2f, ${ n }>(${ lits });
-  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * half; }
+fn roundPoly${id}SD(p: vec2f, half: vec2f, r: f32) -> f32 {
+  var v = array<vec2f, ${n}>(${lits});
+  for (var k = 0; k < ${n}; k++) { v[k] = v[k] * half; }
   // keep the offset polygon non-degenerate; v3's 'auto' radius is well
   // inside this, and an over-large explicit corner-radius clamps here
   let rr = min(r, min(half.x, half.y) * 0.5);
-  var o = array<vec2f, ${ n }>();
-  for (var i = 0; i < ${ n }; i++) {
-    let prev = v[(i + ${ n - 1 }) % ${ n }];
-    let next = v[(i + 1) % ${ n }];
+  var o = array<vec2f, ${n}>();
+  for (var i = 0; i < ${n}; i++) {
+    let prev = v[(i + ${n - 1}) % ${n}];
+    let next = v[(i + 1) % ${n}];
     let e1 = normalize(v[i] - prev);
     let e2 = normalize(next - v[i]);
-    let n1 = vec2f(-e1.y, e1.x) * ${ wind };
-    let n2 = vec2f(-e2.y, e2.x) * ${ wind };
+    let n1 = vec2f(-e1.y, e1.x) * ${wind};
+    let n2 = vec2f(-e2.y, e2.x) * ${wind};
     let denom = 1.0 + dot(n1, n2);
     o[i] = v[i] + select(vec2f(0.0), (n1 + n2) * (rr / denom), denom > 1e-4);
   }
   var d = dot(p - o[0], p - o[0]);
   var s = 1.0;
-  var j = ${ n - 1 };
-  for (var i = 0; i < ${ n }; i++) {
+  var j = ${n - 1};
+  for (var i = 0; i < ${n}; i++) {
     let e = o[j] - o[i];
     let w = p - o[i];
     let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -1122,7 +1160,7 @@ fn roundPoly${ id }SD(p: vec2f, half: vec2f, r: f32) -> f32 {
   return s * sqrt(d) - rr;
 }
 `;
-    cases += `    case ${ id }u: { return roundPoly${ id }SD(p, half, radius); }\n`;
+    cases += `    case ${id}u: { return roundPoly${id}SD(p, half, radius); }\n`;
   }
 
   return { fns, cases };
@@ -1136,19 +1174,21 @@ const arrowSdFns = (): { fns: string; cases: string } => {
   let fns = '';
   let cases = '';
 
-  for( const [ id, pts ] of ARROW_POINTS ){
+  for (const [id, pts] of ARROW_POINTS) {
     const n = pts.length / 2;
-    const lits = Array.from( { length: n }, ( _, i ) =>
-      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+    const lits = Array.from(
+      { length: n },
+      (_, i) => `vec2f(${fmtF32(pts[i * 2])}, ${fmtF32(pts[i * 2 + 1])})`,
+    ).join(', ');
 
     fns += `
-fn arrow${ id }SD(p: vec2f, s: f32) -> f32 {
-  var v = array<vec2f, ${ n }>(${ lits });
-  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * s; }
+fn arrow${id}SD(p: vec2f, s: f32) -> f32 {
+  var v = array<vec2f, ${n}>(${lits});
+  for (var k = 0; k < ${n}; k++) { v[k] = v[k] * s; }
   var d = dot(p - v[0], p - v[0]);
   var sgn = 1.0;
-  var j = ${ n - 1 };
-  for (var i = 0; i < ${ n }; i++) {
+  var j = ${n - 1};
+  for (var i = 0; i < ${n}; i++) {
     let e = v[j] - v[i];
     let w = p - v[i];
     let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -1162,27 +1202,29 @@ fn arrow${ id }SD(p: vec2f, s: f32) -> f32 {
   return sgn * sqrt(d);
 }
 `;
-    cases += `    case ${ id }u: { sd = arrow${ id }SD(p, s); }\n`;
+    cases += `    case ${id}u: { sd = arrow${id}SD(p, s); }\n`;
   }
 
   // Compound arrowheads (27.6): a union of disjoint parts.  Coverage is
   // a smoothstep over the distance, so the union is min(sdA, sdB) and
   // the parts need no stitching.  Each part gets its own generated
   // function; the dispatch case takes the min.
-  for( const [ id, parts ] of ARROW_COMPOUND_POINTS ){
-    parts.forEach( ( pts, part ) => {
+  for (const [id, parts] of ARROW_COMPOUND_POINTS) {
+    parts.forEach((pts, part) => {
       const n = pts.length / 2;
-      const lits = Array.from( { length: n }, ( _, i ) =>
-        `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+      const lits = Array.from(
+        { length: n },
+        (_, i) => `vec2f(${fmtF32(pts[i * 2])}, ${fmtF32(pts[i * 2 + 1])})`,
+      ).join(', ');
 
       fns += `
-fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
-  var v = array<vec2f, ${ n }>(${ lits });
-  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * s; }
+fn arrow${id}p${part}SD(p: vec2f, s: f32) -> f32 {
+  var v = array<vec2f, ${n}>(${lits});
+  for (var k = 0; k < ${n}; k++) { v[k] = v[k] * s; }
   var d = dot(p - v[0], p - v[0]);
   var sgn = 1.0;
-  var j = ${ n - 1 };
-  for (var i = 0; i < ${ n }; i++) {
+  var j = ${n - 1};
+  for (var i = 0; i < ${n}; i++) {
     let e = v[j] - v[i];
     let w = p - v[i];
     let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -1196,12 +1238,13 @@ fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
   return sgn * sqrt(d);
 }
 `;
-    } );
+    });
   }
 
   // triangle-tee: the triangle plus its detached bar
-  cases += `    case ${ ARROW_TRIANGLE_TEE }u: { ` +
-    `sd = min(arrow${ ARROW_TRIANGLE_TEE }p0SD(p, s), arrow${ ARROW_TRIANGLE_TEE }p1SD(p, s)); }\n`;
+  cases +=
+    `    case ${ARROW_TRIANGLE_TEE}u: { ` +
+    `sd = min(arrow${ARROW_TRIANGLE_TEE}p0SD(p, s), arrow${ARROW_TRIANGLE_TEE}p1SD(p, s)); }\n`;
 
   // circle-triangle: v3's frame, the disc centred on the arrow origin
   // with the triangle behind it.  Before round 56 both this disc and the
@@ -1209,15 +1252,17 @@ fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
   // without the tip carrying `spacing`; 56 applies `spacing` to the tip
   // for every shape instead, so the frame is v3's and the accessors can
   // report the same point.
-  cases += `    case ${ ARROW_CIRCLE_TRIANGLE }u: { ` +
-    `sd = min(arrow${ ARROW_CIRCLE_TRIANGLE }p0SD(p, s), ` +
-    `length(p) - ${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s); }\n`;
+  cases +=
+    `    case ${ARROW_CIRCLE_TRIANGLE}u: { ` +
+    `sd = min(arrow${ARROW_CIRCLE_TRIANGLE}p0SD(p, s), ` +
+    `length(p) - ${ARROW_CIRCLE_TRIANGLE_RADIUS} * s); }\n`;
 
   // triangle-cross: the bar's thickness tracks the *edge width*, not the
   // arrow size, so its points cannot be a static table — this is why the
   // arrow fragment stage carries the model width as a varying (27.3)
-  cases += `    case ${ ARROW_TRIANGLE_CROSS }u: { ` +
-    `sd = min(arrow${ ARROW_TRIANGLE_CROSS }p0SD(p, s), crossBarSD(p, s, in.widthModel * frame.zoomDpr)); }\n`;
+  cases +=
+    `    case ${ARROW_TRIANGLE_CROSS}u: { ` +
+    `sd = min(arrow${ARROW_TRIANGLE_CROSS}p0SD(p, s), crossBarSD(p, s, in.widthModel * frame.zoomDpr)); }\n`;
 
   return { fns, cases };
 };
@@ -1240,18 +1285,18 @@ const ARROW_POLY = arrowSdFns();
 const arrowGapFns = (): string => {
   let cases = '';
 
-  for( const [ id, k ] of ARROW_GAP_K ){
-    cases += `    case ${ id }u: { return ${ fmtF32( k ) } * wModel * scale; }\n`;
+  for (const [id, k] of ARROW_GAP_K) {
+    cases += `    case ${id}u: { return ${fmtF32(k)} * wModel * scale; }\n`;
   }
 
-  for( const [ id, c ] of ARROW_GAP_CONST ){
-    cases += `    case ${ id }u: { return ${ fmtF32( c ) }; }\n`;
+  for (const [id, c] of ARROW_GAP_CONST) {
+    cases += `    case ${id}u: { return ${fmtF32(c)}; }\n`;
   }
 
   let depths = '';
 
-  for( const [ id, d ] of ARROW_AXIAL_DEPTH ){
-    depths += `    case ${ id }u: { return ${ fmtF32( d ) }; }\n`;
+  for (const [id, d] of ARROW_AXIAL_DEPTH) {
+    depths += `    case ${id}u: { return ${fmtF32(d)}; }\n`;
   }
 
   return `
@@ -1265,16 +1310,16 @@ fn arrowSizeW(wModel: f32, scale: f32) -> f32 {
 // the drawn line stops.  Generated from ARROW_GAP_K / ARROW_GAP_CONST.
 fn arrowGapW(shape: u32, wModel: f32, scale: f32) -> f32 {
   switch shape {
-${ cases }    default: { return ${ fmtF32( ARROW_GAP_K_DEFAULT ) } * wModel * scale; }
+${cases}    default: { return ${fmtF32(ARROW_GAP_K_DEFAULT)} * wModel * scale; }
   }
 }
 
 // v3's arrowShapes[shape].spacing(edge): how far behind the node
 // boundary the arrow *tip* sits.  Non-zero for three heads only.
 fn arrowSpacingW(shape: u32, wModel: f32, scale: f32) -> f32 {
-  if (shape == ${ ARROW_TEE }u) { return 1.0; }
-  if (shape == ${ ARROW_CIRCLE }u || shape == ${ ARROW_CIRCLE_TRIANGLE }u) {
-    return arrowSizeW(wModel, scale) * ${ fmtF32( ARROW_CIRCLE_TRIANGLE_RADIUS ) };
+  if (shape == ${ARROW_TEE}u) { return 1.0; }
+  if (shape == ${ARROW_CIRCLE}u || shape == ${ARROW_CIRCLE_TRIANGLE}u) {
+    return arrowSizeW(wModel, scale) * ${fmtF32(ARROW_CIRCLE_TRIANGLE_RADIUS)};
   }
   return 0.0;
 }
@@ -1283,10 +1328,10 @@ fn arrowSpacingW(shape: u32, wModel: f32, scale: f32) -> f32 {
 // lane 1 (round 56 — the arrow word rides there so the vertex stages,
 // which have no spare storage-buffer slot, can reach it).
 fn arrowWordOf(w: vec2f) -> u32 { return bitcast<u32>(w.y); }
-fn srcShapeOf(word: u32) -> u32 { return (word >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }
-fn tgtShapeOf(word: u32) -> u32 { return (word >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }
+fn srcShapeOf(word: u32) -> u32 { return (word >> ${ARROW_SHIFT_SOURCE}u) & ${ARROW_SHAPE_MASK}u; }
+fn tgtShapeOf(word: u32) -> u32 { return (word >> ${ARROW_SHIFT_TARGET}u) & ${ARROW_SHAPE_MASK}u; }
 fn scaleOfWord(word: u32) -> f32 {
-  let q = word >> ${ ARROW_SHIFT_SCALE }u;
+  let q = word >> ${ARROW_SHIFT_SCALE}u;
   return select(f32(q) / 16.0, 1.0, q == 0u);
 }
 
@@ -1295,7 +1340,7 @@ fn scaleOfWord(word: u32) -> f32 {
 // there for why this is not ARROW_BACK.
 fn arrowAxialDepthW(shape: u32) -> f32 {
   switch shape {
-${ depths }    default: { return 0.0; }
+${depths}    default: { return 0.0; }
   }
 }
 
@@ -1332,8 +1377,8 @@ fn arrowTrimOf(w: vec2f) -> vec4f {
   let src = srcShapeOf(word);
   let tgt = tgtShapeOf(word);
   // derived by the store, mirror-only: hollow or translucent
-  let srcShows = ((word >> ${ ARROW_SHIFT_SRC_SHOWS_LINE }u) & 1u) == 1u;
-  let tgtShows = ((word >> ${ ARROW_SHIFT_TGT_SHOWS_LINE }u) & 1u) == 1u;
+  let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
+  let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
 
   return vec4f(
     arrowDrawTrimW(src, srcShows, w.x, scale),
@@ -1355,7 +1400,6 @@ fn shortenTowardW(pt: vec2f, toward: vec2f, amount: f32) -> vec2f {
 };
 
 const ARROW_GAP_WGSL = arrowGapFns();
-
 
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
 const SDF = `
@@ -1394,7 +1438,7 @@ fn ellipseSD(p0: vec2f, ab: vec2f) -> f32 {
   return -d;
 }
 
-${ POLY.fns }
+${POLY.fns}
 // custom polygon (C3): iq's sdPolygon over unit points from the poly
 // blob, scaled to device space (exact distance, like the generated
 // shapes); ref packs offset | count << 24
@@ -1450,9 +1494,9 @@ fn cutRectangleSD(p: vec2f, half: vec2f, cut: f32) -> f32 {
 // resulting closed polygon runs through the standard exact-polygon
 // distance loop, so sign and distance are exact for that outline.
 fn barrelSD(p: vec2f, half: vec2f, zoomDpr: f32) -> f32 {
-  let hOff = min(${ BARREL_HEIGHT_OFFSET_MAX }.0 * zoomDpr, ${ BARREL_HEIGHT_OFFSET_PCT } * half.y * 2.0);
-  let wOff = min(${ BARREL_WIDTH_OFFSET_MAX }.0 * zoomDpr, ${ BARREL_WIDTH_OFFSET_PCT } * half.x * 2.0);
-  let ctrl = ${ BARREL_CTRL_OFFSET_PCT } * half.x * 2.0;
+  let hOff = min(${BARREL_HEIGHT_OFFSET_MAX}.0 * zoomDpr, ${BARREL_HEIGHT_OFFSET_PCT} * half.y * 2.0);
+  let wOff = min(${BARREL_WIDTH_OFFSET_MAX}.0 * zoomDpr, ${BARREL_WIDTH_OFFSET_PCT} * half.x * 2.0);
+  let ctrl = ${BARREL_CTRL_OFFSET_PCT} * half.x * 2.0;
   let x0 = -half.x;
   let x1 = half.x;
   let y0 = -half.y;
@@ -1466,13 +1510,13 @@ fn barrelSD(p: vec2f, half: vec2f, zoomDpr: f32) -> f32 {
   var b = array<vec2f, 4>(
     vec2f(x0 + wOff, y0), vec2f(x1, y0 + hOff), vec2f(x1 - wOff, y1), vec2f(x0, y1 - hOff));
 
-  const N: i32 = 4 * (${ BARREL_CURVE_SEGMENTS } + 1);
+  const N: i32 = 4 * (${BARREL_CURVE_SEGMENTS} + 1);
   var v = array<vec2f, N>();
   var k = 0;
 
   for (var i = 0; i < 4; i++) {
-    for (var j = 0; j <= ${ BARREL_CURVE_SEGMENTS }; j++) {
-      let t = f32(j) / ${ BARREL_CURVE_SEGMENTS }.0;
+    for (var j = 0; j <= ${BARREL_CURVE_SEGMENTS}; j++) {
+      let t = f32(j) / ${BARREL_CURVE_SEGMENTS}.0;
       let u = 1.0 - t;
 
       v[k] = a[i] * (u * u) + c[i] * (2.0 * u * t) + b[i] * (t * t);
@@ -1520,11 +1564,11 @@ fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32, zoomDpr:
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
-${ POLY.cases }
-    case ${ SHAPE_POLYGON_CUSTOM }u: { return customPolySD(p, half, polyRef); }
-    case ${ SHAPE_CUT_RECTANGLE }u: { return cutRectangleSD(p, half, radius); }
-    case ${ SHAPE_BOTTOM_ROUND_RECTANGLE }u: { return bottomRoundRectangleSD(p, half, radius); }
-    case ${ SHAPE_BARREL }u: { return barrelSD(p, half, zoomDpr); }
+${POLY.cases}
+    case ${SHAPE_POLYGON_CUSTOM}u: { return customPolySD(p, half, polyRef); }
+    case ${SHAPE_CUT_RECTANGLE}u: { return cutRectangleSD(p, half, radius); }
+    case ${SHAPE_BOTTOM_ROUND_RECTANGLE}u: { return bottomRoundRectangleSD(p, half, radius); }
+    case ${SHAPE_BARREL}u: { return barrelSD(p, half, zoomDpr); }
     default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
 }
@@ -1537,20 +1581,20 @@ fn cornerRadiusPx(stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
 }
 
 // The same word, resolved for cut-rectangle (27.2): v3's 'auto' chamfer
-// is a flat ${ CUT_RECTANGLE_CORNER } model px, *not* round-rectangle's
+// is a flat ${CUT_RECTANGLE_CORNER} model px, *not* round-rectangle's
 // size-relative rule — the two shapes read one prop with two defaults,
 // as they do in v3.
 fn cornerLengthPx(shape: u32, stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
   if (stored == 0xffffffffu) {
-    if (shape == ${ SHAPE_CUT_RECTANGLE }u) {
-      return ${ CUT_RECTANGLE_CORNER }.0 * zoomDpr;
+    if (shape == ${SHAPE_CUT_RECTANGLE}u) {
+      return ${CUT_RECTANGLE_CORNER}.0 * zoomDpr;
     }
     // 27.4: the round-* family's 'auto' is v3's getRoundPolygonRadius —
     // a third meaning for the one prop, as in v3
-    if (shape >= ${ SHAPE_ROUND_TRIANGLE }u && shape <= ${ SHAPE_ROUND_TAG }u) {
+    if (shape >= ${SHAPE_ROUND_TRIANGLE}u && shape <= ${SHAPE_ROUND_TAG}u) {
       return min(
-        min(half.x, half.y) * 2.0 / ${ ROUND_POLYGON_RADIUS_DIV }.0,
-        ${ ROUND_POLYGON_RADIUS_MAX }.0 * zoomDpr);
+        min(half.x, half.y) * 2.0 / ${ROUND_POLYGON_RADIUS_DIV}.0,
+        ${ROUND_POLYGON_RADIUS_MAX}.0 * zoomDpr);
     }
   }
   return cornerRadiusPx(stored, half, zoomDpr);
@@ -1724,7 +1768,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc, no decorations
 
-  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
+  var shape = (borderGeom[slot].y >> ${SHAPE_SHIFT}u) & ${SHAPE_MASK}u;
   var half = in.halfSize;
 
   if (plain) {
@@ -1845,7 +1889,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc
 
-  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
+  var shape = (borderGeom[slot].y >> ${SHAPE_SHIFT}u) & ${SHAPE_MASK}u;
   var half = in.halfSize;
 
   if (plain) {
@@ -1965,7 +2009,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
-  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
+  var shape = (borderGeom[slot].y >> ${SHAPE_SHIFT}u) & ${SHAPE_MASK}u;
   var half = in.halfSize;
 
   if (sizePx < frame.nodeLodPx) {
@@ -2205,8 +2249,8 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
 
     // v3 shortens each boundary point *toward the far end*, so the two
     // trims are independent and neither can cross the other
-    let srcShows = ((word >> ${ ARROW_SHIFT_SRC_SHOWS_LINE }u) & 1u) == 1u;
-    let tgtShows = ((word >> ${ ARROW_SHIFT_TGT_SHOWS_LINE }u) & 1u) == 1u;
+    let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
+    let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
 
     var ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
     var tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
@@ -2785,11 +2829,11 @@ struct ArrowVSOut {
   @location(3) @interpolate(flat) slot: u32,
 }
 
-${ ARROW_POLY.fns }
+${ARROW_POLY.fns}
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
-  let q = pair >> ${ ARROW_SHIFT_SCALE }u;
+  let q = pair >> ${ARROW_SHIFT_SCALE}u;
 
   return select(f32(q) / 16.0, 1.0, q == 0u);
 }
@@ -2915,26 +2959,26 @@ fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
 // adding a head cannot silently clip it (27.6).  triangle-cross's bar
 // additionally hangs the edge width below its base, so that is added at
 // the call site.
-const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+const ARROW_MAX_BACK: f32 = ${ARROW_MAX_BACK};
 // how far in front of the origin a head reaches — nonzero only for the
 // two disc heads, which v3 centres on the origin (round 56)
-const ARROW_MAX_FRONT: f32 = ${ ARROW_MAX_FRONT };
+const ARROW_MAX_FRONT: f32 = ${ARROW_MAX_FRONT};
 const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // this end's shape id from the packed word (C1: ends + mids)
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
   switch endId {
-    case 1u: { return (pair >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }     // source
-    case 2u: { return (pair >> ${ ARROW_SHIFT_MID_TARGET }u) & ${ ARROW_SHAPE_MASK }u; } // mid-target
-    case 3u: { return (pair >> ${ ARROW_SHIFT_MID_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; } // mid-source
-    default: { return (pair >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }     // target
+    case 1u: { return (pair >> ${ARROW_SHIFT_SOURCE}u) & ${ARROW_SHAPE_MASK}u; }     // source
+    case 2u: { return (pair >> ${ARROW_SHIFT_MID_TARGET}u) & ${ARROW_SHAPE_MASK}u; } // mid-target
+    case 3u: { return (pair >> ${ARROW_SHIFT_MID_SOURCE}u) & ${ARROW_SHAPE_MASK}u; } // mid-source
+    default: { return (pair >> ${ARROW_SHIFT_TARGET}u) & ${ARROW_SHAPE_MASK}u; }     // target
   }
 }
 
 // hollow applies to the end arrows only (mids are always filled — C1)
 fn endHollowOf(pair: u32, endId: u32) -> bool {
-  if (endId == 1u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u; }
-  if (endId == 0u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u; }
+  if (endId == 1u) { return ((pair >> ${ARROW_SHIFT_HOLLOW_SOURCE}u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> ${ARROW_SHIFT_HOLLOW_TARGET}u) & 1u) == 1u; }
   return false;
 }
 
@@ -2951,7 +2995,7 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   var sd = 1e6;
 
   switch shape {
-${ ARROW_POLY.cases }
+${ARROW_POLY.cases}
     case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame, centred on the origin (56)
     default: { sd = 1e6; } // none (already degenerate in the VS)
   }
@@ -3082,7 +3126,7 @@ struct ArrowVSOut {
   @location(3) @interpolate(flat) slot: u32,
 }
 
-${ ARROW_POLY.fns }
+${ARROW_POLY.fns}
 
 // v3's getArrowWidth (27.3) — the twin of the straight shader's copy:
 // a model-space nonlinear size with a 29-unit floor, then scaled to
@@ -3117,15 +3161,15 @@ fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
 // adding a head cannot silently clip it (27.6).  triangle-cross's bar
 // additionally hangs the edge width below its base, so that is added at
 // the call site.
-const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+const ARROW_MAX_BACK: f32 = ${ARROW_MAX_BACK};
 // how far in front of the origin a head reaches — nonzero only for the
 // two disc heads, which v3 centres on the origin (round 56)
-const ARROW_MAX_FRONT: f32 = ${ ARROW_MAX_FRONT };
+const ARROW_MAX_FRONT: f32 = ${ARROW_MAX_FRONT};
 const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
-  let q = pair >> ${ ARROW_SHIFT_SCALE }u;
+  let q = pair >> ${ARROW_SHIFT_SCALE}u;
 
   return select(f32(q) / 16.0, 1.0, q == 0u);
 }
@@ -3139,16 +3183,16 @@ fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
 }
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
   switch endId {
-    case 1u: { return (pair >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }     // source
-    case 2u: { return (pair >> ${ ARROW_SHIFT_MID_TARGET }u) & ${ ARROW_SHAPE_MASK }u; } // mid-target
-    case 3u: { return (pair >> ${ ARROW_SHIFT_MID_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; } // mid-source
-    default: { return (pair >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }     // target
+    case 1u: { return (pair >> ${ARROW_SHIFT_SOURCE}u) & ${ARROW_SHAPE_MASK}u; }     // source
+    case 2u: { return (pair >> ${ARROW_SHIFT_MID_TARGET}u) & ${ARROW_SHAPE_MASK}u; } // mid-target
+    case 3u: { return (pair >> ${ARROW_SHIFT_MID_SOURCE}u) & ${ARROW_SHAPE_MASK}u; } // mid-source
+    default: { return (pair >> ${ARROW_SHIFT_TARGET}u) & ${ARROW_SHAPE_MASK}u; }     // target
   }
 }
 
 fn endHollowOf(pair: u32, endId: u32) -> bool {
-  if (endId == 1u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u; }
-  if (endId == 0u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u; }
+  if (endId == 1u) { return ((pair >> ${ARROW_SHIFT_HOLLOW_SOURCE}u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> ${ARROW_SHIFT_HOLLOW_TARGET}u) & 1u) == 1u; }
   return false;
 }
 
@@ -3262,7 +3306,7 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   var sd = 1e6;
 
   switch shape {
-${ ARROW_POLY.cases }
+${ARROW_POLY.cases}
     case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame, centred on the origin (56)
     default: { sd = 1e6; } // none: fully discarded by alpha
   }
@@ -3465,10 +3509,10 @@ fn routeEndWalkW(r: ptr<function, Route>, fromSource: bool, dist: f32) -> vec4f 
 }
 `;
 
-const labelShader = ( edge: boolean ): string => `
+const labelShader = (edge: boolean): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
-${ edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : '' }
+${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : ''}
 // Round 56, a recorded deviation: this stage passes a **zero** arrow
 // trim to the curve evaluators, so an edge label on an arrowed curved
 // edge anchors at the *untrimmed* midpoint while midpoint() answers
@@ -3489,7 +3533,7 @@ ${ edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WG
 // rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
+${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;'}
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -3518,8 +3562,9 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let fade = labelFade(heightPx, frame.labelFadePx);
 
   // glyphs read live positions: labels follow drags/layouts on-GPU
-  ${ edge
-    ? `let owner = glyphOwner(g.nodeSlot);
+  ${
+    edge
+      ? `let owner = glyphOwner(g.nodeSlot);
   let ends = endpoints[owner];
   let pa = nodePositions[ends.x];
   let pb = nodePositions[ends.y];
@@ -3615,7 +3660,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     rotA = anchor;
     rotB = anchor + at.zw;
   }`
-    : 'let anchor = nodePositions[g.nodeSlot];' }
+      : 'let anchor = nodePositions[g.nodeSlot];'
+  }
   let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
@@ -3625,14 +3671,18 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // tweens on-GPU; a numeric rotation (27.7) is a stored angle and works
   // on every stream, node labels included.  Both take the same path:
   // rotate the run's local rect about its anchor.
-  ${ edge
-    ? `let autorot = (g.nodeSlot & GLYPH_ROTATE) != 0u;`
-    : `let autorot = false;` }
+  ${
+    edge
+      ? `let autorot = (g.nodeSlot & GLYPH_ROTATE) != 0u;`
+      : `let autorot = false;`
+  }
 
   if (autorot || g.rotation != 0.0) {
-    ${ edge
-      ? `let cs = select(vec2f(cos(g.rotation), sin(g.rotation)), autorotateFrame(rotA, rotB), autorot);`
-      : `let cs = vec2f(cos(g.rotation), sin(g.rotation));` }
+    ${
+      edge
+        ? `let cs = select(vec2f(cos(g.rotation), sin(g.rotation)), autorotateFrame(rotA, rotB), autorot);`
+        : `let cs = vec2f(cos(g.rotation), sin(g.rotation));`
+    }
     let local = g.offset + t * g.size; // model px from the anchor
 
     posPx = modelToPx(frame, anchor) + rotateBy(cs, local) * frame.zoomDpr;
@@ -3707,8 +3757,8 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
 }
 `;
 
-export const LABEL_SHADER = labelShader( false );
-export const EDGE_LABEL_SHADER = labelShader( true );
+export const LABEL_SHADER = labelShader(false);
+export const EDGE_LABEL_SHADER = labelShader(true);
 
 /*
 Background-image compositing (round 15.3): imaged nodes draw one extra
@@ -3826,10 +3876,10 @@ fn imageRect(rec: ImgRec, half: vec2f, nat: vec2f) -> vec4f {
 }
 
 fn tierSizeOf(tier: u32) -> f32 {
-  if (tier == 3u) { return f32(${ SDF_IMAGE_SIZE_WGSL }); } // the r8 icon array
-  if (tier == 0u) { return ${IMAGE_TIER_SIZES_WGSL[ 0 ]}.0; }
-  if (tier == 1u) { return ${IMAGE_TIER_SIZES_WGSL[ 1 ]}.0; }
-  return ${IMAGE_TIER_SIZES_WGSL[ 2 ]}.0;
+  if (tier == 3u) { return f32(${SDF_IMAGE_SIZE_WGSL}); } // the r8 icon array
+  if (tier == 0u) { return ${IMAGE_TIER_SIZES_WGSL[0]}.0; }
+  if (tier == 1u) { return ${IMAGE_TIER_SIZES_WGSL[1]}.0; }
+  return ${IMAGE_TIER_SIZES_WGSL[2]}.0;
 }
 
 struct ImageVSOut {
@@ -3916,7 +3966,7 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
   // the node SDF for clip: node (model px; radius resolves with zoomDpr 1
   // so 'auto' matches the body shader's model-space value)
   let bg = borderGeom[slot];
-  let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
+  let shape = (bg.y >> ${SHAPE_SHIFT}u) & ${SHAPE_MASK}u;
   let radius = cornerLengthPx(shape, bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x, 1.0);
   let aa = max(fwidth(sd), 1e-4);
@@ -4101,7 +4151,7 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
   // clip to the node shape at the border's inner edge (the image rule:
   // the border stays visible over the chart)
   let bg = borderGeom[slot];
-  let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
+  let shape = (bg.y >> ${SHAPE_SHIFT}u) & ${SHAPE_MASK}u;
   let radius = cornerLengthPx(shape, bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x, 1.0);
   let aa = max(fwidth(sd), 1e-4);
@@ -4207,4 +4257,3 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
   return color * alpha;
 }
 `;
-

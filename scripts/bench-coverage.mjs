@@ -43,96 +43,129 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditFile, PUBLIC_API } from './jsdoc-coverage.mjs';
 
-const ROOT = fileURLToPath( new URL( '..', import.meta.url ) );
-const BENCH_DIR = join( ROOT, 'benchmark' );
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const BENCH_DIR = join(ROOT, 'benchmark');
 
-const verbose = process.argv.includes( '--verbose' );
+const verbose = process.argv.includes('--verbose');
 
 /** Every benchmark source, concatenated — the corpus a name is looked up in. */
-function benchCorpus(){
-  const files = readdirSync( BENCH_DIR ).filter( f => f.endsWith( '.mjs' ) || f.endsWith( '.html' ) );
+function benchCorpus() {
+  const files = readdirSync(BENCH_DIR).filter(
+    (f) => f.endsWith('.mjs') || f.endsWith('.html'),
+  );
   const parts = [];
 
-  for( const f of files ){ parts.push( readFileSync( join( BENCH_DIR, f ), 'utf8' ) ); }
+  for (const f of files) {
+    parts.push(readFileSync(join(BENCH_DIR, f), 'utf8'));
+  }
 
-  return { text: parts.join( '\n' ), files };
+  return { text: parts.join('\n'), files };
 }
 
 /** A call-shaped mention: `.name(`, `name(`, or a quoted 'name'. */
-export function mentions( corpus, name ){
-  const escaped = name.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' );
-  const re = new RegExp( `(?:\\.\\s*${escaped}\\s*\\(|\\b${escaped}\\s*\\(|['"\`]${escaped}['"\`])` );
+export function mentions(corpus, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(
+    `(?:\\.\\s*${escaped}\\s*\\(|\\b${escaped}\\s*\\(|['"\`]${escaped}['"\`])`,
+  );
 
-  return re.test( corpus );
+  return re.test(corpus);
 }
 
-export function audit(){
+export function audit() {
   const { text, files } = benchCorpus();
   const perFile = [];
   let covered = 0;
   let total = 0;
   let fields = 0;
 
-  for( const rel of PUBLIC_API ){
-    const { members } = auditFile( join( ROOT, rel ) );
+  for (const rel of PUBLIC_API) {
+    const { members } = auditFile(join(ROOT, rel));
     const seen = new Set();
     const uncovered = [];
     let fileCovered = 0;
 
-    for( const m of members ){
+    for (const m of members) {
       // Fields are out of the denominator: a benchmark calls things.  The
       // first version of this audit counted them and reported
       // animation.mts at 18%, which was mostly `Animation.refs`,
       // `.gpuId`, `.durationMs` and friends — public members of an
       // exported class (so the *documentation* audits are right to gate
       // them) but not something any benchmark could exercise directly.
-      if( !m.isMethod ){ fields++; continue; }
+      if (!m.isMethod) {
+        fields++;
+        continue;
+      }
 
       // one entry per name per file: overloads and re-declarations are
       // the same member to a benchmark
-      if( seen.has( m.name ) ){ continue; }
+      if (seen.has(m.name)) {
+        continue;
+      }
 
-      seen.add( m.name );
+      seen.add(m.name);
 
-      if( mentions( text, m.name ) ){ fileCovered++; } else {
-        uncovered.push( `${m.owner != null ? m.owner + '.' : ''}${m.name} (${rel}:${m.line})` );
+      if (mentions(text, m.name)) {
+        fileCovered++;
+      } else {
+        uncovered.push(
+          `${m.owner != null ? m.owner + '.' : ''}${m.name} (${rel}:${m.line})`,
+        );
       }
     }
 
     covered += fileCovered;
     total += seen.size;
-    perFile.push( { file: rel, covered: fileCovered, total: seen.size, uncovered } );
+    perFile.push({
+      file: rel,
+      covered: fileCovered,
+      total: seen.size,
+      uncovered,
+    });
   }
 
   return { perFile, covered, total, fields, benchFiles: files.length };
 }
 
-const isMain = process.argv[ 1 ] != null
-  && relative( fileURLToPath( import.meta.url ), process.argv[ 1 ] ) === '';
+const isMain =
+  process.argv[1] != null &&
+  relative(fileURLToPath(import.meta.url), process.argv[1]) === '';
 
-if( isMain ){
+if (isMain) {
   const { perFile, covered, total, fields, benchFiles } = audit();
 
-  console.log( `\nbenchmark coverage of the v4 public surface (${benchFiles} benchmark files)` );
-  console.log( '  a call-shaped mention, not proof of a measurement — see this file\'s header\n' );
+  console.log(
+    `\nbenchmark coverage of the v4 public surface (${benchFiles} benchmark files)`,
+  );
+  console.log(
+    "  a call-shaped mention, not proof of a measurement — see this file's header\n",
+  );
 
-  for( const f of perFile ){
-    const pct = f.total === 0 ? 100 : ( f.covered / f.total ) * 100;
+  for (const f of perFile) {
+    const pct = f.total === 0 ? 100 : (f.covered / f.total) * 100;
 
-    console.log( `  ${f.file.padEnd( 32 )} ${String( f.covered ).padStart( 4 )}/${String( f.total ).padEnd( 4 )} ${pct.toFixed( 1 )}%` );
+    console.log(
+      `  ${f.file.padEnd(32)} ${String(f.covered).padStart(4)}/${String(f.total).padEnd(4)} ${pct.toFixed(1)}%`,
+    );
 
-    if( verbose && f.uncovered.length > 0 ){
-      for( const u of f.uncovered ){ console.log( `      - ${u}` ); }
+    if (verbose && f.uncovered.length > 0) {
+      for (const u of f.uncovered) {
+        console.log(`      - ${u}`);
+      }
     }
   }
 
-  console.log( `\n  total: ${covered}/${total} callable members (${( ( covered / total ) * 100 ).toFixed( 1 )}%)` );
-  console.log( `  ${fields} fields excluded — a benchmark calls things` );
+  console.log(
+    `\n  total: ${covered}/${total} callable members (${((covered / total) * 100).toFixed(1)}%)`,
+  );
+  console.log(`  ${fields} fields excluded — a benchmark calls things`);
 
-  if( !verbose ){ console.log( '  --verbose lists the members with no mention' ); }
+  if (!verbose) {
+    console.log('  --verbose lists the members with no mention');
+  }
 
-  console.log( '' );
+  console.log('');
 
   // reports only, never gates (see the header)
-  process.exit( 0 );
+  process.exit(0);
 }

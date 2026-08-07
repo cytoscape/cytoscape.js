@@ -8,9 +8,19 @@
 
 import cytoscape from '../../build/dts/index.js';
 import type {
-  CytoscapeOptions, Collection, ColumnarElements, Core, Event,
-  ElementsDefinition, ExportOptions, GridLayoutOptions,
-  LayoutOptions, Mapper, Stylesheet, Position, RendererStats,
+  CytoscapeOptions,
+  Collection,
+  ColumnarElements,
+  Core,
+  Event,
+  ElementsDefinition,
+  ExportOptions,
+  GridLayoutOptions,
+  LayoutOptions,
+  Mapper,
+  Stylesheet,
+  Position,
+  RendererStats,
 } from '../../build/dts/index.js';
 
 // -- the factory --
@@ -20,17 +30,17 @@ const elements: ElementsDefinition = {
     { data: { id: 'a', weight: 1 }, position: { x: 0, y: 0 } },
     { data: { id: 'b', weight: 5 }, position: { x: 100, y: 0 } },
   ],
-  edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ],
+  edges: [{ data: { id: 'ab', source: 'a', target: 'b' } }],
 };
 
 // the mapper DSL: a plain serializable object, no strings to parse
-const sizeMapper: Mapper = { data: 'weight', scale: 'sqrt', range: [ 10, 60 ] };
+const sizeMapper: Mapper = { data: 'weight', scale: 'sqrt', range: [10, 60] };
 
 const style: Stylesheet = {
   nodes: {
     width: sizeMapper,
     height: sizeMapper,
-    'background-color': { data: 'weight', range: [ '#eee', '#333' ] },
+    'background-color': { data: 'weight', range: ['#eee', '#333'] },
     'transition-property': 'background-color',
     'transition-duration': 250,
   },
@@ -46,7 +56,7 @@ const options: CytoscapeOptions = {
   boxSelectionIncludesLabels: false,
 };
 
-const cy: Core = cytoscape( options );
+const cy: Core = cytoscape(options);
 
 // -- unknown constructor options are a build-time error (round 37.3) --
 //
@@ -63,11 +73,11 @@ const cy: Core = cytoscape( options );
 // through `cy.options()`:
 
 // @ts-expect-error motionBlur was dropped by the 2026-07-29 triage
-cytoscape( { motionBlur: true } );
+cytoscape({ motionBlur: true });
 // @ts-expect-error hideEdgesOnViewport likewise
-cytoscape( { elements, hideEdgesOnViewport: true } );
+cytoscape({ elements, hideEdgesOnViewport: true });
 // @ts-expect-error and a plain typo, the case the whole rule is for
-cytoscape( { totallyUnknownOption: 1 } );
+cytoscape({ totallyUnknownOption: 1 });
 // @ts-expect-error the same check through the named options type
 const badOptions: CytoscapeOptions = { textureOnViewport: true };
 
@@ -80,43 +90,45 @@ void badOptions;
 
 // -- statics on the factory --
 
-const columnar: ColumnarElements = cytoscape.toColumnarElements( elements );
-const wire: ArrayBuffer = cytoscape.serializeElements( columnar );
+const columnar: ColumnarElements = cytoscape.toColumnarElements(elements);
+const wire: ArrayBuffer = cytoscape.serializeElements(columnar);
 
-cytoscape.deserializeElements( wire );
-cy.add( wire );
+cytoscape.deserializeElements(wire);
+cy.add(wire);
 
 // -- queries: structured objects and predicates, never selector strings --
 
-const selected: Collection = cy.nodes( { selected: true } );
-const heavy: Collection = cy.nodes( { data: { weight: { gt: 2 } } } );
-const parents: Collection = cy.nodes( { parent: true } );
-const byFn: Collection = cy.filter( ele => ele.isEdge() );
-const one: Collection = cy.$id( 'a' );
+const selected: Collection = cy.nodes({ selected: true });
+const heavy: Collection = cy.nodes({ data: { weight: { gt: 2 } } });
+const parents: Collection = cy.nodes({ parent: true });
+const byFn: Collection = cy.filter((ele) => ele.isEdge());
+const one: Collection = cy.$id('a');
 
 // -- collection reads --
 
 const id: string | undefined = one.id();
 const pos = one.position() as Position;
 const w: number | undefined = one.width();
-const bb = one.boundingBox( { includeLabels: true } );
-const deg: number | undefined = one.degree( false );
+const bb = one.boundingBox({ includeLabels: true });
+const deg: number | undefined = one.degree(false);
 const total: number = cy.elements().totalDegree();
 const nhood: Collection = one.neighborhood();
 const edges: Collection = one.connectedEdges();
 
 // -- traversal and algorithms --
 
-const dijkstra = cy.elements().dijkstra( { root: one, weight: () => 1 } );
-const path: Collection = dijkstra.pathTo( cy.$id( 'b' ) );
+const dijkstra = cy.elements().dijkstra({ root: one, weight: () => 1 });
+const path: Collection = dijkstra.pathTo(cy.$id('b'));
 const components: Collection[] = cy.elements().components();
-const clusters: Collection[] = cy.nodes().kMeans( { k: 2, attributes: [ n => n.degree() ?? 0 ] } );
+const clusters: Collection[] = cy
+  .nodes()
+  .kMeans({ k: 2, attributes: [(n) => n.degree() ?? 0] });
 
 // -- viewport --
 
-cy.zoom( 2 );
-cy.pan( { x: 10, y: 10 } );
-cy.fit( heavy, 30 );
+cy.zoom(2);
+cy.pan({ x: 10, y: 10 });
+cy.fit(heavy, 30);
 const extent = cy.extent();
 
 // -- events: predicate delegation, no selector strings --
@@ -125,34 +137,34 @@ const extent = cy.extent();
 // v3 event object, so every handler began with a cast; a v4 event's target is
 // the core or a one-element collection, and narrowing between them is a real
 // type guard rather than an assertion.
-const onTap = ( event: Event ) => {
+const onTap = (event: Event) => {
   const target = event.target;
 
-  if( target != null && 'isNode' in target ){
-    void target.id();      // narrowed to Collection — no cast
+  if (target != null && 'isNode' in target) {
+    void target.id(); // narrowed to Collection — no cast
   }
 
   // the event's own fields are typed too
   const at: number = event.timeStamp;
   const dom: string | undefined = event.originalEvent?.type;
 
-  void [ at, dom ];
+  void [at, dom];
 };
-const isNode = ( ele: Collection ) => ele.isNode();
+const isNode = (ele: Collection) => ele.isNode();
 
-cy.on( 'tap', isNode, onTap );
-cy.off( 'tap', isNode, onTap );
-cy.on( 'tap', ele => ele.isEdge(), onTap );   // no annotation needed
-one.on( 'position', () => undefined );
+cy.on('tap', isNode, onTap);
+cy.off('tap', isNode, onTap);
+cy.on('tap', (ele) => ele.isEdge(), onTap); // no annotation needed
+one.on('position', () => undefined);
 
 // -- animation, with the round-24 controls and round-25 geometry channels --
 
-const ani = one.animation( {
+const ani = one.animation({
   position: { x: 50, y: 50 },
   style: { width: 80, 'background-color': '#f00' },
   duration: 400,
   easing: 'spring(0.3)',
-} );
+});
 
 ani.play();
 ani.pause();
@@ -167,36 +179,62 @@ const done: Promise<void> = ani.promise();
 
 const gridOpts: GridLayoutOptions = { name: 'grid', fit: true, padding: 30 };
 
-cy.layout( gridOpts ).run();
-cy.layout( { name: 'force', animate: true } as LayoutOptions ).run();
+cy.layout(gridOpts).run();
+cy.layout({ name: 'force', animate: true } as LayoutOptions).run();
 
 class SpiralLayout {
-  run( ctx: { nodeSlots(): number[]; setPositions( slots: number[], xy: number[] ): void } ){
+  run(ctx: {
+    nodeSlots(): number[];
+    setPositions(slots: number[], xy: number[]): void;
+  }) {
     const slots = ctx.nodeSlots();
     const xy: number[] = [];
 
-    for( let i = 0; i < slots.length; i++ ){
-      xy.push( Math.cos( i ) * i, Math.sin( i ) * i );
+    for (let i = 0; i < slots.length; i++) {
+      xy.push(Math.cos(i) * i, Math.sin(i) * i);
     }
 
-    ctx.setPositions( slots, xy );
+    ctx.setPositions(slots, xy);
   }
 }
 
-cy.layout( { impl: SpiralLayout } ).run();
-heavy.layout( { impl: new SpiralLayout() } ).run();
+cy.layout({ impl: SpiralLayout }).run();
+heavy.layout({ impl: new SpiralLayout() }).run();
 
 // -- batching, compaction, export --
 
-cy.batch( () => { cy.$id( 'a' ).data( 'weight', 9 ); } );
+cy.batch(() => {
+  cy.$id('a').data('weight', 9);
+});
 cy.compact();
 
 const exportOpts: ExportOptions = { full: true, scale: 2, output: 'blob' };
-const png: Promise<string | Blob> = cy.png( exportOpts );
+const png: Promise<string | Blob> = cy.png(exportOpts);
 
 const stats: RendererStats | undefined = cy.renderer()?.stats();
 
 void [
-  cy, selected, heavy, parents, byFn, id, pos, w, bb, deg, total, nhood, edges,
-  path, components, clusters, extent, progress, paused, done, png, stats, style,
+  cy,
+  selected,
+  heavy,
+  parents,
+  byFn,
+  id,
+  pos,
+  w,
+  bb,
+  deg,
+  total,
+  nhood,
+  edges,
+  path,
+  components,
+  clusters,
+  extent,
+  progress,
+  paused,
+  done,
+  png,
+  stats,
+  style,
 ];

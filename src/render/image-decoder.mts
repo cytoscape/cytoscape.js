@@ -21,7 +21,11 @@ renderer attaches to the store's ImageRegistry at mount
 */
 
 import { IMAGE_TIER_SIZES } from '../image-registry.mjs';
-import type { ImageDecoder, DecodedImage, ImageDecodeOpts } from '../image-registry.mjs';
+import type {
+  ImageDecoder,
+  DecodedImage,
+  ImageDecodeOpts,
+} from '../image-registry.mjs';
 
 const SVG_TYPE = /image\/svg/i;
 const SVG_URL = /\.svg([?#]|$)/i;
@@ -36,29 +40,36 @@ export interface SdfAlphaGrid {
 
 /** Raster any drawable source into a canvas and extract its alpha grid. */
 const toAlphaGrid = (
-  source: CanvasImageSource, w: number, h: number
+  source: CanvasImageSource,
+  w: number,
+  h: number,
 ): SdfAlphaGrid => {
-  const canvas = document.createElement( 'canvas' );
+  const canvas = document.createElement('canvas');
 
   canvas.width = w;
   canvas.height = h;
 
-  const ctx = canvas.getContext( '2d', { willReadFrequently: true } ) as CanvasRenderingContext2D;
+  const ctx = canvas.getContext('2d', {
+    willReadFrequently: true,
+  }) as CanvasRenderingContext2D;
 
-  ctx.drawImage( source, 0, 0, w, h );
+  ctx.drawImage(source, 0, 0, w, h);
 
-  const rgba = ctx.getImageData( 0, 0, w, h ).data;
-  const alpha = new Uint8ClampedArray( w * h );
+  const rgba = ctx.getImageData(0, 0, w, h).data;
+  const alpha = new Uint8ClampedArray(w * h);
 
-  for( let i = 0; i < w * h; i++ ){ alpha[ i ] = rgba[ i * 4 + 3 ]; }
+  for (let i = 0; i < w * h; i++) {
+    alpha[i] = rgba[i * 4 + 3];
+  }
 
   return { alpha, width: w, height: h };
 };
 
 const rasterSvg = async (
-  blob: Blob, targetPx: number
+  blob: Blob,
+  targetPx: number,
 ): Promise<DecodedImage> => {
-  const url = URL.createObjectURL( blob );
+  const url = URL.createObjectURL(blob);
 
   try {
     const img = new Image();
@@ -66,59 +77,67 @@ const rasterSvg = async (
     img.src = url;
     await img.decode();
 
-    const natW = img.naturalWidth || IMAGE_TIER_SIZES[ 0 ];
-    const natH = img.naturalHeight || IMAGE_TIER_SIZES[ 0 ];
-    const scale = targetPx > 0 ? targetPx / Math.max( natW, natH ) : 1;
-    const w = Math.max( 1, Math.round( natW * scale ) );
-    const h = Math.max( 1, Math.round( natH * scale ) );
-    const canvas = document.createElement( 'canvas' );
+    const natW = img.naturalWidth || IMAGE_TIER_SIZES[0];
+    const natH = img.naturalHeight || IMAGE_TIER_SIZES[0];
+    const scale = targetPx > 0 ? targetPx / Math.max(natW, natH) : 1;
+    const w = Math.max(1, Math.round(natW * scale));
+    const h = Math.max(1, Math.round(natH * scale));
+    const canvas = document.createElement('canvas');
 
     canvas.width = w;
     canvas.height = h;
 
-    const ctx = canvas.getContext( '2d' ) as CanvasRenderingContext2D;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-    ctx.drawImage( img, 0, 0, w, h );
+    ctx.drawImage(img, 0, 0, w, h);
 
     return {
-      data: await createImageBitmap( canvas, { premultiplyAlpha: 'none' } ),
+      data: await createImageBitmap(canvas, { premultiplyAlpha: 'none' }),
       width: w,
       height: h,
-      vector: true
+      vector: true,
     };
   } finally {
-    URL.revokeObjectURL( url );
+    URL.revokeObjectURL(url);
   }
 };
 
-/** The decoder the renderer wires up at mount. */
+/**
+ * The decoder the renderer wires up at mount.
+ *
+ * @throws (from the decoder it returns) when the fetch answers a non-2xx
+ *   status, carrying it — the registry catches this, warns once per url and
+ *   renders the node imageless (round 15's async-loading policy)
+ */
 export const createBrowserImageDecoder = (
-  capPx: number = IMAGE_TIER_SIZES[ IMAGE_TIER_SIZES.length - 1 ]
+  capPx: number = IMAGE_TIER_SIZES[IMAGE_TIER_SIZES.length - 1],
 ): ImageDecoder => {
-  return async ( url: string, opts: ImageDecodeOpts ): Promise<DecodedImage> => {
-    const response = await fetch( url, {
+  return async (url: string, opts: ImageDecodeOpts): Promise<DecodedImage> => {
+    const response = await fetch(url, {
       mode: opts.crossOrigin === 'null' ? 'same-origin' : 'cors',
-      credentials: opts.crossOrigin === 'use-credentials' ? 'include' : 'same-origin'
-    } );
+      credentials:
+        opts.crossOrigin === 'use-credentials' ? 'include' : 'same-origin',
+    });
 
-    if( !response.ok ){
-      throw new Error( `HTTP ${response.status}` );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
 
     const blob = await response.blob();
-    const isSvg = SVG_TYPE.test( blob.type ) || ( blob.type === '' && SVG_URL.test( url ) );
+    const isSvg =
+      SVG_TYPE.test(blob.type) || (blob.type === '' && SVG_URL.test(url));
 
     // sdf-icon mode (15.5): raster at the fixed sdf size preserving
     // aspect and hand back the alpha grid — the silhouette is all the
     // EDT consumes (a multi-color source collapses to it; recorded)
-    if( opts.sdf ){
+    if (opts.sdf) {
       const target = opts.targetPx;
       let source: CanvasImageSource;
       let natW: number;
       let natH: number;
 
-      if( isSvg ){
-        const objectUrl = URL.createObjectURL( blob );
+      if (isSvg) {
+        const objectUrl = URL.createObjectURL(blob);
 
         try {
           const img = new Image();
@@ -129,51 +148,75 @@ export const createBrowserImageDecoder = (
           natH = img.naturalHeight || target;
           source = img;
 
-          const k = target / Math.max( natW, natH );
-          const grid = toAlphaGrid( source,
-            Math.max( 1, Math.round( natW * k ) ), Math.max( 1, Math.round( natH * k ) ) );
+          const k = target / Math.max(natW, natH);
+          const grid = toAlphaGrid(
+            source,
+            Math.max(1, Math.round(natW * k)),
+            Math.max(1, Math.round(natH * k)),
+          );
 
-          return { data: grid, width: grid.width, height: grid.height, vector: true };
+          return {
+            data: grid,
+            width: grid.width,
+            height: grid.height,
+            vector: true,
+          };
         } finally {
-          URL.revokeObjectURL( objectUrl );
+          URL.revokeObjectURL(objectUrl);
         }
       }
 
-      const bitmap = await createImageBitmap( blob, { premultiplyAlpha: 'none' } );
-      const k = target / Math.max( bitmap.width, bitmap.height );
-      const grid = toAlphaGrid( bitmap,
-        Math.max( 1, Math.round( bitmap.width * k ) ), Math.max( 1, Math.round( bitmap.height * k ) ) );
+      const bitmap = await createImageBitmap(blob, {
+        premultiplyAlpha: 'none',
+      });
+      const k = target / Math.max(bitmap.width, bitmap.height);
+      const grid = toAlphaGrid(
+        bitmap,
+        Math.max(1, Math.round(bitmap.width * k)),
+        Math.max(1, Math.round(bitmap.height * k)),
+      );
 
       bitmap.close();
 
-      return { data: grid, width: grid.width, height: grid.height, vector: false };
+      return {
+        data: grid,
+        width: grid.width,
+        height: grid.height,
+        vector: false,
+      };
     }
 
-    if( isSvg ){
-      return rasterSvg( blob, opts.targetPx );
+    if (isSvg) {
+      return rasterSvg(blob, opts.targetPx);
     }
 
     // raster source: decode natively, downscaling into the cap when the
     // source exceeds it (tier resolution is the recorded ceiling)
-    let bitmap = await createImageBitmap( blob, { premultiplyAlpha: 'none' } );
-    const longest = Math.max( bitmap.width, bitmap.height );
-    const cap = opts.sdf || ( opts.targetPx > 0 && opts.targetPx < capPx )
-      ? Math.min( opts.targetPx > 0 ? opts.targetPx : capPx, capPx )
-      : capPx;
+    let bitmap = await createImageBitmap(blob, { premultiplyAlpha: 'none' });
+    const longest = Math.max(bitmap.width, bitmap.height);
+    const cap =
+      opts.sdf || (opts.targetPx > 0 && opts.targetPx < capPx)
+        ? Math.min(opts.targetPx > 0 ? opts.targetPx : capPx, capPx)
+        : capPx;
 
-    if( longest > cap ){
+    if (longest > cap) {
       const scale = cap / longest;
-      const scaled = await createImageBitmap( bitmap, {
+      const scaled = await createImageBitmap(bitmap, {
         premultiplyAlpha: 'none',
-        resizeWidth: Math.max( 1, Math.round( bitmap.width * scale ) ),
-        resizeHeight: Math.max( 1, Math.round( bitmap.height * scale ) ),
-        resizeQuality: 'high'
-      } );
+        resizeWidth: Math.max(1, Math.round(bitmap.width * scale)),
+        resizeHeight: Math.max(1, Math.round(bitmap.height * scale)),
+        resizeQuality: 'high',
+      });
 
       bitmap.close();
       bitmap = scaled;
     }
 
-    return { data: bitmap, width: bitmap.width, height: bitmap.height, vector: false };
+    return {
+      data: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      vector: false,
+    };
   };
 };

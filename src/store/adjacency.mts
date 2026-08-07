@@ -1,4 +1,4 @@
-const EMPTY = new Uint32Array( 0 );
+const EMPTY = new Uint32Array(0);
 
 /** What adjacency queries return: iterate or index it, don't mutate it. */
 export type EdgeSlots = ArrayLike<number> & Iterable<number>;
@@ -40,8 +40,8 @@ export class Adjacency {
   // incremental overlay; overlayCount counts list *entries* (an edge holds
   // one in out[source] and one in inn[target]), matching the per-entry
   // decrements in removeEdge/clearNode
-  private out: ( number[] | undefined )[] = [];
-  private inn: ( number[] | undefined )[] = [];
+  private out: (number[] | undefined)[] = [];
+  private inn: (number[] | undefined)[] = [];
   private overlayCount = 0;
   // CSR entries stranded by removals (fixed segments can't be refilled)
   private csrDead = 0;
@@ -67,9 +67,9 @@ export class Adjacency {
    * @param sourceSlot — the source node's slot
    * @param targetSlot — the target node's slot (equal to source for a loop)
    */
-  addEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
-    ( this.out[ sourceSlot ] ??= [] ).push( edgeSlot );
-    ( this.inn[ targetSlot ] ??= [] ).push( edgeSlot );
+  addEdge(edgeSlot: number, sourceSlot: number, targetSlot: number): void {
+    (this.out[sourceSlot] ??= []).push(edgeSlot);
+    (this.inn[targetSlot] ??= []).push(edgeSlot);
     this.overlayCount += 2;
   }
 
@@ -79,16 +79,20 @@ export class Adjacency {
    * `edgeSlots`.  On a fresh index this builds CSR in two counting
    * passes; otherwise the edges append to the overlay.
    */
-  addBulk( edgeSlots: Uint32Array, endpoints: Uint32Array, nodeCap: number ): void {
-    if( this.csrOutOff != null || this.overlayCount > 0 ){
-      for( const slot of edgeSlots ){
-        this.addEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
+  addBulk(
+    edgeSlots: Uint32Array,
+    endpoints: Uint32Array,
+    nodeCap: number,
+  ): void {
+    if (this.csrOutOff != null || this.overlayCount > 0) {
+      for (const slot of edgeSlots) {
+        this.addEdge(slot, endpoints[slot * 2], endpoints[slot * 2 + 1]);
       }
 
       return;
     }
 
-    this.buildCsr( edgeSlots, endpoints, nodeCap );
+    this.buildCsr(edgeSlots, endpoints, nodeCap);
   }
 
   /**
@@ -97,13 +101,17 @@ export class Adjacency {
    * triggers it when the waste meters cross a threshold, so the cost
    * amortizes over the mutations that created the waste.
    */
-  rebuild( edgeSlots: ArrayLike<number>, endpoints: Uint32Array, nodeCap: number ): void {
+  rebuild(
+    edgeSlots: ArrayLike<number>,
+    endpoints: Uint32Array,
+    nodeCap: number,
+  ): void {
     this.out = [];
     this.inn = [];
     this.overlayCount = 0;
     this.csrDead = 0;
 
-    if( edgeSlots.length === 0 ){
+    if (edgeSlots.length === 0) {
       this.csrOutOff = this.csrOutLen = this.csrOutE = null;
       this.csrInnOff = this.csrInnLen = this.csrInnE = null;
       this.csrN = 0;
@@ -111,37 +119,41 @@ export class Adjacency {
       return;
     }
 
-    this.buildCsr( edgeSlots, endpoints, nodeCap );
+    this.buildCsr(edgeSlots, endpoints, nodeCap);
   }
 
-  private buildCsr( edgeSlots: ArrayLike<number>, endpoints: Uint32Array, nodeCap: number ): void {
+  private buildCsr(
+    edgeSlots: ArrayLike<number>,
+    endpoints: Uint32Array,
+    nodeCap: number,
+  ): void {
     const e = edgeSlots.length;
-    const outLen = new Uint32Array( nodeCap );
-    const innLen = new Uint32Array( nodeCap );
+    const outLen = new Uint32Array(nodeCap);
+    const innLen = new Uint32Array(nodeCap);
 
-    for( let i = 0; i < e; i++ ){
-      outLen[ endpoints[ edgeSlots[ i ] * 2 ] ]++;
-      innLen[ endpoints[ edgeSlots[ i ] * 2 + 1 ] ]++;
+    for (let i = 0; i < e; i++) {
+      outLen[endpoints[edgeSlots[i] * 2]]++;
+      innLen[endpoints[edgeSlots[i] * 2 + 1]]++;
     }
 
-    const outOff = new Uint32Array( nodeCap + 1 );
-    const innOff = new Uint32Array( nodeCap + 1 );
+    const outOff = new Uint32Array(nodeCap + 1);
+    const innOff = new Uint32Array(nodeCap + 1);
 
-    for( let n = 0; n < nodeCap; n++ ){
-      outOff[ n + 1 ] = outOff[ n ] + outLen[ n ];
-      innOff[ n + 1 ] = innOff[ n ] + innLen[ n ];
+    for (let n = 0; n < nodeCap; n++) {
+      outOff[n + 1] = outOff[n] + outLen[n];
+      innOff[n + 1] = innOff[n] + innLen[n];
     }
 
-    const outE = new Uint32Array( e );
-    const innE = new Uint32Array( e );
-    const outCur = outOff.slice( 0, nodeCap );
-    const innCur = innOff.slice( 0, nodeCap );
+    const outE = new Uint32Array(e);
+    const innE = new Uint32Array(e);
+    const outCur = outOff.slice(0, nodeCap);
+    const innCur = innOff.slice(0, nodeCap);
 
-    for( let i = 0; i < e; i++ ){
-      const slot = edgeSlots[ i ];
+    for (let i = 0; i < e; i++) {
+      const slot = edgeSlots[i];
 
-      outE[ outCur[ endpoints[ slot * 2 ] ]++ ] = slot;
-      innE[ innCur[ endpoints[ slot * 2 + 1 ] ]++ ] = slot;
+      outE[outCur[endpoints[slot * 2]]++] = slot;
+      innE[innCur[endpoints[slot * 2 + 1]]++] = slot;
     }
 
     this.csrOutOff = outOff;
@@ -166,13 +178,33 @@ export class Adjacency {
    * @param sourceSlot — the source node's slot at add time
    * @param targetSlot — the target node's slot at add time
    */
-  removeEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
-    if( !this.removeFromCsr( edgeSlot, sourceSlot, this.csrOutOff, this.csrOutLen, this.csrOutE ) ){
-      if( removeFrom( this.out[ sourceSlot ], edgeSlot ) ){ this.overlayCount--; }
+  removeEdge(edgeSlot: number, sourceSlot: number, targetSlot: number): void {
+    if (
+      !this.removeFromCsr(
+        edgeSlot,
+        sourceSlot,
+        this.csrOutOff,
+        this.csrOutLen,
+        this.csrOutE,
+      )
+    ) {
+      if (removeFrom(this.out[sourceSlot], edgeSlot)) {
+        this.overlayCount--;
+      }
     }
 
-    if( !this.removeFromCsr( edgeSlot, targetSlot, this.csrInnOff, this.csrInnLen, this.csrInnE ) ){
-      if( removeFrom( this.inn[ targetSlot ], edgeSlot ) ){ this.overlayCount--; }
+    if (
+      !this.removeFromCsr(
+        edgeSlot,
+        targetSlot,
+        this.csrInnOff,
+        this.csrInnLen,
+        this.csrInnE,
+      )
+    ) {
+      if (removeFrom(this.inn[targetSlot], edgeSlot)) {
+        this.overlayCount--;
+      }
     }
   }
 
@@ -185,8 +217,14 @@ export class Adjacency {
    *
    * @param nodeSlot — the node's slot
    */
-  outEdges( nodeSlot: number ): EdgeSlots {
-    return this.edgesFor( nodeSlot, this.csrOutOff, this.csrOutLen, this.csrOutE, this.out );
+  outEdges(nodeSlot: number): EdgeSlots {
+    return this.edgesFor(
+      nodeSlot,
+      this.csrOutOff,
+      this.csrOutLen,
+      this.csrOutE,
+      this.out,
+    );
   }
 
   /**
@@ -195,8 +233,14 @@ export class Adjacency {
    *
    * @param nodeSlot — the node's slot
    */
-  inEdges( nodeSlot: number ): EdgeSlots {
-    return this.edgesFor( nodeSlot, this.csrInnOff, this.csrInnLen, this.csrInnE, this.inn );
+  inEdges(nodeSlot: number): EdgeSlots {
+    return this.edgesFor(
+      nodeSlot,
+      this.csrInnOff,
+      this.csrInnLen,
+      this.csrInnE,
+      this.inn,
+    );
   }
 
   /**
@@ -206,8 +250,10 @@ export class Adjacency {
    *
    * @param nodeSlot — the node's slot
    */
-  outDegree( nodeSlot: number ): number {
-    return this.csrLen( nodeSlot, this.csrOutLen ) + ( this.out[ nodeSlot ]?.length ?? 0 );
+  outDegree(nodeSlot: number): number {
+    return (
+      this.csrLen(nodeSlot, this.csrOutLen) + (this.out[nodeSlot]?.length ?? 0)
+    );
   }
 
   /**
@@ -215,20 +261,26 @@ export class Adjacency {
    *
    * @param nodeSlot — the node's slot
    */
-  inDegree( nodeSlot: number ): number {
-    return this.csrLen( nodeSlot, this.csrInnLen ) + ( this.inn[ nodeSlot ]?.length ?? 0 );
+  inDegree(nodeSlot: number): number {
+    return (
+      this.csrLen(nodeSlot, this.csrInnLen) + (this.inn[nodeSlot]?.length ?? 0)
+    );
   }
 
   /** All incident edge slots (loop edges appear once). */
-  connectedEdges( nodeSlot: number ): number[] {
-    const out = this.outEdges( nodeSlot );
-    const inn = this.inEdges( nodeSlot );
+  connectedEdges(nodeSlot: number): number[] {
+    const out = this.outEdges(nodeSlot);
+    const inn = this.inEdges(nodeSlot);
     const edges: number[] = [];
 
-    for( const e of out ){ edges.push( e ); }
+    for (const e of out) {
+      edges.push(e);
+    }
 
-    for( const e of inn ){
-      if( !includes( out, e ) ){ edges.push( e ); } // exclude loops already listed
+    for (const e of inn) {
+      if (!includes(out, e)) {
+        edges.push(e);
+      } // exclude loops already listed
     }
 
     return edges;
@@ -243,61 +295,77 @@ export class Adjacency {
    *
    * @param nodeSlot — the node's slot
    */
-  clearNode( nodeSlot: number ): void {
-    if( this.csrOutLen != null && nodeSlot < this.csrN ){
-      this.csrDead += this.csrOutLen[ nodeSlot ] + this.csrInnLen![ nodeSlot ];
-      this.csrOutLen[ nodeSlot ] = 0;
-      this.csrInnLen![ nodeSlot ] = 0;
+  clearNode(nodeSlot: number): void {
+    if (this.csrOutLen != null && nodeSlot < this.csrN) {
+      this.csrDead += this.csrOutLen[nodeSlot] + this.csrInnLen![nodeSlot];
+      this.csrOutLen[nodeSlot] = 0;
+      this.csrInnLen![nodeSlot] = 0;
     }
 
-    this.overlayCount -= ( this.out[ nodeSlot ]?.length ?? 0 ) + ( this.inn[ nodeSlot ]?.length ?? 0 );
-    this.out[ nodeSlot ] = undefined;
-    this.inn[ nodeSlot ] = undefined;
+    this.overlayCount -=
+      (this.out[nodeSlot]?.length ?? 0) + (this.inn[nodeSlot]?.length ?? 0);
+    this.out[nodeSlot] = undefined;
+    this.inn[nodeSlot] = undefined;
   }
 
   // -- internals --
 
-  private csrLen( nodeSlot: number, len: Uint32Array | null ): number {
-    return len != null && nodeSlot < this.csrN ? len[ nodeSlot ] : 0;
+  private csrLen(nodeSlot: number, len: Uint32Array | null): number {
+    return len != null && nodeSlot < this.csrN ? len[nodeSlot] : 0;
   }
 
   private edgesFor(
     nodeSlot: number,
-    off: Uint32Array | null, len: Uint32Array | null, e: Uint32Array | null,
-    overlay: ( number[] | undefined )[]
+    off: Uint32Array | null,
+    len: Uint32Array | null,
+    e: Uint32Array | null,
+    overlay: (number[] | undefined)[],
   ): EdgeSlots {
-    const extra = overlay[ nodeSlot ];
-    const n = this.csrLen( nodeSlot, len );
+    const extra = overlay[nodeSlot];
+    const n = this.csrLen(nodeSlot, len);
 
-    if( n === 0 ){ return extra ?? EMPTY; }
+    if (n === 0) {
+      return extra ?? EMPTY;
+    }
 
-    const base = e!.subarray( off![ nodeSlot ], off![ nodeSlot ] + n );
+    const base = e!.subarray(off![nodeSlot], off![nodeSlot] + n);
 
-    if( extra == null || extra.length === 0 ){ return base; }
+    if (extra == null || extra.length === 0) {
+      return base;
+    }
 
-    const both = new Array<number>( n + extra.length );
+    const both = new Array<number>(n + extra.length);
 
-    for( let i = 0; i < n; i++ ){ both[ i ] = base[ i ]; }
-    for( let i = 0; i < extra.length; i++ ){ both[ n + i ] = extra[ i ]; }
+    for (let i = 0; i < n; i++) {
+      both[i] = base[i];
+    }
+    for (let i = 0; i < extra.length; i++) {
+      both[n + i] = extra[i];
+    }
 
     return both;
   }
 
   /** Compact `edgeSlot` out of the node's CSR run, preserving order; false when not there. */
   private removeFromCsr(
-    edgeSlot: number, nodeSlot: number,
-    off: Uint32Array | null, len: Uint32Array | null, e: Uint32Array | null
+    edgeSlot: number,
+    nodeSlot: number,
+    off: Uint32Array | null,
+    len: Uint32Array | null,
+    e: Uint32Array | null,
   ): boolean {
-    const n = this.csrLen( nodeSlot, len );
+    const n = this.csrLen(nodeSlot, len);
 
-    if( n === 0 ){ return false; }
+    if (n === 0) {
+      return false;
+    }
 
-    const lo = off![ nodeSlot ];
+    const lo = off![nodeSlot];
 
-    for( let i = lo; i < lo + n; i++ ){
-      if( e![ i ] === edgeSlot ){
-        e!.copyWithin( i, i + 1, lo + n );
-        len![ nodeSlot ] = n - 1;
+    for (let i = lo; i < lo + n; i++) {
+      if (e![i] === edgeSlot) {
+        e!.copyWithin(i, i + 1, lo + n);
+        len![nodeSlot] = n - 1;
         this.csrDead++;
 
         return true;
@@ -308,21 +376,27 @@ export class Adjacency {
   }
 }
 
-const removeFrom = ( list: number[] | undefined, value: number ): boolean => {
-  if( list == null ){ return false; }
+const removeFrom = (list: number[] | undefined, value: number): boolean => {
+  if (list == null) {
+    return false;
+  }
 
-  const i = list.indexOf( value );
+  const i = list.indexOf(value);
 
-  if( i < 0 ){ return false; }
+  if (i < 0) {
+    return false;
+  }
 
-  list.splice( i, 1 );
+  list.splice(i, 1);
 
   return true;
 };
 
-const includes = ( list: EdgeSlots, value: number ): boolean => {
-  for( let i = 0; i < list.length; i++ ){
-    if( list[ i ] === value ){ return true; }
+const includes = (list: EdgeSlots, value: number): boolean => {
+  for (let i = 0; i < list.length; i++) {
+    if (list[i] === value) {
+      return true;
+    }
   }
 
   return false;

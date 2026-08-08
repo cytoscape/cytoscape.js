@@ -13,8 +13,8 @@ is rewritten from that record — see *Maintaining this file* at the end.
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Last updated**: 2026-08-08, covering work through round 57 plus the
-  out-of-order rounds 52 (shader minification) and 54 (the compound-fit
-  bounds), which landed last.
+  out-of-order rounds 52 (shader minification), 54 (the compound-fit
+  bounds) and 38 (border and outline styles), which landed last.
 
 ---
 
@@ -39,11 +39,11 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,078 unit · 283 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,087 unit · 283 module · 24 soak · 329 browser (226 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 45 golden images, compared **exactly** — zero differing pixels · 38 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
+| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 43 live v3-vs-v4 pixel-parity scenes, ten of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
-| Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
+| Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 601 KiB minified, 163 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
@@ -58,7 +58,7 @@ renders 1.4 as 1.375) or keep them for a seventeenth arrow shape, and how to
 free the vertex-shader binding that would let **edge labels and the casing
 strokes** see the arrow trim.
 
-The unbuilt work that *is* decided — `border-style`, the documentation site,
+The unbuilt work that *is* decided — the documentation site,
 release engineering — is
 scheduled. That list is what has been written down; it is not a complete
 account of what 4.0 needs, and round 57 demonstrated as much by adding two
@@ -430,6 +430,22 @@ measured exactly rather than estimated, the sweep is a standing test, and
 the deliberately-broken controls each fail exactly the specs written for
 them.
 
+**The last unported style pair landed** (round 38, 8 August). Dashed,
+dotted and double borders and outlines now draw on every node shape, with
+v3's exact semantics — dotted ignores the declared pattern, double erases
+the middle third of the stroke — and the dash pattern starts where v3's
+canvas path starts on each shape, because a half-period phase error reads
+as anti-aligned dashes. The build overturned its own plan twice, both
+times by measurement: the budgeted approximate ellipse parameterization
+produced a larger mismatch than not dashing at all (so the test meant to
+record it as a deviation could not fail, and exact elliptic arc length
+shipped instead), and the first verification scenes at normal zoom could
+not tell dashed from solid because antialiasing smeared the gaps — every
+scene moved to a magnified close-up, where the five feature-off controls
+now fail by three to thirteen times their bounds. The fragment-cost
+premium the design review had accepted for dashed polygons measured as
+noise at scene level on real hardware.
+
 ---
 
 ## What remains before 4.0
@@ -440,18 +456,16 @@ that have already shipped were inserted after this sequence was planned. It is
 an inventory, not a schedule.
 
 A design sitting on 2026-08-06 swept the accumulated open decisions: the
-`border-style` scope questions were settled (full v3 parity, including the
-erase behaviour of double borders; two dash properties port; cap/join are
-dropped with the deviation recorded), three surface changes made without a
+`border-style` scope questions were settled (full v3 parity — built two
+days later, see week 3), three surface changes made without a
 call were reviewed and ratified, and shader minification moved from
-optional to scheduled (it landed two days later — see week 3).
+optional to scheduled (it also landed two days later).
 
 | | needs |
 |---|---|
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
 | Arrow trim on labels and casings | **a binding, not a decision.** Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
-| `border-style` / `outline-style` (round 38) | decided in full — build only |
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |

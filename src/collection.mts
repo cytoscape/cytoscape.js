@@ -1,5 +1,6 @@
 import {
   CURVE_CMPD,
+  CURVE_HAS_ENDPT,
   CURVE_MULTI,
   CURVE_STRAIGHT,
   CURVE_TAXI,
@@ -4853,12 +4854,37 @@ export class Collection {
 
       // curved edges expand by the conservative hull deviation — exact
       // eval at hypothetical positions isn't needed for a fit target.
-      // Box-bounded routes add the node-half margin, plus the chord
-      // length for weight extrapolation only — taxi and compound loops
-      // are already contained by the grown endpoint AABB (see the twin
-      // of this comment in `GraphStore.boundingBox`).
+      // The formulation is round 54's, twinned with
+      // `GraphStore.boundingBox`: compound loops take a directional
+      // per-edge box (controls hang up-left of the union of the two
+      // outer boxes by at most the stored p2), and box-bounded routes
+      // add the edge's own endpoints' outer halves — never the global
+      // nodeHalfMax — plus the chord for weight extrapolation only.
       const at = ref.slot * 4;
       const kind = curveParams[at + 3];
+      const source = edge.source();
+      const target = edge.target();
+      const sPos = posMap.get(source) ?? (source.position() as Position);
+      const tPos = posMap.get(target) ?? (target.position() as Position);
+      const sOW = (source.outerWidth() ?? 0) / 2;
+      const sOH = (source.outerHeight() ?? 0) / 2;
+      const tOW = (target.outerWidth() ?? 0) / 2;
+      const tOH = (target.outerHeight() ?? 0) / 2;
+
+      if (kind === CURVE_CMPD) {
+        const p2 = Math.abs(curveParams[at + 2]);
+
+        expandPoint(
+          Math.min(sPos.x - sOW, tPos.x - tOW) - p2,
+          Math.min(sPos.y - sOH, tPos.y - tOH) - p2,
+        );
+        expandPoint(
+          Math.max(sPos.x + sOW, tPos.x + tOW),
+          Math.max(sPos.y + sOH, tPos.y + tOH),
+        );
+        continue;
+      }
+
       let dev =
         kind === CURVE_STRAIGHT
           ? 0
@@ -4868,17 +4894,34 @@ export class Collection {
               curveParams[at + 1],
               curveParams[at + 2],
             );
-      const source = edge.source();
-      const target = edge.target();
-      const sPos = posMap.get(source) ?? (source.position() as Position);
-      const tPos = posMap.get(target) ?? (target.position() as Position);
 
       if ((edgeFlags[ref.slot] & FLAG_CURVED_BOX) !== 0) {
-        dev += this._store.curveBoxMargin();
+        const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
 
-        if (kind !== CURVE_TAXI && kind !== CURVE_CMPD) {
-          dev += Math.hypot(tPos.x - sPos.x, tPos.y - sPos.y);
+        // taxi routes exactly, at the hypothetical centres (round 54):
+        // a forced-direction route overshoots by the turn, which no
+        // node-half margin bounds — see the twin in GraphStore.  The
+        // raw route points hull-bound the drawn path (rounded corners
+        // stay inside their corner's polyline).
+        if (base === CURVE_TAXI) {
+          const route = this._store.curveRouteAtPositions(
+            ref.slot,
+            sPos.x,
+            sPos.y,
+            tPos.x,
+            tPos.y,
+          );
+
+          if (route != null) {
+            for (let k = 0; k < route.n + 2; k++) {
+              expandPoint(route.qx[k], route.qy[k]);
+            }
+            continue;
+          }
         }
+
+        dev += Math.max(sOW, sOH, tOW, tOH);
+        dev += Math.hypot(tPos.x - sPos.x, tPos.y - sPos.y);
       }
 
       for (const pos of [sPos, tPos]) {

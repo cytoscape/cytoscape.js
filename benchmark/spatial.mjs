@@ -26,6 +26,7 @@
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
 import cytoscape from '../src/index.mjs';
+import { CURVE_CMPD } from '../src/contract.mjs';
 import { pickNodeAt } from '../src/render/cpu-pick.mjs';
 import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, N } from './graph.mjs';
@@ -462,6 +463,99 @@ if (has('bounds')) {
     group('bounds: labelBoundingBox (v4 only)', () => {
       bench('gpu', () => do_not_optimize(gpuOne.labelBoundingBox()));
     });
+  }
+
+  // Round 54 reformulated the conservative scan's edge terms: compound
+  // loops take a directional per-edge box and taxi is EXACT via the
+  // memoized curve bb (curveBBAt) rather than a margin disc.  This
+  // fixture is built of exactly those two kinds so the row prices what
+  // changed — and it asserts the property it is named for (the 33.x
+  // rule), since a fixture styled into a mode it never enters measures
+  // nothing.  Two rows: warm is the steady state (curve bbs memoized),
+  // cold pays one geometry write per call, which re-derives every taxi
+  // bb — the post-layout fit cost.
+  {
+    const P = Math.max(4, Math.floor(N / 20));
+    const nodes = [];
+    const edges = [];
+
+    for (let i = 0; i < P; i++) {
+      nodes.push({ data: { id: `p${i}` } });
+
+      for (let k = 0; k < 3; k++) {
+        nodes.push({
+          data: { id: `c${i}_${k}`, parent: `p${i}` },
+          position: { x: i * 90 + k * 25, y: (k % 2) * 40 },
+        });
+      }
+
+      edges.push({
+        data: { id: `loop${i}`, source: `c${i}_0`, target: `p${i}` },
+      });
+
+      if (i > 0) {
+        // downward taxi against an upward chord: the forced-direction
+        // overshoot case the round-54 sweep caught
+        edges.push({
+          data: { id: `taxi${i}`, source: `c${i}_1`, target: `c${i - 1}_2` },
+        });
+      }
+    }
+
+    const cpd = cytoscape({
+      style: {
+        parents: { padding: 10 },
+        edges: {
+          'curve-style': 'taxi',
+          'taxi-direction': 'downward',
+          'taxi-turn': 30,
+        },
+      },
+      elements: { nodes, edges },
+    });
+
+    instances.push(cpd);
+    cpd._store.flushDerived();
+
+    // the row is void unless the fixture carries both reformulated kinds
+    const params = cpd._store.column('edge.curveParams');
+    let cmpdCount = 0;
+    let taxiCount = 0;
+
+    for (let s = 0; s < edges.length; s++) {
+      const kind = params[s * 4 + 3];
+
+      if (kind === CURVE_CMPD) cmpdCount++;
+      else taxiCount++;
+    }
+
+    console.log(
+      `  bounds fixture (round 54): ${cmpdCount} compound-loop edges, ${taxiCount} taxi edges over ${P} parents`,
+    );
+
+    if (cmpdCount === 0 || taxiCount === 0) {
+      console.log(
+        '  !! round-54 bounds fixture is missing a kind — the row measures nothing',
+      );
+    }
+
+    const mover = cpd.$id('c1_0');
+    let flip = 0;
+
+    group(
+      'bounds: compound + taxi conservative scan (round 54, v4 only)',
+      () => {
+        summary(() => {
+          bench('warm (curve bbs memoized)', () =>
+            do_not_optimize(cpd._store.boundingBox()));
+          bench('cold (geometry write per call)', () => {
+            flip = 1 - flip;
+            mover.position({ x: 90 + flip, y: 0 });
+            do_not_optimize(cpd._store.boundingBox());
+          });
+        });
+      },
+    );
   }
 }
 

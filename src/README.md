@@ -383,6 +383,18 @@ with `${...}` interpolations byte-for-byte opaque, taking
 `cytoscape.min.js` from 663.3 to 601.1 KiB (182.3 → 163.3 KiB gzipped).
 See "Shipped shaders" below.
 
+Round 54 (2026-08-08) is the bounds round: the conservative fit scan's
+compound-loop term went from a disc of `p2 + the global nodeHalfMax`
+around both endpoint centres to a *directional per-edge box* (v3's
+construction only ever hangs the controls up-left of the union of the
+two node boxes), the remaining box-bounded margins went per-edge, and
+taxi went **exact** — because the round's new randomized soundness
+sweep caught, on its first run, a forced-direction taxi overshooting
+any node-half margin by its turn.  Fit zoom on the compound fixture:
+0.607 → 0.822.  The sweep is a standing gate now
+(`test/modules/bounds-sweep.mjs`); the compound-loop section below
+carries the formulation.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order
@@ -2297,23 +2309,33 @@ excursion bound feeding `curveSlack()` (a 2× stretch margin —
 stretch grows only logarithmically with node size, and parent
 resizes refresh the bound; recorded).
 
-**The conservative fit box
-does not add the chord length** for this kind (corrected
-2026-08-05): the chord belongs to the *weight-extrapolated* blob
-routes that share `FLAG_CURVED_BOX`, where a
-`control-point-weight` outside [0, 1] puts a control that far past
-an endpoint.  A compound loop's controls hang off the union of the
-two node boxes, at most half the excursion bound past its top-left
-corner, so the endpoint AABB grown by header + node-half already
-contains the curve — and the bb scan visits *both* endpoints, so
-whichever node owns that corner covers it.
+**The conservative fit box is *directional* for this kind** (round
+54, 2026-08-08; the chord-term correction preceding it was
+2026-08-05): a compound loop contributes the union of its two
+endpoints' outer boxes grown by the stored excursion bound `p2`
+**up and left only** — v3's construction hangs both controls off
+that union's top-left corner, so right and down the edge adds
+nothing beyond the nodes the node pass already scanned.  The full
+`p2` is kept rather than the tight `p2 / 2` (it carries the
+curve-index's recorded 2× staleness cushion, and halving it would
+be zero-margin at freshness).  The same round made the remaining
+box-bounded margins **per-edge** — the edge's own endpoints' outer
+halves, never the global `nodeHalfMax` one big parent could
+inflate — and made **taxi exact** in the scan via the memoized
+curve bb, because the round's randomized soundness sweep caught a
+forced-direction taxi (a `downward` route whose target sits above)
+overshooting any node-half margin by its turn on the sweep's first
+run.  Measured on `debug/`'s compound fixture (930 × 900): fit
+zoom 0.607 → 0.822, the residual per-axis over-frame ~1.25× (the
+kept cushion), down from ~1.8×.
 
-Adding a chord made
-`fit()` draw every compound graph with a related edge at a
-fraction of its size (measured on `debug/`'s compound fixture:
+Before those corrections the scan added the chord length here —
+a term that belongs to the *weight-extrapolated* blob routes
+sharing `FLAG_CURVED_BOX` — which made `fit()` draw every compound
+graph with a related edge at a fraction of its size (measured:
 1718 × 1572 against an exact 802 × 637).  The **cull** kernel
-keeps the chord term deliberately: over-inclusion there costs
-efficiency, never correctness.  Deviation: v4 anchors the
+keeps its chord term and global maxima deliberately: over-inclusion
+there costs efficiency, never correctness.  Deviation: v4 anchors the
 curve endpoints outside-to-node (toward the near control) where
 v3's `edge:compound` block defaults them outside-to-line — a small
 angular difference at the boundary, measured at 0.022% in the live

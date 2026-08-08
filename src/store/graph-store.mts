@@ -3257,6 +3257,69 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * The same route evaluation at *hypothetical* endpoint centres —
+   * `Collection.boundingBoxAt`'s taxi term (round 54).  Everything but
+   * the two positions (blob record, outer halves, shapes, trim) reads
+   * the live columns; the caller supplies where the nodes would be.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @param out — optional route to fill (the shared scratch otherwise)
+   * @returns the route, or null for a non-blob-backed edge
+   */
+  curveRouteAtPositions(
+    slot: number,
+    sx: number,
+    sy: number,
+    tx: number,
+    ty: number,
+    out: CurveRoute = this.routeScratch,
+  ): CurveRoute | null {
+    this.flushDerived();
+
+    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const at = slot * 4;
+    const kind = params[at + 3];
+    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
+
+    if (
+      base !== CURVE_MULTI &&
+      base !== CURVE_SEGMENTS &&
+      base !== CURVE_TAXI
+    ) {
+      return null;
+    }
+
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const s = endpoints[at / 2];
+    const t = endpoints[at / 2 + 1];
+
+    return evalRoute(
+      out,
+      kind,
+      this.blob.data(),
+      params[at],
+      params[at + 2],
+      sx,
+      sy,
+      outer[s * 2],
+      outer[s * 2 + 1],
+      shape[s],
+      tx,
+      ty,
+      outer[t * 2],
+      outer[t * 2 + 1],
+      shape[t],
+      this.arrowTrimAt(slot),
+    );
+  }
+
+  /**
    * The haystack endpoint pair of an edge (12c; null unless the edge's
    * derived kind is CURVE_HAYSTACK): the hash-stable offset points
    * inside each node body, computed from the params column + live
@@ -3536,12 +3599,13 @@ export class GraphStore implements ModelView {
     return this.haystackRadiusMax * (this.nodeHalfMax + this.borderMax / 2);
   }
 
-  /** The conservative margin box-bounded routes (FLAG_CURVED_BOX) add
-   * around their endpoint AABB: taxi legs launch a node-body offset
-   * past the centers.  Global maxima — always current, never stale. */
-  curveBoxMargin(): number {
-    return this.nodeHalfMax + this.borderMax / 2;
-  }
+  // curveBoxMargin() (the global nodeHalfMax + borderMax/2 the fit
+  // scans used to add per box-bounded edge) was removed in round 54:
+  // both CPU call sites now read the edge's own endpoints' outer halves
+  // instead, and nothing else consumed it.  The cull kernels never used
+  // it — they carry frame.curveSlack, which keeps its global maxima
+  // deliberately (over-inclusion in a cull costs efficiency, never
+  // correctness).
 
   /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
    * Fixed-kind writes (straight/bezier/loop) release any blob record
@@ -4526,6 +4590,7 @@ export class GraphStore implements ModelView {
     const endpoints = this.column('edge.endpoints') as Uint32Array;
     const curveParams = this.column('edge.curveParams') as Float32Array;
     const edgeFlags = this.column('edge.flags') as Uint32Array;
+    const outerHalf = this.column('node.outerHalf') as Float32Array;
 
     this.forEachAlive('edges', (slot) => {
       // the space tier (round 22): hidden edges — or edges with a hidden
@@ -4542,22 +4607,66 @@ export class GraphStore implements ModelView {
       // within the endpoint/control hull, whose controls sit at most
       // the header deviation from the center segment (exact lazy bb is
       // the collection's job; fit may slightly over-fit, never under).
-      // Box-bounded routes get the node-half margin — taxi legs launch
-      // a body offset past the centers — plus, for the *weight
-      // extrapolated* blob routes only, the chord length: a
-      // `control-point-weight` outside [0, 1] puts the control that far
-      // beyond an endpoint along the chord, which is the one geometry
-      // here that a bound around the endpoint AABB does not already
-      // cover.  Taxi never had it, and a compound loop must not: its
-      // controls hang off the *union of the two node boxes* (v3's
-      // findCompoundLoopPoints), at most `p2 / 2` past the top-left
-      // corner, so the AABB grown by header + node-half already
-      // contains it — adding a chord over-fit `fit()` on every compound
-      // graph with a related edge (measured on debug/'s compound
-      // fixture: box 1718x1572 against an exact 802x637, so the graph
-      // drew at half its size in a third of the viewport).
       const at = slot * 4;
       const kind = curveParams[at + 3];
+      const labelSlack = anyEdgeLabels ? this.edgeLabelSlack(slot) : 0;
+
+      // compound loops are *directional* (round 54): v3's
+      // findCompoundLoopPoints hangs both controls off the top-left
+      // corner of the union of the two endpoint outer boxes, offset at
+      // most the stored excursion bound p2 (its 2x cushion is the
+      // curve-index's recorded staleness allowance) — one control up,
+      // the other left.  The curve lies in the hull of those controls
+      // and boundary points on the node outlines, so the box is the
+      // per-edge union of outer boxes grown by p2 up and left ONLY —
+      // where the old disc of (p2 + global nodeHalfMax) around both
+      // endpoint centres grew every direction by a bound one big parent
+      // set for the whole graph, over-fitting every compound app ~1.8x.
+      if (kind === CURVE_CMPD) {
+        const s = endpoints[slot * 2];
+        const t = endpoints[slot * 2 + 1];
+        const p2 = Math.abs(curveParams[at + 2]);
+        const left =
+          Math.min(
+            pos[s * 2] - outerHalf[s * 2],
+            pos[t * 2] - outerHalf[t * 2],
+          ) -
+          p2 -
+          labelSlack;
+        const top =
+          Math.min(
+            pos[s * 2 + 1] - outerHalf[s * 2 + 1],
+            pos[t * 2 + 1] - outerHalf[t * 2 + 1],
+          ) -
+          p2 -
+          labelSlack;
+        const right =
+          Math.max(
+            pos[s * 2] + outerHalf[s * 2],
+            pos[t * 2] + outerHalf[t * 2],
+          ) + labelSlack;
+        const bottom =
+          Math.max(
+            pos[s * 2 + 1] + outerHalf[s * 2 + 1],
+            pos[t * 2 + 1] + outerHalf[t * 2 + 1],
+          ) + labelSlack;
+
+        if (left < x1) {
+          x1 = left;
+        }
+        if (top < y1) {
+          y1 = top;
+        }
+        if (right > x2) {
+          x2 = right;
+        }
+        if (bottom > y2) {
+          y2 = bottom;
+        }
+
+        return;
+      }
+
       let dev =
         kind === CURVE_STRAIGHT
           ? 0
@@ -4569,24 +4678,63 @@ export class GraphStore implements ModelView {
             );
 
       if ((edgeFlags[slot] & FLAG_CURVED_BOX) !== 0) {
-        dev += this.curveBoxMargin();
+        const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
 
-        if (kind !== CURVE_TAXI && kind !== CURVE_CMPD) {
-          const s = endpoints[slot * 2];
-          const t = endpoints[slot * 2 + 1];
+        // taxi is EXACT here (round 54): no margin formula covers it —
+        // a forced-direction route (`downward` with the target above)
+        // overshoots both endpoints by the turn, which round 54's sweep
+        // caught escaping a per-edge node-half margin, and the Z/L
+        // fallbacks have their own excursions.  The memoized flattened
+        // bb (curveBBAt, epoch-invalidated) is what the box-selection
+        // path already computes per curved edge, so a fit scan pays it
+        // once per geometry change rather than per call.
+        if (base === CURVE_TAXI) {
+          const bb = this.curveBBAt(slot);
 
-          dev += Math.hypot(
-            pos[t * 2] - pos[s * 2],
-            pos[t * 2 + 1] - pos[s * 2 + 1],
-          );
+          if (bb != null) {
+            if (bb.x1 - labelSlack < x1) {
+              x1 = bb.x1 - labelSlack;
+            }
+            if (bb.y1 - labelSlack < y1) {
+              y1 = bb.y1 - labelSlack;
+            }
+            if (bb.x2 + labelSlack > x2) {
+              x2 = bb.x2 + labelSlack;
+            }
+            if (bb.y2 + labelSlack > y2) {
+              y2 = bb.y2 + labelSlack;
+            }
+
+            return;
+          }
         }
+
+        // the remaining box-bounded kinds are the *weight-extrapolated*
+        // blob routes: they add the edge's OWN endpoints' outer halves
+        // (round 54 — not the global nodeHalfMax the cull kernels use,
+        // which let one big parent inflate every box-bounded edge) plus
+        // the chord length, since a `control-point-weight` outside
+        // [0, 1] puts the control that far beyond an endpoint along the
+        // chord (sound for weights in [-1, 2], the same envelope the
+        // old global form bounded).
+        const s = endpoints[slot * 2];
+        const t = endpoints[slot * 2 + 1];
+
+        dev += Math.max(
+          outerHalf[s * 2],
+          outerHalf[s * 2 + 1],
+          outerHalf[t * 2],
+          outerHalf[t * 2 + 1],
+        );
+        dev += Math.hypot(
+          pos[t * 2] - pos[s * 2],
+          pos[t * 2 + 1] - pos[s * 2 + 1],
+        );
       }
 
       // edge labels (16.4): conservative — the block-covering radius,
       // valid wherever the anchor lands along the drawn path
-      if (anyEdgeLabels) {
-        dev += this.edgeLabelSlack(slot);
-      }
+      dev += labelSlack;
 
       for (let end = 0; end < 2; end++) {
         const node = endpoints[slot * 2 + end];

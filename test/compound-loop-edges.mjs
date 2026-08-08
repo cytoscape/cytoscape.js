@@ -101,9 +101,14 @@ describe('gpu/curves: compound loop edges (round 14.10)', function () {
   // belongs to the weight-extrapolated blob routes that share
   // FLAG_CURVED_BOX.  A compound loop's controls hang off the union of
   // the two node boxes, at most p2 / 2 past its top-left corner, so the
-  // grown AABB already contains the curve; the chord was making `fit()`
-  // draw every compound graph at a fraction of its size.
-  it('does not grow a compound loop’s conservative box by the chord', function () {
+  // Round 54: the conservative box is *directional* — v3's construction
+  // hangs both controls up-left of the union of the two endpoint outer
+  // boxes, by at most the stored excursion bound p2, so the box is that
+  // union grown by p2 up and left ONLY.  Before this the scan grew a
+  // disc of (p2 + the global nodeHalfMax) around both endpoint centres,
+  // which over-framed every compound graph in all four directions by a
+  // bound one big parent set for the whole graph.
+  it('grows a compound loop’s box up-left by p2 and nowhere else', function () {
     const cy = make([{ data: { id: 'ap', source: 'a', target: 'p' } }]);
     const store = cy._store;
 
@@ -111,22 +116,26 @@ describe('gpu/curves: compound loop edges (round 14.10)', function () {
 
     const slot = cy.$id('ap')._first().slot;
     const p2 = Math.abs(store.column('edge.curveParams')[slot * 4 + 2]);
-    const margin = store.curveBoxMargin();
-    const chord = 50; // a at (0, 0) to p's derived centre at (50, 0)
     const box = store.boundingBox();
 
     expect(p2).to.be.greaterThan(1); // the bound is doing something
-    expect(box.x1).to.be.closeTo(-(p2 + margin), 0.01);
-    expect(box.y1).to.be.closeTo(-(p2 + margin), 0.01);
-    // the discriminating half: with the chord back in, x1 sits a whole
-    // chord further out and the graph fits into a third of the viewport
-    expect(box.x1).to.be.greaterThan(-(p2 + margin + chord) + 1);
+    // p's outer box spans (-15..115, -15..15); a's (-15..15); the union
+    // corner is (-15, -15), and the controls hang p2 past it
+    expect(box.x1).to.be.closeTo(-15 - p2, 0.01);
+    expect(box.y1).to.be.closeTo(-15 - p2, 0.01);
+    // the discriminating half, both directions: right and down the edge
+    // contributes NOTHING beyond the nodes themselves (q's right edge at
+    // 315, the node bottoms at 15) — under the old disc these read
+    // p2 + margin past the endpoint centres
+    expect(box.x2).to.be.closeTo(315, 0.01);
+    expect(box.y2).to.be.closeTo(15, 0.01);
 
     // `boundingBoxAt` carries the same formula for animated-layout fit
     // targets, so it is pinned here rather than left to drift apart
     const at = cy.elements().boundingBoxAt((node) => node.position());
 
-    expect(at.x1).to.be.closeTo(-(p2 + margin), 0.01);
+    expect(at.x1).to.be.closeTo(-15 - p2, 0.01);
+    expect(at.y2).to.be.closeTo(15, 0.01);
   });
 
   it('keeps the conservative box containing the exact one', function () {

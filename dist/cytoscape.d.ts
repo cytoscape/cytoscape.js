@@ -2777,6 +2777,21 @@ declare class GraphStore implements ModelView {
    */
   curveRouteAt(slot: number, out?: CurveRoute): CurveRoute | null;
   /**
+   * The same route evaluation at *hypothetical* endpoint centres —
+   * `Collection.boundingBoxAt`'s taxi term (round 54).  Everything but
+   * the two positions (blob record, outer halves, shapes, trim) reads
+   * the live columns; the caller supplies where the nodes would be.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @param out — optional route to fill (the shared scratch otherwise)
+   * @returns the route, or null for a non-blob-backed edge
+   */
+  curveRouteAtPositions(slot: number, sx: number, sy: number, tx: number, ty: number, out?: CurveRoute): CurveRoute | null;
+  /**
    * The haystack endpoint pair of an edge (12c; null unless the edge's
    * derived kind is CURVE_HAYSTACK): the hash-stable offset points
    * inside each node body, computed from the params column + live
@@ -2872,10 +2887,6 @@ declare class GraphStore implements ModelView {
    * styles haystack.  Monotone, like the curve slack.
    */
   haystackSlack(): number;
-  /** The conservative margin box-bounded routes (FLAG_CURVED_BOX) add
-   * around their endpoint AABB: taxi legs launch a node-body offset
-   * past the centers.  Global maxima — always current, never stale. */
-  curveBoxMargin(): number;
   /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
    * Fixed-kind writes (straight/bezier/loop) release any blob record
    * the slot held from a previous blob-backed style. */

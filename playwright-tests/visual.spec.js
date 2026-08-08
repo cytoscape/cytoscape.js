@@ -239,6 +239,13 @@ test.describe('WebGPU visual goldens', () => {
     // #CCE1F9 / #aec8e5 pair instead.  Both cases are here, beside their
     // unselected twins — the comparison is what makes the golden say
     // anything, since a golden only ever answers "did this change?".
+    //
+    // **The sheet must not declare `background-color`**, and this scene
+    // did until the rule moved out of the shader.  The colour is a rule
+    // in the *default* stylesheet now, so a sheet that names a fill
+    // replaces it — which meant this golden was showing a selected node
+    // and an unselected one painted identically, i.e. measuring nothing.
+    // The sibling below covers the override case deliberately.
     await makeReadyCy(page, {
       elements: [
         { data: { id: 'a' }, position: { x: -120, y: -60 }, selected: true },
@@ -254,7 +261,6 @@ test.describe('WebGPU visual goldens', () => {
         nodes: {
           width: 60,
           height: 60,
-          'background-color': '#ecf0f1',
           'border-width': 2,
           'border-color': '#95a5a6',
         },
@@ -268,6 +274,73 @@ test.describe('WebGPU visual goldens', () => {
     await expectGraphFits(page, 'selection-accent');
     checkGolden(
       'selection-accent',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
+  });
+
+  test('golden: a sheet that names its own fill replaces the selection colour (round 57.1)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The other half of the rule, and the half that is easy to get wrong
+    // in the direction of "the affordance always wins".  Three rows, all
+    // with one node selected and one not:
+    //
+    //   top     the default sheet             — selected goes v3 blue
+    //   middle  a sheet naming its own fill   — no selection colour at
+    //           all, exactly as v3 behaves for a styled palette
+    //   bottom  the same sheet, with the app's own `{ selected: true }`
+    //           case — selection back, in the app's colours
+    //
+    // One sheet cannot style three groups differently, so the rows are
+    // separated by a data key and the middle/bottom sheets are `case`
+    // mappers over it.  What makes the golden discriminate is that the
+    // three rows must not look alike.
+    const row = (y, tag) => [
+      {
+        data: { id: `${tag}-on`, tag },
+        position: { x: -70, y },
+        selected: true,
+      },
+      { data: { id: `${tag}-off`, tag }, position: { x: 50, y } },
+    ];
+
+    await makeReadyCy(page, {
+      elements: [...row(-90, 'default'), ...row(0, 'named'), ...row(90, 'own')],
+      style: {
+        nodes: {
+          width: 60,
+          height: 60,
+          'border-width': 2,
+          'border-color': '#95a5a6',
+          'background-color': {
+            case: [
+              // row 2: a flat colour, which replaces the default rule
+              { when: { data: 'tag', eq: 'named' }, then: '#e67e22' },
+              // row 3: the app's own selection rule, in its own palette
+              {
+                when: [{ data: 'tag', eq: 'own' }, { selected: true }],
+                then: '#8e44ad',
+              },
+              { when: { data: 'tag', eq: 'own' }, then: '#e67e22' },
+              // row 1 falls through to v4's default rule, restated —
+              // declaring the prop at all is what drops the default
+              { when: { selected: true }, then: '#0169D9' },
+            ],
+            else: '#999',
+          },
+        },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'selection-overridden');
+    checkGolden(
+      'selection-overridden',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
     );
@@ -291,7 +364,6 @@ test.describe('WebGPU visual goldens', () => {
     const elements = shapes.map((shape, i) => ({
       data: { id: shape, shape },
       position: { x: (i % 5) * 70 - 140, y: Math.floor(i / 5) * 70 - 55 },
-      selected: shape === 'star', // accent ring follows the polygon SDF
     }));
 
     // one anisotropic polygon: inside-ness must stay exact under stretch
@@ -5151,23 +5223,18 @@ test.describe('v3-vs-v4 render parity', () => {
     // a ring at its boundary, so the two disagreed over the whole
     // interior of every selected node and no parity scene covered it.
     // Neither stylesheet mentions selection — v3's default sheet carries
-    // `:selected` and `:parent:selected`, and v4 draws the same rule in
-    // the node fragment shader — so what this compares is precisely the
-    // two libraries' *defaults*.
+    // `:selected` and `:parent:selected`, and v4's carries the same rule
+    // as a `{ selected: true }` condition — so what this compares is
+    // precisely the two libraries' *defaults*.
     //
     // The parent pair is here because v3 gives it a different colour
     // (#CCE1F9 / #aec8e5), and a scene with leaves alone would pass with
     // that case unimplemented.
     //
-    // **The sheet sets no colour at all, deliberately.**  In v3 the
-    // selection rules live in the *default* stylesheet, so a user block
-    // setting `background-color` comes later and beats them — a v3 app
-    // with a styled palette shows no selection colour unless it writes
-    // its own `:selected` rule.  v4 has no `:selected` to write, so its
-    // affordance is unconditional and would diverge here for any sheet
-    // that names a colour.  That is a recorded deviation (see
-    // `src/README.md`), and this scene is scoped to the thing the round
-    // is about: the two libraries' **defaults**.
+    // **The sheet sets no colour at all, deliberately** — this scene is
+    // about the two libraries' *defaults*.  Its sibling below covers the
+    // other direction, where both sheets name a fill and neither shows a
+    // selection colour.
     const elements = [
       { data: { id: 'a' }, position: { x: -150, y: -100 }, selected: true },
       { data: { id: 'b' }, position: { x: -30, y: -100 } },
@@ -5246,6 +5313,70 @@ test.describe('v3-vs-v4 render parity', () => {
       // untinted.  At the default bound the last two would pass with
       // the feature missing, which is the whole failure mode round 27
       // recorded (a test that cannot fail is not evidence).
+      { minInk: 3000, bound: 0.001 },
+    );
+  });
+
+  test('parity: a named fill replaces the selection colour, in both (round 57.1)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The sibling of the scene above, and the one that could not have
+    // existed at all before the rule moved out of v4's shader.
+    //
+    // Both sheets name a fill, so in **v3** the user block comes after
+    // the default `:selected` and beats it: a selected node looks like an
+    // unselected one.  v4 now behaves the same way, because its
+    // selection colour is a default rule and the spread puts the user's
+    // block last.  Until round 57.1 it was a shader constant that always
+    // won, and this scene would have shown every selected element in
+    // v4-blue against v3's orange.
+    //
+    // Half the elements are selected and half are not, so the scene also
+    // fails if *neither* library draws anything at all.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -150, y: -70 }, selected: true },
+      { data: { id: 'b' }, position: { x: -30, y: -70 } },
+      { data: { id: 'c' }, position: { x: 90, y: -70 }, selected: true },
+      { data: { id: 'd' }, position: { x: -150, y: 40 } },
+      { data: { id: 'e' }, position: { x: 90, y: 40 }, selected: true },
+      { data: { id: 'de', source: 'd', target: 'e' }, selected: true },
+      { data: { id: 'f' }, position: { x: -150, y: 130 } },
+      { data: { id: 'g' }, position: { x: 90, y: 130 } },
+      { data: { id: 'fg', source: 'f', target: 'g' } },
+    ];
+    const nodeStyle = {
+      width: 56,
+      height: 56,
+      'border-width': 6,
+      'background-color': '#e67e22',
+    };
+    const edgeStyle = {
+      width: 8,
+      'curve-style': 'straight',
+      'line-color': '#16a085',
+      'target-arrow-shape': 'triangle',
+      'target-arrow-color': '#16a085',
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-selection-named',
+      elements,
+      [
+        { selector: 'node', style: Object.assign({}, nodeStyle) },
+        { selector: 'edge', style: Object.assign({}, edgeStyle) },
+      ],
+      {
+        nodes: Object.assign({}, nodeStyle),
+        edges: Object.assign({}, edgeStyle),
+      },
+      // The control is the change itself: spreading the default block
+      // *after* the user's rather than before it — v4's pre-57.1
+      // "selection always wins" — takes this scene from 0 differing
+      // pixels to **12.333%**, three orders of magnitude over the bound.
       { minInk: 3000, bound: 0.001 },
     );
   });

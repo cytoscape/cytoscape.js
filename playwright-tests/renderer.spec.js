@@ -808,14 +808,16 @@ test.describe('WebGPU renderer', () => {
     expect(old[1]).toBeGreaterThan(240);
 
     // ...and the node added while headless renders too.  It was added
-    // `selected: true`, so since round 57.1 it draws in v3's selection
-    // blue (#0169d9) rather than the sheet's red — which makes this
-    // assertion say more than it did: the flag survived the re-mount as
-    // well as the geometry.
+    // `selected: true`, and it draws the sheet's **red** rather than v3's
+    // selection blue, which is the point: since round 57.1 the selection
+    // colour is a rule in the default stylesheet, so this sheet's own
+    // `background-color` replaces it — v3's order-based precedence.
+    // (Round 57.1a had it the other way round, drawn in the shader and
+    // unoverridable, and this assertion read blue.)
     const added = await pixelAt(page, center.x - 80, center.y - 40);
 
-    expect(added[0]).toBeLessThan(60);
-    expect(added[2]).toBeGreaterThan(150);
+    expect(added[0]).toBeGreaterThan(150);
+    expect(added[2]).toBeLessThan(60);
 
     // label glyphs rebuilt after mount: dark pixels exist below the node
     const png = decodePng(

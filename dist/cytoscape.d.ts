@@ -3223,18 +3223,42 @@ interface DataCondition {
   gte?: number;
   in?: (string | number)[];
 }
-/** A structured element query; every present key must hold. */
+/**
+ * A structured element query; every present key must hold.
+ *
+ * The state keys are the ones a `case` mapper's `when` takes, from the
+ * same table (`STATE_CONDITIONS` in style-scales.mts) — so anything you
+ * can style on, you can query for.  Each is a boolean, which is how v3's
+ * paired selectors collapse: `{ selected: false }` is `:unselected`,
+ * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
+ */
 interface Query {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
   selected?: boolean;
-  /** structural (round 14.7, nodes only): has at least one child —
-   * `parent: false` is v3's `:childless` */
+  /** whether the element may be selected by the user */
+  selectable?: boolean;
+  /** whether the element is locked in place */
+  locked?: boolean;
+  /** whether the user is dragging the element */
+  grabbed?: boolean;
+  /** whether the element may be dragged */
+  grabbable?: boolean;
+  /** whether the element is under an active press */
+  active?: boolean;
+  /** whether the pointer is over the element */
+  hovered?: boolean;
+  /** structural (round 14.7, nodes only): has at least one child */
   parent?: boolean;
-  /** structural (round 14.7, nodes only): has a parent —
-   * `child: false` is v3's `:orphan` */
+  /** structural (nodes only): has no children — v3's `:childless`, and
+   * exactly `{ parent: false }` */
+  childless?: boolean;
+  /** structural (round 14.7, nodes only): has a parent */
   child?: boolean;
+  /** structural (nodes only): has no parent — v3's `:orphan`, and
+   * exactly `{ child: false }` */
+  orphan?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
   data?: Record<string, DataCondition | string | number | boolean | null>;
 }

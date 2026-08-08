@@ -141,6 +141,42 @@ variation is **declarative** — a mapper, not a block:
                     else: 'rectangle' } } }
 ```
 
+#### Styling element state
+
+v3 puts state in selectors — `:selected`, `:active`, `:locked`, `:grabbed`.
+v4 has no selectors, so state is a **condition** on the same `case` mapper:
+
+```js
+// v3
+{ selector: 'node:selected', style: { 'background-color': '#0169D9' } }
+
+// v4
+{ nodes: { 'background-color': {
+    case: [ { when: { selected: true }, then: '#0169D9' } ],
+    else: '#999',
+} } }
+```
+
+The states are `selected`, `selectable`, `locked`, `grabbed`, `grabbable`,
+`active`, `hovered`, plus the structural `parent`, `child`, `childless` and
+`orphan`. Each takes a boolean, so v3's negative selectors — `:unselected`,
+`:unlocked`, `:free`, `:ungrabbable`, `:unselectable`, `:inactive` — are the
+same key with `false`. AND a state with a data condition through the array
+form: `when: [ { selected: true }, { data: 'w', gt: 5 } ]`.
+
+**You get v3's affordances without writing any of this**, and you replace
+them the same way you would in v3. v4's default stylesheet carries v3's
+`:selected`, `:parent:selected` and `:active` blocks, spread *before* your
+own — so a sheet that names `background-color` replaces the selection colour
+along with it, precisely as a v3 sheet does, and `overlay-opacity: 0` turns
+the press highlight off.
+
+Not carried over: `:compound` (its node meaning is exactly `parent`; its edge
+meaning has no v4 spelling), `:loop` / `:simple`, and `:visible` / `:hidden` /
+`:transparent` — those are computed *from* style, so a rule conditioned on one
+would be circular. `:animated`, `:backgrounding`, `:removed` and `:inside`
+have no styling form either.
+
 A style group written as a function **throws**, naming mappers as the
 replacement. That is worth knowing precisely, because before round 29.3 it
 was silently ignored: a v3 sheet ported wholesale produced an unstyled graph
@@ -199,9 +235,14 @@ you kept is the app's job — exported element JSON round-trips through
 | `cy.$( 'node:selected' )` | `cy.nodes( { selected: true } )` |
 | `cy.$( ':unselected' )` | `cy.elements( { selected: false } )` |
 | `cy.$( ':parent' )` | `cy.nodes( { parent: true } )` |
-| `cy.$( ':childless' )` | `cy.nodes( { parent: false } )` |
+| `cy.$( ':childless' )` | `cy.nodes( { childless: true } )`, or `{ parent: false }` |
 | `cy.$( ':child' )` | `cy.nodes( { child: true } )` |
-| `cy.$( ':orphan' )` | `cy.nodes( { child: false } )` |
+| `cy.$( ':orphan' )` | `cy.nodes( { orphan: true } )`, or `{ child: false }` |
+| `cy.$( ':locked' )`, `:unlocked` | `cy.elements( { locked: true } )` / `{ locked: false }` |
+| `cy.$( ':grabbed' )`, `:free` | `cy.elements( { grabbed: true } )` / `{ grabbed: false }` |
+| `cy.$( ':grabbable' )`, `:ungrabbable` | `cy.elements( { grabbable: true } )` / `{ grabbable: false }` |
+| `cy.$( ':selectable' )`, `:unselectable` | `cy.elements( { selectable: true } )` / `{ selectable: false }` |
+| `cy.$( ':active' )`, `:inactive` | `cy.elements( { active: true } )` / `{ active: false }` |
 | `cy.$( '[weight > 0.5]' )` | `cy.nodes( { data: { weight: { gt: 0.5 } } } )` |
 | `cy.$( '[type = "gene"]' )` | `cy.nodes( { data: { type: 'gene' } } )` |
 | `cy.$( '[type != "gene"]' )` | `cy.nodes( { data: { type: { ne: 'gene' } } } )` |
@@ -215,6 +256,11 @@ you kept is the app's job — exported element JSON round-trips through
 Data-condition operators: `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`. A bare
 value means `eq`; keys within one object are AND-ed; a missing value fails
 every operator, `ne` included.
+
+The state keys are the same ones a `case` mapper's `when` takes — anything
+you can style on, you can query for. `:visible`, `:hidden`, `:transparent`,
+`:animated`, `:backgrounding`, `:removed`, `:inside`, `:loop`, `:simple` and
+`:compound` have no query form; use a predicate.
 
 ---
 
@@ -338,13 +384,13 @@ app trips on after everything else works.
 | Arrow sizing | `max( (13.37w)^0.9, 29 )` | the same formula, ported in round 27.3 — earlier v4 builds differed |
 | `outerWidth()` with a border | includes the miter overshoot | plain border-inclusive `outerHalf`, so parent boxes can sit sub-pixel smaller |
 | Compound auto-sizing | can include labels | reads child **body** extents only (`compound-sizing-wrt-labels: 'include'` throws) |
-| `:parent:selected` | tints parents | **not ported** — v4 never restyles on selection; the accent ring is drawn by the shader |
+| `:selected` / `:parent:selected` | default-sheet blocks any later block beats | the same rule, as a `{ when: { selected: true } }` condition in v4's default stylesheet — so naming `background-color` yourself still replaces it, exactly as in v3 |
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 
-**Selection never restyles.** v3's `:selected` blocks are gone; the selection
-affordance is a shader-drawn accent ring. If your app coloured selected
-elements through a `:selected` block, that visual is now the ring — or a
-`case` mapper over a data key you set yourself.
+**State is a condition, not a selector.** See "Styling element state" above:
+`:selected`, `:active`, `:locked` and the rest are `when` conditions on a
+`case` mapper, and the affordances v3 gives you for free are entries in v4's
+default stylesheet that your own block replaces — the same precedence v3 has.
 
 ---
 

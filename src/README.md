@@ -986,17 +986,26 @@ each is deliberate, not a pass-1 deferral:
   - *Queries* (evaluate now → collection): structured **query objects**
     compiled to the matcher IR — `cy.nodes({ selected: true })`,
     `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`,
-    structural booleans (round 14.7: `parent`/`child` — nodes only,
-    answering v3's `:parent`/`:childless`/`:child`/`:orphan` as pure
-    flag scans; an explicitly-edges query with a structural key
-    throws), and data conditions over the sidecar columns (round 10):
+    the **state booleans** (`selected`, `selectable`, `locked`,
+    `grabbed`, `grabbable`, `active`, `hovered`, plus the structural
+    `parent`, `childless`, `child`, `orphan` — nodes only, and an
+    explicitly-edges query with one of those throws), answered as pure
+    flag scans, and data conditions over the sidecar columns (round 10):
     `cy.nodes({ data: { weight: { gt: 0.5 } } })` — one of
     `eq/ne/lt/lte/gt/gte/in` per key (a bare value means `eq`; keys AND
     together), sharing the `case` mapper's vocabulary and semantics
     (a missing value fails every op, `ne` included), answered inside
     the columnar scan with per-key readers hoisted out of the loop.
 
-    Unknown query keys throw (a typo must not silently match-all).
+    Unknown query keys throw (a typo must not silently match-all), and
+    the message lists the whole vocabulary — with no selector language
+    behind it, that error *is* the discoverability surface.
+
+    **The state keys come from the same table the `case` conditions
+    compile from** (round 57.1f), so anything you can style on you can
+    query for.  They were two hand-written lists until then and the query
+    one was three entries shorter; a spec now walks the table through
+    both compilations rather than sampling either.
   - *Predicates* (evaluate per element, lodash-style): plain functions —
     `cy.filter( ele => ele.data('weight') > 0.5 )`, and event delegation
     `cy.on('tap', ele => ele.isNode(), handler)` (predicates compare by
@@ -2389,6 +2398,10 @@ choice:
   group turns the fast path off, because the group is on the per-element
   path anyway.
 
+The same keys are **query** keys (round 57.1f): `cy.nodes( { locked: true } )`
+answers what `{ when: { locked: true } }` styles, because `matcher.mts`
+compiles from the same table.  Anything you can style on, you can search for.
+
 Deliberately absent from the vocabulary, and why: `:compound` (its node
 meaning is exactly `parent`, and its edge meaning — touching a parent —
 is not a bit), `:loop` / `:simple` (source == target is a column compare,
@@ -3072,10 +3085,11 @@ sweeps them at up to 200k nodes; `BENCH_OP` runs one group per process at
 that scale).  Flag mutators (`select`/`unselect`, `show`/`hide`, `lock`,
 `grabify`, `selectify`) go through one bulk pass over the flags column
 (`GraphStore.flagRefs`: hoisted columns, one coalesced dirty span per
-group); select/unselect skips its restyle pass entirely unless some style
-block matches on `:selected`/`:unselected` (the whole selection look is
-drawn by the shader, so the default stylesheet never restyles) and only
-emits when someone is listening.  `shift()` and constant `positions()`
+group); a flag write reaches the style engine at all only when some
+`case` condition reads that state, so a sheet that declares its own
+`background-color` makes selection free again — round 4's trade,
+arriving from the other side once round 57.1 made the *default* sheet the
+thing that reads the bit.  And it only emits when someone is listening.  `shift()` and constant `positions()`
 are direct column arithmetic — no per-element handles or Position
 objects.  At 200k nodes vs v3: select+unselect ~38×, lock ~96×, shift
 ~106×, hide+show ~1400× (v3 pays a style bypass per element), and

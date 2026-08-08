@@ -34,6 +34,14 @@ that compile and then behave differently.
 - **Structured queries and predicates** replacing the selector language —
   `cy.nodes( { selected: true } )`, `cy.nodes( { data: { w: { gt: 1 } } } )`,
   and plain functions for everything richer.
+- **Element state is a style condition**, which is what replaces v3's state
+  selectors: `{ when: { selected: true } }`, `{ active: true }`,
+  `{ locked: true }`, `{ grabbed: true }` and the rest, on any property.
+  Each takes a boolean, so v3's negative selectors are the same key with
+  `false`, and the same keys work as query keys. v4's default stylesheet
+  carries v3's `:selected`, `:parent:selected` and `:active` blocks, spread
+  before your own — so declaring the property replaces the rule, exactly as
+  in v3.
 - **A serializable mapper DSL** for style: `linear`/`log`/`sqrt`/`pow`/
   `symlog`/`diverging`/`ordinal`/`threshold`/`quantize` scales, OKLab colour
   interpolation with named schemes, and `case` conditionals. Paint channels
@@ -70,7 +78,8 @@ that compile and then behave differently.
 ### Changed
 
 - **The stylesheet is `{ nodes, edges, parents, core }`** — an object of
-  property objects, not a list of selector blocks.
+  property objects, not a list of selector blocks. State-dependent styling
+  is a `case` condition rather than a `:selected`-style block.
 - **Draw order is structural** and stays that way: compound parents, then
   edges, then leaf nodes, then labels; slot order within a stream.
 - **Animations run concurrently by channel** and sequence by promise;

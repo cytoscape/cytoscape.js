@@ -39,12 +39,12 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,056 unit · 263 module · 24 soak · 321 browser |
+| Automated tests | 2,078 unit · 263 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 44 golden images · 37 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
+| Visual regression | 45 golden images, compared **exactly** — zero differing pixels · 38 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 689 KiB minified, 188 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
+| Bundle | 685 KiB minified, 187 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -366,14 +366,29 @@ free are entries in v4's own default stylesheet that any later block replaces,
 and the hard-coded highlights came out of the shaders altogether — including a
 hover brighten no test had ever covered and no stylesheet could turn off.
 
-Two things make it more than a relocation. A state condition is not tied to
+Three things make it more than a relocation. A state condition is not tied to
 any one property: an element can change *width* when pressed, which a shader
 constant could never have allowed, and the bounding box, culling and hit
-testing all follow. And the affordances are free — a stylesheet made of state
+testing all follow. The affordances are free — a stylesheet made of state
 rules would otherwise cost every application a per-element evaluation at load
 for a highlight almost nothing is using, so such a sheet resolves to one
 answer per state combination (two, for the default) rather than one per
-element. A 150,000-element load measures the same either way.
+element; a 150,000-element load measures the same either way. And the
+*querying* side was brought onto the same list: the stylesheet could style
+nine states while a search could match three, so both are now compiled from
+one table and cannot drift apart.
+
+Regenerating the reference images for the change turned up something older and
+unrelated. **Six of them no longer matched what the library actually drew** —
+one by 1.6% of its pixels — because each carried a tolerance granted at some
+point for text antialiasing, and that tolerance was wide enough to absorb real
+changes for a week without anyone seeing one. The comparison is exact now:
+every input that could vary is pinned (the software renderer, the browser
+version, the font file, the platform), and measurement across four full runs
+confirmed there is nothing left for a tolerance to absorb. The cost of the old
+arrangement is worth stating plainly, because it is the general lesson rather
+than a detail of this change: nothing was broken, and nobody could have told
+from a passing test run whether anything was.
 
 A smaller one, in the same spirit: the specs written for the new demo networks
 found a defect on their first run. A helper built its comparison keys in a way

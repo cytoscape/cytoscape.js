@@ -233,21 +233,32 @@ them losing a third of its canvas including four arrowheads whose mapper
 clauses had never been written.  Four of its own inherited predictions
 were corrected by measurement; the round record has them.
 
-**Round 57** (2026-08-07) is the cleanup round the maintainer raised,
-and it is six items with one thread: the repository adopts `oxfmt`,
-these two documents are made readable and honest about how far v4 is
-from ready, `debug/` gains four networks ported from v3's demos, the
-status build stops warning about paths it should not, and the default
+**Round 57** (2026-08-07 to 08) is the cleanup round the maintainer
+raised, and it is six items with one thread: the repository adopts
+`oxfmt`, these two documents are made readable and honest about how far
+v4 is from ready, `debug/` gains four networks ported from v3's demos,
+the status build stops warning about paths it should not, and the default
 look moves onto v3's.
 
-Its most useful outputs are the things a tool
-found rather than the things it built: reformatting the tree exposed
-five public members invisible to the `@param` gate, two audits whose
-detection fell silently, and one **false pass in the throw gate**; and
-the first draft of the selection parity scene turned up a real
-divergence — v3's selection colour is a *default* any user block beats,
-where v4's is unconditional — which is now a recorded deviation with
-its reversal rather than a surprise in a diff.
+Its most useful outputs are the things a tool found rather than the
+things it built: reformatting the tree exposed five public members
+invisible to the `@param` gate, two audits whose detection fell silently,
+and one **false pass in the throw gate**.
+
+**And the item that looked smallest turned out to be a design round.**
+"Make the default look like v3's" was first built as shader constants,
+with two deviations recorded to explain what that cost — v4's selection
+colour always winning where v3's is a default, and a hover brighten v3
+has no rule for.  The maintainer rejected both, and the premise under
+them was the finding: v4 has no *selectors*, but it has **conditions**,
+and `{ when: { selected: true } }` had been compilable since round 14.7.
+So state became a condition (57.1d), v3's three affordance blocks became
+entries in v4's default stylesheet that any user block replaces, the
+hard-coded highlights left the shaders, and the query API — which could
+match three states where the sheet could style nine — was compiled from
+the same table (57.1f).  Regenerating the goldens for it found **six**
+whose committed pixels no longer matched the code, hidden by tolerances
+granted for text antialiasing; the goldens are exact now (57.1e).
 
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
@@ -1538,10 +1549,10 @@ magnitude.  On a 2k-node/4k-edge graph:
   collection and one coalesced dirty span per group — now backs
   select/unselect *and* all `_setBit` mutators (`show/hide`, `lock`,
   `grabify`, `selectify`); (b) select/unselect skips restyle outright
-  unless some block matches on `:selected/:unselected`
-  (`StyleEngine.dependsOnSelection`; the accent ring is shader-drawn, so
-  the default stylesheet never restyles), else restyles only the changed
-  slots via `applyBulk`; emits are gated on registered listeners;
+  unless some `case` condition reads the state
+  (`StyleEngine.dependsOnState`, generalised in round 57.1 from a
+  selection-only check to every state), else restyles only the changed
+  slots; emits are gated on registered listeners;
   (c) `shift()` and constant/partial `positions()` write the position
   column directly (`GraphStore.shiftPositions`/`setPositionsConst` — no
   per-element handles, callbacks or Position allocations) and the
@@ -1739,8 +1750,11 @@ decisions, explicitly:
 - **Style is `{ nodes, edges }`** (keys renamed from `{ node, edge }`
   2026-07-24 to match the group names) — each key a props object
   (constants, camelCase or kebab-case, and mapper objects).  Selector
-  blocks, `:selected` restyling and `#id` blocks are gone (the accent
-  ring is shader-drawn).  The `(ele) => props` **function form was
+  blocks and `#id` blocks are gone; **state is a `case` condition**
+  (round 57.1: `{ when: { selected: true } }` and the rest of v3's state
+  selectors), and v3's own `:selected` / `:parent:selected` / `:active`
+  blocks are entries in v4's default stylesheet that a user block
+  replaces.  The `(ele) => props` **function form was
   removed in round 8** (below): all per-element styling is declarative
   (`case` conditionals, `data(key)` scales), so every value is
   analyzable, serializable, and GPU-evaluable.  Refresh: a data write
@@ -3835,10 +3849,15 @@ one, and `FLAG_ACTIVE` had existed since round 6 with nothing reading
 the bit.  Building both turned up the divergence the round could most
 easily have shipped silently: v3's selection colour lives in the
 *default* stylesheet, so any user block naming a colour beats it, while
-v4's is drawn by the shader and always wins.  Matching v3 exactly would
-leave a v4 app no way to make selection visible, since there is no
-`:selected` to write — so the shader wins, and the deviation is recorded
-with the mechanism that would reverse it.
+v4's — as first built — was drawn by the shader and always won.
+
+That divergence turned out to be the question rather than a footnote.
+The reasoning for accepting it was "there is no `:selected` to write",
+and v4 has no *selectors* but it does have **conditions** — so the rule
+went into v4's own default stylesheet as `{ when: { selected: true } }`,
+spread before the user's block, which is v3's precedence rather than an
+approximation of it.  Round 57.1d has the whole of it, including what
+came out of the shaders and why the default sheet costs nothing.
 
 **And a spec written for a new fixture found a defect on its first
 run**, which is the argument for writing the property rather than the
@@ -3851,9 +3870,10 @@ would have looked entirely plausible.
 (cleanup) joined the unbuilt list here and has since **landed in full**
 — `oxfmt`, the two documents' readability and their readiness language,
 four `debug/` networks from v3's demos, the status build's path
-allowlist, and the default look moved onto v3's (selection on nodes,
-edges and arrows; `:active` through the overlay props).  So the unbuilt
-list above stands as written.
+allowlist, and the default look moved onto v3's: state is a `case`
+condition, and v3's `:selected`, `:parent:selected` and `:active` blocks
+are entries in v4's default stylesheet.  So the unbuilt list above stands
+as written.
 
 The same amendment added two questions to
 the undecided one: the **`arrow-scale` quantization** (item 23 — closing it
@@ -14836,6 +14856,18 @@ bakes into the shader where v3 spells them in its default stylesheet.
    truth alone.  Consequence, recorded: `style('background-color')` on a
    selected node still reads its own colour, exactly as it does today with
    the ring.
+
+   ***Reversed by the maintainer, and 57.1d implemented the reversal.***
+   The call above is wrong in its premise rather than its trade-off: "v4
+   has no `:selected` blocks" is true and irrelevant, because v4 has
+   *conditions*, and a `{ when: { selected: true } }` case had been
+   compilable since round 14.7's structural pair.  The rules live in v4's
+   **default stylesheet** now, spread before the user's block.  Round 4's
+   fast path survives unchanged and generalised: a flag write reaches the
+   style engine only when some condition reads that state, so a sheet
+   naming its own colour makes selection free exactly as before.  And
+   `style('background-color')` on a selected node reads **blue**, which is
+   what v3 answers.  Design calls 3 and 4 below fall with it.
 2. **`FLAG_ACTIVE` becomes the press state, as in v3**, set by the pointer
    layer on press and cleared on release/cancel — v3's `near.activate()` /
    `unactivate()` in `load-listeners.mts`.  It is already public API
@@ -14848,12 +14880,28 @@ bakes into the shader where v3 spells them in its default stylesheet.
    one keeps it (a user's overlay is not overridden by a press).  That
    needs the cull predicate and the pass gate to admit active elements,
    which is where the work is.
+
+   ***Superseded (57.1d).***  It rides the overlay machinery, but as a
+   *style value* rather than a synthesized record: the default sheet sets
+   `overlay-opacity` behind `{ active: true }`, and the other two of v3's
+   three declarations are already v4's constants.  So the cull predicate
+   and the pass gate needed nothing after all — a pressed element simply
+   has an overlay — and the "substituted only where nothing is styled"
+   rule turned out to be a hand-rolled imitation of stylesheet
+   precedence, which the spread does exactly.
 4. **The grab half of the brighten goes; the hover half stays.**  A
    pressed element now gets v3's overlay, so brightening it too would be
    two affordances for one state.  Hover is a different state that v3 does
    not style at all and v4 has no other way to express — dropping it would
    remove feedback the maintainer did not ask to remove — so it stays, as
    a recorded deviation from v3 rather than an oversight.
+
+   ***Reversed by the maintainer (57.1d).***  "v4 has no other way to
+   express it" was the same false premise one layer down — `hovered` is a
+   condition like any other.  The brighten is deleted, and a sheet that
+   wants the feedback writes it.  Note what it had been: a hard-coded
+   `color.rgb + 0.15` that no spec covered and no stylesheet could turn
+   off.
 5. **`oxfmt` lands before everything else.**  It rewrites every source
    file, so landing it first means the rest of the round is written in the
    new style once rather than reformatted after the fact.  The one thing
@@ -15328,9 +15376,63 @@ bakes into the shader where v3 spells them in its default stylesheet.
   point: it is a change to the rendered output, which is the only thing
   a golden is for.  `AGENTS.md` and `src/README.md` both say so at the
   point where someone reaching for a wider bound would read them.
-- [x] **57.7 Closing docs sweep** (2026-08-07) — both documents end to
-  end plus `AGENTS.md`, and the `EXECUTIVE_SUMMARY.md` rewrite the
-  standing rule requires when a round closes.  The three named drift
+- [x] **57.1f One vocabulary for querying and for styling** (2026-08-08)
+  — 57.1d gave the stylesheet nine states and left the *query* API with
+  three, so `cy.nodes( { locked: true } )` threw on a state you could
+  style on.  A hole the round opened, and the fix is not to add six more
+  entries to a second list: `matcher.mts` compiles queries from the same
+  `STATE_CONDITIONS` table `style-scales.mts` compiles conditions from,
+  so the two cannot drift.
+
+  `Query` gains `selectable`, `locked`, `grabbed`, `grabbable`, `active`,
+  `hovered`, `childless` and `orphan`.  The last two are the structural
+  negations under their v3 names, and they behave as negations because
+  the table says so — `{ orphan: true }` and `{ child: false }` compile
+  to the same `(mask, want)` pair, which a spec asserts by comparing the
+  two result sets rather than by trusting the compiler.
+
+  Two smaller things fall out of the table being the source.  The
+  unknown-key error now lists the whole vocabulary rather than a
+  hand-written five — with no selector language behind it, that message
+  *is* the discoverability surface.  And the nodes-only guard names the
+  key the caller actually used (`'orphan'`, not `'parent'/'child'`),
+  because it knows which spellings were structural.
+
+  The spec walks the table rather than sampling it: every state, in both
+  directions, as a query key and as a `when` condition.  Control: putting
+  the query vocabulary back to its old three fails all five specs in that
+  suite.
+- [x] **57.7 Closing docs sweep** (2026-08-07, re-run 2026-08-08) — both
+  documents end to end plus `AGENTS.md`, and the `EXECUTIVE_SUMMARY.md`
+  rewrite the standing rule requires when a round closes.
+
+  **It was run twice, and the second run is the one worth reading about.**
+  The first closed the round as it stood; then 57.1d–f reversed two of
+  the round's own design calls, which meant the sweep had to correct not
+  just the summaries but the *plan section above* — a design call that a
+  later pass reverses reads exactly like one that still holds.  Both are
+  annotated in place now rather than left to be discovered by someone
+  building on them, which is this file's own standing warning about its
+  stale parts, applied to itself within a day of being written.
+  What the second sweep found, in the order a reader would hit it: the
+  round-57 header paragraph still described the deviation as the useful
+  finding; the "v3 → v4 parity gap analysis" said v4's colour "always
+  wins"; the *design direction* section said `:selected` restyling was
+  gone; and the perf section said the default sheet never restyles.
+
+  **And `MIGRATING.md`, which ships**, told a porting app that
+  `:parent:selected` was "not ported" and that the selection affordance
+  was a shader-drawn accent ring — both false, and both in a table
+  someone reads *while* porting.  That guide now carries a "Styling
+  element state" section with the whole vocabulary, six new
+  selector-recipe rows, and the list of v3 state selectors that have no
+  v4 form.  `CHANGELOG.md` gained the feature it had no line for.
+
+  The general lesson is the one this file already states about itself and
+  had not applied to its own plan sections: **a claim written when it was
+  true reads exactly like one that still is.**  A round that reverses its
+  own design calls has to go back and mark them, or the next reader
+  builds on the version that lost.  The three named drift
   sites were checked: "Suggested sequencing" gains the round-57
   paragraph; the "Needs a call" ledger needed nothing (this round closes
   no design call and opens none — the two ideas it logged are directions,

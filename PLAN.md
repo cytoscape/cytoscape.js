@@ -746,6 +746,15 @@ docs checks), and each is left in place pending the call.
     (option-gated, high-frequency), taphold (no default) and the cxt
     menu (already unconditional) excluded, and bubbled prevention
     stopping the core default via 14.5's shared-Event machinery.
+    **The docs-first proposal is written (2026-08-08)** — the section
+    "Round 41.5 docs-first" at the end of this file: the toggle map is
+    complete (three of four rows have existing toggles at both grains;
+    the background clear is coarse-only, with no new option
+    recommended), rows 1–3 are implementable as emitted today, and row
+    4 (`tapstart` → grab) is **not** — the press handler grabs before
+    it emits — so the proposal recommends dropping that row and logging
+    the emit reorder as its own later call.  Awaiting the maintainer's
+    reaction; the round does not start before it.
 13. ~~**The `Gpu*` exported type names**~~ — **closed by round 42.6**
     (2026-08-04).  Round 42 renamed the package's *identity* — factory,
     bundles, declaration, UMD global — but stopped at the exported **type**
@@ -3930,8 +3939,9 @@ ran: 198 throw sites classified, ~11 demotion candidates in two
 families, the measured recommendation in the round-40 section.
 
 What the queue now holds: **round 40** (blocked on its design sitting,
-prep done), **41.5** (blocked on its docs-first proposal for the
-maintainer), **round 46** (the docs site — unblocked but large and only
+prep done), **41.5** (its docs-first proposal was written later the
+same day — the section at the end of this file — and awaits the
+maintainer's reaction), **round 46** (the docs site — unblocked but large and only
 sketch-specced), **rounds 49–51** (other platforms, release
 credentials, the bake), ~~round 48's documented limit edges~~ (**landed
 later the same day** as 48.6 — the three limit fixtures, each specced at
@@ -15823,3 +15833,102 @@ bakes into the shader where v3 spells them in its default stylesheet.
   "what remains" amendment that added round 57 to the unbuilt list is
   struck with what closed it, which is the entry this file has most often
   left standing.
+
+## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
+
+This is the docs-first stage the sixth sitting instructed: map each
+candidate gesture default to its **explicit toggle** before proposing
+any `preventDefault()` rows, and react to the four-row table the
+sitting tabled.  It is a proposal, not a plan — nothing below is
+implemented, and the round does not start until the maintainer has
+reacted to the two flagged calls.
+
+Every code claim in this section was measured against
+`src/interact/pointer.mts` on 2026-08-08 rather than taken from earlier
+records, and the one that matters most is an *ordering* fact: two of
+the four candidate defaults already emit their gesture event **before**
+the default applies, one emits it **after**, and that difference is
+where the design cost lives.
+
+### The toggle map (the sitting's precondition)
+
+| default | instance toggle | per-element grain | status |
+|---|---|---|---|
+| grab initiation | `autoungrabify` (+ `autolock`) | `ele.ungrabify()` / `grabbable` | exists, both grains |
+| tap selection toggle | `autounselectify` | `ele.unselectify()` / `selectable` | exists, both grains |
+| background clear (tap on core) | `autounselectify` | — | **coarse only** |
+| box apply (`boxend`) | `boxSelectionEnabled` (+ `autounselectify` on the select step) | `selectable` filters the set | exists |
+
+Excluded, per the sitting: pan and wheel-zoom (already option-gated,
+and high-frequency), taphold (no default to suppress), and the cxt
+menu suppression (deliberately unconditional).
+
+The one hole in the map is the **background clear**: it shares
+`autounselectify`, which also disables selection itself, so an app
+that wants tap-select but no background-clear has no toggle for it.
+The maintainer's rule is satisfied as written — the default is not
+controllable *only* through `preventDefault()` — but the toggle is
+coarser than the event.  **Recommendation: add no new option.**  The
+want is per-tap in practice (a click that a UI layer already handled),
+which is exactly what `preventDefault()` on the core `tap` gives; a
+`backgroundClearEnabled` option can always be added later without
+breaking anything, where adding it now is surface on speculation.
+
+### The four rows, reacted to
+
+1. **`tap` on an element → the selection toggle** — implementable as
+   emitted today: `tap()` emits first and applies selection after
+   (`pointer.mts`, the tap helper), so the layer reads
+   `isDefaultPrevented` between the two.  Prevention suppresses the
+   whole toggle step (select, unselect-toggle, and the non-additive
+   clearing of others), so `tapselect`/`tapunselect` do not fire for a
+   prevented tap.
+2. **`tap` on the core → the background clear** — same shape, same
+   helper, implementable as emitted today.
+3. **`boxend` → applying the box's selection** — implementable as
+   emitted today in *both* box paths (mouse `boxEnd` and the
+   three-finger `applyTouchBox`), each of which emits `boxend` before
+   applying.  Prevention suppresses the whole apply step — the
+   non-additive unselect of outsiders *and* the select — not just the
+   select, or a prevented box would still silently deselect the rest of
+   the graph.  The per-element `box` events still fire (they report the
+   geometry, not the default); `boxselect` does not.
+4. **`tapstart` on an element → grab initiation** — **not implementable
+   as emitted today, and this is the call.**  The press handler sets
+   `FLAG_GRABBED` and emits `grabon`/`grab` *before* it emits
+   `pointerdown`/`tapstart`, so the flag is decided before any handler
+   could set it.  Two honest options:
+   - **(a) Reorder the press emits** — `pointerdown`/`tapstart` first,
+     then the grab block reads the flag.  This changes the observable
+     emit order of every press on a grabbable node, which is a
+     parity-relevant ordering (v3's order is a claim to measure before
+     choosing, not to assume).
+   - **(b) Drop the row** — grab initiation keeps its two toggle grains
+     (`autoungrabify`, `ele.ungrabify()`), which are the richest of any
+     row, and `preventDefault()` on `tapstart` keeps suppressing only
+     the browser default.
+   **Recommendation: (b) for this round, (a) logged as its own later
+   call.**  The row buys per-press grab suppression at the cost of an
+   emit-order change whose blast radius is every press; the toggle
+   story for grab is already the best of the four, and nothing else in
+   the proposal depends on the reorder.
+
+**Bubbled prevention** rides round 14.5's machinery as the sitting
+said: compound phases share **one** Event object (origin → ancestors →
+core), so a `preventDefault()` in any phase is visible when the walk
+returns, and the specs must prove it from a core-phase handler as well
+as an origin handler.
+
+### Implementation notes (for the round, once called)
+
+- The emit paths involved return `void` today and the 34.3
+  no-listener gate skips the emit entirely; the implementation needs
+  the built Event (or its flag) back from the emit call.  The
+  no-listener fast path is untouched — with no handler the flag cannot
+  be set, so the default applies unguarded exactly as now.
+- Each row's spec proves **both directions** (prevented → suppressed;
+  unprevented → the default runs and its follow-on events fire), plus
+  the bubbled case, per the sitting.
+- Docs land with the round: the `Event.preventDefault` doc comment
+  (which currently — and correctly — says the gesture half is inert),
+  `MIGRATING.md`'s event section, and ledger item 12.

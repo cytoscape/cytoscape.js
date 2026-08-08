@@ -12,11 +12,12 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-08, covering work through round 57 plus the
-  out-of-order rounds 52 (shader minification), 54 (the compound-fit
-  bounds) and 38 (border and outline styles), the completion of the
-  robustness round's limit-edge coverage, and the written (not yet
-  ratified) proposal for the gesture-default veto.
+- **Last updated**: 2026-08-08, the day the fully-specced queue closed:
+  rounds 52 (shader minification), 54 (the compound-fit bounds) and 38
+  (border and outline styles) landed, the robustness round finished its
+  limit coverage, and the two open questions each gained their prepared
+  input — a measured error-site classification and a written
+  gesture-veto proposal — for the maintainer to react to.
 
 ---
 
@@ -51,10 +52,14 @@ for several weeks; `npm test` passes from a clean checkout.
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Four questions are open**, up from two. The long-standing pair: the
-error/warning policy (round 40, its preparatory classification of every error
-site approved), and which gesture defaults an event handler may veto (direction
-set — explicit toggles come first). Round 56 added two: whether to spend the six
+**Four questions are open**, up from two — and the long-standing pair now
+have their homework done, awaiting only the maintainer. For the error/warning
+policy (round 40), every error site has been classified — 198 sites, of which
+only ~11 are candidates for demotion to a warning — so the design sitting
+reacts to a measured list. For which gesture defaults an event handler may
+veto, a written proposal maps every candidate to its explicit toggle and
+flags the one real trade-off (vetoing a grab would reorder press events;
+the proposal recommends dropping that row). Round 56 added two: whether to spend the six
 reserved arrow-packing bits on **un-quantizing `arrow-scale`** (which currently
 renders 1.4 as 1.375) or keep them for a seventeenth arrow shape, and how to
 free the vertex-shader binding that would let **edge labels and the casing
@@ -101,8 +106,7 @@ what a synchronous read is allowed to observe while the device is mid-frame.
 
 ## Week 2 — 27 July – 2 August: parity
 
-*208 commits — the densest week of the project. Rounds 9.4–27, plus four design
-sittings.*
+*201 commits. Rounds 9.4–27, plus four design sittings.*
 
 The work turned from architecture to matching v3's visible behaviour, and the
 measurement infrastructure that makes such claims checkable was built alongside
@@ -136,8 +140,9 @@ it.
 
 ## Week 3 — 3–8 August: hardening, release preparation, a CI reckoning, and three rounds that began with someone looking at the screen
 
-*Rounds 28–57, and round 52 (numbered out of order — it was scoped late and
-landed last).*
+*208 commits — the densest week of the project. Rounds 28–57, closing on
+8 August with the out-of-order tail: rounds 52, 54 and 38, the robustness
+round's limit tests, and the prepared input for both open questions.*
 
 With the feature ledger closed, the work moved to what was *unpinned* rather
 than unbuilt — contracts, documentation, packaging and robustness.
@@ -452,6 +457,18 @@ scene moved to a magnified close-up, where the five feature-off controls
 now fail by three to thirteen times their bounds. The fragment-cost
 premium the design review had accepted for dashed polygons measured as
 noise at scene level on real hardware.
+
+**The week closed with the documented queue empty of buildable work.**
+Everything fully specced that this machine can run has landed; what
+remains waits on a decision, another platform, or release credentials.
+The two open decisions were prepared rather than left abstract: every
+error site in the library was read and classified so the error-policy
+sitting reacts to a measured list (198 sites; ~11 plausible demotions,
+half of those undermined by the absence of a fallback renderer), and the
+gesture-veto question got a written proposal — every candidate default
+mapped to its explicit toggle, three veto points implementable today, and
+the recommendation to drop the fourth rather than reorder press events.
+Neither is a decision; both are on the maintainer's desk.
 
 ---
 

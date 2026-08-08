@@ -12,8 +12,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-08, covering work through round 57 and the
-  out-of-order round 52 (shader minification), which landed last.
+- **Last updated**: 2026-08-08, covering work through round 57 plus the
+  out-of-order rounds 52 (shader minification) and 54 (the compound-fit
+  bounds), which landed last.
 
 ---
 
@@ -38,7 +39,7 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,078 unit · 280 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,078 unit · 283 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 45 golden images, compared **exactly** — zero differing pixels · 38 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
@@ -58,7 +59,7 @@ free the vertex-shader binding that would let **edge labels and the casing
 strokes** see the arrow trim.
 
 The unbuilt work that *is* decided — `border-style`, the documentation site,
-a tighter compound-fit bound, release engineering — is
+release engineering — is
 scheduled. That list is what has been written down; it is not a complete
 account of what 4.0 needs, and round 57 demonstrated as much by adding two
 more entries to it in the same week it said so: bringing the per-element
@@ -411,6 +412,24 @@ audit of every shader through an independent tokenizer, and the live
 v3-parity scenes — plus the planned control, a deliberately naive transform
 that must (and does) mangle the fixture the real one preserves.
 
+**The compound-fit bound landed the same day** (round 54). `cy.fit()` had
+still been over-framing compound graphs by nearly double, because the
+conservative scan grew a disc around each endpoint of a compound-loop edge
+sized by the largest node anywhere in the graph, in all four directions —
+when the actual geometry only ever extends up and left of the two nodes it
+connects. The bound is now directional and per-edge, and the fit zoom on
+the reference compound graph went from 0.61 to 0.82. The round's real
+finding came from its own verification: a new randomized sweep (sixty
+seeded compound graphs, every conservative box must contain the exact one)
+failed on its first run — not on the new code's account, but on a
+pre-existing hole it was built to find. A taxi edge forced against its
+declared direction overshoots both endpoints by its turn distance, which
+no size-based margin bounds; the old formulation had covered it only by
+the accident of the global margin being oversized. Taxi edges are now
+measured exactly rather than estimated, the sweep is a standing test, and
+the deliberately-broken controls each fail exactly the specs written for
+them.
+
 ---
 
 ## What remains before 4.0
@@ -436,7 +455,6 @@ optional to scheduled (it landed two days later — see week 3).
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
-| Compound fit bound (round 54) | scheduled — `fit()` still over-frames compound graphs ~1.8×; a directional, per-edge bound replaces the disc-around-centres formulation |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |
 | Release bake (round 51) | alpha/beta cycle, external-consumer smoke, then **4.0.0** |

@@ -227,8 +227,9 @@ the packaging move that makes v4 *the* package (v3 to a self-contained
 release engineering — with one question deliberately left open, the
 **error policy** (round 40's own sitting).  A second joined it later:
 round 41 found that *which* gesture defaults `preventDefault()` should
-suppress cannot be derived from v3, so that list is a v4 contract still
-to be designed.
+suppress cannot be derived from v3, so that list is a v4 contract to
+design — its docs-first proposal was written 2026-08-08 (PLAN.md's
+"Round 41.5 docs-first" section) and awaits the maintainer.
 
 Round 37 (2026-08-04) is that roadmap's governance close-out, and it
 changes almost no behaviour: the two audits held back on policy calls
@@ -960,7 +961,13 @@ calls made deliberately rather than by accretion:
   enumeration it planned to derive **cannot be derived** — v3 never
   reads the flag either, so the list of preventable defaults is a v4
   contract to design rather than a v3 behaviour to port.  It is open
-  call 12 in PLAN.md.
+  call 12 in PLAN.md; the sixth sitting set its direction (explicit
+  toggles first) and the docs-first proposal was written 2026-08-08
+  (PLAN.md's "Round 41.5 docs-first" section) — every candidate
+  default has an explicit toggle, three of the four proposed rows are
+  implementable as emitted today, and the `tapstart` → grab row is
+  recommended dropped because the press handler grabs before it
+  emits.  Awaiting the maintainer's reaction.
   **"Dropped" here means "never emitted", not "rejected"** (measured
   2026-08-03): `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
   `cy.on('click', h)` and `cy.on('touchstart', h)` all register
@@ -3374,9 +3381,20 @@ cannot force a collection is a flake generator.
   loss hook neutered the export spec still passed, since it accepts a
   resolved *or* rejected export, so it now asserts the loss as well.
 
-Not yet covered, and the remainder of the round: the documented limit
-edges — the 256-layer image cap, a full glyph atlas, the export texture
-cap.  Each needs a fixture large enough to reach the limit.
+- **The documented limit edges are pinned at their exact edges** (48.6,
+  2026-08-08, the `renderer` project — the round's last item).  Exactly
+  256 unique images fit one tier with no warning and a pixel proves an
+  under-cap image renders; the 257th warns **once** and its node draws
+  its background colour, undisturbed beside the images that fit.  ~1500
+  distinct characters overfill the glyph atlas, after which a label of
+  novel characters lays out empty without re-warning while a label of
+  cached characters still renders in full.  And `png()` succeeds at
+  output width exactly `maxTextureDimension2D`, rejects at one past it
+  naming both, and — round 31's lesson — the `maxWidth` form the error
+  recommends is followed on the same instance and must resolve.  Five
+  controls (the cap at 255 and at 512, a silently-full atlas, the guard
+  at `>=`, the guard deleted) each fail exactly the assertion written
+  for them.  Round 48 is complete.
 
 ## First-frame cost: deferred pipelines (round 53)
 
@@ -4492,8 +4510,9 @@ it here in round 57.4.*
   (landed, round 37.4); `preventDefault()` is **half wired** — its DOM
   half landed with the v4 Event (round 41.4) while the *gesture* half
   became a new open question, since the enumeration of preventable
-  defaults turned out not to be derivable from v3 at all; and both
-  audits gate (landed, round 37.1).
+  defaults turned out not to be derivable from v3 at all (its
+  docs-first proposal is written, 2026-08-08, awaiting the
+  maintainer); and both audits gate (landed, round 37.1).
 
   `cytoscape.warnings()` builds too, but the **error policy** behind
   it — v3's mostly-no-throw stance against v4's fail-loudly design —

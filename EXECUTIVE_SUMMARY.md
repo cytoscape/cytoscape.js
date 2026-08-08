@@ -14,7 +14,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Last updated**: 2026-08-08, covering work through round 57 plus the
   out-of-order rounds 52 (shader minification), 54 (the compound-fit
-  bounds) and 38 (border and outline styles), which landed last.
+  bounds) and 38 (border and outline styles), the completion of the
+  robustness round's limit-edge coverage, and the written (not yet
+  ratified) proposal for the gesture-default veto.
 
 ---
 
@@ -39,7 +41,7 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,087 unit · 283 module · 24 soak · 329 browser (226 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,087 unit · 283 module · 24 soak · 335 browser (229 run; 106 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 43 live v3-vs-v4 pixel-parity scenes, ten of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
@@ -166,7 +168,12 @@ than unbuilt — contracts, documentation, packaging and robustness.
   against both libraries rather than remembered, a **generated API reference**,
   and a **soak tier** that found four defects — including a corrupt payload that
   made a load never return, and an identity bug that made `union()` silently
-  drop elements across two instances.
+  drop elements across two instances. The robustness round finished on
+  2026-08-08 with its three deferred **limit tests**: graphs big enough to
+  actually hit the 256-image ceiling, fill the label-glyph atlas, and reach
+  the GPU's export-size cap, each proving the library degrades with a single
+  warning and keeps running rather than crashing — and that the fix an error
+  message recommends actually works when followed.
 - **A status site** (round 46.5): a deployable preview of the branch — the debug
   harness on WebGPU, the benchmark archive with full machine provenance, the API
   reference and the project documents. Its fixtures ship in v4's own binary wire
@@ -467,7 +474,7 @@ optional to scheduled (it also landed two days later).
 | Arrow trim on labels and casings | **a binding, not a decision.** Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 | Error / warning policy (round 40) | a design sitting. The preparatory classification is done: of 198 error sites, ~187 are contract (invalid input, corrupt payloads) and only ~11 are candidates for demotion — half of those undermined by the absence of a fallback renderer — so the sitting reacts to a measured list |
-| Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
+| Gesture-default veto (`preventDefault()`) | **a proposal awaits reaction** (written 2026-08-08). Every candidate default already has an explicit toggle; three of the four proposed veto points are implementable as-is, and the fourth (vetoing a grab) would change the order press events fire in — the proposal recommends dropping it rather than paying that |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |

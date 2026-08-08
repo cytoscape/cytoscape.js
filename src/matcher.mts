@@ -1,7 +1,11 @@
-import { FLAG_CHILD, FLAG_PARENT, FLAG_SELECTED } from './contract.mjs';
+import { CONDITION_FLAGS } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
-import { testCondition } from './style-scales.mjs';
+import {
+  STATE_CONDITIONS,
+  STATE_NAMES,
+  testCondition,
+} from './style-scales.mjs';
 import type { CompiledCondition } from './style-scales.mjs';
 
 /*
@@ -33,18 +37,42 @@ export interface DataCondition {
   in?: (string | number)[];
 }
 
-/** A structured element query; every present key must hold. */
+/**
+ * A structured element query; every present key must hold.
+ *
+ * The state keys are the ones a `case` mapper's `when` takes, from the
+ * same table (`STATE_CONDITIONS` in style-scales.mts) — so anything you
+ * can style on, you can query for.  Each is a boolean, which is how v3's
+ * paired selectors collapse: `{ selected: false }` is `:unselected`,
+ * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
+ */
 export interface Query {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
   selected?: boolean;
-  /** structural (round 14.7, nodes only): has at least one child —
-   * `parent: false` is v3's `:childless` */
+  /** whether the element may be selected by the user */
+  selectable?: boolean;
+  /** whether the element is locked in place */
+  locked?: boolean;
+  /** whether the user is dragging the element */
+  grabbed?: boolean;
+  /** whether the element may be dragged */
+  grabbable?: boolean;
+  /** whether the element is under an active press */
+  active?: boolean;
+  /** whether the pointer is over the element */
+  hovered?: boolean;
+  /** structural (round 14.7, nodes only): has at least one child */
   parent?: boolean;
-  /** structural (round 14.7, nodes only): has a parent —
-   * `child: false` is v3's `:orphan` */
+  /** structural (nodes only): has no children — v3's `:childless`, and
+   * exactly `{ parent: false }` */
+  childless?: boolean;
+  /** structural (round 14.7, nodes only): has a parent */
   child?: boolean;
+  /** structural (nodes only): has no parent — v3's `:orphan`, and
+   * exactly `{ child: false }` */
+  orphan?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
   data?: Record<string, DataCondition | string | number | boolean | null>;
 }
@@ -68,10 +96,8 @@ export const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
 
 const QUERY_KEYS: ReadonlySet<string> = new Set([
   'group',
-  'selected',
-  'parent',
-  'child',
   'data',
+  ...STATE_NAMES,
 ]);
 const CONDITION_OPS: ReadonlySet<string> = new Set([
   'eq',
@@ -161,7 +187,7 @@ export const compileQuery = (
   for (const key of Object.keys(query)) {
     if (!QUERY_KEYS.has(key)) {
       throw new Error(
-        `Unknown query key '${key}'; supported keys: group, selected, parent, child, data`,
+        `Unknown query key '${key}'; supported keys: ${[...QUERY_KEYS].join(', ')}`,
       );
     }
   }
@@ -174,23 +200,33 @@ export const compileQuery = (
     );
   }
 
-  // boolean flag terms compose by OR-ing (mask, want) pairs
+  // boolean flag terms compose by OR-ing (mask, want) pairs.  Driven by
+  // the style engine's state table, so a state that can be styled can be
+  // queried — the two used to be separate lists and the query one was
+  // three entries shorter than the styling one.
   let mask = 0;
   let want = 0;
+  let structural = false;
+  const structuralNames: string[] = [];
 
-  if (query.selected != null) {
-    mask |= FLAG_SELECTED;
-    want |= query.selected ? FLAG_SELECTED : 0;
-  }
+  for (const name of STATE_NAMES) {
+    const asked = query[name];
 
-  if (query.parent != null) {
-    mask |= FLAG_PARENT;
-    want |= query.parent ? FLAG_PARENT : 0;
-  }
+    if (asked == null) {
+      continue;
+    }
 
-  if (query.child != null) {
-    mask |= FLAG_CHILD;
-    want |= query.child ? FLAG_CHILD : 0;
+    const state = STATE_CONDITIONS[name];
+    const bit = CONDITION_FLAGS[state.key];
+    const on = state.negate ? !asked : asked;
+
+    mask |= bit;
+    want |= on ? bit : 0;
+
+    if (state.nodesOnly) {
+      structural = true;
+      structuralNames.push(name);
+    }
   }
 
   const test: FlagTest = mask === 0 ? MATCH_ALL : { mask, want };
@@ -198,10 +234,10 @@ export const compileQuery = (
   // structural terms are node concepts (v3's :parent/:child/:childless/
   // :orphan never match edges): an explicitly-edges query throws, an
   // unrestricted one just never matches edges
-  const structural = query.parent != null || query.child != null;
-
   if (structural && (group === 'edges' || restrict === 'edges')) {
-    throw new Error(`The 'parent'/'child' query keys apply to nodes only`);
+    throw new Error(
+      `The '${structuralNames.join("'/'")}' query key${structuralNames.length > 1 ? 's apply' : ' applies'} to nodes only`,
+    );
   }
 
   const allows = (g: GroupName): boolean =>

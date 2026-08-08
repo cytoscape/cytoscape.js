@@ -161,29 +161,41 @@ const CONDITION_OPS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The condition vocabulary that reads a *flag* rather than data: the
- * spelling a sheet writes → the reserved key it compiles to, and whether
+ * The state vocabulary that reads a *flag* rather than data: the spelling
+ * a sheet (or a query) writes → the reserved key it compiles to, whether
  * the boolean inverts on the way (the two structural negations v3 names
- * separately).  Several spellings may share a key; the engine's value
- * reader only ever sees the keys.
+ * separately), and whether the state is a node concept.  Several
+ * spellings may share a key; the engine's value reader only ever sees the
+ * keys.
+ *
+ * `matcher.mts` compiles queries from this same table, so
+ * `cy.nodes( { locked: true } )` and `{ when: { locked: true } }` cannot
+ * drift apart — one is the query form and the other the styling form of
+ * one list.
  */
-const STATE_CONDITIONS = {
-  parent: { key: '::parent', negate: false },
-  childless: { key: '::parent', negate: true },
-  child: { key: '::child', negate: false },
-  orphan: { key: '::child', negate: true },
-  selected: { key: '::selected', negate: false },
-  selectable: { key: '::selectable', negate: false },
-  locked: { key: '::locked', negate: false },
-  grabbed: { key: '::grabbed', negate: false },
-  grabbable: { key: '::grabbable', negate: false },
-  active: { key: '::active', negate: false },
-  hovered: { key: '::hovered', negate: false },
-} as const satisfies Record<string, { key: string; negate: boolean }>;
+export const STATE_CONDITIONS = {
+  parent: { key: '::parent', negate: false, nodesOnly: true },
+  childless: { key: '::parent', negate: true, nodesOnly: true },
+  child: { key: '::child', negate: false, nodesOnly: true },
+  orphan: { key: '::child', negate: true, nodesOnly: true },
+  selected: { key: '::selected', negate: false, nodesOnly: false },
+  selectable: { key: '::selectable', negate: false, nodesOnly: false },
+  locked: { key: '::locked', negate: false, nodesOnly: false },
+  grabbed: { key: '::grabbed', negate: false, nodesOnly: false },
+  grabbable: { key: '::grabbable', negate: false, nodesOnly: false },
+  active: { key: '::active', negate: false, nodesOnly: false },
+  hovered: { key: '::hovered', negate: false, nodesOnly: false },
+} as const satisfies Record<
+  string,
+  { key: string; negate: boolean; nodesOnly: boolean }
+>;
 
-const STATE_KEYS = Object.keys(
+/** The spellings a sheet or a query may use, in declaration order. */
+export const STATE_NAMES = Object.keys(
   STATE_CONDITIONS,
 ) as (keyof typeof STATE_CONDITIONS)[];
+
+const STATE_KEYS = STATE_NAMES;
 
 /** The reserved keys a flag condition compiles to, deduped. */
 export const STATE_CONDITION_KEYS: readonly string[] = [

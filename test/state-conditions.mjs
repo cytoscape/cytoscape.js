@@ -185,6 +185,150 @@ describe('gpu/style: state conditions (round 57.1)', function () {
     });
   });
 
+  describe('one vocabulary for querying and for styling', function () {
+    // The property, not a sample of it: every state you can *style* on you
+    // can also *query* for, because `matcher.mts` compiles queries from
+    // the same table `style-scales.mts` compiles conditions from.  Before
+    // round 57.1 they were two hand-written lists and the query one was
+    // three entries shorter — which is the failure this spec exists to
+    // make impossible rather than merely absent.
+    const STATES = [
+      'parent',
+      'childless',
+      'child',
+      'orphan',
+      'selected',
+      'selectable',
+      'locked',
+      'grabbed',
+      'grabbable',
+      'active',
+      'hovered',
+    ];
+
+    it('accepts every state as a query key and as a condition', function () {
+      const cy = cytoscape({ elements: [{ data: { id: 'a' } }] });
+
+      for (const state of STATES) {
+        for (const value of [true, false]) {
+          expect(
+            () => cy.nodes({ [state]: value }),
+            `query { ${state}: ${value} }`,
+          ).to.not.throw();
+          expect(
+            () =>
+              cytoscape({
+                elements: [{ data: { id: 'a' } }],
+                style: {
+                  nodes: {
+                    'border-width': {
+                      case: [{ when: { [state]: value }, then: 7 }],
+                      else: 1,
+                    },
+                  },
+                },
+              }),
+            `condition { ${state}: ${value} }`,
+          ).to.not.throw();
+        }
+      }
+    });
+
+    it('lists every state in the unknown-key error', function () {
+      // the error is the discoverability surface for a vocabulary with no
+      // selector language behind it, so it has to be complete
+      let message = '';
+
+      try {
+        cytoscape({ elements: [] }).nodes({ notAState: true });
+      } catch (e) {
+        message = e.message;
+      }
+
+      expect(message).to.match(/^Unknown query key 'notAState'/);
+
+      for (const state of STATES) {
+        expect(message, `the error should name '${state}'`).to.contain(state);
+      }
+    });
+
+    it('answers the same question either way', function () {
+      // a query and a condition over the same state must agree element for
+      // element — they are two compilations of one table, and this is what
+      // says the second compilation is right
+      const cy = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+        ],
+        style: {
+          nodes: {
+            'border-width': {
+              case: [{ when: { locked: true }, then: 7 }],
+              else: 1,
+            },
+          },
+        },
+      });
+
+      cy.$id('a').lock();
+      cy.$id('c').lock();
+
+      const byQuery = cy
+        .nodes({ locked: true })
+        .map((n) => n.id())
+        .sort();
+      const byStyle = cy
+        .nodes()
+        .filter((n) => n.style('border-width') === 7)
+        .map((n) => n.id())
+        .sort();
+
+      expect(byQuery).to.deep.equal(['a', 'c']);
+      expect(byStyle).to.deep.equal(byQuery);
+    });
+
+    it('reads the structural negations as the negations they are', function () {
+      const cy = cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'c', parent: 'p' } },
+          { data: { id: 'lone' } },
+        ],
+      });
+      const ids = (q) =>
+        cy
+          .nodes(q)
+          .map((n) => n.id())
+          .sort();
+
+      expect(ids({ childless: true })).to.deep.equal(ids({ parent: false }));
+      expect(ids({ orphan: true })).to.deep.equal(ids({ child: false }));
+      expect(ids({ childless: true })).to.deep.equal(['c', 'lone']);
+      expect(ids({ orphan: true })).to.deep.equal(['lone', 'p']);
+    });
+
+    it('keeps the structural keys off edges, naming the one used', function () {
+      const cy = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
+      });
+
+      expect(() => cy.edges({ orphan: true })).to.throw(
+        /'orphan' query key applies to nodes only/,
+      );
+      expect(() => cy.edges({ childless: true })).to.throw(
+        /'childless' query key applies to nodes only/,
+      );
+      // a state that is *not* structural is fine on edges
+      expect(() => cy.edges({ locked: true })).to.not.throw();
+    });
+  });
+
   describe('the flag partition (the default sheet is free)', function () {
     // the def is private; the spec reaches it because the partition is
     // an internal optimisation with no public surface at all — which is

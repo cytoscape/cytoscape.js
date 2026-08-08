@@ -261,6 +261,26 @@ the same table (57.1f).  Regenerating the goldens for it found **six**
 whose committed pixels no longer matched the code, hidden by tolerances
 granted for text antialiasing; the goldens are exact now (57.1e).
 
+**2026-08-08 closed everything fully specced that this machine can
+run.**  **Round 52** landed WGSL minification — 19.0 KiB gzipped off
+the download, pixel-identical under the exact goldens — and **round
+54** the bounds round, taking the compound fixture's fit zoom
+0.607 → 0.822 and catching a pre-existing taxi soundness hole with its
+new randomized sweep on its first run.  (Round 38 landed the same day;
+its entry is above.)
+
+**Round 48 completed** with 48.6, the three
+limit edges its record had left "still to do" — the 256-layer image
+cap, a full glyph atlas and the export texture cap, each specced at
+its exact edge with five controls.  **Round 40's approved
+taxonomy-first prep ran** (198 throw sites classified, ~11 demotion
+candidates; the sitting reacts to a measured list), and **round 41.5's
+docs-first proposal was written** — the preventable-gesture map, at
+the end of this file, awaiting the maintainer's reaction.  What the
+queue holds now is in the "Amended 2026-08-08" paragraph of "Suggested
+sequencing": rounds 40 and 41.5 wait on the maintainer, 46 is
+sketch-specced, and 49–51 need other platforms or release credentials.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -420,6 +440,18 @@ taxonomy-first prep the sitting approved) and the **preventDefault
 enumeration** (item 12, direction set), plus the two conditional
 entries in items 17–18.  The sitting's record is at the end of this
 file.
+
+**2026-08-08: both open questions now have their prep in hand, and
+neither is closed.**  Round 40's approved taxonomy-first prep ran —
+198 throw sites classified, ~11 demotion candidates in two families,
+the measured recommendation in the round-40 section — so its sitting
+reacts to a list rather than starting from the sites.  And item 12's
+docs-first proposal is written ("Round 41.5 docs-first", at the end of
+this file): the toggle map is complete, three of the four tabled rows
+are implementable as emitted today, and the `tapstart` → grab row is
+recommended dropped because the press handler grabs before it emits.
+Each still awaits the maintainer — a sitting for 40, a reaction for
+41.5.
 
 ### Scope calls
 
@@ -15334,7 +15366,8 @@ bakes into the shader where v3 spells them in its default stylesheet.
   — so it read as covered while no spec had ever fired it.  Each is
   fixed by joining the signature before parsing it; the guard got the
   spec round 30.1 would have written, with a message assertion and a
-  control.  `@param` is 239/239 now.  Five `file:line` allowlist entries
+  control.  `@param` is 239/239 now *(240/240 since round 52 added the
+  `wgsl` tag)*.  Five `file:line` allowlist entries
   moved and the gate named all five, which is the failure mode 37.1 was
   built for arriving a third time.  Goldens byte-stable, every parity
   scene at its recorded value.

@@ -46,7 +46,7 @@ for several weeks; `npm test` passes from a clean checkout.
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 43 live v3-vs-v4 pixel-parity scenes, ten of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 601 KiB minified, 163 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
+| Bundle | 612 KiB minified, 165 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.

@@ -4631,9 +4631,10 @@ it here in round 57.4.*
   modules remain (`math`, `types`, `util/colors`, `util/position`,
   `util/sort`), now a maintained allowlist in
   `test/modules/import-graph.mjs` and a round-42 call.
-  (`@param` reads **239/239** since round 57.2, not 232: the gate had
-  never seen a member whose parameters *wrapped*, and adopting a
-  formatter made five of them visible at once.)
+  (`@param` reads **240/240** today — 239 when round 57.2 landed, not
+  232: the gate had never seen a member whose parameters *wrapped*, and
+  adopting a formatter made five of them visible at once; round 52's
+  `wgsl` tag is the 240th.)
 - **Two directions logged in round 57, neither scheduled** (PLAN.md's
   ledger items 25 and 26).  **25** would bring the per-element bypass
   *ergonomics* back without the mechanism: `ele.style( name, value )`

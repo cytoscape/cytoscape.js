@@ -989,10 +989,6 @@ test.describe('WebGPU visual goldens', () => {
       'labels-open-sans',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -1063,15 +1059,7 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'edge-labels');
-    checkGolden(
-      'edge-labels',
-      await exportPng(page, { bg: '#fff' }),
-      testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
-    );
+    checkGolden('edge-labels', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
   test('golden: edge label autorotate (angles + the flip rule)', async ({
@@ -1149,10 +1137,6 @@ test.describe('WebGPU visual goldens', () => {
       'edge-label-autorotate',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -1392,10 +1376,6 @@ test.describe('WebGPU visual goldens', () => {
       'curved-edge-labels',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -1648,10 +1628,6 @@ test.describe('WebGPU visual goldens', () => {
       'label-visuals',
       await exportPng(page, { bg: '#888' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -1986,15 +1962,7 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-boxes');
-    checkGolden(
-      'label-boxes',
-      await exportPng(page, { bg: '#fff' }),
-      testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
-    );
+    checkGolden('label-boxes', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
   test('golden: arrow scalars — scale, hollow, stroke widths (round 13 B7)', async ({
@@ -2289,10 +2257,6 @@ test.describe('WebGPU visual goldens', () => {
       'labels-bold-italic',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -2366,15 +2330,7 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-align');
-    checkGolden(
-      'label-align',
-      await exportPng(page, { bg: '#fff' }),
-      testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
-    );
+    checkGolden('label-align', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
   test('golden: source/target labels along straight, bezier, taxi and loop edges (round 13 D4)', async ({
@@ -2459,10 +2415,7 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'end-labels');
-    checkGolden('end-labels', await exportPng(page, { bg: '#fff' }), testInfo, {
-      threshold: 0.25,
-      maxDiffRatio: 0.02,
-    });
+    checkGolden('end-labels', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
   test('golden: compound parents — nesting, padding, borders (round 14.9)', async ({
@@ -2766,10 +2719,6 @@ test.describe('WebGPU visual goldens', () => {
       'images-sdf-icons',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 
@@ -3032,15 +2981,7 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'labels-wrap');
-    checkGolden(
-      'labels-wrap',
-      await exportPng(page, { bg: '#fff' }),
-      testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
-    );
+    checkGolden('labels-wrap', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
   test('golden: wrapped edge labels rotate as a block (round 16.3)', async ({
@@ -3079,10 +3020,6 @@ test.describe('WebGPU visual goldens', () => {
       'labels-wrap-edge',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
-      {
-        threshold: 0.25,
-        maxDiffRatio: 0.02,
-      },
     );
   });
 

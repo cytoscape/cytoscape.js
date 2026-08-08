@@ -101,11 +101,32 @@ export const writeDiffArtifacts = (dir, name, actual, expected, diff) => {
  * without it a missing golden is a failure that says how to create it.
  * On mismatch beyond `maxDiffRatio`, writes actual/expected/diff PNGs
  * into `artifactsDir` (pass testInfo.outputPath('')) and throws.
+ *
+ * **The default is exact — zero differing pixels** (round 57.1e).  It
+ * used to be 0.5%, with eleven label scenes granted 2% on top, and the
+ * cost of that was measured rather than guessed: **six** goldens'
+ * committed PNGs no longer matched what the code rendered, one by
+ * 1.597%, drift accumulated across five label modules and the shaders
+ * over a week of green runs.  A tolerance does not make a golden robust,
+ * it makes it quiet — and "did this change?" is the only question a
+ * golden answers, so a bound that swallows changes leaves it answering
+ * nothing.
+ *
+ * Exact is defensible here because every input is pinned: the visual
+ * project pins SwiftShader, Playwright pins the browser, and the label
+ * font is vendored through `@fontsource/open-sans` in `node_modules`
+ * rather than taken from the system.  Measured over all 45 goldens,
+ * repeatedly and at different worker counts: zero differing pixels.
+ *
+ * So when a browser or driver bump legitimately moves antialiasing, this
+ * fails — and that is the intended behaviour.  Look at the diff, and if
+ * it is the bump, regenerate and commit.  Do not widen the bound: that
+ * is how the six got there.
  */
 export const compareToGolden = (
   name,
   actual,
-  { threshold = 0.1, maxDiffRatio = 0.005, artifactsDir } = {},
+  { threshold = 0, maxDiffRatio = 0, artifactsDir } = {},
 ) => {
   const goldenPath = path.join(GOLDENS_DIR, `${name}.png`);
 

@@ -1066,26 +1066,6 @@ rather than from a blank page.
       *allowed* to make) is the one that proved a 1100-file move
       behaviour-neutral, and it applies here unchanged.
 
-27. **The golden bounds, and what a loose one hides** (raised
-    2026-08-07, from round 57.1d).  Six goldens' committed PNGs disagree
-    with what the code renders — `label-boxes` by **1.597%**,
-    `label-align` by 0.811%, `edge-labels`, `label-visuals`,
-    `labels-open-sans` and `curved-edge-labels` between 0.25% and 0.46%.
-    They pass because each carries a loosened per-golden `maxDiffRatio`
-    (0.02 for `label-boxes`, against the suite's 0.005 default), granted
-    at some point for text antialiasing and wide enough to hide real
-    drift ever since.  All six are label scenes, which is the shape of
-    the problem: text is the one thing whose rasterisation is genuinely
-    allowed to wobble, so it is the one place a generous bound looks
-    justified — and once it is granted, that golden stops answering even
-    "did this change?", which is the *only* question a golden answers.
-    Worth deciding: whether the label goldens should compare a
-    text-insensitive projection (ink coverage per region, or the box
-    geometry alone) at a **tight** bound instead of the whole image at a
-    loose one.  Note what the current arrangement cost: nothing was
-    broken, and nobody could have told from a green run whether anything
-    was.
-
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass (originally on `feature/webgpu`, branched from the TS refactor PR #3477; the work now lives on `v4`) builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.
@@ -15294,8 +15274,60 @@ bakes into the shader where v3 spells them in its default stylesheet.
   carries a loosened per-golden `maxDiffRatio` (0.02 for `label-boxes`),
   which is exactly wide enough to hide it: **a golden with a generous
   bound stops answering even "did this change?"**.  The regenerated PNGs
-  are committed here because they are the accurate ones, and the bounds
-  are worth a look of their own — logged as ledger item 27.
+  are committed here because they are the accurate ones; 57.1e is the
+  fix.
+- [x] **57.1e The goldens are exact** (2026-08-07) — the answer to
+  57.1d's finding, and the answer is not a smaller tolerance.  It is
+  **no tolerance**: `compareToGolden` defaults to zero differing pixels,
+  and the eleven per-golden exemptions are gone.
+
+  The case for it is the measurement, not a principle.  The default was
+  0.5% and eleven label scenes carried 2% on top, and under that
+  arrangement six goldens' committed pixels had drifted from what the
+  code drew — `label-boxes` by **1.597%**, `label-align` by 0.811%, and
+  `edge-labels`, `label-visuals`, `labels-open-sans` and
+  `curved-edge-labels` between 0.25% and 0.46%.  Note that four of the
+  six were under the *default* bound too, so dropping the exemptions
+  alone would have fixed two.
+  **The drift was real code**, which is what settles it: `label-boxes`
+  had not been regenerated since round 13 B6 on 2026-07-31, while
+  `label-layer`, `glyph-atlas`, `glyph-buffer`, `label-layout`,
+  `label-pipeline` and `shaders.mts` all changed underneath it.  A week
+  of green runs over a golden that no longer described the code.
+
+  Exact is affordable because every input is pinned, and each was
+  checked rather than assumed: SwiftShader (the visual project pins it),
+  the browser (Playwright's version), and the font — vendored through
+  `@fontsource/open-sans` in `node_modules`, so it is the same file
+  everywhere rather than a system face.  Measured across all 45 goldens,
+  four full runs at two worker counts: **zero differing pixels**, at
+  pixelmatch threshold 0.  Then the whole `visual` project at the new
+  default: 113 passed.
+
+  The one variance source a web font cannot pin is the *platform* —
+  Chrome rasters the atlas through CoreText on macOS and FreeType on
+  Linux — and this is where the old bound came from.  It is now handled
+  by saying where the goldens live rather than by widening them: they are
+  generated on Linux and gated on Linux, which is where CI runs the
+  `visual` job.  A maintainer on macOS will see the label scenes differ,
+  and that is the platform showing; the documented answer is to read the
+  diff, not to regenerate on the wrong platform and not to widen the
+  bound.  Per-platform goldens stay the reserve escape hatch.
+
+  **The control is the point of the round, so it was run.**  Widening the
+  text-border band by 15% — a change to one multiply in the label
+  fragment shader — moves `label-boxes` by **12 px, 0.010%**.  The old
+  bound was 2% *and* a per-pixel colour threshold of 0.25, so it would
+  have swallowed that two hundred times over; the exact bound fails on
+  it.  Twelve pixels is the scale of thing a golden ought to notice, and
+  is roughly a fortieth of the drift that had already accumulated
+  unnoticed.
+
+  So a browser or driver bump that legitimately moves antialiasing will
+  now fail the suite.  That is the intended behaviour and the whole
+  point: it is a change to the rendered output, which is the only thing
+  a golden is for.  `AGENTS.md` and `src/README.md` both say so at the
+  point where someone reaching for a wider bound would read them.
 - [x] **57.7 Closing docs sweep** (2026-08-07) — both documents end to
   end plus `AGENTS.md`, and the `EXECUTIVE_SUMMARY.md` rewrite the
   standing rule requires when a round closes.  The three named drift

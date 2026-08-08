@@ -430,15 +430,14 @@ shader over every allocated slot.
 
   Browser tests: the `renderer` Playwright project, plus the
   `visual` project — golden-image diffs (pixelmatch against PNGs
-  in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so
-  the goldens are machine-independent; regenerate intended changes with
-  `UPDATE_GOLDENS=1`) and live v3-vs-v4 parity diffs
-  (`playwright-page/parity.html` renders both renderers side by side —
-  no v3 baselines are checked in).  The two answer different
+  in `playwright-tests/goldens/`, pinned to the SwiftShader adapter and
+  **exact** since round 57.1e — zero differing pixels; regenerate
+  intended changes with `UPDATE_GOLDENS=1`) and live v3-vs-v4 parity
+  diffs (`playwright-page/parity.html` renders both renderers side by
+  side — no v3 baselines are checked in).  The two answer different
   questions, and round 27 is the cautionary tale: a golden compares
-  v4 against *its own* previous output at a 0.5% tolerance, so it
-  asks "did this change?", while only the parity diff asks "is this
-  right?".  v4's arrow sizing deviated from v3 at every width and
+  v4 against *its own* previous output, so it asks "did this change?",
+  while only the parity diff asks "is this right?".  v4's arrow sizing deviated from v3 at every width and
   the arrow goldens passed throughout, before and after the fix.
   **Anything claiming v3 parity needs the parity diff**, and a new
   parity test should be run once with its feature disabled to prove
@@ -1597,14 +1596,24 @@ each is deliberate, not a pass-1 deferral:
   way.
 
   Per-element fonts would re-key the atlas by (font, char) and
-  are out of scope.  Label-test reliability comes from pinning all three
-  variance sources: the *font file* (a vendored OFL web font, Open Sans
-  via devDependency, loaded with FontFace before instance creation), the
-  *GPU* (the SwiftShader-pinned visual project), and *tolerance* for the
-  one layer a web font cannot pin — Chrome rasters the atlas via
-  CoreText on macOS and FreeType on Linux, so label goldens carry a
-  looser diff bound than geometry goldens (per-platform goldens are the
-  reserve escape hatch if CI proves that insufficient).
+  are out of scope.  Label-test reliability comes from pinning every
+  variance source rather than tolerating any: the *font file* (a vendored
+  OFL web font, Open Sans via devDependency, loaded with FontFace before
+  instance creation), the *GPU* (the SwiftShader-pinned visual project),
+  the *browser* (Playwright's, by version) — and the *platform*, which is
+  the one a web font cannot pin, since Chrome rasters the atlas through
+  CoreText on macOS and FreeType on Linux.
+
+  Round 57.1e settled that last one the other way from how it started.
+  Label goldens used to carry a looser diff bound for it, and the bound
+  turned out to hide **six** goldens whose committed pixels no longer
+  matched what the code drew — one by 1.597%, accumulated over a week of
+  green runs.  The goldens are **exact** now, generated on Linux and
+  gated on Linux, which is where CI runs them.  A maintainer on macOS
+  will see the label scenes differ; that is the platform showing, not a
+  regression, and the answer is to read the diff rather than to
+  regenerate on the wrong platform or to widen the bound.  Per-platform
+  goldens remain the reserve escape hatch if that becomes a real cost.
 
   Footgun, and
   why specs pre-load the font: the atlas rasters glyphs lazily and

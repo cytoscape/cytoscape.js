@@ -265,4 +265,81 @@ describe('Algorithms', function(){
       expect(resD.pathTo(nodes[1][5]).stdFilter(isNode).map(ele2id)).to.deep.equal(path);
     });
   });
+
+  describe('eles.aStar() with edge weights', function(){
+
+    var cy;
+
+    beforeEach(function(done){
+      cytoscape({
+        elements: {
+          nodes: [
+            { data: { id: 'a' } },
+            { data: { id: 'b' } },
+            { data: { id: 'c' } },
+            { data: { id: 'd' } }
+          ],
+
+          edges: [
+            { data: { id: 'ab', source: 'a', target: 'b', weight: 4 } },
+            { data: { id: 'ac', source: 'a', target: 'c', weight: 6 } },
+            { data: { id: 'ad', source: 'a', target: 'd', weight: 1 } },
+            { data: { id: 'dc', source: 'd', target: 'c', weight: 1 } },
+            { data: { id: 'cb', source: 'c', target: 'b', weight: 1 } }
+          ]
+        },
+
+        ready: function(){
+          cy = this;
+
+          done();
+        }
+      });
+    });
+
+    function weight( edge ){
+      return edge.data('weight');
+    }
+
+    function ele2id( ele ){
+      return ele.id();
+    }
+
+    function isNode( ele ){
+      return ele.isNode();
+    }
+
+    // a-d-c-b costs 3 while the direct a-b edge costs 4.  The cheaper route is only
+    // taken if c is re-prioritised in the open set when d lowers its score to 2.
+    it('eles.aStar(): weighted: a node already in the open set can be reached more cheaply', function(){
+      var res = cy.elements().aStar({ root: cy.$('#a'), goal: cy.$('#b'), weight: weight });
+
+      expect(res.found).to.equal(true);
+      expect(res.distance).to.equal(3);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "d", "c", "b"]);
+    });
+
+    [true, false].forEach(function( directed ){
+      it('eles.aStar(): weighted, ' + (directed ? 'directed' : 'undirected') + ': same as dijkstra', function(){
+        var nodes = cy.nodes();
+
+        for( var i = 0; i < nodes.length; i++ ){
+          var root = nodes[i];
+          var resD = cy.elements().dijkstra({ root: root, weight: weight, directed: directed });
+
+          for( var j = 0; j < nodes.length; j++ ){
+            var goal = nodes[j];
+            var res = cy.elements().aStar({ root: root, goal: goal, weight: weight, directed: directed });
+            var msg = root.id() + ' to ' + goal.id();
+
+            expect(res.found, msg).to.equal(resD.distanceTo(goal) !== Infinity);
+
+            if( res.found ){
+              expect(res.distance, msg).to.equal(resD.distanceTo(goal));
+            }
+          }
+        }
+      });
+    });
+  });
 });

@@ -142,6 +142,10 @@ let elesfn = ({
         if( tempScore < gScore[ wid ] ){
           gScore[ wid ] = tempScore;
           fScore[ wid ] = tempScore + heuristic( w );
+
+          // the heap is ordered by fScore, so it must be resorted for the new value
+          openSet.updateItem( w );
+
           cameFrom[ wid ] = cMin;
           cameFromEdge[ wid ] = e;
         }

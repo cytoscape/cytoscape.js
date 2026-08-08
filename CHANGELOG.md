@@ -60,6 +60,11 @@ that compile and then behave differently.
   imported class or object; `LayoutContext` is columnar-first, and it,
   `LayoutImpl` and `CustomLayout` are exported types, so an external layout
   author writes against real types rather than `any`.
+- **Border and outline stroke styles on every shape** — `border-style`
+  (`solid`/`dashed`/`dotted`/`double`, with v3's erase behaviour for
+  `double`), `outline-style`, and `border-dash-pattern`/`-offset`. Dash
+  patterns follow each shape's outline with the phase anchored where v3's
+  canvas path starts, including exact elliptic arc length.
 - **`chart`** — v3's 101 numbered pie/stripe properties as one list-valued
   family with data-driven values, scheme palettes and donut holes.
 - **`visibility`** as a paint-only style property beside the structural

@@ -66,6 +66,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
   - `scripts/machine-info.mjs`: `npm run machine` — CPU/cores/clock, RAM, OS, and a GPU *inventory* with VRAM, for benchmark provenance.  Parsers are pure and exported; probes are separate and never throw.
   - `scripts/benchmark-publish.mjs`: `npm run benchmark:publish` — promotes a local run into the tracked `benchmark/published/`.
   - `scripts/theme.mjs`: the design tokens and `esc`, shared by the benchmark report and the status site so the two read as one system.
+  - `scripts/wgsl-minify.mjs`: the round-52 build transform behind the WGSL note above — `minifyWgslTemplate`/`transformWgslTags` are pure and spec'd (`test/modules/wgsl-minify.mjs`); `wgslMinifyPlugin()` is what `rolldown.config.mjs` wires into every bundle.
 - `.github/workflows/`: CI and release workflows.  `tests.yml` runs both projects; the three release workflows are still v3's and are **marked as not yet adapted** (round 50 owns them) — they stay at the root only because GitHub reads workflows nowhere else.
 - `v3/`: Cytoscape.js v3, whole and self-contained — `v3/src/`, `v3/test/`, `v3/benchmark/`, `v3/debug/`, `v3/documentation/`, `v3/playwright-tests/` (port **3334**, so a stray server cannot be mistaken for v4's on 3333), and its own build/tsconfig/package.json.
 

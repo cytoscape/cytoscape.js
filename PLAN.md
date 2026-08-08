@@ -3136,7 +3136,7 @@ per-item history.)*
    `sdPolygon( inward-offset ) − r` — the identity that makes
    corner-rounding exact under anisotropic scaling, which is what
    the earlier "no clean closed form" note had missed.  **v3's
-   node-shape vocabulary is complete.**  Still open:
+   node-shape vocabulary is complete.**  ~~Still open:~~
    `border-style`/`outline-style`, held for exactly the scope call
    this item's own sentence above asks for — see the round-27.8
    entry for the three cost tiers.  (Call taken 2026-08-04: **full
@@ -3797,7 +3797,8 @@ belongs to a different curve kind.  It also leaves one thing logged and
 unbuilt — a **bounds round** for the conservative fit box, which grows a
 disc around each endpoint *centre* by a *global* node-half maximum where
 several kinds' geometry is directional and per-edge; the compound
-fixture still fits at ~1.8× its exact box after 43.13.
+fixture still fit at ~1.8× its exact box after 43.13.  *(That round
+became round 54 and landed 2026-08-08: fit zoom 0.607 → 0.822.)*
 
 **As of 2026-08-06, what remains** (supersedes the paragraph above,
 after rounds 46.6, 52's scoping, 53–53.2 and the sixth design sitting).
@@ -3913,6 +3914,27 @@ question for the maintainer — they are directions with their
 measure-this-first noted, which is the form that makes an idea pickable
 up later.  They are also the concrete demonstration of the sentence
 above: the list grew by two in the same week it was called incomplete.
+
+**Amended 2026-08-08 — three rounds landed in one pass.**  Everything
+in the unbuilt list that was fully specced and runnable on this machine
+closed in a day: **round 52** (WGSL minification — 19.0 KiB gzipped off
+the download, pixel-identical by the exact goldens), **round 54** (the
+bounds round — fit zoom 0.607 → 0.822 on the compound fixture, and its
+new randomized sweep caught a pre-existing taxi soundness hole on its
+first run), and **round 38** (`border-style`/`outline-style` at full
+coverage — the last unported style pair, with the plan's own ellipse
+approximation replaced by exact arc length after its deviation scene
+failed to discriminate).  Round 40's approved taxonomy-first prep also
+ran: 198 throw sites classified, ~11 demotion candidates in two
+families, the measured recommendation in the round-40 section.
+
+What the queue now holds: **round 40** (blocked on its design sitting,
+prep done), **41.5** (blocked on its docs-first proposal for the
+maintainer), **round 46** (the docs site — unblocked but large and only
+sketch-specced), **rounds 49–51** (other platforms, release
+credentials, the bake), round 48's documented limit edges, and round
+44's release-time act.  Nothing else fully specced remains buildable
+without the maintainer or different hardware.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

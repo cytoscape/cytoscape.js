@@ -2800,11 +2800,14 @@ and reports which the Node suite reaches, the same way
   place — the keys are `file:line`, and round 34 moved a site out from
   under its entry by inserting two methods above it.  An unchecked
   exemption silently transfers to whatever line lands on the number.
-- **Reading (2026-08-05, after round 48)**: **197 sites — 182 run by
+- **Reading (2026-08-08, after round 38)**: **198 sites — 183 run by
   the Node suite**, **10 browser-only, 5 unreachable by design**, **0
-  Node-reachable and never run**.
+  Node-reachable and never run**.  (Round 38's stroke-style guard is
+  the 198th; the round-40 prep in PLAN.md classifies all 198 into
+  contract vs recoverable tiers for the pending sitting.)
 
-  Round 36.4 read 191/176 with the
+  The 2026-08-05 reading after round 48 was 197/182 with the same
+  three classifications; round 36.4 read 191/176 with the
   same three classifications; round 41's emitter added one Node-run
   site, and round 48.3's fuzzing added five more — the guards it
   needed for corrupt dictionary indices, packed-id blob lengths and
@@ -3926,9 +3929,10 @@ fragment premium is **unmeasurable at scene level** on real hardware
   `text-border-width`/`-color`/`-opacity` (a band inward from the
   padded background box) and `text-background-shape`
   (rectangle | round-rectangle, v3's auto radius); `text-border-style`
-  stays out with the dash-a-boundary styles — a **round-38** question,
-  where the scope call (full coverage, every shape) is taken but three
-  sub-calls found while scoping it are not; see PLAN.md's open call 1.
+  stays out — round 38 (landed 2026-08-08) built the dash-a-boundary
+  styles for node borders and outlines and took the reserved docs-first
+  call the other way for the label box: it is a different pipeline, and
+  nothing the round built makes it free.  See the border-style section.
 
   `text-rotation` takes a **number of radians** on any label since
   round 27.7, alongside the `autorotate` keyword (edge labels only —

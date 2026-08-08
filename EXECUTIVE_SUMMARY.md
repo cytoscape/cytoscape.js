@@ -12,9 +12,8 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-07, covering work through round 57 — the cleanup
-  round, which turned out to be mostly a round about what its own tools could
-  not see.
+- **Last updated**: 2026-08-08, covering work through round 57 and the
+  out-of-order round 52 (shader minification), which landed last.
 
 ---
 
@@ -39,12 +38,12 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,078 unit · 263 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,078 unit · 280 module · 24 soak · 323 browser (220 run; 103 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 45 golden images, compared **exactly** — zero differing pixels · 38 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 685 KiB minified, 187 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
+| Bundle | 601 KiB minified, 163 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -59,7 +58,7 @@ free the vertex-shader binding that would let **edge labels and the casing
 strokes** see the arrow trim.
 
 The unbuilt work that *is* decided — `border-style`, the documentation site,
-shader minification, a tighter compound-fit bound, release engineering — is
+a tighter compound-fit bound, release engineering — is
 scheduled. That list is what has been written down; it is not a complete
 account of what 4.0 needs, and round 57 demonstrated as much by adding two
 more entries to it in the same week it said so: bringing the per-element
@@ -132,9 +131,10 @@ it.
 
 ---
 
-## Week 3 — 3–7 August: hardening, release preparation, a CI reckoning, and three rounds that began with someone looking at the screen
+## Week 3 — 3–8 August: hardening, release preparation, a CI reckoning, and three rounds that began with someone looking at the screen
 
-*Rounds 28–57.*
+*Rounds 28–57, and round 52 (numbered out of order — it was scoped late and
+landed last).*
 
 With the feature ledger closed, the work moved to what was *unpinned* rather
 than unbuilt — contracts, documentation, packaging and robustness.
@@ -396,6 +396,21 @@ that turned the boolean `true` into the string `"true"`, so every arrowhead
 rendered filled where half should have been hollow — twelve identical heads,
 entirely plausible on screen, and exactly what the spec was named to catch.
 
+**The bundle-size answer landed** (8 August). The maintainer had asked why
+v4's bundle outweighs v3's, and the measured answer was that a quarter of it
+was WebGPU shader source, which a JavaScript minifier ships verbatim because
+it does not touch string contents. The shaders are now minified at build
+time — comments stripped, whitespace collapsed, every interpolation left
+byte-for-byte intact — taking the download from 182 to 163 KiB gzipped, a
+10% cut for thirty-odd lines of build transform and no new dependency. Most
+of the saving is comment prose, which gzip cannot deduplicate the way it
+does repetitive code. The gate is the point: the browser now runs shader
+text no human wrote, so the change shipped behind the exact-golden pixel
+comparison (zero differing pixels across all 45 references), a token-stream
+audit of every shader through an independent tokenizer, and the live
+v3-parity scenes — plus the planned control, a deliberately naive transform
+that must (and does) mangle the fixture the real one preserves.
+
 ---
 
 ## What remains before 4.0
@@ -410,7 +425,7 @@ A design sitting on 2026-08-06 swept the accumulated open decisions: the
 erase behaviour of double borders; two dash properties port; cap/join are
 dropped with the deviation recorded), three surface changes made without a
 call were reviewed and ratified, and shader minification moved from
-optional to scheduled.
+optional to scheduled (it landed two days later — see week 3).
 
 | | needs |
 |---|---|
@@ -421,7 +436,6 @@ optional to scheduled.
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
-| WGSL minification (round 52) | decided — the comment-strip build step lands **before the alpha**, worth 10% of the download, gated by pixel-identical output |
 | Compound fit bound (round 54) | scheduled — `fit()` still over-frames compound graphs ~1.8×; a directional, per-edge bound replaces the disc-around-centres formulation |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |

@@ -610,20 +610,15 @@ ${COMMON}
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
 
-  var rec = layers[slot];
+  // Round 57.1 removed a second admission rule here, which admitted
+  // *active* nodes carrying no overlay of their own so the shader could
+  // substitute v3's press wash for them — a constant this kernel and the
+  // layer shader each held a copy of, with a comment saying the two had
+  // to agree.  The press writes a real overlay record now, so a pressed
+  // node is admitted by the ordinary test below.
+  let rec = layers[slot];
 
-  // round 57.1c: an *active* node with no overlay of its own draws v3's
-  // :active wash, so it has to survive the cull.  The substitution is
-  // the same one the layer shader makes (black 25%, padding 10) and the
-  // two must agree or a pressed node is culled and then drawn, or drawn
-  // at the wrong extent.  This kernel serves both layers, so it admits
-  // active nodes for the underlay too — one extra instance per pressed
-  // element, which the underlay's own entry point then collapses.
-  if ((rec.x >> 24u) == 0u) {
-    if ((nodeFlags[slot] & FLAG_ACTIVE) == 0u) { return false; }
-
-    rec = vec4u(0x40000000u, 10u * 256u, 0u, 0xffffffffu);
-  }
+  if ((rec.x >> 24u) == 0u) { return false; }
 
   let padding = f32(rec.y) / 256.0 * frame.zoomDpr;
   let ext = sizes[slot] * 0.5 * frame.zoomDpr + vec2f(padding + 1.0);

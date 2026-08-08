@@ -109,10 +109,6 @@ ${FRAME_STRUCT}
 
 const FLAG_ALIVE: u32 = 1u;
 const FLAG_VISIBLE: u32 = 2u;
-const FLAG_SELECTED: u32 = 4u;
-const FLAG_GRABBED: u32 = 16u;
-const FLAG_HOVERED: u32 = 32u;
-const FLAG_ACTIVE: u32 = 256u; // pressed — v3's :active (round 57.1c)
 const FLAG_CURVED: u32 = 1024u; // edge renders in the curved stream (store-managed)
 // the curve is not chord-bounded (taxi, extrapolated weights): cull by
 // the endpoint AABB grown by slack + chord length instead (12b)
@@ -123,18 +119,16 @@ const FLAG_PARENT: u32 = 4096u;
 const FLAG_NO_EVENTS: u32 = 32768u; // 20.2: pointer-transparent (pick-mode culls only)
 const SHOWN: u32 = 262145u; // ALIVE | DRAWN (round 22: the draw tier — visibility folds in)
 
-// v3's default stylesheet, drawn rather than restyled (round 57.1).  v4
-// has no selector blocks and does not re-run the style engine on
-// selection — round 4's select/unselect fast path rests on that — so the
-// three rules v3 spells as :selected, :parent:selected and :active
-// are *shader* constants here.  The values are v3's own, verbatim.
+// Selection has no shader constant since round 57.1: v4's *default
+// stylesheet* gives it a colour, as a { selected: true } case mapper on
+// the node fill, the edge line and the four arrow colours.  So the
+// colour arrives here the way every other colour does — resolved into
+// its channel column — and an app that declares those props replaces
+// the rule, which a shader constant could not have allowed.
 //
-// Consequence, recorded: style('background-color') on a selected node
-// still reads the element's own colour.  Stored truth is unchanged; only
-// the pixels differ, exactly as the accent ring this replaces did.
-const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
-const SELECT_PARENT_FILL = vec3f(0.8, 0.88235, 0.97647); // #cce1f9
-const SELECT_PARENT_BORDER = vec3f(0.68235, 0.78431, 0.89804); // #aec8e5
+// v3's :active is still drawn (the layer shader below): it is an
+// *overlay*, and an overlay for a transient pointer state has no stored
+// truth to be the default of.
 
 // early-z depth ranks: the node depth prepass writes NODE_Z for opaque
 // node interiors; edges draw at EDGE_Z with a 'less' test so fragments
@@ -1814,22 +1808,6 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
 
   var edge = 0.0; // coverage boundary: sd <= edge is inked
   let flags = nodeFlags[slot];
-  let selected = (flags & FLAG_SELECTED) != 0u;
-
-  // v3's :selected sets background-color #0169D9 and leaves the border
-  // alone; :parent:selected takes the lighter pair instead.
-  // The *fill* goes blue rather than a ring being drawn at the boundary,
-  // which is what v4 did until round 57.1 — a ring is a different
-  // affordance, and the ask was to look like v3.
-  //
-  // Deliberately outside the !plain branch below: this is a colour
-  // swap with no geometry, so a selected node stays visibly selected at
-  // far zoom where the decorations LOD out.  The alpha is the fill's own,
-  // so background-opacity still applies.
-  if (selected) {
-    color = vec4f(select(SELECT_ACCENT, SELECT_PARENT_FILL,
-      (flags & FLAG_PARENT) != 0u), color.a);
-  }
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
@@ -1839,22 +1817,10 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
-      // a selected *parent* is the one case where v3 recolours the
-      // border too (:parent:selected); a selected leaf keeps its own
-      color = select(unpack4x8unorm(borderColors[slot]),
-        vec4f(SELECT_PARENT_BORDER, 1.0),
-        selected && (flags & FLAG_PARENT) != 0u);
+      color = unpack4x8unorm(borderColors[slot]);
       edge = bOut;
     }
 
-    // hover brighten.  FLAG_GRABBED left this condition in round 57.1:
-    // a pressed element now carries v3's :active overlay, and
-    // brightening it as well would be two affordances for one state.
-    // Hover is a state v3 does not style at all and v4 has no other way
-    // to express, so it stays — a recorded deviation, not an oversight.
-    if ((flags & FLAG_HOVERED) != 0u) {
-      color = vec4f(min(color.rgb + vec3f(0.15), vec3f(1.0)), color.a);
-    }
   }
 
   let mul = opacities[slot] * in.alphaComp;
@@ -2073,12 +2039,6 @@ ${COMMON}
 @group(0) @binding(2) var<storage, read> sizes: array<vec2f>;
 // [rgba, padding*256, shape, radius*256 | 0xffffffff = auto]
 @group(0) @binding(3) var<storage, read> layers: array<vec4u>;
-// round 57.1c: v3's :active is an overlay — black at 25% over 10px of
-// padding — and this is where v4 draws it.  The flag is what the layer
-// reads; nothing about stored truth changes, so style( 'overlay-color' )
-// on a pressed element still answers its own value.
-@group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
-
 struct LayerVSOut {
   @builtin(position) position: vec4f,
   @location(0) local: vec2f,     // device px from the node center
@@ -2088,31 +2048,18 @@ struct LayerVSOut {
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
-// v3's :active block, verbatim: overlay-color black, overlay-padding
-// 10, overlay-opacity 0.25, over the default round-rectangle shape with
-// an 'auto' radius.  Substituted only where the element has styled *no*
-// overlay of its own — a user's overlay is not overridden by a press.
-const ACTIVE_RECORD = vec4u(0x40000000u, 10u * 256u, 0u, 0xffffffffu);
-
-// actives is false for the underlay's entry points below: v3's
-// :active sets overlay-* only, and synthesising it for both layers
-// would darken the padding ring twice.  The instance knows which layer
-// it draws (the column is fixed at construction), so this is an entry
-// point rather than a uniform.
-fn layerRecord(slot: u32, actives: bool) -> vec4u {
-  let rec = layers[slot];
-
-  if ((rec.x >> 24u) != 0u) { return rec; } // the element's own, enabled
-  if (!actives) { return rec; }
-  if ((nodeFlags[slot] & FLAG_ACTIVE) == 0u) { return rec; }
-
-  return ACTIVE_RECORD;
-}
-
-fn layerVS(vi: u32, ii: u32, actives: bool) -> LayerVSOut {
+// Round 57.1 removed a second record here.  v3's :active used to be
+// substituted in this function from the flags word, which meant the
+// press affordance could not be restyled, could not be turned off, and
+// disagreed with style( 'overlay-opacity' ) while it was showing.  It is
+// an ordinary { active: true } case mapper in the default sheet now,
+// so by the time the record reaches this shader a pressed element simply
+// *has* an overlay, and nothing here knows why.
+@vertex
+fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
   var out: LayerVSOut;
   let slot = visible[ii];
-  let padding = f32(layerRecord(slot, actives).y) / 256.0 * frame.zoomDpr;
+  let padding = f32(layers[slot].y) / 256.0 * frame.zoomDpr;
   let half = sizes[slot] * 0.5 * frame.zoomDpr + vec2f(padding);
 
   let centerPx = modelToPx(frame, positions[slot]);
@@ -2126,23 +2073,14 @@ fn layerVS(vi: u32, ii: u32, actives: bool) -> LayerVSOut {
   return out;
 }
 
-@vertex
-fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
-  return layerVS(vi, ii, true);
-}
-
-@vertex
-fn vsLayerPlain(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
-  return layerVS(vi, ii, false);
-}
-
 fn layerRoundRectSD(p: vec2f, b: vec2f, r: f32) -> f32 {
   let q = abs(p) - b + vec2f(r);
   return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - r;
 }
 
-fn layerFS(in: LayerVSOut, actives: bool) -> vec4f {
-  let rec = layerRecord(in.instance, actives);
+@fragment
+fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
+  let rec = layers[in.instance];
   let color = unpack4x8unorm(rec.x);
   var sd = 0.0;
 
@@ -2164,16 +2102,6 @@ fn layerFS(in: LayerVSOut, actives: bool) -> vec4f {
 
   let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * color.a;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
-}
-
-@fragment
-fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
-  return layerFS(in, true);
-}
-
-@fragment
-fn fsLayerPlain(in: LayerVSOut) -> @location(0) vec4f {
-  return layerFS(in, false);
 }
 `;
 
@@ -2198,8 +2126,9 @@ ${DASH_WGSL}
 @group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;
 @group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
-// fragment-stage columns (flat instance fetch; curveParams binds to both
-// stages — the FS skips dashes on straight-triangle fills)
+// fragment-stage columns (flat instance fetch; the FS skips dashes on
+// straight-triangle fills, and reads that kind off a flat varying rather
+// than binding curveParams — round 57.1)
 @group(0) @binding(7) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(8) var<storage, read> opacities: array<f32>;
 @group(0) @binding(9) var<storage, read> lineStyles: array<u32>; // LINE_* ids
@@ -2211,11 +2140,6 @@ ${DASH_WGSL}
 @group(0) @binding(12) var<storage, read> edgeLayer: array<vec2u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(13) var<storage, read> edgeGradients: array<array<u32, 8>>;
-// round 57.1b: v3 recolours a selected edge's line and its arrows, and
-// this is the only column that says so.  It cost nothing to bind
-// because the fragment stage gave up curveParams for it — the FS wanted
-// one number out of that column and now takes it as a flat varying.
-@group(0) @binding(14) var<storage, read> edgeFlags: array<u32>;
 
 // C2: sRGB line gradient over the packed record (same layout as the
 // node background gradient; linear runs along the edge, radial from
@@ -2261,10 +2185,10 @@ struct EdgeVSOut {
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance from the source, model px
   @location(5) @interpolate(flat) totalLen: f32, // model px (C2 gradients)
-  // the curve kind, carried rather than re-read: it freed the fragment
-  // stage's curveParams binding for edge.flags, which is what lets the
-  // FS know an edge is selected (round 57.1b).  The FS wanted exactly
-  // one number out of that column.
+  // the curve kind, carried rather than re-read (round 57.1): the FS
+  // wanted exactly one number out of edge.curveParams — the
+  // straight-triangle kind — and a whole storage binding for one number
+  // is what a stage at its 8-buffer budget cannot afford.
   @location(6) @interpolate(flat) kind: f32,
 }
 
@@ -2392,7 +2316,6 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
   var c = unpack4x8unorm(lineColors[in.instance]);
-  let sel = (edgeFlags[in.instance] & FLAG_SELECTED) != 0u;
 
   // line-fill gradient (C2): linear along the edge, radial from the mid
   let grec = edgeGradients[in.instance];
@@ -2405,11 +2328,6 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
 
     c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
   }
-
-  // v3's :selected sets line-color, which beats a line-fill gradient
-  // for the same reason it beats background-color: it is a later
-  // declaration.  Keeps the resolved alpha, so line-opacity applies.
-  if (sel) { c = vec4f(SELECT_ACCENT, c.a); }
 
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
@@ -2555,9 +2473,6 @@ ${DASH_WGSL}
 @group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(14) var<storage, read> edgeGradients: array<array<u32, 8>>;
-// round 57.1b: v3 recolours a selected edge's line.  Scene entry points
-// only — the layer draw has its own layout and does not bind this.
-@group(0) @binding(15) var<storage, read> edgeFlags: array<u32>;
 
 // C2: sRGB line gradient (same record layout as the node gradient)
 fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
@@ -2739,12 +2654,6 @@ fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
     c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
   }
 
-  // v3's :selected line-color, which beats a line-fill gradient the same
-  // way it beats background-color — it is a later declaration
-  if ((edgeFlags[in.instance] & FLAG_SELECTED) != 0u) {
-    c = vec4f(SELECT_ACCENT, c.a);
-  }
-
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
   // line-style dashes ride the polyline's longitudinal coordinate;
@@ -2917,9 +2826,6 @@ struct End { endId: u32 }
 @group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
 // hollow stroke widths per end, model px (B7)
 @group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
-// round 57.1b: v3's :selected recolours all four arrow colours along
-// with the line, so the head follows its edge.  Fragment-only.
-@group(0) @binding(11) var<storage, read> edgeFlags: array<u32>;
 // curve params: the mid entry point reads the haystack kind (C1)
 @group(0) @binding(10) var<storage, read> curveParams: array<vec4f>;
 
@@ -3107,13 +3013,7 @@ ${ARROW_POLY.cases}
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = in.color.a * arrowCoverage(sd, hollow, strokePx);
-  // v3 recolours source/target/mid arrow colours with the line, so a
-  // selected edge's heads follow it.  The stored alpha is kept: it
-  // carries the opacity fold (edge opacity x line-opacity, round 13 B1)
-  let rgb = select(in.color.rgb, SELECT_ACCENT,
-    (edgeFlags[in.slot] & FLAG_SELECTED) != 0u);
-
-  return vec4f(rgb * alpha, alpha); // premultiplied
+  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 
 // Mid arrows (C1): tip at the edge midpoint (the haystack offset
@@ -3224,9 +3124,6 @@ struct End { endId: u32 }
 @group(0) @binding(9) var<storage, read> arrows: array<u32>;
 @group(0) @binding(10) var<storage, read> arrowShapes: array<u32>;
 @group(0) @binding(11) var<storage, read> arrowWidths: array<vec2f>;
-// round 57.1b: v3's :selected recolours all four arrow colours along
-// with the line, so the head follows its edge.  Fragment-only.
-@group(0) @binding(12) var<storage, read> edgeFlags: array<u32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -3426,13 +3323,7 @@ ${ARROW_POLY.cases}
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
-  // v3 recolours source/target/mid arrow colours with the line, so a
-  // selected edge's heads follow it.  The stored alpha is kept: it
-  // carries the opacity fold (edge opacity x line-opacity, round 13 B1)
-  let rgb = select(c.rgb, SELECT_ACCENT,
-    (edgeFlags[in.slot] & FLAG_SELECTED) != 0u);
-
-  return vec4f(rgb * alpha, alpha); // premultiplied
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 
 // Mid arrows on curved edges (C1): tip at the curve/route midpoint,

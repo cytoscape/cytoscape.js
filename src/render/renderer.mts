@@ -1927,10 +1927,7 @@ export class Renderer {
       );
     }
 
-    if (
-      (store.overlayCount() > 0 || store.activeCount() > 0) &&
-      cull.overlay != null
-    ) {
+    if (store.overlayCount() > 0 && cull.overlay != null) {
       this.overlays()?.draw(
         pass,
         device,
@@ -2142,10 +2139,7 @@ export class Renderer {
       mirror.buffer(id),
     ];
 
-    if (
-      (store.overlayCount() > 0 || store.activeCount() > 0) &&
-      groups.overlay != null
-    ) {
+    if (store.overlayCount() > 0 && groups.overlay != null) {
       groups.overlay.ensure(
         uniform,
         Math.max(1, store.capacity('nodes')),
@@ -2258,10 +2252,7 @@ export class Renderer {
       groups.ghost.encode(pass, store.highWater('nodes'));
     }
 
-    if (
-      (store.overlayCount() > 0 || store.activeCount() > 0) &&
-      groups.overlay != null
-    ) {
+    if (store.overlayCount() > 0 && groups.overlay != null) {
       groups.overlay.encode(pass, store.highWater('nodes'));
     }
 

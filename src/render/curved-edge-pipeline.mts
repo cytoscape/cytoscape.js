@@ -107,14 +107,6 @@ export class CurvedEdgePipeline {
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
-        {
-          // the flags column (round 57.1b): v3 recolours a selected
-          // edge's line.  Scene layout only — the layer entry points do
-          // not tint, since v3 does not restyle an overlay on selection
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
-          visibility: SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
-        },
       ],
     });
 
@@ -261,10 +253,6 @@ export class CurvedEdgePipeline {
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
                 resource: { buffer: mirror.buffer('edge.gradient') },
-              },
-              {
-                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
-                resource: { buffer: mirror.buffer('edge.flags') },
               },
             ]),
       ],

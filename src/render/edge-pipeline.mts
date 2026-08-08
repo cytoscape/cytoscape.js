@@ -24,9 +24,10 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
   { id: 'edge.endpoints', stages: V },
   { id: 'edge.width', stages: V },
   { id: 'node.position', stages: V },
-  // vertex-only since round 57.1b: the fragment stage wanted exactly one
-  // number out of it (the straight-triangle kind) and now takes that as
-  // a flat varying, which freed its slot for edge.flags below
+  // vertex-only since round 57.1: the fragment stage wanted exactly one
+  // number out of it — the straight-triangle kind, for the dash branch —
+  // and takes that as a flat varying instead.  A whole storage binding
+  // for one number is what a stage at its 8-buffer budget cannot afford
   { id: 'edge.curveParams', stages: V },
   { id: 'node.outerHalf', stages: V },
   { id: 'node.shape', stages: V },
@@ -97,13 +98,6 @@ export class EdgePipeline {
         {
           // the line-fill gradient record (C2), fragment-only
           binding: EDGE_COLUMNS.length + 2,
-          visibility: F,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
-        },
-        {
-          // the flags column (round 57.1b): v3 recolours a selected
-          // edge's line, and v4 draws that rather than restyling
-          binding: EDGE_COLUMNS.length + 3,
           visibility: F,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
@@ -203,10 +197,6 @@ export class EdgePipeline {
         {
           binding: EDGE_COLUMNS.length + 2,
           resource: { buffer: mirror.buffer('edge.gradient') },
-        },
-        {
-          binding: EDGE_COLUMNS.length + 3,
-          resource: { buffer: mirror.buffer('edge.flags') },
         },
       ],
     });

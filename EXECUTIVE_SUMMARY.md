@@ -348,13 +348,32 @@ it. Both are drawn now, and a new side-by-side comparison against v3 covering
 selected nodes, a selected compound group, straight and curved selected edges
 and their arrowheads reads **zero differing pixels**.
 
-Building it surfaced a divergence the round could easily have shipped in
-silence. In v3 the selection colour is a *default* — any stylesheet that names
-its own node colour overrides it, and a styled v3 app shows no selection
-colour at all unless it writes its own rule. v4 has no such rule to write, so
-copying v3 exactly would leave an application no way to make selection
-visible. v4's colour therefore always wins; the divergence is recorded, with
-the mechanism that would reverse it, rather than left to be discovered.
+Building it surfaced a divergence, and then the divergence turned out to be
+the actual question. In v3 the selection colour is a *default* — any
+stylesheet that names its own node colour overrides it, and a styled v3 app
+shows no selection colour at all unless it writes its own rule. The first
+attempt drew v4's colour inside the shader, where it always won, and recorded
+the difference as accepted on the grounds that v4 had no rule an application
+could write instead.
+
+That premise was false, which is the useful part. v4 has no selectors, but it
+has **conditions**: a style value can already say "this colour when the datum
+says so". Making it say "this colour when the element is selected" needed no
+new concept at all — and once state is a condition, v3's whole state
+vocabulary follows. `:selected`, `:active`, `:locked`, `:grabbed` and the rest
+are now conditions an application writes, the affordances v3 gives you for
+free are entries in v4's own default stylesheet that any later block replaces,
+and the hard-coded highlights came out of the shaders altogether — including a
+hover brighten no test had ever covered and no stylesheet could turn off.
+
+Two things make it more than a relocation. A state condition is not tied to
+any one property: an element can change *width* when pressed, which a shader
+constant could never have allowed, and the bounding box, culling and hit
+testing all follow. And the affordances are free — a stylesheet made of state
+rules would otherwise cost every application a per-element evaluation at load
+for a highlight almost nothing is using, so such a sheet resolves to one
+answer per state combination (two, for the default) rather than one per
+element. A 150,000-element load measures the same either way.
 
 A smaller one, in the same spirit: the specs written for the new demo networks
 found a defect on their first run. A helper built its comparison keys in a way

@@ -198,12 +198,13 @@ things by building it, one of which (a code span in *this file* holding
 `<script>`) broke every page on the site until a browser was pointed at
 it.
 
-**Round 38 has not started**: scoping
+**Round 38 landed 2026-08-08**: scoping
 it found three sub-calls the sitting did not reach (open call 1) —
 **taken at the sixth design sitting (2026-08-06)**, which swept the
 whole open backlog (items 14–16 ratified, round 52's build-step call
 taken, item 12 given its direction, the round-54 bounds round
-scheduled), so round 38 is unblocked.  **Round 40 is a design
+scheduled) — and the round then built the full scope, its record beside
+the plan.  **Round 40 is a design
 sitting**, its taxonomy-first prep approved at the same sitting.
 
 **Round 55** (2026-08-06) was then inserted ahead of 38, after a
@@ -488,6 +489,10 @@ file.
      beside the existing edge-layer butt-cut note (dash ends are
      perpendicular cuts by construction), with rows in the migration
      guide.
+   ***Executed — round 38 landed 2026-08-08.***  All three sub-calls
+   shipped as specified; the one thing the build reversed was its own
+   plan's ellipse approximation (exact arc length instead — the
+   deviation could not discriminate; see the round-38 record).
 2. **The overlap box-selection mode** (gap item 8) — v4 selects by
    containment only; v3 also offers overlap.  Deferred as a
    demand-gated hook, not v3-surface-critical.
@@ -3135,10 +3140,10 @@ per-item history.)*
    `border-style`/`outline-style`, held for exactly the scope call
    this item's own sentence above asks for — see the round-27.8
    entry for the three cost tiers.  (Call taken 2026-08-04: **full
-   coverage** — scoped as round 38, which has **not started**: scoping
+   coverage** — scoped as round 38: scoping
    it turned up three further sub-calls the sitting did not reach,
-   logged in open call 1 — all three since taken at the sixth sitting,
-   2026-08-06, so the round is unblocked.)
+   logged in open call 1 — all three taken at the sixth sitting,
+   2026-08-06, and **round 38 landed 2026-08-08**.)
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
@@ -3797,7 +3802,9 @@ fixture still fits at ~1.8× its exact box after 43.13.
 **As of 2026-08-06, what remains** (supersedes the paragraph above,
 after rounds 46.6, 52's scoping, 53–53.2 and the sixth design sitting).
 
-Unbuilt: **round 38** (unblocked — its three sub-calls are taken),
+Unbuilt: ~~**round 38** (unblocked — its three sub-calls are taken)~~ —
+**landed 2026-08-08**, full coverage with five parity scenes and their
+controls —
 **round 40** (the error-policy sitting, taxonomy-first prep approved),
 **41.5** (direction set — explicit toggles first; the enumeration lands
 at its docs-first), **round 46** (the docs site), ~~**round 52** (the
@@ -11820,7 +11827,7 @@ stylesheet using it now throws where it silently worked, which is the
 intended failure but is the sort of thing a migration guide has to carry
 (round 47).
 
-## Round 38 plan — `border-style` / `outline-style`, full coverage (planned 2026-08-04)
+## Round 38 — `border-style` / `outline-style`, full coverage (planned 2026-08-04; landed 2026-08-08)
 
 The last unported v3 style pair, at the scope the sitting chose:
 **every shape**.  The technique has been settled since 27.8; this
@@ -11862,6 +11869,85 @@ round builds all three tiers.
   source before asserting).  A `benchmark/` row prices the
   dashed-polygon fragment premium on the renderer bench (device
   time, dashed vs solid on the same scene).
+
+### Landed (2026-08-08)
+
+The full-coverage scope, delivered, with the plan's own deviation
+budget mostly unspent — measurement kept killing the approximations it
+had authorized.  Every tier, all three sitting sub-calls, and the
+docs-first call the plan reserved (`text-border-style` stays out; the
+label-box border is a different pipeline and nothing here makes it
+free).
+
+- [x] **38.1 The style plumbing.**  Four props on the nodes group:
+  `border-style` / `outline-style` (enums, case-mappable),
+  `border-dash-pattern` (normalized to two on/off pairs exactly like
+  the edge twin; v3's default [4, 2]; constants-only) and
+  `border-dash-offset` (mappable).  The enums ride borderGeom.y bits
+  8..11 — a word the FS already binds — because the node pipeline sits
+  at **exactly 8 fragment-visible storage buffers** in both layouts;
+  the pattern/offset are two new contract columns
+  (`node.borderDash`/`node.borderDashMeta`) bound **vertex-only** and
+  handed to the FS as flat varyings, 57.1b's slot trick in reverse.
+  The ghost pipeline's vertex stage lands at exactly 8 with them.
+  Stored-truth readback, validation (the negative-entry throw shared
+  with the edge twin, its message generalized), and 9 Node specs.
+- [x] **38.2 The perimeter coordinate.**  `perimeterCoord` per shape
+  tier, with u = 0 and direction matching v3's canvas path per shape
+  (read from v3's drawing-shapes source, not assumed): the rectangle
+  4-gon from the top-left corner down the left side; round-rectangle /
+  bottom-round-rectangle arcTo paths from the top middle, clockwise;
+  the cut-rectangle octagon; generated per-polygon walks in the same
+  vertex tables as the SDFs; the custom-polygon blob walk; barrel's
+  sampled corner curves in v3's order (which differs from the SD
+  function's own).  **The plan's angle-parameterized ellipse died by
+  measurement**: its 5.0% parity mismatch exceeded the 3.6% a SOLID
+  border scores, so the recorded-deviation scene could not discriminate
+  — round 27's measuring-nothing case, caught by running the control.
+  What shipped is exact elliptic arc length (composite Simpson, 48
+  intervals, dash-gated) plus a **two-step Newton refinement to the
+  nearest-point parameter**, because the radial estimate shears ±2 px
+  of phase across a ±2.5 px band — found when v3's 2-px-period dots
+  rendered anti-aligned, quantified in Python, worst case after the fix
+  0.003 px.  Round-* shapes walk their source polygon (recorded
+  approximation, measured inside the 0.54% polygon tier).
+- [x] **38.3 The three styles.**  `dashed` = pattern + offset;
+  `dotted` = v3's hardcoded [1, 1], pattern ignored (a parity scene
+  declares a wild [15, 15] pattern on every dotted node to prove the
+  ignoring); `double` = v3's erase as alpha-0 stripe fragments (the
+  sitting's call), with double-bordered nodes excluded from the opaque
+  depth prepass on the gradient-fill precedent.  Outline dashes
+  evaluate at the ring's own radius, reproduce v3's anisotropic
+  expandPolygon pad for the polygon family and the padded corner
+  radius for round-rectangles.  Two recorded deviations: outline dash
+  phase on polygon-family shapes (v3 miters outline corners where
+  v4's ring rounds them — geometrically different paths; the parity
+  scene pins the ellipse family, the golden covers the rest), and
+  `outline-style: double` draws solid (v3's own double-outline erase
+  strokes at *border* width / 3 — a v3 bug, lineWidth 0 when
+  borderless — so there is no sane behaviour to match).  The stripe
+  difference under edges is in the migration guide's re-check table.
+- [x] **38.4 Verification.**  Five live parity scenes, all at zoom 2
+  after the first cut at zoom 1 could not discriminate (the AA fringe
+  smears 2 px gaps — round 56's close-up lesson arriving for borders):
+  closed-form 0.178% / polygons 0.538% / exact-arc ellipses 0.793% /
+  dotted + double 1.190% / ellipse-family outlines 0.791%, bounds
+  0.8–2%, and the five feature-off controls at 4.17 / 4.03 / 3.61 /
+  10.86 / 3.61% — every scene fails with its feature turned off.  A
+  40-cell golden spans every tier × style plus the outline rows parity
+  excludes, with one **ghosted dashed cell** as fsGhost's only pixel
+  coverage — two shader controls run, and the ghost-only one proves
+  that cell is load-bearing.  The renderer bench gained a solid/dashed
+  border scene pair: the accepted ~2× dashed-fragment premium is
+  **unmeasurable at scene level** (3.41 vs 3.41 ms device fit-all,
+  4.48 vs 4.52 ms zoomed-in, RX 580, 25k hexagons).  Full suite:
+  2087 + 283 + 24 Node specs, throw gate 183/10/5/0 (it fired twice
+  during the round — both allowlist keys moved by edits above them,
+  the 37.1 failure mode caught both times), 226 browser specs with
+  every pre-existing golden **byte-stable** — the solid border path is
+  instruction-identical by construction, and the exact goldens are
+  what proves it.  MIGRATING.md (rows + a re-check entry),
+  CHANGELOG.md and the docs updated in-commit.
 
 ## Round 39 plan — the decided feature tail (planned 2026-08-04)
 
@@ -13442,9 +13528,10 @@ selectors nor per-element bypass, so each became a `case` mapper over
 take.  Measured against the running library rather than assumed, only three
 things did not survive:
 
-- **`outline-style: solid`** throws — not ported (round 38).  Solid is the
-  default, so the outline rings on `b`/`c`/`f`/`i` still draw; the declaration
-  is simply dropped.
+- **`outline-style: solid`** threw — not yet ported at the time (round 38
+  has since landed it, and the keyword compiles today).  Solid is the
+  default, so the outline rings on `b`/`c`/`f`/`i` drew either way; the
+  declaration was simply dropped.
 - **`text-rotation: '45deg'`** throws; v4 takes radians.  Converted explicitly
   in the sheet, so the 38°/45° labels rotate as v3's do.
 - **The list-valued curve parameters** — `control-point-distances`/`-weights`,

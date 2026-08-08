@@ -68,6 +68,8 @@ import {
   SHAPE_MASK,
   SHAPE_POLYGON_CUSTOM,
   SHAPE_SHIFT,
+  BORDER_STYLE_SHIFT,
+  OUTLINE_STYLE_SHIFT,
 } from '../contract.mjs';
 import type {
   LabelStream,
@@ -2851,9 +2853,12 @@ export class GraphStore implements ModelView {
   /**
    * Write a node's border/corner/outline record (rounds 13 B2/B5):
    * cornerRadius model px (-1 = auto), borderPosition id, the outline
-   * rgba (opacity pre-folded) and outline width/offset (model px,
-   * u16 fixed-point).  Corner radius and outline extents are geometry
-   * (pick + bb read them), so writes bump the geometry epoch.
+   * rgba (opacity pre-folded), outline width/offset (model px,
+   * u16 fixed-point), and — round 38 — the border/outline stroke-style
+   * enums, packed into bits 8..11 of the position word (see the
+   * contract's stroke style constants).  Corner radius and outline
+   * extents are geometry (pick + bb read them), so writes bump the
+   * geometry epoch.
    */
   setBorderGeom(
     slot: number,
@@ -2864,6 +2869,8 @@ export class GraphStore implements ModelView {
     outlineOffset: number,
     shapeId: number = 0,
     polyRef: number = 0,
+    borderStyle: number = 0,
+    outlineStyle: number = 0,
   ): void {
     const arr = this.nodes.column('node.borderGeom') as Uint32Array;
     const at = slot * 4;
@@ -2886,8 +2893,14 @@ export class GraphStore implements ModelView {
 
     // C2: the node FS reads the shape out of this word (its shapes
     // binding went to the gradient column); 27.1 widened the field from
-    // a nibble to a byte
-    const posShape = (borderPos | (shapeId << SHAPE_SHIFT)) >>> 0;
+    // a nibble to a byte.  Round 38 packs the two stroke-style enums
+    // into bits 8..11 (see the contract's stroke style constants).
+    const posShape =
+      (borderPos |
+        (borderStyle << BORDER_STYLE_SHIFT) |
+        (outlineStyle << OUTLINE_STYLE_SHIFT) |
+        (shapeId << SHAPE_SHIFT)) >>>
+      0;
 
     borderPos = posShape;
     const packedWO =

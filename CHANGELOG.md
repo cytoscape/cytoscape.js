@@ -154,8 +154,10 @@ that compile and then behave differently.
 
 ### Not yet implemented
 
-- `border-style`, `outline-style`, `text-border-style` (and
-  `border-dash-pattern`/`-offset`, `border-cap`/`-join`).
+- `text-border-style` (the label box border does not dash).
+  `border-style`/`outline-style` and `border-dash-pattern`/`-offset`
+  themselves work on every shape; `border-cap`/`border-join` are dropped
+  (dash ends are perpendicular cuts by construction).
 - `cytoscape.warnings()` and the error policy behind it.
 - Functional `preventDefault()` for v4's own gesture defaults; the DOM half
   works.
@@ -164,8 +166,8 @@ that compile and then behave differently.
 ### Known deviations
 
 Accepted differences from v3's rendering and semantics — arrow tips on
-approximate boundaries for some shapes, butt caps on layer strokes, uneven
-dashes on eccentric ellipses, a conservative edge-label bounding term, no
+approximate boundaries for some shapes, butt caps on layer strokes, outline
+dash phase on polygon-family shapes, a conservative edge-label bounding term, no
 decimation on the curved edge stream, and others — are enumerated in
 `src/README.md` under "Known deviations from v3". Each is recorded where the
 feature is described, with the reason.

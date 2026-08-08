@@ -37,6 +37,9 @@ import {
   LINE_SOLID,
   SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE,
+  BORDER_STYLE_SHIFT,
+  OUTLINE_STYLE_SHIFT,
+  STROKE_STYLE_MASK,
   SHAPE_CIRCLE,
   SHAPE_CONCAVE_HEXAGON,
   SHAPE_CUT_RECTANGLE,
@@ -244,6 +247,16 @@ interface NodeComputed {
   cornerRadius: number;
   /** border-position (B2): 0 center (v3's default), 1 inside, 2 outside */
   borderPosition: number;
+  /** border-style (round 38): 0 solid, 1 dashed, 2 dotted, 3 double */
+  borderStyle: number;
+  /** border-dash-pattern (round 38), normalized to two on/off pairs
+   * like the edge twin (v3's default [4, 2] stores as [4, 2, 4, 2]) */
+  borderDashPattern: number[];
+  /** border-dash-offset (round 38), model px */
+  borderDashOffset: number;
+  /** outline-style (round 38): same ids; `double` draws solid (v3's
+   * drawOutline has no double branch — a quirk kept for parity) */
+  outlineStyle: number;
   /** node outline (round 13 B5): a solid ring outside the border */
   outlineColor: RGBA;
   outlineOpacity: number;
@@ -493,6 +506,10 @@ const NODE_DEFAULTS: NodeComputed = {
   textValign: 2, // bottom — v4's round-10 default (v3: top; recorded)
   cornerRadius: -1, // 'auto'
   borderPosition: 0, // center, as v3
+  borderStyle: 0, // solid, as v3
+  borderDashPattern: [4, 2, 4, 2], // v3's [4, 2], pair-normalized
+  borderDashOffset: 0,
+  outlineStyle: 0, // solid, as v3
   outlineColor: [153, 153, 153, 255], // '#999', as v3
   outlineOpacity: 1,
   outlineWidth: 0,
@@ -750,6 +767,10 @@ const NODE_READ: ReadonlySet<string> = new Set([
   'chart-opacity',
   'corner-radius',
   'border-position',
+  'border-style',
+  'border-dash-pattern',
+  'border-dash-offset',
+  'outline-style',
   'background-fill',
   'background-gradient-stop-colors',
   'background-gradient-stop-positions',
@@ -1282,14 +1303,17 @@ const parseLineCap = (value: unknown): number => {
  * double (canvas semantics), a single pair repeats, and longer
  * patterns truncate to the first two pairs — a recorded cap.
  */
-const normalizeDashPattern = (list: number[]): number[] => {
+const normalizeDashPattern = (
+  list: number[],
+  empty: number[] = [6, 3, 6, 3],
+): number[] => {
   if (list.length === 0) {
-    return [6, 3, 6, 3];
+    return empty;
   }
 
   for (const v of list) {
     if (v < 0) {
-      throw new Error('line-dash-pattern entries may not be negative');
+      throw new Error('dash-pattern entries may not be negative');
     }
   }
 
@@ -1544,6 +1568,34 @@ const parseBorderPosition = (value: unknown): number => {
   if (id == null) {
     throw new Error(
       `The border-position '${String(value)}' is invalid; use one of: center, inside, outside`,
+    );
+  }
+
+  return id;
+};
+
+// -- border-style / outline-style (round 38) --
+
+const STROKE_STYLES: Record<string, number> = {
+  solid: 0,
+  dashed: 1,
+  dotted: 2,
+  double: 3,
+};
+const STROKE_STYLE_NAMES: Record<number, string> = {
+  0: 'solid',
+  1: 'dashed',
+  2: 'dotted',
+  3: 'double',
+};
+
+const parseStrokeStyle = (prop: string, value: unknown): number => {
+  const id = STROKE_STYLES[String(value)];
+
+  if (id == null) {
+    throw new Error(
+      `The ${prop} '${String(value)}' is invalid; ` +
+        `use one of: ${Object.keys(STROKE_STYLES).join(', ')}`,
     );
   }
 
@@ -2273,6 +2325,21 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       break;
     case 'border-position':
       computed.borderPosition = parseBorderPosition(value);
+      break;
+    case 'border-style':
+      computed.borderStyle = parseStrokeStyle(prop, value);
+      break;
+    case 'border-dash-pattern':
+      computed.borderDashPattern = normalizeDashPattern(
+        parseNumberList(prop, value),
+        NODE_DEFAULTS.borderDashPattern,
+      );
+      break;
+    case 'border-dash-offset':
+      computed.borderDashOffset = parseNumber(prop, value);
+      break;
+    case 'outline-style':
+      computed.outlineStyle = parseStrokeStyle(prop, value);
       break;
     case 'outline-color':
       computed.outlineColor = parseColor(prop, value);
@@ -3346,6 +3413,32 @@ const MAPPABLE: Record<string, MappableChannel> = {
       c.borderPosition = v as number;
     },
     default: () => NODE_DEFAULTS.borderPosition,
+  },
+  'border-style': {
+    kind: 'enum',
+    groups: ['nodes'],
+    parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
+    set: (c, v) => {
+      c.borderStyle = v as number;
+    },
+    default: () => NODE_DEFAULTS.borderStyle,
+  },
+  'outline-style': {
+    kind: 'enum',
+    groups: ['nodes'],
+    parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
+    set: (c, v) => {
+      c.outlineStyle = v as number;
+    },
+    default: () => NODE_DEFAULTS.outlineStyle,
+  },
+  'border-dash-offset': {
+    kind: 'number',
+    groups: ['nodes'],
+    set: (c, v) => {
+      c.borderDashOffset = v as number;
+    },
+    default: () => NODE_DEFAULTS.borderDashOffset,
   },
   // B6 label box props
   'text-transform': {
@@ -4659,6 +4752,44 @@ defineReader(['border-position'], (store, slot) => {
     ] ?? 'center'
   );
 });
+
+defineReader(
+  ['border-style'],
+  (store, slot) =>
+    STROKE_STYLE_NAMES[
+      ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 1] >>>
+        BORDER_STYLE_SHIFT) &
+        STROKE_STYLE_MASK
+    ] ?? 'solid',
+);
+
+defineReader(
+  ['outline-style'],
+  (store, slot) =>
+    STROKE_STYLE_NAMES[
+      ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 1] >>>
+        OUTLINE_STYLE_SHIFT) &
+        STROKE_STYLE_MASK
+    ] ?? 'solid',
+);
+
+defineReader(['border-dash-pattern'], (store, slot) => {
+  const arr = (store.column('node.borderDash') as Float32Array).subarray(
+    slot * 4,
+    slot * 4 + 4,
+  );
+
+  // collapse the normalized two-pair form back to one pair when repeated
+  return arr[0] === arr[2] && arr[1] === arr[3]
+    ? `${arr[0]} ${arr[1]}`
+    : `${arr[0]} ${arr[1]} ${arr[2]} ${arr[3]}`;
+});
+
+defineReader(
+  ['border-dash-offset'],
+  (store, slot) =>
+    (store.column('node.borderDashMeta') as Float32Array)[slot * 2],
+);
 
 defineReader(
   ['background-fill', 'line-fill'],
@@ -7568,7 +7699,16 @@ export class StyleEngine {
         computed.outlineOffset,
         shape,
         polyRef,
+        computed.borderStyle,
+        computed.outlineStyle,
       ); // C2: the FS reads the shape from borderGeom
+
+      // round 38: the dashed border's pattern + offset (vertex-only
+      // columns; the FS gets them as flat varyings)
+      const bdp = computed.borderDashPattern;
+
+      store.setVec4('node.borderDash', slot, bdp[0], bdp[1], bdp[2], bdp[3]);
+      store.setPair('node.borderDashMeta', slot, computed.borderDashOffset, 0);
 
       // background gradient (C2): stops fold the background-opacity like
       // the flat fill; unset positions spread evenly (v3/canvas rule)

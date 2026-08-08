@@ -144,7 +144,9 @@ type ColumnId = 'node.position' | 'node.size' | 'node.fillColor' | 'node.borderC
  * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
  * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
  * 'auto', v3's min(w/4, h/4, 8)), borderPosition (bits 0..7: 0
- * center — v3's default, 1 inside, 2 outside) | shape id << 16
+ * center — v3's default, 1 inside, 2 outside) | border-style
+ * bits 8..9 | outline-style bits 10..11 (round 38; see the stroke
+ * style constants) | shape id << 16
  * (round 13 C2: a copy of node.shape so the node FS can drop the
  * shapes binding — the slot went to the gradient column; the style
  * engine writes both together), outline rgba (outline-opacity
@@ -155,6 +157,22 @@ type ColumnId = 'node.position' | 'node.size' | 'node.fillColor' | 'node.borderC
  * round-rectangle inside test).
  */
 'node.borderGeom' |
+/**
+ * Float32Array(4·cap) — the dashed border's pattern (round 38),
+ * normalized to two on/off pairs exactly like `edge.dashPattern`
+ * (v3's default [4, 2] stores as [4, 2, 4, 2]).  Read only when
+ * borderGeom.y's border-style bits say `dashed`; `dotted` hardcodes
+ * [1, 1] in the shader (v3's rule).  Binds vertex-only in the node
+ * pipeline — the FS is at its 8-storage-buffer budget — and reaches
+ * the fragment stage as flat varyings.
+ */
+'node.borderDash' |
+/**
+ * Float32Array(2·cap) — [border-dash-offset (model px), reserved],
+ * the `edge.dashMeta` twin for borders (round 38).  Same vertex-only
+ * binding rule as 'node.borderDash'.
+ */
+'node.borderDashMeta' |
 /**
  * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
  * stops (v3's canvas gradients), constants-only, capped at 5 (a
@@ -2706,11 +2724,14 @@ declare class GraphStore implements ModelView {
   /**
    * Write a node's border/corner/outline record (rounds 13 B2/B5):
    * cornerRadius model px (-1 = auto), borderPosition id, the outline
-   * rgba (opacity pre-folded) and outline width/offset (model px,
-   * u16 fixed-point).  Corner radius and outline extents are geometry
-   * (pick + bb read them), so writes bump the geometry epoch.
+   * rgba (opacity pre-folded), outline width/offset (model px,
+   * u16 fixed-point), and — round 38 — the border/outline stroke-style
+   * enums, packed into bits 8..11 of the position word (see the
+   * contract's stroke style constants).  Corner radius and outline
+   * extents are geometry (pick + bb read them), so writes bump the
+   * geometry epoch.
    */
-  setBorderGeom(slot: number, cornerRadius: number, borderPos: number, outlineRgba: number, outlineWidth: number, outlineOffset: number, shapeId?: number, polyRef?: number): void;
+  setBorderGeom(slot: number, cornerRadius: number, borderPos: number, outlineRgba: number, outlineWidth: number, outlineOffset: number, shapeId?: number, polyRef?: number, borderStyle?: number, outlineStyle?: number): void;
   /** live count of elements carrying a gradient record (13 C2) */
   private gradients;
   /** Elements with a gradient fill (13 C2) — the pass-skip gate. */

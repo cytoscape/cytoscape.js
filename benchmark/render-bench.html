@@ -296,6 +296,14 @@
               }
             }
 
+            // round 38: the border-style pair — same constants both sides
+            if( scene.spec.borders ){
+              Object.assign( style[ 0 ].style, {
+                shape: 'hexagon', 'border-width': 4,
+                'border-color': '#334455', 'border-style': scene.spec.borders
+              } );
+            }
+
             if( scene.spec.images === true ){
               icons().forEach( ( uri, k ) => {
                 style.push( { selector: 'node[itype = ' + k + ']', style: {
@@ -328,6 +336,13 @@
               nodesStyle = Object.assign( {}, nodesStyle, {
                 'background-image': { data: 'itype', scale: 'ordinal', domain: [ 0, 1, 2, 3 ], range: icons() },
                 'background-fit': 'contain'
+              } );
+            }
+
+            if( scene.spec.borders ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                shape: 'hexagon', 'border-width': 4,
+                'border-color': '#334455', 'border-style': scene.spec.borders
               } );
             }
 

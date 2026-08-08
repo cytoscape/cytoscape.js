@@ -38,6 +38,12 @@ import {
 // shaders and the store read one source of truth (round 27.1)
 import {
   ARROW_SHAPE_MASK,
+  BORDER_STYLE_SHIFT,
+  OUTLINE_STYLE_SHIFT,
+  STROKE_STYLE_MASK,
+  STROKE_DASHED,
+  STROKE_DOTTED,
+  STROKE_DOUBLE,
   ARROW_SHIFT_HOLLOW_SOURCE,
   ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE,
@@ -1065,9 +1071,16 @@ fn routeMidpointW(r: ptr<function, Route>) -> vec4f {
 // space, so it is exact under anisotropy (crisp AA, uniform borders).
 const fmtF32 = (x: number): string => x.toFixed(8);
 
-const polygonSdFns = (): { fns: string; cases: string } => {
+const polygonSdFns = (): {
+  fns: string;
+  cases: string;
+  perimFns: string;
+  perimCases: string;
+} => {
   let fns = '';
   let cases = '';
+  let perimFns = '';
+  let perimCases = '';
 
   for (const [id, pts] of POLYGON_POINTS) {
     const n = pts.length / 2;
@@ -1099,6 +1112,34 @@ fn poly${id}SD(p: vec2f, half: vec2f) -> f32 {
 }
 `;
     cases += `    case ${id}u: { return poly${id}SD(p, half); }\n`;
+
+    // round 38: the perimeter twin — the same vertex list walked in
+    // v3's path order (drawPolygonPath: moveTo(points[0]), lineTo
+    // forward), tracking the argmin edge and its clamped projection
+    // against a cumulative arc length.  Scaled per fragment because the
+    // half-size scales edges anisotropically.
+    perimFns += `
+fn poly${id}Perim(p: vec2f, half: vec2f) -> f32 {
+  var v = array<vec2f, ${n}>(${lits});
+  for (var k = 0; k < ${n}; k++) { v[k] = v[k] * half; }
+  var best = 1e30;
+  var u = 0.0;
+  var cum = 0.0;
+  for (var i = 0; i < ${n}; i++) {
+    let a = v[i];
+    let b = v[(i + 1) % ${n}];
+    let e = b - a;
+    let len = length(e);
+    let t = clamp(dot(p - a, e) / max(dot(e, e), 1e-12), 0.0, 1.0);
+    let q = a + e * t - p;
+    let d = dot(q, q);
+    if (d < best) { best = d; u = cum + t * len; }
+    cum = cum + len;
+  }
+  return u;
+}
+`;
+    perimCases += `    case ${id}u: { return poly${id}Perim(p, half); }\n`;
   }
 
   // Round-corner shapes (27.4).  A polygon with every corner replaced by
@@ -1168,9 +1209,14 @@ fn roundPoly${id}SD(p: vec2f, half: vec2f, r: f32) -> f32 {
 }
 `;
     cases += `    case ${id}u: { return roundPoly${id}SD(p, half, radius); }\n`;
+    // round 38: the round-* dash coordinate walks the SOURCE polygon's
+    // edges — a recorded approximation: the drawn boundary's corner
+    // arcs are slightly shorter than the sharp corners, so the dash
+    // phase drifts by the arc/miter difference at each corner
+    perimCases += `    case ${id}u: { return poly${source}Perim(p, half); }\n`;
   }
 
-  return { fns, cases };
+  return { fns, cases, perimFns, perimCases };
 };
 
 const POLY = polygonSdFns();
@@ -1623,9 +1669,288 @@ fn outlineWO(packed: u32, zoomDpr: f32) -> vec2f {
 }
 `;
 
+/**
+ * Round 38: the arc-length coordinate for dashed borders/outlines — the
+ * position along the shape outline, in device px, of the boundary point
+ * nearest the fragment.  u = 0 and the walk direction match v3's canvas
+ * path construction per shape, because the dash pattern's phase starts
+ * where the path starts and the parity diff sees a half-period phase
+ * error as anti-aligned dashes.  Only evaluated when a dash style is
+ * active (the fsNode branch), so solid borders pay nothing.
+ */
+const NODE_PERIM_WGSL = wgsl`
+// v3's ellipse path starts at parameter 0 (the rightmost point),
+// sweeping y-down positive, and the canvas dashes it by TRUE arc
+// length — so this integrates the elliptic arc numerically (composite
+// Simpson, 20 intervals) rather than approximating by angle.  The
+// round-38 plan budgeted an angle-parameterized approximation with a
+// recorded deviation; measured, that deviation was LARGER than the
+// difference dashing makes at all (5.0% vs 3.6% on the parity scene —
+// the scene could not discriminate), so the exact integral is what
+// shipped.  Cost is dash-gated: solid borders never run this.
+// Two conversions matter: the fragment's RADIAL angle is not the
+// path parameter (P = (a cos t, b sin t) sits at radial angle
+// atan2(b sin t, a cos t)), so t recovers via atan2(y/b, x/a).
+fn ellipsePerimCoord(p: vec2f, half: vec2f) -> f32 {
+  let a = half.x;
+  let b = half.y;
+  var t = atan2(p.y / max(b, 1e-6), p.x / max(a, 1e-6));
+
+  // the radial estimate SHEARS across the border band (measured: +-2 px
+  // of phase over a +-2.5 px band — two whole dot periods), because a
+  // fragment off the boundary is not radially aligned with its nearest
+  // path point.  Two Newton steps to the nearest-point parameter bring
+  // the worst error to 0.003 px.
+  for (var k = 0; k < 2; k++) {
+    let st = sin(t);
+    let ct = cos(t);
+    let fx = a * ct - p.x;
+    let fy = b * st - p.y;
+    let f = fx * (-a * st) + fy * (b * ct);
+    let fp = (a * st) * (a * st) + fx * (-a * ct) + (b * ct) * (b * ct) + fy * (-b * st);
+
+    if (abs(fp) > 1e-9) { t = t - f / fp; }
+  }
+
+  if (t < 0.0) { t = t + 6.28318530718; }
+
+  // 48 intervals: v3's dotted borders are [1, 1] — a 2-model-px period
+  // — so the phase needs sub-half-pixel accuracy over the whole arc
+  let h = t / 48.0;
+  var sum = 0.0;
+
+  for (var i = 0; i <= 48; i++) {
+    let ti = h * f32(i);
+    let sn = sin(ti);
+    let cs = cos(ti);
+    let f = sqrt(a * a * sn * sn + b * b * cs * cs);
+    var w = 2.0;
+
+    if (i == 0 || i == 48) { w = 1.0; }
+    else if ((i % 2) == 1) { w = 4.0; }
+
+    sum = sum + w * f;
+  }
+
+  return sum * h / 3.0;
+}
+
+// v3's rectangle is the 4-gon (-1,-1) (-1,1) (1,1) (1,-1): the path
+// starts at the top-left corner and runs DOWN the left side first
+fn rectanglePerim(p: vec2f, half: vec2f) -> f32 {
+  let dl = abs(p.x + half.x);
+  let dr = abs(p.x - half.x);
+  let dt = abs(p.y + half.y);
+  let db = abs(p.y - half.y);
+  let cx = clamp(p.x, -half.x, half.x);
+  let cy = clamp(p.y, -half.y, half.y);
+  let m = min(min(dl, dr), min(dt, db));
+
+  if (m == dl) { return cy + half.y; }
+  if (m == db) { return 2.0 * half.y + (cx + half.x); }
+  if (m == dr) { return 2.0 * half.y + 2.0 * half.x + (half.y - cy); }
+  return 4.0 * half.y + 2.0 * half.x + (half.x - cx);
+}
+
+// v3's round-rectangle path starts at the TOP MIDDLE and runs clockwise
+// (arcTo corners); u accumulates run - arc - side - arc - ... exactly
+fn roundRectanglePerim(p: vec2f, half: vec2f, rIn: f32) -> f32 {
+  let r = min(rIn, min(half.x, half.y));
+  let cx = half.x - r;
+  let cy = half.y - r;
+  let arc = 1.57079632679 * r;
+  let cum1 = cx + arc;                    // right side start
+  let cum2 = cum1 + 2.0 * cy + arc;       // bottom start
+  let cum3 = cum2 + 2.0 * cx + arc;       // left side start
+  let cum4 = cum3 + 2.0 * cy + arc;       // top-left run start
+
+  let qx = abs(p.x) - cx;
+  let qy = abs(p.y) - cy;
+
+  if (qx > 0.0 && qy > 0.0) {
+    let phi = atan2(qy, qx); // [0, pi/2] out from the corner centre
+    if (p.x >= 0.0 && p.y < 0.0) { return cx + (1.57079632679 - phi) * r; }
+    if (p.x >= 0.0) { return cum1 + 2.0 * cy + phi * r; }
+    if (p.y >= 0.0) { return cum2 + 2.0 * cx + (1.57079632679 - phi) * r; }
+    return cum3 + 2.0 * cy + phi * r;
+  }
+
+  var vertical = qy <= 0.0;
+  if (qx <= 0.0 && qy <= 0.0) { // interior: nearest side line decides
+    vertical = (half.x - abs(p.x)) < (half.y - abs(p.y));
+  } else if (qx <= 0.0) {
+    vertical = false;
+  }
+
+  if (vertical) {
+    if (p.x >= 0.0) { return cum1 + (clamp(p.y, -cy, cy) + cy); }
+    return cum3 + (cy - clamp(p.y, -cy, cy));
+  }
+  if (p.y >= 0.0) { return cum2 + (cx - clamp(p.x, -cx, cx)); }
+  // top edge: +x from the top middle; x < 0 is the closing run
+  if (p.x >= 0.0) { return clamp(p.x, 0.0, cx); }
+  return cum4 + (clamp(p.x, -cx, 0.0) + cx);
+}
+
+// v3's bottom-round-rectangle path: top middle, clockwise, sharp top
+// corners, arcTo bottom corners
+fn bottomRoundRectanglePerim(p: vec2f, half: vec2f, rIn: f32) -> f32 {
+  let r = min(rIn, min(half.x, half.y));
+  let cx = half.x - r;
+  let cy = half.y - r;
+  let arc = 1.57079632679 * r;
+  let cum1 = half.x;                       // right side start (top-right corner)
+  let cum2 = cum1 + (half.y + cy) + arc;   // bottom start
+  let cum3 = cum2 + 2.0 * cx + arc;        // left side start
+  let cum4 = cum3 + (half.y + cy);         // top-left run start
+
+  let qx = abs(p.x) - cx;
+
+  if (p.y > cy && qx > 0.0) { // bottom corner arcs
+    let phi = atan2(p.y - cy, qx);
+    if (p.x >= 0.0) { return cum1 + (half.y + cy) + phi * r; }
+    return cum2 + 2.0 * cx + (1.57079632679 - phi) * r;
+  }
+
+  let dl = abs(p.x + half.x);
+  let dr = abs(p.x - half.x);
+  let dt = abs(p.y + half.y);
+  let db = abs(p.y - half.y);
+  let m = min(min(dl, dr), min(dt, db));
+
+  if (m == dr) { return cum1 + (clamp(p.y, -half.y, cy) + half.y); }
+  if (m == db) { return cum2 + (cx - clamp(p.x, -cx, cx)); }
+  if (m == dl) { return cum3 + (cy - clamp(p.y, -half.y, cy)); }
+  // top edge: +x from the top middle
+  if (p.x >= 0.0) { return clamp(p.x, 0.0, half.x); }
+  return cum4 + (clamp(p.x, -half.x, 0.0) + half.x);
+}
+
+// v3's cut-rectangle path: an octagon from (-hx+c, -hy), clockwise
+fn cutRectanglePerim(p: vec2f, half: vec2f, c: f32) -> f32 {
+  var v = array<vec2f, 8>(
+    vec2f(-half.x + c, -half.y), vec2f(half.x - c, -half.y),
+    vec2f(half.x, -half.y + c), vec2f(half.x, half.y - c),
+    vec2f(half.x - c, half.y), vec2f(-half.x + c, half.y),
+    vec2f(-half.x, half.y - c), vec2f(-half.x, -half.y + c));
+  var best = 1e30;
+  var u = 0.0;
+  var cum = 0.0;
+  for (var i = 0; i < 8; i++) {
+    let a = v[i];
+    let b = v[(i + 1) % 8];
+    let e = b - a;
+    let len = length(e);
+    let t = clamp(dot(p - a, e) / max(dot(e, e), 1e-12), 0.0, 1.0);
+    let q = a + e * t - p;
+    let d = dot(q, q);
+    if (d < best) { best = d; u = cum + t * len; }
+    cum = cum + len;
+  }
+  return u;
+}
+
+// v3's barrel path: from (x0, y0 + hOff) DOWN the left side, then the
+// bottom-left curve, bottom, bottom-right, right side up, top-right,
+// top (right to left), top-left curve closing.  Sampled at the same
+// subdivision as barrelSD so the dash follows the drawn boundary.
+fn barrelPerim(p: vec2f, half: vec2f, zoomDpr: f32) -> f32 {
+  let hOff = min(${BARREL_HEIGHT_OFFSET_MAX}.0 * zoomDpr, ${BARREL_HEIGHT_OFFSET_PCT} * half.y * 2.0);
+  let wOff = min(${BARREL_WIDTH_OFFSET_MAX}.0 * zoomDpr, ${BARREL_WIDTH_OFFSET_PCT} * half.x * 2.0);
+  let ctrl = ${BARREL_CTRL_OFFSET_PCT} * half.x * 2.0;
+  let x0 = -half.x;
+  let x1 = half.x;
+  let y0 = -half.y;
+  let y1 = half.y;
+
+  // the four corner curves, in v3's path order and direction
+  var a = array<vec2f, 4>(
+    vec2f(x0, y1 - hOff), vec2f(x1 - wOff, y1), vec2f(x1, y0 + hOff), vec2f(x0 + wOff, y0));
+  var c = array<vec2f, 4>(
+    vec2f(x0 + ctrl, y1), vec2f(x1 - ctrl, y1), vec2f(x1 - ctrl, y0), vec2f(x0 + ctrl, y0));
+  var b = array<vec2f, 4>(
+    vec2f(x0 + wOff, y1), vec2f(x1, y1 - hOff), vec2f(x1 - wOff, y0), vec2f(x0, y0 + hOff));
+
+  const N: i32 = 4 * (${BARREL_CURVE_SEGMENTS} + 1);
+  var v = array<vec2f, N>();
+  var k = 0;
+
+  for (var i = 0; i < 4; i++) {
+    for (var j = 0; j <= ${BARREL_CURVE_SEGMENTS}; j++) {
+      let t = f32(j) / ${BARREL_CURVE_SEGMENTS}.0;
+      let u2 = 1.0 - t;
+
+      v[k] = a[i] * (u2 * u2) + c[i] * (2.0 * u2 * t) + b[i] * (t * t);
+      k = k + 1;
+    }
+  }
+
+  var best = 1e30;
+  var u = 0.0;
+  var cum = 0.0;
+
+  for (var i = 0; i < N; i++) {
+    let va = v[i];
+    let vb = v[(i + 1) % N];
+    let e = vb - va;
+    let len = length(e);
+    let t = clamp(dot(p - va, e) / max(dot(e, e), 1e-12), 0.0, 1.0);
+    let q = va + e * t - p;
+    let d = dot(q, q);
+    if (d < best) { best = d; u = cum + t * len; }
+    cum = cum + len;
+  }
+
+  return u;
+}
+
+// custom polygon (C3): the blob walk, forward in the declared point
+// order (v3's drawPolygonPath direction)
+fn customPolyPerim(p: vec2f, half: vec2f, polyRef: u32) -> f32 {
+  let off = polyRef & 0xffffffu;
+  let count = polyRef >> 24u;
+
+  if (count < 3u) { return 0.0; }
+
+  var best = 1e30;
+  var u = 0.0;
+  var cum = 0.0;
+
+  for (var i = 0u; i < count; i = i + 1u) {
+    let j = (i + 1u) % count;
+    let a = vec2f(polyBlob[off + i * 2u], polyBlob[off + i * 2u + 1u]) * half;
+    let b = vec2f(polyBlob[off + j * 2u], polyBlob[off + j * 2u + 1u]) * half;
+    let e = b - a;
+    let len = length(e);
+    let t = clamp(dot(p - a, e) / max(dot(e, e), 1e-12), 0.0, 1.0);
+    let q = a + e * t - p;
+    let d = dot(q, q);
+    if (d < best) { best = d; u = cum + t * len; }
+    cum = cum + len;
+  }
+
+  return u;
+}
+${POLY.perimFns}
+fn perimeterCoord(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32, zoomDpr: f32) -> f32 {
+  switch shape {
+    case 0u, 1u: { return ellipsePerimCoord(p, half); }
+    case 2u: { return rectanglePerim(p, half); }
+${POLY.perimCases}
+    case ${SHAPE_POLYGON_CUSTOM}u: { return customPolyPerim(p, half, polyRef); }
+    case ${SHAPE_CUT_RECTANGLE}u: { return cutRectanglePerim(p, half, radius); }
+    case ${SHAPE_BOTTOM_ROUND_RECTANGLE}u: { return bottomRoundRectanglePerim(p, half, radius); }
+    case ${SHAPE_BARREL}u: { return barrelPerim(p, half, zoomDpr); }
+    default: { return roundRectanglePerim(p, half, radius); }
+  }
+}
+`;
+
 export const NODE_SHADER = wgsl`
 ${COMMON}
 ${SDF}
+${DASH_WGSL}
+${NODE_PERIM_WGSL}
 
 // VS reads only geometry columns; decoration columns (colors, border,
 // shape, opacity, flags) are fetched in the FS via the flat instance
@@ -1645,10 +1970,15 @@ ${SDF}
 // ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
 // bound to both stages for the ghost entry points
 @group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
-// [cornerRadius×256 | auto | C3 polyRef, borderPosition | shape<<16, outlineRgba, outlineWO]
+// [cornerRadius×256 | auto | C3 polyRef, borderPosition | styles | shape<<16, outlineRgba, outlineWO]
 @group(0) @binding(10) var<storage, read> borderGeom: array<vec4u>;
+// round 38: the dashed border's pattern + [offset, reserved] — bound
+// VERTEX-only (the FS is at its 8-storage-buffer budget) and handed to
+// the fragment stage as flat varyings
+@group(0) @binding(11) var<storage, read> borderDashes: array<vec4f>;
+@group(0) @binding(12) var<storage, read> borderDashMetas: array<vec2f>;
 // custom-polygon unit points (round 13 C3)
-@group(0) @binding(11) var<storage, read> polyBlob: array<f32>;
+@group(0) @binding(13) var<storage, read> polyBlob: array<f32>;
 
 // C2: sRGB gradient evaluation over the packed record (v3's canvas
 // gradients interpolate in sRGB; OKLab stays the *mapper* default)
@@ -1705,6 +2035,10 @@ struct NodeVSOut {
   @location(1) halfSize: vec2f,   // device px
   @location(2) alphaComp: f32,    // sub-hidePx LOD alpha compensation
   @location(3) @interpolate(flat) instance: u32,
+  // round 38: the border dash pattern + offset, read by the VS from the
+  // vertex-only columns (see the bindings note above)
+  @location(4) @interpolate(flat) dashPat: vec4f,
+  @location(5) @interpolate(flat) dashOffset: f32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -1741,6 +2075,8 @@ fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> N
   out.halfSize = half;
   out.alphaComp = lod.z;
   out.instance = slot;
+  out.dashPat = borderDashes[slot];
+  out.dashOffset = borderDashMetas[slot].x;
   return out;
 }
 
@@ -1753,6 +2089,9 @@ fn vsNodeDepth(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
   let slot = visible[ii];
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
   let half = lod.xy;
+
+  out.dashPat = vec4f(0.0);
+  out.dashOffset = 0.0;
 
   if (lod.z < 1.0 || max(half.x, half.y) < 2.0) {
     out.position = vec4f(2.0, 2.0, 0.0, 1.0); // degenerate quad
@@ -1811,6 +2150,13 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
 
   var edge = 0.0; // coverage boundary: sd <= edge is inked
   let flags = nodeFlags[slot];
+  // round 38 dash state: 0 keeps the plain fill/solid-border epilogue;
+  // dashed/dotted computes its own premultiplied layers below, and
+  // double applies an erase-stripe factor after the epilogue
+  var dashMode = 0u;
+  var dashRgb = vec3f(0.0);
+  var dashA = 0.0;
+  var stripeKeep = 1.0;
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
@@ -1820,8 +2166,51 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
-      color = unpack4x8unorm(borderColors[slot]);
-      edge = bOut;
+      let bStyle = (borderGeom[slot].y >> ${BORDER_STYLE_SHIFT}u) & ${STROKE_STYLE_MASK}u;
+
+      if (bStyle == ${STROKE_DASHED}u || bStyle == ${STROKE_DOTTED}u) {
+        // dashed reads the pattern varyings; dotted is v3's hardcoded
+        // [1, 1] (it ignores the pattern — v3's drawBorder switch).
+        // Dash lengths are MODEL px (v3 sets the line dash in the
+        // transformed context), so u and the AA convert by zoomDpr.
+        var pat = in.dashPat;
+        var doff = in.dashOffset;
+
+        if (bStyle == ${STROKE_DOTTED}u) {
+          pat = vec4f(1.0, 1.0, 1.0, 1.0);
+          doff = 0.0;
+        }
+
+        let u = perimeterCoord(shape, in.local, half, radius, borderGeom[slot].x, frame.zoomDpr) / frame.zoomDpr;
+        let m = smoothstep(-0.75, 0.75, dashInsideSd(u, pat, doff) * frame.zoomDpr);
+        // an on-segment draws the border band (coverage to bOut); an
+        // off-segment falls back to the fill layer (coverage to 0),
+        // which is what v3's stroke-over-fill shows through a gap
+        let bc = unpack4x8unorm(borderColors[slot]);
+        let aB = (1.0 - smoothstep(bOut - 0.75, bOut + 0.75, sd)) * bc.a;
+        let aF = (1.0 - smoothstep(-0.75, 0.75, sd)) * color.a;
+
+        dashRgb = mix(color.rgb * aF, bc.rgb * aB, m);
+        dashA = mix(aF, aB, m);
+        dashMode = 1u;
+      } else {
+        color = unpack4x8unorm(borderColors[slot]);
+        edge = bOut;
+
+        if (bStyle == ${STROKE_DOUBLE}u) {
+          // v3's double: stroke solid, then erase the middle third
+          // (destination-out at borderWidth / 3).  Fill and border are
+          // one draw here, so the erase is these fragments' alpha
+          // landing at 0 — the stripe shows whatever the scene drew
+          // beneath the node, where v3 punches through to the page
+          // (recorded; the depth prepass excludes double borders)
+          let s1 = bOut - borderWidth * (2.0 / 3.0);
+          let s2 = bOut - borderWidth * (1.0 / 3.0);
+
+          stripeKeep = 1.0 - smoothstep(s1 - 0.75, s1 + 0.75, sd) *
+            (1.0 - smoothstep(s2 - 0.75, s2 + 0.75, sd));
+        }
+      }
     }
 
   }
@@ -1829,16 +2218,58 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   let mul = opacities[slot] * in.alphaComp;
   var alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * mul * color.a;
   var rgbPre = color.rgb * alpha;
+
+  if (dashMode == 1u) {
+    alpha = dashA * mul;
+    rgbPre = dashRgb * mul;
+  }
+
+  alpha = alpha * stripeKeep;
+  rgbPre = rgbPre * stripeKeep;
   let og = borderGeom[slot];
 
-  // outline ring (B5): a solid band outside the border at
-  // outline-offset/2, disjoint from the body coverage
+  // outline ring (B5): a band outside the border at outline-offset/2,
+  // disjoint from the body coverage
   if (!plain && (og.z >> 24u) != 0u) {
     let wo = outlineWO(og.w, frame.zoomDpr);
     let inner = borderOutward(og.y & 0xffu, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
     let oc = unpack4x8unorm(og.z);
-    let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
+    var ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
       (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
+    // round 38: outline-style — v3 hardcodes [4, 2] dashed / [1, 1]
+    // dotted and takes no props; its drawOutline has no double branch,
+    // so double draws solid (a v3 quirk kept for parity).  The dash
+    // coordinate reads the base shape's perimeter — the ring's own
+    // path is a hair longer, a recorded approximation.
+    let oStyle = (og.y >> ${OUTLINE_STYLE_SHIFT}u) & ${STROKE_STYLE_MASK}u;
+
+    if (oStyle == ${STROKE_DASHED}u || oStyle == ${STROKE_DOTTED}u) {
+      let pat = select(vec4f(4.0, 2.0, 4.0, 2.0), vec4f(1.0, 1.0, 1.0, 1.0), oStyle == ${STROKE_DOTTED}u);
+      // v3 dashes the outline along an EXPANDED shape path, so the dash
+      // coordinate evaluates at the ring's own radius — and for the
+      // polygon family v3's expandPolygon pads in UNIT space (the pad is
+      // divided by nodeWidth alone), so the y expansion scales by the
+      // aspect ratio.  Without either, the phase drifts a period per
+      // side on rectangles.
+      let dOut = inner + wo.x * 0.5;
+      var oHalf = half + vec2f(dOut);
+      var oRadius = radius;
+
+      if (shape == 2u || (shape >= 4u && shape <= 16u)) {
+        // v3's expandPolygon pads in UNIT space (divided by nodeWidth
+        // alone), so the y expansion scales by the aspect ratio
+        oHalf = half + vec2f(dOut, dOut * half.y / max(half.x, 1e-6));
+      } else if (shape == 3u || shape == 25u) {
+        oRadius = radius + dOut; // v3 pads the outline path's corner radius
+      } else if (shape == 17u) {
+        oRadius = radius + dOut * 0.5; // v3's cut-rectangle: quarter pad
+      }
+
+      let u = perimeterCoord(shape, in.local, oHalf, oRadius, og.x, frame.zoomDpr) / frame.zoomDpr;
+
+      ring = ring * smoothstep(-0.75, 0.75, dashInsideSd(u, pat, 0.0) * frame.zoomDpr);
+    }
+
     let ringA = ring * mul * oc.a;
 
     rgbPre = rgbPre + oc.rgb * ringA;
@@ -1879,6 +2310,8 @@ fn vsGhost(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   out.halfSize = half;
   out.alphaComp = lod.z;
   out.instance = slot;
+  out.dashPat = borderDashes[slot];
+  out.dashOffset = borderDashMetas[slot].x;
   return out;
 }
 
@@ -1919,14 +2352,50 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   var edge = 0.0;
+  // round 38: the ghost body carries the border style like everything
+  // else — same dash/double treatment as fsNode
+  var dashMode = 0u;
+  var dashRgb = vec3f(0.0);
+  var dashA = 0.0;
+  var stripeKeep = 1.0;
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
     let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
-      color = unpack4x8unorm(borderColors[slot]);
-      edge = bOut;
+      let bStyle = (borderGeom[slot].y >> ${BORDER_STYLE_SHIFT}u) & ${STROKE_STYLE_MASK}u;
+
+      if (bStyle == ${STROKE_DASHED}u || bStyle == ${STROKE_DOTTED}u) {
+        var pat = in.dashPat;
+        var doff = in.dashOffset;
+
+        if (bStyle == ${STROKE_DOTTED}u) {
+          pat = vec4f(1.0, 1.0, 1.0, 1.0);
+          doff = 0.0;
+        }
+
+        let u = perimeterCoord(shape, in.local, half, radius, borderGeom[slot].x, frame.zoomDpr) / frame.zoomDpr;
+        let m = smoothstep(-0.75, 0.75, dashInsideSd(u, pat, doff) * frame.zoomDpr);
+        let bc = unpack4x8unorm(borderColors[slot]);
+        let aB = (1.0 - smoothstep(bOut - 0.75, bOut + 0.75, sd)) * bc.a;
+        let aF = (1.0 - smoothstep(-0.75, 0.75, sd)) * color.a;
+
+        dashRgb = mix(color.rgb * aF, bc.rgb * aB, m);
+        dashA = mix(aF, aB, m);
+        dashMode = 1u;
+      } else {
+        color = unpack4x8unorm(borderColors[slot]);
+        edge = bOut;
+
+        if (bStyle == ${STROKE_DOUBLE}u) {
+          let s1 = bOut - borderWidth * (2.0 / 3.0);
+          let s2 = bOut - borderWidth * (1.0 / 3.0);
+
+          stripeKeep = 1.0 - smoothstep(s1 - 0.75, s1 + 0.75, sd) *
+            (1.0 - smoothstep(s2 - 0.75, s2 + 0.75, sd));
+        }
+      }
     }
   }
 
@@ -1934,14 +2403,51 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   let mul = opacities[slot] * in.alphaComp * ghostA;
   var alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * mul * color.a;
   var rgbPre = color.rgb * alpha;
+
+  if (dashMode == 1u) {
+    alpha = dashA * mul;
+    rgbPre = dashRgb * mul;
+  }
+
+  alpha = alpha * stripeKeep;
+  rgbPre = rgbPre * stripeKeep;
   let og = borderGeom[slot];
 
   if (!plain && (og.z >> 24u) != 0u) { // the ghost outline rides along (v3)
     let wo = outlineWO(og.w, frame.zoomDpr);
     let inner = borderOutward(og.y & 0xffu, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
     let oc = unpack4x8unorm(og.z);
-    let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
+    var ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
       (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
+    let oStyle = (og.y >> ${OUTLINE_STYLE_SHIFT}u) & ${STROKE_STYLE_MASK}u;
+
+    if (oStyle == ${STROKE_DASHED}u || oStyle == ${STROKE_DOTTED}u) {
+      let pat = select(vec4f(4.0, 2.0, 4.0, 2.0), vec4f(1.0, 1.0, 1.0, 1.0), oStyle == ${STROKE_DOTTED}u);
+      // v3 dashes the outline along an EXPANDED shape path, so the dash
+      // coordinate evaluates at the ring's own radius — and for the
+      // polygon family v3's expandPolygon pads in UNIT space (the pad is
+      // divided by nodeWidth alone), so the y expansion scales by the
+      // aspect ratio.  Without either, the phase drifts a period per
+      // side on rectangles.
+      let dOut = inner + wo.x * 0.5;
+      var oHalf = half + vec2f(dOut);
+      var oRadius = radius;
+
+      if (shape == 2u || (shape >= 4u && shape <= 16u)) {
+        // v3's expandPolygon pads in UNIT space (divided by nodeWidth
+        // alone), so the y expansion scales by the aspect ratio
+        oHalf = half + vec2f(dOut, dOut * half.y / max(half.x, 1e-6));
+      } else if (shape == 3u || shape == 25u) {
+        oRadius = radius + dOut; // v3 pads the outline path's corner radius
+      } else if (shape == 17u) {
+        oRadius = radius + dOut * 0.5; // v3's cut-rectangle: quarter pad
+      }
+
+      let u = perimeterCoord(shape, in.local, oHalf, oRadius, og.x, frame.zoomDpr) / frame.zoomDpr;
+
+      ring = ring * smoothstep(-0.75, 0.75, dashInsideSd(u, pat, 0.0) * frame.zoomDpr);
+    }
+
     let ringA = ring * mul * oc.a;
 
     rgbPre = rgbPre + oc.rgb * ringA;
@@ -1999,6 +2505,14 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
 
   if (opacities[slot] * in.alphaComp < 1.0 || fill.a < 1.0 ||
       (borderWidth > 0.0 && borderColor.a < 1.0)) {
+    discard;
+  }
+
+  // round 38: a double border erases a stripe (its fragments' alpha is
+  // 0), so the node is not fully opaque — the prepass must not claim it
+  // (the gradient-fill precedent, one line below)
+  if (borderWidth > 0.0 &&
+      ((borderGeom[slot].y >> ${BORDER_STYLE_SHIFT}u) & ${STROKE_STYLE_MASK}u) == ${STROKE_DOUBLE}u) {
     discard;
   }
 

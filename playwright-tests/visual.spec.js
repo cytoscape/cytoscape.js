@@ -816,6 +816,131 @@ test.describe('WebGPU visual goldens', () => {
     checkGolden('line-styles', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
+  test('golden: border and outline styles, every shape tier (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The whole matrix on one canvas: eight shapes spanning every
+    // perimeter tier (closed-form, generated polygon walk, sampled
+    // barrel, octagon walk, round-* source approximation) x dashed /
+    // dotted / double, plus dashed and dotted OUTLINE rows.  The
+    // outline rows carry the polygon-family shapes deliberately: their
+    // dash phase vs v3 is a recorded deviation (v3 miters corners
+    // where v4's ring rounds them), so this golden is their only pixel
+    // coverage — the parity scene pins the ellipse family instead.
+    const shapes = [
+      'ellipse',
+      'rectangle',
+      'round-rectangle',
+      'hexagon',
+      'star',
+      'barrel',
+      'cut-rectangle',
+      'round-hexagon',
+    ];
+    const rows = ['dashed', 'dotted', 'double', 'o-dashed', 'o-dotted'];
+    const elements = [];
+
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < shapes.length; c++) {
+        elements.push({
+          data: {
+            id: `n${r}_${c}`,
+            sh: shapes[c],
+            st: rows[r],
+            // the dashed ellipse also draws a ghost: fsGhost carries the
+            // same dash machinery as fsNode, and this cell is its only
+            // pixel coverage
+            g: r === 0 && c === 0 ? 1 : 0,
+          },
+          position: { x: c * 62 - 217, y: r * 64 - 128 },
+        });
+      }
+    }
+
+    await useViewport(page, 560, 380);
+    await makeReadyCy(page, {
+      elements,
+      style: {
+        nodes: {
+          width: 50,
+          height: 42,
+          'background-color': '#fdf6e3',
+          'border-width': {
+            case: [
+              { when: { data: 'st', eq: 'o-dashed' }, then: 0 },
+              { when: { data: 'st', eq: 'o-dotted' }, then: 0 },
+            ],
+            else: 5,
+          },
+          'border-color': '#1a5276',
+          'border-style': {
+            case: [
+              { when: { data: 'st', eq: 'dashed' }, then: 'dashed' },
+              { when: { data: 'st', eq: 'dotted' }, then: 'dotted' },
+              { when: { data: 'st', eq: 'double' }, then: 'double' },
+            ],
+            else: 'solid',
+          },
+          'border-dash-pattern': [7, 3],
+          'outline-width': {
+            case: [
+              { when: { data: 'st', eq: 'o-dashed' }, then: 5 },
+              { when: { data: 'st', eq: 'o-dotted' }, then: 5 },
+            ],
+            else: 0,
+          },
+          'outline-color': '#7d3c98',
+          'outline-offset': 3,
+          'outline-style': {
+            case: [{ when: { data: 'st', eq: 'o-dotted' }, then: 'dotted' }],
+            else: 'dashed',
+          },
+          ghost: {
+            case: [{ when: { data: 'g', eq: 1 }, then: 'yes' }],
+            else: 'no',
+          },
+          'ghost-offset-x': 9,
+          'ghost-offset-y': 7,
+          'ghost-opacity': 0.5,
+          shape: {
+            case: [
+              { when: { data: 'sh', eq: 'ellipse' }, then: 'ellipse' },
+              { when: { data: 'sh', eq: 'rectangle' }, then: 'rectangle' },
+              {
+                when: { data: 'sh', eq: 'round-rectangle' },
+                then: 'round-rectangle',
+              },
+              { when: { data: 'sh', eq: 'hexagon' }, then: 'hexagon' },
+              { when: { data: 'sh', eq: 'star' }, then: 'star' },
+              { when: { data: 'sh', eq: 'barrel' }, then: 'barrel' },
+              {
+                when: { data: 'sh', eq: 'cut-rectangle' },
+                then: 'cut-rectangle',
+              },
+              {
+                when: { data: 'sh', eq: 'round-hexagon' },
+                then: 'round-hexagon',
+              },
+            ],
+            else: 'ellipse',
+          },
+        },
+      },
+      zoom: 1,
+      pan: { x: 280, y: 190 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'border-styles');
+    checkGolden(
+      'border-styles',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
+  });
+
   test('golden: GPU-evaluated color mappers (viridis scale)', async ({
     page,
   }, testInfo) => {
@@ -5147,6 +5272,416 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { minInk: 1200 },
+    );
+  });
+
+  test('parity: dashed borders — the closed-form tier (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Transparent fills, so the dashes are the scene's only ink (an
+    // opaque fill would paint over half of any error — the round-55
+    // lesson), and the tier's whole vocabulary: circle (exact angular
+    // arc length), eccentric ellipse (the recorded angle-parameterized
+    // deviation), rectangle and round-rectangle (v3's exact path
+    // walks), plus border-position and a dash offset, each of which
+    // moves every dash if mishandled.
+    // compact grid at zoom 2 (the round-56 close-up lesson): at zoom 1
+    // the AA fringe smears the 2 px gaps and a solid border reads
+    // within a percent of a dashed one — magnified, the gaps are real
+    // pixels and the feature-off control jumps
+    const elements = [
+      { data: { id: 'circ' }, position: { x: -58, y: -28 } },
+      { data: { id: 'circ2', doff: 1 }, position: { x: 0, y: -28 } },
+      { data: { id: 'rect', sh: 'rectangle' }, position: { x: 58, y: -28 } },
+      {
+        data: { id: 'rrect', sh: 'round-rectangle' },
+        position: { x: -58, y: 28 },
+      },
+      {
+        data: { id: 'inside', sh: 'rectangle', bp: 'inside' },
+        position: { x: 0, y: 28 },
+      },
+      {
+        data: { id: 'offset', sh: 'round-rectangle', doff: 1 },
+        position: { x: 58, y: 28 },
+      },
+    ];
+    const shared = {
+      width: 44,
+      height: 44,
+      'background-opacity': 0,
+      'border-width': 5,
+      'border-color': '#c0392b',
+      'border-style': 'dashed',
+    };
+    const v3Style = [
+      {
+        selector: 'node',
+        style: Object.assign(
+          { shape: 'ellipse', 'border-dash-pattern': [8, 4] },
+          shared,
+        ),
+      },
+
+      { selector: "node[sh = 'rectangle']", style: { shape: 'rectangle' } },
+      {
+        selector: "node[sh = 'round-rectangle']",
+        style: { shape: 'round-rectangle', 'corner-radius': 12 },
+      },
+      {
+        selector: "node[bp = 'inside']",
+        style: { 'border-position': 'inside' },
+      },
+      { selector: 'node[doff = 1]', style: { 'border-dash-offset': 6 } },
+    ];
+    const v4Style = {
+      nodes: Object.assign(
+        {
+          'border-dash-pattern': [8, 4],
+          shape: {
+            case: [
+              { when: { data: 'sh', eq: 'rectangle' }, then: 'rectangle' },
+              {
+                when: { data: 'sh', eq: 'round-rectangle' },
+                then: 'round-rectangle',
+              },
+            ],
+            else: 'ellipse',
+          },
+
+          'corner-radius': {
+            case: [{ when: { data: 'sh', eq: 'round-rectangle' }, then: 12 }],
+            else: -1,
+          },
+          'border-position': {
+            case: [{ when: { data: 'bp', eq: 'inside' }, then: 'inside' }],
+            else: 'center',
+          },
+          'border-dash-offset': {
+            case: [{ when: { data: 'doff', eq: 1 }, then: 6 }],
+            else: 0,
+          },
+        },
+        shared,
+      ),
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-border-dashed',
+      elements,
+      v3Style,
+      v4Style,
+      { minInk: 2000, bound: 0.008, zoom: 2 },
+    );
+  });
+
+  test('parity: dashed borders — the polygon tier (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the generated-walk tier: sharp polygons (exact), a round-*
+    // polygon (the recorded source-polygon approximation), barrel,
+    // cut-rectangle and the custom polygon blob walk
+    const shapes = [
+      'hexagon',
+      'star',
+      'diamond',
+      'triangle',
+      'cut-rectangle',
+      'barrel',
+      'round-hexagon',
+      'polygon',
+    ];
+    const elements = shapes.map((sh, i) => ({
+      data: { id: sh, sh },
+      position: { x: (i % 4) * 48 - 72, y: Math.floor(i / 4) * 52 - 26 },
+    }));
+    const shared = {
+      width: 42,
+      height: 38,
+      'background-opacity': 0,
+      'border-width': 4,
+      'border-color': '#2c3e50',
+      'border-style': 'dashed',
+      'border-dash-pattern': [7, 4],
+    };
+    const poly = [-1, -1, 1, -1, 1, 0.2, 0, 0.2, 0, 1, -1, 1];
+    const v3Style = [
+      { selector: 'node', style: Object.assign({}, shared) },
+      ...shapes.map((sh) => ({
+        selector: `node[sh = '${sh}']`,
+        style:
+          sh === 'polygon'
+            ? { shape: 'polygon', 'shape-polygon-points': poly }
+            : { shape: sh },
+      })),
+    ];
+    const v4Style = {
+      nodes: Object.assign(
+        {
+          shape: {
+            case: shapes.map((sh) => ({
+              when: { data: 'sh', eq: sh },
+              then: sh,
+            })),
+            else: 'ellipse',
+          },
+          'shape-polygon-points': poly,
+        },
+        shared,
+      ),
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-border-poly',
+      elements,
+      v3Style,
+      v4Style,
+      { minInk: 2000, bound: 0.012, zoom: 2 },
+    );
+  });
+
+  test('parity: dashed and dotted ellipses — exact arc length (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The round-38 plan budgeted an ANGLE-parameterized ellipse dash
+    // with a recorded deviation, and this scene is where that plan
+    // died: measured, the angle version's 5.0% mismatch was LARGER
+    // than the 3.6% a solid border scores, so the scene could not
+    // discriminate — round 27's measuring-nothing case.  v4 now
+    // integrates true elliptic arc length (Simpson, dash-gated) with a
+    // two-step Newton nearest-point parameter (the radial estimate
+    // shears +-2 px of phase across the band), and the eccentric
+    // ellipses land within AA noise of v3.  The [1, 1] dotted pair is
+    // the hard half: a 2 px period turns any phase error into
+    // anti-aligned ink.
+    const elements = [
+      { data: { id: 'e1' }, position: { x: -45, y: -28 } },
+      { data: { id: 'e2', dotted: 1 }, position: { x: 45, y: -28 } },
+      { data: { id: 'e3' }, position: { x: -45, y: 30 } },
+      { data: { id: 'e4', dotted: 1 }, position: { x: 45, y: 30 } },
+    ];
+    const shared = {
+      width: 70,
+      height: 34,
+      'background-opacity': 0,
+      'border-width': 5,
+      'border-color': '#c0392b',
+      'border-dash-pattern': [8, 4],
+    };
+    const v3Style = [
+      {
+        selector: 'node',
+        style: Object.assign(
+          { shape: 'ellipse', 'border-style': 'dashed' },
+          shared,
+        ),
+      },
+      { selector: 'node[dotted = 1]', style: { 'border-style': 'dotted' } },
+    ];
+    const v4Style = {
+      nodes: Object.assign(
+        {
+          'border-style': {
+            case: [{ when: { data: 'dotted', eq: 1 }, then: 'dotted' }],
+            else: 'dashed',
+          },
+        },
+        shared,
+      ),
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-border-ellipse',
+      elements,
+      v3Style,
+      v4Style,
+      { minInk: 1500, bound: 0.02, zoom: 2 },
+    );
+  });
+
+  test('parity: dotted and double borders (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // dotted is v3's hardcoded [1, 1] (the declared pattern must be
+    // ignored — one node declares a wild pattern to prove it); double
+    // keeps the fill opaque, because the erase stripe IS the feature:
+    // the middle third must show the page through both fill and border
+    const elements = [
+      {
+        data: { id: 'd1', st: 'dotted', sh: 'round-rectangle' },
+        position: { x: -58, y: -30 },
+      },
+      {
+        data: { id: 'd2', st: 'dotted', sh: 'rectangle' },
+        position: { x: 0, y: -30 },
+      },
+      {
+        data: { id: 'd3', st: 'dotted', sh: 'hexagon' },
+        position: { x: 58, y: -30 },
+      },
+      { data: { id: 'b1', st: 'double' }, position: { x: -58, y: 30 } },
+      {
+        data: { id: 'b2', st: 'double', sh: 'rectangle' },
+        position: { x: 0, y: 30 },
+      },
+      {
+        data: { id: 'b3', st: 'double', sh: 'round-rectangle' },
+        position: { x: 58, y: 30 },
+      },
+    ];
+    const shared = {
+      width: 48,
+      height: 42,
+      'background-color': '#f1c40f',
+      'border-width': 9,
+      'border-color': '#8e44ad',
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign({ shape: 'ellipse' }, shared) },
+      { selector: "node[st = 'dotted']", style: { 'border-style': 'dotted' } },
+      { selector: "node[st = 'double']", style: { 'border-style': 'double' } },
+      { selector: "node[sh = 'rectangle']", style: { shape: 'rectangle' } },
+      { selector: "node[sh = 'hexagon']", style: { shape: 'hexagon' } },
+      {
+        selector: "node[sh = 'round-rectangle']",
+        style: { shape: 'round-rectangle' },
+      },
+      // the declared pattern is wild ON EVERY NODE: dotted must ignore
+      // it (v3 hardcodes [1, 1]) and double reads no pattern at all, so
+      // if either style consults the pattern the whole scene shifts
+      { selector: 'node', style: { 'border-dash-pattern': [15, 15] } },
+    ];
+    const v4Style = {
+      nodes: Object.assign(
+        {
+          shape: {
+            case: [
+              { when: { data: 'sh', eq: 'rectangle' }, then: 'rectangle' },
+              { when: { data: 'sh', eq: 'hexagon' }, then: 'hexagon' },
+              {
+                when: { data: 'sh', eq: 'round-rectangle' },
+                then: 'round-rectangle',
+              },
+            ],
+            else: 'ellipse',
+          },
+          'border-style': {
+            case: [
+              { when: { data: 'st', eq: 'dotted' }, then: 'dotted' },
+              { when: { data: 'st', eq: 'double' }, then: 'double' },
+            ],
+            else: 'solid',
+          },
+          // list props are constants-only in v4 — the wild pattern is
+          // constant for the scene, and both styles here must ignore it
+          'border-dash-pattern': [15, 15],
+        },
+        shared,
+      ),
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-border-dotted-double',
+      elements,
+      v3Style,
+      v4Style,
+      { minInk: 4000, bound: 0.02, zoom: 2 },
+    );
+  });
+
+  test('parity: outline styles — the ellipse family (round 38)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3 hardcodes [4, 2] dashed / [1, 1] dotted, taking no props, and
+    // builds each shape's outline path by a per-shape expansion
+    // heuristic.  For ellipses that path is a uniformly scaled ellipse,
+    // which v4's ring + arc-length dash coordinate matches; for the
+    // polygon family v3 miters sharp corners where v4's ring is an SDF
+    // offset with ROUNDED corners (the recorded round-13 B5 ring-shape
+    // deviation), so no dash coordinate can align geometrically
+    // different corner paths — those shapes are covered by the
+    // `border-styles` golden instead, and the deviation is recorded in
+    // src/README.md.  This scene pins the family that CAN match.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -50, y: -30 } },
+      { data: { id: 'b', wide: 1 }, position: { x: 50, y: -30 } },
+      { data: { id: 'c', ost: 'dotted' }, position: { x: -50, y: 30 } },
+      {
+        data: { id: 'd', wide: 1, ost: 'dotted' },
+        position: { x: 50, y: 30 },
+      },
+    ];
+    const shared = {
+      'background-opacity': 0,
+      'outline-width': 5,
+      'outline-color': '#16a085',
+      'outline-offset': 4,
+    };
+    const v3Style = [
+      {
+        selector: 'node',
+        style: Object.assign(
+          {
+            shape: 'ellipse',
+            width: 46,
+            height: 46,
+            'outline-style': 'dashed',
+          },
+          shared,
+        ),
+      },
+      { selector: 'node[wide = 1]', style: { width: 66, height: 38 } },
+      {
+        selector: "node[ost = 'dotted']",
+        style: { 'outline-style': 'dotted' },
+      },
+    ];
+    const v4Style = {
+      nodes: Object.assign(
+        {
+          width: {
+            case: [{ when: { data: 'wide', eq: 1 }, then: 66 }],
+            else: 46,
+          },
+          height: {
+            case: [{ when: { data: 'wide', eq: 1 }, then: 38 }],
+            else: 46,
+          },
+          'outline-style': {
+            case: [{ when: { data: 'ost', eq: 'dotted' }, then: 'dotted' }],
+            else: 'dashed',
+          },
+        },
+        shared,
+      ),
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-outline-style',
+      elements,
+      v3Style,
+      v4Style,
+      { minInk: 1500, bound: 0.02, zoom: 2 },
     );
   });
 

@@ -6,22 +6,24 @@ import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
 /**
- * Storage-buffer bindings 1..8, in binding order (0 is the Frame uniform).
- * Geometry columns bind to the vertex stage; decoration columns bind to
- * the fragment stage (fetched via the flat instance index) so each stage
- * stays within the baseline 8-storage-buffer limit alongside the
- * @group(1) visible list.
+ * Storage-buffer bindings 1..12, in binding order (0 is the Frame
+ * uniform; 13 is the C3 custom-polygon blob).  Geometry columns bind to
+ * the vertex stage; decoration columns bind to the fragment stage
+ * (fetched via the flat instance index) so each stage stays within the
+ * baseline 8-storage-buffer limit alongside the @group(1) visible list.
  */
 const V = SHADER_STAGE.VERTEX;
 const F = SHADER_STAGE.FRAGMENT;
 
 /**
- * Columns by binding number (0 is the Frame uniform; 11 is the C3
+ * Columns by binding number (0 is the Frame uniform; 13 is the C3
  * custom-polygon blob).  The per-stage 8-storage-buffer budget forces
  * two bind group layouts (round 13 C3): the main/prepass pipelines
  * exclude the ghost column (their entry points never read it), the
  * ghost pipeline excludes node.flags (no accent/hover on ghosts) —
- * each lands at exactly 8 fragment-visible storage buffers.
+ * each lands at exactly 8 fragment-visible storage buffers, and the
+ * ghost layout at exactly 8 vertex-visible ones too (round 38's two
+ * vertex-only dash columns filled the last slots).
  */
 const NODE_COLUMNS: {
   id: ColumnId;
@@ -39,6 +41,11 @@ const NODE_COLUMNS: {
   { id: 'node.flags', visibility: F, mainOnly: true },
   { id: 'node.ghost', visibility: V | F, ghostOnly: true },
   { id: 'node.borderGeom', visibility: V | F },
+  // round 38: the dashed border's pattern/offset bind VERTEX-only and
+  // reach the FS as flat varyings — the fragment stage sits at exactly
+  // 8 storage buffers in both layouts and has no slot to give
+  { id: 'node.borderDash', visibility: V },
+  { id: 'node.borderDashMeta', visibility: V },
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {

@@ -114,6 +114,22 @@ const SCENES = [
     label: 'generated 25k × 50k arrows (half hollow, 0.6 alpha)',
     page: { n: 25000, m: 50000, arrows: 'mixed' },
   },
+  // round 38: the dashed-polygon fragment premium the sitting accepted
+  // (~2x polygon fragment cost where a dash is enabled), priced as a
+  // pair over one geometry — `solid` is the baseline branch cost,
+  // `dashed` runs the generated perimeter walk per border fragment on
+  // every hexagon.  Compare the pair's device rows, not the wall rows:
+  // both sides vsync-floor on this machine.
+  {
+    key: 'gen-25k-borders-solid',
+    label: 'generated 25k × 50k hexagon borders (solid)',
+    page: { n: 25000, m: 50000, borders: 'solid' },
+  },
+  {
+    key: 'gen-25k-borders-dashed',
+    label: 'generated 25k × 50k hexagon borders (dashed)',
+    page: { n: 25000, m: 50000, borders: 'dashed' },
+  },
 ];
 
 // --layout: instead of the pan scenarios, run the round-18 force layout

@@ -121,7 +121,8 @@ arrowheads by v3's own nonlinear formula, and accepts a numeric
 `text-rotation` on any label.  Each family is pinned by a live
 v3-vs-v4 parity diff rather than by a golden alone — see the
 round-27 records in PLAN.md for the measurements.  `border-style`/
-`outline-style` remain the one unported style pair.
+`outline-style` remained the one unported style pair until round 38
+(2026-08-08) closed it.
 
 Round 28 (2026-08-03) took what was left of the gap ledger that
 needed no design call: **CPU-pick coverage** for round 27's shapes
@@ -382,6 +383,18 @@ literal and a rolldown plugin strips comments and collapses whitespace
 with `${...}` interpolations byte-for-byte opaque, taking
 `cytoscape.min.js` from 663.3 to 601.1 KiB (182.3 → 163.3 KiB gzipped).
 See "Shipped shaders" below.
+
+Round 38 (2026-08-08, out of numeric order — it waited on its design
+sitting) ports the last unported v3 style pair: **`border-style` and
+`outline-style` at full coverage, every shape**, plus
+`border-dash-pattern`/`-offset`.  The node fragment shader gained the
+perimeter coordinate the pair needed — per-shape arc length with u = 0
+and direction matching v3's canvas path construction, exact elliptic
+arc length included — and v3's `double` erase, dotted's hardcoded
+[1, 1], and the outline's hardcoded [4, 2]/[1, 1] all draw as v3 draws
+them.  Five live parity scenes pin it (the exact tiers at 0.18–1.19%
+with feature-off controls at 3.6–10.9%); the details and the recorded
+deviations are in the border-style section below.
 
 Round 54 (2026-08-08) is the bounds round: the conservative fit scan's
 compound-loop term went from a disc of `p2 + the global nodeHalfMax`
@@ -680,9 +693,9 @@ Node outlines (round 13 B5): `outline-color`/`-opacity`/`-width`/
 outer edge — exactly v3's scaled-path stroke for circles and squares
 (anisotropic shapes deviate from v3's per-axis scaling, recorded);
 ghosts carry their outline; outlines are not pickable and grow the
-bb by offset/2 + width.  `outline-style` is still unbuilt, with
-`border-style`: both need a *perimeter* coordinate the node
-fragment shader does not have.
+bb by offset/2 + width.  `outline-style` and `border-style` landed in
+round 38: the node fragment shader gained the *perimeter* coordinate
+they both needed — see the round-38 border-style section below.
 
 The edge shader dashes for free
 because it carries `u` (model px along the edge) as a varying,
@@ -3449,12 +3462,114 @@ it names as dropped must still be rejected, every replacement it offers
 must still compile, and the defaults it tells readers to re-check must
 still be what it says.
 
+## Border and outline styles (round 38)
+
+The last unported v3 style pair, landed at the sitting's full-coverage
+scope: `border-style` (`solid` | `dashed` | `dotted` | `double`),
+`outline-style` (same keywords), `border-dash-pattern` (normalized to
+two on/off pairs exactly like `edge.dashPattern`; v3's default [4, 2])
+and `border-dash-offset`.  All four are sheet props on the nodes group;
+the two styles and the offset are case-mappable, the pattern is
+constants-only like every list prop.  v3 semantics, each measured in
+v3's source rather than assumed: `dashed` reads the pattern and offset;
+`dotted` hardcodes [1, 1] and IGNORES the declared pattern (v3's
+drawBorder switch); `double` strokes solid and then erases the middle
+third (destination-out at width/3); `outline-style` takes no props at
+all ([4, 2] dashed, [1, 1] dotted).
+
+**Where the data lives** is shaped by the storage-buffer budget: the two
+style enums ride free bits of `borderGeom.y` (8..9 and 10..11), which
+the fragment stage already binds, while the dash pattern and offset are
+two new columns (`node.borderDash`, `node.borderDashMeta`) bound
+**vertex-only** — the node FS sits at exactly 8 storage buffers in both
+layouts — and reach the fragment stage as flat varyings, the round-57.1b
+slot trick in reverse.  The ghost pipeline's vertex stage lands at
+exactly 8 with them.
+
+**The perimeter coordinate** (`perimeterCoord` in the node shader) is
+the piece the pair was waiting on: the arc-length position, along the
+shape outline, of the boundary point nearest the fragment — with u = 0
+and walk direction matching v3's canvas path construction per shape,
+because the dash phase starts where the path starts and a half-period
+error reads as anti-aligned dashes.  Per tier:
+
+- **Closed form**: rectangle (v3's 4-gon — top-left corner, down the
+  left side first), round-rectangle and bottom-round-rectangle (v3's
+  arcTo paths from the top middle, clockwise, corner arcs measured
+  exactly), cut-rectangle (the octagon walk in v3's vertex order).
+- **Ellipse and circle: exact elliptic arc length.**  The round-38 plan
+  budgeted an angle-parameterized approximation with a recorded
+  deviation, and measurement killed it: the angle version's 5.0%
+  parity mismatch exceeded the 3.6% a SOLID border scores, so the
+  deviation scene could not discriminate (round 27's measuring-nothing
+  case).  What shipped integrates arc length numerically (composite
+  Simpson, 48 intervals, dash-gated so solid borders never pay) with a
+  two-step Newton refinement to the nearest-point parameter — the
+  radial estimate shears ±2 px of phase across a ±2.5 px border band,
+  which anti-aligned v3's 2-px-period dots.  Worst case measured
+  0.003 px.
+- **The polygon family**: generated per-shape perimeter twins beside
+  the SDF functions — the same vertex tables walked in v3's path order
+  with an argmin edge and cumulative length — plus the same walk over
+  the custom-polygon blob and over barrel's sampled corner curves (in
+  v3's path order, which differs from the SD function's own vertex
+  order).  Round-* shapes walk their SOURCE polygon's edges: a
+  recorded approximation (the drawn corner arcs are shorter than the
+  sharp corners), measured inside the polygon tier's 0.54% parity
+  reading.
+
+**The double erase** ports as alpha-0 stripe fragments — fill and
+border are one draw, so "erase the middle third" is those fragments
+contributing nothing.  Two consequences, both recorded: the stripe
+shows whatever the scene drew beneath the node, where v3's
+destination-out punches through to the page (an edge under a double
+border shows through the gap in v4 and not in v3 — in the migration
+guide's re-check table); and double-bordered nodes are excluded from
+the opaque depth prepass, on the gradient-fill precedent, because a
+node with a hole in it is not an occluder.
+
+**Outline dashes** evaluate the perimeter at the ring's own radius
+(v3 dashes a scaled path, so without this the phase drifts a period
+per side), with v3's anisotropic pad reproduced for the polygon family
+(expandPolygon pads in unit space divided by nodeWidth alone) and the
+corner radius padded for the round-rectangle family.  Two recorded
+deviations remain: **outline dash phase on polygon-family shapes** — v3
+miters sharp outline corners where v4's ring is an SDF offset with
+rounded corners, geometrically different paths no dash coordinate can
+align, so the parity scene pins the ellipse family and the
+`border-styles` golden covers the rest; and **`outline-style: double`
+draws solid** — v3's drawOutline erase strokes at *border* width / 3
+(a v3 bug: with no border that is lineWidth 0), so there is no sane
+v3 behaviour to match and the keyword reads back but adds no stripe.
+
+**`border-cap` / `border-join` drop** (the sitting's third sub-call):
+dash ends are perpendicular cuts by construction, the same butt-cut
+deviation the edge layers record.  Rows are in the migration guide.
+`text-border-style` stays out — the label-box border is a different
+pipeline and nothing here makes it free (the docs-first call the plan
+reserved).
+
+**Verification.**  Five live parity scenes at zoom 2 (the round-56
+close-up lesson: at zoom 1 the AA fringe smears 2 px gaps and a solid
+border reads within a percent of a dashed one): the closed-form tier
+0.178%, polygons 0.538%, exact-arc ellipses 0.793%, dotted + double
+1.190%, ellipse-family outlines 0.791% — with feature-off controls at
+4.17% / 4.03% / 3.61% / 10.86% / 3.61%, each far past its scene's
+bound.  A 40-cell golden (`border-styles`) covers every shape tier ×
+style including the polygon-family outline rows parity deliberately
+excludes, and one cell draws a ghost with a dashed border — the
+fsGhost dash path's only pixel coverage, proven load-bearing by a
+ghost-only shader control.  The renderer benchmark gained a
+solid/dashed hexagon-border scene pair: the accepted ~2× dashed-border
+fragment premium is **unmeasurable at scene level** on real hardware
+(3.41 vs 3.41 ms device fit-all, 4.48 vs 4.52 ms zoomed-in, RX 580 at
+25k nodes) because border-band fragments are a small share of a frame.
+
 ## Known deviations from v3 (accepted for pass 1)
 
-> **One entry below is *not* accepted** and says so where it appears:
-> `border-style` / `outline-style` (round 38).  Everything else in this
-> section is a decision, not a backlog item.  (The missing arrow `gap`
-> was the other; round 56 landed it.)
+> Everything in this section is a decision, not a backlog item.  (The
+> two entries that once said otherwise are both closed: the arrow `gap`
+> landed in round 56, and `border-style` / `outline-style` in round 38.)
 
 - **`:active` reaches nodes only** (round 57.1).  The press affordance
   is v3's `:active` block, and v4 gets it the way v3 does — from the
@@ -3709,9 +3824,9 @@ still be what it says.
   end at the endpoints — identical to v3's default butt).  Picking
   ignores the gaps, as v3 does.
 
-  `border-style` is not ported
-  (dashing an arbitrary SDF boundary needs perimeter
-  parameterization — see the border-geometry note above).
+  `border-style` dashes every
+  shape since round 38 (the perimeter coordinate the note above asked
+  for — see the round-38 section).
 - **Node shapes** (round 10): `ellipse`/`circle`, `rectangle`/`square`,
   `round-rectangle`, plus the polygon family — `triangle`, `pentagon`,
   `hexagon`, `heptagon`, `octagon`, `diamond`, `rhomboid`, `vee`,
@@ -4341,12 +4456,10 @@ it here in round 57.4.*
   **`border-style` / `outline-style`** was
   the last one left, waiting on a scope call rather than a technique;
   the fifth design sitting took it — **full coverage, every shape** —
-  and it builds as round 38, which has not started: scoping it turned
-  up three further sub-calls the sitting did not reach (v3's `double`
-  *erases* a stripe rather than drawing a second band;
-  `dashed` borders need `border-dash-pattern`/`-offset`, which v4 has
-  for edges and not for nodes; `border-cap`/`-join` have no v4
-  counterpart), logged in PLAN.md's open call 1.
+  its three sub-calls were taken at the sixth, and **round 38 landed it
+  in full on 2026-08-08** (v3's `double` erase included, plus
+  `border-dash-pattern`/`-offset`; `border-cap`/`-join` are dropped by
+  the sitting's call).
   ~~The `panBy` animation target~~ — **closed by round 28.2**
   (2026-08-03, the viewport-targets bullet above).
 

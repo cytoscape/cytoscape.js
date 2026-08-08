@@ -233,10 +233,36 @@ export const BARREL_CURVE_SEGMENTS = 4;
 The node shape id rides `borderGeom.y` alongside the border position
 (bits 0..7).  Round 27.1 widened the field from four bits to a full byte
 — 15 of the 16 ids were used, and round 27's twelve new keywords would
-not have fitted.  Bits 8..15 and 24..31 of that word remain free.
+not have fitted.  Round 38 took four of the free bits for the two
+stroke-style enums; bits 12..15 and 24..31 of that word remain free.
 */
 export const SHAPE_SHIFT = 16;
 export const SHAPE_MASK = 0xff;
+
+// -- border / outline stroke styles (round 38; borderGeom.y bit fields) --
+
+/*
+`border-style` rides borderGeom.y bits 8..9 and `outline-style` bits
+10..11, so the node fragment shader reads both from a word it already
+binds — the node pipeline is at exactly 8 fragment-visible storage
+buffers per stage, which is why the dashed border's *pattern* travels
+differently: the `node.borderDash`/`node.borderDashMeta` columns bind
+vertex-only and reach the FS as flat varyings (the round-57.1b slot
+trick, in reverse).  v3 semantics per style: `dashed` reads
+border-dash-pattern/-offset, `dotted` hardcodes [1, 1] (it ignores the
+pattern — measured in v3's drawBorder switch), `double` strokes solid
+and then erases the middle third (destination-out; v4 ports it as
+alpha-0 stripe fragments), and `outline-style` takes no dash props at
+all ([4, 2] hardcoded, [1, 1] for dotted, and its `double` draws SOLID
+— v3's drawOutline has no double branch, a quirk kept for parity).
+*/
+export const BORDER_STYLE_SHIFT = 8;
+export const OUTLINE_STYLE_SHIFT = 10;
+export const STROKE_STYLE_MASK = 0x3;
+export const STROKE_SOLID = 0;
+export const STROKE_DASHED = 1;
+export const STROKE_DOTTED = 2;
+export const STROKE_DOUBLE = 3;
 
 // -- node chart kinds (round 23; stored in the chart blob record) --
 
@@ -492,7 +518,9 @@ export type ColumnId =
    * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
    * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
    * 'auto', v3's min(w/4, h/4, 8)), borderPosition (bits 0..7: 0
-   * center — v3's default, 1 inside, 2 outside) | shape id << 16
+   * center — v3's default, 1 inside, 2 outside) | border-style
+   * bits 8..9 | outline-style bits 10..11 (round 38; see the stroke
+   * style constants) | shape id << 16
    * (round 13 C2: a copy of node.shape so the node FS can drop the
    * shapes binding — the slot went to the gradient column; the style
    * engine writes both together), outline rgba (outline-opacity
@@ -503,6 +531,22 @@ export type ColumnId =
    * round-rectangle inside test).
    */
   | 'node.borderGeom'
+  /**
+   * Float32Array(4·cap) — the dashed border's pattern (round 38),
+   * normalized to two on/off pairs exactly like `edge.dashPattern`
+   * (v3's default [4, 2] stores as [4, 2, 4, 2]).  Read only when
+   * borderGeom.y's border-style bits say `dashed`; `dotted` hardcodes
+   * [1, 1] in the shader (v3's rule).  Binds vertex-only in the node
+   * pipeline — the FS is at its 8-storage-buffer budget — and reaches
+   * the fragment stage as flat varyings.
+   */
+  | 'node.borderDash'
+  /**
+   * Float32Array(2·cap) — [border-dash-offset (model px), reserved],
+   * the `edge.dashMeta` twin for borders (round 38).  Same vertex-only
+   * binding rule as 'node.borderDash'.
+   */
+  | 'node.borderDashMeta'
   /**
    * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
    * stops (v3's canvas gradients), constants-only, capped at 5 (a
@@ -702,6 +746,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec('node.outerHalf', 'nodes', Float32Array, 2),
   spec('node.ghost', 'nodes', Float32Array, 4),
   spec('node.borderGeom', 'nodes', Uint32Array, 4),
+  spec('node.borderDash', 'nodes', Float32Array, 4),
+  spec('node.borderDashMeta', 'nodes', Float32Array, 2),
   spec('node.gradient', 'nodes', Uint32Array, 8),
   spec('node.overlay', 'nodes', Uint32Array, 4),
   spec('node.underlay', 'nodes', Uint32Array, 4),

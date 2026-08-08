@@ -267,9 +267,9 @@ you can style on, you can query for. `:visible`, `:hidden`, `:transparent`,
 ## Style properties that moved
 
 v3 registers **291** property names (properties plus aliases). v4 accepts
-**153** of them — 7 only in the `core` group — and rejects **138**. Of the
+**157** of them — 7 only in the `core` group — and rejects **134**. Of the
 rejections, 96 are v3's numbered `pie-N-*` / `stripe-N-*` props, which became
-one `chart` family. The remaining 42 are the table below.
+one `chart` family. The remaining 38 are the table below.
 
 *(Measured against both libraries, not transcribed. A rejected property name
 throws at `cy.style()` with "The style property 'x' is unsupported"; v4 never
@@ -295,8 +295,8 @@ ignores one silently.)*
 | `bounds-expansion` | **dropped.** Bounds are computed correctly instead |
 | `outside-texture-bg-color/-opacity` | **dropped** with `textureOnViewport` |
 | `mid-source-arrow-fill/-width`, `mid-target-arrow-fill/-width` | **unsupported.** Mid arrows are always filled at standard width |
-| `border-style`, `outline-style`, `text-border-style` | **not yet ported** — see [Not ported](#not-ported) |
-| `border-dash-pattern`, `border-dash-offset`, `border-cap`, `border-join` | **not yet ported**, with `border-style` |
+| `text-border-style` | **not yet ported** — see [Not ported](#not-ported); `border-style` and `outline-style` themselves work (round 38) |
+| `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction (the same butt-cut deviation the edge layers record); `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
 
 Also renamed or re-scoped without being rejected:
 
@@ -378,6 +378,7 @@ app trips on after everything else works.
 | Position precision | Float64 | **Float32** (~7 significant digits) |
 | `bezier` bundling | same | same — a *lone* edge under `curve-style: bezier` still renders straight; only parallel edges fan |
 | Colour animation | per-channel sRGB | **OKLab**, matching colour mappers |
+| `border-style: double` under an edge | erases to the page (destination-out) | the stripe shows whatever the scene drew beneath the node — an edge passing under the border shows through the gap where v3 punches to the background |
 | `spring()` easing | `spring( tension, friction )` | **`spring( bounce )`** — one number; 0 is critically damped |
 | Custom easing functions | accepted | **throw.** A closure cannot cross to the GPU; `cubic-bezier()` and `linear()` cover any drawable curve |
 | Label bounding boxes | opt-in | **`boundingBox()` includes labels by default**; opt out with `{ includeLabels: false }` |
@@ -481,9 +482,9 @@ Deliberately, with no replacement planned:
 
 Not yet built, and tracked:
 
-- **`border-style` / `outline-style` / `text-border-style`** — the technique
-  is settled and the scope call is taken (full coverage, every shape); three
-  sub-questions are open. See PLAN.md's open call 1.
+- **`text-border-style`** — the label box border does not dash;
+  `border-style` and `outline-style` landed in round 38 (every shape,
+  including v3's `double` erase and dash pattern/offset props).
 - **`cytoscape.warnings()`** and the error policy behind it.
 - **Functional `preventDefault()`** for v4's own gesture defaults.
 - Core/collection/renderer extension points — demand-gated.

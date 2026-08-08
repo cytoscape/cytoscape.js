@@ -66,7 +66,8 @@ export type OutputStops =
 export type CompiledCondition = {
   key: string;
   op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
-  /** booleans back the structural '::parent'/'::child' keys (round 14.7) */
+  /** booleans back the reserved '::parent'/'::child' (round 14.7) and
+   * '::selected' (round 57.1) keys */
   value: string | number | boolean | (string | number)[];
 };
 
@@ -158,6 +159,36 @@ const CONDITION_OPS: ReadonlySet<string> = new Set([
   'gte',
   'in',
 ]);
+
+/**
+ * The condition vocabulary that reads a *flag* rather than data: the
+ * spelling a sheet writes → the reserved key it compiles to, and whether
+ * the boolean inverts on the way (the two structural negations v3 names
+ * separately).  Several spellings may share a key; the engine's value
+ * reader only ever sees the keys.
+ */
+const STATE_CONDITIONS = {
+  parent: { key: '::parent', negate: false },
+  childless: { key: '::parent', negate: true },
+  child: { key: '::child', negate: false },
+  orphan: { key: '::child', negate: true },
+  selected: { key: '::selected', negate: false },
+  selectable: { key: '::selectable', negate: false },
+  locked: { key: '::locked', negate: false },
+  grabbed: { key: '::grabbed', negate: false },
+  grabbable: { key: '::grabbable', negate: false },
+  active: { key: '::active', negate: false },
+  hovered: { key: '::hovered', negate: false },
+} as const satisfies Record<string, { key: string; negate: boolean }>;
+
+const STATE_KEYS = Object.keys(
+  STATE_CONDITIONS,
+) as (keyof typeof STATE_CONDITIONS)[];
+
+/** The reserved keys a flag condition compiles to, deduped. */
+export const STATE_CONDITION_KEYS: readonly string[] = [
+  ...new Set(Object.values(STATE_CONDITIONS).map((s) => s.key)),
+];
 
 const CONTINUOUS_SCALES: ReadonlySet<string> = new Set([
   'linear',
@@ -602,16 +633,30 @@ const compileCondition = (
   opts: CompileOpts,
   cond: Condition,
 ): CompiledCondition => {
-  // structural conditions (round 14.7): { parent: bool } / { child: bool }
-  // stand alone and compile to the reserved '::parent'/'::child' keys the
-  // engine's value reader answers from the hierarchy flags — so deps,
-  // evaluation and the hierarchy-change refresh all reuse the data path
-  if (cond != null && (cond.parent != null || cond.child != null)) {
-    if (cond.parent != null && cond.child != null) {
+  // structural and state conditions: { parent: bool } / { child: bool }
+  // (round 14.7) and the state family (round 57.1).  Each stands alone
+  // and compiles to a reserved '::' key the engine's value reader answers
+  // from the flags column — so deps, evaluation and the change-driven
+  // refresh all reuse the data path rather than growing a second one.
+  //
+  // Every one of these is a *bit*, which is why the vocabulary is worth
+  // having at all: the negative spellings v3 carries as separate
+  // selectors (:unselected, :unlocked, :free, :ungrabbable,
+  // :unselectable, :inactive) are the same key with `false`, and
+  // :childless / :orphan are the two structural negations under their v3
+  // names.  Deliberately absent: :compound (a node meaning that is
+  // exactly :parent, plus an edge meaning — touching a parent — that no
+  // bit answers), :loop / :simple (source == target is a column compare,
+  // not a flag), and :visible / :hidden / :transparent (computed *from*
+  // style, so a style rule conditioned on one is circular).
+  const named = STATE_KEYS.filter((k) => cond?.[k] != null);
+
+  if (cond != null && named.length > 0) {
+    if (named.length > 1) {
       throw err(
         opts.prop,
-        `a structural condition tests 'parent' or 'child', not both ` +
-          `(AND them via the 'when' array form)`,
+        `a structural condition tests one of ${STATE_KEYS.join(', ')}, ` +
+          `not several (AND them via the 'when' array form)`,
       );
     }
 
@@ -626,18 +671,16 @@ const compileCondition = (
       );
     }
 
-    const structural = cond.parent != null ? 'parent' : 'child';
+    const structural = named[0];
     const value = cond[structural];
 
     if (typeof value !== 'boolean') {
       throw err(opts.prop, `'${structural}' takes a boolean`);
     }
 
-    return {
-      key: structural === 'parent' ? '::parent' : '::child',
-      op: 'eq',
-      value,
-    };
+    const state = STATE_CONDITIONS[structural];
+
+    return { key: state.key, op: 'eq', value: state.negate ? !value : value };
   }
 
   if (cond == null || typeof cond.data !== 'string' || cond.data === '') {

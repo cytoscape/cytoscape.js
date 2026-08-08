@@ -207,8 +207,41 @@ export interface Condition {
    * A structural condition stands alone — AND it with data conditions
    * via the `when` array form. */
   parent?: boolean;
+  /** structural (round 14.7, nodes only): the element has no children —
+   * v3's `:childless`, and exactly `{ parent: false }` */
+  childless?: boolean;
   /** structural (round 14.7, nodes only): the element has a parent */
   child?: boolean;
+  /** structural (round 14.7, nodes only): the element has no parent —
+   * v3's `:orphan`, and exactly `{ child: false }` */
+  orphan?: boolean;
+  /** state (round 57.1): the element is selected.  This is what v4's
+   * **default stylesheet** uses to give selection a colour — nodes'
+   * `background-color`, edges' `line-color` and the four arrow colours
+   * are conditional mappers rather than constants — so declaring any of
+   * those props in your own sheet replaces the rule and the selection
+   * colour with it, exactly as it does in v3. */
+  selected?: boolean;
+  /** state (round 57.1): the element is selectable — v3's
+   * `:selectable`; `false` is its `:unselectable` */
+  selectable?: boolean;
+  /** state (round 57.1): the element is locked — v3's `:locked`;
+   * `false` is its `:unlocked` */
+  locked?: boolean;
+  /** state (round 57.1): the user is dragging the element — v3's
+   * `:grabbed`; `false` is its `:free` */
+  grabbed?: boolean;
+  /** state (round 57.1): the element can be dragged — v3's
+   * `:grabbable`; `false` is its `:ungrabbable` */
+  grabbable?: boolean;
+  /** state (round 57.1): the element is under an active press — v3's
+   * `:active`; `false` is its `:inactive`.  v3 draws a fixed black wash
+   * for this and v4 draws it from the default stylesheet's `overlay-*`
+   * props, so restyling or removing the affordance is a sheet edit. */
+  active?: boolean;
+  /** state (round 57.1): the pointer is over the element.  v4's own,
+   * with no v3 spelling — v3 styles hover not at all. */
+  hovered?: boolean;
 }
 
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */

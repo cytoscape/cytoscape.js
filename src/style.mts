@@ -26,7 +26,7 @@ import {
   CHART_PIE,
   CHART_STRIPES,
   columnSpec,
-  FLAG_CHILD,
+  CONDITION_FLAGS,
   FLAG_NO_EVENTS,
   FLAG_PARENT,
   FLAG_SELF_INVISIBLE,
@@ -3850,6 +3850,40 @@ interface BoundMapper {
 }
 
 /**
+ * The state bits a group's mappers read, when they read *nothing else* —
+ * else null.  See `GroupDef.partition` for why the distinction earns its
+ * place.
+ *
+ * The test is deliberately strict.  One data-driven mapper in the group
+ * puts it back on the per-element path anyway, so there is nothing to
+ * win by partitioning the rest; and a `case` mixing a state condition
+ * with a data one has a value that varies per element by definition.
+ */
+const partitionOf = (
+  mappers: readonly BoundMapper[],
+): { mask: number; records: Map<number, Computed> } | null => {
+  let mask = 0;
+
+  for (const bm of mappers) {
+    if (bm.m.program.kind !== 'case') {
+      return null;
+    }
+
+    for (const key of bm.m.keys) {
+      const bit = CONDITION_FLAGS[key];
+
+      if (bit == null) {
+        return null;
+      }
+
+      mask |= bit;
+    }
+  }
+
+  return mask === 0 ? null : { mask, records: new Map() };
+};
+
+/**
  * Paint channels: props whose stored bytes no CPU path reads back except
  * the style getters — the GPU-eligible half of the mapper split.  (The
  * geometry channels — size, border-width, shape, edge width — feed
@@ -3950,13 +3984,6 @@ interface TransitionSpec {
   delay: number;
   easing: string;
 }
-
-const DEFAULT_TRANSITION: TransitionSpec = {
-  props: [],
-  duration: 0,
-  delay: 0,
-  easing: 'linear',
-};
 
 /**
  * Where a transitionable prop tweens, per group — the animation system's
@@ -4286,6 +4313,25 @@ interface GroupDef {
   > | null;
   /** the group's transition config (round 24.1) */
   transition: TransitionSpec;
+  /**
+   * The flag-partition fast path (round 57.1).  Non-null when *every*
+   * mapper in the group is a `case` over state conditions alone —
+   * `{ selected: true }`, `{ active: true }` and the rest — which is
+   * exactly what v4's default stylesheet is.
+   *
+   * Such a group has one computed record per distinct combination of the
+   * bits it reads, not one per element: two for the default sheet's
+   * nodes at rest, four once something is both selected and pressed.  So
+   * applying it is a mask, a Map hit and the same write the constant
+   * path does, instead of running a program per element.  Without this
+   * every graph in existence would pay per-element mapper evaluation at
+   * load for affordances almost none of its elements are using
+   * (measured: ~6% of a 150k-element init).
+   *
+   * `mask` is the OR of the bits read; `records` is the lazily built
+   * cache, keyed by `flags & mask`.
+   */
+  partition: { mask: number; records: Map<number, Computed> } | null;
 }
 
 const SHEET_KEYS: ReadonlySet<string> = new Set([
@@ -4295,14 +4341,80 @@ const SHEET_KEYS: ReadonlySet<string> = new Set([
   'core',
 ]);
 
+/**
+ * v4's **default stylesheet** (round 57.1) — the rules that make an
+ * unstyled graph look like a working one.
+ *
+ * These are ordinary sheet props, spread *before* the user's block in
+ * `setSheet`, which is v3's order-based precedence expressed as an
+ * object spread (the same mechanism `PARENT_CHANNEL_OVERLAY` below has
+ * used since round 14.6).  So declaring `background-color` in your own
+ * `nodes` block replaces this rule entirely — the selection colour with
+ * it — exactly as it does in v3, where these live in the default
+ * stylesheet and any later block beats them.
+ *
+ * They are conditional mappers rather than shader constants for the
+ * reason v4 has mappers at all: the value stays *declarative*.  It reads
+ * back through `style()`, it serializes, and an app can replace it with
+ * its own `case` — where a shader-drawn affordance could only be turned
+ * off.  The condition is `{ selected: true }`, which round 57.1 added
+ * beside round 14.7's `{ parent }`/`{ child }`.
+ *
+ * The colours are v3's `:selected` and `:parent:selected` blocks
+ * verbatim.
+ */
+const onState = (
+  state: 'selected' | 'active',
+  then: string | number,
+  otherwise: string | number,
+): StyleProps[string] =>
+  ({ case: [{ when: { [state]: true }, then }], else: otherwise }) as never;
+
+const onSelected = (then: string, otherwise: string): StyleProps[string] =>
+  onState('selected', then, otherwise);
+
+/**
+ * v3's `:active` block — the press affordance — as one conditional prop.
+ *
+ * v3 writes three (`overlay-color: black`, `overlay-padding: 10`,
+ * `overlay-opacity: 0.25`), but two of them are already v4's constant
+ * defaults, so only the opacity has to move.  That matters beyond
+ * brevity: it is the whole of the affordance, so `overlay-opacity: 0` in
+ * a sheet turns the press highlight off, and any other `overlay-*` value
+ * restyles it without losing it.
+ *
+ * Both groups get it, as in v3.  Until round 57.1 this was drawn from
+ * FLAG_ACTIVE inside the layer shader, which meant it could be neither.
+ */
+const ACTIVE_OVERLAY: StyleProps = {
+  'overlay-opacity': onState('active', 0.25, 0),
+};
+
+const NODE_DEFAULT_BLOCK: StyleProps = {
+  'background-color': onSelected('#0169D9', '#999'),
+  ...ACTIVE_OVERLAY,
+};
+
+const EDGE_DEFAULT_BLOCK: StyleProps = {
+  'line-color': onSelected('#0169D9', '#999'),
+  'source-arrow-color': onSelected('#0169D9', '#999'),
+  'target-arrow-color': onSelected('#0169D9', '#999'),
+  'mid-source-arrow-color': onSelected('#0169D9', '#999'),
+  'mid-target-arrow-color': onSelected('#0169D9', '#999'),
+  // v3's default sheet carries `edge { width: 3 }` — its only element rule
+  width: 3,
+  ...ACTIVE_OVERLAY,
+};
+
 /** v3's default `:parent` block (round 14.6): the channel overlay parent
  * nodes get on top of the nodes group.  Padding 10 rides the compound
- * defaults instead (it is not a channel). */
+ * defaults instead (it is not a channel).  Its two colours carry v3's
+ * `:parent:selected` tint the same way the nodes block above does. */
 const PARENT_CHANNEL_OVERLAY: StyleProps = {
   shape: 'rectangle',
-  'background-color': '#eee',
+  'background-color': onSelected('#CCE1F9', '#eee'),
   'border-width': 1,
-  'border-color': '#ccc',
+  'border-color': onSelected('#aec8e5', '#ccc'),
 };
 
 /** The parents-group compound props (constants only; not channels). */
@@ -5461,6 +5573,11 @@ defineReader(
   (store, slot) => store.curveStyleAt(slot).endpoints?.tgtDist ?? 0,
 );
 
+/** The reserved condition keys, as a set — the sheet-scan gate. */
+const CONDITION_KEY_SET: ReadonlySet<string> = new Set(
+  Object.keys(CONDITION_FLAGS),
+);
+
 export class StyleEngine {
   private store: GraphStore;
   /**
@@ -5523,18 +5640,20 @@ export class StyleEngine {
     | null = null;
 
   /** value reader for mapper/condition keys ('id' is first-class, not in
-   * the sidecar; '::parent'/'::child' answer the structural case
-   * conditions from the hierarchy flags, round 14.7) */
+   * the sidecar; the reserved '::' keys answer a case condition from the
+   * flags column — the structural pair since round 14.7, the state
+   * family since 57.1) */
   private readValue: ValueReader = (group, slot, key) => {
-    if (key === '::parent' || key === '::child') {
-      return (
-        group === 'nodes' &&
-        this.store.hasFlag(
-          'nodes',
-          slot,
-          key === '::parent' ? FLAG_PARENT : FLAG_CHILD,
-        )
-      );
+    const bit = CONDITION_FLAGS[key];
+
+    if (bit != null) {
+      // the hierarchy pair is nodes-only; an edge is neither, rather
+      // than reading a bit that means nothing on its flags word
+      if (group !== 'nodes' && (key === '::parent' || key === '::child')) {
+        return false;
+      }
+
+      return this.store.hasFlag(group, slot, bit);
     }
 
     return key === 'id'
@@ -5566,26 +5685,16 @@ export class StyleEngine {
 
     this.readCtx = ctx;
 
-    this.defs = {
-      nodes: {
-        computed: this.resolveConst('nodes', {}, []),
-        mappers: [],
-        deps: null,
-        transition: DEFAULT_TRANSITION,
-      },
-      edges: {
-        computed: this.resolveConst('edges', {}, []),
-        mappers: [],
-        deps: null,
-        transition: DEFAULT_TRANSITION,
-      },
-      parents: {
-        computed: this.resolveConst('nodes', PARENT_CHANNEL_OVERLAY, []),
-        mappers: [],
-        deps: null,
-        transition: DEFAULT_TRANSITION,
-      },
-    };
+    // The empty sheet, through the same path a real one takes.  This
+    // used to build `defs` inline with `mappers: []` hardcoded, which
+    // was harmless while every default was a constant and wrong the
+    // moment one was not: round 57.1 made the default `background-color`
+    // a conditional mapper, and an instance constructed without a
+    // `style` option silently lost it — two paths that agreed only by
+    // coincidence.  There is one path now, and "no stylesheet" is the
+    // empty stylesheet.
+    this.defs = null as never;
+    this.setSheet({}, false);
 
     // a mixed column can't evaluate in the kernel: demote its group's
     // mapped channels back to eager CPU (the runtime repacks on the
@@ -5703,17 +5812,33 @@ export class StyleEngine {
         }
       }
 
-      return { computed, mappers, deps, transition };
+      return {
+        computed,
+        mappers,
+        deps,
+        transition,
+        partition: partitionOf(mappers),
+      };
     };
 
+    // v4's default stylesheet goes *first*, so anything the user's own
+    // block declares replaces it — v3's order-based precedence, spelled
+    // as an object spread (round 57.1)
     const defs = {
-      nodes: compile('nodes', sheet.nodes),
-      edges: compile('edges', sheet.edges),
+      nodes: compile('nodes', {
+        ...NODE_DEFAULT_BLOCK,
+        ...(sheet.nodes ?? {}),
+      }),
+      edges: compile('edges', {
+        ...EDGE_DEFAULT_BLOCK,
+        ...(sheet.edges ?? {}),
+      }),
       // v3 precedence is order-based, not specificity-based: the default
       // :parent block sits before the user stylesheet, so a user nodes
       // block overrides it (parity-pinned), and the user parents block
       // overrides everything
       parents: compile('nodes', {
+        ...NODE_DEFAULT_BLOCK,
         ...PARENT_CHANNEL_OVERLAY,
         ...(sheet.nodes ?? {}),
         ...parentsSplit.channels,
@@ -5787,6 +5912,23 @@ export class StyleEngine {
           )
           .map((bm) => bm.m.key),
       );
+      // the state half (round 57.1): which reserved keys any `case`
+      // condition reads, so the store's flag writes know whether a flip
+      // needs a restyle.  Nodes fold the parents def — a rule that only
+      // applies to compound parents still has to fire when the bit moves
+      // on one.
+      const states = new Set<string>();
+
+      for (const key of CONDITION_KEY_SET) {
+        if (
+          defs[group].deps?.has(key) === true ||
+          (group === 'nodes' && defs.parents.deps?.has(key) === true)
+        ) {
+          states.add(key);
+        }
+      }
+
+      this.store.watchStateKeys(group, states);
       this.gpuOwnedProps[group] = new Set();
     }
 
@@ -5966,6 +6108,28 @@ export class StyleEngine {
         this.store.hasCompounds() &&
         depends(this.defs.parents.deps))
     );
+  }
+
+  /**
+   * Whether the current sheet styles a flag state — i.e. whether
+   * flipping that bit has to restyle at all.  Every flag-write choke
+   * point asks this before doing any work, so a sheet that says nothing
+   * about a state pays one Set lookup when it changes.
+   *
+   * v4's default stylesheet says yes for two of them.  Selection: nodes'
+   * `background-color`, edges' `line-color` and the four arrow colours
+   * are `{ selected: true }` case mappers.  Press: the `overlay-*` props
+   * are `{ active: true }` ones.  A sheet that declares those props
+   * replaces the rule and the state becomes free again — which is the
+   * same trade round 4 made when v4 still had `:selected` blocks,
+   * arriving from the other direction.
+   *
+   * @param group — the element group whose flag is changing
+   * @param key — the reserved condition key, e.g. `'::selected'`
+   * @returns true when the change must re-evaluate mappers
+   */
+  dependsOnState(group: GroupName, key: string): boolean {
+    return this.stylesDependOnData(group, [key]);
   }
 
   /** Which arrow ends the current stylesheet can enable. */
@@ -6505,6 +6669,12 @@ export class StyleEngine {
       skipOwned = false;
     }
 
+    if (def.partition != null) {
+      this.applyPartitioned(group, def, slots);
+
+      return;
+    }
+
     const target = this.checkAutoExtents(group, def)
       ? this.allSlotsFor(group, def)
       : slots;
@@ -6538,6 +6708,69 @@ export class StyleEngine {
 
       this.write(group, slot, scratch);
     }
+  }
+
+  /**
+   * Apply a group whose mappers read only state flags: one record per
+   * distinct flag combination, cached on the def, instead of a program
+   * run per element.
+   *
+   * The cache is unbounded in principle and tiny in practice — its size
+   * is 2^(number of distinct bits the sheet's conditions read), and a
+   * sheet reads one or two.  It lives on the def, so a sheet swap
+   * discards it with the def that built it.
+   */
+  private applyPartitioned(
+    group: GroupName,
+    def: GroupDef,
+    slots: ArrayLike<number>,
+  ): void {
+    const part = def.partition as NonNullable<GroupDef['partition']>;
+    const flags = this.store.column(
+      group === 'nodes' ? 'node.flags' : 'edge.flags',
+    ) as Uint32Array;
+
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const key = flags[slot] & part.mask;
+      let record = part.records.get(key);
+
+      if (record === undefined) {
+        record = this.partitionRecord(group, def, key);
+        part.records.set(key, record);
+      }
+
+      this.write(group, slot, record);
+    }
+  }
+
+  /** Resolve one flag combination into a computed record (cache miss). */
+  private partitionRecord(
+    group: GroupName,
+    def: GroupDef,
+    word: number,
+  ): Computed {
+    // the conditions are answered from `word` rather than from a slot,
+    // which is the whole point: the record is the same for every element
+    // carrying these bits
+    const read: ValueReader = (_group, _slot, key) =>
+      (word & (CONDITION_FLAGS[key] ?? 0)) !== 0;
+    const record: Computed = { ...def.computed };
+
+    for (const bm of def.mappers) {
+      bm.channel.set(
+        record,
+        bindEvaluator(
+          bm.m,
+          this.store.data,
+          group,
+          bm.channel.default(group),
+          read,
+        )(0),
+      );
+    }
+
+    return record;
   }
 
   /**
@@ -6693,11 +6926,22 @@ export class StyleEngine {
     // which is wrong whenever `chart`/size/etc. are themselves mapped)
     if (mapped || (chart && def.mappers.length > 0)) {
       const owned = this.gpuOwnedProps[group];
+      // *these* keys' mappers, not every mapper the group has.  A CPU
+      // mapper on some other key cannot be stale here, and treating it
+      // as though it were forces the whole-element `applyMapped` — which
+      // rewrites the kernel-owned channels too, stomping them back to
+      // their constants.  Round 57.1 surfaced it (every graph's default
+      // `background-color` became a CPU `case`, so the fast path was
+      // dead for all of them), but the bug is older than the round: a
+      // chart or label mapper had the same effect.
+      const affected = def.mappers.filter((bm) =>
+        bm.m.keys.some((k) => keys.includes(k)),
+      );
 
       if (
         chart ||
         this.demoted[group] ||
-        def.mappers.some((bm) => !owned.has(bm.m.prop))
+        affected.some((bm) => !owned.has(bm.m.prop))
       ) {
         this.applyMapped(group, def, slots, true);
       } else {
@@ -6992,6 +7236,16 @@ export class StyleEngine {
     props: StyleProps,
     mappersOut: BoundMapper[],
   ): Computed {
+    // A later declaration of the same *prop* replaces an earlier one —
+    // that is what makes the default stylesheet a default (round 57.1)
+    // and what has made `PARENT_CHANNEL_OVERLAY` overridable since round
+    // 14.6.  The constant half falls out of the loop below writing over
+    // `computed`; the mapper half does not, because a bound mapper is
+    // appended to a list and applied after every constant.  So a prop
+    // that is set twice — a conditional default and then the app's own
+    // colour — has to *drop* the earlier mapper here, or the default
+    // silently wins over the sheet that overrode it.
+    const bound = new Map<string, BoundMapper>();
     const computed: Computed = {
       ...NODE_DEFAULTS,
       ...EDGE_DEFAULTS,
@@ -7116,11 +7370,19 @@ export class StyleEngine {
           continue;
         }
 
-        mappersOut.push(compileChannel(group, norm, value));
+        bound.set(norm, compileChannel(group, norm, value));
         continue;
       }
 
+      // a constant for a prop an earlier block mapped drops that mapper:
+      // the constant lands in `computed` and the mapper would otherwise
+      // overwrite it at apply time
+      bound.delete(norm);
       applyProp(computed, norm, value);
+    }
+
+    for (const m of bound.values()) {
+      mappersOut.push(m);
     }
 
     return computed;

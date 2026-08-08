@@ -114,53 +114,144 @@ describe('gpu/active-pannable', function () {
     });
   });
 
-  // Round 57.1c drew v3's `:active` overlay from this flag, and the
-  // overlay pass is skipped entirely when nothing is styled with one —
-  // so the store keeps a count of active elements to know a press is
-  // live.  A count is bookkeeping, and bookkeeping leaks: these pin the
-  // three writers (the single-slot path, the bulk path, removal) rather
-  // than the drawing, which the `renderer` project covers.
-  describe('the active count the overlay pass gates on (round 57.1c)', function () {
-    const count = () => cy._store.activeCount();
+  // Round 57.1 made the state *styleable* rather than drawn from a
+  // shader constant: a press is a flag flip, and every visual
+  // consequence comes from the sheet's `{ active: true }` conditions.
+  // These pin the wiring that makes that true — the store notifies, the
+  // engine re-evaluates — because it is invisible from the API surface
+  // and only the rendered pixels would otherwise show it.
+  describe('a press restyles through the sheet (round 57.1)', function () {
+    const styled = () =>
+      cytoscape({
+        elements: [{ data: { id: 'a' } }, { data: { id: 'b' } }],
+        style: {
+          nodes: {
+            'background-color': {
+              case: [{ when: { active: true }, then: 'red' }],
+              else: 'blue',
+            },
+          },
+        },
+      });
 
-    it('starts at zero and follows activate/unactivate', function () {
-      expect(count()).to.equal(0);
+    it('re-evaluates the condition on activate and unactivate', function () {
+      const g = styled();
 
-      cy.$id('a').activate();
-      expect(count()).to.equal(1);
+      expect(g.$id('a').style('background-color')).to.equal('rgb(0,0,255)');
 
-      // idempotent: activating twice is still one active element
-      cy.$id('a').activate();
-      expect(count()).to.equal(1);
+      g.$id('a').activate();
+      expect(g.$id('a').style('background-color')).to.equal('rgb(255,0,0)');
+      // and only the element that changed
+      expect(g.$id('b').style('background-color')).to.equal('rgb(0,0,255)');
 
-      cy.$id('a').unactivate();
-      expect(count()).to.equal(0);
+      g.$id('a').unactivate();
+      expect(g.$id('a').style('background-color')).to.equal('rgb(0,0,255)');
     });
 
-    it('counts a bulk activate over a collection', function () {
-      cy.nodes().activate();
-      expect(count()).to.equal(cy.nodes().length);
+    it('works on any property, not just the ones the default sheet uses', function () {
+      const g = cytoscape({
+        elements: [{ data: { id: 'a' } }],
+        style: {
+          nodes: {
+            width: { case: [{ when: { active: true }, then: 90 }], else: 30 },
+          },
+        },
+      });
 
-      cy.nodes().unactivate();
-      expect(count()).to.equal(0);
+      expect(g.$id('a').width()).to.equal(30);
+      g.$id('a').activate();
+      expect(g.$id('a').width()).to.equal(90);
     });
 
-    it('loses an active element that is removed', function () {
-      // the leak that matters: a pressed element removed under the
-      // cursor would otherwise hold the overlay pass alive forever
-      cy.$id('a').activate();
-      expect(count()).to.equal(1);
+    it('costs nothing when the sheet says nothing about the state', function () {
+      // The gate: a state no condition reads must not reach the engine
+      // at all, or every flip on every graph pays for a restyle nobody
+      // asked for.
+      //
+      // The *default* sheet reads `::active` (v3's press overlay), so
+      // the way to have a sheet that says nothing about it is to declare
+      // `overlay-opacity` yourself — which is also the documented way to
+      // turn the affordance off.  A sheet that leaves the default in
+      // place is the control, and notifies.
+      const seen = [];
+      const arm = (g) => {
+        const prev = g._store.onStateChange;
 
-      cy.$id('a').remove();
-      expect(count()).to.equal(0);
+        g._store.onStateChange = (group, key, slots) => {
+          seen.push(key);
+          prev(group, key, slots);
+        };
+      };
+      const overridden = cytoscape({
+        elements: [{ data: { id: 'a' } }],
+        style: {
+          nodes: { 'overlay-opacity': 0 },
+          edges: { 'overlay-opacity': 0 },
+        },
+      });
+
+      arm(overridden);
+      overridden.$id('a').activate();
+      expect(seen).to.deep.equal([]);
+
+      const g = cytoscape({ elements: [{ data: { id: 'a' } }] });
+
+      arm(g);
+      g.$id('a').activate();
+      expect(seen).to.deep.equal(['::active']);
     });
 
-    it('loses an active *edge* removed by its endpoint cascade', function () {
-      cy.$id('ab').activate();
-      expect(count()).to.equal(1);
+    it("gives a press v3's overlay out of the box, and lets a sheet drop it", function () {
+      const g = cytoscape({ elements: [{ data: { id: 'a' } }] });
 
-      cy.$id('b').remove(); // takes `ab` and `ba` with it
-      expect(count()).to.equal(0);
+      expect(g.$id('a').style('overlay-opacity')).to.equal(0);
+      g.$id('a').activate();
+      // v3's `:active` block: black at 25% over 10px of padding.  The
+      // readback is 64/255 because v4 stores overlay opacity as the
+      // packed record's alpha byte — true of a constant 0.25 as well,
+      // not something the conditional introduced.
+      expect(g.$id('a').style('overlay-opacity')).to.be.closeTo(0.25, 0.002);
+      // the colour reads back with the opacity folded into its alpha —
+      // one packed rgba record, again true of a constant
+      expect(g.$id('a').style('overlay-color')).to.equal('rgba(0,0,0,0.251)');
+      expect(g.$id('a').style('overlay-padding')).to.equal(10);
+
+      const off = cytoscape({
+        elements: [{ data: { id: 'a' } }],
+        style: { nodes: { 'overlay-opacity': 0 } },
+      });
+
+      off.$id('a').activate();
+      expect(off.$id('a').style('overlay-opacity')).to.equal(0);
+    });
+
+    it('applies to edges too, as in v3', function () {
+      const g = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
+      });
+
+      g.$id('ab').activate();
+      expect(g.$id('ab').style('overlay-opacity')).to.be.closeTo(0.25, 0.002);
+    });
+
+    it('notifies once for a bulk flip, with every changed slot', function () {
+      const g = styled();
+      const calls = [];
+
+      g._store.onStateChange = (group, key, slots) => {
+        calls.push([group, key, [...slots]]);
+      };
+
+      g.nodes().activate();
+
+      expect(calls.length).to.equal(1);
+      expect(calls[0][0]).to.equal('nodes');
+      expect(calls[0][1]).to.equal('::active');
+      expect(calls[0][2].length).to.equal(2);
     });
   });
 });

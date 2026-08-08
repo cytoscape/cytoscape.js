@@ -47,7 +47,8 @@ import {
   ARROW_SHIFT_SRC_SHOWS_LINE,
   ARROW_SHIFT_TARGET,
   ARROW_SHIFT_TGT_SHOWS_LINE,
-  FLAG_ACTIVE,
+  CONDITION_FLAG_MASK,
+  CONDITION_KEY_OF,
   FLAG_ALIVE,
   FLAG_CHILD,
   FLAG_CURVED,
@@ -176,6 +177,10 @@ export interface GroupCompaction {
   oldHighWater: number;
 }
 
+/** Scratch for the single-slot state-change notification (one write per
+ * flag flip; the callee never retains it). */
+const ONE_SLOT = [0];
+
 /**
  * The CPU-canonical columnar model: NodeTable + EdgeTable + IdMap +
  * Adjacency, with per-column dirty spans for the renderer.  Synchronous API
@@ -277,6 +282,17 @@ export class GraphStore implements ModelView {
   labelFontWeight: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
   private watchedKeys: Record<GroupName, ReadonlySet<string>>;
+  /** reserved state keys some `case` condition reads (registered by the StyleEngine) */
+  private watchedStates: Record<GroupName, ReadonlySet<string>>;
+  /**
+   * Told when a styled state bit flips on live slots — the core wires
+   * this to the StyleEngine's mapper refresh (round 57.1).  Null until
+   * then, and consulted before any per-slot bookkeeping, so a store with
+   * no style attached does the flag write and nothing else.
+   */
+  onStateChange:
+    | ((group: GroupName, key: string, slots: readonly number[]) => void)
+    | null = null;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
   private mapperSpans: Map<string, MapperSpan>;
 
@@ -324,6 +340,7 @@ export class GraphStore implements ModelView {
     this.labelFontWeight = 'normal';
     this.watchedKeys = { nodes: new Set(), edges: new Set() };
     this.mapperSpans = new Map();
+    this.watchedStates = { nodes: new Set(), edges: new Set() };
 
     // a dict compaction remaps every slot's stored index for that key:
     // a watched key must re-upload its whole column (and, via the bumped
@@ -942,6 +959,24 @@ export class GraphStore implements ModelView {
    */
   watchDataKeys(group: GroupName, keys: Iterable<string>): void {
     this.watchedKeys[group] = new Set(keys);
+  }
+
+  /**
+   * Register the reserved state keys (`'::selected'`, `'::active'`, …)
+   * the current sheet's `case` conditions read.  Flag writes outside
+   * this set skip the change notification entirely, which is what makes
+   * an unstyled state cost one mask test per flip.
+   *
+   * Separate from `watchDataKeys` because the two sets answer different
+   * questions: that one is "which data writes feed the GPU eval kernel"
+   * and excludes conditionals on principle, while a state condition is
+   * always a conditional and may sit on any property.
+   *
+   * @param group — the element group the keys belong to
+   * @param keys — the reserved keys; replaces the previous set
+   */
+  watchStateKeys(group: GroupName, keys: Iterable<string>): void {
+    this.watchedStates[group] = new Set(keys);
   }
 
   /** Data write through the mapper-span choke point (the collection's data setter). */
@@ -2152,14 +2187,38 @@ export class GraphStore implements ModelView {
 
     arr[slot] = next;
     this.dirty.mark(id, slot);
+    if (((prev ^ next) & CONDITION_FLAG_MASK) !== 0) {
+      ONE_SLOT[0] = slot;
+      this.noteStateChange(group, prev ^ next, ONE_SLOT);
+    }
+  }
 
-    // round 57.1c: v3's `:active` overlay is drawn from this bit, and
-    // the overlay pass is skipped entirely when nothing is styled with
-    // one — so the renderer needs to know a press is live.  A count
-    // rather than a boolean because the touch gestures can activate a
-    // second element before the first is released.
-    if ((bit & FLAG_ACTIVE) !== 0) {
-      this.actives += on ? 1 : -1;
+  /**
+   * Tell the style engine that a *styled* state bit flipped, so the
+   * affected slots restyle.  This is what makes `{ when: { active:
+   * true } }` work on any property: the flag write is the only event,
+   * and every consequence — the mapper re-evaluation, the column
+   * writes, the upload — is the ordinary refresh path from there.
+   *
+   * Cheap when nothing styles the state, which is the common case: the
+   * mask test rejects the structural and internal bits outright, and
+   * `markDataWrite`'s watched-key set rejects a state no `case`
+   * condition mentions.  A sheet that says nothing about press pays one
+   * `&` per press.
+   */
+  private noteStateChange(
+    group: GroupName,
+    changed: number,
+    slots: number[],
+  ): void {
+    if (this.onStateChange == null) {
+      return;
+    }
+
+    for (const [bit, key] of CONDITION_KEY_OF) {
+      if ((changed & bit) !== 0 && this.watchedStates[group].has(key)) {
+        this.onStateChange(group, key, slots);
+      }
     }
   }
 
@@ -2183,6 +2242,15 @@ export class GraphStore implements ModelView {
     const edgeFlags = this.edges.column('edge.flags') as Uint32Array;
     const nodeGen = this.nodes.gen;
     const edgeGen = this.edges.gen;
+    // collecting the changed slots is only worth it when the bit is one
+    // a `case` condition reads — a bulk grabify() on 100k elements
+    // should not build an array nobody consumes
+    const styled =
+      (bit & CONDITION_FLAG_MASK) !== 0 &&
+      this.onStateChange != null &&
+      CONDITION_KEY_OF.has(bit);
+    const nodeStateSlots: number[] = [];
+    const edgeStateSlots: number[] = [];
     let nMin = Infinity;
     let nMax = -1;
     let eMin = Infinity;
@@ -2215,10 +2283,8 @@ export class GraphStore implements ModelView {
       flags[slot] = next;
       changed++;
 
-      // the same bookkeeping `setFlag` does — `activate()` reaches the
-      // flag through here rather than through that path (round 57.1c)
-      if ((bit & FLAG_ACTIVE) !== 0) {
-        this.actives += on ? 1 : -1;
+      if (styled) {
+        (isNode ? nodeStateSlots : edgeStateSlots).push(slot);
       }
 
       if (isNode) {
@@ -2247,6 +2313,13 @@ export class GraphStore implements ModelView {
     }
     if (eMax >= 0) {
       this.dirty.mark('edge.flags', eMin, eMax + 1);
+    }
+
+    if (nodeStateSlots.length > 0) {
+      this.noteStateChange('nodes', bit, nodeStateSlots);
+    }
+    if (edgeStateSlots.length > 0) {
+      this.noteStateChange('edges', bit, edgeStateSlots);
     }
 
     return changed;
@@ -2570,22 +2643,6 @@ export class GraphStore implements ModelView {
   /** live counts of nodes with a visible overlay / underlay (13 A2) */
   private overlays = 0;
   private underlays = 0;
-  /** elements carrying FLAG_ACTIVE — v3's `:active`, round 57.1c */
-  private actives = 0;
-
-  /**
-   * Elements the pointer layer has marked active (pressed) — v3's
-   * `:active` state, which round 57.1c draws as an overlay.
-   *
-   * The overlay pass is skipped whenever nothing is styled with one, so
-   * without this an active element with no *styled* overlay would draw
-   * nothing at all: the count is what keeps the pass alive for it.
-   *
-   * @returns the number of live elements with the flag set
-   */
-  activeCount(): number {
-    return this.actives;
-  }
 
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number {
@@ -4738,19 +4795,6 @@ export class GraphStore implements ModelView {
 
     if (id != null) {
       this.ids.remove(id);
-    }
-
-    // a removed element takes its flags with it, so the active count has
-    // to lose it here or removing a pressed element leaks a permanently
-    // live overlay pass (round 57.1c)
-    const flagId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
-
-    if (
-      ((this.table(group).column(flagId) as Uint32Array)[slot] &
-        FLAG_ACTIVE) !==
-      0
-    ) {
-      this.actives--;
     }
 
     if (group === 'nodes') {

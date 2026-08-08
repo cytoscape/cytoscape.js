@@ -3531,10 +3531,12 @@ export class Collection {
       return this;
     }
 
-    // a selection change never restyles: the v4 sheet has no selection
-    // terms (the accent ring is shader-drawn), and fn styles by policy
-    // re-run only on an explicit style set, not on state changes
-
+    // The restyle a selection change may need is not here: `flagRefs`
+    // notifies the store's `onStateChange`, which the core wires to the
+    // mapper refresh.  Round 57.1 wrote that hook by hand at this one
+    // site and then wanted it at six more (lock, grab, activate,
+    // selectify, grabify, hover), which is the argument for it living at
+    // the flag choke point instead.
     const type = selected ? 'select' : 'unselect';
 
     if (cy._hasListeners(type)) {

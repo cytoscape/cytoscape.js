@@ -112,6 +112,41 @@ export const FLAG_SELF_INVISIBLE = 131072;
  */
 export const FLAG_DRAWN = 262144;
 
+/**
+ * The styleable states: the reserved case-condition key each flag
+ * answers.  This is the whole binding between a bit and the stylesheet —
+ * `style-scales.mts` lowers every state spelling to one of these keys,
+ * the StyleEngine's value reader answers it from the flags word, and the
+ * store's flag choke points use the reverse direction to know that a bit
+ * flip may need a restyle.
+ *
+ * Only bits a *user* can meaningfully style are here.  The structural
+ * ones (ALIVE, CURVED, NO_EVENTS) decide which pipeline draws an element
+ * rather than what it looks like, and VISIBLE/DRAWN are computed *from*
+ * style, so a rule conditioned on one would be circular.
+ */
+export const CONDITION_FLAGS: Readonly<Record<string, number>> = {
+  '::parent': FLAG_PARENT,
+  '::child': FLAG_CHILD,
+  '::selected': FLAG_SELECTED,
+  '::selectable': FLAG_SELECTABLE,
+  '::locked': FLAG_LOCKED,
+  '::grabbed': FLAG_GRABBED,
+  '::grabbable': FLAG_GRABBABLE,
+  '::active': FLAG_ACTIVE,
+  '::hovered': FLAG_HOVERED,
+};
+
+/** The same binding, bit → key, for the flag-write side. */
+export const CONDITION_KEY_OF: ReadonlyMap<number, string> = new Map(
+  Object.entries(CONDITION_FLAGS).map(([key, bit]) => [bit, key]),
+);
+
+/** Every styleable state bit OR-ed — a one-test gate on a flag write. */
+export const CONDITION_FLAG_MASK: number = Object.values(
+  CONDITION_FLAGS,
+).reduce((m, bit) => m | bit, 0);
+
 /** The fixed model-px gap between a node's box and a top/bottom-row
  * label (see the D3 label-alignment record); shared by the StyleEngine's
  * anchor bake and the store's parent-label re-anchor on auto-bounds

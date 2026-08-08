@@ -226,6 +226,13 @@ export class Core {
       this._animations.settleGpuAll();
       this._styleEngine.refreshMapped('nodes', [slot], ['::parent', '::child']);
     };
+    // A styled state bit flipped (round 57.1): re-evaluate the mappers
+    // that read it, on the slots that changed.  The store notifies only
+    // for bits some `case` condition actually mentions, so a sheet that
+    // says nothing about selection or press never reaches here.
+    this._store.onStateChange = (group, key, slots) => {
+      this._styleEngine.refreshMapped(group, slots as number[], [key]);
+    };
     this._animations = new AnimationManager(() => this._afterAnimationTick());
 
     // round 24.1: the engine's transition diffs spawn preset bulk tweens

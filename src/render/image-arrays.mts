@@ -27,6 +27,7 @@ point of the tier design: minification samples a coherent low mip
 instead of scattering across full-res texels.
 */
 
+import { wgsl } from './wgsl.mjs';
 import {
   IMAGE_TIER_SIZES,
   IMAGE_KIND_SDF,
@@ -179,7 +180,7 @@ export class TierAllocator {
   }
 }
 
-const MIPGEN_SHADER = `
+const MIPGEN_SHADER = wgsl`
 @group(0) @binding(0) var src: texture_2d<f32>;
 @group(0) @binding(1) var samp: sampler;
 

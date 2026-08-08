@@ -1,3 +1,4 @@
+import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
 
 /*
@@ -11,7 +12,7 @@ premultiplied alpha throughout, which filters correctly; the result is
 clamped to [0, 1] to kill bicubic ringing before compositing.
 */
 
-const UPSCALE_SHADER = `
+const UPSCALE_SHADER = wgsl`
 struct UpscaleInfo {
   srcSize: vec2f,
   pad: vec2f,

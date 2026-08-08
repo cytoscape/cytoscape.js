@@ -1,3 +1,4 @@
+import { wgsl } from './wgsl.mjs';
 import { COMMON, GLYPH_STRUCT } from './shaders.mjs';
 import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
 
@@ -57,7 +58,7 @@ const INPUT_COUNTS: Record<CullKind, number> = {
  * slot instead (round 14.9), so its visible list is already in paint
  * order (shallow parents under deep ones).
  */
-const scaffoldWriting = (out: string): string => `
+const scaffoldWriting = (out: string): string => wgsl`
 struct CullInfo { count: u32, indexCount: u32 }
 
 var<workgroup> wgLocal: atomic<u32>;
@@ -114,7 +115,7 @@ fn csScatter(
 
 const SCAFFOLD = scaffoldWriting('gid.x');
 
-const NODE_CULL = `
+const NODE_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
@@ -165,7 +166,7 @@ ${SCAFFOLD}
 // ones — and the main node pipeline draws it before the edge layers.
 // Extents take the ghost cull's conservative tier (full border width +
 // the frame's monotone outline bound; no borderGeom slot left).
-const PARENT_CULL = `
+const PARENT_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
@@ -195,7 +196,7 @@ fn isVisible(i: u32) -> bool {
 ${scaffoldWriting('parentOrder[gid.x]')}
 `;
 
-const EDGE_CULL = `
+const EDGE_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
@@ -282,7 +283,7 @@ already at it).  Loops have a zero-length chord; Liang-Barsky's
 degenerate branch turns the test into point-vs-grown-rect, which the
 slack makes correct.
 */
-const CURVED_EDGE_CULL = `
+const CURVED_EDGE_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
@@ -364,7 +365,7 @@ fn isVisible(slot: u32) -> bool {
 ${SCAFFOLD}
 `;
 
-const GLYPH_CULL = `
+const GLYPH_CULL = wgsl`
 ${COMMON}
 ${GLYPH_STRUCT}
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -417,7 +418,7 @@ fn isVisible(slot: u32) -> bool {
 ${SCAFFOLD}
 `;
 
-const SCAN = `
+const SCAN = wgsl`
 struct CullInfo { count: u32, indexCount: u32 }
 
 @group(0) @binding(0) var<uniform> info: CullInfo;
@@ -426,7 +427,7 @@ struct CullInfo { count: u32, indexCount: u32 }
 @group(0) @binding(3) var<storage, read_write> drawArgs: array<u32, 10>;
 
 // serial exclusive scan over the per-workgroup counts; numWg is a few
-// thousand at most (capacity / ${WG_SIZE}), microseconds on any GPU
+// thousand at most (capacity / WG_SIZE), microseconds on any GPU
 @compute @workgroup_size(1)
 fn csScan() {
   let numWg = (info.count + ${WG_SIZE - 1}u) / ${WG_SIZE}u;
@@ -456,7 +457,7 @@ fn csScan() {
 /** byte offset of the single-quad args block in CulledGroup.indirect */
 export const QUAD_ARGS_OFFSET = 20;
 
-const EDGE_GLYPH_CULL = `
+const EDGE_GLYPH_CULL = wgsl`
 ${COMMON}
 ${GLYPH_STRUCT}
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -557,7 +558,7 @@ ${SCAFFOLD}
 // ghost quads (round 13 A1): a node's ghost draws when the node is
 // shown, its ghost is enabled with visible opacity, and the *offset*
 // quad intersects the viewport
-const GHOST_CULL = `
+const GHOST_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
@@ -595,7 +596,7 @@ ${SCAFFOLD}
 
 // overlay/underlay quads (round 13 A2): one kind serves both layers —
 // the CulledGroup's bind carries that layer's record column
-const NODE_LAYER_CULL = `
+const NODE_LAYER_CULL = wgsl`
 ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;

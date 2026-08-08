@@ -11,6 +11,7 @@ Colour columns are RGBA bytes bound as array<u32> and expanded with
 unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
+import { wgsl } from './wgsl.mjs';
 import {
   ARROW_AXIAL_DEPTH,
   ARROW_COMPOUND_POINTS,
@@ -80,7 +81,7 @@ import {
  * pickMode, arrowWidthMax — 18 floats, 72 bytes.  Round 56 spent the
  * last pad slot on arrowWidthMax, so the next field grows the buffer.
  */
-export const FRAME_STRUCT = `
+export const FRAME_STRUCT = wgsl`
 struct Frame {
   viewportPx: vec2f,     // canvas size in device px
   panPx: vec2f,          // pan in device px
@@ -104,7 +105,7 @@ struct Frame {
 /** Shared WGSL prelude: flags, transforms, quad corners and the LOD
  * functions used by both the cull-pass predicates and the vertex shaders
  * (they must agree exactly on what is drawn and at what alpha). */
-export const COMMON = `
+export const COMMON = wgsl`
 ${FRAME_STRUCT}
 
 const FLAG_ALIVE: u32 = 1u;
@@ -200,7 +201,7 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
  * pass; matches GlyphBuffer's CPU layout (16 words / 64 bytes per glyph). */
-export const GLYPH_STRUCT = `
+export const GLYPH_STRUCT = wgsl`
 struct Glyph {
   nodeSlot: u32,     // owner word: 0xffffffff = dead (tombstoned run); else
                      // bits 0..30 the owner slot, bit 31 the autorotate
@@ -261,7 +262,7 @@ fn glyphLodHeight(g: Glyph) -> f32 {
 /** Distance from a node's center to its boundary along unit direction d —
  * shared by the arrow, curved-edge and edge-label shaders; the CPU twin
  * is curve-geometry.mts's boundaryOffset (they must agree exactly). */
-export const BOUNDARY_WGSL = `
+export const BOUNDARY_WGSL = wgsl`
 fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
   switch shape {
     case 2u, 3u: { // rectangle (round-rect approximated as its box)
@@ -277,7 +278,7 @@ fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
 
 /** AA'd on/off mask for a dash period (lengths in model px, as v3's canvas
  * dashes: setLineDash in the model-space-transformed context). */
-export const DASH_WGSL = `
+export const DASH_WGSL = wgsl`
 fn dashMask(u: f32, onLen: f32, offLen: f32, aaModel: f32) -> f32 {
   let period = onLen + offLen;
   let x = fract(u / period) * period;
@@ -330,7 +331,7 @@ fn dashCoverage(u: f32, v: f32, halfW: f32, pat: vec4f, offset: f32, cap: f32, z
  * drags/layouts/position tweens on-GPU with zero rebuild.  Change the
  * math here and in curve-geometry.mts together.  Requires BOUNDARY_WGSL.
  */
-export const CURVE_WGSL = `
+export const CURVE_WGSL = wgsl`
 const CURVE_SEGS_F: f32 = ${CURVE_SEGS}.0;
 const AVOID_BEZ: f32 = ${AVOID_IMPOSSIBLE_BEZIER};
 const AVOID_BEZ_L: f32 = ${AVOID_IMPOSSIBLE_BEZIER_L.toFixed(9)};
@@ -477,7 +478,7 @@ fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
  * change here and in curve-geometry.mts together.  Requires
  * BOUNDARY_WGSL + CURVE_WGSL (boundary points, AVOID_BEZ, qbez).
  */
-export const ROUTE_WGSL = `
+export const ROUTE_WGSL = wgsl`
 const CURVE_SEGS_U: u32 = ${CURVE_SEGS}u;
 const MAX_ROUTE_PTS: u32 = ${MAX_CURVE_PTS}u;
 const ROUTE_PI: f32 = 3.14159265358979;
@@ -1305,7 +1306,7 @@ const arrowGapFns = (): string => {
     depths += `    case ${id}u: { return ${fmtF32(d)}; }\n`;
   }
 
-  return `
+  return wgsl`
 // v3's getArrowWidth: the arrow size unit, in *model* px (27.3 — the 29
 // is a model-space floor, so this must not see a device width)
 fn arrowSizeW(wModel: f32, scale: f32) -> f32 {
@@ -1408,7 +1409,7 @@ fn shortenTowardW(pt: vec2f, toward: vec2f, amount: f32) -> vec2f {
 const ARROW_GAP_WGSL = arrowGapFns();
 
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
-const SDF = `
+const SDF = wgsl`
 fn circleSD(p: vec2f, r: f32) -> f32 {
   return length(p) - r;
 }
@@ -1587,9 +1588,11 @@ fn cornerRadiusPx(stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
 }
 
 // The same word, resolved for cut-rectangle (27.2): v3's 'auto' chamfer
-// is a flat ${CUT_RECTANGLE_CORNER} model px, *not* round-rectangle's
+// is a flat CUT_RECTANGLE_CORNER model px, *not* round-rectangle's
 // size-relative rule — the two shapes read one prop with two defaults,
-// as they do in v3.
+// as they do in v3.  (The constant's name is spelled out rather than
+// interpolated: an interpolation inside a WGSL comment is a build error
+// under the round-52 comment-strip transform.)
 fn cornerLengthPx(shape: u32, stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
   if (stored == 0xffffffffu) {
     if (shape == ${SHAPE_CUT_RECTANGLE}u) {
@@ -1620,7 +1623,7 @@ fn outlineWO(packed: u32, zoomDpr: f32) -> vec2f {
 }
 `;
 
-export const NODE_SHADER = `
+export const NODE_SHADER = wgsl`
 ${COMMON}
 ${SDF}
 
@@ -2031,7 +2034,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
  * layer's own opacity (folded into the stored color, v3 semantics —
  * element opacity does not multiply).
  */
-export const NODE_LAYER_SHADER = `
+export const NODE_LAYER_SHADER = wgsl`
 ${COMMON}
 
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -2105,7 +2108,7 @@ fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
 }
 `;
 
-export const EDGE_SHADER = `
+export const EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
@@ -2443,7 +2446,7 @@ fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
  * fragment stage (flat instance fetch), like the node pipeline's
  * decoration split.
  */
-export const CURVED_EDGE_SHADER = `
+export const CURVED_EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
@@ -2792,7 +2795,7 @@ fn fsCurvedLayer(in: CurvedVSOut) -> @location(0) vec4f {
 }
 `;
 
-export const ARROW_SHADER = `
+export const ARROW_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
@@ -3100,7 +3103,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
  * outer halves like the straight arrows (the 12a border-exclusive
  * deviation is gone).
  */
-export const CURVED_ARROW_SHADER = `
+export const CURVED_ARROW_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
@@ -3417,7 +3420,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 // route polyline — exactly v3's allpts walk for segments/taxi (both
 // ignore corner rounding) — and multibezier walks its quad chain at 8
 // samples per quad.  Returns (point.xy, tangent.zw).
-const END_WALK_WGSL = `
+const END_WALK_WGSL = wgsl`
 fn segmentWalk(a: vec2f, b: vec2f, fromSource: bool, dist: f32) -> vec4f {
   let d = b - a;
   let l = max(length(d), 1e-6);
@@ -3517,7 +3520,7 @@ fn routeEndWalkW(r: ptr<function, Route>, fromSource: bool, dist: f32) -> vec4f 
 }
 `;
 
-const labelShader = (edge: boolean): string => `
+const labelShader = (edge: boolean): string => wgsl`
 ${COMMON}
 ${GLYPH_STRUCT}
 ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : ''}
@@ -3783,7 +3786,7 @@ over the image; a translucent border shows fill, not image — a
 recorded deviation beside the B1 band rule), 'over' clips at the shape
 boundary.  Repeat tiles are confined to the node box (recorded).
 */
-export const IMAGE_SHADER = `
+export const IMAGE_SHADER = wgsl`
 ${COMMON}
 ${SDF}
 
@@ -4073,7 +4076,7 @@ walks the record's cumulative stops with px-space AA across slice
 boundaries.  The remainder past the values' total stays unpainted
 (v3's percent semantics).
 */
-export const CHART_SHADER = `
+export const CHART_SHADER = wgsl`
 ${COMMON}
 ${SDF}
 

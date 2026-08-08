@@ -15,6 +15,8 @@ Bindings (@group(0)):
   5.. write targets, per group (colors as array<u32>, scalars f32)
 */
 
+import { wgsl } from './wgsl.mjs';
+
 /** uniform-buffer program capacity (1 KB at 64 B each; plenty per group) */
 export const MAX_PROGRAMS = 16;
 
@@ -23,7 +25,7 @@ export const MAX_PROGRAMS = 16;
  * whose CPU version is fround-staged to match this step for step).  Shared
  * with the GPU tween kernel, which interpolates colours in the same space.
  */
-export const OKLAB_TO_SRGB_WGSL = `
+export const OKLAB_TO_SRGB_WGSL = wgsl`
 fn linearToSrgbNorm(c: vec3f) -> vec3f {
   let lo = c * 12.92;
   let hi = 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055;
@@ -48,7 +50,7 @@ fn oklabToSrgbNorm(lab: vec3f) -> vec3f {
 }
 `;
 
-const EVAL_COMMON = `
+const EVAL_COMMON = wgsl`
 struct MapperProgram {
   head: vec4u,     // target, kind, flags, dataBase
   domain: vec4f,   // lo, hi, p0 (exponent | log base | symlog C), pad
@@ -210,13 +212,13 @@ fn resolveColor(p: MapperProgram, v: vec4f, opacityNow: f32) -> u32 {
 }
 `;
 
-const NODE_TARGETS = `
+const NODE_TARGETS = wgsl`
 @group(0) @binding(5) var<storage, read_write> fillColor: array<u32>;
 @group(0) @binding(6) var<storage, read_write> borderColor: array<u32>;
 @group(0) @binding(7) var<storage, read_write> opacity: array<f32>;
 `;
 
-const EDGE_TARGETS = `
+const EDGE_TARGETS = wgsl`
 @group(0) @binding(5) var<storage, read_write> lineColor: array<u32>;
 @group(0) @binding(6) var<storage, read_write> opacity: array<f32>;
 @group(0) @binding(7) var<storage, read_write> sourceArrow: array<u32>;
@@ -224,7 +226,7 @@ const EDGE_TARGETS = `
 `;
 
 /** target ids match TARGETS in mapper-runtime.mts */
-const NODE_WRITE = `
+const NODE_WRITE = wgsl`
 fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
   switch prog.head.x {
     case 0u: { fillColor[slot] = resolveColor(prog, v, opacityNow); }
@@ -235,7 +237,7 @@ fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
 }
 `;
 
-const EDGE_WRITE = `
+const EDGE_WRITE = wgsl`
 fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
   switch prog.head.x {
     case 0u: { lineColor[slot] = resolveColor(prog, v, opacityNow); }
@@ -247,7 +249,7 @@ fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
 }
 `;
 
-const MAIN = `
+const MAIN = wgsl`
 @compute @workgroup_size(256)
 fn csEval(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x >= info.count) { return; }

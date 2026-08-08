@@ -43,6 +43,7 @@ guaranteed bit-identical run-to-run — seeded bit-reproducibility is
 the CPU executor's guarantee; GPU correctness pins invariants (18.4).
 */
 
+import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
 import type { ForceParams } from '../layout/force-sim.mjs';
 
@@ -51,7 +52,7 @@ const ALPHA_WINDOW = 64;
 /** grid capped at 256×256 cells (the serial scan's budget) */
 const MAX_GRID = 256;
 
-const PRELUDE = `
+const PRELUDE = wgsl`
 struct FParams {
   n: u32,
   gridCols: u32,
@@ -72,7 +73,7 @@ struct FParams {
 const META_ALPHA0 = 2;
 
 const KERNELS: Record<string, string> = {
-  clearGrid: `${PRELUDE}
+  clearGrid: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read_write> cellCount: array<atomic<u32>>;
 
@@ -81,7 +82,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x < params.cells) { atomicStore(&cellCount[gid.x], 0u); }
 }`,
 
-  binCount: `${PRELUDE}
+  binCount: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read> simPos: array<f32>;
 @group(0) @binding(2) var<storage, read_write> cellOf: array<u32>;
@@ -98,7 +99,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   atomicAdd(&cellCount[c], 1u);
 }`,
 
-  scanCells: `${PRELUDE}
+  scanCells: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read_write> cellCount: array<atomic<u32>>;
 @group(0) @binding(2) var<storage, read_write> cellStart: array<u32>;
@@ -117,7 +118,7 @@ fn main() {
   cellStart[params.cells] = sum;
 }`,
 
-  scatter: `${PRELUDE}
+  scatter: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read> cellOf: array<u32>;
 @group(0) @binding(2) var<storage, read_write> cellCount: array<atomic<u32>>;
@@ -132,7 +133,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   cellItems[cellStart[c] + atomicAdd(&cellCount[c], 1u)] = i;
 }`,
 
-  force: `${PRELUDE}
+  force: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read> simPos: array<f32>;
 @group(0) @binding(2) var<storage, read_write> forces: array<f32>;
@@ -214,7 +215,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   forces[i * 2u + 1u] = fy * alpha;
 }`,
 
-  apply: `${PRELUDE}
+  apply: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read_write> simPos: array<f32>;
 @group(0) @binding(2) var<storage, read> forces: array<f32>;

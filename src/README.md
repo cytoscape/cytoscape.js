@@ -374,6 +374,15 @@ machinery was ported for.  The live parity scene over selected leaves, a
 selected parent, straight and curved edges and their arrowheads reads
 **0 differing pixels**.  See the round-57 plan in PLAN.md.
 
+Round 52 (2026-08-08) minifies the WGSL at build time — the answer to
+the maintainer's "why is v4's bundle bigger than v3's".  Shader text was
+23.7% of the minified bundle because a JS minifier does not touch string
+contents; a `wgsl` template tag now marks every multi-line shader
+literal and a rolldown plugin strips comments and collapses whitespace
+with `${...}` interpolations byte-for-byte opaque, taking
+`cytoscape.min.js` from 663.3 to 601.1 KiB (182.3 → 163.3 KiB gzipped).
+See "Shipped shaders" below.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order
@@ -3234,6 +3243,47 @@ later one is silently dead); `import`/`require`/`types` point at
 and `./gpu` resolves to identical files.  It deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
+
+## Shipped shaders: WGSL minified at build time (round 52)
+
+The bundles do not ship the WGSL as written.  Every multi-line shader
+literal carries the `wgsl` template tag (`src/render/wgsl.mts` — an
+identity join at runtime, so tsx-driven tests and benchmarks through
+`src/` see the original text), and a build-time rolldown plugin
+(`scripts/wgsl-minify.mjs`, in every bundle config) strips comments,
+collapses whitespace where tokens cannot fuse, and drops the tag.  The
+win is 62.2 KiB raw / 19.0 KiB gzipped off the minified bundle — 10.4%
+of the download — and most of it is comments, which are unique prose
+gzip cannot dedupe.
+
+The rules a shader author needs:
+
+- **Tag every multi-line WGSL literal** with `wgsl`.  Single-line
+  generated fragments (per-polygon `case` lines) stay bare — nothing to
+  strip.  An untagged multi-line literal still works; it just ships fat.
+- **Never put an interpolation inside a WGSL comment** — stripping the
+  comment would strand the interpolated text as live shader code, so the
+  build fails naming the site.  Spell the constant's name in prose.
+- `${...}` interpolations are byte-for-byte opaque, and whitespace
+  *adjacent* to one is preserved as a single space, never deleted and
+  never invented — `return ${X}` keeps its space, `poly${id}SD` stays
+  glued.
+- The transform is **unconditional across dev and production** builds,
+  deliberately: the Playwright projects run the dev UMD build, and the
+  pixel gate only means something if it exercises the transform that
+  ships.  The cost is that Dawn's shader compile errors reference
+  collapsed one-line text; error positions are less readable in
+  `debug/`, which is the accepted price of testing what ships.
+
+Verification is layered (`test/modules/wgsl-minify.mjs`): unit specs pin
+the contract with the plan's own control (a transform that does *not*
+treat `${}` as opaque must mangle the fixture, and does); a token-stream
+audit runs all 49 tagged literals through an independent tokenizer and
+requires the identical WGSL token sequence after minification; a bundle
+spec asserts the built outputs carry the shaders comment-free and
+tag-free; and the `visual` project's exact goldens (round 57.1e — zero
+differing pixels) plus the live parity scenes are the gate that the
+browser still draws the same image from text no human wrote.
 
 ## Robustness + soak (round 48)
 

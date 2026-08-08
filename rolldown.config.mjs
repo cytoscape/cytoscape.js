@@ -2,6 +2,8 @@ import replace from '@rollup/plugin-replace';
 import license from 'rollup-plugin-license';
 import path from 'path';
 
+import { wgslMinifyPlugin } from './scripts/wgsl-minify.mjs';
+
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -63,7 +65,11 @@ const configs = [
       name,
       sourcemap: SOURCEMAPS ? 'inline' : false,
     },
-    plugins: [replace(replaceOptions), license(licenseHeaderOptions)],
+    plugins: [
+      wgslMinifyPlugin(),
+      replace(replaceOptions),
+      license(licenseHeaderOptions),
+    ],
   },
 
   {
@@ -76,7 +82,11 @@ const configs = [
       name,
       minify: true,
     },
-    plugins: [replace(replaceOptions), license(licenseHeaderOptions)],
+    plugins: [
+      wgslMinifyPlugin(),
+      replace(replaceOptions),
+      license(licenseHeaderOptions),
+    ],
   },
 
   {
@@ -88,7 +98,11 @@ const configs = [
       format: 'es',
       minify: true,
     },
-    plugins: [replace(replaceOptions), license(licenseHeaderOptions)],
+    plugins: [
+      wgslMinifyPlugin(),
+      replace(replaceOptions),
+      license(licenseHeaderOptions),
+    ],
   },
 
   {
@@ -96,7 +110,11 @@ const configs = [
     resolve,
     transform,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
-    plugins: [replace(replaceOptions), license(licenseHeaderOptions)],
+    plugins: [
+      wgslMinifyPlugin(),
+      replace(replaceOptions),
+      license(licenseHeaderOptions),
+    ],
   },
 
   {
@@ -104,7 +122,11 @@ const configs = [
     resolve,
     transform,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
-    plugins: [replace(replaceOptions), license(licenseHeaderOptions)],
+    plugins: [
+      wgslMinifyPlugin(),
+      replace(replaceOptions),
+      license(licenseHeaderOptions),
+    ],
   },
 ];
 

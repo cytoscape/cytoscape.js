@@ -1,3 +1,4 @@
+import { wgsl } from './wgsl.mjs';
 import type { ChannelWrite, WriteKind } from '../animation.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { EASING_KIND } from '../easing.mjs';
@@ -62,7 +63,7 @@ command buffers, not against dispatches inside one — a per-channel value
 written here would collapse to whichever write came last.  The per-channel
 count instead comes from `arrayLength(&slots)`.
 */
-const TWEEN_COMMON = `
+const TWEEN_COMMON = wgsl`
 struct TweenParams {
   start: f32,
   duration: f32,
@@ -217,7 +218,7 @@ fn progress() -> f32 {
 
 const POSITION_SHADER =
   TWEEN_COMMON +
-  `
+  wgsl`
 @group(0) @binding(2) var<storage, read> fromTo: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<vec2f>;
 
@@ -241,7 +242,7 @@ for the same reason the dispatch count doesn't live there.
 */
 const SCALAR_SHADER =
   TWEEN_COMMON +
-  `
+  wgsl`
 @group(0) @binding(2) var<storage, read> fromTo: array<vec2f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<f32>;
 
@@ -259,7 +260,7 @@ fn csTween(@builtin(global_invocation_id) gid: vec3u) {
 const COLOR_SHADER =
   TWEEN_COMMON +
   OKLAB_TO_SRGB_WGSL +
-  `
+  wgsl`
 @group(0) @binding(2) var<storage, read> fromTo: array<vec4f>;
 @group(0) @binding(3) var<storage, read_write> dst: array<u32>;
 

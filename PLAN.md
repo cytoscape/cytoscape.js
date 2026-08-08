@@ -904,6 +904,11 @@ conditional halves of calls the sitting took.
     is reached **only if 52.1's measured number disappoints**, and the
     estimate must be measured on one shader before any machinery is
     built.  Expected outcome: never taken.
+    ***Resolved by measurement (2026-08-08, round 52 landed): the
+    condition is false.***  52.1 took 19.0 KiB gzipped, above its own
+    17.8 estimate, so the trigger never fired; miniray is not added.
+    The entry stays as the record of the reserve plan, closed unless a
+    future round reopens bundle size.
 18. **Warm the tween pipelines at init?** (round 53.1's left-open
     judgement.)  A user's *first* `animate()` on a software adapter
     stalls up to ~1.8 s because Dawn compiles the tween compute
@@ -3793,12 +3798,13 @@ after rounds 46.6, 52's scoping, 53–53.2 and the sixth design sitting).
 Unbuilt: **round 38** (unblocked — its three sub-calls are taken),
 **round 40** (the error-policy sitting, taxonomy-first prep approved),
 **41.5** (direction set — explicit toggles first; the enumeration lands
-at its docs-first), **round 46** (the docs site), **round 52** (the
+at its docs-first), **round 46** (the docs site), ~~**round 52** (the
 WGSL comment-strip — decided to build, and it must land before round 50
-cuts the alpha), **round 54** (the bounds round, newly scheduled before
-round 49), **rounds 49–51** (cross-platform, release engineering, the
-bake), round 48's documented limit edges, and round 44's release-time
-act.
+cuts the alpha)~~ — **landed 2026-08-08**, 19.0 KiB gzipped off the
+download with pixel-identical output — **round 54** (the bounds round,
+newly scheduled before round 49), **rounds 49–51** (cross-platform,
+release engineering, the bake), round 48's documented limit edges, and
+round 44's release-time act.
 
 Undecided: the **error policy** (round 40) and the
 **preventDefault enumeration** (item 12) — still the two genuinely open
@@ -13465,12 +13471,14 @@ through the same control points, with hollow arrows at both ends, the same
 hexagon-with-outline-ring on `b`, and the 38° rotated label.  The remaining
 differences are the harness sheet's own palette choices, not fidelity.
 
-## Round 52 plan — WGSL minification (planned 2026-08-05, not scheduled)
+## Round 52 — WGSL minification (planned 2026-08-05; scheduled at the sixth sitting; landed 2026-08-08)
 
 **Where it belongs in the sequence**: it is numbered after 51 only because it
 was scoped last.  It is behaviour-neutral and touches no API, so it can land
 any time — but it should land **before round 50 cuts `4.0.0-alpha.1`**, since
-after that the unminified shader text is in a published artifact.
+after that the unminified shader text is in a published artifact.  (It landed
+well before 50, out of the sitting's nominal order — being decision-free and
+self-contained, it was the cheapest of the three unblocked rounds to close.)
 
 ### What prompted it
 
@@ -13564,21 +13572,81 @@ every variant (larger) or dropping the feature.  It stays dynamic.
 
 ### Proposed passes
 
-- [ ] **52.1 The cheap pass, and probably the whole round.**  A build-time
-  transform that strips WGSL comments and collapses whitespace, treating
-  `${…}` as an opaque token so it never needs to parse a shader.  It therefore
-  applies to **all** the WGSL including the interpolated 91%, needs no new
-  dependency, and takes the measured 17.8 KiB gzipped.  The hazard to spec is
-  the transform mangling an interpolation — `${ n - 1 }` sits on the same
-  characters a naive whitespace collapse rewrites — so the fixture must carry
-  interpolation sites next to punctuation, and the control must be a transform
-  that does *not* treat `${}` as opaque.
-- [ ] **52.2 Prove it did not change what runs.**  Behaviour-neutral means
-  pixel-identical: the `visual` project's goldens and the live v3-vs-v4 parity
-  scenes are the gate, plus `benchmark:renderer` on a real adapter to confirm
-  no pipeline recompiles differently.  A shader that still *compiles* is not
-  evidence; WGSL is whitespace-insensitive but the transform is not obviously
-  correct, and a mangled constant would produce a plausible wrong image.
+- [x] **52.1 The cheap pass, and probably the whole round** (2026-08-08) —
+  landed, and it was the whole round: 52.3 stays unbuilt because the number
+  did not disappoint.  Measured on the day's source (which had grown since
+  the plan's table — rounds 53–57 landed in between): `cytoscape.min.js`
+  **663.3 → 601.1 KiB raw, 182.3 → 163.3 KiB gzipped** — 62.2 KiB raw
+  (9.4%) and **19.0 KiB gzipped (10.4% of the download)**, slightly better
+  than the plan's 60.9/17.8 estimate.
+
+  The shape of the thing: a `wgsl` template tag (`src/render/wgsl.mts`,
+  an identity join at runtime) marks every multi-line WGSL literal — 49
+  across the seven shader-bearing modules — and a rolldown plugin
+  (`scripts/wgsl-minify.mjs`, wired into all five bundle configs) lexes
+  each tagged literal, strips comments (nested block comments per the
+  WGSL spec), collapses whitespace where tokens cannot fuse, and **drops
+  the tag** — an untagged template joins identically, so the bundles pay
+  no per-shader call and the tag itself tree-shakes away.  The build-time
+  marker is what lets the transform find WGSL without parsing JS
+  semantics or guessing which template literals are shaders (several of
+  those files also hold GPU-label and error-message templates that must
+  not be touched).
+
+  `${…}` opacity is the contract the plan named, and it is stricter than
+  "don't parse the interpolation": whitespace *adjacent* to an
+  interpolation collapses to a single space but is never deleted (the
+  value's edge characters are unknowable, so `return ${X}` must keep its
+  space), while `poly${id}SD` stays glued (a space is never invented).
+  Single-line generated fragments (the per-polygon `case` lines) stay
+  untagged — no comments, nothing to collapse.  Two authoring rules
+  became build errors with specs: an interpolation inside a WGSL comment
+  (stripping the comment would strand the interpolated text as live
+  shader code — two such doc comments existed and were reworded to prose),
+  and an unterminated block comment.
+
+  The spec suite (`test/modules/wgsl-minify.mjs`, 17 specs) carries the
+  plan's control: the fixture puts `${ n - 1 }` and a `'a//b'` string
+  interpolation next to punctuation, and the **non-opaque transform run
+  against it mangles both** — the spaced interpolation is rewritten and
+  the `//` inside the string is eaten as a comment — so the fixture
+  demonstrably discriminates.  Beyond the unit specs, a token-stream
+  audit runs every one of the 49 real literals through an *independent*
+  tokenizer (regex-based, sharing no code with the transform): original
+  and minified static chunks must produce the identical WGSL token
+  sequence, and the literal count is pinned at ≥45 so a scanner that
+  silently stops matching fails rather than auditing nothing.  A bundle
+  spec then asserts the built outputs carry the shaders (`fn edgeLod`)
+  without their comments and without the tag.
+
+  Two things went wrong on the way and are worth keeping.  The tag
+  detector first required the preceding significant character to be
+  non-word, which silently skipped the one tag written as `return
+  wgsl\`…\`` — caught by the bundle spec finding a surviving tag, and the
+  fix is that identifiers scan atomically so a preceding word char means
+  a *separate* token, a legitimate expression position.  And the
+  round-37.1 throw gate fired on the tagging commit itself: the added
+  import line moved `gpu-tween.mts`'s exempted throw from line 470 to
+  471, and the build failed naming it — the fourth time that gate has
+  caught a silent allowlist re-point, this time from a one-line import.
+- [x] **52.2 Prove it did not change what runs** (2026-08-08) — the full
+  Playwright suite against the transformed dev UMD build (the plugin is
+  deliberately unconditional across dev and production, so the pixel gate
+  exercises exactly the transform that ships): **220 passed, 103
+  soft-skipped** (the `renderer-webkit` project — WebKit has no WebGPU
+  here), with all 45 goldens at **zero differing pixels** under 57.1e's
+  exact bound and every live parity scene at its recorded value
+  (`parity-selection` 0 px, the close-up tiers at 0.000–0.020%).  The
+  Node tier is green end to end (typecheck, 2078 + 280 + 24 specs, throw
+  gate at 182 run / 10 browser-only / 5 unreachable / 0 dead, lint,
+  format).  `benchmark:renderer` ran on this machine's real adapter (AMD gcn-4 —
+  the RX 580 of the round-18.5 hardware pass), 17.9 minutes over all ten
+  scenes: every pipeline compiled from minified text, v4 held its
+  vsync-bound 16.7 ms frames everywhere, and the 160 GPU rows paired
+  against the 2026-08-06 pre-change run have a **geometric-mean ratio of
+  1.018** — run-to-run noise, with the largest movers the sub-millisecond
+  compaction device rows that jitter in both directions between any two
+  runs.
 - [ ] **52.3 Only if 52.1's number disappoints — generate from `contract.mts`.**
   Resolve the build-time constants at build time so 67% of the text becomes
   static, then run **miniray** over that portion for identifier renaming.
@@ -13587,6 +13655,11 @@ every variant (larger) or dropping the feature.  It stays dynamic.
   identifiers that gzip already compresses well.  The estimate is single-digit
   KiB gzipped for a substantial amount of build machinery, and **that estimate
   should be measured on one shader before the machinery is built**.
+
+  ***Not built (2026-08-08), as the sitting expected.***  52.1 landed 19.0
+  KiB gzipped — above its own estimate — so the trigger ("if the number
+  disappoints") never fired.  Ledger item 17 (miniray) stays where it is:
+  reached only if this pass is ever wanted, measure-first.
 
 ### Calls this round needs
 

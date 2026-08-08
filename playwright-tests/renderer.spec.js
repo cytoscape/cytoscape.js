@@ -6887,4 +6887,358 @@ test.describe('WebGPU renderer', () => {
     expect(n0.x).toBe(7);
     expect(n0.y).toBe(7);
   });
+
+  /*
+  Round 48.6: the documented limit edges.
+
+  Round 48's record left three limits "still to do, and deliberately not
+  claimed" — the 256-layer image tier cap, a full glyph atlas, and the
+  export texture cap — each because it needs a fixture big enough to
+  actually reach the limit.  These are those fixtures.  What each spec
+  pins is the *contract at the edge*: the resource just inside the limit
+  still works, the first thing past it degrades the documented way
+  (warn-once, render without the resource — never a crash, never
+  silence), and the instance carries on.
+  */
+
+  test('the background-image tier caps at 256 with one warning; the graph carries on (round 48.6)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // phase 1: exactly IMAGE_MAX_LAYERS unique images in one tier.  256
+    // must all fit — a warn here would mean the cap fires a layer early.
+    // Unique solid-colour data URIs (r = i * 37 mod 256 is a bijection,
+    // so every URI interns distinctly); node p1 carries pure blue so a
+    // pixel can prove an under-cap image actually renders.
+    await page.evaluate(async () => {
+      window.__warnings = [];
+      const realWarn = console.warn;
+
+      console.warn = (...args) => {
+        window.__warnings.push(args.map(String).join(' '));
+        realWarn(...args);
+      };
+
+      const uri = (fill) => {
+        const c = document.createElement('canvas');
+
+        c.width = 8;
+        c.height = 8;
+
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = fill;
+        ctx.fillRect(0, 0, 8, 8);
+
+        return c.toDataURL();
+      };
+
+      window.__uri = uri;
+
+      const elements = [
+        // the probe node, at a spot no grid node touches
+        {
+          data: { id: 'p1', img: uri('rgb(0,0,255)') },
+          position: { x: -350, y: 250 },
+        },
+      ];
+
+      for (let i = 1; i < 256; i++) {
+        elements.push({
+          data: {
+            id: 'n' + i,
+            img: uri(
+              `rgb(${(i * 37) % 256},${(i * 101) % 256},${(i * 197) % 256})`,
+            ),
+          },
+          position: {
+            x: ((i - 1) % 17) * 30 - 240,
+            y: Math.floor((i - 1) / 17) * 28 - 270,
+          },
+        });
+      }
+
+      const cy = window.makeCy({
+        elements,
+        style: {
+          nodes: {
+            width: 30,
+            height: 30,
+            shape: 'rectangle',
+            'background-color': '#e74c3c',
+            'background-image': { data: 'img' },
+            'background-fit': 'cover',
+          },
+        },
+        zoom: 1,
+      });
+
+      await cy.ready;
+
+      cy.pan({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    });
+
+    await page.waitForFunction(
+      () => window.cy._store.images.pendingCount() === 0,
+    );
+    await waitFrames(page, 6);
+
+    // 256 is inside the limit: no tier-full warning yet, and the probe
+    // node draws its image (blue), not its background colour (red)
+    const phase1 = await page.evaluate(() => window.__warnings.slice());
+
+    expect(phase1.filter((w) => /tier .* is full/.test(w))).toHaveLength(0);
+
+    const under = await pixelAt(page, 400 - 350, 300 + 250);
+
+    expect(under[2]).toBeGreaterThan(150); // blue: the image rendered
+    expect(under[0]).toBeLessThan(100);
+
+    // phase 2: three more unique images in the same tier.  The 257th
+    // allocation must warn — once, not three times — and the overflow
+    // nodes must still draw (background colour, no image), because the
+    // documented degradation is "further images will not render", not
+    // "the renderer stops"
+    await page.evaluate(() => {
+      window.cy.add([
+        {
+          data: { id: 'p2', img: window.__uri('rgb(0,255,0)') },
+          position: { x: 350, y: 250 },
+        },
+        {
+          data: { id: 'o1', img: window.__uri('rgb(0,254,0)') },
+          position: { x: 350, y: 200 },
+        },
+        {
+          data: { id: 'o2', img: window.__uri('rgb(0,253,0)') },
+          position: { x: 350, y: 150 },
+        },
+      ]);
+    });
+
+    await page.waitForFunction(
+      () => window.cy._store.images.pendingCount() === 0,
+    );
+    await waitFrames(page, 6);
+
+    const warnings = await page.evaluate(() => window.__warnings.slice());
+
+    expect(warnings.filter((w) => /tier .* is full/.test(w))).toHaveLength(1);
+
+    // the overflow node draws its background colour where its image would
+    // have been — degraded, visible, alive
+    const over = await pixelAt(page, 400 + 350, 300 + 250);
+
+    expect(over[0]).toBeGreaterThan(180); // #e74c3c
+    expect(over[2]).toBeLessThan(120);
+
+    // and the under-cap images were not disturbed by the overflow
+    const still = await pixelAt(page, 400 - 350, 300 + 250);
+
+    expect(still[2]).toBeGreaterThan(150);
+
+    const alive = await page.evaluate(() => window.cy.nodes().length);
+
+    expect(alive).toBe(259);
+  });
+
+  test('a full glyph atlas warns once, keeps cached glyphs and drops only new ones (round 48.6)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // ~1500 distinct characters at SDF_FONT_SIZE 32 overfill the 1024²
+    // shelf-packed atlas (≈ 400–700 cells fit, ink-width dependent).
+    // Ranges a Linux CI font stack has real ink for come first (ASCII,
+    // Latin-1/Ext, Greek, Cyrillic); CJK filler follows — even where the
+    // face lacks a glyph, the .notdef box is ink and the cache keys on
+    // the character, so every one consumes a cell.
+    await page.evaluate(async () => {
+      window.__warnings = [];
+      const realWarn = console.warn;
+
+      console.warn = (...args) => {
+        window.__warnings.push(args.map(String).join(' '));
+        realWarn(...args);
+      };
+
+      const chars = [];
+
+      const push = (from, to) => {
+        for (let c = from; c <= to; c++) {
+          chars.push(String.fromCharCode(c));
+        }
+      };
+
+      push(0x21, 0x7e); // ASCII
+      push(0xa1, 0x2af); // Latin-1 sup, Ext-A/B, IPA
+      push(0x391, 0x3c9); // Greek
+      push(0x410, 0x44f); // Cyrillic
+      push(0x4e00, 0x4fff); // CJK filler
+
+      const elements = [];
+      const per = 50;
+
+      for (let i = 0; i * per < chars.length; i++) {
+        elements.push({
+          data: {
+            id: 'n' + i,
+            text: chars.slice(i * per, (i + 1) * per).join(''),
+          },
+          position: { x: (i % 8) * 90 - 315, y: Math.floor(i / 8) * 60 - 270 },
+        });
+      }
+
+      const cy = window.makeCy({
+        elements,
+        style: {
+          nodes: {
+            width: 10,
+            height: 10,
+            label: { data: 'text' },
+            'font-size': 12,
+          },
+        },
+        zoom: 1,
+      });
+
+      await cy.ready;
+
+      cy.pan({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    });
+
+    // the atlas fills while the labels build; the warn is the signal
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              window.__warnings.filter((w) => /glyph atlas is full/.test(w))
+                .length,
+          ),
+        { timeout: 30000 },
+      )
+      .toBe(1);
+
+    await waitFrames(page, 3);
+
+    // rendering carried on: glyphs that made it into the atlas are live
+    const g0 = await page.evaluate(() => window.cy.renderer().stats().glyphs);
+
+    expect(g0).toBeGreaterThan(300);
+
+    // a label made of *novel* characters lays out empty — the documented
+    // "further new glyphs will not render" — and does not re-warn
+    await page.evaluate(() => {
+      const novel = [];
+
+      for (let c = 0x5100; c < 0x5140; c++) {
+        novel.push(String.fromCharCode(c));
+      }
+
+      window.cy.add({
+        data: { id: 'novel', text: novel.join('') },
+        position: { x: 0, y: 260 },
+      });
+    });
+    await waitFrames(page, 3);
+
+    const afterNovel = await page.evaluate(() => ({
+      glyphs: window.cy.renderer().stats().glyphs,
+      warns: window.__warnings.filter((w) => /glyph atlas is full/.test(w))
+        .length,
+    }));
+
+    expect(afterNovel.glyphs).toBe(g0); // nothing new rendered...
+    expect(afterNovel.warns).toBe(1); // ...and no warning spam
+
+    // ...but a label of *cached* glyphs still renders in full while the
+    // atlas is full — which is what separates "full" from "broken"
+    await page.evaluate(() => {
+      window.cy.add({
+        data: { id: 'cached', text: 'Aa' },
+        position: { x: 120, y: 260 },
+      });
+    });
+    await waitFrames(page, 3);
+
+    const afterCached = await page.evaluate(
+      () => window.cy.renderer().stats().glyphs,
+    );
+
+    expect(afterCached).toBe(g0 + 2);
+  });
+
+  test('exports work at exactly the device texture limit and the error advice past it works (round 48.6)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // a wide, short graph: maxWidth pins the output width exactly, and
+    // the proportional height keeps the at-limit texture small
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: 4000, y: 0 } },
+      ],
+      style: {
+        nodes: { width: 20, height: 20, 'background-color': '#2c3e50' },
+      },
+      zoom: 1,
+    });
+    await waitFrames(page);
+
+    const limit = await page.evaluate(
+      () => window.cy._renderer.device.limits.maxTextureDimension2D,
+    );
+
+    expect(limit).toBeGreaterThan(0);
+
+    // at the limit: allowed.  One px is the whole contract here — the
+    // guard is `> limit`, and an off-by-one would either reject a legal
+    // export or hand the device an illegal texture
+    const atLimit = await page.evaluate(
+      (limit) => window.cy.png({ full: true, maxWidth: limit }),
+      limit,
+    );
+    const decoded = decodePng(atLimit);
+
+    expect(decoded.width).toBe(limit);
+    expect(decoded.height).toBeGreaterThanOrEqual(1);
+
+    // one past the limit: the guard, naming the dimensions and the limit
+    const past = await page.evaluate(async (limit) => {
+      try {
+        await window.cy.png({ full: true, maxWidth: limit + 1 });
+
+        return null;
+      } catch (err) {
+        return String(err?.message ?? err);
+      }
+    }, limit);
+
+    expect(past).toMatch(/exceeds?.*texture limit/);
+    expect(past).toContain(String(limit));
+
+    // the message advises maxWidth/maxHeight over a large scale — follow
+    // its advice on the same instance and it must actually work (round
+    // 31's lesson: an error that advises a form that fails is a defect)
+    const advised = await page.evaluate(async () => {
+      try {
+        await window.cy.png({ full: true, scale: 100000 });
+
+        return { threw: false };
+      } catch (err) {
+        const message = String(err?.message ?? err);
+        const uri = await window.cy.png({ full: true, maxWidth: 200 });
+
+        return { threw: true, message, ok: uri.startsWith('data:image/png') };
+      }
+    });
+
+    expect(advised.threw).toBe(true);
+    expect(advised.message).toMatch(/maxWidth\/maxHeight or a smaller scale/);
+    expect(advised.ok).toBe(true);
+  });
 });

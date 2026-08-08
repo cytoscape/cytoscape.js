@@ -3815,8 +3815,9 @@ download with pixel-identical output — ~~**round 54** (the bounds
 round, newly scheduled before round 49)~~ — **landed 2026-08-08**, fit
 zoom 0.607 → 0.822 on the compound fixture with the sweep promoted to a
 standing gate — **rounds 49–51** (cross-platform,
-release engineering, the bake), round 48's documented limit edges, and
-round 44's release-time act.
+release engineering, the bake), ~~round 48's documented limit edges~~
+(**landed 2026-08-08** as 48.6 — three browser specs, five controls),
+and round 44's release-time act.
 
 Undecided: the **error policy** (round 40) and the
 **preventDefault enumeration** (item 12) — still the two genuinely open
@@ -3932,9 +3933,12 @@ What the queue now holds: **round 40** (blocked on its design sitting,
 prep done), **41.5** (blocked on its docs-first proposal for the
 maintainer), **round 46** (the docs site — unblocked but large and only
 sketch-specced), **rounds 49–51** (other platforms, release
-credentials, the bake), round 48's documented limit edges, and round
+credentials, the bake), ~~round 48's documented limit edges~~ (**landed
+later the same day** as 48.6 — the three limit fixtures, each specced at
+its exact edge, with five controls), and round
 44's release-time act.  Nothing else fully specced remains buildable
-without the maintainer or different hardware.
+without the maintainer or different hardware — and with 48.6 in, round
+48 is complete.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -13232,7 +13236,7 @@ this for the compound benchmark — so a probe that enumerates its registry
 must `process.exit()` or it hangs forever, printing nothing.  Two runs
 were lost to that before it was recognised.)*
 
-## Round 48 — robustness + soak (planned 2026-08-04; Node tier landed 2026-08-04)
+## Round 48 — robustness + soak (planned 2026-08-04; Node tier landed 2026-08-04; complete with 48.6, 2026-08-08)
 
 The tier of testing a release needs and feature rounds never owed.  It
 ran as `npm run test:soak` — its own script because the leak specs need
@@ -13353,11 +13357,51 @@ none was reachable from any test the suite already had.
   no-opped and the bundle rebuilt, all three fail; restored, all three
   pass.
 
-**Still to do, and deliberately not claimed**: the documented limit
-edges — the 256-layer image cap, a full glyph atlas, the export texture
-cap (the last already half-covered by round 30.2's export guards).  Each
-needs a fixture big enough to reach the limit, which is the reason they
-are not here rather than any difficulty of principle.
+- [x] **48.6 The documented limit edges** (2026-08-08, the `renderer`
+  project, 3 specs) — the tail the record above had left "still to do,
+  and deliberately not claimed": the 256-layer image tier cap, a full
+  glyph atlas, and the export texture cap.  Each got the fixture big
+  enough to reach its limit, and each spec pins the *contract at the
+  edge* rather than the limit alone: the resource just inside still
+  works, the first thing past it degrades the documented way
+  (warn-once, render without the resource — never a crash), and the
+  instance carries on.
+
+  - **The image tier cap is two-sided.**  Phase 1 loads exactly 256
+    unique data-URI images into one tier and asserts *no* warning —
+    the 256th image must fit, so a cap firing a layer early fails the
+    spec — then a pixel proves an under-cap image actually renders
+    (the probe node draws its blue image, not its red background).
+    Phase 2 adds three more: exactly **one** warning (warn-once, not
+    one per overflow), the overflow node draws its background colour
+    where its image would have been, and the under-cap images are
+    undisturbed.
+  - **A full glyph atlas separates "full" from "broken".**  ~1500
+    distinct characters (ASCII through Cyrillic first — ranges a Linux
+    CI font stack has real ink for — with CJK filler, which consumes
+    cells even as `.notdef` boxes because the cache keys on the
+    character) overfill the 1024² shelf packing.  After the warn: a
+    label of *novel* characters lays out empty and does not re-warn,
+    and a label of *cached* characters still renders in full
+    (`stats().glyphs` grows by exactly its glyph count) — which is the
+    behaviour the warning's own text promises.
+  - **The export cap is exact, and the error's advice works.**
+    `png( { full: true, maxWidth: limit } )` succeeds with output width
+    exactly `device.limits.maxTextureDimension2D`; `limit + 1` rejects
+    naming the dimensions and the limit.  And because round 31 found an
+    error message advising a form the library rejects, the spec follows
+    this message's advice on the same instance: after the over-limit
+    `scale` rejection, the `maxWidth` form it recommends must actually
+    resolve.
+
+  **Five controls, every one failing where it should**: the cap at 255
+  fails phase 1's no-warn assertion; the cap at 512 fails phase 2's
+  warn assertion (and trips the device-validation `afterEach`, since
+  layers then write past the texture); the atlas going full *silently*
+  fails the warn poll; the export guard at `>=` fails the at-limit
+  export; the guard deleted fails the past-limit message match (the
+  device rejects the texture instead, which is exactly the raw failure
+  the guard exists to pre-empt).
 
 ## Round 49 plan — cross-platform validation (planned 2026-08-04)
 

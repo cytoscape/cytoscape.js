@@ -4412,11 +4412,13 @@ it here in round 57.4.*
   are documents to keep true rather than to write once.
 
   **48** (soak)
-  landed its Node tier and its device-loss-under-load specs; what
-  remains of it is the documented **limit edges** — the 256-layer image
-  cap, a full glyph atlas, the export texture cap — each of which needs
-  a fixture big enough to reach the limit rather than any new
-  technique.  **49–51** (cross-platform validation, release
+  is complete: the Node tier, the device-loss-under-load specs, and —
+  landed 2026-08-08 as 48.6 — the documented **limit edges** (the
+  256-layer image cap, a full glyph atlas, the export texture cap),
+  each specced at its exact edge with the fixture big enough to reach
+  it: the resource just inside the limit works, the first past it
+  degrades warn-once without a crash, and the instance carries
+  on.  **49–51** (cross-platform validation, release
   engineering, the release bake) are untouched; 49 needs hardware this
   box does not have.
 

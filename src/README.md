@@ -1069,9 +1069,10 @@ each is deliberate, not a pass-1 deferral:
   `case` conditionals), so every value is analyzable, serializable, and
   GPU-evaluable.  The opaque `(ele) => props` form was removed — its
   cases are covered by mappers (`case` for conditionals, `data(id)` for
-  identity), and selection-dependent recolouring is intentionally gone
-  (v3's `:selected` rule is drawn by the shader — see below).  Removed
-  means
+  identity), and state-dependent recolouring — v3's `:selected`,
+  `:active` and the rest — is a **`case` condition on the state**, which
+  is what v4 has instead of a state selector (round 57.1; see "State
+  conditions" below).  Removed means
   **rejected**, since round 29.3: a group written as a function throws
   at `setSheet`.
 
@@ -1983,10 +1984,12 @@ each is deliberate, not a pass-1 deferral:
   `selection-box-*` become stylable props, with today's baked-in
   affordances (shader hover/active brighten, the accent ring, the DOM
   selection box) as the styled defaults.  **Round 57.1 finished that
-  sentence**: v3's `:selected` and `:parent:selected` are what the node
-  fragment shader draws now, and v3's `:active` — black at 25% over 10 px
-  of padding — is drawn by this very overlay machinery, substituted for
-  a pressed element that has styled no overlay of its own.  *Deferred*:
+  sentence, and finished it more literally than it was written**: v3's
+  `:selected`, `:parent:selected` and `:active` blocks are *rules in v4's
+  default stylesheet* rather than anything a shader knows about, and the
+  hover brighten — which v3 has no rule for — was deleted rather than
+  given a default.  Nothing is baked in any more: every one of those
+  affordances is a `case` mapper an app can restyle or drop.  *Deferred*:
   `text-metrics`/`box-select-labels` get their v4 form in the
   multiline/label-bb round.  (Since landed, round 16.4/16.5:
   `eles.labelBoundingBox()` and `boxSelectionIncludesLabels`.)
@@ -2192,11 +2195,11 @@ Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
 string; leaves read 0, as v3 leaves do).  v3's `:parent:selected`
 tint **is** drawn since round 57.1 — its `#CCE1F9` fill and `#aec8e5`
-border are constants in the node fragment shader, like the leaf rule —
-so v4 never restyles on selection and still looks like v3.  The live
-parity scene reads **0 differing pixels** over selected leaves, a
-selected parent, straight and curved selected edges and their
-arrowheads.
+border are `{ selected: true }` conditions in the default sheet's parents
+block, exactly as the leaf rule is in its nodes block, so a user parents
+block replaces them the way a v3 stylesheet does.  The live parity scene
+reads **0 differing pixels** over selected leaves, a selected parent,
+straight and curved selected edges and their arrowheads.
 
 GPU mapper eval: nodes-group paint mappers on channels the parents
 group resolves differently (default-overlay channels the nodes block
@@ -2320,6 +2323,70 @@ direction), the event vocabulary + extension contract (17), and the
 GPU `force` layout (18 — closing the round-9 "GPU layouts: logged"
 hook).  Their sections above and the PLAN.md records carry the
 detail.
+
+## State conditions (round 57.1)
+
+v3 expresses element state in *selectors* — `:selected`, `:active`,
+`:locked`, `:grabbed` and about thirty more.  v4 has no selectors, so the
+same thing is a **condition on a `case` mapper**, beside the data
+conditions and round 14.7's structural `{ parent }` / `{ child }`:
+
+```js
+cytoscape({
+  style: {
+    nodes: {
+      'background-color': {
+        case: [{ when: { selected: true }, then: '#0169D9' }],
+        else: '#999',
+      },
+      'border-width': {
+        case: [{ when: { locked: true }, then: 4 }],
+        else: 0,
+      },
+    },
+  },
+});
+```
+
+The vocabulary is `selected`, `selectable`, `locked`, `grabbed`,
+`grabbable`, `active`, `hovered`, plus the structural `parent`, `child`
+and their v3-named negations `childless` and `orphan`.  Every one takes
+a boolean, so `{ selected: false }` is v3's `:unselected`, `{ grabbed:
+false }` its `:free`, and so on — one key per state rather than v3's
+pair.
+
+Three properties of the design are worth stating, because each was a
+choice:
+
+- **A state condition is not tied to any property.**  It compiles to a
+  reserved key (`'::active'`) that the style engine's value reader
+  answers from the flags word, so it is evaluated wherever every other
+  mapper is and writes the same computed record.  `{ when: { active:
+  true } }` on `width` works exactly as it does on `background-color`,
+  and the bounding box, the cull extent and the pick all follow.
+- **The affordances v3 gives you for free are default rules, not engine
+  behaviour.**  v4's default stylesheet carries v3's `:selected`,
+  `:parent:selected` and `:active` blocks, spread *before* your own — so
+  declaring `background-color` yourself replaces the selection colour
+  along with it, which is precisely what happens in v3, where those
+  blocks sit in the default sheet and any later block beats them.
+  `overlay-opacity: 0` turns the press highlight off.
+- **The default sheet costs nothing.**  A group whose mappers read only
+  state flags has one computed record per distinct combination of the
+  bits it reads — two for the default sheet at rest — so it is applied
+  with a mask and a lookup rather than a program run per element.  A
+  150k-element load measures the same as an all-constant sheet; without
+  it the default sheet cost about 6%.  One data-driven mapper in the
+  group turns the fast path off, because the group is on the per-element
+  path anyway.
+
+Deliberately absent from the vocabulary, and why: `:compound` (its node
+meaning is exactly `parent`, and its edge meaning — touching a parent —
+is not a bit), `:loop` / `:simple` (source == target is a column compare,
+not a flag), and `:visible` / `:hidden` / `:transparent` (computed *from*
+style, so a rule conditioned on one would be circular).  `:animated`,
+`:backgrounding`, `:removed` and `:inside` have no stable bit and no
+obvious use in a sheet.
 
 ## Background images (round 15, landing)
 
@@ -3294,40 +3361,18 @@ still be what it says.
 > section is a decision, not a backlog item.  (The missing arrow `gap`
 > was the other; round 56 landed it.)
 
-- **`:active` reaches nodes only, and hover has no v3 counterpart**
-  (round 57.1c).  v4 draws v3's `:active` overlay for a pressed *node*;
-  pressing an **edge** activates nothing, because the pointer layer's
-  press target comes from the synchronous CPU pick, which is nodes-only
-  by the round-17.3 deviation (an edge would need the async GPU tile).
-  `edge.activate()` still sets the flag and `active()` still reports it —
-  nothing draws it.
-  In the other direction, v4 keeps a **hover brighten** that v3 has no
-  rule for at all: v3 styles hover nowhere, and v4 has no `:hover` an app
-  could write, so removing it would take feedback away with no
-  replacement.
+- **`:active` reaches nodes only** (round 57.1).  The press affordance
+  is v3's `:active` block, and v4 gets it the way v3 does — from the
+  default stylesheet, as a `{ when: { active: true } }` condition on
+  `overlay-opacity`.  What deviates is not the styling but *what gets
+  pressed*: the pointer layer's press target comes from the synchronous
+  CPU pick, which is nodes-only by the round-17.3 deviation, so pressing
+  an **edge** activates nothing.  `edge.activate()` sets the flag,
+  `active()` reports it, and a sheet conditioned on it restyles the edge
+  — only the pointer never sets it.
 
-  `FLAG_GRABBED` left the brighten in the same round, since
-  a pressed element now carries the overlay and two affordances for one
-  state is worse than either.
-- **The selection colour is not overridable, where v3's is** (round
-  57.1).  v4 draws v3's `:selected` rule — `#0169D9` on the fill, on an
-  edge's `line-color` and on all four arrow colours, and
-  `#CCE1F9`/`#aec8e5` on a selected compound parent — in the fragment
-  shaders, and it always wins.  In v3 those rules live in the
-  *default stylesheet*, so a user block setting `background-color` comes
-  later and beats them: a v3 app with a styled palette shows no selection
-  colour at all unless it writes its own `:selected` rule.
-  v4 has no `:selected` to write, so matching v3 exactly would leave an
-  app **no** way to make selection visible, which is why the shader wins
-  instead.
-
-  The two agree exactly on the default sheet — the live parity
-  scene reads **0 differing pixels** — and diverge for any sheet that
-  names a colour.
-  *To reverse*: the style engine knows per group whether the sheet
-  declares `background-color` / `line-color`, and a v4 sheet has exactly
-  one block per group, so a bit per group carried in the Frame uniform
-  would reproduce v3's precedence exactly rather than approximately.
+  *To reverse*: the async GPU pick tile already identifies edges; the
+  press path would have to wait for it.
 
 - **Straight-edge endpoint accessors** (round 55, *fixed* — kept here
   because the answer changed): `source/targetEndpoint()` used to report
@@ -4371,9 +4416,14 @@ it here in round 57.4.*
   constraint that these audits walk *class bodies*, so a v3-style split
   onto a prototype would make every moved member invisible to all four
   gates at once while they kept reading 100%.
-- **Two deviations round 57.1 recorded rather than smoothed over**, both
-  in "Known deviations from v3" above: v4's selection colour always
-  wins where v3's is a default any user block beats, and `:active`
-  reaches nodes only (the press target is the synchronous CPU pick,
-  nodes-only since round 17.3) while v4 keeps a hover brighten v3 has no
-  rule for.
+- **One deviation round 57.1 recorded**, in "Known deviations from v3"
+  above: `:active` reaches nodes only, because the press target is the
+  synchronous CPU pick and that has been nodes-only since round 17.3.
+  The styling is v3's; only the pointer's reach differs.
+
+  The round's *first* pass recorded a second one — that v4's selection
+  colour always won, where v3's is a default any user block beats — and
+  it was rejected rather than accepted, which is why the deviation is not
+  here.  Making it a default rule instead of a shader constant took no
+  new concept: `case` mappers and the reserved condition keys already
+  existed, and the state family joined `{ parent }`/`{ child }`.

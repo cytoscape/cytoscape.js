@@ -1066,6 +1066,26 @@ rather than from a blank page.
       *allowed* to make) is the one that proved a 1100-file move
       behaviour-neutral, and it applies here unchanged.
 
+27. **The golden bounds, and what a loose one hides** (raised
+    2026-08-07, from round 57.1d).  Six goldens' committed PNGs disagree
+    with what the code renders — `label-boxes` by **1.597%**,
+    `label-align` by 0.811%, `edge-labels`, `label-visuals`,
+    `labels-open-sans` and `curved-edge-labels` between 0.25% and 0.46%.
+    They pass because each carries a loosened per-golden `maxDiffRatio`
+    (0.02 for `label-boxes`, against the suite's 0.005 default), granted
+    at some point for text antialiasing and wide enough to hide real
+    drift ever since.  All six are label scenes, which is the shape of
+    the problem: text is the one thing whose rasterisation is genuinely
+    allowed to wobble, so it is the one place a generous bound looks
+    justified — and once it is granted, that golden stops answering even
+    "did this change?", which is the *only* question a golden answers.
+    Worth deciding: whether the label goldens should compare a
+    text-insensitive projection (ink coverage per region, or the box
+    geometry alone) at a **tight** bound instead of the whole image at a
+    loose one.  Note what the current arrangement cost: nothing was
+    broken, and nobody could have told from a green run whether anything
+    was.
+
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass (originally on `feature/webgpu`, branched from the TS refactor PR #3477; the work now lives on `v4`) builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.
@@ -15053,6 +15073,14 @@ bakes into the shader where v3 spells them in its default stylesheet.
   deviation is in `src/README.md` with the mechanism that would reverse
   it (a per-group bit in the Frame uniform, which is *exact* here rather
   than approximate, because a v4 sheet has exactly one block per group).
+
+  ***The deviation was rejected, and 57.1d removed it.***  The premise —
+  "v4 has no `:selected` to write" — was wrong when it was written: the
+  `case` mappers had carried a `{ selected: ... }` condition since
+  earlier the same day, so an app *could* write the rule, and the whole
+  question was which sheet the default lived in.  It lives in v4's
+  default stylesheet now, spread before the user's block, which is v3's
+  precedence exactly.  Read 57.1d, not this paragraph.
   Goldens: **two** moved and eleven did not.  `UPDATE_GOLDENS=1` rewrites
   every golden whether or not it exceeded its bound, so the run was
   re-checked without it — only `selection-accent` (its scene grew a
@@ -15133,6 +15161,141 @@ bakes into the shader where v3 spells them in its default stylesheet.
   17.3's own deviation — so pressing an edge activates nothing, and this
   is that limit rather than a new one.  And v4 keeps a hover brighten
   v3 has no rule for, because v4 has no `:hover` an app could write.
+
+  ***The second one is gone (57.1d).***  "v4 has no `:hover` an app could
+  write" was the same false premise as the selection deviation's, one
+  layer down: the condition vocabulary is v4's answer to a state
+  selector, and it can hold `hovered` as easily as `selected`.  The
+  brighten — a hard-coded `color.rgb + 0.15` in the node fragment shader,
+  which no spec had ever covered — was deleted, and `{ hovered: true }`
+  is what an app writes instead.  Everything this entry says about the
+  *machinery* (the pass gate, the cull predicate, the two entry points,
+  the active count) also went with it: those existed to make a shader
+  constant reachable, and there is no constant.
+- [x] **57.1d The states are style, not shader constants** (2026-08-07)
+  — 57.1a–c drew v3's `:selected`, `:parent:selected` and `:active` from
+  the flags word inside the shaders, and recorded two deviations to
+  explain what that cost.  Both were rejected.  This pass makes state a
+  **`case` condition**, which is what v4 has instead of a state selector,
+  and moves the three rules into v4's **default stylesheet** — spread
+  before the user's block, so declaring the prop replaces the rule, which
+  is v3's order-based precedence and not an approximation of it.
+
+  What that took, in order of how much of it was new: **nothing much**.
+  The condition vocabulary, the reserved `'::'` keys, the value reader,
+  the dependency set and the change-driven refresh all existed for round
+  14.7's `{ parent }` / `{ child }`.  The round is mostly *deletion*.
+
+  **The vocabulary.**  `selected`, `selectable`, `locked`, `grabbed`,
+  `grabbable`, `active`, `hovered`, plus `childless` and `orphan` as the
+  two structural negations under their v3 names.  Each is a boolean, so
+  v3's six negative selectors (`:unselected`, `:unlocked`, `:free`,
+  `:ungrabbable`, `:unselectable`, `:inactive`) are the same key with
+  `false` — one key per state rather than a pair.  The binding lives in
+  `contract.mts` (`CONDITION_FLAGS`), in one direction for the reader and
+  the reverse for the flag-write side, because it is flag semantics and
+  both halves have to agree.
+  Deliberately absent, each for a reason worth keeping: `:compound` (its
+  node meaning is exactly `parent`; its edge meaning — touching a parent
+  — is not a bit, and a spelling that silently means less than v3's is
+  worse than no spelling), `:loop` / `:simple` (a column compare), and
+  `:visible` / `:hidden` / `:transparent` (**computed from style**, so a
+  rule conditioned on one would be circular — v3 gets away with it by
+  re-running selectors).
+
+  **What came out of the shaders.**  `SELECT_ACCENT`,
+  `SELECT_PARENT_FILL`, `SELECT_PARENT_BORDER` and every selection branch
+  in `fsNode` / `fsEdge` / `fsCurvedEdge` / both `fsArrow`s; the
+  `edge.flags` binding 57.1b had freed a slot for; `ACTIVE_RECORD` and
+  `layerRecord()`; the duplicate of that record in `NODE_LAYER_CULL`, the
+  one the cull comment said "must agree" with the shader's; the
+  `vsLayerPlain` / `fsLayerPlain` entry points and the `node.flags`
+  binding the layer pipeline carried for them; `activeCount()` and its
+  three writers in the store; and the three widened pass gates in
+  `renderer.mts`.  Four shader flag constants are now unread and gone.
+
+  **And the hover brighten, which nothing had ever tested.**  A
+  hard-coded `color.rgb + 0.15` in the node fragment shader, for a state
+  v3 styles nowhere — no spec covered it, no golden showed it, and no
+  sheet could turn it off.  Deleted; `{ hovered: true }` is what an app
+  writes now.  It is v4's own condition with no v3 spelling, which is the
+  honest form of "v3 has no rule for this".
+
+  **The press affordance is one property.**  v3's `:active` block is
+  three declarations, and two of them (`overlay-color: black`,
+  `overlay-padding: 10`) are already v4's constant defaults — so only
+  `overlay-opacity` moves, as `{ case: [{ when: { active: true }, then:
+  0.25 }], else: 0 }`.  That is not brevity for its own sake: it makes
+  `overlay-opacity: 0` the way to turn the highlight off, and any other
+  `overlay-*` value a restyle rather than a loss.
+
+  **A state condition is not tied to a property**, and a spec says so
+  rather than a comment: `{ when: { active: true } }` on `width` changes
+  the node's `boundingBox()`, so the cull extent and the pick follow.
+  That is the property the shader version could never have had — the
+  press could only ever change the one thing the shader chose to draw.
+
+  **The cost, which was the reason to hesitate.**  A default sheet made
+  of `case` mappers means every graph pays per-element mapper evaluation
+  at load for an affordance almost none of its elements are using:
+  measured **~6%** of a 150k-element init (704 ms vs 664 ms against an
+  all-constant sheet).  The fix is that such a group is not per-element
+  at all.  A def whose mappers read **only** state flags has one computed
+  record per distinct combination of the bits it reads — *two* for the
+  default sheet at rest — so `applyPartitioned` masks the flags word,
+  hits a `Map`, and does the same `write()` the constant path does.
+  Re-measured: **675 / 704 / 691 ms against 674 / 680 / 678** — the
+  default sheet is now indistinguishable from an all-constant one.
+  One data mapper in the group turns the fast path off, because the group
+  is on the per-element path anyway and there is nothing left to win.
+
+  Two controls, and both landed where they should: with the partition
+  disabled, **only** the three partition specs fail and the other twelve
+  pass, which is the claim (an optimisation must be invisible); with the
+  partition ignoring the flags word, twelve of fifteen fail, which says
+  the specs are actually exercising it.
+
+  **The restyle hook moved to the flag choke point**, which is the
+  structural half.  57.1a had written it by hand in `_setSelected`, and
+  this round wanted it at six more sites (lock, grab, activate, selectify,
+  grabify, hover).  `setFlag` and `flagRefs` notify `store.onStateChange`
+  instead, gated twice so an unstyled state costs one `&`: the styleable
+  mask rejects the structural and internal bits, and a watched-key set
+  registered by the StyleEngine rejects a state no condition mentions.
+  That set is deliberately *not* `watchDataKeys` — that one answers
+  "which data writes feed the GPU eval kernel" and excludes conditionals
+  on principle, while a state condition is always a conditional.
+
+  **The parity scene that could not have existed before.**
+  `parity-selection-named` styles a fill on both sides, so in v3 the user
+  block beats the default `:selected` and a selected node looks like an
+  unselected one — and v4 now does the same, at **0 differing pixels**.
+  Its control is the round itself: spreading the default block *after*
+  the user's rather than before it (v4's pre-57.1d behaviour) takes the
+  scene to **12.333%** against a 0.1% bound.  The scene it partners,
+  `parity-selection`, still reads 0 px on the defaults.
+
+  **Two goldens were measuring nothing and said so by passing.**
+  `selection-accent` and `polygon-shapes` both declared
+  `background-color`, so under the new rule their selected nodes and
+  their unselected twins painted identically — a selection golden with no
+  selection in it.  The first lost its fill declaration; the second lost
+  a `selected: true` left over from the accent-ring era, since it is
+  about polygon SDFs.  A new golden, `selection-overridden`, covers the
+  override case in three rows (default rule / a flat colour / the app's
+  own `{ selected: true }` case), and discriminates because the three
+  rows must not look alike.
+
+  **A finding that has nothing to do with this round.**  Regenerating
+  turned up **six goldens whose committed PNG does not match what HEAD's
+  own code renders** — `label-boxes` by 1.597%, `label-align` by 0.811%,
+  and four more between 0.25% and 0.46%.  Confirmed by regenerating at a
+  clean HEAD, so it is drift that was already there.  Each of the six
+  carries a loosened per-golden `maxDiffRatio` (0.02 for `label-boxes`),
+  which is exactly wide enough to hide it: **a golden with a generous
+  bound stops answering even "did this change?"**.  The regenerated PNGs
+  are committed here because they are the accurate ones, and the bounds
+  are worth a look of their own — logged as ledger item 27.
 - [x] **57.7 Closing docs sweep** (2026-08-07) — both documents end to
   end plus `AGENTS.md`, and the `EXECUTIVE_SUMMARY.md` rewrite the
   standing rule requires when a round closes.  The three named drift

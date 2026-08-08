@@ -768,8 +768,41 @@ interface Condition {
    * A structural condition stands alone — AND it with data conditions
    * via the `when` array form. */
   parent?: boolean;
+  /** structural (round 14.7, nodes only): the element has no children —
+   * v3's `:childless`, and exactly `{ parent: false }` */
+  childless?: boolean;
   /** structural (round 14.7, nodes only): the element has a parent */
   child?: boolean;
+  /** structural (round 14.7, nodes only): the element has no parent —
+   * v3's `:orphan`, and exactly `{ child: false }` */
+  orphan?: boolean;
+  /** state (round 57.1): the element is selected.  This is what v4's
+   * **default stylesheet** uses to give selection a colour — nodes'
+   * `background-color`, edges' `line-color` and the four arrow colours
+   * are conditional mappers rather than constants — so declaring any of
+   * those props in your own sheet replaces the rule and the selection
+   * colour with it, exactly as it does in v3. */
+  selected?: boolean;
+  /** state (round 57.1): the element is selectable — v3's
+   * `:selectable`; `false` is its `:unselectable` */
+  selectable?: boolean;
+  /** state (round 57.1): the element is locked — v3's `:locked`;
+   * `false` is its `:unlocked` */
+  locked?: boolean;
+  /** state (round 57.1): the user is dragging the element — v3's
+   * `:grabbed`; `false` is its `:free` */
+  grabbed?: boolean;
+  /** state (round 57.1): the element can be dragged — v3's
+   * `:grabbable`; `false` is its `:ungrabbable` */
+  grabbable?: boolean;
+  /** state (round 57.1): the element is under an active press — v3's
+   * `:active`; `false` is its `:inactive`.  v3 draws a fixed black wash
+   * for this and v4 draws it from the default stylesheet's `overlay-*`
+   * props, so restyling or removing the affordance is a sheet edit. */
+  active?: boolean;
+  /** state (round 57.1): the pointer is over the element.  v4's own,
+   * with no v3 spelling — v3 styles hover not at all. */
+  hovered?: boolean;
 }
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
 interface CaseClause {
@@ -2034,6 +2067,15 @@ declare class GraphStore implements ModelView {
   labelFontWeight: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
   private watchedKeys;
+  /** reserved state keys some `case` condition reads (registered by the StyleEngine) */
+  private watchedStates;
+  /**
+   * Told when a styled state bit flips on live slots — the core wires
+   * this to the StyleEngine's mapper refresh (round 57.1).  Null until
+   * then, and consulted before any per-slot bookkeeping, so a store with
+   * no style attached does the flag write and nothing else.
+   */
+  onStateChange: ((group: GroupName, key: string, slots: readonly number[]) => void) | null;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
   private mapperSpans;
   /** forwarding chains for refs staled by slot compaction (19.3):
@@ -2192,6 +2234,21 @@ declare class GraphStore implements ModelView {
    * else.
    */
   watchDataKeys(group: GroupName, keys: Iterable<string>): void;
+  /**
+   * Register the reserved state keys (`'::selected'`, `'::active'`, …)
+   * the current sheet's `case` conditions read.  Flag writes outside
+   * this set skip the change notification entirely, which is what makes
+   * an unstyled state cost one mask test per flip.
+   *
+   * Separate from `watchDataKeys` because the two sets answer different
+   * questions: that one is "which data writes feed the GPU eval kernel"
+   * and excludes conditionals on principle, while a state condition is
+   * always a conditional and may sit on any property.
+   *
+   * @param group — the element group the keys belong to
+   * @param keys — the reserved keys; replaces the previous set
+   */
+  watchStateKeys(group: GroupName, keys: Iterable<string>): void;
   /** Data write through the mapper-span choke point (the collection's data setter). */
   setData(group: GroupName, slot: number, key: string, value: unknown): void;
   /**
@@ -2459,6 +2516,20 @@ declare class GraphStore implements ModelView {
    */
   setFlag(group: GroupName, slot: number, bit: number, on: boolean): void;
   /**
+   * Tell the style engine that a *styled* state bit flipped, so the
+   * affected slots restyle.  This is what makes `{ when: { active:
+   * true } }` work on any property: the flag write is the only event,
+   * and every consequence — the mapper re-evaluation, the column
+   * writes, the upload — is the ordinary refresh path from there.
+   *
+   * Cheap when nothing styles the state, which is the common case: the
+   * mask test rejects the structural and internal bits outright, and
+   * `markDataWrite`'s watched-key set rejects a state no `case`
+   * condition mentions.  A sheet that says nothing about press pays one
+   * `&` per press.
+   */
+  private noteStateChange;
+  /**
    * Bulk flag write over a refs array (a collection's _refs): sets or
    * clears `bit` on every live ref, with the flags/gen columns hoisted out
    * of the loop and one coalesced dirty span per touched group.  Refs
@@ -2563,19 +2634,6 @@ declare class GraphStore implements ModelView {
   /** live counts of nodes with a visible overlay / underlay (13 A2) */
   private overlays;
   private underlays;
-  /** elements carrying FLAG_ACTIVE — v3's `:active`, round 57.1c */
-  private actives;
-  /**
-   * Elements the pointer layer has marked active (pressed) — v3's
-   * `:active` state, which round 57.1c draws as an overlay.
-   *
-   * The overlay pass is skipped whenever nothing is styled with one, so
-   * without this an active element with no *styled* overlay would draw
-   * nothing at all: the count is what keeps the pass alive for it.
-   *
-   * @returns the number of live elements with the flag set
-   */
-  activeCount(): number;
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number;
   /** Nodes with a visible underlay (13 A2) — the pass-skip gate. */
@@ -3093,7 +3151,8 @@ type OutputStops = {
 type CompiledCondition = {
   key: string;
   op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
-  /** booleans back the structural '::parent'/'::child' keys (round 14.7) */
+  /** booleans back the reserved '::parent'/'::child' (round 14.7) and
+   * '::selected' (round 57.1) keys */
   value: string | number | boolean | (string | number)[];
 };
 type Program = {
@@ -3257,8 +3316,9 @@ declare class StyleEngine {
     easing: string;
   }) => void) | null;
   /** value reader for mapper/condition keys ('id' is first-class, not in
-   * the sidecar; '::parent'/'::child' answer the structural case
-   * conditions from the hierarchy flags, round 14.7) */
+   * the sidecar; the reserved '::' keys answer a case condition from the
+   * flags column — the structural pair since round 14.7, the state
+   * family since 57.1) */
   private readValue;
   /**
    * @param store — the columnar store whose channel columns this engine
@@ -3342,6 +3402,25 @@ declare class StyleEngine {
    * @returns true when any mapped channel or label depends on one of them
    */
   stylesDependOnData(group: GroupName, keys: string[]): boolean;
+  /**
+   * Whether the current sheet styles a flag state — i.e. whether
+   * flipping that bit has to restyle at all.  Every flag-write choke
+   * point asks this before doing any work, so a sheet that says nothing
+   * about a state pays one Set lookup when it changes.
+   *
+   * v4's default stylesheet says yes for two of them.  Selection: nodes'
+   * `background-color`, edges' `line-color` and the four arrow colours
+   * are `{ selected: true }` case mappers.  Press: the `overlay-*` props
+   * are `{ active: true }` ones.  A sheet that declares those props
+   * replaces the rule and the state becomes free again — which is the
+   * same trade round 4 made when v4 still had `:selected` blocks,
+   * arriving from the other direction.
+   *
+   * @param group — the element group whose flag is changing
+   * @param key — the reserved condition key, e.g. `'::selected'`
+   * @returns true when the change must re-evaluate mappers
+   */
+  dependsOnState(group: GroupName, key: string): boolean;
   /** Which arrow ends the current stylesheet can enable. */
   get arrowEnds(): {
     source: boolean;
@@ -3428,6 +3507,19 @@ declare class StyleEngine {
    * the pass to the whole group (every slot's mapping moved).
    */
   private applyMapped;
+  /**
+   * Apply a group whose mappers read only state flags: one record per
+   * distinct flag combination, cached on the def, instead of a program
+   * run per element.
+   *
+   * The cache is unbounded in principle and tiny in practice — its size
+   * is 2^(number of distinct bits the sheet's conditions read), and a
+   * sheet reads one or two.  It lives on the def, so a sheet swap
+   * discards it with the def that built it.
+   */
+  private applyPartitioned;
+  /** Resolve one flag combination into a computed record (cache miss). */
+  private partitionRecord;
   /**
    * Re-check live auto-domain extents against the data; returns true when
    * any moved (the caller escalates to the whole group).  A moved extent

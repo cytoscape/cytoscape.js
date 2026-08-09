@@ -990,6 +990,20 @@ calls made deliberately rather than by accretion:
   by row.
   Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
   synchronous CPU pick; edges would need the async GPU tile).
+
+  **The gestures apply v3's hit halos** (round 57.9,
+  `findNearestElement`'s thresholds): a press or hover counts within
+  8 rendered px of an edge's stroke for a mouse and 24 for touch, and
+  nodes inflate by 2/8 the way v3 pads `outerWidth` — without them a
+  default 3px edge is a ~3px target, which reads as "edges are too
+  hard to click".  The halo rides the pick *frames*: the edge pick
+  quads, their fragment test and the cull margins grow by
+  `frame.pickPadPx` (zero in scene frames, so drawing is untouched
+  — the exact goldens pin that), the CPU node pick takes a `padPx`,
+  and the cached pick tile remembers the halo it was drawn with so a
+  tile rendered for one pad never answers for another.  `cy.pick`
+  stays **exact** deliberately: the halo belongs to the gesture, not
+  the API.
 - **Extensions are direct objects — no registry.**  No
   `cytoscape.use`, no string registration, no global state: an
   extension layout is an import passed straight to

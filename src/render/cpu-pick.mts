@@ -60,6 +60,15 @@ export interface CpuPickFrame {
   zoomDpr: number; // zoom * dpr
   hidePx: number;
   nodeLodPx: number;
+  /** hit halo, device px (57.9) — v3's nodeThreshold.  v3 inflates the
+   * tested size by the threshold on each side before every shape check
+   * (`node.outerWidth() + 2 * nodeThreshold`), so the halo scales the
+   * shape rather than offsetting its boundary — an approximation for
+   * non-box shapes that this replicates deliberately.  The label box
+   * grows by the same halo (v3's labelThreshold shares the value).
+   * Optional so the many frame literals in specs and benchmarks stay
+   * valid; absent means exact. */
+  padPx?: number;
 }
 
 /**
@@ -80,6 +89,7 @@ export function pickNodeAt(
   const size = view.column('node.size') as Uint32Array | Float32Array;
   const shapes = view.column('node.shape') as Uint32Array;
   const borderGeom = view.column('node.borderGeom') as Uint32Array;
+  const pad = frame.padPx ?? 0;
 
   const hits = (slot: number): boolean => {
     if ((flags[slot] & SHOWN) !== SHOWN) {
@@ -101,6 +111,11 @@ export function pickNodeAt(
       hh = frame.hidePx / 2;
     }
 
+    // the hit halo (57.9): inflate before the LOD/radius derivations,
+    // as v3 pads outerWidth before everything downstream of it
+    hw += pad;
+    hh += pad;
+
     const dx = xPx - (pos[slot * 2] * frame.zoomDpr + frame.panXPx);
     const dy = yPx - (pos[slot * 2 + 1] * frame.zoomDpr + frame.panYPx);
     const hmax = Math.max(hw, hh);
@@ -119,6 +134,7 @@ export function pickNodeAt(
 
       if (lb != null) {
         const rot = view.labelAt(slot, 'nodes')?.rotation ?? 0;
+        const lpad = pad / frame.zoomDpr; // halo in model px
         let lx = dx / frame.zoomDpr;
         let ly = dy / frame.zoomDpr;
 
@@ -134,7 +150,12 @@ export function pickNodeAt(
           ly = ry;
         }
 
-        if (lx >= lb.x1 && lx <= lb.x2 && ly >= lb.y1 && ly <= lb.y2) {
+        if (
+          lx >= lb.x1 - lpad &&
+          lx <= lb.x2 + lpad &&
+          ly >= lb.y1 - lpad &&
+          ly <= lb.y2 + lpad
+        ) {
           return true;
         }
       }

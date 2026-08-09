@@ -2549,6 +2549,147 @@ test.describe('WebGPU renderer', () => {
     expect(afterMoved[0]).toBeGreaterThan(240);
   });
 
+  test("an edge press within v3's hit halo picks the edge (round 57.9)", async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3's findNearestElement counts an edge hit within
+    // `width/2 + edgeThreshold` of the centerline (8 rendered px for a
+    // mouse, 24 for touch) — a 4px stroke is a ~2px target without it,
+    // which is what "the edges are too hard to click" was.  The pick
+    // quads, their fragment test and the cull margins all grow by the
+    // halo in pick frames only, so this spec pins all three at once:
+    // a press 8px off the centerline (outside the ±2px stroke, inside
+    // 2 + 8) lands on the edge, a press 14px off (outside it) is a
+    // background press, and the public `cy.pick` stays *exact* — the
+    // halo belongs to the gesture, not the API.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: { width: 4 },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const circleShowing = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('div')].some(
+          (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
+        ),
+      );
+
+    // the public API is exact: 8px off the stroke picks nothing
+    const apiPick = await page.evaluate(
+      (p) => window.cy.pick(p.x, p.y).then((ele) => ele && ele.id()),
+      { x: center.x, y: center.y - 8 },
+    );
+
+    expect(apiPick).toBe(null);
+
+    // the gesture pads: the same point presses the edge
+    await page.mouse.move(center.x, center.y - 8);
+    await page.mouse.down();
+
+    await expect
+      .poll(() => page.evaluate(() => window.cy.$id('ab').active()))
+      .toBe(true);
+
+    expect(await circleShowing()).toBe(false);
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+
+    // beyond the halo (14 > 2 + 8): a background press — the circle
+    // shows and the edge never activates
+    await page.mouse.move(center.x, center.y - 14);
+    await page.mouse.down();
+
+    await expect.poll(circleShowing).toBe(true);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+
+    await page.mouse.up();
+  });
+
+  test("a curved edge press within v3's hit halo picks it too (round 57.9)", async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The curved stream has its own pick pipeline (vsCurvedEdge +
+    // fsCurvedEdgePick), so the straight-edge halo spec above proves
+    // nothing about it.  Same geometry idea: press perpendicular to the
+    // curve at its midpoint — 8px off a 4px stroke is inside 2 + 8,
+    // 14px is outside it.  The curve is locally flat at the apex, so a
+    // vertical offset from `midpoint()` is the perpendicular distance.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: {
+          width: 4,
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [40],
+          'control-point-weights': [0.5],
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    // rendered = model + pan at zoom 1 (centerPan sets pan to the middle)
+    const mid = await page.evaluate(() => window.cy.$id('ab').midpoint());
+    const apex = { x: center.x + mid.x, y: center.y + mid.y };
+
+    const circleShowing = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('div')].some(
+          (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
+        ),
+      );
+
+    await page.mouse.move(apex.x, apex.y - 8);
+    await page.mouse.down();
+
+    await expect
+      .poll(() => page.evaluate(() => window.cy.$id('ab').active()))
+      .toBe(true);
+
+    expect(await circleShowing()).toBe(false);
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    // beyond the halo: background
+    await page.mouse.move(apex.x, apex.y - 14);
+    await page.mouse.down();
+
+    await expect.poll(circleShowing).toBe(true);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+
+    await page.mouse.up();
+  });
+
   test('a released-before-the-pick edge press never sticks active (round 57.8)', async ({
     page,
   }) => {

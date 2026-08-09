@@ -19,11 +19,14 @@ Pointer/wheel interaction over the WebGPU canvas:
 - drag on background: pan
 - continuous throttled hover picking (latest-wins) drives the HOVERED flag
   plus mouseover/mouseout events
-- pointerdown decides pan-vs-grab with a synchronous, exact CPU node pick
+- pointerdown decides pan-vs-grab with a synchronous CPU node pick
   (no staleness); a press that pick misses resolves through the async GPU
   pick (~a frame) — an edge under it activates (v3's `near.activate()` on
   mousedown) and becomes the tap target, a background press shows the
   active-bg circle
+- every gesture pick applies v3's hit halos (see MOUSE_PADS/TOUCH_PADS
+  below): edges hit within 8 rendered px for a mouse and 24 for touch,
+  nodes within 2/8 — cy.pick stays exact, the halo is the gesture's
 - node drag writes position through the core API (position events fire,
   dirty spans upload, edges follow on-GPU)
 - tap toggles selection (multiple-select key or selectionType 'additive'
@@ -57,6 +60,20 @@ const TOUCH_CXT_MAX_DIST = 200;
 const TOUCH_CXT_CANCEL_DIST = 150;
 const TOUCH_CXT_CANCEL_FACTOR = 1.5;
 const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
+
+/**
+ * v3's hit-test halos (57.9, `findNearestElement`): a press or hover does
+ * not have to land on the painted stroke.  v3 computes them as
+ * `(isTouch ? 24 : 8) / zoom` for edges and `(isTouch ? 8 : 2) / zoom`
+ * for nodes, in model units — i.e. a constant rendered-px halo, which is
+ * what these are (CSS px; the renderer scales by dpr).
+ */
+const MOUSE_PADS = { edgePadPx: 8, nodePadPx: 2 };
+const TOUCH_PADS = { edgePadPx: 24, nodePadPx: 8 };
+
+/** The halo pair for a pointer event's type (v3's isTouch branch). */
+const padsOf = (e: PointerEvent): typeof MOUSE_PADS =>
+  e.pointerType === 'touch' ? TOUCH_PADS : MOUSE_PADS;
 
 interface DownState {
   pointerId: number;
@@ -322,7 +339,11 @@ export class PointerHandler {
       this.capture(e.pointerId);
 
       const pos = this.eventPos(e);
-      const target = this.renderer.pickNodeSync(pos.x, pos.y);
+      const target = this.renderer.pickNodeSync(
+        pos.x,
+        pos.y,
+        padsOf(e).nodePadPx,
+      );
 
       this.cxtDown = {
         pointerId: e.pointerId,
@@ -345,8 +366,13 @@ export class PointerHandler {
 
     const pos = this.eventPos(e);
 
-    // pan-vs-grab from a synchronous CPU node pick: exact and current
-    const picked = this.renderer.pickNodeSync(pos.x, pos.y);
+    // pan-vs-grab from a synchronous CPU node pick — current, with v3's
+    // hit halo for this pointer type (57.9)
+    const picked = this.renderer.pickNodeSync(
+      pos.x,
+      pos.y,
+      padsOf(e).nodePadPx,
+    );
     // box selection overrides grabbing (as in v3): a multiple-select-key
     // press boxes even over a node, as does any press when panning is
     // disabled; mouse/pen only for now (v4 has no touch box gesture)
@@ -419,7 +445,7 @@ export class PointerHandler {
     // so the press affordance (v3's `:active` on the edge, or the
     // active-bg circle on true background) waits for that answer
     if (this.down.mode === 'pan' && this.down.grabbed == null) {
-      void this.resolvePressTarget(this.down, pos);
+      void this.resolvePressTarget(this.down, pos, padsOf(e));
     }
 
     // press-and-hold: 'taphold' unless the press moves or ends first
@@ -490,7 +516,7 @@ export class PointerHandler {
       // tapdragover/tapdragout while the press is active (nodes only —
       // the CPU pick; recorded)
       if (this.down != null && this.down.pointerId === e.pointerId) {
-        this.dragHoverPick(pos, 'tapdrag');
+        this.dragHoverPick(pos, 'tapdrag', padsOf(e).nodePadPx);
       }
     }
 
@@ -538,7 +564,7 @@ export class PointerHandler {
 
       if (cxt.moved) {
         this.emitGesture('cxtdrag', cxt.target, pos);
-        this.dragHoverPick(pos, 'cxtdrag'); // 17.3
+        this.dragHoverPick(pos, 'cxtdrag', padsOf(e).nodePadPx); // 17.3
       }
 
       return;
@@ -547,7 +573,7 @@ export class PointerHandler {
     const down = this.down;
 
     if (down == null || down.pointerId !== e.pointerId) {
-      this.hoverPick(pos);
+      this.hoverPick(pos, padsOf(e));
 
       return;
     }
@@ -711,12 +737,13 @@ export class PointerHandler {
   private async resolvePressTarget(
     down: DownState,
     pos: Position,
+    pads: typeof MOUSE_PADS,
   ): Promise<void> {
     const model = this.cy._viewport.renderedToModel(pos);
     let picked: Collection | null = null;
 
     try {
-      picked = await this.renderer.pick(pos.x, pos.y);
+      picked = await this.renderer.pick(pos.x, pos.y, pads);
     } catch {
       // a device lost mid-pick reads as a background press
     }
@@ -920,8 +947,8 @@ export class PointerHandler {
 
     const [a, b] = [...this.touches.values()];
     const target =
-      this.renderer.pickNodeSync(a.x, a.y) ??
-      this.renderer.pickNodeSync(b.x, b.y); // v3: nodes only, finger 1 first
+      this.renderer.pickNodeSync(a.x, a.y, TOUCH_PADS.nodePadPx) ??
+      this.renderer.pickNodeSync(b.x, b.y, TOUCH_PADS.nodePadPx); // v3: nodes only, finger 1 first
 
     this.touchCxt = {
       target,
@@ -970,7 +997,7 @@ export class PointerHandler {
 
     cxt.dragged = true;
     this.emitGesture('cxtdrag', cxt.target, a);
-    this.dragHoverPick(a, 'cxtdrag'); // cxtdragover/out, as v3
+    this.dragHoverPick(a, 'cxtdrag', TOUCH_PADS.nodePadPx); // cxtdragover/out, as v3
   }
 
   // -- pinch --
@@ -1404,7 +1431,11 @@ export class PointerHandler {
    * cursor enters and leaves nodes.  Nodes only — the exact CPU pick;
    * edges would need the async GPU tile (recorded).
    */
-  private dragHoverPick(pos: Position, prefix: 'tapdrag' | 'cxtdrag'): void {
+  private dragHoverPick(
+    pos: Position,
+    prefix: 'tapdrag' | 'cxtdrag',
+    nodePadPx: number,
+  ): void {
     const now = performance.now();
 
     if (now - this.lastDragHoverAt < HOVER_THROTTLE_MS) {
@@ -1413,7 +1444,7 @@ export class PointerHandler {
 
     this.lastDragHoverAt = now;
 
-    const ele = this.renderer.pickNodeSync(pos.x, pos.y);
+    const ele = this.renderer.pickNodeSync(pos.x, pos.y, nodePadPx);
     const prev = this.dragHover;
 
     if (prev === ele) {
@@ -1529,7 +1560,7 @@ export class PointerHandler {
     }
   }
 
-  private hoverPick(pos: Position): void {
+  private hoverPick(pos: Position, pads: typeof MOUSE_PADS = MOUSE_PADS): void {
     const now = performance.now();
 
     // no hover during viewport gestures (pan drags never reach here; wheel
@@ -1545,7 +1576,7 @@ export class PointerHandler {
     this.lastHoverAt = now;
     this.pickInFlight = true;
 
-    this.renderer.pick(pos.x, pos.y).then((ele) => {
+    this.renderer.pick(pos.x, pos.y, pads).then((ele) => {
       this.pickInFlight = false;
       this.lastPick = ele;
       this.updateHover(ele, pos);

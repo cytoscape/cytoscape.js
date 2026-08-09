@@ -263,7 +263,9 @@ export class Renderer {
     this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
-    this.frameData = new Float32Array(18); // 18 Frame fields (the last pad went to arrowWidthMax, 56)
+    // 19 Frame fields; WGSL rounds the struct to 80 bytes (align 8), so
+    // the arrays carry 20 floats and the buffers bind the full 80
+    this.frameData = new Float32Array(20);
     this.isReady = false;
     this.frameRequested = false;
     this.destroyed = false;
@@ -272,7 +274,7 @@ export class Renderer {
     this.gpuTimer = null;
     this.picking = null;
     this.pickUniform = null;
-    this.pickFrameData = new Float32Array(18);
+    this.pickFrameData = new Float32Array(20);
     this.needsRedraw = true;
     this.inFlightFrames = 0;
     this.labelLayer = null;
@@ -294,7 +296,7 @@ export class Renderer {
     this.upscaler = null;
     this.pendingExports = [];
     this.exportUniform = null;
-    this.exportFrameData = new Float32Array(18);
+    this.exportFrameData = new Float32Array(20);
     this.exportCull = null;
 
     // re-raster glyph runs when web fonts finish loading: glyphs cached
@@ -529,27 +531,36 @@ export class Renderer {
    *    (latest-wins coalescing; requests never queue up — a saturated
    *    staging ring defers the coalesced request a frame, never drops it).
    */
-  async pick(x: number, y: number): Promise<Collection | null> {
+  async pick(
+    x: number,
+    y: number,
+    pads?: { edgePadPx?: number; nodePadPx?: number },
+  ): Promise<Collection | null> {
     if (this.destroyed || !this.isReady || this.picking == null) {
       return null;
     }
 
     const xPx = x * this.dpr;
     const yPx = y * this.dpr;
+    // hit halos in CSS px (57.9): the gesture layer passes v3's
+    // findNearestElement thresholds; the default is exact, which is what
+    // the public `cy.pick` promises
+    const edgePadPx = (pads?.edgePadPx ?? 0) * this.dpr;
+    const nodePadPx = (pads?.nodePadPx ?? 0) * this.dpr;
 
-    const nodeSlot = this.cpuPickNode(xPx, yPx);
+    const nodeSlot = this.cpuPickNode(xPx, yPx, nodePadPx);
 
     if (nodeSlot != null) {
       return this.cy._ele('nodes', nodeSlot);
     }
 
-    const cached = this.picking.cachedIdAt(xPx, yPx);
+    const cached = this.picking.cachedIdAt(xPx, yPx, edgePadPx);
 
     if (cached != null) {
       return this.decodePick(cached);
     }
 
-    const promise = this.picking.request(xPx, yPx);
+    const promise = this.picking.request(xPx, yPx, edgePadPx);
 
     this.schedule(); // the pick pass runs with the next frame
 
@@ -560,18 +571,26 @@ export class Renderer {
    * Synchronous CPU node pick at a rendered (CSS px) position — exact and
    * current (no in-flight staleness).  Edges are not considered; they
    * resolve through the async `pick()`.
+   *
+   * @param padPx — hit halo in CSS px (57.9): v3's nodeThreshold,
+   *   inflating every node's tested size by the halo on each side;
+   *   0 (the default) picks exactly what is drawn
    */
-  pickNodeSync(x: number, y: number): Collection | null {
+  pickNodeSync(x: number, y: number, padPx: number = 0): Collection | null {
     if (this.destroyed || !this.isReady) {
       return null;
     }
 
-    const slot = this.cpuPickNode(x * this.dpr, y * this.dpr);
+    const slot = this.cpuPickNode(x * this.dpr, y * this.dpr, padPx * this.dpr);
 
     return slot == null ? null : this.cy._ele('nodes', slot);
   }
 
-  private cpuPickNode(xPx: number, yPx: number): number | null {
+  private cpuPickNode(
+    xPx: number,
+    yPx: number,
+    padPx: number = 0,
+  ): number | null {
     const viewport = this.cy._viewport;
     const pan = viewport.pan();
     const opts = this.opts;
@@ -587,6 +606,7 @@ export class Renderer {
         zoomDpr: viewport.zoom() * this.dpr,
         hidePx: opts.hidePx ?? DEFAULT_HIDE_PX,
         nodeLodPx: opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX,
+        padPx,
       },
       xPx,
       yPx,
@@ -1325,7 +1345,7 @@ export class Renderer {
 
     if (picking != null && pending != null && this.pickCull != null) {
       if (picking.hasFreeSlot()) {
-        this.writePickUniform(pending.xPx, pending.yPx);
+        this.writePickUniform(pending.xPx, pending.yPx, pending.padPx);
 
         const pickEncoder = device.createCommandEncoder({
           label: 'cy-gpu:pick',
@@ -2455,7 +2475,7 @@ export class Renderer {
    * O(region), not O(scene).  LOD values match the render frame so what
    * you see is what you pick.
    */
-  private writePickUniform(xPx: number, yPx: number): void {
+  private writePickUniform(xPx: number, yPx: number, padPx: number): void {
     const viewport = this.cy._viewport;
     const zoom = viewport.zoom();
     const pan = viewport.pan();
@@ -2484,6 +2504,9 @@ export class Renderer {
     f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * this.scaleCtl.scale; // displayed px, like labelMinPx
     f[16] = 1; // pickMode (20.2): the edge cull kernels drop events:'no' edges here only
+    // 57.9: v3's edgeThreshold — the edge pick quads, their fragment
+    // test and the cull margins all grow by this halo (device px)
+    f[18] = padPx;
 
     (this.device as GPUDevice).queue.writeBuffer(
       this.pickUniform as GPUBuffer,

@@ -266,8 +266,10 @@ fn isVisible(slot: u32) -> bool {
 
   // half width + AA; haystack edges (12c) launch from offset points up
   // to haystackSlack from the centers, so the corridor grows by it
-  // (0 unless some edge styles haystack)
-  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.haystackSlack * frame.zoomDpr;
+  // (0 unless some edge styles haystack).  pickPadPx (57.9) keeps an
+  // edge whose hit halo reaches the tile from being culled out of the
+  // very pass that would have hit it; 0 in scene frames.
+  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.pickPadPx + frame.haystackSlack * frame.zoomDpr;
   return segmentHitsViewport(a, b, m);
 }
 ${SCAFFOLD}
@@ -344,8 +346,9 @@ fn isVisible(slot: u32) -> bool {
   let a = modelToPx(frame, nodePositions[ends.x]);
   let b = modelToPx(frame, nodePositions[ends.y]);
 
-  // chord grown by half width + AA + the conservative curve deviation
-  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.curveSlack * frame.zoomDpr;
+  // chord grown by half width + AA + the conservative curve deviation;
+  // pickPadPx (57.9) is the pick pass's hit halo, 0 in scene frames
+  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.pickPadPx + frame.curveSlack * frame.zoomDpr;
 
   if ((flags & FLAG_CURVED_BOX) != 0u) {
     // not chord-bounded (taxi routes, extrapolated weights): test the

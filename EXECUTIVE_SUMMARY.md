@@ -420,6 +420,16 @@ had silently lacked), a true background press shows the grab indicator, and
 when the press turns into a pan the two swap, exactly as in v3. What remains
 of the deviation is a frame of latency, recorded as such.
 
+Clicking those edges then exposed the second half of the same gap: v4 was
+hit-testing exactly the painted stroke, so a default-width edge was a
+three-pixel target. v3 has always counted a hit within a halo of the stroke —
+8 rendered pixels for a mouse, 24 for touch, with a smaller pair for nodes —
+and v4 now applies the same halos in its pick passes, on both the GPU (edges)
+and the CPU (nodes), for every gesture. The programmatic pick API stays
+exact, deliberately: the halo is a property of fingers and cursors, not of
+the question "what is at this point". The reference images did not move a
+pixel, because the halo exists only in pick frames.
+
 **The bundle-size answer landed** (8 August). The maintainer had asked why
 v4's bundle outweighs v3's, and the measured answer was that a quarter of it
 was WebGPU shader source, which a JavaScript minifier ships verbatim because

@@ -320,4 +320,48 @@ describe('gpu/render: CPU node pick', function () {
       expect(pickNodeAt(store, frame, 30, 0)).to.equal(outer); // outer band
     });
   });
+
+  describe('the hit halo (round 57.9)', function () {
+    // v3's nodeThreshold: findNearestElement inflates every node's tested
+    // size by the threshold on each side (outerWidth + 2 * threshold)
+    // before the shape check.  padPx is that halo in device px; absent or
+    // zero means exact, which every spec above relies on.
+    var padded = function (padPx) {
+      return {
+        panXPx: 0,
+        panYPx: 0,
+        zoomDpr: 1,
+        hidePx: 1,
+        nodeLodPx: 3,
+        padPx,
+      };
+    };
+
+    it('a rectangle hits within the halo and misses beyond it', function () {
+      var n = addNode('a', 0, 0, 20, 10, SHAPE_RECTANGLE);
+
+      expect(pickNodeAt(store, frame, 12, 0)).to.equal(null); // exact: outside
+      expect(pickNodeAt(store, padded(2), 11.9, 0)).to.equal(n); // hw 10 + 2
+      expect(pickNodeAt(store, padded(2), 12.1, 0)).to.equal(null);
+      expect(pickNodeAt(store, padded(8), 17.9, 6.9)).to.equal(n); // touch halo
+      expect(pickNodeAt(store, padded(8), 18.1, 0)).to.equal(null);
+    });
+
+    it('a circle keeps its shape: the halo scales, not boxes', function () {
+      var n = addNode('a', 0, 0, 30, 30, SHAPE_CIRCLE);
+
+      // r 15 + 2 = 17: inside at 16.9 on-axis, outside past it — and the
+      // padded corner diagonal stays outside (a box halo would take it)
+      expect(pickNodeAt(store, padded(2), 16.9, 0)).to.equal(n);
+      expect(pickNodeAt(store, padded(2), 17.1, 0)).to.equal(null);
+      expect(pickNodeAt(store, padded(2), 13, 13)).to.equal(null); // r ≈ 18.4
+    });
+
+    it('an absent padPx means exact, as every frame literal before it', function () {
+      var n = addNode('a', 0, 0, 30, 30, SHAPE_CIRCLE);
+
+      expect(pickNodeAt(store, frame, 14.9, 0)).to.equal(n);
+      expect(pickNodeAt(store, frame, 15.1, 0)).to.equal(null);
+    });
+  });
 });

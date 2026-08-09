@@ -15909,6 +15909,52 @@ bakes into the shader where v3 spells them in its default stylesheet.
   `tapstart` still targets the core rather than the edge, being emitted
   synchronously at press time.
 
+- [x] **57.9 v3's hit halos** (2026-08-08) — the maintainer's follow-up
+  to 57.8: "the edges are too hard to click — are we applying the hit
+  thresholds?"  We were not, anywhere: v4 picked exactly the painted
+  stroke, so a default 3px edge was a ~3px target, while v3's
+  `findNearestElement` counts an edge hit within `width/2 +
+  edgeThreshold` of the centerline — 8 rendered px for a mouse, **24
+  for touch** (the desktop/touch pair the maintainer pointed at) — and
+  inflates node sizes by its 2/8 `nodeThreshold` before every shape
+  check.
+
+  The halo rides the pick *frames*.  `Frame` grew its first field since
+  round 56 (`pickPadPx`, device px — the struct rounds to 80 bytes, so
+  the CPU arrays go to 20 floats): the straight and curved edge pick
+  quads extrude wider by it, both pick fragment tests accept
+  `halfWidth + pickPadPx`, and both edge cull margins grow by it —
+  zero in scene/export frames, so drawing is arithmetically untouched,
+  which the exact-golden `visual` project (119 green, zero differing
+  pixels) pins rather than asserts.  The CPU node pick takes an
+  optional `padPx` (absent means exact, keeping every frame literal in
+  specs and benchmarks honest) and inflates before the LOD/radius
+  derivations, as v3 pads `outerWidth` before everything downstream;
+  the label-box test grows by the same halo (v3's `labelThreshold`
+  shares the value).  The pick-tile cache remembers the halo it was
+  drawn with — a tile rendered for one pad answers nothing about
+  another, so a touch press after a mouse hover re-picks rather than
+  reading the narrower tile.
+
+  The pointer layer passes the pads per pointer type (`padsOf(e)`)
+  everywhere it picks: press, hover, cxt, touch-cxt and drag-hover.
+  **`cy.pick` stays exact deliberately** — the halo belongs to the
+  gesture, not the API — and the new spec asserts both halves at one
+  point: 8px off a 4px stroke, `cy.pick` answers null while a press
+  there activates the edge; 14px off (past 2 + 8) is a background
+  press.  A curved-edge twin covers the curved stream's separate pick
+  pipeline via `midpoint()`.  Controls: the halo removed from the
+  straight pick FS, from the curved pick FS, and a nonzero default pad
+  on `cy.pick` — each failed exactly the spec written for it.  Node
+  halos are pinned in `test/cpu-pick.mjs`, including that a circle's
+  halo scales the shape rather than boxing it (the padded corner
+  diagonal still misses), which is v3's own approximation replicated.
+
+  Not padded, recorded: the pick quads do not extend *longitudinally*,
+  so a press just past an edge's trimmed tip still misses — that end
+  zone is the arrowhead's, and arrowheads are an existing unpickable
+  deviation; both belong to whatever round makes arrows pickable.
+
 ## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
 
 This is the docs-first stage the sixth sitting instructed: map each

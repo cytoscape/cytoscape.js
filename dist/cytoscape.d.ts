@@ -7944,6 +7944,12 @@ declare class Core {
    * Async GPU pick at a rendered (CSS px) position; resolves with the
    * element under the point or null (always null when headless).
    *
+   * Exact: a hit is a point on the drawn element.  The pointer gestures
+   * additionally apply v3's hit halos (8 rendered px around edges for a
+   * mouse, 24 for touch; 2/8 around nodes — round 57.9), so a press can
+   * land where this method answers null; the halo belongs to the
+   * gesture, not the API.
+   *
    * @param x — rendered (CSS px) x, relative to the container
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null

@@ -48,6 +48,8 @@ interface RingSlot {
 interface PendingRequest {
   xPx: number;
   yPx: number;
+  /** edge hit halo, device px (57.9) — part of the tile's identity */
+  padPx: number;
   resolvers: ((id: number | null) => void)[];
   requestedAt: number;
 }
@@ -58,6 +60,8 @@ export interface InFlightCopy {
   requestedAt: number;
   tileX: number;
   tileY: number;
+  /** the halo the tile was drawn with — cached alongside it (57.9) */
+  padPx: number;
   epoch: number;
 }
 
@@ -78,6 +82,8 @@ export class Picking {
   private cacheTile: Uint32Array | null;
   private cacheX: number;
   private cacheY: number;
+  /** the hit halo the cached tile was drawn with (57.9) */
+  private cachePadPx: number;
   private cacheEpoch: number;
   private destroyed: boolean;
 
@@ -94,6 +100,7 @@ export class Picking {
     this.cacheTile = null;
     this.cacheX = 0;
     this.cacheY = 0;
+    this.cachePadPx = 0;
     this.cacheEpoch = 0;
     this.destroyed = false;
     this.lastLatencyMs = 0;
@@ -118,9 +125,11 @@ export class Picking {
   }
 
   /** Cached id at device-px coordinates from the last resolved tile, or
-   * null when the point is outside it (or the cache was invalidated). */
-  cachedIdAt(xPx: number, yPx: number): number | null {
-    if (this.cacheTile == null) {
+   * null when the point is outside it, the cache was invalidated, or the
+   * tile was drawn with a different hit halo (57.9) — a tile rendered
+   * for one pad answers nothing about another. */
+  cachedIdAt(xPx: number, yPx: number, padPx: number): number | null {
+    if (this.cacheTile == null || this.cachePadPx !== padPx) {
       return null;
     }
 
@@ -160,15 +169,22 @@ export class Picking {
     return this.ring.some((slot) => !slot.busy);
   }
 
-  /** The coalesced pending cursor position (device px), for the pick uniform. */
-  peekPending(): { xPx: number; yPx: number } | null {
+  /** The coalesced pending cursor position + halo (device px), for the
+   * pick uniform. */
+  peekPending(): { xPx: number; yPx: number; padPx: number } | null {
     return this.pending == null
       ? null
-      : { xPx: this.pending.xPx, yPx: this.pending.yPx };
+      : {
+          xPx: this.pending.xPx,
+          yPx: this.pending.yPx,
+          padPx: this.pending.padPx,
+        };
   }
 
-  /** Queue a pick at device-px coordinates; coalesces latest-wins within a frame. */
-  request(xPx: number, yPx: number): Promise<number | null> {
+  /** Queue a pick at device-px coordinates with an edge hit halo (57.9);
+   * coalesces latest-wins within a frame — the halo coalesces with the
+   * position, so the tile is drawn for the newest request's pad. */
+  request(xPx: number, yPx: number, padPx: number): Promise<number | null> {
     return new Promise((resolve) => {
       if (this.destroyed) {
         resolve(null);
@@ -180,6 +196,7 @@ export class Picking {
         this.pending = {
           xPx,
           yPx,
+          padPx,
           resolvers: [resolve],
           requestedAt: performance.now(),
         };
@@ -187,6 +204,7 @@ export class Picking {
         // latest-wins: earlier unprocessed requests resolve with the newest result
         this.pending.xPx = xPx;
         this.pending.yPx = yPx;
+        this.pending.padPx = padPx;
         this.pending.resolvers.push(resolve);
       }
     });
@@ -231,6 +249,7 @@ export class Picking {
       // tile origin in device px; must match writePickUniform's offsets
       tileX: Math.floor(pending.xPx) - PICK_TILE / 2,
       tileY: Math.floor(pending.yPx) - PICK_TILE / 2,
+      padPx: pending.padPx,
       epoch: this.cacheEpoch,
     };
   }
@@ -253,6 +272,7 @@ export class Picking {
         this.cacheTile = data.slice();
         this.cacheX = inFlight.tileX;
         this.cacheY = inFlight.tileY;
+        this.cachePadPx = inFlight.padPx;
       }
 
       inFlight.slot.buffer.unmap();

@@ -81,11 +81,11 @@ import {
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
- * Layout must match Renderer's Float32Array(16): viewportPx, panPx, zoomDpr,
+ * Layout must match Renderer's frame arrays: viewportPx, panPx, zoomDpr,
  * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
  * curveSlack, haystackSlack, outlineSlack, arrowScaleMax, imageMinPx,
- * pickMode, arrowWidthMax — 18 floats, 72 bytes.  Round 56 spent the
- * last pad slot on arrowWidthMax, so the next field grows the buffer.
+ * pickMode, arrowWidthMax, pickPadPx — 19 floats; WGSL rounds the
+ * struct to 80 bytes (align 8), so the arrays allocate 20.
  */
 export const FRAME_STRUCT = wgsl`
 struct Frame {
@@ -105,6 +105,7 @@ struct Frame {
   imageMinPx: f32,       // 15.7: skip image sampling below this on-screen node size (displayed px)
   pickMode: f32,         // 20.2: 1 in the pick pass — events:'no' elements drop from pick culling only
   arrowWidthMax: f32,    // 56: max hollow-arrow stroke, model px (the quad grows by half of it)
+  pickPadPx: f32,        // 57.9: edge hit-test halo, device px — v3's edgeThreshold; 0 outside pick frames
 }
 `;
 
@@ -2809,7 +2810,9 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   let halfW = widthPx * 0.5 * taper;
   let dir = ab / len;
   let n = vec2f(-dir.y, dir.x);
-  let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
+  // screen-space extrusion incl. 1px AA margin; pickPadPx widens the pick
+  // quad by v3's hit halo (edgeThreshold) and is 0 in scene frames
+  let s = corner.y * (halfW + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
   out.v = s;
@@ -2869,7 +2872,8 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
 
 @fragment
 fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
-  if (abs(in.v) > in.halfWidth) {
+  // v3's edgeThreshold (57.9): a hit counts within pickPadPx of the stroke
+  if (abs(in.v) > in.halfWidth + frame.pickPadPx) {
     discard;
   }
 
@@ -3143,7 +3147,9 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   }
 
   let halfW = widthPx * 0.5;
-  let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
+  // screen-space extrusion incl. 1px AA margin; pickPadPx widens the pick
+  // strip by v3's hit halo (edgeThreshold) and is 0 in scene frames
+  let s = corner.y * (halfW + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
   out.v = s;
@@ -3191,7 +3197,8 @@ fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
 
 @fragment
 fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
-  if (abs(in.v) > in.halfWidth) {
+  // v3's edgeThreshold (57.9): a hit counts within pickPadPx of the stroke
+  if (abs(in.v) > in.halfWidth + frame.pickPadPx) {
     discard;
   }
 

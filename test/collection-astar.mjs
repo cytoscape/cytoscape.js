@@ -316,7 +316,7 @@ describe('Algorithms', function(){
 
       expect(res.found).to.equal(true);
       expect(res.distance).to.equal(3);
-      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["a", "d", "c", "b"]);
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(['a', 'd', 'c', 'b']);
     });
 
     [true, false].forEach(function( directed ){

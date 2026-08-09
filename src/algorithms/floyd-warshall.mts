@@ -70,14 +70,30 @@ export const floydWarshall = (
   }
 
   for (let k = 0; k < n; k++) {
+    const kn = k * n;
+
     for (let i = 0; i < n; i++) {
-      const ik = i * n + k;
+      const rowI = i * n;
+      const ik = rowI + k;
+      const dik = dist[ik];
 
-      for (let j = 0; j < n; j++) {
-        const ij = i * n + j;
+      // Infinity relaxes nothing (Inf + x is never < anything finite or
+      // not), so an unreachable (i, k) pair skips its whole j row — a
+      // real win on sparse graphs early in k, and a no-op otherwise.
+      if (dik === Infinity) {
+        continue;
+      }
 
-        if (dist[ik] + dist[k * n + j] < dist[ij]) {
-          dist[ij] = dist[ik] + dist[k * n + j];
+      // dist[ik] is loop-invariant across j: the only ij aliasing ik is
+      // j === k, where the update needs dist[kk] < 0 — a negative cycle,
+      // on which Floyd–Warshall is undefined either way (v3 reloads and
+      // is equally undefined there).  Running ij/kj indices replace the
+      // two per-iteration multiplies, and the sum is computed once.
+      for (let j = 0, ij = rowI, kj = kn; j < n; j++, ij++, kj++) {
+        const alt = dik + dist[kj];
+
+        if (alt < dist[ij]) {
+          dist[ij] = alt;
           next[ij] = next[ik];
         }
       }

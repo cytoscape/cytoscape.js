@@ -2,7 +2,7 @@
 // (threshold and dendrogram modes, min/max/mean/other linkage).
 
 import type { Collection } from '../collection.mjs';
-import { clusteringDistance } from './clustering-distances.mjs';
+import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 
 export type HierarchicalAttributeFn = (node: Collection) => number;
@@ -61,26 +61,60 @@ const setOptions = (
 const spawnHandles = (coll: Collection, eles: Collection[]): Collection =>
   coll._spawn(eles.map((ele) => ele._refs[0]));
 
+/**
+ * The pair-distance function for one run, with two per-run caches
+ * (round 62.2): the metric impl resolved once, and each node's
+ * attribute vector computed once — the round-18 algorithms rule (a
+ * projection fn is evaluated once per node, not once per pair, which
+ * on the N² matrix build turned N²·A data reads into N·A).  Handles
+ * are interned singletons, so the vector cache keys on them directly.
+ * A custom metric with no attributes keeps its (nodeP, nodeQ) calling
+ * convention exactly as `clusteringDistance` defines it.
+ */
+const makeGetDist = (
+  opts: ResolvedOptions,
+): ((n1: Collection, n2: Collection) => number) => {
+  const attrs = opts.attributes;
+  const impl = resolveDistance(opts.distance);
+  const custom = typeof opts.distance === 'function' && attrs.length === 0;
+  const vecs = new Map<Collection, number[]>();
+  const vecOf = (n: Collection): number[] => {
+    let v = vecs.get(n);
+
+    if (v === undefined) {
+      v = attrs.map((f) => f(n));
+      vecs.set(n, v);
+    }
+
+    return v;
+  };
+  let vp: number[] = [];
+  let vq: number[] = [];
+  const getP = (i: number): number => vp[i];
+  const getQ = (i: number): number => vq[i];
+
+  return (n1, n2) => {
+    if (custom) {
+      return impl(n1, n2);
+    }
+
+    vp = vecOf(n1);
+    vq = vecOf(n2);
+
+    return impl(attrs.length, getP, getQ, n1, n2);
+  };
+};
+
 const mergeClosest = (
   clusters: ClusterNode[],
   index: ClusterNode[],
   dists: number[][],
   mins: number[],
   opts: ResolvedOptions,
+  getDist: (n1: Collection, n2: Collection) => number,
 ): boolean => {
   let minKey = 0;
   let min = Infinity;
-  const attrs = opts.attributes;
-
-  const getDist = (n1: Collection, n2: Collection): number =>
-    clusteringDistance(
-      opts.distance,
-      attrs.length,
-      (i) => attrs[i](n1),
-      (i) => attrs[i](n2),
-      n1,
-      n2,
-    );
 
   for (let i = 0; i < clusters.length; i++) {
     const key = clusters[i].key as number;
@@ -298,17 +332,7 @@ export const hierarchicalClustering = (
   }
 
   const opts = setOptions(options);
-  const attrs = opts.attributes;
-
-  const getDist = (n1: Collection, n2: Collection): number =>
-    clusteringDistance(
-      opts.distance,
-      attrs.length,
-      (i) => attrs[i](n1),
-      (i) => attrs[i](n2),
-      n1,
-      n2,
-    );
+  const getDist = makeGetDist(opts);
 
   const clusters: ClusterNode[] = [];
   const dists: number[][] = [];
@@ -352,7 +376,7 @@ export const hierarchicalClustering = (
     }
   }
 
-  while (mergeClosest(clusters, index, dists, mins, opts)) {
+  while (mergeClosest(clusters, index, dists, mins, opts, getDist)) {
     /* merge until done */
   }
 

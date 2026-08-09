@@ -88,6 +88,14 @@ distances['squaredeuclidean'] = distances.squaredEuclidean;
  * @param nodeQ — the second operand itself, for custom functions
  * @returns the distance; non-negative for every built-in metric
  */
+/** Resolve a metric name (or custom fn) to its implementation — the
+ * per-call typeof/table hop, hoistable by callers that price a whole
+ * run (round 62.2). */
+export const resolveDistance = (method: DistanceMetric): CustomDistanceFn =>
+  typeof method === 'function'
+    ? method
+    : distances[method] || distances.euclidean;
+
 export const clusteringDistance = (
   method: DistanceMetric,
   length: number,
@@ -96,10 +104,7 @@ export const clusteringDistance = (
   nodeP?: unknown,
   nodeQ?: unknown,
 ): number => {
-  const impl: CustomDistanceFn =
-    typeof method === 'function'
-      ? method
-      : distances[method] || distances.euclidean;
+  const impl = resolveDistance(method);
 
   if (length === 0 && typeof method === 'function') {
     return impl(nodeP, nodeQ);

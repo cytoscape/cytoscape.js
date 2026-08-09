@@ -3,7 +3,7 @@
 // not adjacency-walks, so handles are the natural representation).
 
 import type { Collection } from '../collection.mjs';
-import { clusteringDistance } from './clustering-distances.mjs';
+import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 
 /** A node attribute accessor used as a clustering feature. */
@@ -54,6 +54,44 @@ const setOptions = (options: KClusteringOptions = {}): ResolvedKOptions => ({
 const spawnHandles = (coll: Collection, eles: Collection[]): Collection =>
   coll._spawn(eles.map((ele) => ele._refs[0]));
 
+/**
+ * Per-run caches for the distance hot path (round 62.2), kept behind
+ * the unchanged `getDist` signature: each public entry bumps
+ * `distRunToken`, and a node's attribute vector is computed once per
+ * run (the round-18 algorithms rule — a projection evaluated once per
+ * node, not once per pair) rather than at every classify/cost call.
+ * The cache keys on the interned singleton handles; the token is what
+ * keeps a second run from reading vectors of data that changed between
+ * runs.  kMeans/cmeans centroids are plain feature arrays that mutate
+ * between iterations, so they are read live and never cached.
+ */
+let distRunToken = 0;
+const nodeVecs = new WeakMap<
+  Collection,
+  { token: number; attrs: KAttributeFn[]; vec: number[] }
+>();
+let lastMetric: DistanceMetric | null = null;
+let lastImpl = resolveDistance('euclidean');
+
+const vecOf = (node: Collection, attributes: KAttributeFn[]): number[] => {
+  const hit = nodeVecs.get(node);
+
+  if (hit != null && hit.token === distRunToken && hit.attrs === attributes) {
+    return hit.vec;
+  }
+
+  const vec = attributes.map((f) => f(node));
+
+  nodeVecs.set(node, { token: distRunToken, attrs: attributes, vec });
+
+  return vec;
+};
+
+let distP: ArrayLike<number> = [];
+let distQ: ArrayLike<number> = [];
+const readP = (i: number): number => distP[i];
+const readQ = (i: number): number => distQ[i];
+
 const getDist = (
   type: DistanceMetric,
   node: Collection,
@@ -61,20 +99,22 @@ const getDist = (
   attributes: KAttributeFn[],
   mode: KMode,
 ): number => {
-  const noNodeP = mode !== 'kMedoids';
-  const getP = noNodeP
-    ? (i: number) => (centroid as FeatureCentroid)[i]
-    : (i: number) => attributes[i](centroid as Collection);
-  const getQ = (i: number) => attributes[i](node);
+  if (type !== lastMetric) {
+    lastMetric = type;
+    lastImpl = resolveDistance(type);
+  }
 
-  return clusteringDistance(
-    type,
-    attributes.length,
-    getP,
-    getQ,
-    centroid,
-    node,
-  );
+  if (attributes.length === 0 && typeof type === 'function') {
+    return lastImpl(centroid, node);
+  }
+
+  distP =
+    mode !== 'kMedoids'
+      ? (centroid as FeatureCentroid)
+      : vecOf(centroid as Collection, attributes);
+  distQ = vecOf(node, attributes);
+
+  return lastImpl(attributes.length, readP, readQ, centroid, node);
 };
 
 const randomCentroids = (
@@ -241,6 +281,7 @@ export const kMeans = (
   coll: Collection,
   options?: KClusteringOptions,
 ): Collection[] => {
+  distRunToken++;
   const nodes = coll.nodes();
   const opts = setOptions(options);
 
@@ -331,6 +372,7 @@ export const kMedoids = (
   coll: Collection,
   options?: KClusteringOptions,
 ): Collection[] => {
+  distRunToken++;
   const nodes = coll.nodes();
   const opts = setOptions(options);
 
@@ -445,14 +487,17 @@ const updateMembership = (
     for (let n = 0; n < nodes.length; n++) {
       let sum = 0;
 
+      // the numerator does not depend on k — hoisted (round 62.2), the
+      // same value the k-loop recomputed; the sum is float-identical
+      const numerator = getDist(
+        opts.distance,
+        nodes[n],
+        centroids[c],
+        opts.attributes,
+        'cmeans',
+      );
+
       for (let k = 0; k < centroids.length; k++) {
-        const numerator = getDist(
-          opts.distance,
-          nodes[n],
-          centroids[c],
-          opts.attributes,
-          'cmeans',
-        );
         const denominator = getDist(
           opts.distance,
           nodes[n],
@@ -516,6 +561,7 @@ export const fuzzyCMeans = (
   coll: Collection,
   options?: KClusteringOptions,
 ): FuzzyCMeansResult => {
+  distRunToken++;
   const nodes = coll.nodes();
   const opts = setOptions(options);
 

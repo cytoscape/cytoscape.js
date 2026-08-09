@@ -306,6 +306,127 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     );
   });
 
+  it('compound gravity coheres each compound about its own centroid (59.5)', async function () {
+    // a 16-ring whose halves belong to two compounds: the spectral
+    // seed lays the ring as a circle, where the two half-arcs' boxes
+    // overlap heavily; the owner-centroid pull contracts each half
+    // into its own blob.  The acceptance is a compactness ratio, not
+    // box disjointness — a ring fights the contraction by topology.
+    const elements = [{ data: { id: 'P' } }, { data: { id: 'Q' } }];
+
+    for (let i = 0; i < 16; i++) {
+      elements.push({
+        data: { id: 'n' + i, parent: i < 8 ? 'P' : 'Q' },
+      });
+      elements.push({
+        data: { id: 'e' + i, source: 'n' + i, target: 'n' + ((i + 1) % 16) },
+      });
+    }
+
+    const cy = cytoscape({ elements });
+
+    await cy.layout({ name: 'force', seed: 11, fit: false }).run().promise();
+
+    const centroid = (from, to) => {
+      let x = 0;
+      let y = 0;
+
+      for (let i = from; i < to; i++) {
+        const p = cy.$id('n' + i).position();
+
+        x += p.x;
+        y += p.y;
+      }
+
+      return { x: x / (to - from), y: y / (to - from) };
+    };
+    const spread = (from, to, c) => {
+      let sum = 0;
+
+      for (let i = from; i < to; i++) {
+        const p = cy.$id('n' + i).position();
+
+        sum += Math.hypot(p.x - c.x, p.y - c.y) ** 2;
+      }
+
+      return Math.sqrt(sum / (to - from));
+    };
+    const cp = centroid(0, 8);
+    const cq = centroid(8, 16);
+    const sep = Math.hypot(cq.x - cp.x, cq.y - cp.y);
+    const rms = Math.max(spread(0, 8, cp), spread(8, 16, cq));
+
+    // cohered compounds: each half's rms spread well under the
+    // centroid separation.  The bound is measured, both ways: the
+    // model without compound gravity reads 0.599 on this seed, with
+    // it 0.421 — 0.5 fails the former and passes the latter with
+    // margin (the first draft's 0.75 passed both, which is the
+    // round-27 lesson about a spec that cannot fail)
+    expect(rms).to.be.lessThan(sep * 0.5);
+
+    // and every position is finite (the clustered fixture NaN'd
+    // wholesale before round 59)
+    for (let i = 0; i < 16; i++) {
+      const p = cy.$id('n' + i).position();
+
+      expect(Number.isFinite(p.x) && Number.isFinite(p.y)).to.equal(true);
+    }
+  });
+
+  it('nesting elevates the ideal length of compound-crossing edges (59.5)', async function () {
+    // two 4-cliques in two compounds joined by one edge: the cross
+    // edge spans two boundaries, so its ideal length is elevated by
+    // nestingFactor per spanned level (v3 cose's rule) and it settles
+    // visibly longer than the intra edges
+    const elements = [{ data: { id: 'P' } }, { data: { id: 'Q' } }];
+
+    for (const [prefix, parent] of [
+      ['p', 'P'],
+      ['q', 'Q'],
+    ]) {
+      for (let i = 0; i < 4; i++) {
+        elements.push({ data: { id: prefix + i, parent } });
+
+        for (let j = 0; j < i; j++) {
+          elements.push({
+            data: {
+              id: prefix + i + '_' + j,
+              source: prefix + i,
+              target: prefix + j,
+            },
+          });
+        }
+      }
+    }
+
+    elements.push({ data: { id: 'cross', source: 'p0', target: 'q0' } });
+
+    const cy = cytoscape({ elements });
+
+    await cy.layout({ name: 'force', seed: 4, fit: false }).run().promise();
+
+    const lengthOf = (id) => {
+      const edge = cy.$id(id);
+      const s = edge.source().position();
+      const t = edge.target().position();
+
+      return Math.hypot(t.x - s.x, t.y - s.y);
+    };
+    let intraSum = 0;
+    let intraCount = 0;
+
+    for (const prefix of ['p', 'q']) {
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < i; j++) {
+          intraSum += lengthOf(prefix + i + '_' + j);
+          intraCount++;
+        }
+      }
+    }
+
+    expect(lengthOf('cross')).to.be.greaterThan((intraSum / intraCount) * 1.5);
+  });
+
   it('streams positions in live mode and settles on stop()', async function () {
     const cy = cytoscape({ elements: RING() });
     const layout = cy.layout({

@@ -16754,9 +16754,27 @@ unchanged.
   reaches the configuration no amount of local refinement finds,
   which is fCoSE's headline reproduced.  11 module + 11 layout specs
   green.
-- [ ] **59.5 Compounds** — owner-centroid gravity + `nestingFactor` on
-  the CPU executor; the clustered fixture's coherence pinned (each
-  child nearer its own compound's centroid than any other's).
+- [x] **59.5 Compounds** (2026-08-09) — landed, the Bilkent recipe's
+  cheap two-thirds on the CPU executor (compound graphs never take
+  the GPU path — the 14.11 lease rule): **owner-centroid gravity**
+  (each leaf pulls constant-magnitude toward its direct parent's live
+  centroid, recomputed per iteration in ascending order —
+  `gravityCompound`, a multiple of `gravity`, default 1.5) and
+  **`nestingFactor`** (an edge spanning compound boundaries takes
+  `length × levels × nestingFactor`, v3 cose's multiplicative rule,
+  levels counted below the lowest common ancestor via the parent
+  chains; default 1.2).  Same-owner repulsion partitioning — the
+  recipe's third leg — stays out as planned: owner gravity plus real
+  repulsion coheres siblings without it, and v4 does not simulate
+  parents as rectangles.  Direct-parent centroids only; deeply nested
+  coherence rides the nesting-elevated edges (recorded limit).
+  **The cohesion spec's first bound could not fail**, which is the
+  round-27 lesson arriving on schedule: rms-spread < 0.75 × centroid
+  separation passed a plain ring with no compound gravity at all.
+  Measured both ways — 0.599 without the pull, 0.421 with it — the
+  bound is 0.5, and the control (groups disabled) fails it.  The
+  nesting spec was red-first (cross-clique edge settles > 1.5× the
+  intra mean).  40 Node force specs green.
 - [ ] **59.6 Retune + acceptance** — defaults set from the probe
   matrix; the acceptance numbers recorded; `defaultForceParams` and the
   docs updated together.

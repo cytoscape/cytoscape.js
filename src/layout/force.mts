@@ -57,6 +57,12 @@ export interface ForceRunOptions {
    * landmark-MDS per component, the global untangling) or 'scatter'
    * (the plain seeded scatter).  Ignored under `randomize: false`. */
   init?: 'spectral' | 'scatter';
+  /** ideal-length multiplier per compound boundary an edge spans
+   * (59.5; v3 cose's rule — length × levels × nestingFactor; 1.2) */
+  nestingFactor?: number;
+  /** the compound centroid pull, as a multiple of `gravity` (59.5;
+   * the Bilkent line's gravityCompound — default 1.5) */
+  gravityCompound?: number;
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
@@ -181,20 +187,62 @@ export class ForceLayoutImpl implements LayoutImpl {
     const lengths: number[] = [];
     const lengthOf = options.edgeLength;
 
+    // nesting (59.5): an edge spanning compound boundaries takes an
+    // elevated ideal length — v3 cose's rule, length × levels ×
+    // nestingFactor, levels = both ends' depths below their lowest
+    // common ancestor compound
+    const hasCompounds = store.hasCompounds();
+    const nestingFactor = options.nestingFactor ?? 1.2;
+    const spannedLevels = (a: number, b: number): number => {
+      if (!hasCompounds) {
+        return 0;
+      }
+
+      const chain = (slot: number): number[] => {
+        const out: number[] = [];
+        let at = store.parentOf(slot);
+
+        while (at >= 0) {
+          out.push(at);
+          at = store.parentOf(at);
+        }
+
+        return out;
+      };
+      const ca = chain(a);
+      const cb = chain(b);
+
+      // walk back from the root ends while the ancestors agree
+      let ia = ca.length - 1;
+      let ib = cb.length - 1;
+
+      while (ia >= 0 && ib >= 0 && ca[ia] === cb[ib]) {
+        ia--;
+        ib--;
+      }
+
+      return ia + 1 + (ib + 1);
+    };
+
     for (const edgeSlot of ctx.edgeSlots()) {
-      const s = simIndex.get(endpoints[edgeSlot * 2]);
-      const t = simIndex.get(endpoints[edgeSlot * 2 + 1]);
+      const sSlot = endpoints[edgeSlot * 2];
+      const tSlot = endpoints[edgeSlot * 2 + 1];
+      const s = simIndex.get(sSlot);
+      const t = simIndex.get(tSlot);
 
       if (s == null || t == null || s === t) {
         continue;
       }
 
       simEdges.push(s, t);
-      lengths.push(
+
+      const base =
         typeof lengthOf === 'function'
           ? lengthOf(cy._ele('edges', edgeSlot))
-          : (lengthOf ?? DEFAULT_EDGE_LENGTH),
-      );
+          : (lengthOf ?? DEFAULT_EDGE_LENGTH);
+      const levels = spannedLevels(sSlot, tSlot);
+
+      lengths.push(levels > 0 ? base * levels * nestingFactor : base);
     }
 
     const edgesArr = Uint32Array.from(simEdges);
@@ -302,6 +350,39 @@ export class ForceLayoutImpl implements LayoutImpl {
       }
     };
 
+    // compound owner groups (59.5): each leaf pulls toward its direct
+    // parent's live centroid on the CPU executor (compound graphs
+    // never take the GPU path — the 14.11 lease rule)
+    let groups: { of: Int32Array; count: number; pull: number } | undefined;
+
+    if (hasCompounds) {
+      const of = new Int32Array(n).fill(-1);
+      const gid = new Map<number, number>();
+
+      for (let i = 0; i < n; i++) {
+        const parent = store.parentOf(simSlots[i]);
+
+        if (parent >= 0) {
+          let g = gid.get(parent);
+
+          if (g == null) {
+            g = gid.size;
+            gid.set(parent, g);
+          }
+
+          of[i] = g;
+        }
+      }
+
+      if (gid.size > 0) {
+        groups = {
+          of,
+          count: gid.size,
+          pull: params.gravity * (options.gravityCompound ?? 1.5),
+        };
+      }
+    }
+
     const sim = new ForceSim({
       n,
       edges: edgesArr,
@@ -309,6 +390,7 @@ export class ForceLayoutImpl implements LayoutImpl {
       positions,
       pinned,
       anchors: nodeAnchors,
+      groups,
       ...params,
     });
 

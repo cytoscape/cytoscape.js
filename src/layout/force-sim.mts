@@ -112,6 +112,11 @@ export interface ForceSimInputs extends ForceParams {
   /** per-node gravity anchors, 2n interleaved (59.2 — the component
    * anchor field); absent means everything anchors at the origin */
   anchors?: Float32Array;
+  /** compound owner groups (59.5, the CPU executor only): per-node
+   * group id or −1, and the constant-magnitude pull toward the
+   * group's live centroid — the Bilkent line's per-compound gravity,
+   * with the centroid recomputed every iteration */
+  groups?: { of: Int32Array; count: number; pull: number };
 }
 
 /** Deterministic seeded scatter (Knuth-hash polar): same (n, seed,
@@ -150,6 +155,9 @@ export class ForceSim {
   private edgeLength: Float32Array;
   private pinned: Uint8Array | null;
   private anchors: Float32Array | null;
+  private groups: { of: Int32Array; count: number; pull: number } | null;
+  /** per-group centroid scratch (x, y, count) */
+  private groupSum: Float64Array;
   private params: ForceParams;
   /** per-node force scratch (gather output; applied in a second pass) */
   private forces: Float32Array;
@@ -196,6 +204,8 @@ export class ForceSim {
     this.positions = inputs.positions;
     this.pinned = inputs.pinned ?? null;
     this.anchors = inputs.anchors ?? null;
+    this.groups = inputs.groups ?? null;
+    this.groupSum = new Float64Array((this.groups?.count ?? 0) * 3);
     this.params = inputs;
     this.forces = new Float32Array(inputs.n * 2);
 
@@ -413,6 +423,24 @@ export class ForceSim {
 
     this.buildGrid();
 
+    // compound owner centroids (59.5), recomputed per iteration from
+    // the live positions — ascending node order, deterministic
+    if (this.groups != null) {
+      this.groupSum.fill(0);
+
+      const of = this.groups.of;
+
+      for (let i = 0; i < n; i++) {
+        const g = of[i];
+
+        if (g >= 0) {
+          this.groupSum[g * 3] += pos[i * 2];
+          this.groupSum[g * 3 + 1] += pos[i * 2 + 1];
+          this.groupSum[g * 3 + 2]++;
+        }
+      }
+    }
+
     let maxDisp = 0;
 
     for (let i = 0; i < n; i++) {
@@ -541,6 +569,24 @@ export class ForceSim {
 
         fx += dx * f;
         fy += dy * f;
+      }
+
+      // compound gravity (59.5): a constant-magnitude pull toward the
+      // owner compound's live centroid, the Bilkent per-compound rule
+      if (this.groups != null) {
+        const g = this.groups.of[i];
+
+        if (g >= 0 && this.groupSum[g * 3 + 2] > 0) {
+          const cnt = this.groupSum[g * 3 + 2];
+          const gcx = this.groupSum[g * 3] / cnt - x;
+          const gcy = this.groupSum[g * 3 + 1] / cnt - y;
+          const gcd = Math.hypot(gcx, gcy);
+
+          if (gcd > 1) {
+            fx += (gcx / gcd) * this.groups.pull;
+            fy += (gcy / gcd) * this.groups.pull;
+          }
+        }
       }
 
       // constant-magnitude gravity toward the node's anchor (59.2)

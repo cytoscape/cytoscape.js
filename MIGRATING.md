@@ -422,13 +422,20 @@ block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`, `imageMinPx`,
 ## Layouts and extensions
 
 **Built in**: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
-`random`, and `force` — a GPU-native spring–electric layout that animates
+`random`, and `force` — a GPU-native force-directed layout that animates
 live at 100k nodes.
 
 **`cose` is not ported.** Its option surface and per-iteration structure are
 CPU-shaped; `force` is v4's answer, and it converges in about a second on
 graphs where cose exceeds a 60-second bail. `cy.layout({ name: 'cose' })`
-throws, listing the built-ins.
+throws, listing the built-ins.  The cose behaviours a compound app relies
+on have `force` counterparts: compound members cohere about their parent
+(`gravityCompound`), edges crossing compound boundaries take elevated
+ideal lengths (`nestingFactor`, v3's rule and default), and disconnected
+components are packed into rows at the end (`componentSpacing`, v3's
+option name).  A fresh run also seeds from a spectral draft
+(`init: 'spectral'`, the default — fCoSE's approach), which is what
+untangles chains and separates clusters at scale.
 
 **There is no extension registry.** No `cytoscape.use()`, no string
 registration, no global state. An extension layout is an import you pass in:

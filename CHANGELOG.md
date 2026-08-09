@@ -58,8 +58,12 @@ that compile and then behave differently.
 - **Style transitions** (`transition-property`/`-duration`/`-delay`/
   `-timing-function`) and animation controls (`pause`/`resume`/`reverse`,
   read-only `progress`/`paused`).
-- **The `force` layout** — GPU-native spring–electric, animating live at 100k
-  nodes, with a CPU reference executor for headless and compound graphs.
+- **The `force` layout** — GPU-native force-directed layout, animating live
+  at 100k nodes, with a CPU reference executor for headless and compound
+  graphs; spectral (landmark-MDS) initial placement, degree-normalised
+  springs, grid-pyramid long-range repulsion, per-compound gravity and
+  nesting (`gravityCompound`, `nestingFactor`), and component packing
+  (`componentSpacing`).
 - **A registry-free extension contract**: `cy.layout( { impl } )` runs an
   imported class or object; `LayoutContext` is columnar-first, and it,
   `LayoutImpl` and `CustomLayout` are exported types, so an external layout

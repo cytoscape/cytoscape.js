@@ -430,6 +430,21 @@ any node-half margin by its turn.  Fit zoom on the compound fixture:
 (`test/modules/bounds-sweep.mjs`); the compound-loop section below
 carries the formulation.
 
+Round 59 (2026-08-09, raised by the maintainer) rebuilt the force
+layout's model after it was measured diverging exponentially on any
+graph with hubs or high mean degree — em-web ended at a 3e11-px
+bounding box, and the compound fixture NaN'd wholesale.  The
+round-59 model is stability-by-construction (d3's degree-normalised
+springs, a capped step), gains a real far field (a monopole pyramid
+over the binning grid, cosmos.gl's shipped scheme), is
+component-aware end to end (packed anchors, constant-magnitude
+gravity, a settle re-pack — v3 cose's own `separateComponents`),
+seeds from a landmark-MDS spectral draft (fCoSE's approach), and
+gives compounds the Bilkent gravity + nesting terms on the CPU
+executor.  ndex-x-large — mean degree 47, the explosive shape —
+converges live on the GPU in 1.3 s and fits at zoom 0.76.  The
+force-layout section below carries the model.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order
@@ -813,70 +828,109 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   expensive configuration; wrap-none tweens ride the dims fast path);
   the whole-graph bb scan pays ~0.1 µs/label for its label terms.
 
-## The force layout (round 18)
+## The force layout (rounds 18 + 59)
 
-**Round 59 is rebuilding this layout's model** (in flight; the plan is
-at the end of PLAN.md).  Scoping it found the round-18 model unstable
-on graphs with hubs or high mean degree — the em-web fixture lands at a
-3e11-px bounding box (a blank fit), and the compound twin NaNs — so the
-description below is the round-18 baseline being replaced, kept until
-round 59's records supersede it section by section.
+Round 18 built the layout (2026-08-01); **round 59 rebuilt its model**
+(2026-08-09) after the maintainer reported it drifting apart on large
+networks until a fit left everything invisible.  Scoping measured the
+round-18 model as explicit-Euler *unstable* past node degree ~20 — the
+em-web fixture ended at a 3e11-px bounding box, and the compound twin
+NaN'd — so what follows describes the round-59 model; PLAN.md's two
+round records carry the histories.
 
-Landed 2026-08-01, per the PLAN.md round-18 plan — the round-9 "GPU
-layouts" design, built:
-
-- **`cy.layout({ name: 'force' })`** — spring–electric with
-  uniform-grid cutoff repulsion, springs toward per-edge ideal
-  lengths (`edgeLength` as a number or a plain fn resolved once),
-  centering gravity, and pure damped gradient integration under
-  d3-shaped alpha annealing.  Seeded and deterministic on the CPU
-  executor (`seed`, `randomize`); leaves only (parents derive);
-  locked nodes pin as obstacles; subset scopes simulate the subset
-  only.  Runs through the round-17 extension contract — the
-  built-in is the contract's first production consumer.
+- **`cy.layout({ name: 'force' })`** — a force-directed layout with:
+  - **degree-normalised springs** (d3-force's rule: per-edge strength
+    `stiffness / min(deg)`, each end weighted by the other end's
+    degree share) toward per-edge ideal lengths (`edgeLength` as a
+    number or a plain fn resolved once) — a node's aggregate per-tick
+    spring correction is bounded by `stiffness` whatever its degree,
+    which is the stability guarantee;
+  - **inverse-square repulsion with a real far field**: one law
+    (`repulsion · (cutoff/d)²`, sfdp's p = 2) across all pairs — the
+    near field exact over the binning grid's 3×3, the far field from
+    a **monopole pyramid** over the same grid (per level, the aligned
+    6×6 block refining the parent's 3×3 minus the level's own 3×3 —
+    cosmos.gl v3's shipped scheme);
+  - **component-aware constant-magnitude gravity**: components are
+    found up front (union-find), their anchors shelf-packed by
+    estimated radius, every node seeded around its component's anchor
+    and pulled toward it at constant magnitude (ForceAtlas2's
+    containment rule), with an exact translation-only re-pack of the
+    settled component boxes at the end (`componentSpacing`, v3
+    cose's option and 40px default) — skipped whenever the scope
+    holds a locked node, since a re-pack moves whole components;
+  - **a spectral seed** (`init: 'spectral'`, the default): landmark
+    MDS per component — BFS hop distances from ≤ 25 farthest-first
+    pivots, double-centred, top-2 eigenpairs by power iteration —
+    fCoSE's approach, and the thing that uncurls chains and separates
+    clusters where local refinement cannot (measured: a 40-node chain
+    ends 3208 px end-to-end against 346 px under `init: 'scatter'`);
+  - **capped damped-gradient integration** under d3-shaped alpha
+    annealing: each step is clamped to an alpha-annealed multiple of
+    the repulsion range (v3 cose's `limitForce` discipline), and a
+    non-finite displacement never reads as settled;
+  - **compound terms on the CPU executor** (compound graphs never
+    take the GPU path — the 14.11 lease rule): each leaf pulls toward
+    its direct parent's live centroid (`gravityCompound`, a multiple
+    of `gravity`), and an edge spanning compound boundaries takes
+    `length × levels × nestingFactor` (v3 cose's multiplicative
+    rule and 1.2 default).
+- Seeded and deterministic on the CPU executor (`seed`, `randomize`);
+  leaves only (parents derive); locked nodes pin as obstacles; subset
+  scopes simulate the subset only.  Runs through the round-17
+  extension contract — the built-in is the contract's first
+  production consumer.
 - **Two executors, one spec.**  The CPU reference
-  (`layout/force-sim.mts`) always exists — headless instances,
-  compound graphs (the 14.11 lease rule), `animate: false` — and is
-  what the Node specs pin.  Under `animate: true` on a flat
-  rendered graph, the **GPU integrator** (`render/gpu-force.mts`)
-  takes over: six dispatches per iteration (grid build by counting
-  sort → force gather → apply-and-publish) encoded ahead of the
-  cull pass, so 100k-node layouts animate live with edges and
-  labels following on-GPU.
+  (`layout/force-sim.mts`, with `layout/force-init.mts` holding the
+  pure component/seed machinery) always exists — headless instances,
+  compound graphs, `animate: false` — and is what the Node specs pin.
+  Under `animate: true` on a flat rendered graph, the **GPU
+  integrator** (`render/gpu-force.mts`) takes over: per iteration,
+  grid build by counting sort → pyramid aggregate + per-level reduce
+  → force gather → apply-and-publish, encoded ahead of the cull pass
+  so 100k-node layouts animate live with edges and labels following
+  on-GPU.  The force kernel sits at 7 storage bindings —
+  `cellStart`/`cellItems`/pyramid share one grid buffer, and the
+  gravity anchors ride the CSR buffer's tail.
 
-  `node.position` is GPU-owned for the
-  run (the tween lease — CPU reads stale mid-run, the
-  motion-staleness rule), and convergence triggers **one readback**
-  (the round-9 exception) that settles the CPU columns through the
-  normal dirty-span path.
-- Recorded deviations/limits: a cutoff model does not promise
-  global untangling (a curled chain is a legitimate local minimum —
-  multilevel refinement is future work); the repulsion cutoff is
-  the mean ideal edge length (a connected pair's equilibrium is L
-  itself); GPU trajectories are not bit-stable run-to-run (atomic
-  in-cell scatter order) — seeded bit-reproducibility is the CPU
-  executor's guarantee, and the executors agree on invariants, not
-  trajectories; live streaming writes through the bulk slot path,
-  which emits no per-node position events.
+  `node.position` is GPU-owned for the run (the tween lease — CPU
+  reads stale mid-run, the motion-staleness rule), and convergence
+  triggers **one readback** (the round-9 exception) that settles the
+  CPU columns through the normal dirty-span path.
+- Recorded deviations/limits: GPU trajectories are not bit-stable
+  run-to-run (atomic in-cell scatter order) — seeded
+  bit-reproducibility is the CPU executor's guarantee, and the
+  executors agree on invariants, not trajectories; live streaming
+  writes through the bulk slot path, which emits no per-node position
+  events; the settle re-pack is a visible end-of-run shift under
+  `animate: true` (v3 has the same shift; the anchors keep it small);
+  compound gravity reaches direct parents only (deeply nested
+  coherence rides the nesting-elevated edges); expander graphs settle
+  with mean link lengths several times the ideal, which is
+  topology-intrinsic rather than a model defect (no planar embedding
+  of a random graph has short edges); and multilevel refinement stays
+  the logged future direction for tree/mesh quality beyond the
+  spectral seed's.
+- Options added by round 59: `componentSpacing`, `init`,
+  `nestingFactor`, `gravityCompound`.  Re-read by round 59 (same
+  names, new units): `repulsion` (the push at one cutoff length),
+  `stiffness` (fraction of the residual per tick), `gravity`
+  (constant px/tick toward the anchor).
 - Harness: `debug/?layout=force` (+ `&seed=N`); benchmark:
-  `benchmark:renderer -- --layout` runs a live force to
-  convergence per scene (v3's cose as the classic baseline, bounded
-  by nested test-style timeouts — a 30 s in-page stop reporting a
-  measured floor and a 60 s runner-side bail reporting "> 60 s",
-  since a single cose iteration outgrows any in-page cap at
-  benchmark scale; `--layout-uncapped` measures full runs).
+  `benchmark:renderer -- --layout` runs a live force to convergence
+  per scene (v3's cose as the classic baseline, bounded by nested
+  test-style timeouts — a 30 s in-page stop reporting a measured
+  floor and a 60 s runner-side bail reporting "> 60 s";
+  `--layout-uncapped` measures full runs).
 
-  On an
-  RX 580 (re-measured 2026-08-04, round 36.5; first run 2026-08-01,
-  PLAN.md "hardware validation pass"): force converges in **0.76–1.6 s**
-  across 25k, 100k and ndex — and in **14.8 s** on the compound scene,
-  which runs the CPU executor under the 14.11 lease rule — where the
-  cose baseline exceeds the 60 s bail on every scene.  Read these rows
-  as **±25%**: round 18.3 recorded that GPU trajectories are not
-  bit-stable run-to-run (atomic in-cell scatter order), so the iteration
-  count to convergence varies, and the 2026-08-01 and 2026-08-04 runs
-  differ by −20% to +24% *in both directions* with nothing in the layout
-  path having changed between them.
+  Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
+  (19.6k nodes, **465k edges, mean degree 47 — the shape the
+  round-18 model exploded on**) converges live on the GPU in
+  **1.3 s** and fits at zoom 0.76; em-web fits at zoom 0.44 (from
+  2.3e-9), the clustered compound twin at 0.40 (from 571-of-610
+  NaN).  Read wall-clock convergence rows as **±25%**: trajectories
+  are not bit-stable, so the iteration count to convergence varies
+  (the round-36.5 caveat, unchanged).
 
 ## Slot compaction (round 19)
 

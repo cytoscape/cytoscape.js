@@ -298,6 +298,25 @@ wide, v4's `width + 2 × padding`).  What the queue holds now is in the
 "Amended 2026-08-09" paragraph of "Suggested sequencing": round 46
 (sketch-specced) and 49–51 (other platforms or release credentials).
 
+**Round 59** (2026-08-09, raised by the maintainer the same day)
+rebuilt the force layout's model.  Scoping measured the round-18
+model as explicit-Euler unstable past node degree ~20 — em-web ended
+at a 3e11-px bounding box (the maintainer's "invisible on fit"), the
+compound fixture NaN'd, and NaN read as *converged* — and two research
+sweeps (FA2, cosmos.gl, sfdp, fCoSE, CoSE-Bilkent, G6, d3-force)
+shaped the rebuild: d3's degree-normalised springs + a displacement
+cap (stability by construction), a grid-pyramid far field under one
+inverse-square law (cosmos.gl's shipped scheme — the force kernel
+stays at 7 storage bindings via a grid-buffer fold), component
+anchors + constant gravity + a settle re-pack (v3's own
+`separateComponents`), fCoSE's landmark-MDS spectral seed (a 40-node
+chain: 3208 px end-to-end against 346 under the old scatter), and the
+Bilkent compound gravity + nesting on the CPU executor.  ndex-x-large
+(mean degree 47, the explosive shape) now converges live on the GPU
+in 1.3 s and fits at zoom 0.76.  Four options added
+(`componentSpacing`, `init`, `nestingFactor`, `gravityCompound`);
+`repulsion`/`stiffness`/`gravity` keep their names with new units.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -1263,8 +1282,9 @@ src/
   animation.mts          # Animation + AnimationManager: CPU tween, concurrent per-channel runs (round 21 — no queue); routes position/paint to the GPU sink
   layout/                # grid, preset, circle, concentric, breadthfirst, random
     contract.mts         #   round 17: the extension contract (CustomLayout + the columnar LayoutContext)
-    force-sim.mts        #   round 18: the CPU reference force simulation (the kernels' spec)
-    force.mts            #   round 18: the built-in force layout (contract consumer; picks the executor)
+    force-sim.mts        #   round 18/59: the CPU reference force simulation (the kernels' spec)
+    force-init.mts       #   round 59: components, anchors, the spectral seed, the settle re-pack
+    force.mts            #   round 18/59: the built-in force layout (contract consumer; picks the executor)
   algorithms/            # round 10: the full v3 algorithm surface, slot-native over CSR
   shape-points.mts       # unit polygon + arrowhead point tables shared by WGSL gen + CPU pick (round 10;
                          #   round 27 added the round-corner indirection, the compound-arrow parts and
@@ -1302,7 +1322,7 @@ src/
     mapper-runtime.mts   # GPU mapper eval: program/stop/data packing + the per-frame runtime
     mapper-shaders.mts   # the eval kernel WGSL (scale math mirrors style-scales.mts)
     gpu-tween.mts        # GPU tween runtime + kernels (position/scalar/color; per-slot from/to)
-    gpu-force.mts        # round 18: the on-device force integrator (grid/gather/apply + lease)
+    gpu-force.mts        # round 18/59: the on-device force integrator (grid/pyramid/gather/apply + lease)
     image-arrays.mts     # round 15: tiered rgba arrays + mips + the r8 icon array + image table
     image-pipeline.mts   # round 15: the image compositing draw (own pass off the node streams)
     chart-pipeline.mts   # round 23: the pie/stripe chart draw (own pass, after images)
@@ -4098,6 +4118,12 @@ release credentials, the bake), and round 44's release-time act.  The
 genuinely open ledger questions: item 23 (the `arrow-scale` reserve,
 deferred by the maintainer), item 18 (the tween warm-up, revisit with
 data), and now item 27 (the layer band width).
+
+**Amended later on 2026-08-09: round 59 (the force layout rebuild,
+raised by the maintainer) landed the same day** — the summary
+paragraph above and the round-59 plan and records at the end of this
+file carry it.  The queue and the open questions are otherwise as the
+previous paragraph left them.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -16798,11 +16824,37 @@ unchanged.
   topology-intrinsic — no planar embedding of a random graph has
   short edges — and the tree's 2.22 is the number future quality
   work (multilevel, the logged direction) would move.
-- [ ] **59.7 Verification + benchmarks** — the debug harness driven
-  before/after on em-web, em-web-clustered, gen and ndex scenes with
-  screenshots; the Playwright force specs re-run; `benchmark/
-  layouts.mjs` force rows and `benchmark:renderer -- --layout`
-  re-measured; docs swept and `EXECUTIVE_SUMMARY.md` rewritten.
+- [x] **59.7 Verification + benchmarks** (2026-08-09) — the round's
+  before/after, measured in the browser on the scenes the report
+  named:
+  | scene | before (round 18) | after (round 59) |
+  |---|---|---|
+  | em-web (569n/6.9k e, GPU) | bb 3.0e11×3.6e11, zoom 2.3e-9 | bb 1774×1486, zoom **0.44**, link 2.1×L |
+  | em-web-clustered (compound, CPU) | **571/610 NaN**, zoom 1e-50 | bb 1956×1543, zoom **0.40**, 0 NaN |
+  | gen 2k×4k (GPU) | zoom 0.36, link 6.5×L | zoom 0.52, link 3.8×L |
+  | ndex-x-large (19.6k×465k, GPU) | explodes (mean degree 47) | zoom **0.76**, converges live in **1.3 s** |
+  The screenshots show what the numbers cannot: em-web's clusters
+  separated with its small components shelf-packed in rows beneath,
+  and the clustered fixture's 41 MCODE compounds cohering inside
+  their parent boxes.  Full verification: the entire Node tier
+  (typecheck, **2104 + 315 + 24** specs, throw gate green at
+  184/10/5/0 over 199 sites — the round's own `init` throw specced —
+  lint, format), **238 browser specs** across `renderer` + `visual`
+  with every golden exact and every parity scene at its recorded
+  value, `test:types:all` clean (the declaration regen also picked up
+  round 58's `node.outerGeom` doc, which had never been regenerated —
+  a pre-existing staleness this round's regen caught).  Benchmarks:
+  the `layouts.mjs` force row now measures a complete run at
+  115 ms/2k — the one-time spectral seed (~12 ms warm at 2k)
+  dominates the 20-iteration row, per-iteration cost is 1–4 ms — and
+  `render-bench --layout` on ndex reads 1308 ms to converge against
+  the round-36.5 era's 759–952 ms, the far field's pyramid dispatches
+  plus a model doing real work instead of detonating into a clamped
+  frame (both inside the ±25% read that section carries).
+  MIGRATING.md's cose paragraph now names the cose-alike options
+  (`gravityCompound`, `nestingFactor`, `componentSpacing`, the
+  spectral seed) and CHANGELOG.md's force line describes the round-59
+  model; the README's force section is rewritten wholesale.
 
 ### Risks tracked
 

@@ -50,7 +50,7 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,090 unit · 304 module · 24 soak · 353 browser (237 run; 116 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,104 unit · 315 module · 24 soak · 354 browser (238 run; 116 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, twelve of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
@@ -530,9 +530,9 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9 August: two decisions that decline, and the trim reaches everything
+## Week 4 — 9 August: two decisions that decline, the trim reaches everything, and the force layout is rebuilt
 
-*4 commits — round 58 and the seventh design sitting.*
+*Round 58, the seventh design sitting, and round 59.*
 
 The week opened with the two prepared decisions taken, both by
 declining the surface the preparation had priced (the error and
@@ -557,13 +557,55 @@ control run that itself tripped the repository's documented
 stale-bundle trap before yielding those numbers, and is recorded
 doing so.
 
-The scene that took three drafts is the week's real lesson.  Its first
+The scene that took three drafts is a real lesson.  Its first
 draft measured an already-recorded compositing deviation instead of
 the trim; its second measured something nobody knew: **v3 draws an
 edge's overlay band `2 × padding` wide, v4 `width + 2 × padding`** —
 so at small paddings v3's halo is narrower than the line and
 invisible.  That divergence is logged for a decision, not silently
 patched, because either resolution changes rendered output.
+
+### Round 59: the force layout, rebuilt on what the field ships
+
+The maintainer reported the force layout giving bad results on large
+networks — "drifts apart too much... everything super zoomed out on
+fit (invisible basically)" — and asked for a round grounded in what
+COSE, fCoSE and the GPU layouts (G6 and friends) actually do.
+
+Measurement found something sharper than a tuning problem: the
+original model was **numerically unstable past node degree ~20** (a
+textbook explicit-integrator bound), and real networks sit far past
+it — the em-web fixture ended at a bounding box of 3×10¹¹ px with a
+fit zoom of 2.3×10⁻⁹, the compound fixture destroyed 571 of 610
+positions as NaN, and a destroyed run *reported success*, because NaN
+compares false against every convergence bound.
+
+Two research sweeps (ForceAtlas2, cosmos.gl, sfdp, s_gd2, t-FDP,
+cuGraph; the CoSE/fCoSE line, AntV G6, d3-force, v3's own cose) and a
+scratch prototype shaped the rebuild, each piece traceable to a
+shipped system: d3's degree-normalised springs plus a capped step
+(stability by construction, not by tuning); a real long-range
+repulsion from a monopole pyramid over the existing binning grid
+(the scheme the most-shipped web GPU layout, cosmos.gl, converged on
+after abandoning its quadtree — and the GPU force kernel *ends up
+with a spare binding* after a buffer fold); component-aware
+placement — packed anchors, constant-magnitude gravity, and the same
+end-of-run component packing v3's cose does — so disconnected pieces
+neither interleave nor drift; fCoSE's spectral seed (a 40-node chain
+now lands 3208 px end-to-end where the old scatter left it curled at
+346); and the Bilkent compound recipe's gravity and nesting terms for
+compound graphs.
+
+The before/after, in the browser: em-web fits at **zoom 0.44** (from
+2.3×10⁻⁹ — a blank canvas), the clustered compound fixture at 0.40
+with its 41 clusters cohering inside their parent boxes (from
+wholesale NaN), and the 465k-edge fixture — mean degree 47, exactly
+the shape that exploded — **converges live on the GPU in 1.3 s** and
+fits at zoom 0.76.  Every step landed tests-first with its control
+run, and two controls were themselves findings: one spec measured
+the component packer instead of the physics until a pinned node
+isolated them, and the executor-parity spec turned out unable to
+detect a missing far field at all — it has a dedicated spec now.
 
 ---
 

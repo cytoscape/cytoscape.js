@@ -16887,3 +16887,70 @@ per-iteration cost by a measured factor (Hu's figure is ~1.2x; ours is
 measured in 59.7 before the round closes).  And `separateComponents`
 at settle is a visible jump under `animate: true` — v3 has the same
 jump, and the anchors keep it small; recorded rather than hidden.
+
+## Round 60 plan — the performance record, kept honest (raised by the maintainer 2026-08-09)
+
+The maintainer's ask, in three parts: more performance-related work; **a
+way in the status page to compare performance across commits**, so
+progression or regression is visible rather than remembered; and better
+coverage on both the benchmark and the test side.  No library semantics
+change in this round — it is measurement infrastructure, measurement
+coverage, and the specs that keep both honest.
+
+The premise is one this file already carries: the archive
+(`benchmark/published/`) keeps every published run's full results JSON
+precisely so that "a report improvement applies to every past run" — and
+until this round nothing joined two runs.  The only cross-commit signal
+on the site was one geo-mean per run in the trend table, which is a
+single number over ~175 rows: a 2× regression in one row moves it by
+under half a percent.  Detecting a regression was a manual diff nobody
+had ever run.
+
+### Items
+
+- [x] **60.1 The cross-commit comparison** (2026-08-09) — landed:
+  `benchmark/report-compare.mjs` (pure, Node-testable — the
+  `report-html.mjs` pattern) joins the published runs of one
+  (machine, profile) into per-row p50 series and renders a
+  self-contained comparison page; `scripts/status/bench-pages.mjs`
+  plans one such page for every (machine, profile) with ≥ 2 runs and
+  links it from the trend table ("Across commits").
+
+  Three judgements carry the design, each with its reason recorded in
+  the module header:
+  - **Runs from different machines never share a page** —
+    `buildComparison` throws on mixed fingerprints rather than
+    producing what the archive's README warns about (a hardware
+    history wearing a performance history's clothes).  Unfingerprinted
+    pre-46.5 runs get no comparison at all.
+  - **A missing row renders as a gap, never dropped.**  Runs with a
+    `--suite` filter measure a subset, so the join is sparse; a row's
+    change bridges the gap to the nearest earlier run that measured
+    it, and the page discloses each run's filter.  Silent truncation
+    is the failure mode this repo's benchmark rules name most often.
+  - **Every mover carries its noise controls.**  The movers lists
+    (beyond ±10%, strong past ±30%) cover v4-side benches only — v3
+    is frozen code, so a "v3 regression" is the machine — and each
+    mover prints its v3 twin's change over the same span as a per-row
+    control, with the page's headline **drift** figure (geometric mean
+    change over every shared row, v3 included) as the whole-run
+    control.  A mover near the drift factor is the box, not the
+    commit.
+
+  **Verified against the archive's own two renderer runs**, which is
+  the strongest check available: the computed drift is ×1.014 where
+  round 52.2 independently measured the same pair at a 1.018
+  geometric-mean ratio, and the top movers are exactly the
+  sub-millisecond compaction device rows whose ±40% bimodality rounds
+  29.5 and 52.2 already recorded — appearing in *both* directions
+  (×2.53 and ×0.40 on the same row family), which is what noise looks
+  like and what the drift line exists to say.
+
+  15 specs in `test/modules/benchmark-compare.mjs`, five controls run
+  and each failing the spec named for it (the header lists them):
+  change inverted to prev/latest — 4 fail; the gap bridge removed — 2
+  fail; v3 rows admitted into the movers — 1 fails; the fingerprint
+  guard removed — 1 fails; `planComparisons` merging profiles — 1
+  fails.  Comparison pages are grouped by *exact* profile,
+  deliberately: `renderer` and the Node-tier profiles measure disjoint
+  suites, so a joined page would be mostly gaps presented as history.

@@ -33,6 +33,14 @@ comparable**, and the site will not plot them on one line. The fingerprint
 deliberately ignores kernel and node version, so an OS upgrade does not split
 a machine's history in two.
 
+For every (machine, profile) with at least two runs, the site also renders a
+**cross-commit comparison page** (`benchmark/report-compare.mjs`): each row's
+p50 across runs, the movers beyond ±10% with the frozen-v3 twin's change as a
+per-row noise control, and a whole-run drift figure (the geometric mean change
+over every shared row). Read the drift before the movers — a row moving near
+the drift factor is the box, not the commit — and read a mover's v3 control
+the same way: v3 is frozen code, so if it moved too, the machine did.
+
 ## Retention
 
 Every run is kept until someone removes it. There is no automatic cap, because

@@ -8,7 +8,17 @@
 // machine fingerprint exists: **runs from different boxes are never plotted on
 // one line.**  A chart that mixes them looks like a performance history and is
 // actually a hardware history, which is worse than no chart.
+//
+// Each (machine, profile) with two or more runs also gets a **cross-commit
+// comparison page** (`benchmark/report-compare.mjs`): per-row p50 across runs,
+// the movers beyond ±10% with the frozen v3 twin as a per-row noise control,
+// and a whole-run drift figure so a warm box does not read as a regression.
 import { renderReport } from '../../benchmark/report-html.mjs';
+import {
+  buildComparison,
+  renderComparison,
+  comparePageName,
+} from '../../benchmark/report-compare.mjs';
 import { esc, fmtAge } from '../theme.mjs';
 import { write } from './plan.mjs';
 
@@ -67,7 +77,72 @@ export function byMachine(runs) {
   return [...groups.values()];
 }
 
-function trendTable(group) {
+/**
+ * The cross-commit comparison pages for one machine: one per profile that has
+ * at least two runs.  Grouped by *exact* profile, because the profiles measure
+ * different suites (`renderer` vs the Node tier) — a page joining them would
+ * be mostly gaps presented as history.
+ *
+ * Unfingerprinted runs (pre-round-46.5) get no comparison at all: nothing can
+ * say whether they share hardware, and `buildComparison`'s one rule is that
+ * cross-machine numbers never share a line.
+ *
+ * @returns `[{ profile, page, runCount, op }]`
+ */
+export function planComparisons(group) {
+  if (group.fingerprint == null) {
+    return [];
+  }
+
+  const byProfile = new Map();
+
+  for (const run of group.runs) {
+    const key = run.profile ?? 'unknown';
+    const list = byProfile.get(key) ?? [];
+
+    list.push(run);
+    byProfile.set(key, list);
+  }
+
+  const plans = [];
+
+  for (const [profile, runs] of byProfile) {
+    if (runs.length < 2) {
+      continue;
+    }
+
+    // the archive lists newest first; the comparison reads oldest first
+    const ordered = [...runs].reverse();
+    const comparison = buildComparison(ordered);
+    const page = comparePageName(group.fingerprint, profile);
+
+    plans.push({
+      profile,
+      page,
+      runCount: runs.length,
+      op: write(
+        page,
+        renderComparison(comparison, {
+          machine: group.machine,
+          fingerprint: group.fingerprint,
+        }),
+      ),
+    });
+  }
+
+  return plans;
+}
+
+function trendTable(group, comparisons = []) {
+  const compareLinks =
+    comparisons.length === 0
+      ? ''
+      : `<p>Across commits: ${comparisons
+          .map(
+            (c) =>
+              `<a href="/${esc(c.page)}">${esc(c.profile)} (${c.runCount} runs)</a>`,
+          )
+          .join(' · ')}</p>`;
   const rows = group.runs
     .map((run) => {
       const geo = geoSpeedup(run.results);
@@ -90,6 +165,7 @@ function trendTable(group) {
         ? `Machine id <code>${esc(group.fingerprint)}</code>. Only runs sharing this id are comparable.`
         : 'These runs predate machine fingerprinting, so nothing can be said about whether they share hardware.'
     }</p>
+    ${compareLinks}
     <div class="table-wrap"><table>
       <thead><tr><th>run</th><th>profile</th><th>commit</th><th>geo-mean vs v3</th><th>duration</th><th>note</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -124,14 +200,20 @@ npm run benchmark:publish</code></pre>`,
   const age =
     newest.date != null ? fmtAge(now - Date.parse(newest.date)) : null;
 
+  const machines = byMachine(runs).map((g) => {
+    const comparisons = planComparisons(g);
+
+    ops.push(...comparisons.map((c) => c.op));
+
+    return trendTable(g, comparisons);
+  });
+
   const html = `<h1>Benchmarks</h1>
   <p class="lede">${runs.length} published run${runs.length === 1 ? '' : 's'}. The newest is
   ${age != null ? `<strong>${esc(age)}</strong>` : 'undated'} — benchmarks do not run on this site's
   builder (no GPU, and the quick profile alone is seven minutes), so these are as fresh as the last
   <code>npm run benchmark:publish</code>.</p>
-  ${byMachine(runs)
-    .map((g) => trendTable(g))
-    .join('')}`;
+  ${machines.join('')}`;
 
   return {
     ops,

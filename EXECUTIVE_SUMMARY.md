@@ -409,6 +409,17 @@ that turned the boolean `true` into the string `"true"`, so every arrowhead
 rendered filled where half should have been hollow — twelve identical heads,
 entirely plausible on screen, and exactly what the spec was named to catch.
 
+The press affordance itself gained its missing half (8 August). Pressing an
+edge had activated nothing — hit-testing edges happens on the GPU, a frame
+after the press decides everything else — and that had been recorded as an
+accepted deviation. The maintainer reframed it: an edge not being draggable
+does not make it unclickable, and the highlight is the signifier of the
+click. So the press now waits for the asynchronous answer: an edge under it
+takes the highlight (and becomes the tap's target, which touch taps on edges
+had silently lacked), a true background press shows the grab indicator, and
+when the press turns into a pan the two swap, exactly as in v3. What remains
+of the deviation is a frame of latency, recorded as such.
+
 **The bundle-size answer landed** (8 August). The maintainer had asked why
 v4's bundle outweighs v3's, and the measured answer was that a quarter of it
 was WebGPU shader source, which a JavaScript minifier ships verbatim because

@@ -2458,6 +2458,138 @@ test.describe('WebGPU renderer', () => {
     expect(after[2]).toBeGreaterThan(240);
   });
 
+  test("a pressed edge draws v3's :active overlay (round 57.8)", async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3 activates whatever is *near* on mousedown, edges included — an
+    // edge not being draggable does not make it unclickable, and the
+    // wash is the signifier of the click in progress.  v4's synchronous
+    // press pick knows nodes only, so the edge answer arrives through
+    // the async GPU pick ~a frame later; the assertions poll for the
+    // state rather than sampling at an instant, per untilMidFlight's
+    // doc.  The press affordances are asserted *exclusively*: while the
+    // edge is active the background circle must not show (v3 shows it
+    // only when nothing is near), and once the press pans, the two swap
+    // — the edge unactivates (v3 unactivates a pannable element the
+    // moment its pan starts) and the circle takes over.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: { width: 4 },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    // in the 10px overlay-padding band beside the 4px line: only the
+    // overlay stroke (width + 2×padding) can put ink here
+    const band = { x: center.x, y: center.y - 8 };
+    const before = await pixelAt(page, band.x, band.y);
+
+    expect(before[0]).toBeGreaterThan(240); // background beside the line
+    expect(before[2]).toBeGreaterThan(240);
+
+    const circleShowing = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('div')].some(
+          (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
+        ),
+      );
+
+    await page.mouse.move(center.x, center.y);
+    await page.mouse.down();
+
+    await expect
+      .poll(() => page.evaluate(() => window.cy.$id('ab').active()))
+      .toBe(true);
+    await waitFrames(page);
+
+    const pressed = await pixelAt(page, band.x, band.y);
+
+    // black at 25% over white is ~191 on every channel
+    expect(pressed[0]).toBeLessThan(215);
+    expect(pressed[0]).toBeGreaterThan(165);
+    expect(Math.abs(pressed[0] - pressed[2])).toBeLessThan(12); // neutral
+
+    expect(await circleShowing()).toBe(false); // the press is on the edge
+
+    // past the tap threshold the press is a pan: the edge unactivates
+    // and the background circle takes over at the press point
+    await page.mouse.move(center.x + 60, center.y + 40);
+
+    await expect
+      .poll(() => page.evaluate(() => window.cy.$id('ab').active()))
+      .toBe(false);
+
+    expect(await circleShowing()).toBe(true);
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+    expect(await circleShowing()).toBe(false);
+
+    const after = await pixelAt(page, band.x, band.y);
+
+    // panned by (60, 40): the band point moved with the graph — read it
+    // at its new place to see the wash gone rather than a moved line
+    const afterMoved = await pixelAt(page, band.x + 60, band.y + 40);
+
+    expect(after[0]).toBeGreaterThan(240);
+    expect(afterMoved[0]).toBeGreaterThan(240);
+  });
+
+  test('a released-before-the-pick edge press never sticks active (round 57.8)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The press pick resolves after the release here: the guard in
+    // resolvePressTarget must notice the press is over and set nothing —
+    // a late activation would have no release to clear it, so the wash
+    // would stick until the next gesture.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: { width: 4 },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    // down and up in one CDP breath — no frame between them, so the GPU
+    // pick cannot have answered while the press was still down
+    await page.mouse.move(center.x, center.y);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await waitFrames(page, 6);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+
+    const band = await pixelAt(page, center.x, center.y - 8);
+
+    expect(band[0]).toBeGreaterThan(240); // no stuck wash in the pad band
+  });
+
   test('tap selects and background tap clears', async ({ page }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
@@ -5840,24 +5972,30 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.up();
     await page.keyboard.up('Shift');
 
-    // a plain background press shows the active-bg circle at the point
+    // a plain background press shows the active-bg circle at the point —
+    // once the press pick answers "background": round 57.8 defers the
+    // circle to that answer so it never shows over an edge press, hence
+    // the poll rather than a one-shot read
     await page.mouse.move(center.x - 80, center.y - 40);
     await page.mouse.down();
 
-    const circle = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('div')].find(
-        (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
-      );
+    const readCircle = () =>
+      page.evaluate(() => {
+        const el = [...document.querySelectorAll('div')].find(
+          (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
+        );
 
-      return el == null
-        ? null
-        : {
-            background: el.style.background,
-            width: el.style.width,
-          };
-    });
+        return el == null
+          ? null
+          : {
+              background: el.style.background,
+              width: el.style.width,
+            };
+      });
 
-    expect(circle).not.toBe(null);
+    await expect.poll(readCircle).not.toBe(null);
+
+    const circle = await readCircle();
     expect(circle.background).toContain('0, 0, 255');
     expect(circle.width).toBe('50px');
 
@@ -5913,9 +6051,10 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.move(center.x - 80, center.y - 40);
     await page.mouse.down();
 
-    const at0 = await circlePos();
+    // the circle waits for the press pick to answer "background" (57.8)
+    await expect.poll(circlePos).not.toBe(null);
 
-    expect(at0).not.toBe(null);
+    const at0 = await circlePos();
 
     await page.mouse.move(center.x - 20, center.y - 10);
 
@@ -5976,6 +6115,9 @@ test.describe('WebGPU renderer', () => {
 
     await page.mouse.move(center.x - 80, center.y - 40);
     await page.mouse.down();
+
+    // the circle waits for the press pick to answer "background" (57.8)
+    await expect.poll(circlePos).not.toBe(null);
 
     const at0 = await circlePos();
 

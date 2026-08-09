@@ -3592,18 +3592,25 @@ fragment premium is **unmeasurable at scene level** on real hardware
 > two entries that once said otherwise are both closed: the arrow `gap`
 > landed in round 56, and `border-style` / `outline-style` in round 38.)
 
-- **`:active` reaches nodes only** (round 57.1).  The press affordance
-  is v3's `:active` block, and v4 gets it the way v3 does — from the
-  default stylesheet, as a `{ when: { active: true } }` condition on
-  `overlay-opacity`.  What deviates is not the styling but *what gets
-  pressed*: the pointer layer's press target comes from the synchronous
-  CPU pick, which is nodes-only by the round-17.3 deviation, so pressing
-  an **edge** activates nothing.  `edge.activate()` sets the flag,
-  `active()` reports it, and a sheet conditioned on it restyles the edge
-  — only the pointer never sets it.
-
-  *To reverse*: the async GPU pick tile already identifies edges; the
-  press path would have to wait for it.
+- **`:active` reaches edges a frame late** (round 57.1, narrowed in
+  round 57.8 — kept here because the answer changed).  As recorded in
+  57.1, pressing an edge activated *nothing*: the press target was the
+  synchronous CPU pick, nodes-only by the round-17.3 deviation.  The
+  reversal note said the press path would have to wait for the async
+  GPU pick, and now it does: a press the node pick misses resolves
+  through `Renderer.pick()`, an edge under it carries `FLAG_ACTIVE`
+  (v3's `near.activate()` on mousedown — an edge not being draggable
+  does not make it unclickable, and the wash signifies the click in
+  progress) and becomes the release's tap target, and the active-bg
+  circle waits for the same answer so it shows only on true background
+  presses, as in v3.  When the press pans, a pannable element
+  unactivates and the circle takes over at the press point — v3's
+  mousemove rule.  What still deviates is *latency*: v3 activates in
+  the mousedown handler, v4 one pick later (~a frame; a microtask when
+  the cursor sits in the cached pick tile), so a press-and-release
+  faster than the pick never shows the wash — and `tapstart` itself
+  still targets the core rather than the edge, since it is emitted
+  synchronously at press time.
 
 - **Straight-edge endpoint accessors** (round 55, *fixed* — kept here
   because the answer changed): `source/targetEndpoint()` used to report
@@ -4651,9 +4658,11 @@ it here in round 57.4.*
   onto a prototype would make every moved member invisible to all four
   gates at once while they kept reading 100%.
 - **One deviation round 57.1 recorded**, in "Known deviations from v3"
-  above: `:active` reaches nodes only, because the press target is the
+  above: `:active` reached nodes only, because the press target is the
   synchronous CPU pick and that has been nodes-only since round 17.3.
-  The styling is v3's; only the pointer's reach differs.
+  The styling is v3's; only the pointer's reach differed — round 57.8
+  narrowed the deviation to latency by resolving the press through the
+  async pick.
 
   The round's *first* pass recorded a second one — that v4's selection
   colour always won, where v3's is a default any user block beats — and

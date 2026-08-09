@@ -15867,6 +15867,48 @@ bakes into the shader where v3 spells them in its default stylesheet.
   struck with what closed it, which is the entry this file has most often
   left standing.
 
+- [x] **57.8 The press reaches edges** (2026-08-08) — raised by the
+  maintainer after 57.1c shipped: pressing an edge activated nothing,
+  and the deviation entry recording that ("`:active` reaches nodes
+  only") framed it as the CPU pick's reach.  The maintainer's framing is
+  the better one: **an edge not being draggable does not make it
+  unclickable, and the wash is the signifier of the click in progress**
+  — in v3 a press on an edge activates it at mousedown and only falls
+  through to a pan once the drag actually starts.
+
+  The reversal is the one 57.1's deviation note already named: the press
+  path waits for the async GPU pick.  A press the synchronous node pick
+  misses now resolves through `Renderer.pick()` (~a frame; a microtask
+  when the cursor sits in the cached pick tile), and the answer decides
+  the affordance — an edge carries `FLAG_ACTIVE` and becomes the
+  release's tap target (`lastPick`, which a touch press otherwise never
+  populates, so touch edge taps gain a target too), while a true
+  background press shows the active-bg circle.  The circle *waits* for
+  that answer rather than showing at pointerdown, because v3 shows it
+  only when nothing is near — the alternative was a one-frame circle
+  flash over every edge press.  When the press pans, the two affordances
+  swap: v3's mousemove unactivates a *pannable* pressed element
+  (`down.pannable() && down.active()`) and anchors the circle at the
+  pressed point, and `panStarted` does the same at the tap-threshold
+  flip — non-pannable elements keep the flag through the press, as in
+  v3.  Three staleness guards, because the answer can outlive the press:
+  a press that ended (release, or a touch gesture morphing into
+  pinch/cxt, both of which null `this.down`) discards the resolution
+  outright.
+
+  Two renderer specs, each with a control run that failed before the fix
+  half it names: the press/wash/swap spec (fails with activation
+  removed, and again with `panStarted` neutered), and a
+  released-before-the-pick spec pinning that a late resolution sets
+  nothing (fails with the `this.down !== down` guard removed — the wash
+  sticks with no release left to clear it).  Three circle specs moved
+  from one-shot reads to `expect.poll`, since the circle is now a pick
+  answer late rather than a pointerdown side effect.  What still
+  deviates, recorded in the narrowed deviation entry: latency (a
+  press-and-release faster than the pick never shows the wash), and
+  `tapstart` still targets the core rather than the edge, being emitted
+  synchronously at press time.
+
 ## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
 
 This is the docs-first stage the sixth sitting instructed: map each

@@ -20,8 +20,10 @@ Pointer/wheel interaction over the WebGPU canvas:
 - continuous throttled hover picking (latest-wins) drives the HOVERED flag
   plus mouseover/mouseout events
 - pointerdown decides pan-vs-grab with a synchronous, exact CPU node pick
-  (no staleness); the last resolved async pick only supplies edge targets
-  for taps
+  (no staleness); a press that pick misses resolves through the async GPU
+  pick (~a frame) — an edge under it activates (v3's `near.activate()` on
+  mousedown) and becomes the tap target, a background press shows the
+  active-bg circle
 - node drag writes position through the core API (position events fire,
   dirty spans upload, edges follow on-GPU)
 - tap toggles selection (multiple-select key or selectionType 'additive'
@@ -412,10 +414,12 @@ export class PointerHandler {
     this.emitGesture('pointerdown', picked, pos);
     this.emitGesture('tapstart', picked, pos);
 
-    // the background-grab indicator (round 13 A2): v3's active-bg circle
-    // at the press point while the background is grabbed
+    // a press the node pick missed may still be on an *edge* — the CPU
+    // pick knows nodes only; edges answer through the async GPU pick —
+    // so the press affordance (v3's `:active` on the edge, or the
+    // active-bg circle on true background) waits for that answer
     if (this.down.mode === 'pan' && this.down.grabbed == null) {
-      this.showActiveBg(pos.x, pos.y);
+      void this.resolvePressTarget(this.down, pos);
     }
 
     // press-and-hold: 'taphold' unless the press moves or ends first
@@ -557,6 +561,10 @@ export class PointerHandler {
 
       down.moved = true;
       this.clearTaphold();
+
+      if (down.mode === 'pan') {
+        this.panStarted(down);
+      }
     }
 
     const dx = pos.x - down.lastX;
@@ -677,6 +685,86 @@ export class PointerHandler {
     }
 
     this.activeModel = null;
+  }
+
+  /**
+   * Decide what a press the synchronous node pick missed actually landed
+   * on: an edge, or the background.  Edges hit-test on the GPU, so the
+   * answer is asynchronous — ~a frame, or a microtask when the cursor
+   * sits in the cached pick tile — where v3 answers at mousedown because
+   * its hit test is synchronous.  Both affordances are purely visual, so
+   * late is fine; stale is not, hence the guards.
+   *
+   * An element under the press carries `FLAG_ACTIVE` (v3 calls
+   * `near.activate()` on mousedown for whatever is near, edges included
+   * — an edge not being draggable does not make it unclickable, and the
+   * wash is the signifier of the click in progress) and becomes the tap
+   * target the release reads (`lastPick`, which a touch press otherwise
+   * never populates).  A background press shows the active-bg circle —
+   * which v3 shows only when nothing is near, so it waits for the
+   * answer rather than flashing over every edge press.  A press that
+   * already panned gets the circle either way: v3 unactivates a
+   * pannable element the moment its pan starts (see `panStarted`), and
+   * anchors the circle at the *pressed* model point, captured here
+   * before any pan can move it.
+   */
+  private async resolvePressTarget(
+    down: DownState,
+    pos: Position,
+  ): Promise<void> {
+    const model = this.cy._viewport.renderedToModel(pos);
+    let picked: Collection | null = null;
+
+    try {
+      picked = await this.renderer.pick(pos.x, pos.y);
+    } catch {
+      // a device lost mid-pick reads as a background press
+    }
+
+    if (this.down !== down) {
+      return; // the press already ended; the release dropped FLAG_ACTIVE
+    }
+
+    if (picked != null && picked.inside()) {
+      this.lastPick = picked; // the tap target for the release
+
+      if (!down.moved) {
+        this.setPressed(picked);
+
+        return;
+      }
+    }
+
+    const p = this.cy._viewport.modelToRendered(model);
+
+    this.showActiveBg(p.x, p.y);
+  }
+
+  /**
+   * The press left the tap threshold in 'pan' mode: v3 unactivates a
+   * *pannable* pressed element the moment the pan begins (`down.pannable()
+   * && down.active()` in its mousemove) and shows the circle at the press
+   * point instead — the press means viewport drag now, not a click in
+   * progress.  A non-pannable element keeps the flag, as in v3.
+   */
+  private panStarted(down: DownState): void {
+    const p = this.pressed;
+
+    if (p == null) {
+      return;
+    }
+
+    const ref = p._eventRef();
+
+    if (
+      ref == null ||
+      !this.cy._store.hasFlag(ref.group, ref.slot, FLAG_PANNABLE)
+    ) {
+      return;
+    }
+
+    this.setPressed(null);
+    this.showActiveBg(down.startX, down.startY);
   }
 
   private onPointerUp(e: PointerEvent): void {

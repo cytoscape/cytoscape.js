@@ -376,6 +376,21 @@ machinery was ported for.  The live parity scene over selected leaves, a
 selected parent, straight and curved edges and their arrowheads reads
 **0 differing pixels**.  See the round-57 plan in PLAN.md.
 
+The round then kept growing the same way it started — the maintainer
+looking at the running page — through four follow-ons on 8 August.
+57.8: pressing an **edge** activates it (the press resolves through the
+async GPU pick; the active-bg circle waits for the same answer).  57.9:
+v3's **hit-test halos** — 8/24 rendered px around edges for
+mouse/touch, 2/8 around nodes — applied by every gesture pick while
+`cy.pick` stays exact.  57.10: **arrowheads are hit targets**,
+answering as their edge with the filled area counting regardless of
+`arrow-fill`, via pick twins of the arrow pipelines reusing the scene
+SDFs.  57.11: the debug harness moves onto the **default style** — the
+non-production style kind is now literally the empty sheet, the four
+v3 demo ports are as minimal as v3's own, and every custom sheet
+re-states selection (a spec selects an element under each sheet and
+fails if nothing visible changes).
+
 Round 52 (2026-08-08) minifies the WGSL at build time — the answer to
 the maintainer's "why is v4's bundle bigger than v3's".  Shader text was
 23.7% of the minified bundle because a JS minifier does not touch string

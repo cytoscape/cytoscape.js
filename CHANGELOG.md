@@ -30,7 +30,11 @@ that compile and then behave differently.
 - **A WebGPU renderer**: SDF node shapes, curved-edge families evaluated in
   the vertex stage from live positions, compute culling with indirect draws,
   GPU picking with a synchronous CPU fast path for nodes, an SDF glyph atlas,
-  early-z, and an adaptive render scale.
+  early-z, and an adaptive render scale.  Gestures hit-test with v3's
+  halos (8/24 rendered px around edges for mouse/touch, 2/8 around
+  nodes), arrowheads are hit targets (hollow counts as filled, as in
+  v3), and pressing any element — edges included — shows v3's `:active`
+  overlay; `cy.pick( x, y )` stays exact.
 - **Structured queries and predicates** replacing the selector language —
   `cy.nodes( { selected: true } )`, `cy.nodes( { data: { w: { gt: 1 } } } )`,
   and plain functions for everything richer.

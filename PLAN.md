@@ -15185,7 +15185,11 @@ call 23.
 
 ## Round 57 plan — cleanup (raised by the maintainer 2026-08-07)
 
-Six items, all from the maintainer, none blocked on a decision:
+Six items, all from the maintainer, none blocked on a decision.  *(The
+round closed with 57.7 and then reopened four times on 2026-08-08 —
+57.8 through 57.11, each also maintainer-raised: the edge-press /
+hit-halo / arrowhead-picking arc, and the debug harness moved onto the
+default style.  Their entries follow the originals below.)*
 
 1. **The default stylesheet should look like v3's.**  Grey by default for
    both nodes and edges, the same blue on selection for both, and v3's

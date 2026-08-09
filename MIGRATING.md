@@ -464,6 +464,10 @@ instances are not emitters.
 - **`cy.compact()`** (alias `cy.gc()`) after a big removal, though an
   automatic trigger already fires at safe boundaries.
 - **`cy.pick( x, y )`**, which resolves node hits synchronously on the CPU.
+  It is *exact* — the pointer gestures additionally apply v3's
+  `findNearestElement` hit halos (8/24 rendered px around edges and their
+  arrowheads for mouse/touch, 2/8 around nodes), so a press can land where
+  `pick` answers null; the halo belongs to the gesture, not the API.
 
 ---
 

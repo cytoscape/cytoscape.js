@@ -12,12 +12,15 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-08, the day the fully-specced queue closed:
+- **Last updated**: 2026-08-09.  The fully-specced queue closed 8 August —
   rounds 52 (shader minification), 54 (the compound-fit bounds) and 38
   (border and outline styles) landed, the robustness round finished its
   limit coverage, and the two open questions each gained their prepared
   input — a measured error-site classification and a written
-  gesture-veto proposal — for the maintainer to react to.
+  gesture-veto proposal — for the maintainer to react to.  The same two
+  days added a maintainer-driven interaction arc (edges activate on
+  press, v3's hit-test halos, pickable arrowheads) and the debug
+  harness's move onto the default style, all described under week 3.
 
 ---
 
@@ -42,12 +45,12 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,087 unit · 283 module · 24 soak · 335 browser (229 run; 106 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,090 unit · 298 module · 24 soak · 349 browser (234 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 43 live v3-vs-v4 pixel-parity scenes, ten of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 612 KiB minified, 165 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
+| Bundle | 617 KiB minified, 166 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.

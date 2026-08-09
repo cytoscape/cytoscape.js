@@ -17,7 +17,13 @@ non-members ignored entirely (recorded).
 */
 
 import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
-import { ForceSim, defaultForceParams, seedPositions } from './force-sim.mjs';
+import { ForceSim, defaultForceParams } from './force-sim.mjs';
+import {
+  computeComponents,
+  packAnchors,
+  packComponentsExact,
+  seedAroundAnchors,
+} from './force-init.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
@@ -43,26 +49,34 @@ export interface ForceRunOptions {
   padding?: number;
   /** iterations advanced per animation frame (animate: true) */
   stepsPerFrame?: number;
+  /** the gap between disconnected components' packed boxes (59.2;
+   * v3 cose's option of the same name — default 40) */
+  componentSpacing?: number;
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
 
 /**
- * The built-in force layout (round 18): spring–electric with
- * uniform-grid cutoff repulsion, springs toward per-edge ideal lengths,
- * centering gravity and damped gradient integration under d3-shaped
- * alpha annealing.
+ * The built-in force layout (round 18; model rebuilt in round 59):
+ * spring–electric with uniform-grid repulsion, degree-normalised
+ * springs toward per-edge ideal lengths, component-aware
+ * constant-magnitude gravity, and capped damped gradient integration
+ * under d3-shaped alpha annealing.  Disconnected components lay out
+ * around packed anchors and are re-packed exactly at settle
+ * (`componentSpacing`), so multi-component graphs neither interleave
+ * nor drift.
  *
  * It is an ordinary consumer of the round-17 extension contract — the
  * built-in is the contract's first production user, so an external
  * layout has exactly the same capabilities.
  *
- * Deviations worth knowing: a cutoff model does not promise global
- * untangling (a curled chain is a legitimate local minimum), and GPU
- * trajectories are not bit-stable run to run because in-cell scatter
- * order is atomic — seeded bit-reproducibility is the CPU executor's
- * guarantee, and the two executors agree on invariants, not
- * trajectories.
+ * Deviations worth knowing: GPU trajectories are not bit-stable run to
+ * run because in-cell scatter order is atomic — seeded
+ * bit-reproducibility is the CPU executor's guarantee, and the two
+ * executors agree on invariants, not trajectories.  The settle re-pack
+ * is skipped whenever the scope holds a pinned (locked) node, since a
+ * re-pack translates whole components and a locked node must never
+ * move.
  */
 export class ForceLayoutImpl implements LayoutImpl {
   private stopped = false;
@@ -168,15 +182,38 @@ export class ForceLayoutImpl implements LayoutImpl {
       );
     }
 
-    // seed: a fresh deterministic scatter, or the current positions
+    const edgesArr = Uint32Array.from(simEdges);
+    const lengthsArr = Float32Array.from(lengths);
+
+    let lengthSum = 0;
+
+    for (let e = 0; e < lengthsArr.length; e++) {
+      lengthSum += lengthsArr[e];
+    }
+
+    const meanL =
+      lengthsArr.length > 0
+        ? lengthSum / lengthsArr.length
+        : DEFAULT_EDGE_LENGTH;
+
+    // the component field (59.2): union-find over the sim edges, one
+    // packed anchor per component, one anchor coordinate pair per node
+    const comps = computeComponents(n, edgesArr);
+    const spacing = options.componentSpacing ?? 40;
     const positions = new Float32Array(n * 2);
     const column = ctx.positions();
+    const compAnchors = new Float32Array(comps.count * 2);
 
     if (options.randomize !== false) {
-      seedPositions(
+      // fresh placement: packed anchors, nodes scattered around them
+      compAnchors.set(packAnchors(comps.sizes, meanL, spacing));
+      seedAroundAnchors(
         n,
         options.seed ?? 1,
-        Math.max(100, Math.sqrt(n) * DEFAULT_EDGE_LENGTH * 0.5),
+        comps.compOf,
+        comps.sizes,
+        compAnchors,
+        meanL,
         positions,
       );
 
@@ -188,18 +225,59 @@ export class ForceLayoutImpl implements LayoutImpl {
         }
       }
     } else {
+      // incremental: relax the current positions where they stand —
+      // each component anchors at its own current centroid, so gravity
+      // holds pieces in place rather than dragging them to a new field
       for (let i = 0; i < n; i++) {
         positions[i * 2] = column[simSlots[i] * 2];
         positions[i * 2 + 1] = column[simSlots[i] * 2 + 1];
       }
+
+      const counts = new Float64Array(comps.count);
+
+      for (let i = 0; i < n; i++) {
+        const c = comps.compOf[i];
+
+        compAnchors[c * 2] += positions[i * 2];
+        compAnchors[c * 2 + 1] += positions[i * 2 + 1];
+        counts[c]++;
+      }
+
+      for (let c = 0; c < comps.count; c++) {
+        if (counts[c] > 0) {
+          compAnchors[c * 2] /= counts[c];
+          compAnchors[c * 2 + 1] /= counts[c];
+        }
+      }
     }
+
+    const nodeAnchors = new Float32Array(n * 2);
+
+    for (let i = 0; i < n; i++) {
+      const c = comps.compOf[i];
+
+      nodeAnchors[i * 2] = compAnchors[c * 2];
+      nodeAnchors[i * 2 + 1] = compAnchors[c * 2 + 1];
+    }
+
+    // the settle re-pack (59.2): translate whole components into
+    // non-overlapping boxes once the sim lands.  Skipped whenever
+    // anything is pinned — a re-pack moves whole components, and a
+    // locked node must never move (recorded scope note).
+    const hasPinned = movable.length < n;
+    const repack = (arr: Float32Array): void => {
+      if (!hasPinned) {
+        packComponentsExact(n, comps.compOf, comps.count, arr, spacing);
+      }
+    };
 
     const sim = new ForceSim({
       n,
-      edges: Uint32Array.from(simEdges),
-      edgeLength: Float32Array.from(lengths),
+      edges: edgesArr,
+      edgeLength: lengthsArr,
       positions,
       pinned,
+      anchors: nodeAnchors,
       ...params,
     });
 
@@ -249,25 +327,16 @@ export class ForceLayoutImpl implements LayoutImpl {
 
         const spanW = Math.max(1000, (maxX - minX) * 3);
         const spanH = Math.max(1000, (maxY - minY) * 3);
-
-        let sum = 0;
-
-        for (const L of lengths) {
-          sum += L;
-        }
-
-        const cutoff = Math.max(
-          40,
-          lengths.length > 0 ? sum / lengths.length : DEFAULT_EDGE_LENGTH,
-        );
+        const cutoff = Math.max(40, meanL);
 
         const runtime = renderer.startForce(
           {
             n,
-            edges: Uint32Array.from(simEdges),
-            edgeLength: Float32Array.from(lengths),
+            edges: edgesArr,
+            edgeLength: lengthsArr,
             positions,
             pinned,
+            anchors: nodeAnchors,
             slots: simSlots,
             params,
             cutoff,
@@ -289,6 +358,7 @@ export class ForceLayoutImpl implements LayoutImpl {
             movableSlots,
             movable,
             applyViewport,
+            repack,
           );
         }
       }
@@ -300,6 +370,7 @@ export class ForceLayoutImpl implements LayoutImpl {
         sim.step(50);
       }
 
+      repack(positions);
       writeBack();
       applyViewport();
 
@@ -317,6 +388,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     return new Promise<void>((resolve) => {
       const frame = (): void => {
         if (this.stopped || sim.converged()) {
+          repack(positions);
           writeBack();
           applyViewport();
           resolve();
@@ -341,6 +413,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     movableSlots: number[],
     movable: number[],
     applyViewport: () => void,
+    repack: (arr: Float32Array) => void,
   ): Promise<void> {
     return new Promise<void>((resolve) => {
       const poll = (): void => {
@@ -354,6 +427,8 @@ export class ForceLayoutImpl implements LayoutImpl {
           // release the lease before the CPU write, so the settle
           // uploads through the normal dirty-span path
           renderer.finishForce();
+
+          repack(finalPositions);
 
           const xy = new Array<number>(movable.length * 2);
 

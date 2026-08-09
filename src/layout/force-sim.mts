@@ -27,8 +27,13 @@ per executor):
   (`stiffness · (r − L)` per edge, unnormalised) diverged
   exponentially once `alpha · stiffness · degree` passed 2, which the
   ndex fixtures (mean degree 47) sit well past.
-- **Gravity** toward the origin (`gravity · −p`), keeping disconnected
-  components in frame.
+- **Gravity** (59.2): a constant-magnitude pull toward the node's
+  *anchor* — its component's packed centre, handed in per node — never
+  decaying with distance (ForceAtlas2's containment rule: constant
+  gravity always beats a decaying repulsion at some radius, so escape
+  is impossible).  With no anchors handed in, the origin.  The round-18
+  form was linear (`gravity · −p`), which is scale-dependent and was
+  doing double duty as the only thing separating components.
 - **Integration**: pure damped gradient stepping — each node moves by
   `F · alpha` per iteration (no velocity state: no ringing, one less
   GPU buffer, and displacement tracks force directly, which makes the
@@ -52,6 +57,7 @@ export interface ForceParams {
   /** the fraction of an edge's length residual corrected per tick,
    * before degree normalisation (dimensionless; stable ≤ ~1) */
   stiffness: number;
+  /** constant-magnitude anchor pull in px per tick (alpha-scaled) */
   gravity: number;
   /** alpha annealing rate per iteration (d3's alphaDecay shape) */
   decay: number;
@@ -73,7 +79,8 @@ export const defaultForceParams = (): ForceParams => ({
   // tick (d3's semantics), bounded per node by the degree-normalised
   // rule — 0.6 provisionally; 59.6 finalises the set together
   stiffness: 0.6,
-  gravity: 0.02,
+  // 59.2: gravity is now a constant-magnitude anchor pull (px/tick)
+  gravity: 1,
   decay: 0.015,
   threshold: 0.1,
   iterations: 1000,
@@ -90,6 +97,9 @@ export interface ForceSimInputs extends ForceParams {
   positions: Float32Array;
   /** 1 = the node participates but never moves */
   pinned?: Uint8Array;
+  /** per-node gravity anchors, 2n interleaved (59.2 — the component
+   * anchor field); absent means everything anchors at the origin */
+  anchors?: Float32Array;
 }
 
 /** Deterministic seeded scatter (Knuth-hash polar): same (n, seed,
@@ -127,6 +137,7 @@ export class ForceSim {
   private edges: Uint32Array;
   private edgeLength: Float32Array;
   private pinned: Uint8Array | null;
+  private anchors: Float32Array | null;
   private params: ForceParams;
   /** per-node force scratch (gather output; applied in a second pass) */
   private forces: Float32Array;
@@ -162,6 +173,7 @@ export class ForceSim {
     this.edgeLength = inputs.edgeLength;
     this.positions = inputs.positions;
     this.pinned = inputs.pinned ?? null;
+    this.anchors = inputs.anchors ?? null;
     this.params = inputs;
     this.forces = new Float32Array(inputs.n * 2);
 
@@ -414,9 +426,17 @@ export class ForceSim {
         fy += dy * f;
       }
 
-      // centering gravity
-      fx += -x * gravity;
-      fy += -y * gravity;
+      // constant-magnitude gravity toward the node's anchor (59.2)
+      const ax = this.anchors != null ? this.anchors[i * 2] : 0;
+      const ay = this.anchors != null ? this.anchors[i * 2 + 1] : 0;
+      const gx = ax - x;
+      const gy = ay - y;
+      const gd = Math.hypot(gx, gy);
+
+      if (gd > 1) {
+        fx += (gx / gd) * gravity;
+        fy += (gy / gd) * gravity;
+      }
 
       fx *= alpha;
       fy *= alpha;

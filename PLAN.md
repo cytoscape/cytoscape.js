@@ -16675,9 +16675,29 @@ unchanged.
   GPU executor detonates on the hub), and passes with the fix — with
   all 20 Node force specs and the three GPU force specs green against
   a fresh build.
-- [ ] **59.2 Components + gravity** — union-find, anchor packing,
-  seed-around-anchors, constant-magnitude anchor gravity, the settle
-  re-pack, `componentSpacing`; multi-component and isolated-node specs.
+- [x] **59.2 Components + gravity** (2026-08-09) — landed as planned.
+  `src/layout/force-init.mts` is the new pure module (union-find in
+  first-seen order, the disc-radius estimate, shelf packing in v3
+  `separateComponents`' row shape for both the up-front anchors and
+  the exact settle re-pack, and the anchor-relative scatter), specced
+  in `test/modules/force-init.mjs` including the non-overlap
+  guarantee, determinism, and that the re-pack is translation-only
+  with the packed field centred where the *largest* component sat —
+  the dominant structure holds its place and the strays come to it.
+  Gravity became the constant-magnitude anchor pull on both executors
+  (`gravity` re-read as px/tick, provisionally 1); the anchors reach
+  the force kernel through the **csr buffer's tail** (bitcast f32 at
+  `params.anchorBase`, the uniform's former pad slot), so the kernel
+  stays at exactly its 8 storage bindings and no ninth crosses the
+  budget.  `randomize: false` anchors each component at its own
+  current centroid — incremental runs relax in place rather than being
+  dragged to a fresh field.  Two public specs, the separation one
+  written red first (the round-18 model interleaved the two rings):
+  disconnected rings settle into disjoint boxes with strays contained,
+  and the settle re-pack is **skipped whenever anything is pinned**,
+  since a re-pack translates whole components and a locked node must
+  never move (recorded scope note, pinned by spec).  28 Node force
+  specs + 3 GPU force specs green against a fresh build.
 - [ ] **59.3 The far field** — the pyramid on both executors behind the
   unified force law; the grid-buffer fold on the GPU; specs pin
   near/far agreement (a far pair's force from the pyramid within

@@ -148,6 +148,92 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     expect(cy.$id('n7').position()).to.deep.equal({ x: 9999, y: 9999 });
   });
 
+  it('separates disconnected components and contains strays (59.2)', async function () {
+    // two 8-rings plus four isolated nodes: the round-18 model piled
+    // both rings onto the shared gravity centre (they interleaved) and
+    // held strays only as far as a weak linear pull reached.  With
+    // component anchors + the settle re-pack, the rings' boxes are
+    // disjoint and every stray sits inside the packed field.
+    const elements = [];
+
+    for (const [prefix, base] of [
+      ['a', 0],
+      ['b', 100],
+    ]) {
+      for (let i = 0; i < 8; i++) {
+        elements.push({ data: { id: prefix + i } });
+        elements.push({
+          data: {
+            id: prefix + 'e' + i,
+            source: prefix + i,
+            target: prefix + ((i + 1) % 8),
+          },
+        });
+      }
+    }
+
+    for (let i = 0; i < 4; i++) {
+      elements.push({ data: { id: 'iso' + i } });
+    }
+
+    const cy = cytoscape({ elements });
+
+    await cy.layout({ name: 'force', seed: 9, fit: false }).run().promise();
+
+    const box = (prefix) => {
+      let x1 = Infinity,
+        y1 = Infinity,
+        x2 = -Infinity,
+        y2 = -Infinity;
+
+      for (let i = 0; i < 8; i++) {
+        const p = cy.$id(prefix + i).position();
+
+        x1 = Math.min(x1, p.x);
+        x2 = Math.max(x2, p.x);
+        y1 = Math.min(y1, p.y);
+        y2 = Math.max(y2, p.y);
+      }
+
+      return { x1, y1, x2, y2 };
+    };
+    const A = box('a');
+    const B = box('b');
+    const disjoint = A.x2 < B.x1 || B.x2 < A.x1 || A.y2 < B.y1 || B.y2 < A.y1;
+
+    expect(disjoint, 'ring boxes disjoint').to.equal(true);
+
+    // strays are in the packed field, not drifting at range
+    for (let i = 0; i < 4; i++) {
+      const p = cy.$id('iso' + i).position();
+
+      expect(Math.hypot(p.x, p.y), 'iso' + i).to.be.lessThan(1500);
+      expect(Number.isFinite(p.x) && Number.isFinite(p.y)).to.equal(true);
+    }
+  });
+
+  it('skips the settle re-pack when anything is pinned (59.2)', async function () {
+    // a locked node must never move — and a re-pack translates whole
+    // components, so a scope holding a pinned node keeps the anchor
+    // placement and skips the exact re-pack (recorded scope note)
+    const elements = [];
+
+    for (let i = 0; i < 4; i++) {
+      elements.push({ data: { id: 'n' + i } });
+    }
+
+    elements.push({ data: { id: 'e0', source: 'n0', target: 'n1' } });
+    elements.push({ data: { id: 'e1', source: 'n2', target: 'n3' } });
+
+    const cy = cytoscape({ elements });
+
+    cy.$id('n0').position({ x: 4000, y: 4000 }).lock();
+
+    await cy.layout({ name: 'force', seed: 2, fit: false }).run().promise();
+
+    expect(cy.$id('n0').position()).to.deep.equal({ x: 4000, y: 4000 });
+  });
+
   it('streams positions in live mode and settles on stop()', async function () {
     const cy = cytoscape({ elements: RING() });
     const layout = cy.layout({

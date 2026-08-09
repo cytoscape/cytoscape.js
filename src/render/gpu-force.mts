@@ -65,7 +65,7 @@ struct FParams {
   repulsion: f32,
   stiffness: f32,
   gravity: f32,
-  pad0: f32,
+  anchorBase: u32,
 }
 `;
 
@@ -214,8 +214,18 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     fy = fy + dy * f;
   }
 
-  fx = fx - x * params.gravity;
-  fy = fy - y * params.gravity;
+  // constant-magnitude gravity toward the node's component anchor
+  // (59.2) — the anchors ride the csr buffer's tail (bitcast f32 at
+  // params.anchorBase), so the kernel stays at its 8-binding budget
+  let ax = bitcast<f32>(csr[params.anchorBase + i * 2u]);
+  let ay = bitcast<f32>(csr[params.anchorBase + i * 2u + 1u]);
+  let gvx = ax - x;
+  let gvy = ay - y;
+  let gd = sqrt(gvx * gvx + gvy * gvy);
+  if (gd > 1.0) {
+    fx = fx + gvx / gd * params.gravity;
+    fy = fy + gvy / gd * params.gravity;
+  }
 
   fx = fx * alpha;
   fy = fy * alpha;
@@ -278,6 +288,8 @@ export interface ForceInputs {
   edgeLength: Float32Array;
   positions: Float32Array;
   pinned: Uint8Array;
+  /** per-node gravity anchors, 2n interleaved (59.2) */
+  anchors: Float32Array;
   /** sim index → node slot (the publish map) */
   slots: number[];
   params: ForceParams;
@@ -381,8 +393,11 @@ export class GpuForceRuntime {
     mk('cellStart', (this.cells + 1) * 4, SU);
     mk('cellItems', n * 4, SU);
 
-    // packed incident CSR: [n+1 starts][edge indices]
-    const csr = new Uint32Array(n + 1 + m * 2);
+    // packed incident CSR: [n+1 starts][edge indices][anchors] — the
+    // 59.2 anchor field rides the tail (bitcast f32) so the force
+    // kernel needs no ninth binding; params.anchorBase points at it
+    const anchorBase = n + 1 + m * 2;
+    const csr = new Uint32Array(anchorBase + n * 2);
 
     for (let e = 0; e < m; e++) {
       csr[inputs.edges[e * 2] + 1]++;
@@ -399,6 +414,11 @@ export class GpuForceRuntime {
       csr[n + 1 + cursor[inputs.edges[e * 2]]++] = e;
       csr[n + 1 + cursor[inputs.edges[e * 2 + 1]]++] = e;
     }
+
+    csr.set(
+      new Uint32Array(inputs.anchors.buffer, inputs.anchors.byteOffset, n * 2),
+      anchorBase,
+    );
 
     mk('csr', csr.byteLength, SU, csr);
 
@@ -458,6 +478,7 @@ export class GpuForceRuntime {
     f32[8] = p.repulsion;
     f32[9] = p.stiffness;
     f32[10] = p.gravity;
+    u32[11] = anchorBase;
     device.queue.writeBuffer(uniform, 0, u);
 
     // per-kernel pipelines (layout 'auto' — each kernel's bindings are

@@ -17381,3 +17381,59 @@ round-trip 3.4 µs against 1.5.
   blocks), and the full Playwright suite against a fresh bundle with
   **goldens exact** — the factored writers are instruction-identical
   for a full apply, and the exact goldens are what proves it.
+
+## Round 62 plan — every benchmark beats v3 (maintainer goal, 2026-08-09)
+
+The maintainer's directive, verbatim: **"Every benchmark for v4 should
+beat v3."**  The survey that preceded it (recorded in the 61.5 record
+and the conversation that followed) found the quick profile at 106
+v3/gpu pairs with **11 reading v4-slower**, plus known losers in the
+`--all` tier (the style getters' 2.3× residual, the whole-object
+`data()` read at 6.3×).  This round works the list worst-first until a
+fresh run on an idle box reads **every pair v4-faster**, then publishes
+that run.
+
+The known losers at the round's open, from the 2026-08-09 published
+quick run (ratio = v3/gpu; <1 is a v4 loss):
+
+| row | ratio | standing diagnosis |
+|---|---|---|
+| `algo: degreeCentrality (one root)` | 0.03–0.11× | per-call `subgraph()` view build — O(V+E) for an O(degree) question; 333.7 µs direct through the bundle vs v3's ~7 |
+| `mut: data set` (single element) | 0.58× | per-write (group, key) column resolution (33.6) |
+| `core: getElementById()` | 0.80× | blob-probe + handle fetch vs v3's Map.get |
+| `algo: closenessCentralityNormalized` | 0.85× | runs `floydWarshall` inside — one fix, two rows |
+| `algo: floydWarshall` | 0.85× | dense triple loop, v4's inner loop paying an indirection v3's does not (to be profiled) |
+| `json: element` | 0.88× | per-call object build |
+| `position: get` / `core: pan() get` | 0.92× | nanosecond rows; need genuine shaves to hold a margin over noise |
+| `algo: hierarchicalClustering` | 0.95× | attribute-space parity band; needs a real few-% edge |
+| `algo: kMedoids` / `iter: forEach()` | 0.99× | noise band; forEach gets margin via a cached handle array |
+
+Ground rules, all standing ones applied: fixes are measured through
+the **built bundle** before and after (round 34); a row that cannot be
+beaten without changing observable public behaviour gets the change
+**logged in "Public-surface changes"** with a spec pinning it, never
+silently (the `elements()` memo of 34.2 is the precedent shape); the
+enumeration run may share the box with editing, but the **verification
+run gets an idle machine** (36.5); and every fix keeps its suites and
+controls.
+
+### Pass split (tests-first where behaviour is pinned; docs in-commit)
+
+- [x] **62.0 Docs-first** — this section; the full-`--all` enumeration
+  running as it lands.
+- [ ] **62.1 `degreeCentrality` (one root)** — the CSR fast path for
+  the whole-graph collection, plus the `SubgraphView` memo direction
+  if needed.
+- [ ] **62.2 The dense/attribute algorithm tail** — `floydWarshall`
+  (and with it `closenessCentralityNormalized`), `hierarchicalClustering`,
+  `kMedoids`: inner-loop work for a real margin.
+- [ ] **62.3 The micro rows** — `data set`, `getElementById`,
+  `json: element`, `position get`, `pan get`, `forEach`: profile each
+  through the bundle, shave what is real, and take the public-surface
+  route (logged) only where no neutral shave can win.
+- [ ] **62.4 The `--all` tier's losers** — whatever the enumeration
+  adds; the style getters and the whole-object `data()` read are the
+  expected heads.
+- [ ] **62.5 Verification** — idle-box quick profile with **every**
+  v3/gpu pair v4-faster; the `--all` comparative rows checked; the run
+  published; the closing docs sweep.

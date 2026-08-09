@@ -13,15 +13,17 @@
 // be skipped as unchanged — the same reason mappers.mjs rotates its
 // written value.
 //
-// Not here, deliberately: the **selection restyle skip**.  The round-4
-// finding (v4 skips its restyle pass entirely unless a block matches on
-// `:selected`, where v3 pays a style bypass per element) cannot be
-// measured as a v4-side variation any more, because v4 has no
-// selection-dependent blocks at all — they left with the selector
-// removal, and the accent ring is shader-drawn.  There is nothing to turn
-// on and off.  What survives of that comparison is the plain
-// select/unselect round-trip, which mutators.mjs has priced since
-// round 4 (~38x at 200k).  Recorded here rather than silently dropped.
+// A history note this suite once stated as permanent: "v4 has no
+// selection-dependent blocks at all... there is nothing to turn on and
+// off."  True from the selector removal until round 57.1d, which made
+// state a `case` condition — the default stylesheet's selection blue is
+// `{ when: { selected: true } }` — so the selection restyle is
+// measurable again and the round-60 rows below price it: the flag
+// partition (`applyPartitioned`, one computed record per state
+// combination) against both the constant path it claims to match and
+// the per-element path it avoids, and what a select/unselect costs once
+// a sheet conditions on the state.  The plain select/unselect
+// round-trip stays priced in mutators.mjs (~38x at 200k).
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
 import { finishRun } from './bench-run.mjs';
@@ -250,6 +252,161 @@ cmpGpu(
       cy.style(PARENT_SHEETS[i & 1]);
     },
   );
+}
+
+// -- state conditions (round 57.1d, priced in round 60) ----------------------
+// The default stylesheet is made of state-only `case` mappers
+// (`{ when: { selected: true } }`), and 57.1d's `applyPartitioned` claims
+// that costs nothing: a group whose mappers read *only* state flags has
+// one computed record per distinct flag combination, so the apply masks
+// the flags word and hits a Map instead of evaluating per element.
+//
+// Three rows carry the claim and its control:
+//   - constant vs state-case must read ~1x (the claim — an optimisation
+//     must be invisible);
+//   - state-case vs data-case must NOT read ~1x (the discrimination —
+//     a data condition is the per-element path the partition avoids, so
+//     a ~1x here would mean the partition rows measure nothing);
+//   - select+unselect under a state-conditional sheet prices what the
+//     default look costs on the most common interaction, against the
+//     constant sheet's skip-restyle fast path (round 4, generalised by
+//     57.1's dependsOnState).
+{
+  // Every channel of the shared sheets is conditioned, not just the
+  // colours.  The first version of these rows case-mapped two channels
+  // of seven and could not discriminate: with `applyPartitioned`
+  // disabled outright, constant-vs-state still read 1.02x — the apply's
+  // per-element constant work drowned a 2/7-mapped sheet.  A row whose
+  // claim is ~1x and whose control is also ~1x measures nothing (the
+  // round-27 rule), so the conditional sheets condition everything the
+  // constant sheets set.
+  const caseAll = (when) => (sheet) => {
+    // `then` must differ from `else`, or the condition decides nothing
+    // observable and the startup probe below cannot prove the sheet
+    // restyles on state
+    const thenOf = (value) =>
+      typeof value === 'number' ? value + 1 : '#0169d9';
+    const wrap = (obj) =>
+      Object.fromEntries(
+        Object.entries(obj).map(([prop, value]) => [
+          prop,
+          { case: [{ when, then: thenOf(value) }], else: value },
+        ]),
+      );
+
+    return { nodes: wrap(sheet.nodes), edges: wrap(sheet.edges) };
+  };
+
+  const STATE_SHEETS = GPU_SHEETS.map(caseAll({ selected: true }));
+  // `weight` is 0..6 in the shared fixture; gt 3 splits the graph, so
+  // the per-element evaluation cannot be constant-folded away.  (Edges
+  // carry no `weight`, so their conditions all miss into `else` — still
+  // evaluated per element, which is the thing being priced.)
+  const DATA_SHEETS = GPU_SHEETS.map(caseAll({ data: 'weight', gt: 3 }));
+
+  // the rows are guilty until they discriminate: prove the state sheet
+  // actually restyles on selection before pricing anything
+  {
+    const probe = gpuInstance();
+
+    probe.style(STATE_SHEETS[0]);
+
+    const n = probe.$id('n' + MIDNUM);
+    const before = n.style('background-color');
+
+    n.select();
+
+    const after = n.style('background-color');
+
+    if (before === after) {
+      console.warn(
+        '  !! the state-case sheet does not restyle on selection — the 57.1d rows below measure nothing',
+      );
+    }
+
+    n.unselect();
+  }
+
+  cmpGpu(
+    'style: applyAll — constant vs state-case (the 57.1d partition)',
+    'constant sheet',
+    gpuInstance,
+    (cy, i) => {
+      cy.style(GPU_SHEETS[i & 1]);
+    },
+    'state-case sheet',
+    gpuInstance,
+    (cy, i) => {
+      cy.style(STATE_SHEETS[i & 1]);
+    },
+  );
+
+  cmpGpu(
+    'style: applyAll — state-case vs data-case (what the partition avoids)',
+    'state-case sheet',
+    gpuInstance,
+    (cy, i) => {
+      cy.style(STATE_SHEETS[i & 1]);
+    },
+    'data-case sheet',
+    gpuInstance,
+    (cy, i) => {
+      cy.style(DATA_SHEETS[i & 1]);
+    },
+  );
+
+  // select + unselect a band: the constant sheet takes round 4's
+  // skip-restyle fast path; the state sheet must restyle the changed
+  // slots (57.1's dependsOnState), which is the per-selection price of
+  // the default look
+  {
+    const BAND = Math.min(256, N);
+    // built by union: `cy.collection()` takes no arguments in v4 (it is
+    // the empty accumulator), and the first version of this row handed
+    // it an array it silently ignored — a 0-element band selecting in
+    // 53 ns, caught because 53 ns for 256 elements is not a number a
+    // real select can produce
+    const bandOf = (cy) => {
+      let band = cy.collection();
+
+      for (let k = 0; k < BAND; k++) {
+        band = band.union(cy.$id('n' + ((MIDNUM + k) % N)));
+      }
+
+      if (band.length !== BAND) {
+        console.warn(`  !! select band is ${band.length}, wanted ${BAND}`);
+      }
+
+      return band;
+    };
+
+    const constCy = gpuInstance();
+    const stateCy = gpuInstance();
+
+    constCy.style(GPU_SHEETS[0]);
+    stateCy.style(STATE_SHEETS[0]);
+
+    const constBand = bandOf(constCy);
+    const stateBand = bandOf(stateCy);
+
+    if (OP == null || 'select'.includes(OP)) {
+      group(
+        `style: select+unselect ${BAND}-band — constant vs state-case sheet`,
+        () => {
+          summary(() => {
+            bench('constant sheet (skips restyle)', () => {
+              constBand.select();
+              constBand.unselect();
+            });
+            bench('state-case sheet (restyles the band)', () => {
+              stateBand.select();
+              stateBand.unselect();
+            });
+          });
+        },
+      );
+    }
+  }
 }
 
 // -- readback -----------------------------------------------------------------

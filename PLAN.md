@@ -16954,3 +16954,50 @@ had ever run.
   fails.  Comparison pages are grouped by *exact* profile,
   deliberately: `renderer` and the Node-tier profiles measure disjoint
   suites, so a joined page would be mostly gaps presented as history.
+
+- [x] **60.2 Benchmark coverage for the unpriced recent rounds**
+  (2026-08-09) — `node scripts/bench-coverage.mjs --verbose` reads
+  83.5%, and its missing names are mostly the audit's documented error
+  direction (internals reached through benchmarked public paths — the
+  Viewport methods behind `cy.pan()`, the StyleEngine members behind
+  `cy.style()`).  The real gaps were the *recent* rounds nothing
+  priced, and each new row is in the suite that owns its surface:
+
+  - **The 57.1d state-condition partition** (`style.mjs`, three rows).
+    `applyAll` under a fully state-conditioned sheet against the
+    constant sheet it claims to match (~1×, the claim), against a
+    fully data-conditioned sheet (the per-element path the partition
+    avoids — 1.18× at N=2000), and **what a select now costs**: a
+    256-band select+unselect is 9 µs under a constant sheet (round 4's
+    skip) and **989 µs** under the state-conditioned sheet — ~110×,
+    the restyle every selection pays once a sheet conditions on state,
+    which is v4's own default look.  A re-runnable price, not a
+    defect: it is the per-slot channel rewrite, and the constant-sheet
+    row is the escape hatch's number.
+  - **The round-59 seed split** (`layouts.mjs`).  59.7's "the
+    spectral seed dominates the capped row" was a one-off
+    decomposition; the new row runs the same 20-iteration force with
+    `init: 'spectral'` vs `init: 'scatter'` — 111.7 vs 59.9 ms at
+    N=2000, so the landmark-MDS seed is ~52 ms of the row and the
+    figure is re-runnable rather than remembered.
+  - **The 57.9 hit halo** (`spatial.mjs`).  The full miss walk with
+    `padPx: 24` (the touch halo) against exact: **~2%** — the halo is
+    effectively free on the hover path, with two startup assertions
+    proving the pad is live (a point 8 px outside a boundary must miss
+    exactly and hit padded) so the ≈1× is a finding, not a vacuous
+    row.
+
+  **Two rows were caught measuring nothing while being written**,
+  which is design call 33.5 earning its keep twice more.  The first
+  constant-vs-state row case-mapped two channels of seven and read
+  ~1× — *with `applyPartitioned` disabled outright it still read
+  1.02×*, so the control failed to fail and the sheets now condition
+  every channel (the control then flips the row to 1.07× slower, and
+  restoring the partition flips it back).  And the first select band
+  was **empty**: `cy.collection()` takes no arguments in v4 and
+  silently ignored the array it was handed — a 256-band selecting in
+  53 ns, caught because that is not a number a real select can
+  produce.  The row builds by `union()` now and asserts its own
+  length.  The spatial probe's first point was inside a neighbour
+  (30 px nodes on a 10 px grid overlap), caught by its own startup
+  assertion.

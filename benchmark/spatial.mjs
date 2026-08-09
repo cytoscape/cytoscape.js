@@ -102,6 +102,53 @@ if (has('pick')) {
     });
   }
 
+  // The 57.9 hit halo, priced on the full miss walk — the pointer layer
+  // passes a pad on every gesture pick (8 px mouse, 24 px touch), so the
+  // halo arithmetic runs per candidate on the hover path.  The miss
+  // point sits far outside the graph so that even the 24 px halo reaches
+  // nothing and both rows walk all of highWater; a nearer point would
+  // let the padded walk stop early and the row would compare two
+  // different walks (the 33.5 lesson).  The startup assertion is what
+  // proves the pad is live: a point 8 px outside a node's boundary must
+  // hit with the touch pad and miss exactly.
+  {
+    const cy = pickInstance('ellipse', {});
+    const store = cy._store;
+    const missX = -4000;
+    const missY = -4000;
+
+    // 8 px outside the leftmost column's boundary — off the grid's edge,
+    // because the fixture's 30 px nodes overlap on their 10 px grid, so
+    // any interior point 8 px past one boundary is inside a neighbour
+    // (the first probe was, and warned)
+    const probeX = -15 - 8;
+    const probeY = 0;
+
+    if (pickNodeAt(store, frameAt(1), probeX, probeY) != null) {
+      console.warn(
+        '  !! halo probe point hits exactly — the halo row is not measuring the pad',
+      );
+    }
+    if (
+      pickNodeAt(store, { ...frameAt(1), padPx: 24 }, probeX, probeY) == null
+    ) {
+      console.warn(
+        '  !! the 24 px halo does not reach the probe point — the pad is not live',
+      );
+    }
+
+    group('pick: miss walk — exact vs 24 px touch halo (57.9)', () => {
+      summary(() => {
+        bench('exact', () =>
+          do_not_optimize(pickNodeAt(store, frameAt(1), missX, missY)));
+        bench('padPx 24', () =>
+          do_not_optimize(
+            pickNodeAt(store, { ...frameAt(1), padPx: 24 }, missX, missY),
+          ));
+      });
+    });
+  }
+
   // The shape test, isolated: every node coincident at the origin and
   // large, with the pick point inside every node's *box* but outside
   // every node's *shape* — so the walk runs N inside-tests and all of

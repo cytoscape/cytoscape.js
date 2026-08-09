@@ -2997,11 +2997,11 @@ core/collection op against its v3 analogue in `v3/src/`.  The suites in
 | `traversal.mjs` | the slot-native walks |
 | `scenarios.mjs` | five composed traces **with listeners attached** |
 | `algorithms.mjs` | all 21 graph algorithms vs v3 (33.2) |
-| `layouts.mjs` | every built-in layout, the force executor, the round-17 contract (33.1) |
-| `style.mjs` | sheet compile/apply, the parents partition, the readback getters (33.3) |
+| `layouts.mjs` | every built-in layout, the force executor + the round-59 seed split, the round-17 contract (33.1, 60.2) |
+| `style.mjs` | sheet compile/apply, the parents partition, the 57.1d state-condition partition + what a select restyles, the readback getters (33.3, 60.2) |
 | `style-bundle.mjs` | the same getters **through the built bundle**, where tsx's `__name` wrapper does not exist (36.5) |
 | `load.mjs` | the three ingest forms, conversion, export, incremental add (33.4) |
-| `spatial.mjs` | CPU pick by shape, box selection, bounds/fit (33.5) |
+| `spatial.mjs` | CPU pick by shape + the 57.9 hit halo, box selection, bounds/fit (33.5, 60.2) |
 | `data.mjs` | the sidecar's column kinds; data + structural queries vs selectors (33.6) |
 | `events.mjs` | emits by qualifier kind, the phased compound walk, animation start/stop (33.7) |
 | `store.mjs` | id index, CSR, blob pool, dirty tracker, image registry, charts (33.8) |

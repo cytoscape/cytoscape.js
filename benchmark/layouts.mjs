@@ -167,6 +167,36 @@ if (OP == null || 'force'.includes(OP)) {
   });
 }
 
+// The round-59 seed split, made re-runnable: 59.7 recorded "the one-time
+// spectral seed (~12 ms warm at 2k) dominates the 20-iteration row" as a
+// one-off decomposition, and a figure nobody can re-run is a record
+// rather than a measurement (round 33's rule).  Same run either side;
+// the only difference is what a fresh placement is, so the gap between
+// the rows *is* the landmark-MDS seed.
+if (OP == null || 'seed'.includes(OP)) {
+  const a = gpuInstance();
+  const b = gpuInstance();
+  const opts = {
+    name: 'force',
+    animate: false,
+    fit: false,
+    iterations: 20,
+    randomize: true,
+    seed: 1,
+  };
+
+  group('layout: force seed — spectral vs scatter (20 iterations)', () => {
+    summary(() => {
+      bench('spectral (landmark MDS, the default)', () => {
+        a.layout({ ...opts, init: 'spectral' }).run();
+      });
+      bench('scatter', () => {
+        b.layout({ ...opts, init: 'scatter' }).run();
+      });
+    });
+  });
+}
+
 // v3's cose is the classic baseline, and it is a different algorithm with
 // a different quality target — the comparison is of the interactive
 // experience, not of layout quality (the round-18.5 framing).  It is also

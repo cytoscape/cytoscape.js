@@ -317,6 +317,21 @@ in 1.3 s and fits at zoom 0.76.  Four options added
 (`componentSpacing`, `init`, `nestingFactor`, `gravityCompound`);
 `repulsion`/`stiffness`/`gravity` keep their names with new units.
 
+**Round 60** (2026-08-09, raised by the maintainer the same day) is
+the performance record, kept honest: the status site gains
+**cross-commit benchmark comparison pages** — per-row p50 across the
+published runs of one (machine, profile), the movers beyond ±10% with
+the frozen-v3 twin as a per-row noise control, and a whole-run drift
+figure, so a regression is read against the machine's own noise —
+plus benchmark rows for the rounds nothing priced (the 57.1d
+state-condition partition, and the finding that a 256-band select
+costs 9 µs under a constant sheet and 989 µs under a fully
+state-conditioned one; the round-59 seed split; the 57.9 hit halo at
+~2%, effectively free) and specs for `executePlan()` (the
+53.2-recorded gap) and the benchmark index.  Two of its own rows were
+caught measuring nothing by their controls, and one of those catches
+became ledger item 28.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -4141,6 +4156,22 @@ raised by the maintainer) landed the same day** — the summary
 paragraph above and the round-59 plan and records at the end of this
 file carry it.  The queue and the open questions are otherwise as the
 previous paragraph left them.
+
+**Amended again on 2026-08-09: round 60 (the performance record, kept
+honest — raised by the maintainer) landed the same day.**  The status
+site gains **cross-commit benchmark comparison pages** — per-row p50
+across the published runs of one (machine, profile), movers beyond
+±10% with the frozen-v3 twin as a per-row noise control, and a
+whole-run drift figure (verified against the archive's own two
+renderer runs: drift ×1.014 where round 52.2 independently measured
+1.018) — plus benchmark rows for the unpriced recent rounds (the
+57.1d state-condition partition and what a select now restyles, the
+round-59 spectral-vs-scatter seed split, the 57.9 hit halo) and the
+tests the tooling was owed (`executePlan()`, the 53.2-recorded gap,
+and the benchmark index's judgements).  It adds **ledger item 28**
+(`cy.collection( anything )` silently ignores its argument where v3
+builds from it — found by one of the round's own benchmark controls)
+to the open questions; the queue is otherwise unchanged.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

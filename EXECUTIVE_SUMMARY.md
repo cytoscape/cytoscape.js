@@ -21,7 +21,12 @@ is rewritten from that record — see *Maintaining this file* at the end.
   declining the surface each had priced — errors and warnings stay as
   built, and gesture control stays with the explicit toggles — and the
   arrow trim reached its last three consumers (edge labels, the layer
-  strokes, mid arrows), pixel-exact against v3; see week 4.  The
+  strokes, mid arrows), pixel-exact against v3; the force layout was
+  rebuilt on what the field ships after the original model was
+  measured unstable on real networks; and the status site gained
+  cross-commit benchmark comparison, so a performance regression is
+  now something the site shows rather than something someone
+  remembers; see week 4.  The
   preceding days added a maintainer-driven interaction arc (edges
   activate on press, v3's hit-test halos, pickable arrowheads) and the
   debug harness's move onto the default style, all described under
@@ -195,7 +200,8 @@ than unbuilt — contracts, documentation, packaging and robustness.
 - **A status site** (round 46.5): a deployable preview of the branch — the debug
   harness on WebGPU, the benchmark archive with full machine provenance, the API
   reference and the project documents. Its fixtures ship in v4's own binary wire
-  format, which is what makes them small enough to host.
+  format, which is what makes them small enough to host. (Since round 60 the
+  archive also renders cross-commit comparison pages — see week 4.)
 
 **The build that was never green** (rounds 53–53.2)
 
@@ -530,9 +536,9 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9 August: two decisions that decline, the trim reaches everything, and the force layout is rebuilt
+## Week 4 — 9 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, and performance becomes visible across commits
 
-*13 commits — round 58, the seventh design sitting, and round 59.*
+*18 commits — rounds 58–60 and the seventh design sitting.*
 
 The week opened with the two prepared decisions taken, both by
 declining the surface the preparation had priced (the error and
@@ -606,6 +612,46 @@ run, and two controls were themselves findings: one spec measured
 the component packer instead of the physics until a pinned node
 isolated them, and the executor-parity spec turned out unable to
 detect a missing far field at all — it has a dedicated spec now.
+
+### Round 60: performance across commits, on the status page
+
+The maintainer asked for a way to see performance progress or
+regression across commits.  The archive of published benchmark runs
+already kept every run's full results — round 46.5 built it so "a
+report improvement applies to every past run" — but nothing ever
+joined two runs: the only cross-commit signal was one averaged number
+per run, which a 2× regression in a single row moves by under half a
+percent.
+
+The status site now renders a comparison page for every machine and
+profile with at least two published runs: each benchmark row's median
+across runs, the rows that moved more than 10% listed first, and two
+built-in honesty devices.  Every mover shows how the *frozen v3
+baseline* moved over the same span — v3's code never changes, so if
+it moved, the machine did — and the page headline is the whole-run
+drift, the average movement over all shared rows, so a row moving
+near the drift factor reads as the box warming up rather than as a
+commit's fault.  Runs from different machines are never compared;
+the page refuses rather than producing a chart that would be a
+hardware history in a performance history's clothes.  Checked
+against the archive's own two renderer runs, the computed drift
+matches a figure the record had measured independently, and the
+"regressions" it lists are exactly the rows the record already knew
+to be noisy — appearing in both directions at once, which is what
+noise looks like.
+
+The same round added benchmark rows for recent work nothing priced —
+including a real number worth knowing: selecting 256 elements costs
+about **9 µs** under a constant stylesheet and about **989 µs** under
+a sheet that fully conditions on selection state, which is the
+mechanism the default look uses — and closed a long-recorded test
+gap (the half of the site build that writes files had no coverage at
+all).  Two of the new benchmark rows were caught measuring nothing
+by their own controls before they could publish a number: one
+because the effect it priced was drowned until the fixture was made
+extreme enough to show it, and one because a v3-shaped call
+(`cy.collection(array)`) silently returns an empty collection in v4 —
+a porting trap now logged for a decision.
 
 ---
 

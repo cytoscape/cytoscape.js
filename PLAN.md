@@ -16775,9 +16775,29 @@ unchanged.
   bound is 0.5, and the control (groups disabled) fails it.  The
   nesting spec was red-first (cross-clique edge settles > 1.5× the
   intra mean).  40 Node force specs green.
-- [ ] **59.6 Retune + acceptance** — defaults set from the probe
-  matrix; the acceptance numbers recorded; `defaultForceParams` and the
-  docs updated together.
+- [x] **59.6 Retune + acceptance** (2026-08-09) — the provisional
+  defaults survived the probe matrix and are final: `repulsion 1`
+  (px/tick at one cutoff length), `stiffness 0.6`
+  (fraction-of-residual), `gravity 1` (px/tick constant), with
+  `decay`/`threshold`/`iterations` unchanged from round 18.  A
+  tuning sweep moved quality the wrong way — raising repulsion
+  inflates tangled links faster than it opens spacing, and lowering
+  gravity buys no measured link quality — so the sweep's output is
+  the confirmation, not new constants.
+  The acceptance, measured through the public API (seed 1, defaults):
+  | probe | nan | bb | bb/ideal | link/L |
+  |---|---|---|---|---|
+  | gnm 2k×4k | 0 | 2295×1734 | 1.26 | 3.68 |
+  | scale-free 5k | 0 | 1848×1816 | 0.64 | 4.74 |
+  | tree 4095 | 0 | 3403×3127 | 1.31 | 2.22 |
+  | star 500 | 0 | 395×397 | 0.44 | 2.22 |
+  | gnm 1k×23k (dense) | 0 | 659×662 | 0.52 | 4.04 |
+  Every probe finite and inside ~1.3× the hex-packed ideal radius,
+  against the round-18 baseline of 10³⁰-px explosions and NaN on
+  three of the five.  The expander link ratios (3.7–4.7×L) are
+  topology-intrinsic — no planar embedding of a random graph has
+  short edges — and the tree's 2.22 is the number future quality
+  work (multilevel, the logged direction) would move.
 - [ ] **59.7 Verification + benchmarks** — the debug harness driven
   before/after on em-web, em-web-clustered, gen and ndex scenes with
   screenshots; the Playwright force specs re-run; `benchmark/

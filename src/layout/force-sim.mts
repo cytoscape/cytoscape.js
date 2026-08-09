@@ -84,14 +84,15 @@ export interface ForceParams {
  * comparable at all (18.3).
  */
 export const defaultForceParams = (): ForceParams => ({
-  // 59.3: repulsion is now the push at one cutoff length under the
-  // inverse-square law (the old value belonged to the cutoff falloff)
+  // 59.3/59.6: the push at one cutoff length under the inverse-square
+  // law; confirmed against the probe matrix (59.6) — raising it
+  // inflates tangled links faster than it opens spacing
   repulsion: 1,
-  // 59.1: stiffness is now the *fraction of the residual* corrected per
-  // tick (d3's semantics), bounded per node by the degree-normalised
-  // rule — 0.6 provisionally; 59.6 finalises the set together
+  // 59.1/59.6: the fraction of the residual corrected per tick (d3's
+  // semantics), bounded per node by the degree-normalised rule
   stiffness: 0.6,
-  // 59.2: gravity is now a constant-magnitude anchor pull (px/tick)
+  // 59.2/59.6: a constant-magnitude anchor pull in px/tick; lowering
+  // it buys no measured link quality and loosens containment
   gravity: 1,
   decay: 0.015,
   threshold: 0.1,

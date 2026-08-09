@@ -17,17 +17,31 @@ per executor):
   points separate along a deterministic index-hash direction (a seeded
   scatter makes this near-impossible, but degenerate inputs must not
   NaN).
-- **Springs** along edges toward the per-edge ideal length:
-  `stiffness · (r − L)`.
+- **Springs** along edges toward the per-edge ideal length, under
+  d3-force's degree-normalised rule (round 59.1): per edge
+  `k = stiffness / min(deg(s), deg(t))`, and the end being gathered
+  takes the share `bias_i = deg(other) / (deg(i) + deg(other))`, so a
+  node's aggregate per-tick spring correction is bounded by
+  `stiffness` regardless of its degree.  That bound is what makes the
+  integrator stable by construction — the round-18 form
+  (`stiffness · (r − L)` per edge, unnormalised) diverged
+  exponentially once `alpha · stiffness · degree` passed 2, which the
+  ndex fixtures (mean degree 47) sit well past.
 - **Gravity** toward the origin (`gravity · −p`), keeping disconnected
   components in frame.
 - **Integration**: pure damped gradient stepping — each node moves by
   `F · alpha` per iteration (no velocity state: no ringing, one less
   GPU buffer, and displacement tracks force directly, which makes the
-  threshold settle robust); `alpha` anneals toward zero by `decay`
-  (the d3 shape).  Convergence: a fixed alpha floor, or the max
-  per-node displacement stays under `threshold` for a few consecutive
-  iterations.
+  threshold settle robust), with the step's magnitude **capped at an
+  alpha-annealed multiple of the repulsion cutoff** (59.1 — v3 cose's
+  `limitForce` discipline; the cap is the second stability guard, and
+  the one that holds whatever a future force term does); `alpha`
+  anneals toward zero by `decay` (the d3 shape).  Convergence: a fixed
+  alpha floor, or the max per-node displacement stays under
+  `threshold` for a few consecutive iterations — where a **non-finite
+  displacement never counts as settled** (59.1: NaN compares false
+  against every bound, so the round-18 check read a fully-NaN
+  iteration as displacement 0 and converged on destroyed positions).
 
 Pinned nodes (locked, or outside a subset scope) take part in every
 force pair but never move.
@@ -35,6 +49,8 @@ force pair but never move.
 
 export interface ForceParams {
   repulsion: number;
+  /** the fraction of an edge's length residual corrected per tick,
+   * before degree normalisation (dimensionless; stable ≤ ~1) */
   stiffness: number;
   gravity: number;
   /** alpha annealing rate per iteration (d3's alphaDecay shape) */
@@ -53,7 +69,10 @@ export interface ForceParams {
  */
 export const defaultForceParams = (): ForceParams => ({
   repulsion: 200,
-  stiffness: 0.1,
+  // 59.1: stiffness is now the *fraction of the residual* corrected per
+  // tick (d3's semantics), bounded per node by the degree-normalised
+  // rule — 0.6 provisionally; 59.6 finalises the set together
+  stiffness: 0.6,
   gravity: 0.02,
   decay: 0.015,
   threshold: 0.1,
@@ -114,6 +133,8 @@ export class ForceSim {
   /** per-node incident edge index lists (gather-side springs) */
   private incident: Int32Array;
   private incidentStart: Int32Array;
+  /** per-node degree over the sim edges (59.1's spring normalisation) */
+  private degree: Int32Array;
   private cutoff: number;
   /** grid scratch */
   private cellOf: Int32Array;
@@ -166,6 +187,12 @@ export class ForceSim {
     for (let e = 0; e < m; e++) {
       counts[inputs.edges[e * 2] + 1]++;
       counts[inputs.edges[e * 2 + 1] + 1]++;
+    }
+
+    this.degree = new Int32Array(inputs.n);
+
+    for (let i = 0; i < inputs.n; i++) {
+      this.degree[i] = counts[i + 1];
     }
 
     for (let i = 0; i < inputs.n; i++) {
@@ -361,7 +388,10 @@ export class ForceSim {
         }
       }
 
-      // springs along incident edges (gather side)
+      // springs along incident edges (gather side), degree-normalised
+      // (59.1): k = stiffness / min(deg), this end's share weighted by
+      // the other end's degree — a hub's aggregate correction is
+      // bounded by `stiffness`, which is the stability guarantee
       for (
         let at = this.incidentStart[i];
         at < this.incidentStart[i + 1];
@@ -374,7 +404,11 @@ export class ForceSim {
         const dx = pos[other * 2] - x;
         const dy = pos[other * 2 + 1] - y;
         const r = Math.max(1e-4, Math.hypot(dx, dy));
-        const f = (stiffness * (r - this.edgeLength[e])) / r;
+        const degI = this.degree[i];
+        const degO = this.degree[other];
+        const k = stiffness / Math.min(degI, degO);
+        const bias = degO / (degI + degO);
+        const f = (k * bias * (r - this.edgeLength[e])) / r;
 
         fx += dx * f;
         fy += dy * f;
@@ -384,12 +418,29 @@ export class ForceSim {
       fx += -x * gravity;
       fy += -y * gravity;
 
-      force[i * 2] = fx * alpha;
-      force[i * 2 + 1] = fy * alpha;
+      fx *= alpha;
+      fy *= alpha;
+
+      // the displacement cap (59.1): the step never exceeds an
+      // alpha-annealed multiple of the repulsion range, whatever the
+      // force sum said — v3 cose's limitForce, the guard that holds
+      // even when a force term misbehaves
+      const cap = cutoff * Math.max(alpha, 0.15);
+      const stepLen = Math.hypot(fx, fy);
+
+      if (stepLen > cap) {
+        fx = (fx / stepLen) * cap;
+        fy = (fy / stepLen) * cap;
+      }
+
+      force[i * 2] = fx;
+      force[i * 2 + 1] = fy;
     }
 
     // apply in a second pass: the gather above must read a consistent
     // snapshot (the GPU kernel has the same two-dispatch structure)
+    let sawNonFinite = false;
+
     for (let i = 0; i < n; i++) {
       if (this.pinned != null && this.pinned[i] === 1) {
         continue;
@@ -403,14 +454,20 @@ export class ForceSim {
 
       const disp = Math.abs(dx) + Math.abs(dy);
 
-      if (disp > maxDisp) {
+      if (!Number.isFinite(disp)) {
+        // 59.1: NaN compares false against every bound, so without
+        // this a destroyed iteration read as displacement 0 and the
+        // settle counter converged on garbage
+        sawNonFinite = true;
+      } else if (disp > maxDisp) {
         maxDisp = disp;
       }
     }
 
     this.alpha += (0 - this.alpha) * decay;
-    this.lastMaxDisp = maxDisp;
-    this.settledRuns = maxDisp < threshold ? this.settledRuns + 1 : 0;
+    this.lastMaxDisp = sawNonFinite ? Infinity : maxDisp;
+    this.settledRuns =
+      !sawNonFinite && maxDisp < threshold ? this.settledRuns + 1 : 0;
     this.iteration++;
   }
 }

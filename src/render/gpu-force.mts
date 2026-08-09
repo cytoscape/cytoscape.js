@@ -193,7 +193,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     }
   }
 
-  // springs (gather side of the packed incident CSR)
+  // springs (gather side of the packed incident CSR), degree-normalised
+  // (59.1, the CPU sim's rule verbatim): degrees read straight off the
+  // CSR starts, so no new data crosses to the device
   for (var at = csr[i]; at < csr[i + 1u]; at = at + 1u) {
     let e = csr[params.n + 1u + at];
     let s = edgesPacked[e * 3u];
@@ -203,7 +205,11 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let dx = simPos[other * 2u] - x;
     let dy = simPos[other * 2u + 1u] - y;
     let r = max(1e-4, sqrt(dx * dx + dy * dy));
-    let f = params.stiffness * (r - bitcast<f32>(edgesPacked[e * 3u + 2u])) / r;
+    let degI = csr[i + 1u] - csr[i];
+    let degO = csr[other + 1u] - csr[other];
+    let k = params.stiffness / f32(min(degI, degO));
+    let bias = f32(degO) / f32(degI + degO);
+    let f = k * bias * (r - bitcast<f32>(edgesPacked[e * 3u + 2u])) / r;
     fx = fx + dx * f;
     fy = fy + dy * f;
   }
@@ -211,8 +217,21 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   fx = fx - x * params.gravity;
   fy = fy - y * params.gravity;
 
-  forces[i * 2u] = fx * alpha;
-  forces[i * 2u + 1u] = fy * alpha;
+  fx = fx * alpha;
+  fy = fy * alpha;
+
+  // the displacement cap (59.1): the step never exceeds an
+  // alpha-annealed multiple of the repulsion range (the CPU sim's cap,
+  // verbatim)
+  let cap = params.cutoff * max(alpha, 0.15);
+  let stepLen = sqrt(fx * fx + fy * fy);
+  if (stepLen > cap) {
+    fx = fx / stepLen * cap;
+    fy = fy / stepLen * cap;
+  }
+
+  forces[i * 2u] = fx;
+  forces[i * 2u + 1u] = fy;
 }`,
 
   apply: wgsl`${PRELUDE}
@@ -245,7 +264,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   columnPos[slot * 2u] = simPos[i * 2u];
   columnPos[slot * 2u + 1u] = simPos[i * 2u + 1u];
 
-  // displacement -> monotonic u32 bits (positive f32s order-preserve)
+  // displacement -> monotonic u32 bits (positive f32s order-preserve).
+  // A NaN displacement bitcasts above every finite positive float, so a
+  // destroyed iteration reads as a huge displacement and never settles
+  // — the device-side twin of the CPU sim's non-finite guard (59.1)
   atomicMax(&fmeta[1], bitcast<u32>(abs(dx) + abs(dy)));
 }`,
 };

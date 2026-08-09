@@ -1870,11 +1870,17 @@ test.describe('WebGPU renderer', () => {
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
-    // ring + chords: enough structure that a broken kernel (wrong
-    // spring gather, bad grid, NaN blowup) lands far outside the bounds
+    // ring + chords + a hub: enough structure that a broken kernel
+    // (wrong spring gather, bad grid, NaN blowup) lands far outside the
+    // bounds.  The hub (degree 60, round 59.1) is what the round-18
+    // model detonated on — explicit-Euler instability past degree ~20 —
+    // so the NaN/maxR invariants below discriminate the stability
+    // guards on both executors, not just the grid plumbing.
     await makeReadyCy(page, {
       elements: (() => {
         const els = [];
+
+        els.push({ data: { id: 'hub' }, position: { x: 0, y: 0 } });
 
         for (let i = 0; i < 60; i++) {
           els.push({ data: { id: 'n' + i }, position: { x: 0, y: 0 } });
@@ -1884,6 +1890,9 @@ test.describe('WebGPU renderer', () => {
               source: 'n' + i,
               target: 'n' + ((i + 1) % 60),
             },
+          });
+          els.push({
+            data: { id: 'h' + i, source: 'hub', target: 'n' + i },
           });
 
           if (i % 6 === 0) {

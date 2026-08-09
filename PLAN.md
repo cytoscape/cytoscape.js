@@ -16653,11 +16653,28 @@ unchanged.
 
 - [ ] **59.0 Docs-first** — this section; the README force-layout
   section gains a pointer that the round is in flight.
-- [ ] **59.1 Stability** — degree-normalised springs, the displacement
-  cap, NaN-safe convergence; the explosion probes (star, scale-free,
-  dense-uniform) land red-first as Node specs against the CPU sim, and
-  the same change lands in the force/apply kernels with the 18.4
-  invariant spec widened to a hub graph.
+- [x] **59.1 Stability** (2026-08-09) — landed as planned, tests-first:
+  five specs (star 300, scale-free 1500 with max degree in the
+  hundreds, uniform 600 x 12k at mean degree 40, the NaN-never-settles
+  pin, and a hub-spring quality bound) written red against the shipped
+  sim — all five failed, three by explosion and one by the
+  NaN-reads-as-converged hole stopping a poisoned run at iteration 3.
+  The CPU sim gains the d3 spring rule (`stiffness / min(deg)` with
+  the degree-bias split; `stiffness` re-read as fraction-of-residual,
+  provisionally 0.6), the alpha-annealed displacement cap
+  (`cutoff · max(alpha, 0.15)`, clamped at the gather output so both
+  executors share it verbatim), and the non-finite settle guard.  The
+  force kernel takes the identical spring rule reading degrees off the
+  CSR starts it already binds — zero new data crossed to the device —
+  and the identical cap; the device side needed no non-finite guard,
+  and the reason is recorded in the kernel: a NaN displacement
+  bitcasts *above* every finite float in the monotonic-bits ordering,
+  so a destroyed iteration reads as a huge displacement and never
+  settles.  The 18.4 invariant spec's graph gained a degree-60 hub;
+  run as its own control against the pre-fix bundle it **fails** (the
+  GPU executor detonates on the hub), and passes with the fix — with
+  all 20 Node force specs and the three GPU force specs green against
+  a fresh build.
 - [ ] **59.2 Components + gravity** — union-find, anchor packing,
   seed-around-anchors, constant-magnitude anchor gravity, the settle
   re-pack, `componentSpacing`; multi-component and isolated-node specs.

@@ -506,6 +506,22 @@ export type ColumnId =
    */
   | 'node.outerHalf'
   /**
+   * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
+   * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
+   * into one column, so a vertex stage that binds both can swap them
+   * for this and spend the freed slot on `edge.width` (the arrow-trim
+   * word).  Bound by exactly the two stages that were at the
+   * 8-storage-buffer budget with no slot for the trim: the curved
+   * layer-stroke VS and the edge-label VS.  Maintained by the store —
+   * `updateOuterHalf` writes lanes 0/1 beside every outerHalf write,
+   * the `node.shape` write refreshes lane 2 — and never written
+   * directly.  Shape ids are small integers, so the f32 lane is exact
+   * (`node.borderGeom.y` carrying a shape copy for the node FS is the
+   * precedent).  Nothing reads it on the CPU; `test/modules/`
+   * pins it in lockstep with its two source columns.
+   */
+  | 'node.outerGeom'
+  /**
    * Float32Array(4·cap) — ghost props (round 13 A1): [offsetX, offsetY,
    * ghostOpacity, enabled].  The decided simplified form: a ghost
    * duplicates only the basic node body (shape, border, background) at
@@ -744,6 +760,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec('node.opacity', 'nodes', Float32Array, 1),
   spec('node.shape', 'nodes', Uint32Array, 1),
   spec('node.outerHalf', 'nodes', Float32Array, 2),
+  spec('node.outerGeom', 'nodes', Float32Array, 4),
   spec('node.ghost', 'nodes', Float32Array, 4),
   spec('node.borderGeom', 'nodes', Uint32Array, 4),
   spec('node.borderDash', 'nodes', Float32Array, 4),

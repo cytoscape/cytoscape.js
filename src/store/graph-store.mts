@@ -2367,6 +2367,15 @@ export class GraphStore implements ModelView {
     this.geoEpoch++;
     this.dirty.mark(id, slot);
 
+    // the shape id's lane of the round-58 fused column (outerHalf +
+    // shape); the outerHalf lanes follow their own writes above
+    if (id === 'node.shape') {
+      const geom = this.nodes.column('node.outerGeom') as Float32Array;
+
+      geom[slot * 4 + 2] = value;
+      this.dirty.mark('node.outerGeom', slot);
+    }
+
     if (id === 'node.borderWidth') {
       this.updateOuterHalf(slot);
 
@@ -2584,11 +2593,20 @@ export class GraphStore implements ModelView {
     const size = this.nodes.column('node.size') as Float32Array;
     const border = this.nodes.column('node.borderWidth') as Float32Array;
     const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const geom = this.nodes.column('node.outerGeom') as Float32Array;
     const halfBorder = border[slot] / 2;
+    const hx = size[slot * 2] / 2 + halfBorder;
+    const hy = size[slot * 2 + 1] / 2 + halfBorder;
 
-    outer[slot * 2] = size[slot * 2] / 2 + halfBorder;
-    outer[slot * 2 + 1] = size[slot * 2 + 1] / 2 + halfBorder;
+    outer[slot * 2] = hx;
+    outer[slot * 2 + 1] = hy;
     this.dirty.mark('node.outerHalf', slot);
+    // the round-58 fused twin (outerHalf + shape in one column, for the
+    // vertex stages at the storage-buffer budget) follows in the same
+    // write, so the two can never disagree; lane 2 is the shape write's
+    geom[slot * 4] = hx;
+    geom[slot * 4 + 1] = hy;
+    this.dirty.mark('node.outerGeom', slot);
   }
 
   // -- ghosts (round 13 A1) --

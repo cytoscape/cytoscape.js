@@ -815,6 +815,13 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
 
 ## The force layout (round 18)
 
+**Round 59 is rebuilding this layout's model** (in flight; the plan is
+at the end of PLAN.md).  Scoping it found the round-18 model unstable
+on graphs with hubs or high mean degree — the em-web fixture lands at a
+3e11-px bounding box (a blank fit), and the compound twin NaNs — so the
+description below is the round-18 baseline being replaced, kept until
+round 59's records supersede it section by section.
+
 Landed 2026-08-01, per the PLAN.md round-18 plan — the round-9 "GPU
 layouts" design, built:
 

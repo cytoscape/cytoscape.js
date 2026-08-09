@@ -532,7 +532,7 @@ system working, not wasted work.
 
 ## Week 4 — 9 August: two decisions that decline, the trim reaches everything, and the force layout is rebuilt
 
-*Round 58, the seventh design sitting, and round 59.*
+*13 commits — round 58, the seventh design sitting, and round 59.*
 
 The week opened with the two prepared decisions taken, both by
 declining the surface the preparation had priced (the error and

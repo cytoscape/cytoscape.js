@@ -1,9 +1,11 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 
-// round 18.2: the built-in `force` layout — the extension contract's
-// first production consumer.  CPU executor (the reference sim);
-// deterministic under a seed; leaves-only under compounds; locked
+// round 18.2, model rebuilt in round 59: the built-in `force` layout —
+// the extension contract's first production consumer.  CPU executor
+// (the reference sim); deterministic under a seed; leaves-only under
+// compounds (owner gravity + nesting since 59.5); component anchors,
+// the spectral seed and the settle re-pack since 59.2/59.4; locked
 // nodes pin; live mode streams positions and stop() settles early.
 
 const RING = (n = 12) => {

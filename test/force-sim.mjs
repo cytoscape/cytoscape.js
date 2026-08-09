@@ -5,9 +5,11 @@ import {
   defaultForceParams,
 } from '../src/layout/force-sim.mjs';
 
-// round 18.1: the CPU reference force simulation — the spec the GPU
-// kernels must match (spring–electric with uniform-grid cutoff
-// repulsion, gather-only, seeded and deterministic).
+// round 18.1, model rebuilt in round 59: the CPU reference force
+// simulation — the spec the GPU kernels must match (degree-normalised
+// springs, inverse-square repulsion with a grid-pyramid far field,
+// constant-magnitude anchor gravity, capped steps; gather-only,
+// seeded and deterministic).
 
 const ring = (n) => {
   const edges = new Uint32Array(n * 2);
@@ -537,11 +539,12 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
   });
 
   it('relaxes a path to rest lengths without collapsing', function () {
-    // what a cutoff model guarantees: links settle near their ideal
-    // length and no two nodes collapse together.  It does NOT promise
-    // global straightening — a curled chain is a legitimate local
-    // minimum of short-range repulsion (recorded; sfdp-style
-    // multilevel untangling is future work).
+    // what the sim tier alone guarantees: links settle near their
+    // ideal length and no two nodes collapse together.  Global
+    // straightening is the *seed's* job (59.4's landmark MDS — this
+    // spec drives ForceSim directly from a cramped scatter, so no
+    // seed applies), and deeper untangling stays the logged
+    // multilevel direction.
     const n = 12;
     const edges = new Uint32Array((n - 1) * 2);
 

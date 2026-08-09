@@ -205,7 +205,8 @@ const paramDefs = {
     if (params.layout === 'spiral') {
       cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
     } else if (params.layout === 'force') {
-      // the round-18 force layout, live (add &seed=N to vary)
+      // the force layout (round 18, model rebuilt in 59), live
+      // (add &seed=N to vary)
       cy.ready.then(() => {
         console.time('force layout');
         cy.layout({

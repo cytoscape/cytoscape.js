@@ -3211,7 +3211,9 @@ in this ledger — pinned since 29.3 by `test/decided-drops.mjs`.
   (2026-08-01): `cy.layout({ name: 'force' })`, spring–electric with a
   CPU reference executor and an on-device integrator under the
   position lease.  The call this entry left open (port cose vs a
-  modern kernel) was taken for the latter.
+  modern kernel) was taken for the latter.  *(Round 59, 2026-08-09,
+  rebuilt the model after the round-18 one was measured unstable past
+  node degree ~20 — see the round-59 plan and records.)*
 - **Compaction** — slot-stable tier (id blob / CSR / dictionary
   reclaim) **landed in round 11** with auto waste thresholds; ~~the
   slot-moving tier still waits on the logged policy calls~~ — the
@@ -16541,9 +16543,22 @@ component packing instead (v3 cose: `separateComponents`, 40 px shelf
 rows; cose-bilkent/fcose: tiling + polyomino packing; AntV, which has
 none, interleaves its components — the cautionary tale).
 
-### What the research found (2026-08-09; two web sweeps, sources in the round record)
+### What the research found (2026-08-09; two web sweeps)
 
-Condensed to what this round acts on:
+Condensed to what this round acts on (primary sources, all verified
+against papers or shipping source rather than docs: Jacomy et al.
+2014 PLoS ONE + Gephi's `ForceFactory.java` for FA2; the cosmos.gl
+repo's `ForceManyBody` shaders for the grid pyramid; Hu 2005 for
+sfdp's p = 2 and the grid-variant critique; Fruchterman & Reingold
+1991; Balci & Dogrusoz IEEE TVCG 2021 + the cytoscape.js-fcose /
+cose-base / layout-base sources for the spectral phase and the
+compound recipe; d3-force's `link.js`/`simulation.js` for the spring
+rule and alpha schedule; this repo's own
+`v3/src/extensions/layout/cose.mts` for `limitForce`, per-graph
+gravity and
+`separateComponents`; Zheng et al. TVCG 2019 (s_gd2), Zhong et al.
+TVCG 2023 (t-FDP), Godiyal et al. GD 2008 and cuGraph FA2 as the
+surveyed alternatives not taken):
 
 1. **Stability discipline** — d3-force: per-edge spring strength
    `stiffness / min(deg(s), deg(t))`, applied to each end weighted by
@@ -16677,8 +16692,9 @@ unchanged.
 
 ### Pass split (tests-first; docs in-commit; each pass its own commit)
 
-- [ ] **59.0 Docs-first** — this section; the README force-layout
-  section gains a pointer that the round is in flight.
+- [x] **59.0 Docs-first** (2026-08-09) — this section; the README
+  force-layout section gained the in-flight pointer (replaced by the
+  rewritten section when the round closed).
 - [x] **59.1 Stability** (2026-08-09) — landed as planned, tests-first:
   five specs (star 300, scale-free 1500 with max degree in the
   hundreds, uniform 600 x 12k at mean degree 40, the NaN-never-settles

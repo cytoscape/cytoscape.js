@@ -142,7 +142,9 @@ cmpLayout('random');
 
 // -- the force layout --------------------------------------------------------
 // The CPU executor is what the Node specs pin and what headless and
-// compound graphs always run (18.1); the GPU integrator is the browser
+// compound graphs always run (18.1; model rebuilt in round 59 — the
+// row now includes the one-time spectral seed, which dominates a
+// capped-iteration run at small N); the GPU integrator is the browser
 // bench's --layout mode.  A fixed iteration cap keeps the row a
 // measurement of the integrator rather than of how fast this particular
 // graph happens to converge.

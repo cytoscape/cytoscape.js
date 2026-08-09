@@ -525,6 +525,14 @@ the ledger's genuinely open questions are down to the deferred
 `arrow-scale` reserve (item 23) and the conditional tween warm-up
 (item 18).  The sitting also scheduled **ledger item 24 as round 58**.
 
+**Two joined later the same day** (2026-08-09, added here by round
+60's sweep — round 58's sweep had left item 27 only in the
+what-remains amendment, against this section's own rule): **item 27**
+(v4's edge underlay/overlay band is `width + 2 × padding` wide where
+v3's is `2 × padding` — round 58) and **item 28** (`cy.collection`
+silently ignores an argument v3 builds from — round 60).  So the
+ledger's genuinely open questions stand at four: 18, 23, 27, 28.
+
 ### Scope calls
 
 1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
@@ -1405,6 +1413,9 @@ benchmark/               # 24 suites + the renderer/report runners (see the Benc
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
                          #   surface (the breadth pass) to the round-1..29 set, and report.mjs grew
                          #   an --all profile that runs every one of them (closing open call 7).
+                         #   Round 60.1 added report-compare.mjs — the cross-run join behind the
+                         #   status site's comparison pages (per-row p50 across published runs,
+                         #   movers with the frozen-v3 twin as control, whole-run drift).
 scripts/bench-coverage.mjs   # round 33.12: which public members a benchmark calls (reports, never gates)
 test/modules/bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
 scripts/jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
@@ -16961,9 +16972,9 @@ The premise is one this file already carries: the archive
 precisely so that "a report improvement applies to every past run" — and
 until this round nothing joined two runs.  The only cross-commit signal
 on the site was one geo-mean per run in the trend table, which is a
-single number over ~175 rows: a 2× regression in one row moves it by
-under half a percent.  Detecting a regression was a manual diff nobody
-had ever run.
+single number over the run's ~109 v3-vs-v4 pairs: a 2× regression in
+one row moves it by ln 2 / 109 ≈ 0.6%.  Detecting a regression was a
+manual diff nobody had ever run.
 
 ### Items
 

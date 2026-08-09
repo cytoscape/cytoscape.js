@@ -2548,14 +2548,29 @@ choice:
   along with it, which is precisely what happens in v3, where those
   blocks sit in the default sheet and any later block beats them.
   `overlay-opacity: 0` turns the press highlight off.
-- **The default sheet costs nothing.**  A group whose mappers read only
-  state flags has one computed record per distinct combination of the
-  bits it reads — two for the default sheet at rest — so it is applied
-  with a mask and a lookup rather than a program run per element.  A
-  150k-element load measures the same as an all-constant sheet; without
-  it the default sheet cost about 6%.  One data-driven mapper in the
-  group turns the fast path off, because the group is on the per-element
-  path anyway.
+- **The default sheet costs nothing to apply — and a measured price per
+  state change.**  A group whose mappers read only state flags has one
+  computed record per distinct combination of the bits it reads — two
+  for the default sheet at rest — so it is applied with a mask and a
+  lookup rather than a program run per element.  A 150k-element load
+  measures the same as an all-constant sheet; without it the default
+  sheet cost about 6%.  One data-driven mapper in the group turns the
+  fast path off, because the group is on the per-element path anyway.
+
+  What is *not* free under it, measured by round 60.4's cross-commit
+  comparison on its first run: **selection**.  Because the default
+  sheet conditions on `selected`, every select/unselect restyles the
+  changed slots, and the flag-flip path (`onStateChange` →
+  `refreshMapped`) runs the general per-slot refresh at ~1.9 µs/slot —
+  bulk select+unselect of 2000 nodes went 47.9 µs (the round-4 skip,
+  which no longer engages out of the box) to 6.3 ms, flipping that row
+  from ~38× faster than v3 to ~3.3× slower.  A sheet that declares the
+  conditioned channels itself replaces the state rules and keeps the
+  skip path; the logged headroom (PLAN.md round 60.4) is to route a
+  state flip through the partition records — a mask, a Map hit and a
+  write of only the differing channels — instead of the per-element
+  refresh.  `benchmark/style.mjs`'s round-60.2 rows are the re-runnable
+  source for both configurations.
 
 The same keys are **query** keys (round 57.1f): `cy.nodes( { locked: true } )`
 answers what `{ when: { locked: true } }` styles, because `matcher.mts`
@@ -3256,14 +3271,25 @@ are direct column arithmetic — no per-element handles or Position
 objects.  At 200k nodes vs v3: select+unselect ~38×, lock ~96×, shift
 ~106×, hide+show ~1400× (v3 pays a style bypass per element), and
 removing + re-adding a 256-node band with its incident edges ~1000×.
+**The select figure is the skip-path number and no longer the
+out-of-the-box one** (round 60.4): under the default stylesheet —
+which conditions on `selected` since 57.1d — the same row measures the
+per-slot restyle and reads ~3× *slower* than v3 at 2k, so
+`mutators.mjs`/`scenarios.mjs` now price the default-sheet
+configuration; the state-condition bullet in the styling section above
+carries the mechanism, the mitigation and the logged headroom.
 
 Composed traces hold up too (`benchmark/scenarios.mjs`: five
 interaction scenarios — explore/click-expand, select-all + fit, band
 drag, remove/re-add, dashboard refresh — replayed **with core listeners
 attached**, the axis the micro suites exclude since their emits are
-listener-gated).  At 200k nodes the gpu side wins every trace 6–530×:
-a click-expand-select-fit interaction runs in ~45 µs median (34× v3),
-and per-element emit cost is ~85 ns/listener call.
+listener-gated).  At 200k nodes the gpu side won every trace 6–530×
+when round 5 measured it: a click-expand-select-fit interaction ran in
+~45 µs median (34× v3), and per-element emit cost is ~85 ns/listener
+call.  The select-bearing traces have since changed class under the
+default stylesheet (round 60.4 measured select-all + fit at 3.6× v3 at
+2k, from 35× — still a win, no longer that one); the suite re-runs, so
+read the newest published run rather than this sentence.
 
 The sweep also
 settled the lazy-collection question (handle materialization is ~4–6%

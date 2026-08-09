@@ -26,7 +26,10 @@ is rewritten from that record — see *Maintaining this file* at the end.
   measured unstable on real networks; and the status site gained
   cross-commit benchmark comparison, so a performance regression is
   now something the site shows rather than something someone
-  remembers; see week 4.  The
+  remembers — which it demonstrated immediately: under the default
+  stylesheet's new selection look, bulk selection currently runs ~3×
+  slower than v3 (from 38× faster), with the recovery route measured
+  and logged; see week 4.  The
   preceding days added a maintainer-driven interaction arc (edges
   activate on press, v3's hit-test halos, pickable arrowheads) and the
   debug harness's move onto the default style, all described under
@@ -75,13 +78,15 @@ toggle map showed every candidate default already has an explicit control, so
 `preventDefault()` stays browser-level only and the toggles are the whole
 gesture-control story. The other item round 56 raised — freeing the
 vertex-shader binding that lets **edge labels and the casing strokes** see the
-arrow trim — was never a decision, and landed the same day (week 4). **Two
+arrow trim — was never a decision, and landed the same day (week 4). **Three
 questions are open**: whether to spend the six reserved arrow-packing bits on
 **un-quantizing `arrow-scale`** (which currently renders 1.4 as 1.375) or keep
-them for a seventeenth arrow shape; and whether v4 keeps its **edge overlay
+them for a seventeenth arrow shape; whether v4 keeps its **edge overlay
 band width** (`width + 2 × padding`, always visible) or adopts v3's
 (`2 × padding`, invisible at small paddings) — a divergence week 4's parity
-scenes surfaced.
+scenes surfaced; and what `cy.collection( arg )` should do with an argument —
+today it silently returns the empty collection where v3 builds from the
+argument, a porting trap round 60's own benchmark controls walked into.
 
 The unbuilt work that *is* decided — the documentation site,
 release engineering — is
@@ -620,7 +625,7 @@ regression across commits.  The archive of published benchmark runs
 already kept every run's full results — round 46.5 built it so "a
 report improvement applies to every past run" — but nothing ever
 joined two runs: the only cross-commit signal was one averaged number
-per run, which a 2× regression in a single row moves by under half a
+per run, which a 2× regression in a single row moves by well under a
 percent.
 
 The status site now renders a comparison page for every machine and
@@ -685,6 +690,8 @@ optional to scheduled (it also landed two days later).
 |---|---|
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
 | Edge overlay band width | **a decision.** v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
+| `cy.collection( arg )` | **a decision.** It silently returns the empty collection where v3 builds from the argument — throw, port the v3 form, or record the permissiveness |
+| Selection speed under the default stylesheet | **work, with the route measured.** The default selection look makes every select restyle (~3× slower than v3 in bulk, from 38× faster); routing a state flip through the partitioned records instead of the per-element refresh wins most of it back. No API change |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |

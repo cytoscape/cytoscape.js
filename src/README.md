@@ -229,7 +229,13 @@ release engineering — with one question deliberately left open, the
 round 41 found that *which* gesture defaults `preventDefault()` should
 suppress cannot be derived from v3, so that list is a v4 contract to
 design — its docs-first proposal was written 2026-08-08 (PLAN.md's
-"Round 41.5 docs-first" section) and awaits the maintainer.
+"Round 41.5 docs-first" section).  **The seventh sitting (2026-08-09)
+closed both, each by declining the surface**: errors and warnings stay
+exactly as built (no `cytoscape.warnings()`, no demotion — the
+fail-loudly contract stands whole, with the 198-site classification as
+its recorded rationale), and gesture defaults are controlled by their
+explicit toggles alone — `preventDefault()` is browser-level only,
+permanently.
 
 Round 37 (2026-08-04) is that roadmap's governance close-out, and it
 changes almost no behaviour: the two audits held back on policy calls
@@ -965,24 +971,24 @@ calls made deliberately rather than by accretion:
   normalized vocabulary) and v3's raw mouse/touch re-emits
   (`mousedown`/`click`/`touchstart`/... — `pointer*` is their one
   modern spelling; the existing `mouseover`/`mouseout` stay);
-  `event.preventDefault()` is **half wired** (round 41.4).  The DOM
-  half works: `originalEvent` is populated by the interaction layer
-  since 41.4 — the DOM event a gesture came from is reachable from the
-  handler, and `preventDefault()` reaches the browser's default through
-  it.  The *gesture* half does not: nothing in `src` reads
-  `isDefaultPrevented()`, so the call cannot stop a tap selecting or a
-  grab starting, and those defaults stay gated by options.  The fifth
-  sitting decided that half should be built; round 41 found the
-  enumeration it planned to derive **cannot be derived** — v3 never
-  reads the flag either, so the list of preventable defaults is a v4
-  contract to design rather than a v3 behaviour to port.  It is open
-  call 12 in PLAN.md; the sixth sitting set its direction (explicit
-  toggles first) and the docs-first proposal was written 2026-08-08
-  (PLAN.md's "Round 41.5 docs-first" section) — every candidate
-  default has an explicit toggle, three of the four proposed rows are
-  implementable as emitted today, and the `tapstart` → grab row is
-  recommended dropped because the press handler grabs before it
-  emits.  Awaiting the maintainer's reaction.
+  `event.preventDefault()` is **browser-level only, by decided design**
+  (seventh sitting, 2026-08-09; wired in round 41.4).  `originalEvent`
+  is populated by the interaction layer, so the DOM event a gesture
+  came from is reachable from the handler and `preventDefault()`
+  suppresses the *browser's* default through it — and that is the whole
+  contract.  Nothing in `src` reads `isDefaultPrevented()`: the call
+  cannot stop a tap selecting or a grab starting, and gesture defaults
+  are controlled exclusively by their explicit toggles
+  (`autoungrabify`, `autounselectify`, `boxSelectionEnabled`,
+  `userPanningEnabled`/`userZoomingEnabled`, and the per-element
+  grains).  This spent two sittings as an open design question — round
+  41 found the preventable-defaults list could not be derived from v3,
+  which never reads the flag either, and a docs-first proposal
+  (PLAN.md's "Round 41.5 docs-first" section) mapped every candidate
+  default to its toggle — and the maintainer closed it by declining
+  the whole table: the toggle map showed the toggles were already
+  sufficient, so the proposal became the rationale for not building
+  what it proposed.
   **"Dropped" here means "never emitted", not "rejected"** (measured
   2026-08-03): `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
   `cy.on('click', h)` and `cy.on('touchstart', h)` all register
@@ -4551,17 +4557,22 @@ it here in round 57.4.*
   demand-gated deferred; unknown constructor options stay
   runtime-permissive, closed at the type layer instead (landed, round
   37.3); dropped v3 event names stay legal and silent, documented
-  (landed, round 37.4); `preventDefault()` is **half wired** — its DOM
-  half landed with the v4 Event (round 41.4) while the *gesture* half
-  became a new open question, since the enumeration of preventable
-  defaults turned out not to be derivable from v3 at all (its
-  docs-first proposal is written, 2026-08-08, awaiting the
-  maintainer); and both audits gate (landed, round 37.1).
+  (landed, round 37.4); `preventDefault()` is **browser-level only** —
+  its DOM half landed with the v4 Event (round 41.4), the *gesture*
+  half became an open question when the enumeration of preventable
+  defaults turned out not to be derivable from v3 at all, and the
+  seventh sitting (2026-08-09) closed it by declining the rows:
+  explicit toggles are the whole gesture-control story; and both
+  audits gate (landed, round 37.1).
 
-  `cytoscape.warnings()` builds too, but the **error policy** behind
-  it — v3's mostly-no-throw stance against v4's fail-loudly design —
-  is the one question deliberately left open, and is round 40's own
-  sitting.
+  `cytoscape.warnings()` was to build too, pending the **error
+  policy** behind it — v3's mostly-no-throw stance against v4's
+  fail-loudly design — which was round 40's own sitting.  That sitting
+  (2026-08-09, with the 198-site classification in hand) closed it the
+  other way: **errors and warnings stay exactly as built**, and
+  `warnings()` is not built at all — the recoverable tier measured too
+  small (~11 sites, half meaningless without a fallback renderer) to
+  justify any policy surface.
   The sitting's **packaging** decision — v4 becomes the package, v3
   into a self-contained `v3/` — **landed as round 42** (2026-08-04),
   with the two calls it left to docs-first taken there: the

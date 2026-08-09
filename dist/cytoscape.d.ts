@@ -4752,10 +4752,10 @@ declare class Event {
   /**
    * Whether `preventDefault()` has been called.
    *
-   * **Recorded**: nothing in v4 reads this yet, so calling `preventDefault()`
-   * suppresses no gesture default — it only forwards to the DOM event when
-   * one is attached.  Making it functional is decided but not yet built; see
-   * the module comment and PLAN.md's open calls.
+   * **Recorded, never read by v4**: by decided design `preventDefault()`
+   * suppresses no gesture default — it forwards to the DOM event when one
+   * is attached, and gesture defaults are controlled by their explicit
+   * toggles instead.  See the module comment.
    */
   isDefaultPrevented: () => boolean;
   /** Whether `stopPropagation()` has been called — read by the compound
@@ -4780,10 +4780,12 @@ declare class Event {
    * Mark the event's default as prevented, and prevent the DOM event's
    * default when one is attached.
    *
-   * **Inert for v4's own gesture defaults today** — no v4 code reads
+   * **Browser-level only, by decided design** — no v4 code reads
    * `isDefaultPrevented()`, so this cannot stop a tap from selecting or a
-   * grab from starting.  The DOM half does work: with `originalEvent`
-   * populated (round 41.4) this reaches the browser's default.
+   * grab from starting; use the explicit toggles (`autoungrabify`,
+   * `autounselectify`, `boxSelectionEnabled`, …) for gesture control.
+   * With `originalEvent` populated (round 41.4) this reaches the
+   * browser's default.
    */
   preventDefault(): void;
   /**

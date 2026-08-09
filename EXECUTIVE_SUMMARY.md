@@ -17,9 +17,11 @@ is rewritten from that record — see *Maintaining this file* at the end.
   (border and outline styles) landed, the robustness round finished its
   limit coverage, and the two open questions each gained their prepared
   input — a measured error-site classification and a written
-  gesture-veto proposal — for the maintainer to react to.  The same two
-  days added a maintainer-driven interaction arc (edges activate on
-  press, v3's hit-test halos, pickable arrowheads) and the debug
+  gesture-veto proposal.  On 9 August the maintainer closed both by
+  declining the surface each had priced: errors and warnings stay as
+  built, and gesture control stays with the explicit toggles.  The
+  same days added a maintainer-driven interaction arc (edges activate
+  on press, v3's hit-test halos, pickable arrowheads) and the debug
   harness's move onto the default style, all described under week 3.
 
 ---
@@ -55,18 +57,20 @@ for several weeks; `npm test` passes from a clean checkout.
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Four questions are open**, up from two — and the long-standing pair now
-have their homework done, awaiting only the maintainer. For the error/warning
-policy (round 40), every error site has been classified — 198 sites, of which
-only ~11 are candidates for demotion to a warning — so the design sitting
-reacts to a measured list. For which gesture defaults an event handler may
-veto, a written proposal maps every candidate to its explicit toggle and
-flags the one real trade-off (vetoing a grab would reorder press events;
-the proposal recommends dropping that row). Round 56 added two: whether to spend the six
+**The two long-standing open questions closed on 2026-08-09, each by
+declining the surface its own homework had priced.** For the error/warning
+policy, classifying all 198 error sites showed only ~11 plausible demotions —
+half of them meaningless while there is no fallback renderer — so the decision
+is that errors and warnings stay exactly as built, with no `warnings()` toggle
+and no demotion machinery. For gesture vetoing, the written proposal's own
+toggle map showed every candidate default already has an explicit control, so
+`preventDefault()` stays browser-level only and the toggles are the whole
+gesture-control story. **One question remains open**: whether to spend the six
 reserved arrow-packing bits on **un-quantizing `arrow-scale`** (which currently
-renders 1.4 as 1.375) or keep them for a seventeenth arrow shape, and how to
-free the vertex-shader binding that would let **edge labels and the casing
-strokes** see the arrow trim.
+renders 1.4 as 1.375) or keep them for a seventeenth arrow shape. The other
+item round 56 raised — freeing the vertex-shader binding that lets **edge
+labels and the casing strokes** see the arrow trim — was never a decision, and
+is now scheduled work.
 
 The unbuilt work that *is* decided — the documentation site,
 release engineering — is
@@ -514,7 +518,11 @@ half of those undermined by the absence of a fallback renderer), and the
 gesture-veto question got a written proposal — every candidate default
 mapped to its explicit toggle, three veto points implementable today, and
 the recommendation to drop the fourth rather than reorder press events.
-Neither is a decision; both are on the maintainer's desk.
+Both decisions came on 2026-08-09, and both declined the surface: the
+classification became the rationale for keeping every error thrown, and
+the toggle map became the rationale for building none of the veto points.
+Preparing a proposal well enough that the right answer is "no" is the
+system working, not wasted work.
 
 ---
 
@@ -534,10 +542,8 @@ optional to scheduled (it also landed two days later).
 | | needs |
 |---|---|
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
-| Arrow trim on labels and casings | **a binding, not a decision.** Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot |
+| Arrow trim on labels and casings | **scheduled, in progress** (2026-08-09). Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot; the measured cost is negligible |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
-| Error / warning policy (round 40) | a design sitting. The preparatory classification is done: of 198 error sites, ~187 are contract (invalid input, corrupt payloads) and only ~11 are candidates for demotion — half of those undermined by the absence of a fallback renderer — so the sitting reacts to a measured list |
-| Gesture-default veto (`preventDefault()`) | **a proposal awaits reaction** (written 2026-08-08). Every candidate default already has an explicit toggle; three of the four proposed veto points are implementable as-is, and the fourth (vetoing a grab) would change the order press events fire in — the proposal recommends dropping it rather than paying that |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |

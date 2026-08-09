@@ -351,11 +351,13 @@ removes on its own. (v4 inherited v3's namespace semantics by accident until
 round 41 gave it its own emitter; if you tested against an older v4 build,
 re-check.)
 
-**`event.preventDefault()` is half wired.** `originalEvent` is populated, so
-the call reaches the browser's default — but no v4 code reads
+**`event.preventDefault()` is browser-level only, by design.** `originalEvent`
+is populated, so the call reaches the browser's default — but no v4 code reads
 `isDefaultPrevented()`, so it cannot stop a tap from selecting or a grab from
-starting. Those defaults are gated by options (`autounselectify`,
-`autoungrabify`, `userPanningEnabled`, …) instead.
+starting. Gesture defaults are controlled by the explicit toggles
+(`autounselectify`, `autoungrabify`, `boxSelectionEnabled`,
+`userPanningEnabled`, …, and per-element `ungrabify()`/`unselectify()`)
+instead; this is the decided contract, not a gap.
 
 **Bubbling** works as in v3 for compounds: origin → ancestors → core, with
 `event.target` the originator and `stopPropagation()` (or returning `false`)
@@ -489,9 +491,16 @@ Not yet built, and tracked:
 - **`text-border-style`** — the label box border does not dash;
   `border-style` and `outline-style` landed in round 38 (every shape,
   including v3's `double` erase and dash pattern/offset props).
-- **`cytoscape.warnings()`** and the error policy behind it.
-- **Functional `preventDefault()`** for v4's own gesture defaults.
 - Core/collection/renderer extension points — demand-gated.
+
+Decided against, not pending:
+
+- **`cytoscape.warnings()`** — v4 keeps its fail-loudly contract whole:
+  errors throw, the few recoverable conditions warn on the console, and
+  there is no toggle over either.
+- **Functional `preventDefault()`** for v4's own gesture defaults — the
+  explicit toggles are the gesture-control surface; `preventDefault()`
+  reaches the browser's default only.
 
 ---
 

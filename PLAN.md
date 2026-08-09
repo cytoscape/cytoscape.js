@@ -276,10 +276,23 @@ its exact edge with five controls.  **Round 40's approved
 taxonomy-first prep ran** (198 throw sites classified, ~11 demotion
 candidates; the sitting reacts to a measured list), and **round 41.5's
 docs-first proposal was written** — the preventable-gesture map, at
-the end of this file, awaiting the maintainer's reaction.  What the
-queue holds now is in the "Amended 2026-08-08" paragraph of "Suggested
-sequencing": rounds 40 and 41.5 wait on the maintainer, 46 is
-sketch-specced, and 49–51 need other platforms or release credentials.
+the end of this file, awaiting the maintainer's reaction.
+
+**2026-08-09 (seventh design sitting): both long-open questions
+closed, each by declining the surface its prep had priced.**  Round 40
+closes with **no new API at all** — with the demotion list measured at
+~11 sites and half of it undermined by the missing fallback renderer,
+the maintainer's call is that errors and warnings stay exactly as
+built: every throw stays a throw, the 14 warn sites stay warns, and
+`cytoscape.warnings()` is not built.  And item 12 closes as
+**toggles-only**: `preventDefault()` suppresses the browser's default
+and nothing else, gesture defaults stay controlled by their explicit
+toggles, and round 41.5's four rows are not built.  **Ledger item 24
+was scheduled as round 58** at the same sitting, after its cost was
+assessed as negligible.  What the queue holds now is in the "Amended
+2026-08-09" paragraph of "Suggested sequencing": round 58 (the arrow
+trim's two unreached stages), round 46 (sketch-specced), and 49–51
+(other platforms or release credentials).
 
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
@@ -453,6 +466,22 @@ recommended dropped because the press handler grabs before it emits.
 Each still awaits the maintainer — a sitting for 40, a reaction for
 41.5.
 
+**2026-08-09 (seventh design sitting): both are closed, and neither
+builds anything.**  The error policy: with the recoverable tier
+measured at ~11 sites in two families (GPU acquisition, image export)
+and the acquisition half undermined by the missing fallback renderer,
+the maintainer chose to **leave the errors thrown — and the warnings
+as they are**.  No demotion, no `errorPolicy`, and no
+`cytoscape.warnings()`: the fail-loudly contract stands whole, and the
+14 `console.warn` sites stay plain warns.  The preventDefault
+enumeration: **explicit toggles are the whole gesture-control story**
+— `preventDefault()` is browser-level only, permanently, and none of
+41.5's four rows is built.  The gesture half of `event.preventDefault`
+is now decided design rather than an open half.  With those two taken,
+the ledger's genuinely open questions are down to the deferred
+`arrow-scale` reserve (item 23) and the conditional tween warm-up
+(item 18).  The sitting also scheduled **ledger item 24 as round 58**.
+
 ### Scope calls
 
 1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
@@ -558,6 +587,16 @@ Each still awaits the maintainer — a sitting for 40, a reaction for
    warnings — "the demotion option could be useful... needs more
    discussion and thought").  That question is **round 40's design
    sitting**; this is the one part of the ledger that stays open.
+   ***Closed (2026-08-09, seventh sitting): `cytoscape.warnings()` is
+   not built after all.***  The taxonomy-first prep measured the
+   demotion case at ~11 sites, half of them meaningless without a
+   fallback renderer, and the maintainer's call on that evidence was
+   to keep **errors and warnings exactly as built** — every throw a
+   throw, the 14 warn sites plain `console.warn`, and no global or
+   per-instance toggle over either.  The 2026-08-04 "both names
+   return" reading is thereby corrected: `cy.gc()` returned (39.3);
+   `warnings()` did not.  See the round-40 section for the decision
+   record.
 5. **Graph-level `data` in the binary wire format** (gap item 12) —
    `cy.json()` already exports it; `serializeElements` is
    elements-only.  Since `cy.serialize()` output feeds `cy.add()`,
@@ -787,6 +826,18 @@ docs checks), and each is left in place pending the call.
     it emits — so the proposal recommends dropping that row and logging
     the emit reorder as its own later call.  Awaiting the maintainer's
     reaction; the round does not start before it.
+    ***Closed (2026-08-09, seventh sitting): toggles only — no rows at
+    all.***  The maintainer went further than the proposal's
+    recommendation: not just row 4 but the whole table is declined.
+    `preventDefault()` is **browser-level only** as the permanent
+    contract — it suppresses the DOM default through `originalEvent`
+    and nothing else — and gesture defaults are controlled exclusively
+    by their explicit toggles (`autoungrabify`, `autounselectify`,
+    `boxSelectionEnabled`, `userPanningEnabled`/`userZoomingEnabled`,
+    and the per-element grains).  Round 41.5 does not run; no emit
+    reorder is logged, since nothing now wants it.  The
+    `Event.preventDefault` doc comment's description of the gesture
+    half becomes decided design rather than a gap.
 13. ~~**The `Gpu*` exported type names**~~ — **closed by round 42.6**
     (2026-08-04).  Round 42 renamed the package's *identity* — factory,
     bundles, declaration, UMD global — but stopped at the exported **type**
@@ -858,6 +909,14 @@ docs checks), and each is left in place pending the call.
     Neither is a decision — the fix is to free a binding, and the
     curved-edge pipeline's own layout split is the precedent.  Logged
     rather than attempted inside a round that had already grown large.
+    **Scheduled as round 58 (2026-08-09, seventh sitting)**, after the
+    maintainer asked what it would cost: the trim math already runs per
+    vertex on every curved-edge strip, both new populations (edge-label
+    glyphs, layer-stroke quads) are small fractions of the vertex work
+    in a renderer bound on instance/fragment count, and both precedents
+    for freeing the binding (the layout split, the pre-derived
+    `edgeLayer` stroke width) added no measured frame cost.  The plan
+    is at the end of this file.
 
 ### Public-surface changes made without a call, logged rather than buried
 
@@ -3981,6 +4040,24 @@ its exact edge, with five controls), and round
 44's release-time act.  Nothing else fully specced remains buildable
 without the maintainer or different hardware — and with 48.6 in, round
 48 is complete.
+
+**Amended 2026-08-09 — the seventh sitting cleared the maintainer's
+half of the queue by declining it.**  ~~Round 40~~ closed with **no new
+surface** (errors and warnings stay as built; no `cytoscape.warnings()`
+— the decision record is in the round-40 section), and ~~round 41.5~~
+**does not run** (toggles are the whole gesture-control story;
+`preventDefault()` is browser-level only — the record is in the 41.5
+section).  Neither produces a Landed section, because neither lands
+code; each section carries its decision record instead.  The same
+sitting scheduled **ledger item 24 as round 58** — the arrow trim
+reaching edge labels and the layer strokes, decision-free renderer
+work with negligible measured risk.  What the queue holds: **round
+58** (in progress), **round 46** (the docs site — unblocked, large,
+sketch-specced), **rounds 49–51** (other platforms, release
+credentials, the bake), and round 44's release-time act.  The
+genuinely open ledger questions are down to item 23 (the `arrow-scale`
+reserve, deferred by the maintainer) and item 18 (the tween warm-up,
+revisit with data).
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -12162,7 +12239,7 @@ option where v3's equivalent is a per-element style prop, so an app
 wanting per-element box behaviour has no port path — logged here rather
 than in the round record, since it is the shape the sitting chose.
 
-## Round 40 plan — the error policy + `cytoscape.warnings()` (planned 2026-08-04; sitting required)
+## Round 40 plan — the error policy + `cytoscape.warnings()` (planned 2026-08-04; closed 2026-08-09 with no new surface)
 
 The one question the fifth sitting deliberately kept open.  v4 fails
 loudly by decided design — 191 throw sites are public contract, gated
@@ -12265,6 +12342,29 @@ per-instance ctor override as the v3-parity surface, and **deferring
 the `errorPolicy` demotion option** until the WebGL fallback exists to
 give family 1 a story — family 2 alone (≤6 sites) may not justify the
 policy machinery.  The sitting decides; the list above is the evidence.
+
+### The sitting (2026-08-09, seventh design sitting) — closed with no new surface
+
+The maintainer read the classification and took a smaller call than
+even the measured recommendation: **errors and warnings stay exactly
+as they are.**  With GPU acquisition and image export the only
+recoverable families — and the acquisition family meaningless to
+demote while v4 has no fallback renderer — the demotion machinery is
+not worth its surface, and neither is the boolean toggle: the 14
+`console.warn` sites stay plain warns with no `cytoscape.warnings()`
+over them.
+
+So round 40 ships **nothing**: no `warnings()`, no `errorPolicy`, no
+re-tiering.  Its lasting outputs are the taxonomy above (now the
+recorded rationale for the fail-loudly contract standing whole) and
+the closure of ledger item 4's second half — `cy.gc()` returned,
+`warnings()` did not.  The three questions the sitting was to take
+resolve as: (1) the taxonomy stands as classified, all 198 sites
+contract-or-warn as built; (2) no shape, because no function; (3)
+moot.  If a WebGL fallback renderer ever lands (the direction logged
+at the sixth sitting), the acquisition family's demotion question may
+be reopened by whoever builds it — that is a new call, not a residue
+of this one.
 
 ## Round 41 plan — the v4 Event + emitter (planned 2026-08-04)
 
@@ -16056,7 +16156,7 @@ bakes into the shader where v3 spells them in its default stylesheet.
   box-selection over each half of the rework) per the standing
   "something has to open the page" rule.
 
-## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
+## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; declined 2026-08-09 — the round does not run)
 
 This is the docs-first stage the sixth sitting instructed: map each
 candidate gesture default to its **explicit toggle** before proposing
@@ -16154,3 +16254,16 @@ as an origin handler.
 - Docs land with the round: the `Event.preventDefault` doc comment
   (which currently — and correctly — says the gesture half is inert),
   `MIGRATING.md`'s event section, and ledger item 12.
+
+### The reaction (2026-08-09, seventh design sitting) — the round does not run
+
+The maintainer declined the whole table, not only row 4: **explicit
+toggles are the entire gesture-control story, and `preventDefault()`
+is browser-level only, permanently.**  The toggle map above stands as
+the record of *why* that is sufficient — every candidate default has a
+toggle, three of them at both grains — and the background-clear
+recommendation (no new option) is subsumed: with no rows built, the
+coarse-only grain is simply the contract, as it is in the toggle
+column.  Nothing above the toggle map is implemented, no emit reorder
+is logged, and ledger item 12 is closed.  This section stays as the
+measured proposal the decision was made against.

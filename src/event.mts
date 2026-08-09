@@ -24,15 +24,17 @@ phase order and `stopPropagation()` behave exactly as round 14.5 built them:
      inherited full v3 namespace semantics, which contradicted the design and
      nobody had noticed (measured round 37.4).
 
-`preventDefault()` is **inert for v4's own gesture defaults**, deliberately
-and temporarily.  Its DOM half works (41.4): with `originalEvent` attached
-it reaches the browser's default.  What it cannot do is stop a tap
-selecting or a grab starting, because nothing in v4 reads
-`isDefaultPrevented()`.  The fifth design sitting decided it should become
-functional, but the enumeration of *which* gesture defaults it gates could
-not be derived the way round 41's plan expected — v3 never reads the flag
-either, so there is no v3 behaviour to port.  That enumeration is logged as
-an open call; the flag is recorded here so the machinery is ready for it.
+`preventDefault()` is **browser-level only, by decided design** (the
+seventh sitting, 2026-08-09).  With `originalEvent` attached (41.4) it
+reaches the browser's default, and that is the whole contract: nothing in
+v4 reads `isDefaultPrevented()`, so it cannot stop a tap selecting or a
+grab starting.  Gesture defaults are controlled by their explicit toggles
+instead — `autoungrabify`, `autounselectify`, `boxSelectionEnabled`,
+`userPanningEnabled`/`userZoomingEnabled`, and the per-element grains
+(`ungrabify()`, `unselectify()`).  This spent two sittings as an open
+question (v3 never reads the flag either, so there was no behaviour to
+port); the maintainer closed it by declining the proposed gesture rows —
+the toggles were already sufficient at every grain the rows offered.
 */
 
 /** The DOM event a gesture came from, when there was one. */
@@ -93,10 +95,10 @@ export class Event {
   /**
    * Whether `preventDefault()` has been called.
    *
-   * **Recorded**: nothing in v4 reads this yet, so calling `preventDefault()`
-   * suppresses no gesture default — it only forwards to the DOM event when
-   * one is attached.  Making it functional is decided but not yet built; see
-   * the module comment and PLAN.md's open calls.
+   * **Recorded, never read by v4**: by decided design `preventDefault()`
+   * suppresses no gesture default — it forwards to the DOM event when one
+   * is attached, and gesture defaults are controlled by their explicit
+   * toggles instead.  See the module comment.
    */
   isDefaultPrevented: () => boolean = returnFalse;
   /** Whether `stopPropagation()` has been called — read by the compound
@@ -154,10 +156,12 @@ export class Event {
    * Mark the event's default as prevented, and prevent the DOM event's
    * default when one is attached.
    *
-   * **Inert for v4's own gesture defaults today** — no v4 code reads
+   * **Browser-level only, by decided design** — no v4 code reads
    * `isDefaultPrevented()`, so this cannot stop a tap from selecting or a
-   * grab from starting.  The DOM half does work: with `originalEvent`
-   * populated (round 41.4) this reaches the browser's default.
+   * grab from starting; use the explicit toggles (`autoungrabify`,
+   * `autounselectify`, `boxSelectionEnabled`, …) for gesture control.
+   * With `originalEvent` populated (round 41.4) this reaches the
+   * browser's default.
    */
   preventDefault(): void {
     this.isDefaultPrevented = returnTrue;

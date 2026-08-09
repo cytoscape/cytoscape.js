@@ -167,10 +167,13 @@ that compile and then behave differently.
   `border-style`/`outline-style` and `border-dash-pattern`/`-offset`
   themselves work on every shape; `border-cap`/`border-join` are dropped
   (dash ends are perpendicular cuts by construction).
-- `cytoscape.warnings()` and the error policy behind it.
-- Functional `preventDefault()` for v4's own gesture defaults; the DOM half
-  works.
 - Core, collection and renderer extension points.
+
+Decided against rather than pending: `cytoscape.warnings()` (errors throw
+and warnings warn, with no toggle over either — the fail-loudly contract
+stands whole) and functional `preventDefault()` for v4's own gesture
+defaults (the explicit toggles are the gesture-control surface; the call
+reaches the browser's default only).
 
 ### Known deviations
 

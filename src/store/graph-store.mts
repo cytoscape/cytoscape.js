@@ -288,9 +288,10 @@ export class GraphStore implements ModelView {
   private watchedStates: Record<GroupName, ReadonlySet<string>>;
   /**
    * Told when a styled state bit flips on live slots — the core wires
-   * this to the StyleEngine's mapper refresh (round 57.1).  Null until
-   * then, and consulted before any per-slot bookkeeping, so a store with
-   * no style attached does the flag write and nothing else.
+   * this to the StyleEngine's state refresh (round 57.1; the round-61
+   * partition-record diff since).  Null until then, and consulted
+   * before any per-slot bookkeeping, so a store with no style attached
+   * does the flag write and nothing else.
    */
   onStateChange:
     | ((group: GroupName, key: string, slots: readonly number[]) => void)

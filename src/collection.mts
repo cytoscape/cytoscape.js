@@ -3534,7 +3534,8 @@ export class Collection {
 
     // The restyle a selection change may need is not here: `flagRefs`
     // notifies the store's `onStateChange`, which the core wires to the
-    // mapper refresh.  Round 57.1 wrote that hook by hand at this one
+    // round-61 state refresh (the partition-record diff; refreshMapped
+    // before that).  Round 57.1 wrote that hook by hand at this one
     // site and then wanted it at six more (lock, grab, activate,
     // selectify, grabify, hover), which is the argument for it living at
     // the flag choke point instead.

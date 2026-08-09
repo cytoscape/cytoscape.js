@@ -2245,13 +2245,18 @@ export class GraphStore implements ModelView {
     const edgeFlags = this.edges.column('edge.flags') as Uint32Array;
     const nodeGen = this.nodes.gen;
     const edgeGen = this.edges.gen;
-    // collecting the changed slots is only worth it when the bit is one
-    // a `case` condition reads — a bulk grabify() on 100k elements
-    // should not build an array nobody consumes
-    const styled =
-      (bit & CONDITION_FLAG_MASK) !== 0 &&
-      this.onStateChange != null &&
-      CONDITION_KEY_OF.has(bit);
+    // collecting the changed slots is only worth it when some `case`
+    // condition actually *watches* the bit — a bulk grabify() (or lock,
+    // under the default sheet, which watches selection and press only)
+    // should not build an array `noteStateChange` then discards.  The
+    // 57.1d gate stopped at "is a condition-family bit", which left
+    // every unwatched state paying the collection: measured at 1.83×
+    // on a 256-band lock+unlock through the built bundle (round 61.5).
+    // Per group, because the watched sets are.
+    const stateKey = CONDITION_KEY_OF.get(bit);
+    const notify = stateKey != null && this.onStateChange != null;
+    const styledNodes = notify && this.watchedStates.nodes.has(stateKey);
+    const styledEdges = notify && this.watchedStates.edges.has(stateKey);
     const nodeStateSlots: number[] = [];
     const edgeStateSlots: number[] = [];
     let nMin = Infinity;
@@ -2286,7 +2291,7 @@ export class GraphStore implements ModelView {
       flags[slot] = next;
       changed++;
 
-      if (styled) {
+      if (isNode ? styledNodes : styledEdges) {
         (isNode ? nodeStateSlots : edgeStateSlots).push(slot);
       }
 

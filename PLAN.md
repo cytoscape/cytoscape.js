@@ -17190,6 +17190,11 @@ manual diff nobody had ever run.
   `style-bundle.mjs`-style re-check against the built bundle before
   anyone rewrites anything; listed so they are looked at, not so they
   are believed.
+  ***Re-checked by round 61.5 (2026-08-09)***: three of the four are
+  measurement artifacts (`elements()`/`contains` noise, `forEach`
+  order bias), and `lock + unlock` was real — 57.1d's flag path built
+  a changed-slot array for states no condition watches — fixed the
+  same day.  See the 61.5 record.
 
 ## Round 61 plan — the select regression: state flips write the diff, not the element (planned 2026-08-09)
 
@@ -17334,6 +17339,40 @@ round-trip 3.4 µs against 1.5.
   performance note rewritten from "what is not free" to the
   three-configuration contract; the `style.mjs` header and select-row
   comments; the summary rewrite (week 4 and the what-remains table).
+- [x] **61.5 The smaller flagged movers, re-checked through built
+  bundles** (2026-08-09, maintainer-requested) — the 60.4 list's
+  deferred half, measured the way that record demanded: the baseline
+  commit (`dc6d3505`, the 2026-08-05 published run's sha) built in a
+  worktree with today's rolldown so the A/B isolates library code
+  from toolchain, both bundles raced in one process under the suites'
+  own K=8 rotation and `do_not_optimize`.
+  **Three of four are noise, one was real, and the real one is
+  fixed.**  `elements()` reads 33.4 vs 35.4 ns (the published
+  8.5 → 39 ns was a tsx-environment artifact on both ends);
+  `contains()` is 1.00×; `forEach()` read 1.45× in a combined run
+  and **parity in all six isolated runs at both bench orders**
+  (3.51–3.66 µs both sides, with whichever side runs *first*
+  slightly ahead — the round-55 measurement-order bias, which is
+  what the published +48% was too).  `lock + unlock` reproduced at
+  **1.83×** (3.64 → 6.69 µs on a 256-band) — real, and localized on
+  sight: 57.1d's `flagRefs` gate collects changed slots for any
+  condition-*family* bit, but `noteStateChange` discards the array
+  for a key no `case` condition watches, so every bulk
+  lock/grabify/selectify under the default sheet (which watches
+  selection and press only) built a slot array nobody consumed.
+  The fix folds the per-group `watchedStates` check into the gate;
+  attribution proven by the fix collapsing the row to **4.51 vs
+  4.52 µs**.  No observable behaviour changes — the discarded array
+  was the whole defect — so the pin is the existing state-conditions
+  suite (watched bits still notify and restyle) plus the
+  `mutators.mjs` lock row.  The insertion moved the SHAPE_MASK
+  allowlist key and the throw gate failed naming it — the 37.1
+  mechanism's fifth live firing — re-keyed 2906 → 2912.
+  Verification: typecheck, 2111 + 337 + 24 Node specs, the throw
+  gate at 184/10/5/0, lint, format.  Playwright not re-run: the
+  change gates an allocation in the store and touches no rendered
+  or observable path, and the full Node tier is the coverage that
+  exercises `flagRefs` in both directions.
   Verification for the round: typecheck, **2111 Node + 315 module +
   24 soak tests**, the throw gate green at 184/10/5/0 over 199
   sites, lint, format, JSDoc 100%/100% with `@throws` 18/18,

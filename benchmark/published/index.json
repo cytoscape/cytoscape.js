@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-2026-08-09T16-39-39-390Z.json",
+      "date": "2026-08-09T16:39:39.390Z",
+      "commit": "e37d2444",
+      "commitSubject": "docs: round 60 closes — the record, the header, and the summary's week 4",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 426487,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": "round 60 baseline: quick profile after the round-59 force rebuild and round-60 tooling"
+    },
+    {
       "file": "results-render-2026-08-06T23-41-39-127Z.json",
       "date": "2026-08-06T23:41:39.127Z",
       "commit": "3c9c3e33",

@@ -27,9 +27,11 @@ is rewritten from that record — see *Maintaining this file* at the end.
   cross-commit benchmark comparison, so a performance regression is
   now something the site shows rather than something someone
   remembers — which it demonstrated immediately: under the default
-  stylesheet's new selection look, bulk selection currently runs ~3×
-  slower than v3 (from 38× faster), with the recovery route measured
-  and logged; see week 4.  The
+  stylesheet's new selection look, every select was restyling whole
+  elements, and bulk selection had quietly gone from 38× faster than
+  v3 to ~3× slower.  The same day's follow-up round fixed it (a state
+  flip now writes only the channels the flip changes; selection is
+  ~8× faster than v3 again); see week 4.  The
   preceding days added a maintainer-driven interaction arc (edges
   activate on press, v3's hit-test halos, pickable arrowheads) and the
   debug harness's move onto the default style, all described under
@@ -662,14 +664,25 @@ Both benchmark profiles were then measured fresh and run through the
 new comparison, **which found a real regression on its first use**.
 The rendering tier is clean — overall drift under one percent, and
 every apparent mover is a row family the record already knows to be
-noisy, moving in both directions at once.  The Node tier is not:
+noisy, moving in both directions at once.  The Node tier was not:
 since the default stylesheet gained its v3-parity selection look,
-every select and unselect restyles the selected elements, and bulk
-selection under out-of-the-box settings went from **38× faster than
-v3 to 3.3× slower** — the frozen v3 baseline beside it did not move,
-so it is the code, not the machine.  This is the designed cost of
-the new selection visuals paid on an unoptimised path; the record
-logs a measured, no-API-change route to winning most of it back.
+every select and unselect was restyling the selected elements in
+full, and bulk selection under out-of-the-box settings had gone from
+**38× faster than v3 to 3.3× slower** — the frozen v3 baseline
+beside it did not move, so it was the code, not the machine.
+
+**A follow-up round closed it the same day, by exactly the route the
+finding had measured.**  A selection flip is a one-bit change whose
+styling consequence is knowable up front — the difference between two
+cached style records — so the engine now writes only the channels
+that actually differ (one colour on a node, five on an edge) instead
+of re-deriving the whole element.  Bulk selection measures ~8×
+faster than v3 again, a change to a *geometry* property on selection
+still gets the full treatment it needs, and the whole thing is
+guarded by tests that were each proven able to fail.  The regression
+existed for four days and was caught by the first tool that could
+see it, which is the argument for the comparison pages in one
+sentence.
 
 ---
 
@@ -691,7 +704,6 @@ optional to scheduled (it also landed two days later).
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
 | Edge overlay band width | **a decision.** v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | `cy.collection( arg )` | **a decision.** It silently returns the empty collection where v3 builds from the argument — throw, port the v3 form, or record the permissiveness |
-| Selection speed under the default stylesheet | **work, with the route measured.** The default selection look makes every select restyle (~3× slower than v3 in bulk, from 38× faster); routing a state flip through the partitioned records instead of the per-element refresh wins most of it back. No API change |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |

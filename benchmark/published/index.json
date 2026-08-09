@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-2026-08-09T23-08-35-934Z.json",
+      "date": "2026-08-09T23:08:35.934Z",
+      "commit": "6df994f1",
+      "commitSubject": "docs(src): two comments caught by the round-61 sweep name the new wiring",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 423815,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": null
+    },
+    {
       "file": "results-render-2026-08-09T16-52-32-241Z.json",
       "date": "2026-08-09T16:52:32.241Z",
       "commit": "e37d2444",

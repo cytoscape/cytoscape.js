@@ -17321,6 +17321,14 @@ round-trip 3.4 µs against 1.5.
   (round-61 diff path) / 595 µs (all channels), with a startup probe
   asserting the paint sheet actually restyles, which is what catches
   control 2 in a benchmark run.
+  **And the quick profile was re-measured and published at the
+  round's close** (`6df994f1`, clean tree), so the 60.1 comparison
+  page — the tool that found the regression — shows the recovery
+  against its own baselines: whole-run drift vs the pre-regression
+  2026-08-05 run is **×1.017**, inside machine noise, with every
+  regressed select row recovered (mut-bulk 6301 → 231 µs against the
+  baseline's 47.9, the residual being the default sheet genuinely
+  restyling).
 - [x] **61.4 Closing docs sweep** (2026-08-09) — the 60.4 record
   annotated with the closure; the README's default-stylesheet
   performance note rewritten from "what is not free" to the

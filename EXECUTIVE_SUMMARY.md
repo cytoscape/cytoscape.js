@@ -653,6 +653,19 @@ extreme enough to show it, and one because a v3-shaped call
 (`cy.collection(array)`) silently returns an empty collection in v4 —
 a porting trap now logged for a decision.
 
+Both benchmark profiles were then measured fresh and run through the
+new comparison, **which found a real regression on its first use**.
+The rendering tier is clean — overall drift under one percent, and
+every apparent mover is a row family the record already knows to be
+noisy, moving in both directions at once.  The Node tier is not:
+since the default stylesheet gained its v3-parity selection look,
+every select and unselect restyles the selected elements, and bulk
+selection under out-of-the-box settings went from **38× faster than
+v3 to 3.3× slower** — the frozen v3 baseline beside it did not move,
+so it is the code, not the machine.  This is the designed cost of
+the new selection visuals paid on an unoptimised path; the record
+logs a measured, no-API-change route to winning most of it back.
+
 ---
 
 ## What remains before 4.0

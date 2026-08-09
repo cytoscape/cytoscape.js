@@ -330,7 +330,12 @@ state-conditioned one; the round-59 seed split; the 57.9 hit halo at
 ~2%, effectively free) and specs for `executePlan()` (the
 53.2-recorded gap) and the benchmark index.  Two of its own rows were
 caught measuring nothing by their controls, and one of those catches
-became ledger item 28.
+became ledger item 28.  Running both profiles fresh through the new
+comparison then **found a real regression on its first use** — the
+57.1d default sheet makes every select restyle, flipping bulk select
+from 38× faster than v3 to 3.3× slower — with the measured headroom
+logged in the 60.4 record; the renderer tier read clean (−0.7%
+drift).
 
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
@@ -4171,7 +4176,15 @@ tests the tooling was owed (`executePlan()`, the 53.2-recorded gap,
 and the benchmark index's judgements).  It adds **ledger item 28**
 (`cy.collection( anything )` silently ignores its argument where v3
 builds from it — found by one of the round's own benchmark controls)
-to the open questions; the queue is otherwise unchanged.
+to the open questions; the queue is otherwise unchanged.  **60.4 then
+ran both profiles fresh and the comparison found a real regression on
+its first use**: under the default stylesheet — which conditions on
+`selected` since 57.1d — every select/unselect restyles, so bulk
+select went 47.9 µs → 6.3 ms at 2k with the v3 control flat: v4
+flipped from 38× faster than v3 to 3.3× slower on that row.  The
+measured headroom is logged in the 60.4 record (route a state flip
+through the 57.1d partition records instead of `refreshMapped`); the
+renderer tier read clean at −0.7% drift over 290 shared rows.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -17079,3 +17092,65 @@ had ever run.
   `geoSpeedup` as an arithmetic mean (1); unfingerprinted runs merged
   into the first machine (1); the comparison link dropped from the
   trend table (1).
+
+- [x] **60.4 The first real runs through the comparison — and it found
+  a regression on its first use** (2026-08-09).  Both profiles were
+  measured fresh at `e37d2444` on the archive's machine (2d2ea233,
+  the box otherwise idle) and published: the quick profile (7.1 min,
+  all 8 jobs, clean tree) and the full renderer profile (19.9 min,
+  all 12 scenes — the suite grew from the baselines' 8, which the
+  page shows as new rows; published `--allow-dirty` because the only
+  dirt was the quick run sitting uncommitted in the archive itself,
+  no source differing from the commit).
+
+  **The renderer tier is clean.**  Drift −0.7% over 290 shared rows
+  against the 2026-08-05/06 baselines — a span containing the round-56
+  arrow trim, 57.1d's shader changes, round 52's WGSL minification and
+  round 58 — and every mover family appears in *both directions*
+  across scenes, which is the signature of the families the record
+  already calls noisy: the sub-millisecond compaction device rows
+  (×2.54 up on one scene, −60% on two others — rounds 29.5 and 52.2's
+  bimodality), the compound fit-all pair (+49% with labels, −29%
+  without, same scene), and the init/export rows (+19% labelled
+  against −32% unlabelled on the same 100k scene).  The steady-state
+  frame rows are unmoved and wall time holds the vsync floor
+  everywhere.
+
+  **The Node tier is not, and the finding is real.**  Drift reads
+  +8.2%, and decomposing it shows the drift *is* the regression
+  rather than the box (v3 controls all single-digit): one family
+  moved — everything containing a select.  `mut-bulk: select +
+  unselect` went **47.9 µs → 6.30 ms (×131)** with its v3 twin at
+  +6%, so v4 flipped from **38× faster than v3 to 3.3× slower** on
+  that row; the single-element round-trip went 106 ns → 4.92 µs
+  (v3: 2.6 µs), and the select-all/explore/drag scenarios follow at
+  ×10/×6.5/×4.5.
+
+  The cause is round 57.1d's designed behaviour arriving in rows that
+  predate it: the suites' bare `makeGpu` instances run v4's **default
+  stylesheet**, which now conditions on `selected`, so `dependsOnState`
+  is true out of the box and every select/unselect restyles the
+  changed slots — the round-4 skip that produced the 47.9 µs no longer
+  engages for a default-sheet instance.  The per-slot cost matches
+  60.2's deliberate measurement (~1.9 µs/slot).  **The headroom is
+  measured and directional, logged rather than fixed** (a measurement
+  round measures): `core.mts`'s `onStateChange` routes a flag flip
+  into `refreshMapped` — the general per-slot mapped-refresh path —
+  while the default sheet's defs are state-only *partitioned* (57.1d),
+  so a flip could resolve the slot's partition record by mask and
+  write only the channels whose value differs between the two
+  records, the machinery `applyPartitioned` already owns.  That is
+  appetite, not a call: no API moves.  Until then, the recorded
+  mitigation is the one 60.2's row already prices — a sheet that does
+  not condition on state keeps the 47.9 µs path, and
+  `mutators.mjs`/`scenarios.mjs`/`core+collection` now measure the
+  default-sheet price, which is the honest configuration for rows
+  named for what an app does out of the box.
+
+  Smaller Node-tier movers, deliberately *not* acted on: `elements()`
+  8.5 → 39 ns, `forEach` +48%, `contains` +11%, `lock + unlock` +63% —
+  nanosecond-to-microsecond rows measured through tsx, where round 34
+  showed a closure-heavy path measures the transpiler.  Each needs a
+  `style-bundle.mjs`-style re-check against the built bundle before
+  anyone rewrites anything; listed so they are looked at, not so they
+  are believed.

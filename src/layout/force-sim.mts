@@ -8,15 +8,23 @@ by iterating i's neighbors, never scattered from j — so a fixed loop
 order gives a fixed FP reduction order and bitwise-deterministic runs
 per executor):
 
-- **Repulsion** via a uniform-grid cutoff: the grid rebuilds each
-  iteration by counting sort (cell = the cutoff radius, so the 3×3
-  neighborhood covers every pair within range); the force falls off as
-  `repulsion · (1 − r/cutoff)²` along the separation.  The cutoff is
-  the mean ideal edge length — repulsion vanishes exactly where a
-  spring rests, so connected pairs settle at their edge length.  Coincident
-  points separate along a deterministic index-hash direction (a seeded
-  scatter makes this near-impossible, but degenerate inputs must not
-  NaN).
+- **Repulsion** (59.3): one smooth inverse-square law across all
+  pairs — force `repulsion · (cutoff/d)²` per pair (sfdp's p = 2
+  exponent, the default Hu chose to limit peripheral over-spread) —
+  evaluated exactly for the near field and by monopole approximation
+  for the far field.  The grid rebuilds each iteration by counting
+  sort (cell = the cutoff, the mean ideal edge length floored at 40);
+  the near field gathers the finest 3×3 exactly; a **pyramid** of
+  per-cell monopoles (count, Σx, Σy — each level halving the grid)
+  covers everything else: at each level the node gathers the aligned
+  6×6 block refining its parent's 3×3, minus its own 3×3 — every
+  region of space counted exactly once across levels (cosmos.gl v3's
+  shipped scheme; the round-18 cutoff falloff, which zeroed all force
+  past one edge length, is superseded — it had no long-range term at
+  all, which is why chains curled and clusters never separated).
+  Coincident points separate along a deterministic index-hash
+  direction (a seeded scatter makes this near-impossible, but
+  degenerate inputs must not NaN).
 - **Springs** along edges toward the per-edge ideal length, under
   d3-force's degree-normalised rule (round 59.1): per edge
   `k = stiffness / min(deg(s), deg(t))`, and the end being gathered
@@ -53,6 +61,8 @@ force pair but never move.
 */
 
 export interface ForceParams {
+  /** the pairwise push, in px per tick, at exactly one cutoff length
+   * (the force law is `repulsion · (cutoff/d)²`) */
   repulsion: number;
   /** the fraction of an edge's length residual corrected per tick,
    * before degree normalisation (dimensionless; stable ≤ ~1) */
@@ -74,7 +84,9 @@ export interface ForceParams {
  * comparable at all (18.3).
  */
 export const defaultForceParams = (): ForceParams => ({
-  repulsion: 200,
+  // 59.3: repulsion is now the push at one cutoff length under the
+  // inverse-square law (the old value belonged to the cutoff falloff)
+  repulsion: 1,
   // 59.1: stiffness is now the *fraction of the residual* corrected per
   // tick (d3's semantics), bounded per node by the degree-normalised
   // rule — 0.6 provisionally; 59.6 finalises the set together
@@ -155,6 +167,16 @@ export class ForceSim {
   private gridRows = 0;
   private gridX = 0;
   private gridY = 0;
+  /** the monopole pyramid (59.3): per level, per-cell count/Σx/Σy —
+   * level 0 at the grid's own resolution, each level above halving it,
+   * topping out once a level is ≤ 3 cells on its longer side */
+  private pyr: {
+    cols: number;
+    rows: number;
+    count: Float64Array;
+    sx: Float64Array;
+    sy: Float64Array;
+  }[] = [];
   private settledRuns = 0;
 
   /**
@@ -324,6 +346,60 @@ export class ForceSim {
     for (let i = 0; i < n; i++) {
       this.cellItems[cursor[this.cellOf[i]]++] = i;
     }
+
+    // the monopole pyramid (59.3).  Level 0 accumulates in ascending
+    // node order — a fixed FP reduction order, so runs stay bitwise
+    // deterministic; the level-above sums walk cells in ascending
+    // order for the same reason.
+    this.pyr.length = 0;
+
+    let lvCols = this.gridCols;
+    let lvRows = this.gridRows;
+    let level = {
+      cols: lvCols,
+      rows: lvRows,
+      count: new Float64Array(cells),
+      sx: new Float64Array(cells),
+      sy: new Float64Array(cells),
+    };
+
+    for (let i = 0; i < n; i++) {
+      const c = this.cellOf[i];
+
+      level.count[c]++;
+      level.sx[c] += pos[i * 2];
+      level.sy[c] += pos[i * 2 + 1];
+    }
+
+    this.pyr.push(level);
+
+    while (Math.max(lvCols, lvRows) > 3) {
+      const nc = Math.ceil(lvCols / 2);
+      const nr = Math.ceil(lvRows / 2);
+      const up = {
+        cols: nc,
+        rows: nr,
+        count: new Float64Array(nc * nr),
+        sx: new Float64Array(nc * nr),
+        sy: new Float64Array(nc * nr),
+      };
+
+      for (let yy = 0; yy < lvRows; yy++) {
+        for (let xx = 0; xx < lvCols; xx++) {
+          const src = yy * lvCols + xx;
+          const dst = (yy >> 1) * nc + (xx >> 1);
+
+          up.count[dst] += level.count[src];
+          up.sx[dst] += level.sx[src];
+          up.sy[dst] += level.sy[src];
+        }
+      }
+
+      this.pyr.push(up);
+      level = up;
+      lvCols = nc;
+      lvRows = nr;
+    }
   }
 
   private iterate(): void {
@@ -376,10 +452,6 @@ export class ForceSim {
             let dy = y - pos[j * 2 + 1];
             let d2 = dx * dx + dy * dy;
 
-            if (d2 >= cutoff2) {
-              continue;
-            }
-
             if (d2 < 1e-8) {
               // coincident: separate along a deterministic hash direction
               const h = ((i * 31 + j) * 2654435761) >>> 0;
@@ -390,14 +462,59 @@ export class ForceSim {
               d2 = 1e-4;
             }
 
-            const r = Math.sqrt(d2);
-            const fall = 1 - r / cutoff;
-            const f = (repulsion * fall * fall) / r;
+            // the unified law: repulsion · cutoff² / d², softened
+            // inside 1 px (the cap bounds it anyway)
+            const d = Math.sqrt(d2);
+            const f = (repulsion * cutoff2) / Math.max(1, d2) / d;
 
             fx += dx * f;
             fy += dy * f;
           }
         }
+      }
+
+      // the far field (59.3): per pyramid level, gather the ring — the
+      // aligned 6×6 block refining the parent's 3×3, minus this
+      // level's own 3×3 — as monopoles.  Fixed iteration order, so the
+      // reduction stays deterministic.
+      let cellX = cx;
+      let cellY = cy;
+
+      for (let lv = 0; lv < this.pyr.length; lv++) {
+        const level = this.pyr[lv];
+        const qx = cellX >> 1;
+        const qy = cellY >> 1;
+        const bx0 = Math.max(0, 2 * qx - 2);
+        const bx1 = Math.min(level.cols - 1, 2 * qx + 3);
+        const by0 = Math.max(0, 2 * qy - 2);
+        const by1 = Math.min(level.rows - 1, 2 * qy + 3);
+
+        for (let yy = by0; yy <= by1; yy++) {
+          for (let xx = bx0; xx <= bx1; xx++) {
+            if (Math.abs(xx - cellX) <= 1 && Math.abs(yy - cellY) <= 1) {
+              continue;
+            }
+
+            const c = yy * level.cols + xx;
+            const cnt = level.count[c];
+
+            if (cnt === 0) {
+              continue;
+            }
+
+            const dx = x - level.sx[c] / cnt;
+            const dy = y - level.sy[c] / cnt;
+            const d2 = Math.max(1, dx * dx + dy * dy);
+            const d = Math.sqrt(d2);
+            const f = (cnt * repulsion * cutoff2) / d2 / d;
+
+            fx += dx * f;
+            fy += dy * f;
+          }
+        }
+
+        cellX = qx;
+        cellY = qy;
       }
 
       // springs along incident edges (gather side), degree-normalised

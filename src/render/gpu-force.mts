@@ -3,11 +3,21 @@ The GPU force integrator (round 18.3): the 18.1 reference simulation's
 kernels, run on-device while a `force` layout animates a flat rendered
 graph — the round-9 "GPU layouts" design, built.
 
-Structure per iteration (six dispatches, encoded before the frame's
-cull pass so edges/labels read the advanced positions):
+Structure per iteration (encoded before the frame's cull pass so
+edges/labels read the advanced positions):
 
   clear grid → bin count → serial exclusive scan → scatter →
-  force gather → apply
+  pyramid aggregate → pyramid reduce (per level) → force gather →
+  apply
+
+The 59.3 far field rides a **monopole pyramid** over the binning grid
+(count/Σx/Σy per cell, each level halving the dims): the force kernel
+gathers the finest 3×3 exactly and, per level, the aligned 6×6 block
+refining the parent's 3×3 minus its own 3×3 — the CPU sim's scheme,
+kernel for kernel.  `cellStart`, `cellItems` and the pyramid share
+**one grid buffer** ([starts][items][f32 triplets, bitcast]), which is
+what keeps the force kernel at 7 storage bindings after the far field
+joined — the round-58 freed-binding lesson applied to compute.
 
 The sim is **sim-indexed** (compacted over the participating leaves),
 with a final publish step inside `apply` scattering movable nodes'
@@ -66,6 +76,24 @@ struct FParams {
   stiffness: f32,
   gravity: f32,
   anchorBase: u32,
+  levels: u32,
+  pyrBase: u32,
+  pad0: u32,
+  pad1: u32,
+}
+`;
+
+/** the per-level uniform the pyramid reduce kernel takes (59.3) */
+const LEVEL_PRELUDE = wgsl`
+struct LParams {
+  srcCols: u32,
+  srcRows: u32,
+  srcBase: u32,
+  dstCols: u32,
+  dstRows: u32,
+  dstBase: u32,
+  pad0: u32,
+  pad1: u32,
 }
 `;
 
@@ -102,50 +130,112 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   scanCells: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read_write> cellCount: array<atomic<u32>>;
-@group(0) @binding(2) var<storage, read_write> cellStart: array<u32>;
+@group(0) @binding(2) var<storage, read_write> grid: array<u32>;
 
 // serial exclusive scan over the (bounded) cell array; also rewinds
-// the counters so scatter can reuse them as cursors
+// the counters so scatter can reuse them as cursors.  cellStart lives
+// at the head of the shared grid buffer (59.3's fold).
 @compute @workgroup_size(1)
 fn main() {
   var sum = 0u;
   for (var c = 0u; c < params.cells; c = c + 1u) {
     let count = atomicLoad(&cellCount[c]);
-    cellStart[c] = sum;
+    grid[c] = sum;
     sum = sum + count;
     atomicStore(&cellCount[c], 0u);
   }
-  cellStart[params.cells] = sum;
+  grid[params.cells] = sum;
 }`,
 
   scatter: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read> cellOf: array<u32>;
 @group(0) @binding(2) var<storage, read_write> cellCount: array<atomic<u32>>;
-@group(0) @binding(3) var<storage, read> cellStart: array<u32>;
-@group(0) @binding(4) var<storage, read_write> cellItems: array<u32>;
+@group(0) @binding(3) var<storage, read_write> grid: array<u32>;
 
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let i = gid.x;
   if (i >= params.n) { return; }
   let c = cellOf[i];
-  cellItems[cellStart[c] + atomicAdd(&cellCount[c], 1u)] = i;
+  let itemsBase = params.cells + 1u;
+  grid[itemsBase + grid[c] + atomicAdd(&cellCount[c], 1u)] = i;
+}`,
+
+  // level-0 monopoles: one thread per finest cell walks its item list
+  // and *writes* (never accumulates — no clear pass needed) the
+  // count/Σx/Σy triplet into the pyramid region
+  aggregate: wgsl`${PRELUDE}
+@group(0) @binding(0) var<uniform> params: FParams;
+@group(0) @binding(1) var<storage, read> simPos: array<f32>;
+@group(0) @binding(2) var<storage, read_write> grid: array<u32>;
+
+@compute @workgroup_size(${WG})
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let c = gid.x;
+  if (c >= params.cells) { return; }
+  let itemsBase = params.cells + 1u;
+  var cnt = 0.0;
+  var sx = 0.0;
+  var sy = 0.0;
+  for (var at = grid[c]; at < grid[c + 1u]; at = at + 1u) {
+    let j = grid[itemsBase + at];
+    cnt = cnt + 1.0;
+    sx = sx + simPos[j * 2u];
+    sy = sy + simPos[j * 2u + 1u];
+  }
+  let o = params.pyrBase + c * 3u;
+  grid[o] = bitcast<u32>(cnt);
+  grid[o + 1u] = bitcast<u32>(sx);
+  grid[o + 2u] = bitcast<u32>(sy);
+}`,
+
+  // one dispatch per pyramid level: each coarse cell sums its <= 4
+  // children — a fixed reduction, deterministic per executor
+  reduce: wgsl`${LEVEL_PRELUDE}
+@group(0) @binding(0) var<uniform> lp: LParams;
+@group(0) @binding(1) var<storage, read_write> grid: array<u32>;
+
+@compute @workgroup_size(${WG})
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let d = gid.x;
+  if (d >= lp.dstCols * lp.dstRows) { return; }
+  let dx = d % lp.dstCols;
+  let dy = d / lp.dstCols;
+  var cnt = 0.0;
+  var sx = 0.0;
+  var sy = 0.0;
+  for (var oy = 0u; oy < 2u; oy = oy + 1u) {
+    for (var ox = 0u; ox < 2u; ox = ox + 1u) {
+      let sxc = dx * 2u + ox;
+      let syc = dy * 2u + oy;
+      if (sxc < lp.srcCols && syc < lp.srcRows) {
+        let s = lp.srcBase + (syc * lp.srcCols + sxc) * 3u;
+        cnt = cnt + bitcast<f32>(grid[s]);
+        sx = sx + bitcast<f32>(grid[s + 1u]);
+        sy = sy + bitcast<f32>(grid[s + 2u]);
+      }
+    }
+  }
+  let o = lp.dstBase + d * 3u;
+  grid[o] = bitcast<u32>(cnt);
+  grid[o + 1u] = bitcast<u32>(sx);
+  grid[o + 2u] = bitcast<u32>(sy);
 }`,
 
   force: wgsl`${PRELUDE}
 @group(0) @binding(0) var<uniform> params: FParams;
 @group(0) @binding(1) var<storage, read> simPos: array<f32>;
 @group(0) @binding(2) var<storage, read_write> forces: array<f32>;
-@group(0) @binding(3) var<storage, read> cellStart: array<u32>;
-@group(0) @binding(4) var<storage, read> cellItems: array<u32>;
-// the incident CSR packed as [n+1 starts][edge indices]
-@group(0) @binding(5) var<storage, read> csr: array<u32>;
+// [cellStart (cells+1)][cellItems (n)][pyramid f32 triplets] (59.3)
+@group(0) @binding(3) var<storage, read> grid: array<u32>;
+// the incident CSR packed as [n+1 starts][edge indices][anchors]
+@group(0) @binding(4) var<storage, read> csr: array<u32>;
 // edges at stride 3: [source, target, bitcast(edgeLength)]
-@group(0) @binding(6) var<storage, read> edgesPacked: array<u32>;
+@group(0) @binding(5) var<storage, read> edgesPacked: array<u32>;
 // slot | pinned << 31
-@group(0) @binding(7) var<storage, read> slotPin: array<u32>;
-@group(0) @binding(8) var<storage, read_write> fmeta: array<atomic<u32>>;
+@group(0) @binding(6) var<storage, read> slotPin: array<u32>;
+@group(0) @binding(7) var<storage, read_write> fmeta: array<atomic<u32>>;
 
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid: vec3u) {
@@ -161,22 +251,22 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   var fy = 0.0;
   let cutoff = params.cutoff;
   let cutoff2 = cutoff * cutoff;
+  let itemsBase = params.cells + 1u;
 
-  // repulsion over the 3x3 cell neighborhood (the CPU gather, verbatim);
-  // the cell recomputes from the position (cellOf stays unbound here)
+  // near field: exact pairs over the finest 3x3 (the CPU gather,
+  // verbatim); the cell recomputes from the position (cellOf unbound)
   let cx = i32(clamp((x - params.gridX) / params.cellSize, 0.0, f32(params.gridCols - 1u)));
   let cy = i32(clamp((y - params.gridY) / params.cellSize, 0.0, f32(params.gridRows - 1u)));
 
   for (var gy = max(0, cy - 1); gy <= min(i32(params.gridRows) - 1, cy + 1); gy = gy + 1) {
     for (var gx = max(0, cx - 1); gx <= min(i32(params.gridCols) - 1, cx + 1); gx = gx + 1) {
       let c = u32(gy) * params.gridCols + u32(gx);
-      for (var at = cellStart[c]; at < cellStart[c + 1u]; at = at + 1u) {
-        let j = cellItems[at];
+      for (var at = grid[c]; at < grid[c + 1u]; at = at + 1u) {
+        let j = grid[itemsBase + at];
         if (j == i) { continue; }
         var dx = x - simPos[j * 2u];
         var dy = y - simPos[j * 2u + 1u];
         var d2 = dx * dx + dy * dy;
-        if (d2 >= cutoff2) { continue; }
         if (d2 < 1e-8) {
           let h = (i * 31u + j) * 2654435761u;
           let a = f32(h & 0xffffu) / 65536.0 * 6.28318530718;
@@ -184,13 +274,52 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
           dy = sin(a) * 0.01;
           d2 = 1e-4;
         }
-        let r = sqrt(d2);
-        let fall = 1.0 - r / cutoff;
-        let f = params.repulsion * fall * fall / r;
+        let d = sqrt(d2);
+        let f = params.repulsion * cutoff2 / max(1.0, d2) / d;
         fx = fx + dx * f;
         fy = fy + dy * f;
       }
     }
+  }
+
+  // far field (59.3): per pyramid level, the aligned 6x6 block
+  // refining the parent's 3x3 minus this level's own 3x3, gathered as
+  // monopoles — the CPU sim's rings, verbatim
+  var lvCols = params.gridCols;
+  var lvRows = params.gridRows;
+  var lvBase = params.pyrBase;
+  var cellX = cx;
+  var cellY = cy;
+
+  for (var lv = 0u; lv < params.levels; lv = lv + 1u) {
+    let qx = cellX >> 1;
+    let qy = cellY >> 1;
+    let bx0 = max(0, 2 * qx - 2);
+    let bx1 = min(i32(lvCols) - 1, 2 * qx + 3);
+    let by0 = max(0, 2 * qy - 2);
+    let by1 = min(i32(lvRows) - 1, 2 * qy + 3);
+
+    for (var yy = by0; yy <= by1; yy = yy + 1) {
+      for (var xx = bx0; xx <= bx1; xx = xx + 1) {
+        if (abs(xx - cellX) <= 1 && abs(yy - cellY) <= 1) { continue; }
+        let o = lvBase + (u32(yy) * lvCols + u32(xx)) * 3u;
+        let cnt = bitcast<f32>(grid[o]);
+        if (cnt == 0.0) { continue; }
+        let dx = x - bitcast<f32>(grid[o + 1u]) / cnt;
+        let dy = y - bitcast<f32>(grid[o + 2u]) / cnt;
+        let d2 = max(1.0, dx * dx + dy * dy);
+        let d = sqrt(d2);
+        let f = cnt * params.repulsion * cutoff2 / d2 / d;
+        fx = fx + dx * f;
+        fy = fy + dy * f;
+      }
+    }
+
+    lvBase = lvBase + lvCols * lvRows * 3u;
+    cellX = qx;
+    cellY = qy;
+    lvCols = (lvCols + 1u) >> 1u;
+    lvRows = (lvRows + 1u) >> 1u;
   }
 
   // springs (gather side of the packed incident CSR), degree-normalised
@@ -320,6 +449,10 @@ export class GpuForceRuntime {
   private cells: number;
   private gridCols: number;
   private gridRows: number;
+  /** per pyramid level: [cols, rows, cellCount] (59.3) */
+  private levelDims: [number, number, number][] = [];
+  /** one reduce bind group per level above the finest */
+  private reduceGroups: GPUBindGroup[] = [];
   private settledRuns = 0;
   private destroyed = false;
 
@@ -386,12 +519,35 @@ export class GpuForceRuntime {
       return buffer;
     };
 
+    // the pyramid's level dims (59.3): level 0 at grid resolution,
+    // halving until a level is <= 3 cells on its longer side — the CPU
+    // sim's rule, and the frame is fixed for the run so this is too
+    this.levelDims = [[this.gridCols, this.gridRows, this.cells]];
+
+    {
+      let lc = this.gridCols;
+      let lr = this.gridRows;
+
+      while (Math.max(lc, lr) > 3) {
+        lc = (lc + 1) >> 1;
+        lr = (lr + 1) >> 1;
+        this.levelDims.push([lc, lr, lc * lr]);
+      }
+    }
+
+    const pyrBase = this.cells + 1 + n;
+    let pyrCells = 0;
+
+    for (const [, , count] of this.levelDims) {
+      pyrCells += count;
+    }
+
     mk('simPos', n * 8, SU | BUFFER_USAGE.COPY_SRC, inputs.positions);
     mk('forces', n * 8, SU);
     mk('cellOf', n * 4, SU);
     mk('cellCount', this.cells * 4, SU);
-    mk('cellStart', (this.cells + 1) * 4, SU);
-    mk('cellItems', n * 4, SU);
+    // the shared grid buffer (59.3's fold): [cellStart][cellItems][pyr]
+    mk('grid', (pyrBase + pyrCells * 3) * 4, SU);
 
     // packed incident CSR: [n+1 starts][edge indices][anchors] — the
     // 59.2 anchor field rides the tail (bitcast f32) so the force
@@ -460,10 +616,10 @@ export class GpuForceRuntime {
     const p = inputs.params;
     const uniform = mk(
       'params',
-      48,
+      64,
       BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
     );
-    const u = new ArrayBuffer(48);
+    const u = new ArrayBuffer(64);
     const u32 = new Uint32Array(u);
     const f32 = new Float32Array(u);
 
@@ -479,6 +635,8 @@ export class GpuForceRuntime {
     f32[9] = p.stiffness;
     f32[10] = p.gravity;
     u32[11] = anchorBase;
+    u32[12] = this.levelDims.length;
+    u32[13] = pyrBase;
     device.queue.writeBuffer(uniform, 0, u);
 
     // per-kernel pipelines (layout 'auto' — each kernel's bindings are
@@ -510,25 +668,66 @@ export class GpuForceRuntime {
 
     bind('clearGrid', ['params', 'cellCount']);
     bind('binCount', ['params', 'simPos', 'cellOf', 'cellCount']);
-    bind('scanCells', ['params', 'cellCount', 'cellStart']);
-    bind('scatter', [
-      'params',
-      'cellOf',
-      'cellCount',
-      'cellStart',
-      'cellItems',
-    ]);
+    bind('scanCells', ['params', 'cellCount', 'grid']);
+    bind('scatter', ['params', 'cellOf', 'cellCount', 'grid']);
+    bind('aggregate', ['params', 'simPos', 'grid']);
     bind('force', [
       'params',
       'simPos',
       'forces',
-      'cellStart',
-      'cellItems',
+      'grid',
       'csr',
       'edgesPacked',
       'slotPin',
       'meta',
     ]);
+
+    // one uniform + bind group per pyramid level above the finest —
+    // the frame (and so every level's dims and offset) is fixed for
+    // the run, so these are built once
+    {
+      let srcBase = pyrBase;
+
+      for (let lv = 1; lv < this.levelDims.length; lv++) {
+        const [srcCols, srcRows, srcCount] = this.levelDims[lv - 1];
+        const [dstCols, dstRows] = this.levelDims[lv];
+        const dstBase = srcBase + srcCount * 3;
+        const lu = new Uint32Array([
+          srcCols,
+          srcRows,
+          srcBase,
+          dstCols,
+          dstRows,
+          dstBase,
+          0,
+          0,
+        ]);
+        const lbuf = device.createBuffer({
+          label: `cy-gpu:force-level-${lv}`,
+          size: 32,
+          usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
+        });
+
+        device.queue.writeBuffer(lbuf, 0, lu.buffer);
+        this.buffersByName.set(`level${lv}`, lbuf);
+        this.reduceGroups.push(
+          device.createBindGroup({
+            label: `cy-gpu:force-reduce-${lv}-group`,
+            layout: this.pipelines.reduce.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: lbuf } },
+              {
+                binding: 1,
+                resource: {
+                  buffer: this.buffersByName.get('grid') as GPUBuffer,
+                },
+              },
+            ],
+          }),
+        );
+        srcBase = dstBase;
+      }
+    }
   }
 
   /**
@@ -625,6 +824,14 @@ export class GpuForceRuntime {
       run('binCount', Math.ceil(n / WG));
       run('scanCells', 1);
       run('scatter', Math.ceil(n / WG));
+      run('aggregate', Math.ceil(this.cells / WG));
+
+      for (let lv = 1; lv < this.levelDims.length; lv++) {
+        pass.setPipeline(this.pipelines.reduce);
+        pass.setBindGroup(0, this.reduceGroups[lv - 1]);
+        pass.dispatchWorkgroups(Math.ceil(this.levelDims[lv][2] / WG));
+      }
+
       run('force', Math.ceil(n / WG));
       run('apply', Math.ceil(n / WG));
     }

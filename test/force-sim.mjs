@@ -368,6 +368,174 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
     expect(meanLink).to.be.within(30, 200);
   });
 
+  // -- round 59.3: the far field --
+
+  it('far pairs repel: the force reaches past the grid cutoff', function () {
+    // two unconnected nodes five cutoffs apart.  Under the round-18
+    // cutoff model the force between them was exactly zero — they sat
+    // forever (gravity off), so *any* strict growth discriminates.
+    // threshold 0 keeps the sub-threshold far force from reading as
+    // settled before it accumulates.
+    const positions = new Float32Array([0, 0, 300, 0]);
+    const sim = new ForceSim({
+      n: 2,
+      edges: new Uint32Array(0),
+      edgeLength: new Float32Array(0),
+      positions,
+      ...defaultForceParams(),
+      gravity: 0,
+      threshold: 0,
+      iterations: 100,
+    });
+
+    sim.step(100);
+
+    const d = Math.hypot(
+      positions[2] - positions[0],
+      positions[3] - positions[1],
+    );
+
+    expect(d).to.be.greaterThan(301);
+  });
+
+  it('the pyramid approximates the exact pairwise sum', function () {
+    // one iteration of pure repulsion over a deterministic scatter,
+    // against the exact O(n²) sum under the same law — the coverage
+    // proof: every region of space is counted exactly once across the
+    // near field and the per-level rings (a missed ring reads as a
+    // systematic shortfall here, not noise)
+    const n = 300;
+    const positions = new Float32Array(n * 2);
+
+    seedPositions(n, 5, 900, positions);
+
+    const before = positions.slice();
+    const params = {
+      ...defaultForceParams(),
+      stiffness: 0,
+      gravity: 0,
+      iterations: 1,
+    };
+    const sim = new ForceSim({
+      n,
+      edges: new Uint32Array(0),
+      edgeLength: new Float32Array(0),
+      positions,
+      ...params,
+    });
+
+    sim.step(1);
+
+    // the exact sum under the sim's own law: repulsion · L² / d² per
+    // pair, L = the cutoff (no edges, so cutoff = the 40px floor... the
+    // sim derives it; recompute the same way)
+    const L = 60; // no edges: the sim falls back to a 60px mean
+    const cutoff = Math.max(40, L);
+    const errs = [];
+
+    for (let i = 0; i < n; i++) {
+      let fx = 0;
+      let fy = 0;
+
+      for (let j = 0; j < n; j++) {
+        if (j === i) {
+          continue;
+        }
+
+        const dx = before[i * 2] - before[j * 2];
+        const dy = before[i * 2 + 1] - before[j * 2 + 1];
+        const d2 = Math.max(1, dx * dx + dy * dy);
+        const d = Math.sqrt(d2);
+        const f = (params.repulsion * cutoff * cutoff) / d2 / d;
+
+        fx += dx * f;
+        fy += dy * f;
+      }
+
+      // one iteration at alpha 1: displacement = the capped force
+      const cap = cutoff * 1;
+      const len = Math.hypot(fx, fy);
+
+      if (len > cap) {
+        fx = (fx / len) * cap;
+        fy = (fy / len) * cap;
+      }
+
+      const gotX = positions[i * 2] - before[i * 2];
+      const gotY = positions[i * 2 + 1] - before[i * 2 + 1];
+      const err =
+        Math.hypot(gotX - fx, gotY - fy) / Math.max(1e-6, Math.hypot(fx, fy));
+
+      errs.push(err);
+    }
+
+    errs.sort((a, b) => a - b);
+
+    // monopole error: median well under 10%, tail bounded
+    expect(errs[Math.floor(n / 2)]).to.be.lessThan(0.1);
+    expect(errs[n - 1]).to.be.lessThan(0.5);
+  });
+
+  it('a well-laid-out grid is preserved, not destroyed', function () {
+    // a 12x12 mesh seeded at its true grid positions: refinement may
+    // inflate it slightly (repulsion pressure) but must keep links near
+    // the ideal — a model that destroys a good layout cannot be saved
+    // by any seed (the round-59 acceptance guard)
+    const side = 12;
+    const n = side * side;
+    const list = [];
+
+    for (let y = 0; y < side; y++) {
+      for (let x = 0; x < side; x++) {
+        const i = y * side + x;
+
+        if (x + 1 < side) {
+          list.push(i, i + 1);
+        }
+        if (y + 1 < side) {
+          list.push(i, i + side);
+        }
+      }
+    }
+
+    const edges = Uint32Array.from(list);
+    const positions = new Float32Array(n * 2);
+
+    for (let y = 0; y < side; y++) {
+      for (let x = 0; x < side; x++) {
+        positions[(y * side + x) * 2] = (x - side / 2) * 66;
+        positions[(y * side + x) * 2 + 1] = (y - side / 2) * 66;
+      }
+    }
+
+    const sim = new ForceSim({
+      n,
+      edges,
+      edgeLength: new Float32Array(edges.length / 2).fill(60),
+      positions,
+      ...defaultForceParams(),
+    });
+
+    while (!sim.converged()) {
+      sim.step(50);
+    }
+
+    const m = edges.length / 2;
+    let linkSum = 0;
+
+    for (let e = 0; e < m; e++) {
+      const s = edges[e * 2];
+      const t = edges[e * 2 + 1];
+
+      linkSum += Math.hypot(
+        positions[s * 2] - positions[t * 2],
+        positions[s * 2 + 1] - positions[t * 2 + 1],
+      );
+    }
+
+    expect(linkSum / m).to.be.within(45, 100);
+  });
+
   it('relaxes a path to rest lengths without collapsing', function () {
     // what a cutoff model guarantees: links settle near their ideal
     // length and no two nodes collapse together.  It does NOT promise

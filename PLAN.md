@@ -16698,11 +16698,36 @@ unchanged.
   since a re-pack translates whole components and a locked node must
   never move (recorded scope note, pinned by spec).  28 Node force
   specs + 3 GPU force specs green against a fresh build.
-- [ ] **59.3 The far field** — the pyramid on both executors behind the
-  unified force law; the grid-buffer fold on the GPU; specs pin
-  near/far agreement (a far pair's force from the pyramid within
-  tolerance of the exact pair sum) and the untangling gain is measured,
-  not asserted.
+- [x] **59.3 The far field** (2026-08-09) — landed on both executors:
+  one inverse-square law across all pairs (`repulsion · (cutoff/d)²`,
+  sfdp's p = 2; `repulsion` re-read as the push at one cutoff length,
+  provisionally 1), the near field exact over the finest 3×3, and the
+  far field from a monopole pyramid over the binning grid — per level,
+  the aligned 6×6 block refining the parent's 3×3 minus the level's
+  own 3×3, cosmos.gl v3's shipped scheme.  On the GPU, `cellStart`,
+  `cellItems` and the pyramid fold into **one grid buffer**, so the
+  force kernel lands at 7 storage bindings with the far field in; two
+  new kernels (per-cell aggregate — write-only, so no clear pass —
+  and a per-level reduce driven by per-level uniforms built once,
+  since the frame is fixed per run).  The law choice was swept in a
+  scratch prototype first, whose decisive probe is now a spec: **a
+  12×12 mesh seeded at its true grid positions keeps its links near
+  ideal** — a model that destroys a good layout cannot be saved by
+  any seed.
+  Three controls, and two of them were findings.  The CPU
+  pyramid-vs-exact spec (one pure-repulsion iteration against the
+  exact O(n²) sum — median error < 10%) **fails when the level-0 ring
+  is skipped**, which is precisely the coverage bug the prototype's
+  first draft had.  The 18.4 invariant spec **failed to fail** with
+  the WGSL far field neutered — it does not discriminate the far
+  field — so a dedicated GPU spec now does (an unconnected pair five
+  cutoffs apart, gravity off, moves strictly apart on the GPU
+  executor), and *its* first draft measured the wrong thing too: the
+  59.2 settle re-pack placed the two singleton components exactly
+  `componentSpacing + 1` apart, reading as motion.  A pinned
+  out-of-frame node (the re-pack's own skip rule) isolates the
+  physics; with the WGSL loop neutered the spec fails, restored it
+  passes.  31 Node force specs + 4 GPU force specs green.
 - [ ] **59.4 The spectral seed** — landmark MDS per component with the
   guards above, `init` option, determinism and quality specs (a path
   uncurls; a tree's mean edge length lands near ideal).

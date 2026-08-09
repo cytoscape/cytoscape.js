@@ -1992,6 +1992,65 @@ test.describe('WebGPU renderer', () => {
     expect(stats.gpuBb.w).toBeGreaterThan(100);
   });
 
+  test('the GPU far field reaches past the grid cutoff (round 59.3)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the GPU twin of the CPU sim's far-pair spec, and the control the
+    // 18.4 invariant spec turned out not to be: run once with the WGSL
+    // far-field loop neutered, 18.4 stayed green while this fails —
+    // two unconnected nodes five cutoffs apart move strictly apart
+    // only if the pyramid gather works on-device (gravity off,
+    // randomize off so the given positions are the seed, threshold 0
+    // so the sub-threshold far force never reads as settled).
+    //
+    // The locked node is load-bearing, and the first draft of this
+    // spec is why: without it, the settle re-pack (59.2) placed the
+    // two singleton components exactly componentSpacing + 1 apart and
+    // the spec measured the packer, not the physics.  A pinned node
+    // skips the re-pack by design, leaving the far field as the only
+    // thing that can move the pair.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 100, y: 150 } },
+        { data: { id: 'b' }, position: { x: 400, y: 150 } },
+        { data: { id: 'pin' }, position: { x: 10000, y: 10000 } },
+      ],
+      style: { nodes: { width: 10, height: 10 } },
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+    });
+    await page.evaluate(() => window.cy.$id('pin').lock());
+    await waitFrames(page);
+
+    const dist = await page.evaluate(async () => {
+      const cy = window.cy;
+
+      await cy
+        .layout({
+          name: 'force',
+          animate: true,
+          randomize: false,
+          gravity: 0,
+          threshold: 0,
+          iterations: 80,
+          stepsPerFrame: 8,
+          fit: false,
+        })
+        .run()
+        .promise();
+
+      const a = cy.$id('a').position();
+      const b = cy.$id('b').position();
+
+      return Math.hypot(b.x - a.x, b.y - a.y);
+    });
+
+    expect(dist).toBeGreaterThan(301);
+    expect(Number.isFinite(dist)).toBe(true);
+  });
+
   test('two-finger pinch zooms about the midpoint', async ({ page }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 

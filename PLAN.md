@@ -16002,6 +16002,56 @@ bakes into the shader where v3 spells them in its default stylesheet.
   live.  Arrows also stay out of `boundingBox()` — 57.10 changes
   picking only.
 
+- [x] **57.11 The default style carries the show** (2026-08-08) — the
+  maintainer restated v3's style philosophy as two rules and asked the
+  debug page to follow them.  Rule one: the default style is minimal
+  and carries the affordances — grey nodes and edges, blue on
+  selection, the active-overlay press wash.  That has been v4's default
+  sheet since 57.1, verified live this round (`#999`, `#0169D9`,
+  overlay 0.25) — the work was everything sitting *on top* of it.
+  Rule two: a custom sheet must not bury those affordances.
+
+  What changed, all in `debug/`:
+
+  - **The 'plain' style kind is now 'default', and it is an empty
+    sheet.**  The old hand-written "plain" sheet (small blue discs) was
+    itself a style, so it demonstrated neither the defaults nor the
+    renderer alone.  The dropdown says "Default (v4's default
+    stylesheet)"; the legacy `?style=plain` URL still resolves.
+  - **The four v3 demo ports are v3-minimal.**  v3's own demo sheets
+    style *nothing but the demoed feature* — node-types is `shape:
+    data(type)` + a label + a 40px body; edge-types is the curve
+    families and `width: 3` (10 for straight-triangle, v3's own value);
+    edge-arrows is the head mappers on a 16px body; labels styles only
+    label channels.  The v4 ports had grown blue-grey house colours,
+    borders and fonts on all four; those are gone, so every demo now
+    shows default grey with working selection blue.
+  - **Every production sheet re-states selection.**  Selection blue is
+    a default-sheet conditional, so a sheet naming a colour channel
+    replaces it — v3's own precedence.  Constant colours wrap in
+    `selectable()` (a `{ selected }` case over the constant); case
+    mappers prepend the selected clause via `withSelected()`; and
+    scale-mapped colours — where a `then` cannot nest a mapper — route
+    selection through another channel: EnrichmentMap fills its reserved
+    12px border (the web app's own affordance), NDEx-large brightens
+    its border, and the 465k-edge scene gives its diverging-coloured
+    edges a blue selected underlay.
+  - **edge-types lays out in two columns** like edge-arrows, band
+    height stretched by the tallest taxi drop so cells cannot collide.
+
+  Two specs enforce the rules in `test/modules/debug-harness.mjs`: the
+  'default' kind must be `{}` for every network (both spellings), and —
+  behavioural, not structural — selecting a node and an edge under
+  every production sheet must change the computed style.  Controls: a
+  buried edge (constant line colour *and* constant opacity) failed
+  em-web; a constant `background-color` added to node-types failed it;
+  a non-empty default sheet failed the first spec.  A control that
+  buried only the line *colour* did not fail — the opacity conditional
+  still signalled, which is the rule holding, not the spec missing.
+  The page itself was driven (six screenshots, including a
+  box-selection over each half of the rework) per the standing
+  "something has to open the page" rule.
+
 ## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
 
 This is the docs-first stage the sixth sitting instructed: map each

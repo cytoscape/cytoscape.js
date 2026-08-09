@@ -113,7 +113,7 @@ var networks = {
     edges: 16,
     generated: 'edge-types',
     labelKey: 'label',
-    note: "v3's edge-types demo: one row per curve-style, with the multi-edge fans that make bezier and haystack do anything at all. The routing fixture.",
+    note: "v3's edge-types demo: one cell per curve-style, two columns, with the multi-edge fans that make bezier and haystack do anything at all. The routing fixture.",
   },
   'edge-arrows': {
     desc: 'Edge arrow types (v3 demo)',

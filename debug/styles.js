@@ -12,12 +12,27 @@
 // a couple of sheets need a data extent (EnrichmentMap sizes its diverging
 // colour domain to max |NES|).  `labelKey` comes from `networks.js`.
 //
-// Two things these sheets deliberately cannot reproduce, both decided design:
-//   * `z-index` — dropped outright 2026-08-01.  Draw order in v4 is structural
-//     (parents, then edges, then leaves, then labels), so EnrichmentMap's
-//     "selected nodes to the front" has no v4 spelling.
-//   * `node:selected` restyling — there are no selector blocks and no
-//     pseudo-classes; v4 draws the selection accent in the shader.
+// One thing these sheets deliberately cannot reproduce, a decided design:
+// `z-index` was dropped outright 2026-08-01.  Draw order in v4 is structural
+// (parents, then edges, then leaves, then labels), so EnrichmentMap's
+// "selected nodes to the front" has no v4 spelling.
+//
+// Two rules govern every sheet here (the maintainer's, round 57.11 —
+// v3's own philosophy):
+//   * **The default style carries the affordances**: grey bodies, blue on
+//     selection, the active-overlay press wash — all default-sheet rules
+//     since round 57.1.  The 'default' kind is therefore an *empty* sheet,
+//     and the four v3 demo ports add only what their demo exercises.
+//   * **A custom sheet must not bury those affordances.**  Selection blue is
+//     a default-sheet conditional, so any sheet naming a colour channel
+//     replaces it — exactly as in v3, where the default `:selected` block
+//     loses to any later block naming the same property.  Every sheet below
+//     therefore re-states selection: constant colours through `selectable`,
+//     case mappers through `withSelected`, and scale-mapped colours (a
+//     `then` cannot nest a mapper) through another channel — a border or an
+//     underlay, which is how real v3 apps solve the same problem.  A spec
+//     in `test/modules/debug-harness.mjs` selects an element under every
+//     sheet and fails if nothing visible changes.
 
 var styles = (function () {
   // -- shared helpers ------------------------------------------------------
@@ -68,17 +83,57 @@ var styles = (function () {
     return { label: { data: def.labelKey || 'id' } };
   }
 
-  // -- the plain sheet: the pre-round-43 look, kept for contrast ------------
-  //
-  // Useful when you are looking at the *renderer* rather than the style —
-  // no mappers, no labels, nothing to blame but geometry.
+  // -- selection stays visible (round 57.11) -------------------------------
 
-  function plain(elements, def) {
+  var SELECT_BLUE = '#0169D9'; // v3's selection blue, the default sheet's own
+
+  /** A constant colour that still turns selection blue. */
+  function selectable(colour) {
     return {
-      nodes: { width: 12, height: 12, 'background-color': '#4a7dbd' },
-      edges: { width: 1, 'line-color': '#bbb', opacity: 0.6 },
-      parents: { padding: 14, 'background-opacity': 0.08 },
+      case: [{ when: { selected: true }, then: SELECT_BLUE }],
+      else: colour,
     };
+  }
+
+  /** A `case` mapper with the selected clause prepended, so selection wins
+   * over the sheet's own clauses. */
+  function withSelected(mapper) {
+    var out = {
+      case: [{ when: { selected: true }, then: SELECT_BLUE }].concat(
+        mapper.case,
+      ),
+    };
+
+    if ('else' in mapper) {
+      out.else = mapper.else;
+    }
+    if ('fallback' in mapper) {
+      out.fallback = mapper.fallback;
+    }
+
+    return out;
+  }
+
+  /** `selected ? then : otherwise` for any prop. */
+  function onSelected(then, otherwise) {
+    return {
+      case: [{ when: { selected: true }, then: then }],
+      else: otherwise,
+    };
+  }
+
+  // -- the default sheet: v4 exactly as it comes (round 57.11) --------------
+  //
+  // An empty sheet: grey nodes and edges, blue on selection, the press
+  // overlay — v3's default look, carried by v4's default stylesheet since
+  // round 57.1.  Useful when you are looking at the *renderer* or at the
+  // default affordances themselves: nothing to blame but geometry, and
+  // nothing on top to bury the built-ins.  (This replaced the old 'plain'
+  // hand-written sheet, which was itself a style — small blue discs — and so
+  // demonstrated neither the defaults nor the renderer alone.)
+
+  function defaultSheet(elements, def) {
+    return {};
   }
 
   // -- per-network production sheets ---------------------------------------
@@ -110,10 +165,11 @@ var styles = (function () {
           width: 40,
           height: 40,
           'background-color': nesColour,
-          // EnrichmentMap reserves a fat transparent border so a selected node can
-          // fill it without moving anything: 12px at zero opacity
+          // EnrichmentMap reserves a fat transparent border so a selected node
+          // can fill it without moving anything: 12px at zero opacity, filled
+          // on selection — the web app's own affordance (round 57.11)
           'border-width': 12,
-          'border-opacity': 0,
+          'border-opacity': onSelected(1, 0),
           'border-color': '#333333',
           'font-size': 8,
           color: '#fff',
@@ -133,8 +189,8 @@ var styles = (function () {
       edges: {
         'curve-style': 'haystack',
         'haystack-radius': 0,
-        'line-color': '#888',
-        'line-opacity': 0.3,
+        'line-color': selectable('#888'),
+        'line-opacity': onSelected(0.9, 0.3),
         width: {
           data: 'similarity_coefficient',
           domain: [0, 1],
@@ -196,8 +252,10 @@ var styles = (function () {
             interpolate: 'srgb',
             fallback: '#f0f0f0',
           },
-          'border-width': 1,
-          'border-color': '#333333',
+          // fill is data-mapped (a `then` cannot nest a mapper), so selection
+          // takes the border instead (round 57.11)
+          'border-width': onSelected(4, 1),
+          'border-color': selectable('#333333'),
           'font-size': 9,
           color: '#222',
           'text-valign': 'center',
@@ -213,8 +271,8 @@ var styles = (function () {
       edges: {
         'curve-style': 'haystack',
         'haystack-radius': 0,
-        'line-color': '#9aa5b1',
-        'line-opacity': 0.35,
+        'line-color': selectable('#9aa5b1'),
+        'line-opacity': onSelected(0.9, 0.35),
         width: {
           data: 'EM1_similarity_coefficient',
           domain: [0.375, 1],
@@ -233,7 +291,8 @@ var styles = (function () {
         {
           width: 18,
           height: 18,
-          'background-color': {
+          // selection first, then the three classifications (round 57.11)
+          'background-color': withSelected({
             case: [
               {
                 when: { data: 'Classification', eq: 'candidate' },
@@ -249,7 +308,7 @@ var styles = (function () {
               },
             ],
             else: '#c9d2da',
-          },
+          }),
           'border-width': 1,
           'border-color': '#33691e',
           'border-opacity': 0.5,
@@ -266,8 +325,8 @@ var styles = (function () {
       ),
       edges: {
         width: 1,
-        'line-color': '#009900',
-        'line-opacity': 0.2,
+        'line-color': selectable('#009900'),
+        'line-opacity': onSelected(0.9, 0.2),
       },
     };
   }
@@ -314,9 +373,10 @@ var styles = (function () {
             range: range,
             fallback: '#b0b8bf',
           },
-          'border-width': 1,
-          'border-color': '#ffffff',
-          'border-opacity': 0.7,
+          // fill is scale-mapped, so selection takes the border (57.11)
+          'border-width': onSelected(3, 1),
+          'border-color': selectable('#ffffff'),
+          'border-opacity': onSelected(1, 0.7),
           'font-size': 9,
           color: '#1b2733',
           'text-valign': 'center',
@@ -329,8 +389,8 @@ var styles = (function () {
       ),
       edges: {
         width: { data: 'corr', domain: [0, 1], range: [0.5, 3], fallback: 0.5 },
-        'line-color': '#c4ccd4',
-        'line-opacity': 0.35,
+        'line-color': selectable('#c4ccd4'),
+        'line-opacity': onSelected(0.9, 0.35),
       },
     };
   }
@@ -350,10 +410,10 @@ var styles = (function () {
             case: [{ when: { data: 'Node_Type', eq: 'TF' }, then: 26 }],
             else: 14,
           },
-          'background-color': {
+          'background-color': withSelected({
             case: [{ when: { data: 'Node_Type', eq: 'TF' }, then: '#3366ff' }],
             else: '#66ccff',
-          },
+          }),
           'border-width': 1,
           'border-color': '#0d47a1',
           'border-opacity': 0.6,
@@ -378,7 +438,12 @@ var styles = (function () {
           range: ['#cc0033', '#e8e8e8', '#009966'],
           fallback: '#e8e8e8',
         },
-        'line-opacity': 0.25,
+        // the line colour is data-mapped, so a selected edge shows through
+        // a blue underlay stroke instead (round 57.11)
+        'line-opacity': onSelected(1, 0.25),
+        'underlay-color': SELECT_BLUE,
+        'underlay-opacity': onSelected(0.4, 0),
+        'underlay-padding': 2,
       },
     };
   }
@@ -399,6 +464,9 @@ var styles = (function () {
             range: 'category10',
             fallback: '#4a7dbd',
           },
+          // fill is scale-mapped, so selection takes a border (57.11)
+          'border-width': onSelected(3, 0),
+          'border-color': SELECT_BLUE,
           'font-size': 8,
           color: '#333',
           'text-valign': 'center',
@@ -409,14 +477,14 @@ var styles = (function () {
         },
         label(def),
       ),
-      edges: { width: 1, 'line-color': '#bbb', opacity: 0.6 },
+      edges: { width: 1, 'line-color': selectable('#bbb'), opacity: 0.6 },
       parents: {
         padding: 14,
-        'background-opacity': 0.06,
-        'background-color': '#4a7dbd',
+        'background-opacity': onSelected(0.25, 0.06),
+        'background-color': selectable('#4a7dbd'),
         'border-width': 1,
-        'border-color': '#4a7dbd',
-        'border-opacity': 0.35,
+        'border-color': selectable('#4a7dbd'),
+        'border-opacity': onSelected(1, 0.35),
       },
     };
   }
@@ -442,7 +510,7 @@ var styles = (function () {
             ],
             else: 'ellipse',
           },
-          'background-color': '#e07a5f',
+          'background-color': selectable('#e07a5f'),
           'border-width': 2,
           'border-color': '#3d405b',
           'font-size': 11,
@@ -458,11 +526,11 @@ var styles = (function () {
       ),
       edges: {
         width: 2,
-        'line-color': '#3d405b',
-        'line-opacity': 0.6,
+        'line-color': selectable('#3d405b'),
+        'line-opacity': onSelected(1, 0.6),
         'curve-style': 'bezier',
         'target-arrow-shape': 'triangle',
-        'target-arrow-color': '#3d405b',
+        'target-arrow-color': selectable('#3d405b'),
       },
       parents: {
         padding: 16,
@@ -472,10 +540,10 @@ var styles = (function () {
         // rectangle, and a round parent box round a rectangular child reads
         // as a mistake, so say so here rather than leave it to the overlay.
         shape: 'rectangle',
-        'background-color': '#81b29a',
-        'background-opacity': 0.18,
+        'background-color': selectable('#81b29a'),
+        'background-opacity': onSelected(0.4, 0.18),
         'border-width': 2,
-        'border-color': '#81b29a',
+        'border-color': selectable('#81b29a'),
         label: { data: 'id' },
         'font-size': 12,
         color: '#2f4f42',
@@ -532,7 +600,7 @@ var styles = (function () {
             'ellipse',
           ),
           'corner-radius': byId({ c: 30, b: 10, f: 10 }, 5),
-          'background-color': '#dfe6ee',
+          'background-color': selectable('#dfe6ee'),
           // the outline group: v3 also sets `outline-style: solid`, which v4 has
           // not ported (round 38) — solid is the default, so the ring still draws
           'outline-width': ringed(10, 0),
@@ -560,7 +628,7 @@ var styles = (function () {
       ),
       edges: {
         width: byId({ fi: 6 }, 2),
-        'line-color': '#5b6472',
+        'line-color': selectable('#5b6472'),
         label: { data: 'id' },
         'font-size': 10,
         color: '#5b6472',
@@ -572,10 +640,10 @@ var styles = (function () {
         'target-arrow-shape': byId({ fi: 'none' }, 'triangle'),
         'mid-source-arrow-shape': byId({ fi: 'none' }, 'triangle-backcurve'),
         'mid-target-arrow-shape': byId({ fi: 'none' }, 'triangle'),
-        'source-arrow-color': '#5b6472',
-        'target-arrow-color': '#5b6472',
-        'mid-source-arrow-color': '#5b6472',
-        'mid-target-arrow-color': '#5b6472',
+        'source-arrow-color': selectable('#5b6472'),
+        'target-arrow-color': selectable('#5b6472'),
+        'mid-source-arrow-color': selectable('#5b6472'),
+        'mid-target-arrow-color': selectable('#5b6472'),
         'source-arrow-fill': 'hollow',
         'target-arrow-fill': 'hollow',
         // the one v3 line this sheet cannot vary per edge (see above)
@@ -613,10 +681,10 @@ var styles = (function () {
       parents: {
         shape: 'rectangle',
         padding: 20,
-        'background-color': '#81b29a',
-        'background-opacity': 0.15,
+        'background-color': selectable('#81b29a'),
+        'background-opacity': onSelected(0.4, 0.15),
         'border-width': 2,
-        'border-color': '#81b29a',
+        'border-color': selectable('#81b29a'),
         label: { data: 'id' },
         'text-valign': 'top',
         'text-margin-y': -4,
@@ -642,11 +710,13 @@ var styles = (function () {
     };
   }
 
-  // v3's node-types demo styles `shape: data(type)` directly.  v4's shape is an
-  // enum channel and mapper-capable, but a *raw passthrough* would have to
-  // trust the data, so this is a `case` over the keyword list — which also
-  // means a typo in the fixture renders as the `else` rather than throwing at
-  // an arbitrary element.
+  // v3's node-types demo is four properties: `shape: data(type)`, a label
+  // and a 40px body — everything else is the default sheet, which is the
+  // point (round 57.11): grey bodies, blue on selection, the press overlay,
+  // all visible because nothing here paints over them.  v4's shape channel
+  // is mapper-capable but enum-valued, so the raw `data(type)` passthrough
+  // is a `case` over the keyword list — a typo in the fixture renders as the
+  // `else` rather than throwing at an arbitrary element.
   function nodeTypes(elements, def) {
     var shapes = {};
 
@@ -657,11 +727,8 @@ var styles = (function () {
     return {
       nodes: {
         shape: byData('type', shapes, 'ellipse'),
-        width: 60,
-        height: 60,
-        'background-color': '#dfe6ee',
-        'border-width': 2,
-        'border-color': '#5b6472',
+        width: 40,
+        height: 40,
         // `shape-polygon-points` is constants-only (a list prop — the 12b
         // scope rule), so v3's `shape-polygon-points: data(points)` has no v4
         // spelling.  A constant is enough here because the points are read
@@ -672,35 +739,25 @@ var styles = (function () {
           1, -0.33, 1, -0.33, 0.33, -1, 0.33, -1, -0.33, -0.33, -0.33,
         ],
         label: { data: 'label' },
-        'font-size': 11,
-        color: '#1d2433',
-        'text-valign': 'bottom',
-        'text-margin-y': 4,
         'text-wrap': 'wrap',
         'text-max-width': 130,
       },
-      edges: {},
     };
   }
 
+  // v3's edge-types demo styles nothing but the curve families and the row
+  // labels — default nodes, default (grey) lines, so the default selection
+  // blue reads on every family (round 57.11).
   function edgeTypes(elements, def) {
     return {
       nodes: {
-        width: 26,
-        height: 26,
-        'background-color': '#5b6472',
         label: { data: 'label' },
-        'font-size': 12,
-        color: '#1d2433',
         'text-valign': 'center',
         'text-halign': 'left',
-        'text-margin-x': -6,
       },
       edges: {
-        width: 3,
-        'line-color': '#2f6fa8',
-        'target-arrow-shape': 'triangle',
-        'target-arrow-color': '#2f6fa8',
+        // v3's demo: `edge { width: 3 }` and straight-triangle at 10
+        width: byData('type', { 'straight-triangle': 10 }, 3),
         'curve-style': byData(
           'type',
           {
@@ -722,7 +779,7 @@ var styles = (function () {
         // single and multiple unbundled-bezier rows collapse to one.  That is
         // why the two rows draw the same curve here and different ones there,
         // and it is the same limit round 46.6 recorded porting v3's default
-        // graph.  `straight-triangle` takes the width below.
+        // graph.
         'control-point-distances': [40, -40],
         'control-point-weights': [0.25, 0.75],
         'segment-distances': [40, -40],
@@ -746,12 +803,10 @@ var styles = (function () {
 
     return {
       nodes: {
+        // v3's demo body: 16px, everything else default (round 57.11)
         width: 16,
         height: 16,
-        'background-color': '#5b6472',
         label: { data: 'label' },
-        'font-size': 12,
-        color: '#1d2433',
         // above the node rather than beside it: a left-aligned
         // `triangle-backcurve (hollow)` is wider than the gap between
         // columns and lands on the previous row's target node
@@ -759,11 +814,7 @@ var styles = (function () {
         'text-margin-y': -4,
       },
       edges: {
-        width: 3,
-        'line-color': '#2f6fa8',
-        'curve-style': 'straight',
         'target-arrow-shape': byData('arrow', heads, 'none'),
-        'target-arrow-color': '#2f6fa8',
         // hollow heads are the ones that show whether the line stops where it
         // should: v3 erases the head's footprint, v4 trims the line to it
         // (round 56), and the two agree to 0.442% on the parity scene.  A
@@ -788,14 +839,9 @@ var styles = (function () {
 
     return {
       nodes: {
-        width: 40,
-        height: 40,
-        'background-color': '#dfe6ee',
-        'border-width': 2,
-        'border-color': '#5b6472',
+        // the body is default-styled (round 57.11); every prop here is a
+        // *label* feature, which is what the demo exercises
         label: { data: 'label' },
-        'font-size': 13,
-        color: '#1d2433',
         // v4 has v3's 3x3 anchor grid and **not** its `-inside` variants
         // (round 13 D3), so those three cells of v3's demo have no port; the
         // fixture drops them rather than approximating them.
@@ -827,21 +873,12 @@ var styles = (function () {
         'text-border-width': byData('kind', { background: 1 }, 0),
         'text-border-color': '#1d2433',
         'text-border-opacity': byData('kind', { background: 1 }, 0),
-        // the outline and background cells read their text in white
-        color: byData(
-          'kind',
-          { outline: '#fff', background: '#fff' },
-          '#1d2433',
-        ),
+        // the outline and background cells read their text in white; the
+        // else is the channel default (an omitted `else` falls through)
+        color: byData('kind', { outline: '#fff', background: '#fff' }, '#000'),
       },
       edges: {
-        width: 3,
-        'line-color': '#2f6fa8',
-        'target-arrow-shape': 'triangle',
-        'target-arrow-color': '#2f6fa8',
         label: { data: 'label' },
-        'font-size': 13,
-        color: '#1d2433',
         'text-outline-width': 3,
         'text-outline-color': '#fff',
         // the edge label re-angles in the vertex shader from the live endpoint
@@ -872,18 +909,22 @@ var styles = (function () {
     /**
      * The sheet for a network.
      *
-     * @param kind 'production' | 'plain'
+     * @param kind 'production' | 'default' ('plain', the pre-57.11 name for
+     *   the non-production kind, still resolves to 'default' so old URLs work)
      * @param networkID the key in `networks`
      * @param elements  { nodes, edges } in definition form, for data extents
      * @param def       the `networks` entry (labelKey and friends)
      */
     sheet: function (kind, networkID, elements, def) {
-      var build = kind === 'plain' ? plain : production[networkID] || generated;
+      var build =
+        kind === 'production'
+          ? production[networkID] || generated
+          : defaultSheet;
 
       return build(elements, def || {});
     },
 
-    kinds: ['production', 'plain'],
+    kinds: ['production', 'default'],
   };
 })();
 

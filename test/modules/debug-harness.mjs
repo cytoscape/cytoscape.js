@@ -363,6 +363,75 @@ describe('debug harness (round 43)', function () {
     });
   });
 
+  describe('the two style rules (round 57.11)', function () {
+    // The maintainer's rules, v3's own philosophy: the default style is
+    // minimal and carries the affordances (grey bodies, selection blue, the
+    // press overlay), and a custom sheet may restyle anything but must not
+    // bury them.
+
+    it("the 'default' kind is the default stylesheet — an empty sheet", function () {
+      const empty = { nodes: [], edges: [] };
+
+      for (const [id, def] of entries) {
+        expect(styles.sheet('default', id, empty, def), id).to.eql({});
+        // 'plain' was the pre-57.11 name; old URLs must keep resolving
+        expect(styles.sheet('plain', id, empty, def), `${id} (legacy)`).to.eql(
+          {},
+        );
+      }
+    });
+
+    describe('no production sheet buries selection', function () {
+      // Selection blue is a *default-sheet* conditional, so a sheet naming a
+      // colour channel replaces it — precisely v3's precedence, where the
+      // default `:selected` block loses to any later block naming the same
+      // property.  Every sheet must re-state selection somewhere visible: on
+      // the colour itself, on a border, on an underlay.  The check is
+      // behavioural rather than structural: select an element, and the
+      // computed style must change.  A tiny dataless graph suffices — the
+      // selected clause sits ahead of every data clause, and data mappers
+      // fall to their fallbacks without affecting it.
+      for (const [id, def] of entries) {
+        it(id, function () {
+          this.timeout?.(120000);
+
+          // real elements, because the demo sheets derive their case-clause
+          // lists from the fixture's data — the *instance* below stays tiny
+          const sheet = styles.sheet(
+            'production',
+            id,
+            elementsFor(id, def),
+            def,
+          );
+          const cy = cytoscape({
+            elements: {
+              nodes: [{ data: { id: 'n1' } }, { data: { id: 'n2' } }],
+              edges: [{ data: { id: 'e1', source: 'n1', target: 'n2' } }],
+            },
+            style: sheet,
+          });
+
+          for (const ele of [cy.$id('n1'), cy.$id('e1')]) {
+            const what = ele.isNode() ? 'node' : 'edge';
+            const before = JSON.stringify(ele.style());
+
+            ele.select();
+
+            const after = JSON.stringify(ele.style());
+
+            expect(
+              after,
+              `${id}: selecting a ${what} changes nothing visible`,
+            ).to.not.equal(before);
+            ele.unselect();
+          }
+
+          cy.destroy();
+        });
+      }
+    });
+  });
+
   describe('the sheets say what they mean', function () {
     it("labels resolve to the network's own key, not to ids", function () {
       // the defect round 43 fixed: `?labels=true` used to *replace* the sheet's

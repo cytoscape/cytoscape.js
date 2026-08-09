@@ -440,6 +440,18 @@ The cheapest implementation turned out to be the exact one: the drawing
 shader already computes each head's true shape, so hit-testing reuses that
 computation instead of approximating it.
 
+The week closed by turning the same philosophy on the styling side. The
+default stylesheet had carried v3's look for days — grey elements, blue
+selection, a press highlight — but the developer harness sat on top of it
+with hand-coloured demo pages that buried exactly those affordances. The
+demos are now as minimal as v3's own (they style only the feature they
+demonstrate), the harness's non-production style option is now literally the
+default stylesheet rather than a third look, and every remaining custom
+sheet re-states selection somewhere visible — on the colour itself where it
+is constant, or through a border or underlay where the colour carries data.
+A test now selects an element under every sheet and fails if nothing
+visible changes, so the rule outlives the sweep that applied it.
+
 **The bundle-size answer landed** (8 August). The maintainer had asked why
 v4's bundle outweighs v3's, and the measured answer was that a quarter of it
 was WebGPU shader source, which a JavaScript minifier ships verbatim because

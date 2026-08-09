@@ -393,7 +393,7 @@ var fixtures = (function () {
     return { nodes: nodes, edges: [], hasPositions: true };
   }
 
-  /** v3's `edge-types` demo: one row per `curve-style`. */
+  /** v3's `edge-types` demo: one cell per `curve-style`, in two columns. */
   function edgeTypesFixture() {
     // v3 spells the families as classes and gives `ab`, `bc` and friends their
     // own control-point and segment arrays.  v4's list-valued curve params are
@@ -404,6 +404,11 @@ var fixtures = (function () {
     // `count` is how many parallel edges the row draws, which is the whole
     // point for `bezier` (it bundles multi-edges only, so a lone bezier edge
     // renders straight — round 12's signed-off call 2) and for `haystack`.
+    //
+    // Two columns rather than one long strip (57.11, matching edge-arrows):
+    // the pairs lay left-to-right then down, and a band's height stretches by
+    // the tallest `drop` in it, so the taxi cells (whose targets sit 110
+    // below their sources) do not collide with the band beneath.
     var rows = [
       { type: 'bezier', label: 'bezier (x3)', count: 3, back: true },
       { type: 'unbundled-bezier', label: 'unbundled-bezier', count: 1 },
@@ -420,42 +425,64 @@ var fixtures = (function () {
       { type: 'round-taxi', label: 'round-taxi', count: 1, drop: 110 },
       { type: 'straight-triangle', label: 'straight-triangle', count: 1 },
     ];
+    var COLS = 2;
+    // labels sit to the *left* of their source node (v3's demo alignment),
+    // so the column pitch leaves room for the longest of them
+    var COL_W = 560;
+    var EDGE_LEN = 320;
     var nodes = [];
     var edges = [];
     var y = 0;
 
-    rows.forEach(function (row, r) {
-      var src = 's' + r;
-      var tgt = 't' + r;
-      var drop = row.drop || 0;
+    for (var r = 0; r < rows.length; r += COLS) {
+      var band = rows.slice(r, r + COLS);
+      var maxDrop = 0;
 
-      nodes.push({
-        data: { id: src, label: row.label },
-        position: { x: 0, y: y },
+      band.forEach(function (row, c) {
+        var i = r + c;
+        var x = c * COL_W;
+        var src = 's' + i;
+        var tgt = 't' + i;
+        var drop = row.drop || 0;
+
+        maxDrop = Math.max(maxDrop, drop);
+
+        nodes.push({
+          data: { id: src, label: row.label },
+          position: { x: x, y: y },
+        });
+        nodes.push({
+          data: { id: tgt },
+          position: { x: x + EDGE_LEN, y: y + drop },
+        });
+
+        for (var k = 0; k < row.count; k++) {
+          edges.push({
+            data: {
+              id: src + '-' + k,
+              source: src,
+              target: tgt,
+              type: row.type,
+            },
+          });
+        }
+
+        // v3's bezier row includes one edge the other way, which is what
+        // makes the antiparallel stagger sign visible
+        if (row.back) {
+          edges.push({
+            data: {
+              id: tgt + '-back',
+              source: tgt,
+              target: src,
+              type: row.type,
+            },
+          });
+        }
       });
-      nodes.push({ data: { id: tgt }, position: { x: 320, y: y + drop } });
 
-      for (var k = 0; k < row.count; k++) {
-        edges.push({
-          data: {
-            id: src + '-' + k,
-            source: src,
-            target: tgt,
-            type: row.type,
-          },
-        });
-      }
-
-      // v3's bezier row includes one edge the other way, which is what makes
-      // the antiparallel stagger sign visible
-      if (row.back) {
-        edges.push({
-          data: { id: tgt + '-back', source: tgt, target: src, type: row.type },
-        });
-      }
-
-      y += 150 + drop;
-    });
+      y += 150 + maxDrop;
+    }
 
     return { nodes: nodes, edges: edges, hasPositions: true };
   }

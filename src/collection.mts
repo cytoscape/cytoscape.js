@@ -216,6 +216,11 @@ export class Collection {
   _scratch?: Record<string, unknown>;
   /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
   _keys?: Map<number, number>;
+  /** the algorithms' SubgraphView memo (round 62.1), keyed by the
+   * store's structureEpoch — sound because membership is _refs (immutable)
+   * minus dead refs, and death moves the epoch.  Typed loosely to keep
+   * the algorithms layer out of this module's imports. */
+  _sgView?: { epoch: number; view: unknown };
 
   /**
    * The collection's refs, repaired lazily after a slot compaction

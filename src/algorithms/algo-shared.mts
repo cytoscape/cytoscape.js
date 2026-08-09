@@ -33,7 +33,15 @@ export interface SubgraphView {
  * dense [0, N) index in collection order and edges get a membership set.
  * The view is a snapshot: it holds slots and a borrowed `edge.endpoints`
  * column, so it is only valid until the store next adds or removes
- * elements.  Algorithms build one per call rather than caching.
+ * elements — which is exactly what `structureEpoch` counts, so the view
+ * is **memoized on the collection against that epoch** (round 62.1).
+ * Before the memo, every algorithm call paid an O(V+E) Map/Set build:
+ * a single-root `degreeCentrality` — an O(degree) question — measured
+ * 333.7 µs at N=2000 through the built bundle against v3's ~7, and an
+ * app computing it per node over one collection paid O(N·E) where v3
+ * pays O(E).  Weights and endpoints are read live per call (the view
+ * holds structure only), so data writes and `moveEdge` need no
+ * invalidation; adds, removes and compaction all move the epoch.
  *
  * @param coll — the calling collection; dead refs are skipped
  * @returns the snapshot the `eachIncident` / `incidentEdgesInView` helpers
@@ -42,6 +50,12 @@ export interface SubgraphView {
 export const subgraph = (coll: Collection): SubgraphView => {
   const cy = coll.cy();
   const store = cy._store;
+  const memo = coll._sgView;
+
+  if (memo != null && memo.epoch === store.structureEpoch) {
+    return memo.view as SubgraphView;
+  }
+
   const endpoints = store.column('edge.endpoints') as Uint32Array;
   const nodeSlots: number[] = [];
   const index = new Map<number, number>();
@@ -60,7 +74,20 @@ export const subgraph = (coll: Collection): SubgraphView => {
     }
   }
 
-  return { cy, store, coll, endpoints, nodeSlots, index, edgeSlots, edgeIn };
+  const view: SubgraphView = {
+    cy,
+    store,
+    coll,
+    endpoints,
+    nodeSlots,
+    index,
+    edgeSlots,
+    edgeIn,
+  };
+
+  coll._sgView = { epoch: store.structureEpoch, view };
+
+  return view;
 };
 
 /**

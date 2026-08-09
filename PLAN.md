@@ -972,6 +972,21 @@ docs checks), and each is left in place pending the call.
     rounds these strokes' caps where v4 butt-cuts, and v3's erase-only
     compositing where heads overlap.
 
+28. **`cy.collection( anything )` silently ignores its argument** (round
+    60.2, 2026-08-09).  v4's `collection()` is the zero-argument empty
+    accumulator; v3's `collection( eles?, opts? )` also builds from a
+    string, an element array or a collection.  So the v3-shaped call
+    `cy.collection( arrayOfEles )` type-errors at build time but at
+    runtime returns the **empty collection**, silently — which is how a
+    round-60.2 benchmark band came to select nothing in 53 ns.  v4
+    throws on an unknown query key, an unknown sheet key and an unknown
+    `boundingBox()` option on the stated reasoning that a typo must not
+    silently do nothing; this is the same shape at a method boundary.
+    The call: throw on any argument (fail loudly, plus a
+    migration-guide row), port the array-building form, or record the
+    permissiveness as deliberate.  Logged rather than patched — it is
+    public surface either way.
+
 ### Public-surface changes made without a call, logged rather than buried
 
 None of these needed a decision to *make* — one is a missing export and
@@ -17000,4 +17015,36 @@ had ever run.
   produce.  The row builds by `union()` now and asserts its own
   length.  The spatial probe's first point was inside a neighbour
   (30 px nodes on a 10 px grid overlap), caught by its own startup
-  assertion.
+  assertion.  The silent-argument behaviour itself is **logged as
+  ledger item 28** rather than patched — it is public surface.
+
+- [x] **60.3 The tests the tooling was owed** (2026-08-09) — two
+  recorded gaps closed in `test/modules/status-site.mjs`, both about
+  the status site's own machinery rather than the library:
+
+  - **`executePlan()` finally has coverage.**  Round 53.2 recorded the
+    gap by name ("the half that writes the deployable site has no
+    coverage, and `npm run status` runs nowhere") and left it open
+    because the spec would have copied 30 MiB of fixtures.  It does
+    not have to: the plan is data, so three specs run `executePlan`
+    over a synthetic five-op plan in a tmpdir — every op kind lands
+    (write writes, `jsonmin` re-serialises rather than copying, copy
+    is byte-for-byte, omit writes nothing and stays out of the size
+    report), nested output directories are created, and the returned
+    byte counts are the real on-disk sizes, which matters because the
+    25 MiB cap check downstream reads exactly those numbers.
+  - **The benchmark index page's judgements are pinned**: `geoSpeedup`
+    is a geometric mean and answers null (not a fake 1×) when a run
+    has no v3/gpu pair; `byMachine` quarantines unfingerprinted
+    pre-46.5 runs in their own group rather than guessing them into a
+    real machine; the empty archive renders unavailable with the
+    publish command in its reason; and the trend table links the
+    60.1 comparison page when a machine has two comparable runs.
+
+  Six controls, each failing exactly the spec written for it:
+  `jsonmin` degraded to a plain copy (2 fail — the minify spec and
+  the byte-count spec, the second being the cap check's number);
+  the `mkdirSync` dropped (2); omit ops written as empty files (1);
+  `geoSpeedup` as an arithmetic mean (1); unfingerprinted runs merged
+  into the first machine (1); the comparison link dropped from the
+  trend table (1).

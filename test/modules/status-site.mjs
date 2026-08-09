@@ -829,3 +829,178 @@ describe('status site: the goldens gallery', function () {
     );
   });
 });
+
+describe('executePlan (round 60.3 — the writing half, previously uncovered)', () => {
+  // 53.2 recorded this exact gap: the spec file imported `buildPlan` and
+  // nothing else, so the half that writes the deployable site had no
+  // coverage at all.  The plan here is synthetic — a handful of ops over a
+  // tmpdir — so the spec costs milliseconds, which is what the pure/writing
+  // split was built to allow.
+  let src;
+  let out;
+
+  beforeEach(() => {
+    src = mkdtempSync(join(tmpdir(), 'status-exec-src-'));
+    out = mkdtempSync(join(tmpdir(), 'status-exec-out-'));
+    writeFileSync(
+      join(src, 'pretty.json'),
+      '{\n  "a": 1,\n  "b": [ 1, 2 ]\n}\n',
+    );
+    writeFileSync(join(src, 'bytes.bin'), 'exact bytes\n');
+  });
+
+  afterEach(() => {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  });
+
+  it('executes each op kind: write writes, jsonmin minifies, copy is byte-for-byte, omit writes nothing', async () => {
+    const { executePlan } = await import('../../scripts/status-build.mjs');
+    const written = executePlan(
+      [
+        { kind: 'write', to: 'page.html', text: '<h1>hi</h1>' },
+        {
+          kind: 'jsonmin',
+          from: join(src, 'pretty.json'),
+          to: 'fixtures/data.json',
+        },
+        { kind: 'copy', from: join(src, 'bytes.bin'), to: 'assets/bytes.bin' },
+        { kind: 'omit', to: 'too-big.json', reason: 'over the cap' },
+      ],
+      out,
+    );
+
+    expect(readFileSync(join(out, 'page.html'), 'utf8')).to.equal(
+      '<h1>hi</h1>',
+    );
+    // minified means parse -> stringify, not a byte copy of the source
+    expect(readFileSync(join(out, 'fixtures/data.json'), 'utf8')).to.equal(
+      '{"a":1,"b":[1,2]}',
+    );
+    expect(readFileSync(join(out, 'assets/bytes.bin'), 'utf8')).to.equal(
+      'exact bytes\n',
+    );
+    // the omit is planned-but-absent: not on disk, not in the size report
+    expect(existsSync(join(out, 'too-big.json'))).to.equal(false);
+    expect(written.map((w) => w.to)).to.deep.equal([
+      'page.html',
+      'fixtures/data.json',
+      'assets/bytes.bin',
+    ]);
+  });
+
+  it('reports the real on-disk byte count per op — the number the 25 MiB cap check reads', async () => {
+    const { executePlan } = await import('../../scripts/status-build.mjs');
+    const written = executePlan(
+      [{ kind: 'jsonmin', from: join(src, 'pretty.json'), to: 'd.json' }],
+      out,
+    );
+
+    // the *minified* size, not the source's: the cap check downstream
+    // compares written bytes, so reporting the source size would let an
+    // over-cap file through as under
+    expect(written[0].bytes).to.equal(statSync(join(out, 'd.json')).size);
+    expect(written[0].bytes).to.be.lessThan(
+      statSync(join(src, 'pretty.json')).size,
+    );
+  });
+
+  it('creates nested output directories rather than requiring them', async () => {
+    const { executePlan } = await import('../../scripts/status-build.mjs');
+
+    executePlan([{ kind: 'write', to: 'a/b/c/deep.txt', text: 'x' }], out);
+
+    expect(readFileSync(join(out, 'a/b/c/deep.txt'), 'utf8')).to.equal('x');
+  });
+});
+
+describe('the benchmark index page (round 60.3)', () => {
+  const stats = (p50) => ({ p50, min: p50, max: p50, avg: p50, samples: 5 });
+  const pairResults = (speedups) => ({
+    meta: {},
+    jobs: [
+      {
+        suite: 's',
+        n: 100,
+        groups: speedups.map((x, i) => ({
+          name: 'g' + i,
+          benches: [
+            { name: 'v3', stats: stats(100 * x) },
+            { name: 'gpu', stats: stats(100) },
+          ],
+        })),
+      },
+    ],
+  });
+
+  it('geoSpeedup is the geometric mean of the v3/gpu pairs and null without one', async () => {
+    const { geoSpeedup } = await import('../../scripts/status/bench-pages.mjs');
+
+    expect(geoSpeedup(pairResults([10, 1000]))).to.be.closeTo(100, 1e-9);
+    // a gpu-only group contributes nothing rather than a fake 1x
+    expect(
+      geoSpeedup({
+        jobs: [
+          {
+            suite: 's',
+            n: 1,
+            groups: [
+              { name: 'g', benches: [{ name: 'gpu', stats: stats(5) }] },
+            ],
+          },
+        ],
+      }),
+    ).to.equal(null);
+  });
+
+  it('byMachine groups by fingerprint and quarantines unfingerprinted runs rather than guessing', async () => {
+    const { byMachine } = await import('../../scripts/status/bench-pages.mjs');
+    const groups = byMachine([
+      { fingerprint: 'aa', machine: 'A', results: {} },
+      { fingerprint: 'bb', machine: 'B', results: {} },
+      { fingerprint: 'aa', machine: 'A', results: {} },
+      { machine: 'old run, no fingerprint', results: {} },
+    ]);
+
+    expect(groups).to.have.length(3);
+    expect(groups.find((g) => g.fingerprint === 'aa').runs).to.have.length(2);
+    // pre-46.5 runs get their own group with a null fingerprint — merging
+    // them into a real machine would be a guess presented as a fact
+    expect(groups.find((g) => g.fingerprint === null).runs).to.have.length(1);
+  });
+
+  it('says how to publish when the archive is empty, and stays unavailable', async () => {
+    const { planBenchmarks } =
+      await import('../../scripts/status/bench-pages.mjs');
+    const plan = planBenchmarks({ runs: [] });
+
+    expect(plan.available).to.equal(false);
+    expect(plan.reason).to.include('benchmark:publish');
+    expect(plan.ops).to.deep.equal([]);
+  });
+
+  it('links the cross-commit comparison from the trend table when a machine has two comparable runs', async () => {
+    const { planBenchmarks } =
+      await import('../../scripts/status/bench-pages.mjs');
+    const run = (file, date, commit) => ({
+      file,
+      date,
+      commit,
+      profile: 'quick',
+      fingerprint: 'aa11',
+      machine: 'Test CPU',
+      results: pairResults([10]),
+    });
+    const plan = planBenchmarks({
+      runs: [
+        run('results-b.json', '2026-08-02T00:00:00.000Z', 'bbb'),
+        run('results-a.json', '2026-08-01T00:00:00.000Z', 'aaa'),
+      ],
+    });
+
+    expect(plan.html).to.include('Across commits');
+    expect(plan.ops.map((o) => o.to)).to.include(
+      'benchmark/compare-aa11-quick.html',
+    );
+  });
+});

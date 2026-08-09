@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-render-2026-08-09T16-52-32-241Z.json",
+      "date": "2026-08-09T16:52:32.241Z",
+      "commit": "e37d2444",
+      "commitSubject": "docs: round 60 closes — the record, the header, and the summary's week 4",
+      "branch": "v4",
+      "profile": "renderer",
+      "suiteFilter": null,
+      "dirty": true,
+      "totalMs": 1193237,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 12,
+      "note": "round 60 baseline: all 12 renderer scenes after the arrow trim (56), state conditions (57.1d) and the force rebuild (59).  The dirty flag is the archive itself: the quick run published minutes earlier sat uncommitted in benchmark/published/ while this measured; no source differed from e37d2444"
+    },
+    {
       "file": "results-2026-08-09T16-39-39-390Z.json",
       "date": "2026-08-09T16:39:39.390Z",
       "commit": "e37d2444",

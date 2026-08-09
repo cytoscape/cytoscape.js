@@ -2690,6 +2690,193 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.up();
   });
 
+  test('an arrowhead picks as its edge, hollow as filled (round 57.10)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3 hit-tests all four arrowheads with shape.collide, which tests
+    // the filled point table regardless of arrow-fill — a hollow head's
+    // interior is a hit.  Since round 56's trim the line stops
+    // gap = 2·width·scale behind the boundary, so the head's zone is
+    // covered by *no* line pixels: before 57.10 this press landed on
+    // background.
+    //
+    // Geometry at width 4, arrow-scale 3: head size ≈ 107.8, triangle
+    // back 0.3s ≈ 32.3, half-base 0.15s ≈ 16.2; tip on the target
+    // boundary x = 135 (node half 15, spacing 0 for triangle); line
+    // ends at 135 − 24.  The probe sits 16 behind the tip on the axis:
+    // interior (half-width there ≈ 8), in the line's gap zone, and left
+    // of the node's padded box (133).
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: {
+          width: 4,
+          'target-arrow-shape': 'triangle',
+          'target-arrow-fill': 'hollow',
+          'arrow-scale': 3,
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const probe = { x: center.x + 119, y: center.y };
+
+    // the probe is in the hollow interior: nothing is painted there, so
+    // a hit here is the head's *area*, not its ink
+    const px = await pixelAt(page, probe.x, probe.y);
+
+    expect(px[0]).toBeGreaterThan(200);
+    expect(px[2]).toBeGreaterThan(200);
+
+    // the exact pick already answers the edge (no halo needed inside)
+    const apiPick = await page.evaluate(
+      (p) => window.cy.pick(p.x, p.y).then((ele) => ele && ele.id()),
+      probe,
+    );
+
+    expect(apiPick).toBe('ab');
+
+    // and the gesture: pressing the hollow interior activates the edge
+    const circleShowing = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('div')].some(
+          (d) => d.style.borderRadius === '50%' && d.style.display === 'block',
+        ),
+      );
+
+    await page.mouse.move(probe.x, probe.y);
+    await page.mouse.down();
+
+    await expect
+      .poll(() => page.evaluate(() => window.cy.$id('ab').active()))
+      .toBe(true);
+
+    expect(await circleShowing()).toBe(false);
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    // beyond the head and its halo (26 off-axis vs half-width 8 + 8):
+    // a background press
+    await page.mouse.move(probe.x, probe.y - 26);
+    await page.mouse.down();
+
+    await expect.poll(circleShowing).toBe(true);
+
+    expect(await page.evaluate(() => window.cy.$id('ab').active())).toBe(false);
+
+    await page.mouse.up();
+  });
+
+  test('a mid arrow picks as its edge (round 57.10)', async ({ page }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Mid arrows are v3 hit targets too (its arrows array carries
+    // mid-source/mid-target), and they draw through their own entry
+    // points (vsMidArrow), so the endpoint spec proves nothing about
+    // them.  A mid-target head's tip sits at the midpoint pointing at
+    // the target: it occupies x ∈ [mid − 32.3, mid], half-width
+    // tapering to 16.2 at the back.  The probe at (−28, 11) is inside
+    // the head (half-width there ≈ 14) but 11 > 2 off the line, so an
+    // *exact* pick can only answer through the mid-arrow draw; its
+    // mirror at (+28, 11) is in front of the tip, where nothing is.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: {
+          width: 4,
+          'mid-target-arrow-shape': 'triangle',
+          'arrow-scale': 3,
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const hit = await page.evaluate(
+      (p) => window.cy.pick(p.x, p.y).then((ele) => ele && ele.id()),
+      { x: center.x - 28, y: center.y + 11 },
+    );
+    const miss = await page.evaluate(
+      (p) => window.cy.pick(p.x, p.y).then((ele) => ele && ele.id()),
+      { x: center.x + 28, y: center.y + 11 },
+    );
+
+    expect(hit).toBe('ab');
+    expect(miss).toBe(null);
+  });
+
+  test('a curved edge arrowhead picks as its edge (round 57.10)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The curved stream draws its heads through its own pipeline (the
+    // tip rides the curve's end tangent), so the straight specs prove
+    // nothing about it.  targetEndpoint() reports the arrow point (the
+    // point the head's tip is drawn at, round 55/56); stepping back
+    // from it toward the curve's midpoint approximates the end tangent
+    // within a few degrees — at 20px depth the head is ±10 wide, so a
+    // ~3px lateral error from that approximation stays well inside.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#2c3e50' },
+        edges: {
+          width: 4,
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [40],
+          'control-point-weights': [0.5],
+          'target-arrow-shape': 'triangle',
+          'arrow-scale': 3,
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const hit = await page.evaluate((c) => {
+      const tip = window.cy.$id('ab').targetEndpoint();
+      const mid = window.cy.$id('ab').midpoint();
+      const len = Math.hypot(tip.x - mid.x, tip.y - mid.y);
+      const dir = { x: (tip.x - mid.x) / len, y: (tip.y - mid.y) / len };
+      const probe = {
+        x: c.x + tip.x - dir.x * 20,
+        y: c.y + tip.y - dir.y * 20,
+      };
+
+      return window.cy.pick(probe.x, probe.y).then((ele) => ele && ele.id());
+    }, center);
+
+    expect(hit).toBe('ab');
+  });
+
   test('a released-before-the-pick edge press never sticks active (round 57.8)', async ({
     page,
   }) => {

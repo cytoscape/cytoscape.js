@@ -5262,6 +5262,7 @@ autonomously):
 - Arrow scalars are draw-only in v4 (arrows are not pickable and not
   in bb — both existing recorded deviations), so `arrow-scale`/
   `arrow-width`/`arrow-fill` are pure FS/quad-sizing work.
+  *(Half-superseded by 57.10: arrows pick now.  Not-in-bb stands.)*
 
 **Phase A — the 2026-07-29 triage keeps** (direction already set)
 
@@ -15954,6 +15955,52 @@ bakes into the shader where v3 spells them in its default stylesheet.
   so a press just past an edge's trimmed tip still misses — that end
   zone is the arrowhead's, and arrowheads are an existing unpickable
   deviation; both belong to whatever round makes arrows pickable.
+  ***That round is 57.10, the next entry — the maintainer asked for it
+  the same day.***
+
+- [x] **57.10 Arrowheads are hit targets** (2026-08-08) — the maintainer
+  asked for the piece 57.9 parked, with three directions: hollow
+  hit-tests as filled, triangle approximations are acceptable for the
+  arrow-like shapes, and performance decides.  The implementation takes
+  the *exact* shapes anyway, because that was the cheapest option on
+  this architecture: `fsArrow` already evaluates a true signed distance
+  per head (the generated `ARROW_POLY` polygon SDFs + the circle), so
+  the pick fragment shader reuses the same switch and tests
+  `sd <= frame.pickPadPx` — no new shape code, pick-matches-drawn by
+  construction, and the cost is a handful of SDF evaluations in a
+  64×64 tile.  An approximation would have been *more* code for less
+  agreement.  Hollow-as-filled is v3's own semantics
+  (`findNearestElement` runs `shape.collide` against the filled point
+  table for all four ends, mid arrows included) and falls out of using
+  `sd` rather than the scene's stroke coverage.
+
+  Structure: each arrow pipeline (straight + curved) gains pick twins
+  (same vertex shaders, id-writing fragment, r32uint target, no depth —
+  the pick pass has no depth attachment); the four arrow quads grow by
+  `pickPadPx` exactly as the edge quads did in 57.9; the pick pass
+  draws heads after lines with the *same* pick id, so order cannot
+  matter — heads add coverage, which since round 56's trim is exactly
+  the zone the line vacated.  The curved stream's pick FS drops
+  no-arrow ends by alpha (that stream rasterizes a transparent quad
+  where the straight VS collapses).  Gating rides `arrowEnds` /
+  `midArrowCount`, so an arrowless sheet pays nothing.
+
+  Three renderer specs: a hollow triangle's unpainted interior picks
+  and presses as its edge while a point past the head + halo stays
+  background (the probe's pixel is asserted white first — the hit is
+  the head's *area*, not its ink); a mid arrow picks through an exact
+  `cy.pick` at a point the line cannot answer, with its mirror point in
+  front of the tip answering null; a curved-end head picks via
+  `targetEndpoint()`.  Controls: the four pick draws removed failed all
+  three; the pick FS switched to outline-only (`abs(sd)`) failed
+  exactly the hollow spec, which is the user-visible requirement.  The
+  `visual` project stayed at zero differing pixels — the scene
+  arithmetic is untouched at pad 0.
+
+  What remains unpicked, deliberately: labels (edge and node — the
+  round-16 deviation), ghosts and outlines, each recorded where they
+  live.  Arrows also stay out of `boundingBox()` — 57.10 changes
+  picking only.
 
 ## Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; awaiting the maintainer)
 

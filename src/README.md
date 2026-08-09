@@ -1001,9 +1001,13 @@ calls made deliberately rather than by accretion:
   `frame.pickPadPx` (zero in scene frames, so drawing is untouched
   — the exact goldens pin that), the CPU node pick takes a `padPx`,
   and the cached pick tile remembers the halo it was drawn with so a
-  tile rendered for one pad never answers for another.  `cy.pick`
-  stays **exact** deliberately: the halo belongs to the gesture, not
-  the API.
+  tile rendered for one pad never answers for another.  Arrowheads are
+  hit targets too (round 57.10, closing the last of v3's
+  `findNearestElement` surface): each head answers as its edge, its
+  filled area counting regardless of `arrow-fill`, grown by the same
+  halo.  `cy.pick` stays **exact** deliberately: the halo belongs to
+  the gesture, not the API — exact still includes an arrowhead's
+  interior, which is a place, not a halo.
 - **Extensions are direct objects — no registry.**  No
   `cytoscape.use`, no string registration, no global state: an
   extension layout is an import passed straight to
@@ -4047,8 +4051,12 @@ fragment premium is **unmeasurable at scene level** on real hardware
   default).  One quad per visible edge per enabled end, reusing the
   edge cull stream; the tip sits on the endpoint node's boundary
   (round-rect approximated by its box, polygons by their inscribed
-  ellipse).  Arrows are not pickable (the GPU pick pass stays
-  edges-only), and size with the drawn (floored) edge width.
+  ellipse).  Arrows size with the drawn (floored) edge width, and
+  since round 57.10 they are *pickable*: each head draws into the pick
+  tile with its edge's id, its filled area counting as the hit region
+  regardless of `arrow-fill` (v3's `shape.collide` semantics), grown
+  by the round-57.9 hit halo.  (They were not pickable from C1 through
+  57.9 — the pick pass stayed edges-only.)
 
   **Outstanding deviation — v4 draws no arrow `gap`** (round 55,
   measured; scheduled, *not* accepted).  v3 keeps two shortened

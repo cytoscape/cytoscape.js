@@ -430,6 +430,16 @@ exact, deliberately: the halo is a property of fingers and cursors, not of
 the question "what is at this point". The reference images did not move a
 pixel, because the halo exists only in pick frames.
 
+The last unpickable piece of an edge followed the same day: arrowheads.
+They had never been hit targets in v4, and a recent correctness fix had
+made that visible — the line now stops behind the head as it should, so the
+pixels under a head belonged to nothing. Heads now answer as their edge, on
+every arrow position and both edge streams, and a head's whole area counts
+even when it is drawn hollow — which is how v3 has always treated them.
+The cheapest implementation turned out to be the exact one: the drawing
+shader already computes each head's true shape, so hit-testing reuses that
+computation instead of approximating it.
+
 **The bundle-size answer landed** (8 August). The maintainer had asked why
 v4's bundle outweighs v3's, and the measured answer was that a quarter of it
 was WebGPU shader source, which a JavaScript minifier ships verbatim because

@@ -11,8 +11,9 @@ import type { ColumnId } from '../contract.mjs';
  * the edge cull pass's visible list and indirect args.  The two ends
  * draw as two calls distinguished by a tiny End uniform; edges without
  * an arrow at that end (arrow color a=0) collapse to degenerate quads
- * in the vertex shader.  Arrows are not pickable (the GPU pick pass
- * stays edges-only).
+ * in the vertex shader.  Since round 57.10 arrows are pickable: the
+ * pick pipelines draw each head into the r32uint tile with its edge's
+ * id, hollow heads hit-testing as filled (v3's shape.collide).
  */
 // this end's arrow color column binds separately per end, and edge
 // opacity is folded into the stored arrow alpha at style-write time:
@@ -30,6 +31,8 @@ const ARROW_COLUMNS: ColumnId[] = [
 export class ArrowPipeline {
   private pipeline: GPURenderPipeline;
   private midPipeline: GPURenderPipeline;
+  private pickPipeline: GPURenderPipeline;
+  private midPickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   private endUniforms: [GPUBuffer, GPUBuffer, GPUBuffer, GPUBuffer]; // [tgt, src, midTgt, midSrc]
@@ -167,6 +170,32 @@ export class ArrowPipeline {
       },
     });
 
+    // the pick twins (57.10): same vertex shaders, id-writing fragment,
+    // r32uint target, no depth — the pick pass has no depth attachment
+    this.pickPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:arrow-pick-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsArrow' },
+      fragment: {
+        module,
+        entryPoint: 'fsArrowPick',
+        targets: [{ format: 'r32uint' }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    this.midPickPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:arrow-mid-pick-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsMidArrow' },
+      fragment: {
+        module,
+        entryPoint: 'fsArrowPick',
+        targets: [{ format: 'r32uint' }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
     this.bindGroups = new Map();
   }
 
@@ -242,6 +271,8 @@ export class ArrowPipeline {
    * encoded
    * @param ends — which ends the stylesheet actually uses; a false end
    * skips its whole draw rather than collapsing quads in the VS
+   * @param pick — true to write edge ids to the r32uint pick target
+   * (57.10) instead of drawing the scene heads
    */
   draw(
     pass: GPURenderPassEncoder,
@@ -251,6 +282,7 @@ export class ArrowPipeline {
     instances: number,
     cull: CulledGroup,
     ends: { source: boolean; target: boolean },
+    pick: boolean = false,
   ): void {
     if (instances === 0 || (!ends.source && !ends.target)) {
       return;
@@ -258,7 +290,7 @@ export class ArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(this.pipeline);
+    pass.setPipeline(pick ? this.pickPipeline : this.pipeline);
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 
@@ -273,7 +305,8 @@ export class ArrowPipeline {
     }
   }
 
-  /** Mid arrows (C1): tip at the edge midpoint along the tangent. */
+  /** Mid arrows (C1): tip at the edge midpoint along the tangent.
+   * `pick` draws ids into the pick tile instead (57.10). */
   drawMid(
     pass: GPURenderPassEncoder,
     device: GPUDevice,
@@ -282,6 +315,7 @@ export class ArrowPipeline {
     instances: number,
     cull: CulledGroup,
     ends: { source: boolean; target: boolean },
+    pick: boolean = false,
   ): void {
     if (instances === 0 || (!ends.source && !ends.target)) {
       return;
@@ -289,7 +323,7 @@ export class ArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(this.midPipeline);
+    pass.setPipeline(pick ? this.midPickPipeline : this.midPipeline);
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 

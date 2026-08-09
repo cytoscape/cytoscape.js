@@ -29,6 +29,8 @@ const VERTEX_COLUMNS: ColumnId[] = [
 export class CurvedArrowPipeline {
   private pipeline: GPURenderPipeline;
   private midPipeline: GPURenderPipeline;
+  private pickPipeline: GPURenderPipeline;
+  private midPickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   private endUniforms: [GPUBuffer, GPUBuffer, GPUBuffer, GPUBuffer]; // [tgt, src, midTgt, midSrc]
@@ -50,8 +52,8 @@ export class CurvedArrowPipeline {
    *
    * @param device — the device that owns the pipelines, End uniforms and
    * quad index
-   * @param format — the scene colour target's format; curved arrows never
-   * draw into the pick target
+   * @param format — the scene colour target's format (the pick twins
+   * hard-code r32uint)
    * @param visibleLayout — the curved-edge culler's @group(1) layout,
    * whose stream these arrows ride
    */
@@ -165,6 +167,32 @@ export class CurvedArrowPipeline {
       },
     });
 
+    // the pick twins (57.10): same vertex shaders, id-writing fragment,
+    // r32uint target, no depth — the pick pass has no depth attachment
+    this.pickPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:curved-arrow-pick-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsArrow' },
+      fragment: {
+        module,
+        entryPoint: 'fsArrowPick',
+        targets: [{ format: 'r32uint' }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    this.midPickPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:curved-arrow-mid-pick-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsMidArrow' },
+      fragment: {
+        module,
+        entryPoint: 'fsArrowPick',
+        targets: [{ format: 'r32uint' }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
     this.bindGroups = new Map();
   }
 
@@ -242,6 +270,8 @@ export class CurvedArrowPipeline {
    * already be encoded
    * @param ends — which ends the stylesheet uses; a false end skips its
    * whole draw
+   * @param pick — true to write edge ids to the r32uint pick target
+   * (57.10) instead of drawing the scene heads
    */
   draw(
     pass: GPURenderPassEncoder,
@@ -251,6 +281,7 @@ export class CurvedArrowPipeline {
     instances: number,
     cull: CulledGroup,
     ends: { source: boolean; target: boolean },
+    pick: boolean = false,
   ): void {
     if (instances === 0 || (!ends.source && !ends.target)) {
       return;
@@ -258,7 +289,7 @@ export class CurvedArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(this.pipeline);
+    pass.setPipeline(pick ? this.pickPipeline : this.pipeline);
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 
@@ -273,7 +304,8 @@ export class CurvedArrowPipeline {
     }
   }
 
-  /** Mid arrows (C1): tip at the curve/route midpoint, on the tangent. */
+  /** Mid arrows (C1): tip at the curve/route midpoint, on the tangent.
+   * `pick` draws ids into the pick tile instead (57.10). */
   drawMid(
     pass: GPURenderPassEncoder,
     device: GPUDevice,
@@ -282,6 +314,7 @@ export class CurvedArrowPipeline {
     instances: number,
     cull: CulledGroup,
     ends: { source: boolean; target: boolean },
+    pick: boolean = false,
   ): void {
     if (instances === 0 || (!ends.source && !ends.target)) {
       return;
@@ -289,7 +322,7 @@ export class CurvedArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(this.midPipeline);
+    pass.setPipeline(pick ? this.midPickPipeline : this.midPipeline);
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 

@@ -3446,8 +3446,9 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // arrow tables), positive in front — the disc heads are centred on the
   // origin and so reach ARROW_MAX_FRONT past it (round 56).  1px AA
   // margin on every side.
-  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
-  let lateral = corner.x * (halfBase + 1.0);
+  // 1px AA margin; pickPadPx grows the pick quad by the hit halo (57.10)
+  let yLocal = mix(-(arrowLen + frame.pickPadPx + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + frame.pickPadPx + 1.0, t); // 56
+  let lateral = corner.x * (halfBase + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
@@ -3540,6 +3541,33 @@ ${ARROW_POLY.cases}
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 
+// Arrowhead picking (round 57.10): a head answers as its edge, with
+// the same id the line writes, so overwrite order in the tile cannot
+// matter.  The hit region is the head's *area* regardless of
+// arrow-fill — v3's shape.collide tests the filled point table for
+// hollow heads too — grown by the hit halo.  No-arrow ends already
+// collapsed in the VS (c.a == 0), so no alpha test is needed here.
+@fragment
+fn fsArrowPick(in: ArrowVSOut) -> @location(0) u32 {
+  let pair = arrowShapes[in.slot];
+  let shape = endShapeOf(pair, end.endId);
+  let p = in.p;
+  let s = arrowSizePx(in.widthModel, arrowScaleOf(pair), frame.zoomDpr);
+  var sd = 1e6;
+
+  switch shape {
+${ARROW_POLY.cases}
+    case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame (56)
+    default: { sd = 1e6; } // none
+  }
+
+  if (sd > frame.pickPadPx) {
+    discard;
+  }
+
+  return (in.slot + 1u) | 0x80000000u; // the owning edge's pick id
+}
+
 // Mid arrows (C1): tip at the edge midpoint (the haystack offset
 // midpoint for kind 6), pointing along the chord — mid-source flipped
 // backward, exactly v3's midsrcArrowAngle.
@@ -3593,8 +3621,9 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5;
-  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
-  let lateral = corner.x * (halfBase + 1.0);
+  // 1px AA margin; pickPadPx grows the pick quad by the hit halo (57.10)
+  let yLocal = mix(-(arrowLen + frame.pickPadPx + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + frame.pickPadPx + 1.0, t); // 56
+  let lateral = corner.x * (halfBase + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, mid + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
@@ -3813,8 +3842,9 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
-  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
-  let lateral = corner.x * (halfBase + 1.0);
+  // 1px AA margin; pickPadPx grows the pick quad by the hit halo (57.10)
+  let yLocal = mix(-(arrowLen + frame.pickPadPx + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + frame.pickPadPx + 1.0, t); // 56
+  let lateral = corner.x * (halfBase + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
@@ -3848,6 +3878,36 @@ ${ARROW_POLY.cases}
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
   return vec4f(c.rgb * alpha, alpha); // premultiplied
+}
+
+// Arrowhead picking (round 57.10) — the straight shader's twin; see
+// the note there.  One difference: this stream's no-arrow ends
+// rasterize a small transparent quad rather than collapsing in the VS
+// (the colors live in the fragment stage), so they are dropped by the
+// alpha test the scene FS gets for free.
+@fragment
+fn fsArrowPick(in: ArrowVSOut) -> @location(0) u32 {
+  if (unpack4x8unorm(arrows[in.slot]).a == 0.0) {
+    discard;
+  }
+
+  let pair = arrowShapes[in.slot];
+  let shape = endShapeOf(pair, end.endId);
+  let p = in.p;
+  let s = arrowSizePx(in.widthModel, arrowScaleOf(pair), frame.zoomDpr);
+  var sd = 1e6;
+
+  switch shape {
+${ARROW_POLY.cases}
+    case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame (56)
+    default: { sd = 1e6; } // none
+  }
+
+  if (sd > frame.pickPadPx) {
+    discard;
+  }
+
+  return (in.slot + 1u) | 0x80000000u; // the owning edge's pick id
 }
 
 // Mid arrows on curved edges (C1): tip at the curve/route midpoint,
@@ -3914,8 +3974,9 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5;
-  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
-  let lateral = corner.x * (halfBase + 1.0);
+  // 1px AA margin; pickPadPx grows the pick quad by the hit halo (57.10)
+  let yLocal = mix(-(arrowLen + frame.pickPadPx + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + frame.pickPadPx + 1.0, t); // 56
+  let lateral = corner.x * (halfBase + frame.pickPadPx + 1.0);
 
   out.position = vec4f(pxToClip(frame, midPx + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);

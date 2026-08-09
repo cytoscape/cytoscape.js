@@ -2328,7 +2328,11 @@ export class Renderer {
 
     const store = this.cy._store;
 
-    // edges only: node picks are answered synchronously on the CPU
+    // edges and their arrowheads; node picks are answered synchronously
+    // on the CPU.  Arrows (57.10) write the same id as their edge's
+    // line, so the draw order within the tile cannot matter — what they
+    // add is coverage: the head's area (hollow included), which since
+    // round 56's trim is exactly where the line no longer reaches.
     this.edgePipeline?.draw(
       pass,
       device,
@@ -2336,6 +2340,16 @@ export class Renderer {
       mirror,
       store.highWater('edges'),
       pickCull.edge,
+      true,
+    );
+    this.arrowPipeline?.draw(
+      pass,
+      device,
+      uniform,
+      mirror,
+      store.highWater('edges'),
+      pickCull.edge,
+      this.cy._styleEngine.arrowEnds,
       true,
     );
 
@@ -2349,6 +2363,42 @@ export class Renderer {
         pickCull.curved,
         true,
       );
+      this.curvedArrows()?.draw(
+        pass,
+        device,
+        uniform,
+        mirror,
+        store.highWater('edges'),
+        pickCull.curved,
+        this.cy._styleEngine.arrowEnds,
+        true,
+      );
+    }
+
+    if (store.midArrowCount() > 0) {
+      this.arrowPipeline?.drawMid(
+        pass,
+        device,
+        uniform,
+        mirror,
+        store.highWater('edges'),
+        pickCull.edge,
+        this.cy._styleEngine.midArrowEnds,
+        true,
+      );
+
+      if (store.hasCurvedEdges()) {
+        this.curvedArrows()?.drawMid(
+          pass,
+          device,
+          uniform,
+          mirror,
+          store.highWater('edges'),
+          pickCull.curved,
+          this.cy._styleEngine.midArrowEnds,
+          true,
+        );
+      }
     }
     pass.end();
   }

@@ -17165,3 +17165,99 @@ manual diff nobody had ever run.
   `style-bundle.mjs`-style re-check against the built bundle before
   anyone rewrites anything; listed so they are looked at, not so they
   are believed.
+
+## Round 61 plan — the select regression: state flips write the diff, not the element (planned 2026-08-09)
+
+The fix round for what 60.4 measured, taking exactly the headroom that
+record logged: a state flip routes through `refreshMapped` — the
+general per-slot mapped-refresh path, whose `write()` rewrites **every**
+channel of the element — while the default sheet's defs are state-only
+*partitioned* (57.1d), so the styling consequence of a one-bit flip is
+knowable up front: it is the difference between two cached partition
+records, and for the default sheet that difference is one channel on a
+node (`background-color`) and five on an edge (`line-color` + the four
+arrow colours), against the ~25 store calls plus the label/image/chart
+writes a full `write()` performs per slot.
+
+**Re-measured through the built bundle before any change** (the
+round-34 rule; the numbers the round is judged against, N=2000 nodes /
+4000 edges on this machine): a 256-band select + unselect is
+**541.9 µs under the default sheet against 15.5 µs under a constant
+sheet** (×35 — the published suite's ×131 is tsx-inflated, as 60.4
+itself predicted for the smaller movers), and the single-element
+round-trip 3.4 µs against 1.5.
+
+### Design calls
+
+1. **A dedicated `StyleEngine.refreshState( group, key, slots )`**,
+   wired from `core.onStateChange` in place of the `refreshMapped`
+   call.  It knows something `refreshMapped` cannot: the old flag word
+   is the new word with one known bit flipped, so per slot it has both
+   partition keys (`to = flags & mask`, `from = to ^ bit`) and both
+   records are in `part.records`.  `onReparented` keeps using
+   `refreshMapped` — its two pseudo-keys flip together, and reparents
+   are rare structural ops.
+2. **The record diff is computed per (from, to) pair and cached on the
+   def**, never per slot: for each of the def's mappers, evaluate the
+   case program against both flag words (the `partitionRecord` reader,
+   which is what makes the records per-combination in the first place)
+   and compare.  The cache lives beside `part.records` and dies with
+   the def on sheet swap, the same lifetime rule; its size is bounded
+   by pairs over 2^(bits the sheet reads), which is single digits in
+   practice.
+3. **Narrow writes only where they are provably safe; the partition
+   record's full `write()` otherwise.**  The `applyMapped` comment is
+   the constraint: per-channel writes break the cross-channel couplings
+   that live in `writeChannels` (circle collapse, the arrow-alpha fold,
+   the label re-anchor).  So each fast writer is a private method
+   **factored out of `writeChannels` and called by it** — one source
+   for the fold math, the dual-consumers discipline — and the fast set
+   is deliberately small: the single-call paint channels
+   (node fill/border colours, node opacity, both layer records per
+   group, the edge line colour, the four arrow colours).  A diff
+   touching anything else — geometry, labels, charts, edge `opacity`
+   with its fold cluster — falls back to the full per-slot `write()`
+   of the target record, which is byte-for-byte today's behaviour.
+   The store setters are already self-consistent underneath (the
+   arrow-bits mirror re-derives inside `setColor`, the layer counts
+   inside `setNodeLayer`/`setEdgeLayer`), which is what makes a narrow
+   write complete.
+4. **Fall back to the general path entirely** when `def.partition` is
+   null (a data mapper puts the group per-element anyway), when the
+   group's transition spec is live (the txn capture is exactly what
+   the general path owns, and a sheet transitioning on a state flip is
+   rare), or when `demoted[group]` is set.  Compounds split
+   leaves/parents against `defs.nodes`/`defs.parents` exactly as
+   `refreshMapped` does.  Note what is *not* a concern: GPU-owned
+   channels — a partitioned def is all-`case` by definition and case
+   conditionals never join the eval kernel.
+5. **An empty diff is a no-op**, which the path gets for free: the
+   store's `watchedStates` set is per group, not per def, so a bit
+   only the parents def reads notifies for leaf slots too — those
+   slots' def diff is empty and they are skipped rather than written.
+
+### Pass split (tests-first; docs in-commit)
+
+- [x] **61.0 Docs-first** — this section.
+- [ ] **61.1 The specs, red where the behaviour is new** — in
+  `test/state-conditions.mjs` beside the partition suite: the fast
+  path agrees with the general path element for element across every
+  state and both directions (the 57.1d control's shape, now applied to
+  the *refresh* rather than the apply); a geometry-prop condition
+  still moves `boundingBox()` through the fallback; a transition on a
+  state flip still tweens (fallback when the spec is live); the
+  parents def's diff applies to parents and not leaves; readback
+  answers the target record's values after a fast write.
+- [ ] **61.2 The implementation** — `refreshState`, the diff cache,
+  the factored writers, the `core.mts` wiring.
+- [ ] **61.3 Controls + measurement** — each control run and its
+  failing spec named: the fast path disabled outright (the perf gap
+  returns — proved by the bundle harness rather than a spec), the
+  diff writer neutered (the agreement specs fail), the classifier
+  forced to claim a geometry channel (the bounding-box spec fails).
+  Before/after through `build/cytoscape.esm.mjs`, plus the suites
+  whose rows gate it (`style.mjs`'s state-select rows,
+  `mutators.mjs`, `scenarios.mjs`) re-run for the record.
+- [ ] **61.4 Closing docs sweep** — the 60.4 record annotated with
+  what closed it, the README's perf/style notes, the suite header
+  comments, and the summary rewrite per the standing rule.

@@ -416,4 +416,242 @@ describe('gpu/style: state conditions (round 57.1)', function () {
       }
     });
   });
+
+  describe('the state-refresh fast path (round 61)', function () {
+    // Round 60.4 measured what a state flip cost: the general refresh
+    // path runs the full `write()` — every channel of the element —
+    // per slot, while a partitioned def's flip is knowable up front as
+    // the difference between two cached records.  These specs pin the
+    // fast path from the outside where they can (readback) and from
+    // the inside where only the inside can say which path ran: the
+    // engine's `write` is instance-shadowed to count full element
+    // writes, the same private-reach idiom the partition suite uses.
+    const partitionOf = (cy, group) => cy._styleEngine.defs[group].partition;
+    const countFullWrites = (cy) => {
+      const engine = cy._styleEngine;
+      const proto = Object.getPrototypeOf(engine);
+      const counter = { n: 0 };
+
+      engine.write = function (...args) {
+        counter.n++;
+
+        return proto.write.apply(this, args);
+      };
+
+      return counter;
+    };
+    const onSelected = (then, otherwise) => ({
+      case: [{ when: { selected: true }, then }],
+      else: otherwise,
+    });
+    const onActive = (then, otherwise) => ({
+      case: [{ when: { active: true }, then }],
+      else: otherwise,
+    });
+
+    it('fast-writes a paint flip without a full element write', function () {
+      const cy = graph({
+        nodes: { 'background-color': onSelected('#0169D9', '#999999') },
+      });
+      const writes = countFullWrites(cy);
+
+      cy.$id('a').select();
+
+      expect(writes.n, 'select ran the full write()').to.equal(0);
+      expect(cy.$id('a').style('background-color')).to.equal('rgb(1,105,217)');
+      // and only the element whose state changed
+      expect(cy.$id('b').style('background-color')).to.equal(
+        'rgb(153,153,153)',
+      );
+
+      cy.$id('a').unselect();
+
+      expect(writes.n, 'unselect ran the full write()').to.equal(0);
+      expect(cy.$id('a').style('background-color')).to.equal(
+        'rgb(153,153,153)',
+      );
+    });
+
+    it('caches the diff per flag pair, not per slot', function () {
+      const cy = graph({
+        nodes: { 'background-color': onSelected('#0169D9', '#999999') },
+      });
+
+      cy.nodes().select();
+      cy.nodes().unselect();
+
+      const part = partitionOf(cy, 'nodes');
+
+      // two elements, two directions of the same pair, one cached diff —
+      // and it would be one cached diff for two hundred thousand elements
+      expect(part.diffs.size).to.equal(1);
+    });
+
+    it('covers every fast paint channel, both directions', function () {
+      const cy = graph({
+        nodes: {
+          'background-color': onSelected('#0169D9', '#999999'),
+          'border-color': onSelected('#111111', '#222222'),
+          opacity: { case: [{ when: { selected: true }, then: 0.5 }], else: 1 },
+          'overlay-opacity': onActive(1, 0),
+        },
+        edges: {
+          // shapes as constants so the colour flips are observable —
+          // a 'none' end stores NO_ARROW whatever the colour says
+          'source-arrow-shape': 'triangle',
+          'target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'triangle',
+          'mid-target-arrow-shape': 'triangle',
+          'line-color': onSelected('#0169D9', '#999999'),
+          'source-arrow-color': onSelected('#0169D9', '#999999'),
+          'target-arrow-color': onSelected('#0169D9', '#999999'),
+          'mid-source-arrow-color': onSelected('#0169D9', '#999999'),
+          'mid-target-arrow-color': onSelected('#0169D9', '#999999'),
+          'overlay-opacity': onActive(1, 0),
+        },
+      });
+      const writes = countFullWrites(cy);
+      const grey = 'rgb(153,153,153)';
+      const blue = 'rgb(1,105,217)';
+      const edgeColorProps = [
+        'line-color',
+        'source-arrow-color',
+        'target-arrow-color',
+        'mid-source-arrow-color',
+        'mid-target-arrow-color',
+      ];
+
+      cy.$id('a').select();
+      cy.$id('ab').select();
+      cy.$id('a').activate();
+      cy.$id('ab').activate();
+
+      expect(cy.$id('a').style('background-color')).to.equal(blue);
+      expect(cy.$id('a').style('border-color')).to.equal('rgb(17,17,17)');
+      expect(cy.$id('a').style('opacity')).to.equal(0.5);
+      expect(cy.$id('a').style('overlay-opacity')).to.equal(1);
+
+      for (const prop of edgeColorProps) {
+        expect(cy.$id('ab').style(prop), prop).to.equal(blue);
+      }
+      expect(cy.$id('ab').style('overlay-opacity')).to.equal(1);
+
+      cy.$id('a').unselect();
+      cy.$id('ab').unselect();
+      cy.$id('a').unactivate();
+      cy.$id('ab').unactivate();
+
+      expect(cy.$id('a').style('background-color')).to.equal(grey);
+      expect(cy.$id('a').style('border-color')).to.equal('rgb(34,34,34)');
+      expect(cy.$id('a').style('opacity')).to.equal(1);
+      expect(cy.$id('a').style('overlay-opacity')).to.equal(0);
+
+      for (const prop of edgeColorProps) {
+        expect(cy.$id('ab').style(prop), prop).to.equal(grey);
+      }
+      expect(cy.$id('ab').style('overlay-opacity')).to.equal(0);
+
+      expect(writes.n, 'some flip ran the full write()').to.equal(0);
+    });
+
+    it('falls back to the full write for a geometry condition, and the box follows', function () {
+      const cy = graph({
+        nodes: {
+          width: { case: [{ when: { locked: true }, then: 80 }], else: 20 },
+        },
+      });
+      const writes = countFullWrites(cy);
+
+      cy.$id('a').lock();
+
+      // geometry has cross-channel consequences (bb, cull, pick, the
+      // label anchor) that live in write() — the fast path must decline
+      expect(writes.n).to.be.greaterThan(0);
+      expect(cy.$id('a').width()).to.equal(80);
+      expect(cy.$id('a').boundingBox().w).to.equal(80);
+    });
+
+    it('falls back when the group transitions, so a state flip still tweens', function () {
+      const cy = graph({
+        nodes: {
+          'background-color': onSelected('#0169D9', '#999999'),
+          'transition-property': 'background-color',
+          'transition-duration': 200,
+        },
+      });
+      const writes = countFullWrites(cy);
+
+      cy.$id('a').select();
+
+      // the txn capture wraps the general path's write(); a fast write
+      // would restyle instantly and never spawn the tween
+      expect(writes.n).to.be.greaterThan(0);
+      expect(cy.$id('a').animated()).to.equal(true);
+
+      cy.$id('a').stop(true);
+      cy.destroy();
+    });
+
+    it('applies the parents overlay diff to parents and the nodes def to leaves', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'p' } }, { data: { id: 'c', parent: 'p' } }],
+        style: {
+          nodes: { 'background-color': onSelected('#0169D9', '#999999') },
+          parents: { 'background-color': onSelected('#CCE1F9', '#eeeeee') },
+        },
+      });
+      const writes = countFullWrites(cy);
+
+      cy.$id('p').select();
+      cy.$id('c').select();
+
+      expect(writes.n).to.equal(0);
+      expect(cy.$id('p').style('background-color')).to.equal(
+        'rgb(204,225,249)',
+      );
+      expect(cy.$id('c').style('background-color')).to.equal('rgb(1,105,217)');
+
+      cy.$id('p').unselect();
+      cy.$id('c').unselect();
+
+      expect(writes.n).to.equal(0);
+      expect(cy.$id('p').style('background-color')).to.equal(
+        'rgb(238,238,238)',
+      );
+      expect(cy.$id('c').style('background-color')).to.equal(
+        'rgb(153,153,153)',
+      );
+    });
+
+    it('skips slots whose def does not read the flipped bit', function () {
+      // 'locked' is watched for the nodes *group* because the parents
+      // def reads it, so a leaf's lock still notifies — the leaf's own
+      // def diff is empty and the slot must be skipped, not written
+      const cy = cytoscape({
+        elements: [{ data: { id: 'p' } }, { data: { id: 'c', parent: 'p' } }],
+        style: {
+          nodes: { 'background-color': onSelected('#0169D9', '#999999') },
+          parents: {
+            'border-color': {
+              case: [{ when: { locked: true }, then: '#111111' }],
+              else: '#cccccc',
+            },
+          },
+        },
+      });
+      const writes = countFullWrites(cy);
+
+      cy.$id('c').lock();
+
+      expect(writes.n).to.equal(0);
+      expect(cy.$id('c').style('background-color')).to.equal(
+        'rgb(153,153,153)',
+      );
+
+      cy.$id('p').lock();
+
+      expect(writes.n).to.equal(0);
+      expect(cy.$id('p').style('border-color')).to.equal('rgb(17,17,17)');
+    });
+  });
 });

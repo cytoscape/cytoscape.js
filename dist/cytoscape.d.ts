@@ -3590,6 +3590,9 @@ declare class StyleEngine {
    * discards it with the def that built it.
    */
   private applyPartitioned;
+  /** The partition record for one masked flag word — cached on the def,
+   * resolved on the first miss (round 57.1). */
+  private partRecordFor;
   /** Resolve one flag combination into a computed record (cache miss). */
   private partitionRecord;
   /**
@@ -3618,6 +3621,43 @@ declare class StyleEngine {
    * @param keys — the data() keys written, which gate what re-evaluates
    */
   refreshMapped(group: GroupName, slots: ArrayLike<number>, keys: string[]): void;
+  /**
+   * The state-flip refresh (round 61) — `core.onStateChange`'s entry,
+   * replacing the `refreshMapped` route that made every select restyle
+   * whole elements (the 60.4 regression).  A flipped bit is the one
+   * event whose styling consequence is knowable up front: for a
+   * partitioned def the old masked word is the new word with `key`'s bit
+   * flipped back, both records are cached, and the channels that differ
+   * between them — one on a default-sheet node, five on a default-sheet
+   * edge — are written narrowly instead of through the ~25-call full
+   * `write()`.
+   *
+   * The general path is kept wherever it is the correct one: an
+   * unpartitioned def (a data mapper puts the group per-element anyway),
+   * a live transition spec (the txn capture is the general path's), a
+   * demoted group, and the structural pseudo-keys (a parent flip changes
+   * *which def* resolves the slot — the reparent hooks own that).  A
+   * diff containing any channel without a narrow writer falls back to
+   * the full `write()` of the target record per slot, byte-for-byte the
+   * old behaviour.
+   *
+   * @param group — the element group whose flag flipped
+   * @param key — the reserved condition key ('::selected', '::active', …)
+   * @param slots — the slots whose bit actually changed
+   */
+  refreshState(group: GroupName, key: string, slots: ArrayLike<number>): void;
+  /** One def's share of a state flip: the fast diff path, or the
+   * general `refreshGroupDef` wherever that one is correct (see
+   * `refreshState`). */
+  private refreshStateDef;
+  /**
+   * The writers for the channels that differ between two partition
+   * records — cached per unordered pair of masked flag words (the
+   * changed set is symmetric; which record to write is the caller's).
+   * Null when some differing channel has no narrow writer: that pair
+   * takes the full `write()`.
+   */
+  private partitionDiffWriters;
   private refreshGroupDef;
   private refreshGroupDefInner;
   /**
@@ -3694,6 +3734,53 @@ declare class StyleEngine {
   private resolveConst;
   /** Stored-truth readback for the background-image family (15.2). */
   private readImageProp;
+  /** Write `node.fillColor` (the B1 background-opacity fold). */
+  private writeNodeFillColor;
+  /** Write `node.borderColor` (the B1 border-opacity fold). */
+  private writeNodeBorderColor;
+  /** Write `node.opacity` — under compounds the store folds the
+   * ancestor product itself (round 14.4), so one call is complete. */
+  private writeNodeOpacity;
+  /** Write the `node.overlay` layer record (the A2 opacity fold). */
+  private writeNodeOverlay;
+  /** Write the `node.underlay` layer record (the A2 opacity fold). */
+  private writeNodeUnderlay;
+  /** Write `edge.lineColor` (the B1 line-opacity fold). */
+  private writeEdgeLineColor;
+  /**
+   * The B1 arrow fold: v3's effective arrow opacity is opacity ×
+   * line-opacity.  A 'none' end — or any end of a haystack edge, which
+   * draws no arrows (v3 skips them) — stores NO_ARROW, so the getters
+   * read 'none' (the recorded deviation: v3's pstyle still reports the
+   * declared shape).
+   */
+  private edgeArrowRgba;
+  /** Write `edge.sourceArrow` — `setColor` re-derives the round-56
+   * shows-line bits itself, so one call is complete. */
+  private writeEdgeSourceArrowColor;
+  /** Write `edge.targetArrow` (see the source twin). */
+  private writeEdgeTargetArrowColor;
+  /** Write `edge.midSourceArrow` — `setMidArrow` maintains the live
+   * mid-arrow count, so one call is complete. */
+  private writeEdgeMidSourceArrowColor;
+  /** Write `edge.midTargetArrow` (see the source twin). */
+  private writeEdgeMidTargetArrowColor;
+  /** Write the `edge.overlay` stroke record (A2: stroke = width +
+   * 2·padding, derived here so the layer shaders need no width
+   * binding). */
+  private writeEdgeOverlay;
+  /** Write the `edge.underlay` stroke record (see the overlay twin). */
+  private writeEdgeUnderlay;
+  /**
+   * The narrow writer for one normalized prop, or null when the prop has
+   * cross-channel consequences the writers above cannot carry — geometry
+   * (bb/cull/pick/label anchors), labels, charts, the edge-opacity fold
+   * cluster — in which case a state flip that moves it falls back to the
+   * full `write()` of the target record, byte-for-byte the general
+   * path's behaviour.  The layer props share one writer per record
+   * because they land in one packed store call.
+   */
+  private fastStateWriter;
   /**
    * The one channel funnel, wrapped by the transition capture (round
    * 24.1): an already-styled slot written inside an open capture gets

@@ -2557,20 +2557,27 @@ choice:
   sheet cost about 6%.  One data-driven mapper in the group turns the
   fast path off, because the group is on the per-element path anyway.
 
-  What is *not* free under it, measured by round 60.4's cross-commit
-  comparison on its first run: **selection**.  Because the default
-  sheet conditions on `selected`, every select/unselect restyles the
-  changed slots, and the flag-flip path (`onStateChange` →
-  `refreshMapped`) runs the general per-slot refresh at ~1.9 µs/slot —
-  bulk select+unselect of 2000 nodes went 47.9 µs (the round-4 skip,
-  which no longer engages out of the box) to 6.3 ms, flipping that row
-  from ~38× faster than v3 to ~3.3× slower.  A sheet that declares the
-  conditioned channels itself replaces the state rules and keeps the
-  skip path; the logged headroom (PLAN.md round 60.4) is to route a
-  state flip through the partition records — a mask, a Map hit and a
-  write of only the differing channels — instead of the per-element
-  refresh.  `benchmark/style.mjs`'s round-60.2 rows are the re-runnable
-  source for both configurations.
+  A state *flip* is cheap under it too, since round 61 took the
+  headroom round 60.4 had logged: `onStateChange` routes through
+  `StyleEngine.refreshState`, which resolves the old and new partition
+  records (the old masked word is the new one with the flipped bit
+  undone), diffs them once per flag pair — cached on the def beside
+  the records — and writes **only the differing channels** through
+  narrow writers factored out of `writeChannels`, so the fold math has
+  one definition.  For the default sheet that is one colour write per
+  selected node and five per selected edge: bulk select+unselect of a
+  256-band measures 63.5 µs through the built bundle against 15.5 µs
+  under a constant sheet (it was 541.9 µs through the general
+  per-element refresh — the regression 60.4's comparison caught, now
+  ~8.5× *faster* than v3 on that row again).  A diff touching a
+  channel with cross-channel consequences — geometry (bb/cull/pick,
+  label anchors), labels, charts, the edge-opacity fold cluster —
+  falls back to the full per-slot `write()` of the target record, as
+  does a group with a live transition spec, an unpartitioned def or a
+  demoted group, so a sheet conditioning `width` on `selected` still
+  pays (and must pay) the full restyle.  `benchmark/style.mjs`'s
+  select rows price all three configurations: no restyle, the round-61
+  diff path, and the all-channels full write.
 
 The same keys are **query** keys (round 57.1f): `cy.nodes( { locked: true } )`
 answers what `{ when: { locked: true } }` styles, because `matcher.mts`
@@ -3013,7 +3020,7 @@ core/collection op against its v3 analogue in `v3/src/`.  The suites in
 | `scenarios.mjs` | five composed traces **with listeners attached** |
 | `algorithms.mjs` | all 21 graph algorithms vs v3 (33.2) |
 | `layouts.mjs` | every built-in layout, the force executor + the round-59 seed split, the round-17 contract (33.1, 60.2) |
-| `style.mjs` | sheet compile/apply, the parents partition, the 57.1d state-condition partition + what a select restyles, the readback getters (33.3, 60.2) |
+| `style.mjs` | sheet compile/apply, the parents partition, the 57.1d state-condition partition + what a select restyles — no-restyle vs the round-61 diff path vs the all-channels full write, the readback getters (33.3, 60.2, 61) |
 | `style-bundle.mjs` | the same getters **through the built bundle**, where tsx's `__name` wrapper does not exist (36.5) |
 | `load.mjs` | the three ingest forms, conversion, export, incremental add (33.4) |
 | `spatial.mjs` | CPU pick by shape + the 57.9 hit halo, box selection, bounds/fit (33.5, 60.2) |

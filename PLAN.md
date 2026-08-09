@@ -337,6 +337,20 @@ from 38× faster than v3 to 3.3× slower — with the measured headroom
 logged in the 60.4 record; the renderer tier read clean (−0.7%
 drift).
 
+**Round 61** (2026-08-09, the same day) took that headroom: a state
+flip now routes through `StyleEngine.refreshState`, which diffs the
+two partition records once per flag pair and writes only the
+differing channels through writers factored out of `writeChannels` —
+one colour write per selected node under the default sheet, against
+the ~25-call full `write()` the general refresh ran per slot.
+Measured through the built bundle, the 256-band select+unselect went
+**541.9 → 63.5 µs** (constant sheet: 15.5 µs), and the regressed
+`mutators` row reads ~8.5× *faster* than v3 again (6.30 ms →
+250.9 µs).  Geometry/label/chart diffs, live transitions,
+unpartitioned defs and demoted groups all keep the full write —
+correctness by fallback, pinned by controls that fail exactly the
+specs written for them.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -4196,6 +4210,13 @@ flipped from 38× faster than v3 to 3.3× slower on that row.  The
 measured headroom is logged in the 60.4 record (route a state flip
 through the 57.1d partition records instead of `refreshMapped`); the
 renderer tier read clean at −0.7% drift over 290 shared rows.
+
+**Amended once more on 2026-08-09: round 61 closed that regression the
+same day** — the state flip routes through the partition-record diff
+(541.9 → 63.5 µs on the bundle-measured 256-band select; the mutators
+row back to ~8.5× faster than v3), with geometry/label/transition
+cases falling back to the full write.  The queue and the open ledger
+questions (18, 23, 27, 28) are unchanged by it.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -17157,6 +17178,10 @@ manual diff nobody had ever run.
   `mutators.mjs`/`scenarios.mjs`/`core+collection` now measure the
   default-sheet price, which is the honest configuration for rows
   named for what an app does out of the box.
+  ***Closed by round 61 (2026-08-09, the same day)*** — exactly the
+  routing described: through the built bundle the 256-band
+  select+unselect went 541.9 → 63.5 µs, and the mutators row reads
+  ~8.5× *faster* than v3 again.  See the round-61 record.
 
   Smaller Node-tier movers, deliberately *not* acted on: `elements()`
   8.5 → 39 ns, `forEach` +48%, `contains` +11%, `lock + unlock` +63% —
@@ -17239,25 +17264,73 @@ round-trip 3.4 µs against 1.5.
 ### Pass split (tests-first; docs in-commit)
 
 - [x] **61.0 Docs-first** — this section.
-- [ ] **61.1 The specs, red where the behaviour is new** — in
-  `test/state-conditions.mjs` beside the partition suite: the fast
-  path agrees with the general path element for element across every
-  state and both directions (the 57.1d control's shape, now applied to
-  the *refresh* rather than the apply); a geometry-prop condition
-  still moves `boundingBox()` through the fallback; a transition on a
-  state flip still tweens (fallback when the spec is live); the
-  parents def's diff applies to parents and not leaves; readback
-  answers the target record's values after a fast write.
-- [ ] **61.2 The implementation** — `refreshState`, the diff cache,
-  the factored writers, the `core.mts` wiring.
-- [ ] **61.3 Controls + measurement** — each control run and its
-  failing spec named: the fast path disabled outright (the perf gap
-  returns — proved by the bundle harness rather than a spec), the
-  diff writer neutered (the agreement specs fail), the classifier
-  forced to claim a geometry channel (the bounding-box spec fails).
-  Before/after through `build/cytoscape.esm.mjs`, plus the suites
-  whose rows gate it (`style.mjs`'s state-select rows,
-  `mutators.mjs`, `scenarios.mjs`) re-run for the record.
-- [ ] **61.4 Closing docs sweep** — the 60.4 record annotated with
-  what closed it, the README's perf/style notes, the suite header
-  comments, and the summary rewrite per the standing rule.
+- [x] **61.1 The specs** (2026-08-09) — seven in
+  `test/state-conditions.mjs` beside the partition suite, **five seen
+  red** against HEAD (the write-count assertions and the diff cache)
+  and two green by design (the fallback pins, which exist so the
+  controls can prove they discriminate): a paint flip runs no full
+  `write()` and reads back the target record; the diff caches per
+  flag pair, not per slot; every fast paint channel round-trips in
+  both directions on both groups (arrow shapes as constants, since a
+  'none' end stores NO_ARROW whatever the colour says); a
+  geometry-prop condition still moves `boundingBox()` through the
+  fallback; a transition on a state flip still tweens; the parents
+  overlay's diff applies to parents and the nodes def's to leaves;
+  and a bit watched for the group but unread by the slot's def skips
+  the slot.  The which-path-ran assertions instance-shadow the
+  engine's `write` — the partition suite's private-reach idiom.
+- [x] **61.2 The implementation** (2026-08-09) — as designed, plus
+  one addition measurement forced: `refreshState` /
+  `refreshStateDef` / `partitionDiffWriters` and the `diffs` cache on
+  `def.partition`; eleven narrow writers factored out of
+  `writeChannels` (both callers, one fold definition — `foldRgba` /
+  `foldLayerRgba` replaced four inline copies); `partRecordFor`
+  extracted from `applyPartitioned`; the `core.mts` wiring.  The
+  addition: the first cut resolved the diff per slot (a string key
+  and two Map hits each) and measured 131.5 µs on the 256-band — a
+  bulk flip's slots almost always share one masked word, so the
+  record and writers now resolve **once per run of equal words**,
+  which took it to 63.5 µs.
+- [x] **61.3 Controls + measurement** (2026-08-09) — all three
+  controls run, each failing exactly what it should and nothing else:
+  the fast path disabled outright fails the five write-count/cache
+  specs while the fallback pins stay green (the optimisation is
+  invisible — 57.1d's control shape); the writers neutered fail the
+  four readback specs while the write-count specs stay green (the
+  failures come from the writers, not the routing); the classifier
+  claiming `width` fails both geometry specs — the round-61 fallback
+  pin and 57.1d's own bounding-box spec.
+  **Measured through `build/cytoscape.esm.mjs`** (N=2000, this
+  machine): 256-band select+unselect **541.9 → 63.5 µs** under the
+  default sheet (constant sheet 15.5 µs — the residual ~4× is the
+  restyle actually happening, one colour write per slot at ~50 ns);
+  single-element 3.4 → 2.2 µs; a 256-band lock+unlock (a state no
+  default-sheet condition reads) at 21.6 µs, pure flag work — the
+  unwatched path stays free.  Through tsx, the suites whose rows
+  regressed: `mut-bulk: select + unselect` **6.30 ms → 250.9 µs**
+  (v3 2.14 ms — v4 is ~8.5× faster than v3 on that row again),
+  `scn: explore` 164.7 → 39.3 µs, `scn: select-all + fit` 7.14 →
+  0.99 ms, `scn: drag` 411.9 → 103.7 µs.  The residuals over the
+  pre-57.1d published numbers are the default sheet genuinely
+  restyling on select, which pre-57.1d sheets never did.
+  **`style.mjs` gained the row that prices the fork** — its 60.2
+  state sheet conditions *geometry* (width/height/border-width), so
+  it correctly keeps the full-write price (989 → 583 µs, the leaner
+  dispatch only) and a new paint-only state row (the default sheet's
+  shape) prices the diff path: 8.9 µs (no restyle) / **31.4 µs**
+  (round-61 diff path) / 595 µs (all channels), with a startup probe
+  asserting the paint sheet actually restyles, which is what catches
+  control 2 in a benchmark run.
+- [x] **61.4 Closing docs sweep** (2026-08-09) — the 60.4 record
+  annotated with the closure; the README's default-stylesheet
+  performance note rewritten from "what is not free" to the
+  three-configuration contract; the `style.mjs` header and select-row
+  comments; the summary rewrite (week 4 and the what-remains table).
+  Verification for the round: typecheck, **2111 Node + 315 module +
+  24 soak tests**, the throw gate green at 184/10/5/0 over 199
+  sites, lint, format, JSDoc 100%/100% with `@throws` 18/18,
+  `@param` 241/241, `@returns` 280/280, the regenerated
+  `dist/cytoscape.d.ts` (45 type exports / 3 statics / 1226 doc
+  blocks), and the full Playwright suite against a fresh bundle with
+  **goldens exact** — the factored writers are instruction-identical
+  for a full apply, and the exact goldens are what proves it.

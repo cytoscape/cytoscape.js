@@ -22,8 +22,11 @@
 // partition (`applyPartitioned`, one computed record per state
 // combination) against both the constant path it claims to match and
 // the per-element path it avoids, and what a select/unselect costs once
-// a sheet conditions on the state.  The plain select/unselect
-// round-trip stays priced in mutators.mjs (~38x at 200k).
+// a sheet conditions on the state.  Round 61 split that last question
+// in two, because the answer forked: a paint-only state sheet (the
+// default sheet's shape) takes the partition-diff fast path, while a
+// sheet conditioning geometry pays the full per-slot write.  The plain
+// select/unselect round-trip stays priced in mutators.mjs.
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
 import { finishRun } from './bench-run.mjs';
@@ -355,10 +358,13 @@ cmpGpu(
     },
   );
 
-  // select + unselect a band: the constant sheet takes round 4's
-  // skip-restyle fast path; the state sheet must restyle the changed
-  // slots (57.1's dependsOnState), which is the per-selection price of
-  // the default look
+  // select + unselect a band, three ways: the constant sheet takes
+  // round 4's skip-restyle fast path; the paint-only state sheet — the
+  // default stylesheet's shape — takes round 61's partition-diff path
+  // (one colour write per slot); and the all-channels state sheet
+  // conditions geometry too, so its diff has no narrow writers and it
+  // pays the full per-slot write, which is the 60.4 regression's cost
+  // kept priced for the sheets that genuinely need it
   {
     const BAND = Math.min(256, N);
     // built by union: `cy.collection()` takes no arguments in v4 (it is
@@ -382,12 +388,53 @@ cmpGpu(
 
     const constCy = gpuInstance();
     const stateCy = gpuInstance();
+    // The round-61 contrast: a sheet that conditions *paint only* on the
+    // state — the default stylesheet's shape — takes the partition-diff
+    // fast path (one colour write per slot), where the all-channels
+    // sheet above conditions geometry too and correctly pays the full
+    // per-slot write.  The gap between the two rows *is* the fast path;
+    // the 60.4 regression was every select paying the second price.
+    const paintCy = gpuInstance();
+    const PAINT_STATE_SHEET = {
+      nodes: {
+        ...GPU_SHEETS[0].nodes,
+        'background-color': {
+          case: [{ when: { selected: true }, then: '#0169d9' }],
+          else: GPU_SHEETS[0].nodes['background-color'],
+        },
+      },
+      edges: {
+        ...GPU_SHEETS[0].edges,
+        'line-color': {
+          case: [{ when: { selected: true }, then: '#0169d9' }],
+          else: GPU_SHEETS[0].edges['line-color'],
+        },
+      },
+    };
 
     constCy.style(GPU_SHEETS[0]);
     stateCy.style(STATE_SHEETS[0]);
+    paintCy.style(PAINT_STATE_SHEET);
 
     const constBand = bandOf(constCy);
     const stateBand = bandOf(stateCy);
+    const paintBand = bandOf(paintCy);
+
+    // the paint row is guilty until it discriminates: the fast path must
+    // actually restyle (round 61's control 2 is a writer that writes
+    // nothing, and this probe is what catches it in a benchmark run)
+    {
+      const n = paintCy.$id('n' + ((MIDNUM + 1) % N));
+      const before = n.style('background-color');
+
+      n.select();
+
+      if (n.style('background-color') === before) {
+        console.warn('  !! paint-state sheet did not restyle on select');
+      }
+
+      n.unselect();
+    }
 
     if (OP == null || 'select'.includes(OP)) {
       group(
@@ -398,7 +445,11 @@ cmpGpu(
               constBand.select();
               constBand.unselect();
             });
-            bench('state-case sheet (restyles the band)', () => {
+            bench('paint-only state sheet (round-61 diff path)', () => {
+              paintBand.select();
+              paintBand.unselect();
+            });
+            bench('state-case sheet (all channels; full write)', () => {
               stateBand.select();
               stateBand.unselect();
             });

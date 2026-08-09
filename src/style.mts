@@ -710,6 +710,22 @@ const formatRgba = (r: number, g: number, b: number, a: number): string => {
     : `rgba(${r},${g},${b},${Math.round((a / 255) * 1000) / 1000})`;
 };
 
+/** The B1 opacity fold: a channel opacity multiplies into the stored
+ * alpha (v3's effective = channel opacity × element opacity; element
+ * opacity stays its own column).  One definition for every fold site in
+ * the write path — `writeChannels` and the round-61 narrow writers. */
+const foldRgba = ([r, g, b, a]: RGBA, opacity: number): RGBA => [
+  r,
+  g,
+  b,
+  Math.round(a * opacity),
+];
+
+/** The A2 layer fold: layer opacity into the packed record alpha (v3's
+ * overlay never multiplies element opacity). */
+const foldLayerRgba = (color: RGBA, opacity: number): number =>
+  packRgba(foldRgba(color, opacity));
+
 /** Stored shape id → resolved keyword (the exact-circle compile collapses back to 'ellipse'). */
 const SHAPE_NAMES: Record<number, string> = {
   [SHAPE_CIRCLE]: 'ellipse',
@@ -3954,7 +3970,7 @@ interface BoundMapper {
  */
 const partitionOf = (
   mappers: readonly BoundMapper[],
-): { mask: number; records: Map<number, Computed> } | null => {
+): GroupDef['partition'] => {
   let mask = 0;
 
   for (const bm of mappers) {
@@ -3973,8 +3989,15 @@ const partitionOf = (
     }
   }
 
-  return mask === 0 ? null : { mask, records: new Map() };
+  return mask === 0 ? null : { mask, records: new Map(), diffs: new Map() };
 };
+
+/** Evaluated-value equality for the round-61 partition diff: colours
+ * evaluate to RGBA arrays, everything else to scalars/strings. */
+const evaluatedEq = (a: Evaluated, b: Evaluated): boolean =>
+  Array.isArray(a) && Array.isArray(b)
+    ? a.length === b.length && a.every((v, i) => v === b[i])
+    : a === b;
 
 /**
  * Paint channels: props whose stored bytes no CPU path reads back except
@@ -4423,9 +4446,27 @@ interface GroupDef {
    *
    * `mask` is the OR of the bits read; `records` is the lazily built
    * cache, keyed by `flags & mask`.
+   *
+   * `diffs` (round 61) is the state-refresh fast path's cache: for an
+   * unordered pair of masked flag words, the writers for exactly the
+   * channels whose value differs between the two records — or null when
+   * some differing channel has no narrow writer, in which case a flip
+   * between those words takes the full `write()` of the target record.
+   * Keyed `lo:hi`; sized by pairs over the record cache, so single
+   * digits in practice, and discarded with the def like `records`.
    */
-  partition: { mask: number; records: Map<number, Computed> } | null;
+  partition: {
+    mask: number;
+    records: Map<number, Computed>;
+    diffs: Map<string, StateWriter[] | null>;
+  } | null;
 }
+
+/** A narrow channel writer for the state-refresh fast path (round 61):
+ * writes one channel's store bytes for `slot` from the resolved record,
+ * with the same fold math as `writeChannels` — each is a method of the
+ * engine that `writeChannels` itself calls, so the two cannot drift. */
+type StateWriter = (slot: number, computed: Computed) => void;
 
 const SHEET_KEYS: ReadonlySet<string> = new Set([
   'nodes',
@@ -6863,16 +6904,31 @@ export class StyleEngine {
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
-      const key = flags[slot] & part.mask;
-      let record = part.records.get(key);
 
-      if (record === undefined) {
-        record = this.partitionRecord(group, def, key);
-        part.records.set(key, record);
-      }
-
-      this.write(group, slot, record);
+      this.write(
+        group,
+        slot,
+        this.partRecordFor(group, def, part, flags[slot] & part.mask),
+      );
     }
+  }
+
+  /** The partition record for one masked flag word — cached on the def,
+   * resolved on the first miss (round 57.1). */
+  private partRecordFor(
+    group: GroupName,
+    def: GroupDef,
+    part: NonNullable<GroupDef['partition']>,
+    word: number,
+  ): Computed {
+    let record = part.records.get(word);
+
+    if (record === undefined) {
+      record = this.partitionRecord(group, def, word);
+      part.records.set(word, record);
+    }
+
+    return record;
   }
 
   /** Resolve one flag combination into a computed record (cache miss). */
@@ -6990,6 +7046,191 @@ export class StyleEngine {
     }
 
     this.refreshGroupDef(group, this.defs[group], slots, keys);
+  }
+
+  /**
+   * The state-flip refresh (round 61) — `core.onStateChange`'s entry,
+   * replacing the `refreshMapped` route that made every select restyle
+   * whole elements (the 60.4 regression).  A flipped bit is the one
+   * event whose styling consequence is knowable up front: for a
+   * partitioned def the old masked word is the new word with `key`'s bit
+   * flipped back, both records are cached, and the channels that differ
+   * between them — one on a default-sheet node, five on a default-sheet
+   * edge — are written narrowly instead of through the ~25-call full
+   * `write()`.
+   *
+   * The general path is kept wherever it is the correct one: an
+   * unpartitioned def (a data mapper puts the group per-element anyway),
+   * a live transition spec (the txn capture is the general path's), a
+   * demoted group, and the structural pseudo-keys (a parent flip changes
+   * *which def* resolves the slot — the reparent hooks own that).  A
+   * diff containing any channel without a narrow writer falls back to
+   * the full `write()` of the target record per slot, byte-for-byte the
+   * old behaviour.
+   *
+   * @param group — the element group whose flag flipped
+   * @param key — the reserved condition key ('::selected', '::active', …)
+   * @param slots — the slots whose bit actually changed
+   */
+  refreshState(group: GroupName, key: string, slots: ArrayLike<number>): void {
+    // the structural pair changes def resolution, not just values
+    if (key === '::parent' || key === '::child') {
+      this.refreshMapped(group, slots as number[], [key]);
+
+      return;
+    }
+
+    if (group === 'nodes' && this.store.hasCompounds()) {
+      const flags = this.store.column('node.flags') as Uint32Array;
+      const leaves: number[] = [];
+      const parents: number[] = [];
+
+      for (let i = 0; i < slots.length; i++) {
+        ((flags[slots[i]] & FLAG_PARENT) !== 0 ? parents : leaves).push(
+          slots[i],
+        );
+      }
+
+      this.refreshStateDef('nodes', this.defs.nodes, leaves, key);
+      this.refreshStateDef('nodes', this.defs.parents, parents, key);
+
+      return;
+    }
+
+    this.refreshStateDef(group, this.defs[group], slots, key);
+  }
+
+  /** One def's share of a state flip: the fast diff path, or the
+   * general `refreshGroupDef` wherever that one is correct (see
+   * `refreshState`). */
+  private refreshStateDef(
+    group: GroupName,
+    def: GroupDef,
+    slots: ArrayLike<number>,
+    key: string,
+  ): void {
+    if (slots.length === 0) {
+      return;
+    }
+
+    const part = def.partition;
+    const spec = def.transition;
+    const transitionsLive =
+      this.transitionSink != null && spec.duration > 0 && spec.props.length > 0;
+
+    if (part == null || this.demoted[group] || transitionsLive) {
+      this.refreshGroupDef(group, def, slots, [key]);
+
+      return;
+    }
+
+    const bit = CONDITION_FLAGS[key] ?? 0;
+
+    if ((part.mask & bit) === 0) {
+      // the bit is watched for the *group* (the store's set folds the
+      // parents def into nodes'), not necessarily read by this def —
+      // an empty diff by construction, so the slots are skipped
+      return;
+    }
+
+    const flags = this.store.column(
+      group === 'nodes' ? 'node.flags' : 'edge.flags',
+    ) as Uint32Array;
+    // a bulk flip's slots almost always share one masked word (nothing
+    // else is usually pressed or hovered mid-select), so the record and
+    // diff resolve once per run of equal words, not per slot
+    let last = -1;
+    let record: Computed | null = null;
+    let writers: StateWriter[] | null = null;
+
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const to = flags[slot] & part.mask;
+
+      if (to !== last) {
+        last = to;
+        record = this.partRecordFor(group, def, part, to);
+        writers = this.partitionDiffWriters(group, def, part, to ^ bit, to);
+      }
+
+      if (writers == null) {
+        this.write(group, slot, record as Computed);
+      } else {
+        for (let j = 0; j < writers.length; j++) {
+          writers[j](slot, record as Computed);
+        }
+      }
+    }
+  }
+
+  /**
+   * The writers for the channels that differ between two partition
+   * records — cached per unordered pair of masked flag words (the
+   * changed set is symmetric; which record to write is the caller's).
+   * Null when some differing channel has no narrow writer: that pair
+   * takes the full `write()`.
+   */
+  private partitionDiffWriters(
+    group: GroupName,
+    def: GroupDef,
+    part: NonNullable<GroupDef['partition']>,
+    from: number,
+    to: number,
+  ): StateWriter[] | null {
+    const cacheKey = from <= to ? `${from}:${to}` : `${to}:${from}`;
+    let writers = part.diffs.get(cacheKey);
+
+    if (writers !== undefined) {
+      return writers;
+    }
+
+    // the partitionRecord reader, per word: a condition is answered from
+    // the word rather than from a slot, which is what makes the diff a
+    // property of the pair
+    const readerFor =
+      (word: number): ValueReader =>
+      (_group, _slot, condKey) =>
+        (word & (CONDITION_FLAGS[condKey] ?? 0)) !== 0;
+    const readFrom = readerFor(from);
+    const readTo = readerFor(to);
+
+    writers = [];
+
+    for (const bm of def.mappers) {
+      const fallback = bm.channel.default(group);
+      const a = bindEvaluator(
+        bm.m,
+        this.store.data,
+        group,
+        fallback,
+        readFrom,
+      )(0);
+      const b = bindEvaluator(
+        bm.m,
+        this.store.data,
+        group,
+        fallback,
+        readTo,
+      )(0);
+
+      if (evaluatedEq(a, b)) {
+        continue;
+      }
+
+      const writer = this.fastStateWriter(group, bm.m.prop);
+
+      if (writer == null) {
+        writers = null;
+
+        break;
+      }
+
+      writers.push(writer);
+    }
+
+    part.diffs.set(cacheKey, writers);
+
+    return writers;
   }
 
   private refreshGroupDef(
@@ -7611,6 +7852,229 @@ export class StyleEngine {
     }
   }
 
+  // -- the shared channel writers (round 61) --
+  //
+  // Single-store-call paint writes factored out of writeChannels so the
+  // state-refresh fast path can perform exactly one channel's write with
+  // exactly the fold math the full pass uses — one definition, two
+  // callers, the dual-consumers discipline.  Everything with a
+  // cross-channel coupling (the circle collapse, geometry's cull/pick/
+  // label-anchor cascade, the edge-opacity arrow fold cluster) stays
+  // inline in writeChannels, which is what confines the fast path to
+  // the channels listed in fastStateWriter.
+
+  /** Write `node.fillColor` (the B1 background-opacity fold). */
+  private writeNodeFillColor(slot: number, computed: Computed): void {
+    this.store.setColor(
+      'node.fillColor',
+      slot,
+      ...foldRgba(computed.fillColor, computed.backgroundOpacity),
+    );
+  }
+
+  /** Write `node.borderColor` (the B1 border-opacity fold). */
+  private writeNodeBorderColor(slot: number, computed: Computed): void {
+    this.store.setColor(
+      'node.borderColor',
+      slot,
+      ...foldRgba(computed.borderColor, computed.borderOpacity),
+    );
+  }
+
+  /** Write `node.opacity` — under compounds the store folds the
+   * ancestor product itself (round 14.4), so one call is complete. */
+  private writeNodeOpacity(slot: number, computed: Computed): void {
+    this.store.setScalar('node.opacity', slot, computed.opacity);
+  }
+
+  /** Write the `node.overlay` layer record (the A2 opacity fold). */
+  private writeNodeOverlay(slot: number, computed: Computed): void {
+    this.store.setNodeLayer(
+      'node.overlay',
+      slot,
+      foldLayerRgba(computed.overlayColor, computed.overlayOpacity),
+      computed.overlayPadding,
+      computed.overlayShape,
+      computed.overlayRadius,
+    );
+  }
+
+  /** Write the `node.underlay` layer record (the A2 opacity fold). */
+  private writeNodeUnderlay(slot: number, computed: Computed): void {
+    this.store.setNodeLayer(
+      'node.underlay',
+      slot,
+      foldLayerRgba(computed.underlayColor, computed.underlayOpacity),
+      computed.underlayPadding,
+      computed.underlayShape,
+      computed.underlayRadius,
+    );
+  }
+
+  /** Write `edge.lineColor` (the B1 line-opacity fold). */
+  private writeEdgeLineColor(slot: number, computed: Computed): void {
+    this.store.setColor(
+      'edge.lineColor',
+      slot,
+      ...foldRgba(computed.lineColor, computed.lineOpacity),
+    );
+  }
+
+  /**
+   * The B1 arrow fold: v3's effective arrow opacity is opacity ×
+   * line-opacity.  A 'none' end — or any end of a haystack edge, which
+   * draws no arrows (v3 skips them) — stores NO_ARROW, so the getters
+   * read 'none' (the recorded deviation: v3's pstyle still reports the
+   * declared shape).
+   */
+  private edgeArrowRgba(
+    computed: Computed,
+    shape: ArrowShape,
+    color: RGBA,
+  ): RGBA {
+    return shape === 'none' || computed.curveStyle === CURVE_STYLE_HAYSTACK
+      ? NO_ARROW
+      : [
+          color[0],
+          color[1],
+          color[2],
+          Math.round(color[3] * computed.opacity * computed.lineOpacity),
+        ];
+  }
+
+  /** Write `edge.sourceArrow` — `setColor` re-derives the round-56
+   * shows-line bits itself, so one call is complete. */
+  private writeEdgeSourceArrowColor(slot: number, computed: Computed): void {
+    this.store.setColor(
+      'edge.sourceArrow',
+      slot,
+      ...this.edgeArrowRgba(
+        computed,
+        computed.sourceArrowShape,
+        computed.sourceArrowColor,
+      ),
+    );
+  }
+
+  /** Write `edge.targetArrow` (see the source twin). */
+  private writeEdgeTargetArrowColor(slot: number, computed: Computed): void {
+    this.store.setColor(
+      'edge.targetArrow',
+      slot,
+      ...this.edgeArrowRgba(
+        computed,
+        computed.targetArrowShape,
+        computed.targetArrowColor,
+      ),
+    );
+  }
+
+  /** Write `edge.midSourceArrow` — `setMidArrow` maintains the live
+   * mid-arrow count, so one call is complete. */
+  private writeEdgeMidSourceArrowColor(slot: number, computed: Computed): void {
+    this.store.setMidArrow(
+      'edge.midSourceArrow',
+      slot,
+      ...this.edgeArrowRgba(
+        computed,
+        computed.midSourceArrowShape,
+        computed.midSourceArrowColor,
+      ),
+      'edge.midTargetArrow',
+    );
+  }
+
+  /** Write `edge.midTargetArrow` (see the source twin). */
+  private writeEdgeMidTargetArrowColor(slot: number, computed: Computed): void {
+    this.store.setMidArrow(
+      'edge.midTargetArrow',
+      slot,
+      ...this.edgeArrowRgba(
+        computed,
+        computed.midTargetArrowShape,
+        computed.midTargetArrowColor,
+      ),
+      'edge.midSourceArrow',
+    );
+  }
+
+  /** Write the `edge.overlay` stroke record (A2: stroke = width +
+   * 2·padding, derived here so the layer shaders need no width
+   * binding). */
+  private writeEdgeOverlay(slot: number, computed: Computed): void {
+    this.store.setEdgeLayer(
+      'edge.overlay',
+      slot,
+      foldLayerRgba(computed.overlayColor, computed.overlayOpacity),
+      computed.width + 2 * computed.overlayPadding,
+    );
+  }
+
+  /** Write the `edge.underlay` stroke record (see the overlay twin). */
+  private writeEdgeUnderlay(slot: number, computed: Computed): void {
+    this.store.setEdgeLayer(
+      'edge.underlay',
+      slot,
+      foldLayerRgba(computed.underlayColor, computed.underlayOpacity),
+      computed.width + 2 * computed.underlayPadding,
+    );
+  }
+
+  /**
+   * The narrow writer for one normalized prop, or null when the prop has
+   * cross-channel consequences the writers above cannot carry — geometry
+   * (bb/cull/pick/label anchors), labels, charts, the edge-opacity fold
+   * cluster — in which case a state flip that moves it falls back to the
+   * full `write()` of the target record, byte-for-byte the general
+   * path's behaviour.  The layer props share one writer per record
+   * because they land in one packed store call.
+   */
+  private fastStateWriter(group: GroupName, prop: string): StateWriter | null {
+    if (group === 'nodes') {
+      switch (prop) {
+        case 'background-color':
+          return (slot, c) => this.writeNodeFillColor(slot, c);
+        case 'border-color':
+          return (slot, c) => this.writeNodeBorderColor(slot, c);
+        case 'opacity':
+          return (slot, c) => this.writeNodeOpacity(slot, c);
+        case 'overlay-color':
+        case 'overlay-opacity':
+        case 'overlay-padding':
+          return (slot, c) => this.writeNodeOverlay(slot, c);
+        case 'underlay-color':
+        case 'underlay-opacity':
+        case 'underlay-padding':
+          return (slot, c) => this.writeNodeUnderlay(slot, c);
+        default:
+          return null;
+      }
+    }
+
+    switch (prop) {
+      case 'line-color':
+        return (slot, c) => this.writeEdgeLineColor(slot, c);
+      case 'source-arrow-color':
+        return (slot, c) => this.writeEdgeSourceArrowColor(slot, c);
+      case 'target-arrow-color':
+        return (slot, c) => this.writeEdgeTargetArrowColor(slot, c);
+      case 'mid-source-arrow-color':
+        return (slot, c) => this.writeEdgeMidSourceArrowColor(slot, c);
+      case 'mid-target-arrow-color':
+        return (slot, c) => this.writeEdgeMidTargetArrowColor(slot, c);
+      case 'overlay-color':
+      case 'overlay-opacity':
+      case 'overlay-padding':
+        return (slot, c) => this.writeEdgeOverlay(slot, c);
+      case 'underlay-color':
+      case 'underlay-opacity':
+      case 'underlay-padding':
+        return (slot, c) => this.writeEdgeUnderlay(slot, c);
+      default:
+        return null;
+    }
+  }
+
   /**
    * The one channel funnel, wrapped by the transition capture (round
    * 24.1): an already-styled slot written inside an open capture gets
@@ -7647,32 +8111,14 @@ export class StyleEngine {
           ? SHAPE_CIRCLE
           : computed.shape;
 
-      // the B1 opacity split folds into the stored channel alphas (v3's
-      // effective = channel opacity × element opacity; element opacity
-      // stays its own column, multiplied in the FS)
-      const foldA = ([r, g, b, a]: RGBA, opacity: number): RGBA => [
-        r,
-        g,
-        b,
-        Math.round(a * opacity),
-      ];
-
       store.setPair('node.size', slot, computed.width, computed.height);
       store.setFlag('nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
       store.setFlag('nodes', slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
       store.setInvisibility('nodes', slot, computed.invisible); // 22
-      store.setColor(
-        'node.fillColor',
-        slot,
-        ...foldA(computed.fillColor, computed.backgroundOpacity),
-      );
-      store.setColor(
-        'node.borderColor',
-        slot,
-        ...foldA(computed.borderColor, computed.borderOpacity),
-      );
+      this.writeNodeFillColor(slot, computed);
+      this.writeNodeBorderColor(slot, computed);
       store.setScalar('node.borderWidth', slot, computed.borderWidth);
-      store.setScalar('node.opacity', slot, computed.opacity);
+      this.writeNodeOpacity(slot, computed);
       store.setScalar('node.shape', slot, shape);
       store.setGhost(
         slot,
@@ -7693,7 +8139,7 @@ export class StyleEngine {
         computed.cornerRadius,
         computed.borderPosition,
         computed.outlineWidth > 0
-          ? packRgba(foldA(computed.outlineColor, computed.outlineOpacity))
+          ? packRgba(foldRgba(computed.outlineColor, computed.outlineOpacity))
           : 0,
         computed.outlineWidth,
         computed.outlineOffset,
@@ -7726,46 +8172,16 @@ export class StyleEngine {
         ),
       );
 
-      // overlay/underlay records: the layer opacity folds into the alpha
-      // (v3's overlay never multiplies element opacity)
-      const layerRgba = ([r, g, b, a]: RGBA, opacity: number): number =>
-        packRgba([r, g, b, Math.round(a * opacity)]);
-
-      store.setNodeLayer(
-        'node.overlay',
-        slot,
-        layerRgba(computed.overlayColor, computed.overlayOpacity),
-        computed.overlayPadding,
-        computed.overlayShape,
-        computed.overlayRadius,
-      );
-      store.setNodeLayer(
-        'node.underlay',
-        slot,
-        layerRgba(computed.underlayColor, computed.underlayOpacity),
-        computed.underlayPadding,
-        computed.underlayShape,
-        computed.underlayRadius,
-      );
+      this.writeNodeOverlay(slot, computed);
+      this.writeNodeUnderlay(slot, computed);
 
       this.writeImages(slot, computed);
       this.writeChart(slot, computed);
       this.writeLabel(slot, computed);
     } else {
-      const foldE = ([r, g, b, a]: RGBA, opacity: number): RGBA => [
-        r,
-        g,
-        b,
-        Math.round(a * opacity),
-      ];
-
       store.setFlag('edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
       store.setInvisibility('edges', slot, computed.invisible); // 22
-      store.setColor(
-        'edge.lineColor',
-        slot,
-        ...foldE(computed.lineColor, computed.lineOpacity),
-      );
+      this.writeEdgeLineColor(slot, computed);
       // line-fill gradient (C2), stops folded by line-opacity
       store.setGradient(
         'edge.gradient',
@@ -7791,33 +8207,8 @@ export class StyleEngine {
       store.setScalar('edge.width', slot, computed.width);
       store.setScalar('edge.opacity', slot, computed.opacity);
       store.setScalar('edge.lineStyle', slot, computed.lineStyle);
-      // edge opacity folds into the stored alpha (the arrow shader has no
-      // spare storage-buffer binding for the opacity column).  Haystack
-      // edges draw no arrows (v3 skips them), so their stored arrow
-      // alpha is 0 — arrow getters read 'none' (a recorded deviation:
-      // v3's pstyle still reports the declared shape)
-      const noArrows = computed.curveStyle === CURVE_STYLE_HAYSTACK;
-      // v3's effective arrow opacity is opacity × line-opacity (B1)
-      const arrow = (shape: ArrowShape, color: RGBA): RGBA =>
-        shape === 'none' || noArrows
-          ? NO_ARROW
-          : [
-              color[0],
-              color[1],
-              color[2],
-              Math.round(color[3] * computed.opacity * computed.lineOpacity),
-            ];
-
-      store.setColor(
-        'edge.sourceArrow',
-        slot,
-        ...arrow(computed.sourceArrowShape, computed.sourceArrowColor),
-      );
-      store.setColor(
-        'edge.targetArrow',
-        slot,
-        ...arrow(computed.targetArrowShape, computed.targetArrowColor),
-      );
+      this.writeEdgeSourceArrowColor(slot, computed);
+      this.writeEdgeTargetArrowColor(slot, computed);
       // B7: hollow flags at bits 16/17 and arrow-scale ×16 in the top
       // byte (quantized readback — recorded); stroke widths resolve
       // 'match-line'/% against the edge width here
@@ -7847,18 +8238,8 @@ export class StyleEngine {
       );
 
       // mid-arrow colors fold like the end arrows (C1)
-      store.setMidArrow(
-        'edge.midSourceArrow',
-        slot,
-        ...arrow(computed.midSourceArrowShape, computed.midSourceArrowColor),
-        'edge.midTargetArrow',
-      );
-      store.setMidArrow(
-        'edge.midTargetArrow',
-        slot,
-        ...arrow(computed.midTargetArrowShape, computed.midTargetArrowColor),
-        'edge.midSourceArrow',
-      );
+      this.writeEdgeMidSourceArrowColor(slot, computed);
+      this.writeEdgeMidTargetArrowColor(slot, computed);
 
       const resolveAw = (
         aw: number | 'match-line' | { percent: number },
@@ -7878,18 +8259,13 @@ export class StyleEngine {
       // vertex stage cannot bind this column, so the quad grows by a
       // frame-level maximum instead — reported here, resolved.
       store.noteArrowWidth(Math.max(srcAw, tgtAw));
-      // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
-      // derived here so the layer shaders need no width binding
-      const layerRgbaE = ([r, g, b, a]: RGBA, opacity: number): number =>
-        packRgba([r, g, b, Math.round(a * opacity)]);
-
       // line-outline casing (B4): stroke = width + outline width (v3's
       // lineWidth), alpha folded by v3's effectiveLineOpacity
       store.setEdgeLayer(
         'edge.casing',
         slot,
         computed.lineOutlineWidth > 0
-          ? layerRgbaE(
+          ? foldLayerRgba(
               computed.lineOutlineColor,
               computed.opacity * computed.lineOpacity,
             )
@@ -7897,18 +8273,10 @@ export class StyleEngine {
         computed.width + computed.lineOutlineWidth,
       );
 
-      store.setEdgeLayer(
-        'edge.overlay',
-        slot,
-        layerRgbaE(computed.overlayColor, computed.overlayOpacity),
-        computed.width + 2 * computed.overlayPadding,
-      );
-      store.setEdgeLayer(
-        'edge.underlay',
-        slot,
-        layerRgbaE(computed.underlayColor, computed.underlayOpacity),
-        computed.width + 2 * computed.underlayPadding,
-      );
+      // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
+      // derived here so the layer shaders need no width binding
+      this.writeEdgeOverlay(slot, computed);
+      this.writeEdgeUnderlay(slot, computed);
       // blob-family styles carry the 12b record; straight/bezier store none
       const extras: CurveStyleExtras | null = isBlobStyle(computed.curveStyle)
         ? {

@@ -229,9 +229,12 @@ export class Core {
     // A styled state bit flipped (round 57.1): re-evaluate the mappers
     // that read it, on the slots that changed.  The store notifies only
     // for bits some `case` condition actually mentions, so a sheet that
-    // says nothing about selection or press never reaches here.
+    // says nothing about selection or press never reaches here.  Round
+    // 61 routes the flip through the partition-diff fast path — a
+    // default-sheet select writes one channel per slot, not the element
+    // (the 60.4 regression's fix).
     this._store.onStateChange = (group, key, slots) => {
-      this._styleEngine.refreshMapped(group, slots as number[], [key]);
+      this._styleEngine.refreshState(group, key, slots);
     };
     this._animations = new AnimationManager(() => this._afterAnimationTick());
 

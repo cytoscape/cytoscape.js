@@ -53,11 +53,12 @@ export class LabelPipeline {
 
     this.quadIndex = createQuadIndexBuffer(device);
 
-    // edge labels bind the edge endpoints + curve inputs (incl. the 12b
-    // param blob) ahead of the atlas, so the VS can compute the
-    // curve/route midpoint anchor on-GPU — 7 storage buffers + the
-    // visible list, exactly the vertex-stage budget (node size and
-    // border ride the derived outerHalf column)
+    // edge labels bind the edge endpoints + widths (the arrow-trim
+    // word) + curve inputs (incl. the 12b param blob) ahead of the
+    // atlas, so the VS can compute the trimmed curve/route midpoint
+    // anchor on-GPU — 7 storage buffers + the visible list, exactly the
+    // vertex-stage budget (node geometry rides the fused outerGeom
+    // column since round 58, which is what freed the widths slot)
     const storageCount = this.edge ? 7 : 2;
 
     this.bindLayout = device.createBindGroupLayout({
@@ -134,10 +135,10 @@ export class LabelPipeline {
       ? [
           glyphs.buffer(),
           mirror.buffer('edge.endpoints'),
+          mirror.buffer('edge.width'),
           mirror.buffer('node.position'),
           mirror.buffer('edge.curveParams'),
-          mirror.buffer('node.outerHalf'),
-          mirror.buffer('node.shape'),
+          mirror.buffer('node.outerGeom'),
           mirror.blobBuffer(),
         ]
       : [glyphs.buffer(), mirror.buffer('node.position')];

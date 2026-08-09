@@ -1450,6 +1450,41 @@ fn shortenTowardW(pt: vec2f, toward: vec2f, amount: f32) -> vec2f {
   if (ratio < 0.0) { ratio = 0.00001; }
   return toward + disp * ratio;
 }
+
+// The accessor-semantics trim (round 58): v3's plain gap/spacing per
+// end, the exact twin of GraphStore.arrowTrimAt.  arrowTrimOf above
+// extends hollow/translucent heads to their axial depth because it
+// positions *ink* (the drawn line, the layer strokes); anchors — label
+// midpoints, mid arrows, end-label walks — sit at the gap, because that
+// is what midpoint() answers and where v3 builds rs.allpts.
+fn arrowGapTrimOf(w: vec2f) -> vec4f {
+  let word = arrowWordOf(w);
+  let scale = scaleOfWord(word);
+  let src = srcShapeOf(word);
+  let tgt = tgtShapeOf(word);
+
+  return vec4f(
+    arrowGapW(src, w.x, scale),
+    arrowGapW(tgt, w.x, scale),
+    arrowSpacingW(src, w.x, scale),
+    arrowSpacingW(tgt, w.x, scale));
+}
+
+// v3's straight-edge rs.mid (round 58): the mean of the two
+// gap-shortened line ends and the two spacing-shortened arrow points —
+// NOT the centre-chord midpoint, which it equals only when both ends
+// carry the same head.  bs/bt are the resolved boundary points, ca/cb
+// the node centres (v3 shortens toward the far *centre*).  The CPU
+// twin is Collection.midpoint()'s straight branch.
+fn straightMidW(bs: vec2f, bt: vec2f, ca: vec2f, cb: vec2f, w: vec2f) -> vec2f {
+  let t = arrowGapTrimOf(w);
+  let l0 = shortenTowardW(bs, cb, t.x);
+  let l1 = shortenTowardW(bt, ca, t.y);
+  let a0 = shortenTowardW(bs, cb, t.z);
+  let a1 = shortenTowardW(bt, ca, t.w);
+
+  return (l0 + l1 + a0 + a1) * 0.25;
+}
 `;
 };
 
@@ -2712,6 +2747,59 @@ struct EdgeVSOut {
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
+// Where the drawn line spans (round 56; factored in round 58 so the
+// layer strokes hug the same rule): xy/zw are the source/target ends.
+//
+// v3's arrow gap: the drawn line stops gap(shape) behind each node
+// boundary, which is what makes a hollow or translucent head read as
+// one shape instead of a head laid over a line — the line is strictly
+// inside the head over that span, so trimming to it reproduces v3's
+// destination-out erase with no second pass.  Callers exclude haystack
+// (kind 6 — v3 draws it no arrows and routes it elsewhere) and
+// straight-triangle (kind 7 — it resolves its own boundary tips and
+// tapers to a point, so a trim would cut the apex off).
+fn drawnSpanW(slot: u32, pa: vec2f, pb: vec2f) -> vec4f {
+  let word = arrowWordOf(widths[slot]);
+  let wModel = widths[slot].x;
+  let scale = scaleOfWord(word);
+
+  var md = pb - pa;
+  let ml = max(length(md), 1e-6);
+
+  md = md / ml;
+
+  let ends = endpoints[slot];
+  let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
+  let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
+
+  // v3 shortens each boundary point *toward the far end*, so the two
+  // trims are independent and neither can cross the other
+  let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
+  let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
+
+  var ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
+  var tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
+
+  // Heads bigger than the edge they sit on: v3 shortens each end
+  // independently, so its two line ends cross and it draws a short
+  // *reversed* segment in the middle — visible through a hollow head as
+  // a stub that has nothing to do with the edge.  Scaling both trims to
+  // meet instead collapses the line to a point, which is what "the
+  // heads cover the whole edge" should look like.  A deliberate
+  // divergence, and only reachable where v3's own output is an artifact.
+  let avail = length(bt - bs);
+  let total = ts + tt;
+
+  if (total > avail) {
+    let k = avail / max(total, 1e-6);
+
+    ts = ts * k;
+    tt = tt * k;
+  }
+
+  return vec4f(shortenTowardW(bs, bt, ts), shortenTowardW(bt, bs, tt));
+}
+
 @vertex
 fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
   var out: EdgeVSOut;
@@ -2751,55 +2839,10 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
     pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
     taper = 1.0 - t; // full width at the base, a point at the apex
   } else if (params.w != 6.0) {
-    // Round 56: v3's arrow gap.  The drawn line stops gap(shape) behind
-    // each node boundary, which is what makes a hollow or translucent
-    // head read as one shape instead of a head laid over a line — the
-    // line is strictly inside the head over that span, so trimming to it
-    // reproduces v3's destination-out erase with no second pass.
-    //
-    // Haystack (kind 6) is excluded because v3 draws it no arrows at all
-    // and routes it through a different path entirely; straight-triangle
-    // (kind 7) above resolves its own boundary tips and tapers to a
-    // point, so a trim there would cut the apex off.
-    let word = arrowWordOf(widths[slot]);
-    let wModel = widths[slot].x;
-    let scale = scaleOfWord(word);
+    let sp = drawnSpanW(slot, pa, pb);
 
-    var md = pb - pa;
-    let ml = max(length(md), 1e-6);
-
-    md = md / ml;
-
-    let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
-    let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
-
-    // v3 shortens each boundary point *toward the far end*, so the two
-    // trims are independent and neither can cross the other
-    let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
-    let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
-
-    var ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
-    var tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
-
-    // Heads bigger than the edge they sit on: v3 shortens each end
-    // independently, so its two line ends cross and it draws a short
-    // *reversed* segment in the middle — visible through a hollow head as
-    // a stub that has nothing to do with the edge.  Scaling both trims to
-    // meet instead collapses the line to a point, which is what "the
-    // heads cover the whole edge" should look like.  A deliberate
-    // divergence, and only reachable where v3's own output is an artifact.
-    let avail = length(bt - bs);
-    let total = ts + tt;
-
-    if (total > avail) {
-      let k = avail / max(total, 1e-6);
-
-      ts = ts * k;
-      tt = tt * k;
-    }
-
-    pa = shortenTowardW(bs, bt, ts);
-    pb = shortenTowardW(bt, bs, tt);
+    pa = sp.xy;
+    pb = sp.zw;
   }
 
   let a = modelToPx(frame, pa);
@@ -2920,6 +2963,17 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
     pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
     pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
     taper = 1.0 - t;
+  } else if (params.w != 6.0) {
+    // Round 58: the layer stroke hugs the drawn line — boundary points
+    // plus the draw trim, the same drawnSpanW the line itself spans —
+    // where it used to run node centre to node centre.  v3 strokes its
+    // overlay/underlay/casing along the *shortened* path and its head
+    // erase reaches the layers too, so the draw trim (not the accessor
+    // gap) is the right distance here.
+    let sp = drawnSpanW(slot, pa, pb);
+
+    pa = sp.xy;
+    pb = sp.zw;
   }
 
   let a = modelToPx(frame, pa);
@@ -2989,11 +3043,15 @@ ${DASH_WGSL}
 @group(0) @binding(11) var<storage, read> dashPatterns: array<vec4f>;
 @group(0) @binding(12) var<storage, read> dashMetas: array<vec2f>;
 // overlay/underlay record — only the layer entry points bind it; they
-// drop the widths binding (the stroke width is pre-derived), which
-// keeps the layer vertex stage at the 8-storage-buffer budget
+// drop the two node-geometry bindings (4/5) for the fused column below,
+// which keeps the layer vertex stage at the 8-storage-buffer budget
+// with a slot for widths (the arrow-trim word)
 @group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(14) var<storage, read> edgeGradients: array<array<u32, 8>>;
+// round 58: node.outerHalf + node.shape fused ([hx, hy, shape, 0]) —
+// only the layer entry points bind it, in place of bindings 4/5
+@group(0) @binding(15) var<storage, read> nodeOuterGeom: array<vec4f>;
 
 // C2: sRGB line gradient (same record layout as the node gradient)
 fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
@@ -3230,21 +3288,23 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
   var n: vec2f;
   var miterScale = 1.0;
 
+  // Round 58: the layer stroke hugs the drawn line — the same draw trim
+  // the strip itself spans — where it used to ride the untrimmed path.
+  // v3 strokes its overlay/underlay/casing along the *shortened* path
+  // and its head erase reaches the layers too, so the draw trim (not
+  // the accessor gap) is the right distance.  The node geometry comes
+  // from the fused nodeOuterGeom column, whose freed binding is what
+  // lets this stage reach widths at all.
+  let ga = nodeOuterGeom[ends.x];
+  let gb = nodeOuterGeom[ends.y];
+  let trim = arrowTrimOf(widths[slot]);
+
   if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      // The overlay/underlay/casing strokes ride the *untrimmed* path
-      // (round 56).  Not a choice: this pipeline has its own bind group
-      // layout precisely because its vertex stage cannot afford a slot
-      // for edge.width, so it has no way to reach the arrow word — and a
-      // layout entry counts against the budget even for a binding the
-      // shader never reads.  v3 strokes its casing along the *shortened*
-      // path, so a layer on an arrowed edge runs a gap further than v3's
-      // does; recorded as a deviation with a follow-up, and matched by
-      // the straight-stream layer entry point so the two agree.
-      vec4f(0.0)
+      nodePositions[ends.x], ga.xy, u32(ga.z),
+      nodePositions[ends.y], gb.xy, u32(gb.z),
+      trim
     );
     let t = f32(tIdx) / CURVE_SEGS_F;
 
@@ -3259,18 +3319,9 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
   } else {
     var route = evalRouteW(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      // The overlay/underlay/casing strokes ride the *untrimmed* path
-      // (round 56).  Not a choice: this pipeline has its own bind group
-      // layout precisely because its vertex stage cannot afford a slot
-      // for edge.width, so it has no way to reach the arrow word — and a
-      // layout entry counts against the budget even for a binding the
-      // shader never reads.  v3 strokes its casing along the *shortened*
-      // path, so a layer on an arrowed edge runs a gap further than v3's
-      // does; recorded as a deviation with a follow-up, and matched by
-      // the straight-stream layer entry point so the two agree.
-      vec4f(0.0)
+      nodePositions[ends.x], ga.xy, u32(ga.z),
+      nodePositions[ends.y], gb.xy, u32(gb.z),
+      trim
     );
 
     p = routeVertexW(&route, tIdx);
@@ -3588,12 +3639,30 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   var pa = nodePositions[ends.x];
   var pb = nodePositions[ends.y];
 
+  var anchor = (pa + pb) * 0.5;
+
   if (params.w == 6.0) { // haystack: mid of the offset points (v3's rs.mid)
     pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
     pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+    anchor = (pa + pb) * 0.5;
+  } else {
+    // Round 58: the anchor is v3's rs.mid — the four-point mean
+    // straightMidW computes, which is what midpoint() answers — not the
+    // centre chord, which equals it only when both ends carry the same
+    // head.  Mirrors GraphStore.straightEndpointAt's degenerate +x
+    // fallback for coincident endpoints.
+    var md = pb - pa;
+    let ml = length(md);
+
+    if (ml < 1e-6) { md = vec2f(1.0, 0.0); } else { md = md / ml; }
+
+    let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
+    let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
+
+    anchor = straightMidW(bs, bt, pa, pb, edgeWidths[slot]);
   }
 
-  let mid = modelToPx(frame, (pa + pb) * 0.5);
+  let mid = modelToPx(frame, anchor);
   let ab = modelToPx(frame, pb) - modelToPx(frame, pa);
   let len = max(length(ab), 1e-4);
   var dir = ab / len;
@@ -3928,7 +3997,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
       nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      arrowTrimOf(edgeWidths[slot])
+      arrowGapTrimOf(edgeWidths[slot]) // round 58: an anchor, not ink — must land on midpoint()
     );
 
     mid = g.m;
@@ -3939,7 +4008,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
       nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      arrowTrimOf(edgeWidths[slot])
+      arrowGapTrimOf(edgeWidths[slot]) // round 58: an anchor, not ink — must land on midpoint()
     );
     let midTan = routeMidpointW(&route);
 
@@ -4106,27 +4175,24 @@ const labelShader = (edge: boolean): string => wgsl`
 ${COMMON}
 ${GLYPH_STRUCT}
 ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : ''}
-// Round 56, a recorded deviation: this stage passes a **zero** arrow
-// trim to the curve evaluators, so an edge label on an arrowed curved
-// edge anchors at the *untrimmed* midpoint while midpoint() answers
-// v3's trimmed one — about 2.6 model px apart on a bezier at
-// arrow-scale 1.2.  The cause is a binding, not a decision: this vertex
-// stage already binds 7 storage buffers plus the visible list, exactly
-// the base budget, with no slot left for edge.width and therefore no way
-// to reach the arrow word.  Closing it means freeing a binding here (the
-// curved-edge pipeline's layout split is the precedent) and is logged as
-// a follow-up rather than guessed at.
+// Round 58: this stage passes the *accessor* trim (arrowGapTrimOf —
+// v3's plain gap/spacing, GraphStore.arrowTrimAt's twin) to the curve
+// evaluators, so an edge label anchors exactly where midpoint()
+// answers.  Round 56 had left it at a zero trim — the stage was at the
+// 8-storage-buffer budget with no slot for edge.width — and the freed
+// binding comes from the fused node.outerGeom column, which carries
+// outerHalf + shape in one slot.
 //
 // flags columns are not bound here: the cull pass already dropped glyphs
 // of dead/hidden owners.  The edge variant binds the curve inputs too —
-// 7 storage buffers + the visible list (node size and border ride the
-// derived outerHalf column; the curve param blob rides the freed slot),
-// exactly the vertex-stage budget — so curved-edge labels anchor at the
+// 7 storage buffers + the visible list (node geometry rides the fused
+// outerGeom column; the curve param blob rides the freed slot), exactly
+// the vertex-stage budget — so curved-edge labels anchor at the
 // curve/route midpoint computed in the VS from live positions (zero
 // rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;'}
+${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(6) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, 0] (round 58)\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;'}
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -4162,6 +4228,11 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let pa = nodePositions[ends.x];
   let pb = nodePositions[ends.y];
   let params = curveParams[owner];
+  // round 58: the accessor trim and the fused node geometry — the
+  // anchor must land exactly where midpoint() answers
+  let gs = nodeOuterGeom[ends.x];
+  let gt = nodeOuterGeom[ends.y];
+  let gTrim = arrowGapTrimOf(widths[owner]);
   var anchor = (pa + pb) * 0.5;
   // the autorotate frame endpoints: a bezier's t=0.5 tangent IS the
   // chord direction, so (pa, pb) stands; a loop's midpoint tangent runs
@@ -4172,9 +4243,9 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound midpoint
     let geom = evalCurveGeom(
       params,
-      pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      vec4f(0.0) // see the arrow-gap note below
+      pa, gs.xy, u32(gs.z),
+      pb, gt.xy, u32(gt.z),
+      gTrim
     );
 
     anchor = geom.m;
@@ -4184,25 +4255,37 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       rotB = geom.c2;
     }
   } else if (params.w == 6.0) { // haystack (12c): the offset midpoint
-    let ha = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
-    let hb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+    let ha = pa + vec2f(cos(params.x), sin(params.x)) * gs.xy * params.z;
+    let hb = pb + vec2f(cos(params.y), sin(params.y)) * gt.xy * params.z;
 
     anchor = (ha + hb) * 0.5;
     rotA = ha;
     rotB = hb;
   } else if (params.w > 2.0 && params.w != 7.0) { // route families: v3's midpoint rules
-    // (7.0 = straight-triangle keeps the chord default)
     var route = evalRouteW(
       params,
-      pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
-      vec4f(0.0) // see the arrow-gap note below
+      pa, gs.xy, u32(gs.z),
+      pb, gt.xy, u32(gt.z),
+      gTrim
     );
     let midTan = routeMidpointW(&route);
 
     anchor = midTan.xy;
     rotA = anchor;
     rotB = anchor + midTan.zw;
+  } else {
+    // straight / straight-triangle (round 58): v3's rs.mid is the
+    // four-point mean straightMidW computes — what midpoint() answers —
+    // not the centre chord; rotA/rotB stay the chord (same direction)
+    var md = pb - pa;
+    let ml = length(md);
+
+    if (ml < 1e-6) { md = vec2f(1.0, 0.0); } else { md = md / ml; }
+
+    let bs = pa + md * boundaryOffset(u32(gs.z), gs.xy, md);
+    let bt = pb - md * boundaryOffset(u32(gt.z), gt.xy, -md);
+
+    anchor = straightMidW(bs, bt, pa, pb, widths[owner]);
   }
 
   // end labels (round 13 D4): glyphs on the edgeSource/edgeTarget
@@ -4217,36 +4300,42 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound
       let geom = evalCurveGeom(
         params,
-        pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
-        vec4f(0.0) // see the arrow-gap note below
+        pa, gs.xy, u32(gs.z),
+        pb, gt.xy, u32(gt.z),
+        gTrim
       );
 
       at = curveEndWalk(geom, fromSource, dist);
     } else if (params.w == 6.0) { // haystack: the offset segment
-      let ha = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
-      let hb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+      let ha = pa + vec2f(cos(params.x), sin(params.x)) * gs.xy * params.z;
+      let hb = pb + vec2f(cos(params.y), sin(params.y)) * gt.xy * params.z;
 
       at = segmentWalk(ha, hb, fromSource, dist);
     } else if (params.w > 2.0 && params.w != 7.0) { // route families
       var endRoute = evalRouteW(
         params,
-        pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
-        vec4f(0.0) // see the arrow-gap note below
+        pa, gs.xy, u32(gs.z),
+        pb, gt.xy, u32(gt.z),
+        gTrim
       );
 
       at = routeEndWalkW(&endRoute, fromSource, dist);
-    } else { // straight / straight-triangle: the boundary chord
+    } else { // straight / straight-triangle: the gap-trimmed boundary chord
       var d = pb - pa;
       let l = length(d);
 
       if (l < 1e-6) { d = vec2f(1.0, 0.0); } else { d = d / l; }
 
-      let sPt = pa + d * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], d);
-      let ePt = pb - d * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -d);
+      let sPt = pa + d * boundaryOffset(u32(gs.z), gs.xy, d);
+      let ePt = pb - d * boundaryOffset(u32(gt.z), gt.xy, -d);
 
-      at = segmentWalk(sPt, ePt, fromSource, dist);
+      // round 58: v3's allpts start at the *gap*-shortened line ends
+      // (rs.startX/Y), so the end-label walk does too — shortened
+      // toward the far node centre, exactly straightLineEndAt
+      at = segmentWalk(
+        shortenTowardW(sPt, pb, gTrim.x),
+        shortenTowardW(ePt, pa, gTrim.y),
+        fromSource, dist);
     }
 
     anchor = at.xy;

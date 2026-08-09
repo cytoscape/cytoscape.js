@@ -5486,6 +5486,121 @@ test.describe('WebGPU renderer', () => {
     ).toBeGreaterThan(5);
   });
 
+  test('edge labels anchor where midpoint() answers, arrows included (round 58)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Round 58: the label VS applies the accessor trim (arrowGapTrimOf,
+    // the twin of GraphStore.arrowTrimAt), so the drawn label must sit
+    // on the API's midpoint even when arrow gaps shift it.  A
+    // target-only triangle at width 8 / arrow-scale 2 puts the straight
+    // four-point midpoint gap/4 = 8 model px (16 rendered at zoom 2)
+    // off the centre chord — the precondition assertion is what lets
+    // this spec fail: without the trim the label ink sits on the centre
+    // chord, outside the tolerance by more than double.
+    //
+    // Control (run 2026-08-09): with the label VS's straight branch
+    // reverted to the centre chord, the centroid lands ~16 px from
+    // renderedMidpoint() and the spec fails; same for the bezier half
+    // with gTrim zeroed.
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -100, y: 0 } },
+        { data: { id: 'b' }, position: { x: 100, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 20, height: 20, 'background-color': '#eee' },
+        edges: {
+          width: 8,
+          'arrow-scale': 2,
+          'line-color': '#eee',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#eee',
+          label: 'XX',
+          'font-size': 24,
+          color: '#000',
+        },
+      },
+      zoom: 2,
+    });
+    await centerPan(page);
+    await waitFrames(page);
+
+    // the label is the only dark ink, so its centroid is the anchor
+    const inkCentroidX = async () => {
+      const png = decodePng(
+        await page.evaluate(() => window.cy.png({ bg: '#fff' })),
+      );
+      let sum = 0;
+      let n = 0;
+
+      for (let y = 0; y < png.height; y++) {
+        for (let x = 0; x < png.width; x++) {
+          const i = (y * png.width + x) * 4;
+
+          if (
+            png.data[i] < 100 &&
+            png.data[i + 1] < 100 &&
+            png.data[i + 2] < 100
+          ) {
+            sum += x;
+            n++;
+          }
+        }
+      }
+
+      expect(n, 'label ink rendered').toBeGreaterThan(50);
+
+      return sum / n;
+    };
+
+    const readMid = async () =>
+      await page.evaluate(() => {
+        const ra = window.cy.$id('a').renderedPosition();
+        const rb = window.cy.$id('b').renderedPosition();
+
+        return {
+          mid: window.cy.$id('ab').renderedMidpoint(),
+          chordX: (ra.x + rb.x) / 2,
+        };
+      });
+
+    const straight = await readMid();
+
+    // precondition: the asymmetric head actually shifts the midpoint,
+    // or the assertion below is satisfied by the untrimmed anchor too
+    expect(Math.abs(straight.mid.x - straight.chordX)).toBeGreaterThan(12);
+    expect(Math.abs((await inkCentroidX()) - straight.mid.x)).toBeLessThan(5);
+
+    // the curved families take the same trim through the evaluators
+    await page.evaluate(() => {
+      window.cy.style({
+        nodes: { width: 20, height: 20, 'background-color': '#eee' },
+        edges: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': 60,
+          'control-point-weights': 0.5,
+          width: 8,
+          'arrow-scale': 2,
+          'line-color': '#eee',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#eee',
+          label: 'XX',
+          'font-size': 24,
+          color: '#000',
+        },
+      });
+    });
+    await waitFrames(page);
+
+    const curved = await readMid();
+
+    expect(Math.abs(curved.mid.x - straight.chordX)).toBeGreaterThan(6);
+    expect(Math.abs((await inkCentroidX()) - curved.mid.x)).toBeLessThan(5);
+  });
+
   test('self-loops render as loops (not degenerate points)', async ({
     page,
   }) => {

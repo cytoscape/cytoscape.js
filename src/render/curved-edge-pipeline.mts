@@ -55,10 +55,12 @@ export class CurvedEdgePipeline {
   /**
    * Compiles the curved-edge shader, allocates the CURVE_SEGS-quad strip
    * index buffer and builds the scene, pick and layer pipelines.  Two
-   * bind group layouts are needed rather than one: the layer draw's
-   * vertex stage would exceed the 8-storage-buffer budget if it kept a
-   * slot for edge.width, and a layout entry counts even when the shader
-   * never reads it.
+   * bind group layouts are needed rather than one: the layer draw binds
+   * its layer record where the scene draw binds the paint columns, and
+   * its vertex stage swaps the two node-geometry columns for the fused
+   * node.outerGeom (round 58) so edge.width — the arrow-trim word —
+   * fits the 8-storage-buffer budget, since a layout entry counts even
+   * when the shader never reads it.
    *
    * @param device — the device that owns the pipelines and strip index
    * @param format — the scene colour target's format (the pick target is
@@ -115,10 +117,11 @@ export class CurvedEdgePipeline {
     });
 
     // the layer draw's own layout: the same binding numbers minus the
-    // widths column (binding 2) — the pre-derived stroke width replaces
-    // it, keeping the layer vertex stage within the 8-buffer budget
-    // (layouts count against the per-stage limit even for bindings a
-    // shader never references)
+    // two node-geometry columns (bindings 4/5), which the round-58 fused
+    // node.outerGeom column replaces — freeing the slot that lets the
+    // layer vertex stage keep edge.width (the arrow-trim word) within
+    // the 8-buffer budget (layouts count against the per-stage limit
+    // even for bindings a shader never references)
     this.layerBindLayout = device.createBindGroupLayout({
       label: 'cy-gpu:curved-edge-layer-bind-layout',
       entries: [
@@ -128,7 +131,10 @@ export class CurvedEdgePipeline {
           buffer: { type: 'uniform' },
         },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
-          .filter((entry) => entry.id !== 'edge.width')
+          .filter(
+            (entry) =>
+              entry.id !== 'node.outerHalf' && entry.id !== 'node.shape',
+          )
           .map((entry) => ({
             binding: entry.binding,
             visibility: SHADER_STAGE.VERTEX,
@@ -142,6 +148,11 @@ export class CurvedEdgePipeline {
         {
           binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2, // the layer record
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4, // node.outerGeom
+          visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
       ],
@@ -227,7 +238,11 @@ export class CurvedEdgePipeline {
       entries: [
         { binding: 0, resource: { buffer: uniform } },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
-          .filter((entry) => !forLayer || entry.id !== 'edge.width')
+          .filter(
+            (entry) =>
+              !forLayer ||
+              (entry.id !== 'node.outerHalf' && entry.id !== 'node.shape'),
+          )
           .map((entry) => ({
             binding: entry.binding,
             resource: { buffer: mirror.buffer(entry.id) },
@@ -247,6 +262,10 @@ export class CurvedEdgePipeline {
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
                 resource: { buffer: mirror.buffer(layer) },
+              },
+              {
+                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
+                resource: { buffer: mirror.buffer('node.outerGeom') },
               },
             ]
           : [

@@ -3708,14 +3708,19 @@ fragment premium is **unmeasurable at scene level** on real hardware
   by construction.  Same family as the butt-cap note the edge layers
   carry.  It is the whole of the close-up hollow parity scene's 0.898%
   residual — the same scene with `arrow-fill: filled` reads 0.000%.
-- **Edge labels and the overlay/underlay/casing strokes ride the
-  *untrimmed* path** (round 56).  Not a decision: both vertex stages sit
-  at WebGPU's base 8-storage-buffer limit with no slot for `edge.width`,
-  and a bind-group layout entry counts against that limit even for a
-  binding the shader never reads — so neither can reach the arrow word.
-  An edge label on an arrowed bezier anchors about 2.6 model px from
-  what `midpoint()` answers, and a casing runs a gap further than v3's.
-  PLAN.md's open call 24; the fix is to free a binding.
+- **The arrow trim reaches every consumer since round 58** (2026-08-09,
+  closing PLAN.md's open call 24), under one rule: *ink hugs the draw
+  trim; anchors sit at the gap trim.*  The layer strokes
+  (overlay/underlay/casing, both streams) follow the drawn line's own
+  `drawnSpanW` — v3 strokes its casing along the shortened path and its
+  head erase reaches the layers too — while edge-label anchors and mid
+  arrows use `arrowGapTrimOf`, the WGSL twin of `arrowTrimAt`, so they
+  land exactly where `midpoint()` answers.  The straight mid anchor is
+  v3's four-point mean (line ends + arrow points), not the centre
+  chord, which equals it only when both ends carry the same head.  The
+  binding the two starved stages needed came from `node.outerGeom` —
+  `outerHalf` + `shape` fused into one derived column — freeing a slot
+  for `edge.width`'s arrow word.
 - **`arrow-scale` is quantized to 1/16** and always was (round 13 B7) —
   but it is not only readback, as this file used to imply.  The drawn
   head's size takes the quantized value, and since round 56 so do v3's
@@ -4461,12 +4466,12 @@ it here in round 57.4.*
   (2026-08-07).  v3's `gap` and `spacing` both port, on the CPU and in
   generated WGSL; the three scenes that measured 3.5% / 11.8% / 26.7%
   against v3 now read **0.000% / 0.442% / 0 differing pixels**.  What is
-  left of it is three recorded deviations rather than unbuilt work, and
+  left of it is recorded deviations rather than unbuilt work, and
   they are below: hollow **mid** arrows (no trim reaches mid-line — open
-  call 21, and they may end up unsupported), edge labels and the
-  overlay/underlay/casing strokes riding the *untrimmed* path (open call
-  24 — a binding, not a decision), and two overlapping translucent heads
-  compositing where v3's erase flattens them.
+  call 21, and they may end up unsupported), and two overlapping
+  translucent heads compositing where v3's erase flattens them.  (A
+  third — edge labels and the layer strokes riding the *untrimmed*
+  path — was open call 24 and **landed as round 58**, 2026-08-09.)
 - **The release sequence** (rounds 44–51), and what is left of the four
   that have landed.  **44** (packaging) is complete as a source
   concern; its one remaining act is release-time and belongs to round

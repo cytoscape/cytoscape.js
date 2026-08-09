@@ -3414,6 +3414,8 @@ test.describe('v3-vs-v4 render parity', () => {
     hollow: 0.012,
     edges: 0.002,
     curves: 0.002,
+    layers: 0.002,
+    midarrow: 0.002,
   };
 
   let deviceErrors = [];
@@ -6714,6 +6716,92 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.curves },
+    );
+  });
+
+  test('parity close-up: layer strokes stop where the drawn line does (round 58)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // Measured 2026-08-09: **0.000%** with the trim, **1.535%** with the
+    // vsEdgeLayer branch deliberately removed — the control fails by
+    // 7.7x the bound.
+
+    // The scene round 58's layer trim needs: a *casing* (line-outline)
+    // on short edges carrying filled heads (opaque, so v3's
+    // erase-vs-trim compositing deviation stays out of frame),
+    // magnified.  Before the trim, v4's layer strokes ran node centre
+    // to node centre, so the casing filled the whole gap span behind
+    // each head where v3 shows background — per-end ink, which is why
+    // three rows.  Casing specifically, because it is the one layer
+    // whose *width* the two libraries agree on (edgeWidth +
+    // outlineWidth, butt-capped): the first two drafts used an
+    // underlay and measured everything but the trim — overlapping big
+    // heads land on the recorded erase-overlap deviation (3.160%), and
+    // v3's underlay band is 2 x padding wide where v4's is width +
+    // 2 x padding (PLAN.md item 27, found by this scene's second
+    // draft: 7.105%, all of it band-width and round caps).
+    const { v3Style, v4Style } = closeUpSheets(CLOSE_UP_NODE, {
+      width: 4,
+      'arrow-scale': 0.75,
+      'line-color': '#2c3e50',
+      'source-arrow-shape': 'triangle',
+      'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#2c3e50',
+      'target-arrow-color': '#2c3e50',
+      'line-outline-width': 3,
+      'line-outline-color': '#e67e22',
+    });
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-layers',
+      closeUpElements({ chord: 66, rows: [-25, 0, 25] }),
+      v3Style,
+      v4Style,
+      { zoom: 4, minInk: 4000, bound: CLOSE_UP_BOUND.layers },
+    );
+  });
+
+  test("parity close-up: mid arrows sit at v3's four-point midpoint (round 58)", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // Measured 2026-08-09: **0.000%** with the four-point anchor,
+    // **5.580%** with the centre chord deliberately restored — the
+    // control fails by 27.9x the bound.  (Both control runs needed
+    // `npm run test:playwright:build` first: the first attempt ran the
+    // controls against a stale bundle and both scenes stayed green,
+    // which is AGENTS.md's silent-stale-bundle trap doing exactly what
+    // it warns.)
+
+    // A mid arrow on a straight edge with *asymmetric* end heads: v3
+    // anchors it at rs.mid — the mean of the two gap-shortened line
+    // ends and the two spacing-shortened arrow points — which the
+    // target-only head pulls toward the source.  Before round 58, v4
+    // anchored it at the centre chord, a shift of (gap + spacing) / 4
+    // model px that magnification turns into most of a head's length.
+    // The end head is filled and opaque so only the mid head's
+    // placement is in frame.
+    const { v3Style, v4Style } = closeUpSheets(CLOSE_UP_NODE, {
+      width: 6,
+      'arrow-scale': 1.5,
+      'line-color': '#2c3e50',
+      'target-arrow-shape': 'triangle',
+      'target-arrow-color': '#2c3e50',
+      'mid-target-arrow-shape': 'triangle',
+      'mid-target-arrow-color': '#c0392b',
+    });
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-midarrow',
+      closeUpElements({ chord: 66, rows: [-25, 0, 25] }),
+      v3Style,
+      v4Style,
+      { zoom: 4, minInk: 4000, bound: CLOSE_UP_BOUND.midarrow },
     );
   });
 });

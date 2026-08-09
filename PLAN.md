@@ -289,10 +289,14 @@ built: every throw stays a throw, the 14 warn sites stay warns, and
 and nothing else, gesture defaults stay controlled by their explicit
 toggles, and round 41.5's four rows are not built.  **Ledger item 24
 was scheduled as round 58** at the same sitting, after its cost was
-assessed as negligible.  What the queue holds now is in the "Amended
-2026-08-09" paragraph of "Suggested sequencing": round 58 (the arrow
-trim's two unreached stages), round 46 (sketch-specced), and 49–51
-(other platforms or release credentials).
+assessed as negligible — and **round 58 landed the same day**: the
+trim reaches the layer strokes and every anchor (labels, mid arrows —
+a third consumer the item had not named), both new close-up parity
+scenes at **0.000%** against v3, and the scene drafts surfaced a new
+divergence logged as item 27 (v3's edge layer band is `2 × padding`
+wide, v4's `width + 2 × padding`).  What the queue holds now is in the
+"Amended 2026-08-09" paragraph of "Suggested sequencing": round 46
+(sketch-specced) and 49–51 (other platforms or release credentials).
 
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
@@ -917,6 +921,37 @@ docs checks), and each is left in place pending the call.
     for freeing the binding (the layout split, the pre-derived
     `edgeLayer` stroke width) added no measured frame cost.  The plan
     is at the end of this file.
+    ***Landed as round 58 the same day — this item is closed.***  The
+    freed binding is the fused `node.outerGeom` column; the fix reached
+    a third consumer the entry had not named (the straight mid-arrow
+    anchor, which was the centre chord where `midpoint()` answers v3's
+    four-point mean); both new close-up parity scenes read **0.000%**
+    against v3 with controls failing at 7.7x and 27.9x their bounds.
+    See the round-58 record.
+
+27. **v4's edge underlay/overlay band is `width + 2 × padding` wide;
+    v3's is `2 × padding`** (round 58, 2026-08-09).  Found by a parity
+    scene draft: underlay + small heads on a short edge read 7.105%
+    mismatch, and the diff was band-width along the whole span, not the
+    trim the scene was named for.  Measured against
+    `v3/src/extensions/renderer/canvas/drawing-edges.mts` —
+    `drawEdgeOverlayUnderlay` sets `context.lineWidth = 2 * padding`,
+    nothing else — so at v3's defaults a padding smaller than half the
+    line width draws a halo *narrower than the line*, i.e. invisible.
+    v4's round-13 A2 formula (the edge geometry stroked at
+    `width + 2 × padding`, recorded in `src/README.md`) matches the
+    *node* overlay's semantics (the node's own extent plus padding) and
+    always shows the halo.  The casing (`line-outline`) is unaffected —
+    both libraries agree on `width + outlineWidth`.
+    The call: keep v4's formula as a deliberate deviation (arguably the
+    saner semantics, but a visible difference in any app that styles
+    edge overlays), or match v3's.  Logged rather than patched: either
+    direction changes rendered output, and the `edge-layers` golden and
+    the round-13 A2 zoom-1 parity scene (which passes today because its
+    padding values happen to dominate the width term) both move if the
+    formula does.  Related recorded deviations, unchanged by this: v3
+    rounds these strokes' caps where v4 butt-cuts, and v3's erase-only
+    compositing where heads overlap.
 
 ### Public-surface changes made without a call, logged rather than buried
 
@@ -3280,7 +3315,8 @@ per-item history.)*
    reaches *under* a head where a trim cannot, and two translucent heads
    that overlap **each other** composite where v3 flattens them.  Plus
    two questions the round raised: the `arrow-scale` quantization (item
-   23) and the two stages the trim cannot reach (item 24).
+   23) and the two stages the trim cannot reach (item 24 — *since
+   closed by round 58, 2026-08-09*).
 6. **Label parity** — placement (`text-valign`/`text-halign` grid
    vs v4's fixed below-node), per-element numeric `text-rotation`,
    **source/target edge labels** (10 props — second/third label
@@ -4051,13 +4087,17 @@ section).  Neither produces a Landed section, because neither lands
 code; each section carries its decision record instead.  The same
 sitting scheduled **ledger item 24 as round 58** — the arrow trim
 reaching edge labels and the layer strokes, decision-free renderer
-work with negligible measured risk.  What the queue holds: **round
-58** (in progress), **round 46** (the docs site — unblocked, large,
-sketch-specced), **rounds 49–51** (other platforms, release
-credentials, the bake), and round 44's release-time act.  The
-genuinely open ledger questions are down to item 23 (the `arrow-scale`
-reserve, deferred by the maintainer) and item 18 (the tween warm-up,
-revisit with data).
+work with negligible measured risk — and ~~round 58~~ **landed the
+same day** (0.000% on both new close-up scenes, controls failing at
+7.7x and 27.9x their bounds; the record is beside the plan).  Its
+scene drafts added **ledger item 27** (v4's edge underlay/overlay band
+is `width + 2 × padding` wide where v3's is `2 × padding` — logged,
+not patched).  What the queue holds: **round 46** (the docs site —
+unblocked, large, sketch-specced), **rounds 49–51** (other platforms,
+release credentials, the bake), and round 44's release-time act.  The
+genuinely open ledger questions: item 23 (the `arrow-scale` reserve,
+deferred by the maintainer), item 18 (the tween warm-up, revisit with
+data), and now item 27 (the layer band width).
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -15260,13 +15300,15 @@ been showing seven heads while naming eleven since 27.6.
 
 ### Recorded deviations
 
-- **Edge labels and the overlay/underlay/casing strokes ride the
-  untrimmed path.**  A binding, not a decision: both vertex stages sit at
+- ~~**Edge labels and the overlay/underlay/casing strokes ride the
+  untrimmed path.**~~  *Closed by round 58 (2026-08-09).*  A binding, not
+  a decision: both vertex stages sat at
   the 8-storage-buffer budget with no slot for `edge.width`, and a layout
   entry counts even for a binding the shader never reads.  An edge label
-  on an arrowed bezier anchors ~2.6 model px from what `midpoint()`
-  answers.  The fix is to free a binding (the curved-edge pipeline's
-  layout split is the precedent); logged rather than guessed at.
+  on an arrowed bezier anchored ~2.6 model px from what `midpoint()`
+  answers.  The fix was to free a binding, which round 58's fused
+  `node.outerGeom` column did; logged rather than guessed at, and then
+  taken as its own round.
 - **Two translucent heads that overlap composite** where v3's erase
   flattens them.  v4 has no erase pass by design (decision 1 of round 55).
 - **A hollow head's back corners are radiused** where v3 miters them —
@@ -16361,3 +16403,56 @@ the freed slot: a derived **`node.outerGeom`** column fuses them.
 Deliberately out of scope: hollow *mid* arrows (item 21, punted by the
 sixth sitting) and the `arrow-scale` quantization (item 23, deferred —
 this round spends no reserved bits, exactly like round 56).
+
+### Landed (round 58) — 2026-08-09
+
+All four items shipped as planned, in two commits (58.1 the store
+column; 58.2–58.4 the renderer, whose pieces cannot land separately),
+plus the closing docs commit.  The suites at the close: 2090 Node +
+304 module tests, throw gate clean, renderer 116, visual 121 — the two
+new close-up scenes included, goldens exact.
+
+**What the verification measured.**  Both new parity scenes read
+**0.000%** — pixel-exact against v3 — with the fix in, and fail hard
+with it removed: `parity-closeup-layers` 1.535% (7.7x its 0.2% bound)
+with the vsEdgeLayer branch deleted, `parity-closeup-midarrow` 5.580%
+(27.9x) with the centre chord restored.  The label property spec pins
+the rendered ink centroid to `renderedMidpoint()` on a straight edge
+whose asymmetric head shifts the four-point midpoint 16 rendered px
+off the centre chord (precondition-asserted, so the spec cannot be
+satisfied by the untrimmed anchor), and on an unbundled bezier; its
+control fails it.  One golden moved — `edge-layers`, only at the
+straight row's two ends, where the strokes now stop at the boundary
+instead of running under the node discs — inspected and regenerated.
+
+**What the round found beyond its plan, in the order found:**
+
+- **The stale-bundle trap caught this round's own controls.**  The
+  first control run flipped the shaders off and re-ran the scenes
+  without rebuilding — both stayed green at 0.000%, because `npx
+  playwright test` invoked directly exercises whatever bundle is on
+  disk.  AGENTS.md warns exactly this; the scene comment now records
+  the instance.  Every control number above is from a rebuilt bundle.
+- **A parity scene's first two drafts each measured a real thing that
+  was not the trim** — the round's own instance of "ask what is
+  painted over it".  Draft one (big heads) read 3.160%, all of it the
+  recorded erase-overlap compositing deviation where two huge heads
+  meet mid-span.  Draft two (small heads, underlay + casing) read
+  7.105%, and the diff showed band-width, not trim: **v3's edge
+  underlay/overlay stroke is `2 × padding` wide where v4's is
+  `width + 2 × padding`** — a divergence nothing had measured, logged
+  as ledger item 27 rather than silently patched.  The shipped scene
+  is casing-only, because `line-outline` is the one layer whose width
+  formula the two libraries share; it still exercises the same layer
+  entry points the underlay draws through.
+- **The round-37.1 throw gate fired correctly** on 58.1's store
+  insertion shifting the SHAPE_MASK invariant off its `file:line`
+  key — re-keyed 2888 → 2906, the maintained-allowlist flow working
+  as designed, in its second live firing.
+
+**Cost, as predicted**: +16 B/node CPU and GPU for the fused column,
+no new per-frame CPU work, no new draw calls; the trim math runs in
+two more vertex stages over the smallest streams the renderer draws.
+The curved *end* arrows deliberately keep `arrowTrimOf` — their tips
+sit at spacing points that are identical under both trim functions,
+and their evaluator inputs stay byte-identical with round 56's.

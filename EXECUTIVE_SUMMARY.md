@@ -18,11 +18,14 @@ is rewritten from that record — see *Maintaining this file* at the end.
   limit coverage, and the two open questions each gained their prepared
   input — a measured error-site classification and a written
   gesture-veto proposal.  On 9 August the maintainer closed both by
-  declining the surface each had priced: errors and warnings stay as
-  built, and gesture control stays with the explicit toggles.  The
-  same days added a maintainer-driven interaction arc (edges activate
-  on press, v3's hit-test halos, pickable arrowheads) and the debug
-  harness's move onto the default style, all described under week 3.
+  declining the surface each had priced — errors and warnings stay as
+  built, and gesture control stays with the explicit toggles — and the
+  arrow trim reached its last three consumers (edge labels, the layer
+  strokes, mid arrows), pixel-exact against v3; see week 4.  The
+  preceding days added a maintainer-driven interaction arc (edges
+  activate on press, v3's hit-test halos, pickable arrowheads) and the
+  debug harness's move onto the default style, all described under
+  week 3.
 
 ---
 
@@ -47,9 +50,9 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,090 unit · 298 module · 24 soak · 349 browser (234 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,090 unit · 304 module · 24 soak · 353 browser (237 run; 116 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 43 live v3-vs-v4 pixel-parity scenes, ten of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
+| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, twelve of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 617 KiB minified, 166 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
@@ -65,12 +68,15 @@ is that errors and warnings stay exactly as built, with no `warnings()` toggle
 and no demotion machinery. For gesture vetoing, the written proposal's own
 toggle map showed every candidate default already has an explicit control, so
 `preventDefault()` stays browser-level only and the toggles are the whole
-gesture-control story. **One question remains open**: whether to spend the six
-reserved arrow-packing bits on **un-quantizing `arrow-scale`** (which currently
-renders 1.4 as 1.375) or keep them for a seventeenth arrow shape. The other
-item round 56 raised — freeing the vertex-shader binding that lets **edge
-labels and the casing strokes** see the arrow trim — was never a decision, and
-is now scheduled work.
+gesture-control story. The other item round 56 raised — freeing the
+vertex-shader binding that lets **edge labels and the casing strokes** see the
+arrow trim — was never a decision, and landed the same day (week 4). **Two
+questions are open**: whether to spend the six reserved arrow-packing bits on
+**un-quantizing `arrow-scale`** (which currently renders 1.4 as 1.375) or keep
+them for a seventeenth arrow shape; and whether v4 keeps its **edge overlay
+band width** (`width + 2 × padding`, always visible) or adopts v3's
+(`2 × padding`, invisible at small paddings) — a divergence week 4's parity
+scenes surfaced.
 
 The unbuilt work that *is* decided — the documentation site,
 release engineering — is
@@ -524,6 +530,41 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
+## Week 4 — 9 August: two decisions that decline, and the trim reaches everything
+
+*4 commits — round 58 and the seventh design sitting.*
+
+The week opened with the two prepared decisions taken, both by
+declining the surface the preparation had priced (the error and
+gesture-veto outcomes are described at the end of week 3), and with
+the one decision-free renderer item left in the queue: three places
+that still read untrimmed edge geometry after the arrow-gap work —
+edge labels anchored ~2.6 px off what `midpoint()` answers, the
+overlay/underlay/casing strokes ran from node centre to node centre,
+and mid arrows on straight edges sat at the centre chord where v3
+computes a four-point mean.  The first two were blocked on a hardware
+budget: their vertex shaders sit at WebGPU's base limit of eight
+storage buffers, with no slot for the column that carries the arrow
+data.
+
+The fix fused two node-geometry columns into one derived column,
+spending the freed slot on the arrow data, under one rule: *ink* (the
+line, the layer strokes) stops at the draw trim, *anchors* (labels,
+mid arrows) sit at the accessor trim the API answers.  Both new
+magnified parity scenes read **zero differing pixels** against v3, and
+each fails by 8–28x its bound with the fix deliberately removed — a
+control run that itself tripped the repository's documented
+stale-bundle trap before yielding those numbers, and is recorded
+doing so.
+
+The scene that took three drafts is the week's real lesson.  Its first
+draft measured an already-recorded compositing deviation instead of
+the trim; its second measured something nobody knew: **v3 draws an
+edge's overlay band `2 × padding` wide, v4 `width + 2 × padding`** —
+so at small paddings v3's halo is narrower than the line and
+invisible.  That divergence is logged for a decision, not silently
+patched, because either resolution changes rendered output.
+
 ---
 
 ## What remains before 4.0
@@ -542,7 +583,7 @@ optional to scheduled (it also landed two days later).
 | | needs |
 |---|---|
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
-| Arrow trim on labels and casings | **scheduled, in progress** (2026-08-09). Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot; the measured cost is negligible |
+| Edge overlay band width | **a decision.** v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |

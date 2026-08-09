@@ -673,7 +673,15 @@ family — haystack offsets and the triangle taper included), the
 underlay under the edges and the overlay over edges + arrows, both
 under the nodes; strokes are solid with butt caps (v3 rounds stroke
 ends — a recorded deviation), and `overlay-shape`/`-corner-radius`
-stay node-only.
+stay node-only.  Two more things about that stroke, both found by
+round 58's parity scenes: since round 58 it stops where the drawn
+line does (the draw trim; it used to run node centre to node centre
+on the straight stream), and its **width formula diverges from v3's**
+— v3 strokes the edge underlay/overlay at `2 × padding` alone, so a
+padding under half the line width draws a halo narrower than the
+line; v4's `width + 2 × padding` always shows the halo.  PLAN.md
+ledger item 27 holds the call; the casing (`line-outline`) is
+unaffected, both libraries agreeing on `width + outlineWidth`.
 
 Core theming (round 13 A2): the sheet takes an optional `core` group
 with v3's core-selector props, constants only —

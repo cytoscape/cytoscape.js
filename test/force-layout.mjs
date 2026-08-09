@@ -234,6 +234,78 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     expect(cy.$id('n0').position()).to.deep.equal({ x: 4000, y: 4000 });
   });
 
+  it('uncurls a chain: the spectral seed reaches what refinement cannot (59.4)', async function () {
+    // a 40-node path.  From a random scatter, every short-range model
+    // curls it (round 18's own recorded limit); the landmark-MDS seed
+    // embeds it near-collinear and the force phase preserves that.
+    const elements = [];
+
+    for (let i = 0; i < 40; i++) {
+      elements.push({ data: { id: 'n' + i } });
+
+      if (i > 0) {
+        elements.push({
+          data: { id: 'e' + i, source: 'n' + (i - 1), target: 'n' + i },
+        });
+      }
+    }
+
+    const cy = cytoscape({ elements });
+
+    await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+
+    const a = cy.$id('n0').position();
+    const b = cy.$id('n39').position();
+
+    // a straight 39-link chain at ideal length 60 spans ~2340; curled
+    // scatters land at a small fraction of that.  0.4x is generous —
+    // it discriminates curled from straight, not good from perfect.
+    expect(Math.hypot(b.x - a.x, b.y - a.y)).to.be.greaterThan(39 * 60 * 0.4);
+  });
+
+  it("init: 'scatter' keeps the plain seeded start; unknown init throws (59.4)", async function () {
+    const els = [];
+
+    for (let i = 0; i < 10; i++) {
+      els.push({ data: { id: 'n' + i } });
+
+      if (i > 0) {
+        els.push({
+          data: { id: 'e' + i, source: 'n' + (i - 1), target: 'n' + i },
+        });
+      }
+    }
+
+    const spectral = cytoscape({ elements: els });
+    const scatter = cytoscape({ elements: els });
+
+    await spectral
+      .layout({ name: 'force', seed: 3, fit: false })
+      .run()
+      .promise();
+    await scatter
+      .layout({ name: 'force', seed: 3, fit: false, init: 'scatter' })
+      .run()
+      .promise();
+
+    // both are valid runs; they differ, which is what pins that the
+    // option selects a different placement path
+    const posOf = (cy) =>
+      cy.nodes().map((node) => {
+        const p = node.position();
+
+        return [p.x, p.y];
+      });
+
+    expect(posOf(spectral)).to.not.deep.equal(posOf(scatter));
+
+    const bad = cytoscape({ elements: els });
+
+    expect(() => bad.layout({ name: 'force', init: 'organic' }).run()).to.throw(
+      /unknown init/,
+    );
+  });
+
   it('streams positions in live mode and settles on stop()', async function () {
     const cy = cytoscape({ elements: RING() });
     const layout = cy.layout({

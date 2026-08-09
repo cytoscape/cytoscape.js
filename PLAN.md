@@ -16728,9 +16728,32 @@ unchanged.
   out-of-frame node (the re-pack's own skip rule) isolates the
   physics; with the WGSL loop neutered the spec fails, restored it
   passes.  31 Node force specs + 4 GPU force specs green.
-- [ ] **59.4 The spectral seed** — landmark MDS per component with the
-  guards above, `init` option, determinism and quality specs (a path
-  uncurls; a tree's mean edge length lands near ideal).
+- [x] **59.4 The spectral seed** (2026-08-09) — landed:
+  `spectralSeed` in `force-init.mts` (landmark MDS per component of
+  ≥ 4 nodes — BFS hop distances from up to 25 farthest-first pivots
+  at fCoSE's 1.5·L separation, squared, double-centred, top-2
+  eigenpairs by hash-seeded power iteration, LMDS out-of-sample
+  embedding), wired as the default fresh placement with
+  `init: 'spectral' | 'scatter'` selecting it (unknown values throw;
+  `randomize: false` ignores it).  The scatter also went uniform-in-
+  *area* (`sqrt(u)` radial draw) — the uniform-in-radius draw piled
+  density at the centre, and the seed's density is what the anneal
+  budget mostly preserves.
+  The guards were where the work was: the first implementation threw
+  away a **path's** embedding, because a path's metric is legitimately
+  rank-1 (λ₂ = 0) and the degenerate-spectrum guard read that as
+  failure — a rank-1 spectrum now embeds on the first axis with the
+  jitter as the second dimension, a dead λ₁ keeps the scatter, and a
+  spectrum blowup rescales to the component's own hop-diameter extent
+  (clamping to the *disc estimate* would have destroyed exactly the
+  long thin layouts the seed exists to produce).  K-complete graphs
+  (every eigenvalue equal) pin the finite-and-bounded case.
+  Measured discrimination on the public path: a 40-node chain ends
+  **3208 px** end-to-end under the spectral seed against **346 px**
+  under `init: 'scatter'`, with the spec's bound at 936 — the seed
+  reaches the configuration no amount of local refinement finds,
+  which is fCoSE's headline reproduced.  11 module + 11 layout specs
+  green.
 - [ ] **59.5 Compounds** — owner-centroid gravity + `nestingFactor` on
   the CPU executor; the clustered fixture's coherence pinned (each
   child nearer its own compound's centroid than any other's).

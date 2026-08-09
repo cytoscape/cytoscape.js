@@ -5,6 +5,7 @@ import {
   estimateComponentRadius,
   seedAroundAnchors,
   packComponentsExact,
+  spectralSeed,
 } from '../../src/layout/force-init.mjs';
 
 // round 59.2: the force layout's component machinery — union-find over
@@ -176,5 +177,141 @@ describe('gpu/modules: force-init (round 59.2)', function () {
     // left 5000 px out
     expect(Math.abs(positions[12])).to.be.lessThan(1000);
     expect(Math.abs(positions[13])).to.be.lessThan(1000);
+  });
+});
+
+// round 59.4: the spectral seed — landmark MDS per component (fCoSE's
+// scheme: BFS hop distances from farthest-first pivots, squared,
+// double-centred, top-2 eigenpairs by power iteration), with the
+// guards that make a degenerate spectrum harmless.
+describe('gpu/modules: force-init spectral seed (round 59.4)', function () {
+  const pathEdges = (n) => {
+    const list = [];
+
+    for (let i = 0; i < n - 1; i++) {
+      list.push(i, i + 1);
+    }
+
+    return Uint32Array.from(list);
+  };
+
+  const seedComponent = (n, edges) => {
+    const { compOf, sizes } = computeComponents(n, edges);
+    const anchors = new Float32Array(2); // one component at the origin
+    const positions = new Float32Array(n * 2);
+
+    seedAroundAnchors(n, 1, compOf, sizes, anchors, 60, positions);
+    spectralSeed(n, edges, compOf, sizes, anchors, 60, positions);
+
+    return positions;
+  };
+
+  it('is deterministic', function () {
+    const edges = pathEdges(30);
+    const a = seedComponent(30, edges);
+    const b = seedComponent(30, edges);
+
+    expect([...a]).to.deep.equal([...b]);
+  });
+
+  it('embeds a path stretched out, ends far apart', function () {
+    // the whole point of the spectral phase: a 40-node path embeds
+    // near-collinear with its ends roughly a path-length apart — the
+    // configuration no amount of local refinement reaches from a
+    // random scatter
+    const n = 40;
+    const positions = seedComponent(n, pathEdges(n));
+    const endDist = Math.hypot(
+      positions[(n - 1) * 2] - positions[0],
+      positions[(n - 1) * 2 + 1] - positions[1],
+    );
+
+    // hop distance 39 at ~1.5 L separation; allow generous slack
+    expect(endDist).to.be.greaterThan(39 * 60 * 0.5);
+
+    // and consecutive nodes appear in path order along the long axis
+    const dx = positions[(n - 1) * 2] - positions[0];
+    const dy = positions[(n - 1) * 2 + 1] - positions[1];
+    const len = Math.hypot(dx, dy);
+    const ux = dx / len;
+    const uy = dy / len;
+    let monotone = 0;
+
+    for (let i = 0; i < n - 1; i++) {
+      const step =
+        (positions[(i + 1) * 2] - positions[i * 2]) * ux +
+        (positions[(i + 1) * 2 + 1] - positions[i * 2 + 1]) * uy;
+
+      if (step > 0) {
+        monotone++;
+      }
+    }
+
+    expect(monotone).to.equal(n - 1);
+  });
+
+  it("separates a star's leaves (no coincident embedding)", function () {
+    const n = 30;
+    const list = [];
+
+    for (let i = 1; i < n; i++) {
+      list.push(0, i);
+    }
+
+    const positions = seedComponent(n, Uint32Array.from(list));
+    let minDist = Infinity;
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        minDist = Math.min(
+          minDist,
+          Math.hypot(
+            positions[j * 2] - positions[i * 2],
+            positions[j * 2 + 1] - positions[i * 2 + 1],
+          ),
+        );
+      }
+    }
+
+    expect(minDist).to.be.greaterThan(0.5);
+  });
+
+  it('a degenerate spectrum stays finite and bounded', function () {
+    // K6: every pivot distance is 1, the double-centred matrix is
+    // rank-deficient — the guards must produce finite coordinates
+    // within the component's legitimate extent rather than a blowup
+    const n = 6;
+    const list = [];
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        list.push(i, j);
+      }
+    }
+
+    const positions = seedComponent(n, Uint32Array.from(list));
+
+    for (let i = 0; i < n; i++) {
+      expect(Number.isFinite(positions[i * 2])).to.equal(true);
+      expect(Number.isFinite(positions[i * 2 + 1])).to.equal(true);
+      expect(Math.hypot(positions[i * 2], positions[i * 2 + 1])).to.be.lessThan(
+        6 * 90 * 2,
+      );
+    }
+  });
+
+  it('leaves small components (< 4 nodes) on their scatter', function () {
+    const n = 3;
+    const edges = pathEdges(3);
+    const { compOf, sizes } = computeComponents(n, edges);
+    const anchors = new Float32Array(2);
+    const scattered = new Float32Array(n * 2);
+
+    seedAroundAnchors(n, 1, compOf, sizes, anchors, 60, scattered);
+
+    const positions = scattered.slice();
+
+    spectralSeed(n, edges, compOf, sizes, anchors, 60, positions);
+    expect([...positions]).to.deep.equal([...scattered]);
   });
 });

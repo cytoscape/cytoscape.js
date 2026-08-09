@@ -23,6 +23,7 @@ import {
   packAnchors,
   packComponentsExact,
   seedAroundAnchors,
+  spectralSeed,
 } from './force-init.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Collection } from '../collection.mjs';
@@ -52,6 +53,10 @@ export interface ForceRunOptions {
   /** the gap between disconnected components' packed boxes (59.2;
    * v3 cose's option of the same name — default 40) */
   componentSpacing?: number;
+  /** what a fresh placement is (59.4): 'spectral' (the default —
+   * landmark-MDS per component, the global untangling) or 'scatter'
+   * (the plain seeded scatter).  Ignored under `randomize: false`. */
+  init?: 'spectral' | 'scatter';
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
@@ -121,6 +126,16 @@ export class ForceLayoutImpl implements LayoutImpl {
     }
     if (options.threshold != null) {
       params.threshold = options.threshold;
+    }
+    if (
+      options.init != null &&
+      options.init !== 'spectral' &&
+      options.init !== 'scatter'
+    ) {
+      throw new Error(
+        `force layout: unknown init '${String(options.init)}' — ` +
+          `'spectral' (default) or 'scatter'`,
+      );
     }
 
     // the sim set: every leaf in scope — unlocked ones move, locked
@@ -216,6 +231,22 @@ export class ForceLayoutImpl implements LayoutImpl {
         meanL,
         positions,
       );
+
+      // the spectral seed (59.4): landmark MDS per component, the
+      // global untangling a local force phase cannot reach from a
+      // scatter; 'scatter' keeps the plain seeded start (the control
+      // path, and the escape hatch)
+      if (options.init !== 'scatter') {
+        spectralSeed(
+          n,
+          edgesArr,
+          comps.compOf,
+          comps.sizes,
+          compAnchors,
+          meanL,
+          positions,
+        );
+      }
 
       // pinned nodes keep their real coordinates even under randomize
       for (let i = 0; i < n; i++) {

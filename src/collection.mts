@@ -2164,15 +2164,16 @@ export class Collection {
    *   (read it), a key and a value, or an object of keys to merge
    * @returns the read value, or this collection when writing
    */
-  data(
-    ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
-  ): unknown {
-    const [key, value] = args;
+  data(key?: string | Record<string, unknown>, value?: unknown): unknown {
+    // arity via arguments.length, not a rest array — the rest form
+    // allocated per call on the hottest read path (round 62.6)
+    // eslint-disable-next-line prefer-rest-params
+    const argc = arguments.length;
 
     // whole-object getter
-    if (args.length === 0) {
-      const ref = this._first();
+    if (argc === 0) {
       const store = this._store;
+      const ref = this.__refs[0];
 
       if (ref == null || !store.isCurrent(ref)) {
         return undefined;
@@ -2231,8 +2232,8 @@ export class Collection {
     }
 
     // single-key getter
-    if (typeof key === 'string' && args.length === 1) {
-      const ref = this._first();
+    if (typeof key === 'string' && argc === 1) {
+      const ref = this.__refs[0];
 
       if (ref == null || !this._store.isCurrent(ref)) {
         return undefined;

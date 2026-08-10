@@ -5837,7 +5837,7 @@ declare class Collection {
    *   (read it), a key and a value, or an object of keys to merge
    * @returns the read value, or this collection when writing
    */
-  data(...args: [] | [string] | [string, unknown] | [Record<string, unknown>]): unknown;
+  data(key?: string | Record<string, unknown>, value?: unknown): unknown;
   private _setData;
   /**
    * Remove sidecar data keys.

@@ -1246,6 +1246,17 @@ declare class IdMap {
    */
   has(id: string): boolean;
   /**
+   * Resolve an id to its packed `(slot << 1) | groupBit` code, or −1 —
+   * the allocation-free twin of `get()` for the id-lookup hot path
+   * (round 62.3: `getElementById` paid two throwaway objects per call,
+   * the IdEntry here and the Ref above, and lost to v3's Map.get on
+   * them alone).  Group bit 1 = edges.
+   *
+   * @param id — the id to look up
+   * @returns the packed code, or −1 when no element holds the id
+   */
+  code(id: string): number;
+  /**
    * Resolve an id to its group and slot.  Allocates a fresh result
    * object per hit but decodes no strings — the probe compares UTF-8
    * bytes in the blob against the encoded query.
@@ -2105,9 +2116,10 @@ declare class GraphStore implements ModelView {
   private watchedStates;
   /**
    * Told when a styled state bit flips on live slots — the core wires
-   * this to the StyleEngine's mapper refresh (round 57.1).  Null until
-   * then, and consulted before any per-slot bookkeeping, so a store with
-   * no style attached does the flag write and nothing else.
+   * this to the StyleEngine's state refresh (round 57.1; the round-61
+   * partition-record diff since).  Null until then, and consulted
+   * before any per-slot bookkeeping, so a store with no style attached
+   * does the flag write and nothing else.
    */
   onStateChange: ((group: GroupName, key: string, slots: readonly number[]) => void) | null;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
@@ -2333,6 +2345,16 @@ declare class GraphStore implements ModelView {
    * @returns undefined when no live element carries the id
    */
   lookup(id: string): Ref | undefined;
+  /**
+   * The allocation-free twin of `lookup()` (round 62.3): the id's packed
+   * `(slot << 1) | groupBit` code, or −1.  For callers that only need to
+   * reach the interned handle — `getElementById` — the two objects
+   * `lookup()` allocates per call are pure cost.
+   *
+   * @param id — the element id
+   * @returns the packed code (group bit 1 = edges), or −1 when absent
+   */
+  lookupCode(id: string): number;
   /**
    * The id occupying a slot, or undefined when the slot is a hole.
    * The reverse of lookup(); ids are stored out of line, so this is the
@@ -5026,6 +5048,14 @@ declare class Collection {
   _scratch?: Record<string, unknown>;
   /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
   _keys?: Map<number, number>;
+  /** the algorithms' SubgraphView memo (round 62.1), keyed by the
+   * store's structureEpoch — sound because membership is _refs (immutable)
+   * minus dead refs, and death moves the epoch.  Typed loosely to keep
+   * the algorithms layer out of this module's imports. */
+  _sgView?: {
+    epoch: number;
+    view: unknown;
+  };
   /**
    * The collection's refs, repaired lazily after a slot compaction
    * (19.3): on first access past a new compaction epoch, every stale-

@@ -598,6 +598,14 @@ export function renderReport(results) {
     <ul>${meta.failures.map((f) => `<li class="fail">${esc(f.job)} (exit ${esc(f.exitCode)})</li>`).join('')}</ul>
   </section>`;
 
+  // the tagline names what the run compares: the classic v3-vs-v4
+  // suites, or (algorithms-gpu, 65.9) v4's own cpu-vs-gpu executors
+  const kinds = [...new Set(pairs.map((p) => p.baseline))];
+  const tagline =
+    kinds.length === 1 && kinds[0] === 'cpu'
+      ? "v4 executor 'cpu' vs 'gpu' · times are per-call p50"
+      : 'v4 (src/) vs v3 (v3/src/) · Mitata · times are per-iteration p50';
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -608,7 +616,7 @@ export function renderReport(results) {
 </head>
 <body>
 <h1>Cytoscape.js GPU benchmarks</h1>
-<p class="meta">v4 (src/) vs v3 (v3/src/) · Mitata · times are per-iteration p50${metaLine ? ` · ${metaLine}` : ''}</p>
+<p class="meta">${esc(tagline)}${metaLine ? ` · ${metaLine}` : ''}</p>
 ${machineBlock(meta)}
 ${failures}
 ${tiles(pairs, meta)}

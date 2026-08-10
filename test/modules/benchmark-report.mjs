@@ -499,6 +499,9 @@ describe('cpu-baseline pairs (the algorithms-gpu profile, 65.8)', function () {
     expect(html).to.include('cpu still ahead');
     expect(html).to.include('cpu p50 ÷ gpu p50');
     expect(html).to.include('algorithms-gpu profile');
+    // the tagline names the run's own comparison, not the v3 one
+    expect(html).to.include("v4 executor 'cpu' vs 'gpu'");
+    expect(html).to.not.include('vs v3 (v3/src/)');
   });
 
   it('control: an inexact bench name is not a baseline', function () {

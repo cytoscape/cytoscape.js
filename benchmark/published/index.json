@@ -1,6 +1,38 @@
 {
   "runs": [
     {
+      "file": "results-alggpu-2026-08-10T19-05-10-711Z.json",
+      "date": "2026-08-10T19:05:10.711Z",
+      "commit": "1f324088",
+      "commitSubject": "fix(65.9b): style-bundle.mjs has been a module-level SyntaxError since round 42 — every all-profile run published it as a failure",
+      "branch": "v4",
+      "profile": "algorithms-gpu",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 302873,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 27,
+      "note": "round 65.9: first published run of the algorithms-gpu profile — executor cpu vs gpu per family per size on the amd gcn-4 adapter, after the 65.8 kernel perf pass"
+    },
+    {
+      "file": "results-2026-08-10T18-46-43-437Z.json",
+      "date": "2026-08-10T18:46:43.437Z",
+      "commit": "1f324088",
+      "commitSubject": "fix(65.9b): style-bundle.mjs has been a module-level SyntaxError since round 42 — every all-profile run published it as a failure",
+      "branch": "v4",
+      "profile": "all",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 1106678,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 25,
+      "note": "round 65 baseline: all profile after 65.1-65.9b — style-bundle measures again for the first time since round 42"
+    },
+    {
       "file": "results-2026-08-10T18-18-11-811Z.json",
       "date": "2026-08-10T18:18:11.811Z",
       "commit": "d4ff0730",

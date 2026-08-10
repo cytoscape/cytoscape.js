@@ -18254,3 +18254,59 @@ column walks (~2.6 ms/iteration remains), 4×4 matmul register blocks
 is now genuinely memory-bound — its real headroom is a sparse CSR
 formulation, which would change the memory story rather than the
 kernel.
+
+### 65.9 — every benchmarked thing reaches the status site (2026-08-10)
+
+The GPU sweep measured well and published nowhere: an ad-hoc JSON shape
+in gitignored results/, invisible to the report, the publish machinery
+and the archive — while the site's algorithm rows showed only the
+Node-tier CPU executor, from runs that predated round 65 entirely.
+The maintainer's directive: all the benchmarked things represented.
+
+- **The sweep is a first-class producer** on render-bench's exact
+  pattern: standard results shape (one job per family × size, benches
+  `cpu` / `gpu` / `gpu first call` — the last carrying the
+  once-per-page pipeline-compile stall the steady-state rows exclude),
+  raw sample arrays through `toStats`, buildMeta provenance with the
+  adapter identity, its own **`algorithms-gpu` profile**.  Publish,
+  the index, pruning and compare-page grouping needed zero changes —
+  the round-46.5 machinery was already generic.
+- **The report learned the second pair form**: exact-named `cpu`
+  beside `gpu` is a comparison pair (both sides v4) next to the
+  classic v3/gpu one.  Dumbbells, the speedup overview, the scaling
+  table (which now reads families × sizes for the sweep — 72×/300×/
+  642× across MCL's three sizes on one row) and the tiles all light
+  up; legends, tooltips, the pairs tile and the page tagline name the
+  baseline honestly per run, and the run-time tile stops mislabeling
+  'all'/'renderer' runs as 'quick' (hardcoded since 46.5).  The
+  compare page's v3-twin noise control is deliberately *not* extended
+  to cpu twins: v3 is frozen code, the cpu executor is live v4, and
+  calling it a noise control would launder real regressions.
+- **Three fresh runs published** (quick, all, algorithms-gpu — commit
+  1f324088, plus the quick run on d4ff0730), so nothing on the site
+  predates the round.  The first ladder design published between
+  measurements and tainted its own second run's provenance — the
+  dirty-tree refusal caught it, working as built; ladder 2 measures
+  everything first and publishes at the end.
+- **Reading the log, not the exit code, found a round-42 corpse**:
+  `style-bundle.mjs` has been a module-level SyntaxError since the
+  restructure's factory-rename sweep collapsed its two bundle imports
+  onto one identifier — published as a recorded failure in every
+  `--all` run since, its rows (the one measurement of style reads
+  through the *built bundle*, the round-34 `__name` lesson's suite)
+  absent from the archive the whole time.  Fixed (`cytoscapeV3`),
+  and un-masking the compile error un-masked the guard beneath: the
+  suite needs v3's ESM bundle, which the parity harness's UMD-only
+  build does not produce.
+- **The new compare-all page did its job on arrival**: it surfaced a
+  +17–34% mover cluster in the curve-premium rows (no v3 twin)
+  between the pre-65 run and the ladder's.  A solo re-run on the idle
+  box read 2.2 ms where the ladder run read 4.43 (old run: 1.89) —
+  the cluster is the box running hot late in an 18-minute profile,
+  not a regression; the drift/twin framing exists for exactly this
+  readout, and rows without a twin are where it must be done by hand.
+
+Verified: the built site driven in Chromium (benchmark index lists all
+four profiles; the sweep page renders 27 dumbbells, the cpu legend,
+the scaling matrix; screenshots taken), module tier 344/344 including
+the three new cpu-pair specs and their inexact-name control.

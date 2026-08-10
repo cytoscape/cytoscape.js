@@ -4,7 +4,7 @@ import type { Collection } from '../collection.mjs';
 import { median, mean, min, max } from '../math.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { affinityPropagationGpu } from './algo-gpu-ap.mjs';
 
@@ -137,10 +137,12 @@ export const affinityPropagationAsync = (
   const executor = resolveExecutor(options.executor);
   const n = coll.nodes().length;
 
+  // measured crossover (65.6, amd gcn-4): 0.87x at n=512, 1.43x at
+  // n=1024 (iteration-capped rows)
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    1024,
     () => affinityPropagation(coll, options),
     (ctx) => affinityPropagationGpu(ctx, coll, options),
   );

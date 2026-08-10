@@ -5,7 +5,7 @@
 import type { Collection } from '../collection.mjs';
 import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { fuzzyCMeansGpu, kMeansGpu, kMedoidsGpu } from './algo-gpu-cluster.mjs';
 
@@ -398,10 +398,12 @@ export const kMeansAsync = (
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
 
+  // measured crossover (65.6, amd gcn-4): 1.9x at n=4096; the fixed
+  // ~15 ms GPU overhead puts the wash near n=2048
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    2048,
     () => kMeans(coll, options),
     reason == null ? (ctx) => kMeansGpu(ctx, coll, options) : null,
     reason ?? undefined,
@@ -426,10 +428,12 @@ export const kMedoidsAsync = (
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
 
+  // measured crossover (65.6, amd gcn-4): 9.6x at n=1024 (the n^2 cost
+  // matrices dominate the CPU well before that)
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    512,
     () => kMedoids(coll, options),
     reason == null ? (ctx) => kMedoidsGpu(ctx, coll, options) : null,
     reason ?? undefined,
@@ -454,10 +458,11 @@ export const fuzzyCMeansAsync = (
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
 
+  // measured crossover (65.6, amd gcn-4): 7.2x at n=4096, scaling flat
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    1024,
     () => fuzzyCMeans(coll, options),
     reason == null ? (ctx) => fuzzyCMeansGpu(ctx, coll, options) : null,
     reason ?? undefined,

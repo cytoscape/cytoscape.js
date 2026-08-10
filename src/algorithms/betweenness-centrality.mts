@@ -1,7 +1,7 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
 
@@ -40,10 +40,12 @@ export const betweennessCentralityAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
+  // measured crossover (65.6, amd gcn-4): 0.74x at n=512, 1.65x at
+  // n=1024, 3.6x at n=2048
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    1024,
     () => betweennessCentrality(coll, options),
     options.weight == null
       ? (ctx) => betweennessCentralityGpu(ctx, coll, options)

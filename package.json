@@ -122,6 +122,7 @@
     "benchmark:report": "node --import tsx benchmark/report.mjs",
     "benchmark:all": "node --import tsx benchmark/report.mjs --all",
     "benchmark:renderer": "node --import tsx benchmark/render-bench.mjs",
+    "benchmark:algorithms-gpu": "node --import tsx benchmark/algorithms-gpu-bench.mjs",
     "benchmark:publish": "node scripts/benchmark-publish.mjs",
     "machine": "node scripts/machine-info.mjs",
     "status": "node scripts/status-build.mjs",

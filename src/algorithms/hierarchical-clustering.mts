@@ -4,7 +4,7 @@
 import type { Collection } from '../collection.mjs';
 import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { hierarchicalClusteringGpu } from './algo-gpu-cluster.mjs';
 
@@ -336,10 +336,12 @@ export const hierarchicalClusteringAsync = (
           "use executor 'cpu' or 'auto'"
         : null;
 
+  // measured crossover (65.6, amd gcn-4): ~2x from n=1024 up (the CPU
+  // merge chain is the shared floor both executors pay)
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    1024,
     () => hierarchicalClustering(coll, options),
     reason == null
       ? (ctx) => hierarchicalClusteringGpu(ctx, coll, options)

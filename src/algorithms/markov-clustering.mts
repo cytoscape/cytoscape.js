@@ -3,7 +3,7 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
 
@@ -118,10 +118,12 @@ export const markovClusteringAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
+  // measured crossover (65.6, amd gcn-4): 71.9x GPU at n=256 and n^3
+  // growth put the wash near n=128
   return runAlgo(
     executor,
     n,
-    GPU_MIN_N,
+    128,
     () => markovClustering(coll, options),
     (ctx) => markovClusteringGpu(ctx, coll, options),
   );

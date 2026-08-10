@@ -4541,7 +4541,9 @@ export class Collection {
   }
 
   private _liveNodeRef(): Ref | null {
-    const ref = this._first();
+    // raw ref + isCurrent (which repairs a forwarded ref in place)
+    // instead of the syncing getter — the 62.6 fast-read shape
+    const ref = this.__refs[0];
 
     return ref != null && ref.group === 'nodes' && this._store.isCurrent(ref)
       ? ref

@@ -190,20 +190,31 @@ for (const b of BUNDLES) {
   // updating on essentially every commit — made the next benchmark run warn
   // that its bundle was stale when nothing about the code had moved.  A
   // warning that cries wolf on every docs commit is a warning nobody reads.
-  const newestSrc = readdirSync(join(ROOT, 'src'), { recursive: true })
-    .filter((f) => SOURCE_EXT.test(String(f)))
-    .map((f) => {
-      try {
-        return statSync(join(ROOT, 'src', f)).mtimeMs;
-      } catch {
-        return 0;
-      }
-    })
-    .reduce((a, b) => Math.max(a, b), 0);
+  // Each bundle is checked against *its own* source tree: comparing v3's
+  // UMD against v4's src/ warned on every v4 commit while v3 — frozen
+  // code — had not moved (found when the round-62 renderer run warned
+  // seconds after a fresh v4 build).
+  const newestUnder = (dir) =>
+    readdirSync(join(ROOT, dir), { recursive: true })
+      .filter((f) => SOURCE_EXT.test(String(f)))
+      .map((f) => {
+        try {
+          return statSync(join(ROOT, dir, f)).mtimeMs;
+        } catch {
+          return 0;
+        }
+      })
+      .reduce((a, b) => Math.max(a, b), 0);
+  const stale = [
+    ['build/cytoscape.umd.js', 'src'],
+    ['v3/build/cytoscape.umd.js', 'v3/src'],
+  ].filter(
+    ([bundle, dir]) => statSync(join(ROOT, bundle)).mtimeMs < newestUnder(dir),
+  );
 
-  if (BUNDLES.some((b) => statSync(b).mtimeMs < newestSrc)) {
+  for (const [bundle, dir] of stale) {
     console.warn(
-      'warning: build/ bundles are older than src/ — results may reflect stale code (npm run build)',
+      `warning: ${bundle} is older than ${dir}/ — results may reflect stale code (npm run build${dir.startsWith('v3') ? ' in v3/' : ''})`,
     );
   }
 }

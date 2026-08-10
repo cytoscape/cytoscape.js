@@ -278,8 +278,9 @@ var fixtures = (function () {
   //
   // Labels live in the data rather than the sheet because v4's `label` takes
   // only the passthrough mapper (`{ data: key }`) — there are no style
-  // functions and no per-element bypass, so v3's per-id label overrides have
-  // to be data.  The zero-width spaces (\u200b) are v3's, and they are the
+  // functions, so v3's per-id label overrides became data.  (Round 63's
+  // `bypasses` section postdates this port and could carry them now; data
+  // is still the better home here, since the labels are the fixture's.)  The zero-width spaces (\u200b) are v3's, and they are the
   // point of those three labels: they mark where wrapping is allowed.
   function v3DefaultFixture() {
     var LONG_C =

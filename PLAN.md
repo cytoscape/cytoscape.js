@@ -369,6 +369,28 @@ sample.  Node tier, gates and Playwright green throughout; the goal is
 a snapshot, not a floor — the published archive plus the comparison
 pages are the standing regression net.
 
+**Round 63** (2026-08-10) brought the per-element bypass back —
+ledger item 25, reopened by the maintainer ("bypasses are worth a
+discussion"), decided at the eighth sitting, and landed the same day
+under one requirement set above the rest: **fast**.  Not the logged
+case-rewrite shape, which measurement killed on three walls (it
+cannot compose with a scale-mapped channel — `then`/`else` are
+scalars; one id clause nulls the 57.1d partition for its whole group
+and re-opens the round-60.4 select regression, 53.7 → 392 µs
+measured; and the chain is O(k·V)) — but a first-class **`bypasses`
+stylesheet section**: id-keyed constant declarations merged at the
+write funnel, with v3's method spellings back as sugar
+(`ele.style( name, value )`, `removeStyle`), v3's
+bypass-beats-everything precedence, export from `cy.json()` (better
+than v3, which drops bypasses on export), and sheet swaps replacing
+the section.  The contract's numbers: bypass-free graphs measure
+unchanged (the state-only select reads 48.0 µs against the
+pre-round 53.7), punch-outs are O(bypassed), and the set path is
+**2× faster than v3** through the built bundles.  The round also
+pinned the amendment that style prop keys take **dash-case and
+camelCase everywhere** — measured already true at every entry
+point, now a contract with a sweep spec and its control.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -577,10 +599,10 @@ mid-sitting: **the implementation must be fast/performant**.
 Design-doc first: the proposal, with its measurements, went to the
 end of this file — and **the maintainer approved it the same day with
 two amendments** (the section key is `bypasses`, and style prop keys
-accept dash-case *and* camelCase everywhere in the API), so it is now
-the **round-63 plan**.  The genuinely open questions are unchanged at
-four (18, 23, 27, 28) — item 25 is scheduled work now, not an open
-call.
+accept dash-case *and* camelCase everywhere in the API), so it became
+the **round-63 plan — which landed the same day** (the records are in
+that section).  The genuinely open questions are unchanged at four
+(18, 23, 27, 28); item 25 is closed.
 
 ### Scope calls
 
@@ -1355,6 +1377,11 @@ rather than from a blank page.
     (not `overrides`), and style property keys accept **both dash-case
     and camelCase everywhere in the API** — in the bypasses and in
     every other place a prop name is taken.
+    ***Landed as round 63 the same day — this item is closed.***  The
+    29.3 setter throw is reversed, the section exports, and the
+    performance contract held under measurement (the set path 2×
+    faster than v3 through the built bundles; bypass-free selects
+    unchanged).  See the round-63 plan and records.
 26. **Split the big implementation files, v4's way** (raised
     2026-08-07).  `style.mts` is 7.9k lines, `collection.mts` 5.8k,
     `store/graph-store.mts` 5.0k, `render/shaders.mts` 4.3k, `core.mts`
@@ -17917,40 +17944,69 @@ gate as a benchmark row, since a spec cannot see a nanosecond.
 
 ### Pass split (tests-first; docs in-commit; each pass its own commit(s))
 
-- [ ] **63.0 Docs-first** — this section, amended to the approved
-  design; ledger item 25 annotated.
-- [ ] **63.1 The camel/dash sweep** — a spec that reads every prop of
-  the readback table through both spellings at every entry point
-  (sheet blocks, getters, `transition-property`, `animate({ style })`,
-  and — once they exist — the bypasses and `removeStyle`), fixing any
-  entry point the audit finds bare.  Written first because the
-  bypasses parser reuses whatever this pass pins.
-- [ ] **63.2 The model** — `Stylesheet.bypasses` in `public-types.mts`;
-  engine store (id-keyed raw entries + per-group slot→patch maps and
-  counts), parse/validate at `setSheet` through `normalizeProp` +
-  `applyProp` (unknown prop or invalid value throws), slot maintenance
-  on add/remove/compaction; id-keyed declaration semantics pinned
-  (survive remove/re-add, inert until the id exists).
-- [ ] **63.3 Apply integration** — the merge hook at the `write()`
-  funnel (every full-write path respects bypasses by construction),
-  the `refreshState` punch-out (bypassed slots take the merged full
-  write), `paintInputs` demotion per bypassed prop (count-gated,
-  reversible, paintVersion-bumped), and the count === 0 gate on every
-  touched path.
-- [ ] **63.4 The sugar** — `ele.style( name, value )` /
-  `eles.style( props )` set bypasses through the single-slot apply
-  path (transitions by construction); `removeStyle( name? )` restores
-  sheet-resolved values; `cy.style()` getter carries the live section;
-  the 29.3 throw and its `test/decided-drops.mjs` pin flip; JSDoc for
-  the gates.
-- [ ] **63.5 Benchmarks** — the `ele.style( name, value )` comparative
-  row against v3 (spelled identically on both sides for the first time
-  since 29.3), punch-out at k = 1/100/1000 on the apply and select
-  paths, and the bypass-free select row unchanged (the count-gate's
-  nullity), all through the built bundle.
-- [ ] **63.6 Closing sweep** — `src/README.md` design-decision entry,
-  `MIGRATING.md` rows flip (+ guide spec), `CHANGELOG.md`,
-  `dist/cytoscape.d.ts` regenerated with `test:types:surface`, the
-  round record here, `EXECUTIVE_SUMMARY.md` rewritten, and the full
-  verification gate (Node tier + Playwright against a fresh bundle
-  with goldens byte-stable — no golden uses a bypass).
+- [x] **63.0 Docs-first** (2026-08-10) — this section, amended to the
+  approved design; ledger item 25 annotated.
+- [x] **63.1 The camel/dash sweep** (2026-08-10) — landed as
+  `test/style-camel-case.mjs`: a fully camelized copy of the 153-prop
+  styled fixtures reads back identical to the dash copy through every
+  sheet group, the getters compare outcome-for-outcome across the
+  whole surface, and `transition-property` and `animate({ style })`
+  take camel entries.  **The audit found every existing entry point
+  already normalized** — the spec turns the coincidence into a
+  contract.  Control: `normalizeProp` neutered to identity fails 5 of
+  7 (the survivors are the meta-check and the animation spec, whose
+  parser has its own normalizer — the correct reading).
+- [x] **63.2 The model** (2026-08-10) — `Stylesheet.bypasses`;
+  id-keyed raw declarations + per-group parsed patches; parsing
+  reuses the sheet compiler's own pieces (the per-group guards
+  extracted from `resolveConst` into `assertGroupProp`, and
+  `applyProp` as validator/parser — a bare scratch object captures
+  exactly the `Computed` fields an entry assigns, surviving a value
+  equal to the channel default).  Slot resolution is lazy against
+  `store.structureEpoch`: O(declared ids) per structural change,
+  never O(elements).  Wrong-group props behave exactly as sheet
+  blocks treat them — the guarded families throw, the rest are
+  accepted-and-inert — one rule for both surfaces.
+- [x] **63.3 Apply integration** (2026-08-10) — the `write()` merge
+  hook (every full-write path respects bypasses by construction; the
+  transition capture wraps it, so bypass changes tween wherever a
+  spec configures them), the `refreshStateDef` punch-out (bypassed
+  slots take the merged full write; the run optimization untouched),
+  `paintInputs` demotion per bypassed prop (count-gated, reversible),
+  and the one-load gate (`mergeBypass` is a method so a spec counts
+  invocations: zero on a bypass-free instance, pinned).  **Four
+  controls, and one strengthened two specs**: the epoch-rebuild
+  control caught the re-add and compaction specs passing by accident
+  (a recycled slot; permuted-but-unrewritten bytes) — they claim the
+  freed slot with a squatter and restyle after compacting now, and
+  the control fails all three lifecycle specs.
+- [x] **63.4 The sugar** (2026-08-10) — `ele.style( name, value )`,
+  the object form and `removeStyle( name? )`/`removeCss` (the 85th
+  alias row), validating against the element's own group and
+  re-applying through the single-slot funnel — a configured
+  transition tweens a sugar bypass in both directions, pinned.  The
+  29.3 throw and its pins flipped (`test/decided-drops.mjs`,
+  `test/style-getters.mjs`), `style()` grew real overloads with one
+  doc block each, and the round-45 gate caught the stale shipped
+  declaration by name (regenerated: 45 type exports / 3 statics /
+  1330 doc blocks).  23 specs in `test/style-bypass.mjs`.
+- [x] **63.5 Benchmarks** (2026-08-10) — four rows in `style.mjs`:
+  the set path **3.9× faster than v3 through tsx and 2.0× through
+  the built bundles** (3.32 vs 6.59 µs/call — the maintainer's
+  fast-requirement met on the headline row), the set+remove
+  round-trip 4.4×, the 256-band default-sheet select at 34.5 µs
+  with 0 bypassed vs 352 µs with 128 (O(bypassed) at the known
+  full-write cost, the k=0 side the standing O(0) gate row), and a
+  128-bypass sheet swap at 1.02–1.06× of bypass-free.  The
+  count-gate's nullity measured through the bundle: the pre-round
+  state-only select read 53.7 µs, the post-round 48.0 —
+  no regression.  Both bypassed rows carry startup discrimination
+  probes.
+- [x] **63.6 Closing sweep** (2026-08-10) — `src/README.md`'s
+  style-getters section carries the contract and the two live claims
+  trued (the transition taxonomy, ledger idea 25's own sketch —
+  which shipped in a different shape than it proposed);
+  `MIGRATING.md` flips its bypass rows with the two porting
+  differences named (export is better than v3; sheet swaps replace);
+  `CHANGELOG.md` gains the feature; the summary rewritten; full
+  verification below.

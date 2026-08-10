@@ -182,8 +182,16 @@ replacement. That is worth knowing precisely, because before round 29.3 it
 was silently ignored: a v3 sheet ported wholesale produced an unstyled graph
 and no error at all.
 
-There is also **no per-element bypass** — `ele.style( name, value )` throws.
-Mappers are the per-element mechanism.
+The per-element bypass **works, spelled as in v3** (round 63):
+`ele.style( name, value )`, the object form and `removeStyle( name? )`
+set and clear id-keyed constants that beat every sheet rule.  Two
+differences from v3 worth knowing while porting: the canonical form is
+the stylesheet's `bypasses` section (`{ bypasses: { id: { prop:
+value } } }`), which **exports from `cy.json()`** where v3 silently
+drops bypasses on export — and a full `cy.style( sheet )` **replaces**
+the live bypasses like any other section (v3's survive sheet swaps;
+spread the exported sheet to keep them).  Values are constants only —
+mappers remain the per-element mechanism for anything data-driven.
 
 **CSS-string stylesheets and `cytoscape.stylesheet()` are gone** with the
 block form.
@@ -484,7 +492,7 @@ instances are not emitters.
 
 Deliberately, with no replacement planned:
 
-- classes, selector strings, style functions, per-element style bypass
+- classes, selector strings, style functions
 - `z-index` and companions; `sortByZIndex`, `zDepth`
 - `restore`/`clone`/`copy`, `cy.json()` import
 - event namespaces; the `vmouse*` aliases and raw mouse/touch re-emits

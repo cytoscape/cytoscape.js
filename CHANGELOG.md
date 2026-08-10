@@ -35,6 +35,16 @@ that compile and then behave differently.
   nodes), arrowheads are hit targets (hollow counts as filled, as in
   v3), and pressing any element — edges included — shows v3's `:active`
   overlay; `cy.pick( x, y )` stays exact.
+- **Per-element bypasses** (round 63): the stylesheet's `bypasses`
+  section — `{ bypasses: { id: { prop: constant } } }` — with v3's
+  method spellings as sugar (`ele.style( name, value )`, the object
+  form, `removeStyle( name? )`, `removeCss`).  A bypass beats every
+  sheet rule (default-sheet selection included), survives remove/
+  re-add of its element, and exports from `cy.json()` — better than
+  v3, which drops bypasses on export.  Constants only; a full
+  `cy.style( sheet )` replaces the section (spread the exported sheet
+  to keep it).  Style prop keys accept dash-case and camelCase
+  everywhere (`foo-bar` ≡ `fooBar`), the bypasses included.
 - **Structured queries and predicates** replacing the selector language —
   `cy.nodes( { selected: true } )`, `cy.nodes( { data: { w: { gt: 1 } } } )`,
   and plain functions for everything richer.
@@ -132,8 +142,9 @@ that compile and then behave differently.
   the id lookup). Passing one throws, naming the replacement.
 - **Classes** (`addClass`/`removeClass`/`toggleClass`/`hasClass`/
   `flashClass`) — `data()` plus mappers is the replacement.
-- **Style functions** (`( ele ) => props`) and **per-element style bypass**
-  (`ele.style( name, value )`) — both throw.
+- **Style functions** (`( ele ) => props`) throw; per-element bypasses
+  are back since round 63 (see Added), spelled as in v3 and canonically
+  the stylesheet's `bypasses` section.
 - **CSS-string stylesheets** and `cytoscape.stylesheet()`.
 - **`z-index`**, `z-compound-depth`, `z-index-compare`, `sortByZIndex`,
   `zDepth`.

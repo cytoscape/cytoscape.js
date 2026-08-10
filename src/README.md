@@ -657,9 +657,28 @@ after data writes and the getter evaluates the shared mapper IR lazily
 instead — same math as the kernel, agreeing with rendered pixels within
 ±1 per RGBA byte.
 
-The setter forms throw: v4 has no per-element bypass —
-per-element styling is a mapper (`case` conditionals, `data(key)`
-scales).
+The setter forms are **per-element bypasses** (round 63 — reversing
+the 29.3 drop; the design record is PLAN.md's round-63 plan, ledger
+item 25).  `ele.style( name, value )`, the object form and
+`removeStyle( name? )` are sugar over the stylesheet's **`bypasses`
+section** — `{ bypasses: { [id]: { prop: constant } } }` — which is
+the canonical, exported form.  The contract: a bypass **beats
+everything** (the user's blocks and the default sheet's state
+conditionals included — a bypassed channel hides selection blue for
+that element, exactly as in v3); values are **constants only**
+(mappers stay the sheet's job); entries are **id-keyed declarations**
+rather than element state (they survive remove/re-add, may name an id
+that does not exist yet — inert until it does — and round-trip
+through `cy.json()`, which is better than v3, whose export drops
+bypasses); and a full `cy.style( sheet )` **replaces** the section
+like any other, with spreading the exported sheet as the keep-them
+idiom (a v3 difference, recorded: v3's bypasses live on elements and
+survive sheet swaps).  Implementation: an overlay merged at the write
+funnel — bypass-free graphs pay one count load (measured unchanged),
+apply and select punch-outs are O(bypassed), a channel carrying a
+bypass demotes its GPU mapper eval while one exists (count-gated,
+reversible), and the set path measures 2× *faster* than v3's through
+the built bundles.
 
 Ghost props (round 13 A1): `ghost` ('yes' | 'no'), `ghost-offset-x/y`
 and `ghost-opacity` duplicate the *basic node body* — shape, border,
@@ -4580,9 +4599,10 @@ fragment premium is **unmeasurable at scene level** on real hardware
   are broken upstream (recorded), the golden pins v4's behavior.
 - **Transitions + controls** (round 24) — the deviations in one
   place (the design bullets above carry the detail): the trigger
-  taxonomy is v4-specific (no classes, no bypass — restyles and
-  mapper re-evaluations trigger; v3 transitioned on class/bypass
-  changes); durations/delays are plain numbers of milliseconds (no
+  taxonomy is v4-specific (no classes — restyles and mapper
+  re-evaluations trigger, and since round 63 a bypass set or removal
+  does too, riding the same write-funnel capture; v3 transitioned on
+  class/bypass changes); durations/delays are plain numbers of milliseconds (no
   v3 time-unit strings); transition config is constants-only (no
   per-element transition props); discrete channels snap at the
   transition's start (geometry numerics tween since round 25);
@@ -4844,13 +4864,13 @@ it here in round 57.4.*
   adopting a formatter made five of them visible at once; round 52's
   `wgsl` tag is the 240th.)
 - **Two directions logged in round 57, neither scheduled** (PLAN.md's
-  ledger items 25 and 26).  **25** would bring the per-element bypass
-  *ergonomics* back without the mechanism: `ele.style( name, value )`
-  rewriting the sheet so that element takes its value through a `case`
-  clause keyed on its id, which keeps every value analyzable and
-  serializable.  The thing to measure first is what an N-clause
-  first-match-wins chain costs when N is "elements the app has
-  bypassed", and what `cy.style()` then exports.
+  ledger items 25 and 26).  **25 landed as round 63** (2026-08-10) —
+  and *not* in the case-rewrite shape this entry first sketched, which
+  measurement rejected on three walls (it could not compose with
+  scale-mapped channels, one id clause re-opened the round-60.4 select
+  regression for its whole group, and the chain was O(k·V)).  What
+  shipped is the `bypasses` sheet section with the v3 method spellings
+  as sugar; the style-getters section above carries the contract.
 
   **26** would split the
   big implementation files the way `src/algorithms/` already is —

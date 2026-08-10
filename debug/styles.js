@@ -556,10 +556,10 @@ var styles = (function () {
   // v3's default debug graph, ported to a v4 sheet.
   //
   // v3 styles this graph with **eighteen id selectors** (`#ab`, `node#c`,
-  // `[source = "c"][target = "e"]`, …).  v4 has neither selectors nor a
-  // per-element bypass, so each of those becomes a `case` mapper over
-  // `data( 'id' )` — which is the shape v4 intends per-element styling to
-  // take, and it keeps the whole sheet serializable.
+  // `[source = "c"][target = "e"]`, …).  v4 has no selectors, so each of
+  // those becomes a `case` mapper over `data( 'id' )` — declarative and
+  // serializable.  (Round 63's `bypasses` section is the other spelling
+  // now; the mappers stay because this sheet is also the mapper demo.)
   //
   // **One deviation, and it is a real limit rather than a shortcut.**  The
   // list-valued curve parameters — `control-point-distances`/`-weights`,

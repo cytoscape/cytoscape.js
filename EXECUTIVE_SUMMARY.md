@@ -63,7 +63,7 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,115 unit · 341 module · 24 soak · 355 browser (240 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,145 unit · 341 module · 24 soak · 355 browser (240 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **every one of the 287 v3-comparative pairs reads v4-faster** as of 10 August (geometric mean **11×**, minimum 1.03×), **27×** on rendering (geometric mean over 64 paired rows) |
@@ -546,7 +546,7 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, and then every benchmark ends v4-faster
+## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster — and the bypass comes back
 
 *18 commits — rounds 58–60 and the seventh design sitting.*
 
@@ -734,6 +734,44 @@ which is how any future regression of substance gets caught — the
 same way round 60's was.
 
 ---
+
+### Round 63: the per-element bypass returns, as a sheet section
+
+The one v3 mechanism whose removal users feel most — `ele.style( name,
+value )`, throwing since the selector removal era — came back on 10
+August, after the maintainer reopened it and an eighth design sitting
+settled the shape with one requirement above the rest: fast.
+
+The idea on file was to fake it by rewriting the stylesheet with
+id-keyed conditional clauses.  Measurement rejected that in an
+afternoon: a conditional clause cannot wrap a data-driven scale at
+all, a single id clause knocks the whole group off the fast selection
+path that round 61 built (a 256-element select went from 54 to 392
+microseconds with one bypass), and the clause chain scales with
+bypass-count times element-count.  What shipped instead is a
+first-class **`bypasses` section of the stylesheet** — id-keyed
+constants, merged over the resolved style at the one funnel every
+restyle already passes through — with the v3 method spellings restored
+as sugar over it, and `removeCss`/`removeStyle` back too.
+
+Three properties distinguish it from v3's bypass, each deliberate.  It
+is a *declaration*, keyed by id: it survives removing and re-adding
+its element, and may name an element that does not exist yet.  It
+**exports** — `cy.json()` carries the section, where v3 silently loses
+bypasses on export.  And a full stylesheet swap replaces it like any
+other section (v3's bypasses ride out sheet swaps; spreading the
+exported sheet keeps them).  Precedence is v3's exactly: a bypass
+beats everything, the built-in selection blue included.
+
+The performance requirement was met and measured: graphs with no
+bypasses are unchanged (one integer check on the write path — the
+bulk-select benchmark reads the same before and after), all costs
+scale with the number of bypassed elements only, and setting a bypass
+is **twice as fast as v3's own** through the built bundles.  The same
+round made a spelling promise a contract: every style property key is
+accepted in dash-case and camelCase alike (`foo-bar` / `fooBar`),
+everywhere a property name is taken — already true in practice, now
+pinned by a sweep spec with a control.
 
 ## What remains before 4.0
 

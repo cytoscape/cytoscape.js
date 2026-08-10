@@ -1,6 +1,38 @@
 {
   "runs": [
     {
+      "file": "results-alggpu-2026-08-10T22-13-32-549Z.json",
+      "date": "2026-08-10T22:13:32.549Z",
+      "commit": "44e55dc9",
+      "commitSubject": "perf(65.10): the CPU takes two families back — flat hierarchical merges, sparse PageRank, and honest re-routing (+ the wide benchmark page)",
+      "branch": "v4",
+      "profile": "algorithms-gpu",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 293652,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 30,
+      "note": "round 65.10: executor sweep with the pageRankDense family; pageRank and hierarchical now route 'auto' to the CPU (sparse iteration / flat merges), the GPU keeping the seven families it wins"
+    },
+    {
+      "file": "results-2026-08-10T21-55-07-730Z.json",
+      "date": "2026-08-10T21:55:07.730Z",
+      "commit": "44e55dc9",
+      "commitSubject": "perf(65.10): the CPU takes two families back — flat hierarchical merges, sparse PageRank, and honest re-routing (+ the wide benchmark page)",
+      "branch": "v4",
+      "profile": "all",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 1104209,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 25,
+      "note": "round 65.10: all profile after sparse pageRank and the flat hierarchical merge engine — both CPU-executor changes, so the v3-comparative rows move"
+    },
+    {
       "file": "results-alggpu-2026-08-10T19-05-10-711Z.json",
       "date": "2026-08-10T19:05:10.711Z",
       "commit": "1f324088",

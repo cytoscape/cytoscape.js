@@ -25,7 +25,7 @@ is rewritten from that record — see *Maintaining this file* at the end.
   every benchmark for v4 should beat v3 — still holds under the
   fresh post-65 runs: 366 v3-comparative pairs across the newest
   all-profile and renderer runs, zero v3-faster (combined geometric
-  mean 13.5×, narrowest margin 1.03×).  Re-measuring for this round
+  mean 13.7×, narrowest margin 1.03×).  Re-measuring for this round
   also resurrected a suite: `style-bundle.mjs` had been a
   module-level syntax error since round 42, its failure published
   unread in every all-profile run since.
@@ -58,7 +58,7 @@ for several weeks; `npm test` passes from a clean checkout.
 | Automated tests | 2,165 unit · 344 module · 24 soak · 375 browser (248 run; 127 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 363 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) |
-| Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.5×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
+| Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 684 KiB minified, 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire; the WebGPU shader source (which v3 has no equivalent of) is minified at build time, and round 65's algorithm kernels ride in it |
 
@@ -687,8 +687,10 @@ round's idle-box run carried 287 v3-comparative pairs with zero
 v3-faster rows — and it still holds after round 65's re-measurement:
 366 pairs across the newest all-profile and renderer runs (the count
 grew with round 63's bypass rows and the round-65.9b resurrection of
-style-bundle), zero v3-faster, combined geometric mean 13.5×, the
-narrowest margin 1.03×.
+style-bundle), zero v3-faster, combined geometric mean 13.7×, the
+narrowest margin 1.03× — and after round 65.10's sparse pageRank and
+flat hierarchical merges, the two last near-parity CPU rows read 69×
+and 8×.
 
 Getting there took ten verification runs and split cleanly into two
 kinds of work.  The first was ordinary: 28 rows were genuinely losing,

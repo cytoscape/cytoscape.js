@@ -3,6 +3,7 @@ import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
 
 export interface BetweennessCentralityOptions {
   weight?: WeightFn | null;
@@ -44,7 +45,9 @@ export const betweennessCentralityAsync = (
     n,
     GPU_MIN_N,
     () => betweennessCentrality(coll, options),
-    null,
+    options.weight == null
+      ? (ctx) => betweennessCentralityGpu(ctx, coll, options)
+      : null,
     options.weight != null
       ? 'weighted betweennessCentrality has no GPU path — ' +
           "use executor 'cpu' or 'auto'"
@@ -53,19 +56,19 @@ export const betweennessCentralityAsync = (
 };
 
 /**
- * Brandes' betweenness centrality over the calling collection.  Neighbor
- * sets dedupe parallel edges; when weighted, the first subgraph edge between
- * the pair (v→w, else w→v) supplies the weight, as in v3.
+ * Build the deduped dense-index neighbor lists (plus one
+ * representative edge slot per pair, for weights) both executors
+ * traverse.  Directed: out-neighbors only; undirected: both sides.
+ *
+ * @param view — the subgraph view
+ * @param directed — the traversal mode
+ * @returns per-node neighbor and representative-edge lists
  */
-export const betweennessCentrality = (
-  coll: Collection,
-  options: BetweennessCentralityOptions = {},
-): BetweennessCentralityResult => {
-  const view = subgraph(coll);
+export const buildBrandesNeighbors = (
+  view: ReturnType<typeof subgraph>,
+  directed: boolean,
+): { neighbors: number[][]; neighborEdge: number[][] } => {
   const { store, endpoints, index, nodeSlots, edgeIn } = view;
-  const directed = options.directed === true;
-  const weighted = options.weight != null;
-  const weightOf = weightAt(view, options.weight ?? undefined);
   const n = nodeSlots.length;
 
   // deduped neighbor lists (dense indices) + one representative edge slot per pair
@@ -123,6 +126,72 @@ export const betweennessCentrality = (
     neighbors[v] = list;
     neighborEdge[v] = eList;
   }
+
+  return { neighbors, neighborEdge };
+};
+
+/**
+ * Wrap accumulated betweenness scores as the public accessors — shared
+ * by both executors.
+ *
+ * @param view — the subgraph view
+ * @param C — per-dense-index betweenness
+ * @param max — the maximum score, for normalization
+ * @returns the result object
+ */
+export const bcResultFrom = (
+  view: ReturnType<typeof subgraph>,
+  C: ArrayLike<number>,
+  max: number,
+): BetweennessCentralityResult => {
+  const denseOf = (node: Collection): number | undefined => {
+    const slot = firstNodeSlot(view, node, 'node');
+
+    return slot == null ? undefined : view.index.get(slot);
+  };
+
+  const ret: BetweennessCentralityResult = {
+    betweenness(node: Collection): number | undefined {
+      const i = denseOf(node);
+
+      return i == null ? undefined : C[i];
+    },
+
+    betweennessNormalized(node: Collection): number {
+      if (max === 0) {
+        return 0;
+      }
+
+      const i = denseOf(node);
+
+      return i == null ? 0 : C[i] / max;
+    },
+
+    betweennessNormalised(node: Collection): number {
+      return ret.betweennessNormalized(node);
+    },
+  };
+
+  return ret;
+};
+
+/**
+ * Brandes' betweenness centrality over the calling collection.  Neighbor
+ * sets dedupe parallel edges; when weighted, the first subgraph edge between
+ * the pair (v→w, else w→v) supplies the weight, as in v3.
+ */
+export const betweennessCentrality = (
+  coll: Collection,
+  options: BetweennessCentralityOptions = {},
+): BetweennessCentralityResult => {
+  const view = subgraph(coll);
+  const { nodeSlots } = view;
+  const directed = options.directed === true;
+  const weighted = options.weight != null;
+  const weightOf = weightAt(view, options.weight ?? undefined);
+  const n = nodeSlots.length;
+
+  const { neighbors, neighborEdge } = buildBrandesNeighbors(view, directed);
 
   const C = new Float64Array(n);
   let max = 0;
@@ -204,33 +273,5 @@ export const betweennessCentrality = (
     }
   }
 
-  const denseOf = (node: Collection): number | undefined => {
-    const slot = firstNodeSlot(view, node, 'node');
-
-    return slot == null ? undefined : index.get(slot);
-  };
-
-  const ret: BetweennessCentralityResult = {
-    betweenness(node: Collection): number | undefined {
-      const i = denseOf(node);
-
-      return i == null ? undefined : C[i];
-    },
-
-    betweennessNormalized(node: Collection): number {
-      if (max === 0) {
-        return 0;
-      }
-
-      const i = denseOf(node);
-
-      return i == null ? 0 : C[i] / max;
-    },
-
-    betweennessNormalised(node: Collection): number {
-      return ret.betweennessNormalized(node);
-    },
-  };
-
-  return ret;
+  return bcResultFrom(view, C, max);
 };

@@ -6,6 +6,7 @@ import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { hierarchicalClusteringGpu } from './algo-gpu-cluster.mjs';
 
 export type HierarchicalAttributeFn = (node: Collection) => number;
 
@@ -31,7 +32,7 @@ interface ClusterNode {
   right?: ClusterNode;
 }
 
-interface ResolvedOptions {
+export interface ResolvedHcaOptions {
   distance: DistanceMetric;
   linkage: string;
   mode: 'threshold' | 'dendrogram';
@@ -46,9 +47,11 @@ const linkageAliases: Record<string, string> = {
   complete: 'max',
 };
 
-const setOptions = (
+/** Resolve the options to their defaults (linkage aliases folded) —
+ * shared by the CPU reference and the GPU executor. */
+export const resolveHcaOptions = (
   options: HierarchicalClusteringOptions = {},
-): ResolvedOptions => {
+): ResolvedHcaOptions => {
   const linkage = options.linkage ?? 'min';
 
   return {
@@ -73,10 +76,12 @@ const spawnHandles = (coll: Collection, eles: Collection[]): Collection =>
  * on the N² matrix build turned N²·A data reads into N·A).  Handles
  * are interned singletons, so the vector cache keys on them directly.
  * A custom metric with no attributes keeps its (nodeP, nodeQ) calling
- * convention exactly as `clusteringDistance` defines it.
+ * convention exactly as `clusteringDistance` defines it.  Exported
+ * since round 65: the GPU executor's merge phase still needs it for
+ * custom linkage.
  */
-const makeGetDist = (
-  opts: ResolvedOptions,
+export const makeGetDist = (
+  opts: ResolvedHcaOptions,
 ): ((n1: Collection, n2: Collection) => number) => {
   const attrs = opts.attributes;
   const impl = resolveDistance(opts.distance);
@@ -114,7 +119,7 @@ const mergeClosest = (
   index: ClusterNode[],
   dists: number[][],
   mins: number[],
-  opts: ResolvedOptions,
+  opts: ResolvedHcaOptions,
   getDist: (n1: Collection, n2: Collection) => number,
 ): boolean => {
   let minKey = 0;
@@ -322,13 +327,24 @@ export const hierarchicalClusteringAsync = (
 ): Promise<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
+  const reason =
+    typeof options?.distance === 'function'
+      ? 'a custom distance function runs on the CPU — ' +
+        "use executor 'cpu' or 'auto'"
+      : (options?.attributes ?? []).length === 0
+        ? 'the GPU path needs `attributes` to materialize features — ' +
+          "use executor 'cpu' or 'auto'"
+        : null;
 
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
     () => hierarchicalClustering(coll, options),
-    null,
+    reason == null
+      ? (ctx) => hierarchicalClusteringGpu(ctx, coll, options)
+      : null,
+    reason ?? undefined,
   );
 };
 
@@ -363,9 +379,36 @@ export const hierarchicalClustering = (
     return [];
   }
 
-  const opts = setOptions(options);
+  const opts = resolveHcaOptions(options);
   const getDist = makeGetDist(opts);
 
+  return hierarchicalRun(coll, nodes, opts, getDist, (i, j) =>
+    getDist(nodes[i], nodes[j]),
+  );
+};
+
+/**
+ * The merge machinery both executors share: seed one cluster per node,
+ * fill the pair matrix from `pairDist` (the executors differ only
+ * here — the CPU evaluates the metric per pair, the GPU hands a
+ * read-back matrix lookup), merge until the mode says stop, and build
+ * the requested output.  `getDist` is still consulted by the merge
+ * phase for custom linkage functions, on the CPU under every executor.
+ *
+ * @param coll — the calling collection
+ * @param nodes — the nodes, in matrix order
+ * @param opts — the resolved options
+ * @param getDist — the per-pair distance fn (custom-linkage merges)
+ * @param pairDist — the initial matrix entry for dense pair (i, j)
+ * @returns the clusters
+ */
+export const hierarchicalRun = (
+  coll: Collection,
+  nodes: Collection,
+  opts: ResolvedHcaOptions,
+  getDist: (n1: Collection, n2: Collection) => number,
+  pairDist: (i: number, j: number) => number,
+): Collection[] => {
   const clusters: ClusterNode[] = [];
   const dists: number[][] = [];
   const mins: number[] = [];
@@ -386,18 +429,7 @@ export const hierarchicalClustering = (
 
   for (let i = 0; i < clusters.length; i++) {
     for (let j = 0; j <= i; j++) {
-      const dist =
-        i === j
-          ? Infinity
-          : opts.mode === 'dendrogram'
-            ? getDist(
-                clusters[i].value as Collection,
-                clusters[j].value as Collection,
-              )
-            : getDist(
-                (clusters[i].value as Collection[])[0],
-                (clusters[j].value as Collection[])[0],
-              );
+      const dist = i === j ? Infinity : pairDist(i, j);
 
       dists[i][j] = dist;
       dists[j][i] = dist;

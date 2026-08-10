@@ -7,6 +7,26 @@ import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { fuzzyCMeansGpu, kMeansGpu, kMedoidsGpu } from './algo-gpu-cluster.mjs';
+
+/** Why a feature-space run has no GPU path, when it doesn't. */
+const featureGpuReason = (options?: KClusteringOptions): string | null => {
+  if (typeof options?.distance === 'function') {
+    return (
+      'a custom distance function runs on the CPU — ' +
+      "use executor 'cpu' or 'auto'"
+    );
+  }
+
+  if ((options?.attributes ?? []).length === 0) {
+    return (
+      'the GPU path needs `attributes` to materialize features — ' +
+      "use executor 'cpu' or 'auto'"
+    );
+  }
+
+  return null;
+};
 
 /** A node attribute accessor used as a clustering feature. */
 export type KAttributeFn = (node: Collection) => number;
@@ -33,7 +53,7 @@ export interface FuzzyCMeansResult {
 
 type KMode = 'kMeans' | 'kMedoids' | 'cmeans';
 
-interface ResolvedKOptions {
+export interface ResolvedKOptions {
   k: number;
   m: number;
   sensitivityThreshold: number;
@@ -44,7 +64,11 @@ interface ResolvedKOptions {
   testCentroids: number | FeatureCentroid[] | Collection[] | null;
 }
 
-const setOptions = (options: KClusteringOptions = {}): ResolvedKOptions => ({
+/** Resolve the k-clustering options to their defaults — shared by the
+ * CPU reference and the GPU executors. */
+export const resolveKOptions = (
+  options: KClusteringOptions = {},
+): ResolvedKOptions => ({
   k: options.k ?? 2,
   m: options.m ?? 2,
   sensitivityThreshold: options.sensitivityThreshold ?? 0.0001,
@@ -121,7 +145,9 @@ const getDist = (
   return lastImpl(attributes.length, readP, readQ, centroid, node);
 };
 
-const randomCentroids = (
+/** Uniform-random centroids within the data's per-dimension range —
+ * the shared seeding for both executors' non-test mode. */
+export const randomCentroids = (
   nodes: Collection,
   k: number,
   attributes: KAttributeFn[],
@@ -223,7 +249,9 @@ const seenBefore = (
   return false;
 };
 
-const randomMedoids = (nodes: Collection, k: number): Collection[] => {
+/** Random distinct-ish medoid seeding — the shared seeding for both
+ * executors' non-test mode. */
+export const randomMedoids = (nodes: Collection, k: number): Collection[] => {
   const medoids: Collection[] = new Array(k);
 
   if (nodes.length < 50) {
@@ -245,6 +273,92 @@ const randomMedoids = (nodes: Collection, k: number): Collection[] => {
 
   return medoids;
 };
+
+/**
+ * Materialize the attribute callbacks into a row-major n×d feature
+ * matrix — the single CPU pass that lets the GPU executors run without
+ * ever calling back into user code.
+ *
+ * @param nodes — the nodes, in matrix-row order
+ * @param attributes — the feature accessors
+ * @returns the f32 features
+ */
+export const featuresOf = (
+  nodes: Collection,
+  attributes: KAttributeFn[],
+): Float32Array => {
+  const n = nodes.length;
+  const d = attributes.length;
+  const features = new Float32Array(n * d);
+
+  for (let i = 0; i < n; i++) {
+    const node = nodes[i];
+
+    for (let j = 0; j < d; j++) {
+      features[i * d + j] = attributes[j](node);
+    }
+  }
+
+  return features;
+};
+
+/**
+ * Spawn the k cluster collections from a dense assignment vector.
+ * Matches the CPU shape: a centroid that attracted no node leaves its
+ * entry `undefined`, as in v3.
+ *
+ * @param coll — the calling collection
+ * @param nodes — the nodes, in assignment order
+ * @param k — the cluster count
+ * @param assignment — per-node cluster index
+ * @returns the sparse cluster array
+ */
+export const kClustersFromAssignment = (
+  coll: Collection,
+  nodes: Collection,
+  k: number,
+  assignment: ArrayLike<number>,
+): Collection[] => {
+  const members: Collection[][] = [];
+
+  for (let c = 0; c < k; c++) {
+    members.push([]);
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    members[assignment[i]]?.push(nodes[i]);
+  }
+
+  const clusters: Collection[] = new Array(k);
+
+  for (let c = 0; c < k; c++) {
+    if (members[c].length > 0) {
+      clusters[c] = spawnHandles(coll, members[c]);
+    }
+  }
+
+  return clusters;
+};
+
+/**
+ * Wrap a membership matrix as the public fuzzy c-means result — the
+ * crisp clusters are the per-node arg-max, as on the CPU.
+ *
+ * @param coll — the calling collection
+ * @param nodes — the nodes, in matrix-row order
+ * @param U — the n×k membership rows
+ * @param opts — the resolved options (for k)
+ * @returns `{ clusters, degreeOfMembership }`
+ */
+export const fcmResultFrom = (
+  coll: Collection,
+  nodes: Collection,
+  U: number[][],
+  opts: ResolvedKOptions,
+): FuzzyCMeansResult => ({
+  clusters: assign(coll, nodes, U, opts),
+  degreeOfMembership: U,
+});
 
 const findCost = (
   potentialNewMedoid: Collection,
@@ -282,8 +396,16 @@ export const kMeansAsync = (
 ): Promise<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
+  const reason = featureGpuReason(options);
 
-  return runAlgo(executor, n, GPU_MIN_N, () => kMeans(coll, options), null);
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => kMeans(coll, options),
+    reason == null ? (ctx) => kMeansGpu(ctx, coll, options) : null,
+    reason ?? undefined,
+  );
 };
 
 /**
@@ -302,8 +424,16 @@ export const kMedoidsAsync = (
 ): Promise<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
+  const reason = featureGpuReason(options);
 
-  return runAlgo(executor, n, GPU_MIN_N, () => kMedoids(coll, options), null);
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => kMedoids(coll, options),
+    reason == null ? (ctx) => kMedoidsGpu(ctx, coll, options) : null,
+    reason ?? undefined,
+  );
 };
 
 /**
@@ -322,13 +452,15 @@ export const fuzzyCMeansAsync = (
 ): Promise<FuzzyCMeansResult> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
+  const reason = featureGpuReason(options);
 
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
     () => fuzzyCMeans(coll, options),
-    null,
+    reason == null ? (ctx) => fuzzyCMeansGpu(ctx, coll, options) : null,
+    reason ?? undefined,
   );
 };
 
@@ -353,7 +485,7 @@ export const kMeans = (
 ): Collection[] => {
   distRunToken++;
   const nodes = coll.nodes();
-  const opts = setOptions(options);
+  const opts = resolveKOptions(options);
 
   const clusters: Collection[] = new Array(opts.k);
   const assignment: Record<string, number> = {};
@@ -444,7 +576,7 @@ export const kMedoids = (
 ): Collection[] => {
   distRunToken++;
   const nodes = coll.nodes();
-  const opts = setOptions(options);
+  const opts = resolveKOptions(options);
 
   // k distinct medoids are required, so k cannot exceed the node count
   if (opts.k > nodes.length) {
@@ -633,7 +765,7 @@ export const fuzzyCMeans = (
 ): FuzzyCMeansResult => {
   distRunToken++;
   const nodes = coll.nodes();
-  const opts = setOptions(options);
+  const opts = resolveKOptions(options);
 
   const _U: number[][] = new Array(nodes.length);
   const U: number[][] = new Array(nodes.length);

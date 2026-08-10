@@ -93,17 +93,30 @@ function toSections(jobs) {
   return [...byKey.values()];
 }
 
-// a group is a comparison pair when it holds exactly the v3/gpu benches
+// a group is a comparison pair when it holds the gpu bench beside a
+// baseline bench: 'v3' (the cross-library suites) or — since the round-65.8
+// executor sweep, where both sides are v4 — 'cpu'.  Exact names only: a
+// bench called 'cpu eval' is a plain row, not a baseline.
 function pairOf(group) {
-  const v3 = group.benches.find((b) => b.name === 'v3');
   const gpu = group.benches.find((b) => b.name === 'gpu');
+  const base =
+    group.benches.find((b) => b.name === 'v3') ??
+    group.benches.find((b) => b.name === 'cpu');
 
-  if (v3 == null || gpu == null || !(gpu.stats.p50 > 0)) {
+  if (base == null || gpu == null || !(gpu.stats.p50 > 0)) {
     return null;
   }
 
-  return { v3, gpu, speedup: v3.stats.p50 / gpu.stats.p50 };
+  return {
+    base,
+    gpu,
+    speedup: base.stats.p50 / gpu.stats.p50,
+    baseline: base.name,
+  };
 }
+
+// how a baseline bench is titled in tips and legends
+const baselineLabel = (baseline) => (baseline === 'cpu' ? 'v4 (cpu)' : 'v3');
 
 // -- axis ----------------------------------------------------------------------
 
@@ -142,7 +155,7 @@ const tipFor = (side, stats) =>
 
 function pairRow(group, pair, axis) {
   const a = axis.pos(pair.gpu.stats.p50);
-  const b = axis.pos(pair.v3.stats.p50);
+  const b = axis.pos(pair.base.stats.p50);
   const lo = Math.min(a, b);
   const w = Math.abs(a - b);
   const losing = pair.speedup < 1;
@@ -151,7 +164,7 @@ function pairRow(group, pair, axis) {
     <span class="lbl" title="${esc(group.name)}">${esc(group.name)}</span>
     <div class="track">${gridlines(axis.ticks)}
       <i class="link" style="left:${lo.toFixed(2)}%;width:${w.toFixed(2)}%"></i>
-      ${dot('v3', b, tipFor('v3', pair.v3.stats))}
+      ${dot('v3', b, tipFor(baselineLabel(pair.baseline), pair.base.stats))}
       ${dot('gpu', a, tipFor('v4 (gpu)', pair.gpu.stats))}
     </div>
     <span class="val${losing ? ' losing' : ''}">${fmtSpeedup(pair.speedup)}</span>
@@ -210,8 +223,13 @@ function sectionHtml(section) {
     })
     .join('');
 
+  const baselines = new Set(
+    section.groups.map((g) => pairOf(g)?.baseline).filter((b) => b != null),
+  );
   const legend = hasPair
-    ? `<span class="legend"><i class="key gpu"></i>v4 (gpu) <i class="key v3"></i>v3</span>`
+    ? `<span class="legend"><i class="key gpu"></i>v4 (gpu) <i class="key v3"></i>${esc(
+        [...baselines].map(baselineLabel).join(' / '),
+      )}</span>`
     : '';
 
   return `<section>
@@ -250,6 +268,16 @@ function tiles(pairs, meta) {
   );
   const best = pairs.reduce((a, b) => (b.speedup > a.speedup ? b : a));
   const losing = pairs.filter((p) => p.speedup < 1).length;
+  const kinds = [
+    ['v3', pairs.filter((p) => p.baseline === 'v3').length],
+    ['cpu', pairs.filter((p) => p.baseline === 'cpu').length],
+  ].filter(([, count]) => count > 0);
+  const pairsSub = kinds
+    .map(([kind, count]) => `${count} ${kind}-vs-gpu`)
+    .join(' + ')
+    .concat(' comparisons');
+  const aheadLabel =
+    kinds.length === 1 ? `${kinds[0][0]} still ahead` : 'baseline still ahead';
 
   const tile = (label, value, sub) => `<div class="tile">
     <span class="tile-label">${esc(label)}</span>
@@ -258,10 +286,10 @@ function tiles(pairs, meta) {
   </div>`;
 
   return `<div class="tiles">
-    ${tile('Median speedup (geo-mean)', fmtSpeedup(geo), `${pairs.length} v3-vs-gpu comparisons`)}
+    ${tile('Median speedup (geo-mean)', fmtSpeedup(geo), pairsSub)}
     ${tile('Biggest win', fmtSpeedup(best.speedup), `${best.name} @ N=${fmtN(best.n)}`)}
-    ${tile('v3 still ahead', String(losing), losing === 1 ? 'comparison' : 'comparisons')}
-    ${tile('Total run time', fmtMin(meta.totalMs ?? 0), meta.profile === 'full' ? 'full profile' : 'quick profile')}
+    ${tile(aheadLabel, String(losing), losing === 1 ? 'comparison' : 'comparisons')}
+    ${tile('Total run time', fmtMin(meta.totalMs ?? 0), `${meta.profile ?? 'quick'} profile`)}
   </div>`;
 }
 
@@ -284,7 +312,7 @@ function overview(pairs) {
         ${dot(
           'gpu',
           axis.pos(p.speedup),
-          `${fmtSpeedup(p.speedup)} — v3 p50 ${fmtTime(p.v3.stats.p50)} vs gpu p50 ${fmtTime(p.gpu.stats.p50)}`,
+          `${fmtSpeedup(p.speedup)} — ${p.baseline} p50 ${fmtTime(p.base.stats.p50)} vs gpu p50 ${fmtTime(p.gpu.stats.p50)}`,
         )}
       </div>
       <span class="val${losing ? ' losing' : ''}">${fmtSpeedup(p.speedup)}</span>
@@ -292,8 +320,11 @@ function overview(pairs) {
     })
     .join('');
 
+  const kinds = [...new Set(pairs.map((p) => p.baseline))];
+  const what = kinds.length === 1 ? kinds[0] : 'baseline';
+
   return `<section>
-    <h2>Speedup overview <small>v3 p50 ÷ gpu p50, log scale · right of the 1× line = gpu faster</small></h2>
+    <h2>Speedup overview <small>${esc(what)} p50 ÷ gpu p50, log scale · right of the 1× line = gpu faster</small></h2>
     <div class="chart">${rows}${axisBand(axis.ticks, (v) => `${v >= 1 ? Math.round(v) : v}×`)}</div>
   </section>`;
 }

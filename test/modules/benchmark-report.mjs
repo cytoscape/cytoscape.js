@@ -454,3 +454,87 @@ describe('gpu benchmark report', function () {
     });
   });
 });
+
+// Round 65.8: the executor sweep's cpu-baseline pairs.  `pairOf` treats a
+// group holding exact-named `cpu` and `gpu` benches as a comparison pair —
+// both sides v4 — beside the classic v3/gpu form; a bench merely *containing*
+// "cpu" (the mappers suite's 'cpu eval') must stay a plain row.
+describe('cpu-baseline pairs (the algorithms-gpu profile, 65.8)', function () {
+  const cpuFixture = () => ({
+    meta: {
+      date: '2026-08-10T18:00:00.000Z',
+      commit: 'abc1234',
+      branch: 'v4',
+      profile: 'algorithms-gpu',
+      totalMs: 60000,
+      failures: [],
+    },
+    jobs: [
+      {
+        suite: 'algorithms-gpu',
+        n: 1024,
+        op: null,
+        durationMs: 9000,
+        context: { arch: null, runtime: 'chromium', cpu: null },
+        groups: [
+          {
+            name: 'markovClustering',
+            benches: [
+              { name: 'cpu', stats: stats(31e9) },
+              { name: 'gpu', stats: stats(47e6) },
+              { name: 'gpu first call', stats: stats(65e6) },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  it('renders a cpu/gpu group as a pair with its speedup', function () {
+    const html = renderReport(cpuFixture());
+
+    expect(html).to.include('660×'); // 31e9 / 47e6
+    expect(html).to.include('v4 (cpu)'); // the legend names the baseline
+    expect(html).to.include('1 cpu-vs-gpu comparisons');
+    expect(html).to.include('cpu still ahead');
+    expect(html).to.include('cpu p50 ÷ gpu p50');
+    expect(html).to.include('algorithms-gpu profile');
+  });
+
+  it('control: an inexact bench name is not a baseline', function () {
+    const results = cpuFixture();
+
+    results.jobs[0].groups[0].benches[0].name = 'cpu eval';
+
+    const html = renderReport(results);
+
+    expect(html).to.not.include('660×');
+    expect(html).to.not.include('cpu-vs-gpu');
+  });
+
+  it('a mixed run counts both pair kinds and hedges the ahead tile', function () {
+    const results = cpuFixture();
+
+    results.jobs.push({
+      suite: 'traversal',
+      n: 2000,
+      op: null,
+      durationMs: 4000,
+      context: { arch: null, runtime: 'node', cpu: null },
+      groups: [
+        {
+          name: 'bfs',
+          benches: [
+            { name: 'v3', stats: stats(34e6) },
+            { name: 'gpu', stats: stats(1e6) },
+          ],
+        },
+      ],
+    });
+
+    const html = renderReport(results);
+
+    expect(html).to.include('1 v3-vs-gpu + 1 cpu-vs-gpu comparisons');
+    expect(html).to.include('baseline still ahead');
+  });
+});

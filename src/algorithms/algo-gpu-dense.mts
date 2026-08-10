@@ -181,6 +181,18 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
+/** Advance a one-word storage counter (one invocation) — the step/
+ * iteration index kernels read, letting a whole run encode into one
+ * pass with no per-step uniform writes. */
+export const BUMP_WORD = wgsl`
+@group(0) @binding(0) var<storage, read_write> word : array<u32>;
+
+@compute @workgroup_size(1)
+fn main() {
+  word[0] = word[0] + 1u;
+}
+`;
+
 /** Clear the iteration's any-difference bit (one invocation). */
 export const RESET_DIFF = wgsl`
 @group(0) @binding(0) var<storage, read_write> flags : array<atomic<u32>>;

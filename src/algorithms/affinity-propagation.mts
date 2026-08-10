@@ -6,6 +6,7 @@ import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { affinityPropagationGpu } from './algo-gpu-ap.mjs';
 
 export type AffinityAttributeFn = (node: Collection) => number;
 export type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
@@ -141,33 +142,34 @@ export const affinityPropagationAsync = (
     n,
     GPU_MIN_N,
     () => affinityPropagation(coll, options),
-    null,
+    (ctx) => affinityPropagationGpu(ctx, coll, options),
   );
 };
 
 /**
- * Affinity propagation over the calling collection's nodes.  Like the
- * other attribute-space clusterers it ignores the adjacency: similarity is
- * the negated `distance` between attribute vectors.  The number of
- * clusters is not given — it falls out of `preference`, the self-similarity
- * placed on the diagonal (lower preference yields fewer exemplars).
- * Allocates three dense N-by-N matrices plus an N-by-`minIterations`
- * convergence history, so cost is quadratic in node count in both time and
- * memory.  Stops early once the exemplar set is unchanged across
- * `minIterations` passes.
+ * Validate the options and build the similarity matrix S both
+ * executors iterate from: pairwise negated distances with the resolved
+ * preference on the diagonal.  Attribute callbacks (and any custom
+ * distance function) are evaluated here, on the CPU — the GPU path
+ * never needs them.
  *
- * @param coll — the calling collection; only its nodes are clustered
- * @param options — `damping` and `preference` are effectively required
- *   (v3 validates them); plus `distance`, `attributes`, `maxIterations`,
- *   `minIterations`
- * @returns one collection per exemplar, in exemplar-index order
- * @throws if `damping` is outside [0.5, 1), or `preference` is neither a
- *   number nor one of 'median' / 'mean' / 'min' / 'max'
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the nodes, node count, matrix, and resolved iteration knobs
+ * @throws if `damping` is outside [0.5, 1), or `preference` is neither
+ *   a number nor one of 'median' / 'mean' / 'min' / 'max'
  */
-export const affinityPropagation = (
+export const buildAffinitySimilarity = (
   coll: Collection,
-  options: AffinityPropagationOptions = {},
-): Collection[] => {
+  options: AffinityPropagationOptions,
+): {
+  nodes: Collection;
+  n: number;
+  S: number[];
+  damping: number;
+  maxIterations: number;
+  minIterations: number;
+} => {
   const damping = options.damping;
   const preference = options.preference;
 
@@ -189,8 +191,6 @@ export const affinityPropagation = (
   }
 
   const distance = options.distance ?? 'euclidean';
-  const maxIterations = options.maxIterations ?? 1000;
-  const minIterations = options.minIterations ?? 100;
   const attributes = options.attributes ?? [];
 
   const nodes = coll.nodes();
@@ -225,6 +225,82 @@ export const affinityPropagation = (
   for (let i = 0; i < n; i++) {
     S[i * n + i] = p;
   }
+
+  return {
+    nodes,
+    n,
+    S,
+    damping,
+    maxIterations: options.maxIterations ?? 1000,
+    minIterations: options.minIterations ?? 100,
+  };
+};
+
+/**
+ * Assign every node to its exemplar's cluster and spawn the result
+ * collections — the shared tail of both executors.
+ *
+ * @param coll — the calling collection
+ * @param nodes — the clustered nodes, in matrix order
+ * @param n — the node count
+ * @param S — the similarity matrix from `buildAffinitySimilarity`
+ * @param exemplarsIndices — the exemplar rows (R+A diagonal > 0)
+ * @returns one collection per exemplar, in exemplar-index order
+ */
+export const apClustersFrom = (
+  coll: Collection,
+  nodes: Collection,
+  n: number,
+  S: number[],
+  exemplarsIndices: number[],
+): Collection[] => {
+  const clusterIndices = assign(n, S, exemplarsIndices);
+
+  const clusters: Record<number, Collection[]> = {};
+
+  for (let c = 0; c < exemplarsIndices.length; c++) {
+    clusters[exemplarsIndices[c]] = [];
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    const clusterIndex = clusterIndices[i];
+
+    if (clusterIndex != null) {
+      clusters[clusterIndex].push(nodes[i]);
+    }
+  }
+
+  return exemplarsIndices.map((ei) =>
+    coll._spawn(clusters[ei].map((ele) => ele._refs[0])),
+  );
+};
+
+/**
+ * Affinity propagation over the calling collection's nodes.  Like the
+ * other attribute-space clusterers it ignores the adjacency: similarity is
+ * the negated `distance` between attribute vectors.  The number of
+ * clusters is not given — it falls out of `preference`, the self-similarity
+ * placed on the diagonal (lower preference yields fewer exemplars).
+ * Allocates three dense N-by-N matrices plus an N-by-`minIterations`
+ * convergence history, so cost is quadratic in node count in both time and
+ * memory.  Stops early once the exemplar set is unchanged across
+ * `minIterations` passes.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — `damping` and `preference` are effectively required
+ *   (v3 validates them); plus `distance`, `attributes`, `maxIterations`,
+ *   `minIterations`
+ * @returns one collection per exemplar, in exemplar-index order
+ * @throws if `damping` is outside [0.5, 1), or `preference` is neither a
+ *   number nor one of 'median' / 'mean' / 'min' / 'max'
+ */
+export const affinityPropagation = (
+  coll: Collection,
+  options: AffinityPropagationOptions = {},
+): Collection[] => {
+  const { nodes, n, S, damping, maxIterations, minIterations } =
+    buildAffinitySimilarity(coll, options);
+  const n2 = n * n;
 
   const R: number[] = new Array(n2).fill(0);
   const A: number[] = new Array(n2).fill(0);
@@ -317,23 +393,6 @@ export const affinityPropagation = (
   }
 
   const exemplarsIndices = findExemplars(n, R, A);
-  const clusterIndices = assign(n, S, exemplarsIndices);
 
-  const clusters: Record<number, Collection[]> = {};
-
-  for (let c = 0; c < exemplarsIndices.length; c++) {
-    clusters[exemplarsIndices[c]] = [];
-  }
-
-  for (let i = 0; i < nodes.length; i++) {
-    const clusterIndex = clusterIndices[i];
-
-    if (clusterIndex != null) {
-      clusters[clusterIndex].push(nodes[i]);
-    }
-  }
-
-  return exemplarsIndices.map((ei) =>
-    coll._spawn(clusters[ei].map((ele) => ele._refs[0])),
-  );
+  return apClustersFrom(coll, nodes, n, S, exemplarsIndices);
 };

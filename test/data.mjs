@@ -406,4 +406,64 @@ describe('gpu/data', function () {
       expect(cy.$id('a').label()).to.equal('a');
     });
   });
+
+  describe('the whole-object data() cache (round 62.4)', function () {
+    // Two calls with no write between them return the *same object* —
+    // a deliberate public-surface change, logged in PLAN.md beside the
+    // round-34.2 elements() memo it mirrors.  v3 goes further and hands
+    // out its live internal object; v4's snapshot is refreshed by the
+    // next write anywhere in the sidecar.
+    const make = () =>
+      cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p', w: 1 } },
+          { data: { id: 'b' } },
+          { data: { id: 'ab', source: 'a', target: 'b', kind: 'x' } },
+        ],
+      });
+
+    it('returns the same object until a data write, then a fresh one', function () {
+      const cy = make();
+      const n = cy.$id('a');
+      const first = n.data();
+
+      expect(n.data()).to.equal(first);
+      expect(first.w).to.equal(1);
+
+      cy.$id('b').data('other', 2); // any sidecar write invalidates
+
+      const second = n.data();
+
+      expect(second).to.not.equal(first);
+      n.data('w', 5);
+      expect(n.data().w).to.equal(5);
+    });
+
+    it('reflects a reparent through the synthesized parent field', function () {
+      const cy = make();
+      const n = cy.$id('a');
+
+      expect(n.data().parent).to.equal('p');
+      n.move({ parent: null });
+      expect(n.data().parent).to.equal(undefined);
+    });
+
+    it('reflects a re-pointed edge through source/target', function () {
+      const cy = make();
+      const e = cy.$id('ab');
+
+      expect(e.data().target).to.equal('b');
+      e.move({ target: 'p' });
+      expect(e.data().target).to.equal('p');
+    });
+
+    it('never leaks an element object to another element', function () {
+      const cy = make();
+
+      expect(cy.$id('a').data().id).to.equal('a');
+      expect(cy.$id('b').data().id).to.equal('b');
+      expect(cy.$id('a').data().id).to.equal('a');
+    });
+  });
 });

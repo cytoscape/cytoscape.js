@@ -215,6 +215,100 @@ export interface AnimationHandle {
   paused(): boolean;
 }
 
+/**
+ * The one implementation behind every `animation()` handle (round 62):
+ * prototype methods instead of nine per-handle closures.  Building a
+ * handle cost ~2.9 µs through tsx — the round-34 `__name` tax landing
+ * on closure *creation* — against v3's ~0.5 µs, for methods that never
+ * differ between handles.  The trade, stated because the closures did
+ * not have it: methods read `this`, so a destructured method must be
+ * re-bound by the caller, exactly as v3's own animation object behaves.
+ */
+export class AnimationHandleImpl implements AnimationHandle {
+  private mgr: AnimationManager;
+  private ani: Animation;
+
+  /**
+   * @param mgr — the core's animation manager
+   * @param ani — the built animation this handle controls
+   */
+  constructor(mgr: AnimationManager, ani: Animation) {
+    this.mgr = mgr;
+    this.ani = ani;
+  }
+
+  /** Enqueue and start.
+   *
+   * @returns resolves when the animation completes (or is stopped) */
+  play(): Promise<void> {
+    this.mgr.start(this.ani);
+
+    return this.ani.promise();
+  }
+
+  /** Stop in place, or at the targets with `jumpToEnd`.
+   *
+   * @param jumpToEnd — apply the final values instead of freezing */
+  stop(jumpToEnd = false): void {
+    this.ani.stop(jumpToEnd);
+  }
+
+  /** The completion promise.
+   *
+   * @returns resolves when the animation completes (or is stopped) */
+  promise(): Promise<void> {
+    return this.ani.promise();
+  }
+
+  /** Whether the animation is running and not paused.
+   *
+   * @returns true while playing */
+  playing(): boolean {
+    return this.ani.running && !this.ani.paused;
+  }
+
+  /** Round 24.3: freeze in place; the paused span leaves the timeline.
+   *
+   * @returns this handle, for chaining */
+  pause(): AnimationHandle {
+    this.mgr.pauseAni(this.ani);
+
+    return this;
+  }
+
+  /** Resume a paused animation with the clock shifted (round 24.3).
+   *
+   * @returns this handle, for chaining */
+  resume(): AnimationHandle {
+    this.mgr.resumeAni(this.ani);
+
+    return this;
+  }
+
+  /** Swap the tween's ends with elapsed remapped (round 24.3).
+   *
+   * @returns this handle, for chaining */
+  reverse(): AnimationHandle {
+    this.mgr.reverseAni(this.ani);
+
+    return this;
+  }
+
+  /** Elapsed fraction of the duration (read-only — no scrubbing).
+   *
+   * @returns the fraction in [0, 1] */
+  progress(): number {
+    return this.ani.progress;
+  }
+
+  /** Whether the animation is paused (round 24.3).
+   *
+   * @returns true while paused */
+  paused(): boolean {
+    return this.ani.paused;
+  }
+}
+
 /** Options accepted by animate()/animation(). */
 export interface AnimateOptions {
   style?: Record<string, string | number>;
@@ -1778,7 +1872,9 @@ export class AnimationManager {
       this.viewportRunning.push(ani);
     } else {
       const cols = ani.touchedColumns();
-      const evicted = new Set<Animation>();
+      // allocated only when a running overlap actually exists — the
+      // common case (nothing running on these refs) allocates nothing
+      let evicted: Set<Animation> | null = null;
 
       for (const ref of ani.refs) {
         const arr = this.running.get(packRef(ref));
@@ -1788,22 +1884,24 @@ export class AnimationManager {
         }
 
         for (const other of arr) {
-          if (evicted.has(other)) {
+          if (evicted != null && evicted.has(other)) {
             continue;
           }
 
           for (const col of other.touchedColumns()) {
             if (cols.has(col)) {
-              evicted.add(other);
+              (evicted ??= new Set()).add(other);
               break;
             }
           }
         }
       }
 
-      for (const other of evicted) {
-        this.stopOne(other, false);
-        this.remove(other);
+      if (evicted != null) {
+        for (const other of evicted) {
+          this.stopOne(other, false);
+          this.remove(other);
+        }
       }
 
       for (const ref of ani.refs) {
@@ -1866,6 +1964,14 @@ export class AnimationManager {
     const arr = this.running.get(packRef(ref));
 
     return arr != null && arr.length > 0;
+  }
+
+  /** Whether any element animation is running at all — the O(1) gate in
+   * front of per-ref queries (round 62.4).
+   *
+   * @returns true when any element animation is live */
+  anyRunning(): boolean {
+    return this.running.size > 0;
   }
 
   /**

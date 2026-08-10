@@ -703,11 +703,32 @@ const curveExtrasFor = (store: GraphStore, slot: number): CurveStyleExtras => {
   return store.curveStyleAt(slot).extras ?? CURVE_EXTRA_DEFAULTS;
 };
 
+/** Formatted colour strings by packed rgba word (round 62.4): building
+ * the string was about half of a colour read's cost, and a graph uses a
+ * bounded palette.  Cleared wholesale at the bound rather than LRU'd —
+ * the map re-warms in one read per colour. */
+const RGBA_STRINGS = new Map<number, string>();
+const RGBA_STRINGS_MAX = 4096;
+
 /** RGBA bytes → the v3-style resolved color string. */
 const formatRgba = (r: number, g: number, b: number, a: number): string => {
-  return a === 255
-    ? `rgb(${r},${g},${b})`
-    : `rgba(${r},${g},${b},${Math.round((a / 255) * 1000) / 1000})`;
+  const key = ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
+  let s = RGBA_STRINGS.get(key);
+
+  if (s === undefined) {
+    s =
+      a === 255
+        ? `rgb(${r},${g},${b})`
+        : `rgba(${r},${g},${b},${Math.round((a / 255) * 1000) / 1000})`;
+
+    if (RGBA_STRINGS.size >= RGBA_STRINGS_MAX) {
+      RGBA_STRINGS.clear();
+    }
+
+    RGBA_STRINGS.set(key, s);
+  }
+
+  return s;
 };
 
 /** The B1 opacity fold: a channel opacity multiplies into the stored
@@ -5758,6 +5779,21 @@ export class StyleEngine {
    * its getters stay live across a sheet swap that replaces `defs`.
    */
   private readonly readCtx: ReadContext;
+  /** per-raw-name read plans (round 62.4): normalization, group
+   * membership, the transition/arrow classifications and the reader,
+   * resolved once per spelling — all from module tables no sheet swap
+   * changes, so the cache is immortal per engine */
+  private readonly readPlans = new Map<
+    string,
+    {
+      prop: string;
+      node: boolean;
+      edge: boolean;
+      transition: boolean;
+      arrowColorProp: string | null;
+      reader: PropReader | null;
+    }
+  >();
   private sheet: Stylesheet;
   private defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
   /** the parents-group compound style, applied per parent slot */
@@ -7368,23 +7404,45 @@ export class StyleEngine {
    *   fail loudly rather than read as undefined
    */
   readProp(ref: Ref, propRaw: string): string | number | undefined {
-    const prop = normalizeProp(propRaw);
+    // The per-raw-name read plan (round 62.4): one Map hit replaces the
+    // normalize memo, four set membership tests and — on every edge
+    // read — a per-call regex.  Everything cached here is immortal per
+    // engine: name normalization, group membership, the transition and
+    // arrow-fold classifications and the reader all come from module
+    // tables a sheet swap never changes.
+    let plan = this.readPlans.get(propRaw);
 
-    if (!NODE_READ.has(prop) && !EDGE_READ.has(prop)) {
-      throw new Error(
-        `The style property '${prop}' is unsupported in the GPU prototype`,
-      );
+    if (plan === undefined) {
+      const prop = normalizeProp(propRaw);
+
+      if (!NODE_READ.has(prop) && !EDGE_READ.has(prop)) {
+        throw new Error(
+          `The style property '${prop}' is unsupported in the GPU prototype`,
+        );
+      }
+
+      plan = {
+        prop,
+        node: NODE_READ.has(prop),
+        edge: EDGE_READ.has(prop),
+        transition: TRANSITION_CONFIG_PROPS.has(prop),
+        arrowColorProp: /-arrow-(color|shape)$/.test(prop)
+          ? prop.replace('-shape', '-color')
+          : null,
+        reader: PROP_READERS.get(prop) ?? null,
+      };
+      this.readPlans.set(propRaw, plan);
     }
 
-    const forGroup = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
-
-    if (!forGroup.has(prop)) {
+    if (!(ref.group === 'nodes' ? plan.node : plan.edge)) {
       return undefined;
     }
 
+    const prop = plan.prop;
+
     // transition config (round 24.1): answered from the group's spec
     // (the parents overlay for parent nodes, like every channel read)
-    if (TRANSITION_CONFIG_PROPS.has(prop)) {
+    if (plan.transition) {
       const spec = this.defFor(ref).transition;
 
       switch (prop) {
@@ -7405,8 +7463,8 @@ export class StyleEngine {
     // either of which may be kernel-owned.
     const owned = this.gpuOwnedProps[ref.group];
 
-    if (ref.group === 'edges' && /-arrow-(color|shape)$/.test(prop)) {
-      const colorProp = prop.replace('-shape', '-color');
+    if (ref.group === 'edges' && plan.arrowColorProp != null) {
+      const colorProp = plan.arrowColorProp;
 
       if (owned.has(colorProp) || owned.has('opacity')) {
         const [r, g, b, a] = this.foldedArrow(ref, colorProp);
@@ -7435,17 +7493,12 @@ export class StyleEngine {
       }
     }
 
-    const store = this.store;
-    const slot = ref.slot;
-
-    const reader = PROP_READERS.get(prop);
-
     // every readable property is one entry in PROP_READERS (35.2); a
     // name that reaches here without one is admitted by the group
     // guard above but stored nowhere, which reads as undefined
-    return reader === undefined
+    return plan.reader === null
       ? undefined
-      : reader(store, slot, ref, this.readCtx, prop);
+      : plan.reader(this.store, ref.slot, ref, this.readCtx, prop);
   }
 
   /**

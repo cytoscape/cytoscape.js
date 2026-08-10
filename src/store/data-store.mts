@@ -102,6 +102,12 @@ export class DataStore {
     edges: new Map(),
   };
 
+  /** Bumped on every value write, clear or bulk ingest (round 62.4) —
+   * the validity key for whole-object data() caches.  Dict compaction
+   * and slot remaps deliberately do not bump: neither changes any
+   * element's values. */
+  epoch = 0;
+
   /** Fires when a column promotes to mixed (a GPU-mirrored key must demote to CPU eval). */
   onPromote: ((group: GroupName, key: string) => void) | null = null;
 
@@ -291,6 +297,7 @@ export class DataStore {
     key: string,
     column: ArrayLike<unknown> | DictColumn,
   ): void {
+    this.epoch++;
     const cols = this.cols[group];
     const existing = cols.get(key);
 
@@ -511,6 +518,7 @@ export class DataStore {
     slot: number,
     value: unknown,
   ): void {
+    this.epoch++;
     switch (col.kind) {
       case 'number': {
         if (slot >= col.values.length) {
@@ -570,6 +578,7 @@ export class DataStore {
   }
 
   private clearValue(group: GroupName, slot: number, key: string): void {
+    this.epoch++;
     const col = this.cols[group].get(key);
 
     if (col == null) {

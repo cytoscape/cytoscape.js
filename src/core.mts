@@ -21,7 +21,11 @@ import { testCondition } from './style-scales.mjs';
 import type { CompiledCondition } from './style-scales.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
-import { Animation, AnimationManager } from './animation.mjs';
+import {
+  Animation,
+  AnimationHandleImpl,
+  AnimationManager,
+} from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import * as math from './math.mjs';
 import type { BoundsLike } from './viewport.mjs';
@@ -90,6 +94,12 @@ const DEFAULT_HEADLESS_HEIGHT = 600;
 
 /** dead slots below this never auto-compact (small graphs don't churn) */
 const COMPACT_FLOOR = 1024;
+
+/** The hosting window, resolved once at module load — its existence
+ * cannot change at runtime, and `cy.window()` is called often enough in
+ * extensions that the per-call typeof test showed (round 62.4). */
+const GLOBAL_WINDOW: (Window & typeof globalThis) | null =
+  typeof window !== 'undefined' ? window : null;
 
 /** The memoized unfiltered collections and the structure epoch they belong to (round 34.2). */
 interface AllCache {
@@ -1565,40 +1575,16 @@ export class Core {
    * @returns the handle
    */
   animation(opts: AnimateOptions): AnimationHandle {
-    const ani = new Animation(
-      this._store,
-      this._viewport,
-      [],
-      true,
-      this._resolveViewportTargets(opts),
+    return new AnimationHandleImpl(
+      this._animations,
+      new Animation(
+        this._store,
+        this._viewport,
+        [],
+        true,
+        this._resolveViewportTargets(opts),
+      ),
     );
-
-    const handle: AnimationHandle = {
-      play: () => {
-        this._animations.start(ani);
-        return ani.promise();
-      },
-      stop: (jumpToEnd = false) => ani.stop(jumpToEnd),
-      promise: () => ani.promise(),
-      playing: () => ani.running && !ani.paused,
-      // round 24.3: the controls (progress is read-only — no scrubbing)
-      pause: () => {
-        this._animations.pauseAni(ani);
-        return handle;
-      },
-      resume: () => {
-        this._animations.resumeAni(ani);
-        return handle;
-      },
-      reverse: () => {
-        this._animations.reverseAni(ani);
-        return handle;
-      },
-      progress: () => ani.progress,
-      paused: () => ani.paused,
-    };
-
-    return handle;
   }
 
   /**
@@ -2513,7 +2499,7 @@ export class Core {
    * @returns true when the graph holds that element
    */
   hasElementWithId(id: string): boolean {
-    return this._store.lookup(id) != null;
+    return this._store.lookupCode(id) >= 0;
   }
 
   declare $id: this['getElementById'];
@@ -2525,7 +2511,19 @@ export class Core {
    * @returns every element in the graph
    */
   mutableElements(): Collection {
-    return this.elements();
+    // the memo hit inlined (round 62.4): the elements() -> _allOf hop
+    // pair cost more than the answer against v3's bare property read
+    const cached = this._allCache;
+
+    if (
+      cached != null &&
+      cached.all != null &&
+      cached.epoch === this._store.structureEpoch
+    ) {
+      return cached.all;
+    }
+
+    return this._allOf(null);
   }
 
   /**
@@ -2535,7 +2533,7 @@ export class Core {
    * @returns the global window, or null outside a browser
    */
   window(): (Window & typeof globalThis) | null {
-    return typeof window !== 'undefined' ? window : null;
+    return GLOBAL_WINDOW;
   }
 
   /**

@@ -526,6 +526,20 @@ export class GraphStore implements ModelView {
     return this.table(columnSpec(id).group).column(id);
   }
 
+  /** The node position column without the per-call spec walk — the
+   * accessor for read paths hot enough that two Map hops show
+   * (round 62.4: `position()` lost to v3 on the dispatch alone).  Not
+   * cached beyond the table's own map: a realloc swaps the array, and a
+   * stale reference would read a dead buffer. */
+  nodePositions(): Float32Array {
+    return this.nodes.column('node.position') as Float32Array;
+  }
+
+  /** The edge endpoints column, on the same terms as `nodePositions`. */
+  edgeEndpoints(): Uint32Array {
+    return this.edges.column('edge.endpoints') as Uint32Array;
+  }
+
   /** Whether any column write or touch() is pending a frame. */
   hasDirty(): boolean {
     return this.dirty.hasDirty();

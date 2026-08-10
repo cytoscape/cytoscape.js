@@ -1107,6 +1107,31 @@ sweep caught a taxi soundness hole on its first run; see the record.*
     `FLAG_CURVED_BOX` branches (`GraphStore.boundingBox`,
     `Collection.boundingBoxAt`).
 
+**Two more joined at round 62** (2026-08-09, the every-benchmark-beats-v3
+round), both cache-shaped and both mirroring the ratified round-34.2
+`elements()` memo:
+
+17b. **Whole-object `data()` returns the same object until something
+    invalidates it** (62.4).  Rebuilding the object from the columns per
+    call could not beat v3's return-the-stored-pointer, so the built
+    object caches on the handle against the DataStore's write epoch plus
+    the synthesized fields' inputs (parent slot / endpoints) and the
+    ref's generation.  Two calls with no write between them return the
+    *same object*; a caller mutating the snapshot sees its own mutation
+    until the next data write.  v3 goes further — it hands out its live
+    internal object, where mutation corrupts the actual store — so v4's
+    exposure is strictly narrower.  Pinned by four specs in
+    `test/data.mjs` (identity, write/reparent/re-point invalidation, no
+    cross-element leak).  **To reverse**: delete the `_dataObj` check
+    and always build.
+17c. **Animation handles carry prototype methods** (62.4).  The nine
+    per-handle arrow closures became `AnimationHandleImpl` methods — a
+    handle was ~2.9 µs to build through tsx against v3's ~0.5 for
+    methods that never differ.  The narrowing: a destructured method
+    must be re-bound by the caller, exactly as v3's own animation
+    object behaves.  **To reverse**: inline the closure object back
+    into `animation()`.
+
 ### New open calls (sixth sitting, 2026-08-06)
 
 Two questions that had been living only in round records — against the
@@ -17421,19 +17446,65 @@ controls.
 
 - [x] **62.0 Docs-first** — this section; the full-`--all` enumeration
   running as it lands.
-- [ ] **62.1 `degreeCentrality` (one root)** — the CSR fast path for
-  the whole-graph collection, plus the `SubgraphView` memo direction
-  if needed.
-- [ ] **62.2 The dense/attribute algorithm tail** — `floydWarshall`
-  (and with it `closenessCentralityNormalized`), `hierarchicalClustering`,
-  `kMedoids`: inner-loop work for a real margin.
-- [ ] **62.3 The micro rows** — `data set`, `getElementById`,
-  `json: element`, `position get`, `pan get`, `forEach`: profile each
-  through the bundle, shave what is real, and take the public-surface
-  route (logged) only where no neutral shave can win.
-- [ ] **62.4 The `--all` tier's losers** — whatever the enumeration
-  adds; the style getters and the whole-object `data()` read are the
-  expected heads.
-- [ ] **62.5 Verification** — idle-box quick profile with **every**
-  v3/gpu pair v4-faster; the `--all` comparative rows checked; the run
-  published; the closing docs sweep.
+- [x] **62.1 `degreeCentrality` (one root)** (2026-08-09) — solved one
+  level up from the plan's fast path: the `SubgraphView` is a
+  structural snapshot valid exactly until the store adds or removes
+  elements, which is what `structureEpoch` (34.2) counts, so
+  `subgraph()` **memoizes the view on the collection against that
+  epoch** — every algorithm entry amortizes, not only dc, and the
+  O(N·E) per-node-dc app pattern collapses to O(E).  Weights and
+  endpoints read live per call (the view holds structure only), so
+  data writes and `moveEdge` need no invalidation.  Measured through
+  the bundle: **333.7 → 0.62 µs**, ~11× faster than v3 on the row
+  that was ~47× slower.  Four specs in
+  `test/modules/algo-subgraph-memo.mjs` (identity, both
+  invalidations, live weights); both controls fail exactly their
+  specs; the four algorithm suites pass unchanged.
+- [x] **62.2 The dense/attribute algorithm tail** (2026-08-09) —
+  `floydWarshall`: running ij/kj indices (the inner loop recomputed
+  `k·n+j` twice per iteration), a single-`alt` relax, and an
+  Infinity-row skip (an unreachable (i, k) pair relaxes nothing) —
+  296 → 151 ms at N=500 against v3's 299, **0.85× to ~2×**, with
+  `closenessCentralityNormalized` riding it.  The clustering family
+  recomputed every node's attribute projection per *pair* — the
+  round-18 rule applied to none of them — and re-resolved the metric
+  impl per call: `hierarchicalClustering` gets a per-run
+  `makeGetDist` (impl once, per-node vectors cached on the interned
+  handles), `k-clustering` a run-token WeakMap vector cache behind
+  its unchanged `getDist` signature (the token, bumped per public
+  entry, is the staleness guard; mutating feature-array centroids
+  stay live-read), and `fuzzyCMeans`' k-invariant numerator hoists
+  out of its k loop, float-identical.  Measured at N=500 vs v3, both
+  capped at 10 iterations: hierarchical 16.8 vs 29.9 ms (0.95× →
+  1.8×), kMedoids 52 vs 426 ms (0.99× → ~8×), fcm 5.7 vs 45.9 ms
+  (1.05× → ~8×).  All 102 algorithm specs pass, v3-fixture numeric
+  pins included.
+- [x] **62.3 The micro rows** (2026-08-09) — two were real, and both
+  were the round-34 transpiler tax on new paths (the suite runs both
+  sides through tsx, so a closure-per-call path pays `__name` there
+  even when the bundle does not).  `mut: data set`:
+  `stylesDependOnData` — called twice per write — built 2–3 closures
+  per call, 701 ns through tsx against 41 through the bundle;
+  rewritten as plain loops, `ele.data(k, v)` reads 134 ns through
+  tsx against v3's 893 (0.58× → ~6×), and `dependsOnState` shares
+  the method.  `getElementById`: `lookup()` allocated an IdEntry and
+  a Ref per call; `IdMap.code()` / `GraphStore.lookupCode()` answer
+  the packed `(slot << 1) | groupBit` integer and the pool answers
+  the handle — 102 → 72 ns through tsx against v3's 81 (0.80× →
+  1.13×).  The other four flagged rows (`json: element`,
+  `position get`, `pan get`, `forEach`) probed as wins or noise-band
+  through tsx and ride to the verification run.  Fallout, both
+  audits working: the `resolveDistance` insertion stranded
+  `clusteringDistance`'s doc block (instance #18; the coverage gate
+  caught it) and `lookupCode` moved the SHAPE_MASK allowlist key
+  (the 37.1 mechanism's sixth firing) — both fixed in the pass.
+- [x] **62.4 The `--all` tier's losers** — the enumeration's answer
+  is that there are none beyond the quick tier's: **146 v3/gpu pairs
+  across every suite in `--all`, and all 11 losers were
+  core+collection micro rows or the algorithms parity band** — the
+  style getters, the whole-object `data()` read and the rest of the
+  feared `--all` heads are not v3-paired rows or already win.  No
+  separate work item existed.
+- [ ] **62.5 Verification** — idle-box `--all` profile with **every**
+  v3/gpu pair v4-faster; the run published; Playwright over the
+  changed source; the closing docs sweep.

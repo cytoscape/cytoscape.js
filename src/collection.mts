@@ -26,7 +26,7 @@ import type { Query } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import { normalizeProp as normalizeCss } from './style.mjs';
-import { Animation } from './animation.mjs';
+import { Animation, AnimationHandleImpl } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
 import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
@@ -216,6 +216,18 @@ export class Collection {
   _scratch?: Record<string, unknown>;
   /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
   _keys?: Map<number, number>;
+  /** lazily-built id → index map for indexOfId (round 62.4), cacheable
+   * on the same immutability grounds as _keys */
+  _idIdx?: Map<string, number>;
+  /** the whole-object data() cache (round 62.4), valid while the
+   * DataStore epoch, the synthesized-field inputs (parent slot or
+   * endpoints) and the ref's generation all hold */
+  _dataObj?: {
+    epoch: number;
+    aux: number;
+    gen: number;
+    obj: Record<string, unknown>;
+  };
   /** the algorithms' SubgraphView memo (round 62.1), keyed by the
    * store's structureEpoch — sound because membership is _refs (immutable)
    * minus dead refs, and death moves the epoch.  Typed loosely to keep
@@ -268,9 +280,36 @@ export class Collection {
   constructor(
     cy: Core,
     refs: Ref[],
-    opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {},
+    opts: {
+      singleton?: boolean;
+      unique?: boolean;
+      live?: boolean;
+      /** interned handles matching `refs` one-for-one (round 62.4):
+       * a slice of an existing collection passes its own — they are
+       * exactly what re-interning would return, minus the per-element
+       * validation the source collection already carries */
+      handles?: Collection[];
+    } = {},
   ) {
     this._cy = cy;
+
+    if (opts.handles != null) {
+      const handles = opts.handles;
+
+      for (let i = 0; i < handles.length; i++) {
+        this[i] = handles[i];
+      }
+
+      this._refs = refs;
+      this.length = refs.length;
+
+      if (refs.length === 1) {
+        this._id = this[0]._id;
+        this._group = refs[0].group;
+      }
+
+      return;
+    }
 
     if (opts.singleton) {
       const ref = refs[0];
@@ -492,13 +531,32 @@ export class Collection {
    * @returns the index, or -1 when absent
    */
   indexOfId(id: string): number {
-    for (let i = 0; i < this.length; i++) {
-      if (this[i]._id === id) {
-        return i;
+    // Lazily-built id → index map, sound for the same reason `_keys`
+    // is: `_refs` is immutable, ids are immutable, and a removed
+    // member's handle keeps its cached `_id` — which is exactly what
+    // the linear scan compared, so the map preserves the
+    // still-answers-for-removed-elements contract round 34.1 kept
+    // this method out of the id index for (round 62.4: the scan read
+    // 0.02× against v3's indexed lookup).
+    let map = this._idIdx;
+
+    if (map == null) {
+      map = new Map();
+
+      for (let i = this.length - 1; i >= 0; i--) {
+        const id0 = this[i]._id;
+
+        if (id0 != null) {
+          map.set(id0, i);
+        }
       }
+
+      this._idIdx = map;
     }
 
-    return -1;
+    const at = map.get(id);
+
+    return at === undefined ? -1 : at;
   }
 
   // -- iteration --
@@ -601,7 +659,16 @@ export class Collection {
       end = this.length + end;
     }
 
-    return this._spawnUnique(this._refs.slice(start, end));
+    // the _refs getter syncs the compaction epoch first, so the copied
+    // refs and handles are current together (round 62.4)
+    const refs = this._refs.slice(start, end);
+    const handles: Collection[] = new Array(refs.length);
+
+    for (let i = 0; i < refs.length; i++) {
+      handles[i] = this[start + i];
+    }
+
+    return new Collection(this._cy, refs, { unique: true, handles });
   }
 
   /**
@@ -1492,7 +1559,21 @@ export class Collection {
    *   `promise`/`pause`/`resume`/`reverse`
    */
   animate(opts: AnimateOptions): this {
-    this.animation(opts).play();
+    // start directly rather than through the handle: the chaining form
+    // never exposes the promise, so play()'s per-call Promise + resolver
+    // would be pure allocation here (round 62.4)
+    const cy = this._cy;
+
+    cy._animations.start(
+      new Animation(
+        cy._store,
+        null,
+        this._liveRefs(),
+        false,
+        opts,
+        cy._styleEngine,
+      ),
+    );
 
     return this;
   }
@@ -1506,41 +1587,18 @@ export class Collection {
    */
   animation(opts: AnimateOptions): AnimationHandle {
     const cy = this._cy;
-    const ani = new Animation(
-      cy._store,
-      null,
-      this._liveRefs(),
-      false,
-      opts,
-      cy._styleEngine,
+
+    return new AnimationHandleImpl(
+      cy._animations,
+      new Animation(
+        cy._store,
+        null,
+        this._liveRefs(),
+        false,
+        opts,
+        cy._styleEngine,
+      ),
     );
-
-    const handle: AnimationHandle = {
-      play: () => {
-        cy._animations.start(ani);
-        return ani.promise();
-      },
-      stop: (jumpToEnd = false) => ani.stop(jumpToEnd),
-      promise: () => ani.promise(),
-      playing: () => ani.running && !ani.paused,
-      // round 24.3: the controls (progress is read-only — no scrubbing)
-      pause: () => {
-        cy._animations.pauseAni(ani);
-        return handle;
-      },
-      resume: () => {
-        cy._animations.resumeAni(ani);
-        return handle;
-      },
-      reverse: () => {
-        cy._animations.reverseAni(ani);
-        return handle;
-      },
-      progress: () => ani.progress,
-      paused: () => ani.paused,
-    };
-
-    return handle;
   }
 
   /**
@@ -1574,8 +1632,16 @@ export class Collection {
    *   are, and not whether the viewport is (that is `cy.animated()`)
    */
   animated(): boolean {
+    const mgr = this._cy._animations;
+
+    // nothing running anywhere answers without touching refs — the
+    // common case for a UI polling animation state (round 62.4)
+    if (!mgr.anyRunning()) {
+      return false;
+    }
+
     for (const ref of this._refs) {
-      if (this._cy._animations.isAnimating(ref)) {
+      if (mgr.isAnimating(ref)) {
         return true;
       }
     }
@@ -2057,13 +2123,45 @@ export class Collection {
     // whole-object getter
     if (args.length === 0) {
       const ref = this._first();
+      const store = this._store;
 
-      if (ref == null || !this._store.isCurrent(ref)) {
+      if (ref == null || !store.isCurrent(ref)) {
         return undefined;
       }
 
+      // Cached against the DataStore epoch plus the synthesized fields'
+      // own inputs (round 62.4): rebuilding from the columns per call
+      // read ~5× slower than v3's return-the-stored-object, and no
+      // rebuild can beat a pointer.  Two data() calls with no write
+      // between them therefore return the *same object* — logged as a
+      // public-surface change beside the round-34.2 elements() memo it
+      // mirrors; a caller mutating the snapshot sees its own mutation
+      // until the next data write, where v3 hands out its live internal
+      // object outright.
+      const aux =
+        ref.group === 'edges'
+          ? (() => {
+              const endpoints = store.edgeEndpoints();
+
+              return (
+                endpoints[ref.slot * 2] * 0x4000000 +
+                endpoints[ref.slot * 2 + 1]
+              );
+            })()
+          : store.parentOf(ref.slot);
+      const cached = this._dataObj;
+
+      if (
+        cached != null &&
+        cached.epoch === store.data.epoch &&
+        cached.aux === aux &&
+        cached.gen === ref.gen
+      ) {
+        return cached.obj;
+      }
+
       const out: Record<string, unknown> = {
-        id: this._store.idAt(ref.group, ref.slot),
+        id: store.idAt(ref.group, ref.slot),
       };
 
       if (ref.group === 'edges') {
@@ -2072,14 +2170,15 @@ export class Collection {
       } else {
         // parent is first-class hierarchy state, synthesized on read
         // like edge source/target (round 14); absent for orphans
-        const parentSlot = this._store.parentOf(ref.slot);
-
-        if (parentSlot >= 0) {
-          out.parent = this._store.idAt('nodes', parentSlot);
+        if (aux >= 0) {
+          out.parent = store.idAt('nodes', aux);
         }
       }
 
-      return Object.assign(out, this._store.data.object(ref.group, ref.slot));
+      Object.assign(out, store.data.object(ref.group, ref.slot));
+      this._dataObj = { epoch: store.data.epoch, aux, gen: ref.gen, obj: out };
+
+      return out;
     }
 
     // single-key getter
@@ -3805,7 +3904,9 @@ export class Collection {
       return this._spawn([]);
     }
 
-    const endpoints = this._store.column('edge.endpoints') as Uint32Array;
+    // the lean accessor: source()/target() lost to v3 on the per-call
+    // column spec walk alone (round 62.4)
+    const endpoints = this._store.edgeEndpoints();
 
     return this._cy._ele('nodes', endpoints[ref.slot * 2 + which]);
   }

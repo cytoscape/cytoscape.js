@@ -1455,6 +1455,11 @@ declare class Adjacency {
 //#region src/store/data-store.d.mts
 declare class DataStore {
   private cols;
+  /** Bumped on every value write, clear or bulk ingest (round 62.4) —
+   * the validity key for whole-object data() caches.  Dict compaction
+   * and slot remaps deliberately do not bump: neither changes any
+   * element's values. */
+  epoch: number;
   /** Fires when a column promotes to mixed (a GPU-mirrored key must demote to CPU eval). */
   onPromote: ((group: GroupName, key: string) => void) | null;
   /** Fires after a dict compaction remapped a column's indices (see the header note). */
@@ -2171,6 +2176,14 @@ declare class GraphStore implements ModelView {
    * tracker, so readers must not mutate it.
    */
   column(id: ColumnId): ColumnArray;
+  /** The node position column without the per-call spec walk — the
+   * accessor for read paths hot enough that two Map hops show
+   * (round 62.4: `position()` lost to v3 on the dispatch alone).  Not
+   * cached beyond the table's own map: a realloc swaps the array, and a
+   * stale reference would read a dead buffer. */
+  nodePositions(): Float32Array;
+  /** The edge endpoints column, on the same terms as `nodePositions`. */
+  edgeEndpoints(): Uint32Array;
   /** Whether any column write or touch() is pending a frame. */
   hasDirty(): boolean;
   /**
@@ -3374,6 +3387,11 @@ declare class StyleEngine {
    * its getters stay live across a sheet swap that replaces `defs`.
    */
   private readonly readCtx;
+  /** per-raw-name read plans (round 62.4): normalization, group
+   * membership, the transition/arrow classifications and the reader,
+   * resolved once per spelling — all from module tables no sheet swap
+   * changes, so the cache is immortal per engine */
+  private readonly readPlans;
   private sheet;
   private defs;
   /** the parents-group compound style, applied per parent slot */
@@ -4521,6 +4539,11 @@ declare class AnimationManager {
    * @returns whether anything is tweening it
    */
   isAnimating(ref: Ref): boolean;
+  /** Whether any element animation is running at all — the O(1) gate in
+   * front of per-ref queries (round 62.4).
+   *
+   * @returns true when any element animation is live */
+  anyRunning(): boolean;
   /**
    * True when the viewport is animating.
    *
@@ -5048,6 +5071,18 @@ declare class Collection {
   _scratch?: Record<string, unknown>;
   /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
   _keys?: Map<number, number>;
+  /** lazily-built id → index map for indexOfId (round 62.4), cacheable
+   * on the same immutability grounds as _keys */
+  _idIdx?: Map<string, number>;
+  /** the whole-object data() cache (round 62.4), valid while the
+   * DataStore epoch, the synthesized-field inputs (parent slot or
+   * endpoints) and the ref's generation all hold */
+  _dataObj?: {
+    epoch: number;
+    aux: number;
+    gen: number;
+    obj: Record<string, unknown>;
+  };
   /** the algorithms' SubgraphView memo (round 62.1), keyed by the
    * store's structureEpoch — sound because membership is _refs (immutable)
    * minus dead refs, and death moves the epoch.  Typed loosely to keep
@@ -5082,6 +5117,11 @@ declare class Collection {
     singleton?: boolean;
     unique?: boolean;
     live?: boolean;
+    /** interned handles matching `refs` one-for-one (round 62.4):
+     * a slice of an existing collection passes its own — they are
+     * exactly what re-interning would return, minus the per-element
+     * validation the source collection already carries */
+    handles?: Collection[];
   });
   get _store(): GraphStore;
   _first(): Ref | undefined;

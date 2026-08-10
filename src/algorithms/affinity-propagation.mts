@@ -122,8 +122,8 @@ const assign = (n: number, S: number[], exemplars: number[]): number[] => {
 /**
  * The async affinity-propagation entry point behind
  * `eles.affinityPropagation()`: validates `executor` synchronously,
- * then routes to the CPU reference implementation or, in a later
- * round, the WGSL kernels.
+ * then routes to the CPU reference implementation or the WGSL
+ * kernels.
  *
  * @param coll — the calling collection
  * @param options — as `affinityPropagation`, plus `executor`

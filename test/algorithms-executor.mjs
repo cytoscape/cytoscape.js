@@ -3,9 +3,12 @@ import cytoscape from '../src/index.mjs';
 import {
   acquireAlgoGpu,
   algoGpuSupported,
+  assertFits,
+  GpuUnfitError,
   _resetAlgoGpu,
 } from '../src/algorithms/algo-gpu.mjs';
 import { runAlgo } from '../src/algorithms/executor.mjs';
+import { kMedoidsGpu } from '../src/algorithms/algo-gpu-cluster.mjs';
 
 // Round 65: the expensive whole-graph algorithms are async, with an
 // `executor` option ('cpu' | 'gpu' | 'auto').  These specs pin the
@@ -262,6 +265,53 @@ describe('gpu/algorithms: the executor contract', function () {
       var err = await rejection(acquireAlgoGpu());
 
       expect(err.message).to.match(/WebGPU is required/);
+    });
+
+    // a ctx whose device admits only tiny storage bindings
+    var tinyCtx = () => ({
+      device: { limits: { maxStorageBufferBindingSize: 1024 } },
+      pipelines: new Map(),
+    });
+
+    it('assertFits throws GpuUnfitError past the binding limit', function () {
+      expect(() => assertFits(tinyCtx(), 4096, 'markovClustering')).to.throw(
+        GpuUnfitError,
+        /exceeds this device/,
+      );
+
+      // control: a fitting size passes
+      assertFits(tinyCtx(), 512, 'markovClustering');
+    });
+
+    it("an unfit input under 'auto' falls back to the CPU; under 'gpu' it propagates", async function () {
+      workingStub(); // 'auto' must actually reach the GPU branch
+
+      var unfitGpu = async () => {
+        throw new GpuUnfitError('too big');
+      };
+
+      var auto = await runAlgo('auto', 10_000, 256, () => 'cpu', unfitGpu);
+
+      expect(auto).to.equal('cpu');
+
+      var err = await rejection(
+        runAlgo('gpu', 10_000, 256, () => 'cpu', unfitGpu),
+      );
+
+      expect(err).to.be.instanceOf(GpuUnfitError);
+    });
+
+    it('the GPU k-medoids guard rejects k past the node count before any device work', async function () {
+      // the k > n guard fires before the ctx is touched, so it is
+      // Node-reachable with no device at all
+      var err = await rejection(
+        kMedoidsGpu(tinyCtx(), cy.elements(), {
+          k: 99,
+          attributes: [(n) => n.data('v')],
+        }),
+      );
+
+      expect(err.message).to.match(/cannot exceed the number of nodes/);
     });
   });
 });

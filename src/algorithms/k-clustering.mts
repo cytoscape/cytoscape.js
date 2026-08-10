@@ -383,7 +383,7 @@ const findCost = (
 /**
  * The async k-means entry point behind `eles.kMeans()`: validates
  * `executor` synchronously, then routes to the CPU reference
- * implementation or, in a later round, the WGSL kernels.
+ * implementation or the WGSL kernels.
  *
  * @param coll — the calling collection
  * @param options — as `kMeans`, plus `executor`
@@ -413,7 +413,7 @@ export const kMeansAsync = (
 /**
  * The async k-medoids entry point behind `eles.kMedoids()`: validates
  * `executor` synchronously, then routes to the CPU reference
- * implementation or, in a later round, the WGSL kernels.
+ * implementation or the WGSL kernels.
  *
  * @param coll — the calling collection
  * @param options — as `kMedoids`, plus `executor`
@@ -443,7 +443,7 @@ export const kMedoidsAsync = (
 /**
  * The async fuzzy c-means entry point behind `eles.fuzzyCMeans()`:
  * validates `executor` synchronously, then routes to the CPU reference
- * implementation or, in a later round, the WGSL kernels.
+ * implementation or the WGSL kernels.
  *
  * @param coll — the calling collection
  * @param options — as `fuzzyCMeans`, plus `executor`

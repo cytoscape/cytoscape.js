@@ -21,7 +21,7 @@ export interface PageRankResult {
 /**
  * The async PageRank entry point behind `eles.pageRank()`: validates
  * `executor` synchronously, then routes to the CPU reference
- * implementation or, in a later round, the WGSL kernels.
+ * implementation or the WGSL kernels.
  *
  * @param coll — the calling collection
  * @param options — as `pageRank`, plus `executor`

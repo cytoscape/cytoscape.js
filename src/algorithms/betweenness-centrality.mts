@@ -23,7 +23,7 @@ export interface BetweennessCentralityResult {
 /**
  * The async betweenness entry point behind `eles.betweennessCentrality()`:
  * validates `executor` synchronously, then routes to the CPU reference
- * implementation or, in a later round, the WGSL kernels.  Weighted runs
+ * implementation or the WGSL kernels.  Weighted runs
  * (a `weight` fn given) have no GPU formulation here — Brandes over
  * weights needs a priority queue — so they always run on the CPU, and
  * an explicit `executor: 'gpu'` rejects rather than silently degrading.

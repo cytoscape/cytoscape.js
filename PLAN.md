@@ -18072,3 +18072,106 @@ small, decided, and all on the query/building surface:
 Note what the round deliberately does **not** reopen: the selector
 *language*.  `cy.$` accepts exactly what `filter()` accepts — the
 alias restores a spelling, not a dialect.
+
+## Round 65 — the async algorithm tier and the GPU executors (planned and landed 2026-08-10)
+
+The design question arrived as "which algorithms could the GPU speed
+up?", and the answer split the algorithm surface in two.  The
+traversal tier (bfs/dfs, dijkstra, aStar, bellmanFord, kruskal,
+tarjan, hopcroft-tarjan, hierholzer, kargerStein, degree/closeness
+centrality) already beats v3 by 13–39× slot-native and is called
+per-root in tight loops — the round-62.1 memo lesson is exactly that
+usage — so it stays synchronous forever, and no GPU formulation would
+beat it.  The dense-matrix and clustering tier (pageRank,
+floydWarshall, betweennessCentrality, markovClustering,
+affinityPropagation, kMeans, kMedoids, fuzzyCMeans,
+hierarchicalClustering) sat at deliberate CPU-parity with v3
+(identical math dominating, the round-33 reading) — which is precisely
+the statement that only a different execution model moves it.
+
+**Design calls (maintainer-approved in discussion, 2026-08-10):**
+
+1. **The nine whole-graph algorithms are async-only** —
+   Promise-returning, awaited once per computation (they are
+   call-once-query-many, so the await is idiomatic), decided *now*
+   because pre-4.0 the contract change costs a migration row and
+   post-4.0 it is semver-major.  No `asyncPageRank()` twins: one
+   spelling, and the executor choice stays inside the library.
+2. **`executor: 'cpu' | 'gpu' | 'auto'`** (default 'auto') on each.
+   'cpu' is the bit-reproducible f64 reference — the spec, the
+   round-18.4 force-layout determinism precedent applied to
+   algorithms.  'gpu' rejects rather than silently degrading when
+   WebGPU or the algorithm's GPU path is missing.  'auto' takes the
+   GPU above a per-family measured crossover; only acquisition
+   failure and GpuUnfitError (input past device buffer limits) fall
+   back — a kernel error propagates, so a defect cannot hide behind
+   the router.
+3. **Contracted CPU-only paths** say so: weighted betweenness
+   (Brandes over weights needs a priority queue), custom distance
+   functions and attribute-less feature runs (kernels never call back
+   into user code).
+
+**Landed, in six commits (65.1–65.6):**
+
+- **65.1** the async reshape: per-module `*Async` wrappers (sync
+  validation throws at the call site; everything later is a
+  rejection), the executor router (`src/algorithms/executor.mts`),
+  standalone device acquisition (`algo-gpu.mts` — no canvas, no
+  renderer coupling, cache cleared on loss), the four spec files
+  converted to await, `test/algorithms-executor.mjs` pinning the
+  routing contract with stubbed-navigator paths so every guard fires
+  in the Node tier (throw gate at zero), `cmpAsync` in
+  `benchmark/algorithms.mjs` (rotation + 62.5c pre-warm preserved;
+  the gpu-side await asymmetry is µs-noise under ms rows),
+  MIGRATING.md, d.ts.
+- **65.2–65.4** the kernels, family by family, each validated on a
+  real adapter before its commit: shared dense WGSL
+  (`algo-gpu-dense.mts` — tiled matmul, column ops, rounded compare,
+  the flags discipline: all iterations encoded up front,
+  barrier-free kernels early-return on the converge bit, the matmul
+  guards its store instead because WGSL uniformity analysis forbids
+  divergent returns before workgroup barriers), MCL, pageRank, FW
+  (per-k relaxation over a bumped storage counter; finite 3.0e38
+  sentinel instead of Inf — WGSL may assume finite floats),
+  AP (row/column-owning kernels; the exemplar-history convergence
+  ring verbatim; 'as' is a WGSL reserved word), the feature-space
+  clusterers (featuresOf materializes attributes once; k-medoids
+  turns its iterations into O(n²) lookups over two device-built
+  matrices; fcm's one deliberate deviation — denominators clamp at
+  1e-30 where the CPU would NaN/Inf — is noted on the kernel), the
+  hierarchical pair-matrix (merge chain stays CPU under every
+  executor), and pulled level-synchronous Brandes (one writer per
+  node, no atomics; 64-source batches; weighted contracted out).
+  One live catch: extracting `buildBrandesNeighbors` displaced the
+  impl's doc block onto it — the seventeen-instance stranded-block
+  hazard — and the JSDoc gate caught it red before commit.
+- **65.5** the parity suite (`playwright-tests/algorithms-gpu.spec.js`,
+  riding the renderer projects): nine live CPU-vs-GPU comparisons —
+  discrete results exact, floats under f32-honest tolerances, plus
+  the in-browser routing contract.  Controls run per the
+  can-it-fail rule: MCL fails with the inflate exponent degraded,
+  betweenness fails with sigma corrupted; both reverted, 9/9 green.
+  One assertion corrected by its own first failure: the pageRank
+  fixture has genuinely *tied* ranks, which f64 and f32 break
+  differently, so the ordering invariant is zero inversions among
+  pairs separated by >1e-4, not total-sort equality.
+- **65.6** the sweep (`npm run benchmark:algorithms-gpu`): whole
+  public call, cpu vs gpu, per family per size, adapter identity
+  reported and SwiftShader refused.  On this machine (amd gcn-4,
+  RX 570-class): markovClustering **71.9× / 266× / 478×** at
+  n=256/512/1024 (31.2 s → 65 ms), kMedoids 9.6–36.6×,
+  floydWarshall 2.4–16.7×, fuzzyCMeans ~7.5×, kMeans ~2×,
+  hierarchical ~2× (the CPU merge chain is the shared floor),
+  betweenness 0.74× → 3.6× (crossover ~1024), affinityPropagation
+  0.65× → 1.43×, pageRank 0.70× → 1.33× (both ~1024) — the serial
+  per-row/column kernels are the modest tier, the dense-matmul and
+  n²-matrix families the headline one.  Each wrapper's 'auto'
+  threshold now encodes its measured crossover in place of the
+  uniform 256 guess, machine-stamped for re-measure.
+
+**Open follow-ups, logged not scheduled:** two-stage reductions for
+the serial pageRank/AP kernels (would move their crossovers left); a
+device-side benchmark row via gpu-timer to split kernel time from
+upload/readback; Playwright coverage of the algorithms-gpu suite on
+WebKit once its compute story firms up; and revisiting `GPU_MIN_N`
+constants when a second machine's published sweep exists.

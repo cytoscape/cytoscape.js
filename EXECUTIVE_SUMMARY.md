@@ -47,7 +47,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
 v4 covers its own documented scope and is being hardened. The public API keeps
 v3's *shape* — `cy.add()`, `eles.filter()`, `node.position()`, the traversal and
 algorithm surfaces — while several v3 mechanisms were removed by decision rather
-than reimplemented, each recorded with its rationale.
+than reimplemented, each recorded with its rationale.  One shape change is
+v4's own: the nine expensive whole-graph algorithms return promises, because
+they can now run on the GPU (round 65).
 
 **It is not close to a release, and the round list is not a plan for getting
 there.** The rounds named below are the ones that have been *written down*;
@@ -546,7 +548,7 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster — and the bypass comes back
+## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster, the bypass comes back — and the expensive algorithms go async, onto the GPU
 
 *18 commits — rounds 58–60 and the seventh design sitting.*
 
@@ -785,6 +787,33 @@ of `filter()` over the query-object and predicate forms (selector
 strings still throw — the alias restores a spelling, not the
 language), and **`cy.byId()`** joins `$id`/`getElementById` as the
 brief id lookup.
+
+### Round 65: the expensive algorithms go async — and onto the GPU
+
+The nine whole-graph algorithms that had sat at deliberate CPU-parity
+with v3 — PageRank, Floyd–Warshall, betweenness, Markov clustering,
+affinity propagation, the k-clusterers, hierarchical clustering — now
+**return promises and take an `executor` option**: `'cpu'` is the
+bit-reproducible reference, `'gpu'` runs WGSL compute kernels wherever
+WebGPU exists (rejecting rather than silently degrading where it does
+not), and `'auto'`, the default, picks per measured per-family
+crossover.  The traversal tier — everything an app calls per node in a
+loop, already 13–39× over v3 — stays synchronous by design.  The
+decision to break the sync contract was taken deliberately *before*
+4.0, when it costs a migration-guide row instead of a major version.
+
+The kernels follow the force layout's round-18 pattern: the CPU
+implementation is the spec, GPU runs pin invariants rather than bits
+(WGSL is f32), and every run is encoded up front behind
+convergence-guarded kernels so it pays exactly one readback.  A live
+CPU-vs-GPU parity suite covers every family, its specs verified able
+to fail by degrading kernels.  Measured on a real adapter (RX
+570-class), the wins land where the arithmetic said they would:
+**Markov clustering 72–478×** (31.2 s → 65 ms at a thousand nodes),
+k-medoids up to 37×, Floyd–Warshall up to 17×, fuzzy c-means ~7.5× —
+while the serial-per-row kernels (PageRank, affinity propagation) and
+the CPU-floored merge chain (hierarchical) win modestly past ~1,000
+nodes, which is exactly where their `'auto'` thresholds now sit.
 
 ## What remains before 4.0
 

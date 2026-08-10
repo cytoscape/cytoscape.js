@@ -621,7 +621,31 @@ Graph walks are slot-native over the
 CSR adjacency; the attribute-space clustering algorithms work on
 handles as v3 does.  v3 option/result shapes are kept, except that
 node arguments are collections (selector strings throw) and
-`weight`/`heuristic`/`attributes` are plain functions.
+`weight`/`heuristic`/`attributes` are plain functions — and, since
+round 65, **the expensive whole-graph tier is async with a GPU
+executor**: `pageRank`, `floydWarshall`, `betweennessCentrality`,
+`markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`,
+`fuzzyCMeans` and `hierarchicalClustering` return promises, and an
+`executor` option ('cpu' | 'gpu' | 'auto', default 'auto') picks where
+the maths runs.  'cpu' is the bit-reproducible f64 reference (the
+spec, and what headless Node always runs); 'gpu' runs the WGSL kernels
+and rejects rather than degrading when WebGPU or the algorithm's GPU
+path is missing (weighted betweenness, custom distance functions, and
+attribute-less feature runs are contracted CPU-only — kernels never
+call back into user code); 'auto' takes the GPU above a per-family
+measured crossover and otherwise the CPU, falling back only on
+acquisition failure or an input past the device's buffer limits — a
+kernel error propagates.  GPU results may differ from CPU results in
+f32 detail (the force layout's round-18.4 determinism precedent);
+discrete results (cluster memberships, path sequences) are pinned
+identical by the parity suite (`playwright-tests/algorithms-gpu.spec.js`).
+The traversal tier — everything called per root in loops — stays
+synchronous by design.  The kernels live beside the wrappers as
+`src/algorithms/algo-gpu*.mts`: a standalone compute device (no
+canvas, no renderer coupling), shared dense-matrix kernels, and one
+driver module per family, each run encoding all its iterations up
+front behind converge-flag-guarded kernels so a run costs exactly one
+readback (the round-9 discipline, compute form).
 
 Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
 `cy.batch(fn)`) defers *style application* — the first apply of
@@ -1899,7 +1923,9 @@ each is deliberate, not a pass-1 deferral:
   match).  It reuses this round's lease + readback machinery, but the
   per-algorithm kernels and convergence detection are a future round.
   (Since built: the round-18 `force` layout below is exactly this
-  design.)
+  design — and round 65 carried the same pattern to the graph
+  algorithms, with CPU references as specs and per-family WGSL
+  kernels behind the async `executor` contract.)
 - **Curved edges (round 12; the two flagged calls signed off
   2026-07-30).**  v4's default `curve-style` stays **`straight`** — the
   perf-first default at v4's target scales, a deliberate divergence
@@ -3407,8 +3433,15 @@ The graph algorithms have their own sweep (`benchmark/algorithms.mjs`;
 superlinear ops gate on `BENCH_N`): the slot-native walks win every op at
 N=2000 — bfs ~34×, dfs ~39×, dijkstra+pathTo ~33×, tarjan SCC ~19×,
 betweenness ~13× — while the dense-matrix ops (pageRank, floydWarshall,
-markov/hierarchical/kMeans clustering) are parity as expected, identical
-math dominating (within ±1.2× at N=500).
+markov/hierarchical/kMeans clustering) are CPU-parity with v3 as
+expected, identical math dominating (within ±1.2× at N=500).  That
+parity is exactly why round 65 gave the dense tier its GPU executor:
+`npm run benchmark:algorithms-gpu` prices executor 'cpu' vs 'gpu' per
+family per size on a real adapter (refusing SwiftShader), and on the
+round-65 bench machine (amd gcn-4) measured markovClustering 72–478×,
+kMedoids 9.6–37×, floydWarshall 2.4–17×, fuzzyCMeans ~7.5×, kMeans
+~2×, hierarchical ~2×, with betweenness/pageRank/AP crossing over near
+n=1024 — the figures each wrapper's 'auto' threshold now encodes.
 
 ## Loading
 

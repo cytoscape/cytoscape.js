@@ -103,8 +103,8 @@ const hasConverged = (
 /**
  * The async MCL entry point behind `eles.markovClustering()`: validates
  * `executor` synchronously (so a bad value throws at the call site),
- * then routes to the CPU reference implementation or, in a later
- * round, the WGSL kernels.
+ * then routes to the CPU reference implementation or the WGSL
+ * kernels.
  *
  * @param coll — the calling collection
  * @param options — as `markovClustering`, plus `executor`

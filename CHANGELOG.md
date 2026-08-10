@@ -102,6 +102,16 @@ that compile and then behave differently.
   default.
 - **TypeScript declarations** built from the source JSDoc, so the API
   documentation is hover text in an editor.
+- **GPU executors for the expensive whole-graph algorithms** (round 65).
+  `markovClustering`, `affinityPropagation`, `pageRank`,
+  `floydWarshall`, `betweennessCentrality`, `kMeans`, `kMedoids`,
+  `fuzzyCMeans` and `hierarchicalClustering` accept
+  `executor: 'cpu' | 'gpu' | 'auto'` (default `'auto'`): the CPU is
+  the bit-reproducible reference, the GPU runs WGSL compute kernels
+  where WebGPU exists, and `'auto'` picks per measured per-family
+  crossovers.  Measured on an RX 570-class adapter: Markov clustering
+  up to 478× (31.2 s → 65 ms at 1,024 nodes), k-medoids up to 37×,
+  Floyd–Warshall up to 17×.
 
 ### Changed
 
@@ -112,6 +122,13 @@ that compile and then behave differently.
   edges, then leaf nodes, then labels; slot order within a stream.
 - **Animations run concurrently by channel** and sequence by promise;
   overlapping channels evict the older animation in place.
+- **The expensive whole-graph algorithms are async** (round 65): the
+  nine methods above return promises — `await` the call, then use the
+  result exactly as in v3.  Runtime option validation on them surfaces
+  as a rejection; a bad `executor` value still throws synchronously.
+  The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
+  `bellmanFord`, `kruskal`, components, degree/closeness centrality)
+  stays synchronous.
 - **Colours tween in OKLab**, matching the mapper default (v3 tweened
   per-channel in sRGB).
 - **`spring( bounce )`** replaces `spring( tension, friction )`.

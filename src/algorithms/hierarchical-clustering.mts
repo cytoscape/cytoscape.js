@@ -312,8 +312,8 @@ const buildClustersFromTree = (
 /**
  * The async hierarchical-clustering entry point behind
  * `eles.hierarchicalClustering()`: validates `executor` synchronously,
- * then routes to the CPU reference implementation or, in a later round,
- * the WGSL distance-matrix kernels (the merge chain itself is
+ * then routes to the CPU reference implementation or the WGSL
+ * distance-matrix kernels (the merge chain itself is
  * inherently sequential and stays on the CPU under every executor).
  *
  * @param coll — the calling collection

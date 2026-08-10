@@ -1,17 +1,41 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 export interface PageRankOptions {
   dampingFactor?: number;
   precision?: number;
   iterations?: number;
   weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 export interface PageRankResult {
   rank(node: Collection): number | undefined;
 }
+
+/**
+ * The async PageRank entry point behind `eles.pageRank()`: validates
+ * `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `pageRank`, plus `executor`
+ * @returns a promise of the `{ rank }` accessor
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const pageRankAsync = (
+  coll: Collection,
+  options: PageRankOptions = {},
+): Promise<PageRankResult> => {
+  const executor = resolveExecutor(options.executor);
+  const n = subgraph(coll).nodeSlots.length;
+
+  return runAlgo(executor, n, GPU_MIN_N, () => pageRank(coll, options), null);
+};
 
 /** PageRank over the calling collection (power method on the dense matrix). */
 export const pageRank = (

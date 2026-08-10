@@ -55,8 +55,8 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     return res;
   };
 
-  it('eles.pageRank(): ranks sum to 1', function () {
-    var res = cy.elements().pageRank({ iterations: 20 });
+  it('eles.pageRank(): ranks sum to 1', async function () {
+    var res = await cy.elements().pageRank({ iterations: 20 });
     var sum = 0;
 
     cy.nodes().forEach((node) => {
@@ -187,8 +187,8 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.closeness(a)).to.be.within(0.7, 0.8); // 3.33 / 4.5
   });
 
-  it('eles.betweennessCentrality() unweighted undirected', function () {
-    var res = cy.elements().betweennessCentrality();
+  it('eles.betweennessCentrality() unweighted undirected', async function () {
+    var res = await cy.elements().betweennessCentrality();
 
     expect(res.betweenness(a)).to.equal(0);
     expect(res.betweenness(b).toFixed(2)).to.equal('1.67');
@@ -197,8 +197,8 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.betweenness(e).toFixed(2)).to.equal('5.33');
   });
 
-  it('eles.betweennessCentrality() unweighted directed', function () {
-    var res = cy.elements().betweennessCentrality({ directed: true });
+  it('eles.betweennessCentrality() unweighted directed', async function () {
+    var res = await cy.elements().betweennessCentrality({ directed: true });
 
     expect(res.betweenness(a)).to.equal(0);
     expect(res.betweenness(b)).to.equal(3);
@@ -207,8 +207,8 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.betweenness(e)).to.equal(0);
   });
 
-  it('eles.betweennessCentrality() weighted undirected', function () {
-    var res = cy.elements().betweennessCentrality({ weight });
+  it('eles.betweennessCentrality() weighted undirected', async function () {
+    var res = await cy.elements().betweennessCentrality({ weight });
 
     expect(res.betweenness(a)).to.equal(1);
     expect(res.betweenness(b)).to.equal(0);
@@ -217,8 +217,10 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.betweenness(e)).to.equal(6);
   });
 
-  it('eles.betweennessCentrality() weighted directed', function () {
-    var res = cy.elements().betweennessCentrality({ weight, directed: true });
+  it('eles.betweennessCentrality() weighted directed', async function () {
+    var res = await cy
+      .elements()
+      .betweennessCentrality({ weight, directed: true });
 
     expect(res.betweenness(a)).to.equal(0);
     expect(res.betweenness(b)).to.equal(3);
@@ -227,7 +229,7 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.betweenness(e)).to.equal(0);
   });
 
-  it('eles.betweennessCentrality() unweighted directed: multiple shortest paths', function () {
+  it('eles.betweennessCentrality() unweighted directed: multiple shortest paths', async function () {
     cy.remove(cy.$id('ae'));
     cy.remove(cy.$id('bc'));
     cy.remove(cy.$id('cd'));
@@ -237,7 +239,7 @@ describe('gpu/algorithms: pageRank + centralities', function () {
       { group: 'edges', data: { id: 'ec', source: 'e', target: 'c' } },
     ]);
 
-    var res = cy.elements().betweennessCentrality({ directed: true });
+    var res = await cy.elements().betweennessCentrality({ directed: true });
 
     expect(res.betweenness(a)).to.equal(0);
     expect(res.betweenness(b)).to.equal(1);
@@ -246,8 +248,8 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.betweenness(e)).to.equal(4);
   });
 
-  it('betweennessNormalized divides by the max', function () {
-    var res = cy.elements().betweennessCentrality();
+  it('betweennessNormalized divides by the max', async function () {
+    var res = await cy.elements().betweennessCentrality();
 
     expect(res.betweennessNormalized(c)).to.equal(1);
     expect(res.betweennessNormalised(e)).to.equal(1);
@@ -278,11 +280,11 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(cy.elements().closenessCentrality({ root: b })).to.equal(4);
   });
 
-  it('aliases resolve', function () {
+  it('aliases resolve', async function () {
     expect(cy.elements().dc({ root: a }).degree).to.equal(2);
     expect(cy.elements().dcn({}).degree(c)).to.equal(1);
     expect(cy.elements().cc({ root: b })).to.equal(4);
     expect(cy.elements().ccn({}).closeness(c)).to.equal(1);
-    expect(cy.elements().bc().betweenness(a)).to.equal(0);
+    expect((await cy.elements().bc()).betweenness(a)).to.equal(0);
   });
 });

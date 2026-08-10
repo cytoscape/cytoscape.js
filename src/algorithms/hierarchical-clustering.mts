@@ -4,6 +4,8 @@
 import type { Collection } from '../collection.mjs';
 import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 export type HierarchicalAttributeFn = (node: Collection) => number;
 
@@ -16,6 +18,8 @@ export interface HierarchicalClusteringOptions {
   addDendrogram?: boolean;
   dendrogramDepth?: number;
   attributes?: HierarchicalAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 interface ClusterNode {
@@ -298,6 +302,34 @@ const buildClustersFromTree = (
     : [];
 
   return leftC.concat(rightC);
+};
+
+/**
+ * The async hierarchical-clustering entry point behind
+ * `eles.hierarchicalClustering()`: validates `executor` synchronously,
+ * then routes to the CPU reference implementation or, in a later round,
+ * the WGSL distance-matrix kernels (the merge chain itself is
+ * inherently sequential and stays on the CPU under every executor).
+ *
+ * @param coll — the calling collection
+ * @param options — as `hierarchicalClustering`, plus `executor`
+ * @returns a promise of the clusters
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const hierarchicalClusteringAsync = (
+  coll: Collection,
+  options?: HierarchicalClusteringOptions,
+): Promise<Collection[]> => {
+  const executor = resolveExecutor(options?.executor);
+  const n = coll.nodes().length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => hierarchicalClustering(coll, options),
+    null,
+  );
 };
 
 /**

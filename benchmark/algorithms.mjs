@@ -53,6 +53,38 @@ function cmp(name, setup, op) {
   });
 }
 
+// round 65: the async tier's comparator — the same rotation pool and IC
+// pre-warm alternations as cmp() (the round-62.5c rule: every cmp-style
+// helper carries them), but the gpu side is awaited, because the nine
+// expensive whole-graph algorithms return promises now (executor
+// contract; these rows pass no executor, so they run 'auto', which is
+// the CPU path in Node).  The await adds a microtask to the gpu side
+// only; every row using this helper runs µs–ms, orders of magnitude
+// above that floor, so the asymmetry cannot decide a sign.
+async function cmpAsync(name, setup, op) {
+  const vs = Array.from({ length: K }, (_, k) => setup(v3, k));
+  const gs = Array.from({ length: K }, (_, k) => setup(gpu, k));
+  let i = 0;
+
+  for (let w = 0; w < 2; w++) {
+    do_not_optimize(op(vs[w & MASK], w & MASK));
+    do_not_optimize(await op(gs[w & MASK], w & MASK));
+  }
+
+  group(name, () => {
+    summary(() => {
+      bench('v3', () => {
+        const k = i++ & MASK;
+        return do_not_optimize(op(vs[k], k));
+      });
+      bench('gpu', async () => {
+        const k = i++ & MASK;
+        return do_not_optimize(await op(gs[k], k));
+      });
+    });
+  });
+}
+
 // operand builders: { eles, root, goal } per rotation slot
 const ctx = (cy, k) => ({
   eles: cy.elements(),
@@ -84,7 +116,7 @@ cmp('algo: hopcroft-tarjan biconnected', ctx, (c) =>
 cmp('algo: hierholzer (directed)', ctx, (c) =>
   c.eles.hierholzer({ root: c.root, directed: true }),
 );
-cmp('algo: betweennessCentrality (unweighted)', ctx, (c) =>
+await cmpAsync('algo: betweennessCentrality (unweighted)', ctx, (c) =>
   c.eles.betweennessCentrality(),
 );
 cmp('algo: degreeCentralityNormalized', ctx, (c) =>
@@ -103,7 +135,7 @@ cmp('algo: degreeCentrality (one root)', ctx, (c) =>
 );
 
 if (N <= 1000) {
-  cmp('algo: pageRank (20 iters)', ctx, (c) =>
+  await cmpAsync('algo: pageRank (20 iters)', ctx, (c) =>
     c.eles.pageRank({ iterations: 20 }),
   );
 
@@ -117,17 +149,21 @@ if (N <= 1000) {
 }
 
 if (N <= 500) {
-  cmp('algo: floydWarshall', ctx, (c) => c.eles.floydWarshall({ weight }));
+  await cmpAsync('algo: floydWarshall', ctx, (c) =>
+    c.eles.floydWarshall({ weight }),
+  );
   cmp('algo: closenessCentralityNormalized', ctx, (c) =>
     c.eles.closenessCentralityNormalized({}),
   );
-  cmp('algo: markovClustering', ctx, (c) => c.eles.markovClustering({}));
-  cmp('algo: hierarchicalClustering (threshold)', ctx, (c) =>
+  await cmpAsync('algo: markovClustering', ctx, (c) =>
+    c.eles.markovClustering({}),
+  );
+  await cmpAsync('algo: hierarchicalClustering (threshold)', ctx, (c) =>
     c.eles.hierarchicalClustering({
       attributes: [(n) => n.data('foo'), (n) => n.data('weight')],
     }),
   );
-  cmp('algo: kMeans (fixed centroids)', ctx, (c) =>
+  await cmpAsync('algo: kMeans (fixed centroids)', ctx, (c) =>
     c.eles.kMeans({
       k: 4,
       attributes: [(n) => n.data('foo'), (n) => n.data('weight')],
@@ -150,7 +186,7 @@ if (N <= 500) {
   // the slot-native walks above.  Iteration counts are capped on both
   // sides so the rows measure the algorithm rather than how long each
   // implementation happens to wander.
-  cmp('algo: kMedoids', ctx, (c) =>
+  await cmpAsync('algo: kMedoids', ctx, (c) =>
     c.eles.kMedoids({
       k: 4,
       attributes: attrs,
@@ -158,7 +194,7 @@ if (N <= 500) {
     }),
   );
 
-  cmp('algo: fuzzyCMeans', ctx, (c) =>
+  await cmpAsync('algo: fuzzyCMeans', ctx, (c) =>
     c.eles.fuzzyCMeans({
       k: 4,
       attributes: attrs,
@@ -166,7 +202,7 @@ if (N <= 500) {
     }),
   );
 
-  cmp('algo: affinityPropagation', ctx, (c) =>
+  await cmpAsync('algo: affinityPropagation', ctx, (c) =>
     c.eles.affinityPropagation({
       attributes: attrs,
       damping: 0.8,
@@ -183,7 +219,7 @@ if (N <= 500) {
 
   // the weighted centrality branch (see the closeness row above): at
   // this scale v3 pays its re-sort per relaxation
-  cmp('algo: betweennessCentrality (weighted)', ctx, (c) =>
+  await cmpAsync('algo: betweennessCentrality (weighted)', ctx, (c) =>
     c.eles.betweennessCentrality({ weight }),
   );
 }

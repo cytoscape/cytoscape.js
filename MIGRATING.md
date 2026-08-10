@@ -405,6 +405,20 @@ app trips on after everything else works.
 | Compound auto-sizing | can include labels | reads child **body** extents only (`compound-sizing-wrt-labels: 'include'` throws) |
 | `:selected` / `:parent:selected` | default-sheet blocks any later block beats | the same rule, as a `{ when: { selected: true } }` condition in v4's default stylesheet — so naming `background-color` yourself still replaces it, exactly as in v3 |
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
+| The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
+
+**The whole-graph tier is async, and `executor` picks where it runs.** The
+nine algorithms above return promises because they can run on the GPU:
+`{ executor: 'auto' }` (the default) uses the GPU where an adapter exists and
+the input is large enough to win, `'cpu'` forces the bit-reproducible
+reference implementation, and `'gpu'` forces the kernels (rejecting where
+WebGPU is unavailable, so a silent slow path cannot masquerade as a fast
+one). GPU results may differ from CPU results in float detail — WGSL is
+f32 — so a caller that needs run-to-run identical numbers says
+`executor: 'cpu'`. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
+`bellmanFord`, `kruskal`, the components algorithms, degree/closeness
+centrality) stays synchronous: those run per-root in tight loops, and no
+GPU formulation would beat their slot-native CPU walks.
 
 **State is a condition, not a selector.** See "Styling element state" above:
 `:selected`, `:active`, `:locked` and the rest are `when` conditions on a

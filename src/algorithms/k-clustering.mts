@@ -5,6 +5,8 @@
 import type { Collection } from '../collection.mjs';
 import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 /** A node attribute accessor used as a clustering feature. */
 export type KAttributeFn = (node: Collection) => number;
@@ -20,6 +22,8 @@ export interface KClusteringOptions {
   attributes?: KAttributeFn[];
   testMode?: boolean;
   testCentroids?: number | FeatureCentroid[] | Collection[] | null;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 export interface FuzzyCMeansResult {
@@ -260,6 +264,72 @@ const findCost = (
   }
 
   return cost;
+};
+
+/**
+ * The async k-means entry point behind `eles.kMeans()`: validates
+ * `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `kMeans`, plus `executor`
+ * @returns a promise of the clusters
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const kMeansAsync = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): Promise<Collection[]> => {
+  const executor = resolveExecutor(options?.executor);
+  const n = coll.nodes().length;
+
+  return runAlgo(executor, n, GPU_MIN_N, () => kMeans(coll, options), null);
+};
+
+/**
+ * The async k-medoids entry point behind `eles.kMedoids()`: validates
+ * `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `kMedoids`, plus `executor`
+ * @returns a promise of the clusters
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const kMedoidsAsync = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): Promise<Collection[]> => {
+  const executor = resolveExecutor(options?.executor);
+  const n = coll.nodes().length;
+
+  return runAlgo(executor, n, GPU_MIN_N, () => kMedoids(coll, options), null);
+};
+
+/**
+ * The async fuzzy c-means entry point behind `eles.fuzzyCMeans()`:
+ * validates `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `fuzzyCMeans`, plus `executor`
+ * @returns a promise of `{ clusters, degreeOfMembership }`
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const fuzzyCMeansAsync = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): Promise<FuzzyCMeansResult> => {
+  const executor = resolveExecutor(options?.executor);
+  const n = coll.nodes().length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => fuzzyCMeans(coll, options),
+    null,
+  );
 };
 
 /**

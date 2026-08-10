@@ -2,6 +2,8 @@
 
 import type { Collection } from '../collection.mjs';
 import { subgraph } from './algo-shared.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 /** A similarity function: maps an edge to a numeric contribution. */
 export type MarkovAttributeFn = (edge: Collection) => number;
@@ -12,6 +14,8 @@ export interface MarkovClusteringOptions {
   multFactor?: number;
   maxIterations?: number;
   attributes?: MarkovAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 const normalize = (M: Float64Array, n: number): void => {
@@ -92,6 +96,33 @@ const hasConverged = (
   }
 
   return true;
+};
+
+/**
+ * The async MCL entry point behind `eles.markovClustering()`: validates
+ * `executor` synchronously (so a bad value throws at the call site),
+ * then routes to the CPU reference implementation or, in a later
+ * round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `markovClustering`, plus `executor`
+ * @returns a promise of the clusters
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const markovClusteringAsync = (
+  coll: Collection,
+  options: MarkovClusteringOptions = {},
+): Promise<Collection[]> => {
+  const executor = resolveExecutor(options.executor);
+  const n = subgraph(coll).nodeSlots.length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => markovClustering(coll, options),
+    null,
+  );
 };
 
 /**

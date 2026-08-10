@@ -226,9 +226,9 @@ describe('gpu/aliases: the alias surface (29.1)', function () {
       expect(cy.nodes().filter({ selected: true }).length).to.equal(0);
     });
 
-    it('eles.bc() is betweennessCentrality', function () {
-      var viaAlias = cy.elements().bc();
-      var viaName = cy.elements().betweennessCentrality();
+    it('eles.bc() is betweennessCentrality', async function () {
+      var viaAlias = await cy.elements().bc();
+      var viaName = await cy.elements().betweennessCentrality();
 
       expect(viaAlias.betweenness(cy.$id('a'))).to.equal(
         viaName.betweenness(cy.$id('a')),

@@ -5,8 +5,18 @@ import { clusteringDistance } from '../src/algorithms/clustering-distances.mjs';
 // ported from test/collection-k-means.mjs, -k-medoids, -fuzzy-c-means,
 // -hierarchical, -markov-clustering; affinity propagation gets a compact
 // deterministic fixture instead of v3's 700-line weighted-graph fixture.
+// Round 65 made the clustering tier async (the executor contract), so the
+// specs await; the fixtures and expectations are unchanged.
 describe('gpu/algorithms: clustering', function () {
   var ids = (eles) => eles.map((ele) => ele.id());
+  // resolves to the rejection error (and fails if the promise fulfils)
+  var rejection = (promise) =>
+    promise.then(
+      () => {
+        throw new Error('expected the promise to reject');
+      },
+      (err) => err,
+    );
 
   describe('eles.kMeans()', function () {
     var cy, options;
@@ -40,26 +50,26 @@ describe('gpu/algorithms: clustering', function () {
       };
     });
 
-    it('returns k clusters covering every node exactly once', function () {
-      var clusters = cy.elements().kMeans(options);
+    it('returns k clusters covering every node exactly once', async function () {
+      var clusters = await cy.elements().kMeans(options);
 
       expect(clusters.length).to.equal(2);
       expect(clusters[0].length + clusters[1].length).to.equal(7);
       expect(clusters[0].intersection(clusters[1]).length).to.equal(0);
     });
 
-    it('returns the numerically correct clusters', function () {
-      var clusters = cy.elements().kMeans(options);
+    it('returns the numerically correct clusters', async function () {
+      var clusters = await cy.elements().kMeans(options);
 
       expect(ids(clusters[0])).to.deep.equal(['1', '2']);
       expect(ids(clusters[1])).to.deep.equal(['3', '4', '5', '6', '7']);
     });
 
-    it('is deterministic with hard-coded centroids', function () {
-      var first = cy.elements().kMeans(options);
+    it('is deterministic with hard-coded centroids', async function () {
+      var first = await cy.elements().kMeans(options);
 
       for (var i = 0; i < 5; i++) {
-        var again = cy.elements().kMeans(options);
+        var again = await cy.elements().kMeans(options);
 
         for (var j = 0; j < first.length; j++) {
           expect(again[j].same(first[j])).to.be.true;
@@ -100,16 +110,16 @@ describe('gpu/algorithms: clustering', function () {
       };
     });
 
-    it('returns the numerically correct clusters', function () {
-      var clusters = cy.elements().kMedoids(options);
+    it('returns the numerically correct clusters', async function () {
+      var clusters = await cy.elements().kMedoids(options);
 
       expect(clusters.length).to.equal(2);
       expect(ids(clusters[0])).to.deep.equal(['1', '2', '3', '4']);
       expect(ids(clusters[1])).to.deep.equal(['5', '6', '7', '8', '9', '10']);
     });
 
-    it('allows a custom 2-arg distance function', function () {
-      var clusters = cy.elements().kMedoids({
+    it('allows a custom 2-arg distance function', async function () {
+      var clusters = await cy.elements().kMedoids({
         k: 2,
         maxIterations: 10,
         testMode: true,
@@ -130,18 +140,19 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[1])).to.deep.equal(['5', '6', '7', '8', '9', '10']);
     });
 
-    it('throws when k exceeds the number of nodes', function () {
-      expect(() =>
+    it('rejects when k exceeds the number of nodes', async function () {
+      var err = await rejection(
         cy.elements().kMedoids({ ...options, testMode: false, k: 11 }),
-      ).to.throw(/cannot exceed the number of nodes/);
+      );
+
+      expect(err.message).to.match(/cannot exceed the number of nodes/);
     });
 
-    it('throws for an empty collection instead of hanging', function () {
+    it('rejects for an empty collection instead of hanging', async function () {
       var emptyCy = cytoscape({ elements: [] });
+      var err = await rejection(emptyCy.elements().kMedoids({ k: 2 }));
 
-      expect(() => emptyCy.elements().kMedoids({ k: 2 })).to.throw(
-        /cannot exceed the number of nodes/,
-      );
+      expect(err.message).to.match(/cannot exceed the number of nodes/);
     });
   });
 
@@ -182,8 +193,8 @@ describe('gpu/algorithms: clustering', function () {
       };
     });
 
-    it('returns the numerically correct clusters (random init, separated data)', function () {
-      var results = cy.elements().fuzzyCMeans(options);
+    it('returns the numerically correct clusters (random init, separated data)', async function () {
+      var results = await cy.elements().fuzzyCMeans(options);
       var clusters = results.clusters;
 
       expect(clusters.length).to.equal(2);
@@ -212,8 +223,8 @@ describe('gpu/algorithms: clustering', function () {
       ]);
     });
 
-    it('degreeOfMembership rows sum to ~1', function () {
-      var results = cy.elements().fuzzyCMeans(options);
+    it('degreeOfMembership rows sum to ~1', async function () {
+      var results = await cy.elements().fuzzyCMeans(options);
       var U = results.degreeOfMembership;
 
       expect(U.length).to.equal(16);
@@ -225,8 +236,8 @@ describe('gpu/algorithms: clustering', function () {
       }
     });
 
-    it('fcm alias resolves', function () {
-      expect(cy.elements().fcm(options).clusters.length).to.equal(2);
+    it('fcm alias resolves', async function () {
+      expect((await cy.elements().fcm(options)).clusters.length).to.equal(2);
     });
   });
 
@@ -255,8 +266,8 @@ describe('gpu/algorithms: clustering', function () {
       };
     });
 
-    it('dendrogram level 0: one cluster with all nodes', function () {
-      var clusters = cy
+    it('dendrogram level 0: one cluster with all nodes', async function () {
+      var clusters = await cy
         .elements()
         .hierarchicalClustering({ ...options, dendrogramDepth: 0 });
 
@@ -264,8 +275,8 @@ describe('gpu/algorithms: clustering', function () {
       expect(clusters[0].length).to.equal(6);
     });
 
-    it('dendrogram level 1: two clusters', function () {
-      var clusters = cy
+    it('dendrogram level 1: two clusters', async function () {
+      var clusters = await cy
         .elements()
         .hierarchicalClustering({ ...options, dendrogramDepth: 1 });
 
@@ -274,8 +285,8 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[1])).to.deep.equal(['C', 'E', 'F', 'D']);
     });
 
-    it('dendrogram level 2: four clusters', function () {
-      var clusters = cy
+    it('dendrogram level 2: four clusters', async function () {
+      var clusters = await cy
         .elements()
         .hierarchicalClustering({ ...options, dendrogramDepth: 2 });
 
@@ -286,8 +297,8 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[3])).to.deep.equal(['E', 'F', 'D']);
     });
 
-    it('dendrogram level 3: five clusters', function () {
-      var clusters = cy
+    it('dendrogram level 3: five clusters', async function () {
+      var clusters = await cy
         .elements()
         .hierarchicalClustering({ ...options, dendrogramDepth: 3 });
 
@@ -295,9 +306,9 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[4])).to.deep.equal(['F', 'D']);
     });
 
-    it('dendrogram levels 4+: one node per cluster (fails safely)', function () {
+    it('dendrogram levels 4+: one node per cluster (fails safely)', async function () {
       for (var depth of [4, 5, 10]) {
-        var clusters = cy
+        var clusters = await cy
           .elements()
           .hierarchicalClustering({ ...options, dendrogramDepth: depth });
 
@@ -307,8 +318,8 @@ describe('gpu/algorithms: clustering', function () {
       }
     });
 
-    it('threshold mode with default Infinity merges everything', function () {
-      var clusters = cy.elements().hierarchicalClustering({
+    it('threshold mode with default Infinity merges everything', async function () {
+      var clusters = await cy.elements().hierarchicalClustering({
         distance: 'euclidean',
         linkage: 'min',
         attributes: options.attributes,
@@ -318,8 +329,8 @@ describe('gpu/algorithms: clustering', function () {
       expect(clusters[0].length).to.equal(6);
     });
 
-    it('allows a custom 2-arg distance function', function () {
-      var clusters = cy.elements().hierarchicalClustering({
+    it('allows a custom 2-arg distance function', async function () {
+      var clusters = await cy.elements().hierarchicalClustering({
         linkage: 'min',
         mode: 'dendrogram',
         dendrogramDepth: 1,
@@ -332,10 +343,10 @@ describe('gpu/algorithms: clustering', function () {
       expect(clusters.length).to.equal(2);
     });
 
-    it('addDendrogram adds intermediary nodes and edges', function () {
+    it('addDendrogram adds intermediary nodes and edges', async function () {
       var before = cy.nodes().length;
 
-      cy.elements().hierarchicalClustering({
+      await cy.elements().hierarchicalClustering({
         ...options,
         dendrogramDepth: 0,
         addDendrogram: true,
@@ -345,17 +356,17 @@ describe('gpu/algorithms: clustering', function () {
       expect(cy.edges().length).to.be.above(0);
     });
 
-    it('returns an empty array for an empty collection', function () {
+    it('returns an empty array for an empty collection', async function () {
       var emptyCy = cytoscape({ elements: [] });
 
-      expect(emptyCy.elements().hierarchicalClustering(options)).to.deep.equal(
-        [],
-      );
+      expect(
+        await emptyCy.elements().hierarchicalClustering(options),
+      ).to.deep.equal([]);
     });
 
-    it('hca alias resolves', function () {
+    it('hca alias resolves', async function () {
       expect(
-        cy.elements().hca({ ...options, dendrogramDepth: 0 }).length,
+        (await cy.elements().hca({ ...options, dendrogramDepth: 0 })).length,
       ).to.equal(1);
     });
   });
@@ -424,8 +435,8 @@ describe('gpu/algorithms: clustering', function () {
       });
     });
 
-    it('returns the numerically correct clusters', function () {
-      var clusters = cy.elements().markovClustering({
+    it('returns the numerically correct clusters', async function () {
+      var clusters = await cy.elements().markovClustering({
         inflateFactor: 1.8,
         attributes: [(edge) => edge.data('weight')],
       });
@@ -442,8 +453,8 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[2])).to.deep.equal(['11', '66', '77', '123']);
     });
 
-    it('every node lands in exactly one cluster', function () {
-      var clusters = cy.elements().mcl({
+    it('every node lands in exactly one cluster', async function () {
+      var clusters = await cy.elements().mcl({
         inflateFactor: 1.8,
         attributes: [(edge) => edge.data('weight')],
       });
@@ -477,8 +488,8 @@ describe('gpu/algorithms: clustering', function () {
       attributes: [(node) => node.data('v')],
     });
 
-    it('partitions well-separated data', function () {
-      var clusters = cy.elements().affinityPropagation(opts());
+    it('partitions well-separated data', async function () {
+      var clusters = await cy.elements().affinityPropagation(opts());
       var total = clusters.reduce((sum, cluster) => sum + cluster.length, 0);
 
       expect(total).to.equal(6);
@@ -491,17 +502,20 @@ describe('gpu/algorithms: clustering', function () {
       expect(clusterOf('a1')).to.not.equal(clusterOf('b1'));
     });
 
-    it('validates damping and preference like v3', function () {
-      expect(() =>
+    it('validates damping and preference like v3 (as rejections)', async function () {
+      var dampingErr = await rejection(
         cy.elements().affinityPropagation({ ...opts(), damping: 1.5 }),
-      ).to.throw(/Damping/);
-      expect(() =>
+      );
+      var preferenceErr = await rejection(
         cy.elements().affinityPropagation({ ...opts(), preference: 'bogus' }),
-      ).to.throw(/Preference/);
+      );
+
+      expect(dampingErr.message).to.match(/Damping/);
+      expect(preferenceErr.message).to.match(/Preference/);
     });
 
-    it('ap alias resolves', function () {
-      expect(cy.elements().ap(opts()).length).to.be.above(0);
+    it('ap alias resolves', async function () {
+      expect((await cy.elements().ap(opts())).length).to.be.above(0);
     });
   });
 
@@ -539,7 +553,7 @@ describe('gpu/algorithms: clustering', function () {
       expect(d('mahalanobis')).to.equal(d('euclidean'));
     });
 
-    it('kMeans accepts them as option values', function () {
+    it('kMeans accepts them as option values', async function () {
       // the metrics reach the algorithms through the same option the
       // specs above exercise with 'euclidean'
       var cy2 = cytoscape({
@@ -553,7 +567,7 @@ describe('gpu/algorithms: clustering', function () {
       var attributes = [(n) => n.data('a'), (n) => n.data('b')];
 
       for (var metric of ['squaredEuclidean', 'max']) {
-        var clusters = cy2.elements().kMeans({
+        var clusters = await cy2.elements().kMeans({
           k: 2,
           distance: metric,
           maxIterations: 20,

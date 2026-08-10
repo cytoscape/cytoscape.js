@@ -2,16 +2,46 @@ import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 export interface FloydWarshallOptions {
   weight?: WeightFn;
   directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 export interface FloydWarshallResult {
   distance(from: Collection, to: Collection): number | undefined;
   path(from: Collection, to: Collection): Collection;
 }
+
+/**
+ * The async Floyd–Warshall entry point behind `eles.floydWarshall()`:
+ * validates `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `floydWarshall`, plus `executor`
+ * @returns a promise of the `{ distance, path }` accessors
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const floydWarshallAsync = (
+  coll: Collection,
+  options: FloydWarshallOptions = {},
+): Promise<FloydWarshallResult> => {
+  const executor = resolveExecutor(options.executor);
+  const n = subgraph(coll).nodeSlots.length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => floydWarshall(coll, options),
+    null,
+  );
+};
 
 /** All-pairs shortest paths over the calling collection (dense N² matrices). */
 export const floydWarshall = (

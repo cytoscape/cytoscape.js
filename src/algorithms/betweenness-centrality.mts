@@ -1,10 +1,16 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 export interface BetweennessCentralityOptions {
   weight?: WeightFn | null;
   directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Weighted runs have no GPU path: 'auto' quietly uses the CPU and an
+   * explicit 'gpu' rejects. */
+  executor?: AlgoExecutor;
 }
 
 export interface BetweennessCentralityResult {
@@ -12,6 +18,39 @@ export interface BetweennessCentralityResult {
   betweennessNormalized(node: Collection): number;
   betweennessNormalised(node: Collection): number;
 }
+
+/**
+ * The async betweenness entry point behind `eles.betweennessCentrality()`:
+ * validates `executor` synchronously, then routes to the CPU reference
+ * implementation or, in a later round, the WGSL kernels.  Weighted runs
+ * (a `weight` fn given) have no GPU formulation here — Brandes over
+ * weights needs a priority queue — so they always run on the CPU, and
+ * an explicit `executor: 'gpu'` rejects rather than silently degrading.
+ *
+ * @param coll — the calling collection
+ * @param options — as `betweennessCentrality`, plus `executor`
+ * @returns a promise of the betweenness accessors
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const betweennessCentralityAsync = (
+  coll: Collection,
+  options: BetweennessCentralityOptions = {},
+): Promise<BetweennessCentralityResult> => {
+  const executor = resolveExecutor(options.executor);
+  const n = subgraph(coll).nodeSlots.length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => betweennessCentrality(coll, options),
+    null,
+    options.weight != null
+      ? 'weighted betweennessCentrality has no GPU path — ' +
+          "use executor 'cpu' or 'auto'"
+      : undefined,
+  );
+};
 
 /**
  * Brandes' betweenness centrality over the calling collection.  Neighbor

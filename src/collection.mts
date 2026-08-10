@@ -37,24 +37,24 @@ import {
   dijkstra as dijkstraImpl,
   aStar as aStarImpl,
   bellmanFord as bellmanFordImpl,
-  floydWarshall as floydWarshallImpl,
+  floydWarshallAsync as floydWarshallImpl,
   kruskal as kruskalImpl,
   tarjanStronglyConnected as tarjanImpl,
   hopcroftTarjanBiconnected as hopcroftTarjanImpl,
   hierholzer as hierholzerImpl,
   kargerStein as kargerSteinImpl,
-  pageRank as pageRankImpl,
+  pageRankAsync as pageRankImpl,
   degreeCentrality as degreeCentralityImpl,
   degreeCentralityNormalized as degreeCentralityNormalizedImpl,
   closenessCentrality as closenessCentralityImpl,
   closenessCentralityNormalized as closenessCentralityNormalizedImpl,
-  betweennessCentrality as betweennessCentralityImpl,
-  kMeans as kMeansImpl,
-  kMedoids as kMedoidsImpl,
-  fuzzyCMeans as fuzzyCMeansImpl,
-  hierarchicalClustering as hierarchicalClusteringImpl,
-  markovClustering as markovClusteringImpl,
-  affinityPropagation as affinityPropagationImpl,
+  betweennessCentralityAsync as betweennessCentralityImpl,
+  kMeansAsync as kMeansImpl,
+  kMedoidsAsync as kMedoidsImpl,
+  fuzzyCMeansAsync as fuzzyCMeansImpl,
+  hierarchicalClusteringAsync as hierarchicalClusteringImpl,
+  markovClusteringAsync as markovClusteringImpl,
+  affinityPropagationAsync as affinityPropagationImpl,
 } from './algorithms/index.mjs';
 import type {
   SearchArgs,
@@ -5496,12 +5496,17 @@ export class Collection {
 
   /**
    * Floyd–Warshall all-pairs shortest paths.  O(n³) — for a single
-   * source prefer `dijkstra`/`bellmanFord`.
+   * source prefer `dijkstra`/`bellmanFord`.  Async (round 65): the
+   * expensive whole-graph tier returns promises, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the maths
+   * runs; 'cpu' is the reproducible reference.
    *
-   * @param options — `{ weight, directed }`
-   * @returns `{ distance, path }` accessors
+   * @param options — `{ weight, directed, executor }`
+   * @returns a promise of the `{ distance, path }` accessors
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  floydWarshall(options?: FloydWarshallOptions): FloydWarshallResult {
+  floydWarshall(options?: FloydWarshallOptions): Promise<FloydWarshallResult> {
     return floydWarshallImpl(this, options);
   }
 
@@ -5563,12 +5568,17 @@ export class Collection {
   }
 
   /**
-   * PageRank over the (directed) subgraph.
+   * PageRank over the (directed) subgraph.  Async (round 65): returns a
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * picks where the power method runs; 'cpu' is the reproducible
+   * reference.
    *
-   * @param options — `{ dampingFactor, precision, iterations }`
-   * @returns `{ rank }`, a per-node accessor
+   * @param options — `{ dampingFactor, precision, iterations, executor }`
+   * @returns a promise of `{ rank }`, a per-node accessor
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  pageRank(options?: PageRankOptions): PageRankResult {
+  pageRank(options?: PageRankOptions): Promise<PageRankResult> {
     return pageRankImpl(this, options);
   }
 
@@ -5630,14 +5640,20 @@ export class Collection {
 
   /**
    * Betweenness centrality — how often each node lies on shortest paths
-   * between other pairs.
+   * between other pairs.  Async (round 65): returns a promise, and
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
+   * Brandes sweep runs.  Weighted runs have no GPU path: 'auto' uses
+   * the CPU and an explicit 'gpu' rejects.
    *
-   * @param options — `{ weight, directed }`
-   * @returns `{ betweenness, betweennessNormalized }` accessors
+   * @param options — `{ weight, directed, executor }`
+   * @returns a promise of the `{ betweenness, betweennessNormalized }`
+   *   accessors
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable or the run is weighted
    */
   betweennessCentrality(
     options?: BetweennessCentralityOptions,
-  ): BetweennessCentralityResult {
+  ): Promise<BetweennessCentralityResult> {
     return betweennessCentralityImpl(this, options);
   }
 
@@ -5648,48 +5664,66 @@ export class Collection {
    * algorithms this works on handles and `attributes` accessors rather
    * than on graph structure.
    *
+   * Async (round 65): returns a promise, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the iteration
+   * runs; 'cpu' is the reproducible reference.
+   *
    * @param options — `{ k, attributes, distance, maxIterations,
-   *   sensitivityThreshold }`, with `attributes` as plain functions
-   * @returns one collection per cluster
+   *   sensitivityThreshold, executor }`, with `attributes` as plain
+   *   functions
+   * @returns a promise of one collection per cluster
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  kMeans(options?: KClusteringOptions): Collection[] {
+  kMeans(options?: KClusteringOptions): Promise<Collection[]> {
     return kMeansImpl(this, options);
   }
 
   /**
    * k-medoids clustering — like k-means, but cluster centres are actual
-   * elements, which makes it robust to outliers.
+   * elements, which makes it robust to outliers.  Async, with the same
+   * `executor` contract as `kMeans`.
    *
    * @param options — as `kMeans`
-   * @returns one collection per cluster
+   * @returns a promise of one collection per cluster
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable, or if `k` exceeds the node count
    */
-  kMedoids(options?: KClusteringOptions): Collection[] {
+  kMedoids(options?: KClusteringOptions): Promise<Collection[]> {
     return kMedoidsImpl(this, options);
   }
 
   /**
    * Fuzzy c-means clustering: each element gets a degree of membership
-   * in every cluster rather than one hard assignment.
+   * in every cluster rather than one hard assignment.  Async, with the
+   * same `executor` contract as `kMeans`.
    *
    * @param options — as `kMeans`, plus the fuzziness exponent
-   * @returns `{ clusters, degreeOfMembership }`
+   * @returns a promise of `{ clusters, degreeOfMembership }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  fuzzyCMeans(options?: KClusteringOptions): FuzzyCMeansResult {
+  fuzzyCMeans(options?: KClusteringOptions): Promise<FuzzyCMeansResult> {
     return fuzzyCMeansImpl(this, options);
   }
 
   declare fcm: this['fuzzyCMeans'];
 
   /**
-   * Agglomerative hierarchical clustering.
+   * Agglomerative hierarchical clustering.  Async (round 65): returns a
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * picks where the distance matrix is built; the merge chain itself is
+   * sequential and always runs on the CPU.
    *
    * @param options — `{ attributes, distance, linkage, mode,
-   *   dendrogramDepth }`
-   * @returns one collection per cluster
+   *   dendrogramDepth, executor }`
+   * @returns a promise of one collection per cluster
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
   hierarchicalClustering(
     options?: HierarchicalClusteringOptions,
-  ): Collection[] {
+  ): Promise<Collection[]> {
     return hierarchicalClusteringImpl(this, options);
   }
 
@@ -5699,11 +5733,17 @@ export class Collection {
    * Markov clustering (MCL) — flow simulation over the graph, so unlike
    * the attribute-space algorithms this one clusters by structure.
    *
+   * Async (round 65): returns a promise, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
+   * expand/inflate iteration runs; 'cpu' is the reproducible reference.
+   *
    * @param options — `{ attributes, expandFactor, inflateFactor,
-   *   multFactor, maxIterations }`
-   * @returns one collection per cluster
+   *   multFactor, maxIterations, executor }`
+   * @returns a promise of one collection per cluster
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  markovClustering(options?: MarkovClusteringOptions): Collection[] {
+  markovClustering(options?: MarkovClusteringOptions): Promise<Collection[]> {
     return markovClusteringImpl(this, options);
   }
 
@@ -5713,11 +5753,19 @@ export class Collection {
    * Affinity propagation, which picks exemplars by message passing and
    * so needs no target cluster count.
    *
+   * Async (round 65): returns a promise, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the message
+   * passing runs; 'cpu' is the reproducible reference.
+   *
    * @param options — `{ attributes, distance, preference, damping,
-   *   minIterations, maxIterations }`
-   * @returns one collection per cluster
+   *   minIterations, maxIterations, executor }`
+   * @returns a promise of one collection per cluster
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable, or if `damping`/`preference` are invalid
    */
-  affinityPropagation(options?: AffinityPropagationOptions): Collection[] {
+  affinityPropagation(
+    options?: AffinityPropagationOptions,
+  ): Promise<Collection[]> {
     return affinityPropagationImpl(this, options);
   }
 

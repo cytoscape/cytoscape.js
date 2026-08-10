@@ -379,8 +379,8 @@ describe('gpu/algorithms: search + paths', function () {
   });
 
   describe('eles.floydWarshall()', function () {
-    it('directed, weighted', function () {
-      var res = cy.elements().floydWarshall({ directed: true, weight });
+    it('directed, weighted', async function () {
+      var res = await cy.elements().floydWarshall({ directed: true, weight });
       var path = res.path;
       var distance = res.distance;
 
@@ -415,8 +415,8 @@ describe('gpu/algorithms: search + paths', function () {
       expect(path(e, d).empty()).to.be.true;
     });
 
-    it('undirected, weighted', function () {
-      var res = cy.elements().floydWarshall({ directed: false, weight });
+    it('undirected, weighted', async function () {
+      var res = await cy.elements().floydWarshall({ directed: false, weight });
       var path = res.path;
       var distance = res.distance;
 
@@ -439,15 +439,15 @@ describe('gpu/algorithms: search + paths', function () {
       expect(nodeIds(path(e, a))).to.deep.equal(['e', 'a']);
     });
 
-    it('directed, unweighted', function () {
-      var res = cy.elements().floydWarshall({ directed: true });
+    it('directed, unweighted', async function () {
+      var res = await cy.elements().floydWarshall({ directed: true });
 
       expect(res.distance(a, d)).to.equal(3);
       expect(nodeIds(res.path(a, d))).to.deep.equal(['a', 'b', 'c', 'd']);
     });
 
-    it('undirected, unweighted', function () {
-      var res = cy.elements().floydWarshall({});
+    it('undirected, unweighted', async function () {
+      var res = await cy.elements().floydWarshall({});
 
       expect(res.distance(a, d)).to.equal(2);
       expect(nodeIds(res.path(a, d))).to.deep.equal(['a', 'e', 'd']);

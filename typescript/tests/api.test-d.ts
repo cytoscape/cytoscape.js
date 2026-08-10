@@ -120,9 +120,14 @@ const edges: Collection = one.connectedEdges();
 const dijkstra = cy.elements().dijkstra({ root: one, weight: () => 1 });
 const path: Collection = dijkstra.pathTo(cy.$id('b'));
 const components: Collection[] = cy.elements().components();
-const clusters: Collection[] = cy
+// round 65: the expensive whole-graph tier is async, with an `executor`
+// option routing between the CPU reference and the GPU kernels
+const clusters: Promise<Collection[]> = cy
   .nodes()
-  .kMeans({ k: 2, attributes: [(n) => n.degree() ?? 0] });
+  .kMeans({ k: 2, attributes: [(n) => n.degree() ?? 0], executor: 'cpu' });
+const ranks: Promise<{ rank(node: Collection): number | undefined }> = cy
+  .elements()
+  .pageRank({ executor: 'auto' });
 
 // -- viewport --
 
@@ -230,6 +235,7 @@ void [
   path,
   components,
   clusters,
+  ranks,
   extent,
   progress,
   paused,

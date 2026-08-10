@@ -4,6 +4,8 @@ import type { Collection } from '../collection.mjs';
 import { median, mean, min, max } from '../math.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor } from './executor.mjs';
 
 export type AffinityAttributeFn = (node: Collection) => number;
 export type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
@@ -15,6 +17,8 @@ export interface AffinityPropagationOptions {
   maxIterations?: number;
   minIterations?: number;
   attributes?: AffinityAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
 }
 
 const getPreference = (S: number[], preference: AffinityPreference): number => {
@@ -112,6 +116,33 @@ const assign = (n: number, S: number[], exemplars: number[]): number[] => {
   clusters = assignClusters(n, S, exemplars);
 
   return clusters;
+};
+
+/**
+ * The async affinity-propagation entry point behind
+ * `eles.affinityPropagation()`: validates `executor` synchronously,
+ * then routes to the CPU reference implementation or, in a later
+ * round, the WGSL kernels.
+ *
+ * @param coll — the calling collection
+ * @param options — as `affinityPropagation`, plus `executor`
+ * @returns a promise of the clusters
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ */
+export const affinityPropagationAsync = (
+  coll: Collection,
+  options: AffinityPropagationOptions = {},
+): Promise<Collection[]> => {
+  const executor = resolveExecutor(options.executor);
+  const n = coll.nodes().length;
+
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => affinityPropagation(coll, options),
+    null,
+  );
 };
 
 /**

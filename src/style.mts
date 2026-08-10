@@ -6357,6 +6357,19 @@ export class StyleEngine {
     return this.stylesDependOnData(group, [key]);
   }
 
+  /**
+   * Whether the eval kernel currently owns this prop's stored bytes —
+   * the gate a direct column read carries so it never reports a value
+   * a kernel has made stale (round 62.6; the same rule readProp keeps).
+   *
+   * @param group — the element group
+   * @param prop — the normalized property name
+   * @returns true when the prop is kernel-owned
+   */
+  ownsProp(group: GroupName, prop: string): boolean {
+    return this.gpuOwnedProps[group].has(prop);
+  }
+
   /** Which arrow ends the current stylesheet can enable. */
   get arrowEnds(): { source: boolean; target: boolean } {
     return this.arrows;

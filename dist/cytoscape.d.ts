@@ -1439,6 +1439,19 @@ declare class Adjacency {
    * @param nodeSlot — the node's slot
    */
   inDegree(nodeSlot: number): number;
+  /**
+   * Append this node's incident edge slots (out then in) to `dst`,
+   * skipping any slot already in `seen` and recording what it appends —
+   * the allocation-free form of `outEdges`/`inEdges` for bulk traversal
+   * consumers (round 62.6): the CSR rows are read in place, so no
+   * subarray view is created per node.  Loops dedupe like any shared
+   * slot.
+   *
+   * @param nodeSlot — the node's slot
+   * @param seen — the caller's dedupe set, updated in place
+   * @param dst — the output array, appended in incident order
+   */
+  appendIncident(nodeSlot: number, seen: Set<number>, dst: number[]): void;
   /** All incident edge slots (loop edges appear once). */
   connectedEdges(nodeSlot: number): number[];
   /**
@@ -2145,6 +2158,13 @@ declare class GraphStore implements ModelView {
    * that consult it).  Treat as read-only outside the store.
    */
   structureEpoch: number;
+  /** Told when structureEpoch moves (round 62.5b) — the core nulls its
+   * whole-graph collection cache here, so the memo-hit read needs no
+   * epoch compare at all. */
+  onStructureChange: (() => void) | null;
+  /** The one place structureEpoch moves: bump plus the push-invalidation
+   * hook (round 62.5b). */
+  private bumpStructureEpoch;
   /**
    * Build an empty store: both tables at zero capacity, empty id /
    * adjacency / data / hierarchy / curve indexes, and the sub-index
@@ -3543,6 +3563,16 @@ declare class StyleEngine {
    * @returns true when the change must re-evaluate mappers
    */
   dependsOnState(group: GroupName, key: string): boolean;
+  /**
+   * Whether the eval kernel currently owns this prop's stored bytes —
+   * the gate a direct column read carries so it never reports a value
+   * a kernel has made stale (round 62.6; the same rule readProp keeps).
+   *
+   * @param group — the element group
+   * @param prop — the normalized property name
+   * @returns true when the prop is kernel-owned
+   */
+  ownsProp(group: GroupName, prop: string): boolean;
   /** Which arrow ends the current stylesheet can enable. */
   get arrowEnds(): {
     source: boolean;
@@ -3898,7 +3928,10 @@ declare class Viewport {
   maxZoom: number;
   private host;
   private _zoom;
-  private _pan;
+  /** the live pan object (round 62.6: read directly by Core.pan()'s
+   * getter — one field hop where a method call showed; setters replace
+   * the object rather than mutating it, the round-5 contract) */
+  _pan: Position;
   /**
    * @param host — supplies the rendered viewport dimensions (the core)
    * @param opts — initial `zoom` (default 1, clamped) and `pan` (default
@@ -7500,6 +7533,10 @@ declare class Core {
   private _batchPending;
   /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
   private _allCache;
+  /** round 62.6: the whole-graph memo flattened to one field, so the
+   * `elements()`/`mutableElements()` hit is a single load — nulled by
+   * the same push-invalidation as `_allCache` */
+  private _allEles;
   _animations: AnimationManager;
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(

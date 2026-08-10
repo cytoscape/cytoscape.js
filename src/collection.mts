@@ -519,13 +519,21 @@ export class Collection {
    * @returns the index, or -1 when it is not in this collection
    */
   indexOf(ele: Collection): number {
-    assertCollection(ele, 'indexOf', this._cy);
+    // same-instance collections skip the full guard on one identity
+    // compare (round 62.6); anything else takes the 29.3/48.4 throw
+    if (ele == null || ele._cy !== this._cy) {
+      assertCollection(ele, 'indexOf', this._cy);
+    }
 
-    const ref = ele._first();
+    const ref = ele.__refs[0];
 
     if (ref == null) {
       return -1;
     }
+
+    // isCurrent repairs a forwarded ref in place, so the packed key
+    // below is its current identity without the full getter sync
+    this._store.isCurrent(ref);
 
     // O(1) off the shared packed-key cache (34.1), which set membership
     // builds anyway; a linear re-packing scan was 81× v3 here
@@ -2537,14 +2545,24 @@ export class Collection {
    *   `style('opacity')` reads; undefined when empty or removed
    */
   effectiveOpacity(): number | undefined {
-    const ref = this._first();
+    const ref = this.__refs[0];
+    const store = this._store;
 
-    if (ref == null || !this._store.isCurrent(ref)) {
+    if (ref == null || !store.isCurrent(ref)) {
       return undefined;
     }
 
-    if (ref.group === 'nodes' && this._store.hasCompounds()) {
-      return (this._store.column('node.opacity') as Float32Array)[ref.slot];
+    if (ref.group === 'nodes' && store.hasCompounds()) {
+      return (store.column('node.opacity') as Float32Array)[ref.slot];
+    }
+
+    // stored truth is the effective value on the flat path; the one case
+    // the column cannot answer is a kernel-owned opacity mapper, whose
+    // stored bytes go stale (round 62.6 — the same gate readProp keeps)
+    if (!this._cy._styleEngine.ownsProp(ref.group, 'opacity')) {
+      return ref.group === 'nodes'
+        ? (store.nodes.column('node.opacity') as Float32Array)[ref.slot]
+        : (store.edges.column('edge.opacity') as Float32Array)[ref.slot];
     }
 
     return this.numericStyle('opacity');
@@ -3988,36 +4006,28 @@ export class Collection {
   connectedEdges(criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
-    const refs: Ref[] = [];
+    const list = this._refs; // hoisted: the getter syncs per call (62.6)
+    const egen = store.edges.gen;
+    const slots: number[] = [];
     const seen = new Set<number>(); // edge slots: dedupes loops and shared edges alike
 
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
+    for (let i = 0; i < list.length; i++) {
+      const ref = list[i];
 
       if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
         continue;
       }
 
-      const out = adj.outEdges(ref.slot);
-      const inn = adj.inEdges(ref.slot);
+      // reads the CSR rows in place — no per-node subarray views (62.6)
+      adj.appendIncident(ref.slot, seen, slots);
+    }
 
-      for (let j = 0; j < out.length; j++) {
-        const edgeSlot = out[j];
+    const refs: Ref[] = new Array(slots.length);
 
-        if (!seen.has(edgeSlot)) {
-          seen.add(edgeSlot);
-          refs.push(store.ref('edges', edgeSlot));
-        }
-      }
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
 
-      for (let j = 0; j < inn.length; j++) {
-        const edgeSlot = inn[j];
-
-        if (!seen.has(edgeSlot)) {
-          seen.add(edgeSlot);
-          refs.push(store.ref('edges', edgeSlot));
-        }
-      }
+      refs[i] = { group: 'edges', slot, gen: egen[slot] };
     }
 
     const eles = this._spawnLive(refs);
@@ -4035,11 +4045,12 @@ export class Collection {
   connectedNodes(criterion?: FilterLike): Collection {
     const store = this._store;
     const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const list = this._refs; // hoisted: the getter syncs per call (62.6)
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
+    for (let i = 0; i < list.length; i++) {
+      const ref = list[i];
 
       if (ref.group !== 'edges' || !store.isCurrent(ref)) {
         continue;

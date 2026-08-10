@@ -45,7 +45,10 @@ export class Viewport {
 
   private host: ViewportHost;
   private _zoom: number;
-  private _pan: Position;
+  /** the live pan object (round 62.6: read directly by Core.pan()'s
+   * getter — one field hop where a method call showed; setters replace
+   * the object rather than mutating it, the round-5 contract) */
+  _pan: Position;
 
   /**
    * @param host — supplies the rendered viewport dimensions (the core)

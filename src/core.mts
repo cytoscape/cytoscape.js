@@ -185,6 +185,10 @@ export class Core {
   private _batchPending: BatchPending | null;
   /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
   private _allCache: AllCache | null = null;
+  /** round 62.6: the whole-graph memo flattened to one field, so the
+   * `elements()`/`mutableElements()` hit is a single load — nulled by
+   * the same push-invalidation as `_allCache` */
+  private _allEles: Collection | null = null;
   _animations: AnimationManager;
 
   /**
@@ -251,6 +255,7 @@ export class Core {
     // compare at all
     this._store.onStructureChange = () => {
       this._allCache = null;
+      this._allEles = null;
     };
     this._animations = new AnimationManager(() => this._afterAnimationTick());
 
@@ -989,7 +994,9 @@ export class Core {
    * @returns the matching elements
    */
   elements(query?: Query | EleFilterFn): Collection {
-    return query === undefined ? this._allOf(null) : this._query(query, null);
+    return query === undefined
+      ? (this._allEles ?? this._allOf(null))
+      : this._query(query, null);
   }
 
   /**
@@ -1079,6 +1086,7 @@ export class Core {
 
     if (restrict == null) {
       slot.all = fresh;
+      this._allEles = fresh;
     } else if (restrict === 'nodes') {
       slot.nodes = fresh;
     } else {
@@ -1468,7 +1476,7 @@ export class Core {
    */
   pan(pan?: Position): Position | this {
     if (pan === undefined) {
-      return this._viewport.pan();
+      return this._viewport._pan;
     }
 
     if (this._panningEnabled && this._viewport.setPan(pan)) {
@@ -2518,13 +2526,9 @@ export class Core {
    * @returns every element in the graph
    */
   mutableElements(): Collection {
-    // the memo hit inlined (round 62.4), push-invalidated (62.5b): a
-    // non-null cache is current by construction, so the hit is two loads
-    const cached = this._allCache;
-
-    return cached != null && cached.all != null
-      ? cached.all
-      : this._allOf(null);
+    // the memo hit inlined (round 62.4), push-invalidated (62.5b),
+    // flattened to one field load (62.6)
+    return this._allEles ?? this._allOf(null);
   }
 
   /**

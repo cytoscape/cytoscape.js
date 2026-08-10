@@ -267,6 +267,75 @@ export class Adjacency {
     );
   }
 
+  /**
+   * Append this node's incident edge slots (out then in) to `dst`,
+   * skipping any slot already in `seen` and recording what it appends —
+   * the allocation-free form of `outEdges`/`inEdges` for bulk traversal
+   * consumers (round 62.6): the CSR rows are read in place, so no
+   * subarray view is created per node.  Loops dedupe like any shared
+   * slot.
+   *
+   * @param nodeSlot — the node's slot
+   * @param seen — the caller's dedupe set, updated in place
+   * @param dst — the output array, appended in incident order
+   */
+  appendIncident(nodeSlot: number, seen: Set<number>, dst: number[]): void {
+    const e = this.csrOutE;
+
+    if (e != null && nodeSlot < this.csrN) {
+      const outOff = this.csrOutOff![nodeSlot];
+      const outEnd = outOff + this.csrOutLen![nodeSlot];
+
+      for (let i = outOff, arr = e; i < outEnd; i++) {
+        const slot = arr[i];
+
+        if (!seen.has(slot)) {
+          seen.add(slot);
+          dst.push(slot);
+        }
+      }
+
+      const innE = this.csrInnE!;
+      const innOff = this.csrInnOff![nodeSlot];
+      const innEnd = innOff + this.csrInnLen![nodeSlot];
+
+      for (let i = innOff; i < innEnd; i++) {
+        const slot = innE[i];
+
+        if (!seen.has(slot)) {
+          seen.add(slot);
+          dst.push(slot);
+        }
+      }
+    }
+
+    const oExtra = this.out[nodeSlot];
+
+    if (oExtra != null) {
+      for (let i = 0; i < oExtra.length; i++) {
+        const slot = oExtra[i];
+
+        if (!seen.has(slot)) {
+          seen.add(slot);
+          dst.push(slot);
+        }
+      }
+    }
+
+    const iExtra = this.inn[nodeSlot];
+
+    if (iExtra != null) {
+      for (let i = 0; i < iExtra.length; i++) {
+        const slot = iExtra[i];
+
+        if (!seen.has(slot)) {
+          seen.add(slot);
+          dst.push(slot);
+        }
+      }
+    }
+  }
+
   /** All incident edge slots (loop edges appear once). */
   connectedEdges(nodeSlot: number): number[] {
     const out = this.outEdges(nodeSlot);

@@ -17524,6 +17524,60 @@ controls.
   fired three more times (SHAPE_MASK re-keys, stranded block #19,
   the handle class joining the public tier) and each was fixed in
   the pass.
-- [ ] **62.5 Verification** — idle-box `--all` profile with **every**
+- [x] **62.5 The nanosecond tail** (2026-08-09/10, three batches) —
+  the verification loop's residue after 62.4: ~10 rows per run in the
+  sub-30 ns band, **rotating membership across runs** (forEach read
+  1.00×, 0.67× and 0.80× in three consecutive runs with no code
+  change between them).  What landed, batch by batch:
+  - *Hot column caches* (62.5): `ColumnTable.arraysVersion`, bumped
+    in the same call that swaps the arrays (grow/compact) — the
+    timing-safe validity key an epoch cannot be — and the four
+    hottest arrays (node/edge flags, positions, endpoints) cached on
+    the store against it.  `flags()`/`hasFlag` and every state
+    predicate ride it, as do `position()` and `source()`/`target()`.
+    `Collection._store` became a constructor field; `sort()` passes
+    its handles through the 62.4 ctor path; `toArray()`
+    preallocates.
+  - *The dense handle array* (62.5b): `_arr()` caches the interned
+    handles as a dense array (safe on `_refs` immutability), and
+    `forEach`/`map`/`some`/`toArray` iterate it — array-element
+    access holds its speed in the JIT modes where indexed
+    own-property access is bimodal.  `toArray()` becomes a `slice()`
+    of the cache: 795 ns against v3's 9.5 µs at 2000 elements.
+    `removed()`/`inside()` read the raw first ref (isCurrent repairs
+    a forwarded ref itself); `removeAllListeners()` gates on an
+    empty list before `off('*')` allocates to remove nothing;
+    `structureEpoch` converted from getter to field; the
+    `isParent`/`isChild`/`isChildless`/`isOrphan` family reads the
+    store-managed FLAG_PARENT/FLAG_CHILD bits through the hot cache
+    instead of the child-list map; the whole-graph collection cache
+    is push-invalidated (`onStructureChange` from the one
+    `bumpStructureEpoch()` funnel) so the `elements()` memo hit is
+    two loads.  One over-reach reverted by measurement: routing
+    `eq()` through `_arr()` cost more than the property read it
+    replaced on three accesses.
+  - *The harness itself* (62.5c) — the finding that explains the
+    rotation.  Every `cmp()`-style suite shares one op closure
+    between the v3 and gpu benches, and v3 is always declared first,
+    so **v3 sampled against monomorphic inline caches and v4 against
+    polymorphic ones** — a systematic, one-directional ~0.5–1 ns/call
+    bias, exactly the band where rows kept losing in-suite while
+    measuring at-parity-or-faster in isolated A/B probes (isolated:
+    minZoom+maxZoom 1.0 vs 4.6 ns, pan 4.4 vs 6.2, gating tied).
+    This is the round-55 measurement-order rule in IC form, and
+    round 33's "every 1× line is real" cuts against a row whose sign
+    is decided by which side sampled first.  A few alternations
+    through both sides before either bench samples (eight for the
+    micro suites, two for algorithms, whose rows run to seconds)
+    take every call site to its steady polymorphic state.
+    `style.mjs`'s cmp takes separate closures per side and was
+    already fair.
+  Audit fallout across the batches, every instance caught by its
+  gate: the SHAPE_MASK `file:line` key moved four more times, the
+  `_arr` insertion stranded `forEach`'s doc block (instance #20,
+  caught by three gates at once), and the one-off single-spec
+  `test:js` flake fired twice more without reproducing (the
+  2026-08-02 record's shape; output captured on the re-runs only).
+- [ ] **62.6 Verification** — idle-box `--all` profile with **every**
   v3/gpu pair v4-faster; the run published; Playwright over the
   changed source; the closing docs sweep.

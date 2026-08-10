@@ -106,7 +106,7 @@
     "benchmark:single": "run-s benchmark:download benchmark:single:exec"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
+    "@babel/core": "^8.0.1",
     "@babel/preset-env": "^7.26.0",
     "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.49.1",

@@ -574,11 +574,13 @@ logged case-rewrite spelling, which measurement killed on three walls
 bypass-beats-everything precedence, and export as a named section
 that sheet swaps replace.  One requirement was set above the rest,
 mid-sitting: **the implementation must be fast/performant**.
-Design-doc first: the proposal, with its measurements, is "Item 25
-docs-first — per-element overrides" at the end of this file, and no
-round is scheduled until the maintainer reacts to it.  The genuinely
-open questions are unchanged at four (18, 23, 27, 28) — item 25 is
-direction-set, awaiting its proposal's review.
+Design-doc first: the proposal, with its measurements, went to the
+end of this file — and **the maintainer approved it the same day with
+two amendments** (the section key is `bypasses`, and style prop keys
+accept dash-case *and* camelCase everywhere in the API), so it is now
+the **round-63 plan**.  The genuinely open questions are unchanged at
+four (18, 23, 27, 28) — item 25 is scheduled work now, not an open
+call.
 
 ### Scope calls
 
@@ -1347,9 +1349,12 @@ rather than from a blank page.
     returning as sugar over it, v3's bypass-beats-everything
     precedence, export as a named section, and **performance as the
     maintainer's stated top requirement**.  The full proposal is
-    "Item 25 docs-first — per-element overrides" at the end of this
-    file; **design-doc first** — the round is not scheduled until the
-    maintainer reacts to it.
+    the round-63 plan at the end of this file.
+    ***Approved with two amendments the same day (2026-08-10), and
+    scheduled as round 63***: the sheet section's key is **`bypasses`**
+    (not `overrides`), and style property keys accept **both dash-case
+    and camelCase everywhere in the API** — in the bypasses and in
+    every other place a prop name is taken.
 26. **Split the big implementation files, v4's way** (raised
     2026-08-07).  `style.mts` is 7.9k lines, `collection.mts` 5.8k,
     `store/graph-store.mts` 5.0k, `render/shaders.mts` 4.3k, `core.mts`
@@ -17712,14 +17717,19 @@ controls.
   compared v3's frozen UMD against v4's src mtimes and cried wolf on
   a fresh build; each bundle now checks against its own tree.
 
-## Item 25 docs-first — per-element overrides (eighth design sitting + proposal, 2026-08-10)
+## Round 63 plan — per-element bypasses (item 25; eighth design sitting + proposal 2026-08-10, amended and approved the same day)
 
 The maintainer reopened ledger item 25 — "bypasses are worth a
 discussion" — and the sitting took its calls with one requirement set
 above the others, verbatim: **the proposed implementation must be
-fast/performant**.  This section is the docs-first proposal those
-calls asked for; on the 41.5 precedent it is a proposal, not a plan —
-the round is not scheduled until the maintainer has reacted to it.
+fast/performant**.  This section was written as the docs-first
+proposal those calls asked for (the 41.5 precedent), and the
+maintainer approved it the same day with **two amendments**, which are
+folded in below and marked: the sheet section's key is **`bypasses`**
+(not `overrides`), and style property keys accept **both dash-case and
+camelCase, in the bypasses and everywhere else in the API**.  With the
+approval this section is the round-63 plan; the pass split is at the
+end.
 
 ### The sitting's calls
 
@@ -17735,19 +17745,19 @@ the round is not scheduled until the maintainer has reacted to it.
    `data()`, the wire and every export.
 2. **The v3 spellings return**: `ele.style( name, value )`,
    `eles.style( props )` and `removeStyle( name? )` work again, as
-   sugar over the overrides section.  This deliberately reverses
+   sugar over the bypasses section.  This deliberately reverses
    29.3's decided drop (the throw whose message 31.1 corrected);
    `MIGRATING.md`'s "no per-element bypass" row and
    `test/decided-drops.mjs`'s pin both flip with the round.
-3. **Precedence is v3's: an override beats everything**, the default
+3. **Precedence is v3's: a bypass beats everything**, the default
    sheet's selection/active conditionals included (v3 applies "its
    bypass" ahead of every selector — the header comment in
-   `v3/src/style/apply.mts`).  Consequence recorded up front: an
-   overridden `background-color` hides selection blue for that
+   `v3/src/style/apply.mts`).  Consequence recorded up front: a
+   bypassed `background-color` hides selection blue for that
    element, exactly as a v3 bypass does — and 57.11's
    don't-bury-the-affordances rule is about *sheets*, not about a
    per-element instruction the app gave explicitly.
-4. **Overrides export, and sheet swaps replace them.**  `cy.style()` /
+4. **Bypasses export, and sheet swaps replace them.**  `cy.style()` /
    `cy.json()` carry the section — strictly better than v3, whose
    `ele.json()` exports no bypass at all (verified against
    `v3/src/collection/index.mts`: data/position/group/flags/classes
@@ -17756,8 +17766,22 @@ the round is not scheduled until the maintainer has reacted to it.
    keep-them idiom is spreading the getter.  A recorded deviation from
    v3's element-lifetime bypasses.
 5. **Performance is the top requirement** (maintainer, mid-sitting):
-   an override-free graph pays nothing measurable, and every override
+   a bypass-free graph pays nothing measurable, and every bypass
    operation costs what it touches.
+6. **The two amendments, taken with the approval** (2026-08-10):
+   - **The section's key is `bypasses`.**  The prose keeps "bypass" as
+     the concept name too — it is v3's word for exactly this surface,
+     which is the point of bringing the spelling back.
+   - **Style property keys accept dash-case and camelCase everywhere**
+     — `foo-bar` and `fooBar` are the same key in the bypasses section,
+     the sheet blocks, the getters, `transition-property` lists,
+     `animate({ style })` and `removeStyle`.  Measured before planning:
+     most of this is already true (sheet blocks normalize through
+     `normalizeProp` in `resolveConst`; the getters through the 34.5
+     memo; `transition-property` and the animation channels each
+     normalize at their parse) — so the round's job is a **sweep spec
+     that pins every entry point in both spellings** and a fix for any
+     the audit finds bare, not a new convention.
 
 ### Why not the logged shape — measured, and rejected
 
@@ -17793,13 +17817,13 @@ three walls:
    needing clause identity — both of which the shape below dissolves
    rather than engineers around.
 
-### The design: a first-class `overrides` sheet section
+### The design: a first-class `bypasses` sheet section
 
 ```js
 cy.style( {
   nodes: { /* ... */ },
   edges: { /* ... */ },
-  overrides: {
+  bypasses: {
     n42: { 'background-color': 'red', width: 40 },
   },
 } );
@@ -17816,7 +17840,7 @@ cy.style( {
   semantics), with a name clears one.  The `cy.style()` getter
   returns the live section.
 - **Id-keyed means declaration, not element state** — a deliberate
-  semantic difference from v3: an override survives remove/re-add of
+  semantic difference from v3: a bypass survives remove/re-add of
   its element, may name an id not yet present (inert until it is —
   what makes a hand-written section legal in a sheet set before its
   elements), and round-trips through `cy.json()`.  The one
@@ -17826,8 +17850,8 @@ cy.style( {
 
 ### The performance contract (the requirement, made concrete)
 
-1. **Override-free graphs pay one load.**  The engine keeps a
-   per-group override count and slot set; every touched path gates on
+1. **Bypass-free graphs pay one load.**  The engine keeps a
+   per-group bypass count and slot set; every touched path gates on
    `count === 0`.  The gate is measured, not asserted: the round-62
    published zero-losers run is the baseline, and the round fails if
    any row moves past machine noise.
@@ -17840,19 +17864,19 @@ cy.style( {
    `updateOuterHalf`).  The round adds the comparative row v3 makes
    possible for the first time since 29.3: `ele.style( name, value )`
    spelled identically on both sides.
-3. **Apply punch-out is O(overridden).**  The sheet paths
+3. **Apply punch-out is O(bypassed).**  The sheet paths
    (`applyBulk`, `applyPartitioned`, `refreshMapped`, `refreshState`)
-   re-assert overrides after the sheet write for overridden slots
+   re-assert bypasses after the sheet write for bypassed slots
    only — a slot-set test per run when the count is non-zero.  The
    57.1d partition and the round-61 diff path survive untouched;
-   overridden slots fall out of record runs and take per-slot writes.
+   bypassed slots fall out of record runs and take per-slot writes.
 4. **GPU eval demotes per channel, count-gated, reversibly.**  A
-   channel carrying ≥ 1 override joins the B1 `paintInputs` exclusion
+   channel carrying ≥ 1 bypass joins the B1 `paintInputs` exclusion
    while any exists (the kernel evaluates every slot and would
    overwrite the bytes); the last removal restores kernel ownership.
    The recorded bound is round 7's 78.5-vs-15.9 ms whole-channel
    re-derive at 200k — paid only on data writes of a mapped key whose
-   channel also carries an override — re-measured on a real renderer
+   channel also carries a bypass — re-measured on a real renderer
    in the round.
 5. **What the round must measure before claiming any of this**: the
    count-gate's nullity (the full published suite unchanged), the
@@ -17862,13 +17886,13 @@ cy.style( {
 
 ### Semantics inventory (the round's checklist)
 
-- **Precedence, per channel**: override > user block > default sheet;
+- **Precedence, per channel**: bypass > user block > default sheet;
   the burying consequences (selection blue; the press wash via an
-  `overlay-opacity` override) recorded as v3 parity.
+  `overlay-opacity` bypass) recorded as v3 parity.
 - **Readback needs no new path**: stored truth already answers the
-  overridden value through `style()` / `numericStyle()` /
+  bypassed value through `style()` / `numericStyle()` /
   `renderedStyle()` — v3's semantics for free.
-- **Transitions come free**: override writes flow through the write
+- **Transitions come free**: bypass writes flow through the write
   funnel the 24.1 txn capture wraps, so a configured
   `transition-property` tweens a bypass change; round 21's
   latest-wins eviction against animations is unchanged.
@@ -17887,9 +17911,46 @@ cy.style( {
 
 Readback in both directions; precedence against the default sheet
 *and* against a user block; removal restores the sheet-resolved
-value; a sheet swap replaces the section; a transition on an override
+value; a sheet swap replaces the section; a transition on a bypass
 tweens; kernel ownership restored on the last removal; and the O(0)
 gate as a benchmark row, since a spec cannot see a nanosecond.
 
-**Awaiting the maintainer's reaction; the round is not scheduled
-before it.**
+### Pass split (tests-first; docs in-commit; each pass its own commit(s))
+
+- [ ] **63.0 Docs-first** — this section, amended to the approved
+  design; ledger item 25 annotated.
+- [ ] **63.1 The camel/dash sweep** — a spec that reads every prop of
+  the readback table through both spellings at every entry point
+  (sheet blocks, getters, `transition-property`, `animate({ style })`,
+  and — once they exist — the bypasses and `removeStyle`), fixing any
+  entry point the audit finds bare.  Written first because the
+  bypasses parser reuses whatever this pass pins.
+- [ ] **63.2 The model** — `Stylesheet.bypasses` in `public-types.mts`;
+  engine store (id-keyed raw entries + per-group slot→patch maps and
+  counts), parse/validate at `setSheet` through `normalizeProp` +
+  `applyProp` (unknown prop or invalid value throws), slot maintenance
+  on add/remove/compaction; id-keyed declaration semantics pinned
+  (survive remove/re-add, inert until the id exists).
+- [ ] **63.3 Apply integration** — the merge hook at the `write()`
+  funnel (every full-write path respects bypasses by construction),
+  the `refreshState` punch-out (bypassed slots take the merged full
+  write), `paintInputs` demotion per bypassed prop (count-gated,
+  reversible, paintVersion-bumped), and the count === 0 gate on every
+  touched path.
+- [ ] **63.4 The sugar** — `ele.style( name, value )` /
+  `eles.style( props )` set bypasses through the single-slot apply
+  path (transitions by construction); `removeStyle( name? )` restores
+  sheet-resolved values; `cy.style()` getter carries the live section;
+  the 29.3 throw and its `test/decided-drops.mjs` pin flip; JSDoc for
+  the gates.
+- [ ] **63.5 Benchmarks** — the `ele.style( name, value )` comparative
+  row against v3 (spelled identically on both sides for the first time
+  since 29.3), punch-out at k = 1/100/1000 on the apply and select
+  paths, and the bypass-free select row unchanged (the count-gate's
+  nullity), all through the built bundle.
+- [ ] **63.6 Closing sweep** — `src/README.md` design-decision entry,
+  `MIGRATING.md` rows flip (+ guide spec), `CHANGELOG.md`,
+  `dist/cytoscape.d.ts` regenerated with `test:types:surface`, the
+  round record here, `EXECUTIVE_SUMMARY.md` rewritten, and the full
+  verification gate (Node tier + Playwright against a fresh bundle
+  with goldens byte-stable — no golden uses a bypass).

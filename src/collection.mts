@@ -13,6 +13,7 @@ import {
   FLAG_NO_EVENTS,
   FLAG_PANNABLE,
   FLAG_PARENT,
+  FLAG_CHILD,
   FLAG_SELECTABLE,
   FLAG_SELECTED,
   FLAG_VISIBLE,
@@ -730,9 +731,7 @@ export class Collection {
    * @returns that element, or an empty collection when out of range
    */
   eq(i: number): Collection {
-    // the dense array read holds its speed where indexed own-property
-    // access is JIT-bimodal (round 62.5b)
-    return this._arr()[i] ?? this._spawn([]);
+    return this[i] ?? this._spawn([]);
   }
 
   /**
@@ -4479,9 +4478,13 @@ export class Collection {
    *   removed elements, which are nodes of no hierarchy
    */
   isParent(): boolean {
+    // FLAG_PARENT is store-managed (set while a node has >= 1 child), so
+    // the flags word answers without the child-list map hop (round 62.5b)
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.childrenOf(ref.slot).length > 0;
+    return (
+      ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_PARENT) !== 0
+    );
   }
 
   /**
@@ -4493,7 +4496,9 @@ export class Collection {
   isChildless(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.childrenOf(ref.slot).length === 0;
+    return (
+      ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_PARENT) === 0
+    );
   }
 
   /**
@@ -4504,7 +4509,9 @@ export class Collection {
   isChild(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.parentOf(ref.slot) >= 0;
+    return (
+      ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_CHILD) !== 0
+    );
   }
 
   /**
@@ -4516,7 +4523,9 @@ export class Collection {
   isOrphan(): boolean {
     const ref = this._liveNodeRef();
 
-    return ref != null && this._store.parentOf(ref.slot) < 0;
+    return (
+      ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_CHILD) === 0
+    );
   }
 
   private _liveNodeRef(): Ref | null {

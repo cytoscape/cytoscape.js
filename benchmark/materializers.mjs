@@ -25,6 +25,13 @@ for (let i = 0; i < selN; i++) {
 // `gpuOp` overrides the gpu-side op where the idiomatic v4 form differs
 // (v4 has no selector strings; queries/predicates replace them)
 function cmp(name, op, gpuOp = op) {
+  // round 62.5c: equalize the shared op's inline caches before either
+  // side samples (the round-55 order bias, IC form)
+  for (let w = 0; w < 8; w++) {
+    do_not_optimize(op(v3));
+    do_not_optimize(gpuOp(gpu));
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => do_not_optimize(op(v3)));

@@ -30,6 +30,15 @@ function cmp(name, setup, op) {
   const gs = Array.from({ length: K }, (_, k) => setup(gpu, k));
   let i = 0;
 
+  // round 62.5c: two alternations take the shared op's call sites to
+  // their steady polymorphic state before either side samples (the
+  // round-55 order bias, IC form) — two, not eight, because algorithm
+  // rows run to seconds
+  for (let w = 0; w < 2; w++) {
+    do_not_optimize(op(vs[w & MASK], w & MASK));
+    do_not_optimize(op(gs[w & MASK], w & MASK));
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

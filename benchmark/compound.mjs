@@ -79,6 +79,13 @@ function cmp(name, setup, fn) {
 
   instances.push(a, b);
 
+  // round 62.5c: equalize the shared fn's inline caches before either
+  // side samples (the round-55 order bias, IC form)
+  for (let w = 0; w < 8; w++) {
+    fn(ta, i++, a);
+    fn(tb, i++, b);
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

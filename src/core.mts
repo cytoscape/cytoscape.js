@@ -246,6 +246,12 @@ export class Core {
     this._store.onStateChange = (group, key, slots) => {
       this._styleEngine.refreshState(group, key, slots);
     };
+    // round 62.5b: push-invalidate the whole-graph collection cache, so
+    // the memo-hit read (elements()/mutableElements()) needs no epoch
+    // compare at all
+    this._store.onStructureChange = () => {
+      this._allCache = null;
+    };
     this._animations = new AnimationManager(() => this._afterAnimationTick());
 
     // round 24.1: the engine's transition diffs spawn preset bulk tweens
@@ -1051,7 +1057,8 @@ export class Core {
     const epoch = this._store.structureEpoch;
     const cached = this._allCache;
 
-    if (cached != null && cached.epoch === epoch) {
+    // a non-null cache is current: onStructureChange nulls it (62.5b)
+    if (cached != null) {
       const hit =
         restrict == null
           ? cached.all
@@ -2511,19 +2518,13 @@ export class Core {
    * @returns every element in the graph
    */
   mutableElements(): Collection {
-    // the memo hit inlined (round 62.4): the elements() -> _allOf hop
-    // pair cost more than the answer against v3's bare property read
+    // the memo hit inlined (round 62.4), push-invalidated (62.5b): a
+    // non-null cache is current by construction, so the hit is two loads
     const cached = this._allCache;
 
-    if (
-      cached != null &&
-      cached.all != null &&
-      cached.epoch === this._store.structureEpoch
-    ) {
-      return cached.all;
-    }
-
-    return this._allOf(null);
+    return cached != null && cached.all != null
+      ? cached.all
+      : this._allOf(null);
   }
 
   /**

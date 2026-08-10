@@ -318,6 +318,18 @@ export class GraphStore implements ModelView {
    */
   structureEpoch = 0;
 
+  /** Told when structureEpoch moves (round 62.5b) — the core nulls its
+   * whole-graph collection cache here, so the memo-hit read needs no
+   * epoch compare at all. */
+  onStructureChange: (() => void) | null = null;
+
+  /** The one place structureEpoch moves: bump plus the push-invalidation
+   * hook (round 62.5b). */
+  private bumpStructureEpoch(): void {
+    this.structureEpoch++;
+    this.onStructureChange?.();
+  }
+
   /**
    * Build an empty store: both tables at zero capacity, empty id /
    * adjacency / data / hierarchy / curve indexes, and the sub-index
@@ -4944,7 +4956,7 @@ export class GraphStore implements ModelView {
       order.gens.push(gen[slot]);
     }
 
-    this.structureEpoch++;
+    this.bumpStructureEpoch();
   }
 
   /** Default flags for the whole bulk, then per-element deviations. */
@@ -5035,7 +5047,7 @@ export class GraphStore implements ModelView {
 
     order.slots.push(slot);
     order.gens.push(table.gen[slot]);
-    this.structureEpoch++;
+    this.bumpStructureEpoch();
 
     return { slot, resized };
   }
@@ -5078,7 +5090,7 @@ export class GraphStore implements ModelView {
     const order = this.order[group];
 
     order.stale++;
-    this.structureEpoch++;
+    this.bumpStructureEpoch();
 
     if (order.stale > order.slots.length / 2) {
       this.compactOrder(group);
@@ -5153,7 +5165,7 @@ export class GraphStore implements ModelView {
       );
       this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
       this._compactEpoch++; // collections invalidate cached membership sets
-      this.structureEpoch++; // and whole-graph collection caches drop
+      this.bumpStructureEpoch(); // and whole-graph collection caches drop
       this.dirty.touch();
     }
 

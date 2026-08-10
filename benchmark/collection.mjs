@@ -36,6 +36,16 @@ function cmp(name, setup, op) {
   const gs = Array.from({ length: K }, (_, k) => setup(gpu, k));
   let i = 0;
 
+  // round 62.5c: with one shared op, the first-sampled side runs against
+  // monomorphic inline caches and the second against polymorphic ones —
+  // the round-55 measurement-order bias in IC form.  A few alternations
+  // take every call site to its steady polymorphic state before either
+  // side samples, so both benches measure the same machine.
+  for (let w = 0; w < 8; w++) {
+    do_not_optimize(op(vs[w & MASK], w & MASK));
+    do_not_optimize(op(gs[w & MASK], w & MASK));
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

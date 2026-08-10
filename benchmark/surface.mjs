@@ -668,6 +668,20 @@ for (const row of ROWS) {
     continue;
   }
 
+  // round 62.5c: with one shared op, the first-sampled side runs against
+  // monomorphic inline caches and the second against polymorphic ones —
+  // the round-55 measurement-order bias in IC form.  A few alternations
+  // take every call site to its steady polymorphic state before either
+  // side samples.
+  if (pair) {
+    for (let w = 0; w < 8; w++) {
+      ctx.v3.i++;
+      do_not_optimize(row.v3(ctx.v3));
+      ctx.gpu.i++;
+      do_not_optimize(row.gpu(ctx.gpu));
+    }
+  }
+
   group(`${row.section}: ${row.label}`, () => {
     const body = () => {
       if (pair) {

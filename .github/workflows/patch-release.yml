@@ -15,7 +15,7 @@ jobs:
           echo "BRANCH=master" >> $GITHUB_ENV
           echo "Branch: master"
       - name: checkout patch branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.BRANCH }}
       - uses: actions/setup-node@v6
@@ -42,7 +42,7 @@ jobs:
         run: echo "# version:" ${{ env.VERSION }}
         shell: bash
       - name: checkout master branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: master
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
           git add . && git commit -m "Docs: Add ${{ env.VERSION }} to versions.json"
           git push
       - name: checkout unstable branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: unstable
           fetch-depth: 0

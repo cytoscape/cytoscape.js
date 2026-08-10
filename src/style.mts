@@ -6271,15 +6271,32 @@ export class StyleEngine {
    * @returns true when any mapped channel or label depends on one of them
    */
   stylesDependOnData(group: GroupName, keys: string[]): boolean {
-    const depends = (deps: GroupDef['deps']): boolean =>
-      deps != null && keys.some((key) => deps.has(key));
+    // plain loops, no closures: this gate runs twice on every data()
+    // write, and the closure-per-call form cost 700 ns through tsx
+    // (the round-34 __name tax) against 41 through the bundle (62.3)
+    const own = this.defs[group].deps;
 
-    return (
-      depends(this.defs[group].deps) ||
-      (group === 'nodes' &&
-        this.store.hasCompounds() &&
-        depends(this.defs.parents.deps))
-    );
+    if (own != null) {
+      for (let i = 0; i < keys.length; i++) {
+        if (own.has(keys[i])) {
+          return true;
+        }
+      }
+    }
+
+    if (group === 'nodes' && this.store.hasCompounds()) {
+      const parents = this.defs.parents.deps;
+
+      if (parents != null) {
+        for (let i = 0; i < keys.length; i++) {
+          if (parents.has(keys[i])) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   /**

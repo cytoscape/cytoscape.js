@@ -942,9 +942,13 @@ export class Core {
    *   element has that id
    */
   getElementById(id: string): Collection {
-    const ref = this._store.lookup(id);
+    // the packed-code lookup (round 62.3): no IdEntry, no Ref — the
+    // probe answers an integer and the pool answers the handle
+    const code = this._store.lookupCode(id);
 
-    return ref == null ? this.collection() : this._ele(ref.group, ref.slot);
+    return code < 0
+      ? this.collection()
+      : this._ele((code & 1) === 1 ? 'edges' : 'nodes', code >>> 1);
   }
 
   /**

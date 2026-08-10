@@ -73,6 +73,19 @@ const distances: Record<
 distances['squared-euclidean'] = distances.squaredEuclidean;
 distances['squaredeuclidean'] = distances.squaredEuclidean;
 
+/** Resolve a metric name (or custom fn) to its implementation — the
+ * per-call typeof/table hop, hoistable by callers that price a whole
+ * run (round 62.2).
+ *
+ * @param method — a `DistanceMetricName` or a custom function
+ * @returns the implementation; an unrecognised name silently falls back
+ *   to `euclidean`, matching v3
+ */
+export const resolveDistance = (method: DistanceMetric): CustomDistanceFn =>
+  typeof method === 'function'
+    ? method
+    : distances[method] || distances.euclidean;
+
 /**
  * Distance between two attribute vectors under the named metric, or under
  * a caller-supplied function.  An unrecognised name silently falls back to
@@ -88,14 +101,6 @@ distances['squaredeuclidean'] = distances.squaredEuclidean;
  * @param nodeQ — the second operand itself, for custom functions
  * @returns the distance; non-negative for every built-in metric
  */
-/** Resolve a metric name (or custom fn) to its implementation — the
- * per-call typeof/table hop, hoistable by callers that price a whole
- * run (round 62.2). */
-export const resolveDistance = (method: DistanceMetric): CustomDistanceFn =>
-  typeof method === 'function'
-    ? method
-    : distances[method] || distances.euclidean;
-
 export const clusteringDistance = (
   method: DistanceMetric,
   length: number,

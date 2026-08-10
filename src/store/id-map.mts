@@ -104,6 +104,22 @@ export class IdMap {
   }
 
   /**
+   * Resolve an id to its packed `(slot << 1) | groupBit` code, or −1 —
+   * the allocation-free twin of `get()` for the id-lookup hot path
+   * (round 62.3: `getElementById` paid two throwaway objects per call,
+   * the IdEntry here and the Ref above, and lost to v3's Map.get on
+   * them alone).  Group bit 1 = edges.
+   *
+   * @param id — the id to look up
+   * @returns the packed code, or −1 when no element holds the id
+   */
+  code(id: string): number {
+    const entry = this.findEntry(id);
+
+    return entry === EMPTY ? -1 : entry - BASE;
+  }
+
+  /**
    * Resolve an id to its group and slot.  Allocates a fresh result
    * object per hit but decodes no strings — the probe compares UTF-8
    * bytes in the blob against the encoded query.

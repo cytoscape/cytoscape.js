@@ -1131,6 +1131,19 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * The allocation-free twin of `lookup()` (round 62.3): the id's packed
+   * `(slot << 1) | groupBit` code, or −1.  For callers that only need to
+   * reach the interned handle — `getElementById` — the two objects
+   * `lookup()` allocates per call are pure cost.
+   *
+   * @param id — the element id
+   * @returns the packed code (group bit 1 = edges), or −1 when absent
+   */
+  lookupCode(id: string): number {
+    return this.ids.code(id);
+  }
+
+  /**
    * The id occupying a slot, or undefined when the slot is a hole.
    * The reverse of lookup(); ids are stored out of line, so this is the
    * only string the columnar hot paths ever touch.

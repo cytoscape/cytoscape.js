@@ -351,6 +351,24 @@ unpartitioned defs and demoted groups all keep the full write —
 correctness by fallback, pinned by controls that fail exactly the
 specs written for them.
 
+**Round 62** (2026-08-09/10) took the maintainer's flat goal — *every
+benchmark for v4 should beat v3* — and met it: the published idle-box
+`--all` run carries **287 v3/gpu pairs with zero v3-faster rows**
+(geometric mean 11×, narrowest margin 1.03×), reached across ten
+verification runs (28 → 0 losers).  Twenty-eight rows were genuinely
+losing and got real fixes (the prototype-method animation handle, the
+epoch-keyed whole-object `data()` cache — ledger 17b/17c — per-name
+style read plans, the id → index map, the CSR-in-place traversal
+walk); the last few "losers" were **the harness measuring itself**,
+pinned by controls: a shared op closure samples the first-declared
+side against monomorphic ICs (62.5c's pre-warm fixes it), and below
+~10 ns a row sits at the harness floor where group-order artifacts own
+the sign — `pan() get` lost eight straight runs in-suite while reading
+**4× v4-faster** in per-process loops, and now does 32 reads per
+sample.  Node tier, gates and Playwright green throughout; the goal is
+a snapshot, not a floor — the published archive plus the comparison
+pages are the standing regression net.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed

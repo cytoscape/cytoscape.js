@@ -2159,9 +2159,17 @@ export class Collection {
    * edges) are first-class and immutable — reading them works, writing
    * them throws.  Setters apply to every element in the collection and
    * emit `data` per element; a write refreshes data-mapped labels.
+   * The whole-object read returns a built snapshot, not the store's
+   * internals — and the *same* snapshot until a data write (or a
+   * reparent/re-point) invalidates it, so mutating it never corrupts
+   * the store but is visible to the mutator until the next write
+   * (v3 hands out its live internal object here, where mutation
+   * corrupts the actual store — v4's exposure is strictly narrower).
    *
-   * @param args — nothing (read the first element's whole object), a key
-   *   (read it), a key and a value, or an object of keys to merge
+   * @param key — omit it (read the first element's whole object), a key
+   *   (read it), or an object of keys to merge (write)
+   * @param value — with a string key: the value to write; omitting it
+   *   reads the key, and an explicit `undefined` clears it
    * @returns the read value, or this collection when writing
    */
   data(key?: string | Record<string, unknown>, value?: unknown): unknown {

@@ -12,7 +12,10 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-09.  The fully-specced queue closed 8 August —
+- **Last updated**: 2026-08-10, as round 62 closed: the maintainer's
+  flat goal — every benchmark for v4 should beat v3 — is met, with all
+  287 v3-comparative pairs reading v4-faster in the published run (see
+  "Where it stands" and week 4).  The fully-specced queue closed 8 August —
   rounds 52 (shader minification), 54 (the compound-fit bounds) and 38
   (border and outline styles) landed, the robustness round finished its
   limit coverage, and the two open questions each gained their prepared
@@ -62,7 +65,7 @@ for several weeks; `npm test` passes from a clean checkout.
 |---|---|
 | Automated tests | 2,115 unit · 341 module · 24 soak · 355 browser (240 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, twelve of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
+| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
 | Benchmarks | 24 suites; **every one of the 287 v3-comparative pairs reads v4-faster** as of 10 August (geometric mean **11×**, minimum 1.03×), **27×** on rendering (geometric mean over 64 paired rows) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 617 KiB minified, 166 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
@@ -695,7 +698,8 @@ pairs, and the published run has zero v3-faster rows (geometric mean
 Getting there took ten verification runs and split cleanly into two
 kinds of work.  The first was ordinary: 28 rows were genuinely losing,
 and each got a real fix — the animation-handle lifecycle rebuilt on
-prototype methods (a handle was ~30× v3's cost to construct), the
+prototype methods (a handle was ~6× v3's cost to construct, and is
+now ~30× cheaper than it was), the
 whole-object `data()` read cached against a write epoch (it had been
 rebuilding the object per call), style reads planned per property name
 instead of re-normalising per read, a traversal walk that had been

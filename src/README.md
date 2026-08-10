@@ -3141,11 +3141,14 @@ shared one varies ±30%):
   specs pin it against `cy.nodes()`/`cy.edges()`.
 - **`mutableElements()` — 121 µs → 20 ns** (round 34.2): the three
   unfiltered collections (`elements`, `nodes`, `edges` with no query)
-  are memoized against a store *structure epoch*, bumped wherever an
-  element enters or leaves the insertion-order list.  A counter and not
-  a count, so add-one-remove-one between two calls cannot read as
-  unchanged.  Two calls with no structural change now return the same
-  object, which is the one visible consequence and is pinned by a spec.
+  are memoized.  Round 34.2 keyed the memo on a store *structure
+  epoch* — a counter and not a count, so add-one-remove-one between
+  two calls cannot read as unchanged; rounds 62.5b/62.6 made the store
+  **push-invalidate** it instead (the one `bumpStructureEpoch()`
+  funnel nulls the cache), so the hit is a single field load with no
+  epoch compare — ~2.4 ns, past v3's own O(1) return.  Two calls with
+  no structural change return the same object, which is the one
+  visible consequence and is pinned by a spec.
 - **`indexOf()` — 12.5 µs → 41 ns** (round 34.1), parity with v3: the
   lazily-built packed-key membership `Set` became a `Map` from key to
   first index, so the cache the set ops already build now carries the

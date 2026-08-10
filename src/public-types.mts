@@ -314,6 +314,20 @@ export interface Stylesheet {
    * (the background-grab indicator circle).  v3's core-selector props.
    */
   core?: StyleProps;
+  /**
+   * Per-element bypasses (round 63): id → prop → constant.  A bypass
+   * beats everything — the user's group blocks and the default sheet's
+   * state conditionals included (v3's precedence) — and is an id-keyed
+   * *declaration* rather than element state: it survives remove/re-add
+   * of its element, may name an id that does not exist yet (inert
+   * until it does), and round-trips through `cy.json()`.  Values are
+   * constants only — mappers belong in the group blocks — and prop
+   * keys take dash-case or camelCase like every prop surface.  A full
+   * `cy.style( sheet )` replaces the section like any other; the
+   * `ele.style( name, value )` / `removeStyle()` methods are sugar
+   * over it.
+   */
+  bypasses?: Record<string, StyleProps>;
 }
 
 /**

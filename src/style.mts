@@ -2927,6 +2927,139 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
   }
 };
 
+/**
+ * The per-group prop guards, extracted from `resolveConst` (round 63.2)
+ * so the bypass parser and the sheet compiler reject a wrong-group or
+ * malformed prop with one set of messages.  Assignment-free: throws or
+ * returns.
+ *
+ * @param group — the group the prop is being resolved for
+ * @param norm — the normalized (dash-case) prop name
+ * @param value — the raw sheet value (mapper specs included; the
+ *   `text-rotation` and font guards test it directly)
+ * @throws when the prop belongs to the other group, to the parents
+ *   group, or is a global font prop given a mapper
+ */
+const assertGroupProp = (
+  group: GroupName,
+  norm: string,
+  value: unknown,
+): void => {
+  if (COMPOUND_PROPS.has(norm)) {
+    // round 14.6: the compound props live in the parents sheet group
+    // (they are auto-bounds inputs, split out before this resolve)
+    throw new Error(
+      `The style property '${norm}' belongs to the parents group`,
+    );
+  }
+
+  if (END_LABEL_PROPS.has(norm) && group === 'nodes') {
+    throw new Error(`'${norm}' is an edge style property`);
+  }
+
+  // the raw sheet value may be a mapper object here, so test the
+  // keyword directly rather than parsing
+  if (norm === 'text-rotation' && group === 'nodes' && value === 'autorotate') {
+    // 27.7: numeric rotations now work on node labels; `autorotate`
+    // is still an edge concept — it resolves from the edge's slope,
+    // and a node has none
+    throw new Error(
+      `text-rotation 'autorotate' is edge-only; nodes take a number of radians`,
+    );
+  }
+
+  if (CURVE_PROPS.has(norm) && group === 'nodes') {
+    throw new Error(`'${norm}' is an edge style property`);
+  }
+
+  if (
+    (GHOST_PROPS.has(norm) ||
+      LAYER_SHAPE_PROPS.has(norm) ||
+      NODE_ONLY_EXTRA.has(norm) ||
+      IMAGE_PROPS.has(norm) ||
+      CHART_PROPS.has(norm)) &&
+    group === 'edges'
+  ) {
+    throw new Error(`'${norm}' is a node style property`);
+  }
+
+  if (GLOBAL_FONT_PROPS.has(norm)) {
+    // one glyph atlas keyed by character ⇒ one font face, globally
+    if (group === 'edges') {
+      throw new Error(
+        `'${norm}' is a node style property (labels are node-only)`,
+      );
+    }
+
+    if (isMapperSpec(value)) {
+      throw new Error(
+        `'${norm}' takes a constant only — per-element fonts are unsupported ` +
+          `(the glyph atlas holds one font)`,
+      );
+    }
+  }
+};
+
+/**
+ * One id's bypass, resolved for one group: the `Computed` fields its
+ * props assign, captured once at parse time (round 63.2) so the write
+ * funnel's merge is field copies with no per-write parsing.
+ */
+type BypassPatch = readonly (readonly [string, unknown])[];
+
+/**
+ * Parse a bypass entry's props for one group into a `BypassPatch`.
+ * Sound because `applyProp` only ever *assigns* parsed values into
+ * `computed` (no case reads a sibling field — checked at 63.2), so a
+ * bare scratch object's own keys are exactly the fields the props
+ * touch — including a value that happens to equal the channel default,
+ * which a diff-against-defaults capture would silently drop.
+ *
+ * @param group — the group to resolve against ('width' parses per group)
+ * @param props — normalized prop name → raw constant value
+ * @returns the captured field pairs, ready for `mergeBypass`
+ * @throws on a mapper value (bypasses are constants-only), a global
+ *   font prop (one atlas, one font — there is no per-element font to
+ *   bypass to), a transition config prop (engine config, not a
+ *   channel), a wrong-group prop, or an invalid value
+ */
+const captureBypassPatch = (
+  group: GroupName,
+  props: Record<string, unknown>,
+): BypassPatch => {
+  const scratch = {} as Computed;
+
+  for (const norm of Object.keys(props)) {
+    const value = props[norm];
+
+    if (isMapperSpec(value)) {
+      throw new Error(
+        `A bypass value must be a constant; '${norm}' got a mapper — ` +
+          `mappers belong in the sheet's group blocks`,
+      );
+    }
+
+    if (GLOBAL_FONT_PROPS.has(norm)) {
+      throw new Error(
+        `'${norm}' is global (the glyph atlas holds one font) and cannot ` +
+          `be bypassed per element`,
+      );
+    }
+
+    if (TRANSITION_CONFIG_PROPS.has(norm)) {
+      throw new Error(
+        `'${norm}' is per-group engine config, not a channel — set it in ` +
+          `the sheet's group block`,
+      );
+    }
+
+    assertGroupProp(group, norm, value);
+    applyProp(scratch, norm, value);
+  }
+
+  return Object.entries(scratch);
+};
+
 /** background-image props are node-only (round 15.2). */
 const IMAGE_PROPS: ReadonlySet<string> = new Set([
   'background-image',
@@ -4494,6 +4627,7 @@ const SHEET_KEYS: ReadonlySet<string> = new Set([
   'edges',
   'parents',
   'core',
+  'bypasses',
 ]);
 
 /**
@@ -5836,6 +5970,214 @@ export class StyleEngine {
   /** Round 24.1: the open transition capture (one per group-def pass). */
   private txn: TxnCapture | null = null;
 
+  // -- per-element bypasses (round 63) --
+
+  /** id → normalized prop → raw value: the live bypass declarations
+   * (the `bypasses` sheet section plus the sugar methods' writes),
+   * exported by `json()`.  Id-keyed declarations, not element state —
+   * an entry survives remove/re-add and may name an id that does not
+   * exist yet (inert until it does). */
+  private bypassRaw = new Map<string, Record<string, unknown>>();
+
+  /** id → per-group parsed patches.  Both groups parse at declaration
+   * time (the id may not resolve yet); null marks a group whose guards
+   * reject the entry's props (e.g. a curve prop never applies to a
+   * node), decided when the id resolves. */
+  private bypassParsed = new Map<
+    string,
+    { nodes: BypassPatch | null; edges: BypassPatch | null }
+  >();
+
+  /** slot → patch per group, resolved lazily against the store's
+   * structure epoch — adds, removes and compaction all bump it, and a
+   * re-resolution is O(declared ids), never O(elements). */
+  private bypassSlots: Record<GroupName, Map<number, BypassPatch>> = {
+    nodes: new Map(),
+    edges: new Map(),
+  };
+
+  private bypassEpoch = -1;
+
+  /** normalized prop → live declaration count across ids — what
+   * `paintInputs` demotes by (a kernel-owned mapper would overwrite a
+   * bypassed slot's stored bytes on its next dispatch). */
+  private bypassPropCounts = new Map<string, number>();
+
+  /** Whether any bypass is declared — the zero-cost gate every touched
+   * path checks first (the round-63 performance contract).
+   *
+   * @returns true when at least one id has a live bypass declaration
+   */
+  hasBypasses(): boolean {
+    return this.bypassRaw.size > 0;
+  }
+
+  /** Validate a sheet's `bypasses` section into installable entries —
+   * called before any engine state mutates, so a bad section throws
+   * from `setSheet` with nothing half-applied. */
+  private validateBypasses(section: Stylesheet['bypasses']): Map<
+    string,
+    {
+      raw: Record<string, unknown>;
+      parsed: { nodes: BypassPatch | null; edges: BypassPatch | null };
+    }
+  > {
+    const out = new Map<
+      string,
+      {
+        raw: Record<string, unknown>;
+        parsed: { nodes: BypassPatch | null; edges: BypassPatch | null };
+      }
+    >();
+
+    if (section == null) {
+      return out;
+    }
+
+    if (typeof section !== 'object' || Array.isArray(section)) {
+      throw new Error(
+        `The 'bypasses' section is an object of { id: { prop: constant } } entries`,
+      );
+    }
+
+    for (const id of Object.keys(section)) {
+      const entry = (section as Record<string, unknown>)[id];
+
+      if (entry == null || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw new Error(
+          `Invalid bypass for '${id}': an entry is a { prop: constant } object`,
+        );
+      }
+
+      const raw: Record<string, unknown> = {};
+
+      for (const key of Object.keys(entry)) {
+        raw[normalizeProp(key)] = (entry as Record<string, unknown>)[key];
+      }
+
+      out.set(id, { raw, parsed: this.parseBypassGroups(id, raw) });
+    }
+
+    return out;
+  }
+
+  /** Parse one entry's props for both groups; a group whose guards
+   * reject them parses null, and both rejecting is the caller's error. */
+  private parseBypassGroups(
+    id: string,
+    raw: Record<string, unknown>,
+  ): { nodes: BypassPatch | null; edges: BypassPatch | null } {
+    let nodes: BypassPatch | null = null;
+    let edges: BypassPatch | null = null;
+    let nodesErr: unknown = null;
+
+    try {
+      nodes = captureBypassPatch('nodes', raw);
+    } catch (e) {
+      nodesErr = e;
+    }
+
+    try {
+      edges = captureBypassPatch('edges', raw);
+    } catch {
+      // the nodes error carries the message when both reject
+    }
+
+    if (nodes == null && edges == null) {
+      throw new Error(
+        `Invalid bypass for '${id}': ${(nodesErr as Error).message}`,
+      );
+    }
+
+    return { nodes, edges };
+  }
+
+  /** Install validated bypass entries (whole-replace — `setSheet`'s
+   * swap semantics: the section is replaced like any other). */
+  private installBypasses(
+    entries: Map<
+      string,
+      {
+        raw: Record<string, unknown>;
+        parsed: { nodes: BypassPatch | null; edges: BypassPatch | null };
+      }
+    >,
+  ): void {
+    this.bypassRaw.clear();
+    this.bypassParsed.clear();
+    this.bypassPropCounts.clear();
+    this.bypassEpoch = -1;
+
+    for (const [id, { raw, parsed }] of entries) {
+      this.bypassRaw.set(id, raw);
+      this.bypassParsed.set(id, parsed);
+
+      for (const norm of Object.keys(raw)) {
+        this.bypassPropCounts.set(
+          norm,
+          (this.bypassPropCounts.get(norm) ?? 0) + 1,
+        );
+      }
+    }
+  }
+
+  /** Re-resolve declared ids to live slots when the structure epoch
+   * moved — O(declared ids) per structural change, amortized over the
+   * writes between changes, and nothing at all when no bypass exists. */
+  private rebuildBypassSlots(): void {
+    const epoch = this.store.structureEpoch;
+
+    if (epoch === this.bypassEpoch) {
+      return;
+    }
+
+    this.bypassEpoch = epoch;
+    this.bypassSlots.nodes.clear();
+    this.bypassSlots.edges.clear();
+
+    for (const [id, parsed] of this.bypassParsed) {
+      const ref = this.store.lookup(id);
+
+      if (ref == null) {
+        continue; // declared for an id not present — inert until it is
+      }
+
+      const patch = parsed[ref.group];
+
+      if (patch != null && patch.length > 0) {
+        this.bypassSlots[ref.group].set(ref.slot, patch);
+      }
+    }
+  }
+
+  /** The bypass patch for a slot, or null.  O(1) after the lazy
+   * epoch-checked re-resolution. */
+  private bypassPatchAt(group: GroupName, slot: number): BypassPatch | null {
+    this.rebuildBypassSlots();
+
+    return this.bypassSlots[group].get(slot) ?? null;
+  }
+
+  /**
+   * Clone-and-patch: the write funnel's bypass merge (round 63.3).  A
+   * method rather than an inline spread so specs can count invocations
+   * — a bypass-free instance must never reach it, which is the
+   * performance contract's zero-cost gate made testable.
+   *
+   * @param computed — the slot's sheet-resolved record (never mutated)
+   * @param patch — the captured field pairs for the slot's bypass
+   * @returns a fresh record with the bypassed fields replaced
+   */
+  mergeBypass(computed: Computed, patch: BypassPatch): Computed {
+    const merged = { ...computed } as unknown as Record<string, unknown>;
+
+    for (let i = 0; i < patch.length; i++) {
+      merged[patch[i][0] as string] = patch[i][1];
+    }
+
+    return merged as unknown as Computed;
+  }
+
   /** Round 24.1: receives the diffed transition tweens — wired by the
    * core to AnimationManager.start (the round-21 eviction gives uniform
    * latest-wins); null in engine-only contexts disables capture. */
@@ -5950,7 +6292,7 @@ export class StyleEngine {
     for (const key of Object.keys(sheet)) {
       if (!SHEET_KEYS.has(key)) {
         throw new Error(
-          `Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core`,
+          `Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core, bypasses`,
         );
       }
 
@@ -5965,6 +6307,10 @@ export class StyleEngine {
         );
       }
     }
+
+    // round 63.2: validate the bypasses section before any engine state
+    // mutates, so a bad entry throws with nothing half-applied
+    const bypassEntries = this.validateBypasses(sheet.bypasses);
 
     this.coreStyle = resolveCoreProps(sheet.core);
 
@@ -6140,6 +6486,11 @@ export class StyleEngine {
       this.gpuOwnedProps[group] = new Set();
     }
 
+    // whole-replace, like every other section (the keep-them idiom is
+    // spreading the exported sheet); setSheet's paintVersion bump below
+    // already covers any kernel-ownership change this implies
+    this.installBypasses(bypassEntries);
+
     this.paintVersion++;
 
     if (apply) {
@@ -6208,6 +6559,17 @@ export class StyleEngine {
       // so a kernel-owned opacity would leave stale casing bytes
       if (computed.lineOutlineWidth > 0 || mapped('line-outline-width')) {
         demoted.add('opacity');
+      }
+    }
+
+    // round 63.3: a channel carrying a bypass demotes while any exists —
+    // the kernel evaluates every slot and would overwrite the bypassed
+    // slot's stored bytes on its next dispatch.  Count-gated and
+    // reversible: the last removal (or a sheet swap without the entry)
+    // restores kernel ownership through the paintVersion bump.
+    for (const [prop, n] of this.bypassPropCounts) {
+      if (n > 0) {
+        demoted.add(prop);
       }
     }
 
@@ -6390,7 +6752,24 @@ export class StyleEngine {
    * @returns the sheet object (live, not a copy — treat as read-only)
    */
   json(): Stylesheet {
-    return this.sheet;
+    // round 63.2: the bypasses section reflects the *live* declarations
+    // (sheet section plus sugar writes), not the object the sheet was
+    // set with — and is omitted entirely when none exist
+    const { bypasses: _stale, ...rest } = this.sheet as Stylesheet & {
+      bypasses?: unknown;
+    };
+
+    if (this.bypassRaw.size === 0) {
+      return rest;
+    }
+
+    const bypasses: Record<string, Record<string, unknown>> = {};
+
+    for (const [id, props] of this.bypassRaw) {
+      bypasses[id] = { ...props };
+    }
+
+    return { ...rest, bypasses } as Stylesheet;
   }
 
   /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
@@ -7208,6 +7587,7 @@ export class StyleEngine {
     let last = -1;
     let record: Computed | null = null;
     let writers: StateWriter[] | null = null;
+    const bypassed = this.bypassRaw.size > 0;
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
@@ -7217,6 +7597,15 @@ export class StyleEngine {
         last = to;
         record = this.partRecordFor(group, def, part, to);
         writers = this.partitionDiffWriters(group, def, part, to ^ bit, to);
+      }
+
+      // round 63.3: a bypassed slot takes the merged full write — the
+      // narrow diff writers would stomp a bypassed channel with the
+      // partition record's value.  O(bypassed); the run optimization
+      // and the diff path are untouched for everything else.
+      if (bypassed && this.bypassPatchAt(group, slot) != null) {
+        this.write(group, slot, record as Computed);
+        continue;
       }
 
       if (writers == null) {
@@ -7711,63 +8100,7 @@ export class StyleEngine {
       const norm = normalizeProp(prop);
       const value = props[prop];
 
-      if (COMPOUND_PROPS.has(norm)) {
-        // round 14.6: the compound props live in the parents sheet group
-        // (they are auto-bounds inputs, split out before this resolve)
-        throw new Error(
-          `The style property '${norm}' belongs to the parents group`,
-        );
-      }
-
-      if (END_LABEL_PROPS.has(norm) && group === 'nodes') {
-        throw new Error(`'${norm}' is an edge style property`);
-      }
-
-      // the raw sheet value may be a mapper object here, so test the
-      // keyword directly rather than parsing
-      if (
-        norm === 'text-rotation' &&
-        group === 'nodes' &&
-        value === 'autorotate'
-      ) {
-        // 27.7: numeric rotations now work on node labels; `autorotate`
-        // is still an edge concept — it resolves from the edge's slope,
-        // and a node has none
-        throw new Error(
-          `text-rotation 'autorotate' is edge-only; nodes take a number of radians`,
-        );
-      }
-
-      if (CURVE_PROPS.has(norm) && group === 'nodes') {
-        throw new Error(`'${norm}' is an edge style property`);
-      }
-
-      if (
-        (GHOST_PROPS.has(norm) ||
-          LAYER_SHAPE_PROPS.has(norm) ||
-          NODE_ONLY_EXTRA.has(norm) ||
-          IMAGE_PROPS.has(norm) ||
-          CHART_PROPS.has(norm)) &&
-        group === 'edges'
-      ) {
-        throw new Error(`'${norm}' is a node style property`);
-      }
-
-      if (GLOBAL_FONT_PROPS.has(norm)) {
-        // one glyph atlas keyed by character ⇒ one font face, globally
-        if (group === 'edges') {
-          throw new Error(
-            `'${norm}' is a node style property (labels are node-only)`,
-          );
-        }
-
-        if (isMapperSpec(value)) {
-          throw new Error(
-            `'${norm}' takes a constant only — per-element fonts are unsupported ` +
-              `(the glyph atlas holds one font)`,
-          );
-        }
-      }
+      assertGroupProp(group, norm, value);
 
       if (isMapperSpec(value)) {
         // chart-values (round 23): the data passthrough reads a
@@ -8165,6 +8498,18 @@ export class StyleEngine {
    * body itself stays transition-blind.
    */
   private write(group: GroupName, slot: number, computed: Computed): void {
+    // round 63.3: a bypassed slot writes the merged record — one gate
+    // load for bypass-free instances (the performance contract), and
+    // because every restyle path except refreshStateDef's narrow
+    // writers funnels through here, correctness is by construction
+    if (this.bypassRaw.size > 0) {
+      const patch = this.bypassPatchAt(group, slot);
+
+      if (patch != null) {
+        computed = this.mergeBypass(computed, patch);
+      }
+    }
+
     const txn = this.txn;
     const pre =
       txn != null && this.wasStyled(group, slot)

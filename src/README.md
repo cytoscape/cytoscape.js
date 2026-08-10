@@ -3238,6 +3238,20 @@ round 36.5 adds the obvious-in-hindsight caveat that applies to every
 row here: **do not run anything else on the box.**  Its first `--layout`
 run overlapped this repo's own test suite and was discarded.
 
+**The one-shot CPU rows swing ±40–50% between runs of the same
+binary** (round 62.7): `convert (toColumnarElements)`, `compact()`
+one-shot, `export: png` and the `init` rows are each measured once
+per run, so they sample a GC-noisy distribution — measured directly,
+`compact()` read 19.7 then 30.7 ms on back-to-back runs of one scene
+and one bundle, and a best-of-7 conversion A/B put HEAD and a
+28-commit-older build within 0.3 ms of each other while single shots
+spanned 13–23 ms.  The first renderer comparison page flagged exactly
+these rows at +14–66% across a span where the frame rows drifted
++0.7%; the direct A/B exonerated the code.  Before attributing a
+one-shot row's movement to a commit, reproduce it best-of on one
+binary — the frame rows (121 frames per press) and pick p50s are the
+regression signal here, not the one-shots.
+
 It replays the interactions behind the
 recorded renderer numbers on six scenes (seeded 25k×50k and 100k×300k
 generators, ndex-x-large, a 25k×50k *curved* scene whose edges come

@@ -17647,3 +17647,31 @@ controls.
     Node tier green throughout (2115 + 341 + 24; throw gate
     184/10/5/0; JSDoc 100% with 244 `@param` / 288 `@returns`);
     Playwright over the changed source; the closing docs sweep.
+- [x] **62.7 The renderer run, and the comparison's first false alarm**
+  (2026-08-10) — a fresh renderer run at c182dd0c (12 scenes, amd
+  gcn-4, published as the profile's fourth run) read clean where it
+  matters: v4 vsync-bound at 16.7 ms wall on every scene, whole-run
+  drift +0.7% over 348 shared rows.  The comparison page's mover list,
+  though, flagged a one-directional CPU-side cluster spanning exactly
+  rounds 61–62: `convert (toColumnarElements)` +14–66% across five
+  scenes, `compact()` one-shot +40–42%, pick-hover ×2 on ndex, export
+  and labeled init +11–18% with flat v3 twins.  The follow-up
+  **exonerated the code and convicted the sampling**: a best-of-7
+  conversion A/B through both trees' built bundles (a worktree at
+  e37d2444, per the round-53 reproduction rule) put the two within
+  0.3 ms while single shots on *one* binary spanned 13–23 ms; and
+  back-to-back runs of one scene on one bundle read `compact()` at
+  19.7 then 30.7 ms — the published "+42%" inside same-binary
+  run-to-run spread.  These rows are measured **once per run** and
+  have no v3 twin, so they sample a GC-noisy distribution the frame
+  rows (121 frames per press) never see.  The device-pair "×2.5"
+  flag was its own tell: the peak-slot row slowed by the same factor
+  its compacted twin sped up, i.e. the bimodal pair the round-29.5
+  record already documents, trading modes.  Recorded as a caveat in
+  the README's renderer-benchmark section (one-shot rows are not a
+  regression signal; reproduce best-of on one binary before
+  attributing movement to a commit) — and the run's own publish
+  commit carries the original flag so the record shows the alarm and
+  the resolution both.  Also in the pass: the stale-bundle warning
+  compared v3's frozen UMD against v4's src mtimes and cried wolf on
+  a fresh build; each bundle now checks against its own tree.

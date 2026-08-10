@@ -12,33 +12,23 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-10, as round 62 closed: the maintainer's
-  flat goal — every benchmark for v4 should beat v3 — is met, with all
-  287 v3-comparative pairs reading v4-faster in the published run (see
-  "Where it stands" and week 4).  The fully-specced queue closed 8 August —
-  rounds 52 (shader minification), 54 (the compound-fit bounds) and 38
-  (border and outline styles) landed, the robustness round finished its
-  limit coverage, and the two open questions each gained their prepared
-  input — a measured error-site classification and a written
-  gesture-veto proposal.  On 9 August the maintainer closed both by
-  declining the surface each had priced — errors and warnings stay as
-  built, and gesture control stays with the explicit toggles — and the
-  arrow trim reached its last three consumers (edge labels, the layer
-  strokes, mid arrows), pixel-exact against v3; the force layout was
-  rebuilt on what the field ships after the original model was
-  measured unstable on real networks; and the status site gained
-  cross-commit benchmark comparison, so a performance regression is
-  now something the site shows rather than something someone
-  remembers — which it demonstrated immediately: under the default
-  stylesheet's new selection look, every select was restyling whole
-  elements, and bulk selection had quietly gone from 38× faster than
-  v3 to ~3× slower.  The same day's follow-up round fixed it (a state
-  flip now writes only the channels the flip changes; selection is
-  ~8× faster than v3 again); see week 4.  The
-  preceding days added a maintainer-driven interaction arc (edges
-  activate on press, v3's hit-test halos, pickable arrowheads) and the
-  debug harness's move onto the default style, all described under
-  week 3.
+- **Last updated**: 2026-08-10, as round 65 closed.  The same day held
+  three decision rounds and one large build round: the per-element
+  bypasses returned as a stylesheet section (round 63), `cy.$()` and
+  `cy.byId()` returned as aliases while `cy.collection( arg )` began
+  throwing (round 64), and the nine expensive whole-graph algorithms
+  became **async with a GPU executor** (round 65) — WGSL compute
+  kernels behind an `executor: 'cpu' | 'gpu' | 'auto'` option, a
+  same-day performance pass, a live CPU-vs-GPU parity suite, and a
+  fourth benchmark profile publishing the executor sweep to this
+  site's benchmark pages.  The maintainer's round-62 flat goal —
+  every benchmark for v4 should beat v3 — still holds under the
+  fresh post-65 runs: 366 v3-comparative pairs across the newest
+  all-profile and renderer runs, zero v3-faster (combined geometric
+  mean 13.5×, narrowest margin 1.03×).  Re-measuring for this round
+  also resurrected a suite: `style-bundle.mjs` had been a
+  module-level syntax error since round 42, its failure published
+  unread in every all-profile run since.
 
 ---
 
@@ -65,12 +55,12 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,145 unit · 341 module · 24 soak · 355 browser (240 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
-| Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
-| Benchmarks | 24 suites; **every one of the 287 v3-comparative pairs reads v4-faster** as of 10 August (geometric mean **11×**, minimum 1.03×), **27×** on rendering (geometric mean over 64 paired rows) |
+| Automated tests | 2,165 unit · 344 module · 24 soak · 375 browser (248 run; 127 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Documented API | 363 members over 48 sections, gated at 100% |
+| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) |
+| Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.5×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 617 KiB minified, 166 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
+| Bundle | 684 KiB minified, 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire; the WebGPU shader source (which v3 has no equivalent of) is minified at build time, and round 65's algorithm kernels ride in it |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -692,10 +682,13 @@ sentence.
 ### Round 62: every benchmark pair reads v4-faster
 
 With the comparison pages live, the maintainer set a flat goal:
-**every v4 benchmark should beat v3.**  As of 10 August it does — an
-idle-box run of the full benchmark tier carries 287 v3-comparative
-pairs, and the published run has zero v3-faster rows (geometric mean
-11×; the narrowest margin 1.03×).
+**every v4 benchmark should beat v3.**  It was met that day — the
+round's idle-box run carried 287 v3-comparative pairs with zero
+v3-faster rows — and it still holds after round 65's re-measurement:
+366 pairs across the newest all-profile and renderer runs (the count
+grew with round 63's bypass rows and the round-65.9b resurrection of
+style-bundle), zero v3-faster, combined geometric mean 13.5×, the
+narrowest margin 1.03×.
 
 Getting there took ten verification runs and split cleanly into two
 kinds of work.  The first was ordinary: 28 rows were genuinely losing,

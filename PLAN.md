@@ -1556,7 +1556,7 @@ test/soak/*.mjs          # round 48: the robustness tier, run by `npm run test:s
                          #   window, promoted from measurement to gate), wire-fuzz.mjs
                          #   (seeded byte mutations; found three defects on its first run)
                          #   and isolation.mjs (multi-instance; found the fourth)
-benchmark/               # 24 suites + the renderer/report runners (see the Benchmarks section of the README).
+benchmark/               # 25 suites + the renderer/report/executor-sweep runners (see the Benchmarks section of the README).
                          #   Round 36.5 added style-bundle.mjs — the style getters measured through the
                          #   *built bundle*, giving rounds 34-35's headline figures a re-runnable source.
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
@@ -1589,7 +1589,7 @@ test/modules/import-graph.mjs    # round 41.3: what src imports from outside its
                                  #   src/ may import outside it, nothing may reach into v3/)
 scripts/docs-generate.mjs    # round 45: the docs generator — source doc blocks + the
                                  #   `// -- section --` banners -> docmaker's fns shape
-                                 #   (`npm run docs:api`; 362 members over 48 sections)
+                                 #   (`npm run docs:api`; 363 members over 48 sections)
 test/docs-generate.mjs           # round 45: the gate — the model cross-checked against the
                                  #   *shipped* dist/cytoscape.d.ts, both directions, plus the
                                  #   stranded-block precondition (gated at zero for published files)

@@ -3129,14 +3129,18 @@ than a courtesy.
 **What a profile costs**, measured 2026-08-04 on the i9-9900K these
 rounds have used (round 33's risk register promised this number and no
 round had recorded it; the runner prints its own total, so it was
-always a run away): **quick 7.1 min, `--all` 17.4 min.**  `--full` adds
+always a run away): **quick 7.1 min, `--all` 18.2 min** (the latter
+grew with round 65.9b's resurrection of style-bundle).  `--full` adds
 the 2k/20k/200k matrix and is unmeasured — it is the profile nobody
 runs casually, which is the point of keeping quick quick.
 
 **As of round 62 (2026-08-10), every v3-comparative row reads
-v4-faster** — an idle-box `--all` run carries 287 v3/gpu pairs and its
-published run (`benchmark/published/`, the i9-9900K) has zero
-v3-faster rows.  That was a goal, so say what it took: rounds 62.4–62.6
+v4-faster** — that round's idle-box `--all` run carried 287 v3/gpu
+pairs and its published run (`benchmark/published/`, the i9-9900K) had
+zero v3-faster rows; round 65's re-measurement holds the property at
+**270 all-profile pairs (plus 96 renderer pairs), still zero
+v3-faster**, the count having grown with round 63's bypass rows and
+style-bundle's return.  That was a goal, so say what it took: rounds 62.4–62.6
 fixed 28 genuinely losing rows (the animation handle lifecycle, the
 whole-object `data()` cache, per-raw-name style read plans, the
 id → index map, the CSR-in-place traversal walk among them) — and then

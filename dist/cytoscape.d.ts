@@ -543,6 +543,11 @@ interface AllocResult {
  * per-slot generation counters so stale handles can be detected.
  */
 declare class ColumnTable {
+  /** Bumped whenever the column arrays are replaced (grow or compact) —
+   * the precise validity key for callers that cache an array reference
+   * (round 62.5's hot accessors).  Timing-safe where an epoch key is
+   * not: the bump happens in the same call that swaps the arrays. */
+  arraysVersion: number;
   /** which element group this table holds ('nodes' or 'edges') */
   group: GroupName;
   /** current capacity, in slots */
@@ -2176,13 +2181,9 @@ declare class GraphStore implements ModelView {
    * tracker, so readers must not mutate it.
    */
   column(id: ColumnId): ColumnArray;
-  /** The node position column without the per-call spec walk — the
-   * accessor for read paths hot enough that two Map hops show
-   * (round 62.4: `position()` lost to v3 on the dispatch alone).  Not
-   * cached beyond the table's own map: a realloc swaps the array, and a
-   * stale reference would read a dead buffer. */
+  /** The node position column through the hot cache (round 62.4/5). */
   nodePositions(): Float32Array;
-  /** The edge endpoints column, on the same terms as `nodePositions`. */
+  /** The edge endpoints column through the hot cache (round 62.4/5). */
   edgeEndpoints(): Uint32Array;
   /** Whether any column write or touch() is pending a frame. */
   hasDirty(): boolean;
@@ -2573,6 +2574,16 @@ declare class GraphStore implements ModelView {
   /** The whole flags word for a slot (see the FLAG_* bits in
    * contract.mts); 0 for a tombstoned slot. */
   flags(group: GroupName, slot: number): number;
+  private hotNodeV;
+  private hotEdgeV;
+  private hotNFlags;
+  private hotNPos;
+  private hotEFlags;
+  private hotEEnds;
+  /** The node flags column through the hot cache (round 62.5). */
+  hotNodeFlags(): Uint32Array;
+  /** The edge flags column through the hot cache (round 62.5). */
+  hotEdgeFlags(): Uint32Array;
   /** Whether every bit of `bit` is set — the single-bit tests read as
    * a predicate, not a mask compare. */
   hasFlag(group: GroupName, slot: number, bit: number): boolean;
@@ -5062,6 +5073,9 @@ declare class Collection {
   /** How many elements this collection holds. */
   length: number;
   _cy: Core;
+  /** the owning store, held directly (round 62.5): every accessor read
+   * it through a getter chain, which showed on the nanosecond rows */
+  _store: GraphStore;
   private __refs;
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch;
@@ -5123,7 +5137,6 @@ declare class Collection {
      * validation the source collection already carries */
     handles?: Collection[];
   });
-  get _store(): GraphStore;
   _first(): Ref | undefined;
   /** the event system's view of this collection (see events.mts) */
   _eventRef(): Ref | null;

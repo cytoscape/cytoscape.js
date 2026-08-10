@@ -18,6 +18,7 @@ import {
   FLAG_VISIBLE,
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
+import type { GraphStore } from './store/graph-store.mjs';
 import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
 import type { CurveRoute } from './curve-geometry.mjs';
 import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
@@ -207,6 +208,9 @@ export class Collection {
   length: number;
 
   _cy: Core;
+  /** the owning store, held directly (round 62.5): every accessor read
+   * it through a getter chain, which showed on the nanosecond rows */
+  _store: GraphStore;
   private __refs!: Ref[];
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch = -1;
@@ -292,6 +296,7 @@ export class Collection {
     } = {},
   ) {
     this._cy = cy;
+    this._store = cy._store;
 
     if (opts.handles != null) {
       const handles = opts.handles;
@@ -389,10 +394,6 @@ export class Collection {
   }
 
   // -- internals --
-
-  get _store() {
-    return this._cy._store;
-  }
 
   _first(): Ref | undefined {
     return this._refs[0];
@@ -634,10 +635,11 @@ export class Collection {
    * @returns a new array of the members
    */
   toArray(): Collection[] {
-    const array: Collection[] = [];
+    const n = this.length;
+    const array: Collection[] = new Array(n);
 
-    for (let i = 0; i < this.length; i++) {
-      array.push(this[i]);
+    for (let i = 0; i < n; i++) {
+      array[i] = this[i];
     }
 
     return array;
@@ -686,8 +688,16 @@ export class Collection {
     }
 
     const sorted = this.toArray().sort(sortFn);
+    // the sorted handles are this collection's own interned singletons,
+    // so they pass straight through as the new collection's handles —
+    // no per-element re-validation or dedupe (round 62.5)
+    const refs: Ref[] = new Array(sorted.length);
 
-    return this._spawn(sorted.map((ele) => ele._refs[0]));
+    for (let i = 0; i < sorted.length; i++) {
+      refs[i] = sorted[i]._refs[0];
+    }
+
+    return new Collection(this._cy, refs, { unique: true, handles: sorted });
   }
 
   /**
@@ -1485,8 +1495,9 @@ export class Collection {
         store.flushDerived();
       }
 
-      // one column fetch instead of getX()+getY() (two Map.gets)
-      const xy = store.nodes.column('node.position') as Float32Array;
+      // the hot cache (round 62.5): no Map hop at all on the array the
+      // most-read accessor in the API reads
+      const xy = store.nodePositions();
       const slot = ref.slot;
       const pos = { x: xy[slot * 2], y: xy[slot * 2 + 1] };
 

@@ -20,6 +20,12 @@ export interface AllocResult {
  * per-slot generation counters so stale handles can be detected.
  */
 export class ColumnTable {
+  /** Bumped whenever the column arrays are replaced (grow or compact) —
+   * the precise validity key for callers that cache an array reference
+   * (round 62.5's hot accessors).  Timing-safe where an epoch key is
+   * not: the bump happens in the same call that swaps the arrays. */
+  arraysVersion = 0;
+
   /** which element group this table holds ('nodes' or 'edges') */
   group: GroupName;
   /** current capacity, in slots */
@@ -203,6 +209,8 @@ export class ColumnTable {
    * forwarding repair (19.3) instead of silently matching a mover.
    */
   compact(remap: Uint32Array, newCount: number): void {
+    this.arraysVersion++;
+
     let newCap = INITIAL_CAP;
 
     while (newCap < newCount) {
@@ -251,6 +259,8 @@ export class ColumnTable {
   }
 
   private grow(newCap: number = this.cap * 2): void {
+    this.arraysVersion++;
+
     for (const spec of this.specs) {
       const old = this.arrays.get(spec.id) as ColumnArray;
       const grown = new spec.ctor(spec.components * newCap);

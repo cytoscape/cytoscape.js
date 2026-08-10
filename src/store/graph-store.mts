@@ -526,18 +526,22 @@ export class GraphStore implements ModelView {
     return this.table(columnSpec(id).group).column(id);
   }
 
-  /** The node position column without the per-call spec walk — the
-   * accessor for read paths hot enough that two Map hops show
-   * (round 62.4: `position()` lost to v3 on the dispatch alone).  Not
-   * cached beyond the table's own map: a realloc swaps the array, and a
-   * stale reference would read a dead buffer. */
+  /** The node position column through the hot cache (round 62.4/5). */
   nodePositions(): Float32Array {
-    return this.nodes.column('node.position') as Float32Array;
+    if (this.hotNodeV !== this.nodes.arraysVersion) {
+      this.hotNodeFlags(); // one sync path for the node pair
+    }
+
+    return this.hotNPos;
   }
 
-  /** The edge endpoints column, on the same terms as `nodePositions`. */
+  /** The edge endpoints column through the hot cache (round 62.4/5). */
   edgeEndpoints(): Uint32Array {
-    return this.edges.column('edge.endpoints') as Uint32Array;
+    if (this.hotEdgeV !== this.edges.arraysVersion) {
+      this.hotEdgeFlags(); // one sync path for the edge pair
+    }
+
+    return this.hotEEnds;
   }
 
   /** Whether any column write or touch() is pending a frame. */
@@ -2187,9 +2191,47 @@ export class GraphStore implements ModelView {
   /** The whole flags word for a slot (see the FLAG_* bits in
    * contract.mts); 0 for a tombstoned slot. */
   flags(group: GroupName, slot: number): number {
-    const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    return group === 'nodes'
+      ? this.hotNodeFlags()[slot]
+      : this.hotEdgeFlags()[slot];
+  }
 
-    return (this.table(group).column(id) as Uint32Array)[slot];
+  // -- the hot column caches (round 62.5) --
+  //
+  // An accessor like isParent()/selected()/position() pays the column
+  // spec walk (two Map hops) on every call where v3 reads a bare field.
+  // A column array's identity changes only when its table grows or
+  // compacts, so the four hottest arrays cache against the table's
+  // arraysVersion — bumped in the same call that swaps the arrays,
+  // which is what makes this timing-safe where an epoch key is not.
+
+  private hotNodeV = -1;
+  private hotEdgeV = -1;
+  private hotNFlags!: Uint32Array;
+  private hotNPos!: Float32Array;
+  private hotEFlags!: Uint32Array;
+  private hotEEnds!: Uint32Array;
+
+  /** The node flags column through the hot cache (round 62.5). */
+  hotNodeFlags(): Uint32Array {
+    if (this.hotNodeV !== this.nodes.arraysVersion) {
+      this.hotNodeV = this.nodes.arraysVersion;
+      this.hotNFlags = this.nodes.column('node.flags') as Uint32Array;
+      this.hotNPos = this.nodes.column('node.position') as Float32Array;
+    }
+
+    return this.hotNFlags;
+  }
+
+  /** The edge flags column through the hot cache (round 62.5). */
+  hotEdgeFlags(): Uint32Array {
+    if (this.hotEdgeV !== this.edges.arraysVersion) {
+      this.hotEdgeV = this.edges.arraysVersion;
+      this.hotEFlags = this.edges.column('edge.flags') as Uint32Array;
+      this.hotEEnds = this.edges.column('edge.endpoints') as Uint32Array;
+    }
+
+    return this.hotEFlags;
   }
 
   /** Whether every bit of `bit` is set — the single-bit tests read as

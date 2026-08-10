@@ -310,7 +310,13 @@ export class GraphStore implements ModelView {
   // insertion-order list — the one structure every add and every remove
   // passes through — so a cached whole-graph collection can tell
   // "unchanged" from "add one, remove one" (which a count cannot).
-  private _structureEpoch = 0;
+  /**
+   * Monotonic counter of structural changes — every element added or
+   * removed, and every slot compaction (round 34.2; a plain field since
+   * round 62.5b, because the getter call showed on the memo-hit reads
+   * that consult it).  Treat as read-only outside the store.
+   */
+  structureEpoch = 0;
 
   /**
    * Build an empty store: both tables at zero capacity, empty id /
@@ -1081,16 +1087,6 @@ export class GraphStore implements ModelView {
    * invalidate cached packed-key membership sets (19.3). */
   get compactEpoch(): number {
     return this._compactEpoch;
-  }
-
-  /**
-   * Monotonic counter of structural changes — every element added or
-   * removed, and every slot compaction.  A cache of "all the elements"
-   * is valid exactly while this does not move (round 34.2); style,
-   * flag, position and data writes never touch it.
-   */
-  get structureEpoch(): number {
-    return this._structureEpoch;
   }
 
   /**
@@ -4948,7 +4944,7 @@ export class GraphStore implements ModelView {
       order.gens.push(gen[slot]);
     }
 
-    this._structureEpoch++;
+    this.structureEpoch++;
   }
 
   /** Default flags for the whole bulk, then per-element deviations. */
@@ -5039,7 +5035,7 @@ export class GraphStore implements ModelView {
 
     order.slots.push(slot);
     order.gens.push(table.gen[slot]);
-    this._structureEpoch++;
+    this.structureEpoch++;
 
     return { slot, resized };
   }
@@ -5082,7 +5078,7 @@ export class GraphStore implements ModelView {
     const order = this.order[group];
 
     order.stale++;
-    this._structureEpoch++;
+    this.structureEpoch++;
 
     if (order.stale > order.slots.length / 2) {
       this.compactOrder(group);
@@ -5157,7 +5153,7 @@ export class GraphStore implements ModelView {
       );
       this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
       this._compactEpoch++; // collections invalidate cached membership sets
-      this._structureEpoch++; // and whole-graph collection caches drop
+      this.structureEpoch++; // and whole-graph collection caches drop
       this.dirty.touch();
     }
 

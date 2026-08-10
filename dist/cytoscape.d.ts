@@ -2138,7 +2138,13 @@ declare class GraphStore implements ModelView {
    * packed (slot, gen) → packed (newSlot, newGen), per group */
   private forwards;
   private _compactEpoch;
-  private _structureEpoch;
+  /**
+   * Monotonic counter of structural changes — every element added or
+   * removed, and every slot compaction (round 34.2; a plain field since
+   * round 62.5b, because the getter call showed on the memo-hit reads
+   * that consult it).  Treat as read-only outside the store.
+   */
+  structureEpoch: number;
   /**
    * Build an empty store: both tables at zero capacity, empty id /
    * adjacency / data / hierarchy / curve indexes, and the sub-index
@@ -2338,13 +2344,6 @@ declare class GraphStore implements ModelView {
   /** Bumped once per slot-moving compaction; collections use it to
    * invalidate cached packed-key membership sets (19.3). */
   get compactEpoch(): number;
-  /**
-   * Monotonic counter of structural changes — every element added or
-   * removed, and every slot compaction.  A cache of "all the elements"
-   * is valid exactly while this does not move (round 34.2); style,
-   * flag, position and data writes never touch it.
-   */
-  get structureEpoch(): number;
   /**
    * Chase a stale ref through the forwarding chain (each compaction a
    * moved element survives adds one link) and, on reaching a live

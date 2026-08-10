@@ -730,7 +730,9 @@ export class Collection {
    * @returns that element, or an empty collection when out of range
    */
   eq(i: number): Collection {
-    return this[i] ?? this._spawn([]);
+    // the dense array read holds its speed where indexed own-property
+    // access is JIT-bimodal (round 62.5b)
+    return this._arr()[i] ?? this._spawn([]);
   }
 
   /**
@@ -962,7 +964,10 @@ export class Collection {
    * @returns true when the element is no longer in the graph
    */
   removed(): boolean {
-    const ref = this._first();
+    // raw first ref + isCurrent (round 62.5b): isCurrent repairs a
+    // forwarded ref itself, so the _refs getter's whole-array sync is
+    // more than this one-ref liveness test needs
+    const ref = this.__refs[0];
 
     return ref == null ? false : !this._store.isCurrent(ref);
   }
@@ -974,7 +979,7 @@ export class Collection {
    * @returns true when the element is live
    */
   inside(): boolean {
-    const ref = this._first();
+    const ref = this.__refs[0];
 
     return ref == null ? false : this._store.isCurrent(ref);
   }

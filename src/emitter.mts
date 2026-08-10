@@ -204,6 +204,13 @@ export class Emitter<TContext = unknown, TQualifier = unknown> {
    * @returns this emitter
    */
   removeAllListeners(): this {
+    // nothing registered is the common state on this call (round 62.5b):
+    // off('*') would allocate a types array, a filter closure and a new
+    // listeners array to remove nothing
+    if (this.listeners.length === 0) {
+      return this;
+    }
+
     return this.off('*');
   }
 

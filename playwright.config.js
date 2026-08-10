@@ -131,7 +131,9 @@ export default defineConfig({
      */
     {
       name: 'renderer',
-      testMatch: /renderer\.spec\.js/,
+      // algorithms-gpu (round 65) rides this project: same launch args,
+      // same soft-skip, headless instances (compute needs no canvas)
+      testMatch: /(renderer|algorithms-gpu)\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',
@@ -153,7 +155,7 @@ export default defineConfig({
      */
     {
       name: 'renderer-webkit',
-      testMatch: /renderer\.spec\.js/,
+      testMatch: /(renderer|algorithms-gpu)\.spec\.js/,
       use: { ...devices['Desktop Safari'] },
     },
 

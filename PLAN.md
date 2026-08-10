@@ -18175,3 +18175,82 @@ device-side benchmark row via gpu-timer to split kernel time from
 upload/readback; Playwright coverage of the algorithms-gpu suite on
 WebKit once its compute story firms up; and revisiting `GPU_MIN_N`
 constants when a second machine's published sweep exists.
+
+### 65.8 — the kernel performance pass (2026-08-10)
+
+"See how far you can push it."  The 65.6 sweep's modest tier had a
+common signature once read as a profile rather than a scoreboard:
+kernels launching one *invocation* per row, column or cluster — n
+threads total, two workgroups at n=512, a >95%-idle device.  The pass
+was therefore mostly an occupancy pass, plus three structural items,
+each verified against the parity suite and re-measured in isolation
+before moving on:
+
+- **Workgroup-per-line rewrites**: pageRank's mat-vec (256 lanes
+  stride the row — fixing coalescing and occupancy in one move — and
+  tree-reduce), AP's responsibility/availability updates (the R row's
+  top-two reduces with a (value, index)-lexicographic champion,
+  reproducing the CPU's ascending `>=` tie-break exactly), the
+  k-means/fcm centroid updates, and k-medoids' cost/pick kernels
+  (argmin by (cost, index) — the CPU's first-minimum rule).
+- **Dispatch-count surgery**: pageRank's epilogue (sum, scale, diff,
+  converge) fused into one single-workgroup kernel — after the matvec
+  fix, per-dispatch overhead × 200 encoded iterations was the
+  dominant term; AP's tracking similarly fused from four kernels to
+  two.  `workgroupUniformLoad` joined the flags discipline: it makes
+  the converged bit *uniform*, so barrier kernels may return whole
+  workgroups early instead of running converged iterations to
+  completion and discarding the stores.
+- **Blocked Floyd–Warshall**: the per-k chain (2n dispatches; most of
+  the n=1024 run was dispatch overhead) replaced by the textbook
+  three-phase blocked formulation — 32-wide k-panels, four dispatches
+  per panel, shared-tile working sets, and a per-cell best-k register
+  accumulation in phase 3.  The 5-node parity fixture is a single
+  phase-1 block, so a multi-block n=100 spec joined the suite —
+  distance parity plus path-sums-to-its-own-distance consistency
+  (tie-tolerant where f32/f64 executors may route differently) — and
+  its control (phase-3 relaxation weakened) fails exactly it while
+  the 5-node spec stays green, which is the reason it exists.
+- **Brandes batching**: 256-wide source batches, and a per-level
+  check kernel that latches a frontier-empty bit the moment a level
+  assigns nothing — every remaining encoded level no-ops, the
+  between-chunk readback becomes a 16-byte completion probe carrying
+  the deepest level (which sizes the dependency sweep exactly), and a
+  batch costs two submits and one probe instead of a sync per 32
+  levels.
+- **The one CPU finding**: profiling AP showed ~640 ms of its n=1024
+  run was *fixed* cost — the shared similarity build evaluated the
+  attribute accessors per **pair** (n²·d calls, the round-18/62.2
+  rule violated in code that shipped citing it) and took a
+  comparator-sorted median of a million-entry plain array.  The build
+  now materializes vectors once, runs named metrics as a tight
+  symmetric typed-array loop, and `math.median` sorts typed input
+  without a comparator (identical ordering — non-finites are
+  rewritten before the sort).  The CPU executor got faster too, and
+  the stats helpers' widened signatures displaced `min`'s doc block
+  onto the new type alias — the stranded-block hazard's second
+  appearance this round, caught red by the JSDoc gate both times.
+
+Re-measured, one run, same machine (gpu ms, cpu×):
+
+  markovClustering   47.2 ms at n=1024   663×   (65.6: 65.3 ms, 478×)
+  kMedoids           11.8 ms at n=4096   146×   (61.3 ms, 37×)
+  fuzzyCMeans        39.6 ms at n=65536   70×   (306.6 ms, 7.8×)
+  floydWarshall      47.2 ms at n=1024    28×   (72.2 ms, 17×)
+  kMeans             26.5 ms at n=65536   25×   (237.9 ms, 2.4×)
+  betweenness        35.5 ms at n=2048    18×   (182.3 ms, 3.6×)
+  affinityPropagation 298.8 ms at n=1024  3.8×  (1109.8 ms, 1.43×)
+  pageRank           75.4 ms at n=2048   1.65×  (93.1 ms, 1.33×)
+  hierarchical       (unchanged ~2× — the CPU merge chain is the
+                      floor both executors pay)
+
+Every family is now GPU-favored at every benchmark size, and the
+'auto' thresholds moved left accordingly (pageRank/betweenness 1024 →
+512, AP 1024 → 256, kMeans 2048 → 1024, fcm 1024 → 512, kMedoids
+512 → 256).  What was deliberately left on the table, logged in the
+round's open follow-ups: transposed R/A copies to coalesce AP's
+column walks (~2.6 ms/iteration remains), 4×4 matmul register blocks
+(shared-memory-limit tradeoffs), and pageRank's dense mat-vec, which
+is now genuinely memory-bound — its real headroom is a sparse CSR
+formulation, which would change the memory story rather than the
+kernel.

@@ -22,7 +22,28 @@ export interface AffinityPropagationOptions {
   executor?: AlgoExecutor;
 }
 
-const getPreference = (S: number[], preference: AffinityPreference): number => {
+/** Named-metric code for the tight build loop: 0 euclidean,
+ * 1 squaredEuclidean, 2 manhattan, 3 max (unknown → euclidean, as
+ * `resolveDistance` falls back). */
+const resolveMetricKind = (distance: DistanceMetric): number => {
+  switch (distance) {
+    case 'squaredEuclidean':
+    case 'squared-euclidean':
+    case 'squaredeuclidean':
+      return 1;
+    case 'manhattan':
+      return 2;
+    case 'max':
+      return 3;
+    default:
+      return 0;
+  }
+};
+
+const getPreference = (
+  S: Float64Array,
+  preference: AffinityPreference,
+): number => {
   if (preference === 'median') {
     return median(S);
   }
@@ -53,7 +74,7 @@ const findExemplars = (n: number, R: number[], A: number[]): number[] => {
 
 const assignClusters = (
   n: number,
-  S: number[],
+  S: Float64Array,
   exemplars: number[],
 ): number[] => {
   const clusters: number[] = [];
@@ -83,7 +104,7 @@ const assignClusters = (
   return clusters;
 };
 
-const assign = (n: number, S: number[], exemplars: number[]): number[] => {
+const assign = (n: number, S: Float64Array, exemplars: number[]): number[] => {
   let clusters = assignClusters(n, S, exemplars);
 
   for (let ei = 0; ei < exemplars.length; ei++) {
@@ -137,12 +158,13 @@ export const affinityPropagationAsync = (
   const executor = resolveExecutor(options.executor);
   const n = coll.nodes().length;
 
-  // measured crossover (65.6, amd gcn-4): 0.87x at n=512, 1.43x at
+  // measured crossover (65.8, amd gcn-4): workgroup-per-line updates
+  // and the shared-build fix moved it left — 2.5x at n=256, 3.8x at
   // n=1024 (iteration-capped rows)
   return runAlgo(
     executor,
     n,
-    1024,
+    256,
     () => affinityPropagation(coll, options),
     (ctx) => affinityPropagationGpu(ctx, coll, options),
   );
@@ -167,7 +189,7 @@ export const buildAffinitySimilarity = (
 ): {
   nodes: Collection;
   n: number;
-  S: number[];
+  S: Float64Array;
   damping: number;
   maxIterations: number;
   minIterations: number;
@@ -198,26 +220,80 @@ export const buildAffinitySimilarity = (
   const nodes = coll.nodes();
   const n = nodes.length;
   const n2 = n * n;
+  const d = attributes.length;
 
-  const getSimilarity = (n1: Collection, n2ele: Collection): number => {
-    // negative: similarity is inverse to distance
-    return -clusteringDistance(
-      distance,
-      attributes.length,
-      (i) => attributes[i](n1),
-      (i) => attributes[i](n2ele),
-      n1,
-      n2ele,
-    );
-  };
-
-  // similarity matrix
-  const S: number[] = new Array(n2).fill(-Infinity);
+  // attribute vectors once per node — the round-18/62.2 rule.  The
+  // original build evaluated the accessors per *pair* (n²·d calls),
+  // and at n=1024 the build dwarfed the message passing it fed.
+  const vecs = new Float64Array(n * d);
 
   for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      if (i !== j) {
-        S[i * n + j] = getSimilarity(nodes[i], nodes[j]);
+    const node = nodes[i];
+
+    for (let k = 0; k < d; k++) {
+      vecs[i * d + k] = attributes[k](node);
+    }
+  }
+
+  // similarity matrix
+  const S = new Float64Array(n2).fill(-Infinity);
+
+  if (typeof distance === 'function' || d === 0) {
+    // custom metrics keep their duck-typed calling convention (and may
+    // be asymmetric, so both triangles are computed)
+    let vp = 0;
+    let vq = 0;
+    const getP = (k: number): number => vecs[vp + k];
+    const getQ = (k: number): number => vecs[vq + k];
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i !== j) {
+          vp = i * d;
+          vq = j * d;
+          S[i * n + j] = -clusteringDistance(
+            distance,
+            d,
+            getP,
+            getQ,
+            nodes[i],
+            nodes[j],
+          );
+        }
+      }
+    }
+  } else {
+    // named metrics are symmetric: one tight typed-array pass over the
+    // lower triangle, mirrored
+    // euclidean over a single attribute is |dx| on the CPU reference
+    // (`clustering-distances` skips the sqrt), i.e. manhattan
+    const kind0 = resolveMetricKind(distance);
+    const kind = kind0 === 0 && d === 1 ? 2 : kind0;
+
+    for (let i = 0; i < n; i++) {
+      const pi = i * d;
+
+      for (let j = 0; j < i; j++) {
+        const qi = j * d;
+        let acc = kind === 3 ? -Infinity : 0;
+
+        for (let k = 0; k < d; k++) {
+          const ad = Math.abs(vecs[pi + k] - vecs[qi + k]);
+
+          if (kind === 2) {
+            acc += ad;
+          } else if (kind === 3) {
+            acc = Math.max(acc, ad);
+          } else {
+            acc += ad * ad;
+          }
+        }
+
+        // euclidean keeps the reference's 1-D shortcut (no sqrt)
+        const dist = kind === 0 && d >= 2 ? Math.sqrt(acc) : acc;
+
+        S[i * n + j] = -dist;
+        S[j * n + i] = -dist;
       }
     }
   }
@@ -253,7 +329,7 @@ export const apClustersFrom = (
   coll: Collection,
   nodes: Collection,
   n: number,
-  S: number[],
+  S: Float64Array,
   exemplarsIndices: number[],
 ): Collection[] => {
   const clusterIndices = assign(n, S, exemplarsIndices);

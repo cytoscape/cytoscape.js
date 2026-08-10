@@ -177,8 +177,12 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
-/** k-means centroid update — one invocation per (cluster, dimension);
- * an empty cluster keeps its centroid, a moved dimension past the
+/** k-means centroid update — one *workgroup* per (cluster, dimension)
+ * (round 65.8; the one-invocation-per-pair version launched k·d
+ * invocations total — sixteen, for the benchmark's shape — and ran
+ * its O(n) fold on a single lane each).  Lanes stride the nodes, the
+ * member sum and count tree-reduce, and lane 0 applies the mean: an
+ * empty cluster keeps its centroid, a dimension moved past the
  * threshold (p.r) raises the moved bit. */
 const KM_UPDATE = wgsl`
 struct FP { n : u32, d : u32, k : u32, metric : u32 }
@@ -190,35 +194,52 @@ struct P { n : u32, r : f32 }
 @group(0) @binding(4) var<storage, read_write> cents : array<f32>;
 @group(0) @binding(5) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> psum : array<f32, ${WG}>;
+var<workgroup> pcount : array<u32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let idx = gid.x;
-
-  if (idx >= fp.k * fp.d) { return; }
-
-  let c = idx / fp.d;
-  let dd = idx % fp.d;
+  let c = wid.x / fp.d;
+  let dd = wid.x % fp.d;
   var sum = 0.0;
   var count = 0u;
 
-  for (var i = 0u; i < fp.n; i = i + 1u) {
+  for (var i = lid.x; i < fp.n; i = i + ${WG}u) {
     if (assign[i] == c) {
       sum = sum + feats[i * fp.d + dd];
       count = count + 1u;
     }
   }
 
-  if (count == 0u) { return; }
+  psum[lid.x] = sum;
+  pcount[lid.x] = count;
+  workgroupBarrier();
 
-  let mean = sum / f32(count);
-
-  if (abs(mean - cents[idx]) > p.r) {
-    atomicStore(&flags[1], 1u);
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      psum[lid.x] = psum[lid.x] + psum[lid.x + stride];
+      pcount[lid.x] = pcount[lid.x] + pcount[lid.x + stride];
+    }
+    workgroupBarrier();
   }
 
-  cents[idx] = mean;
+  if (lid.x == 0u && pcount[0] > 0u) {
+    let mean = psum[0] / f32(pcount[0]);
+    let idx = c * fp.d + dd;
+
+    if (abs(mean - cents[idx]) > p.r) {
+      atomicStore(&flags[1], 1u);
+    }
+
+    cents[idx] = mean;
+  }
 }
 `;
 
@@ -257,9 +278,10 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
-/** Every node's swap cost within its own cluster: Σ manhattan distance
- * to fellow members (the cost matrix is always manhattan, as on the
- * CPU, whatever the assignment metric). */
+/** Every node's swap cost within its own cluster — one *workgroup*
+ * per node (round 65.8), lanes striding the row and tree-reducing: the
+ * sum of manhattan distances to fellow members (the cost matrix is
+ * always manhattan, as on the CPU, whatever the assignment metric). */
 const KMED_COST = wgsl`
 struct FP { n : u32, d : u32, k : u32, metric : u32 }
 @group(0) @binding(0) var<uniform> fp : FP;
@@ -268,32 +290,50 @@ struct FP { n : u32, d : u32, k : u32, metric : u32 }
 @group(0) @binding(3) var<storage, read_write> cost : array<f32>;
 @group(0) @binding(4) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> partial : array<f32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let i = gid.x;
+  let i = wid.x;
   let n = fp.n;
-
-  if (i >= n) { return; }
-
   let mine = assign[i];
   var sum = 0.0;
 
-  for (var j = 0u; j < n; j = j + 1u) {
+  for (var j = lid.x; j < n; j = j + ${WG}u) {
     if (assign[j] == mine) {
       sum = sum + dcost[i * n + j];
     }
   }
 
-  cost[i] = sum;
+  partial[lid.x] = sum;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      partial[lid.x] = partial[lid.x] + partial[lid.x + stride];
+    }
+    workgroupBarrier();
+  }
+
+  if (lid.x == 0u) {
+    cost[i] = partial[0];
+  }
 }
 `;
 
-/** Per-cluster medoid swap: the current medoid's cost over the
- * cluster's members is the baseline; members are scanned in ascending
- * order (the CPU's iteration order) and a strict improvement swaps and
- * raises the moved bit. */
+/** Per-cluster medoid swap — one *workgroup* per cluster (round
+ * 65.8): the current medoid's cost over the members reduces first as
+ * the baseline, then the members' precomputed costs reduce to a
+ * (cost, index)-lexicographic argmin — exactly the CPU's ascending
+ * strict-< scan, where the first occurrence of the minimum wins — and
+ * lane 0 swaps on a strict improvement. */
 const KMED_PICK = wgsl`
 struct FP { n : u32, d : u32, k : u32, metric : u32 }
 @group(0) @binding(0) var<uniform> fp : FP;
@@ -303,39 +343,86 @@ struct FP { n : u32, d : u32, k : u32, metric : u32 }
 @group(0) @binding(4) var<storage, read_write> medoids : array<u32>;
 @group(0) @binding(5) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> psum : array<f32, ${WG}>;
+var<workgroup> pcost : array<f32, ${WG}>;
+var<workgroup> pidx : array<u32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let c = gid.x;
+  let c = wid.x;
   let n = fp.n;
-
-  if (c >= fp.k) { return; }
-
   let med = medoids[c];
-  var members = 0u;
-  var best = 0.0;
 
-  for (var i = 0u; i < n; i = i + 1u) {
+  // baseline: the current medoid's cost over the cluster's members
+  var base = 0.0;
+  var members = 0u;
+
+  for (var i = lid.x; i < n; i = i + ${WG}u) {
     if (assign[i] == c) {
-      best = best + dcost[med * n + i];
+      base = base + dcost[med * n + i];
       members = members + 1u;
     }
   }
 
-  if (members == 0u) { return; }
+  psum[lid.x] = base;
+  pidx[lid.x] = members;
+  workgroupBarrier();
 
-  var bestI = med;
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      psum[lid.x] = psum[lid.x] + psum[lid.x + stride];
+      pidx[lid.x] = pidx[lid.x] + pidx[lid.x + stride];
+    }
+    workgroupBarrier();
+  }
 
-  for (var i = 0u; i < n; i = i + 1u) {
-    if (assign[i] == c && cost[i] < best) {
-      best = cost[i];
-      bestI = i;
+  let baseCost = psum[0];
+  let memberCount = pidx[0];
+
+  workgroupBarrier();
+
+  // candidate argmin by (cost, index) — the CPU's first-minimum rule
+  var bestCost = 3.4e38;
+  var bestI = 0xffffffffu;
+
+  for (var i = lid.x; i < n; i = i + ${WG}u) {
+    if (assign[i] == c) {
+      if (cost[i] < bestCost || (cost[i] == bestCost && i < bestI)) {
+        bestCost = cost[i];
+        bestI = i;
+      }
     }
   }
 
-  if (bestI != med) {
-    medoids[c] = bestI;
+  pcost[lid.x] = bestCost;
+  pidx[lid.x] = bestI;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      let oc = pcost[lid.x + stride];
+      let oi = pidx[lid.x + stride];
+
+      if (oc < pcost[lid.x] || (oc == pcost[lid.x] && oi < pidx[lid.x])) {
+        pcost[lid.x] = oc;
+        pidx[lid.x] = oi;
+      }
+    }
+    workgroupBarrier();
+  }
+
+  if (
+    lid.x == 0u && memberCount > 0u && pidx[0] != 0xffffffffu &&
+    pcost[0] < baseCost && pidx[0] != med
+  ) {
+    medoids[c] = pidx[0];
     atomicStore(&flags[1], 1u);
   }
 }
@@ -374,8 +461,9 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
-/** Fuzzy centroid update — one invocation per (cluster, dimension),
- * weights U^m (p.r carries m). */
+/** Fuzzy centroid update — one *workgroup* per (cluster, dimension)
+ * with tree-reduced numerator and denominator (round 65.8), weights
+ * U^m (p.r carries m). */
 const FCM_CENTROIDS = wgsl`
 struct FP { n : u32, d : u32, k : u32, metric : u32 }
 struct P { n : u32, r : f32 }
@@ -386,27 +474,45 @@ struct P { n : u32, r : f32 }
 @group(0) @binding(4) var<storage, read_write> cents : array<f32>;
 @group(0) @binding(5) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> pnum : array<f32, ${WG}>;
+var<workgroup> pden : array<f32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let idx = gid.x;
-
-  if (idx >= fp.k * fp.d) { return; }
-
-  let c = idx / fp.d;
-  let dd = idx % fp.d;
+  let c = wid.x / fp.d;
+  let dd = wid.x % fp.d;
   var num = 0.0;
   var den = 0.0;
 
-  for (var i = 0u; i < fp.n; i = i + 1u) {
+  for (var i = lid.x; i < fp.n; i = i + ${WG}u) {
     let w = pow(u[i * fp.k + c], p.r);
 
     num = num + w * feats[i * fp.d + dd];
     den = den + w;
   }
 
-  cents[idx] = num / den;
+  pnum[lid.x] = num;
+  pden[lid.x] = den;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      pnum[lid.x] = pnum[lid.x] + pnum[lid.x + stride];
+      pden[lid.x] = pden[lid.x] + pden[lid.x + stride];
+    }
+    workgroupBarrier();
+  }
+
+  if (lid.x == 0u) {
+    cents[c * fp.d + dd] = pnum[0] / pden[0];
+  }
 }
 `;
 
@@ -643,8 +749,9 @@ export const kMeansGpu = async (
     },
     {
       pipeline: kmUpdate,
+      // one workgroup per (cluster, dimension)
       group: groupFor(ctx, kmUpdate, [fp, pT, feats, assign, centBuf, flags]),
-      groups: [Math.ceil((opts.k * d) / WG)],
+      groups: [opts.k * d],
     },
     {
       pipeline: converge,
@@ -770,13 +877,15 @@ export const kMedoidsGpu = async (
     },
     {
       pipeline: kmedCost,
+      // one workgroup per node
       group: groupFor(ctx, kmedCost, [fp, dcost, assign, cost, flags]),
-      groups: gridN,
+      groups: [n],
     },
     {
       pipeline: kmedPick,
+      // one workgroup per cluster
       group: groupFor(ctx, kmedPick, [fp, dcost, assign, cost, medBuf, flags]),
-      groups: [Math.ceil(opts.k / WG)],
+      groups: [opts.k],
     },
     {
       pipeline: converge,
@@ -871,14 +980,14 @@ export const fuzzyCMeansGpu = async (
   const converge = getPipeline(ctx, 'dense-converge', CONVERGE_ON_NO_DIFF);
 
   const gridNK: [number] = [Math.ceil((n * k) / WG)];
-  const gridKD: [number] = [Math.ceil((k * d) / WG)];
   const one: [number] = [1];
   const iteration: Dispatch[] = [
     { pipeline: reset, group: groupFor(ctx, reset, [flags]), groups: one },
     {
       pipeline: fcmCent,
+      // one workgroup per (cluster, dimension)
       group: groupFor(ctx, fcmCent, [fp, pM, feats, uBuf, cents, flags]),
-      groups: gridKD,
+      groups: [k * d],
     },
     {
       pipeline: fcmSave,

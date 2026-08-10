@@ -22,6 +22,10 @@ export interface InputBoundingBox {
   h?: number | null;
 }
 
+/** The numeric-range shape the stats helpers accept (round 65.8:
+ * affinity propagation hands a Float64Array similarity matrix). */
+export type NumericArray = number[] | Float64Array;
+
 /**
  * The smallest finite value in a numeric range; non-finite entries are
  * skipped rather than poisoning the result.
@@ -32,7 +36,7 @@ export interface InputBoundingBox {
  * @returns the minimum, or `Infinity` when the range holds no finite value
  */
 export const min = (
-  arr: number[],
+  arr: NumericArray,
   begin: number = 0,
   end: number = arr.length,
 ): number => {
@@ -59,7 +63,7 @@ export const min = (
  * @returns the maximum, or `-Infinity` when the range holds no finite value
  */
 export const max = (
-  arr: number[],
+  arr: NumericArray,
   begin: number = 0,
   end: number = arr.length,
 ): number => {
@@ -85,7 +89,7 @@ export const max = (
  * @returns the mean, or `NaN` when the range holds no finite value
  */
 export const mean = (
-  arr: number[],
+  arr: NumericArray,
   begin: number = 0,
   end: number = arr.length,
 ): number => {
@@ -119,7 +123,7 @@ export const mean = (
  * @returns the median value
  */
 export const median = (
-  arr: number[],
+  arr: NumericArray,
   begin: number = 0,
   end: number = arr.length,
   copy: boolean = true,
@@ -127,14 +131,14 @@ export const median = (
   includeHoles: boolean = true,
 ): number => {
   if (copy) {
-    arr = arr.slice(begin, end);
+    arr = arr.slice(begin, end) as NumericArray;
   } else {
-    if (end < arr.length) {
-      arr.splice(end, arr.length - end);
-    }
+    // in-place trimming needs a real array; typed callers must keep
+    // the default copy = true
+    (arr as number[]).splice(end, arr.length - end);
 
     if (begin > 0) {
-      arr.splice(0, begin);
+      (arr as number[]).splice(0, begin);
     }
   }
 
@@ -149,13 +153,24 @@ export const median = (
         off++;
       }
     } else {
-      // just remove it if we don't want to consider holes
-      arr.splice(i, 1);
+      // just remove it if we don't want to consider holes (needs a
+      // real array; typed callers must keep includeHoles = true)
+      (arr as number[]).splice(i, 1);
     }
   }
 
   if (sort) {
-    arr.sort((a, b) => a - b); // requires copy = true if you don't want to change the orig
+    // requires copy = true if you don't want to change the orig.  A
+    // typed array sorts numerically without a comparator — and an
+    // order of magnitude faster (no JS call per comparison), which
+    // matters at affinity propagation's n² input (round 65.8).  Any
+    // non-finites were rewritten to -Infinity above, so the two paths
+    // order identically.
+    if (ArrayBuffer.isView(arr)) {
+      arr.sort();
+    } else {
+      arr.sort((a, b) => a - b);
+    }
   }
 
   let len = arr.length;

@@ -35,12 +35,13 @@ export const pageRankAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
-  // measured crossover (65.6, amd gcn-4): 0.70x at n=512, parity at
-  // n=1024, 1.33x at n=2048
+  // measured crossover (65.8, amd gcn-4): the workgroup-per-row
+  // matvec + fused epilogue moved it left — 1.2x at n=512, 1.8x at
+  // n=1024
   return runAlgo(
     executor,
     n,
-    1024,
+    512,
     () => pageRank(coll, options),
     (ctx) => pageRankGpu(ctx, coll, options),
   );

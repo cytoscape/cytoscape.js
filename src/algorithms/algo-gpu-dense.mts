@@ -10,13 +10,23 @@ few pieces defined here.  Two conventions every kernel follows:
   Every iteration of every algorithm is encoded up front (no
   per-iteration readback — the round-9 one-readback discipline), so
   kernels neutralise themselves once `flags[0]` is set: barrier-free
-  kernels early-return, and the tiled matmul — whose workgroup
-  barriers forbid a divergent return under WGSL's uniformity analysis
-  — computes normally but skips its store.  Either way the matrices
-  stop changing at convergence, exactly like the CPU loop's `break`.
+  kernels early-return on a plain read, and barrier kernels read the
+  bit through `workgroupUniformLoad`, which makes it *uniform* and so
+  lets the whole workgroup return before its barriers (65.8 — a raw
+  storage read is non-uniform under the analysis, and round 65's
+  first version had to run converged matmuls to completion and merely
+  skip their stores).  Either way the matrices stop changing at
+  convergence, exactly like the CPU loop's `break`.
 
 - **f32 everywhere** — WGSL has no f64.  The CPU reference is the
   spec; parity is pinned by invariants, not bits.
+
+- **Occupancy is the first number to check** (65.8).  A kernel with
+  one invocation per row/column/cluster launches n-ish threads — a
+  handful of workgroups — and idles the device; the 65.8 rewrites
+  made those one *workgroup* per row with lanes striding and
+  tree-reducing, which is where the biggest single-family wins of the
+  perf pass came from.
 */
 
 import { wgsl } from '../render/wgsl.mjs';
@@ -34,7 +44,14 @@ struct P {
 @group(0) @binding(0) var<uniform> p : P;
 `;
 
-/** c = a × b, tiled; the store is skipped once the run has converged. */
+/** Matmul tile edge: 32×32 tiles walked by 16×16 invocations, each
+ * accumulating a 2×2 register block (round 65.8 — the plain 16×16
+ * one-output-per-invocation version measured memory-bound well under
+ * the device's throughput). */
+export const MM_TILE = 32;
+
+/** c = a × b, tiled with 2×2 register blocking; a converged run
+ * early-exits whole workgroups via the uniform flag load. */
 export const MATMUL = wgsl`
 ${PRELUDE}
 @group(0) @binding(1) var<storage, read> a : array<f32>;
@@ -42,41 +59,71 @@ ${PRELUDE}
 @group(0) @binding(3) var<storage, read_write> c : array<f32>;
 @group(0) @binding(4) var<storage, read_write> flags : array<atomic<u32>>;
 
-var<workgroup> ta : array<f32, ${TILE * TILE}>;
-var<workgroup> tb : array<f32, ${TILE * TILE}>;
+var<workgroup> ta : array<f32, ${MM_TILE * MM_TILE}>;
+var<workgroup> tb : array<f32, ${MM_TILE * MM_TILE}>;
+var<workgroup> wflag : u32;
 
 @compute @workgroup_size(${TILE}, ${TILE})
 fn main(
-  @builtin(global_invocation_id) gid : vec3u,
+  @builtin(workgroup_id) wid : vec3u,
   @builtin(local_invocation_id) lid : vec3u,
 ) {
+  // uniform early exit: a post-converge matmul must cost a flag read,
+  // not a full tile walk (workgroupUniformLoad makes the bit uniform,
+  // which a raw storage read is not under the uniformity analysis)
+  if (lid.x == 0u && lid.y == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
+
   let n = p.n;
-  let row = gid.y;
-  let col = gid.x;
-  var sum = 0.0;
-  let tiles = (n + ${TILE - 1}u) / ${TILE}u;
+  let row0 = wid.y * ${MM_TILE}u + lid.y * 2u;
+  let col0 = wid.x * ${MM_TILE}u + lid.x * 2u;
+  let t = lid.y * ${TILE}u + lid.x;
+  var acc00 = 0.0;
+  var acc01 = 0.0;
+  var acc10 = 0.0;
+  var acc11 = 0.0;
+  let tiles = (n + ${MM_TILE - 1}u) / ${MM_TILE}u;
 
-  for (var t = 0u; t < tiles; t = t + 1u) {
-    let ac = t * ${TILE}u + lid.x;
-    let br = t * ${TILE}u + lid.y;
-    var av = 0.0;
-    var bv = 0.0;
+  for (var tt = 0u; tt < tiles; tt = tt + 1u) {
+    // 1024 tile elements over 256 invocations: 4 coalesced loads each
+    for (var e = 0u; e < 4u; e = e + 1u) {
+      let linear = t + e * 256u;
+      let tr = linear / ${MM_TILE}u;
+      let tc = linear % ${MM_TILE}u;
+      let ar = wid.y * ${MM_TILE}u + tr;
+      let ac = tt * ${MM_TILE}u + tc;
+      let br = tt * ${MM_TILE}u + tr;
+      let bc = wid.x * ${MM_TILE}u + tc;
+      var av = 0.0;
+      var bv = 0.0;
 
-    if (row < n && ac < n) { av = a[row * n + ac]; }
-    if (br < n && col < n) { bv = b[br * n + col]; }
+      if (ar < n && ac < n) { av = a[ar * n + ac]; }
+      if (br < n && bc < n) { bv = b[br * n + bc]; }
 
-    ta[lid.y * ${TILE}u + lid.x] = av;
-    tb[lid.y * ${TILE}u + lid.x] = bv;
+      ta[linear] = av;
+      tb[linear] = bv;
+    }
     workgroupBarrier();
 
-    for (var k = 0u; k < ${TILE}u; k = k + 1u) {
-      sum = sum + ta[lid.y * ${TILE}u + k] * tb[k * ${TILE}u + lid.x];
+    for (var k = 0u; k < ${MM_TILE}u; k = k + 1u) {
+      let a0 = ta[(lid.y * 2u) * ${MM_TILE}u + k];
+      let a1 = ta[(lid.y * 2u + 1u) * ${MM_TILE}u + k];
+      let b0 = tb[k * ${MM_TILE}u + lid.x * 2u];
+      let b1 = tb[k * ${MM_TILE}u + lid.x * 2u + 1u];
+
+      acc00 = acc00 + a0 * b0;
+      acc01 = acc01 + a0 * b1;
+      acc10 = acc10 + a1 * b0;
+      acc11 = acc11 + a1 * b1;
     }
     workgroupBarrier();
   }
 
-  if (row < n && col < n && atomicLoad(&flags[0]) == 0u) {
-    c[row * n + col] = sum;
+  if (row0 < n && col0 < n) { c[row0 * n + col0] = acc00; }
+  if (row0 < n && col0 + 1u < n) { c[row0 * n + col0 + 1u] = acc01; }
+  if (row0 + 1u < n && col0 < n) { c[(row0 + 1u) * n + col0] = acc10; }
+  if (row0 + 1u < n && col0 + 1u < n) {
+    c[(row0 + 1u) * n + col0 + 1u] = acc11;
   }
 }
 `;

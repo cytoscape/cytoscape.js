@@ -31,6 +31,7 @@ import {
   CONVERGE_ON_NO_DIFF,
   COPY_MAT,
   MATMUL,
+  MM_TILE,
   POW_MAT,
   RESET_DIFF,
   ROUND_COMPARE,
@@ -92,6 +93,11 @@ export const markovClusteringGpu = async (
   const converge = getPipeline(ctx, 'dense-converge', CONVERGE_ON_NO_DIFF);
 
   const grid2d: [number, number] = [Math.ceil(n / TILE), Math.ceil(n / TILE)];
+  // the register-blocked matmul walks 32-wide tiles with 16x16 invocations
+  const gridMM: [number, number] = [
+    Math.ceil(n / MM_TILE),
+    Math.ceil(n / MM_TILE),
+  ];
   const grid1d: [number] = [Math.ceil(n / WG)];
   const one: [number] = [1];
 
@@ -107,7 +113,7 @@ export const markovClusteringGpu = async (
     mults.push({
       pipeline: matmul,
       group: groupFor(ctx, matmul, [pInflate, cur, a, dst, flags]),
-      groups: grid2d,
+      groups: gridMM,
     });
     cur = dst;
   }

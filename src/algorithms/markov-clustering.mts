@@ -118,7 +118,7 @@ export const markovClusteringAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
-  // measured crossover (65.6, amd gcn-4): 71.9x GPU at n=256 and n^3
+  // measured crossover (65.8, amd gcn-4): 70x GPU at n=256 and n^3
   // growth put the wash near n=128
   return runAlgo(
     executor,

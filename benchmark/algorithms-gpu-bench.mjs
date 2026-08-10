@@ -39,6 +39,8 @@ const args = process.argv.slice(2);
 const allowSwiftshader = args.includes('--allow-swiftshader');
 const jsonAt = args.indexOf('--json');
 const jsonPath = jsonAt >= 0 ? args[jsonAt + 1] : null;
+const familyAt = args.indexOf('--family');
+const familyFilter = familyAt >= 0 ? args[familyAt + 1] : null;
 
 const MIME = {
   '.html': 'text/html',
@@ -211,8 +213,11 @@ const FAMILIES = [
 ];
 
 const rows = [];
+const families = familyFilter
+  ? FAMILIES.filter((f) => f.key.includes(familyFilter))
+  : FAMILIES;
 
-for (const family of FAMILIES) {
+for (const family of families) {
   for (const n of family.sizes) {
     const row = await page.evaluate(
       async ({ key, kind, opSrc, n, reps }) => {

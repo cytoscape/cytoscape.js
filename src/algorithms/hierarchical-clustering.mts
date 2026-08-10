@@ -336,7 +336,7 @@ export const hierarchicalClusteringAsync = (
           "use executor 'cpu' or 'auto'"
         : null;
 
-  // measured crossover (65.6, amd gcn-4): ~2x from n=1024 up (the CPU
+  // measured crossover (65.8, amd gcn-4): ~2x from n=1024 up (the CPU
   // merge chain is the shared floor both executors pay)
   return runAlgo(
     executor,

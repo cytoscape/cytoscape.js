@@ -110,8 +110,9 @@ that compile and then behave differently.
   the bit-reproducible reference, the GPU runs WGSL compute kernels
   where WebGPU exists, and `'auto'` picks per measured per-family
   crossovers.  Measured on an RX 570-class adapter: Markov clustering
-  up to 478× (31.2 s → 65 ms at 1,024 nodes), k-medoids up to 37×,
-  Floyd–Warshall up to 17×.
+  up to 663× (31.3 s → 47 ms at 1,024 nodes), k-medoids up to 146×,
+  fuzzy c-means up to 70×, Floyd–Warshall up to 28×, betweenness up
+  to 18×, k-means up to 25×.
 
 ### Changed
 

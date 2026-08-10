@@ -35,8 +35,9 @@ export const floydWarshallAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
-  // measured crossover (65.6, amd gcn-4): 2.4x GPU at n=256 already —
-  // the default threshold is the measured one
+  // measured crossover (65.8, amd gcn-4): 3.4x GPU at n=256 already
+  // (28x at n=1024, blocked) — the default threshold is the measured
+  // one
   return runAlgo(
     executor,
     n,

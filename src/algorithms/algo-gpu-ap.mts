@@ -34,16 +34,20 @@ import {
   uniformFrom,
 } from './algo-gpu.mjs';
 import type { Dispatch } from './algo-gpu.mjs';
-import { BUMP_WORD, WG } from './algo-gpu-dense.mjs';
+import { WG } from './algo-gpu-dense.mjs';
 import {
   apClustersFrom,
   buildAffinitySimilarity,
 } from './affinity-propagation.mjs';
 import type { AffinityPropagationOptions } from './affinity-propagation.mjs';
 
-/** Damped responsibility update — one invocation per row i.  Pass one
- * finds the top-two of A+S over the row; pass two applies the damped
- * update, with the runner-up standing in for the maximum's own slot. */
+/** Damped responsibility update — one *workgroup* per row i
+ * (round 65.8; the one-invocation-per-row version left the device
+ * idle).  Phase one tree-reduces the row's top-two of A+S with the
+ * CPU's exact tie-break — the champion compares (value, index)
+ * lexicographically, matching the reference's ascending `>=` scan
+ * where the *last* equal value wins — and phase two applies the
+ * damped update with all lanes writing the row coalesced. */
 const R_UPDATE = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
@@ -52,34 +56,69 @@ struct P { n : u32, r : f32 }
 @group(0) @binding(3) var<storage, read> a : array<f32>;
 @group(0) @binding(4) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> sm1 : array<f32, ${WG}>;
+var<workgroup> sm2 : array<f32, ${WG}>;
+var<workgroup> si1 : array<u32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let i = gid.x;
+  let i = wid.x;
   let n = p.n;
-
-  if (i >= n) { return; }
-
   let damping = p.r;
-  var maxAS = -3.4e38;
-  var max2 = -3.4e38;
-  var maxI = 0u;
 
-  // 'as' is a WGSL reserved word, so the A+S sum is 'combined'
-  for (var j = 0u; j < n; j = j + 1u) {
+  // local ascending scan: the CPU's >= rule (later equal j replaces)
+  var m1 = -3.4e38;
+  var m2 = -3.4e38;
+  var i1 = 0u;
+
+  for (var j = lid.x; j < n; j = j + ${WG}u) {
     let combined = a[i * n + j] + s[i * n + j];
 
-    if (combined >= maxAS) {
-      max2 = maxAS;
-      maxAS = combined;
-      maxI = j;
-    } else if (combined > max2) {
-      max2 = combined;
+    if (combined >= m1) {
+      m2 = m1;
+      m1 = combined;
+      i1 = j;
+    } else if (combined > m2) {
+      m2 = combined;
     }
   }
 
-  for (var j = 0u; j < n; j = j + 1u) {
+  sm1[lid.x] = m1;
+  sm2[lid.x] = m2;
+  si1[lid.x] = i1;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      let bm1 = sm1[lid.x + stride];
+      let bm2 = sm2[lid.x + stride];
+      let bi1 = si1[lid.x + stride];
+
+      // champion by (value, index): the larger value wins, and on an
+      // exact tie the larger index — the CPU's last-max rule
+      if (bm1 > sm1[lid.x] || (bm1 == sm1[lid.x] && bi1 > si1[lid.x])) {
+        sm2[lid.x] = max(sm1[lid.x], bm2);
+        sm1[lid.x] = bm1;
+        si1[lid.x] = bi1;
+      } else {
+        sm2[lid.x] = max(sm2[lid.x], bm1);
+      }
+    }
+    workgroupBarrier();
+  }
+
+  let maxAS = sm1[0];
+  let max2 = sm2[0];
+  let maxI = si1[0];
+
+  for (var j = lid.x; j < n; j = j + ${WG}u) {
     let old = rr[i * n + j];
     var ceiling = maxAS;
 
@@ -87,15 +126,15 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
       ceiling = max2;
     }
 
-    rr[i * n + j] =
-      (1.0 - damping) * (s[i * n + j] - ceiling) + damping * old;
+    rr[i * n + j] = (1.0 - damping) * (s[i * n + j] - ceiling) + damping * old;
   }
 }
 `;
 
-/** Damped availability update — one invocation per column i.  Pass one
- * sums the column's clipped responsibilities; pass two applies the
- * damped update, the diagonal taking the unclipped rule. */
+/** Damped availability update — one *workgroup* per column i
+ * (round 65.8): phase one tree-reduces the column's clipped
+ * responsibility sum, phase two applies the damped update with the
+ * diagonal taking the unclipped rule. */
 const A_UPDATE = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
@@ -103,19 +142,23 @@ struct P { n : u32, r : f32 }
 @group(0) @binding(2) var<storage, read_write> a : array<f32>;
 @group(0) @binding(3) var<storage, read_write> flags : array<atomic<u32>>;
 
+var<workgroup> partial : array<f32, ${WG}>;
+var<workgroup> wflag : u32;
+
 @compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+fn main(
+  @builtin(workgroup_id) wid : vec3u,
+  @builtin(local_invocation_id) lid : vec3u,
+) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let i = gid.x;
+  let i = wid.x;
   let n = p.n;
-
-  if (i >= n) { return; }
-
   let damping = p.r;
   var sum = 0.0;
 
-  for (var j = 0u; j < n; j = j + 1u) {
+  for (var j = lid.x; j < n; j = j + ${WG}u) {
     if (j == i) {
       sum = sum + rr[i * n + i];
     } else {
@@ -123,7 +166,19 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
     }
   }
 
-  for (var j = 0u; j < n; j = j + 1u) {
+  partial[lid.x] = sum;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      partial[lid.x] = partial[lid.x] + partial[lid.x + stride];
+    }
+    workgroupBarrier();
+  }
+
+  let total = partial[0];
+
+  for (var j = lid.x; j < n; j = j + ${WG}u) {
     var rp = max(0.0, rr[j * n + i]);
 
     if (j == i) {
@@ -131,10 +186,10 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
     }
 
     let old = a[j * n + i];
-    var next = (1.0 - damping) * min(0.0, sum - rp) + damping * old;
+    var next = (1.0 - damping) * min(0.0, total - rp) + damping * old;
 
     if (j == i) {
-      next = (1.0 - damping) * (sum - rp) + damping * old;
+      next = (1.0 - damping) * (total - rp) + damping * old;
     }
 
     a[j * n + i] = next;
@@ -142,9 +197,11 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
-/** Write this iteration's exemplar bit (A+R diagonal > 0) into the
- * n×minIterations history ring — one invocation per node. */
-const E_WRITE = wgsl`
+/** Track this iteration per node (round 65.8, fusing the old E-write
+ * and history-check kernels — safe because a node's history column is
+ * only ever written by its own invocation): write the exemplar bit
+ * into the ring, then re-check the column is all-0 or all-1. */
+const AP_TRACK = wgsl`
 struct P { n : u32, r : f32 }
 struct Q { mi : u32, maxIter : f32 }
 @group(0) @binding(0) var<uniform> p : P;
@@ -153,7 +210,8 @@ struct Q { mi : u32, maxIter : f32 }
 @group(0) @binding(3) var<storage, read> a : array<f32>;
 @group(0) @binding(4) var<storage, read_write> hist : array<u32>;
 @group(0) @binding(5) var<storage, read> iter : array<u32>;
-@group(0) @binding(6) var<storage, read_write> flags : array<atomic<u32>>;
+@group(0) @binding(6) var<storage, read_write> ok : array<u32>;
+@group(0) @binding(7) var<storage, read_write> flags : array<atomic<u32>>;
 
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid : vec3u) {
@@ -171,32 +229,11 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
   }
 
   hist[(iter[0] % q.mi) * n + i] = e;
-}
-`;
-
-/** ok[i] = the node's history column is all-0 or all-1 — one
- * invocation per node. */
-const HIST_CHECK = wgsl`
-struct P { n : u32, r : f32 }
-struct Q { mi : u32, maxIter : f32 }
-@group(0) @binding(0) var<uniform> p : P;
-@group(0) @binding(1) var<uniform> q : Q;
-@group(0) @binding(2) var<storage, read> hist : array<u32>;
-@group(0) @binding(3) var<storage, read_write> ok : array<u32>;
-@group(0) @binding(4) var<storage, read_write> flags : array<atomic<u32>>;
-
-@compute @workgroup_size(${WG})
-fn main(@builtin(global_invocation_id) gid : vec3u) {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
-
-  let i = gid.x;
-
-  if (i >= p.n) { return; }
 
   var se = 0u;
 
   for (var j = 0u; j < q.mi; j = j + 1u) {
-    se = se + hist[j * p.n + i];
+    se = se + hist[j * n + i];
   }
 
   var flag = 0u;
@@ -209,42 +246,61 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
 }
 `;
 
-/** The CPU convergence rule, folded serially: some exemplar exists this
- * iteration, the window is full (or the run is ending), and every
- * node's history column is settled. */
-const CONVERGE_AP = wgsl`
+/** The CPU convergence rule, tree-reduced in one workgroup (round
+ * 65.8 — the serial single-invocation fold was latency-bound), plus
+ * the iteration bump the old separate kernel carried: some exemplar
+ * exists this iteration, the window is full (or the run is ending),
+ * and every node's history column is settled. */
+const AP_CONVERGE = wgsl`
 struct P { n : u32, r : f32 }
 struct Q { mi : u32, maxIter : f32 }
 @group(0) @binding(0) var<uniform> p : P;
 @group(0) @binding(1) var<uniform> q : Q;
 @group(0) @binding(2) var<storage, read> hist : array<u32>;
 @group(0) @binding(3) var<storage, read> ok : array<u32>;
-@group(0) @binding(4) var<storage, read> iter : array<u32>;
+@group(0) @binding(4) var<storage, read_write> iter : array<u32>;
 @group(0) @binding(5) var<storage, read_write> flags : array<atomic<u32>>;
 
-@compute @workgroup_size(1)
-fn main() {
-  if (atomicLoad(&flags[0]) == 1u) { return; }
+var<workgroup> pk : array<u32, ${WG}>;
+var<workgroup> ps : array<u32, ${WG}>;
+var<workgroup> wflag : u32;
+
+@compute @workgroup_size(${WG})
+fn main(@builtin(local_invocation_id) lid : vec3u) {
+  if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
+  if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
   let n = p.n;
   let it = iter[0];
   var k = 0u;
-
-  for (var i = 0u; i < n; i = i + 1u) {
-    k = k + hist[(it % q.mi) * n + i];
-  }
-
-  if (k == 0u) { return; }
-  if (f32(it) < f32(q.mi) - 1.0 && f32(it) != q.maxIter - 1.0) { return; }
-
   var settled = 0u;
 
-  for (var i = 0u; i < n; i = i + 1u) {
+  for (var i = lid.x; i < n; i = i + ${WG}u) {
+    k = k + hist[(it % q.mi) * n + i];
     settled = settled + ok[i];
   }
 
-  if (settled == n) {
-    atomicStore(&flags[0], 1u);
+  pk[lid.x] = k;
+  ps[lid.x] = settled;
+  workgroupBarrier();
+
+  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
+    if (lid.x < stride) {
+      pk[lid.x] = pk[lid.x] + pk[lid.x + stride];
+      ps[lid.x] = ps[lid.x] + ps[lid.x + stride];
+    }
+    workgroupBarrier();
+  }
+
+  if (lid.x == 0u) {
+    let windowReady =
+      f32(it) >= f32(q.mi) - 1.0 || f32(it) == q.maxIter - 1.0;
+
+    if (pk[0] > 0u && windowReady && ps[0] == n) {
+      atomicStore(&flags[0], 1u);
+    }
+
+    iter[0] = it + 1u;
   }
 }
 `;
@@ -319,33 +375,37 @@ export const affinityPropagationGpu = async (
 
   const rUpdate = getPipeline(ctx, 'ap-r-update', R_UPDATE);
   const aUpdate = getPipeline(ctx, 'ap-a-update', A_UPDATE);
-  const eWrite = getPipeline(ctx, 'ap-e-write', E_WRITE);
-  const histCheck = getPipeline(ctx, 'ap-hist-check', HIST_CHECK);
-  const converge = getPipeline(ctx, 'ap-converge', CONVERGE_AP);
+  const track = getPipeline(ctx, 'ap-track', AP_TRACK);
+  const converge = getPipeline(ctx, 'ap-converge', AP_CONVERGE);
   const diagSum = getPipeline(ctx, 'ap-diag-sum', DIAG_SUM);
-  const bump = getPipeline(ctx, 'bump-word', BUMP_WORD);
 
   const grid: [number] = [Math.ceil(n / WG)];
   const one: [number] = [1];
   const iteration: Dispatch[] = [
     {
       pipeline: rUpdate,
+      // one workgroup per row
       group: groupFor(ctx, rUpdate, [pN, sBuf, rBuf, aBuf, flags]),
-      groups: grid,
+      groups: [n],
     },
     {
       pipeline: aUpdate,
+      // one workgroup per column
       group: groupFor(ctx, aUpdate, [pN, rBuf, aBuf, flags]),
-      groups: grid,
+      groups: [n],
     },
     {
-      pipeline: eWrite,
-      group: groupFor(ctx, eWrite, [pN, pQu, rBuf, aBuf, hist, iterBuf, flags]),
-      groups: grid,
-    },
-    {
-      pipeline: histCheck,
-      group: groupFor(ctx, histCheck, [pN, pQu, hist, ok, flags]),
+      pipeline: track,
+      group: groupFor(ctx, track, [
+        pN,
+        pQu,
+        rBuf,
+        aBuf,
+        hist,
+        iterBuf,
+        ok,
+        flags,
+      ]),
       groups: grid,
     },
     {
@@ -353,7 +413,6 @@ export const affinityPropagationGpu = async (
       group: groupFor(ctx, converge, [pN, pQu, hist, ok, iterBuf, flags]),
       groups: one,
     },
-    { pipeline: bump, group: groupFor(ctx, bump, [iterBuf]), groups: one },
   ];
 
   const all: Dispatch[] = [];

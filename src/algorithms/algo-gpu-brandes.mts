@@ -13,12 +13,15 @@ the C accumulator serially per node.
 
 Sources process in batches of B: the d/sigma/delta arrays are B×n, so
 one dispatch advances B independent BFS traversals a level at a time.
-Levels are encoded in chunks with a did-anything-change readback
-between chunks — a BFS whose frontier empties mid-chunk just no-ops
-the remaining levels, so the only cost of the chunk size is up to
-CHUNK−1 empty dispatches per batch.  Weighted runs never reach this
-module: Brandes over weights needs a priority queue, and the wrapper
-contracts them to the CPU.
+Levels are encoded in chunks, and a per-level check kernel latches the
+batch's *frontier-empty* bit the moment a level assigns nothing — no
+deeper level can — so every remaining encoded step no-ops at the cost
+of one flag read, and the readback between chunks is a 16-byte
+completion probe rather than a pipeline sync per level (65.8; the
+probe also carries the deepest level, which sizes the dependency
+sweep exactly).  Weighted runs never reach this module: Brandes over
+weights needs a priority queue, and the wrapper contracts them to the
+CPU.
 
 sigma counts ride f32 (the CPU uses f64): graphs whose shortest-path
 counts overflow f32 lose precision here — the invariant-parity specs
@@ -40,7 +43,7 @@ import {
   uniformFrom,
 } from './algo-gpu.mjs';
 import type { Dispatch } from './algo-gpu.mjs';
-import { BUMP_WORD, RESET_DIFF, WG } from './algo-gpu-dense.mjs';
+import { BUMP_WORD, WG } from './algo-gpu-dense.mjs';
 import {
   bcResultFrom,
   buildBrandesNeighbors,
@@ -51,9 +54,12 @@ import type {
 } from './betweenness-centrality.mjs';
 
 /** Sources per batch (B×n working arrays). */
-const BATCH = 64;
-/** Forward levels encoded per readback. */
-const CHUNK = 32;
+const BATCH = 256;
+/** Forward levels encoded per completion probe (round 65.8: the
+ * frontier-empty bit lets a whole chunk no-op once every lane's BFS
+ * has finished, so a probe is a 16-byte readback per chunk, not a
+ * pipeline sync every level). */
+const CHUNK = 64;
 
 /** d = −1, sigma = 0, delta = 0 across the batch. */
 const BC_INIT = wgsl`
@@ -112,6 +118,11 @@ struct BP { n : u32, batch : u32 }
 
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid : vec3u) {
+  // flags[2] is the batch's frontier-empty bit: once no lane assigned
+  // anything at some level, no deeper level can, and every remaining
+  // encoded step no-ops here
+  if (atomicLoad(&flags[2]) == 1u) { return; }
+
   let idx = gid.x;
   let n = bp.n;
 
@@ -137,6 +148,26 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
     d[idx] = level + 1;
     sigma[idx] = sg;
     atomicStore(&flags[1], 1u);
+  }
+}
+`;
+
+/** After each forward level: nothing assigned means the batch's BFS
+ * frontier is empty — latch the done bit and the deepest level for
+ * the dependency sweep; otherwise clear the per-level change bit. */
+const BC_LEVEL_CHECK = wgsl`
+@group(0) @binding(0) var<storage, read> lvl : array<u32>;
+@group(0) @binding(1) var<storage, read_write> flags : array<atomic<u32>>;
+
+@compute @workgroup_size(1)
+fn main() {
+  if (atomicLoad(&flags[2]) == 1u) { return; }
+
+  if (atomicLoad(&flags[1]) == 0u) {
+    atomicStore(&flags[2], 1u);
+    atomicStore(&flags[3], lvl[0]);
+  } else {
+    atomicStore(&flags[1], 0u);
   }
 }
 `;
@@ -290,14 +321,15 @@ export const betweennessCentralityGpu = async (
   const sources = storageOf(ctx, BATCH * 4);
   const cBuf = storageFrom(ctx, new Float32Array(n));
   const lvl = storageOf(ctx, 4);
-  const flags = storageFrom(ctx, new Uint32Array([0, 0]));
+  // [changed-this-level (1), frontier-empty (2), levels-at-done (3)]
+  const flags = storageFrom(ctx, new Uint32Array([0, 0, 0, 0]));
 
   const init = getPipeline(ctx, 'bc-init', BC_INIT);
   const seed = getPipeline(ctx, 'bc-seed', BC_SEED);
   const fwdStep = getPipeline(ctx, 'bc-fwd', BC_FWD);
+  const levelCheck = getPipeline(ctx, 'bc-level-check', BC_LEVEL_CHECK);
   const backStep = getPipeline(ctx, 'bc-back', BC_BACK);
   const accum = getPipeline(ctx, 'bc-accum', BC_ACCUM);
-  const reset = getPipeline(ctx, 'dense-reset-diff', RESET_DIFF);
   const bump = getPipeline(ctx, 'bump-word', BUMP_WORD);
   const dec = getPipeline(ctx, 'dec-word', DEC_WORD);
 
@@ -327,7 +359,7 @@ export const betweennessCentralityGpu = async (
     lvl,
   ]);
   const accumGroup = groupFor(ctx, accum, [bp, sources, delta, cBuf]);
-  const resetGroup = groupFor(ctx, reset, [flags]);
+  const checkGroup = groupFor(ctx, levelCheck, [lvl, flags]);
   const bumpGroup = groupFor(ctx, bump, [lvl]);
   const decGroup = groupFor(ctx, dec, [lvl]);
   const queue = ctx.device.queue;
@@ -341,41 +373,42 @@ export const betweennessCentralityGpu = async (
 
     queue.writeBuffer(sources, 0, batchSources);
     queue.writeBuffer(lvl, 0, new Uint32Array([0]));
+    queue.writeBuffer(flags, 0, new Uint32Array([0, 0, 0, 0]));
     submitPass(ctx, [
       { pipeline: init, group: initGroup, groups: gridBN },
       { pipeline: seed, group: seedGroup, groups: gridB },
     ]);
 
-    // forward: chunks of levels until a whole chunk assigns nothing
-    let levels = 0;
+    // forward: encode CHUNK levels at a time; the frontier-empty bit
+    // no-ops any excess, so the probe between chunks is the batch's
+    // only sync (a path has at most n-1 edges — the loop's hard cap)
+    let maxLevel = 0;
 
-    for (;;) {
-      const chunk: Dispatch[] = [
-        { pipeline: reset, group: resetGroup, groups: one },
-      ];
+    for (let encoded = 0; encoded < n + CHUNK; encoded += CHUNK) {
+      const chunk: Dispatch[] = [];
 
       for (let l = 0; l < CHUNK; l++) {
         chunk.push({ pipeline: fwdStep, group: fwdGroup, groups: gridBN });
+        chunk.push({ pipeline: levelCheck, group: checkGroup, groups: one });
         chunk.push({ pipeline: bump, group: bumpGroup, groups: one });
       }
 
       submitPass(ctx, chunk);
 
-      const changed = new Uint32Array(await readBack(ctx, flags, 8))[1];
+      const words = new Uint32Array(await readBack(ctx, flags, 16));
 
-      levels += CHUNK;
-
-      if (changed === 0) {
+      if (words[2] === 1) {
+        maxLevel = words[3];
         break;
       }
     }
 
-    // backward: levels..0, one dispatch per level, one submit
-    queue.writeBuffer(lvl, 0, new Uint32Array([levels]));
+    // backward: maxLevel..0, one dispatch per level, one submit
+    queue.writeBuffer(lvl, 0, new Uint32Array([maxLevel]));
 
     const back: Dispatch[] = [];
 
-    for (let l = levels; l >= 0; l--) {
+    for (let l = maxLevel; l >= 0; l--) {
       back.push({ pipeline: backStep, group: backGroup, groups: gridBN });
       back.push({ pipeline: dec, group: decGroup, groups: one });
     }

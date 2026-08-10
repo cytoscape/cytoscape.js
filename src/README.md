@@ -3437,11 +3437,16 @@ markov/hierarchical/kMeans clustering) are CPU-parity with v3 as
 expected, identical math dominating (within ±1.2× at N=500).  That
 parity is exactly why round 65 gave the dense tier its GPU executor:
 `npm run benchmark:algorithms-gpu` prices executor 'cpu' vs 'gpu' per
-family per size on a real adapter (refusing SwiftShader), and on the
-round-65 bench machine (amd gcn-4) measured markovClustering 72–478×,
-kMedoids 9.6–37×, floydWarshall 2.4–17×, fuzzyCMeans ~7.5×, kMeans
-~2×, hierarchical ~2×, with betweenness/pageRank/AP crossing over near
-n=1024 — the figures each wrapper's 'auto' threshold now encodes.
+family per size on a real adapter (refusing SwiftShader).  After the
+65.8 kernel-performance pass (workgroup-per-line occupancy, blocked
+Floyd–Warshall, register-blocked matmul, uniform-flag early exits,
+batched Brandes with device-side termination, and the shared
+similarity-build fix), the round-65 bench machine (amd gcn-4)
+measures markovClustering 70–663×, kMedoids 19–146×, fuzzyCMeans
+30–70×, floydWarshall 3.4–28×, betweennessCentrality 4.1–18×, kMeans
+8–25×, affinityPropagation 1.9–3.8×, pageRank 1.2–1.8×, hierarchical
+~2× (its merge chain is a CPU floor both executors pay) — the figures
+each wrapper's 'auto' threshold now encodes.
 
 ## Loading
 

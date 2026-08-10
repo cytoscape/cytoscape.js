@@ -40,12 +40,13 @@ export const betweennessCentralityAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
-  // measured crossover (65.6, amd gcn-4): 0.74x at n=512, 1.65x at
-  // n=1024, 3.6x at n=2048
+  // measured crossover (65.8, amd gcn-4): the 256-wide batches and
+  // frontier-empty probes moved it left — 4.1x at n=512, 18.3x at
+  // n=2048
   return runAlgo(
     executor,
     n,
-    1024,
+    512,
     () => betweennessCentrality(coll, options),
     options.weight == null
       ? (ctx) => betweennessCentralityGpu(ctx, coll, options)

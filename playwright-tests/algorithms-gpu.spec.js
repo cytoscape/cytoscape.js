@@ -229,6 +229,96 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out).toEqual([]);
   });
 
+  test('floydWarshall: multi-block parity at n=100 (65.8 blocked kernels)', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // n=100 spans four 32-wide k-panels, so every blocked phase —
+      // diagonal, row/column panels, the min-plus remainder, and the
+      // padded edge blocks — runs; the 5-node fixture above is a
+      // single phase-1 block and would pass with phases 2–3 broken
+      const els = [];
+      const n = 100;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + ((i + 1) % n),
+            w: 1 + ((i * 37) % 97) / 10,
+          },
+        });
+
+        if (i % 5 === 0) {
+          els.push({
+            data: {
+              source: 'n' + i,
+              target: 'n' + ((i * 13 + 7) % n),
+              w: 1 + ((i * 53) % 89) / 10,
+            },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const weight = (e) => e.data('w');
+      const cpu = await cy
+        .elements()
+        .floydWarshall({ weight, executor: 'cpu' });
+      const gpu = await cy
+        .elements()
+        .floydWarshall({ weight, executor: 'gpu' });
+      let maxRel = 0;
+      let badPaths = 0;
+      const nodes = cy.nodes();
+
+      for (let i = 0; i < n; i += 7) {
+        for (let j = 0; j < n; j += 3) {
+          const dc = cpu.distance(nodes[i], nodes[j]);
+          const dg = gpu.distance(nodes[i], nodes[j]);
+
+          if (dc === Infinity || dg === Infinity) {
+            if (dc !== dg) {
+              badPaths++;
+            }
+
+            continue;
+          }
+
+          maxRel = Math.max(
+            maxRel,
+            Math.abs(dc - dg) / Math.max(1, Math.abs(dc)),
+          );
+
+          // the GPU path must be internally consistent: its edge
+          // weights must sum to the GPU distance (tie-tolerant, unlike
+          // comparing node sequences across f32/f64 executors)
+          const path = gpu.path(nodes[i], nodes[j]);
+          let sum = 0;
+
+          path.forEach((ele) => {
+            if (ele.isEdge()) {
+              sum += ele.data('w');
+            }
+          });
+
+          if (i !== j && Math.abs(sum - dg) > 1e-3 * Math.max(1, dg)) {
+            badPaths++;
+          }
+        }
+      }
+
+      return { maxRel, badPaths };
+    });
+
+    expect(out.maxRel).toBeLessThan(1e-4);
+    expect(out.badPaths).toBe(0);
+  });
+
   test('affinityPropagation: identical partition of separated data', async ({
     page,
   }) => {

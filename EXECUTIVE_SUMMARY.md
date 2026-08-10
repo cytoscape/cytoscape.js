@@ -807,13 +807,17 @@ implementation is the spec, GPU runs pin invariants rather than bits
 (WGSL is f32), and every run is encoded up front behind
 convergence-guarded kernels so it pays exactly one readback.  A live
 CPU-vs-GPU parity suite covers every family, its specs verified able
-to fail by degrading kernels.  Measured on a real adapter (RX
-570-class), the wins land where the arithmetic said they would:
-**Markov clustering 72–478×** (31.2 s → 65 ms at a thousand nodes),
-k-medoids up to 37×, Floyd–Warshall up to 17×, fuzzy c-means ~7.5× —
-while the serial-per-row kernels (PageRank, affinity propagation) and
-the CPU-floored merge chain (hierarchical) win modestly past ~1,000
-nodes, which is exactly where their `'auto'` thresholds now sit.
+to fail by degrading kernels.  A performance pass the same day
+(occupancy-first workgroup rewrites, a blocked Floyd–Warshall, a
+register-blocked matmul, batched BFS with device-side termination)
+left the measured wins on a real adapter (RX 570-class) at:
+**Markov clustering 70–663×** (31.3 s → 47 ms at a thousand nodes),
+k-medoids up to 146×, fuzzy c-means up to 70×, Floyd–Warshall up to
+28×, betweenness up to 18×, k-means up to 25×, affinity propagation
+up to 3.8× — with only PageRank (memory-bound dense mat-vec, ~1.8×)
+and hierarchical clustering (a CPU merge chain both executors pay,
+~2×) in low single digits, and every family GPU-favored at its
+benchmark sizes.
 
 ## What remains before 4.0
 

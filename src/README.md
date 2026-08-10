@@ -1179,9 +1179,20 @@ each is deliberate, not a pass-1 deferral:
     `cy.on('tap', ele => ele.isNode(), handler)` (predicates compare by
     function identity in `off()`, so removing a delegated handler takes
     the same `(events, predicate, handler)` triple).
-  - *Id lookup*: `cy.$id(id)` / `getElementById` (the O(1) id index).
-  - `cy.$()` is gone; set ops and `edgesWith`-style methods take
-    collections, not selector strings.
+  - *Id lookup*: `cy.$id(id)` / `getElementById` / `byId` (the O(1)
+    id index; `byId` is round 64's brevity alias).
+  - `cy.$()` **returned in round 64 as a plain alias of `filter()`**
+    over the query/predicate forms above — in line with `cy.$id()` —
+    after leaving with the selector language.  A selector string
+    passed to it still throws, through filter's own rejection.  Set
+    ops and `edgesWith`-style methods take collections, not selector
+    strings.
+  - `cy.collection()` takes **no arguments** and throws if given any
+    (round 64, ledger item 28): v3 also built from a string/array/
+    collection there, and the v3-shaped call used to return the empty
+    collection silently — the one boundary where a typo did nothing.
+    Build with `union()` over the accumulator, or query with
+    `cy.$( query )`.
   - **The rejection is enforced at the boundary** (round 29.3), which it
     was not before: a selector string now throws from the query
     compiler, from the twelve collection methods that take another

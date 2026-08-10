@@ -773,6 +773,19 @@ accepted in dash-case and camelCase alike (`foo-bar` / `fooBar`),
 everywhere a property name is taken — already true in practice, now
 pinned by a sweep spec with a control.
 
+### Round 64: three small calls on the query surface
+
+The same day closed another open question and restored two spellings.
+`cy.collection()` — the empty accumulator — now **throws if passed any
+argument**: v3 also builds a collection from a string or an array
+there, so the v3-shaped call used to return the empty collection
+silently, the one place in the API where a typo did nothing.  And two
+aliases returned for ergonomics: **`cy.$()`** is back as a plain alias
+of `filter()` over the query-object and predicate forms (selector
+strings still throw — the alias restores a spelling, not the
+language), and **`cy.byId()`** joins `$id`/`getElementById` as the
+brief id lookup.
+
 ## What remains before 4.0
 
 **This table lists what has been written down.** Several rounds that v4 needs
@@ -790,7 +803,6 @@ optional to scheduled (it also landed two days later).
 |---|---|
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
 | Edge overlay band width | **a decision.** v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
-| `cy.collection( arg )` | **a decision.** It silently returns the empty collection where v3 builds from the argument — throw, port the v3 form, or record the permissiveness |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |

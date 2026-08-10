@@ -77,7 +77,15 @@ cy.on( 'tap', ele => ele.isNode(), handler );   // predicate delegation
 - **Predicates** are plain functions and cover everything richer. In `off()`
   they compare by identity, so removing a delegated handler takes the same
   `( events, predicate, handler )` triple that added it.
-- **`cy.$()` is gone.** `cy.$id()` / `cy.getElementById()` is the id lookup.
+- **`cy.$()` works — over the new forms** (round 64): it is a plain
+  alias of `cy.filter()`, so `cy.$( { selected: true } )` and
+  `cy.$( ele => … )` do what you expect, while `cy.$( 'node' )` still
+  throws with the replacement named.  `cy.$id()` /
+  `cy.getElementById()` / `cy.byId()` is the id lookup.
+- **`cy.collection()` takes no arguments** and throws if given any —
+  v3's `collection( eles )` building form is not ported (it used to
+  return the empty collection *silently* in v4).  Build with
+  `union()` over the empty accumulator, or query with `cy.$( query )`.
 
 Passing a selector string anywhere throws with the replacement named — at the
 query compiler, at the twelve collection methods that take another collection,

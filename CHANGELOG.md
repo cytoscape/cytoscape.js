@@ -35,6 +35,11 @@ that compile and then behave differently.
   nodes), arrowheads are hit targets (hollow counts as filled, as in
   v3), and pressing any element — edges included — shows v3's `:active`
   overlay; `cy.pick( x, y )` stays exact.
+- **`cy.$()` is back** (round 64) as a plain alias of `cy.filter()`
+  over the query/predicate forms (selector strings still throw), and
+  **`cy.byId()`** joins `$id`/`getElementById` as the brevity id
+  lookup.  **`cy.collection()` now throws if passed any argument** —
+  it used to silently ignore one where v3 builds from it.
 - **Per-element bypasses** (round 63): the stylesheet's `bypasses`
   section — `{ bypasses: { id: { prop: constant } } }` — with v3's
   method spellings as sugar (`ele.style( name, value )`, the object

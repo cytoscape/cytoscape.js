@@ -5097,6 +5097,12 @@ declare class Collection {
     gen: number;
     obj: Record<string, unknown>;
   };
+  /** the dense handle array behind the iteration family (round 62.5):
+   * array-element access holds its speed in every JIT mode where
+   * indexed own-property access is bimodal, and _refs immutability
+   * makes the cache safe — the handles are the same interned objects
+   * either way */
+  _eles?: Collection[];
   /** the algorithms' SubgraphView memo (round 62.1), keyed by the
    * store's structureEpoch — sound because membership is _refs (immutable)
    * minus dead refs, and death moves the epoch.  Typed loosely to keep
@@ -5238,6 +5244,10 @@ declare class Collection {
    * @returns true when non-empty
    */
   nonempty(): boolean;
+  /** The interned handles as a cached dense array — the iteration
+   * family's backing (round 62.5).  Internal: never handed out (the
+   * public form is toArray(), which copies). */
+  _arr(): Collection[];
   /**
    * Call `fn` for each element.  Returning `false` from the callback
    * stops the iteration early, as in v3.

@@ -232,6 +232,12 @@ export class Collection {
     gen: number;
     obj: Record<string, unknown>;
   };
+  /** the dense handle array behind the iteration family (round 62.5):
+   * array-element access holds its speed in every JIT mode where
+   * indexed own-property access is bimodal, and _refs immutability
+   * makes the cache safe — the handles are the same interned objects
+   * either way */
+  _eles?: Collection[];
   /** the algorithms' SubgraphView memo (round 62.1), keyed by the
    * store's structureEpoch — sound because membership is _refs (immutable)
    * minus dead refs, and death moves the epoch.  Typed loosely to keep
@@ -247,7 +253,7 @@ export class Collection {
    * removed-element semantics.
    */
   get _refs(): Ref[] {
-    const store = this._cy._store;
+    const store = this._store;
 
     if (this._syncEpoch !== store.compactEpoch) {
       this._syncEpoch = store.compactEpoch;
@@ -589,6 +595,27 @@ export class Collection {
     return this.length > 0;
   }
 
+  /** The interned handles as a cached dense array — the iteration
+   * family's backing (round 62.5).  Internal: never handed out (the
+   * public form is toArray(), which copies). */
+  _arr(): Collection[] {
+    let arr = this._eles;
+
+    if (arr == null) {
+      const n = this.length;
+
+      arr = new Array(n);
+
+      for (let i = 0; i < n; i++) {
+        arr[i] = this[i];
+      }
+
+      this._eles = arr;
+    }
+
+    return arr;
+  }
+
   /**
    * Call `fn` for each element.  Returning `false` from the callback
    * stops the iteration early, as in v3.
@@ -605,20 +632,21 @@ export class Collection {
     fn: (ele: Collection, i: number, eles: Collection) => void | false,
     thisArg?: unknown,
   ): this {
-    const n = this.length;
+    const arr = this._arr();
+    const n = arr.length;
 
     // exit early like v3 when the callback returns false; a plain call when
     // there is no thisArg, like v3 — rebinding the receiver per element via
     // fn.call() costs ~2x on large collections
     if (thisArg == null) {
       for (let i = 0; i < n; i++) {
-        if (fn(this[i], i, this) === false) {
+        if (fn(arr[i], i, this) === false) {
           break;
         }
       }
     } else {
       for (let i = 0; i < n; i++) {
-        if (fn.call(thisArg, this[i], i, this) === false) {
+        if (fn.call(thisArg, arr[i], i, this) === false) {
           break;
         }
       }
@@ -635,14 +663,9 @@ export class Collection {
    * @returns a new array of the members
    */
   toArray(): Collection[] {
-    const n = this.length;
-    const array: Collection[] = new Array(n);
-
-    for (let i = 0; i < n; i++) {
-      array[i] = this[i];
-    }
-
-    return array;
+    // a fresh copy each call — callers sort and splice what they get —
+    // over the cached dense array (round 62.5)
+    return this._arr().slice();
   }
 
   /**
@@ -739,16 +762,17 @@ export class Collection {
     fn: (ele: Collection, i: number, eles: Collection) => T,
     thisArg?: unknown,
   ): T[] {
-    const n = this.length;
+    const arr = this._arr();
+    const n = arr.length;
     const array: T[] = new Array(n);
 
     if (thisArg == null) {
       for (let i = 0; i < n; i++) {
-        array[i] = fn(this[i], i, this);
+        array[i] = fn(arr[i], i, this);
       }
     } else {
       for (let i = 0; i < n; i++) {
-        array[i] = fn.call(thisArg, this[i], i, this);
+        array[i] = fn.call(thisArg, arr[i], i, this);
       }
     }
 
@@ -763,11 +787,13 @@ export class Collection {
    * @returns true when at least one element matches
    */
   some(fn: EleFilterFn, thisArg?: unknown): boolean {
-    for (let i = 0; i < this.length; i++) {
+    const arr = this._arr();
+
+    for (let i = 0; i < arr.length; i++) {
       const ret =
         thisArg == null
-          ? fn(this[i], i, this)
-          : fn.call(thisArg, this[i], i, this);
+          ? fn(arr[i], i, this)
+          : fn.call(thisArg, arr[i], i, this);
 
       if (ret) {
         return true;

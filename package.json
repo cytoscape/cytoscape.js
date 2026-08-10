@@ -115,7 +115,7 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-terser": "^0.4.4",
-    "@types/node": "^22.10.7",
+    "@types/node": "^26.1.2",
     "benchmark": "^2.1.4",
     "bluebird": "^3.5.0",
     "chai": "^5.1.2",

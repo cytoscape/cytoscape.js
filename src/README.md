@@ -3077,6 +3077,25 @@ always a run away): **quick 7.1 min, `--all` 17.4 min.**  `--full` adds
 the 2k/20k/200k matrix and is unmeasured — it is the profile nobody
 runs casually, which is the point of keeping quick quick.
 
+**As of round 62 (2026-08-10), every v3-comparative row reads
+v4-faster** — an idle-box `--all` run carries 287 v3/gpu pairs and its
+published run (`benchmark/published/`, the i9-9900K) has zero
+v3-faster rows.  That was a goal, so say what it took: rounds 62.4–62.6
+fixed 28 genuinely losing rows (the animation handle lifecycle, the
+whole-object `data()` cache, per-raw-name style read plans, the
+id → index map, the CSR-in-place traversal walk among them) — and then
+found that the last handful of "losers" were the **harness measuring
+itself**.  Two mechanisms, both now standing rules for `cmp()`-style
+rows: a shared op closure samples the first-declared side against
+monomorphic inline caches (fixed by pre-warm alternations before either
+bench samples, 62.5c); and below ~10 ns a row sits at the harness
+floor, where the pair's sign belongs to group-order sampling artifacts
+— `pan() get` lost eight consecutive runs in-suite while per-process
+monomorphic loops read v4 at 0.49 ns against v3's 1.96, so the row now
+does 32 reads per op and is named `(x32)` for it.  A sub-floor row
+that cannot discriminate is round 33's "guilty until shown to
+discriminate" applied to the instrument rather than the subject.
+
 **What round 33 found, and round 34 fixed** — the measurements that went
 the *other* way.  Round 33 logged them; round 34 fixed all five, and the
 before/after numbers below are through the built bundle at N=2000
@@ -3130,9 +3149,16 @@ shared one varies ±30%):
 - **`indexOf()` — 12.5 µs → 41 ns** (round 34.1), parity with v3: the
   lazily-built packed-key membership `Set` became a `Map` from key to
   first index, so the cache the set ops already build now carries the
-  answer.
-- Whole-object `data()` is 6.3× v3 — the columnar rebuild-the-object
-  cost, showing up exactly where the design predicts.
+  answer.  (Round 62.6 took it past parity — ~1.5× v3 — by letting one
+  identity compare prove the argument same-instance before the full
+  guard walk runs; the cross-instance throw is unchanged.)
+- Whole-object `data()` read 6.3× v3 when round 34 measured it — the
+  columnar rebuild-the-object cost, showing up exactly where the
+  design predicted.  Round 62.4 closed it: the built object caches on
+  the handle against the DataStore's write epoch (plus the synthesized
+  fields' own inputs), so the no-write read is a pointer return again —
+  a logged public-surface change (PLAN.md ledger 17b), since two calls
+  with no write between them now return the same object.
 
 **Round 35 — the readback dispatch table.**  `StyleEngine.readProp`
 answered all 150 readable property labels from one switch of the same
@@ -3281,10 +3307,13 @@ removing + re-adding a 256-node band with its incident edges ~1000×.
 **The select figure is the skip-path number and no longer the
 out-of-the-box one** (round 60.4): under the default stylesheet —
 which conditions on `selected` since 57.1d — the same row measures the
-per-slot restyle and reads ~3× *slower* than v3 at 2k, so
-`mutators.mjs`/`scenarios.mjs` now price the default-sheet
-configuration; the state-condition bullet in the styling section above
-carries the mechanism, the mitigation and the logged headroom.
+per-slot restyle, and it read ~3× *slower* than v3 at 2k until round
+61's `refreshState` diff path (resolve the old and new partition
+records once, write only the channels that differ) took the
+default-sheet configuration back to v4-faster;
+`mutators.mjs`/`scenarios.mjs` price that configuration, and the
+state-condition bullet in the styling section above carries the
+mechanism.
 
 Composed traces hold up too (`benchmark/scenarios.mjs`: five
 interaction scenarios — explore/click-expand, select-all + fit, band

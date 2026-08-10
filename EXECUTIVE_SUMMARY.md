@@ -60,10 +60,10 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,104 unit · 315 module · 24 soak · 354 browser (238 run; 116 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,115 unit · 341 module · 24 soak · 355 browser (240 run; 115 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, twelve of them **close-ups** at zoom 2–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
-| Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
+| Benchmarks | 24 suites; **every one of the 287 v3-comparative pairs reads v4-faster** as of 10 August (geometric mean **11×**, minimum 1.03×), **27×** on rendering (geometric mean over 64 paired rows) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 617 KiB minified, 166 KiB gzipped — ~1.3× v3 (411 / 126 KiB) on the wire, now that the WebGPU shader source (which v3 has no equivalent of, and which a JS minifier cannot touch) is itself minified at build time |
 
@@ -543,7 +543,7 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, and performance becomes visible across commits
+## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, and then every benchmark ends v4-faster
 
 *18 commits — rounds 58–60 and the seventh design sitting.*
 
@@ -683,6 +683,51 @@ guarded by tests that were each proven able to fail.  The regression
 existed for four days and was caught by the first tool that could
 see it, which is the argument for the comparison pages in one
 sentence.
+
+### Round 62: every benchmark pair reads v4-faster
+
+With the comparison pages live, the maintainer set a flat goal:
+**every v4 benchmark should beat v3.**  As of 10 August it does — an
+idle-box run of the full benchmark tier carries 287 v3-comparative
+pairs, and the published run has zero v3-faster rows (geometric mean
+11×; the narrowest margin 1.03×).
+
+Getting there took ten verification runs and split cleanly into two
+kinds of work.  The first was ordinary: 28 rows were genuinely losing,
+and each got a real fix — the animation-handle lifecycle rebuilt on
+prototype methods (a handle was ~30× v3's cost to construct), the
+whole-object `data()` read cached against a write epoch (it had been
+rebuilding the object per call), style reads planned per property name
+instead of re-normalising per read, a traversal walk that had been
+allocating a typed-array view per node now reading the adjacency rows
+in place, and a tail of similar single-cause repairs.  Two of those
+are logged surface changes: `data()` with no arguments returns the
+same object until the next write invalidates it, and destructured
+animation-handle methods must be re-bound — both narrower exposures
+than v3's own behaviour at the same spots.
+
+The second kind is the part worth remembering: **the last several
+"losers" were the measuring instrument, not the library.**  Two
+mechanisms were pinned with controls.  Where a comparison row shares
+one operation closure between its two sides, the side declared first
+samples against a warmer optimiser state — a systematic sub-nanosecond
+bias, exactly the band where a handful of rows kept losing in the
+suite while measuring at parity or better in isolation; the harness
+now warms both sides before either samples.  And below about ten
+nanoseconds a row sits at the harness floor, where run-order artifacts
+own the result outright: the pan-position read lost eight consecutive
+suite runs while measuring **four times faster than v3** in clean
+per-process loops — v4's read had become cheaper than the machinery
+timing it.  That row now does 32 reads per sample and is renamed to
+say so.  Both fixes follow the project's oldest benchmark rule — a row
+is guilty until shown to discriminate — applied, for the first time,
+to the instrument rather than the subject.
+
+The goal is a snapshot, not a floor: sub-10-nanosecond pairs will
+always trade a percent or two run to run.  What the record supports
+going forward is the published archive plus the comparison pages,
+which is how any future regression of substance gets caught — the
+same way round 60's was.
 
 ---
 

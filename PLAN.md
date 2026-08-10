@@ -17578,6 +17578,54 @@ controls.
   caught by three gates at once), and the one-off single-spec
   `test:js` flake fired twice more without reproducing (the
   2026-08-02 record's shape; output captured on the re-runs only).
-- [ ] **62.6 Verification** — idle-box `--all` profile with **every**
-  v3/gpu pair v4-faster; the run published; Playwright over the
-  changed source; the closing docs sweep.
+- [x] **62.6 The last five, and the goal** (2026-08-10, three passes) —
+  run six read 287 pairs / 5 losers; runs seven through nine each
+  cleared some and surfaced a floor-row flicker; **run ten reads 287
+  pairs, zero v3-faster rows**, and is the published run.  The
+  progression across the round's ten idle-box `--all` runs: 28 → 12 →
+  10 → 10 → 11 → 5 → 2 → 1 → 0.  What landed:
+  - *Real shaves* (62.6/62.6b/62.6c), each probed with margin before
+    riding to a verification run: `indexOf` skips the full
+    `assertCollection` walk when one identity compare proves the
+    argument is this instance's (the 29.3/48.4 throw intact for
+    everything else; 1.52× from 0.675×); `effectiveOpacity` reads the
+    stored opacity column directly behind a new
+    `StyleEngine.ownsProp()` gate — the one case stored bytes lie is
+    a kernel-owned mapper, the same rule `readProp` keeps (2.27×);
+    `mutableElements()` flattens its memo to one dedicated field
+    (1.38×); band `connectedEdges()` was profiled to 17.7 of 22.2 µs
+    in the walk — `outEdges`/`inEdges` allocate a CSR **subarray view
+    per node** — and `AdjacencyIndex.appendIncident()` now reads the
+    CSR rows in place (14.1 µs against v3's ~25); `data(key)` dropped
+    its rest-parameter args-array allocation (arity via
+    `arguments.length`; 1.13×); `_liveNodeRef` (the
+    `isParent`/`isChild`/`isChildless`/`isOrphan` shared head) and
+    the `data()` getters read the raw ref and let `isCurrent` repair
+    forwarded ones in place (the flags ×4 row: 1.36× from 0.895×).
+  - *The harness, twice more* (62.6b): `data.mjs`'s `cmpRead` had
+    been **missed by 62.5c's pre-warm sweep** — its three rows still
+    sampled v3 against monomorphic ICs, and the one-numeric-key row
+    flickered at 0.985–0.996× until it joined.  And `pan() get`
+    exposed the artifact 62.5c's fix cannot reach: 0.83–0.87×
+    across eight independent `--all` runs while replicating at 1.01×
+    outside the suite through the same factories, pre-warm and
+    rotation.  Order-swap probes showed the sign belongs to
+    **group-order sampling at the ~6 ns harness floor** (declared
+    order swapped, the same row reads ~1.1× the other way; lead- and
+    tail-bench controls bounce both directions), while per-process
+    monomorphic loops read gpu **0.49 ns vs v3 1.96 ns** — v4 is
+    genuinely ~4× faster, v3's `arguments` use blocking full
+    inlining; the subject outran the instrument.  The row now does 32
+    reads per op — the round-33 rule (a row is guilty until shown to
+    discriminate) applied to the row itself — renamed `pan() get
+    (x32)` since it is a different measurement.
+  - *Process fallout*: 62.5c had shipped with the SHAPE_MASK
+    allowlist key stale (the 37.1 gate said so on the next
+    `test:modules` run, its seventh firing; the key now sits at the
+    `throw` line, 2989) — the round's one red-tier commit, caught by
+    the gate it exists for.
+  - *Verification*: the green run published
+    (`benchmark/published/`, all profile, 287 pairs at cf5727b4);
+    Node tier green throughout (2115 + 341 + 24; throw gate
+    184/10/5/0; JSDoc 100% with 244 `@param` / 288 `@returns`);
+    Playwright over the changed source; the closing docs sweep.

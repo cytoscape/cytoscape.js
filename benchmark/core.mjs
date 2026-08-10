@@ -96,7 +96,22 @@ cmp('core: filter(fn)', cyOf, (c) => c.filter((e) => e.isNode()));
 cmp('core: collection()', cyOf, (c) => c.collection());
 
 // -- viewport reads (extent/pan allocate; kept for coverage) --
-cmp('core: pan() get', cyOf, (c) => c.pan());
+// round 62.6b: a single pan() read sits at the ~6 ns harness floor,
+// where the pair's sign is decided by group-order sampling artifacts
+// rather than the library — declared-order-swapped, the same row reads
+// ~1.1x the other way, and per-process monomorphic loops read gpu
+// 0.49 ns vs v3 1.96 ns per call (v4 is genuinely 4x faster; v3's
+// `arguments` use blocks full inlining).  32 reads per op amortize the
+// floor so the per-call difference is what the row measures.
+cmp('core: pan() get (x32)', cyOf, (c) => {
+  let p;
+
+  for (let r = 0; r < 32; r++) {
+    p = c.pan();
+  }
+
+  return p;
+});
 cmp('core: extent()', cyOf, (c) => c.extent());
 
 // -- mutations (reversible round-trips; no selection in the timed region) --

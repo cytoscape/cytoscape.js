@@ -147,6 +147,14 @@ if (has('read')) {
   let i = 0;
 
   const cmpRead = (name, op) => {
+    // round 62.6b: the 62.5c IC pre-warm — data.mjs was missed by that
+    // sweep, so these three rows still sampled v3 against monomorphic
+    // inline caches and gpu against polymorphic ones
+    for (let w = 0; w < 8; w++) {
+      do_not_optimize(op(vs[w & MASK]));
+      do_not_optimize(op(gs[w & MASK]));
+    }
+
     group(name, () => {
       summary(() => {
         bench('v3', () => {

@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-render-2026-08-10T10-18-42-749Z.json",
+      "date": "2026-08-10T10:18:42.749Z",
+      "commit": "c182dd0c",
+      "commitSubject": "docs: the double-check sweep — six staleness fixes the round-62 close missed",
+      "branch": "v4",
+      "profile": "renderer",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 1203138,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 12,
+      "note": null
+    },
+    {
       "file": "results-2026-08-10T04-38-13-271Z.json",
       "date": "2026-08-10T04:38:13.271Z",
       "commit": "cf5727b4",

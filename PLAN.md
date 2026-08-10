@@ -565,6 +565,21 @@ v3's is `2 × padding` — round 58) and **item 28** (`cy.collection`
 silently ignores an argument v3 builds from — round 60).  So the
 ledger's genuinely open questions stand at four: 18, 23, 27, 28.
 
+**2026-08-10 (eighth design sitting): ledger item 25 gains its
+direction.**  The maintainer reopened the bypass idea ("bypasses are
+worth a discussion") and the sitting took four calls: the ergonomics
+return as a first-class **`overrides` sheet section** — *not* the
+logged case-rewrite spelling, which measurement killed on three walls
+— with the v3 method spellings coming back as sugar over it, v3's
+bypass-beats-everything precedence, and export as a named section
+that sheet swaps replace.  One requirement was set above the rest,
+mid-sitting: **the implementation must be fast/performant**.
+Design-doc first: the proposal, with its measurements, is "Item 25
+docs-first — per-element overrides" at the end of this file, and no
+round is scheduled until the maintainer reacts to it.  The genuinely
+open questions are unchanged at four (18, 23, 27, 28) — item 25 is
+direction-set, awaiting its proposal's review.
+
 ### Scope calls
 
 1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
@@ -1314,6 +1329,27 @@ rather than from a blank page.
     - **What removes one.**  v3 has `removeStyle`; here it is "drop the
       clause", which needs the clause to be identifiable, which is why
       the keying is a design call rather than an implementation detail.
+
+    **Direction set (2026-08-10, eighth design sitting): the ergonomics
+    return, but not in this shape.**  The three measures were taken
+    through the built bundle, and two of them killed the case-rewrite
+    spelling outright: one id clause in an otherwise state-conditioned
+    sheet nulls the 57.1d partition for its whole group and re-opens
+    the round-60.4 select regression (256-band select+unselect
+    **53.7 → 392.0 µs**, measured), and the chain cost is the
+    predicted O(k·V) (k = 1000 clauses: 6.2× on applyAll).  A third
+    wall this entry had not seen: a `case` clause's `then`/`else`
+    parse to scalars, so a scale-mapped channel — em-web's
+    `background-color`, the flagship sheet — cannot take the wrapper
+    at all without a mapper-IR change.  The direction is a first-class
+    **`overrides` sheet section** instead (id-keyed constants applied
+    as an overlay at the write funnel), with the v3 method spellings
+    returning as sugar over it, v3's bypass-beats-everything
+    precedence, export as a named section, and **performance as the
+    maintainer's stated top requirement**.  The full proposal is
+    "Item 25 docs-first — per-element overrides" at the end of this
+    file; **design-doc first** — the round is not scheduled until the
+    maintainer reacts to it.
 26. **Split the big implementation files, v4's way** (raised
     2026-08-07).  `style.mts` is 7.9k lines, `collection.mts` 5.8k,
     `store/graph-store.mts` 5.0k, `render/shaders.mts` 4.3k, `core.mts`
@@ -17675,3 +17711,185 @@ controls.
   the resolution both.  Also in the pass: the stale-bundle warning
   compared v3's frozen UMD against v4's src mtimes and cried wolf on
   a fresh build; each bundle now checks against its own tree.
+
+## Item 25 docs-first — per-element overrides (eighth design sitting + proposal, 2026-08-10)
+
+The maintainer reopened ledger item 25 — "bypasses are worth a
+discussion" — and the sitting took its calls with one requirement set
+above the others, verbatim: **the proposed implementation must be
+fast/performant**.  This section is the docs-first proposal those
+calls asked for; on the 41.5 precedent it is a proposal, not a plan —
+the round is not scheduled until the maintainer has reacted to it.
+
+### The sitting's calls
+
+1. **The ergonomics return, for apps and extensions; the shape goes
+   design-doc-first** (this section, with its measurements, before any
+   round is committed).  The residual use case the sitting named: v4
+   already answers state styling (conditions), data styling (scales)
+   and static per-id rules (`case` on `id`) — what it lacks is
+   *imperative, runtime* per-element styling, and the strongest form
+   of that is **extensions**, which must style elements without owning
+   the app's stylesheet.  The app-side workaround (a data flag plus a
+   sheet clause) needs sheet cooperation and leaks the flag into
+   `data()`, the wire and every export.
+2. **The v3 spellings return**: `ele.style( name, value )`,
+   `eles.style( props )` and `removeStyle( name? )` work again, as
+   sugar over the overrides section.  This deliberately reverses
+   29.3's decided drop (the throw whose message 31.1 corrected);
+   `MIGRATING.md`'s "no per-element bypass" row and
+   `test/decided-drops.mjs`'s pin both flip with the round.
+3. **Precedence is v3's: an override beats everything**, the default
+   sheet's selection/active conditionals included (v3 applies "its
+   bypass" ahead of every selector — the header comment in
+   `v3/src/style/apply.mts`).  Consequence recorded up front: an
+   overridden `background-color` hides selection blue for that
+   element, exactly as a v3 bypass does — and 57.11's
+   don't-bury-the-affordances rule is about *sheets*, not about a
+   per-element instruction the app gave explicitly.
+4. **Overrides export, and sheet swaps replace them.**  `cy.style()` /
+   `cy.json()` carry the section — strictly better than v3, whose
+   `ele.json()` exports no bypass at all (verified against
+   `v3/src/collection/index.mts`: data/position/group/flags/classes
+   only), so v3 bypasses are silently lost on export today.  A full
+   `cy.style( sheet )` replaces the section like any other; the
+   keep-them idiom is spreading the getter.  A recorded deviation from
+   v3's element-lifetime bypasses.
+5. **Performance is the top requirement** (maintainer, mid-sitting):
+   an override-free graph pays nothing measurable, and every override
+   operation costs what it touches.
+
+### Why not the logged shape — measured, and rejected
+
+Item 25 as logged would rewrite the user's sheet with id-keyed `case`
+clauses.  Measured against the code (2026-08-10, through the built
+bundle, N = 2000 nodes / 4000 edges, this machine), that shape hits
+three walls:
+
+1. **It cannot compose with scale-mapped channels.**  A clause's
+   `then` and the `else` parse through `parseOutput` to scalars
+   (`src/style-scales.mts` — the `case` Program's clause values are
+   `number | RGBA`), so "wrap the channel's current value in a case"
+   is inexpressible when the current value is a scale — and em-web's
+   `background-color`, the flagship demo sheet, is exactly that.
+   Fixing it means `else` holds a nested Program: a mapper-IR change
+   with GPU-pack and readback consequences, at which point the sugar
+   is no longer sugar.
+2. **One bypass re-opens the round-60.4 select regression for its
+   whole group.**  `partitionOf` (`src/style.mts`) deliberately
+   returns null on any condition key outside `CONDITION_FLAGS` — `id`
+   is not one — and since 57.1d the default sheet state-conditions
+   every graph.  Measured: a 256-band select+unselect under a
+   state-only sheet runs the round-61 diff path at **53.7 µs**; the
+   same sheet with **one** id clause prepended (what the sugar
+   produces after a single bypass) reads **392.0 µs** — 7.3×, the
+   full per-slot path back for every selection the app ever makes,
+   with `applyAll` gone per-element too.
+3. **The chain is O(k·V).**  applyAll with k id clauses on one
+   channel reads **10.0 / 10.4 / 10.8 / 16.9 / 61.7 ms** per
+   swap-pair at k = 0 / 1 / 10 / 100 / 1000 — the ledger's quadratic
+   concern, confirmed.  On top sit the ledger's other two concerns —
+   `cy.json()` exporting a sheet the app never wrote, and removal
+   needing clause identity — both of which the shape below dissolves
+   rather than engineers around.
+
+### The design: a first-class `overrides` sheet section
+
+```js
+cy.style( {
+  nodes: { /* ... */ },
+  edges: { /* ... */ },
+  overrides: {
+    n42: { 'background-color': 'red', width: 40 },
+  },
+} );
+```
+
+- **Declarative and id-keyed.**  Round 8's invariant holds — every
+  value analyzable and serializable; the representation is data, not
+  a closure and not a forged clause chain.  Values are
+  **constants-only**: mappers stay the sheet's job (a recorded
+  deviation — v3's bypass technically parses mapper values).
+- **The v3 methods are sugar over it.**  `ele.style( name, value )`
+  writes one entry; `eles.style( props )` writes one per element;
+  `removeStyle()` with no argument clears the element's entries (v3
+  semantics), with a name clears one.  The `cy.style()` getter
+  returns the live section.
+- **Id-keyed means declaration, not element state** — a deliberate
+  semantic difference from v3: an override survives remove/re-add of
+  its element, may name an id not yet present (inert until it is —
+  what makes a hand-written section legal in a sheet set before its
+  elements), and round-trips through `cy.json()`.  The one
+  fail-loudly softening this admits: a typo'd id in a hand-written
+  section is silently inert — recorded rather than hidden, and the
+  sugar path cannot hit it (the caller holds the element).
+
+### The performance contract (the requirement, made concrete)
+
+1. **Override-free graphs pay one load.**  The engine keeps a
+   per-group override count and slot set; every touched path gates on
+   `count === 0`.  The gate is measured, not asserted: the round-62
+   published zero-losers run is the baseline, and the round fails if
+   any row moves past machine noise.
+2. **A bypass set is one narrow write, not a restyle.**  Round 61
+   factored eleven per-channel writers out of `writeChannels`
+   (`partitionDiffWriters`) at exactly this granularity — one channel
+   of one slot, ~50 ns measured — so `ele.style( name, value )` is a
+   map update plus one writer call, with geometry channels riding
+   their existing write-through cascades (`setLane`,
+   `updateOuterHalf`).  The round adds the comparative row v3 makes
+   possible for the first time since 29.3: `ele.style( name, value )`
+   spelled identically on both sides.
+3. **Apply punch-out is O(overridden).**  The sheet paths
+   (`applyBulk`, `applyPartitioned`, `refreshMapped`, `refreshState`)
+   re-assert overrides after the sheet write for overridden slots
+   only — a slot-set test per run when the count is non-zero.  The
+   57.1d partition and the round-61 diff path survive untouched;
+   overridden slots fall out of record runs and take per-slot writes.
+4. **GPU eval demotes per channel, count-gated, reversibly.**  A
+   channel carrying ≥ 1 override joins the B1 `paintInputs` exclusion
+   while any exists (the kernel evaluates every slot and would
+   overwrite the bytes); the last removal restores kernel ownership.
+   The recorded bound is round 7's 78.5-vs-15.9 ms whole-channel
+   re-derive at 200k — paid only on data writes of a mapped key whose
+   channel also carries an override — re-measured on a real renderer
+   in the round.
+5. **What the round must measure before claiming any of this**: the
+   count-gate's nullity (the full published suite unchanged), the
+   set-path row against v3, punch-out cost at k = 1 / 100 / 10k on
+   the apply and select paths, and the demotion cost on an
+   em-web-shaped sheet.
+
+### Semantics inventory (the round's checklist)
+
+- **Precedence, per channel**: override > user block > default sheet;
+  the burying consequences (selection blue; the press wash via an
+  `overlay-opacity` override) recorded as v3 parity.
+- **Readback needs no new path**: stored truth already answers the
+  overridden value through `style()` / `numericStyle()` /
+  `renderedStyle()` — v3's semantics for free.
+- **Transitions come free**: override writes flow through the write
+  funnel the 24.1 txn capture wraps, so a configured
+  `transition-property` tweens a bypass change; round 21's
+  latest-wins eviction against animations is unchanged.
+- **Validation**: prop names validate at set — the sugar path against
+  the element's group, the sheet path against the union with the
+  group checked when the id resolves.  Unknown props throw, as
+  everywhere.
+- **The existing carve-outs ride along**: parent `width`/`height`
+  stay auto-bounds-owned (the 25.1 filter), `label` stays
+  constants-or-passthrough, list props take constants like any sheet
+  block.
+- **Out of scope**: mapper values, classes, per-element style events,
+  and the wire format (the sheet is not in it).
+
+### Controls the round owes
+
+Readback in both directions; precedence against the default sheet
+*and* against a user block; removal restores the sheet-resolved
+value; a sheet swap replaces the section; a transition on an override
+tweens; kernel ownership restored on the last removal; and the O(0)
+gate as a benchmark row, since a spec cannot see a nanosecond.
+
+**Awaiting the maintainer's reaction; the round is not scheduled
+before it.**

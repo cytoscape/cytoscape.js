@@ -3448,9 +3448,15 @@ batched Brandes with device-side termination, and the shared
 similarity-build fix), the round-65 bench machine (amd gcn-4)
 measures markovClustering 70–663×, kMedoids 19–146×, fuzzyCMeans
 30–70×, floydWarshall 3.4–28×, betweennessCentrality 4.1–18×, kMeans
-8–25×, affinityPropagation 1.9–3.8×, pageRank 1.2–1.8×, hierarchical
-~2× (its merge chain is a CPU floor both executors pay) — the figures
-each wrapper's 'auto' threshold now encodes.
+8–25×, affinityPropagation 1.9–3.8× — the figures each wrapper's
+'auto' threshold encodes.  **pageRank and hierarchicalClustering
+route to the CPU under 'auto'** since 65.10: the CPU pageRank went
+sparse (O(E + n) per iteration — 0.3–0.6 ms where the dense form took
+30–124 ms, and still ~5× ahead of the GPU's dense mat-vec at
+E = n²/12, because denser graphs converge in fewer power iterations),
+and the flattened, typed hierarchical build took the CPU to a wash
+with the GPU (0.92–1.03×).  Their kernels stay for an explicit
+`executor: 'gpu'` and the parity suite.
 
 ## Loading
 

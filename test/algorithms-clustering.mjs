@@ -364,6 +364,64 @@ describe('gpu/algorithms: clustering', function () {
       ).to.deep.equal([]);
     });
 
+    // Round 65.10: v3's 'mean' linkage never worked — its size field
+    // was read by the weighted-average formula but never assigned, so
+    // the first mean merge wrote NaN distances and NaN comparisons
+    // froze those rows out of every later merge.  v4 tracks sizes and
+    // deviates deliberately: mean is the weighted-average linkage the
+    // docs always claimed.  Both specs fail against the NaN behavior,
+    // and the second also fails if the weighting drops the sizes.
+    it("mean linkage merges what v3's NaN-poisoned mean could not", async function () {
+      var meanCy = cytoscape({
+        elements: [
+          { data: { id: 'A', v: 0 } },
+          { data: { id: 'B', v: 1 } },
+          { data: { id: 'C', v: 10 } },
+          { data: { id: 'D', v: 11.6 } },
+        ],
+      });
+      var opts2 = (linkage, threshold) => ({
+        linkage,
+        threshold,
+        attributes: [(n) => n.data('v')],
+      });
+
+      // pair distances after (A,B) and (C,D) merge: mean 10.3, max 11.6
+      var mean = await meanCy
+        .elements()
+        .hierarchicalClustering(opts2('mean', 11));
+      var max = await meanCy
+        .elements()
+        .hierarchicalClustering(opts2('max', 11));
+
+      expect(mean.length).to.equal(1); // 10.3 < 11 — the NaN bug left 2
+      expect(max.length).to.equal(2); // 11.6 >= 11 — mean is not max
+    });
+
+    it('mean linkage weights by cluster size', async function () {
+      var meanCy = cytoscape({
+        elements: [
+          { data: { id: 'A', v: 0 } },
+          { data: { id: 'B', v: 1 } },
+          { data: { id: 'C', v: 2.1 } },
+          { data: { id: 'D', v: 10 } },
+        ],
+      });
+
+      // after {A,B}+C merges (sizes 2 and 1): weighted dist to D is
+      // (9.5·2 + 7.9·1)/3 = 8.97, unweighted would be 8.7 — the
+      // threshold sits between, so dropping the sizes merges everything
+      var clusters = await meanCy.elements().hierarchicalClustering({
+        linkage: 'mean',
+        threshold: 8.8,
+        attributes: [(n) => n.data('v')],
+      });
+
+      expect(clusters.length).to.equal(2);
+      expect(ids(clusters[0]).sort()).to.deep.equal(['A', 'B', 'C']);
+      expect(ids(clusters[1])).to.deep.equal(['D']);
+    });
+
     it('hca alias resolves', async function () {
       expect(
         (await cy.elements().hca({ ...options, dendrogramDepth: 0 })).length,

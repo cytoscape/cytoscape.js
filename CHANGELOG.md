@@ -112,7 +112,11 @@ that compile and then behave differently.
   crossovers.  Measured on an RX 570-class adapter: Markov clustering
   up to 663× (31.3 s → 47 ms at 1,024 nodes), k-medoids up to 146×,
   fuzzy c-means up to 70×, Floyd–Warshall up to 28×, betweenness up
-  to 18×, k-means up to 25×.
+  to 18×, k-means up to 25×.  PageRank and hierarchical clustering
+  route to the CPU under `'auto'`: the CPU PageRank iterates sparsely
+  (O(E) per iteration — orders of magnitude on sparse graphs) and the
+  hierarchical merge engine went flat-typed, leaving the GPU no edge
+  to win there.
 
 ### Changed
 
@@ -130,6 +134,12 @@ that compile and then behave differently.
   The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
   `bellmanFord`, `kruskal`, components, degree/closeness centrality)
   stays synchronous.
+- **`hierarchicalClustering`'s `mean` linkage works** (round 65.10) —
+  a deliberate deviation: v3's mean linkage never assigned the cluster
+  sizes its weighted-average formula read, so the first mean merge
+  produced NaN distances and the linkage silently degenerated.  v4
+  tracks sizes; `mean` is the weighted-average linkage the docs always
+  claimed.
 - **Colours tween in OKLab**, matching the mapper default (v3 tweened
   per-channel in sRGB).
 - **`spring( bounce )`** replaces `spring( tension, friction )`.

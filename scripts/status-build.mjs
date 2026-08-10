@@ -286,6 +286,8 @@ export function buildPlan({
           body: bench.html,
           active: 'benchmark',
           state,
+          // the run tables want the whole screen, not a prose column
+          wide: true,
         }),
       ),
     );

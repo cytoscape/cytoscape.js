@@ -50,6 +50,10 @@ header.bar .build { margin-left: auto; font-size: 12px; color: var(--muted); }
 .layout { display: flex; align-items: flex-start; gap: 32px; padding: 24px 32px 64px; }
 .layout > main { min-width: 0; flex: 1; }
 main.prose { max-width: 82ch; }
+/* data-heavy pages (the benchmark archive) opt out of the prose cap:
+   dev machines have wide screens and tables want them — paragraph and
+   list-item caps below still hold, so ledes stay readable (65.10) */
+main.prose.wide { max-width: none; }
 main.prose h1 { font-size: 26px; margin: 0 0 16px; }
 main.prose h2 { font-size: 19px; margin: 32px 0 10px; padding-top: 8px; border-top: 1px solid var(--grid); }
 main.prose h2 small { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 8px; }
@@ -164,6 +168,7 @@ export function page({
   active = null,
   state = {},
   prose = true,
+  wide = false,
 }) {
   const nav = NAV.map(
     (n) =>
@@ -202,7 +207,7 @@ ${hljsCss()}</style>
 </header>
 <div class="layout">
 ${toc}
-<main${prose ? ' class="prose"' : ''}>
+<main${prose ? ` class="prose${wide ? ' wide' : ''}"` : ''}>
 ${body}
 </main>
 </div>

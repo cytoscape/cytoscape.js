@@ -73,6 +73,31 @@ const distances: Record<
 distances['squared-euclidean'] = distances.squaredEuclidean;
 distances['squaredeuclidean'] = distances.squaredEuclidean;
 
+/**
+ * Named-metric kind code for callers that inline the arithmetic in a
+ * tight typed-array loop (the 65.8 AP build, the 65.10 hierarchical
+ * build): 0 euclidean, 1 squaredEuclidean, 2 manhattan, 3 max — an
+ * unrecognised name falls back to euclidean, as `resolveDistance`
+ * does.
+ *
+ * @param method — a metric name (custom functions never reach this)
+ * @returns the kind code
+ */
+export const namedMetricKind = (method: DistanceMetric): number => {
+  switch (method) {
+    case 'squaredEuclidean':
+    case 'squared-euclidean':
+    case 'squaredeuclidean':
+      return 1;
+    case 'manhattan':
+      return 2;
+    case 'max':
+      return 3;
+    default:
+      return 0;
+  }
+};
+
 /** Resolve a metric name (or custom fn) to its implementation — the
  * per-call typeof/table hop, hoistable by callers that price a whole
  * run (round 62.2).

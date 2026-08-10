@@ -144,6 +144,17 @@ const FAMILIES = [
       cy.elements().pageRank({ executor })
         .then((r) => r.rank(cy.nodes()[0]))`,
   },
+  // 65.10: the sparse CPU iteration owns sparse graphs outright, so the
+  // GPU's dense mat-vec is priced where it can compete — E = n²/12,
+  // above the wrapper's density gate
+  {
+    key: 'pageRankDense',
+    sizes: [512, 1024, 2048],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().pageRank({ executor })
+        .then((r) => r.rank(cy.nodes()[0]))`,
+  },
   {
     key: 'floydWarshall',
     sizes: [256, 512, 1024],
@@ -294,7 +305,7 @@ async function runCell(family, n) {
       // feature = pseudo-random points from a seeded LCG
       const els = [];
 
-      if (kind === 'graph') {
+      if (kind === 'graph' || kind === 'graph-dense') {
         for (let i = 0; i < n; i++) {
           els.push({ data: { id: 'n' + i } });
         }
@@ -308,6 +319,19 @@ async function runCell(family, n) {
             els.push({
               data: { source: 'n' + i, target: 'n' + ((i * 13 + 29) % n) },
             });
+          }
+        }
+
+        if (kind === 'graph-dense') {
+          // ~n²/12 extra edges: dense enough for the pageRank gate
+          const fanout = Math.max(1, (n / 12) | 0);
+
+          for (let i = 0; i < n; i++) {
+            for (let k = 2; k < 2 + fanout; k++) {
+              els.push({
+                data: { source: 'n' + i, target: 'n' + ((i + k) % n) },
+              });
+            }
           }
         }
       } else {

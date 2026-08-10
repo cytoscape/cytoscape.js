@@ -2,7 +2,7 @@
 // (threshold and dendrogram modes, min/max/mean/other linkage).
 
 import type { Collection } from '../collection.mjs';
-import { resolveDistance } from './clustering-distances.mjs';
+import { namedMetricKind, resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
@@ -336,12 +336,16 @@ export const hierarchicalClusteringAsync = (
           "use executor 'cpu' or 'auto'"
         : null;
 
-  // measured crossover (65.8, amd gcn-4): ~2x from n=1024 up (the CPU
-  // merge chain is the shared floor both executors pay)
+  // 'auto' never routes hierarchical to the GPU since 65.10: the flat
+  // merge engine plus the typed-vector matrix build took the CPU to a
+  // wash with the GPU at every measured size (0.92–1.03x, amd gcn-4) —
+  // the GPU's only edge was the pair-matrix build, and the merge chain
+  // was always shared.  The GPU path stays for an explicit
+  // `executor: 'gpu'` and the parity suite.
   return runAlgo(
     executor,
     n,
-    1024,
+    Infinity,
     () => hierarchicalClustering(coll, options),
     reason == null
       ? (ctx) => hierarchicalClusteringGpu(ctx, coll, options)
@@ -383,10 +387,269 @@ export const hierarchicalClustering = (
 
   const opts = resolveHcaOptions(options);
   const getDist = makeGetDist(opts);
+  const d = opts.attributes.length;
+
+  // named metric over attributes: materialize the vectors once and
+  // inline the arithmetic (the 65.8 AP-build treatment — the per-pair
+  // closure dominated the n² matrix fill).  Math.pow(x, 2) and x·x
+  // round identically, so the entries are bit-identical to getDist's.
+  if (typeof opts.distance !== 'function' && d > 0) {
+    const n = nodes.length;
+    const vecs = new Float64Array(n * d);
+
+    for (let i = 0; i < n; i++) {
+      const node = nodes[i];
+
+      for (let k = 0; k < d; k++) {
+        vecs[i * d + k] = opts.attributes[k](node);
+      }
+    }
+
+    const kind0 = namedMetricKind(opts.distance);
+    // euclidean over one attribute is |dx| (the reference's shortcut)
+    const kind = kind0 === 0 && d === 1 ? 2 : kind0;
+    const pairDist = (i: number, j: number): number => {
+      const pi = i * d;
+      const qi = j * d;
+      let acc = kind === 3 ? -Infinity : 0;
+
+      for (let k = 0; k < d; k++) {
+        const ad = Math.abs(vecs[pi + k] - vecs[qi + k]);
+
+        if (kind === 2) {
+          acc += ad;
+        } else if (kind === 3) {
+          acc = Math.max(acc, ad);
+        } else {
+          acc += ad * ad;
+        }
+      }
+
+      return kind === 0 && d >= 2 ? Math.sqrt(acc) : acc;
+    };
+
+    return hierarchicalRun(coll, nodes, opts, getDist, pairDist);
+  }
 
   return hierarchicalRun(coll, nodes, opts, getDist, (i, j) =>
     getDist(nodes[i], nodes[j]),
   );
+};
+
+/**
+ * The flat merge engine for the named linkages (round 65.10): the
+ * distance matrix, min pointers, active-key order and cluster sizes
+ * all live in typed arrays, and the merge *structure* is a log of
+ * (left, right) tree-node pairs replayed once at the end — the object
+ * path allocated per-cluster nodes, `number[][]` rows and concatenated
+ * member arrays per merge, and its scans dominated both executors'
+ * hierarchical profiles (the GPU pays this phase too).  Semantics are
+ * the object path's exactly: the same lower-triangle min seeding, the
+ * same first-in-order tie-breaks on the global-min scan, the same
+ * stale-min repair rule, and members ordered by in-order traversal of
+ * the merge tree (left subtree first), which is what the old
+ * per-merge `concat` produced.
+ *
+ * One deliberate deviation, from a defect this rewrite surfaced:
+ * **v3's `mean` linkage never worked** — its `size` field is read in
+ * the weighted-average formula but never assigned, in v3 and in the
+ * v4 port alike, so the first mean merge wrote NaN distances and NaN
+ * comparisons made those rows unpickable ever after (v3 tests only
+ * exercise `min`).  Here sizes are tracked (leaves 1, merged sums),
+ * so `mean` is the weighted-average linkage its documentation always
+ * claimed.
+ *
+ * @param coll — the calling collection
+ * @param nodes — the nodes, in matrix order
+ * @param opts — the resolved options (linkage ∈ min | max | mean)
+ * @param pairDist — the initial matrix entry for dense pair (i, j)
+ * @returns the clusters
+ */
+const hierarchicalRunFlat = (
+  coll: Collection,
+  nodes: Collection,
+  opts: ResolvedHcaOptions,
+  pairDist: (i: number, j: number) => number,
+): Collection[] => {
+  const n = nodes.length;
+  const dist = new Float64Array(n * n);
+  const minIdx = new Int32Array(n);
+  const sizes = new Int32Array(n).fill(1);
+  // active cluster keys, in the object path's array order (a merge
+  // keeps the survivor in place and closes the gap left by the other)
+  const active = new Int32Array(n);
+  let activeCount = n;
+  // merge log: tree-node ids (leaf i < n; merge m is node n + m)
+  const treeNode = new Int32Array(n);
+  const leftChild = new Int32Array(Math.max(0, n - 1));
+  const rightChild = new Int32Array(Math.max(0, n - 1));
+  let merges = 0;
+
+  for (let i = 0; i < n; i++) {
+    active[i] = i;
+    treeNode[i] = i;
+  }
+
+  // the object path's exact init: symmetric fill, min pointers seeded
+  // from the lower triangle only (row 0 starts at its Infinity
+  // diagonal — its pairs are found through the higher-indexed rows)
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      const d = i === j ? Infinity : pairDist(i, j);
+
+      dist[i * n + j] = d;
+      dist[j * n + i] = d;
+
+      if (d < dist[i * n + minIdx[i]]) {
+        minIdx[i] = j;
+      }
+    }
+  }
+
+  const linkage = opts.linkage;
+
+  for (;;) {
+    // global min, first-in-order wins on ties (strict <)
+    let minKey = active[0] ?? 0;
+    let min = Infinity;
+
+    for (let p = 0; p < activeCount; p++) {
+      const key = active[p];
+      const d = dist[key * n + minIdx[key]];
+
+      if (d < min) {
+        minKey = key;
+        min = d;
+      }
+    }
+
+    if (
+      (opts.mode === 'threshold' && min >= opts.threshold) ||
+      (opts.mode === 'dendrogram' && activeCount === 1)
+    ) {
+      break;
+    }
+
+    const c1 = minKey;
+    const c2 = minIdx[minKey];
+
+    // record the merge and take c2 out of the active order
+    leftChild[merges] = treeNode[c1];
+    rightChild[merges] = treeNode[c2];
+    treeNode[c1] = n + merges;
+    merges++;
+
+    let at = 0;
+
+    while (active[at] !== c2) {
+      at++;
+    }
+
+    active.copyWithin(at, at + 1, activeCount);
+    activeCount--;
+
+    // linkage update of the survivor's row/column (mean uses the
+    // pre-merge sizes, then the survivor absorbs the other's)
+    const s1 = sizes[c1];
+    const s2 = sizes[c2];
+
+    for (let p = 0; p < activeCount; p++) {
+      const cur = active[p];
+      let d: number;
+
+      if (cur === c1) {
+        d = Infinity;
+      } else if (linkage === 'min') {
+        d = Math.min(dist[c1 * n + cur], dist[c2 * n + cur]);
+      } else if (linkage === 'max') {
+        d = Math.max(dist[c1 * n + cur], dist[c2 * n + cur]);
+      } else {
+        d = (dist[c1 * n + cur] * s1 + dist[c2 * n + cur] * s2) / (s1 + s2);
+      }
+
+      dist[c1 * n + cur] = d;
+      dist[cur * n + c1] = d;
+    }
+
+    sizes[c1] = s1 + s2;
+
+    // repair min pointers that referenced the merged pair (the object
+    // path's rule: a linkage value is never below the smaller of the
+    // two entries it replaces, so only those pointers can be stale)
+    for (let p = 0; p < activeCount; p++) {
+      const key1 = active[p];
+
+      if (minIdx[key1] === c1 || minIdx[key1] === c2) {
+        let minK = key1;
+
+        for (let q = 0; q < activeCount; q++) {
+          const key2 = active[q];
+
+          if (dist[key1 * n + key2] < dist[key1 * n + minK]) {
+            minK = key2;
+          }
+        }
+
+        minIdx[key1] = minK;
+      }
+    }
+  }
+
+  // replay the merge log into the shapes the output builders expect —
+  // iteratively, because a single-linkage chain makes the merge tree n
+  // deep and recursion would overflow (the tarjan lesson, round 10)
+  if (opts.mode === 'dendrogram') {
+    // bottom-up: children always have smaller ids than their merge
+    const byId: ClusterNode[] = new Array(n + merges);
+
+    for (let i = 0; i < n; i++) {
+      byId[i] = { value: nodes[i], key: null, index: null };
+    }
+
+    for (let m = 0; m < merges; m++) {
+      byId[n + m] = {
+        left: byId[leftChild[m]],
+        right: byId[rightChild[m]],
+        key: null,
+        index: null,
+      };
+    }
+
+    const root = byId[treeNode[active[0]]];
+    const retClusters = buildClustersFromTree(root, opts.dendrogramDepth, coll);
+
+    if (opts.addDendrogram) {
+      buildDendrogram(root, coll);
+    }
+
+    return retClusters;
+  }
+
+  // threshold mode: in-order leaves of each surviving root (left
+  // subtree first — the member order the old per-merge concat built)
+  const out: Collection[] = [];
+  const stack: number[] = [];
+
+  for (let p = 0; p < activeCount; p++) {
+    const members: Collection[] = [];
+
+    stack.length = 0;
+    stack.push(treeNode[active[p]]);
+
+    while (stack.length > 0) {
+      const id = stack.pop() as number;
+
+      if (id < n) {
+        members.push(nodes[id]);
+      } else {
+        stack.push(rightChild[id - n], leftChild[id - n]);
+      }
+    }
+
+    out.push(spawnHandles(coll, members));
+  }
+
+  return out;
 };
 
 /**
@@ -411,6 +674,17 @@ export const hierarchicalRun = (
   getDist: (n1: Collection, n2: Collection) => number,
   pairDist: (i: number, j: number) => number,
 ): Collection[] => {
+  // the named linkages take the flat typed-array engine (65.10); a
+  // custom per-pair linkage *function* needs live Collection values at
+  // every merge and keeps the object path below
+  if (
+    opts.linkage === 'min' ||
+    opts.linkage === 'max' ||
+    opts.linkage === 'mean'
+  ) {
+    return hierarchicalRunFlat(coll, nodes, opts, pairDist);
+  }
+
   const clusters: ClusterNode[] = [];
   const dists: number[][] = [];
   const mins: number[] = [];

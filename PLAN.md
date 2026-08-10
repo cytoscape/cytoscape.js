@@ -1435,6 +1435,32 @@ rather than from a blank page.
       *allowed* to make) is the one that proved a 1100-file move
       behaviour-neutral, and it applies here unchanged.
 
+29. **A worker-pool executor for the per-source-parallel algorithms**
+    (raised 2026-08-10, round 65.10 — the maintainer asked what the
+    GPU-modest algorithms could gain from wasm/SIMD/threads, and this
+    is the piece that survived the analysis).  Weighted
+    `betweennessCentrality` is contracted CPU-only (Brandes over
+    weights needs a priority queue) and is n independent Dijkstras —
+    embarrassingly parallel across sources.  A pool of plain workers
+    (Node `worker_threads` / browser `Worker`) with *transferable*
+    typed arrays needs no SharedArrayBuffer and therefore no
+    COOP/COEP isolation — our algorithms are snapshot-in/result-out —
+    and it can keep the CPU executor's **bit-reproducibility**:
+    partition sources into contiguous ranges and combine per-node
+    sums in range order, and the f64 summation order matches the
+    sequential reference exactly, a property no GPU executor offers.
+    It slots behind the round-65 `executor` contract ('auto' picking
+    workers where no adapter exists), with the pool cached like the
+    GPU device.  Deliberately *not* wasm: SIMD reorders float sums
+    (a third numerics tier), wasm threads inherit the SAB isolation
+    constraint plain workers avoid, and a new toolchain fights code
+    standard 7.  **First measurement before building**: weighted
+    betweenness at n=2048 through a 4- and 8-worker pool against the
+    sequential reference on the same box — proceed only if the
+    speedup clears ~3× at 8 workers after pool-startup amortization,
+    and re-check the per-worker copy cost of the CSR against
+    SharedArrayBuffer before concluding SAB is unnecessary.
+
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass (originally on `feature/webgpu`, branched from the TS refactor PR #3477; the work now lives on `v4`) builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.
@@ -18310,3 +18336,56 @@ Verified: the built site driven in Chromium (benchmark index lists all
 four profiles; the sweep page renders 27 dumbbells, the cpu legend,
 the scaling matrix; screenshots taken), module tier 344/344 including
 the three new cpu-pair specs and their inexact-name control.
+
+### 65.10 — the CPU takes two families back (2026-08-10)
+
+The maintainer's directive after the wasm/SIMD/threads assessment:
+build the plain-JS items, log the worker pool (ledger item 29).  Both
+plain-JS items landed, and both ended somewhere more interesting than
+"faster":
+
+- **The hierarchical merge chain went flat** — distance matrix, min
+  pointers, active order and sizes in typed arrays, the merge
+  *structure* as a (left, right) log replayed iteratively at the end
+  (a single-linkage chain makes the tree n deep; recursion was the
+  tarjan lesson waiting to happen).  Custom linkage functions keep
+  the object path — they need live Collections per merge.  Semantics
+  pinned to the object path exactly: lower-triangle min seeding,
+  first-in-order tie-breaks, the stale-min repair rule, in-order
+  member order.  Then the profile said the *matrix build* dominated,
+  and the 65.8 AP-build treatment (vectors once, metric inlined —
+  `Math.pow(x, 2)` and `x·x` round identically, so entries are
+  bit-identical) closed that too.  Net: CPU 73/306/1245 ms →
+  **30/103/435 ms** at n=1024/2048/4096 — 2.5–2.9×, and now a *wash*
+  with the GPU (0.92–1.03×), whose only edge was the matrix build the
+  CPU just matched.  `'auto'` routes hierarchical to the CPU.
+- **En route, a v3 defect**: `mean` linkage never worked — its `size`
+  field is read by the weighted-average formula and never assigned,
+  in v3 and the port alike, so the first mean merge wrote NaN
+  distances and froze those rows out of every later merge (v3 tests
+  only exercise `min`).  v4 now tracks sizes and deviates
+  deliberately; two specs discriminate both the NaN behavior and a
+  dropped size weighting, and both controls were run red.
+- **PageRank went sparse**: temp = M·v decomposes into an O(E) edge
+  gather plus two rank-1 terms (damping teleport, dangling mass), so
+  an iteration costs O(E + n) instead of O(n²).  On the sparse bench
+  fixture the CPU dropped from 30–124 ms to **0.3–0.6 ms**; at
+  E = n²/12 — dense enough that the GPU's mat-vec was expected to
+  win — the sparse CPU still measured ~5× ahead, because denser
+  graphs converge in *fewer* power iterations.  `'auto'` therefore
+  never routes pageRank to the GPU; the kernels stay for an explicit
+  `executor: 'gpu'` and the parity suite, and the revisit that could
+  change the verdict is a sparse SpMV kernel.  A `pageRankDense`
+  family joined the sweep so the losing configuration stays measured
+  rather than asserted.
+- **The status site's benchmark archive went wide** (maintainer
+  request): the shell gained a `wide` page variant that lifts the
+  82ch prose cap while keeping paragraph caps, and the run table now
+  uses the screen it is given.
+
+The round-65 scoreboard reads differently after this: the "GPU-modest
+tier" is gone — not because the GPU got faster, but because the CPU
+implementations stopped leaving their own headroom on the table.  The
+honest routing table now sends pageRank and hierarchical to the CPU
+under 'auto', and the GPU keeps the seven families where it wins
+outright.

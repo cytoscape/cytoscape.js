@@ -1,8 +1,9 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
-import type { WeightFn } from './algo-shared.mjs';
+import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { pageRankGpu } from './algo-gpu-pagerank.mjs';
 
 export interface PageRankOptions {
   dampingFactor?: number;
@@ -34,18 +35,29 @@ export const pageRankAsync = (
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 
-  return runAlgo(executor, n, GPU_MIN_N, () => pageRank(coll, options), null);
+  return runAlgo(
+    executor,
+    n,
+    GPU_MIN_N,
+    () => pageRank(coll, options),
+    (ctx) => pageRankGpu(ctx, coll, options),
+  );
 };
 
-/** PageRank over the calling collection (power method on the dense matrix). */
-export const pageRank = (
+/**
+ * Build the damped, column-normalized transition matrix (transposed —
+ * rows gather from sources) both executors iterate on, so the GPU path
+ * starts from the identical f64 matrix the CPU reference uses.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options (weight, dampingFactor)
+ * @returns the view, node count and row-major matrix
+ */
+export const buildPageRankMatrix = (
   coll: Collection,
-  options: PageRankOptions = {},
-): PageRankResult => {
+  options: PageRankOptions,
+): { view: SubgraphView; n: number; matrix: Float64Array } => {
   const dampingFactor = options.dampingFactor ?? 0.8;
-  const precision = options.precision ?? 0.000001;
-  const iterations = options.iterations ?? 200;
-
   const view = subgraph(coll);
   const { endpoints, index, nodeSlots } = view;
   const weightOf = weightAt(view, options.weight);
@@ -92,6 +104,39 @@ export const pageRank = (
     }
   }
 
+  return { view, n, matrix };
+};
+
+/**
+ * Wrap a converged eigenvector as the public `{ rank }` accessor —
+ * shared by both executors.
+ *
+ * @param view — the subgraph view the matrix was built from
+ * @param eigenvector — the converged, sum-normalized ranks
+ * @returns the result object
+ */
+export const pageRankResultFrom = (
+  view: SubgraphView,
+  eigenvector: ArrayLike<number>,
+): PageRankResult => ({
+  rank(node: Collection): number | undefined {
+    const slot = firstNodeSlot(view, node, 'node');
+    const i = slot == null ? undefined : view.index.get(slot);
+
+    return i == null ? undefined : eigenvector[i];
+  },
+});
+
+/** PageRank over the calling collection (power method on the dense matrix). */
+export const pageRank = (
+  coll: Collection,
+  options: PageRankOptions = {},
+): PageRankResult => {
+  const precision = options.precision ?? 0.000001;
+  const iterations = options.iterations ?? 200;
+
+  const { view, n, matrix } = buildPageRankMatrix(coll, options);
+
   // dominant eigenvector via the power method
   let eigenvector = new Float64Array(n).fill(1);
   let temp = new Float64Array(n);
@@ -135,12 +180,5 @@ export const pageRank = (
     }
   }
 
-  return {
-    rank(node: Collection): number | undefined {
-      const slot = firstNodeSlot(view, node, 'node');
-      const i = slot == null ? undefined : index.get(slot);
-
-      return i == null ? undefined : eigenvector[i];
-    },
-  };
+  return pageRankResultFrom(view, eigenvector);
 };

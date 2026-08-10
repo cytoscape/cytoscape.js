@@ -18,12 +18,17 @@ executor is the reproducible spec; GPU results may differ within pinned
 invariants (WGSL is f32, the reference is f64), and a caller that needs
 bit-stable output says `executor: 'cpu'`.
 
-Under 'auto', only *acquisition* failure falls back to the CPU — an
-error thrown by a kernel run propagates, so a kernel defect is loud
-rather than quietly rerouted (the guard-nothing-triggers rule).
+Under 'auto', only *acquisition* failure and `GpuUnfitError` (an input
+too large for the device's buffer limits) fall back to the CPU — any
+other error thrown by a kernel run propagates, so a kernel defect is
+loud rather than quietly rerouted (the guard-nothing-triggers rule).
 */
 
-import { acquireAlgoGpu, algoGpuSupported } from './algo-gpu.mjs';
+import {
+  acquireAlgoGpu,
+  algoGpuSupported,
+  GpuUnfitError,
+} from './algo-gpu.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 
 /** Where an async algorithm runs: the reference CPU path, the WGSL
@@ -123,7 +128,15 @@ export const runAlgo = async <T,>(
     }
 
     if (ctx != null) {
-      return gpu(ctx);
+      try {
+        return await gpu(ctx);
+      } catch (err) {
+        // an input the device cannot fit routes to the reference path;
+        // any *other* kernel error propagates (a defect must be loud)
+        if (!(err instanceof GpuUnfitError)) {
+          throw err;
+        }
+      }
     }
   }
 

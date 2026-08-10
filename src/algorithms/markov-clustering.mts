@@ -2,8 +2,10 @@
 
 import type { Collection } from '../collection.mjs';
 import { subgraph } from './algo-shared.mjs';
+import type { SubgraphView } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
 
 /** A similarity function: maps an edge to a numeric contribution. */
 export type MarkovAttributeFn = (edge: Collection) => number;
@@ -121,44 +123,32 @@ export const markovClusteringAsync = (
     n,
     GPU_MIN_N,
     () => markovClustering(coll, options),
-    null,
+    (ctx) => markovClusteringGpu(ctx, coll, options),
   );
 };
 
 /**
- * Markov clustering (MCL) over the calling collection.  Unlike the
- * attribute-space clusterers this one is a graph algorithm: it builds a
- * column-stochastic matrix from the subgraph's edges (treated as
- * undirected — each edge contributes to both entries), adds `multFactor`
- * self loops on the diagonal, then alternates expansion and inflation
- * until the matrix stops changing to four decimal places or
- * `maxIterations` passes.  The matrix is dense N-by-N and expansion
- * multiplies it, so cost is cubic in node count per iteration.
+ * Build MCL's initial column-stochastic matrix from the subgraph —
+ * shared by the CPU reference and the GPU path, so both executors
+ * iterate from the identical (f64) starting matrix.
  *
- * @param coll — the calling collection; only edges inside it contribute
- * @param options — `expandFactor` (matrix power, default 2),
- *   `inflateFactor` (element-wise power, default 2), `multFactor`
- *   (diagonal self-loop weight, default 1), `maxIterations`, and
- *   `attributes`, summed per edge for the similarity (default: 1 each)
- * @returns one collection per attractor row, de-duplicated by member set
+ * @param coll — the calling collection
+ * @param options — the caller's options (attributes, multFactor)
+ * @returns the view, the node count and the normalized matrix
  */
-export const markovClustering = (
+export const buildMarkovMatrix = (
   coll: Collection,
-  options: MarkovClusteringOptions = {},
-): Collection[] => {
-  const expandFactor = options.expandFactor ?? 2;
-  const inflateFactor = options.inflateFactor ?? 2;
+  options: MarkovClusteringOptions,
+): { view: SubgraphView; n: number; M: Float64Array } => {
   const multFactor = options.multFactor ?? 1;
-  const maxIterations = options.maxIterations ?? 20;
   const attributes: MarkovAttributeFn[] = options.attributes ?? [() => 1];
 
   const view = subgraph(coll);
   const { cy, endpoints, index, nodeSlots } = view;
   const n = nodeSlots.length;
-  const n2 = n * n;
 
   // stochastic matrix from the (symmetric, undirected) input graph
-  let M: Float64Array = new Float64Array(n2);
+  const M = new Float64Array(n * n);
 
   for (const e of view.edgeSlots) {
     const i = index.get(endpoints[e * 2]);
@@ -186,24 +176,26 @@ export const markovClustering = (
 
   normalize(M, n);
 
-  let isStillMoving = true;
-  let iterations = 0;
+  return { view, n, M };
+};
 
-  while (isStillMoving && iterations < maxIterations) {
-    isStillMoving = false;
-
-    const _M = expand(M, n, expandFactor);
-
-    M = inflate(_M, n, inflateFactor);
-
-    if (!hasConverged(M, _M, n2, 4)) {
-      isStillMoving = true;
-    }
-
-    iterations++;
-  }
-
-  // row-wise attractors and their attracted nodes form the clusters
+/**
+ * Extract MCL's clusters from a converged matrix: row-wise attractors
+ * and their attracted nodes, de-duplicated by member set.  Shared by
+ * both executors (the GPU path hands a read-back Float32Array here).
+ *
+ * @param coll — the calling collection
+ * @param view — the subgraph view the matrix was built from
+ * @param M — the converged matrix, row-major n-by-n
+ * @param n — the node count
+ * @returns one collection per attractor row
+ */
+export const markovClustersFrom = (
+  coll: Collection,
+  view: SubgraphView,
+  M: ArrayLike<number>,
+  n: number,
+): Collection[] => {
   const clusters: Collection[] = [];
   const seen = new Set<string>(); // dedupe symmetric duplicates by member key
 
@@ -229,10 +221,61 @@ export const markovClustering = (
     seen.add(key);
     clusters.push(
       coll._spawnLive(
-        cluster.map((di) => view.store.ref('nodes', nodeSlots[di])),
+        cluster.map((di) => view.store.ref('nodes', view.nodeSlots[di])),
       ),
     );
   }
 
   return clusters;
+};
+
+/**
+ * Markov clustering (MCL) over the calling collection.  Unlike the
+ * attribute-space clusterers this one is a graph algorithm: it builds a
+ * column-stochastic matrix from the subgraph's edges (treated as
+ * undirected — each edge contributes to both entries), adds `multFactor`
+ * self loops on the diagonal, then alternates expansion and inflation
+ * until the matrix stops changing to four decimal places or
+ * `maxIterations` passes.  The matrix is dense N-by-N and expansion
+ * multiplies it, so cost is cubic in node count per iteration.
+ *
+ * @param coll — the calling collection; only edges inside it contribute
+ * @param options — `expandFactor` (matrix power, default 2),
+ *   `inflateFactor` (element-wise power, default 2), `multFactor`
+ *   (diagonal self-loop weight, default 1), `maxIterations`, and
+ *   `attributes`, summed per edge for the similarity (default: 1 each)
+ * @returns one collection per attractor row, de-duplicated by member set
+ */
+export const markovClustering = (
+  coll: Collection,
+  options: MarkovClusteringOptions = {},
+): Collection[] => {
+  const expandFactor = options.expandFactor ?? 2;
+  const inflateFactor = options.inflateFactor ?? 2;
+  const maxIterations = options.maxIterations ?? 20;
+
+  const built = buildMarkovMatrix(coll, options);
+  const { view, n } = built;
+  const n2 = n * n;
+  let M = built.M;
+
+  let isStillMoving = true;
+  let iterations = 0;
+
+  while (isStillMoving && iterations < maxIterations) {
+    isStillMoving = false;
+
+    const _M = expand(M, n, expandFactor);
+
+    M = inflate(_M, n, inflateFactor);
+
+    if (!hasConverged(M, _M, n2, 4)) {
+      isStillMoving = true;
+    }
+
+    iterations++;
+  }
+
+  // row-wise attractors and their attracted nodes form the clusters
+  return markovClustersFrom(coll, view, M, n);
 };

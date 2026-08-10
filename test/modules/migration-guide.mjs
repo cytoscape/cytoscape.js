@@ -219,8 +219,8 @@ describe('the migration guide: behavioural claims', () => {
     }
   });
 
-  it('still has no classes and no cy.$', () => {
-    expect(cy.$).to.equal(undefined);
+  it('still has no classes; cy.$ returned in round 64 as a filter alias', () => {
+    expect(cy.$).to.equal(cy.filter);
 
     for (const m of [
       'addClass',

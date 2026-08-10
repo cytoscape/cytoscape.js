@@ -495,10 +495,25 @@ export class Collection {
   /**
    * An empty collection in the same core.
    *
+   * Takes no arguments, and throws if given any — the same round-64
+   * guard as `cy.collection()`, since this delegate shared the same
+   * silently-ignored-argument shape.
+   *
    * @returns a fresh empty collection bound to this core — the seed for
    *   building a set up by union
+   * @throws if called with any argument (v3's building forms are not
+   *   ported; the message names the replacements)
    */
   collection(): Collection {
+    if (arguments.length > 0) {
+      throw new Error(
+        'collection() takes no arguments in v4 — it is the empty ' +
+          'accumulator.  Build from elements with union() ' +
+          '(eles.union( other )), or query with cy.$( query ) / ' +
+          'cy.filter( query )',
+      );
+    }
+
     return this._cy.collection();
   }
 

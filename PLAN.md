@@ -391,6 +391,15 @@ pinned the amendment that style prop keys take **dash-case and
 camelCase everywhere** — measured already true at every entry
 point, now a contract with a sweep spec and its control.
 
+**Round 64** (2026-08-10, the ninth sitting's three calls, landed the
+same day) closed ledger item 28 — `cy.collection()` **throws on any
+argument** instead of silently answering the empty collection — and
+took two aliases: **`cy.$` returns** as a plain alias of `filter()`
+over the v4 query API (selector strings still throw, through filter's
+own rejection), and **`cy.byId`** joins `$id`/`getElementById`.  The
+alias table grew to 87 rows; three controls run, each failing its
+pin.  The open ledger questions are down to three: 18, 23, 27.
+
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
@@ -603,6 +612,15 @@ accept dash-case *and* camelCase everywhere in the API), so it became
 the **round-63 plan — which landed the same day** (the records are in
 that section).  The genuinely open questions are unchanged at four
 (18, 23, 27, 28); item 25 is closed.
+
+**2026-08-10 (ninth design sitting): item 28 closed — throw — plus
+two aliases.**  `cy.collection()` throws on any argument (the silent
+empty-collection answer was the one method boundary where a typo did
+nothing); `cy.$` returns as a plain alias of `filter()` over the v4
+query API, in line with `cy.$id()` (selector strings still throw);
+and `cy.byId` joins `$id`/`getElementById` for brevity.  All three
+landed as **round 64** the same day.  The genuinely open questions
+are down to **three: 18, 23, 27**.
 
 ### Scope calls
 
@@ -1085,6 +1103,12 @@ docs checks), and each is left in place pending the call.
     migration-guide row), port the array-building form, or record the
     permissiveness as deliberate.  Logged rather than patched — it is
     public surface either way.
+    ***Closed (2026-08-10, ninth sitting): throw on any argument —
+    landed as round 64 the same day***, together with two aliases taken
+    at the same sitting: `cy.$` returns as a plain alias of `filter()`
+    over the v4 query API (in line with `cy.$id()`; selector strings
+    still throw through filter's own rejection), and `cy.byId` joins
+    `$id`/`getElementById` for brevity.  See the round-64 record.
 
 ### Public-surface changes made without a call, logged rather than buried
 
@@ -18010,3 +18034,41 @@ gate as a benchmark row, since a spec cannot see a nanosecond.
   differences named (export is better than v3; sheet swaps replace);
   `CHANGELOG.md` gains the feature; the summary rewritten; full
   verification below.
+
+
+## Round 64 — the collection guard and the query aliases (ninth sitting; planned and landed 2026-08-10)
+
+Three maintainer calls taken in one sitting and landed the same day —
+small, decided, and all on the query/building surface:
+
+- [x] **64.1 `cy.collection()` throws on any argument** (closing
+  ledger item 28).  Both boundaries — the core's accumulator and the
+  collection delegate that shared the silent-ignore shape — guard on
+  `arguments.length`, with a message naming the replacements (build
+  with `union()`, query with `cy.$( query )` / `cy.filter( query )`),
+  and the guard spec executes the advice it gives (the 31.1 rule: an
+  error's recommendation must actually run).  The zero-arg accumulator
+  is unchanged.
+- [x] **64.2 `cy.$` returns as a plain alias of `filter()`** — over
+  the v4 query API, in line with `cy.$id()`: `cy.$( { selected:
+  true } )`, `cy.$( ele => … )`.  A selector string still throws,
+  through filter's own rejection, and the decided-drops pin flipped
+  from absence to alias-plus-strings-throw.  **`cy.byId`** lands
+  beside `$id` as the brevity id lookup.  Both ride the standard
+  declare + wiring + alias-table row mechanics (85 → 87 rows, the
+  table's cross-checks passing in both directions).
+- [x] **64.3 Verification + sweep** (2026-08-10).  Three controls,
+  each failing exactly its pin: the guards neutered fail the guard
+  spec; `$` wired to `elements` instead of `filter` fails the alias
+  table and the decided-drops identity; `byId` unwired fails the
+  table's two directions.  `MIGRATING.md` carries the porting rows
+  (`cy.$` works over the new forms; `collection( eles )` is not
+  ported and now throws), `CHANGELOG.md` the entries,
+  `src/README.md`'s selector-removal design bullet the amendment, and
+  `dist/cytoscape.d.ts` regenerated.  Full tier: typecheck, test:js,
+  test:modules, soak, the throw gate (the two new guards pinned),
+  lint, format.
+
+Note what the round deliberately does **not** reopen: the selector
+*language*.  `cy.$` accepts exactly what `filter()` accepts — the
+alias restores a spelling, not a dialect.

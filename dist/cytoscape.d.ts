@@ -5607,8 +5607,14 @@ declare class Collection {
   /**
    * An empty collection in the same core.
    *
+   * Takes no arguments, and throws if given any — the same round-64
+   * guard as `cy.collection()`, since this delegate shared the same
+   * silently-ignored-argument shape.
+   *
    * @returns a fresh empty collection bound to this core — the seed for
    *   building a set up by union
+   * @throws if called with any argument (v3's building forms are not
+   *   ported; the message names the replacements)
    */
   collection(): Collection;
   /**
@@ -8162,7 +8168,17 @@ declare class Core {
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
    *
+   * Takes **no arguments**, and throws if given any (round 64, closing
+   * ledger item 28): v3's `collection( eles, opts )` also built from a
+   * string, an array or a collection, so the v3-shaped call used to
+   * return the empty collection *silently* — the one method boundary
+   * where a typo did nothing, against the unknown-key/unknown-prop
+   * throws everywhere else.  Build a set with `union()` over this
+   * accumulator, or query with `cy.$( query )` / `cy.filter( query )`.
+   *
    * @returns a collection of zero elements
+   * @throws if called with any argument — v3's building forms are not
+   *   ported; the message names the replacements
    */
   collection(): Collection;
   /**
@@ -8221,6 +8237,7 @@ declare class Core {
    * @returns the matching elements
    */
   filter(query: Query | EleFilterFn): Collection;
+  $: this['filter'];
   /**
    * The unfiltered whole-graph collections (`elements()`, `nodes()`,
    * `edges()` with no query), memoized against the store's structure
@@ -8904,6 +8921,7 @@ declare class Core {
    */
   hasElementWithId(id: string): boolean;
   $id: this['getElementById'];
+  byId: this['getElementById'];
   /**
    * All elements (the prototype has no immutable/"read-only"
    * collections) — `elements()` by another name, memo included.

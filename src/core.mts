@@ -949,9 +949,28 @@ export class Core {
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
    *
+   * Takes **no arguments**, and throws if given any (round 64, closing
+   * ledger item 28): v3's `collection( eles, opts )` also built from a
+   * string, an array or a collection, so the v3-shaped call used to
+   * return the empty collection *silently* — the one method boundary
+   * where a typo did nothing, against the unknown-key/unknown-prop
+   * throws everywhere else.  Build a set with `union()` over this
+   * accumulator, or query with `cy.$( query )` / `cy.filter( query )`.
+   *
    * @returns a collection of zero elements
+   * @throws if called with any argument — v3's building forms are not
+   *   ported; the message names the replacements
    */
   collection(): Collection {
+    if (arguments.length > 0) {
+      throw new Error(
+        'cy.collection() takes no arguments in v4 — it is the empty ' +
+          'accumulator.  Build from elements with union() ' +
+          '(eles.union( other )), or query with cy.$( query ) / ' +
+          'cy.filter( query )',
+      );
+    }
+
     return new Collection(this, []);
   }
 
@@ -1037,6 +1056,11 @@ export class Core {
   filter(query: Query | EleFilterFn): Collection {
     return this._query(query, null);
   }
+
+  // round 64: cy.$ returns, as a plain alias of filter() over the v4
+  // query API — in line with cy.$id().  Selector strings still throw,
+  // through filter's own rejection.
+  declare $: this['filter'];
 
   /**
    * The unfiltered whole-graph collections (`elements()`, `nodes()`,
@@ -2519,6 +2543,9 @@ export class Core {
 
   declare $id: this['getElementById'];
 
+  // round 64: a brevity alias of getElementById, beside $id
+  declare byId: this['getElementById'];
+
   /**
    * All elements (the prototype has no immutable/"read-only"
    * collections) — `elements()` by another name, memo included.
@@ -3087,6 +3114,8 @@ export class Core {
 }
 
 Core.prototype.centre = Core.prototype.center;
+Core.prototype.$ = Core.prototype.filter;
+Core.prototype.byId = Core.prototype.getElementById;
 Core.prototype.addListener = Core.prototype.on;
 Core.prototype.listen = Core.prototype.on;
 Core.prototype.bind = Core.prototype.on;

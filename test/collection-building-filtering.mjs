@@ -18,6 +18,24 @@ describe('gpu/collection: building and filtering', function () {
     });
   });
 
+  // round 64 (ledger item 28): the accumulator takes no arguments.
+  // v3's collection( eles, opts ) also built from a string, an array or
+  // a collection, so the v3-shaped call silently returned the empty
+  // collection — a round-60.2 benchmark band selected nothing in 53 ns
+  // because of it.  Now it throws, naming the replacements.
+  it('cy.collection() with any argument throws; the zero-arg accumulator stands', function () {
+    expect(cy.collection().length).to.equal(0);
+
+    expect(() => cy.collection([cy.$id('a')])).to.throw(/union|filter/);
+    expect(() => cy.collection('node')).to.throw(/takes no arguments/);
+    expect(() => cy.$id('a').collection('x')).to.throw(/takes no arguments/);
+
+    // and the advice the message gives actually works
+    var built = cy.collection().union(cy.$id('a')).union(cy.$id('b'));
+
+    expect(built.length).to.equal(2);
+  });
+
   it('unions collections', function () {
     var eles = cy.$id('a').union(cy.$id('b'));
 

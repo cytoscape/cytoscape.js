@@ -57,6 +57,8 @@ const CORE_ALIASES = [
   ['autolockNodes', 'autolock'],
   ['autoungrabifyNodes', 'autoungrabify'],
   ['$id', 'getElementById'],
+  ['byId', 'getElementById'],
+  ['$', 'filter'],
   // round 39.3: v3's name for what round 19 built.  Kept because an
   // upgrading app already types it, and because v4 has no separate
   // garbage-collection concept for it to mean instead.

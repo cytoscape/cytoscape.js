@@ -194,9 +194,15 @@ describe('gpu/decided drops (29.3)', function () {
       }
     });
 
-    it('cy.$ is gone (id lookup is cy.$id)', function () {
-      expect(cy.$).to.equal(undefined);
+    // cy.$ was removed with the selector language and returned in round
+    // 64 as a plain alias of filter() over the v4 query API — selector
+    // strings still throw, through filter's own rejection
+    it('cy.$ returned in round 64 as a filter alias; strings still throw', function () {
+      expect(cy.$).to.equal(cy.filter);
+      expect(cy.$({ selected: false }).length).to.be.greaterThan(0);
+      expect(() => cy.$('node')).to.throw();
       expect(cy.$id('a').id()).to.equal('a');
+      expect(cy.byId('a').id()).to.equal('a');
     });
   });
 

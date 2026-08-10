@@ -82,7 +82,11 @@ for (const bundle of [GPU_BUNDLE, V3_BUNDLE]) {
 }
 
 const { default: cytoscape } = await import(GPU_BUNDLE);
-const { default: cytoscape } = await import(V3_BUNDLE);
+// round 42's factory-rename sweep collapsed this import onto the same
+// identifier as the v4 one above — a module-level SyntaxError, so the
+// whole suite failed (and published as a failure) from round 42 until
+// round 65.9 re-ran the all profile and read the log
+const { default: cytoscapeV3 } = await import(V3_BUNDLE);
 
 const N = Number(process.env.BENCH_N) || 2000;
 
@@ -128,7 +132,7 @@ gpu.style({
   },
 });
 
-const v3 = cytoscape({
+const v3 = cytoscapeV3({
   headless: true,
   styleEnabled: true,
   layout: { name: 'preset' },

@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-2026-08-10T18-18-11-811Z.json",
+      "date": "2026-08-10T18:18:11.811Z",
+      "commit": "d4ff0730",
+      "commitSubject": "bench(65.9): the executor sweep joins the report, publish and status pipeline",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 451101,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": "round 65 baseline: quick profile after the async algorithm tier (65.1) and the kernel perf pass (65.8) — the algorithm rows here are the CPU executor, which 65.8 also sped up (AP build fix, typed median)"
+    },
+    {
       "file": "results-render-2026-08-10T10-18-42-749Z.json",
       "date": "2026-08-10T10:18:42.749Z",
       "commit": "c182dd0c",

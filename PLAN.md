@@ -17498,13 +17498,32 @@ controls.
   `clusteringDistance`'s doc block (instance #18; the coverage gate
   caught it) and `lookupCode` moved the SHAPE_MASK allowlist key
   (the 37.1 mechanism's sixth firing) — both fixed in the pass.
-- [x] **62.4 The `--all` tier's losers** — the enumeration's answer
-  is that there are none beyond the quick tier's: **146 v3/gpu pairs
-  across every suite in `--all`, and all 11 losers were
-  core+collection micro rows or the algorithms parity band** — the
-  style getters, the whole-object `data()` read and the rest of the
-  feared `--all` heads are not v3-paired rows or already win.  No
-  separate work item existed.
+- [x] **62.4 The `--all` tier's losers** (2026-08-09) — the first
+  enumeration's "146 pairs, no `--all`-only losers" was **wrong,
+  from a partial run**: launched under this round's own editing
+  contention, several jobs died and the reading was taken as
+  complete (the 36.5 idle-box rule violated by its own round).  The
+  idle-box run reads **287 pairs with 28 losers**, most in the
+  `surface`/`events` suites.  All fixed, worst first: `indexOfId`
+  (0.02× — a lazy id → index map on `_keys`' immutability grounds,
+  preserving 34.1's answers-for-removed contract); the animation
+  lifecycle (0.12–0.57× — the nine per-handle closures became the
+  prototype-method `AnimationHandleImpl` at ~93 ns vs ~2.9 µs, the
+  chaining `animate()` skips the Promise it never exposed, `start()`
+  allocates its eviction Set only on overlap, `animated()` gates on
+  an O(1) `anyRunning()`; delay+stop 3420 → 488 ns vs v3's 561);
+  whole-object `data()` (0.20× — cached on the handle against a new
+  DataStore write epoch + parent/endpoints + gen, a **logged
+  public-surface change**, ledger item 17b; `json()`/`jsons()` ride
+  it); the style colour read (0.78× — per-raw-name read plans
+  replace the normalize hop, four set tests and a per-edge-read
+  regex, plus a packed-word rgba string cache); `slice()` (handle
+  reuse); `source()`/`target()` (lean endpoint accessor);
+  `hasElementWithId` (lookupCode), `window()` (module-load
+  resolve), `mutableElements()` (inlined memo hit).  The audits
+  fired three more times (SHAPE_MASK re-keys, stranded block #19,
+  the handle class joining the public tier) and each was fixed in
+  the pass.
 - [ ] **62.5 Verification** — idle-box `--all` profile with **every**
   v3/gpu pair v4-faster; the run published; Playwright over the
   changed source; the closing docs sweep.

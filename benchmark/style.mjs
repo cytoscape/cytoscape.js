@@ -518,6 +518,138 @@ cmpGpu(
   cmpRead('style: whole-object style()', (n) => n.style());
 }
 
+// -- per-element bypasses (round 63.5) ----------------------------------------
+// The set path is the first v3-comparative bypass row since 29.3 removed
+// the setter: `ele.style( name, value )` spelled identically on both
+// sides.  The punch-out rows price the round-63 performance contract —
+// apply and select stay O(bypassed), and the k=0 sides double as the
+// bypass-free gate rows the cross-commit comparison page reads against
+// history (a spec cannot see a nanosecond; these rows can).
+{
+  const BAND = Math.min(256, N);
+  const K_BYPASSED = BAND >> 1;
+
+  cmp(
+    'style: bypass set (ele.style name,value)',
+    (cy, i) => {
+      cy.getElementById('n' + MIDNUM).style(
+        'background-color',
+        (i & 1) === 0 ? '#ff0000' : '#00ff00',
+      );
+    },
+    (cy, i) => {
+      cy.$id('n' + MIDNUM).style(
+        'background-color',
+        (i & 1) === 0 ? '#ff0000' : '#00ff00',
+      );
+    },
+  );
+
+  cmp(
+    'style: bypass set + removeStyle round-trip',
+    (cy) => {
+      const n = cy.getElementById('n' + MIDNUM);
+
+      n.style('width', 44);
+      n.removeStyle('width');
+    },
+    (cy) => {
+      const n = cy.$id('n' + MIDNUM);
+
+      n.style('width', 44);
+      n.removeStyle('width');
+    },
+  );
+
+  // select under the *default* sheet (which conditions on `selected`
+  // since 57.1d): the k=0 side is the round-61 diff path untouched —
+  // the bypass-free gate — and the bypassed side pays the punch-out's
+  // merged full writes for exactly the bypassed slots
+  const selectBand = (k) => {
+    const cy = makeGpu(elements);
+
+    instances.push(cy);
+
+    let band = cy.collection();
+
+    for (let j = 0; j < BAND; j++) {
+      band = band.union(cy.$id('n' + ((MIDNUM + j) % N)));
+    }
+
+    if (band.length !== BAND) {
+      throw new Error(`bypass select band built ${band.length} of ${BAND}`);
+    }
+
+    for (let j = 0; j < k; j++) {
+      cy.$id('n' + ((MIDNUM + j) % N)).style('background-color', '#ff0000');
+    }
+
+    // guilty until it discriminates: the bypassed side must actually
+    // bypass, or the row prices the diff path twice under two labels
+    if (
+      k > 0 &&
+      cy.$id('n' + (MIDNUM % N)).style('background-color') !== 'rgb(255,0,0)'
+    ) {
+      console.warn('  !! bypass select row: the band is not bypassed');
+    }
+
+    return band;
+  };
+
+  cmpGpu(
+    `style: select+unselect ${BAND}-band under the default sheet — bypass punch-out`,
+    'no bypasses (diff path; the O(0) gate row)',
+    () => selectBand(0),
+    (band) => {
+      band.select();
+      band.unselect();
+    },
+    `${K_BYPASSED} of ${BAND} bypassed (punched out to merged writes)`,
+    () => selectBand(K_BYPASSED),
+    (band) => {
+      band.select();
+      band.unselect();
+    },
+  );
+
+  // applyAll with the section live: a swapped sheet replaces the
+  // section, so the bypassed side's sheets carry it — which is also the
+  // keep-them idiom the docs name
+  const bypassSection = {};
+
+  for (let j = 0; j < K_BYPASSED; j++) {
+    bypassSection['n' + ((MIDNUM + j) % N)] = {
+      'background-color': '#ff0000',
+    };
+  }
+
+  cmpGpu(
+    `style: sheet swap (applyAll) — 0 vs ${K_BYPASSED} bypasses`,
+    'no bypasses',
+    () => gpuInstance(),
+    (cy, i) => {
+      cy.style(GPU_SHEETS[i & 1]);
+    },
+    `${K_BYPASSED} bypassed`,
+    () => {
+      const cy = gpuInstance();
+
+      cy.style({ ...GPU_SHEETS[0], bypasses: bypassSection });
+
+      if (
+        cy.$id('n' + (MIDNUM % N)).style('background-color') !== 'rgb(255,0,0)'
+      ) {
+        console.warn('  !! bypass swap row: the section did not apply');
+      }
+
+      return cy;
+    },
+    (cy, i) => {
+      cy.style({ ...GPU_SHEETS[i & 1], bypasses: bypassSection });
+    },
+  );
+}
+
 await finishRun('style');
 
 for (const cy of instances) {

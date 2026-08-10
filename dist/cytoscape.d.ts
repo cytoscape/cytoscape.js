@@ -908,6 +908,20 @@ interface Stylesheet {
    * (the background-grab indicator circle).  v3's core-selector props.
    */
   core?: StyleProps;
+  /**
+   * Per-element bypasses (round 63): id → prop → constant.  A bypass
+   * beats everything — the user's group blocks and the default sheet's
+   * state conditionals included (v3's precedence) — and is an id-keyed
+   * *declaration* rather than element state: it survives remove/re-add
+   * of its element, may name an id that does not exist yet (inert
+   * until it does), and round-trips through `cy.json()`.  Values are
+   * constants only — mappers belong in the group blocks — and prop
+   * keys take dash-case or camelCase like every prop surface.  A full
+   * `cy.style( sheet )` replaces the section like any other; the
+   * `ele.style( name, value )` / `removeStyle()` methods are sugar
+   * over it.
+   */
+  bypasses?: Record<string, StyleProps>;
 }
 /**
  * Options for `cy.png()`/`cy.jpg()` image export.  Export is async (the
@@ -3396,7 +3410,274 @@ interface EasingProgram {
 }
 //#endregion
 //#region src/style.d.mts
+/** One styled end of source/target-endpoint (12c): the parsed form of
+ * v3's edgeEndpoint type.  Angles store the *effective* radians (the
+ * 12-o'clock start already applied); point pct components store the
+ * fraction (v3's pfValue). */
+interface EndpointEnd {
+  mode: number;
+  a: number;
+  b: number;
+  pct: number;
+}
 type RGBA = [number, number, number, number];
+/** Resolved channel values for one element, before writing to columns. */
+interface NodeComputed {
+  /** text-rotation in radians (27.7); NaN is not valid on nodes. */
+  textRotation: number;
+  fillColor: RGBA;
+  borderColor: RGBA;
+  width: number;
+  height: number;
+  shape: number;
+  opacity: number;
+  borderWidth: number;
+  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
+  eventsEnabled: boolean;
+  /** text-events (round 20.3): true = the label box picks the node (FLAG_TEXT_EVENTS) */
+  textEvents: boolean;
+  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
+  invisible: boolean;
+  /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
+  chartKind: number;
+  /** constant value list (null when unset or the data passthrough is used) */
+  chartValues: number[] | null;
+  /** the `{ data: key }` passthrough key (per-element arrays) */
+  chartValuesKey: string | null;
+  /** resolved palette (null = the default category10 scheme) */
+  chartColors: RGBA[] | null;
+  chartSize: number;
+  chartHole: number;
+  chartStartAngle: number;
+  /** stripes: 0 = vertical (bands advance top->bottom), 1 = horizontal */
+  chartDirection: number;
+  chartOpacity: number;
+  /** literal label text ('' for none) when labelKey is null */
+  label: string;
+  /** `data(key)` mapper key ('id' reads the first-class id) */
+  labelKey: string | null;
+  fontSize: number;
+  textColor: RGBA;
+  /** effectively global: one font per glyph atlas (keyed by character) */
+  fontFamily: string;
+  /** font-style + font-weight (round 13 D1): global constants like
+   * font-family — the atlas rasters one face */
+  fontStyle: string;
+  fontWeight: string;
+  textOutlineWidth: number;
+  textOutlineColor: RGBA;
+  textOutlineOpacity: number;
+  textBgColor: RGBA;
+  textBgOpacity: number;
+  textBgPadding: number;
+  textMarginX: number;
+  textMarginY: number;
+  /** min-zoomed-font-size (round 13 D2): hide the label when
+   * font-size x zoom x dpr drops below this (device px; 0 = off) */
+  minZoomedFontSize: number;
+  /** text-halign (round 13 D3): 0 left, 1 center, 2 right */
+  textHalign: number;
+  /** text-valign (D3): 0 top, 1 center, 2 bottom.  v4's default is
+   * 'bottom' (the round-10 below-node placement) — v3 defaults to
+   * 'top'; a recorded deviation */
+  textValign: number;
+  /** corner-radius (round 13 B2): model px, -1 = 'auto' (v3's
+   * min(w/4, h/4, 8)) — round-rectangle only */
+  cornerRadius: number;
+  /** border-position (B2): 0 center (v3's default), 1 inside, 2 outside */
+  borderPosition: number;
+  /** border-style (round 38): 0 solid, 1 dashed, 2 dotted, 3 double */
+  borderStyle: number;
+  /** border-dash-pattern (round 38), normalized to two on/off pairs
+   * like the edge twin (v3's default [4, 2] stores as [4, 2, 4, 2]) */
+  borderDashPattern: number[];
+  /** border-dash-offset (round 38), model px */
+  borderDashOffset: number;
+  /** outline-style (round 38): same ids; `double` draws solid (v3's
+   * drawOutline has no double branch — a quirk kept for parity) */
+  outlineStyle: number;
+  /** node outline (round 13 B5): a solid ring outside the border */
+  outlineColor: RGBA;
+  outlineOpacity: number;
+  outlineWidth: number;
+  outlineOffset: number;
+  /** shape-polygon-points (C3): flat unit [x, y, ...] pairs for the
+   * 'polygon' shape (v3's normalized [-1, 1] space) */
+  shapePolygonPoints: number[];
+  /** background-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
+  backgroundFill: number;
+  /** background gradient stops (C2; constants-only, capped at 5) */
+  backgroundGradientStopColors: RGBA[];
+  backgroundGradientStopPositions: number[] | null;
+  backgroundGradientDirection: number;
+  /** background-opacity (round 13 B1): folds into the stored fill alpha */
+  backgroundOpacity: number;
+  /** border-opacity (B1): folds into the stored border alpha */
+  borderOpacity: number;
+  /** text-opacity (B1): v3's parentOpacity for the label block — folds
+   * into the stored text/outline/background alphas */
+  textOpacity: number;
+  /** text-transform (B6): 0 none, 1 uppercase, 2 lowercase */
+  textTransform: number;
+  /** text-wrap (16.2): 0 none, 1 wrap, 2 ellipsis */
+  textWrap: number;
+  /** text-max-width, model px */
+  textMaxWidth: number;
+  /** line-height multiplier */
+  lineHeight: number;
+  /** text-overflow-wrap: 0 whitespace, 1 anywhere */
+  textOverflowWrap: number;
+  /** text-justification: -1 auto (resolves against halign at write) */
+  textJustification: number;
+  /** text-background-shape (B6): 0 rectangle, 1 round-rectangle */
+  textBgShape: number;
+  /** text-border (B6): a band inward from the padded background box */
+  textBorderWidth: number;
+  textBorderColor: RGBA;
+  textBorderOpacity: number;
+  ghost: boolean;
+  ghostOffsetX: number;
+  ghostOffsetY: number;
+  ghostOpacity: number;
+  overlayColor: RGBA;
+  overlayOpacity: number;
+  overlayPadding: number;
+  /** 0 round-rectangle, 1 ellipse */
+  overlayShape: number;
+  /** model px; -1 = 'auto' (v3's min(w/4, h/4, 8)) */
+  overlayRadius: number;
+  underlayColor: RGBA;
+  underlayOpacity: number;
+  underlayPadding: number;
+  underlayShape: number;
+  underlayRadius: number;
+  backgroundImage: string[];
+  backgroundFit: number[];
+  backgroundImageOpacity: number[];
+  backgroundPositionX: BgLen[];
+  backgroundPositionY: BgLen[];
+  backgroundOffsetX: BgLen[];
+  backgroundOffsetY: BgLen[];
+  backgroundWidth: BgSize[];
+  backgroundHeight: BgSize[];
+  backgroundRepeat: number[];
+  backgroundClip: number[];
+  backgroundImageContainment: number[];
+  backgroundImageSmoothing: boolean[];
+  /** one per node (the registry dedup key includes it) */
+  backgroundImageCrossorigin: string;
+  /** background-image-type per image: 0 auto (rgba), 1 sdf-icon */
+  backgroundImageType: number[];
+  /** the sdf-icon tint (render-time color, mapper-capable) */
+  backgroundImageColor: RGBA;
+}
+interface EdgeComputed {
+  lineColor: RGBA;
+  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
+  eventsEnabled: boolean;
+  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
+  invisible: boolean;
+  /** line-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
+  lineFill: number;
+  lineGradientStopColors: RGBA[];
+  lineGradientStopPositions: number[] | null;
+  /** line-opacity (round 13 B1): folds into the stored line alpha and
+   * the arrow fold (v3's effective opacities) */
+  lineOpacity: number;
+  /** line-outline casing (round 13 B4): width sticks out width/2 per
+   * side (v3's lineWidth = edgeWidth + line-outline-width) */
+  lineOutlineWidth: number;
+  lineOutlineColor: RGBA;
+  /** line-cap (round 13 B3): 0 butt, 1 round, 2 square */
+  lineCap: number;
+  /** line-dash-pattern (B3), normalized to two on/off pairs */
+  lineDashPattern: number[];
+  /** line-dash-offset (B3), model px */
+  lineDashOffset: number;
+  width: number;
+  opacity: number;
+  /** 0 solid, 1 dashed, 2 dotted (contract LINE_* ids) */
+  lineStyle: number;
+  sourceArrowShape: ArrowShape;
+  sourceArrowColor: RGBA;
+  targetArrowShape: ArrowShape;
+  targetArrowColor: RGBA;
+  /** arrow-scale (B7): scales every arrowhead on the edge */
+  arrowScale: number;
+  /** mid arrows (C1): anchored at the curve/route midpoint */
+  midSourceArrowShape: ArrowShape;
+  midSourceArrowColor: RGBA;
+  midTargetArrowShape: ArrowShape;
+  midTargetArrowColor: RGBA;
+  /** arrow-fill per end (B7): 0 filled, 1 hollow */
+  sourceArrowFill: number;
+  targetArrowFill: number;
+  /** hollow stroke widths per end, model px ('match-line' and % resolve
+   * at write against the edge width) */
+  sourceArrowWidth: number | 'match-line' | {
+    percent: number;
+  };
+  targetArrowWidth: number | 'match-line' | {
+    percent: number;
+  };
+  label: string;
+  labelKey: string | null;
+  fontSize: number;
+  textColor: RGBA;
+  textOutlineWidth: number;
+  textOutlineColor: RGBA;
+  textOutlineOpacity: number;
+  textBgColor: RGBA;
+  textBgOpacity: number;
+  textBgPadding: number;
+  textMarginX: number;
+  textMarginY: number;
+  /**
+   * text-rotation in radians, with NaN meaning `autorotate` (27.7).
+   * Numeric rotations apply to any label; autorotate is edge-only,
+   * since it resolves from the edge's own slope.
+   */
+  textRotation: number;
+  sourceLabel: string;
+  sourceLabelKey: string | null;
+  sourceTextOffset: number;
+  sourceTextMarginX: number;
+  sourceTextMarginY: number;
+  sourceTextRotation: number;
+  targetLabel: string;
+  targetLabelKey: string | null;
+  targetTextOffset: number;
+  targetTextMarginX: number;
+  targetTextMarginY: number;
+  targetTextRotation: number;
+  curveStyle: number;
+  controlPointStepSize: number;
+  controlPointWeight: number;
+  loopDirection: number;
+  loopSweep: number;
+  controlPointDistances: number[] | null;
+  controlPointWeights: number[];
+  segmentDistances: number[];
+  segmentWeights: number[];
+  segmentRadii: number[];
+  /** radius-type per point: 1 = arc-radius, 0 = influence-radius */
+  radiusTypes: number[];
+  /** EDGE_DIST_* id */
+  edgeDistances: number;
+  taxiDirection: number;
+  haystackRadius: number;
+  sourceEndpoint: EndpointEnd;
+  targetEndpoint: EndpointEnd;
+  sourceDistanceFromNode: number;
+  targetDistanceFromNode: number;
+  /** percent turns store the fraction (v3 pfValue); px turns the px */
+  taxiTurn: number;
+  taxiTurnPercent: boolean;
+  taxiTurnMinDistance: number;
+  taxiRadius: number;
+}
+type Computed = NodeComputed & EdgeComputed;
+type ArrowShape = 'none' | 'triangle' | 'vee' | 'chevron' | 'circle' | 'square' | 'diamond' | 'tee' | 'triangle-tee' | 'circle-triangle' | 'triangle-cross' | 'triangle-backcurve';
 /** Core (viewport-level) theming (round 13 A2): v3's core-selector
  * props, resolved once per sheet — constants only (there is no element
  * to map over). */
@@ -3409,6 +3690,12 @@ interface CoreStyle {
   activeBgOpacity: number;
   activeBgSize: number;
 }
+/**
+ * One id's bypass, resolved for one group: the `Computed` fields its
+ * props assign, captured once at parse time (round 63.2) so the write
+ * funnel's merge is field copies with no per-write parsing.
+ */
+type BypassPatch = readonly (readonly [string, unknown])[];
 declare class StyleEngine {
   private store;
   /**
@@ -3449,6 +3736,93 @@ declare class StyleEngine {
   private styledGen;
   /** Round 24.1: the open transition capture (one per group-def pass). */
   private txn;
+  /** id → normalized prop → raw value: the live bypass declarations
+   * (the `bypasses` sheet section plus the sugar methods' writes),
+   * exported by `json()`.  Id-keyed declarations, not element state —
+   * an entry survives remove/re-add and may name an id that does not
+   * exist yet (inert until it does). */
+  private bypassRaw;
+  /** id → per-group parsed patches.  Both groups parse at declaration
+   * time (the id may not resolve yet); null marks a group whose guards
+   * reject the entry's props (e.g. a curve prop never applies to a
+   * node), decided when the id resolves. */
+  private bypassParsed;
+  /** slot → patch per group, resolved lazily against the store's
+   * structure epoch — adds, removes and compaction all bump it, and a
+   * re-resolution is O(declared ids), never O(elements). */
+  private bypassSlots;
+  private bypassEpoch;
+  /** normalized prop → live declaration count across ids — what
+   * `paintInputs` demotes by (a kernel-owned mapper would overwrite a
+   * bypassed slot's stored bytes on its next dispatch). */
+  private bypassPropCounts;
+  /** Whether any bypass is declared — the zero-cost gate every touched
+   * path checks first (the round-63 performance contract).
+   *
+   * @returns true when at least one id has a live bypass declaration
+   */
+  hasBypasses(): boolean;
+  /** Validate a sheet's `bypasses` section into installable entries —
+   * called before any engine state mutates, so a bad section throws
+   * from `setSheet` with nothing half-applied. */
+  private validateBypasses;
+  /** Parse one entry's props for both groups; a group whose guards
+   * reject them parses null, and both rejecting is the caller's error. */
+  private parseBypassGroups;
+  /** Install validated bypass entries (whole-replace — `setSheet`'s
+   * swap semantics: the section is replaced like any other). */
+  private installBypasses;
+  /** Re-resolve declared ids to live slots when the structure epoch
+   * moved — O(declared ids) per structural change, amortized over the
+   * writes between changes, and nothing at all when no bypass exists. */
+  private rebuildBypassSlots;
+  /** The bypass patch for a slot, or null.  O(1) after the lazy
+   * epoch-checked re-resolution. */
+  private bypassPatchAt;
+  /**
+   * Clone-and-patch: the write funnel's bypass merge (round 63.3).  A
+   * method rather than an inline spread so specs can count invocations
+   * — a bypass-free instance must never reach it, which is the
+   * performance contract's zero-cost gate made testable.
+   *
+   * @param computed — the slot's sheet-resolved record (never mutated)
+   * @param patch — the captured field pairs for the slot's bypass
+   * @returns a fresh record with the bypassed fields replaced
+   */
+  mergeBypass(computed: Computed, patch: BypassPatch): Computed;
+  /**
+   * Set bypass props for one live element — the sugar path behind
+   * `ele.style( name, value )` (round 63.4).  Unlike the sheet
+   * section, whose entries parse against both groups because their ids
+   * may not have resolved yet, this validates against the element's
+   * own group, so a wrong-group prop throws with the group's own
+   * message.  The slot re-applies through the normal single-slot apply
+   * afterwards, which is what makes transitions and the write-funnel
+   * merge ride the same path every restyle does.
+   *
+   * @param ref — the live element's ref (the caller validates liveness)
+   * @param id — its id, the declaration key
+   * @param props — prop → constant, dash-case or camelCase
+   * @throws on a mapper value, a global font prop, a transition config
+   *   prop, a wrong-group prop, or an invalid value
+   */
+  setBypass(ref: Ref, id: string, props: Record<string, unknown>): void;
+  /**
+   * Remove bypass props for one live element — the path behind
+   * `ele.removeStyle( name? )` (round 63.4).  Removing re-applies the
+   * slot, so the sheet-resolved values return through the normal
+   * funnel (transitions included).
+   *
+   * @param ref — the live element's ref
+   * @param id — its id, the declaration key
+   * @param name — the prop to remove, either spelling; omit to clear
+   *   the element's whole declaration
+   */
+  removeBypass(ref: Ref, id: string, name?: string): void;
+  /** Patch one slot's entry in the resolved maps after a sugar write —
+   * only when the maps are current (stale maps re-resolve wholesale at
+   * the next write anyway). */
+  private refreshBypassSlot;
   /** Round 24.1: receives the diffed transition tweens — wired by the
    * core to AnimationManager.start (the round-21 eviction gives uniform
    * latest-wins); null in engine-only contexts disables capture. */
@@ -5879,27 +6253,61 @@ declare class Collection {
    */
   removeScratch(namespace?: string): this;
   /**
-   * Resolved style read off the stored channels: `style()` returns all of
-   * the first element's group props, `style(name)` one value (numbers for
-   * numeric props, `rgb()`/`rgba()` strings for colors, keywords
-   * otherwise).
+   * Resolved style read off the stored channels — all of the first
+   * element's group props.
    *
-   * Setter forms throw — v4 has no per-element bypass.  Per-element
-   * styling is declarative instead: a `case` mapper for conditionals, a
-   * `data(key)` scale for per-element values.  (Until round 31 both this
-   * comment and the throw pointed at "the function form of the
-   * stylesheet", which round 8 removed and 29.3 made throw — following
-   * the advice hit a second error.)
-   *
-   * @param name — a property name to read one value; omit for the whole
-   *   group.  An object or a second argument is a setter form
-   * @param value — never valid; present so the setter form throws rather
-   *   than silently ignoring it
-   * @returns one resolved value, or the whole group's props
-   * @throws if called in any setter form
+   * @returns the whole group's props (numbers for numeric props,
+   *   `rgb()`/`rgba()` strings for colors, keywords otherwise), or
+   *   undefined when the collection is empty
    */
-  style(name?: string | Record<string, unknown>, value?: unknown): unknown;
+  style(): unknown;
+  /**
+   * Resolved style read off the stored channels — one value.  A
+   * bypassed prop reads its bypass value, since a bypass writes stored
+   * truth (round 63).
+   *
+   * @param name — the property to read, dash-case or camelCase
+   * @returns the resolved value, or undefined when the collection is
+   *   empty or the prop belongs to the other group
+   */
+  style(name: string): unknown;
+  /**
+   * Set a per-element style bypass on every element (round 63.4 — the
+   * v3 spelling, returned).  Sugar over the stylesheet's `bypasses`
+   * section: the value must be a constant (mappers belong in the
+   * sheet's group blocks), the entry is keyed by the element's id and
+   * survives remove/re-add, it beats every sheet rule including the
+   * default sheet's selection color, and it exports from `cy.json()`.
+   *
+   * @param name — the property to bypass, dash-case or camelCase
+   * @param value — the constant value to pin
+   * @returns this collection, for chaining
+   * @throws on a mapper value, a global font prop, a transition config
+   *   prop, a wrong-group prop, or an invalid value
+   */
+  style(name: string, value: unknown): this;
+  /**
+   * Set several per-element style bypasses on every element (round
+   * 63.4).  The object form of the setter: each key–value pair joins
+   * the element's bypass declaration.
+   *
+   * @param props — prop → constant value, dash-case or camelCase keys
+   * @returns this collection, for chaining
+   * @throws as the name/value form does, per prop
+   */
+  style(props: Record<string, unknown>): this;
   css: this['style'];
+  /**
+   * Remove per-element style bypasses from every element (round 63.4 —
+   * v3's `removeStyle`).  The sheet-resolved values return through the
+   * normal apply, transitions included.
+   *
+   * @param name — the property to un-bypass, dash-case or camelCase;
+   *   omit to clear each element's whole bypass declaration
+   * @returns this collection, for chaining
+   */
+  removeStyle(name?: string): this;
+  removeCss: this['removeStyle'];
   /**
    * Like `style()`, but with length props (width, height, border-width,
    * font-size) scaled into rendered (on-screen) px by the zoom.

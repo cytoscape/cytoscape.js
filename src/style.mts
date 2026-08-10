@@ -6178,6 +6178,158 @@ export class StyleEngine {
     return merged as unknown as Computed;
   }
 
+  /**
+   * Set bypass props for one live element — the sugar path behind
+   * `ele.style( name, value )` (round 63.4).  Unlike the sheet
+   * section, whose entries parse against both groups because their ids
+   * may not have resolved yet, this validates against the element's
+   * own group, so a wrong-group prop throws with the group's own
+   * message.  The slot re-applies through the normal single-slot apply
+   * afterwards, which is what makes transitions and the write-funnel
+   * merge ride the same path every restyle does.
+   *
+   * @param ref — the live element's ref (the caller validates liveness)
+   * @param id — its id, the declaration key
+   * @param props — prop → constant, dash-case or camelCase
+   * @throws on a mapper value, a global font prop, a transition config
+   *   prop, a wrong-group prop, or an invalid value
+   */
+  setBypass(ref: Ref, id: string, props: Record<string, unknown>): void {
+    const raw: Record<string, unknown> = {};
+
+    for (const key of Object.keys(props)) {
+      raw[normalizeProp(key)] = props[key];
+    }
+
+    // validate against the element's own group before any state mutates
+    captureBypassPatch(ref.group, raw);
+
+    const prev = this.bypassRaw.get(id);
+    const merged = { ...(prev ?? {}), ...raw };
+
+    this.bypassRaw.set(id, merged);
+    this.bypassParsed.set(id, this.parseBypassGroups(id, merged));
+
+    let countsMoved = false;
+
+    for (const norm of Object.keys(raw)) {
+      if (prev == null || !(norm in prev)) {
+        const n = this.bypassPropCounts.get(norm) ?? 0;
+
+        this.bypassPropCounts.set(norm, n + 1);
+
+        if (n === 0) {
+          countsMoved = true;
+        }
+      }
+    }
+
+    this.refreshBypassSlot(ref, id);
+
+    if (countsMoved) {
+      this.paintVersion++;
+    }
+
+    // a first bypass on a kernel-owned channel demotes it, and the
+    // kernel stops writing — every slot's stored bytes for that channel
+    // must become CPU-derived, which one whole-group apply does (paid
+    // once per 0→1 transition of a kernel-owned prop; never headless,
+    // where nothing is kernel-owned)
+    if (
+      countsMoved &&
+      Object.keys(raw).some((p) => this.gpuOwnedProps[ref.group].has(p))
+    ) {
+      this.applyBulk(ref.group, this.store.slotsOrdered(ref.group));
+    } else {
+      this.applyBulk(ref.group, [ref.slot]);
+    }
+  }
+
+  /**
+   * Remove bypass props for one live element — the path behind
+   * `ele.removeStyle( name? )` (round 63.4).  Removing re-applies the
+   * slot, so the sheet-resolved values return through the normal
+   * funnel (transitions included).
+   *
+   * @param ref — the live element's ref
+   * @param id — its id, the declaration key
+   * @param name — the prop to remove, either spelling; omit to clear
+   *   the element's whole declaration
+   */
+  removeBypass(ref: Ref, id: string, name?: string): void {
+    const prev = this.bypassRaw.get(id);
+
+    if (prev == null) {
+      return;
+    }
+
+    let removed: string[];
+
+    if (name == null) {
+      removed = Object.keys(prev);
+      this.bypassRaw.delete(id);
+      this.bypassParsed.delete(id);
+    } else {
+      const norm = normalizeProp(name);
+
+      if (!(norm in prev)) {
+        return;
+      }
+
+      delete prev[norm];
+      removed = [norm];
+
+      if (Object.keys(prev).length === 0) {
+        this.bypassRaw.delete(id);
+        this.bypassParsed.delete(id);
+      } else {
+        this.bypassParsed.set(id, this.parseBypassGroups(id, prev));
+      }
+    }
+
+    let countsMoved = false;
+
+    for (const norm of removed) {
+      const n = this.bypassPropCounts.get(norm) ?? 0;
+
+      if (n <= 1) {
+        this.bypassPropCounts.delete(norm);
+        countsMoved = true;
+      } else {
+        this.bypassPropCounts.set(norm, n - 1);
+      }
+    }
+
+    this.refreshBypassSlot(ref, id);
+
+    if (countsMoved) {
+      // a 1→0 transition hands the channel back to the kernel (it
+      // re-evaluates every slot on its next dispatch, so no CPU
+      // re-derive is owed here)
+      this.paintVersion++;
+    }
+
+    this.applyBulk(ref.group, [ref.slot]);
+  }
+
+  /** Patch one slot's entry in the resolved maps after a sugar write —
+   * only when the maps are current (stale maps re-resolve wholesale at
+   * the next write anyway). */
+  private refreshBypassSlot(ref: Ref, id: string): void {
+    if (this.bypassEpoch !== this.store.structureEpoch) {
+      return;
+    }
+
+    const parsed = this.bypassParsed.get(id);
+    const patch = parsed == null ? null : parsed[ref.group];
+
+    if (patch != null && patch.length > 0) {
+      this.bypassSlots[ref.group].set(ref.slot, patch);
+    } else {
+      this.bypassSlots[ref.group].delete(ref.slot);
+    }
+  }
+
   /** Round 24.1: receives the diffed transition tweens — wired by the
    * core to AnimationManager.start (the round-21 eviction gives uniform
    * latest-wins); null in engine-only contexts disables capture. */

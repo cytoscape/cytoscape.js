@@ -5,7 +5,8 @@ import cytoscape from '../src/index.mjs';
 Round 29.3: the decided-design drops, pinned at the API boundary.
 
 v4's most permanent decisions are the *removals* — no selector strings,
-no classes, no z-index, no per-element bypass, no style functions — and
+no classes, no z-index, no style functions (the per-element bypass
+returned in round 63, as the `bypasses` sheet section) — and
 until this file they were pinned by three specs in the algorithms files.
 A decision nothing asserts is a decision that comes back by accident.
 
@@ -432,46 +433,15 @@ describe('gpu/decided drops (29.3)', function () {
   });
 
   describe('the other decided removals', function () {
-    it('per-element style bypass (the setter form throws)', function () {
-      expect(() => cy.$id('a').style('background-color', 'red')).to.throw(
-        /bypass/,
-      );
-    });
-
-    // round 31.1: the message has to name a replacement that works.  It
-    // used to say "use the function form of the stylesheet", which round
-    // 8 removed and 29.3 made throw — so following the error produced a
-    // second error.  The spec asserts both halves: what it now says, and
-    // that the advice actually runs.
-    it('the bypass error names a replacement that v4 accepts', function () {
-      var message;
-
-      try {
-        cy.$id('a').style('background-color', 'red');
-      } catch (e) {
-        message = e.message;
-      }
-
-      expect(message).to.match(/case.*mapper|mapper/);
-      expect(
-        message,
-        'must not send the caller at a removed form',
-      ).to.not.match(/function form/);
-
-      // and the form it names is accepted
-      expect(() =>
-        cytoscape({
-          elements: [{ data: { id: 'a', kind: 'x' } }],
-          style: {
-            nodes: {
-              'background-color': {
-                case: [{ when: { data: 'kind', eq: 'x' }, then: 'red' }],
-                else: 'blue',
-              },
-            },
-          },
-        }),
-      ).to.not.throw();
+    // Rounds 29.3/31.1 pinned the per-element bypass *throw* here.  Round
+    // 63 reverses that decided drop: `ele.style( name, value )` works
+    // again, as sugar over the stylesheet's `bypasses` section — the
+    // behaviour (and its precedence, export and removal semantics) is
+    // pinned in test/style-bypass.mjs, and the ledger entry is item 25.
+    it('per-element style bypass returned in round 63 (the setter form works)', function () {
+      cy.$id('a').style('background-color', 'red');
+      expect(cy.$id('a').style('background-color')).to.equal('rgb(255,0,0)');
+      cy.$id('a').removeStyle('background-color');
     });
 
     it('cy.json( obj ) — export only', function () {

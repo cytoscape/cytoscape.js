@@ -359,4 +359,187 @@ describe('per-element bypasses (round 63)', function () {
       cy.destroy();
     });
   });
+
+  describe('the v3 sugar (63.4)', function () {
+    it('ele.style( name, value ) sets a bypass; both spellings work', function () {
+      const cy = cytoscape({ elements: ELEMENTS });
+
+      cy.$id('a').style('background-color', '#ff0000');
+      cy.$id('b').style('borderWidth', 9);
+
+      expect(cy.$id('a').style('background-color')).to.equal(RED);
+      expect(cy.$id('b').style('border-width')).to.equal(9);
+
+      cy.destroy();
+    });
+
+    it('the object form sets several props per element', function () {
+      const cy = cytoscape({ elements: ELEMENTS });
+
+      cy.nodes().style({ 'background-color': '#ff0000', width: 41 });
+
+      expect(cy.$id('a').style('background-color')).to.equal(RED);
+      expect(cy.$id('b').style('background-color')).to.equal(RED);
+      expect(cy.$id('a').width()).to.equal(41);
+      expect(cy.$id('ab').style('line-color')).to.equal('rgb(153,153,153)');
+
+      cy.destroy();
+    });
+
+    it('fails loudly per the element group: wrong-group, invalid and mapper values throw', function () {
+      const cy = cytoscape({ elements: ELEMENTS });
+
+      expect(() => cy.$id('a').style('taxi-radius', 5)).to.throw(
+        /edge style property/,
+      );
+      // the guarded families reject cross-group; ungated props (e.g.
+      // 'shape' on an edge) stay accepted-and-inert, exactly as a sheet
+      // block treats them — one rule for both surfaces
+      expect(() => cy.$id('ab').style('ghost', 'yes')).to.throw(
+        /node style property/,
+      );
+      expect(() => cy.$id('a').style('width', 'bogus')).to.throw();
+      expect(() =>
+        cy.$id('a').style('background-color', { data: 'v' }),
+      ).to.throw(/constant/i);
+
+      // and nothing half-applied: the failed sets left no bypass behind
+      expect(cy.json().style.bypasses).to.equal(undefined);
+
+      cy.destroy();
+    });
+
+    it('removeStyle( name ) restores the sheet value; removeStyle() clears all', function () {
+      const cy = cytoscape({
+        elements: ELEMENTS,
+        style: { nodes: { 'background-color': '#112233', width: 25 } },
+      });
+      const a = cy.$id('a');
+
+      a.style({ 'background-color': '#ff0000', width: 60 });
+      expect(a.style('background-color')).to.equal(RED);
+      expect(a.width()).to.equal(60);
+
+      // camel spelling removes the dash-set prop — one key, two spellings
+      a.removeStyle('backgroundColor');
+      expect(a.style('background-color')).to.equal('rgb(17,34,51)');
+      expect(a.width()).to.equal(60); // the other bypass stands
+
+      a.style('background-color', '#ff0000');
+      a.removeStyle();
+      expect(a.style('background-color')).to.equal('rgb(17,34,51)');
+      expect(a.width()).to.equal(25);
+      expect(cy.json().style.bypasses).to.equal(undefined);
+
+      cy.destroy();
+    });
+
+    it('sugar writes export and merge with the sheet section', function () {
+      const cy = cytoscape({
+        elements: ELEMENTS,
+        style: { bypasses: { a: { width: 50 } } },
+      });
+
+      cy.$id('a').style('background-color', '#ff0000');
+
+      expect(cy.json().style.bypasses).to.deep.equal({
+        a: { width: 50, 'background-color': '#ff0000' },
+      });
+
+      cy.destroy();
+    });
+
+    it('a sugar bypass beats live selection immediately', function () {
+      const cy = cytoscape({ elements: ELEMENTS });
+
+      cy.$id('a').select();
+      expect(cy.$id('a').style('background-color')).to.equal(BLUE_SELECT);
+
+      cy.$id('a').style('background-color', '#ff0000');
+      expect(cy.$id('a').style('background-color')).to.equal(RED);
+
+      cy.$id('a').unselect();
+      expect(cy.$id('a').style('background-color')).to.equal(RED);
+
+      cy.destroy();
+    });
+
+    it('a configured transition tweens a sugar bypass', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'a' }, position: { x: 0, y: 0 } }],
+        style: {
+          nodes: {
+            width: 20,
+            'transition-property': ['width'],
+            'transition-duration': 100,
+            'transition-timing-function': 'linear',
+          },
+        },
+      });
+      const a = cy.$id('a');
+
+      a.style('width', 60);
+      expect(a.width()).to.equal(20); // held until the first tick
+
+      cy._animations.tick(0);
+      cy._animations.tick(50);
+      expect(a.width()).to.be.closeTo(40, 1e-4);
+
+      cy._animations.tick(100);
+      expect(a.width()).to.equal(60);
+
+      // and back: removal transitions to the sheet value too
+      a.removeStyle('width');
+      cy._animations.tick(200);
+      cy._animations.tick(250);
+      expect(a.width()).to.be.closeTo(40, 1e-4);
+
+      cy.destroy();
+    });
+
+    it('sugar demotion is count-gated and reversible through removeStyle', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'a', v: 0.5 } }],
+        style: {
+          nodes: {
+            'background-color': {
+              data: 'v',
+              domain: [0, 1],
+              range: ['#000000', '#ffffff'],
+            },
+          },
+        },
+      });
+      const propsOf = () =>
+        cy
+          .style()
+          .paintInputs('nodes')
+          .map((entry) => entry.m.prop);
+
+      expect(propsOf()).to.include('background-color');
+
+      cy.$id('a').style('background-color', '#ff0000');
+      expect(propsOf()).to.not.include('background-color');
+
+      cy.$id('a').removeStyle('background-color');
+      expect(propsOf()).to.include('background-color');
+
+      cy.destroy();
+    });
+
+    it('a setter on an empty or dead selection is a chainable no-op', function () {
+      const cy = cytoscape({ elements: ELEMENTS });
+      const a = cy.$id('a');
+
+      a.remove();
+
+      expect(a.style('background-color', '#ff0000')).to.equal(a);
+      expect(
+        cy.collection().style('background-color', '#ff0000').length,
+      ).to.equal(0);
+      expect(cy.json().style.bypasses).to.equal(undefined);
+
+      cy.destroy();
+    });
+  });
 });

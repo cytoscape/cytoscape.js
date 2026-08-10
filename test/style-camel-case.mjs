@@ -15,8 +15,9 @@ re-register its suites under this file's run) — drift between the
 copies is harmless, because each file asserts against the live engine
 rather than against the other.
 
-Rounds 63.2/63.4 extend this file with the bypasses section and
-`removeStyle` rows as those entry points land.
+The bypasses section and `removeStyle` take both spellings too —
+pinned beside their behaviour in `test/style-bypass.mjs` (the camel
+section entry, and a dash-set prop removed via its camel spelling).
 */
 
 const NODE_STYLE = {

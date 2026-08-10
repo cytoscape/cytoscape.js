@@ -93,6 +93,7 @@ const COLLECTION_ALIASES = [
   ['attr', 'data'],
   ['removeAttr', 'removeData'],
   ['css', 'style'],
+  ['removeCss', 'removeStyle'],
   ['renderedCss', 'renderedStyle'],
   ['renderedBoundingbox', 'renderedBoundingBox'],
   ['deselect', 'unselect'],

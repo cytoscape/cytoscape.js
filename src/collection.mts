@@ -2447,32 +2447,71 @@ export class Collection {
   // -- style (read-only) --
 
   /**
-   * Resolved style read off the stored channels: `style()` returns all of
-   * the first element's group props, `style(name)` one value (numbers for
-   * numeric props, `rgb()`/`rgba()` strings for colors, keywords
-   * otherwise).
+   * Resolved style read off the stored channels — all of the first
+   * element's group props.
    *
-   * Setter forms throw — v4 has no per-element bypass.  Per-element
-   * styling is declarative instead: a `case` mapper for conditionals, a
-   * `data(key)` scale for per-element values.  (Until round 31 both this
-   * comment and the throw pointed at "the function form of the
-   * stylesheet", which round 8 removed and 29.3 made throw — following
-   * the advice hit a second error.)
-   *
-   * @param name — a property name to read one value; omit for the whole
-   *   group.  An object or a second argument is a setter form
-   * @param value — never valid; present so the setter form throws rather
-   *   than silently ignoring it
-   * @returns one resolved value, or the whole group's props
-   * @throws if called in any setter form
+   * @returns the whole group's props (numbers for numeric props,
+   *   `rgb()`/`rgba()` strings for colors, keywords otherwise), or
+   *   undefined when the collection is empty
    */
+  style(): unknown;
+  /**
+   * Resolved style read off the stored channels — one value.  A
+   * bypassed prop reads its bypass value, since a bypass writes stored
+   * truth (round 63).
+   *
+   * @param name — the property to read, dash-case or camelCase
+   * @returns the resolved value, or undefined when the collection is
+   *   empty or the prop belongs to the other group
+   */
+  style(name: string): unknown;
+  /**
+   * Set a per-element style bypass on every element (round 63.4 — the
+   * v3 spelling, returned).  Sugar over the stylesheet's `bypasses`
+   * section: the value must be a constant (mappers belong in the
+   * sheet's group blocks), the entry is keyed by the element's id and
+   * survives remove/re-add, it beats every sheet rule including the
+   * default sheet's selection color, and it exports from `cy.json()`.
+   *
+   * @param name — the property to bypass, dash-case or camelCase
+   * @param value — the constant value to pin
+   * @returns this collection, for chaining
+   * @throws on a mapper value, a global font prop, a transition config
+   *   prop, a wrong-group prop, or an invalid value
+   */
+  style(name: string, value: unknown): this;
+  /**
+   * Set several per-element style bypasses on every element (round
+   * 63.4).  The object form of the setter: each key–value pair joins
+   * the element's bypass declaration.
+   *
+   * @param props — prop → constant value, dash-case or camelCase keys
+   * @returns this collection, for chaining
+   * @throws as the name/value form does, per prop
+   */
+  style(props: Record<string, unknown>): this;
   style(name?: string | Record<string, unknown>, value?: unknown): unknown {
-    if (value !== undefined || (name != null && typeof name !== 'string')) {
-      throw new Error(
-        'Per-element style bypass is not supported in v4; per-element styling ' +
-          "is declarative: use a 'case' mapper for conditionals and 'data(key)' " +
-          'scales for per-element values',
-      );
+    const objectForm = name != null && typeof name !== 'string';
+
+    if (value !== undefined || objectForm) {
+      const props = objectForm
+        ? (name as Record<string, unknown>)
+        : { [name as string]: value };
+      const engine = this._cy.style();
+      const store = this._store;
+
+      for (let i = 0; i < this.length; i++) {
+        const ele = this[i];
+        const ref = ele.__refs[0];
+
+        if (ref == null || !store.isCurrent(ref)) {
+          continue;
+        }
+
+        engine.setBypass(ref, ele.id() as string, props);
+      }
+
+      return this;
     }
 
     const ref = this._first();
@@ -2489,6 +2528,35 @@ export class Collection {
   declare css: this['style'];
 
   /**
+   * Remove per-element style bypasses from every element (round 63.4 —
+   * v3's `removeStyle`).  The sheet-resolved values return through the
+   * normal apply, transitions included.
+   *
+   * @param name — the property to un-bypass, dash-case or camelCase;
+   *   omit to clear each element's whole bypass declaration
+   * @returns this collection, for chaining
+   */
+  removeStyle(name?: string): this {
+    const engine = this._cy.style();
+    const store = this._store;
+
+    for (let i = 0; i < this.length; i++) {
+      const ele = this[i];
+      const ref = ele.__refs[0];
+
+      if (ref == null || !store.isCurrent(ref)) {
+        continue;
+      }
+
+      engine.removeBypass(ref, ele.id() as string, name);
+    }
+
+    return this;
+  }
+
+  declare removeCss: this['removeStyle'];
+
+  /**
    * Like `style()`, but with length props (width, height, border-width,
    * font-size) scaled into rendered (on-screen) px by the zoom.
    *
@@ -2496,7 +2564,7 @@ export class Collection {
    * @returns the rendered-space value, or the whole group's props
    */
   renderedStyle(name?: string): unknown {
-    const value = this.style(name);
+    const value = name == null ? this.style() : this.style(name);
 
     if (value === undefined) {
       return undefined;
@@ -6013,4 +6081,5 @@ Collection.prototype.pon = Collection.prototype.promiseOn;
 Collection.prototype.attr = Collection.prototype.data;
 Collection.prototype.removeAttr = Collection.prototype.removeData;
 Collection.prototype.css = Collection.prototype.style;
+Collection.prototype.removeCss = Collection.prototype.removeStyle;
 Collection.prototype.renderedCss = Collection.prototype.renderedStyle;

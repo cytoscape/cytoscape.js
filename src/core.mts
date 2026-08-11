@@ -1,12 +1,14 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { Collection } from './collection.mjs';
-import { isColumnarElements } from './columnar.mjs';
+import { buildColumnar, isColumnarElements } from './columnar.mjs';
+import type { FlagOverride } from './columnar.mjs';
 import {
   deserializeElements,
   isSerializedElements,
   serializeElements,
 } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
+import type { PartitionedDefs } from './element-defs.mjs';
 import {
   hasListeners,
   makeCoreEmitter,
@@ -50,7 +52,14 @@ export type Layout =
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
-import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
+import {
+  FLAG_GRABBABLE,
+  FLAG_LOCKED,
+  FLAG_PANNABLE,
+  FLAG_SELECTABLE,
+  FLAG_SELECTED,
+  NO_SLOT,
+} from './contract.mjs';
 import { NO_PARENT } from './public-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
@@ -780,6 +789,18 @@ export class Core {
    * 500k-element load the handle layer costs more than the model writes
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
+   *
+   * **A definition-form payload loads through the columnar ingest too**
+   * (round 66): it is converted first, because convert-then-ingest is
+   * cheaper than the def loop — measured 1.2-1.8x end to end, from 4k to
+   * 800k elements and on the ndex-x-large renderer scene (1696 -> 980 ms).
+   * The def loop pays a `Table.alloc` per element and two
+   * `IdIndex` lookups per edge, where the columnar path takes one
+   * contiguous `allocBulk` run and resolves endpoints by index; the
+   * conversion costs about a tenth of what that saves.  The route is
+   * taken only when the payload is self-contained (every edge endpoint
+   * names a node in the same payload) — otherwise `buildColumnar` answers
+   * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void {
     const defs = isSerializedElements(input)
@@ -796,19 +817,27 @@ export class Core {
 
       const { nodeSlots, edgeSlots } = this._addColumnar(defs);
 
-      if (this._hasListeners('add')) {
-        for (const slot of nodeSlots) {
-          this._emitOnEle('add', this._ele('nodes', slot));
-        }
-        for (const slot of edgeSlots) {
-          this._emitOnEle('add', this._ele('edges', slot));
-        }
-      }
+      this._emitBulkAdds(nodeSlots, edgeSlots);
 
       return;
     }
 
-    const refs = this._addDefs(defs);
+    const part = partitionDefs(defs);
+    const bulk = buildColumnar(part, false);
+
+    if (bulk != null) {
+      const { nodeSlots, edgeSlots } = this._addColumnar(
+        bulk.elements,
+        bulk.nodeFlags,
+        bulk.edgeFlags,
+      );
+
+      this._emitBulkAdds(nodeSlots, edgeSlots);
+
+      return;
+    }
+
+    const refs = this._addPartition(part);
 
     if (this._hasListeners('add')) {
       for (const ref of refs) {
@@ -817,8 +846,35 @@ export class Core {
     }
   }
 
-  /** Columnar ingest: store-level bulk adds + one bulk style pass. */
-  private _addColumnar(elements: ColumnarElements): {
+  /** Per-element `add` for a columnar bulk, nodes before edges. */
+  private _emitBulkAdds(nodeSlots: Uint32Array, edgeSlots: Uint32Array): void {
+    if (!this._hasListeners('add')) {
+      return;
+    }
+
+    for (const slot of nodeSlots) {
+      this._emitOnEle('add', this._ele('nodes', slot));
+    }
+    for (const slot of edgeSlots) {
+      this._emitOnEle('add', this._ele('edges', slot));
+    }
+  }
+
+  /**
+   * Columnar ingest: store-level bulk adds + one bulk style pass.
+   *
+   * The optional flag overrides come from a converted definition payload
+   * — `locked`, `grabbable` and `pannable` have no column.  They are
+   * written before the style pass, where the def path also has them: a
+   * later write would still be *correct*, since `::locked` and
+   * `::grabbable` are styleable conditions and a condition-flag write
+   * restyles its slot, but it would pay for that restyle.
+   */
+  private _addColumnar(
+    elements: ColumnarElements,
+    nodeFlags?: FlagOverride[],
+    edgeFlags?: FlagOverride[],
+  ): {
     nodeSlots: Uint32Array;
     edgeSlots: Uint32Array;
   } {
@@ -832,10 +888,39 @@ export class Core {
         ? this._store.addEdgesColumnar(elements.edges, nodeSlots, newId)
         : new Uint32Array(0);
 
+    if (nodeFlags != null && nodeFlags.length > 0) {
+      this._applyFlagOverrides('nodes', nodeSlots, nodeFlags, false);
+    }
+    if (edgeFlags != null && edgeFlags.length > 0) {
+      this._applyFlagOverrides('edges', edgeSlots, edgeFlags, true);
+    }
+
     this._applyStyle('nodes', nodeSlots);
     this._applyStyle('edges', edgeSlots);
 
     return { nodeSlots, edgeSlots };
+  }
+
+  /** Write the def flags the columnar columns cannot carry. */
+  private _applyFlagOverrides(
+    group: GroupName,
+    slots: Uint32Array,
+    overrides: FlagOverride[],
+    pannableDefault: boolean,
+  ): void {
+    for (const { at, def } of overrides) {
+      const slot = slots[at];
+
+      if (def.locked === true) {
+        this._store.setFlag(group, slot, FLAG_LOCKED, true);
+      }
+      if (def.grabbable === false) {
+        this._store.setFlag(group, slot, FLAG_GRABBABLE, false);
+      }
+      if (def.pannable != null && def.pannable !== pannableDefault) {
+        this._store.setFlag(group, slot, FLAG_PANNABLE, def.pannable);
+      }
+    }
   }
 
   private _columnarRefs({
@@ -859,7 +944,16 @@ export class Core {
 
   /** Shared add loop: nodes first so edges can reference same-call nodes. */
   private _addDefs(defs: ElementsDefinition | ElementDefinition): Ref[] {
-    const { nodes: nodeDefs, edges: edgeDefs } = partitionDefs(defs);
+    return this._addPartition(partitionDefs(defs));
+  }
+
+  /**
+   * `_addDefs` over defs already split by group, so the bulk load path
+   * can partition once and hand the same split to whichever route it
+   * takes.
+   */
+  private _addPartition(part: PartitionedDefs): Ref[] {
+    const { nodes: nodeDefs, edges: edgeDefs } = part;
 
     this._store.reserve(nodeDefs.length, edgeDefs.length);
 

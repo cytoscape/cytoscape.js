@@ -210,6 +210,23 @@ describe('gpu/columnar', function () {
       ).to.throw(/self-contained/);
     });
 
+    it('throws on a positions column shorter than the count', function () {
+      // Round 66: this guard read as covered and had in fact never been
+      // fired — misattributed line coverage, the throw gate's documented
+      // blind spot.  It surfaced when the def-form load started routing
+      // through addNodesColumnar and the attribution moved.  Ids must be
+      // unique or the duplicate-id guard above fires first.
+      const store = new GraphStore();
+      let n = 0;
+
+      expect(() =>
+        store.addNodesColumnar(
+          { count: 2, positions: new Float32Array(2) },
+          () => 'n' + n++,
+        ),
+      ).to.throw('Columnar node positions must hold 4 floats; got 2');
+    });
+
     it('marks one coalesced dirty span when not resized', function () {
       const store = new GraphStore();
 

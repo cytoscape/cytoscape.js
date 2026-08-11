@@ -12,8 +12,13 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-10, as round 65 closed.  The same day held
-  three decision rounds and one large build round: the per-element
+- **Last updated**: 2026-08-11, as round 66 closed — the loader now
+  converts definition-form payloads to columns before ingesting them,
+  which is 1.2–1.8× on load and moves this file's own headline init
+  figure from 1.7 s to 0.98 s.  (Rounds 65.11–65.13, also 08-11, are in
+  `PLAN.md` and not yet summarised here: two benchmark-instrument
+  corrections and a debug-harness error-reporting fix.)  The day before
+  held three decision rounds and one large build round: the per-element
   bypasses returned as a stylesheet section (round 63), `cy.$()` and
   `cy.byId()` returned as aliases while `cy.collection( arg )` began
   throwing (round 64), and the nine expensive whole-graph algorithms
@@ -55,15 +60,17 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,165 unit · 344 module · 24 soak · 375 browser (248 run; 127 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,181 unit · 394 module · 24 soak · 375 browser (250 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 363 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) |
 | Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 684 KiB minified, 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire; the WebGPU shader source (which v3 has no equivalent of) is minified at build time, and round 65's algorithm kernels ride in it |
 
-The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
-against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
+The headline case: a 19,607-node / 464,657-edge network initialises in
+**0.98 s against v3's 18.6 s**, and holds **33 ms frames where v3 takes
+4,460 ms**.  (That init was 1.7 s until round 66 taught the loader to
+convert definition-form payloads to columns before ingesting them.)
 
 **The two long-standing open questions closed on 2026-08-09, each by
 declining the surface its own homework had priced.** For the error/warning
@@ -538,7 +545,7 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9–10 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster, the bypass comes back — and the expensive algorithms go async, onto the GPU
+## Week 4 — 9–11 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster, the bypass comes back, the expensive algorithms go async onto the GPU — and the loader stops taking the slow road
 
 *18 commits — rounds 58–60 and the seventh design sitting.*
 
@@ -813,6 +820,46 @@ up to 3.8× — with only PageRank (memory-bound dense mat-vec, ~1.8×)
 and hierarchical clustering (a CPU merge chain both executors pay,
 ~2×) in low single digits, and every family GPU-favored at its
 benchmark sizes.
+
+### Round 66: the loader stops taking the slow road
+
+A maintainer question about the debug harness — *why aren't the
+"columnar" and "binary" checkboxes on by default, and would they speed
+up first load?* — turned out to be about the library.  The boxes are
+instrumentation, and the harness's default should be the compat path most
+apps use.  But measuring the harness's own load on the 465k-edge network
+put **886 ms** of a 2.8 s first load in one place: the factory ingesting
+*definitions* rather than columns.
+
+Converting a definition payload to the columnar form and ingesting that
+beats ingesting the definitions, at every size measured from 4k to 800k
+elements, with and without data — and the conversion costs about a tenth
+of what it saves.  A CPU profile said why, and it is structural rather
+than a micro-optimisation: the definition loop pays a slot allocation per
+element and two id-index lookups per edge (the lookup allocating a result
+object per hit), where the columnar path takes one contiguous bulk
+allocation and resolves endpoints by index.  So `options.elements` now
+converts first.  `cy.add()` does not — adding into a populated graph may
+legitimately name nodes already there — and a payload that is not
+self-contained falls back to the definition path, which reports the error
+in its own words.
+
+Measured, same machine: **1.2–1.8×** depending on the payload, models
+identical at every size; the ndex-x-large renderer scene 1696 → 980 ms,
+which is 11.4× → 19.0× v3 and the headline figure at the top of this
+file.  The debug page, with no harness change at all, 2899 → 2163 ms.
+
+The round's own controls found two things the specs had not.  A control
+that **failed to fail** exposed a spec named for an ordering it could not
+observe (a flag write after the style pass restyles anyway), so the spec
+was renamed to what it tests.  And the throw gate went red on a guard
+that turned out never to have run *before* the round either — its green
+was line-coverage misattribution, the gate's documented blind spot, which
+routing definition loads through a different store method disturbed.  It
+has a real spec now.  A third near-miss did not reach the record as a
+finding but is in it as a lesson: a baseline built by stashing *sources*
+measured the same **bundle** twice, and briefly produced a 3% result that
+contradicted every other measurement.
 
 ## What remains before 4.0
 

@@ -3537,6 +3537,31 @@ dictionary-encoded string columns).  Columnar payloads are self-contained: every
 edge endpoint indexes a node in the same payload.  Convert classic JSON
 with `cytoscape.toColumnarElements(json)`.
 
+**The factory converts for you** (round 66): a definition-form
+`options.elements` is turned into the columnar form and ingested through
+that path, because convert-then-ingest is cheaper than the definition
+loop — measured **1.2–1.8×** end to end, the spread being the payload's:
+1.19–1.36× on synthetic graphs from 4k to 800k elements carrying data on
+both groups, 1.50× on `benchmark/load.mjs`'s warmed N=2000 init row
+(which took that row from 6.28× to 8.87× v3 on one machine), and
+**1696 → 980 ms** on `benchmark:renderer`'s ndex-x-large scene (19.6k ×
+465k, lean defs, auto-generated edge ids), taking that scene from 11.4×
+to 19.0× v3.  The definition loop pays a
+`Table.alloc` per element and two `IdIndex` lookups per edge, where the
+columnar path takes one contiguous `allocBulk` run and resolves endpoints
+by index; a CPU profile of a 50k/150k load put 159 ms of a 924 ms init in
+`Table.alloc` alone and none in the columnar path, against ~85 ms for the
+whole conversion.  Three things bound the route: it is the **bulk path
+only** (`cy.add()` into a populated graph keeps the definition path,
+since it may legitimately name nodes already in the graph); it applies
+only to **self-contained** payloads, and a payload that is not falls back
+to the definition path, which raises the error in its own words; and
+`locked`/`grabbable`/`pannable` have **no columnar column**, so the
+converter reports the defs that set them and the loader writes those
+flags per element after the ingest.  That last one is also the caveat on
+the public converter: `cytoscape.toColumnarElements(json)` drops those
+three flags, and the factory does not use it for that reason.
+
 There is also a **binary
 wire format** — `cytoscape.serializeElements(elements)` (takes either
 form) produces one little-endian ArrayBuffer (fixed header + columns; ids

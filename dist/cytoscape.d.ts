@@ -8220,13 +8220,44 @@ declare class Core {
    * 500k-element load the handle layer costs more than the model writes
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
+   *
+   * **A definition-form payload loads through the columnar ingest too**
+   * (round 66): it is converted first, because convert-then-ingest is
+   * cheaper than the def loop — measured 1.2-1.8x end to end, from 4k to
+   * 800k elements and on the ndex-x-large renderer scene (1696 -> 980 ms).
+   * The def loop pays a `Table.alloc` per element and two
+   * `IdIndex` lookups per edge, where the columnar path takes one
+   * contiguous `allocBulk` run and resolves endpoints by index; the
+   * conversion costs about a tenth of what that saves.  The route is
+   * taken only when the payload is self-contained (every edge endpoint
+   * names a node in the same payload) — otherwise `buildColumnar` answers
+   * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void;
-  /** Columnar ingest: store-level bulk adds + one bulk style pass. */
+  /** Per-element `add` for a columnar bulk, nodes before edges. */
+  private _emitBulkAdds;
+  /**
+   * Columnar ingest: store-level bulk adds + one bulk style pass.
+   *
+   * The optional flag overrides come from a converted definition payload
+   * — `locked`, `grabbable` and `pannable` have no column.  They are
+   * written before the style pass, where the def path also has them: a
+   * later write would still be *correct*, since `::locked` and
+   * `::grabbable` are styleable conditions and a condition-flag write
+   * restyles its slot, but it would pay for that restyle.
+   */
   private _addColumnar;
+  /** Write the def flags the columnar columns cannot carry. */
+  private _applyFlagOverrides;
   private _columnarRefs;
   /** Shared add loop: nodes first so edges can reference same-call nodes. */
   private _addDefs;
+  /**
+   * `_addDefs` over defs already split by group, so the bulk load path
+   * can partition once and hand the same split to whichever route it
+   * takes.
+   */
+  private _addPartition;
   /**
    * Remove elements from the graph.  Removing a node removes its
    * connected edges, and removing a compound parent removes its
@@ -9147,6 +9178,12 @@ declare class Core {
  * contiguous slot runs become memcpys and no per-element objects or
  * per-edge id lookups are needed.  Exposed publicly as
  * `cytoscape.toColumnarElements`.
+ *
+ * **The columnar form has no column for `locked`, `grabbable` or
+ * `pannable`**, so a def setting one of those converts without it.  The
+ * factory's own definition-form load does not go through this function
+ * for that reason — it uses the internal {@link buildColumnar}, which
+ * reports the deviations so it can write them after the ingest.
  *
  * @param defs — one element, an array, or `{ nodes, edges }`
  * @returns the equivalent self-contained columnar payload

@@ -18788,3 +18788,131 @@ the four failure paths: no-adapter Chromium, Firefox, `file://` and a
 **What is *not* explained.**  Nothing measured here makes a binary
 fixture fail on a working browser, so if the page is still blank after
 this, the message on it is now the evidence — it will name the phase.
+
+## Round 66 — the definition-form load takes the columnar path (raised by the maintainer 2026-08-11)
+
+The question that started it was about the debug harness: *why aren't
+"Columnar load" and "Binary wire round trip" checked by default, and
+would they speed up first load?*  The answer to the first half is that
+they are instrumentation — the harness's default should be the compat
+path most apps use, and the two boxes exist so a person can A/B the three
+ingest forms in a browser.  The second half is where the round came from.
+
+**What the demo measured.**  ndex-x-large (19,607 nodes / 464,657 edges)
+in Chromium on a real adapter (AMD GCN-4, not SwiftShader), fetch start
+to first rendered frame, p50 of 3 fresh page loads, all paths
+fingerprint-checked identical (counts, positions, `data()`, computed
+`background-color`/`line-color`, post-`fit` zoom):
+
+| path | fetch+decode | convert | init | ready | fit+frame | total |
+|---|---|---|---|---|---|---|
+| JSON (`npm run watch`) | 268 | 104 | 2018 | 87 | 400 | **2899** |
+| wire (the status build) | 37 | 95 | 2101 | 91 | 420 | **2754** |
+| wire → columnar, no `fromColumnar` | 37 | 17 | 1215 | 86 | 401 | **1762** |
+
+The harness change that motivated the table — stop converting the
+decoded columnar payload *back* to definition form for the sheet builders
+— was worth 78 ms of it.  The other **886 ms** was the factory ingesting
+definitions instead of columns, and that is not the demo's, it is the
+library's.  Confirmed on synthetic graphs with no `debug/` code:
+converting to columnar and ingesting that beat ingesting the definitions
+at every size from 4k to 800k elements, with and without data columns
+(1.28–1.70×), the conversion costing 7–10% of what it saved.
+
+**Why, from a CPU profile of a 50k/150k load** (924 ms defs vs 580 ms
+columnar), as self time the def path pays and the columnar path does not:
+`Table.alloc` **159 ms**, `_addDefs` 54, the `IdIndex` (`allocSlot`,
+`get`, `probe`) 76, `addEdge` 38, `setDefData`/`markDataWrite` 21 —
+against ~85 ms for the whole conversion.  It is structural, not a
+micro-optimisation: ~350 ms of *per-element* work (a slot allocation each,
+two id lookups per edge, whose `get` allocates a result object per hit)
+traded for one pass that hands the store columns.  GC is the same on both
+sides (134 vs 127 ms), so this is not allocation pressure in general.
+
+Landed:
+
+- [x] **`buildColumnar( part, strict )`** in `columnar.mts` — the
+  conversion over already-partitioned defs, in two modes.  The public
+  `toColumnarElements` is the strict one and still throws on an endpoint
+  it cannot resolve; the loader's is not, and answers `null` instead, so
+  a payload that is not self-contained simply is not this route's and the
+  definition path raises the error **in its own words**.  No `try`/`catch`
+  around the converter, deliberately: a real bug in it must not read as
+  "not a candidate" and silently cost 1.3× forever.
+- [x] **The flag deviations no column can carry.**  A def may set
+  `locked`, `grabbable` and `pannable`; the columnar form has columns for
+  `selected` and `selectable` only.  Converting blindly would have
+  dropped three flags silently — the exact shape of 46.5's lost dictionary
+  column.  `buildColumnar` returns the deviating defs by index and
+  `_addColumnar` writes them, **before** the style pass (`::locked` and
+  `::grabbable` are styleable conditions, and that is where the def path
+  has them).  This also leaves `toColumnarElements` lossy for those three,
+  which its doc comment now says out loud.
+- [x] **`_bulkAdd` routes**, `_addPartition` splits `_addDefs` so one
+  partition serves whichever route is taken, and `cy.add()` is untouched:
+  adding into a populated graph may legitimately name nodes already there.
+
+**Measured after** (same machine, order alternated, each side its own
+process, 5 reps): definition-form `cytoscape({ elements })` 23.6→19.3 ms
+at 1k/3k, 173.7→146.5 at 10k/30k, 848→624 at 50k/150k, 4134→3173 at
+200k/600k — **1.19–1.36×**, models identical at every size.
+`benchmark/load.mjs`'s warmed init row (N=2000) moves 24.95→16.64 ms,
+taking it from 6.28× to 8.87× v3 on this machine.  The debug page, with
+no harness change at all: JSON 2899→**2163 ms**, wire 2754→**1944 ms**.
+And `benchmark:renderer`'s ndex-x-large scene — lean defs, no edge ids,
+a real adapter — **1696 → 980 ms**, which is 11.4× → **19.0×** v3 and
+the figure `EXECUTIVE_SUMMARY.md`'s headline quotes.
+
+**The spread is the payload's, and one guess about it was wrong.**  The
+gain runs 1.19× (200k/600k with data on both groups) to 1.78× (the lean
+ndex shape). The first hypothesis — that auto-generated ids would
+*shrink* the gain, since both paths must mint 465k strings — was
+refuted by measuring it: dropping edge ids at 200k/600k took the ratio
+to **1.66×**, the largest of the three variants, not the smallest.
+
+**A near-miss worth recording, because it nearly published a wrong
+number.**  The first baseline for that renderer row read 977 ms against
+945 — a 3% gain that contradicted everything else, and was taken as a
+finding to explain.  It was `git stash push -- src/` followed by a
+benchmark that serves `build/cytoscape.umd.js`: **stashing source does
+not rebuild the bundle**, so both runs measured the same code.  The trap
+is the one `AGENTS.md` already documents for Playwright ("rebuild the
+bundle before trusting a run"), and it applies to every browser harness
+here, not just that one.  A baseline for a browser measurement has to
+swap *bundles*, not sources.
+
+Verification: 14 new specs (13 in `test/bulk-load.mjs`, parity between
+the two routes over a fixture carrying every def feature — including a
+column-for-column comparison over *every* column in `columnSpecsForGroup`
+rather than a hand-picked four; 1 in `test/columnar.mjs`, below), 2181
+test:js, 394 test:modules, 24 test:soak, 250 Playwright across every
+project, all audits at 100%.
+
+**Three controls, and two of them found something.**
+
+- Not writing the flag overrides fails exactly three specs — including
+  the column-for-column parity — which is also the proof that the new
+  route is the one being taken.
+- Making the converter throw instead of answering `null` fails exactly
+  the fallback spec, on the message.
+- Moving the flag write *after* the style pass **failed to fail**.  The
+  spec was named for the ordering and could not observe it: `setFlag`
+  notes a condition-flag change and the slot restyles, so a late write is
+  correct, merely wasteful.  The spec has been renamed to what it
+  actually asserts and the comment now says which control does land.
+- The throw gate went red on `graph-store.mts:1313`, the columnar
+  positions-length guard.  It was **never run before this round either**:
+  instrumented, it executes zero times across the whole Node suite on
+  both sides of the change, so its previous green was line-coverage
+  misattribution — the gate's documented blind spot — and routing def
+  loads through `addNodesColumnar` moved the attribution and exposed it.
+  It now has a deterministic spec (ids must be unique, or the duplicate-id
+  guard fires first).
+
+**Not done, and now smaller.**  The harness change that raised all this —
+have `debug/init.js` hand the decoded columnar payload straight to the
+factory instead of `fixtures.fromColumnar`, with a columnar-aware
+`extent`/`magnitude` for the two sheets that scan node data (em-web,
+em-desktop; 569 and 1260 nodes) and `fromColumnar` kept for the one
+network declaring a `derive` — is worth **167 ms** of the hosted page's
+1944 now, not the ~990 it would have been.

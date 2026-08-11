@@ -18991,3 +18991,66 @@ whose state mapper *cannot* be hoisted agrees element for element).
 100%.  Both controls land: making the hoist never notice a changed word
 fails exactly the three per-element specs, and making the memo answer
 with any cached value fails the continuous-scale suite wholesale.
+
+### 66.2 — deferring the CPU eval of GPU-owned paint: measured, and not landed (2026-08-11)
+
+The third idea from 66.1's investigation: at construction the CPU
+evaluates every mapper, including the paint channels the eval kernel is
+about to own — and `mapperRuntime.update()` "configures + fully
+evaluates" before the first scene pass reads them, so for a rendered
+instance that CPU work is redundant.  Deferring it would serve all three
+of the round's goals at once, most directly the third (the main thread
+free sooner).
+
+**It is worth ~5%, for a sheet this repo does not have.**  Prototyped by
+skipping exactly the props the packer ends up owning, on ndex-x-large
+with a sheet whose `line-color` *is* owned: init **996 → 932 ms**,
+fetch-to-first-frame **1487 → 1417 ms**, the screenshot **byte-identical**
+and `style()` still answering correctly (the getter re-evaluates for an
+owned prop).  Real, and small.
+
+**And on the sheets that exist, it is worth nothing at all.**  Nine of
+the harness's networks, driven in Chromium on a real adapter, reporting
+what the kernel actually owns:
+
+| network | mapped paint props | GPU-owned | dispatches |
+|---|---|---|---|
+| em-web (569/6899) | 12 | `background-color` | 1 |
+| em-desktop (1260/16030) | 12 | `background-color` | 1 |
+| em-web-clustered (610/6899) | 12 | `background-color` | 1 |
+| white-matter (1499/18288) | 9 | — | 0 |
+| ndex-large (3238/68641) | 12 | — | 0 |
+| ndex-x-large (19607/464657) | 8 | — | 0 |
+| v3-default, node-types, edge-types, labels | 12–18 | — | 0 |
+
+Where ownership happens the graph is small (a `background-color` over
+569–1260 nodes, microseconds); where the graph is large, **nothing is
+owned**.  Both halves have the same cause: these sheets map
+`line-opacity` for the round-57.11 selection affordance, and a mapped
+channel opacity demotes `line-color` and the arrow colours (the B1 fold —
+a kernel colour program would overwrite the folded bytes); node colour is
+a state `case`, which is not packable at all.
+
+So the deferral was **not landed**.  It would buy 0 ms on every sheet
+here, and a correct version is not free: candidates are a *superset* of
+what the packer owns, so it needs a reconciliation at `setGpuOwned`, a
+recovery path for when no adapter arrives, and getters that treat a
+deferred prop as lazily evaluated — three new failure paths and a window
+in which stored paint is neither correct nor stale but absent.  The
+prototype demonstrated exactly that hazard: skipping *candidates*
+(rather than owned props) left the node `case` mapper evaluated
+**nowhere**, and the graph rendered with grey default nodes — a picture
+that looks plausible, which is this repo's recurring failure mode.
+
+**The finding that outlives it**: the blocker on the big sheets is the
+demotion rule, not the deferral.  The kernel already folds a mapped
+opacity into colour alpha (`FLAG_MUL_ALPHA`, `opacityNow` from an opacity
+program packed first), so a *continuous* line-opacity need not demote its
+colours.  What it cannot fold is a **state** `case` opacity — exactly
+what these sheets use — because a conditional is not packable.  Teaching
+the kernel a flag-conditioned constant (a state `case` over conditions
+alone has one value per masked flag word, which is what round 57.1's
+partition already computes on the CPU) would hand it the 465k-edge
+colour mapper: ~160 ms of CPU work per apply on this fixture, and it
+would make the deferral above worth having as well.  That is a round,
+not a follow-up.

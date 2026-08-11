@@ -19102,3 +19102,28 @@ neither mechanism reaches is a **state-case** opacity, which is what this
 repo's sheets use — so ndex-x-large stays CPU-evaluated either way, and
 that remains a question about per-element alpha in the kernel rather than
 about `case` being slow.
+
+**And the cost is on the update path, not on load** (measured after the
+amendment above, in answer to *why should anyone care*).  Ownership does
+**not** save CPU at construction — the initial apply evaluates every
+mapper whatever the kernel is about to own, which is exactly what 66.2's
+rejected deferral would have changed — so the two opacity spellings load
+indistinguishably (985 vs 968 ms).  Where it shows is a data write to a
+mapped key, which an owned channel re-derives on the GPU and a demoted
+one re-derives per element on the CPU.  50,000 writes of
+`Mechanism_of_Action` on ndex-x-large, timed to the next rendered frame:
+
+| `line-opacity` | `line-color` | 50k writes → frame |
+|---|---|---|
+| `1` | kernel-owned | **20–27 ms** |
+| `0.25` | demoted | **92–119 ms** |
+
+**4–5×, for changing one constant.**  That is the argument for the fold,
+and it is a *principle of least surprise* argument as much as a
+performance one: opacity is the property a web developer expects to be
+the cheap one — compositing, not layout — and in v4 today setting it to
+anything but 1 quietly moves a whole colour channel off the GPU.  Note
+what this also says about ordering: the fold and the deferral are
+complementary, and the fold is the one that pays on its own.  Deferral
+without it saves ~64 ms once; the fold without deferral is worth 4–5× on
+every restyle for the rest of the session.

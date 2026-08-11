@@ -19054,3 +19054,51 @@ partition already computes on the CPU) would hand it the 465k-edge
 colour mapper: ~160 ms of CPU work per apply on this fixture, and it
 would make the deferral above worth having as well.  That is a round,
 not a follow-up.
+
+**Amendment (same day): the blocker is the alpha fold, not the `case`.**
+66.2 above closed by naming the state-`case` opacity as what keeps the
+kernel off these sheets' colour mappers.  That reading was challenged and
+does not survive measurement.  Same fixture, same sheet, only
+`line-opacity` varying, ownership read *after the first frame* (it is
+configured on the first `update()`, not by `cy.ready` — the first version
+of this probe read it too early and reported nothing owned anywhere):
+
+| `line-opacity` | GPU-owned edge props |
+|---|---|
+| `case` (as shipped) | — |
+| constant **1** | `line-color` |
+| constant **0.25** | — |
+
+A plain constant 0.25, with no conditional anywhere in the sheet, demotes
+exactly as the `case` does: the trigger is `computed.lineOpacity !== 1 ||
+mapped('line-opacity')`, i.e. **any** non-1 alpha, however it is spelled.
+
+**And `case` mappers are not the expense.**  Priced on the same 464,657
+edges, as the cost of the `line-color` clause over a constant baseline:
+
+| clause | cost | per edge |
+|---|---|---|
+| state-only `case`, 1 clause | −34 ms | ~0 (at the noise floor) |
+| state-only `case`, 3 clauses | −26 ms | ~0 |
+| mixed `case` (state + data) | +31 ms | 67 ns |
+| `case` on a data condition | +40 ms | 85 ns |
+| continuous `diverging` mapper | +129 ms | 277 ns |
+
+A state-only `case` is free since 66.1's hoist — it measures at the
+constant baseline — and even a data-conditional one is a third of what
+the continuous mapper costs.  Moving conditionals into the kernel is
+therefore not where the value is; the continuous data mapper is.
+
+**The nearest real opportunity, then**, is narrower and better founded
+than what 66.2 first named: the kernel *already* folds a constant edge
+opacity into colour alpha through `domain.w`, and the packer already
+wires it — but only for arrow props (`isArrowProp( m.prop )`).
+`line-color` itself never gets an `alphaMul`, which is why a constant
+0.25 has to demote.  Extending that fold to `line-color` (and the node
+fill/border pair with their own constant opacities) would make every
+constant-opacity sheet's colour mapper kernel-owned, and `FLAG_MUL_ALPHA`
+already covers the *mapped*-opacity case for arrows the same way.  What
+neither mechanism reaches is a **state-case** opacity, which is what this
+repo's sheets use — so ndex-x-large stays CPU-evaluated either way, and
+that remains a question about per-element alpha in the kernel rather than
+about `case` being slow.

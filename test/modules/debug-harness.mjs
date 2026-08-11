@@ -55,6 +55,7 @@ const loadGlobal = (name) => {
 const networks = loadGlobal('networks');
 const fixtures = loadGlobal('fixtures');
 const styles = loadGlobal('styles');
+const loadError = loadGlobal('load-error');
 
 /** The path the browser would fetch, resolved against the repo root. */
 const fixturePath = (url) => resolve(DEBUG, url);
@@ -242,6 +243,129 @@ describe('debug harness (round 43)', function () {
           before.edges[i].data.target,
         );
       }
+    });
+  });
+
+  describe('a failed load names the right suspect', function () {
+    // Why this exists: `init.js` used to call `loadNetwork` *inside* the
+    // fixture's promise chain, so the `.catch` written for the fetch also
+    // caught every error the library threw — and for a network loaded from the
+    // binary wire form it reported them all as "a decode failure means the
+    // buffer and the library disagree — rebuild the site".  The generated
+    // networks, which are built outside any promise, showed the real error.
+    // So a WebGPU failure read as "the binary networks are broken and the
+    // built-in ones are fine", which is how it was reported.
+    //
+    // The phase is therefore passed in by the caller that knows it, and these
+    // specs pin what each phase may and may not say.
+    //
+    // Control: making `hint()` return the wire-decode text for every phase
+    // fails 'an init failure does not blame the fixture', 'a file:// page is
+    // diagnosed as a file:// page' and both http specs.
+    const { describeLoadFailure } = loadError;
+
+    const wire = (phase, over = {}) =>
+      describeLoadFailure({
+        phase,
+        networkID: 'em-web',
+        url: '../v3/debug/webgl/network-em-web.cyge',
+        isWire: true,
+        protocol: 'http:',
+        error: new Error('boom'),
+        ...over,
+      });
+
+    it('an init failure does not blame the fixture', function () {
+      const text = wire('init', {
+        error: new Error(
+          'WebGPU is available but no adapter could be acquired; the GPU may be blocklisted',
+        ),
+        counts: { nodes: 569, edges: 6899 },
+      });
+
+      expect(text).to.contain('no adapter could be acquired');
+      expect(text).to.contain('569 nodes, 6899 edges');
+      expect(text).to.contain('The data is not the suspect');
+      // the three things the old message said, and each one was wrong here
+      expect(text).to.not.contain('decode');
+      expect(text).to.not.contain('npm run status');
+      expect(text).to.not.contain('.cyge');
+    });
+
+    it('a decode failure does blame the buffer, and says how to fix it', function () {
+      const text = wire('decode', {
+        error: new Error('Unsupported serialized elements version 9'),
+      });
+
+      expect(text).to.contain('Unsupported serialized elements version 9');
+      expect(text).to.contain('.cyge');
+      expect(text).to.contain('npm run status');
+    });
+
+    it('a file:// page is diagnosed as a file:// page', function () {
+      // opening status/debug/index.html from disk breaks every fetched network
+      // and nothing else — the exact symptom this whole suite is about
+      const text = wire('network', {
+        protocol: 'file:',
+        error: new TypeError('Failed to fetch'),
+      });
+
+      expect(text).to.contain('file://');
+      expect(text).to.contain('only the generated ones work');
+      expect(text).to.contain('npm run status:serve');
+      expect(text).to.not.contain('rebuild');
+    });
+
+    it('a 404 on the wire form points at the manifest that named it', function () {
+      const text = wire('http', {
+        error: new Error('404 Not Found for network-em-web.cyge'),
+      });
+
+      expect(text).to.contain('404 Not Found');
+      expect(text).to.contain('status-config.js');
+    });
+
+    it('a 404 on the JSON form points at where the fixtures live', function () {
+      const text = describeLoadFailure({
+        phase: 'http',
+        networkID: 'em-web',
+        url: '../v3/debug/webgl/network-em-web.json',
+        isWire: false,
+        protocol: 'http:',
+        error: new Error('404 Not Found'),
+      });
+
+      expect(text).to.contain('v3/debug/webgl/');
+      expect(text).to.contain('npm run watch');
+      expect(text).to.not.contain('.cyge');
+    });
+
+    it('every phase carries the error and names the network', function () {
+      for (const phase of ['network', 'http', 'decode', 'init']) {
+        const text = wire(phase);
+
+        expect(text, phase).to.contain('boom');
+        expect(text, phase).to.contain('em-web');
+      }
+    });
+
+    it('init.js routes all four phases, rather than one catch for the lot', function () {
+      // A headless process cannot open the page, so this is a text check — the
+      // same trade the dev-server spec below makes.  It is worth having because
+      // a correct classifier is useless if the caller collapses back to a
+      // single `.catch( fail )`, which is precisely the defect that was here.
+      const src = readFileSync(join(DEBUG, 'init.js'), 'utf8');
+
+      for (const phase of ['network', 'http', 'decode']) {
+        expect(src, phase).to.contain(`'${phase}'`);
+      }
+
+      expect(src).to.contain(`describe('init'`);
+      // the stats overlay must not be able to erase a fatal message: it wrote
+      // `#stats` every 500 ms, so the adapter error was visible for half a
+      // second and then replaced by plausible-looking counts
+      expect(src).to.not.contain(`$('#stats').textContent =\n`);
+      expect(src.match(/showStats\(/g) || []).to.have.length.at.least(1);
     });
   });
 

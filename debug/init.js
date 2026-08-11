@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, cytoscape, networks, styles, fixtures */
+/* global $, cytoscape, networks, styles, fixtures, loadError */
 
 var cy;
 
@@ -105,6 +105,27 @@ const paramDefs = {
       pending.push(fn);
     }
   };
+
+  // -- the status line --
+  //
+  // `showFatal` wins over the stats overlay for good.  It has to: the overlay
+  // rewrites `#stats` every 500 ms, so before this the *most common* real
+  // failure — `cy.ready` rejecting because no GPU adapter could be acquired —
+  // wrote its message and had it erased within half a second.  What was left
+  // was a blank canvas above a plausible-looking "569 nodes, 6899 edges,
+  // 0 glyphs", with the actual error only in the console.
+  let fatal = null;
+
+  function showFatal(text) {
+    fatal = text;
+    $('#stats').textContent = text;
+  }
+
+  function showStats(text) {
+    if (fatal == null) {
+      $('#stats').textContent = text;
+    }
+  }
 
   // -- loading --
 
@@ -229,12 +250,17 @@ const paramDefs = {
       })
       .catch((err) => {
         console.error(err);
-        $('#stats').textContent = String(err);
+        showFatal(
+          describe('init', err, {
+            nodes: gpuElements.nodes.length,
+            edges: gpuElements.edges.length,
+          }),
+        );
       });
 
     cy.on('error', (e, message) => {
       console.error('gpu error', message);
-      $('#stats').textContent = 'GPU error: ' + message;
+      showFatal('GPU error: ' + message);
     });
 
     cy.on('pan zoom', () => {
@@ -300,15 +326,16 @@ const paramDefs = {
           ? ` (${((100 * stats.labelShapeHits) / shaped).toFixed(0)}% memo hits)`
           : '';
 
-      $('#stats').textContent =
+      showStats(
         `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs${hitRate}\n` +
-        `${fps.toFixed(0)} fps (rendered), ${stats.cpuFrameMs.toFixed(2)} ms CPU / ${gpuMs} per frame, scale ${stats.renderScale}\n` +
-        `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
-        `mapper: ${(stats.mapperUploadedBytes / 1024).toFixed(0)} KiB in ${stats.mapperDispatches} dispatches\n` +
-        `pick latency ${stats.pickLatencyMs.toFixed(1)} ms` +
-        (stats.pickDeferrals > 0
-          ? ` (${stats.pickDeferrals} ring-deferred frames)`
-          : '');
+          `${fps.toFixed(0)} fps (rendered), ${stats.cpuFrameMs.toFixed(2)} ms CPU / ${gpuMs} per frame, scale ${stats.renderScale}\n` +
+          `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
+          `mapper: ${(stats.mapperUploadedBytes / 1024).toFixed(0)} KiB in ${stats.mapperDispatches} dispatches\n` +
+          `pick latency ${stats.pickLatencyMs.toFixed(1)} ms` +
+          (stats.pickDeferrals > 0
+            ? ` (${stats.pickDeferrals} ring-deferred frames)`
+            : ''),
+      );
     }, 500);
   }
 
@@ -332,48 +359,94 @@ const paramDefs = {
   const fixtureUrl = wireUrl != null ? wireUrl : network.url;
   const isWire = wireUrl != null;
 
-  function fail(err) {
-    console.error(err);
-    $('#stats').textContent = isWire
-      ? `Could not load "${networkID}" from ${fixtureUrl}:\n${err}\n\n` +
-        `This is the binary wire form written by scripts/status-build.mjs.\n` +
-        `A decode failure means the buffer and the library disagree — rebuild\n` +
-        `the site (\`npm run status\`) so both come from the same commit.`
-      : `Could not load "${networkID}":\n${err}\n\n` +
-        `Fixtures live in v3/debug/webgl/ — served from the repo root, so run\n` +
-        `\`npm run watch\` from the repo root rather than from debug/.`;
+  /**
+   * The message for a failed load, with the *phase* passed in rather than
+   * inferred — see debug/load-error.js for why that distinction is the whole
+   * point.
+   */
+  function describe(phase, err, counts) {
+    return loadError.describeLoadFailure({
+      phase: phase,
+      networkID: networkID,
+      url: fixtureUrl,
+      isWire: isWire,
+      protocol: window.location.protocol,
+      error: err,
+      counts: counts,
+    });
+  }
+
+  /** Fetch and decode the fixture. Rejects with `[phase, error]`. */
+  function fetchFixture() {
+    return fetch(fixtureUrl)
+      .then(
+        (res) => {
+          if (!res.ok) {
+            throw [
+              'http',
+              new Error(`${res.status} ${res.statusText} for ${fixtureUrl}`),
+            ];
+          }
+
+          return (isWire ? res.arrayBuffer() : res.json()).catch((err) => {
+            throw ['decode', err];
+          });
+        },
+        (err) => {
+          // fetch() rejects only when the request never completed: no server,
+          // a blocked origin, or a file:// page
+          throw ['network', err];
+        },
+      )
+      .then((payload) => {
+        try {
+          // the wire buffer already holds the output of toGpuElements — the
+          // build ran it — so both paths converge on the same shape here
+          const gpuElements = isWire
+            ? fixtures.fromColumnar(cytoscape.deserializeElements(payload))
+            : fixtures.toGpuElements(payload.elements);
+
+          return fixtures.derive(network.derive, gpuElements);
+        } catch (err) {
+          throw ['decode', err];
+        }
+      });
+  }
+
+  /**
+   * Build the instance, reporting a failure as its own error.
+   *
+   * This runs *outside* the fetch chain deliberately: when `loadNetwork` was
+   * called inside it, the fetch's `.catch` swallowed every library error and
+   * reported it as a broken fixture — and only for the networks that load from
+   * a fixture, which is why the binary ones looked uniquely broken.
+   */
+  function start(gpuElements) {
+    try {
+      loadNetwork(gpuElements, networkID, network);
+    } catch (err) {
+      console.error(err);
+      showFatal(
+        describe('init', err, {
+          nodes: gpuElements.nodes.length,
+          edges: gpuElements.edges.length,
+        }),
+      );
+    }
   }
 
   if (network.generated) {
-    loadNetwork(
-      fixtures.generate(network.generated, params.gen),
-      networkID,
-      network,
-    );
+    start(fixtures.generate(network.generated, params.gen));
   } else {
     // a missing fixture used to reject silently and render nothing at all
-    fetch(fixtureUrl)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`${res.status} ${res.statusText} for ${fixtureUrl}`);
-        }
+    fetchFixture().then(start, (failure) => {
+      const [phase, err] = Array.isArray(failure)
+        ? failure
+        : ['decode', failure];
 
-        return isWire ? res.arrayBuffer() : res.json();
-      })
-      .then((payload) => {
-        // the wire buffer already holds the output of toGpuElements — the
-        // build ran it — so both paths converge on the same shape here
-        const gpuElements = isWire
-          ? fixtures.fromColumnar(cytoscape.deserializeElements(payload))
-          : fixtures.toGpuElements(payload.elements);
-
-        loadNetwork(
-          fixtures.derive(network.derive, gpuElements),
-          networkID,
-          network,
-        );
-      })
-      .catch(fail);
+      console.error(err);
+      showFatal(describe(phase, err));
+    });
   }
 
   // -- controls --

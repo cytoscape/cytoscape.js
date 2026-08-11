@@ -972,6 +972,57 @@ export const applyAutoExtent = (
 // -- evaluation --
 
 /**
+ * How many distinct data values one bound evaluator memoizes before it
+ * stops growing (see the memo in `bindEvaluator`).  Sized so the cache
+ * stays trivial next to the graph it serves; a payload with more
+ * distinct values than this had nothing to gain from a memo anyway.
+ */
+const EVAL_MEMO_CAP = 8192;
+
+/** How many present values decide whether a column repeats. */
+const REPEAT_SAMPLE = 512;
+
+/** The sample's distinct fraction at or below which a memo pays. */
+const REPEAT_RATIO = 4;
+
+/**
+ * Whether a numeric column repeats its values enough for a per-value
+ * memo to pay — decided once, from a sample spread across the column, so
+ * the answer costs the same whatever the graph's size and the hot path
+ * carries no test.
+ *
+ * Below the sample size everything answers true: a column that small
+ * cannot lose measurably either way, and the cheap answer is the one
+ * that also serves the common small-graph-with-categorical-data case.
+ *
+ * @param values — the column's f64 values, indexed by slot
+ * @param present — 1 where the slot carries a value
+ * @returns true when a memo should wrap the evaluator
+ */
+const repeatsEnough = (values: Float64Array, present: Uint8Array): boolean => {
+  const n = Math.min(values.length, present.length);
+
+  if (n <= REPEAT_SAMPLE) {
+    return true;
+  }
+
+  const stride = Math.ceil(n / REPEAT_SAMPLE);
+  const seen = new Set<number>();
+  let sampled = 0;
+
+  for (let i = 0; i < n; i += stride) {
+    if (present[i] !== 1) {
+      continue;
+    }
+
+    seen.add(values[i]);
+    sampled++;
+  }
+
+  return sampled === 0 || seen.size * REPEAT_RATIO <= sampled;
+};
+
+/**
  * Segment index + fraction for a transformed input.  The index clamps to
  * the end segments, so an unclamped out-of-domain input extrapolates
  * linearly along them.
@@ -1256,11 +1307,57 @@ export const bindEvaluator = (
       ? continuousEval(program)
       : discreteEval(program);
 
+  // Round 66.1: memoize by datum.  A continuous colour evaluation is the
+  // most expensive thing this file does per element — a segment search,
+  // an OKLab lerp, `oklabToSrgb`, and three `Math.pow`s in the sRGB
+  // transfer, allocating four arrays on the way — and real data repeats
+  // heavily (the harness's 465k-edge fixture has 1,920 distinct values,
+  // its two commonest covering 43% of all edges).  The memo makes that
+  // work per *distinct value* instead of per element.  Sharing one
+  // evaluated array across elements is safe for the same reason the
+  // channel defaults already are: the write path folds into fresh
+  // arrays and never mutates what it was handed.
+  //
+  // A memo that only helps when the data repeats has to answer for the
+  // payload where it does not, so the decision is taken **once, from a
+  // sample of the column**, and the un-memoized path keeps calling the
+  // evaluator directly.  Deciding per call instead — an adaptive memo
+  // that gives up once it sees the data is all-distinct — was measured
+  // and rejected: the wrapper alone costs ~5% on 200k distinct values,
+  // whether or not it has stopped consulting its map.
+  const memoized = (
+    ev: (x: number) => Evaluated | null,
+  ): ((x: number) => Evaluated) => {
+    const memo = new Map<number, Evaluated>();
+
+    return (x) => {
+      const hit = memo.get(x);
+
+      if (hit !== undefined) {
+        return hit;
+      }
+
+      const out = ev(x) ?? missing;
+
+      if (memo.size < EVAL_MEMO_CAP) {
+        memo.set(x, out);
+      }
+
+      return out;
+    };
+  };
+
   if (col.kind === 'number') {
     const { values, present } = col;
 
-    return (slot) =>
-      present[slot] ? (evalNum(values[slot]) ?? missing) : missing;
+    if (!repeatsEnough(values, present)) {
+      return (slot) =>
+        present[slot] ? (evalNum(values[slot]) ?? missing) : missing;
+    }
+
+    const ev = memoized(evalNum);
+
+    return (slot) => (present[slot] ? ev(values[slot]) : missing);
   }
 
   if (col.kind === 'mixed') {

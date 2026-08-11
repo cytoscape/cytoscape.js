@@ -654,4 +654,108 @@ describe('gpu/style: state conditions (round 57.1)', function () {
       expect(cy.$id('p').style('border-color')).to.equal('rgb(17,17,17)');
     });
   });
+  // Round 66.1: a data mapper still denies the group the partition above,
+  // but the group's *state-only* mappers are hoisted inside the
+  // per-element loop — re-evaluated only when `flags & mask` changes from
+  // the previous slot.  These specs interleave the states so a cache that
+  // failed to notice a change would be caught, and the last one is the
+  // control the optimisation is judged by: same values as the path that
+  // has no hoist at all.
+  describe('the state hoist beside a data mapper (round 66.1)', function () {
+    // the same private reach the partition suite above uses
+    const partitionOf = (cy, group) => cy._styleEngine.defs[group].partition;
+    const sheet = {
+      nodes: {
+        // the data mapper is what denies the group its partition
+        width: { data: 'w', range: [10, 20] },
+        'border-width': {
+          case: [{ when: { selected: true }, then: 7 }],
+          else: 1,
+        },
+      },
+    };
+
+    /** n nodes, `selected` chosen per index, w cycling over four values. */
+    const build = (n, selectedAt) =>
+      cytoscape({
+        style: sheet,
+        elements: {
+          nodes: Array.from({ length: n }, (_, i) => ({
+            data: { id: `n${i}`, w: i % 4 },
+            selected: selectedAt(i),
+          })),
+        },
+      });
+
+    it('has no partition, so the hoist is what is under test', function () {
+      expect(
+        partitionOf(
+          build(4, () => false),
+          'nodes',
+        ),
+      ).to.equal(null);
+    });
+
+    it('gives each element its own state value, interleaved', function () {
+      const cy = build(40, (i) => i % 2 === 0);
+
+      for (let i = 0; i < 40; i++) {
+        expect(cy.$id(`n${i}`).style('border-width'), `n${i}`).to.equal(
+          i % 2 === 0 ? 7 : 1,
+        );
+      }
+    });
+
+    it('gives each element its own state value, in runs', function () {
+      // runs are the case a per-slot cache gets right for the wrong
+      // reason if it only ever sees one word; both orders are here
+      const cy = build(40, (i) => i < 20);
+
+      expect(cy.$id('n0').style('border-width')).to.equal(7);
+      expect(cy.$id('n19').style('border-width')).to.equal(7);
+      expect(cy.$id('n20').style('border-width')).to.equal(1);
+      expect(cy.$id('n39').style('border-width')).to.equal(1);
+    });
+
+    it('leaves the data mapper per-element', function () {
+      const cy = build(8, (i) => i % 2 === 0);
+
+      // w cycles 0..3 against range [10, 20] over the auto extent
+      expect(cy.$id('n0').style('width')).to.equal(10);
+      expect(cy.$id('n3').style('width')).to.equal(20);
+      expect(cy.$id('n1').style('width')).to.be.closeTo(13.333, 0.001);
+    });
+
+    it('agrees with a sheet whose state mapper cannot be hoisted', function () {
+      // The control.  The same state clause mixed with a data condition
+      // is not state-only, so it takes the un-hoisted path; the two must
+      // agree element for element.
+      const hoisted = build(40, (i) => i % 3 === 0);
+      const notHoisted = cytoscape({
+        style: {
+          nodes: {
+            width: { data: 'w', range: [10, 20] },
+            'border-width': {
+              case: [
+                { when: [{ selected: true }, { data: 'w', gte: 0 }], then: 7 },
+              ],
+              else: 1,
+            },
+          },
+        },
+        elements: {
+          nodes: Array.from({ length: 40 }, (_, i) => ({
+            data: { id: `n${i}`, w: i % 4 },
+            selected: i % 3 === 0,
+          })),
+        },
+      });
+
+      for (let i = 0; i < 40; i++) {
+        expect(hoisted.$id(`n${i}`).style('border-width'), `n${i}`).to.equal(
+          notHoisted.$id(`n${i}`).style('border-width'),
+        );
+      }
+    });
+  });
 });

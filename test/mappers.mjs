@@ -592,6 +592,72 @@ describe('gpu/mappers', function () {
     });
   });
 
+  // Round 66.1: a continuous/discrete evaluator over a numeric column
+  // memoizes by datum when the column repeats.  These pin the two things
+  // that could go wrong — a value that is wrong because it came from the
+  // cache, and a cache that outlives the program that filled it.
+  describe('per-value memo', function () {
+    /** n slots cycling through `distinct` values, so the memo engages. */
+    const repeating = (n, distinct) =>
+      Array.from({ length: n }, (_, i) => (i % distinct) / distinct);
+
+    it('gives the same values as the unmemoized path, repeating or not', function () {
+      const spec = {
+        data: 'w',
+        scale: 'diverging',
+        domain: [0, 0.5, 1],
+        range: ['#cc0033', '#e8e8e8', '#009966'],
+      };
+      // 2000 slots over 8 values (memo engages) and 2000 all distinct
+      // (the sample says it will not pay, so the direct path runs)
+      const repeated = repeating(2000, 8);
+      const distinct = Array.from({ length: 2000 }, (_, i) => i / 2000);
+      const evR = evaluator(spec, COLOR, repeated);
+      const evD = evaluator(spec, COLOR, distinct);
+
+      // an independent reference: one fresh evaluator per slot can hold
+      // no cache at all
+      for (const slot of [0, 1, 7, 8, 999, 1999]) {
+        expect(evR(slot), `repeated ${slot}`).to.deep.equal(
+          evaluator(spec, COLOR, repeated)(slot),
+        );
+        expect(evD(slot), `distinct ${slot}`).to.deep.equal(
+          evaluator(spec, COLOR, distinct)(slot),
+        );
+      }
+
+      // and the values really do vary with the datum (a memo that
+      // returned one colour for everything would pass the above)
+      expect(evR(0)).to.not.deep.equal(evR(4));
+    });
+
+    it('does not carry a value across an auto-domain change', function () {
+      const m = compileMapper({ data: 'w', range: [0, 100] }, NUM);
+      // 0, 2, 4, 6, 8 repeating — extent [0, 8], so slot 1 reads 25
+      const data = dataWith(repeating(2000, 5).map((v) => v * 10));
+
+      expect(bindEvaluator(m, data, 'nodes', 0)(1)).to.equal(25);
+
+      // widen the extent; the rebound evaluator must re-evaluate, not
+      // answer from the memo the previous binding filled
+      data.set('nodes', 2000, 'w', 20);
+      applyAutoExtent(m.program, ...autoExtentFor(m, data, 'nodes'));
+
+      expect(bindEvaluator(m, data, 'nodes', 0)(1)).to.equal(10);
+    });
+
+    it('answers the fallback for an absent value either way', function () {
+      const values = repeating(2000, 4);
+
+      values[5] = undefined;
+
+      const ev = evaluator({ data: 'w', range: [0, 100] }, NUM, values, -1);
+
+      expect(ev(5)).to.equal(-1);
+      expect(ev(4)).to.not.equal(-1);
+    });
+  });
+
   describe('schemes', function () {
     it('tables are well-formed', function () {
       for (const [name, scheme] of Object.entries(SCHEMES)) {

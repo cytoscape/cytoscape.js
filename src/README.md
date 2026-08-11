@@ -1302,6 +1302,30 @@ each is deliberate, not a pass-1 deferral:
   Everything stays fresh
   automatically: a data write re-derives the affected mapped channels,
   gated on the mapped keys.
+- **The CPU apply pass costs per *distinct value*, not per element,
+  wherever it can** (round 66.1).  Two things make a mapped sheet's
+  whole-graph apply cheaper, and both were priced on the harness's
+  465k-edge fixture, whose one diverging edge-colour mapper was
+  **354 ms** of a 1.36 s init:
+  - a **per-value memo** on continuous/discrete evaluation over a numeric
+    column.  Real data repeats — that fixture has 1,920 distinct values
+    over 464,657 edges, its two commonest covering 43% of them — and a
+    colour evaluation is a segment search, an OKLab lerp, `oklabToSrgb`
+    and three `Math.pow`s, allocating four arrays.  Whether to memo is
+    decided **once, from a 512-value sample of the column**, so the
+    un-memoized path keeps calling the evaluator directly: an adaptive
+    memo that gave up when it saw all-distinct data was measured and
+    rejected, its wrapper alone costing ~5% on 200k distinct values.
+  - the **state hoist**: a group denied the round-57.1 partition by one
+    data mapper still evaluates its state-only `case` mappers once per
+    distinct `flags & mask` rather than once per element.  At rest that
+    word never changes, so a sheet's selection affordances cost one
+    evaluation for the whole group.
+
+  Together: that fixture's init **1364 → 1149 ms**, the harness page's
+  first frame 2129 → 2022 ms (JSON) and 1914 → 1756 (wire), with every
+  computed value identical.  The hoist is the larger half (~219 ms of
+  the 215 measured together; the two overlap).
 - **Every mapper is cheaply CPU-evaluable — a load-bearing invariant.**
   It is what keeps `ele.style()` (and `numericStyle`/`renderedStyle`)
   *synchronous*, keeps headless mode and Node tests working (the same IR

@@ -18916,3 +18916,78 @@ factory instead of `fixtures.fromColumnar`, with a columnar-aware
 em-desktop; 569 and 1260 nodes) and `fromColumnar` kept for the one
 network declaring a `derive` — is worth **167 ms** of the hosted page's
 1944 now, not the ~990 it would have been.
+
+### 66.1 — the mapped apply costs per distinct value, not per element (2026-08-11)
+
+Round 66's own decomposition left one item standing: of the harness
+page's remaining init, **340 ms was style mappers over 465k edges**.
+Asked which mapper, the answer was *one* — and it is not the one the
+figure suggests.
+
+**What each clause costs**, same fixture and payload, only the sheet
+varying (headless, median of 3):
+
+| sheet | init | delta |
+|---|---|---|
+| the production sheet, as shipped | 1340 ms | — |
+| edges: `line-color` constant | 986 | **−354** |
+| edges: both `onSelected` opacities constant | 1290 | −50 |
+| nodes: width/height/background constant (3 `case` mappers) | 1372 | +32 |
+| nodes: no label | 1345 | −5 |
+
+The three node `case` mappers and 19.6k labels cost nothing measurable;
+the whole 340 ms is the edge `line-color` diverging mapper, at **762 ns
+per edge**.  A profile diff said where that goes, and the surprise is
+that the colour arithmetic is the *small* half: `linearToByte` 31 ms,
+`oklabToSrgb` 17, `continuousEval` 20 — against ~218 ms of per-element
+apply machinery (`applyMapped`, `applyGroupDef`, `bindCase`,
+`writeChannels`, `setStyle`) and 29 ms of GC.  The reason is
+`partitionOf`: one data-driven mapper denies the *whole group* the
+round-57.1 flag partition, so the two `{ selected: true }` opacity
+clauses are evaluated per edge as well.
+
+Landed, both exact — every computed value identical, goldens and parity
+untouched:
+
+- [x] **A per-value memo** on continuous/discrete evaluation over a
+  numeric column (`style-scales.mts`).  The fixture has **1,920 distinct
+  `Mechanism_of_Action` values over 464,657 edges**, its two commonest
+  covering 43% of them, so the work was being redone ~242× per distinct
+  input.  Sharing one evaluated array across elements is safe for the
+  same reason the channel defaults already are: the write path folds into
+  fresh arrays and never mutates what it was handed.
+- [x] **The state hoist** (`style.mts`): a group without a partition
+  still evaluates its state-only `case` mappers only when `flags & mask`
+  changes from the previous slot.  `partitionOf`'s comment had said there
+  was "nothing to win by partitioning the rest" once a data mapper is
+  present; measured, there was — and more than expected, because what
+  goes away is not just the evaluation but the per-element closure calls
+  and condition reads behind it.
+
+**Measured** (same machine, alternated, own process, 5 reps): the
+fixture's init **1364 → 1149 ms (1.19×)**; the hoist is ~219 ms of that
+and the memo ~23–58 on top (they overlap).  In the browser, the harness
+page's fetch-to-first-frame: JSON **2129 → 2022 ms**, wire **1914 →
+1756**.  `benchmark:renderer`'s ndex scene does not move (936 → 930),
+correctly: its defs are lean and its sheet has **no mappers at all**, so
+there is nothing there for either change to improve — which is also why
+that scene could not have found this.
+
+**The memo's own control decided its shape.**  A first version memoized
+unconditionally: +8% where data repeats, **−3% where every value is
+distinct**.  A second gave up adaptively once misses ran ahead of hits —
+and measured *no better*, because the wrapper costs ~5% on 200k distinct
+values whether or not it still consults its map.  The shipped version
+decides **once, from a 512-value sample**, and returns the original
+direct closure when a memo will not pay: all-distinct back to parity,
+repeating still ~9% ahead.
+
+Verification: 8 new specs (4 in `test/mappers.mjs` for the memo — same
+values as an uncached evaluator, no value carried across an auto-domain
+change, fallback for an absent value; 4 in `test/state-conditions.mjs`
+for the hoist, interleaved and in runs, plus the control that a sheet
+whose state mapper *cannot* be hoisted agrees element for element).
+2189 test:js, 394 test:modules, 24 test:soak, 250 Playwright, all audits
+100%.  Both controls land: making the hoist never notice a changed word
+fails exactly the three per-element specs, and making the memo answer
+with any cached value fails the continuous-scale suite wholesale.

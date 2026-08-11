@@ -4128,23 +4128,52 @@ const partitionOf = (
   let mask = 0;
 
   for (const bm of mappers) {
-    if (bm.m.program.kind !== 'case') {
+    const bits = stateOnlyMask(bm);
+
+    if (bits === 0) {
       return null;
     }
 
-    for (const key of bm.m.keys) {
-      const bit = CONDITION_FLAGS[key];
-
-      if (bit == null) {
-        return null;
-      }
-
-      mask |= bit;
-    }
+    mask |= bits;
   }
 
   return mask === 0 ? null : { mask, records: new Map(), diffs: new Map() };
 };
+
+/**
+ * The state bits one mapper reads, when it reads *nothing else* — else 0.
+ *
+ * A `case` over conditions alone has a value determined by
+ * `flags & mask`, which is what lets both the group-wide partition above
+ * and `applyMapped`'s per-mapper hoist evaluate it once per distinct
+ * word rather than once per element.  A `case` mixing a state condition
+ * with a data one varies per element by definition, and answers 0.
+ */
+const stateOnlyMask = (bm: BoundMapper): number => {
+  if (bm.m.program.kind !== 'case') {
+    return 0;
+  }
+
+  let mask = 0;
+
+  for (const key of bm.m.keys) {
+    const bit = CONDITION_FLAGS[key];
+
+    if (bit == null) {
+      return 0;
+    }
+
+    mask |= bit;
+  }
+
+  return mask;
+};
+
+/** A bound mapper's channel writer plus its slot evaluator. */
+interface Evaluator {
+  set: (computed: Computed, value: Evaluated) => void;
+  ev: (slot: number) => Evaluated;
+}
 
 /** Evaluated-value equality for the round-61 partition diff: colours
  * evaluate to RGBA arrays, everything else to scalars/strings. */
@@ -7457,7 +7486,7 @@ export class StyleEngine {
       ? def.mappers.filter((bm) => !owned.has(bm.m.prop))
       : def.mappers;
     const scratch: Computed = { ...def.computed };
-    const evals = active.map((bm) => ({
+    const bind = (bm: BoundMapper): Evaluator => ({
       set: bm.channel.set,
       ev: bindEvaluator(
         bm.m,
@@ -7466,10 +7495,47 @@ export class StyleEngine {
         bm.channel.default(group),
         this.readValue,
       ),
-    }));
+    });
+
+    // Round 66.1: the state-only `case` mappers still hoist, even though
+    // a data mapper in the same group denied the whole def the round-57.1
+    // partition.  Their value is a function of `flags & mask` alone, so
+    // re-running them only when that word changes is the same work the
+    // partition does — and at rest the word never changes at all, so a
+    // sheet's selection affordances cost one evaluation for the group
+    // rather than one per element.  `partitionOf`'s comment used to say
+    // there was nothing to win here; measured on the 465k-edge harness
+    // fixture, two `{ selected: true }` opacity clauses were ~50 ms.
+    const stateMask = active.reduce((m, bm) => m | stateOnlyMask(bm), 0);
+    const stateEvals: Evaluator[] = [];
+    const evals: Evaluator[] = [];
+
+    for (const bm of active) {
+      (stateOnlyMask(bm) !== 0 ? stateEvals : evals).push(bind(bm));
+    }
+
+    const flagsCol =
+      stateEvals.length > 0
+        ? (store.column(
+            group === 'nodes' ? 'node.flags' : 'edge.flags',
+          ) as Uint32Array)
+        : null;
+    let lastWord = -1;
 
     for (let i = 0; i < target.length; i++) {
       const slot = target[i];
+
+      if (flagsCol != null) {
+        const word = flagsCol[slot] & stateMask;
+
+        if (word !== lastWord) {
+          lastWord = word;
+
+          for (let j = 0; j < stateEvals.length; j++) {
+            stateEvals[j].set(scratch, stateEvals[j].ev(slot));
+          }
+        }
+      }
 
       for (let j = 0; j < evals.length; j++) {
         evals[j].set(scratch, evals[j].ev(slot));

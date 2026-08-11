@@ -33,15 +33,29 @@ export const WIRE_EXT = '.cyge'; // the format's magic is 'CYGE'
 let cached = null;
 let lib = null;
 
+/** The one bundle both halves of this use: the page loads it, so we encode with it. */
+export const WIRE_BUNDLE = 'cytoscape.umd.js';
+
 /**
- * The wire helpers, taken from the **built CJS bundle** rather than from
- * `src/`.
+ * The wire helpers, taken from the **UMD bundle the page itself loads** rather
+ * than from `src/`.
  *
- * Three reasons, in order of weight.  It is the same code the page will decode
- * with, so an encoder/decoder mismatch is impossible by construction.  It keeps
- * the status build free of `.mts` and therefore of tsx, so Cloudflare's plain
- * `npm ci` + `npm run status:all` is enough.  And it keeps the build's import
- * graph out of `src/`, which a spec pins.
+ * Three reasons, in order of weight.  It is literally the code the page will
+ * decode with — `debug/index.html` has one `<script src="../build/
+ * cytoscape.umd.js">` and `planDebug` copies that same file — so an
+ * encoder/decoder mismatch is impossible by construction.  It keeps the status
+ * build free of `.mts` and therefore of tsx, so Cloudflare's plain `npm ci` +
+ * `npm run status:all` is enough.  And it keeps the build's import graph out of
+ * `src/`, which a spec pins.
+ *
+ * It read `cytoscape.cjs.js` until 2026-08-11, which satisfied the second and
+ * third reasons and only *looked* like it satisfied the first: `npm run watch`
+ * rebuilds the UMD alone (`FILE=umd`), and `npm run status` does not build at
+ * all, so a tree can carry a fresh UMD beside a CJS from any earlier commit —
+ * and then the fixtures on the site are encoded by one version of the format
+ * and decoded by another.  The wire format is versioned and tolerant, so this
+ * was latent rather than broken (measured: a CJS six days old round-trips every
+ * fixture), but the invariant the comment claimed was not the one the code had.
  *
  * @returns the factory, or `null` when the bundle has not been built
  * @throws when the bundle exists but predates the wire helpers — a stale
@@ -53,7 +67,7 @@ export function wireLib(root) {
     return lib;
   }
 
-  const path = join(root, 'build', 'cytoscape.cjs.js');
+  const path = join(root, 'build', WIRE_BUNDLE);
 
   if (!existsSync(path)) {
     return null;
@@ -67,7 +81,7 @@ export function wireLib(root) {
     typeof cy.serializeElements !== 'function'
   ) {
     throw new Error(
-      'build/cytoscape.cjs.js is stale — it lacks the wire helpers; run `npm run build`',
+      `build/${WIRE_BUNDLE} is stale — it lacks the wire helpers; run \`npm run build\``,
     );
   }
 
@@ -81,7 +95,7 @@ function requireWireLib(root) {
   const cy = wireLib(root);
 
   if (cy == null) {
-    throw new Error('build/cytoscape.cjs.js is missing — run `npm run build`');
+    throw new Error(`build/${WIRE_BUNDLE} is missing — run \`npm run build\``);
   }
 
   return cy;

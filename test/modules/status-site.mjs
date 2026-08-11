@@ -244,7 +244,7 @@ describe('status site: the Cloudflare Pages per-file cap', function () {
     try {
       mkdirSync(join(root, 'build'));
       writeFileSync(
-        join(root, 'build', 'cytoscape.cjs.js'),
+        join(root, 'build', mod.WIRE_BUNDLE),
         'module.exports = {};\n',
       );
 
@@ -252,6 +252,26 @@ describe('status site: the Cloudflare Pages per-file cap', function () {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it('encodes with the same bundle debug/index.html loads', async function () {
+    // 2026-08-11: it encoded with `cytoscape.cjs.js` while the page decodes
+    // with `cytoscape.umd.js`, and the two are not kept in step — `npm run
+    // watch` rebuilds the UMD alone and `npm run status` builds nothing — so
+    // the site could ship fixtures written by one commit's format and read by
+    // another's.  The fix is to have one file, and this is the spec that says
+    // which: the encoder's bundle must be the one the page's script tag names.
+    //
+    // Control: pointing WIRE_BUNDLE back at 'cytoscape.cjs.js' fails here.
+    const mod = await import('../../scripts/status/wire-fixtures.mjs');
+    const html = readFileSync(join(ROOT, 'debug', 'index.html'), 'utf8');
+    const bundles = [...html.matchAll(/src="\.\.\/build\/([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+
+    expect(bundles, 'the page loads exactly one bundle').to.deep.equal([
+      mod.WIRE_BUNDLE,
+    ]);
   });
 
   it('a missing bundle throws the rebuild instruction rather than answering null', async function () {

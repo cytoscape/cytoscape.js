@@ -488,6 +488,15 @@ shader over every allocated slot.
   every curve style, every arrowhead in both fills and the whole label
   surface on one screen.
 
+  When it does not come up, the message on the page names the *phase* —
+  `network`, `http`, `decode` or `init` (round 65.13, `debug/load-error.js`).
+  That distinction is load-bearing: `init.js` used to build the instance
+  inside the fixture's promise chain, so a library error on a
+  binary-loaded network was reported as "a decode failure … rebuild the
+  site", while the generated networks showed the real cause — a WebGPU
+  problem read as "the binary networks are broken".  A fatal message is
+  sticky, too; the stats overlay had been erasing it twice a second.
+
   `test/modules/debug-harness.mjs` is its only
   automated coverage: every fixture exists at the path the page fetches,
   every sheet compiles against that fixture's real data, the compound

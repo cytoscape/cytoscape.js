@@ -18710,3 +18710,81 @@ clean.  Eight controls run red, each failing exactly its spec — the
 formatter rule, the import walk, the whole-stats merge, the union
 shape, the ledger audit (both entries), `sameEpoch` forced true,
 `screenOf` forced true, and the cpu-twin fallback.
+
+### 65.13 — "the debug page doesn't work with the binary networks" (2026-08-11)
+
+The report: the hosted harness fails on the networks that load from a
+fixture — enrichmentmap named as the example — while the generated ones
+are fine.  The investigation found the binary path **correct**, and the
+message it prints **wrong in a way that produces exactly that report**.
+
+**What was measured before changing anything.**  Every fetched fixture,
+encoded and decoded through the page's own two functions and compared
+column by column against the JSON path: 26,173 nodes and 574,515 edges,
+**no column lost, no value changed**, positions within 2.3e-4 of f32,
+edge endpoints identical.  Then the page itself, driven in Chromium on
+both servers — the JSON tree on 3333's shape and the built `status/` on
+3335 — for all **fourteen** networks: identical node/edge/glyph counts,
+and the two screenshots of em-web differ by **20 pixels of 765,000**
+(0.003%), which is antialiasing.  Picking, a data query, a click-select
+and a wheel-zoom all agree across the two paths.  The `?columnar=true`
+and `?binary=true` toggles work on every fetched network, up to the
+465k-edge one.  A six-day-old encoder round-trips every fixture too, so
+the format is as tolerant as its version rule claims.
+
+**The defect is the error handling, and it is binary-specific by
+accident.**  `init.js` called `loadNetwork` *inside* the fixture's
+promise chain, under a single `.catch( fail )`.  So every error the
+library threw — the sheet compile, `cytoscape()`, the layout — was
+reported as a fixture failure, and for a wire-loaded network the text
+was "A decode failure means the buffer and the library disagree —
+rebuild the site".  The eight generated networks build outside any
+promise, so the identical failure surfaced there as itself.  A WebGPU
+problem therefore reads as *"the binary networks are broken, the
+built-in ones are fine"*.  Reproduced in Firefox (no WebGPU): em-web
+printed the decode message, `v3-default` printed the real one.
+
+**And a second, worse one underneath: the stats overlay erased the
+error.**  `startStats` rewrites `#stats` every 500 ms, and the
+`cy.ready` rejection — the *most common* real failure, no GPU adapter —
+wrote its message there.  Measured in plain Chromium with no adapter:
+the console carried "no adapter could be acquired" and the page showed
+a blank canvas above "569 nodes, 6899 edges, 0 glyphs".  The one thing
+a harness owes you, it was deleting twice a second.
+
+Landed:
+
+- [x] **`debug/load-error.js`** — the message, with the **phase passed
+  in by the caller that knows it** rather than guessed from the error:
+  `network` (the fetch never completed), `http` (the server answered,
+  badly), `decode` (bytes arrived, would not parse), `init` (the data
+  is loaded and the library failed).  Only `decode` may blame the wire
+  buffer; `init` says how many nodes and edges came through and that
+  the data is not the suspect.
+- [x] **`init.js` restructured** so `loadNetwork` runs outside the
+  fetch chain, and `showFatal`/`showStats` make a fatal message stick —
+  the overlay cannot overwrite one.
+- [x] **A `file://` diagnosis**, because opening `status/debug/index.html`
+  from disk breaks every fetched network and nothing else, which is the
+  reported symptom exactly.  It now says so and names the two servers.
+- [x] **The encoder uses the bundle the page loads.**  `wire-fixtures.mjs`
+  encoded with `build/cytoscape.cjs.js` while `debug/index.html` decodes
+  with `build/cytoscape.umd.js`, and its own comment claimed that made a
+  mismatch "impossible by construction".  It did not: `npm run watch`
+  rebuilds the UMD alone and `npm run status` builds nothing, so a tree
+  can hold a fresh UMD beside a CJS from any earlier commit.  Latent, not
+  broken — but the invariant the comment asserted is now the one the code
+  has, pinned by a spec that reads the page's script tag.
+
+Verification: 7 new specs in `test/modules/debug-harness.mjs` and 1 in
+`status-site.mjs` (388 test:modules, 0 fail), and three controls run
+red — every phase given the wire-decode hint fails exactly the four
+specs its comment names, renaming a phase string fails the routing
+spec, and pointing the encoder back at the CJS fails the bundle spec.
+All fourteen networks re-driven on both servers after the change, plus
+the four failure paths: no-adapter Chromium, Firefox, `file://` and a
+404 each report their own cause now.
+
+**What is *not* explained.**  Nothing measured here makes a binary
+fixture fail on a working browser, so if the page is still blank after
+this, the message on it is now the evidence — it will name the phase.

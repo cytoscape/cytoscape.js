@@ -1,6 +1,38 @@
 {
   "runs": [
     {
+      "file": "results-2026-08-11T15-16-55-256Z.json",
+      "date": "2026-08-11T15:16:55.256Z",
+      "commit": "54062c08",
+      "commitSubject": "docs(65.12c): the renderer device flip is an open question again, measured",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 1358286,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": "round 65.12: replicate B, same commit and harness as A.  Any change between the two is noise by construction — the pair exists so the comparison has a measured band to screen against, and so the screen's own false-positive rate is on the record (1 of 217 rows here, against 6 under a flat ±10%)."
+    },
+    {
+      "file": "results-2026-08-11T14-54-19-609Z.json",
+      "date": "2026-08-11T14:54:19.609Z",
+      "commit": "54062c08",
+      "commitSubject": "docs(65.12c): the renderer device flip is an open question again, measured",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 1355468,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": "round 65.12: first --repeat 3 run — each row is the median of three processes and carries the band they spanned.  Replicate A of a same-commit pair published to give the new harness epoch its measured noise floor."
+    },
+    {
       "file": "results-alggpu-2026-08-10T22-13-32-549Z.json",
       "date": "2026-08-10T22:13:32.549Z",
       "commit": "44e55dc9",

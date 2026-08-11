@@ -18671,10 +18671,42 @@ having built it: the algorithms-gpu movers *were* a sweep-composition
 artifact, and the quick profile's step *was* 62.5c, and neither
 conclusion now depends on someone remembering.
 
-Verification: 2167 test:js, 383 test:modules (25 comparison specs, 28
-new for the fingerprint and the merge), 24 soak, throw gate 213/0
-never-run, JSDoc 100% with the new `gpuFrameReadings` documented,
-types regenerated, lint and format clean.  Seven controls run red,
-each failing exactly its spec — the formatter rule, the import walk,
-the whole-stats merge, the ledger audit (both entries), `sameEpoch`
-forced true, `screenOf` forced true, and the cpu-twin fallback.
+**The acid test, and what it cost to run honestly.**  Two `--repeat 3`
+quick runs at one commit, on a clean tree, 22.6 min each — identical
+code, so every change between them is false by construction.  The
+comparison reports **0 screened regressions** and drift +0.1% over 219
+rows.  Six rows moved beyond ±10%; five were caught by their own band.
+
+The sixth is the number worth publishing: `mut-bulk: select + unselect`
+moved **−11.3%** where run A's three repeats had agreed to 1.3% and run
+B's to 9.2%, so the screen let it through.  That is not a bug to tune
+away — a three-repeat band is a *sample* of the noise, not the noise,
+and a row whose distribution has a mode three draws can miss will
+occasionally clear it.  Stated as a rate: **1 false flag in 219 rows,
+against 6 under the flat ±10% the page used before.**  The pair is
+published as replicates with notes saying so, and the mover row carries
+its band in the evidence column, so a reader sees the same thing this
+paragraph says.
+
+The instrument also measured its own blind spot.  Of 106 v4 rows, **94
+(89%) have a band tight enough to detect a real +10% regression**; 12
+do not, 3 are worse than 20%, and the worst is `sweep: elements()` at
+4.9 ns with a **551%** band — round 62's sub-floor rule, arriving as a
+measurement instead of a warning.
+
+A first pair was discarded before publishing: both runs carried
+`dirty: true`, because a `report-html.mjs` edit sat in the tree when
+`buildMeta` stamped them.  That file cannot touch a number and is
+excluded from the fingerprint by design — and publishing the run that
+establishes the epoch's noise floor with an asterisk on it is exactly
+the asterisk this round exists to remove, so the pair was re-run on a
+clean tree.
+
+Verification: 2167 test:js, 384 test:modules (25 comparison specs, 29
+new for the fingerprint and the merge, 2 for the index marker), 24
+soak, throw gate 213/0 never-run, JSDoc 100% with the new
+`gpuFrameReadings` documented, types regenerated, lint and format
+clean.  Eight controls run red, each failing exactly its spec — the
+formatter rule, the import walk, the whole-stats merge, the union
+shape, the ledger audit (both entries), `sameEpoch` forced true,
+`screenOf` forced true, and the cpu-twin fallback.

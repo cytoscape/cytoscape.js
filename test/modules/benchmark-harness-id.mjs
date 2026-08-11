@@ -299,6 +299,26 @@ describe('merging repeats (round 65.12)', () => {
     expect(statsOf(merged).repeats).to.equal(2);
   });
 
+  it('keeps a row only a later repeat emitted — the shape is the union, not the first', () => {
+    // control: taking present[0]'s groups drops `late` entirely, which is the
+    // silent truncation this repo's benchmark rules exist to prevent
+    const late = job(400);
+
+    late.groups.push({
+      name: 'appeared-later',
+      benches: [{ name: 'gpu', stats: { p50: 7, samples: 5 } }],
+    });
+
+    const merged = mergeRepeats([job(100), late, job(200)]);
+    const group = merged.groups.find((g) => g.name === 'appeared-later');
+
+    expect(group, 'a row from a later repeat must survive').to.not.equal(
+      undefined,
+    );
+    expect(group.benches[0].stats.p50).to.equal(7);
+    expect(group.benches[0].stats.repeats).to.equal(1);
+  });
+
   it('sums the wall time across repeats rather than reporting one pass', () => {
     expect(mergeRepeats([job(100), job(200), job(300)]).durationMs).to.equal(
       3000,

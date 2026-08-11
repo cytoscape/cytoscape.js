@@ -151,7 +151,13 @@ function dot(cls, pct, tip) {
 }
 
 const tipFor = (side, stats) =>
-  `${side} — p50 ${fmtTime(stats.p50)} · avg ${fmtTime(stats.avg)} · p99 ${fmtTime(stats.p99)} · min ${fmtTime(stats.min)}`;
+  `${side} — p50 ${fmtTime(stats.p50)} · avg ${fmtTime(stats.avg)} · p99 ${fmtTime(stats.p99)} · min ${fmtTime(stats.min)}` +
+  // round 65.12: a `--repeat` run's p50 is the median of N processes, and the
+  // band they spanned is the only honest thing to compare a later change
+  // against.  A reader of one run should see it too, not only the comparison.
+  (stats.repeats > 1
+    ? ` · median of ${stats.repeats} runs, band ${((stats.repeatSpread - 1) * 100).toFixed(0)}%`
+    : '');
 
 function pairRow(group, pair, axis) {
   const a = axis.pos(pair.gpu.stats.p50);

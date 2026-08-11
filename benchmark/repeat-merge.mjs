@@ -60,12 +60,34 @@ export function mergeRepeats(runs) {
     return present[0];
   }
 
-  // the first repeat sets the shape: group order, bench order, and every
-  // non-row field (suite, n, op, context)
-  const merged = {
-    ...present[0],
-    groups: present[0].groups.map((g) => ({ ...g, benches: [] })),
-  };
+  // The shape is the **union** across repeats, in first-seen order — not the
+  // first repeat's.  Taking the first would silently drop a row only the later
+  // repeats emitted, which is the invisible truncation this repo's benchmark
+  // rules exist to prevent; a row measured twice out of three says so in its
+  // `repeats` count instead of vanishing.
+  const order = [];
+  const byGroup = new Map();
+
+  for (const run of present) {
+    for (const group of run.groups ?? []) {
+      let entry = byGroup.get(group.name);
+
+      if (entry == null) {
+        entry = { name: group.name, benchOrder: [], benches: new Set() };
+        byGroup.set(group.name, entry);
+        order.push(entry);
+      }
+
+      for (const bench of group.benches ?? []) {
+        if (!entry.benches.has(bench.name)) {
+          entry.benches.add(bench.name);
+          entry.benchOrder.push(bench.name);
+        }
+      }
+    }
+  }
+
+  const merged = { ...present[0], groups: [] };
 
   const statsFor = (groupName, benchName) =>
     present
@@ -77,20 +99,32 @@ export function mergeRepeats(runs) {
       )
       .filter((s) => s != null && s.p50 > 0);
 
-  for (const [gi, group] of present[0].groups.entries()) {
-    for (const bench of group.benches) {
-      const all = statsFor(group.name, bench.name);
+  for (const group of order) {
+    const benches = [];
+
+    for (const name of group.benchOrder) {
+      const all = statsFor(group.name, name);
 
       if (all.length === 0) {
-        merged.groups[gi].benches.push(bench);
+        // present in some repeat but with no usable p50 — keep whatever that
+        // repeat wrote, so the row is visible rather than quietly absent
+        const raw = present
+          .flatMap((r) => r.groups ?? [])
+          .find((g) => g.name === group.name)
+          ?.benches?.find((b) => b.name === name);
+
+        if (raw != null) {
+          benches.push(raw);
+        }
+
         continue;
       }
 
       const p50s = all.map((s) => s.p50);
       const chosen = all[medianIndex(p50s)];
 
-      merged.groups[gi].benches.push({
-        name: bench.name,
+      benches.push({
+        name,
         stats: {
           ...chosen,
           repeats: all.length,
@@ -98,6 +132,8 @@ export function mergeRepeats(runs) {
         },
       });
     }
+
+    merged.groups.push({ name: group.name, benches });
   }
 
   merged.durationMs = present.reduce((sum, r) => sum + (r.durationMs ?? 0), 0);

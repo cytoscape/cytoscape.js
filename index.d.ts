@@ -5802,6 +5802,22 @@ declare namespace cytoscape {
              * The shape of the node overlay; may be round-rectangle (default), ellipse. Doesn’t apply to edges.
              */
             "overlay-shape"?: PropertyValueEdge<"round-rectangle" | "ellipse">;
+            /**
+             * The filling style of the overlay; may be solid (default), linear-gradient, or radial-gradient.
+             */
+            "overlay-fill"?: PropertyValueEdge<"solid" | "linear-gradient" | "radial-gradient">;
+            /**
+             * The direction of the gradient for the node overlay. Doesn’t apply to edges.
+             */
+            "overlay-gradient-direction"?: PropertyValueEdge<string>;
+            /**
+             * The colors to use at each stop in the gradient for the overlay; may be specified as a space-separated list or an array.
+             */
+            "overlay-gradient-stop-colors"?: PropertyValueEdge<string[] | string>;
+            /**
+             * The positions of each stop in the gradient for the overlay; may be specified as a space-separated list or an array.
+             */
+            "overlay-gradient-stop-positions"?: PropertyValueEdge<(number | string)[] | string>;
         }
 
         /**
@@ -5825,6 +5841,22 @@ declare namespace cytoscape {
              * The shape of the node underlay; may be round-rectangle (default), ellipse. Doesn’t apply to edges.
              */
             "underlay-shape"?: PropertyValueNode<"round-rectangle" | "ellipse">;
+            /**
+             * The filling style of the underlay; may be solid (default), linear-gradient, or radial-gradient.
+             */
+            "underlay-fill"?: PropertyValueNode<"solid" | "linear-gradient" | "radial-gradient">;
+            /**
+             * The direction of the gradient for the node underlay. Doesn’t apply to edges.
+             */
+            "underlay-gradient-direction"?: PropertyValueNode<string>;
+            /**
+             * The colors to use at each stop in the gradient for the underlay; may be specified as a space-separated list or an array.
+             */
+            "underlay-gradient-stop-colors"?: PropertyValueNode<string[] | string>;
+            /**
+             * The positions of each stop in the gradient for the underlay; may be specified as a space-separated list or an array.
+             */
+            "underlay-gradient-stop-positions"?: PropertyValueNode<(number | string)[] | string>;
         }
 
         /**

@@ -555,14 +555,14 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
         Math.round( r1 + (r2 - r1) * percent ),
         Math.round( g1 + (g2 - g1) * percent ),
         Math.round( b1 + (b2 - b1) * percent ),
-        Math.round( a1 + (a2 - a1) * percent )
+        a1 + (a2 - a1) * percent
       ];
 
       flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
         bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
         name: prop.name,
         value: clr,
-        strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
+        strValue: 'rgba(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ', ' + clr[3] + ')'
       };
 
     } else if( type.number ){

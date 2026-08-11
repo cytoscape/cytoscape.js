@@ -118,7 +118,9 @@ styfn.overrideBypass = function( eles, name, value ){
       }
 
       if( isColor ){
-        prop.strValue = 'rgb(' + value.join( ',' ) + ')';
+        prop.strValue = value[3] == null
+          ? 'rgb(' + value[0] + ',' + value[1] + ',' + value[2] + ')'
+          : 'rgba(' + value[0] + ',' + value[1] + ',' + value[2] + ',' + value[3] + ')';
       } else if( isMulti ){
         prop.strValue = value.join( ' ' );
       } else {

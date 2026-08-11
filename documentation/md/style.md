@@ -772,6 +772,18 @@ These properties allow for the creation of overlays on top of nodes or edges, an
  * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
  * **`overlay-opacity`** : The opacity of the overlay.
  * **`overlay-shape`** : The shape of the node overlay; may be `round-rectangle` (default), `ellipse`. Doesn't apply to edges.
+ * **`overlay-fill`** : The filling style of the overlay; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
+* **`overlay-gradient-stop-colors`** : The colours of the overlay gradient stops (e.g. `cyan magenta yellow`).
+ * **`overlay-gradient-stop-positions`** : The positions of the overlay gradient stops (e.g. `0% 50% 100%`). If not specified or invalid, the stops will divide equally.
+ * **`overlay-gradient-direction`** : For `overlay-fill: linear-gradient`, this property defines the direction of the overlay gradient.  The following values are accepted:
+   * `to-bottom` (default)
+   * `to-top`
+   * `to-left`
+   * `to-right`
+   * `to-bottom-right`
+   * `to-bottom-left`
+   * `to-top-right`
+   * `to-top-left`
 
 
 ## Underlay
@@ -782,6 +794,18 @@ These properties allow for the creation of underlays behind nodes or edges, and 
  * **`underlay-padding`** : The area outside of the element within which the underlay is shown.
  * **`underlay-opacity`** : The opacity of the underlay.
  * **`underlay-shape`** : The shape of the node underlay; may be `round-rectangle` (default), `ellipse`. Doesn't apply to edges.
+ * **`underlay-fill`** : The filling style of the underlay; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
+* **`underlay-gradient-stop-colors`** : The colours of the underlay gradient stops (e.g. `cyan magenta yellow`).
+ * **`underlay-gradient-stop-positions`** : The positions of the underlay gradient stops (e.g. `0% 50% 100%`). If not specified or invalid, the stops will divide equally.
+ * **`underlay-gradient-direction`** : For `underlay-fill: linear-gradient`, this property defines the direction of the underlay gradient.  The following values are accepted:
+   * `to-bottom` (default)
+   * `to-top`
+   * `to-left`
+   * `to-right`
+   * `to-bottom-right`
+   * `to-bottom-left`
+   * `to-top-right`
+   * `to-top-left`
 
 ## Ghost
 

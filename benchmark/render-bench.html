@@ -442,13 +442,16 @@
           let dir = 1;
           let tick = 0;
           // round 65.12: sample on a *new reading*, not on a changed value.
-          // This used to be `g !== lastGpu`, which drops every repeat — so a
-          // pan whose device time alternates between two quantized durations
-          // contributed one sample per transition instead of one per frame,
-          // and its p50 landed in whichever mode held the middle transition.
-          // Measured across four published runs, the same row read 460 µs,
-          // 1.16 ms, 465 µs, 1.17 ms with no relation to the commit, and the
-          // comparison ranked the flip first at +152%.
+          // This used to be `g !== lastGpu`, which cannot tell a repeated
+          // measurement from a stale one — the device time is latest-wins and
+          // quantized, so an unchanged value may be either.
+          //
+          // What this does NOT fix, stated so the next reader does not assume
+          // it: the peak-slot device row flips between ~0.46 and ~1.17 ms
+          // across runs (and, in one process, across scenes) with no relation
+          // to the commit, and the comparison ranked that at +152%.  The old
+          // sampler was already yielding 120 of 121 frames, so the dedupe was
+          // never the cause.  PLAN.md's 65.11 entry carries the open question.
           let lastReadings = -1;
           let lastGpu = -1;
           let warnedNoReadings = false;

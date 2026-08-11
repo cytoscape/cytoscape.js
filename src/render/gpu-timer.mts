@@ -38,13 +38,17 @@ export class GpuTimer {
 
   /**
    * How many readings have resolved.  `lastMs` is latest-wins and quantized
-   * (Chrome: ~100 µs), so a sampler cannot tell a repeated value from a stale
-   * one — and round 65.11 measured what that costs: the renderer benchmark
-   * recorded a device time only when the *value* changed, so a pan alternating
-   * between two durations contributed one sample per transition rather than one
-   * per frame, and its p50 flipped between the two modes across runs with no
-   * relation to the commit.  A monotonic counter is what a sampler actually
+   * (Chrome: ~100 µs), so a sampler keying off the *value* cannot tell a
+   * repeated measurement from a stale one — which is what the renderer
+   * benchmark did until round 65.12.  A monotonic counter is what a sampler
    * needs: it says "this is a new measurement", which the value cannot.
+   *
+   * Stated precisely, because 65.11 first claimed more than this: on the
+   * scenes measured, the value-keyed sampler was already yielding ~one sample
+   * per frame (120 of 121), so removing it did *not* explain the peak-slot
+   * device row's flip between 0.46 and 1.17 ms.  That remains open; see
+   * PLAN.md's 65.11 entry, whose leading hypothesis is that `read()` below
+   * reports a span over fewer passes in the fast mode.
    */
   readings: number;
 

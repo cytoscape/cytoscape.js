@@ -18479,24 +18479,50 @@ that is not measured is worth no more than the alarm it dismisses.
   the 791 rows in an all run are one-shot (curves 22, arrows 21,
   labels 6).
 
-- **The renderer's device pair has a mechanism, not just a mode.**
-  Round 62.7 recorded the peak-slot/compacted pair "trading modes";
-  the sampler is why.  `panScenario` records `gpuFrameMs` **only when
-  the value changes** (`g !== lastGpu`), so a series that dwells in
-  one mode and visits the other briefly contributes *one sample per
-  transition* rather than one per frame.  The device timer reports two
-  discrete durations for the peak-slot pan — 0.46 and 1.15–1.17 ms,
-  readings quantized by the browser to ~100 µs and delivered
-  latest-wins — so the p50 lands in whichever cluster holds the middle
-  transition.  Across the four published runs that p50 reads 460 µs,
-  1.16 ms, 465 µs, 1.17 ms with no relation to the commit, and the
-  page ranks the flip first at **+152%**.  Within a single run the
-  clustering is visible in the percentiles: at `365d4d5a`, min 0.46
-  with p25 through p99 at 1.15–1.16; at `e37d2444`, min through p75
-  all 0.46.  `pick: hover while panning` is the same class in a
-  cheaper form — **25 samples**, 100 µs quantization, min 0 · p25
-  100 µs · p50 400 µs · p75 43 ms · max 73 ms — where one sample
-  crossing the median prints as +100%.
+- **The renderer's device pair flips between two modes, and the cause
+  is still open.**  *(This entry was rewritten on 2026-08-11 after
+  round 65.12 measured it.  The original said the sampler was the
+  cause — `panScenario` recorded `gpuFrameMs` only when the value
+  changed, so a two-mode series would contribute one sample per
+  transition — and that was wrong.  The sample counts say so: the old
+  sampler already yielded 120 of 121 frames, because the per-frame
+  values jitter rather than repeat.  The dedupe-by-value was worth
+  removing on its own terms, and 65.12 removed it, but it never
+  explained the flip.  Recorded in full because a wrong mechanism
+  confidently written down is worse than an open question.)*
+
+  What is measured: across the four published runs the peak-slot p50
+  reads 460 µs, 1.16 ms, 465 µs, 1.17 ms with no relation to the
+  commit, and the page ranked the flip first at **+152%**.  Within a
+  run the row is *stable* — at `e37d2444` min through p75 all 0.46 —
+  so this is bistability per run, not per frame.  And 65.12's
+  verification run pins it tighter still: in **one process**, the ten
+  scenes split 0.46/0.47 (five), 0.57, 0.64, and 1.10/1.17/1.18
+  (three), while the compacted twin reads 0.98 in every one of them.
+  So it is per *scene instance*, not per run, machine or driver.
+
+  The clue worth following: where the peak-slot row reads 0.46 it is
+  **twice as fast as its compacted twin**, which is backwards — the
+  peak-slot pan walks a 25 000-slot instance range with 2 500 live,
+  the compacted one walks 2 500, and the cull pass covers the whole
+  range either way.  A number that is too *good* usually means the
+  measurement is covering less, not that the work is.  `GpuTimer.read`
+  reports the span from the earliest begin to the latest end **across
+  whichever passes have non-zero timestamps**, skipping any pair that
+  comes back zero — so a frame whose render pass reported no
+  timestamps would yield the cull pass alone and land exactly where
+  0.46 does.  That is a hypothesis with a mechanism, not a finding:
+  proving it needs the timer to report which pairs contributed, which
+  is its own pass.
+
+  `pick: hover while panning` is a different and simpler problem —
+  **25 samples**, a 100 µs-quantized clock, min 0 · p25 100 µs · p50
+  400 µs · p75 43 ms · max 73 ms on the ndex scene, where one sample
+  crossing the median prints as +100%.  65.12 took it to 80 samples.
+  Note what that verification could and could not show: on the
+  `generated 25k × 50k` scene the p50 was already stable (17.4 ms at
+  25 samples, 17.3 ms at 80), so the fix is justified by the ndex
+  scene's distribution rather than demonstrated on it.
 
 - **The algorithms-gpu movers track the sweep's composition.**  65.10
   changed three files under `src/algorithms/`:
@@ -18608,15 +18634,25 @@ else is a value, not a change.
   which `report-html.mjs` was taught in 65.9 and this module was not —
   all ten algorithms-gpu movers had been printing "no v3 twin" with
   their twin in the same file.
-- **The two renderer samplers.**  `panScenario` recorded a device time
-  only when the *value* changed, so a two-mode series contributed one
-  sample per transition instead of one per frame; `GpuTimer` now
-  counts its readings and `RendererStats.gpuFrameReadings` exposes the
-  counter, which is what a sampler actually needs (a value cannot say
-  "I am new").  The pick scenario went from 25 samples to 80: its
-  latency distribution is bimodal and its clock is quantized to
-  100 µs, so a 25-sample p50 sat on the boundary between clusters and
-  one sample crossing it printed as +100%.
+- **The two renderer samplers — and what verifying them corrected.**
+  `panScenario` recorded a device time only when the *value* changed,
+  which cannot distinguish a repeat from a stale reading; `GpuTimer`
+  counts its readings now and `RendererStats.gpuFrameReadings` exposes
+  the counter, which is what a sampler needs (a value cannot say "I am
+  new").  That is right in principle and **it is not what caused the
+  +152% flip**, which 65.11 had claimed: the run that verified it
+  reads 121 samples where the old sampler read 120, because the
+  per-frame values jitter rather than repeat.  The 65.11 entry above
+  is rewritten with the measurement and the flip is back to being an
+  open question, with a hypothesis (the timer's pass-span may be
+  covering fewer passes in the fast mode) and the observation that
+  makes it interesting: in one process the ten scenes split
+  0.46–0.64 ms and 1.10–1.18 ms while the compacted twin holds 0.98
+  throughout, and where peak reads 0.46 it is *faster than a pan over
+  a tenth as many slots*.  The pick scenario went from 25 samples to
+  80, on the same reasoning as before but with its evidence stated
+  properly: it is justified by the ndex scene's 0 → 73 ms spread, and
+  the scene the verification actually ran was already stable at 25.
 - **The three mutation helpers got the 62.5c pre-warm** they never
   had.  This was the *cause* of the archive's most bistable row, not
   only its symptom: `mut: position set` spanned 47.6–69.3 ns in two

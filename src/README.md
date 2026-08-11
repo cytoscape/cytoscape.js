@@ -3354,6 +3354,20 @@ one-shot row's movement to a commit, reproduce it best-of on one
 binary — the frame rows (121 frames per press) and pick p50s are the
 regression signal here, not the one-shots.
 
+**The `gpu device (peak slots)` row is not a regression signal either,
+and nobody knows why yet** (round 65.12).  It flips between ~0.46 and
+~1.17 ms with no relation to the commit — across published runs, and
+in one process across scenes (five scenes at 0.46–0.47, three at
+1.10–1.18) while its compacted twin holds 0.98 ms in every one.  Where
+it reads 0.46 it is *faster than a pan over a tenth as many slots*,
+which is backwards, so the suspicion is that the fast mode measures
+fewer passes rather than less work: `GpuTimer.read` spans the earliest
+begin to the latest end over whichever timestamp pairs are non-zero,
+and a frame whose render pair came back zero would report the cull
+pass alone.  Untested.  Round 65.11 first attributed the flip to the
+benchmark's own sampler and 65.12 measured that away — the sampler was
+already recording 120 of 121 frames.
+
 It replays the interactions behind the
 recorded renderer numbers on six scenes (seeded 25k×50k and 100k×300k
 generators, ndex-x-large, a 25k×50k *curved* scene whose edges come

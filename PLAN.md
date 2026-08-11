@@ -18402,3 +18402,143 @@ implementations stopped leaving their own headroom on the table.  The
 honest routing table now sends pageRank and hierarchical to the CPU
 under 'auto', and the GPU keeps the seven families where it wins
 outright.
+
+### 65.11 — the comparison's movers, re-investigated: the instrument, not the library (2026-08-11)
+
+The maintainer asked what the cross-commit pages are reporting as
+performance regressions.  Across the four (machine, profile)
+comparisons the mover tables flag **56** rows as slower than the
+previous run beyond +10%.  Every one of them was traced, and **none
+survives as a library regression** — four instrument mechanisms
+account for the list, three of them measurable on this box in an
+hour.  What follows is the evidence, because a verdict of "noise"
+that is not measured is worth no more than the alarm it dismisses.
+
+- **The mover threshold sits below the harness's own repeatability.**
+  Eight back-to-back runs of `index.mjs` at one commit (identical
+  code, idle box): **14 of 35 v4 rows span more than 10%** across the
+  eight, 8 span more than 20%, 3 more than 30%.  The v3 rows — frozen
+  code, same processes — span >10% just as often (15/35) but **never
+  exceed 20%**, which is the shape to expect when the noise is
+  proportional and v4's ops are ten to ten-thousand times smaller.
+  `mut: position set [gpu]` reads
+  `[50.7, 66.1, 66.1, 61.0, 69.3, 64.0, 47.6, 68.9]` ns over those
+  eight — two clusters, not a trend — and the all profile's headline
+  "+39% regression" is that flip caught between two published runs.
+  A ±10% flag on the v4 side is therefore a coin toss for two rows in
+  five.
+
+- **The round-62 step in the core+collection series is 62.5c's own
+  pre-warm.**  Every row that steps at `cf5727b4` steps on the *v4
+  side only* — `core: filter(fn)` 263.5k → 344.2k ns with its v3 twin
+  flat at 423.7k → 416.3k, and the same shape for `same()`,
+  `collection()`, `degree()`, `outgoers()`, `neighborhood()`,
+  `iter: filter(fn)`, `nodes ($("node") vs filter({group}))`.  Two
+  controls place it:
+
+  1. **Remove the eight alternations at HEAD and the old numbers come
+     back.**  `core: filter(fn)` falls 352.2k → **261.8k**, against
+     263.5k measured at `6df994f1` before the pre-warm existed;
+     `outgoers()` 490.2 → **436.7** (was 439.9); `neighborhood()`
+     963.7 → **898.2** (was 886.5); `degree()` 28.4 → **25.9** (was
+     24.1); `iter: filter(fn)` 133.6k → **117.1k** (was 101.6k);
+     `same()` 15.0 → **14.0** (was 12.5).  The v3 side moves ±2% under
+     the same control.
+  2. **The library is flat across the whole of round 62 when probed in
+     isolation.**  A fixed probe — one library per process, monomorphic
+     call sites, best-of-9 — run against ten worktrees from `6df994f1`
+     to `cf5727b4` and HEAD: `cy.collection()` 46.4 → 47.8 → 47.3 ns,
+     `node.degree()` 23.0 → 22.6 → 20.8, `nodes.same()` 11.9 → 12.1 →
+     10.9, `nodes.filter(fn)` 107.0k → 109.5k → 101.9k, and
+     `node.position()` 23.0 → 16.8 → 15.7 with the step visible at
+     `90b71d6b`, which is round 62.5's hot column caches doing exactly
+     what they were written to do.
+
+  This corrects the record rather than the code.  62.5c priced the
+  bias it removed at "~0.5–1 ns/call on the trivial accessor rows";
+  measured, the pre-warm costs the **v4 side 12–35%** on any row that
+  iterates, because the shared closure's *inner* per-element call site
+  goes polymorphic too, so the cost scales with elements touched
+  rather than with calls.  It lands on v4 alone because v4's
+  per-element work is small enough for a polymorphic dispatch to be a
+  large share of it and v3's is not.  Whether the pre-warmed number is
+  the more honest one is a **question, not a defect**: it removes a
+  real order bias between the two sides, and it also measures v4 in a
+  state no application produces, since an app loads one library.  What
+  is not defensible is the published series crossing a methodology
+  change with nothing recording it — the step reads as a regression to
+  every later reader, and did.
+
+- **One-shot rows still lead the tables.**  **17 of the 56** flagged
+  regressions are rows with `samples = 1` — twelve of the renderer
+  profile's sixteen — the class round 62.7 already ruled out as a
+  regression signal and wrote into `src/README.md`.  The comparison
+  page carries no mark for it, and ranks by magnitude, so the all
+  profile's number one (`curve premium: cy.elements().boundingBox()
+  x 20`, **+52%**) is one measurement against one measurement.  49 of
+  the 791 rows in an all run are one-shot (curves 22, arrows 21,
+  labels 6).
+
+- **The renderer's device pair has a mechanism, not just a mode.**
+  Round 62.7 recorded the peak-slot/compacted pair "trading modes";
+  the sampler is why.  `panScenario` records `gpuFrameMs` **only when
+  the value changes** (`g !== lastGpu`), so a series that dwells in
+  one mode and visits the other briefly contributes *one sample per
+  transition* rather than one per frame.  The device timer reports two
+  discrete durations for the peak-slot pan — 0.46 and 1.15–1.17 ms,
+  readings quantized by the browser to ~100 µs and delivered
+  latest-wins — so the p50 lands in whichever cluster holds the middle
+  transition.  Across the four published runs that p50 reads 460 µs,
+  1.16 ms, 465 µs, 1.17 ms with no relation to the commit, and the
+  page ranks the flip first at **+152%**.  Within a single run the
+  clustering is visible in the percentiles: at `365d4d5a`, min 0.46
+  with p25 through p99 at 1.15–1.16; at `e37d2444`, min through p75
+  all 0.46.  `pick: hover while panning` is the same class in a
+  cheaper form — **25 samples**, 100 µs quantization, min 0 · p25
+  100 µs · p50 400 µs · p75 43 ms · max 73 ms — where one sample
+  crossing the median prints as +100%.
+
+- **The algorithms-gpu movers track the sweep's composition.**  65.10
+  changed three files under `src/algorithms/`:
+  `src/algorithms/hierarchical-clustering.mts`,
+  `src/algorithms/page-rank.mts`, and one **purely additive** export in
+  `src/algorithms/clustering-distances.mts`.  Nothing on the
+  kMeans / kMedoids /
+  fuzzyCMeans / floydWarshall paths the page flags at +11–31%.  Two
+  fresh runs at HEAD, same code, same adapter: `fuzzyCMeans` n=16384
+  reads **12.8 and 12.8 ms** against the published pair's 12.4 → 16.3
+  (the "+31%"), `kMeans` n=16384 **8.0 and 7.8** against 7.7 → 9.0,
+  and `kMedoids` n=1024 **4.1 and 3.2** — a ×1.28 spread on identical
+  code, bracketing both published values.  Where a systematic shift is
+  plausible at all (floydWarshall n=1024, HEAD 46.4/50.4 against 42.1
+  before), it tracks the sweep gaining the `pageRankDense` family
+  *ahead* of those families in one shared page and one device, not any
+  source change.  That profile's mover list also has **no noise
+  control at all**: `twinOf` in `report-compare.mjs` looks up a bench
+  named `v3`, and 65.9 taught `report-html.mjs`'s `pairOf` about the
+  `cpu` baseline without teaching the comparison, so all ten rows
+  print "no v3 twin" while their cpu twin sits in the same file.
+
+- **One row is left open, with two suspects excluded.**
+  `core: collection()` steps 57.1 → 68.2 ns at `cf5727b4` and stays
+  there (66–68 at HEAD).  The pre-warm does not explain it (65.9 with
+  the alternations removed), and neither does round 64's arity guard —
+  deleting the `arguments.length` check at HEAD reads 65.4 and 66.6,
+  i.e. free — while the isolated probe holds the constructor flat at
+  46–48 ns across the same span.  So it is a suite-context cost of
+  ~10 ns on a 57 ns row, not a library one, and it is the only flagged
+  row this pass could not attribute.
+
+**What the pass recommends** (none of it applied here — changing the
+instrument changes the record, which is the maintainer's call):
+mark `samples = 1` rows in the mover table or drop them from it;
+give the comparison a per-row noise envelope from two same-commit runs
+instead of a flat ±10%; teach `twinOf` the `cpu` baseline; record a
+harness-methodology epoch in the published index so a step like
+62.5c's is attributable at a glance; sample `gpuFrameMs` per frame
+rather than per change; report the pick scenario's deferral share
+instead of a 25-sample p50; and give `cmpMutEle` (collection.mjs),
+`cmpMut` (core.mjs) and `cmpMut` (mutators.mjs) the 62.5c pre-warm —
+they still share one op closure between the two sides, which is the
+bias 62.5c exists to remove and the shape `mut: position set` is
+bistable in.

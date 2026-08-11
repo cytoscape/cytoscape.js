@@ -44,7 +44,7 @@ import { planDebug, write, copy, PAGES_MAX_BYTES } from './status/plan.mjs';
 import { encodeFixture } from './status/wire-fixtures.mjs';
 import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
-import { planBenchmarks } from './status/bench-pages.mjs';
+import { planBenchmarks, BENCH_CSS } from './status/bench-pages.mjs';
 import { indexPage, INDEX_CSS } from './status/index-page.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -288,7 +288,7 @@ export function buildPlan({
           state,
           // the run tables want the whole screen, not a prose column
           wide: true,
-        }),
+        }).replace('</style>', `${BENCH_CSS}</style>`),
       ),
     );
 

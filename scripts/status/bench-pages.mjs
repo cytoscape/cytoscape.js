@@ -153,7 +153,7 @@ function trendTable(group, comparisons = []) {
       <td><code>${esc(run.commit ?? '?')}</code>${run.dirty === true ? ' <span class="fail">dirty</span>' : ''}</td>
       <td>${geo != null ? `${geo.toFixed(2)}×` : '–'}</td>
       <td>${run.totalMs != null ? `${(run.totalMs / 60000).toFixed(1)} min` : '–'}</td>
-      <td class="muted">${esc(run.note ?? '')}</td>
+      <td class="note-cell muted">${esc(run.note ?? '')}</td>
     </tr>`;
     })
     .join('');
@@ -166,12 +166,34 @@ function trendTable(group, comparisons = []) {
         : 'These runs predate machine fingerprinting, so nothing can be said about whether they share hardware.'
     }</p>
     ${compareLinks}
-    <div class="table-wrap"><table>
-      <thead><tr><th>run</th><th>profile</th><th>commit</th><th>geo-mean vs v3</th><th>duration</th><th>note</th></tr></thead>
+    <div class="table-wrap"><table class="runs">
+      <thead><tr><th>run</th><th>profile</th><th>commit</th><th>geo-mean vs v3</th><th>duration</th><th class="note-cell">note</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
   </section>`;
 }
+
+/**
+ * The run table's layout, appended to the page shell's stylesheet by
+ * `status-build.mjs` (the `*_CSS` convention the API and goldens pages use).
+ *
+ * Every column but the note holds a short fixed-shape value — a timestamp, a
+ * profile name, an abbreviated sha, a ratio, a duration — and each was wrapping
+ * onto a second line because the browser was free to shrink it to make room for
+ * the note.  So a run whose note is one line, or absent entirely, still cost a
+ * two-line row.  Pinning the short columns to `nowrap` gives them their natural
+ * width and leaves the remainder to the note, which is the only cell that
+ * legitimately wraps; a row is one line unless its note needs more.
+ *
+ * The note's `min-width` is what keeps that true on a narrow screen: without
+ * it the fixed columns win the layout and the note is squeezed into a ribbon
+ * (measured at a 760 px viewport: a 193 px note column, rows five lines tall —
+ * worse than before the nowrap).  With it the table exceeds its container and
+ * `.table-wrap` scrolls, which is what that wrapper is for.
+ */
+export const BENCH_CSS = `
+.runs th, .runs td { white-space: nowrap; }
+.runs th.note-cell, .runs td.note-cell { white-space: normal; width: 100%; min-width: 46ch; }`;
 
 /**
  * @param runs — from `loadPublished()`, each with its `results` attached

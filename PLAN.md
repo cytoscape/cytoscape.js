@@ -18381,7 +18381,20 @@ plain-JS items landed, and both ended somewhere more interesting than
 - **The status site's benchmark archive went wide** (maintainer
   request): the shell gained a `wide` page variant that lifts the
   82ch prose cap while keeping paragraph caps, and the run table now
-  uses the screen it is given.
+  uses the screen it is given.  A follow-up (2026-08-11, same
+  request) made its rows **single-line unless the note needs more**:
+  every column but the note holds a short fixed-shape value, and each
+  was wrapping because the browser could shrink it to make room for
+  the note — so a run with a one-line note, or none at all, still
+  cost a two-line row.  `BENCH_CSS` pins those columns to `nowrap`
+  and leaves the remainder to the note.  Measured at 1440 px: nine of
+  thirteen rows fell from 50 px to 31 px, the four that stayed tall
+  having notes that genuinely wrap.  The note's `min-width: 46ch` is
+  the other half — without it the fixed columns win the layout on a
+  narrow screen and the note is squeezed into a ribbon (760 px: a
+  193 px note column, rows five lines deep — *worse* than before), and
+  with it the table overflows and `.table-wrap` scrolls, which is what
+  that wrapper exists for.
 
 The round-65 scoreboard reads differently after this: the "GPU-modest
 tier" is gone — not because the GPU got faster, but because the CPU

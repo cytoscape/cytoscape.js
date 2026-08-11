@@ -1003,4 +1003,42 @@ describe('the benchmark index page (round 60.3)', () => {
       'benchmark/compare-aa11-quick.html',
     );
   });
+
+  // The note is the only cell in a run row with anything to wrap; the rest are
+  // a timestamp, a profile, a sha, a ratio and a duration.  Two halves make a
+  // row single-line, and they live in different files: the markup has to class
+  // the note cell, and `status-build.mjs` has to append `BENCH_CSS` to the
+  // page's stylesheet.  Either alone silently restores the two-line rows.
+  it('marks the note as the one wrapping column, and the page carries the rule', async () => {
+    const { planBenchmarks, BENCH_CSS } =
+      await import('../../scripts/status/bench-pages.mjs');
+    const plan = planBenchmarks({
+      runs: [
+        {
+          file: 'results-a.json',
+          date: '2026-08-01T00:00:00.000Z',
+          commit: 'aaa',
+          profile: 'quick',
+          fingerprint: 'aa11',
+          machine: 'Test CPU',
+          note: 'a note long enough to want a second line',
+          results: pairResults([10]),
+        },
+      ],
+    });
+
+    expect(plan.html).to.include('<table class="runs">');
+    expect(plan.html).to.include('<td class="note-cell muted">');
+    expect(BENCH_CSS).to.include('.runs th, .runs td { white-space: nowrap; }');
+    expect(BENCH_CSS).to.match(/\.note-cell[^}]*white-space:\s*normal/);
+
+    const page = buildPlan({ root: ROOT, gzip: false }).ops.find(
+      (op) => op.to === 'benchmark/index.html',
+    );
+
+    expect(page, 'the benchmark index is not in the plan').to.not.equal(
+      undefined,
+    );
+    expect(page.text).to.include(BENCH_CSS);
+  });
 });

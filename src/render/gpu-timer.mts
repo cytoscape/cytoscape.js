@@ -36,6 +36,18 @@ export class GpuTimer {
   /** most recent per-frame GPU duration (cull + render passes); 0 until the first reading */
   lastMs: number;
 
+  /**
+   * How many readings have resolved.  `lastMs` is latest-wins and quantized
+   * (Chrome: ~100 µs), so a sampler cannot tell a repeated value from a stale
+   * one — and round 65.11 measured what that costs: the renderer benchmark
+   * recorded a device time only when the *value* changed, so a pan alternating
+   * between two durations contributed one sample per transition rather than one
+   * per frame, and its p50 flipped between the two modes across runs with no
+   * relation to the commit.  A monotonic counter is what a sampler actually
+   * needs: it says "this is a new measurement", which the value cannot.
+   */
+  readings: number;
+
   private querySet: GPUQuerySet;
   private resolveBuffer: GPUBuffer;
   private ring: RingSlot[];
@@ -62,6 +74,7 @@ export class GpuTimer {
    */
   constructor(device: GPUDevice) {
     this.lastMs = 0;
+    this.readings = 0;
     this.destroyed = false;
 
     this.querySet = device.createQuerySet({
@@ -201,6 +214,7 @@ export class GpuTimer {
       if (ns > 0) {
         // quantization can yield 0/negative deltas; keep the last real reading
         this.lastMs = ns / 1e6;
+        this.readings++;
       }
     } catch {
       // device lost or destroyed mid-flight

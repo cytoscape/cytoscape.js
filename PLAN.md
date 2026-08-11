@@ -18542,3 +18542,103 @@ instead of a 25-sample p50; and give `cmpMutEle` (collection.mjs),
 they still share one op closure between the two sides, which is the
 bias 62.5c exists to remove and the shape `mut: position set` is
 bistable in.
+
+### 65.12 — the instrument gets the rules 65.11 wrote down (2026-08-11)
+
+The maintainer's concern, put plainly: the status site must not
+suggest performance has been degrading when it has not.  Round 65.11
+established that it had been doing exactly that — 56 flagged
+regressions across four comparison pages, none of them the library —
+and proposed rules.  This round builds them, because a rule that
+lives in prose is read once by the person who already knows it.
+
+The principle the whole round reduces to: **a comparison may display a
+change only when it can name what was held constant.**  Machine
+(enforced since 46.5), harness (new), and sampling (new).  Anything
+else is a value, not a change.
+
+- **`--repeat 3`, and the number is not arbitrary.**  The runner runs
+  each job N times in N processes and publishes the per-row median,
+  carrying **one repeat's whole stats object** — the median by p50 —
+  rather than a per-key median, so no published row is a distribution
+  assembled from parts.  Beside it goes `repeatSpread`, the band the
+  repeats spanned, which is the per-row noise the comparison screens
+  against.  Measured over the eight identical-code runs 65.11 left
+  behind: single-vs-single flags **28 of 245** row pairs beyond ±10%
+  (worst +48%); median-of-3 flags **0 of 105** (worst +9%).  Two is
+  not enough (10% still flagged — these rows are bimodal, so a 2-run
+  aggregate lands between the modes), and min-of-3 is no better than
+  no aggregation at all (11%), because best-of takes the fast mode
+  whenever it appears.  Three is the smallest N that reports the
+  *majority* mode.  An even count resolves to the **slower** middle
+  value, deliberately: an even split is where the evidence is weakest
+  and flattering the library there is how a benchmark stops being one.
+- **The harness fingerprint** (`benchmark/harness-id.mjs`), the
+  machine fingerprint's twin.  Each job carries a hash of the suite
+  file, its `./`-relative import closure (which is what makes
+  `index.mjs` answer for `core.mjs` and `collection.mjs`, where its
+  benches live) and the shared inputs — never `src/`, which is the
+  subject.  `buildComparison` refuses a change across two hashes and
+  renders `⋮ harness`, exactly as it refuses one across machines.
+  Nobody declares an epoch; editing a bench file starts one.
+- **What the hash ignores, and why that mattered immediately.**  The
+  first thing it would have flagged is round 57.2 — `oxfmt`
+  reformatted every benchmark file in one commit and moved no number.
+  A break nobody believes is worse than no break, so the hash is over
+  comments-stripped, whitespace-normalised text, and the control is a
+  spec: a reformat is inert, a changed constant is not.  What survives
+  normalisation can be declared in `EQUIVALENT_HARNESSES` with a
+  reason — the shape of `throw-coverage.mjs`'s exemption lists, and
+  audited the same way, so an entry naming a hash the archive no
+  longer carries fails rather than sitting there reading as
+  permission.
+- **The archive was backfilled from git**
+  (`scripts/benchmark-backfill-harness.mjs`), so all thirteen
+  published runs carry the hashes their own commits imply.  An
+  unstamped run is treated as *unknown*, never as unchanged.
+- **The mover table screens, and the page leads with the verdict.**  A
+  row that moved is a regression only if it clears its own measured
+  band; a one-shot row (`samples = 1`) never is — round 62.7's rule,
+  enforced rather than written down.  Everything else goes to a
+  collapsed *unscreened* list with the reason stated, ranked nowhere.
+  The verdict sits above the tables and refuses to overclaim in the
+  other direction too: "no row regressed" and "no row could be
+  compared" are different sentences, and a page spanning a harness
+  change says the second.  `twinOf` also learnt the `cpu` baseline,
+  which `report-html.mjs` was taught in 65.9 and this module was not —
+  all ten algorithms-gpu movers had been printing "no v3 twin" with
+  their twin in the same file.
+- **The two renderer samplers.**  `panScenario` recorded a device time
+  only when the *value* changed, so a two-mode series contributed one
+  sample per transition instead of one per frame; `GpuTimer` now
+  counts its readings and `RendererStats.gpuFrameReadings` exposes the
+  counter, which is what a sampler actually needs (a value cannot say
+  "I am new").  The pick scenario went from 25 samples to 80: its
+  latency distribution is bimodal and its clock is quantized to
+  100 µs, so a 25-sample p50 sat on the boundary between clusters and
+  one sample crossing it printed as +100%.
+- **The three mutation helpers got the 62.5c pre-warm** they never
+  had.  This was the *cause* of the archive's most bistable row, not
+  only its symptom: `mut: position set` spanned 47.6–69.3 ns in two
+  clusters over eight runs, and with the pre-warm it measures a
+  **2.7% band** across three repeats at 52.0 ns.
+
+**What the pages say now.**  Re-rendering the existing archive through
+the new comparison: **0 regressions on all four pages**.  Not because
+the tables were emptied — because 81 of the algorithms-gpu profile's
+rows and 184 of quick's are behind a harness break (the sweep gained
+the `pageRankDense` family; the core suites crossed 62.5c), and the
+remainder are listed as unscreened with their reason, the archive
+having been measured without repeats.  The mechanism reproduced
+65.11's two manual findings on its own, which is the argument for
+having built it: the algorithms-gpu movers *were* a sweep-composition
+artifact, and the quick profile's step *was* 62.5c, and neither
+conclusion now depends on someone remembering.
+
+Verification: 2167 test:js, 383 test:modules (25 comparison specs, 28
+new for the fingerprint and the merge), 24 soak, throw gate 213/0
+never-run, JSDoc 100% with the new `gpuFrameReadings` documented,
+types regenerated, lint and format clean.  Seven controls run red,
+each failing exactly its spec — the formatter rule, the import walk,
+the whole-stats merge, the ledger audit (both entries), `sameEpoch`
+forced true, `screenOf` forced true, and the cpu-twin fallback.

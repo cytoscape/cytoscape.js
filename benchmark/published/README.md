@@ -11,11 +11,22 @@ alone is about seven minutes. So a run reaches the site only by being promoted
 here deliberately, on the machine that measured it:
 
 ```
-npm run benchmark:report            # or benchmark:all / benchmark:renderer
+npm run benchmark:report -- --repeat 3     # or benchmark:all / benchmark:renderer
 npm run benchmark:publish -- --note "round 46.5 baseline"
 ```
 
 Then commit `benchmark/published/`.
+
+**Use `--repeat 3`.** Round 65.11 measured this harness's run-to-run spread
+and found it larger than the ±10% the comparison page flags at: over eight
+identical-code runs of `index.mjs`, 14 of 35 v4 rows moved more than 10% and 8
+moved more than 20%. Comparing single runs turns that into a change table
+that is 11% noise; comparing medians of three flags **none** of 105
+identical-code row pairs. Two repeats does not do it — these rows are
+bimodal, so a 2-run aggregate lands between the modes or picks one — and
+best-of is worse than median, because it takes the fast mode whenever it
+appears. A `--repeat` run also records each row's own band (`repeatSpread`),
+which is what the comparison screens a change against.
 
 ## What is in here
 
@@ -35,11 +46,38 @@ a machine's history in two.
 
 For every (machine, profile) with at least two runs, the site also renders a
 **cross-commit comparison page** (`benchmark/report-compare.mjs`): each row's
-p50 across runs, the movers beyond ±10% with the frozen-v3 twin's change as a
+p50 across runs, the movers beyond ±10% with the frozen twin's change as a
 per-row noise control, and a whole-run drift figure (the geometric mean change
 over every shared row). Read the drift before the movers — a row moving near
-the drift factor is the box, not the commit — and read a mover's v3 control
-the same way: v3 is frozen code, so if it moved too, the machine did.
+the drift factor is the box, not the commit — and read a mover's control the
+same way: v3 (and, in the executor sweep, the cpu side) is frozen code, so if
+it moved too, the machine did.
+
+## The harness fingerprint (round 65.12)
+
+Every job also carries a hash of the **harness** that produced it — the suite
+file, the `./`-relative modules it imports, and the shared inputs
+(`graph.mjs`, `bench-size.mjs`, `bench-run.mjs`, `render-stats.mjs`).  Not
+`src/`: that is the subject of the measurement.
+
+The comparison refuses to show a change across a harness change, for the same
+reason it refuses one across machines. Round 65.11 measured the cost of not
+doing so: round 62.5c's inline-cache pre-warm moved the v4 side of the core
+suites 12–35% with the library untouched, and every page since had rendered
+that step as a regression. A cross-epoch cell reads `⋮ harness` instead.
+
+The hash ignores comments and formatting — round 57.2 reformatted every
+benchmark file in one commit and moved no number, and a break nobody believes
+is worse than no break at all. A change that really is cosmetic but survives
+normalisation can be declared in `EQUIVALENT_HARNESSES`
+(`benchmark/harness-id.mjs`) with a reason; the list is audited, so an entry
+naming a hash the archive no longer carries fails the build.
+
+Runs published before 65.12 were stamped retroactively from git:
+
+```
+node scripts/benchmark-backfill-harness.mjs [--dry-run]
+```
 
 ## Retention
 

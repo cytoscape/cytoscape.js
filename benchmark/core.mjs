@@ -51,6 +51,13 @@ function cmpMut(name, fn) {
   const a = makeV3(elements);
   const b = makeGpu(elements);
 
+  // the 62.5c pre-warm, which this helper never got — see collection.mjs's
+  // cmpMutEle for what it costs (round 65.12)
+  for (let w = 0; w < 8; w++) {
+    fn(a);
+    fn(b);
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

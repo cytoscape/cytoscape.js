@@ -71,6 +71,17 @@ function cmpMutEle(name, setup, fn) {
   const ta = setup(a);
   const tb = setup(b);
 
+  // round 62.5c's pre-warm, which the three mutation helpers never got (round
+  // 65.12).  `fn` is one closure called with both sides, so without this the
+  // v3 bench samples it monomorphic and the gpu bench inherits a site going
+  // polymorphic mid-sample — the bias 62.5c exists to remove, and the shape
+  // `mut: position set` was bistable in: 47.6-69.3 ns in two clusters over
+  // eight identical-code runs.
+  for (let w = 0; w < 8; w++) {
+    fn(ta);
+    fn(tb);
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

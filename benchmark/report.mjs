@@ -9,11 +9,28 @@
 //                                               #   (render-bench.mjs: built
 //                                               #   bundles + real GPU)
 //   npm run benchmark:report -- --suite traversal
+//   npm run benchmark:report -- --repeat 3    # publish per-row medians
 //   npm run benchmark:report -- --render-only results/results-<ts>.json
 //
 // Results land in benchmark/results/ (gitignored): a timestamped
 // results-*.json plus report.html rendered from it.  --render-only
 // re-renders an existing results file without re-running anything.
+//
+// **--repeat N runs each job N times and publishes the per-row median**, which
+// is the round-65.12 answer to the thing round 65.11 measured: this harness's
+// run-to-run spread on the v4 side is *larger than the ±10% the comparison page
+// flags at*, so a single run's p50 makes a change table that is 11% noise.  Over
+// eight identical-code runs of `index.mjs`, comparing single runs flags 28 of
+// 245 row pairs beyond ±10% (worst +48%); comparing medians of three flags
+// **0 of 105** (worst +9%).  Two is not enough — these rows are bimodal, so a
+// 2-run aggregate lands between the modes or picks one at random (10% still
+// flagged), and best-of is worse than median for the same reason: it takes the
+// fast mode whenever it appears.  Three is the smallest N that reports the
+// *majority* mode, which is the stable one.
+//
+// Each row also carries what the repeats measured about it — `stats.repeats`
+// and `stats.repeatSpread` (max p50 / min p50) — so the comparison can screen a
+// change against that row's own noise instead of one global threshold.
 
 import { spawnSync } from 'node:child_process';
 import {
@@ -27,6 +44,8 @@ import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderReport } from './report-html.mjs';
 import { buildMeta } from './run-meta.mjs';
+import { stampHarness } from './harness-id.mjs';
+import { mergeRepeats } from './repeat-merge.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const RESULTS_DIR = join(DIR, 'results');
@@ -127,6 +146,7 @@ const withRenderer = argv.includes('--renderer');
 const suiteFilter = flagValue('--suite');
 const sceneFilter = flagValue('--scene'); // forwarded to the renderer bench
 const renderOnly = flagValue('--render-only');
+const repeat = Math.max(1, Number(flagValue('--repeat') ?? 1) || 1);
 
 function render(results, resultsPath) {
   const htmlPath = join(RESULTS_DIR, 'report.html');
@@ -183,7 +203,6 @@ for (const [i, job] of jobs.entries()) {
 
   console.log(`\n[${i + 1}/${jobs.length}] ${label}`);
 
-  const t0 = Date.now();
   const args = job.browser
     ? [
         '--import',
@@ -194,41 +213,87 @@ for (const [i, job] of jobs.entries()) {
         ...(sceneFilter != null ? ['--scene', sceneFilter] : []),
       ]
     : ['--import', 'tsx', join(DIR, job.file)];
-  const r = spawnSync(process.execPath, args, {
-    cwd: resolve(DIR, '..'),
-    stdio: 'inherit',
-    env: job.browser
-      ? process.env
-      : {
-          ...process.env,
-          BENCH_N: String(job.n),
-          ...(job.op != null ? { BENCH_OP: job.op } : {}),
-          BENCH_JSON: jsonPath,
-        },
-  });
-  const durationMs = Date.now() - t0;
 
-  if (r.status !== 0 || !existsSync(jsonPath)) {
-    console.error(`  FAILED (exit ${r.status})`);
-    failures.push({ job: label, exitCode: r.status });
-    continue;
+  // each repeat is its own process, which is the point: round 65.11 traced the
+  // bistable rows to per-process JIT/heap state, so repeating inside one
+  // process would sample the same state N times and report a noise band of
+  // zero — a screen that always passes is worse than none
+  const repeats = [];
+  const bundles = [];
+
+  for (let pass = 0; pass < repeat; pass++) {
+    if (repeat > 1) {
+      console.log(`  repeat ${pass + 1}/${repeat}`);
+    }
+
+    const t0 = Date.now();
+    const r = spawnSync(process.execPath, args, {
+      cwd: resolve(DIR, '..'),
+      stdio: 'inherit',
+      env: job.browser
+        ? process.env
+        : {
+            ...process.env,
+            BENCH_N: String(job.n),
+            ...(job.op != null ? { BENCH_OP: job.op } : {}),
+            BENCH_JSON: jsonPath,
+          },
+    });
+    const durationMs = Date.now() - t0;
+
+    if (r.status !== 0 || !existsSync(jsonPath)) {
+      console.error(`  FAILED (exit ${r.status})`);
+      failures.push({ job: label, exitCode: r.status });
+      continue;
+    }
+
+    const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
+
+    rmSync(jsonPath);
+
+    if (job.browser) {
+      bundles.push(data);
+    } else {
+      repeats.push({ ...data, durationMs });
+    }
   }
-
-  const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
-
-  rmSync(jsonPath);
 
   if (job.browser) {
-    // a jobs bundle: one job per scene, durations set scene-side
-    results.jobs.push(...data.jobs);
-    failures.push(...(data.failures ?? []));
-    // which GPU actually rendered — captured browser-side, and until round
-    // 46.5 discarded at this boundary
-    rendererAdapter = data.adapter ?? rendererAdapter;
+    // a jobs bundle: one job per scene, durations set scene-side, so the
+    // repeats are merged per scene rather than per job
+    const bySuite = new Map();
+
+    for (const bundle of bundles) {
+      for (const j of bundle.jobs ?? []) {
+        bySuite.set(j.suite, [...(bySuite.get(j.suite) ?? []), j]);
+      }
+
+      failures.push(...(bundle.failures ?? []));
+      // which GPU actually rendered — captured browser-side, and until round
+      // 46.5 discarded at this boundary
+      rendererAdapter = bundle.adapter ?? rendererAdapter;
+    }
+
+    for (const list of bySuite.values()) {
+      const m = mergeRepeats(list);
+
+      if (m != null) {
+        results.jobs.push(m);
+      }
+    }
   } else {
-    results.jobs.push({ ...data, durationMs });
+    const m = mergeRepeats(repeats);
+
+    if (m != null) {
+      results.jobs.push(m);
+    }
   }
 }
+
+// every job carries the fingerprint of the harness that produced it, so the
+// comparison can refuse a change across a methodology break the way it already
+// refuses one across machines (benchmark/harness-id.mjs)
+stampHarness(results.jobs);
 
 const context = results.jobs[0]?.context ?? {};
 
@@ -236,6 +301,7 @@ results.meta = buildMeta({
   startedAt,
   profile: full ? 'full' : all ? 'all' : 'quick',
   suiteFilter,
+  repeat,
   failures,
   context,
   // a --renderer run carries the adapter through the browser job's bundle;

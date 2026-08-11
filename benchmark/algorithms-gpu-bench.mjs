@@ -40,6 +40,7 @@ import { chromium } from '@playwright/test';
 import { toStats, oneShotStats } from './render-stats.mjs';
 import { renderReport } from './report-html.mjs';
 import { buildMeta } from './run-meta.mjs';
+import { stampHarness } from './harness-id.mjs';
 import { describeMachine } from '../scripts/machine-info.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -387,6 +388,9 @@ async function runCell(family, n) {
 
 // -- output: the standard results file + report, render-bench's shape ---------
 mkdirSync(RESULTS_DIR, { recursive: true });
+
+// the harness that produced these rows (round 65.12)
+stampHarness(jobs, 'algorithms-gpu-bench.mjs');
 
 const results = {
   meta: buildMeta({

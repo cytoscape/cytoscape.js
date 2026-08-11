@@ -441,7 +441,17 @@
           const gpuMs = [];
           let dir = 1;
           let tick = 0;
+          // round 65.12: sample on a *new reading*, not on a changed value.
+          // This used to be `g !== lastGpu`, which drops every repeat — so a
+          // pan whose device time alternates between two quantized durations
+          // contributed one sample per transition instead of one per frame,
+          // and its p50 landed in whichever mode held the middle transition.
+          // Measured across four published runs, the same row read 460 µs,
+          // 1.16 ms, 465 µs, 1.17 ms with no relation to the commit, and the
+          // comparison ranked the flip first at +152%.
+          let lastReadings = -1;
           let lastGpu = -1;
+          let warnedNoReadings = false;
 
           await raf();
 
@@ -473,9 +483,24 @@
             }
 
             if( isGpu && elapsed > warmupMs ){
-              const g = stats().gpuFrameMs;
+              const s = stats();
 
-              if( g > 0 && g !== lastGpu ){ gpuMs.push( g ); lastGpu = g; }
+              if( s.gpuFrameMs > 0 ){
+                if( s.gpuFrameReadings == null ){
+                  // a bundle older than round 65.12 has no counter.  Say so
+                  // once and fall back to the value test: undersampling is
+                  // bad, but an empty row that quietly disappears is worse
+                  if( !warnedNoReadings ){
+                    console.warn( 'render-bench: stats().gpuFrameReadings is absent — stale bundle?  device rows will undersample' );
+                    warnedNoReadings = true;
+                  }
+
+                  if( s.gpuFrameMs !== lastGpu ){ gpuMs.push( s.gpuFrameMs ); lastGpu = s.gpuFrameMs; }
+                } else if( s.gpuFrameReadings !== lastReadings ){
+                  gpuMs.push( s.gpuFrameMs );
+                  lastReadings = s.gpuFrameReadings;
+                }
+              }
             }
 
             if( elapsed >= maxMs ){ break; }
@@ -495,9 +520,20 @@
         async function pickScenario( opts ){
           opts = opts || {};
 
-          const picks = opts.picks ?? 25;
+          // round 65.12: 25 was too few for a p50 to mean anything here.  The
+          // latency distribution is strongly bimodal — a pick answered from a
+          // ready staging slot returns in ~0.1 ms, one that waits for a frame
+          // in tens of ms — and `performance.now()` is coarsened to 100 µs
+          // without cross-origin isolation, so the samples are quantized too.
+          // Measured over three published runs: min 0, p25 100 µs, p50 400 µs,
+          // p75 43 ms, max 73 ms, from 25 samples.  One sample crossing the
+          // median moved the published p50 from 400 to 800 µs, and the
+          // comparison ranked that as a +100% regression.  80 samples put the
+          // median well inside a cluster instead of on the boundary between
+          // them; the tail is what the p99 in the tooltip is for.
+          const picks = opts.picks ?? 80;
           const gapMs = opts.gapMs ?? 120;
-          const maxMs = opts.maxMs ?? 10000;
+          const maxMs = opts.maxMs ?? 25000;
 
           applyView( 'fit-all' );
 

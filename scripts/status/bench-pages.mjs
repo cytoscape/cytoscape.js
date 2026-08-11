@@ -19,6 +19,7 @@ import {
   renderComparison,
   comparePageName,
 } from '../../benchmark/report-compare.mjs';
+import { sameEpoch } from '../../benchmark/harness-id.mjs';
 import { esc, fmtAge } from '../theme.mjs';
 import { write } from './plan.mjs';
 
@@ -133,6 +134,74 @@ export function planComparisons(group) {
   return plans;
 }
 
+/** A run's harness hash per suite — the unit an epoch is measured in. */
+function harnessesOf(run) {
+  const map = new Map();
+
+  for (const job of run.results?.jobs ?? []) {
+    if (job.harness != null) {
+      map.set(job.suite, job.harness);
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Which runs were measured by a harness the previous run **of the same
+ * profile** did not use?
+ *
+ * The geo-mean column is computed *within* a run, so it is not itself a
+ * cross-run figure — but a reader compares the column down the page, and that
+ * comparison is exactly as invalid across a harness change as any other (round
+ * 65.12: 62.5c moved the v4 side of the core suites 12-35% with the library
+ * untouched, which moves the geo-mean with it).  So the table marks where the
+ * instrument changed instead of leaving the reader to infer a trend across it.
+ *
+ * **Per profile, and that is the whole subtlety.**  The table interleaves
+ * profiles, so adjacent rows are usually a renderer run beside an all run —
+ * which share no harness hash for the trivial reason that they measure
+ * different suites.  Comparing those would mark almost every row and teach the
+ * reader to ignore the mark, which is the failure this exists to prevent.
+ *
+ * @param runs — the machine's runs, newest first
+ * @returns a Set of indices whose profile's previous run used a different harness
+ */
+export function harnessChanges(runs) {
+  const marks = new Set();
+  const lastOfProfile = new Map();
+
+  // oldest first, so "the previous run of this profile" is the one already seen
+  for (let i = runs.length - 1; i >= 0; i--) {
+    const profile = runs[i].profile ?? '?';
+    const here = harnessesOf(runs[i]);
+    const before = lastOfProfile.get(profile);
+
+    // per *suite*, not per run: a quick run measures eight suites, and one of
+    // them keeping its hash says nothing about the other seven.  Asking only
+    // whether the two runs share any hash at all missed round 62.5c entirely,
+    // because `mappers.mjs` had not changed across it.
+    const moved =
+      before != null &&
+      [...here].some(
+        ([suite, hash]) =>
+          before.has(suite) && !sameEpoch(before.get(suite), hash),
+      );
+
+    if (moved) {
+      marks.add(i);
+    }
+
+    if (here.size > 0) {
+      // carry forward per suite, so a --suite-filtered run does not erase the
+      // hashes of the suites it skipped
+      lastOfProfile.set(profile, new Map([...(before ?? []), ...here]));
+    }
+  }
+
+  return marks;
+}
+
 function trendTable(group, comparisons = []) {
   const compareLinks =
     comparisons.length === 0
@@ -143,15 +212,23 @@ function trendTable(group, comparisons = []) {
               `<a href="/${esc(c.page)}">${esc(c.profile)} (${c.runCount} runs)</a>`,
           )
           .join(' · ')}</p>`;
+  const changed = harnessChanges(group.runs);
+  const changedAny = changed.size > 0;
   const rows = group.runs
-    .map((run) => {
+    .map((run, i) => {
       const geo = geoSpeedup(run.results);
+      const repeat = run.results?.meta?.repeat ?? 1;
 
       return `<tr>
       <td>${esc((run.date ?? '').replace('T', ' ').slice(0, 16))}</td>
-      <td><a href="/${esc(pageNameFor(run.file))}">${esc(run.profile ?? '?')}</a></td>
+      <td><a href="/${esc(pageNameFor(run.file))}">${esc(run.profile ?? '?')}</a>${
+        changed.has(i)
+          ? ' <span class="epoch" title="the benchmark harness changed since this profile&#39;s previous run, so the two are different measurements rather than a before and an after">new harness</span>'
+          : ''
+      }</td>
       <td><code>${esc(run.commit ?? '?')}</code>${run.dirty === true ? ' <span class="fail">dirty</span>' : ''}</td>
       <td>${geo != null ? `${geo.toFixed(2)}×` : '–'}</td>
+      <td>${repeat > 1 ? `median of ${repeat}` : '<span class="muted">1 run</span>'}</td>
       <td>${run.totalMs != null ? `${(run.totalMs / 60000).toFixed(1)} min` : '–'}</td>
       <td class="note-cell muted">${esc(run.note ?? '')}</td>
     </tr>`;
@@ -165,9 +242,17 @@ function trendTable(group, comparisons = []) {
         ? `Machine id <code>${esc(group.fingerprint)}</code>. Only runs sharing this id are comparable.`
         : 'These runs predate machine fingerprinting, so nothing can be said about whether they share hardware.'
     }</p>
+    ${
+      changedAny
+        ? `<p class="note">A run marked <span class="epoch">new harness</span> was measured by a
+          benchmark harness the previous run of its profile did not use, so reading the two as a
+          before and an after is reading two different instruments.  The comparison pages show those
+          rows as breaks rather than as changes.</p>`
+        : ''
+    }
     ${compareLinks}
     <div class="table-wrap"><table class="runs">
-      <thead><tr><th>run</th><th>profile</th><th>commit</th><th>geo-mean vs v3</th><th>duration</th><th class="note-cell">note</th></tr></thead>
+      <thead><tr><th>run</th><th>profile</th><th>commit</th><th>geo-mean vs v3</th><th>sampling</th><th>duration</th><th class="note-cell">note</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
   </section>`;
@@ -193,7 +278,8 @@ function trendTable(group, comparisons = []) {
  */
 export const BENCH_CSS = `
 .runs th, .runs td { white-space: nowrap; }
-.runs th.note-cell, .runs td.note-cell { white-space: normal; width: 100%; min-width: 46ch; }`;
+.runs th.note-cell, .runs td.note-cell { white-space: normal; width: 100%; min-width: 46ch; }
+.runs .epoch { color: var(--warn); font-size: 11.5px; }`;
 
 /**
  * @param runs — from `loadPublished()`, each with its `results` attached

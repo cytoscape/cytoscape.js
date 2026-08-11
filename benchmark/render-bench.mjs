@@ -42,6 +42,7 @@ import { chromium } from '@playwright/test';
 import { toStats, oneShotStats } from './render-stats.mjs';
 import { renderReport } from './report-html.mjs';
 import { buildMeta } from './run-meta.mjs';
+import { stampHarness } from './harness-id.mjs';
 import { describeMachine } from '../scripts/machine-info.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -662,6 +663,11 @@ function median(arr) {
 }
 
 // -- output --------------------------------------------------------------------
+// the harness that produced these rows, so the comparison can refuse a change
+// across a methodology break (round 65.12); stamped before either output path
+// so the bundle and the standalone file agree
+stampHarness(jobs, 'render-bench.mjs');
+
 if (jsonOut != null) {
   // bundle for report.mjs --renderer: jobs (+ failures for its meta, + the
   // adapter, which was captured above and discarded at this boundary until

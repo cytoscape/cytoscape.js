@@ -1004,6 +1004,55 @@ describe('the benchmark index page (round 60.3)', () => {
     );
   });
 
+  // Round 65.12.  Controls: comparing hash *sets* rather than per suite —
+  // passes the different-profiles spec but fails the changed-suite one, which
+  // is how the first version missed round 62.5c (mappers.mjs had not changed
+  // across it, so the two runs shared a hash and read as one epoch); and
+  // dropping the same-profile grouping — marks every row, since a renderer run
+  // beside an all run shares no suite at all.
+  it('marks a run whose harness changed since the previous run of its profile, per suite', async () => {
+    const { harnessChanges } =
+      await import('../../scripts/status/bench-pages.mjs');
+    const run = (profile, jobs) => ({
+      profile,
+      results: { jobs },
+    });
+    // newest first, as the archive lists them
+    const marks = harnessChanges([
+      run('quick', [
+        { suite: 'core+collection', harness: 'CHANGED' },
+        { suite: 'mappers', harness: 'same' },
+      ]),
+      run('renderer', [{ suite: 'render — x', harness: 'rrrr' }]),
+      run('quick', [
+        { suite: 'core+collection', harness: 'aaaa' },
+        { suite: 'mappers', harness: 'same' },
+      ]),
+    ]);
+
+    // the newest quick run: one of its two suites changed, which is enough
+    expect(marks.has(0)).to.equal(true);
+    // the renderer run between them shares no suite with either quick run —
+    // that is not a harness change, it is a different profile
+    expect(marks.has(1)).to.equal(false);
+    // and the oldest run has nothing to be compared against
+    expect(marks.has(2)).to.equal(false);
+  });
+
+  it('does not mark a run the harness merely did not stamp', async () => {
+    const { harnessChanges } =
+      await import('../../scripts/status/bench-pages.mjs');
+    const marks = harnessChanges([
+      { profile: 'quick', results: { jobs: [{ suite: 's' }] } },
+      {
+        profile: 'quick',
+        results: { jobs: [{ suite: 's', harness: 'aaaa' }] },
+      },
+    ]);
+
+    expect(marks.size).to.equal(0);
+  });
+
   // The note is the only cell in a run row with anything to wrap; the rest are
   // a timestamp, a profile, a sha, a ratio and a duration.  Two halves make a
   // row single-line, and they live in different files: the markup has to class

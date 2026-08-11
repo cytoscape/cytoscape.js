@@ -574,7 +574,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 100k × 300k",
@@ -1083,7 +1084,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — ndex-x-large (19.6k × 465k)",
@@ -1592,7 +1594,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k curved (bezier pairs)",
@@ -2101,7 +2104,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k compound (1k parents)",
@@ -2610,7 +2614,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k images (icon-per-type)",
@@ -3119,7 +3124,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k wrapped labels",
@@ -3628,7 +3634,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k half-invisible / half-inert",
@@ -4137,7 +4144,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k arrows (filled)",
@@ -4646,7 +4654,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k arrows (half hollow, 0.6 alpha)",
@@ -5155,7 +5164,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k hexagon borders (solid)",
@@ -5664,7 +5674,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     },
     {
       "suite": "render — generated 25k × 50k hexagon borders (dashed)",
@@ -6173,7 +6184,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "af76462a"
     }
   ]
 }

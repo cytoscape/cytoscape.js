@@ -1295,7 +1295,8 @@
           ]
         }
       ],
-      "durationMs": 58813
+      "durationMs": 58813,
+      "harness": "65400540"
     },
     {
       "suite": "materializers",
@@ -1588,7 +1589,8 @@
           ]
         }
       ],
-      "durationMs": 20073
+      "durationMs": 20073,
+      "harness": "8eaadc0f"
     },
     {
       "suite": "mutators",
@@ -1881,7 +1883,8 @@
           ]
         }
       ],
-      "durationMs": 17558
+      "durationMs": 17558,
+      "harness": "82744d15"
     },
     {
       "suite": "scenarios",
@@ -2069,7 +2072,8 @@
           ]
         }
       ],
-      "durationMs": 12776
+      "durationMs": 12776,
+      "harness": "a0f4caf2"
     },
     {
       "suite": "traversal",
@@ -2502,7 +2506,8 @@
           ]
         }
       ],
-      "durationMs": 32692
+      "durationMs": 32692,
+      "harness": "8d5293a5"
     },
     {
       "suite": "algorithms",
@@ -2970,7 +2975,8 @@
           ]
         }
       ],
-      "durationMs": 81752
+      "durationMs": 81752,
+      "harness": "927d7f5e"
     },
     {
       "suite": "algorithms",
@@ -3858,7 +3864,8 @@
           ]
         }
       ],
-      "durationMs": 193124
+      "durationMs": 193124,
+      "harness": "927d7f5e"
     },
     {
       "suite": "mappers",
@@ -3961,7 +3968,8 @@
           ]
         }
       ],
-      "durationMs": 8194
+      "durationMs": 8194,
+      "harness": "2c3779ff"
     }
   ]
 }

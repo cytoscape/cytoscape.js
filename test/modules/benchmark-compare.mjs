@@ -6,8 +6,10 @@ import {
   comparePageName,
   renderComparison,
   fmtChange,
+  screenOf,
   NOTABLE_CHANGE,
 } from '../../benchmark/report-compare.mjs';
+import { EQUIVALENT_HARNESSES } from '../../benchmark/harness-id.mjs';
 import { planComparisons } from '../../scripts/status/bench-pages.mjs';
 
 /*
@@ -30,9 +32,22 @@ Controls run while writing (each failed the spec named):
     per-profile spec (one page appears where none may).
 */
 
-const bench = (name, p50) => ({
+// round 65.12: a bench carries the evidence a screen reads.  The default is a
+// row measured by three processes that agreed to within 2%, which is what a
+// `--repeat 3` run produces — so the fixtures below exercise the screened path,
+// and the specs that want the unscreened path say so explicitly.
+const bench = (name, p50, stats = {}) => ({
   name,
-  stats: { p50, min: p50, max: p50, avg: p50, samples: 10 },
+  stats: {
+    p50,
+    min: p50,
+    max: p50,
+    avg: p50,
+    samples: 10,
+    repeats: 3,
+    repeatSpread: 1.02,
+    ...stats,
+  },
 });
 
 const run = ({
@@ -42,6 +57,7 @@ const run = ({
   fingerprint = 'aaaa1111',
   profile = 'quick',
   suiteFilter = null,
+  harness = 'hhhh0001',
 }) => ({
   file: `results-${date}.json`,
   date,
@@ -53,7 +69,7 @@ const run = ({
   suiteFilter,
   results: {
     meta: { commit, date },
-    jobs: [{ suite: 'style', n: 2000, op: null, groups }],
+    jobs: [{ suite: 'style', n: 2000, op: null, groups, harness }],
   },
 });
 
@@ -212,6 +228,180 @@ describe('benchmark cross-commit comparison', () => {
       expect(c.sharedRows).to.equal(4);
       expect(c.drift).to.be.closeTo(expected, 1e-9);
     });
+  });
+
+  // Round 65.12.  Controls run while writing, each failing exactly the spec
+  // named: `sameEpoch` forced to true — fails the break spec (the row is
+  // compared across the harness change and reappears as a mover); `screenOf`
+  // forced to `{ screened: true }` — fails all three screening specs; the cpu
+  // fallback removed from `twinOf` — fails the cpu-twin spec.
+  describe('the harness epoch (65.12)', () => {
+    const withHarness = (runs, hashes) =>
+      runs.map((r, i) => {
+        r.results.jobs[0].harness = hashes[i];
+
+        return r;
+      });
+
+    it('refuses to compare a row across a harness change, and says how many', () => {
+      const c = buildComparison(
+        withHarness(fixtureRuns(), ['h1', 'h1', 'h2-different']),
+      );
+      const row = c.rows.find(
+        (r) => r.group === 'read: background-color' && r.bench === 'gpu',
+      );
+
+      expect(row.change, 'a cross-epoch change must not be computed').to.equal(
+        null,
+      );
+      expect(row.epochBreak).to.equal(true);
+      expect(c.epochBreaks).to.be.greaterThan(0);
+      // and the 1.5x row is not a regression, because it is not a comparison
+      expect(
+        c.movers.regressions.some(
+          (m) => m.row.group === 'read: background-color',
+        ),
+      ).to.equal(false);
+    });
+
+    it('renders the break in the matrix and leads the page with it, rather than claiming nothing regressed', () => {
+      const html = renderComparison(
+        buildComparison(withHarness(fixtureRuns(), ['h1', 'h1', 'h2'])),
+        { machine: 'Test CPU' },
+      );
+
+      expect(html).to.include('⋮ harness');
+      expect(html).to.include('could not be compared at all');
+    });
+
+    it('compares across a change the equivalence ledger declares non-substantive', () => {
+      EQUIVALENT_HARNESSES.push({
+        from: 'h1',
+        to: 'h2',
+        reason: 'spec fixture: a declared-cosmetic change',
+      });
+
+      try {
+        const c = buildComparison(
+          withHarness(fixtureRuns(), ['h1', 'h1', 'h2']),
+        );
+        const row = c.rows.find(
+          (r) => r.group === 'read: background-color' && r.bench === 'gpu',
+        );
+
+        expect(row.epochBreak).to.equal(false);
+        expect(row.change).to.be.closeTo(1.5, 1e-9);
+      } finally {
+        EQUIVALENT_HARNESSES.pop();
+      }
+    });
+
+    it('treats an unstamped run as unknown, not as unchanged', () => {
+      const c = buildComparison(withHarness(fixtureRuns(), ['h1', 'h1', null]));
+
+      expect(c.rows.find((r) => r.group === 'tiny move').epochBreak).to.equal(
+        true,
+      );
+    });
+  });
+
+  describe('screening a mover (65.12)', () => {
+    const rowWith = (evidence, change = 1.5) => ({
+      change,
+      prevAt: 0,
+      latestAt: 1,
+      evidence,
+    });
+
+    it("screens a change that clears the row's own measured band", () => {
+      const s = screenOf(
+        rowWith([
+          { samples: 10, repeats: 3, repeatSpread: 1.05 },
+          { samples: 10, repeats: 3, repeatSpread: 1.05 },
+        ]),
+      );
+
+      expect(s.screened).to.equal(true);
+      expect(s.band).to.be.closeTo(1.05, 1e-9);
+    });
+
+    it('does not screen a change inside the band, and says which band', () => {
+      const s = screenOf(
+        rowWith(
+          [
+            { samples: 10, repeats: 3, repeatSpread: 1.3 },
+            { samples: 10, repeats: 3, repeatSpread: 1.2 },
+          ],
+          1.25,
+        ),
+      );
+
+      expect(s.screened).to.equal(false);
+      // the wider of the two bands is the one that matters
+      expect(s.why).to.include('30%');
+    });
+
+    it('does not screen a one-shot row — the class round 62.7 already ruled out', () => {
+      const s = screenOf(
+        rowWith([
+          { samples: 1, repeats: 1, repeatSpread: null },
+          { samples: 1, repeats: 1, repeatSpread: null },
+        ]),
+      );
+
+      expect(s.screened).to.equal(false);
+      expect(s.why).to.include('one-shot');
+    });
+
+    it('does not screen a row with no repeats on either side', () => {
+      const s = screenOf(
+        rowWith([
+          { samples: 10, repeats: 1, repeatSpread: null },
+          { samples: 10, repeats: 1, repeatSpread: null },
+        ]),
+      );
+
+      expect(s.screened).to.equal(false);
+      expect(s.why).to.include('no repeats');
+    });
+
+    it('lists an unscreened mover separately rather than dropping or ranking it', () => {
+      const runs = fixtureRuns();
+
+      for (const r of runs) {
+        r.results.jobs[0].groups[0].benches[1].stats.repeats = 1;
+        r.results.jobs[0].groups[0].benches[1].stats.repeatSpread = null;
+      }
+
+      const c = buildComparison(runs);
+
+      expect(
+        c.movers.regressions.some(
+          (m) => m.row.group === 'read: background-color',
+        ),
+      ).to.equal(false);
+      expect(
+        c.movers.unscreened.some(
+          (m) => m.row.group === 'read: background-color',
+        ),
+        'an unscreened mover must still be visible',
+      ).to.equal(true);
+    });
+  });
+
+  it('falls back to the cpu twin where a group has no v3 side (the executor sweep)', () => {
+    const runs = fixtureRuns().map((r) => {
+      r.results.jobs[0].groups[0].benches[0].name = 'cpu';
+
+      return r;
+    });
+    const c = buildComparison(runs);
+    const reg = c.movers.regressions.find(
+      (m) => m.row.group === 'read: background-color',
+    );
+
+    expect(reg.controlBench).to.equal('cpu');
+    expect(reg.control).to.be.closeTo(0.99, 1e-9);
   });
 
   describe('rendering', () => {

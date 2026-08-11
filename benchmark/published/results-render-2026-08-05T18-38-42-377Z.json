@@ -574,7 +574,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 100k × 300k",
@@ -1083,7 +1084,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — ndex-x-large (19.6k × 465k)",
@@ -1592,7 +1594,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 25k × 50k curved (bezier pairs)",
@@ -2101,7 +2104,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 25k × 50k compound (1k parents)",
@@ -2610,7 +2614,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 25k × 50k images (icon-per-type)",
@@ -3119,7 +3124,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 25k × 50k wrapped labels",
@@ -3628,7 +3634,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     },
     {
       "suite": "render — generated 25k × 50k half-invisible / half-inert",
@@ -4137,7 +4144,8 @@
             }
           ]
         }
-      ]
+      ],
+      "harness": "65e613a3"
     }
   ]
 }

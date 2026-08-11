@@ -570,6 +570,11 @@ export interface RendererStats {
   cpuFrameMs: number;
   /** GPU execution time of the last measured scene pass; 0 when 'timestamp-query' is unavailable */
   gpuFrameMs: number;
+  /** how many GPU timings have resolved (round 65.12).  `gpuFrameMs` is
+   * latest-wins and quantized, so a sampler cannot tell a repeated value from
+   * a stale one; this counter can, and a sampler that keys off the value
+   * instead records transitions rather than frames */
+  gpuFrameReadings: number;
   /** current adaptive render scale (fraction of native resolution) */
   renderScale: number;
   uploadedBytes: number;

@@ -1300,7 +1300,8 @@
           ]
         }
       ],
-      "durationMs": 57765
+      "durationMs": 57765,
+      "harness": "ee10a167"
     },
     {
       "suite": "materializers",
@@ -1593,7 +1594,8 @@
           ]
         }
       ],
-      "durationMs": 16578
+      "durationMs": 16578,
+      "harness": "b2c907c3"
     },
     {
       "suite": "mutators",
@@ -1886,7 +1888,8 @@
           ]
         }
       ],
-      "durationMs": 17961
+      "durationMs": 17961,
+      "harness": "319b5dbc"
     },
     {
       "suite": "scenarios",
@@ -2074,7 +2077,8 @@
           ]
         }
       ],
-      "durationMs": 12741
+      "durationMs": 12741,
+      "harness": "c36a14e4"
     },
     {
       "suite": "traversal",
@@ -2507,7 +2511,8 @@
           ]
         }
       ],
-      "durationMs": 40636
+      "durationMs": 40636,
+      "harness": "a36ebe31"
     },
     {
       "suite": "algorithms",
@@ -2975,7 +2980,8 @@
           ]
         }
       ],
-      "durationMs": 91405
+      "durationMs": 91405,
+      "harness": "5b0386ab"
     },
     {
       "suite": "algorithms",
@@ -3863,7 +3869,8 @@
           ]
         }
       ],
-      "durationMs": 204209
+      "durationMs": 204209,
+      "harness": "5b0386ab"
     },
     {
       "suite": "mappers",
@@ -3966,7 +3973,8 @@
           ]
         }
       ],
-      "durationMs": 8170
+      "durationMs": 8170,
+      "harness": "49c65418"
     },
     {
       "suite": "layouts",
@@ -4384,7 +4392,8 @@
           ]
         }
       ],
-      "durationMs": 30875
+      "durationMs": 30875,
+      "harness": "ca431c77"
     },
     {
       "suite": "style",
@@ -4832,7 +4841,8 @@
           ]
         }
       ],
-      "durationMs": 27601
+      "durationMs": 27601,
+      "harness": "62c4e900"
     },
     {
       "suite": "load",
@@ -5165,7 +5175,8 @@
           ]
         }
       ],
-      "durationMs": 19538
+      "durationMs": 19538,
+      "harness": "a6bba3ab"
     },
     {
       "suite": "spatial",
@@ -5838,7 +5849,8 @@
           ]
         }
       ],
-      "durationMs": 37545
+      "durationMs": 37545,
+      "harness": "c2e3b084"
     },
     {
       "suite": "data",
@@ -6411,7 +6423,8 @@
           ]
         }
       ],
-      "durationMs": 28322
+      "durationMs": 28322,
+      "harness": "afa211ec"
     },
     {
       "suite": "events",
@@ -6914,7 +6927,8 @@
           ]
         }
       ],
-      "durationMs": 27040
+      "durationMs": 27040,
+      "harness": "1d36a846"
     },
     {
       "suite": "store",
@@ -7337,7 +7351,8 @@
           ]
         }
       ],
-      "durationMs": 20947
+      "durationMs": 20947,
+      "harness": "2f958983"
     },
     {
       "suite": "surface",
@@ -11305,7 +11320,8 @@
           ]
         }
       ],
-      "durationMs": 174246
+      "durationMs": 174246,
+      "harness": "49383772"
     },
     {
       "suite": "compaction",
@@ -11528,7 +11544,8 @@
           ]
         }
       ],
-      "durationMs": 18520
+      "durationMs": 18520,
+      "harness": "dfe0ed3b"
     },
     {
       "suite": "compound",
@@ -11646,7 +11663,8 @@
           ]
         }
       ],
-      "durationMs": 9251
+      "durationMs": 9251,
+      "harness": "9e76d83b"
     },
     {
       "suite": "curves",
@@ -12044,7 +12062,8 @@
           ]
         }
       ],
-      "durationMs": 630
+      "durationMs": 630,
+      "harness": "82fffc16"
     },
     {
       "suite": "arrows",
@@ -12427,7 +12446,8 @@
           ]
         }
       ],
-      "durationMs": 3334
+      "durationMs": 3334,
+      "harness": "6a7f08b6"
     },
     {
       "suite": "labels",
@@ -12560,7 +12580,8 @@
           ]
         }
       ],
-      "durationMs": 537
+      "durationMs": 537,
+      "harness": "b3ccce22"
     },
     {
       "suite": "transitions",
@@ -12698,7 +12719,8 @@
           ]
         }
       ],
-      "durationMs": 9472
+      "durationMs": 9472,
+      "harness": "9ee42758"
     },
     {
       "suite": "geometry-tween",
@@ -12881,7 +12903,8 @@
           ]
         }
       ],
-      "durationMs": 11113
+      "durationMs": 11113,
+      "harness": "1791fc67"
     },
     {
       "suite": "algorithms",
@@ -13769,7 +13792,8 @@
           ]
         }
       ],
-      "durationMs": 208416
+      "durationMs": 208416,
+      "harness": "5b0386ab"
     }
   ]
 }

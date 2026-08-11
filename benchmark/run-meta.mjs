@@ -33,6 +33,9 @@ export function git(...args) {
  * @param startedAt — `Date.now()` at the start of the run
  * @param profile — 'quick' | 'all' | 'full' | 'renderer'
  * @param suiteFilter — the `--suite`/`--scene` filter in force, or null
+ * @param repeat — how many processes each row's median came from (round
+ *   65.12); 1 for a single-run file, which is what every run before that round
+ *   is, and the comparison reads it to know whether a row has a noise band
  * @param failures — the failed-job list, carried into the report
  * @param context — the first job's context (mitata's arch/runtime/cpu strings)
  * @param adapter — the WebGPU adapter actually used, for a browser run
@@ -42,6 +45,7 @@ export function buildMeta({
   startedAt,
   profile,
   suiteFilter = null,
+  repeat = 1,
   failures = [],
   context = {},
   adapter = null,
@@ -59,6 +63,7 @@ export function buildMeta({
     runtime: context.runtime ?? null,
     profile,
     suiteFilter,
+    repeat,
     totalMs: Date.now() - startedAt,
     failures,
 

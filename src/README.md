@@ -3158,22 +3158,31 @@ discriminate" applied to the instrument rather than the subject.
 
 **Reading the cross-commit comparison** (round 65.11, after tracing all
 56 rows its four pages flag as regressions — none of them the library).
-Three rules, each measured on the i9-9900K:
+Three rules, each measured on the i9-9900K — and each **built into the
+instrument by round 65.12**, so they are enforced now rather than
+remembered:
 
 - **±10% is inside this harness's repeatability on the v4 side.**
   Eight back-to-back `index.mjs` runs at one commit: 14 of 35 v4 rows
   span >10% across the eight, 8 span >20%.  The v3 rows span >10% just
   as often and **never** exceed 20% — proportional noise on ops that
   are ten to ten-thousand times larger.  Some rows are outright
-  bistable: `mut: position set` reads 47.6–69.3 ns over those eight in
-  two clusters.  Reproduce a mover with two same-commit runs before
-  attributing it to a commit.
-- **One-shot rows (`samples = 1`) are not a regression signal, and the
-  comparison does not mark them.**  49 of an all run's 791 rows are
-  one-shot (curves 22, arrows 21, labels 6), 17 of the 56 flagged
-  regressions are among them, and the all profile's largest flag
-  (+52%) is one measurement against one.  This is round 62.7's
-  renderer rule; it holds for the Node suites too.
+  bistable: `mut: position set` read 47.6–69.3 ns over those eight in
+  two clusters.  **65.12's answer**: `--repeat 3` publishes the median
+  of three processes per row and records the band they spanned, which
+  takes identical-code false flags from 28 of 245 row pairs to **0 of
+  105**; the comparison screens each change against that band rather
+  than against one global threshold.  Publish with `--repeat 3`.
+  (The bistability had a cause as well as a treatment: `cmpMutEle`,
+  `cmpMut` and `mutators.mjs`'s `cmpMut` never got round 62.5c's
+  pre-warm.  With it, `mut: position set` measures a 2.7% band.)
+- **One-shot rows (`samples = 1`) are not a regression signal.**  49
+  of an all run's 791 rows are one-shot (curves 22, arrows 21, labels
+  6), 17 of the 56 flagged regressions were among them, and the all
+  profile's largest flag (+52%) was one measurement against one.  This
+  is round 62.7's renderer rule, holding for the Node suites too —
+  and since 65.12 the comparison **enforces** it: a one-shot mover is
+  listed as unscreened, never ranked as a regression.
 - **A step in the series can be the harness.**  Round 62.5c's pre-warm
   costs the **v4 side 12–35%** on rows that iterate — not the ~0.5–1
   ns/call its own commit estimated, because the shared closure's
@@ -3182,8 +3191,12 @@ Three rules, each measured on the i9-9900K:
   returns `core: filter(fn)` to 261.8 µs against the 263.5 µs measured
   before 62.5c existed, and a per-commit probe in isolation shows the
   library flat or faster across all of round 62.  The pre-warm is
-  right about the bias it removes; the point is that the published
-  series crosses it with nothing recording the change.
+  right about the bias it removes; the problem was a published series
+  crossing it with nothing recording the change.  **65.12's answer**:
+  every job carries a hash of the harness that produced it
+  (`benchmark/harness-id.mjs`), and a change across two hashes renders
+  as `⋮ harness` instead of a percentage — the machine fingerprint's
+  rule, applied to the instrument.
 
 **What round 33 found, and round 34 fixed** — the measurements that went
 the *other* way.  Round 33 logged them; round 34 fixed all five, and the

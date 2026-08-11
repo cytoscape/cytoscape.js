@@ -44,6 +44,15 @@ function cmpMut(name, setup, fn, v3opts, gpuFn = fn) {
   const tb = setup(b);
   let i = 0;
 
+  // the 62.5c pre-warm, which this helper never got (round 65.12).  These are
+  // bulk ops over the whole graph, so eight alternations here cost real time —
+  // but the alternative is the two sides measuring different machines, which
+  // is what 62.5c was written about.
+  for (let w = 0; w < 8; w++) {
+    fn(ta, i++, a);
+    gpuFn(tb, i++, b);
+  }
+
   group(name, () => {
     summary(() => {
       bench('v3', () => {

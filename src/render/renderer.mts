@@ -374,6 +374,7 @@ export class Renderer {
       frames: this.frameCount,
       cpuFrameMs: this.cpuFrameMs,
       gpuFrameMs: this.gpuTimer?.lastMs ?? 0,
+      gpuFrameReadings: this.gpuTimer?.readings ?? 0,
       renderScale: this.scaleCtl.scale,
       uploadedBytes:
         (this.mirror?.uploadedBytes ?? 0) +

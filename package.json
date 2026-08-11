@@ -123,7 +123,7 @@
     "cross-env": "^7.0.0",
     "download-cli": "^1.0.5",
     "eslint": "^9.18.0",
-    "gh-pages": "^5.0.0",
+    "gh-pages": "^6.3.0",
     "gl-matrix": "^3.4.3",
     "globals": "^15.14.0",
     "handlebars": "^4.7.6",

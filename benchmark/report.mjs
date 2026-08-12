@@ -10,6 +10,7 @@
 //                                               #   bundles + real GPU)
 //   npm run benchmark:report -- --suite traversal
 //   npm run benchmark:report -- --repeat 3    # publish per-row medians
+//   npm run benchmark:report -- --jobs auto   # run jobs concurrently (68)
 //   npm run benchmark:report -- --render-only results/results-<ts>.json
 //
 // Results land in benchmark/results/ (gitignored): a timestamped
@@ -31,8 +32,18 @@
 // Each row also carries what the repeats measured about it — `stats.repeats`
 // and `stats.repeatSpread` (max p50 / min p50) — so the comparison can screen a
 // change against that row's own noise instead of one global threshold.
+//
+// **--jobs N runs N jobs at once** (round 68).  The default is 1 and the serial
+// path is unchanged down to the spawn order, because the whole published
+// archive was measured that way.  A concurrent run is a different measurement —
+// all-core turbo instead of single-core, a share of the L3 instead of all of it
+// — so its jobs stamp a different harness hash (`concurrentHash`) and the
+// comparison refuses to draw a line from a serial run to a parallel one.  Use it
+// for the iteration loop, where what matters is a suite's own v3-vs-v4 ratio
+// (both sides measured seconds apart, so a uniform slowdown cancels), and read
+// `benchmark/schedule.mjs` before publishing from one.
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import {
   readFileSync,
   writeFileSync,
@@ -46,6 +57,13 @@ import { renderReport } from './report-html.mjs';
 import { buildMeta } from './run-meta.mjs';
 import { stampHarness } from './harness-id.mjs';
 import { mergeRepeats } from './repeat-merge.mjs';
+import {
+  canPin,
+  physicalCores,
+  pickNext,
+  planUnits,
+  resolveWorkers,
+} from './schedule.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const RESULTS_DIR = join(DIR, 'results');
@@ -152,6 +170,7 @@ const suiteFilter = flagValue('--suite');
 const sceneFilter = flagValue('--scene'); // forwarded to the renderer bench
 const renderOnly = flagValue('--render-only');
 const repeat = Math.max(1, Number(flagValue('--repeat') ?? 1) || 1);
+const jobsFlag = flagValue('--jobs'); // a count, or 'auto'; absent is serial
 
 function render(results, resultsPath) {
   const htmlPath = join(RESULTS_DIR, 'report.html');
@@ -200,75 +219,218 @@ const results = { meta: null, jobs: [] };
 const failures = [];
 let rendererAdapter = null;
 
-for (const [i, job] of jobs.entries()) {
-  const label = job.browser
+const ROOT = resolve(DIR, '..');
+const cores = physicalCores();
+const workers = Math.min(
+  resolveWorkers(jobsFlag, cores),
+  Math.max(1, jobs.length * repeat),
+);
+const pin = workers > 1 && cores.length > 0 && canPin();
+
+if (workers > 1) {
+  console.log(
+    `${workers} workers` +
+      (pin ? `, pinned to cpu ${cores.slice(0, workers).join(',')}` : '') +
+      ' — a concurrent run measures under contention and is its own epoch;' +
+      ' it does not compare against the serial archive',
+  );
+
+  if (full) {
+    console.warn(
+      '  warning: --full builds 200k-element graphs, several GB per process —' +
+        ' check the memory headroom before raising --jobs here',
+    );
+  }
+}
+
+const labelOf = (job) =>
+  job.browser
     ? `${job.file} (browser)`
     : `${job.file} @ N=${job.n}${job.op ? ` op=${job.op}` : ''}`;
-  const jsonPath = join(RESULTS_DIR, `.job-${i}.json`);
 
-  console.log(`\n[${i + 1}/${jobs.length}] ${label}`);
+// -- the duration cache ------------------------------------------------------
+// Ordering only: the scheduler starts the longest jobs first, and without a
+// hint it learns each job's length from that job's own first pass — which is
+// one pass too late for the first pass.  The file is written into the
+// gitignored results directory, is never read by anything that renders a
+// number, and a missing or corrupt one costs packing rather than correctness.
+// (Hints recorded under `--jobs N` are inflated by the contention they were
+// measured in.  That is fine for a comparator and is why they are not used
+// for anything else.)
+const HINTS_PATH = join(RESULTS_DIR, '.durations.json');
 
-  const args = job.browser
-    ? [
-        '--import',
-        'tsx',
-        join(DIR, job.file),
-        '--json',
-        jsonPath,
-        ...(sceneFilter != null ? ['--scene', sceneFilter] : []),
-      ]
-    : ['--import', 'tsx', join(DIR, job.file)];
-
-  // each repeat is its own process, which is the point: round 65.11 traced the
-  // bistable rows to per-process JIT/heap state, so repeating inside one
-  // process would sample the same state N times and report a noise band of
-  // zero — a screen that always passes is worse than none
-  const repeats = [];
-  const bundles = [];
-
-  for (let pass = 0; pass < repeat; pass++) {
-    if (repeat > 1) {
-      console.log(`  repeat ${pass + 1}/${repeat}`);
-    }
-
-    const t0 = Date.now();
-    const r = spawnSync(process.execPath, args, {
-      cwd: resolve(DIR, '..'),
-      stdio: 'inherit',
-      env: job.browser
-        ? process.env
-        : {
-            ...process.env,
-            BENCH_N: String(job.n),
-            ...(job.op != null ? { BENCH_OP: job.op } : {}),
-            BENCH_JSON: jsonPath,
-          },
-    });
-    const durationMs = Date.now() - t0;
-
-    if (r.status !== 0 || !existsSync(jsonPath)) {
-      console.error(`  FAILED (exit ${r.status})`);
-      failures.push({ job: label, exitCode: r.status });
-      continue;
-    }
-
-    const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
-
-    rmSync(jsonPath);
-
-    if (job.browser) {
-      bundles.push(data);
-    } else {
-      repeats.push({ ...data, durationMs });
-    }
+function readHints() {
+  try {
+    return new Map(
+      Object.entries(JSON.parse(readFileSync(HINTS_PATH, 'utf8'))).filter(
+        ([, v]) => typeof v === 'number' && v > 0,
+      ),
+    );
+  } catch {
+    return new Map();
   }
+}
+
+function writeHints(hints) {
+  try {
+    writeFileSync(
+      HINTS_PATH,
+      JSON.stringify(Object.fromEntries([...hints].sort()), null, 2),
+    );
+  } catch {
+    // a cache that cannot be written is a slower schedule, not a failed run
+  }
+}
+
+// -- the pool ----------------------------------------------------------------
+// Each unit is one (job, pass) in its own process, which is the point: round
+// 65.11 traced the bistable rows to per-process JIT/heap state, so repeating
+// inside one process would sample the same state N times and report a noise
+// band of zero — a screen that always passes is worse than none.
+const hints = readHints();
+const units = planUnits(jobs, repeat, workers > 1);
+const collected = jobs.map(() => []);
+const total = units.length;
+let finished = 0;
+
+async function runPool() {
+  const pending = [...units];
+  const running = new Map(); // slot -> unit
+  const freeSlots = Array.from({ length: workers }, (_, i) => i);
+
+  await new Promise((done) => {
+    const pump = () => {
+      while (freeSlots.length > 0) {
+        const at = pickNext(pending, { running: [...running.values()], hints });
+
+        if (at < 0) {
+          break;
+        }
+
+        const [unit] = pending.splice(at, 1);
+        const slot = freeSlots.shift();
+
+        running.set(slot, unit);
+        start(unit, slot, () => {
+          running.delete(slot);
+          freeSlots.push(slot);
+          pump();
+        });
+      }
+
+      if (running.size === 0 && pending.length === 0) {
+        done();
+      }
+    };
+
+    const start = (unit, slot, release) => {
+      const { job, index, pass } = unit;
+      const label = labelOf(job);
+      const jsonPath = join(RESULTS_DIR, `.job-${index}-${pass}.json`);
+      const core = pin ? cores[slot % cores.length] : null;
+      const args = job.browser
+        ? [
+            '--import',
+            'tsx',
+            join(DIR, job.file),
+            '--json',
+            jsonPath,
+            ...(sceneFilter != null ? ['--scene', sceneFilter] : []),
+          ]
+        : ['--import', 'tsx', join(DIR, job.file)];
+      const suffix = repeat > 1 ? ` (pass ${pass + 1}/${repeat})` : '';
+
+      if (workers === 1) {
+        console.log(`\n[${total - pending.length}/${total}] ${label}${suffix}`);
+      } else {
+        console.log(
+          `  > ${label}${suffix}${core != null ? ` [cpu ${core}]` : ''}`,
+        );
+      }
+
+      const t0 = Date.now();
+      const child = spawn(
+        core != null ? 'taskset' : process.execPath,
+        core != null
+          ? ['-c', String(core), process.execPath, ...args]
+          : [...args],
+        {
+          cwd: ROOT,
+          // a serial run keeps mitata's live output, exactly as before; a
+          // concurrent one would interleave eight suites into nonsense, so it
+          // captures instead and prints the tail of whatever failed
+          stdio: workers === 1 ? 'inherit' : ['ignore', 'pipe', 'pipe'],
+          env: job.browser
+            ? process.env
+            : {
+                ...process.env,
+                BENCH_N: String(job.n),
+                ...(job.op != null ? { BENCH_OP: job.op } : {}),
+                BENCH_JSON: jsonPath,
+              },
+        },
+      );
+
+      let tail = '';
+      const keep = (chunk) => {
+        tail = `${tail}${chunk}`.slice(-4000);
+      };
+
+      child.stdout?.on('data', keep);
+      child.stderr?.on('data', keep);
+
+      child.on('close', (code) => {
+        const durationMs = Date.now() - t0;
+
+        finished++;
+
+        if (code !== 0 || !existsSync(jsonPath)) {
+          console.error(
+            `  FAILED (exit ${code}) ${label}${suffix}` +
+              (tail === '' ? '' : `\n${tail}`),
+          );
+          failures.push({ job: label, exitCode: code });
+          release();
+
+          return;
+        }
+
+        const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
+
+        rmSync(jsonPath);
+        hints.set(unit.key, durationMs);
+        collected[index][pass] = job.browser ? data : { ...data, durationMs };
+
+        if (workers > 1) {
+          console.log(
+            `  ok ${finished}/${total} ${label}${suffix} ` +
+              `${(durationMs / 1000).toFixed(1)}s`,
+          );
+        }
+
+        release();
+      });
+    };
+
+    pump();
+  });
+}
+
+await runPool();
+writeHints(hints);
+
+// jobs land in declaration order however the pool ran them, so the results
+// file — and every report and comparison rendered from it — is unchanged by
+// the scheduling
+for (const [i, job] of jobs.entries()) {
+  const passes = collected[i].filter((p) => p != null);
 
   if (job.browser) {
     // a jobs bundle: one job per scene, durations set scene-side, so the
     // repeats are merged per scene rather than per job
     const bySuite = new Map();
 
-    for (const bundle of bundles) {
+    for (const bundle of passes) {
       for (const j of bundle.jobs ?? []) {
         bySuite.set(j.suite, [...(bySuite.get(j.suite) ?? []), j]);
       }
@@ -287,7 +449,7 @@ for (const [i, job] of jobs.entries()) {
       }
     }
   } else {
-    const m = mergeRepeats(repeats);
+    const m = mergeRepeats(passes);
 
     if (m != null) {
       results.jobs.push(m);
@@ -297,8 +459,9 @@ for (const [i, job] of jobs.entries()) {
 
 // every job carries the fingerprint of the harness that produced it, so the
 // comparison can refuse a change across a methodology break the way it already
-// refuses one across machines (benchmark/harness-id.mjs)
-stampHarness(results.jobs);
+// refuses one across machines (benchmark/harness-id.mjs) — and since round 68
+// that includes the contention a concurrent run measured under
+stampHarness(results.jobs, null, { workers });
 
 const context = results.jobs[0]?.context ?? {};
 
@@ -307,6 +470,7 @@ results.meta = buildMeta({
   profile: full ? 'full' : all ? 'all' : 'quick',
   suiteFilter,
   repeat,
+  concurrency: workers,
   failures,
   context,
   // a --renderer run carries the adapter through the browser job's bundle;

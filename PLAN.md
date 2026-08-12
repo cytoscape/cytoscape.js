@@ -19522,3 +19522,45 @@ rows were parsed, merged and thrown away on every run since the two
 tables were split.  206 s per repeat; **10.3 min of a `--repeat 3` run**,
 recovered by deleting one line.
 
+### 68.2 — the runner takes the other seven cores (2026-08-12)
+
+`--jobs N` (or `auto`) runs the jobs concurrently: `benchmark/schedule.mjs`
+holds the policy, pure and spec'd, and `report.mjs` holds a worker pool.
+**The default is 1, and the serial path is unchanged down to the spawn
+order**, because that is the condition the whole published archive was
+measured in.
+
+`auto` takes one worker per physical core less one, capped at 6, and pins
+each with `taskset`.  Both halves are measurements, not guesses: a bench
+process is ~1.1 cores, so one-per-core already oversubscribes; and the
+physical set comes from `thread_siblings_list` rather than being assumed
+to be `0..N-1`, which on this box would put two jobs on cores 0 and 1
+(cpu *i* and *i+8* are one core) while four idled.
+
+The three scheduling rules, each chosen against the obvious alternative:
+
+1. **One pool, no barrier between passes.**  The obvious design runs
+   every job's pass 1, waits, then pass 2 — and that reimposes the serial
+   floor: a 206 s job means three barriered waves cannot finish under
+   10.3 min however many cores are free.  One pool of 72 units is bounded
+   by total work instead (2694 s ÷ 6 = 7.5 min).
+2. **Every job's first pass before any job's second**, then longest-first.
+   Pure LPT from a cold cache discovers a long job late and hands it the
+   tail; a duration cache (`results/.durations.json`, gitignored) carries
+   the lengths between runs so the first pass packs too.
+3. **A job's repeats do not overlap each other** — softly.  Round 65.11's
+   median-of-three assumes three independent samples; three siblings
+   running side by side would share one wall-clock neighbourhood on top
+   of the machine state.  Soft because parking a worker at the tail costs
+   more than the correlation it avoids.
+
+**Not done, deliberately**: splitting the two long suites into `BENCH_OP`
+chunks to pack better.  It was in the plan until the arithmetic — the
+longest job only binds the schedule above ~13 workers (2694 s ÷ 206 s) —
+and it would change what each suite measures (a chunk rebuilds the
+fixture and starts cold) while being **invisible to the harness hash**,
+since `report.mjs` sits in `NOT_INSTRUMENT` and correctly so.  A
+measurement change no fingerprint can see is the exact failure the
+fingerprints exist to prevent.  The GPU profiles stay serial and
+exclusive — one adapter, one queue, and frame time is the measurement.
+

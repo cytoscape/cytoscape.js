@@ -36,6 +36,10 @@ export function git(...args) {
  * @param repeat — how many processes each row's median came from (round
  *   65.12); 1 for a single-run file, which is what every run before that round
  *   is, and the comparison reads it to know whether a row has a noise band
+ * @param concurrency — how many jobs ran at once (round 68); 1 is the serial
+ *   condition the whole archive was measured in.  It is provenance here and
+ *   an epoch in `harness-id.mjs`: this field says what happened, that hash
+ *   stops the comparison drawing a line through it
  * @param failures — the failed-job list, carried into the report
  * @param context — the first job's context (mitata's arch/runtime/cpu strings)
  * @param adapter — the WebGPU adapter actually used, for a browser run
@@ -46,6 +50,7 @@ export function buildMeta({
   profile,
   suiteFilter = null,
   repeat = 1,
+  concurrency = 1,
   failures = [],
   context = {},
   adapter = null,
@@ -64,6 +69,7 @@ export function buildMeta({
     profile,
     suiteFilter,
     repeat,
+    concurrency,
     totalMs: Date.now() - startedAt,
     failures,
 

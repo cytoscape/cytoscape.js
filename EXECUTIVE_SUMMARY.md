@@ -14,15 +14,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 - **Rewrite when a round closes** — by re-reading the record and restating it,
   never by appending.
 - **Point form only.** Short points, high level, readable in five minutes.
-- **Week by week, and headline changes only.** Each week is a list of what
-  changed and **what it buys** — the benefit, not the implementation. A change
-  earns a line only if it changed what the library *is* or what it can do; most
-  do not.
+- **Day by day, headline changes only.** Each day is a list of what changed and
+  **what it buys** — the benefit, not the implementation. A change earns a line
+  only if it changed what the library *is* or what it can do; most do not.
 - **No round narrative.** Rounds, file names, sub-round numbering and
   implementation detail belong in `PLAN.md`. Round numbers appear here only
   where one is the sole handle on an open question.
-- **Restate, don't append.** Later rounds routinely change what an earlier
-  decision meant, so earlier weeks need correcting too.
+- **Restate, don't append.** Later work routinely changes what an earlier
+  decision meant, so earlier days need correcting too.
 - **Facts, not judgement.** The numbers table below stays current; assessments
   of how close a release is, what is "left", or whether the work is on track do
   not belong here — they need information this file does not carry.
@@ -49,74 +48,110 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 ---
 
-## Week 1 — 22–24 July
+## Day by day
 
-- **A columnar, CPU-canonical model** — typed-array columns, stable slots,
-  coalesced dirty spans, a CSR adjacency index. Buys the whole performance
-  case: the graph is already in the shape the GPU wants.
-- **Reads stay synchronous.** Buys a public API that did not have to become
-  async to get the model.
-- **A WebGPU renderer** — SDF shapes, compute culling, indirect draws, GPU
-  picking, GPU text. Buys interaction on graphs that stall v3: **33 ms frames
-  where v3 takes 4,460**.
-- **A co-signed model↔renderer contract in one file.** Buys a layout change
-  that cannot happen by accident on one side only.
-- **Structured queries instead of a selector language.** Buys queries that are
-  data — composable, inspectable, no parser.
-- **A serializable mapper DSL for style.** Buys paint channels evaluated on the
-  GPU, and style that can cross a wire.
-
-## Week 2 — 27 July – 2 August
-
-- **Visible-behaviour parity with v3** — curves, compounds, labels, images,
-  animation. Buys an existing app the same picture.
-- **Goldens *plus* live v3-vs-v4 parity diffs.** Buys the answer to *is it
-  right*, which a golden alone cannot give: goldens compare v4 against its own
-  past.
-- **Benchmarks with an HTML report.** Buys claims that are numbers.
-- **Design sittings, decisions recorded when taken.** Buys a migration guide
-  that could later be compiled rather than reconstructed.
-
-## Week 3 — 3–8 August
-
-- **Error and documentation contracts gated at zero tolerance.** Buys a guard
-  no test has ever fired failing the build, and a public member without docs
-  failing it too.
-- **The repository split: v4 is the package, v3 lives whole in `v3/`.** Buys a
-  v4 that ships alone, and a real v3 to keep measuring parity against.
-- **Packaging gate, migration guide, soak tier, status site.** Buys release
-  mechanics that are testable before there is a release.
-- **CI made honest.** Buys a green run that means something: every defect found
-  was in something never executed on a fresh checkout, on a runner, or in a
-  browser nobody could launch locally.
-
-## Week 4 — 9–11 August
-
-- **Both long-standing API decisions taken, each by declining the surface its
-  own homework had priced.** Buys a smaller library and a recorded reason.
-- **The force layout rebuilt on published methods.** Buys a layout that stays
-  numerically stable past node degree ~20, and lays out the 465k-edge network
-  live in **1.3 s**.
-- **The nine expensive whole-graph algorithms went async with GPU executors.**
-  Buys Markov clustering at up to **642×** its CPU reference, k-medoids 146×,
-  Floyd–Warshall 28×; the traversal tier stays synchronous.
-- **Per-element bypasses returned as a first-class stylesheet section.** Buys
-  v3's ergonomics without v3's cost — id-keyed, surviving re-add, carried by
-  `cy.json()` (v3 loses them), twice as fast.
-- **Cross-commit benchmark comparison pages.** Buys regressions caught by the
-  archive rather than by a user: one four-day-old regression on first use.
-- **The load path measured, then taken apart.** Buys **1.9×** on the 465k-edge
-  load with a byte-identical rendered frame, and initialisation of that network
-  in **~0.95 s against v3's ~19 s**.
-
-## Week 5 — 12 August
-
-- **The benchmark runner runs jobs concurrently.** Buys a publishing run of the
-  `all` profile in **8.4 minutes instead of ~55**, so re-measuring stops being
-  a reason not to measure.
-- **Concurrency folded into the harness fingerprint, and the published archive
-  kept serial.** Buys the guarantee that a faster *instrument* can never be
-  read as a faster *library*.
+- **22 Jul** — the whole stack, stood up in one day
+  - Columnar store, model↔renderer contract, core facade, collections, events,
+    viewport, compiled style engine, grid layout, WebGPU pipeline, GPU picking,
+    pointer interaction, SDF labels, debug harness.
+  - Buys the architecture proved end to end before any of it was polished.
+- **23 Jul** — the model earns its shape
+  - Packed numeric keys for set operations, columnar flag scans, id-index
+    selector resolution, slot-native traversal.
+  - Buys v3's own API measuring faster on v4, not just its drawing.
+- **24 Jul** — style becomes data
+  - Mapper spec compile, scale programs, OKLab colour and named schemes,
+    ordinal dictionaries, GPU evaluation of scalar and colour channels.
+  - Buys paint that never round-trips through the CPU, and style that can cross
+    a wire.
+- **27 Jul** — visible-behaviour parity, in one sitting
+  - Search, path, structure and centrality algorithms; polygon shapes; line
+    styles; label visuals; edge labels; one easing layer; the gesture family
+    (cxttap, taphold, dbltap, drag-all-selected); mount/unmount; device-loss
+    recovery.
+  - Buys an existing app the same picture and the same interactions.
+- **28 Jul** — measurement infrastructure
+  - A single-page benchmark report, and browser renderer benchmarks putting v3
+    canvas against v4 WebGPU.
+  - Buys claims that are numbers.
+- **29 Jul** — memory comes back
+  - String-dictionary and id-blob compaction, CSR adjacency rebuild.
+  - Buys a long-running session that does not keep the graph it removed.
+- **30 Jul** — curved edges
+  - Curve parameters, route pipeline, arrows on end tangents, labels at route
+    midpoints, exact accessors, haystack and manual endpoints.
+  - Buys v3's whole edge vocabulary.
+- **31 Jul** — compound graphs
+  - Hierarchy model, lifecycle, auto-bounds, ancestor-gated visibility, event
+    bubbling, parent draw/cull/pick, compound layouts and loop edges; end
+    labels on v3's 3×3 grid.
+  - Buys nested graphs, which most real applications use.
+- **1 Aug** — the layout leaves the main thread
+  - The force layout on the extension contract with a GPU integrator; touch
+    gestures; the display/visibility split; style transitions; slot compaction.
+  - Buys layout that does not freeze the page, and a hide that costs only
+    paint.
+- **2 Aug** — the visual vocabulary completed
+  - Every remaining v3 node shape and arrowhead, v3's nonlinear arrow sizing,
+    size/width/font/padding tweens, shipped TypeScript declarations.
+  - Buys a stylesheet that ports without a lookup table of what is missing.
+- **3 Aug** — contracts gated, hot paths fixed
+  - Documentation and error contracts gated at zero tolerance; the style read
+    path's 150-case switch became a dispatch table; memoized collections;
+    O(1) `indexOf`.
+  - Buys a build that fails on an undocumented member or an untested guard, and
+    a worst-case style read 2.6× faster.
+- **4 Aug** — v4 becomes the package
+  - The repository split so v4 is the package and v3 lives whole in `v3/`; v4's
+    own event emitter; packaging gates; the docs generator; the debug harness
+    rebuilt.
+  - Buys a v4 that ships alone, and a real v3 to keep measuring against.
+- **5 Aug** — robustness and publication
+  - The soak tier (leaks, churn, wire fuzzing, multi-instance isolation); the
+    status site; machine provenance and a tracked benchmark archive; fixtures
+    shipped in v4's binary wire format.
+  - Buys a deployable preview of the branch, and a benchmark history that
+    survives the machine that produced it.
+- **6 Aug** — CI made honest
+  - Fresh-checkout failures fixed, bundles built before the suite; v3's arrow
+    gap and spacing constants ported; feature pipelines built on first draw.
+  - Buys a green run that means something, and a first frame of 2.7 s where it
+    had been 4.6.
+- **7 Aug** — parity found by measuring, not by looking
+  - Numeric routing parity (geometry, not pixels); the arrow gap; element state
+    (`:selected`, `:active`, `:grabbed`) as ordinary style condition rather than
+    a shader constant; v3's selection colours.
+  - Buys differences 400× below the pixel bound being caught, and every
+    affordance being restyleable or disableable by an application.
+- **8 Aug** — the things you click
+  - v3's hit halos, arrowheads as hit targets, `:active` on edge press;
+    border-style and outline-style on every shape; minified WGSL; directional
+    fit bounds.
+  - Buys edges that are clickable again, and smaller shipped shaders.
+- **9 Aug** — every benchmark pair reads v4-faster
+  - State flips write the diff rather than the element; the force layout made
+    stable by construction; cross-commit benchmark comparison pages.
+  - Buys performance visible across commits — the pages caught a four-day-old
+    regression on first use.
+- **10 Aug** — the expensive algorithms go async, onto the GPU
+  - Nine whole-graph algorithms return promises and take
+    `executor: 'cpu' | 'gpu' | 'auto'`, with WGSL kernels and a performance
+    pass; per-element bypasses returned as a stylesheet section;
+    `cy.collection()` throws on an argument, `cy.$()` and `cy.byId()` return.
+  - Buys Markov clustering at up to **642×** its CPU reference, and v3's bypass
+    ergonomics at twice v3's speed.
+- **11 Aug** — the load path taken apart
+  - Definition-form payloads convert to columns before ingest; mapped style
+    costs per distinct value; a run of identically styled edges is written once;
+    the benchmark comparison learned harness epochs, repeat medians and
+    screened movers.
+  - Buys **1.9×** on a 465k-edge load with a byte-identical frame, and a
+    comparison page that can tell a change from its own noise.
+- **12 Aug** — the instrument
+  - The benchmark runner runs jobs concurrently; concurrency is folded into the
+    harness fingerprint and the published archive stays serial.
+  - Buys a publishing run in **8.4 minutes instead of ~55**, with no way to
+    mistake a faster instrument for a faster library.
 
 ---
 
@@ -134,9 +169,6 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `executor: 'cpu' | 'gpu' | 'auto'`.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
-- **Element state** (`:selected`, `:active`, `:grabbed`, …) is ordinary style
-  condition rather than a shader constant, so an application can restyle or
-  disable every affordance.
 
 ## Open decisions
 

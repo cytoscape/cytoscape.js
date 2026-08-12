@@ -4958,7 +4958,7 @@ plan (12a/12b/12c) is done.
 
   Readback: `curve-style`/`haystack-radius` off the styled record;
   endpoints as canonical strings (keywords, 'x y' with % suffixes,
-  '<rad>rad' angles); distances as numbers.  21 Node specs
+  `'<rad>rad'` angles); distances as numbers.  21 Node specs
   (`test/curve-12c-derivation.mjs`); two 12b-era specs updated to
   the new surface (haystack/edge-distances no longer throw).  1831
   Node tests, typecheck + lint green.
@@ -19540,10 +19540,12 @@ to be `0..N-1`, which on this box would put two jobs on cores 0 and 1
 The three scheduling rules, each chosen against the obvious alternative:
 
 1. **One pool, no barrier between passes.**  The obvious design runs
-   every job's pass 1, waits, then pass 2 — and that reimposes the serial
-   floor: a 206 s job means three barriered waves cannot finish under
-   10.3 min however many cores are free.  One pool of 72 units is bounded
-   by total work instead (2694 s ÷ 6 = 7.5 min).
+   every job's pass 1, waits, then pass 2 — and that multiplies the
+   longest job by the repeat count *and* pays a barrier at each wave.
+   One pool of 72 units pays the chain once.  (What that leaves is
+   measured in 68.4, and it is not the 7.5 min this planning note first
+   claimed: with rule 3 in force the run is bounded by the longest job's
+   own repeat chain, ~11 min, not by total work ÷ workers, 8.4 min.)
 2. **Every job's first pass before any job's second**, then longest-first.
    Pure LPT from a cold cache discovers a long job late and hands it the
    tail; a duration cache (`results/.durations.json`, gitignored) carries
@@ -19580,3 +19582,83 @@ report grows a provenance row saying the numbers were measured under
 contention — because the page is also read on its own, by someone
 wondering why every row sits above the archive's.
 
+
+### 68.4 — measured (2026-08-12)
+
+`--all --repeat 3` on the i9-9900K (8 physical / 16 logical, three qemu
+VMs holding their usual ~29% of a core), round-67 HEAD, `--jobs auto`
+= 6 workers pinned:
+
+| | wall |
+|---|---:|
+| before this round (`--repeat 3`, serial, duplicate included) | ~55 min |
+| serial with the duplicate removed (derived from the same per-job times) | 44.9 min |
+| **`--jobs auto`** | **11.0 min** |
+
+**5.0× against the command that was being run**, 4.1× against a
+deduplicated serial run.  Utilisation is 77% of six workers (50.4 min of
+unit work in 11.0 min of wall), and the missing quarter is the tail: the
+last three units are `algorithms @ 500` pass 2, `surface` pass 3 and
+`algorithms @ 500` pass 3, finishing with three cores idle.
+
+**What binds it is the chain, not the packing** — worth a second run to
+establish, because the duration cache was written on the assumption that
+packing was the problem.  A second `--jobs auto` run with the cache warm
+started the six longest jobs first, in the order LPT wants, and finished
+in **10.9 min**: 0.1 min different, 77% utilisation again.  The reason is
+rule 3.  `algorithms @ 500` takes ~226 s a pass and its three passes may
+not overlap, so its chain alone is ~11 min — within a rounding error of
+the whole run.  Total work ÷ 6 workers is 8.4 min, and that is what would
+be reachable if the chain were broken.
+
+So the cache earns its place by making the *shape* right — long jobs
+start first, and the first pass packs like the later ones — rather than
+by moving the wall clock, and **the only remaining lever is the one 68.2
+declined**: splitting `algorithms @ 500`, or relaxing rule 3, for about
+2.5 min.  Neither is worth its cost today; both are named here so the
+next person to look at this figure does not have to re-derive why it is
+11 and not 8.
+
+**The contention penalty, per job** — parallel pass time against the same
+job in the 65.10 serial archive.  Median **1.11×**, and the shape is the
+finding:
+
+| | |
+|---|---|
+| `spatial`, `store`, `surface`, `mappers`, `style-bundle` | 1.02–1.06× |
+| `core+collection`, `materializers`, `compaction`, `style`, `algorithms @ 500` | 1.07–1.11× |
+| `traversal`, `algorithms @ 2000`, `load` | 1.21–1.28× |
+| `layouts` | **1.55×** |
+
+It is **not a uniform slowdown**, so no single correction factor could
+turn a parallel number back into a serial one — which is the measured
+form of the argument for keeping publishing serial, and worth more than
+the wall-clock figure.  (`curves` 1.57× and `labels` 1.48× are excluded
+from that reading: both are sub-second one-shot suites where process
+startup, not contention, is most of the number.)
+
+**The rule for using it.**  Parallel is for the iteration loop, where the
+question is a suite's own v3-vs-v4 ratio — both sides measured seconds
+apart in one process, so a uniform slowdown cancels.  **Publishing stays
+serial**, and `scripts/benchmark-publish.mjs` now enforces that with a
+guard shaped like the dirty-tree one: a run carrying `meta.concurrency >
+1` is refused unless `--allow-concurrent`.  The reason is not that the
+page would be *wrong* — the epoch hash sees to that — but that it would
+be **blind**: every row would read as a break, and, worse, if the
+epoch were waved through, contention would widen each row's
+`repeatSpread` and the mover screen would file real 10–20% wins as
+"inside the row's own run-to-run band" — the band the style rounds live
+in.
+
+**Controls**, all landing: the collision tier removed from the picker
+fails the two-repeats spec; explore-first removed fails the
+unmeasured-job spec; longest-first removed fails two; the exclusive drain
+removed fails two more; `concurrentHash` made a no-op fails the two epoch
+specs; the provenance row removed fails the concurrency spec.
+
+**Open**: the serial-vs-parallel validation for *publishing*, ~70 min of
+machine time at one commit.  Three numbers decide it — the median
+row-wise parallel/serial ratio (the per-job spread above says it will not
+be one number), the inflation in per-row `repeatSpread`, and how many of
+the ~245 rows would still be screenable at a true 10% change.  Until
+that is run, the guard stays.

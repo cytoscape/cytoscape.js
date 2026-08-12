@@ -12,13 +12,24 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-11, as rounds 66–66.3 closed — the loader
+- **Last updated**: 2026-08-12, as round 68 closed — the benchmark
+  runner stopped using one core of eight (`--jobs N`, default still
+  serial), a duplicated job that had been running the suite's slowest
+  sweep twice was removed, and a publishing run of the `all` profile went
+  from ~55 minutes to **11.0**.  Concurrency is treated as a change of
+  instrument, not a faster clock: it is folded into the harness
+  fingerprint and the archive stays serial.  The day before, rounds
+  66–67 closed the load path: the loader
   now converts definition-form payloads to columns before ingesting them
   (1.2–1.8× on load, and this file's headline init figure moves from
   1.7 s to 0.98 s); the mapped style apply costs per distinct value
-  rather than per element; and a constant channel opacity no longer
+  rather than per element; a constant channel opacity no longer
   demotes its colour channel off the GPU, which was costing 3.5× on
-  every restyle of a sheet that dimmed its edges.  (Rounds 65.11–65.13, also 08-11, are in
+  every restyle of a sheet that dimmed its edges; and round 67 decomposed
+  what remained, found the mappers were *not* the cost, and took the
+  465k-edge load's init from 1195 to **622 ms** headless (1.92×) across
+  three bulk-write changes — while measuring and declining two more.
+  (Rounds 65.11–65.13, also 08-11, are in
   `PLAN.md` and not yet summarised here: two benchmark-instrument
   corrections and a debug-harness error-reporting fix.)  The day before
   held three decision rounds and one large build round: the per-element
@@ -66,7 +77,7 @@ for several weeks; `npm test` passes from a clean checkout.
 | Automated tests | 2,205 unit · 394 module · 24 soak · 376 browser (251 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 363 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) · a kernel-vs-CPU colour-fold scene compared at zero differing pixels (round 66.3) |
-| Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
+| Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) · a full publishing run of the `all` profile takes **11 min** since round 68, from ~55 |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 684 KiB minified, 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire; the WebGPU shader source (which v3 has no equivalent of) is minified at build time, and round 65's algorithm kernels ride in it |
 
@@ -966,6 +977,55 @@ passed against the broken bundle.  What caught it was writing the spec
 for the branch the benchmark could not reach — and that spec's own first
 two versions passed for two different wrong reasons before it was made to
 discriminate.
+
+## Week 5 — 12 August: the benchmark suite stops using one core of eight
+
+*Round 68.*
+
+The publish run had grown to about an hour, and the diagnosis was one
+observation: it used **one core of eight**.  The runner spawned a job,
+waited for it, spawned the next — while a bench process wants only ~1.1
+of the one core it has, and seven sat idle for the whole run.
+
+Two things came out of looking at where the hour went.  The first was
+free: the slowest job in the table, the 206-second `algorithms` sweep at
+N=500, was listed in **two** job tables and `--all` is their sum, so it
+ran twice and the second copy was discarded on arrival — both the report
+and the comparison keep the first-seen row and drop duplicates.  That is
+10.3 minutes of a publishing run, recovered by deleting a line.
+
+The second is the runner itself, which now takes `--jobs N` (or `auto`:
+one worker per physical core less one, capped at six, each pinned to a
+distinct core — derived from the machine's hyperthread topology rather
+than assumed).  Measured on the same machine and profile: **55 minutes
+becomes 11.0**, a 5.0× improvement, at 77% utilisation of six workers.
+The missing quarter has a name: the suite's longest job takes ~226
+seconds a pass and its three repeats are kept from overlapping (they are
+meant to be independent samples), so its chain alone is ~11 minutes and
+the run cannot beat it.  A second run confirmed as much — with the
+scheduler's duration cache warm, so that it started the longest jobs
+first, it finished in 10.9.
+
+The interesting half is what the round declined to do with that.  A
+concurrent run is a *different measurement* — all-core turbo instead of
+single-core, a share of the L3 instead of all of it — and the per-job
+cost was measured rather than assumed: a median of 1.11×, but ranging
+from 1.02× on the cache-resident suites to **1.55×** on the
+allocation-heavy layout sweep.  Because the penalty sorts by suite, no
+correction factor can turn a parallel number back into a serial one.  So
+concurrency is folded into each job's harness fingerprint — the
+mechanism round 65.12 built to stop a methodology change reading as a
+performance change — and the publishing script refuses a concurrent run
+unless told twice.  Parallel is for the iteration loop; the archive stays
+serial until a validation run says otherwise.  A serial run is unchanged
+down to the spawn order, which was verified rather than asserted: it
+stamps the same fingerprint the published archive already carries.
+
+The plan also lost a step to arithmetic.  Splitting the two longest
+suites into chunks, to pack the schedule better, turned out to buy
+nothing below about thirteen workers — and it would have changed what
+those suites measure while being invisible to the fingerprint that exists
+to catch exactly that.
 
 ## What remains before 4.0
 

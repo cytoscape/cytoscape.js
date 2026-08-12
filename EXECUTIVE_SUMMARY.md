@@ -3,25 +3,39 @@
 The v4 rewrite: a columnar model and a WebGPU renderer, per
 [#3486](https://github.com/cytoscape/cytoscape.js/issues/3486).
 
-- **Status**: not released, and not close. `cytoscape@3` remains the shipping
-  library.
+- **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
 - **Last updated**: 2026-08-12, as round 68 closed.
-- **Derived document.** [`PLAN.md`](PLAN.md) is the development record and the
-  source of truth; this is the five-minute version — see *Maintaining this
-  file*.
+
+## How to maintain this file
+
+- **[`PLAN.md`](PLAN.md) is the source; this file is derived from it.** Nothing
+  is recorded here that is not recorded there first.
+- **Rewrite when a round closes** — by re-reading the record and restating it,
+  never by appending.
+- **Point form only.** Short points, high level, readable in five minutes.
+- **Week by week, and headline changes only.** Each week is a list of what
+  changed and **what it buys** — the benefit, not the implementation. A change
+  earns a line only if it changed what the library *is* or what it can do; most
+  do not.
+- **No round narrative.** Rounds, file names, sub-round numbering and
+  implementation detail belong in `PLAN.md`. Round numbers appear here only
+  where one is the sole handle on an open question.
+- **Restate, don't append.** Later rounds routinely change what an earlier
+  decision meant, so earlier weeks need correcting too.
+- **Facts, not judgement.** The numbers table below stays current; assessments
+  of how close a release is, what is "left", or whether the work is on track do
+  not belong here — they need information this file does not carry.
+- **Quote a number only if it is current.** Test tallies, member counts and
+  benchmark figures go stale first; re-run the relevant command (see
+  `AGENTS.md`) rather than copying one forward.
+- **Keep the decisions table honest**: an item leaves it when the decision is
+  made, not when the work is scheduled.
+- Update *Last updated* and the round it covers.
 
 ---
 
 ## Where it stands
-
-- Feature scope covered; the work is **hardening, measurement and release
-  preparation**.
-- CI green as of 2026-08-06, having been red on every push for weeks.
-- `npm test` passes from a clean checkout.
-- What is left waits on **a decision, another platform, or release
-  credentials** — not on unbuilt features.
-- An inventory, not a schedule: several rounds v4 needs are not scoped yet.
 
 | | |
 |---|---|
@@ -31,31 +45,80 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
-
-**Headline case** — a 19,607-node / 464,657-edge network:
-
-- initialises in **~0.95 s against v3's ~19 s**;
-- holds **33 ms frames where v3 takes 4,460 ms**;
-- lays out live on the GPU force layout in **1.3 s**.
+| CI | Green as of 2026-08-06; `npm test` passes from a clean checkout |
 
 ---
 
-## What v4 is
+## Week 1 — 22–24 July
 
 - **A columnar, CPU-canonical model** — typed-array columns, stable slots,
-  coalesced dirty spans, a CSR adjacency index.
-- Reads stay synchronous, so the public API did not become async.
-- **A WebGPU renderer** — SDF node shapes, compute culling, indirect draws, GPU
-  picking, GPU text.
-- **A co-signed model↔renderer contract** in one file: changing the column and
-  flag layout is a deliberate act.
-- **Structured queries instead of a selector language** — objects and plain
-  functions.
-- **A serializable mapper DSL** for style, evaluated on the GPU for paint
-  channels.
-- Element state (`:selected`, `:active`, `:grabbed`, …) is ordinary style
-  condition, not a shader constant — so an application can restyle or disable
-  every affordance.
+  coalesced dirty spans, a CSR adjacency index. Buys the whole performance
+  case: the graph is already in the shape the GPU wants.
+- **Reads stay synchronous.** Buys a public API that did not have to become
+  async to get the model.
+- **A WebGPU renderer** — SDF shapes, compute culling, indirect draws, GPU
+  picking, GPU text. Buys interaction on graphs that stall v3: **33 ms frames
+  where v3 takes 4,460**.
+- **A co-signed model↔renderer contract in one file.** Buys a layout change
+  that cannot happen by accident on one side only.
+- **Structured queries instead of a selector language.** Buys queries that are
+  data — composable, inspectable, no parser.
+- **A serializable mapper DSL for style.** Buys paint channels evaluated on the
+  GPU, and style that can cross a wire.
+
+## Week 2 — 27 July – 2 August
+
+- **Visible-behaviour parity with v3** — curves, compounds, labels, images,
+  animation. Buys an existing app the same picture.
+- **Goldens *plus* live v3-vs-v4 parity diffs.** Buys the answer to *is it
+  right*, which a golden alone cannot give: goldens compare v4 against its own
+  past.
+- **Benchmarks with an HTML report.** Buys claims that are numbers.
+- **Design sittings, decisions recorded when taken.** Buys a migration guide
+  that could later be compiled rather than reconstructed.
+
+## Week 3 — 3–8 August
+
+- **Error and documentation contracts gated at zero tolerance.** Buys a guard
+  no test has ever fired failing the build, and a public member without docs
+  failing it too.
+- **The repository split: v4 is the package, v3 lives whole in `v3/`.** Buys a
+  v4 that ships alone, and a real v3 to keep measuring parity against.
+- **Packaging gate, migration guide, soak tier, status site.** Buys release
+  mechanics that are testable before there is a release.
+- **CI made honest.** Buys a green run that means something: every defect found
+  was in something never executed on a fresh checkout, on a runner, or in a
+  browser nobody could launch locally.
+
+## Week 4 — 9–11 August
+
+- **Both long-standing API decisions taken, each by declining the surface its
+  own homework had priced.** Buys a smaller library and a recorded reason.
+- **The force layout rebuilt on published methods.** Buys a layout that stays
+  numerically stable past node degree ~20, and lays out the 465k-edge network
+  live in **1.3 s**.
+- **The nine expensive whole-graph algorithms went async with GPU executors.**
+  Buys Markov clustering at up to **642×** its CPU reference, k-medoids 146×,
+  Floyd–Warshall 28×; the traversal tier stays synchronous.
+- **Per-element bypasses returned as a first-class stylesheet section.** Buys
+  v3's ergonomics without v3's cost — id-keyed, surviving re-add, carried by
+  `cy.json()` (v3 loses them), twice as fast.
+- **Cross-commit benchmark comparison pages.** Buys regressions caught by the
+  archive rather than by a user: one four-day-old regression on first use.
+- **The load path measured, then taken apart.** Buys **1.9×** on the 465k-edge
+  load with a byte-identical rendered frame, and initialisation of that network
+  in **~0.95 s against v3's ~19 s**.
+
+## Week 5 — 12 August
+
+- **The benchmark runner runs jobs concurrently.** Buys a publishing run of the
+  `all` profile in **8.4 minutes instead of ~55**, so re-measuring stops being
+  a reason not to measure.
+- **Concurrency folded into the harness fingerprint, and the published archive
+  kept serial.** Buys the guarantee that a faster *instrument* can never be
+  read as a faster *library*.
+
+---
 
 ## What changed for users of v3
 
@@ -67,45 +130,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   sequencing.
 - **display/visibility split** into a structural tier and a paint-only tier.
 - **`cy.layout({ impl })` is the whole extension story.**
-- **The nine expensive whole-graph algorithms return promises** and take
-  `executor: 'cpu' | 'gpu' | 'auto'`; the traversal tier stays synchronous.
-- **Per-element bypasses are back** — a first-class `bypasses` stylesheet
-  section, id-keyed, surviving re-add, carried by `cy.json()` (v3 loses them),
-  twice as fast as v3's.
+- **The expensive whole-graph algorithms return promises** and take
+  `executor: 'cpu' | 'gpu' | 'auto'`.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
-
-## Performance
-
-- Every v3-comparative benchmark pair reads v4-faster.
-- The published archive and its cross-commit comparison pages keep it that way
-  — they caught a four-day-old regression on first use.
-- **GPU algorithm executors** on a real adapter: Markov clustering up to 642×
-  its CPU reference, k-medoids 146×, Floyd–Warshall 28×, betweenness 18×; only
-  PageRank and hierarchical clustering sit in low single digits.
-- **The load path**, rebuilt on measurement: **1.9×** on the 465k-edge load,
-  rendered frame byte-identical.
-- **First frame**: deferring the feature pipelines cut the software-renderer
-  first frame from 4.6 s to 2.7 s.
-- **The benchmark runner** runs jobs concurrently: an `all`-profile publishing
-  run went from ~55 min to **8.4**.
-- Concurrency is treated as a change of instrument, not a faster clock: it is
-  folded into the harness fingerprint, and **the published archive stays
-  serial**.
-
----
-
-## Timeline
-
-| Week | |
-|---|---|
-| **1** — 22–24 Jul | Architecture proved end to end. |
-| **2** — 27 Jul – 2 Aug | Visible-behaviour parity with v3, and the measurement infrastructure to keep it. |
-| **3** — 3–8 Aug | Contracts gated; the repository split so v4 is the package; packaging, migration guide, soak tier, status site; CI made honest. |
-| **4** — 9–11 Aug | Both long-standing decisions taken; the force layout rebuilt; the expensive algorithms async onto the GPU; bypasses back; the load path taken apart. |
-| **5** — 12 Aug | The benchmark runner stopped using one core of eight. |
-
----
+- **Element state** (`:selected`, `:active`, `:grabbed`, …) is ordinary style
+  condition rather than a shader constant, so an application can restyle or
+  disable every affordance.
 
 ## Open decisions
 
@@ -115,7 +146,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Edge overlay band width | v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | Hollow *mid* arrows | Still show the line through them: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
 
-## What remains before 4.0
+## Not yet built
 
 | | |
 |---|---|
@@ -128,8 +159,6 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   through the declarative mapper system; splitting the largest implementation
   files.
 
----
-
 ## How this project works
 
 1. **A control for every claim** — each test run once with the behaviour it
@@ -141,24 +170,3 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
    browser, a person opening the page.
 5. **A change that should be invisible is the best test of the tools that watch
    for changes.**
-
----
-
-## Maintaining this file
-
-- **`PLAN.md` is the source; this file is derived from it.**
-- **Rewrite when a round closes** — by re-reading the record and restating it,
-  never by appending.
-- **Point form only**: short points, high level, readable in five minutes.
-- **No round narrative.** Rounds, file names and implementation detail belong
-  in `PLAN.md`; a round earns a line here only when it changed what the library
-  *is*, and most earn none.
-- Round numbers appear only where one is the sole handle on an open question.
-- **Restate, don't append.** Later rounds routinely change what an earlier
-  decision meant, so earlier sections need correcting too.
-- **Quote numbers only if they are current.** Test tallies, member counts and
-  benchmark figures go stale first; re-run the relevant command (see
-  `AGENTS.md`) rather than copying a figure forward.
-- **Keep the decisions table honest**: an item leaves it when the decision is
-  made, not when the work is scheduled.
-- Update *Last updated* and the round it covers.

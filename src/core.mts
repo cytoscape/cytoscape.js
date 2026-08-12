@@ -803,6 +803,20 @@ export class Core {
    * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void {
+    // round 67: one bulk-load window over the whole ingest, so the curve
+    // index takes one pass over the finished pair map instead of a mark
+    // per edge.  `cy.add()` gets no window, deliberately — it adds into
+    // a populated graph, where the pairs it touches are a small subset.
+    this._store.beginBulkLoad();
+
+    try {
+      this._bulkAddInner(input);
+    } finally {
+      this._store.endBulkLoad();
+    }
+  }
+
+  private _bulkAddInner(input: ElementsInput): void {
     const defs = isSerializedElements(input)
       ? deserializeElements(input)
       : input;

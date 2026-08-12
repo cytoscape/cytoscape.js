@@ -1517,6 +1517,22 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * Open a bulk-load window on the derived indexes (round 67): the curve
+   * index stops accumulating one pair mark per edge and takes their
+   * union at `endBulkLoad`, which on a whole-graph load is the whole
+   * pair map.  Must be paired in a `finally` — see `CurveIndex.beginBulk`
+   * for what may not happen inside the window.
+   */
+  beginBulkLoad(): void {
+    this.curves.beginBulk();
+  }
+
+  /** Close a bulk-load window and mark the derivations it implies. */
+  endBulkLoad(): void {
+    this.curves.endBulk();
+  }
+
+  /**
    * The hierarchy flush's write sink: derived parent geometry lands in
    * the real columns (position, size, outerHalf) with normal dirty
    * spans — but never re-marks the hierarchy, so a flush can not

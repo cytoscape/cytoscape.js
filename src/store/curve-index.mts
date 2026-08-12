@@ -377,6 +377,9 @@ export class CurveIndex {
   private pending: Set<number>;
   /** non-loop blob-family edges awaiting per-edge derivation */
   private pendingSlots: Set<number>;
+  /** inside a bulk load: per-pair marks are suppressed, and `endBulk`
+   * marks the union they would have accumulated (round 67) */
+  private bulk: boolean;
   private warnedCap: boolean;
   private warnedEndptDist: boolean;
 
@@ -401,8 +404,60 @@ export class CurveIndex {
     this.loops = new Map();
     this.pending = new Set();
     this.pendingSlots = new Set();
+    this.bulk = false;
     this.warnedCap = false;
     this.warnedEndptDist = false;
+  }
+
+  // -- bulk load (round 67) --
+
+  /**
+   * Enter a bulk load: stop accumulating per-pair marks.
+   *
+   * Every edge's style apply marks its pair, because in isolation any
+   * one of them may change a bundle.  Over a whole load that is one
+   * `Set` insert per edge — 464,657 of them on this repo's largest
+   * fixture, measured at ~110 ms — deriving nothing that one pass over
+   * the finished index would not: at the end of a load *every* pair is
+   * new, so the union of the marks is the whole map.
+   *
+   * `endBulk` marks that union, so the flush's result is unchanged.
+   * Per-*slot* marks (the 12b blob families) are untouched: those are
+   * per-edge by nature and there is no union to take.
+   *
+   * Nothing may read a derived curve param inside the window — a flush
+   * during it derives only what has been marked, which is deliberately
+   * less than the load implies.  The bulk add path holds the window
+   * across the store adds and the style pass, and nothing between them
+   * reads geometry.
+   */
+  beginBulk(): void {
+    this.bulk = true;
+  }
+
+  /** Leave a bulk load and mark what it implies: every pair the map
+   * holds (it is only built at all once something styles bezier or a
+   * compound relation appears) and every loop list. */
+  endBulk(): void {
+    if (!this.bulk) {
+      return;
+    }
+
+    this.bulk = false;
+
+    if (this.pairs != null) {
+      for (const key of this.pairs.keys()) {
+        this.pending.add(key);
+      }
+    }
+
+    for (const node of this.loops.keys()) {
+      this.pending.add(pairKey(node, node));
+    }
+
+    if (this.pending.size > 0) {
+      this.host.schedule();
+    }
   }
 
   // -- styled records --
@@ -936,6 +991,10 @@ export class CurveIndex {
   }
 
   private markPair(a: number, b: number): void {
+    if (this.bulk) {
+      return; // endBulk() marks the union (round 67)
+    }
+
     this.pending.add(pairKey(a, b));
     this.host.schedule();
   }

@@ -19398,6 +19398,34 @@ smaller than the edge side on every graph measured, its blob refs make
 replication unsafe without further conditions, and node labels are
 usually mapped — which the gate declines anyway.
 
+### 67.2c — an unlabelled element stops paying for a label (2026-08-11)
+
+Re-profiling after 67.2b left `writeEdgePerSlot` as the largest item in
+the apply, and most of it was `writeLabel` — on a fixture whose edges
+carry **no label of any kind**.  An unlabelled element built the whole
+record anyway (~15 colour folds, a closure per call, the anchor solve)
+to hand `setLabel` a `null` it discards on the first line.
+
+Landed: the two end-label texts (D4) resolve up front rather than in
+their own loop below, and an element whose main and end texts are all
+empty clears its three streams and returns before the record is built.
+Clearing is still correct for a slot that *had* a label — `setLabel(
+null )` is what does it, and it is the cheap half.
+
+**Measured**, and worth recording because the profile oversold it.  The
+CPU profile put `writeLabel` at ~75 ms per load; three independent A/Bs
+(bundles swapped, alternated, medians of 9) put it at **1.04×, 1.06× and
+1.08×** — 669 → 641, 649 → 613, 656 → 609 ms.  Consistent in direction,
+about **35–45 ms**, and roughly half what the profile suggested: at
+1 ms sampling over a 650 ms load there are only ~650 samples to divide
+among a hundred functions, so a per-function figure is a hypothesis to
+A/B, not a measurement.  On the 50k/150k synthetic it is at the noise
+floor.  The harness page: init **677 → 644**, total **1569 → 1526**,
+screenshot **0 differing pixels**.
+
+**Controls**, both landing: an early-out that forgets to clear fails 5
+specs; end-label texts that never resolve fail 9.
+
 ### 67.3 — overlapping GPU acquisition with the ingest: measured, and not landed (2026-08-11)
 
 `src/index.mts` ingests the elements and runs the layout *before* it

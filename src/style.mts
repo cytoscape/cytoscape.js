@@ -4688,6 +4688,10 @@ type StateWriter = (slot: number, computed: Computed) => void;
  */
 const BULK_MIN_RUN = 64;
 
+/** A node has no end-label streams; shared so the common path allocates
+ * nothing to say so. */
+const EMPTY_END_TEXTS: readonly string[] = ['', ''];
+
 const SHEET_KEYS: ReadonlySet<string> = new Set([
   'nodes',
   'edges',
@@ -9474,6 +9478,50 @@ export class StyleEngine {
       text = text.toLowerCase();
     }
 
+    // the two end-label streams (D4), resolved here rather than at their
+    // own loop below so that an element with *no* text at all can leave
+    // before the shared record is built
+    const endTexts =
+      group === 'edges'
+        ? (['source', 'target'] as const).map((end) => {
+            const ec = computed as Computed;
+            const key2 =
+              end === 'source' ? ec.sourceLabelKey : ec.targetLabelKey;
+            const raw =
+              key2 == null
+                ? end === 'source'
+                  ? ec.sourceLabel
+                  : ec.targetLabel
+                : key2 === 'id'
+                  ? (store.idAt(group, slot) ?? '')
+                  : stringify(store.data.get(group, slot, key2));
+
+            return computed.textTransform === 1
+              ? raw.toUpperCase()
+              : computed.textTransform === 2
+                ? raw.toLowerCase()
+                : raw;
+          })
+        : EMPTY_END_TEXTS;
+
+    // Round 67.2c: an unlabelled element used to pay for the whole
+    // record — ~15 colour folds, an anchor solve and a closure per call
+    // — to hand `setLabel` a null it discards.  On the harness's
+    // 464,657-edge fixture, whose edges carry no label of any kind, that
+    // measured **75 ms per load**.  Clearing is still correct for a slot
+    // that *had* a label: `setLabel( null )` is what does it, and it is
+    // the cheap half.
+    if (text === '' && endTexts[0] === '' && endTexts[1] === '') {
+      store.setLabel(slot, null, group);
+
+      if (group === 'edges') {
+        store.setLabel(slot, null, 'edgeSource');
+        store.setLabel(slot, null, 'edgeTarget');
+      }
+
+      return;
+    }
+
     // text-opacity (B1) is v3's parentOpacity for the whole label block:
     // it folds into the text fill, outline and background alphas alike
     const textOp = computed.textOpacity;
@@ -9580,22 +9628,7 @@ export class StyleEngine {
 
       for (const end of ['source', 'target'] as const) {
         const src = end === 'source';
-        const key2 = src ? ec.sourceLabelKey : ec.targetLabelKey;
-        let endText =
-          key2 == null
-            ? src
-              ? ec.sourceLabel
-              : ec.targetLabel
-            : key2 === 'id'
-              ? (store.idAt(group, slot) ?? '')
-              : stringify(store.data.get(group, slot, key2));
-
-        if (computed.textTransform === 1) {
-          endText = endText.toUpperCase();
-        } else if (computed.textTransform === 2) {
-          endText = endText.toLowerCase();
-        }
-
+        const endText = endTexts[src ? 0 : 1];
         const marginY = src ? ec.sourceTextMarginY : ec.targetTextMarginY;
 
         store.setLabel(

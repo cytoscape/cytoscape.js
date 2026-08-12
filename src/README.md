@@ -1379,6 +1379,13 @@ each is deliberate, not a pass-1 deferral:
   `EDGE_PER_ELEMENT_COLUMNS` in `contract.mts` carries the whole safety
   argument — the three columns a shared record does not determine — and a
   spec fails until a newly added edge column is classified.
+- **An unlabelled element pays nothing for a label** (round 67.2c).  The
+  label record is ~15 colour folds, a closure and an anchor solve, and it
+  was built even when the resolved text was empty — for a `setLabel(
+  null )` that discards it on the first line.  An element whose main and
+  both end-label (D4) texts are all empty now clears its three streams
+  and returns.  Worth ~5% of a 464,657-edge load, where no edge carries a
+  label; at the noise floor on a 50k/150k graph.
 - **A bulk load marks curve derivations once, not per edge** (round
   67.1).  Every edge's style apply marks its endpoint pair pending,
   because in isolation any record change may re-fan a bundle; over a

@@ -63,7 +63,7 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,192 unit · 394 module · 24 soak · 376 browser (251 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,205 unit · 394 module · 24 soak · 376 browser (251 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 363 members over 48 sections, gated at 100% |
 | Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) · a kernel-vs-CPU colour-fold scene compared at zero differing pixels (round 66.3) |
 | Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
@@ -549,7 +549,7 @@ the toggle map became the rationale for building none of the veto points.
 Preparing a proposal well enough that the right answer is "no" is the
 system working, not wasted work.
 
-## Week 4 — 9–11 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster, the bypass comes back, the expensive algorithms go async onto the GPU — and the loader stops taking the slow road
+## Week 4 — 9–11 August: two decisions that decline, the trim reaches everything, the force layout is rebuilt, performance becomes visible across commits, every benchmark ends v4-faster, the bypass comes back, the expensive algorithms go async onto the GPU — and the load path is measured, then taken apart
 
 *18 commits — rounds 58–60 and the seventh design sitting.*
 
@@ -907,6 +907,63 @@ nothing else — so colour programs now carry their own fold, and only a
 approximately right: the same scene rendered with the kernel folding and
 with the CPU folding differs by **zero pixels**, and degrading the fold
 fails that spec.
+
+### Round 67: the load path, measured first and then taken apart
+
+Round 66 had halved the harness page's load and left the obvious
+question.  This round answered it by measuring rather than guessing, and
+the measurement was the surprise: **the mappers were not the cost.**
+With the edge half of the style apply reduced to its one *mapped*
+channel, a 464,657-edge load ran in 470 ms — against 483 ms for writing
+no edge channels at all.  The 687 ms between that and the 1170 ms
+shipping figure was per-element writes of ~20 channels whose value is
+identical for every edge in the graph.  Priced directly: one column
+write costs 26 ns, of which 16 ns is looking the column up by name, and
+1 ns is the write.  Filling the same run costs 0.1 ns per element.
+
+So three changes, each committed only after its own bundle-swapped A/B:
+
+- **The curve index takes one pass, not a mark per edge.**  Every edge's
+  style apply marked its endpoint pair for re-derivation — correct in
+  isolation, and 464,657 redundant set insertions over a whole load,
+  since at the end of one *every* pair is new.
+- **A run of edges is written once and filled.**  One template slot is
+  written the ordinary way; every column a shared styled record
+  determines is filled from it by memory copy; each remaining slot pays
+  only its own mapped properties.  What makes it safe is a rule that
+  already existed — round 61's narrow writers, each of which covers every
+  column its property affects — plus one observation: a freshly loaded
+  graph has nothing selected, so the selection affordances that most
+  sheets map cannot vary across the run and need not be written at all.
+- **An unlabelled element stops paying for a label.**
+
+Together, on the harness's 465k-edge network in Chromium on a real
+adapter: **init 1150 → 644 ms, fetch-to-first-frame 2017 → 1526 ms**, and
+the rendered frame is **byte-identical** — zero differing pixels of a
+million.
+
+Two proposals were investigated and **not** landed, which is the more
+useful half of the record.  Starting GPU device acquisition before the
+ingest instead of after it was implemented, verified to move the request
+1.1 s earlier, and measured at **zero**: the adapter resolves ~34 ms
+after the factory returns either way, because what remains is main-thread
+work that cannot run while the main thread is busy.  The ~100 ms it was
+expected to save came from an *idle-page* probe — a configuration the
+measurement is not about.  And the first frame, which reads 85 ms, 390 ms
+or 1100 ms depending on nothing the library controls, is recorded as not
+currently measurable on this machine, with the one stable observation
+(a 312 ms stall on the glyph atlas canvas's first draw operation) written
+down as an unexplained lead rather than a fix.
+
+The round also produced a defect worth naming, because the whole of it
+was invisible to the workload that motivated it.  The bulk route
+evaluated its state-dependent mappers once, for the template slot — fine
+for a graph loaded at rest, wrong the moment a selection made the run
+non-uniform.  The entire benchmark suite, and all 251 browser specs,
+passed against the broken bundle.  What caught it was writing the spec
+for the branch the benchmark could not reach — and that spec's own first
+two versions passed for two different wrong reasons before it was made to
+discriminate.
 
 ## What remains before 4.0
 

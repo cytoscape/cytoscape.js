@@ -116,7 +116,12 @@ const STANDALONE_JOBS = [
   { file: 'labels.mjs', n: 20000 },
   { file: 'transitions.mjs', n: 2000 },
   { file: 'geometry-tween.mjs', n: 2000 },
-  { file: 'algorithms.mjs', n: 500 }, // the superlinear + clustering tier
+  // `algorithms.mjs @ 500` — the superlinear + clustering tier — is **not**
+  // listed here, though it belongs to this tier by subject.  It is already in
+  // QUICK_JOBS, and `--all` is quick + these: listing it twice ran the slowest
+  // job in the table (206 s, 19% of an `--all` run; 10.3 min of a `--repeat 3`
+  // one) a second time for nothing, since `rowsOf` and `toSections` both keep
+  // the first-seen (group, bench) and discard the duplicate.  Round 68.
 ];
 
 const FULL_JOBS = [

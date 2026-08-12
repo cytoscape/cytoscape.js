@@ -19490,3 +19490,35 @@ So: a real stall with an unidentified trigger, and **not** a validated
 fix.  Anyone taking the first frame should pin the trigger before
 writing code, and should expect to need a way to hold the machine in the
 state that reproduces it.
+
+
+## Round 68 — the benchmark suite's wall clock (raised by the maintainer 2026-08-12)
+
+The publish run had grown to about an hour, and the maintainer's
+observation was the whole diagnosis: **it uses one core of eight**.
+`report.mjs` spawned one job, waited, spawned the next.  Measured on the
+65.10 archive, `--all` is 18.4 min of work at `--repeat 1` and so ~55 at
+the `--repeat 3` publishing requires — with seven cores idle throughout,
+and (measured live, `ps -o nlwp,pcpu`) a bench process wanting only ~1.1
+of the one core it has, over 7 threads.
+
+Where the time goes, from that archive — four jobs are 62% of the run:
+
+| job | s | share |
+|---|---:|---:|
+| `algorithms` N=500 | 206.0 | 18.7% |
+| `algorithms` N=500 *(a duplicate — see 68.1)* | 205.6 | 18.6% |
+| `surface` N=2000 | 174.9 | 15.8% |
+| `algorithms` N=2000 | 93.0 | 8.4% |
+
+### 68.1 — `--all` ran its slowest job twice (2026-08-12)
+
+`algorithms.mjs @ N=500` was listed in **both** `QUICK_JOBS` and
+`STANDALONE_JOBS`, and `--all` is quick + standalone.  So the slowest job
+in the table ran twice, and the second copy contributed *nothing*:
+`rowsOf` (report-compare.mjs) and `toSections` (report-html.mjs) both
+keep the first-seen (group, bench) and discard the rest — the duplicate's
+rows were parsed, merged and thrown away on every run since the two
+tables were split.  206 s per repeat; **10.3 min of a `--repeat 3` run**,
+recovered by deleting one line.
+

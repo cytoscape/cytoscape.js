@@ -59,6 +59,7 @@ import { stampHarness } from './harness-id.mjs';
 import { mergeRepeats } from './repeat-merge.mjs';
 import {
   canPin,
+  criticalKeys,
   physicalCores,
   pickNext,
   planUnits,
@@ -298,10 +299,36 @@ async function runPool() {
   const running = new Map(); // slot -> unit
   const freeSlots = Array.from({ length: workers }, (_, i) => i);
 
+  // which jobs' repeats may overlap, recomputed as the queue drains: a chain
+  // stops being critical once enough of it has run.  Announced once per job,
+  // because a narrowed repeat band that nobody was told about is the kind of
+  // thing this harness exists to prevent.
+  const announced = new Set();
+  const criticalNow = () => {
+    const keys =
+      workers > 1 ? criticalKeys(pending, hints, workers) : new Set();
+
+    for (const key of keys) {
+      if (!announced.has(key)) {
+        announced.add(key);
+        console.log(
+          `  note: overlapping the repeats of ${key} — its chain is longer` +
+            ' than the rest of the run; its repeat band will be correlated',
+        );
+      }
+    }
+
+    return keys;
+  };
+
   await new Promise((done) => {
     const pump = () => {
       while (freeSlots.length > 0) {
-        const at = pickNext(pending, { running: [...running.values()], hints });
+        const at = pickNext(pending, {
+          running: [...running.values()],
+          hints,
+          critical: criticalNow(),
+        });
 
         if (at < 0) {
           break;

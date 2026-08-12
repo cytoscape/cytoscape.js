@@ -23,9 +23,11 @@
 //      Round 65.11 traced the bistable rows to per-process JIT and heap state,
 //      which repeats sample independently by construction; under concurrency
 //      they would also share a *wall-clock neighbourhood*, and three siblings
-//      running side by side see one machine state rather than three.  Soft
-//      because the alternative is idling a core at the tail: when nothing else
-//      is runnable the collision is taken rather than the worker parked.
+//      running side by side see one machine state rather than three.  Soft in
+//      two places: when nothing else is runnable the collision is taken rather
+//      than the worker parked, and the rule yields for whichever job's chain is
+//      longer than the work left over the workers (`criticalKeys`) — because
+//      round 68.4 measured that chain, not the packing, deciding the run.
 //
 // What this module does not decide is whether a concurrent run may be compared
 // against a serial one.  It may not — see `harness-id.mjs`'s `concurrentHash`.
@@ -223,13 +225,66 @@ export function planUnits(jobs, repeat, passMajor = false) {
 }
 
 /**
+ * The jobs whose remaining repeats are what the run is waiting for.
+ *
+ * Rule 3 keeps a job's repeats apart, and round 68.4 measured what that costs:
+ * with `algorithms @ 500` at ~226 s a pass, its three passes end-to-end are
+ * ~11 min while the whole run's work over six workers is 8.4 — so the pool
+ * finished at 11.0 and 10.9 min in two runs that differed in nothing else.
+ * The chain was the wall clock, and no amount of packing could touch it.
+ *
+ * So the rule yields for exactly the jobs that cause that: one whose remaining
+ * chain (its unstarted passes, back to back) is longer than the work left
+ * divided among the workers.  Everything else keeps its repeats apart.
+ *
+ * The cost is named rather than hidden — a job scheduled this way has repeats
+ * measured side by side, so its run-to-run band is narrower than the truth.
+ * That is survivable *here* and nowhere else: a concurrent run already carries
+ * its own harness epoch and is refused by the publish script, so the band it
+ * reports was never going to reach the archive.  `report.mjs` prints which
+ * jobs it applied to.
+ *
+ * @param pending — the units not yet started
+ * @param hints — `Map<hintKey, durationMs>`
+ * @param workers — how many run at once
+ * @returns the set of hint keys whose repeats may overlap
+ */
+export function criticalKeys(pending, hints, workers) {
+  const chain = new Map();
+  let work = 0;
+
+  for (const unit of pending) {
+    const d = hints.get(unit.key);
+
+    if (d == null) {
+      continue; // an unmeasured job is not yet known to be anything
+    }
+
+    chain.set(unit.key, (chain.get(unit.key) ?? 0) + d);
+    work += d;
+  }
+
+  const bound = work / Math.max(1, workers);
+  const critical = new Set();
+
+  for (const [key, total] of chain) {
+    if (total > bound) {
+      critical.add(key);
+    }
+  }
+
+  return critical;
+}
+
+/**
  * Rank two pending units.  Lower sorts first.
  *
  * The tiers, in order: an exclusive unit last (it wants the machine to
  * itself, and gets it at the end); a unit colliding with a running repeat of
- * its own job last-but-one (rule 3); an unmeasured unit before a measured one
- * (rule 2 — explore, then exploit); measured units longest-first, which is
- * LPT and is what keeps a 206 s job from starting last.
+ * its own job last-but-one (rule 3, unless that job is the critical chain);
+ * an unmeasured unit before a measured one (rule 2 — explore, then exploit);
+ * measured units longest-first, which is LPT and is what keeps a 206 s job
+ * from starting last.
  */
 function rank(unit, { colliding, duration }) {
   return [
@@ -259,11 +314,16 @@ function compareRanks(a, b) {
  * @param running — the units currently running
  * @param hints — `Map<hintKey, durationMs>`: what this run (or the last one)
  *   measured for that job
+ * @param critical — hint keys whose repeats may overlap (`criticalKeys`);
+ *   empty means rule 3 applies to everything
  * @returns the index into `pending`, or -1 when nothing may start yet — which
  *   happens only around an exclusive unit, where the answer is to let the
  *   machine drain rather than to start something beside it
  */
-export function pickNext(pending, { running = [], hints = new Map() } = {}) {
+export function pickNext(
+  pending,
+  { running = [], hints = new Map(), critical = new Set() } = {},
+) {
   if (pending.length === 0 || running.some((u) => u.exclusive)) {
     return -1;
   }
@@ -274,7 +334,7 @@ export function pickNext(pending, { running = [], hints = new Map() } = {}) {
 
   pending.forEach((unit, at) => {
     const r = rank(unit, {
-      colliding: busy.has(unit.key),
+      colliding: busy.has(unit.key) && !critical.has(unit.key),
       duration: hints.get(unit.key) ?? null,
     });
 

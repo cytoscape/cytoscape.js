@@ -19615,9 +19615,10 @@ So the cache earns its place by making the *shape* right — long jobs
 start first, and the first pass packs like the later ones — rather than
 by moving the wall clock, and **the only remaining lever is the one 68.2
 declined**: splitting `algorithms @ 500`, or relaxing rule 3, for about
-2.5 min.  Neither is worth its cost today; both are named here so the
-next person to look at this figure does not have to re-derive why it is
-11 and not 8.
+2.5 min.  (Written here as "neither is worth its cost today" — and 68.5
+immediately revisits that, because the two options do *not* cost the
+same: one edits a suite file and breaks its epoch, the other touches only
+the scheduler.  The wrong judgement was treating them as one item.)
 
 **The contention penalty, per job** — parallel pass time against the same
 job in the 65.10 serial archive.  Median **1.11×**, and the shape is the
@@ -19662,3 +19663,52 @@ row-wise parallel/serial ratio (the per-job spread above says it will not
 be one number), the inflation in per-row `repeatSpread`, and how many of
 the ~245 rows would still be screenable at a true 10% change.  Until
 that is run, the guard stays.
+
+### 68.5 — the chain yields, and the run reaches its work bound (2026-08-12)
+
+68.4 named two ways past the ~11 min chain and judged neither worth its
+cost.  That was wrong about the second one, and the correction is cheap
+enough to be worth making: **relaxing rule 3 costs nothing that reaches
+the archive.**
+
+Splitting `algorithms @ 500` into `BENCH_OP` chunks would have to edit
+the suite file, which changes its harness hash — breaking the epoch for
+every algorithms row in the archive over a filter that is inert when the
+variable is unset.  That is the false break `harness-id.mjs`'s own header
+warns about: "a break nobody believes is worse than no break at all".
+
+Relaxing rule 3 touches no suite file and no hash.  `criticalKeys`
+computes, from the duration hints, which jobs have a remaining chain
+longer than the work left divided among the workers — on this profile,
+`algorithms @ 500` and `surface` — and those jobs alone may run their
+repeats concurrently.  It affects concurrent runs only (a serial run has
+nothing to overlap with), and those already carry their own epoch and are
+refused by the publish script, so the correlated band it produces was
+never going to reach the archive.  The runner prints which jobs it
+applied the exception to, because a narrowed band nobody was told about
+is precisely what this harness exists to prevent.
+
+**Measured**, same machine, same profile, `--repeat 3 --jobs auto`:
+
+| | wall | utilisation |
+|---|---:|---:|
+| serial, before the round | ~55 min | 12% of one core of eight |
+| `--jobs auto`, rule 3 absolute (68.2) | 11.0 / 10.9 min | 77% |
+| `--jobs auto`, rule 3 yielding (this) | **8.4 min** | **100%** |
+
+100% of six workers, which is the work bound (50.3 min of unit work in
+8.4 min of wall) — there is nothing left for a scheduler to win here.
+**6.6× against the command that was being run**, 5.3× against a
+deduplicated serial run.
+
+**The cost, looked for and not found at this sample size.**  The worry is
+that overlapped repeats share a wall-clock neighbourhood and so report a
+narrower `repeatSpread` than the truth.  Comparing the run that
+overlapped against the run that did not, per-suite median bands: the two
+critical suites narrowed (`algorithms` 1.086 -> 1.060, `surface` 1.073 ->
+1.058) — but so did two suites that were *not* overlapped (`style` 1.085
+-> 1.065, `traversal` 1.086 -> 1.051), while `core+collection` held flat
+and `spatial` widened.  The movement is inside the band statistic's own
+run-to-run variation, so this comparison does not isolate the effect.
+The mechanism is still real and the exception is still announced; what
+cannot be claimed is that it was measured to be harmless.

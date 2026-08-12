@@ -9,6 +9,7 @@ import { expect } from 'chai';
 import {
   AUTO_WORKER_CAP,
   canPin,
+  criticalKeys,
   expandCpuList,
   hintKey,
   parsePhysicalCores,
@@ -162,6 +163,47 @@ describe('the benchmark scheduler (round 68)', () => {
       const at = pickNext(pending, { running, hints });
 
       expect(pending[at].key).to.equal('surface.mjs@2000');
+    });
+
+    it('lets the critical chain overlap its own repeats, and nothing else', () => {
+      // round 68.4: rule 3 kept `algorithms @ 500`'s three 226 s passes
+      // end-to-end, and that chain — not the packing — was the whole run's
+      // wall clock.  It yields for the job that is holding the clock, and
+      // only for that job.
+      const units = planUnits(JOBS, 3, true);
+      const hints = new Map([
+        ['index.mjs@2000', 10_000],
+        ['surface.mjs@2000', 10_000],
+        ['algorithms.mjs@500', 200_000],
+      ]);
+      const critical = criticalKeys(units, hints, 6);
+
+      expect([...critical]).to.deep.equal(['algorithms.mjs@500']);
+
+      const running = [units[2]]; // algorithms pass 1
+      const pending = units.filter((u) => u !== units[2]);
+      const at = pickNext(pending, { running, hints, critical });
+
+      expect(pending[at].key).to.equal('algorithms.mjs@500');
+    });
+
+    it('calls nothing critical when the work divides evenly', () => {
+      // the control for the rule above: equal jobs over enough workers means
+      // no chain binds, and every repeat stays apart
+      const units = planUnits(JOBS, 3, true);
+      const hints = new Map([
+        ['index.mjs@2000', 50_000],
+        ['surface.mjs@2000', 50_000],
+        ['algorithms.mjs@500', 50_000],
+      ]);
+
+      expect([...criticalKeys(units, hints, 2)]).to.deep.equal([]);
+    });
+
+    it('calls nothing critical while the durations are still unknown', () => {
+      const units = planUnits(JOBS, 3, true);
+
+      expect([...criticalKeys(units, new Map(), 6)]).to.deep.equal([]);
     });
 
     it('takes the collision rather than idling when nothing else is left', () => {

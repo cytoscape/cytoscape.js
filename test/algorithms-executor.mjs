@@ -105,6 +105,11 @@ describe('gpu/algorithms: the executor contract', function () {
         executor: 'gpu',
         attributes: [(n) => n.data('v')],
       }),
+      // the round-69 families
+      eles.closenessCentralityNormalized({ executor: 'gpu' }),
+      eles.triangleCount({ executor: 'gpu' }),
+      eles.neighborhoodSimilarity({ executor: 'gpu' }),
+      eles.katzCentrality({ executor: 'gpu' }),
     ];
 
     for (var call of calls) {

@@ -152,7 +152,9 @@ if (N <= 500) {
   await cmpAsync('algo: floydWarshall', ctx, (c) =>
     c.eles.floydWarshall({ weight }),
   );
-  cmp('algo: closenessCentralityNormalized', ctx, (c) =>
+  // async on the v4 side since round 69 (the executor tier); v3's stays
+  // sync, which cmpAsync's await absorbs
+  await cmpAsync('algo: closenessCentralityNormalized', ctx, (c) =>
     c.eles.closenessCentralityNormalized({}),
   );
   await cmpAsync('algo: markovClustering', ctx, (c) =>

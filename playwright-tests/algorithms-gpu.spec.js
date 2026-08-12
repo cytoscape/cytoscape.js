@@ -652,4 +652,335 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.rejection).toMatch(/custom distance function/);
     expect(out.autoLength).toBe(2);
   });
+
+  // -- the round-69 families ------------------------------------------------
+
+  test('closenessCentralityNormalized: scores within 1e-4, both modes, at multi-block n', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // n=100 spans four 32-wide FW k-panels (the 65.8 blocked kernels)
+      // and the ring+chords leave some pairs distant, so both the
+      // relaxation and the row fold do real work; the weighted variant
+      // exercises the shared f64→f32 sentinel encoding
+      const els = [];
+      const n = 100;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + ((i + 1) % n),
+            w: 1 + ((i * 37) % 97) / 10,
+          },
+        });
+
+        if (i % 5 === 0) {
+          els.push({
+            data: {
+              source: 'n' + i,
+              target: 'n' + ((i * 13 + 7) % n),
+              w: 1 + ((i * 53) % 89) / 10,
+            },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const weight = (e) => e.data('w');
+      const rows = {};
+
+      for (const harmonic of [true, false]) {
+        const cpu = await cy
+          .elements()
+          .closenessCentralityNormalized({ harmonic, weight, executor: 'cpu' });
+        const gpu = await cy
+          .elements()
+          .closenessCentralityNormalized({ harmonic, weight, executor: 'gpu' });
+        let maxDelta = 0;
+        let cpuMax = 0;
+
+        cy.nodes().forEach((node) => {
+          const c = cpu.closeness(node);
+
+          cpuMax = Math.max(cpuMax, c);
+          maxDelta = Math.max(maxDelta, Math.abs(c - gpu.closeness(node)));
+        });
+
+        // the scene must discriminate: normalized scores top out at 1
+        rows[harmonic ? 'harmonic' : 'plain'] = { maxDelta, cpuMax };
+      }
+
+      return rows;
+    });
+
+    expect(out.harmonic.cpuMax).toBe(1);
+    expect(out.plain.cpuMax).toBe(1);
+    expect(out.harmonic.maxDelta).toBeLessThan(1e-4);
+    expect(out.plain.maxDelta).toBeLessThan(1e-4);
+  });
+
+  test('closenessCentralityNormalized: disconnection agrees across executors', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // two components: the unreachable pairs ride the sentinel band on
+      // the GPU, and a defect there moves plain-mode scores off 0
+      const els = [];
+
+      for (let i = 0; i < 40; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < 40; i++) {
+        // ring within each 20-node half; no edge crosses the halves
+        const half = i < 20 ? 0 : 20;
+
+        els.push({
+          data: { source: 'n' + i, target: 'n' + (half + ((i + 1) % 20)) },
+        });
+      }
+
+      const cy = cytoscape({ elements: els });
+      const modes = {};
+
+      for (const harmonic of [true, false]) {
+        const cpu = await cy
+          .elements()
+          .closenessCentralityNormalized({ harmonic, executor: 'cpu' });
+        const gpu = await cy
+          .elements()
+          .closenessCentralityNormalized({ harmonic, executor: 'gpu' });
+        let maxDelta = 0;
+        let gpuSum = 0;
+
+        cy.nodes().forEach((node) => {
+          maxDelta = Math.max(
+            maxDelta,
+            Math.abs(cpu.closeness(node) - gpu.closeness(node)),
+          );
+          gpuSum += gpu.closeness(node);
+        });
+        modes[harmonic ? 'harmonic' : 'plain'] = { maxDelta, gpuSum };
+      }
+
+      return modes;
+    });
+
+    // harmonic scores survive disconnection; plain mode answers 0
+    // everywhere (every node has an unreachable peer) on BOTH sides
+    expect(out.harmonic.maxDelta).toBeLessThan(1e-4);
+    expect(out.harmonic.gpuSum).toBeGreaterThan(1);
+    expect(out.plain.maxDelta).toBe(0);
+    expect(out.plain.gpuSum).toBe(0);
+  });
+
+  test('triangleCount: identical integer counts and coefficients', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // ring + deterministic chords at n=96 (three matmul tiles):
+      // chords cross the ring so triangles appear at many densities;
+      // counts are small exact integers in f32, so the two executors
+      // must agree exactly — a discrete invariant, like MCL's clusters
+      const els = [];
+      const n = 96;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % n) } });
+        els.push({ data: { source: 'n' + i, target: 'n' + ((i + 2) % n) } });
+
+        if (i % 3 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 7 + 5) % n) },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const cpu = await cy.elements().triangleCount({ executor: 'cpu' });
+      const gpu = await cy.elements().triangleCount({ executor: 'gpu' });
+      let mismatches = 0;
+      let cpuTotal = 0;
+
+      cy.nodes().forEach((node) => {
+        cpuTotal += cpu.triangles(node);
+
+        if (
+          cpu.triangles(node) !== gpu.triangles(node) ||
+          cpu.clusteringCoefficient(node) !== gpu.clusteringCoefficient(node)
+        ) {
+          mismatches++;
+        }
+      });
+
+      return {
+        mismatches,
+        cpuNodeSum: cpuTotal,
+        cpuTotal: cpu.totalTriangles,
+        gpuTotal: gpu.totalTriangles,
+        cpuTransitivity: cpu.transitivity,
+        gpuTransitivity: gpu.transitivity,
+      };
+    });
+
+    expect(out.mismatches).toBe(0);
+    expect(out.gpuTotal).toBe(out.cpuTotal);
+    expect(out.gpuTransitivity).toBe(out.cpuTransitivity);
+    // the scene must discriminate: the ring's i→i+1→i+2 chords alone
+    // guarantee ≥ n triangles, so a kernel that answers 0 fails loudly
+    expect(out.cpuTotal).toBeGreaterThan(90);
+  });
+
+  test('neighborhoodSimilarity: identical counts, every metric, directed and not', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      const els = [];
+      const n = 80;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % n) } });
+
+        if (i % 2 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 11 + 3) % n) },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const nodes = cy.nodes();
+      const rows = {};
+
+      for (const directed of [false, true]) {
+        for (const metric of ['jaccard', 'cosine', 'overlap']) {
+          const cpu = await cy
+            .elements()
+            .neighborhoodSimilarity({ metric, directed, executor: 'cpu' });
+          const gpu = await cy
+            .elements()
+            .neighborhoodSimilarity({ metric, directed, executor: 'gpu' });
+          let maxDelta = 0;
+          let cpuSum = 0;
+
+          // counts are exact integers on both executors, so the
+          // normalized scores must agree exactly, not within an epsilon
+          for (let i = 0; i < n; i += 3) {
+            for (let j = 0; j < n; j += 5) {
+              const c = cpu.similarity(nodes[i], nodes[j]);
+
+              cpuSum += c;
+              maxDelta = Math.max(
+                maxDelta,
+                Math.abs(c - gpu.similarity(nodes[i], nodes[j])),
+              );
+            }
+          }
+
+          rows[`${directed ? 'directed' : 'undirected'}-${metric}`] = {
+            maxDelta,
+            cpuSum,
+          };
+        }
+      }
+
+      return rows;
+    });
+
+    for (const [key, row] of Object.entries(out)) {
+      expect(row.maxDelta, key).toBe(0);
+      // the probe grid must hit genuinely similar pairs, or exact
+      // agreement proves nothing
+      expect(row.cpuSum, key).toBeGreaterThan(5);
+    }
+  });
+
+  test('katzCentrality: scores within 1e-4 and no rank inversions', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      const els = [];
+      const n = 120;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + ((i + 1) % n),
+            w: 1 + (i % 5) / 4,
+          },
+        });
+
+        if (i % 4 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 13 + 7) % n), w: 2 },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const weight = (e) => e.data('w');
+      const rows = {};
+
+      for (const directed of [false, true]) {
+        const opts = { alpha: 0.05, weight, directed };
+        const cpu = await cy
+          .elements()
+          .katzCentrality({ ...opts, executor: 'cpu' });
+        const gpu = await cy
+          .elements()
+          .katzCentrality({ ...opts, executor: 'gpu' });
+        let maxDelta = 0;
+        let inversions = 0;
+        const nodes = cy.nodes();
+
+        nodes.forEach((node) => {
+          maxDelta = Math.max(
+            maxDelta,
+            Math.abs(cpu.katz(node) - gpu.katz(node)),
+          );
+        });
+
+        // every clearly separated pair keeps its order (the pageRank
+        // spec's tie-tolerant invariant: f32 and f64 break ties
+        // differently)
+        for (let i = 0; i < n; i += 3) {
+          for (let j = 0; j < n; j += 7) {
+            const ci = cpu.katz(nodes[i]);
+            const cj = cpu.katz(nodes[j]);
+
+            if (ci > cj + 1e-4 && gpu.katz(nodes[i]) <= gpu.katz(nodes[j])) {
+              inversions++;
+            }
+          }
+        }
+
+        rows[directed ? 'directed' : 'undirected'] = { maxDelta, inversions };
+      }
+
+      return rows;
+    });
+
+    expect(out.undirected.maxDelta).toBeLessThan(1e-4);
+    expect(out.directed.maxDelta).toBeLessThan(1e-4);
+    expect(out.undirected.inversions).toBe(0);
+    expect(out.directed.inversions).toBe(0);
+  });
 });

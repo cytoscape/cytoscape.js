@@ -47,6 +47,7 @@ export type {
 export {
   closenessCentrality,
   closenessCentralityNormalized,
+  closenessCentralityNormalizedAsync,
 } from './closeness-centrality.mjs';
 export type {
   ClosenessCentralityOptions,
@@ -89,6 +90,25 @@ export {
   affinityPropagationAsync,
 } from './affinity-propagation.mjs';
 export type { AffinityPropagationOptions } from './affinity-propagation.mjs';
+export { triangleCount, triangleCountAsync } from './triangle-counting.mjs';
+export type {
+  TriangleCountOptions,
+  TriangleCountResult,
+} from './triangle-counting.mjs';
+export {
+  neighborhoodSimilarity,
+  neighborhoodSimilarityAsync,
+} from './neighborhood-similarity.mjs';
+export type {
+  NeighborhoodSimilarityOptions,
+  NeighborhoodSimilarityResult,
+  SimilarityMetric,
+} from './neighborhood-similarity.mjs';
+export { katzCentrality, katzCentralityAsync } from './katz-centrality.mjs';
+export type {
+  KatzCentralityOptions,
+  KatzCentralityResult,
+} from './katz-centrality.mjs';
 export type { DistanceMetric } from './clustering-distances.mjs';
 export type { WeightFn } from './algo-shared.mjs';
 export type { AlgoExecutor } from './executor.mjs';

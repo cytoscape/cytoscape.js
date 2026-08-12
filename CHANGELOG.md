@@ -117,6 +117,19 @@ that compile and then behave differently.
   (O(E) per iteration — orders of magnitude on sparse graphs) and the
   hierarchical merge engine went flat-typed, leaving the GPU no edge
   to win there.
+- **Three new algorithm families, designed matmul-first for the GPU
+  tier** (round 69), all on the same async `executor` contract and
+  with no v3 counterpart: **`eles.triangleCount()`** (per-node
+  triangle counts, local clustering coefficients, total triangles and
+  transitivity — A²∘A on the GPU), **`eles.neighborhoodSimilarity()`**
+  (pairwise Jaccard / cosine / overlap coefficients over neighbor
+  sets — A·Aᵀ on the GPU) and **`eles.katzCentrality()`** (attenuated
+  walk counting; like PageRank its sparse CPU iteration owns `'auto'`
+  and the GPU path serves an explicit `'gpu'`).  The whole-collection
+  `closenessCentralityNormalized` joined the async tier in the same
+  round: its GPU path rides the blocked Floyd–Warshall kernels and
+  folds each distance row on the device, reading back n floats
+  instead of the n² matrix.
 
 ### Changed
 
@@ -127,13 +140,15 @@ that compile and then behave differently.
   edges, then leaf nodes, then labels; slot order within a stream.
 - **Animations run concurrently by channel** and sequence by promise;
   overlapping channels evict the older animation in place.
-- **The expensive whole-graph algorithms are async** (round 65): the
-  nine methods above return promises — `await` the call, then use the
-  result exactly as in v3.  Runtime option validation on them surfaces
-  as a rejection; a bad `executor` value still throws synchronously.
-  The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
-  `bellmanFord`, `kruskal`, components, degree/closeness centrality)
-  stays synchronous.
+- **The expensive whole-graph algorithms are async** (round 65; the
+  closeness family joined in round 69): the executor-tier methods
+  above return promises — `await` the call, then use the result
+  exactly as in v3.  Runtime option validation on them surfaces as a
+  rejection; a bad `executor` value still throws synchronously.  The
+  traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`, `bellmanFord`,
+  `kruskal`, components, degree centrality and the single-root
+  `closenessCentrality`) stays synchronous; only the O(n³)
+  whole-collection `closenessCentralityNormalized` moved.
 - **`hierarchicalClustering`'s `mean` linkage works** (round 65.10) —
   a deliberate deviation: v3's mean linkage never assigned the cluster
   sizes its weighted-average formula read, so the first mean merge

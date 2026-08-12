@@ -38,8 +38,10 @@ import type { PageRankOptions, PageRankResult } from './page-rank.mjs';
  * two workgroups at n=512 — and left the device idle; this shape is
  * what moved pageRank's crossover left.  The converge guard branches
  * the *work* and the store, never the barriers (uniformity analysis
- * forbids a divergent return before workgroupBarrier). */
-const MATVEC = wgsl`
+ * forbids a divergent return before workgroupBarrier).  Exported since
+ * round 69: the kernel is a generic flags-guarded tmp = m × v, and the
+ * Katz iteration runs the identical product with its own epilogue. */
+export const MATVEC = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
 @group(0) @binding(1) var<storage, read> m : array<f32>;

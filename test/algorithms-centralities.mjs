@@ -179,8 +179,11 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.e).to.equal(0);
   });
 
-  it('eles.closenessCentralityNormalized()', function () {
-    var res = cy.elements().closenessCentralityNormalized({});
+  it('eles.closenessCentralityNormalized()', async function () {
+    // async since round 69: the whole-collection form is the O(n³)
+    // all-pairs tier, so it routes through the executor like
+    // floydWarshall
+    var res = await cy.elements().closenessCentralityNormalized({});
 
     expect(res.closeness(c)).to.equal(1); // c and e share the max
     expect(res.closeness(e)).to.equal(1);
@@ -284,7 +287,7 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(cy.elements().dc({ root: a }).degree).to.equal(2);
     expect(cy.elements().dcn({}).degree(c)).to.equal(1);
     expect(cy.elements().cc({ root: b })).to.equal(4);
-    expect(cy.elements().ccn({}).closeness(c)).to.equal(1);
+    expect((await cy.elements().ccn({})).closeness(c)).to.equal(1);
     expect((await cy.elements().bc()).betweenness(a)).to.equal(0);
   });
 });

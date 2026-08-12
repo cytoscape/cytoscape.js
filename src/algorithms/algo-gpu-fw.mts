@@ -56,10 +56,12 @@ import type {
 } from './floyd-warshall.mjs';
 
 /** The finite stand-in for Infinity: far above any real path sum, far
- * enough below f32 max that sentinel + sentinel cannot overflow. */
-const FINF = 3.0e38;
+ * enough below f32 max that sentinel + sentinel cannot overflow.
+ * Shared with the closeness reduction (round 69), whose kernel reads
+ * the relaxed matrix in place. */
+export const FINF = 3.0e38;
 /** Values at or above this band are treated as unreachable. */
-const FINF_BAND = 1.5e38;
+export const FINF_BAND = 1.5e38;
 /** Block edge: 32×32 cells per block, walked by 16×16 invocations
  * owning 2×2 cells each. */
 const BS = 32;
@@ -389,31 +391,30 @@ fn main(
 `;
 
 /**
- * The GPU Floyd–Warshall executor.  Shares init and result accessors
- * with the CPU reference; distances relax in f32, so a GPU distance
- * can differ from the CPU's f64 in float detail while the successor
- * matrix stays a valid shortest-path routing.
+ * Upload the sentinel-encoded matrices and build the blocked-relaxation
+ * dispatch chain — the piece the closeness family shares (round 69):
+ * closeness runs the same relaxation and then reduces each row on the
+ * device instead of reading n² distances back.
  *
  * @param ctx — the shared device state
- * @param coll — the calling collection
- * @param options — as the CPU reference
- * @returns the `{ distance, path }` accessors over read-back matrices
- * @throws GpuUnfitError when n² floats exceed the device's buffer limit
+ * @param n — the node count (must be > 0)
+ * @param dist — the f64 init distances (Infinity where unconnected)
+ * @param next — the dense-index successor matrix from init
+ * @returns the uploaded dist/next buffers, the dispatch chain that
+ *   relaxes them in place, and the scratch buffers to destroy after
+ *   submission
  */
-export const floydWarshallGpu = async (
+export const fwRelaxPlan = (
   ctx: AlgoGpu,
-  coll: Collection,
-  options: FloydWarshallOptions = {},
-): Promise<FloydWarshallResult> => {
-  const { view, n, dist, next, edgeNext } = initFloydWarshall(coll, options);
-  const bytes = n * n * 4;
-
-  assertFits(ctx, bytes, 'floydWarshall');
-
-  if (n === 0) {
-    return floydWarshallResultFrom(coll, view, n, dist, next, edgeNext);
-  }
-
+  n: number,
+  dist: Float64Array,
+  next: Int32Array,
+): {
+  distBuf: GPUBuffer;
+  nextBuf: GPUBuffer;
+  dispatches: Dispatch[];
+  scratch: GPUBuffer[];
+} => {
   // Infinity → the finite sentinel the kernels understand
   const dist32 = new Float32Array(n * n);
 
@@ -439,22 +440,58 @@ export const floydWarshallGpu = async (
   const p2ColGroup = groupFor(ctx, p2col, mats);
   const p3Group = groupFor(ctx, p3, mats);
   const bumpGroup = groupFor(ctx, bump, [kbuf]);
-  const all: Dispatch[] = [];
+  const dispatches: Dispatch[] = [];
 
   for (let block = 0; block < nb; block++) {
-    all.push({ pipeline: p1, group: p1Group, groups: [1] });
-    all.push({ pipeline: p2row, group: p2RowGroup, groups: [nb] });
-    all.push({ pipeline: p2col, group: p2ColGroup, groups: [nb] });
-    all.push({ pipeline: p3, group: p3Group, groups: [nb, nb] });
-    all.push({ pipeline: bump, group: bumpGroup, groups: [1] });
+    dispatches.push({ pipeline: p1, group: p1Group, groups: [1] });
+    dispatches.push({ pipeline: p2row, group: p2RowGroup, groups: [nb] });
+    dispatches.push({ pipeline: p2col, group: p2ColGroup, groups: [nb] });
+    dispatches.push({ pipeline: p3, group: p3Group, groups: [nb, nb] });
+    dispatches.push({ pipeline: bump, group: bumpGroup, groups: [1] });
   }
 
-  submitPass(ctx, all);
+  return { distBuf, nextBuf, dispatches, scratch: [kbuf, pN] };
+};
+
+/**
+ * The GPU Floyd–Warshall executor.  Shares init and result accessors
+ * with the CPU reference; distances relax in f32, so a GPU distance
+ * can differ from the CPU's f64 in float detail while the successor
+ * matrix stays a valid shortest-path routing.
+ *
+ * @param ctx — the shared device state
+ * @param coll — the calling collection
+ * @param options — as the CPU reference
+ * @returns the `{ distance, path }` accessors over read-back matrices
+ * @throws GpuUnfitError when n² floats exceed the device's buffer limit
+ */
+export const floydWarshallGpu = async (
+  ctx: AlgoGpu,
+  coll: Collection,
+  options: FloydWarshallOptions = {},
+): Promise<FloydWarshallResult> => {
+  const { view, n, dist, next, edgeNext } = initFloydWarshall(coll, options);
+  const bytes = n * n * 4;
+
+  assertFits(ctx, bytes, 'floydWarshall');
+
+  if (n === 0) {
+    return floydWarshallResultFrom(coll, view, n, dist, next, edgeNext);
+  }
+
+  const { distBuf, nextBuf, dispatches, scratch } = fwRelaxPlan(
+    ctx,
+    n,
+    dist,
+    next,
+  );
+
+  submitPass(ctx, dispatches);
 
   const outDist = new Float32Array(await readBack(ctx, distBuf, bytes));
   const outNext = new Int32Array(await readBack(ctx, nextBuf, bytes));
 
-  for (const buffer of [distBuf, nextBuf, kbuf, pN]) {
+  for (const buffer of [distBuf, nextBuf, ...scratch]) {
     buffer.destroy();
   }
 

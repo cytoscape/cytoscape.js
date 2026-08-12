@@ -235,6 +235,47 @@ const FAMILIES = [
         threshold: 0.75,
       }).then((cs) => cs.length)`,
   },
+  // round 69: closeness rides the blocked FW relaxation with an on-device
+  // row fold, so its readback is n floats where floydWarshall's is 2n² —
+  // the same sizes as FW price the difference
+  {
+    key: 'closenessCentralityNormalized',
+    sizes: [256, 512, 1024],
+    kind: 'graph',
+    op: `(cy, executor) =>
+      cy.elements().closenessCentralityNormalized({ executor })
+        .then((r) => r.closeness(cy.nodes()[0]))`,
+  },
+  // round 69: the A²∘A families are priced on the dense fixture because
+  // that is where their 'auto' gate routes to the GPU at all — the CPU's
+  // O(Σ deg²) walk owns sparse graphs outright, which is the gate's point
+  {
+    key: 'triangleCount',
+    sizes: [512, 1024, 2048],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().triangleCount({ executor })
+        .then((r) => r.totalTriangles)`,
+  },
+  {
+    key: 'neighborhoodSimilarity',
+    sizes: [512, 1024, 2048],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().neighborhoodSimilarity({ executor })
+        .then((r) => r.similarity(cy.nodes()[0], cy.nodes()[1]))`,
+  },
+  // round 69: priced on the sparse fixture to document why 'auto' never
+  // routes Katz to the GPU — the pageRank verdict (65.10) for the same
+  // iteration shape; the gpu bench is the explicit-'gpu' price
+  {
+    key: 'katzCentrality',
+    sizes: [512, 1024, 2048],
+    kind: 'graph',
+    op: `(cy, executor) =>
+      cy.elements().katzCentrality({ executor })
+        .then((r) => r.katz(cy.nodes()[0]))`,
+  },
 ];
 
 const jobs = [];

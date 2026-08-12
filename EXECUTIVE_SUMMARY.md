@@ -38,9 +38,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,205 unit · 427 module · 24 soak · 376 browser (251 run; 125 skip for want of a WebGPU adapter) |
-| Documented API | 363 members over 48 sections, gated at 100% |
-| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 10 CPU-vs-GPU algorithm-parity scenes |
+| Automated tests | 2,223 unit · 427 module · 24 soak · 386 browser (some skip for want of a WebGPU adapter) |
+| Documented API | 366 members over 48 sections, gated at 100% |
+| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 15 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -152,6 +152,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     harness fingerprint and the published archive stays serial.
   - Buys a publishing run in **8.4 minutes instead of ~55**, with no way to
     mistake a faster instrument for a faster library.
+- **12 Aug** — the matmul-first algorithm families
+  - Markov clustering leads the GPU benchmark because its inner loop is a
+    dense matrix product; four families were built to that shape: triangle
+    counting / clustering coefficients / transitivity (A²∘A), neighborhood
+    similarity (A·Aᵀ), Katz centrality, and a GPU path for whole-collection
+    closeness centrality that folds each distance row on the device — n floats
+    read back instead of the n² matrix.  Whole-collection closeness joined the
+    async tier (a public API change); the three other families are v4-only
+    surface.  'auto' gates the A²∘A families on *density* — their sparse CPU
+    walks own sparse graphs however large — and never routes Katz to the GPU,
+    the pageRank verdict for the same iteration shape.
+  - Buys three algorithms v3 never had, on kernels the suite already trusts;
+    each of the five new parity specs was proven able to fail by degrading its
+    kernel; crossover numbers await the benchmark machine.
 
 ---
 
@@ -166,7 +180,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 - **display/visibility split** into a structural tier and a paint-only tier.
 - **`cy.layout({ impl })` is the whole extension story.**
 - **The expensive whole-graph algorithms return promises** and take
-  `executor: 'cpu' | 'gpu' | 'auto'`.
+  `executor: 'cpu' | 'gpu' | 'auto'` — including, since 12 Aug, the
+  whole-collection `closenessCentralityNormalized`; the single-root form
+  stays synchronous.
+- **Three algorithm families v3 never had**: `triangleCount`,
+  `neighborhoodSimilarity` and `katzCentrality`, on the same executor
+  contract.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
 

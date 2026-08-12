@@ -189,13 +189,23 @@ export const floydWarshallResultFrom = (
   };
 };
 
-/** All-pairs shortest paths over the calling collection (dense N² matrices). */
-export const floydWarshall = (
-  coll: Collection,
-  options: FloydWarshallOptions = {},
-): FloydWarshallResult => {
-  const { view, n, dist, next, edgeNext } = initFloydWarshall(coll, options);
-
+/**
+ * The O(n³) relaxation both the CPU reference and the CPU side of the
+ * closeness family run: relax `dist` (and the successor matrix) in
+ * place over every intermediate k.  Extracted from `floydWarshall` in
+ * round 69 so closeness centrality can share the loop rather than
+ * paying the accessor-per-pair cost of reading distances back through
+ * the public result.
+ *
+ * @param n — the node count
+ * @param dist — the row-major distance matrix from `initFloydWarshall`
+ * @param next — the dense-index successor matrix, relaxed alongside
+ */
+export const relaxFloydWarshall = (
+  n: number,
+  dist: Float64Array,
+  next: Int32Array,
+): void => {
   for (let k = 0; k < n; k++) {
     const kn = k * n;
 
@@ -226,6 +236,16 @@ export const floydWarshall = (
       }
     }
   }
+};
+
+/** All-pairs shortest paths over the calling collection (dense N² matrices). */
+export const floydWarshall = (
+  coll: Collection,
+  options: FloydWarshallOptions = {},
+): FloydWarshallResult => {
+  const { view, n, dist, next, edgeNext } = initFloydWarshall(coll, options);
+
+  relaxFloydWarshall(n, dist, next);
 
   return floydWarshallResultFrom(coll, view, n, dist, next, edgeNext);
 };

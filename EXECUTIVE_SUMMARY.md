@@ -937,10 +937,12 @@ So three changes, each committed only after its own bundle-swapped A/B:
   sheets map cannot vary across the run and need not be written at all.
 - **An unlabelled element stops paying for a label.**
 
-Together, on the harness's 465k-edge network in Chromium on a real
-adapter: **init 1150 → 644 ms, fetch-to-first-frame 2017 → 1526 ms**, and
-the rendered frame is **byte-identical** — zero differing pixels of a
-million.
+Together, measured in one A/B of the round's first commit against its
+last, on the harness's 465k-edge network in Chromium on a real adapter:
+**init 1164 → 649 ms, fetch-to-first-frame 2047 → 1569 ms** — and
+**1.92×** on the same load headless.  An ordinary 50k/150k graph with a
+plain sheet loads **1.7×** faster.  The rendered frame is
+**byte-identical**: zero differing pixels of a million.
 
 Two proposals were investigated and **not** landed, which is the more
 useful half of the record.  Starting GPU device acquisition before the

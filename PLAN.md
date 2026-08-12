@@ -19213,6 +19213,23 @@ the style apply is **818 ms of 1150 (71%)** — `_applyStyle` →
 `applyGroupDef` → `applyMapped` → `write` → `writeChannels`; the columnar
 store ingest ~210; `buildColumnar` ~73; `fit()` ~30.
 
+**The round's result, measured in one A/B rather than chained** (the
+round's starting commit `44d84999` built in a detached worktree against
+`HEAD`, bundles swapped and alternated, five browser reps and nine
+headless):
+
+| | before | after | |
+|---|---|---|---|
+| ndex-x-large, headless init | 1195 ms | **622 ms** | **1.92×** |
+| ndex-x-large, browser init | 1164 | **649** | 1.79× |
+| ndex-x-large, fetch → first frame | 2047 | **1569** | −478 ms |
+| synthetic 50k/150k, minimal sheet | 385 | **221** | 1.74× |
+| synthetic 50k/150k, typical sheet | 454 | **297** | 1.53× |
+
+The rendered frame is **byte-identical** at both ends: the harness's
+ndex-x-large page fitted and screenshotted through both bundles, **0
+differing pixels** of 1,024,000.
+
 **And inside the style apply, the cost is not the mappers.**  Two
 controls through built bundles, on the edge branch of `writeChannels`:
 

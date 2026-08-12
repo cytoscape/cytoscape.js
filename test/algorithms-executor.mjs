@@ -110,6 +110,16 @@ describe('gpu/algorithms: the executor contract', function () {
       eles.triangleCount({ executor: 'gpu' }),
       eles.neighborhoodSimilarity({ executor: 'gpu' }),
       eles.katzCentrality({ executor: 'gpu' }),
+      // the round-70 families (the seed forms of randomWalkWithRestart
+      // and heatDiffusion are CPU-only, but in Node the WebGPU-absent
+      // guard still fires first, identically)
+      eles.simRank({ executor: 'gpu' }),
+      eles.randomWalkWithRestart({ seeds: eles, executor: 'gpu' }),
+      eles.randomWalkWithRestartProximity({ executor: 'gpu' }),
+      eles.heatDiffusion({ seeds: eles, executor: 'gpu' }),
+      eles.heatKernel({ executor: 'gpu' }),
+      eles.effectiveResistance({ executor: 'gpu' }),
+      eles.motifCensus({ executor: 'gpu' }),
     ];
 
     for (var call of calls) {

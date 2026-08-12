@@ -276,6 +276,59 @@ const FAMILIES = [
       cy.elements().katzCentrality({ executor })
         .then((r) => r.katz(cy.nodes()[0]))`,
   },
+  // round 70: effective resistance is O(n³) on BOTH executors (a dense
+  // inverse has no sparse shortcut), so like MCL it is priced on the
+  // plain fixture and wins at every density
+  {
+    key: 'effectiveResistance',
+    sizes: [256, 512, 1024],
+    kind: 'graph',
+    op: `(cy, executor) =>
+      cy.elements().effectiveResistance({ executor })
+        .then((r) => r.resistance(cy.nodes()[0], cy.nodes()[1]))`,
+  },
+  // round 70: the iterated-product families, priced dense (their 'auto'
+  // gates route to the GPU only there — sparse CPU walks own the rest).
+  // Iteration knobs are pinned (the round-33.2 rule), and sizes stop at
+  // 1024 because the dense CPU references are MCL-cost there already —
+  // simRank pays 2·n·m per iteration and rwrProximity one sparse solve
+  // per column; heatKernel's time is small so its scaling exponent (and
+  // with it the CPU's 2^s operator applications) stays bounded
+  {
+    key: 'simRank',
+    sizes: [256, 512, 1024],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().simRank({ executor, maxIterations: 10 })
+        .then((r) => r.similarity(cy.nodes()[0], cy.nodes()[1]))`,
+  },
+  {
+    key: 'rwrProximity',
+    sizes: [256, 512, 1024],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().randomWalkWithRestartProximity({
+        executor,
+        restartProbability: 0.3,
+        tolerance: 0.00001,
+      }).then((r) => r.proximity(cy.nodes()[0], cy.nodes()[1]))`,
+  },
+  {
+    key: 'heatKernel',
+    sizes: [256, 512, 1024],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().heatKernel({ executor, time: 0.02 })
+        .then((r) => r.heat(cy.nodes()[0], cy.nodes()[1]))`,
+  },
+  {
+    key: 'motifCensus',
+    sizes: [512, 1024, 2048],
+    kind: 'graph-dense',
+    op: `(cy, executor) =>
+      cy.elements().motifCensus({ executor })
+        .then((r) => r.counts['030T'])`,
+  },
 ];
 
 const jobs = [];

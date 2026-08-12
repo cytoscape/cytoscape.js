@@ -33,10 +33,12 @@ import { MATMUL, MM_TILE, WG } from './algo-gpu-dense.mjs';
 import { triangleResultFrom } from './triangle-counting.mjs';
 import type { TriangleCountResult } from './triangle-counting.mjs';
 
-/** out[i] = Σ_j c[i][j] · a[i][j] — the Hadamard row fold of A² ∘ A,
- * one workgroup per row with lanes striding and tree-reducing (the
- * 65.8 occupancy rule). */
-const TRI_ROWS = wgsl`
+/** out[i] = Σ_j c[i][j] · a[i][j] — a generic Hadamard row fold, one
+ * workgroup per row with lanes striding and tree-reducing (the 65.8
+ * occupancy rule).  Named for the triangle family that introduced it;
+ * exported since round 70, when the motif census reuses it to fold
+ * its seven trace products. */
+export const TRI_ROWS = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
 @group(0) @binding(1) var<storage, read> a : array<f32>;

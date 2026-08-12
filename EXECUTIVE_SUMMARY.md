@@ -38,9 +38,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,223 unit · 427 module · 24 soak · 386 browser (some skip for want of a WebGPU adapter) |
-| Documented API | 366 members over 48 sections, gated at 100% |
-| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 15 CPU-vs-GPU algorithm-parity scenes |
+| Automated tests | 2,245 unit · 427 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
+| Documented API | 373 members over 48 sections, gated at 100% |
+| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -166,6 +166,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys three algorithms v3 never had, on kernels the suite already trusts;
     each of the five new parity specs was proven able to fail by degrading its
     kernel; crossover numbers await the benchmark machine.
+- **12 Aug** — the propagation tier: network biology's algorithms
+  - Five more families, chosen by scientific usefulness: random walk with
+    restart (seed propagation — the disease-gene-prioritization primitive —
+    plus the all-pairs proximity matrix), heat-kernel diffusion (HotNet-style
+    exp(−tL), seed and all-pairs forms), effective resistance / commute time
+    (Laplacian pseudo-inverse: f64 elimination on the CPU, Newton–Schulz
+    matmuls on the GPU — O(n³) both sides, so the GPU wins at every density),
+    SimRank, and the sixteen-class triad census ('030T' is the biology
+    literature's feed-forward loop), whose closed forms are pinned by a
+    brute-force classify-every-triple spec.  Seed forms are CPU-only by
+    design — O(E) walks with nothing for a kernel to win.
+  - Buys the network-biology propagation toolbox on the existing kernel
+    machinery; five more parity specs, each proven able to fail; measured on
+    an M2: RWR proximity 119×, SimRank 45× at n=1024.
 
 ---
 
@@ -183,9 +197,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `executor: 'cpu' | 'gpu' | 'auto'` — including, since 12 Aug, the
   whole-collection `closenessCentralityNormalized`; the single-root form
   stays synchronous.
-- **Three algorithm families v3 never had**: `triangleCount`,
-  `neighborhoodSimilarity` and `katzCentrality`, on the same executor
-  contract.
+- **Eight algorithm families v3 never had**, on the same executor
+  contract: `triangleCount`, `neighborhoodSimilarity`, `katzCentrality`,
+  `randomWalkWithRestart` (+ its all-pairs proximity form),
+  `heatDiffusion`/`heatKernel`, `effectiveResistance`, `simRank` and
+  `motifCensus`.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
 

@@ -5515,6 +5515,116 @@ interface KatzCentralityResult {
   katzNormalised(node: Collection): number;
 }
 //#endregion
+//#region src/algorithms/sim-rank.d.mts
+interface SimRankOptions {
+  /** the decay per neighborhood step (default 0.8); must sit in (0, 1) */
+  dampingFactor?: number;
+  /** iteration cap when the tolerance is never met (default 50) */
+  maxIterations?: number;
+  /** stop once max |Δs| ≤ tolerance (default 1e-4) */
+  tolerance?: number;
+  /** compare in-neighborhoods (the classic form) instead of undirected ones */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) products beat the CPU's O(n·m)-per-iteration sparse form. */
+  executor?: AlgoExecutor;
+}
+interface SimRankResult {
+  /** the pair's SimRank score in [0, 1], or undefined when either
+   * node is outside the collection */
+  similarity(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/random-walk.d.mts
+interface RandomWalkWithRestartOptions {
+  /** the nodes the walk restarts at (required for the seed form) */
+  seeds?: Collection | null;
+  /** the restart probability c (default 0.15); must sit in (0, 1) */
+  restartProbability?: number;
+  /** iteration cap when the tolerance is never met (default 200) */
+  maxIterations?: number;
+  /** stop once the L1 step drops under `tolerance` (default 1e-6) —
+   * per column, for the proximity form */
+  tolerance?: number;
+  /** walk out-edges only */
+  directed?: boolean;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the proximity form routes to the
+   * GPU only on dense graphs (the CPU solves per column at O(E) per
+   * step, so sparse graphs are its outright). */
+  executor?: AlgoExecutor;
+}
+interface RandomWalkWithRestartResult {
+  /** the node's stationary probability, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface RandomWalkWithRestartProximityResult {
+  /** the stationary probability of `to` for the walk restarting at
+   * `from`, or undefined when either node is outside the collection */
+  proximity(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/heat-kernel.d.mts
+interface HeatDiffusionOptions {
+  /** the nodes the heat starts on (required for the seed form) */
+  seeds?: Collection | null;
+  /** how long the heat flows (default 0.1); must be positive */
+  time?: number;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the kernel form routes to the GPU
+   * only on dense graphs. */
+  executor?: AlgoExecutor;
+}
+interface HeatDiffusionResult {
+  /** the node's share of the diffused heat, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface HeatKernelResult {
+  /** the heat at `to` after unit heat starts at `from` (symmetric),
+   * or undefined when either node is outside the collection */
+  heat(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/effective-resistance.d.mts
+interface EffectiveResistanceOptions {
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+interface EffectiveResistanceResult {
+  /** the effective resistance between the nodes (Infinity across
+   * components), or undefined when either node is outside the
+   * collection */
+  resistance(a: Collection, b: Collection): number | undefined;
+  /** the expected round-trip steps of the random walk — the
+   * component volume times the resistance */
+  commuteTime(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/motif-census.d.mts
+/** The sixteen triad classes, in Holland–Leinhardt order. */
+declare const TRIAD_CLASSES: readonly ['003', '012', '102', '021D', '021U', '021C', '111D', '111U', '030T', '030C', '201', '120D', '120U', '120C', '210', '300'];
+type TriadClass = (typeof TRIAD_CLASSES)[number];
+interface MotifCensusOptions {
+  /** read edge direction (default true — the census is a directed
+   * notion; `false` reads every edge as mutual, so only 003/102/201/
+   * 300 can be non-zero) */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) trace products beat the CPU's O(Σ deg²) wedge walks. */
+  executor?: AlgoExecutor;
+}
+interface MotifCensusResult {
+  /** the sixteen counts; they sum to C(n, 3) */
+  counts: Record<TriadClass, number>;
+}
+//#endregion
 //#region src/event.d.mts
 /** The DOM event a gesture came from, when there was one. */
 type NativeEvent = globalThis.Event;
@@ -7612,6 +7722,123 @@ declare class Collection {
    *   `executor: 'gpu'` is unavailable in this environment
    */
   neighborhoodSimilarity(options?: NeighborhoodSimilarityOptions): Promise<NeighborhoodSimilarityResult>;
+  /**
+   * SimRank — "two nodes are similar when their neighbors are
+   * similar", the Jeh–Widom recursive fixed point, iterated as dense
+   * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where
+   * the iteration runs — under 'auto' the GPU only on graphs dense
+   * enough to beat the CPU's sparse form.  The undirected default
+   * compares all neighbors; `directed: true` compares the classic
+   * in-neighborhoods.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ dampingFactor, maxIterations, tolerance,
+   *   directed, executor }`
+   * @returns a promise of the `{ similarity }` accessor
+   * @throws if `executor` or `dampingFactor` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  simRank(options?: SimRankOptions): Promise<SimRankResult>;
+  /**
+   * Random walk with restart — network propagation from a `seeds`
+   * collection: a walker follows edges with probability 1−c and
+   * restarts at the seeds with probability c, and the stationary
+   * distribution scores every node by proximity to the seeds.  Async
+   * (round 70); the vector iteration is O(E) per step on the CPU, so
+   * there is no GPU path — an explicit `executor: 'gpu'` rejects and
+   * points at `randomWalkWithRestartProximity`.  On directed graphs a
+   * node with no out-edges absorbs the walk (scores can sum below 1).
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, restartProbability, maxIterations,
+   *   tolerance, directed, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `restartProbability` is invalid, or if
+   *   `seeds` holds no node of the collection
+   */
+  randomWalkWithRestart(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartResult>;
+  /**
+   * All-pairs random-walk-with-restart proximity — the full matrix
+   * S = c·(I − (1−c)·W)⁻¹, whose column s is the walk restarting at
+   * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between one sparse solve per column on the CPU and
+   * the dense Neumann iteration on the GPU — under 'auto' the GPU
+   * only on graphs dense enough to beat the per-column solves.
+   * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ restartProbability, maxIterations, tolerance,
+   *   directed, weight, executor }`
+   * @returns a promise of the `{ proximity }` accessor
+   * @throws if `executor` or `restartProbability` is invalid; rejects
+   *   if `executor: 'gpu'` is unavailable in this environment
+   */
+  randomWalkWithRestartProximity(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartProximityResult>;
+  /**
+   * Heat diffusion from a `seeds` collection: unit heat spread over
+   * the seeds flows along edges for `time`, through the kernel
+   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved.
+   * Async (round 70); the vector form is O(E) per series term on the
+   * CPU, so there is no GPU path — an explicit `executor: 'gpu'`
+   * rejects and points at `heatKernel`.  Edges are read undirected
+   * with positive weights.  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, time, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `time` is invalid, if `seeds` holds no
+   *   node of the collection, or if an edge weight is not positive
+   */
+  heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult>;
+  /**
+   * The all-pairs heat kernel exp(−t·L) — `heat(from, to)` is the
+   * heat at `to` after unit heat starts at `from` (symmetric).  Async
+   * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * picks between per-column sparse series on the CPU and the dense
+   * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
+   * on dense graphs.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ time, weight, executor }`
+   * @returns a promise of the `{ heat }` accessor
+   * @throws if `executor` or `time` is invalid, or if an edge weight
+   *   is not positive
+   */
+  heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult>;
+  /**
+   * Effective resistance and commute time — the graph as a resistor
+   * network (weights are conductances): `resistance(a, b)` from the
+   * Laplacian pseudo-inverse, `commuteTime(a, b)` the expected
+   * round-trip steps of the random walk (component volume ×
+   * resistance).  Pairs in different components answer Infinity.
+   * Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between dense f64 elimination on the CPU and
+   * Newton–Schulz matmul iteration on the GPU; both are O(n³), so
+   * 'auto' takes the GPU on size alone.  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ weight, executor }`
+   * @returns a promise of the `{ resistance, commuteTime }` accessors
+   * @throws if `executor` is invalid; rejects if an edge weight is
+   *   not positive or `executor: 'gpu'` is unavailable
+   */
+  effectiveResistance(options?: EffectiveResistanceOptions): Promise<EffectiveResistanceResult>;
+  /**
+   * The triad census — every three-node subgraph classified into the
+   * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
+   * feed-forward loop).  The counts sum to C(n, 3).  Async (round
+   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * between sparse wedge walks on the CPU and matmul trace products
+   * on the GPU — under 'auto' the GPU only on dense graphs.
+   * `directed: false` reads every edge as mutual, so only 003 / 102 /
+   * 201 / 300 (empty / one-edge / path / triangle) can be non-zero.
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ directed, executor }`
+   * @returns a promise of `{ counts }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
+   */
+  motifCensus(options?: MotifCensusOptions): Promise<MotifCensusResult>;
   /**
    * k-means clustering in attribute space.  Like v3's clustering
    * algorithms this works on handles and `attributes` accessors rather

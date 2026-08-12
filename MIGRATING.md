@@ -424,14 +424,21 @@ slot-native CPU walks.  Only the whole-collection
 `closenessCentralityNormalized` moved to the async tier — it is the O(n³)
 all-pairs computation, exactly what the tier exists for.
 
-**v4 also adds three algorithm families v3 never had**, on the same async
+**v4 also adds eight algorithm families v3 never had**, on the same async
 `executor` contract: `triangleCount()` (per-node triangles, local
 clustering coefficients, transitivity), `neighborhoodSimilarity()`
-(pairwise Jaccard / cosine / overlap coefficients over neighbor sets) and
-`katzCentrality()` (attenuated walk counting).  Nothing to migrate — they
-are new surface — but note they read the collection as a simple graph:
-parallel edges collapse, loops are excluded, and `triangleCount` ignores
-direction outright.
+(pairwise Jaccard / cosine / overlap coefficients over neighbor sets),
+`katzCentrality()` (attenuated walk counting), `randomWalkWithRestart()`
+and `randomWalkWithRestartProximity()` (network propagation from a seed
+set, and the all-pairs proximity matrix), `heatDiffusion()` and
+`heatKernel()` (heat-kernel propagation, exp(−t·L)),
+`effectiveResistance()` (the graph as a resistor network, with
+`commuteTime`), `simRank()` (recursive neighborhood similarity) and
+`motifCensus()` (the sixteen-class triad census; '030T' is the
+feed-forward loop).  Nothing to migrate — they are new surface — but
+note they read the collection as a simple graph: parallel edges collapse
+(summing weights where weights are read), loops are excluded, and the
+triangle/heat/resistance families ignore direction outright.
 
 **State is a condition, not a selector.** See "Styling element state" above:
 `:selected`, `:active`, `:locked` and the rest are `when` conditions on a

@@ -117,19 +117,34 @@ that compile and then behave differently.
   (O(E) per iteration — orders of magnitude on sparse graphs) and the
   hierarchical merge engine went flat-typed, leaving the GPU no edge
   to win there.
-- **Three new algorithm families, designed matmul-first for the GPU
-  tier** (round 69), all on the same async `executor` contract and
-  with no v3 counterpart: **`eles.triangleCount()`** (per-node
-  triangle counts, local clustering coefficients, total triangles and
-  transitivity — A²∘A on the GPU), **`eles.neighborhoodSimilarity()`**
-  (pairwise Jaccard / cosine / overlap coefficients over neighbor
-  sets — A·Aᵀ on the GPU) and **`eles.katzCentrality()`** (attenuated
-  walk counting; like PageRank its sparse CPU iteration owns `'auto'`
-  and the GPU path serves an explicit `'gpu'`).  The whole-collection
-  `closenessCentralityNormalized` joined the async tier in the same
-  round: its GPU path rides the blocked Floyd–Warshall kernels and
-  folds each distance row on the device, reading back n floats
-  instead of the n² matrix.
+- **Eight new algorithm families, designed matmul-first for the GPU
+  tier** (rounds 69–70), all on the same async `executor` contract
+  and with no v3 counterpart.  Round 69: **`eles.triangleCount()`**
+  (per-node triangle counts, local clustering coefficients, total
+  triangles and transitivity — A²∘A on the GPU),
+  **`eles.neighborhoodSimilarity()`** (pairwise Jaccard / cosine /
+  overlap coefficients over neighbor sets — A·Aᵀ on the GPU) and
+  **`eles.katzCentrality()`** (attenuated walk counting; like
+  PageRank its sparse CPU iteration owns `'auto'` and the GPU path
+  serves an explicit `'gpu'`).  Round 70, aimed at network-biology
+  workloads: **`eles.randomWalkWithRestart()`** (seed-set network
+  propagation — the disease-gene-prioritization primitive) and
+  **`eles.randomWalkWithRestartProximity()`** (the all-pairs
+  proximity matrix, a Neumann matmul iteration on the GPU),
+  **`eles.heatDiffusion()`** / **`eles.heatKernel()`** (HotNet-style
+  heat propagation; exp(−t·L) by scaling-and-squaring on the GPU),
+  **`eles.effectiveResistance()`** (resistance distance and commute
+  time off the Laplacian pseudo-inverse — f64 elimination on the CPU,
+  Newton–Schulz matmul iteration on the GPU; O(n³) on both sides, so
+  the GPU wins at every density), **`eles.simRank()`** (the Jeh–Widom
+  recursive similarity, two matmuls per iteration) and
+  **`eles.motifCensus()`** (the sixteen-class Holland–Leinhardt triad
+  census — '030T' is the feed-forward loop — computed from seven
+  trace primitives and pinned by a brute-force classifier spec).
+  The whole-collection `closenessCentralityNormalized` joined the
+  async tier in round 69: its GPU path rides the blocked
+  Floyd–Warshall kernels and folds each distance row on the device,
+  reading back n floats instead of the n² matrix.
 
 ### Changed
 

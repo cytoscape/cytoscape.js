@@ -109,6 +109,46 @@ export type {
   KatzCentralityOptions,
   KatzCentralityResult,
 } from './katz-centrality.mjs';
+export { simRank, simRankAsync } from './sim-rank.mjs';
+export type { SimRankOptions, SimRankResult } from './sim-rank.mjs';
+export {
+  randomWalkWithRestartAsync,
+  randomWalkWithRestartProximityAsync,
+  rwrProximity,
+} from './random-walk.mjs';
+export type {
+  RandomWalkWithRestartOptions,
+  RandomWalkWithRestartResult,
+  RandomWalkWithRestartProximityResult,
+} from './random-walk.mjs';
+export {
+  heatDiffusionAsync,
+  heatKernel,
+  heatKernelAsync,
+} from './heat-kernel.mjs';
+export type {
+  HeatDiffusionOptions,
+  HeatDiffusionResult,
+  HeatKernelResult,
+} from './heat-kernel.mjs';
+export {
+  effectiveResistance,
+  effectiveResistanceAsync,
+} from './effective-resistance.mjs';
+export type {
+  EffectiveResistanceOptions,
+  EffectiveResistanceResult,
+} from './effective-resistance.mjs';
+export {
+  motifCensus,
+  motifCensusAsync,
+  TRIAD_CLASSES,
+} from './motif-census.mjs';
+export type {
+  MotifCensusOptions,
+  MotifCensusResult,
+  TriadClass,
+} from './motif-census.mjs';
 export type { DistanceMetric } from './clustering-distances.mjs';
 export type { WeightFn } from './algo-shared.mjs';
 export type { AlgoExecutor } from './executor.mjs';

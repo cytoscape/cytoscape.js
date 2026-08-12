@@ -31,7 +31,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 10 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 684 KiB minified / 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
+| Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
 
 **Headline case** — a 19,607-node / 464,657-edge network:
 

@@ -59,7 +59,7 @@ export const DOCUMENTS = [
     nav: 'summary',
     title: 'Executive summary',
     blurb:
-      'Where v4 stands, week by week — the five-minute version of the development record.',
+      'Where v4 stands — the five-minute version of the development record.',
   },
   {
     file: 'PLAN.md',

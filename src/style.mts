@@ -4681,6 +4681,13 @@ interface GroupDef {
  * engine that `writeChannels` itself calls, so the two cannot drift. */
 type StateWriter = (slot: number, computed: Computed) => void;
 
+/**
+ * Below this many slots a bulk edge run is not worth its setup — the
+ * contiguity scan, the state-word scan and one `copyWithin` per column
+ * are each O(run), but the per-column call overhead is fixed.
+ */
+const BULK_MIN_RUN = 64;
+
 const SHEET_KEYS: ReadonlySet<string> = new Set([
   'nodes',
   'edges',
@@ -6026,6 +6033,19 @@ export class StyleEngine {
     edges: new Uint32Array(0),
   };
 
+  /**
+   * How many edge runs have taken the round-67.2 bulk route.
+   *
+   * Internal, and not a statistic anyone needs at runtime — it exists so
+   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
+   * it a comparison against the per-element route passes just as well
+   * when the gate declined, which is exactly what the first version of
+   * that spec did: its fixture mapped `curve-style` and `label`, neither
+   * of which has a narrow writer, so every assertion compared the
+   * per-element path against itself.
+   */
+  _bulkRuns = 0;
+
   /** Round 24.1: the open transition capture (one per group-def pass). */
   private txn: TxnCapture | null = null;
 
@@ -7137,8 +7157,13 @@ export class StyleEngine {
       } else {
         const computed = def.computed;
 
-        for (let i = 0; i < slots.length; i++) {
-          this.write(group, slots[i], computed);
+        // no mappers: nothing varies, so the run needs no writers
+        if (this.bulkEdgeRun(group, slots)) {
+          this.applyBulkEdges(slots, computed, [], [], []);
+        } else {
+          for (let i = 0; i < slots.length; i++) {
+            this.write(group, slots[i], computed);
+          }
         }
       }
     } finally {
@@ -7559,6 +7584,23 @@ export class StyleEngine {
         : null;
     let lastWord = -1;
 
+    // round 67.2: a contiguous run of edges whose per-element variation
+    // is confined to props with narrow writers takes the whole styled
+    // record from one template slot
+    if (this.bulkEdgeRun(group, target)) {
+      const writers = this.bulkEdgeWriters(
+        group,
+        active,
+        flagsCol == null || this.uniformMaskedWord(target, flagsCol, stateMask),
+      );
+
+      if (writers != null) {
+        this.applyBulkEdges(target, scratch, evals, stateEvals, writers);
+
+        return;
+      }
+    }
+
     for (let i = 0; i < target.length; i++) {
       const slot = target[i];
 
@@ -7583,6 +7625,168 @@ export class StyleEngine {
   }
 
   /**
+   * The structural half of the bulk-edge gate (round 67.2): whether this
+   * run *could* be written from one template slot and filled.
+   *
+   * Nodes decline outright — their branch hands out per-slot blob
+   * records (custom polygons, images, charts) whose refs a copy would
+   * alias.  The rest is what the fill needs: enough slots to pay for the
+   * scans, one contiguous ascending range so each column is a single
+   * `copyWithin` chain, no open transition capture (which diffs per
+   * slot) and no per-element bypasses.
+   *
+   * `bulkEdgeWriters` carries the other half — what the *mappers* allow.
+   *
+   * @param group — the group being applied
+   * @param slots — the run, in apply order
+   * @returns whether the structural preconditions hold
+   */
+  private bulkEdgeRun(group: GroupName, slots: ArrayLike<number>): boolean {
+    if (
+      group !== 'edges' ||
+      slots.length < BULK_MIN_RUN ||
+      this.txn != null || // a transition capture diffs per slot
+      this.bypassRaw.size > 0 // a bypassed slot is not the template's
+    ) {
+      return false;
+    }
+
+    // contiguous and ascending, so the fill is one memmove per column
+    const first = slots[0];
+
+    for (let i = 1; i < slots.length; i++) {
+      if (slots[i] !== first + i) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** Whether every slot in the run carries the same masked flag word —
+   * i.e. whether anything reading state alone can vary across it.  True
+   * at rest, which is what a freshly loaded graph is. */
+  private uniformMaskedWord(
+    slots: ArrayLike<number>,
+    flags: Uint32Array,
+    mask: number,
+  ): boolean {
+    const word = flags[slots[0]] & mask;
+
+    for (let i = 1; i < slots.length; i++) {
+      if ((flags[slots[i]] & mask) !== word) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * The narrow writers a bulk edge run needs, or null when the run's
+   * mappers rule the route out (round 67.2).  `bulkEdgeRun` carries the
+   * structural half of the gate.
+   *
+   * The route writes one template slot and fills every
+   * `EDGE_STYLE_COLUMNS` column from it, so it is admissible exactly
+   * when each mapped prop either
+   *
+   *   1. has a `fastStateWriter` — which by round 61's invariant writes
+   *      *every* column that prop affects, so the fill's value for it is
+   *      overwritten per slot; or
+   *   2. reads state flags only, over a run whose masked flag word never
+   *      changes — then its value is the template's for every slot and
+   *      the fill is already right.  This is the clause that matters in
+   *      practice: a freshly loaded graph has nothing selected, so the
+   *      selection affordances this repo's sheets map (`line-opacity`,
+   *      which has no narrow writer and could not have one without the
+   *      whole B1 fold cluster) cost the route nothing.
+   *
+   * Anything else declines and the ordinary per-element loop runs.
+   *
+   * @param group — the group being applied
+   * @param active — the mappers this pass will evaluate
+   * @param uniformState — whether the run's masked flag word is constant
+   * @returns the writers to run per slot, or null to decline
+   */
+  private bulkEdgeWriters(
+    group: GroupName,
+    active: BoundMapper[],
+    uniformState: boolean,
+  ): StateWriter[] | null {
+    const writers: StateWriter[] = [];
+
+    for (const bm of active) {
+      const writer = this.fastStateWriter(group, bm.m.prop);
+
+      if (writer != null) {
+        writers.push(writer);
+
+        continue;
+      }
+
+      if (stateOnlyMask(bm) !== 0 && uniformState) {
+        continue; // constant over this run; the fill carries it
+      }
+
+      return null;
+    }
+
+    return writers;
+  }
+
+  /**
+   * Apply a contiguous edge run from one template slot (round 67.2).
+   *
+   * The template takes the ordinary `write()`, so every side effect the
+   * edge branch has — the arrow-scale and arrow-width meters, the curve
+   * record, the label sidecar, the transition-free channel funnel —
+   * happens exactly as it always did.  `replicateEdgeStyle` then fills
+   * every style-owned column from it, and each remaining slot pays only
+   * its own mapped props (through the narrow writers) plus the per-slot
+   * half of the edge branch.
+   *
+   * Measured on a 464,657-edge fixture: 26 ns per `setScalar` against
+   * 0.1 ns per element for the fill.
+   */
+  private applyBulkEdges(
+    slots: ArrayLike<number>,
+    scratch: Computed,
+    evals: Evaluator[],
+    stateEvals: Evaluator[],
+    writers: StateWriter[],
+  ): void {
+    this._bulkRuns++;
+
+    const first = slots[0];
+    const n = slots.length;
+
+    for (let j = 0; j < stateEvals.length; j++) {
+      stateEvals[j].set(scratch, stateEvals[j].ev(first));
+    }
+    for (let j = 0; j < evals.length; j++) {
+      evals[j].set(scratch, evals[j].ev(first));
+    }
+
+    this.write('edges', first, scratch);
+    this.store.replicateEdgeStyle(first, n);
+
+    for (let i = 1; i < n; i++) {
+      const slot = slots[i];
+
+      for (let j = 0; j < evals.length; j++) {
+        evals[j].set(scratch, evals[j].ev(slot));
+      }
+      for (let j = 0; j < writers.length; j++) {
+        writers[j](slot, scratch);
+      }
+
+      this.writeEdgePerSlot(slot, scratch);
+      this.markStyled('edges', slot);
+    }
+  }
+
+  /**
    * Apply a group whose mappers read only state flags: one record per
    * distinct flag combination, cached on the def, instead of a program
    * run per element.
@@ -7601,6 +7805,24 @@ export class StyleEngine {
     const flags = this.store.column(
       group === 'nodes' ? 'node.flags' : 'edge.flags',
     ) as Uint32Array;
+
+    // round 67.2: at rest every slot carries the same masked word — a
+    // freshly loaded graph has nothing selected — so the whole run
+    // resolves to one record and takes the bulk route with no writers
+    if (
+      this.bulkEdgeRun(group, slots) &&
+      this.uniformMaskedWord(slots, flags, part.mask)
+    ) {
+      this.applyBulkEdges(
+        slots,
+        this.partRecordFor(group, def, part, flags[slots[0]] & part.mask),
+        [],
+        [],
+        [],
+      );
+
+      return;
+    }
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
@@ -8874,158 +9096,185 @@ export class StyleEngine {
       this.writeChart(slot, computed);
       this.writeLabel(slot, computed);
     } else {
-      store.setFlag('edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
-      store.setInvisibility('edges', slot, computed.invisible); // 22
-      this.writeEdgeLineColor(slot, computed);
-      // line-fill gradient (C2), stops folded by line-opacity
-      store.setGradient(
-        'edge.gradient',
-        slot,
-        computed.lineGradientStopColors.length > 0 ? computed.lineFill : 0,
-        0,
-        gradientStops(
-          computed.lineGradientStopColors,
-          computed.lineGradientStopPositions,
-          computed.lineOpacity,
-        ),
-      );
-
-      const dp = computed.lineDashPattern;
-
-      store.setVec4('edge.dashPattern', slot, dp[0], dp[1], dp[2], dp[3]);
-      store.setPair(
-        'edge.dashMeta',
-        slot,
-        computed.lineDashOffset,
-        computed.lineCap,
-      );
-      store.setScalar('edge.width', slot, computed.width);
-      store.setScalar('edge.opacity', slot, computed.opacity);
-      store.setScalar('edge.lineStyle', slot, computed.lineStyle);
-      this.writeEdgeSourceArrowColor(slot, computed);
-      this.writeEdgeTargetArrowColor(slot, computed);
-      // B7: hollow flags at bits 16/17 and arrow-scale ×16 in the top
-      // byte (quantized readback — recorded); stroke widths resolve
-      // 'match-line'/% against the edge width here
-      const scaleQ = Math.max(
-        1,
-        Math.min(255, Math.round(computed.arrowScale * 16)),
-      );
-
-      store.noteArrowScale(computed.arrowScale);
-      const srcArrowId = ARROW_ENUM[computed.sourceArrowShape];
-      const tgtArrowId = ARROW_ENUM[computed.targetArrowShape];
-
-      // not setScalar: the word is mirrored into edge.width's lane 1 so
-      // the edge vertex stages can derive v3's gap (round 56)
-      store.setArrowShapes(
-        slot,
-        packArrowShapes(
-          srcArrowId,
-          tgtArrowId,
-          ARROW_ENUM[computed.midSourceArrowShape],
-          ARROW_ENUM[computed.midTargetArrowShape],
-          // 27.6: a hollow compound head falls back to filled (recorded)
-          COMPOUND_ARROWS.has(srcArrowId) ? 0 : computed.sourceArrowFill,
-          COMPOUND_ARROWS.has(tgtArrowId) ? 0 : computed.targetArrowFill,
-          scaleQ,
-        ),
-      );
-
-      // mid-arrow colors fold like the end arrows (C1)
-      this.writeEdgeMidSourceArrowColor(slot, computed);
-      this.writeEdgeMidTargetArrowColor(slot, computed);
-
-      const resolveAw = (
-        aw: number | 'match-line' | { percent: number },
-      ): number =>
-        aw === 'match-line'
-          ? computed.width
-          : typeof aw === 'number'
-            ? aw
-            : aw.percent * computed.width;
-
-      const srcAw = resolveAw(computed.sourceArrowWidth);
-      const tgtAw = resolveAw(computed.targetArrowWidth);
-
-      store.setPair('edge.arrowWidths', slot, srcAw, tgtAw);
-      // 56: a hollow head's stroke straddles its outline, so the ink
-      // reaches half a stroke width outside the polygon.  The arrow
-      // vertex stage cannot bind this column, so the quad grows by a
-      // frame-level maximum instead — reported here, resolved.
-      store.noteArrowWidth(Math.max(srcAw, tgtAw));
-      // line-outline casing (B4): stroke = width + outline width (v3's
-      // lineWidth), alpha folded by v3's effectiveLineOpacity
-      store.setEdgeLayer(
-        'edge.casing',
-        slot,
-        computed.lineOutlineWidth > 0
-          ? foldLayerRgba(
-              computed.lineOutlineColor,
-              computed.opacity * computed.lineOpacity,
-            )
-          : 0,
-        computed.width + computed.lineOutlineWidth,
-      );
-
-      // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
-      // derived here so the layer shaders need no width binding
-      this.writeEdgeOverlay(slot, computed);
-      this.writeEdgeUnderlay(slot, computed);
-      // blob-family styles carry the 12b record; straight/bezier store none
-      const extras: CurveStyleExtras | null = isBlobStyle(computed.curveStyle)
-        ? {
-            ctrlDists: computed.controlPointDistances,
-            ctrlWeights: computed.controlPointWeights,
-            segDists: computed.segmentDistances,
-            segWeights: computed.segmentWeights,
-            segRadii: computed.segmentRadii,
-            radiusTypes: computed.radiusTypes,
-            edgeDistances: computed.edgeDistances,
-            taxiDir: computed.taxiDirection,
-            taxiTurn: computed.taxiTurn,
-            taxiTurnPercent: computed.taxiTurnPercent,
-            taxiTurnMinDist: computed.taxiTurnMinDistance,
-            taxiRadius: computed.taxiRadius,
-          }
-        : null;
-
-      // the styled endpoint spec (null when all-default — the common case)
-      const se = computed.sourceEndpoint;
-      const te = computed.targetEndpoint;
-      const endpoints: EndpointSpec | null =
-        se.mode === ENDPT_DEFAULT &&
-        te.mode === ENDPT_DEFAULT &&
-        computed.sourceDistanceFromNode === 0 &&
-        computed.targetDistanceFromNode === 0
-          ? null
-          : {
-              srcMode: se.mode,
-              srcA: se.a,
-              srcB: se.b,
-              srcPct: se.pct,
-              srcDist: computed.sourceDistanceFromNode,
-              tgtMode: te.mode,
-              tgtA: te.a,
-              tgtB: te.b,
-              tgtPct: te.pct,
-              tgtDist: computed.targetDistanceFromNode,
-            };
-
-      store.setCurveStyle(
-        slot,
-        computed.curveStyle,
-        computed.controlPointStepSize,
-        computed.controlPointWeight,
-        computed.loopDirection,
-        computed.loopSweep,
-        extras,
-        computed.haystackRadius,
-        endpoints,
-      );
-
-      this.writeLabel(slot, computed, 'edges');
+      this.writeEdgeColumns(slot, computed);
+      this.writeEdgePerSlot(slot, computed);
     }
+  }
+
+  /**
+   * The edge channels that land in `EDGE_STYLE_COLUMNS` — every edge
+   * column a styled record fully determines (round 67.2).  Split from
+   * the per-slot half below so the bulk apply can run this once for a
+   * run's template slot and fill the rest of the columns from it, while
+   * still calling `writeEdgePerSlot` for every slot.  One definition,
+   * two callers, as with the round-61 narrow writers.
+   */
+  private writeEdgeColumns(slot: number, computed: Computed): void {
+    const store = this.store;
+
+    this.writeEdgeLineColor(slot, computed);
+    // line-fill gradient (C2), stops folded by line-opacity
+    store.setGradient(
+      'edge.gradient',
+      slot,
+      computed.lineGradientStopColors.length > 0 ? computed.lineFill : 0,
+      0,
+      gradientStops(
+        computed.lineGradientStopColors,
+        computed.lineGradientStopPositions,
+        computed.lineOpacity,
+      ),
+    );
+
+    const dp = computed.lineDashPattern;
+
+    store.setVec4('edge.dashPattern', slot, dp[0], dp[1], dp[2], dp[3]);
+    store.setPair(
+      'edge.dashMeta',
+      slot,
+      computed.lineDashOffset,
+      computed.lineCap,
+    );
+    store.setScalar('edge.width', slot, computed.width);
+    store.setScalar('edge.opacity', slot, computed.opacity);
+    store.setScalar('edge.lineStyle', slot, computed.lineStyle);
+    this.writeEdgeSourceArrowColor(slot, computed);
+    this.writeEdgeTargetArrowColor(slot, computed);
+    // B7: hollow flags at bits 16/17 and arrow-scale ×16 in the top
+    // byte (quantized readback — recorded); stroke widths resolve
+    // 'match-line'/% against the edge width here
+    const scaleQ = Math.max(
+      1,
+      Math.min(255, Math.round(computed.arrowScale * 16)),
+    );
+
+    store.noteArrowScale(computed.arrowScale);
+    const srcArrowId = ARROW_ENUM[computed.sourceArrowShape];
+    const tgtArrowId = ARROW_ENUM[computed.targetArrowShape];
+
+    // not setScalar: the word is mirrored into edge.width's lane 1 so
+    // the edge vertex stages can derive v3's gap (round 56)
+    store.setArrowShapes(
+      slot,
+      packArrowShapes(
+        srcArrowId,
+        tgtArrowId,
+        ARROW_ENUM[computed.midSourceArrowShape],
+        ARROW_ENUM[computed.midTargetArrowShape],
+        // 27.6: a hollow compound head falls back to filled (recorded)
+        COMPOUND_ARROWS.has(srcArrowId) ? 0 : computed.sourceArrowFill,
+        COMPOUND_ARROWS.has(tgtArrowId) ? 0 : computed.targetArrowFill,
+        scaleQ,
+      ),
+    );
+
+    // mid-arrow colors fold like the end arrows (C1)
+    this.writeEdgeMidSourceArrowColor(slot, computed);
+    this.writeEdgeMidTargetArrowColor(slot, computed);
+
+    const resolveAw = (
+      aw: number | 'match-line' | { percent: number },
+    ): number =>
+      aw === 'match-line'
+        ? computed.width
+        : typeof aw === 'number'
+          ? aw
+          : aw.percent * computed.width;
+
+    const srcAw = resolveAw(computed.sourceArrowWidth);
+    const tgtAw = resolveAw(computed.targetArrowWidth);
+
+    store.setPair('edge.arrowWidths', slot, srcAw, tgtAw);
+    // 56: a hollow head's stroke straddles its outline, so the ink
+    // reaches half a stroke width outside the polygon.  The arrow
+    // vertex stage cannot bind this column, so the quad grows by a
+    // frame-level maximum instead — reported here, resolved.
+    store.noteArrowWidth(Math.max(srcAw, tgtAw));
+    // line-outline casing (B4): stroke = width + outline width (v3's
+    // lineWidth), alpha folded by v3's effectiveLineOpacity
+    store.setEdgeLayer(
+      'edge.casing',
+      slot,
+      computed.lineOutlineWidth > 0
+        ? foldLayerRgba(
+            computed.lineOutlineColor,
+            computed.opacity * computed.lineOpacity,
+          )
+        : 0,
+      computed.width + computed.lineOutlineWidth,
+    );
+
+    // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
+    // derived here so the layer shaders need no width binding
+    this.writeEdgeOverlay(slot, computed);
+    this.writeEdgeUnderlay(slot, computed);
+  }
+
+  /**
+   * The edge work a column copy cannot carry: the two flag bits (the
+   * flags word holds per-element bits too), the invisibility cascade,
+   * the curve index's own per-slot record, and the label sidecar.  Runs
+   * for every slot on both paths.
+   */
+  private writeEdgePerSlot(slot: number, computed: Computed): void {
+    const store = this.store;
+
+    store.setFlag('edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
+    store.setInvisibility('edges', slot, computed.invisible); // 22
+
+    // blob-family styles carry the 12b record; straight/bezier store none
+    const extras: CurveStyleExtras | null = isBlobStyle(computed.curveStyle)
+      ? {
+          ctrlDists: computed.controlPointDistances,
+          ctrlWeights: computed.controlPointWeights,
+          segDists: computed.segmentDistances,
+          segWeights: computed.segmentWeights,
+          segRadii: computed.segmentRadii,
+          radiusTypes: computed.radiusTypes,
+          edgeDistances: computed.edgeDistances,
+          taxiDir: computed.taxiDirection,
+          taxiTurn: computed.taxiTurn,
+          taxiTurnPercent: computed.taxiTurnPercent,
+          taxiTurnMinDist: computed.taxiTurnMinDistance,
+          taxiRadius: computed.taxiRadius,
+        }
+      : null;
+
+    // the styled endpoint spec (null when all-default — the common case)
+    const se = computed.sourceEndpoint;
+    const te = computed.targetEndpoint;
+    const endpoints: EndpointSpec | null =
+      se.mode === ENDPT_DEFAULT &&
+      te.mode === ENDPT_DEFAULT &&
+      computed.sourceDistanceFromNode === 0 &&
+      computed.targetDistanceFromNode === 0
+        ? null
+        : {
+            srcMode: se.mode,
+            srcA: se.a,
+            srcB: se.b,
+            srcPct: se.pct,
+            srcDist: computed.sourceDistanceFromNode,
+            tgtMode: te.mode,
+            tgtA: te.a,
+            tgtB: te.b,
+            tgtPct: te.pct,
+            tgtDist: computed.targetDistanceFromNode,
+          };
+
+    store.setCurveStyle(
+      slot,
+      computed.curveStyle,
+      computed.controlPointStepSize,
+      computed.controlPointWeight,
+      computed.loopDirection,
+      computed.loopSweep,
+      extras,
+      computed.haystackRadius,
+      endpoints,
+    );
+
+    this.writeLabel(slot, computed, 'edges');
   }
 
   /** warn-once flag for the multi-image cap (recorded: 4 per node) */

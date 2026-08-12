@@ -28,6 +28,7 @@ import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
   columnSpec,
   columnSpecsForGroup,
+  EDGE_STYLE_COLUMNS,
   CHART_HEADER,
   CURVE_BEZIER,
   CURVE_CMPD,
@@ -1530,6 +1531,50 @@ export class GraphStore implements ModelView {
   /** Close a bulk-load window and mark the derivations it implies. */
   endBulkLoad(): void {
     this.curves.endBulk();
+  }
+
+  /**
+   * Copy every style-owned edge column from the run's first slot across
+   * the rest of it (round 67.2), and mark each column's span once.
+   *
+   * The run must be contiguous and ascending — the caller checks, and a
+   * bulk load's slots are exactly that.  Filling proceeds by doubling
+   * (`copyWithin` over an ever-larger prefix), so a 464,657-slot run is
+   * ~19 MB of `memmove` rather than 464,657 × 17 setter calls: measured
+   * 0.1 ns per element against 26 ns for one `setScalar`, whose cost is
+   * mostly the two string-keyed lookups behind `column( id )`.
+   *
+   * Safety rests entirely on {@link EDGE_PER_ELEMENT_COLUMNS} being the
+   * complete list of edge columns a shared styled record does *not*
+   * determine; a spec pins the two lists against `COLUMN_SPECS`.
+   *
+   * @param start — the run's first slot, which is also the template
+   * @param count — how many slots the run covers, template included
+   */
+  replicateEdgeStyle(start: number, count: number): void {
+    if (count < 2) {
+      return;
+    }
+
+    for (const spec of EDGE_STYLE_COLUMNS) {
+      const arr = this.edges.column(spec.id);
+      const c = spec.components;
+
+      // doubling fill: [start, start+done) is already the pattern, so
+      // copy it onto itself until the run is covered
+      let done = 1;
+
+      while (done < count) {
+        const n = Math.min(done, count - done);
+
+        arr.copyWithin((start + done) * c, start * c, (start + n) * c);
+        done += n;
+      }
+
+      this.dirty.mark(spec.id, start, start + count);
+    }
+
+    this.geoEpoch++;
   }
 
   /**

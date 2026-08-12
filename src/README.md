@@ -1339,6 +1339,47 @@ each is deliberate, not a pass-1 deferral:
   first frame 2129 → 2022 ms (JSON) and 1914 → 1756 (wire), with every
   computed value identical.  The hoist is the larger half (~219 ms of
   the 215 measured together; the two overlap).
+- **A run of edges that shares a styled record is written once and
+  *filled*, not written per element** (round 67.2).  Round 67 measured
+  the whole-graph apply and found the mappers were not the cost: with the
+  edge branch of `writeChannels` reduced to its one mapped channel, a
+  464,657-edge load ran in 470 ms against 483 for writing nothing at all
+  — the other **687 ms of a 1170 ms init** was per-element writes of
+  channels whose value is the same for every edge.  `store.setScalar` is
+  26.4 ns, of which 15.8 is `column( id )`'s two string-keyed lookups;
+  a `fill()` over the same run is 0.1 ns per element.
+
+  So a contiguous edge run writes one template slot the ordinary way,
+  fills every `EDGE_STYLE_COLUMNS` column from it (`copyWithin`
+  doubling), and pays per slot only the mapped props — through the
+  round-61 narrow writers — plus `writeEdgePerSlot` (the two flag bits,
+  the invisibility cascade, the curve record, the label sidecar).  The
+  route is admissible when every mapped prop either has a narrow writer,
+  which by round 61's invariant writes *every* column that prop affects,
+  or reads state flags only over a run whose masked word never changes —
+  which is what a freshly loaded graph is, and what lets the sheets in
+  `debug/` take it despite mapping `line-opacity`.
+
+  **Nodes decline**, deliberately: their branch hands out per-slot blob
+  records (custom polygons, images, charts) whose refs a copy would
+  alias, and their labels are usually mapped, which the gate declines
+  anyway.
+
+  Measured on ndex-x-large: headless init 1031 → **836 ms**, the harness
+  page's fetch-to-first-frame 1864 → **1674**; on a synthetic 50k/150k
+  graph, a minimal sheet ~370 → **~250** and a typical one ~445 → **~295**.
+  `EDGE_PER_ELEMENT_COLUMNS` in `contract.mts` carries the whole safety
+  argument — the three columns a shared record does not determine — and a
+  spec fails until a newly added edge column is classified.
+- **A bulk load marks curve derivations once, not per edge** (round
+  67.1).  Every edge's style apply marks its endpoint pair pending,
+  because in isolation any record change may re-fan a bundle; over a
+  whole load that is 464,657 `Set` inserts (112 ms measured) deriving
+  nothing that one pass over the finished pair map would not.
+  `Core._bulkAdd` holds a window in which the marks are suppressed and
+  `CurveIndex.endBulk` takes their union.  `cy.add()` gets no window:
+  adding into a populated graph touches a small subset of the pairs.
+  Measured: headless init 1223 → **1044 ms**.
 - **Every mapper is cheaply CPU-evaluable — a load-bearing invariant.**
   It is what keeps `ele.style()` (and `numericStyle`/`renderedStyle`)
   *synchronous*, keeps headless mode and Node tests working (the same IR

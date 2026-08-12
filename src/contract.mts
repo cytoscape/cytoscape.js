@@ -829,6 +829,37 @@ export const columnSpecsForGroup = (group: GroupName): ColumnSpec[] => {
   return COLUMN_SPECS.filter((s) => s.group === group);
 };
 
+/**
+ * Edge columns that are **per element by nature** — their value comes
+ * from the graph's structure or from a derivation, never from the styled
+ * record alone (round 67.2):
+ *
+ * - `edge.endpoints` is the ingest's, written from source/target;
+ * - `edge.flags` carries per-element bits (selected, visible, drawn,
+ *   curved) alongside the two the style pass sets;
+ * - `edge.curveParams` is derived by the curve index from membership.
+ *
+ * Every *other* edge column is a pure function of the styled record, so
+ * a run of slots sharing one record can be filled from a template
+ * instead of written slot by slot.  That is the whole safety argument
+ * behind `GraphStore.replicateEdgeStyle`, which is why the split lives
+ * here beside `COLUMN_SPECS` rather than in the style engine: adding a
+ * column is what forces the classification, and
+ * `test/bulk-style-apply.mjs` fails until a new edge column appears in
+ * one list or the other.
+ */
+export const EDGE_PER_ELEMENT_COLUMNS: readonly ColumnId[] = [
+  'edge.endpoints',
+  'edge.flags',
+  'edge.curveParams',
+];
+
+/** The complement of {@link EDGE_PER_ELEMENT_COLUMNS}: edge columns a
+ * shared styled record fully determines. */
+export const EDGE_STYLE_COLUMNS: readonly ColumnSpec[] = COLUMN_SPECS.filter(
+  (s) => s.group === 'edges' && !EDGE_PER_ELEMENT_COLUMNS.includes(s.id),
+);
+
 // -- per-frame delta --
 
 /** A coalesced dirty range of slots [start, end) for one column. */

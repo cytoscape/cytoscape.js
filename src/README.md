@@ -1365,8 +1365,16 @@ each is deliberate, not a pass-1 deferral:
   alias, and their labels are usually mapped, which the gate declines
   anyway.
 
-  Measured on ndex-x-large: headless init 1031 → **836 ms**, the harness
-  page's fetch-to-first-frame 1864 → **1674**; on a synthetic 50k/150k
+  A state-only mapper is skipped **before** its writer is looked up, not
+  after (round 67.2b): over a uniform run its value cannot leave the
+  template's whether or not the prop has a writer, and the selection
+  affordances are most of the mappers on an ordinary sheet — v4's default
+  sheet alone contributes five to the edge def.  Checking the writer
+  first cost 143 ms of a 498 ms apply, rewriting bytes the fill had
+  already placed.
+
+  Measured on ndex-x-large: headless init 1031 → **~665 ms**, the harness
+  page's fetch-to-first-frame 1864 → **~1543**; on a synthetic 50k/150k
   graph, a minimal sheet ~370 → **~250** and a typical one ~445 → **~295**.
   `EDGE_PER_ELEMENT_COLUMNS` in `contract.mts` carries the whole safety
   argument — the three columns a shared record does not determine — and a

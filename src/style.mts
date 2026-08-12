@@ -7588,14 +7588,23 @@ export class StyleEngine {
     // is confined to props with narrow writers takes the whole styled
     // record from one template slot
     if (this.bulkEdgeRun(group, target)) {
-      const writers = this.bulkEdgeWriters(
-        group,
-        active,
-        flagsCol == null || this.uniformMaskedWord(target, flagsCol, stateMask),
-      );
+      const uniform =
+        flagsCol == null || this.uniformMaskedWord(target, flagsCol, stateMask);
+      const writers = this.bulkEdgeWriters(group, active, uniform);
 
       if (writers != null) {
-        this.applyBulkEdges(target, scratch, evals, stateEvals, writers);
+        // a uniform run needs no word watch in the loop: every state
+        // mapper's value is the template's, and `bulkEdgeWriters` has
+        // already dropped their writers
+        this.applyBulkEdges(
+          target,
+          scratch,
+          evals,
+          stateEvals,
+          writers,
+          uniform ? null : flagsCol,
+          stateMask,
+        );
 
         return;
       }
@@ -7717,19 +7726,26 @@ export class StyleEngine {
     const writers: StateWriter[] = [];
 
     for (const bm of active) {
-      const writer = this.fastStateWriter(group, bm.m.prop);
-
-      if (writer != null) {
-        writers.push(writer);
-
+      // A state-only mapper over a uniform run never leaves the
+      // template's value, so the fill already carries it and there is
+      // nothing to write — whether or not the prop has a narrow writer.
+      // This clause is checked *first* deliberately: it is what keeps
+      // the selection affordances off the per-slot loop, and they are
+      // most of the mappers on an ordinary sheet.  Ordering it after the
+      // writer lookup cost 143 ms of a 498 ms apply on the 464,657-edge
+      // fixture, running eight writers per edge to rewrite bytes the
+      // fill had already put there.
+      if (stateOnlyMask(bm) !== 0 && uniformState) {
         continue;
       }
 
-      if (stateOnlyMask(bm) !== 0 && uniformState) {
-        continue; // constant over this run; the fill carries it
+      const writer = this.fastStateWriter(group, bm.m.prop);
+
+      if (writer == null) {
+        return null;
       }
 
-      return null;
+      writers.push(writer);
     }
 
     return writers;
@@ -7755,6 +7771,8 @@ export class StyleEngine {
     evals: Evaluator[],
     stateEvals: Evaluator[],
     writers: StateWriter[],
+    flagsCol: Uint32Array | null = null,
+    stateMask = 0,
   ): void {
     this._bulkRuns++;
 
@@ -7771,8 +7789,30 @@ export class StyleEngine {
     this.write('edges', first, scratch);
     this.store.replicateEdgeStyle(first, n);
 
+    // A state-only mapper reaches the loop only when the run's word is
+    // *not* uniform — `bulkEdgeWriters` drops the uniform ones — and its
+    // value then has to be re-evaluated on a word change like round
+    // 66.1's hoist, or every slot is written the template's.  Skipping
+    // this re-evaluation is not caught by a graph loaded at rest: it
+    // needs a data mapper (so the def has no partition) beside a state
+    // mapper that *has* a narrow writer, over a mixed selection.  That
+    // is what the spec named for it builds.
+    let lastWord = flagsCol == null ? 0 : flagsCol[first] & stateMask;
+
     for (let i = 1; i < n; i++) {
       const slot = slots[i];
+
+      if (flagsCol != null && stateEvals.length > 0) {
+        const word = flagsCol[slot] & stateMask;
+
+        if (word !== lastWord) {
+          lastWord = word;
+
+          for (let j = 0; j < stateEvals.length; j++) {
+            stateEvals[j].set(scratch, stateEvals[j].ev(slot));
+          }
+        }
+      }
 
       for (let j = 0; j < evals.length; j++) {
         evals[j].set(scratch, evals[j].ev(slot));

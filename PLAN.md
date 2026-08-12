@@ -19341,6 +19341,57 @@ takes the route.
 Verification: 2203 test:js, 394 test:modules, 24 test:soak, all audits
 100%, throw gate 0.
 
+### 67.2b — the state affordances leave the per-slot loop too (2026-08-11)
+
+Re-profiling after 67.2 put **143 ms of the remaining 498 ms apply** in
+the narrow writers themselves: eight of them per edge, 464,657 times.
+Seven were rewriting bytes the fill had already put there.
+
+`bulkEdgeWriters` checked for a narrow writer *first* and only fell
+through to the uniform-state clause when there was none.  But the two
+clauses are not alternatives — a state-only mapper over a uniform run
+never leaves the template's value **whether or not its prop has a
+writer**, so the writer is pure waste.  Ordering the state clause first
+is the whole change.  It matters because the selection affordances are
+most of the mappers on an ordinary sheet: v4's *default* sheet alone
+contributes five to the edge def, and the harness sheet's
+`underlay-color`/`underlay-opacity`/`underlay-padding` all resolve to
+the same writer, so the same record was being rebuilt three times per
+edge.
+
+**Measured** (bundles swapped, alternated, own process; medians of 9 for
+the headless rows, two independent A/Bs): headless init **816–824 →
+660–679 ms, 1.20–1.25×**; the harness page's init **792 → 655** and its
+fetch-to-first-frame **1676 → 1543**.  The screenshot is again **0
+differing pixels**.
+
+The spec that guards it is the one this change makes load-bearing:
+*'is exact when the run's state word is NOT uniform'* selects every third
+edge, re-applies the whole sheet and compares columns against the
+per-element route.  **Control**: making `uniformMaskedWord` always answer
+true fails exactly that spec and nothing else.
+
+**And writing it found a real bug in 67.2, which had shipped an hour
+earlier.**  A state-only mapper reaches the per-slot loop only when the
+word is *not* uniform — and `applyBulkEdges` evaluated the state mappers
+**once, for the template**, so its writer wrote the template's value to
+every slot.  The first spec written for it passed, twice, for two
+different wrong reasons: the sheet's only state mapper had no narrow
+writer (so the route declined), and then `_bulkRuns > 0` was satisfied by
+the *initial* load rather than by the re-apply under test.  What exposes
+it is narrow — a **data** mapper beside a state mapper that **has** a
+writer (the data mapper is what denies the def a round-57.1 partition and
+so routes the pass through `applyMapped`), over a mixed selection,
+asserting the run count *delta* across the re-apply.  The fix is round
+66.1's hoist inside the bulk loop: watch `flags & mask` and re-evaluate
+the state mappers when it changes.  A uniform run passes `null` for the
+flags column and skips the watch entirely.
+
+Two lessons, both old ones in new clothes.  A graph **loaded at rest**
+cannot exercise the non-uniform branch at all, so the entire round's
+benchmark workload is blind to it.  And an accumulating counter answers
+"has this ever happened", not "did it happen here" — assert the delta.
+
 **Not done, and named**: the node branch.  Its per-element cost is real
 (128 ms for 50k labelled nodes on the synthetic fixture) but it is
 smaller than the edge side on every graph measured, its blob refs make

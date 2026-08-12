@@ -34,12 +34,24 @@ Two things have to hold, and each has its own spec below.
    the uniform-word rule instead), a gradient, dashes, arrows at three
    ends in both fills, a casing, both layers and a label.
 
+3. The state clause holds only while the run's masked flag word is
+   uniform.  Two specs break that — one by selecting every third edge and
+   re-applying the sheet, one (round 67.2b) with a *data* mapper beside a
+   state mapper that **has** a narrow writer, which is the shape that
+   routes the pass through `applyMapped` rather than `applyPartitioned`
+   and so actually takes the route with a mixed selection.  The second
+   found a real defect: the loop evaluated the state mappers once, for
+   the template, and wrote that value to every slot.
+
 And the route has to have *run*: `styleEngine._bulkRuns` is asserted, not
 assumed.  The first version of this spec did assume it, and its fixture
 mapped `curve-style` and `label` — neither has a narrow writer, so the
 gate declined and every comparison was the per-element path against
 itself.  Four separate "skip a column in the fill" controls passed
-because of it.
+because of it.  The 67.2b spec then passed for a *second* wrong reason,
+because `_bulkRuns > 0` was satisfied by the initial load rather than by
+the re-apply under test — so it asserts the count's **delta** across the
+re-apply instead.
 */
 
 const N = 150; // comfortably over BULK_MIN_RUN (64)
@@ -264,6 +276,102 @@ describe('gpu/style: the bulk edge apply (round 67.2)', function () {
       const colors = new Set(bulk.edges().map((e) => e.style('line-color')));
 
       expect(colors.size).to.be.above(5);
+    });
+
+    it("is exact when the run's state word is NOT uniform", function () {
+      // the route skips a state-only mapper's writer on the reasoning
+      // that its value cannot leave the template's — which holds only
+      // while every slot carries the same masked word.  Break that and
+      // re-apply the whole sheet: the gate must either decline or get
+      // every element right, and this asserts the result either way.
+      const flip = (cy) =>
+        cy.edges().forEach((e, i) => {
+          if (i % 3 === 0) {
+            e.select();
+          }
+        });
+
+      flip(bulk);
+      flip(oneAtATime);
+      bulk.style(SHEET);
+      oneAtATime.style(SHEET);
+
+      expect(columns(bulk)).to.deep.equal(columns(oneAtATime));
+
+      // and the mixed state really is visible, or the assertion above
+      // holds over one uniform record and proves nothing
+      const opacities = new Set(
+        bulk.edges().map((e) => e.style('line-opacity')),
+      );
+
+      expect(opacities.size, 'selected and unselected edges differ').to.equal(
+        2,
+      );
+    });
+
+    it('re-evaluates a state mapper that DOES have a writer, per slot', function () {
+      // the sharp case, and the one the first version of the route got
+      // wrong: a state-only mapper whose prop *has* a narrow writer, over
+      // a run whose word is not uniform.  Clause 2 does not apply, so the
+      // writer is pushed and runs per slot — with a `scratch` that was
+      // only ever evaluated for the template unless the loop re-evaluates
+      // on a word change.  Nothing else in this sheet lacks a writer, so
+      // the route is taken rather than declined.
+      const sheet = {
+        edges: {
+          width: 2,
+          // a *data* mapper, so the def gets no round-57.1 partition and
+          // the pass goes through applyMapped rather than applyPartitioned
+          'line-color': {
+            data: 'w',
+            scale: 'linear',
+            domain: [0, 1],
+            range: ['#cc0033', '#009966'],
+          },
+          'line-opacity': 1, // constant: does not deny the route
+          'underlay-color': {
+            case: [{ when: { selected: true }, then: '#ff0000' }],
+            else: '#0000ff',
+          },
+          'underlay-opacity': 0.5,
+          'underlay-padding': 3,
+        },
+      };
+      const els = elements();
+      const a = cytoscape({ headless: true, elements: els, style: sheet });
+      const b = cytoscape({ headless: true, style: sheet });
+
+      for (const n of els.nodes) {
+        b.add(n);
+      }
+      for (const e of els.edges) {
+        b.add(e);
+      }
+
+      for (const cy of [a, b]) {
+        cy.edges().forEach((e, i) => {
+          if (i % 2 === 0) {
+            e.select();
+          }
+        });
+      }
+
+      const before = a._styleEngine._bulkRuns;
+
+      a.style(sheet);
+      b.style(sheet);
+
+      const runsOnReapply = a._styleEngine._bulkRuns - before;
+
+      // the *re-apply* has to take the route, not just the initial load
+      expect(runsOnReapply, 'the re-apply takes the route').to.be.above(0);
+      expect(columns(a)).to.deep.equal(columns(b));
+
+      const seen = new Set(a.edges().map((e) => e.style('underlay-color')));
+
+      expect(seen.size, 'both branches are represented').to.equal(2);
+      a.destroy();
+      b.destroy();
     });
 
     it('still selects and restyles correctly after a bulk load', function () {

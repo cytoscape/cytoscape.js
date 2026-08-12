@@ -12,10 +12,13 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-11, as round 66 closed — the loader now
-  converts definition-form payloads to columns before ingesting them,
-  which is 1.2–1.8× on load and moves this file's own headline init
-  figure from 1.7 s to 0.98 s.  (Rounds 65.11–65.13, also 08-11, are in
+- **Last updated**: 2026-08-11, as rounds 66–66.3 closed — the loader
+  now converts definition-form payloads to columns before ingesting them
+  (1.2–1.8× on load, and this file's headline init figure moves from
+  1.7 s to 0.98 s); the mapped style apply costs per distinct value
+  rather than per element; and a constant channel opacity no longer
+  demotes its colour channel off the GPU, which was costing 3.5× on
+  every restyle of a sheet that dimmed its edges.  (Rounds 65.11–65.13, also 08-11, are in
   `PLAN.md` and not yet summarised here: two benchmark-instrument
   corrections and a debug-harness error-reporting fix.)  The day before
   held three decision rounds and one large build round: the per-element
@@ -60,15 +63,16 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,181 unit · 394 module · 24 soak · 375 browser (250 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
+| Automated tests | 2,192 unit · 394 module · 24 soak · 376 browser (251 run; 125 skip for want of a WebGPU adapter, which is the WebKit project) |
 | Documented API | 363 members over 48 sections, gated at 100% |
-| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) |
+| Visual regression | 46 golden images, compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, seven of them **close-ups** at zoom 3–4 · 11 numeric routing-parity scenes comparing geometry rather than pixels · 10 numeric CPU-vs-GPU executor-parity scenes for the async algorithms (round 65) · a kernel-vs-CPU colour-fold scene compared at zero differing pixels (round 66.3) |
 | Benchmarks | 25 suites over four published profiles (quick, all, renderer, and round 65's algorithms-gpu); **every one of the 366 v3-comparative pairs in the newest all + renderer runs reads v4-faster** as of 10 August (combined geometric mean **13.7×**, minimum 1.03×; **27.9×** over the renderer run's 96 paired rows) · the GPU algorithm executors measure **13×** geo-mean over their CPU reference (27 cpu-vs-gpu pairs, Markov clustering peaking at **642×**) |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 684 KiB minified, 183 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire; the WebGPU shader source (which v3 has no equivalent of) is minified at build time, and round 65's algorithm kernels ride in it |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in
-**0.98 s against v3's 18.6 s**, and holds **33 ms frames where v3 takes
+**~0.95 s against v3's ~19 s** (four samples on one machine: v4
+0.93–0.98 s, v3 18.6–20.1 s), and holds **33 ms frames where v3 takes
 4,460 ms**.  (That init was 1.7 s until round 66 taught the loader to
 convert definition-form payloads to columns before ingesting them.)
 
@@ -860,6 +864,49 @@ has a real spec now.  A third near-miss did not reach the record as a
 finding but is in it as a lesson: a baseline built by stashing *sources*
 measured the same **bundle** twice, and briefly produced a 3% result that
 contradicted every other measurement.
+
+### Rounds 66.1–66.3: what the load was still spending, and one property that was quietly expensive
+
+Round 66's decomposition left 340 ms of the harness page's init in
+"style mappers".  Measured clause by clause it was **one** mapper — a
+diverging edge colour over 465k edges — and a profile put the colour
+arithmetic at the *small* half of it.  Two fixes, both exact:
+
+- **A per-value memo.** Real data repeats (that fixture has 1,920
+  distinct values across 464,657 edges), so the segment search, OKLab
+  interpolation and three `Math.pow`s were being redone ~242× per
+  distinct input.  Whether to memo is decided once from a sample of the
+  column: an adaptive memo that gave up when it saw all-distinct data
+  measured *no better*, because the wrapper costs ~5% either way.
+- **A state hoist.** One data mapper had been denying its whole group
+  the round-57.1 flag partition, so selection affordances were
+  re-evaluated per element.  They now cost one evaluation per distinct
+  flag word — at rest, one for the group.
+
+Together: that fixture's init 1364 → 1149 ms, and the harness page's
+first frame 2129 → 2022 ms (JSON), 1914 → 1756 (wire).
+
+A third idea — deferring the CPU evaluation of paint channels the GPU is
+about to own — was prototyped, priced at ~5%, and **not landed**: driving
+nine harness networks on a real adapter showed that where the kernel owns
+a channel the graph is small, and where the graph is large it owns
+nothing.
+
+Chasing *why* it owns nothing produced the round's real finding, and it
+began as a challenge to the explanation: the blocker is not the
+conditional mappers, it is the **alpha fold**.  A plain constant
+`line-opacity: 0.25`, with no conditional anywhere, demoted a colour
+channel to CPU evaluation exactly as a conditional did — and an unowned
+channel re-derives per element on every data write.  So a sheet that
+dimmed its edges paid **3.5×** on every restyle (50k data writes on the
+465k-edge fixture: 91 → 26 ms to the next frame) for the one property a
+web developer reasonably expects to be free.  The kernel already had the
+mechanism — a constant alpha multiplier it applied to arrowheads and
+nothing else — so colour programs now carry their own fold, and only a
+*mapped* channel opacity still demotes.  Proved exact rather than
+approximately right: the same scene rendered with the kernel folding and
+with the CPU folding differs by **zero pixels**, and degrading the fold
+fails that spec.
 
 ## What remains before 4.0
 

@@ -18915,7 +18915,10 @@ factory instead of `fixtures.fromColumnar`, with a columnar-aware
 `extent`/`magnitude` for the two sheets that scan node data (em-web,
 em-desktop; 569 and 1260 nodes) and `fromColumnar` kept for the one
 network declaring a `derive` — is worth **167 ms** of the hosted page's
-1944 now, not the ~990 it would have been.
+1944 now, not the ~990 it would have been.  (Restated after 66.1, which
+moved the page underneath this sentence: ~160 ms of 1756.  The rule this
+file keeps tripping on is that a forward-looking number reads exactly
+like a measured one a week later.)
 
 ### 66.1 — the mapped apply costs per distinct value, not per element (2026-08-11)
 

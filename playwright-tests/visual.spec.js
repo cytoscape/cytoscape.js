@@ -13,10 +13,10 @@ import path from 'node:path';
 Visual regression specs for the WebGPU prototype, in two families:
 
 - **v4 goldens**: each scene exports a png and diffs it against a PNG
-  checked into playwright-tests/goldens/.  Run under the 'webgpu-visual'
+  checked into playwright-tests/goldens/.  Run under the 'visual'
   project, which pins the SwiftShader software adapter so rasterization is
   deterministic across machines.  Regenerate after an intended visual
-  change with:  UPDATE_GOLDENS=1 npx playwright test --project=webgpu-visual
+  change with:  UPDATE_GOLDENS=1 npx playwright test --project=visual
   Geometry goldens carry a tight bound.  The label golden uses the fixed
   Open Sans web font (an OFL devDependency, pre-loaded before instance
   creation so the lazily-caching atlas never rasters a fallback font) at

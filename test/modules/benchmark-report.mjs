@@ -371,6 +371,23 @@ describe('gpu benchmark report', function () {
       expect(withMachine()).to.match(/8 physical \/ 16 logical/);
     });
 
+    it('says when the run was concurrent, and says nothing when it was not', function () {
+      // round 68: the harness hash already stops the comparison drawing a
+      // line from a serial run to this one, but the page is read on its own
+      // too, and a reader wondering why every row sits above the archive's
+      // deserves the reason on the page rather than in a commit message
+      const parallel = withMachine({ concurrency: 6 });
+
+      expect(parallel).to.match(/Concurrency/);
+      expect(parallel).to.match(/6 jobs at once/);
+      expect(parallel).to.match(/not comparable with a serial run/);
+
+      const serial = withMachine({ concurrency: 1 });
+
+      expect(serial).to.not.match(/Concurrency/);
+      expect(withMachine()).to.not.match(/Concurrency/);
+    });
+
     it('reports the clocks, the memory and every GPU with its VRAM', function () {
       const html = withMachine();
 

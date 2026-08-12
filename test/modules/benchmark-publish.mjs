@@ -141,6 +141,21 @@ describe('benchmark archive: summarize', () => {
     expect(entry.date).to.equal('2026-07-01T00:00:00.000Z');
   });
 
+  it('keeps the worker count, so a concurrent run cannot enter the archive quietly', () => {
+    // round 68: publishing one takes --allow-concurrent, and the index says
+    // so afterwards — the archive is serial, and a row measured beside five
+    // neighbours is a different measurement, not a slower one
+    expect(
+      summarize(results({ concurrency: 6 }), { file: 'r.json' }).concurrency,
+    ).to.equal(6);
+    expect(
+      summarize(results({ concurrency: 1 }), { file: 'r.json' }).concurrency,
+    ).to.equal(1);
+    // and every run published before round 68 carries no such field: null is
+    // the honest answer, the same one `dirty` gives for a pre-46.5 run
+    expect(summarize(results(), { file: 'r.json' }).concurrency).to.equal(null);
+  });
+
   it('records the note verbatim', () => {
     expect(
       summarize(results(), { file: 'r.json', note: 'round 46.5 baseline' })

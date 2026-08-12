@@ -291,6 +291,43 @@ export function harnessHash(file, read = readRepoFile) {
   return h.digest('hex').slice(0, 8);
 }
 
+/**
+ * The hash a run made with `--jobs N` stamps: the harness hash, plus how many
+ * jobs shared the machine with this one.
+ *
+ * Round 68 made the runner concurrent, and concurrency is an instrument
+ * change the file hashes cannot see — `report.mjs` is in `NOT_INSTRUMENT`, and
+ * correctly so, since what it renders is not what it measures.  But *when* a
+ * job ran beside five others, it ran at the all-core turbo clock against a
+ * sixth of the L3, and its p50 is not the serial archive's p50.  Folding the
+ * worker count in makes that a break the comparison refuses on its own, which
+ * is the whole argument of this module applied to the one variable it did not
+ * yet cover.
+ *
+ * **A serial run is unchanged**, deliberately: `workers <= 1` returns the hash
+ * untouched, so every run in the archive keeps the epoch it was published
+ * with, and a `--jobs 1` run today still compares against them.
+ *
+ * Different worker counts are different epochs.  Four-way and eight-way
+ * contention are not the same condition, and nothing here knows which of them
+ * a given row is sensitive to.
+ *
+ * @param hash — the harness hash, or null
+ * @param workers — how many jobs ran concurrently
+ * @returns the stamped hash, or null when `hash` is null
+ */
+export function concurrentHash(hash, workers) {
+  if (hash == null || !(workers > 1)) {
+    return hash;
+  }
+
+  return createHash('sha256')
+    .update(hash)
+    .update(`\0jobs=${workers}`)
+    .digest('hex')
+    .slice(0, 8);
+}
+
 /** Read a repo-relative file from the working tree, or null. */
 function readRepoFile(path) {
   const full = join(ROOT, path);
@@ -304,8 +341,10 @@ function readRepoFile(path) {
  * @param jobs — job objects with a `suite` field
  * @param file — the benchmark file that produced them; inferred per job when
  *   omitted, which is what a multi-suite bundle (the renderer) needs
+ * @param workers — how many jobs ran concurrently (round 68); 1 leaves the
+ *   hash exactly as every earlier run stamped it
  */
-export function stampHarness(jobs, file = null) {
+export function stampHarness(jobs, file = null, { workers = 1 } = {}) {
   const cache = new Map();
 
   for (const job of jobs) {
@@ -317,7 +356,7 @@ export function stampHarness(jobs, file = null) {
     }
 
     if (!cache.has(f)) {
-      cache.set(f, harnessHash(f));
+      cache.set(f, concurrentHash(harnessHash(f), workers));
     }
 
     job.harness = cache.get(f);

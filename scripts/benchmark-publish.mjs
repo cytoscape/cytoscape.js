@@ -18,6 +18,8 @@
 //     --prune <n>       after publishing, keep only the newest n runs per
 //                       (machine, profile); prints every file it removes
 //     --allow-dirty     publish a run measured on a dirty tree
+//     --allow-concurrent  publish a run measured with --jobs N (round 68;
+//                       every row of it will read as a harness break)
 //     --dry-run         print what would happen, write nothing
 import {
   readFileSync,
@@ -88,6 +90,10 @@ export function summarize(results, { file, note = null }) {
     profile: meta.profile ?? null,
     suiteFilter: meta.suiteFilter ?? null,
     dirty: meta.dirty ?? null,
+    // round 68: a concurrent run reaches the archive only past an explicit
+    // --allow-concurrent, and when one does, the index says so rather than
+    // leaving the reader to open the results file
+    concurrency: meta.concurrency ?? null,
     totalMs: meta.totalMs ?? null,
     // the grouping key for a trend: runs from different boxes are not
     // comparable, and a chart that mixes them is worse than no chart
@@ -196,6 +202,7 @@ function main(argv) {
   const { flags, positional } = parseArgs(argv);
   const dryRun = flags['--dry-run'] === true;
   const allowDirty = flags['--allow-dirty'] === true;
+  const allowConcurrent = flags['--allow-concurrent'] === true;
   const note = typeof flags['--note'] === 'string' ? flags['--note'] : null;
   const pruneTo = flags['--prune'] != null ? Number(flags['--prune']) : null;
 
@@ -224,6 +231,27 @@ function main(argv) {
       'so its numbers are not attributable to its commit.  Re-run on a clean',
     );
     console.error('tree, or publish it deliberately with --allow-dirty.');
+    process.exit(1);
+  }
+
+  // Round 68: `--jobs N` measures every row against N-1 neighbours, and the
+  // whole archive is serial.  Its harness hash already stops the comparison
+  // drawing a line across the difference — so a published concurrent run does
+  // not corrupt anything, it *loses* things: every row of it reads as an epoch
+  // break, and the page shows no changes at all.  Hence a guard shaped like
+  // the dirty-tree one above rather than a silent accept.
+  if (results.meta?.concurrency > 1 && !allowConcurrent) {
+    console.error(
+      `refusing to publish: ${basename(source)} was measured with` +
+        ` --jobs ${results.meta.concurrency},`,
+    );
+    console.error(
+      'so its rows carry a different harness epoch than the serial archive and',
+    );
+    console.error(
+      'every one of them would render as a break.  Re-run without --jobs, or',
+    );
+    console.error('publish it deliberately with --allow-concurrent.');
     process.exit(1);
   }
 

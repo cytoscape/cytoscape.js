@@ -19564,3 +19564,19 @@ measurement change no fingerprint can see is the exact failure the
 fingerprints exist to prevent.  The GPU profiles stay serial and
 exclusive — one adapter, one queue, and frame time is the measurement.
 
+### 68.3 — a concurrent run is its own epoch (2026-08-12)
+
+Concurrency is an instrument change the file hashes cannot see, so
+`concurrentHash` folds the worker count into each job's harness hash and
+the comparison refuses a serial-to-parallel line the way it already
+refuses a cross-machine one.  Different worker counts are different
+epochs: four-way and eight-way contention are not one condition.
+
+**A serial run is untouched**, and that is verified rather than asserted:
+a `--jobs 1` run of `compound` stamps `9e76d83b`, which is exactly what
+the three published archive runs carry, while the same suite at `--jobs
+2` stamps `9a662dc2`.  `meta.concurrency` records the fact, and the
+report grows a provenance row saying the numbers were measured under
+contention — because the page is also read on its own, by someone
+wondering why every row sits above the archive's.
+

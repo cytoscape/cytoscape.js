@@ -564,6 +564,18 @@ function machineBlock(meta) {
             : '')
         : null,
     ],
+    // round 68: a run made with `--jobs N` measured every row against N-1
+    // neighbours, which is a different instrument.  The harness hash already
+    // refuses the comparison; this says so to the reader looking at one page
+    // and wondering why its numbers sit above the archive's.
+    [
+      'Concurrency',
+      meta.concurrency > 1
+        ? `<span class="fail">${esc(meta.concurrency)} jobs at once</span>` +
+          ' <span class="muted">— measured under contention; not' +
+          ' comparable with a serial run</span>'
+        : null,
+    ],
     ['Machine id', e(m.fingerprint)],
   ].filter(([, v]) => v != null && v !== '');
 
@@ -591,6 +603,7 @@ export function renderReport(results) {
       ? `${meta.runtime} ${meta.nodeVersion ?? ''}`.trim()
       : meta.nodeVersion,
     meta.profile != null ? `${meta.profile} profile` : null,
+    meta.concurrency > 1 ? `${meta.concurrency} jobs concurrent` : null,
   ]
     .filter((v) => v != null)
     .map(esc)

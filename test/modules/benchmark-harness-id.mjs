@@ -13,6 +13,7 @@ import {
   auditEquivalences,
   stampHarness,
   EQUIVALENT_HARNESSES,
+  concurrentHash,
 } from '../../benchmark/harness-id.mjs';
 import { mergeRepeats } from '../../benchmark/repeat-merge.mjs';
 
@@ -243,6 +244,44 @@ describe('the harness fingerprint (round 65.12)', () => {
       expect(jobs[1].harness).to.equal(jobs[0].harness);
       expect(jobs[2].harness).to.not.equal(jobs[0].harness);
       expect(jobs[3].harness).to.equal(null);
+    });
+
+    it('stamps a concurrent run into its own epoch, and a serial one into the archive’s', () => {
+      const serial = [{ suite: 'core+collection' }];
+      const parallel = [{ suite: 'core+collection' }];
+
+      stampHarness(serial);
+      stampHarness(parallel, null, { workers: 6 });
+
+      // the whole contract of round 68 in three lines: a `--jobs 1` run is
+      // still comparable with everything published before it, a `--jobs 6`
+      // one is not, and the refusal happens without anyone remembering to
+      // declare it
+      expect(serial[0].harness).to.match(/^[0-9a-f]{8}$/);
+      expect(parallel[0].harness).to.not.equal(serial[0].harness);
+      expect(sameEpoch(serial[0].harness, parallel[0].harness)).to.equal(false);
+    });
+  });
+
+  describe('concurrentHash (round 68)', () => {
+    it('leaves a serial run exactly as every earlier run stamped it', () => {
+      expect(concurrentHash('abcd1234', 1)).to.equal('abcd1234');
+      expect(concurrentHash('abcd1234', 0)).to.equal('abcd1234');
+      expect(concurrentHash('abcd1234', undefined)).to.equal('abcd1234');
+    });
+
+    it('separates the worker counts from each other, not just from serial', () => {
+      // four-way and eight-way contention are different conditions, and
+      // nothing here knows which rows are sensitive to which
+      const hashes = [2, 4, 6, 8].map((w) => concurrentHash('abcd1234', w));
+
+      expect(new Set(hashes).size).to.equal(4);
+      expect(hashes.every((h) => /^[0-9a-f]{8}$/.test(h))).to.equal(true);
+      expect(hashes).to.not.include('abcd1234');
+    });
+
+    it('keeps an unknown hash unknown rather than inventing one', () => {
+      expect(concurrentHash(null, 6)).to.equal(null);
     });
   });
 });

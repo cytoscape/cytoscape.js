@@ -119,6 +119,14 @@ export interface PackInput {
   m: CompiledMapper;
   /** resolved missing-value output: spec fallback ?? channel default */
   fallback: Evaluated;
+  /**
+   * The constant channel opacity folded into this colour's stored alpha
+   * by the CPU write path (round 66.3) — the kernel applies the same
+   * factor through `domain.w`, so the two produce the same bytes.
+   * Omitted (or 1) folds nothing.  Arrow colours ignore it: their fold
+   * comes from `paintContext`, which also covers the mapped case.
+   */
+  alphaMul?: number;
 }
 
 export interface PackedPrograms {
@@ -338,7 +346,7 @@ export const packPrograms = (
   const isArrowProp = (prop: string): boolean => prop.endsWith('-arrow-color');
 
   for (let p = 0; p < eligible.length; p++) {
-    const { m, fallback } = eligible[p];
+    const { m, fallback, alphaMul: constAlpha } = eligible[p];
     const { target, column } = TARGETS[group][m.prop];
     const program = m.program;
     const at = p * PROGRAM_WORDS;
@@ -353,10 +361,12 @@ export const packPrograms = (
     let lo = 0;
     let hi = 0;
     let p0 = 0;
-    // domain.w: the constant alpha multiplier for color programs (arrow
-    // programs fold the constant edge opacity here; FLAG.MUL_ALPHA
-    // switches to the evaluated opacity instead)
-    let alphaMul = isColor ? 1 : 0;
+    // domain.w: the constant alpha multiplier for color programs.  Every
+    // colour channel folds its own constant channel opacity here (round
+    // 66.3, the caller resolves which); arrow programs override it with
+    // the edge opacity, and FLAG.MUL_ALPHA switches them to the
+    // *evaluated* opacity when that is mapped.
+    let alphaMul = isColor ? (constAlpha ?? 1) : 0;
     let outBase = 0;
     let count = 0;
     let inBase = 0;

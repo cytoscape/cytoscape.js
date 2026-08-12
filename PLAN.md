@@ -19127,3 +19127,59 @@ what this also says about ordering: the fold and the deferral are
 complementary, and the fold is the one that pays on its own.  Deferral
 without it saves ~64 ms once; the fold without deferral is worth 4–5× on
 every restyle for the rest of the session.
+
+### 66.3 — a constant channel opacity stops demoting its colour (2026-08-11)
+
+The amendment above ended with a claim to act on: the kernel already
+folds a constant edge opacity into colour alpha through `domain.w`, and
+the packer already wires it — but only for arrow props, so `line-color`
+and the node fill/border pair had to demote whenever their channel
+opacity was anything but 1.  That is now fixed.
+
+- [x] **The demotion is `mapped(...)` only.**  `paintInputs` demoted on
+  `computed.<channel>Opacity !== 1 || mapped(...)`; the constant half is
+  gone.  A mapped channel opacity still demotes — its value varies per
+  element, and the state `case` form this repo's sheets use is not
+  packable at all.
+- [x] **Every colour program carries its own fold.**  `PackInput` gains
+  `alphaMul`, resolved per prop by `constOpacityFor` (background ←
+  `background-opacity`, border ← `border-opacity`, line ←
+  `line-opacity`); arrow programs keep overriding it from
+  `paintContext`, which also covers their mapped case.
+- [x] **The owned-prop getter folds too.**  `readProp` re-evaluates a
+  kernel-owned mapper and formatted it *unfolded* — correct only while a
+  non-1 opacity was guaranteed to demote.  It now applies the same
+  constant, so stored, drawn and reported alpha agree.
+
+**Measured, on the update path this was about**: 50,000 data writes to a
+mapped key on ndex-x-large with `line-opacity: 0.25`, timed to the next
+rendered frame — **91 → 26 ms, 3.5×** (three reps each side, bundles
+swapped).  Load time does not move, and should not: the initial apply is
+CPU either way (see 66.2).
+
+**Exactness is the whole claim, so it is a spec rather than a golden.**
+`visual.spec.js` renders one scene twice — once with constant opacities
+(kernel-folded) and once with the *same* values written as mappers with a
+constant range (which demotes, so the CPU folds) — asserts the two really
+did take different paths, and diffs the exports: **zero differing
+pixels**, `style()` equal on both.  Degrading the fold (`alphaMul`
+dropped in `packPrograms`) fails it, on the pixel count.  The whole
+suite is unmoved: 251 Playwright including 46 exact goldens and every
+v3-parity scene, 2192 test:js, 394 test:modules, 24 test:soak.
+
+**What it does *not* change: this repo's own sheets.**  Re-driving the
+nine harness networks shows ownership exactly as 66.2 recorded it —
+three `background-color`s on small graphs, nothing on the large ones —
+because those sheets *map* `line-opacity` for the round-57.11 selection
+affordance rather than setting it constant.  The beneficiary is the
+ordinary app idiom (`line-opacity: 0.4` to dim edges), which is why this
+landed and 66.2's deferral did not: same zero on the harness, but this
+one is exact, has no correctness window, and pays 3.5× wherever the
+pattern occurs.
+
+**Still open** (unchanged by this): a *mapped* channel opacity.  A
+continuous one could ride `FLAG_MUL_ALPHA`, which the shader already has
+and nothing currently reaches, since the demotion removes the colour
+before the packer sees it.  A **state `case`** one — what these sheets
+use — needs the kernel to resolve a flag-conditioned constant, which is
+round 57.1's partition expressed device-side.

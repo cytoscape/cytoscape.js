@@ -120,7 +120,13 @@ describe('gpu/opacity-split (round 13 B1)', function () {
     expect(fill[cy._store.lookup('b').slot * 4 + 3]).to.equal(255);
   });
 
-  it('a non-1 channel opacity demotes that color channel off the GPU kernel', function () {
+  // Round 66.3 replaced this pair's contract.  A *constant* channel
+  // opacity no longer demotes: the multiplier rides the packed program
+  // (`alphaMul` -> `domain.w`) and the kernel folds exactly what the CPU
+  // write path folds, so the channel stays kernel-owned.  A *mapped*
+  // channel opacity still demotes — its value varies per element, and
+  // the state `case` form real sheets use is not packable at all.
+  it('a constant channel opacity keeps the color channel on the kernel', function () {
     cy = makeCy({
       nodes: {
         'background-color': {
@@ -133,9 +139,32 @@ describe('gpu/opacity-split (round 13 B1)', function () {
       },
     });
 
-    expect(cy._styleEngine.paintInputs('nodes').length).to.equal(0);
+    const inputs = cy._styleEngine.paintInputs('nodes');
 
-    var cy2 = makeCy({
+    expect(inputs.length).to.equal(1);
+    expect(inputs[0].m.prop).to.equal('background-color');
+    // and it carries the fold the CPU would have applied
+    expect(inputs[0].alphaMul).to.equal(0.5);
+  });
+
+  it('a mapped channel opacity still demotes it', function () {
+    cy = makeCy({
+      nodes: {
+        'background-color': {
+          data: 'x',
+          scale: 'linear',
+          domain: [0, 1],
+          range: ['#000', '#fff'],
+        },
+        'background-opacity': { data: 'x', domain: [0, 1], range: [1, 0.2] },
+      },
+    });
+
+    expect(cy._styleEngine.paintInputs('nodes').length).to.equal(0);
+  });
+
+  it('an opacity of 1 folds nothing', function () {
+    cy = makeCy({
       nodes: {
         'background-color': {
           data: 'x',
@@ -145,12 +174,42 @@ describe('gpu/opacity-split (round 13 B1)', function () {
         },
       },
     });
-    var keep = cy;
 
-    cy = cy2;
-    expect(cy2._styleEngine.paintInputs('nodes').length).to.equal(1);
-    cy = keep;
-    cy2.destroy();
+    const inputs = cy._styleEngine.paintInputs('nodes');
+
+    expect(inputs.length).to.equal(1);
+    expect(inputs[0].alphaMul).to.equal(1);
+  });
+
+  it('the edge line and node border channels fold their own opacity', function () {
+    cy = makeCy({
+      nodes: {
+        'border-color': {
+          data: 'x',
+          scale: 'linear',
+          domain: [0, 1],
+          range: ['#000', '#fff'],
+        },
+        'border-opacity': 0.25,
+      },
+      edges: {
+        'line-color': {
+          data: 'x',
+          scale: 'linear',
+          domain: [0, 1],
+          range: ['#000', '#fff'],
+        },
+        'line-opacity': 0.75,
+      },
+    });
+
+    const byProp = (group) =>
+      Object.fromEntries(
+        cy._styleEngine.paintInputs(group).map((i) => [i.m.prop, i.alphaMul]),
+      );
+
+    expect(byProp('nodes')['border-color']).to.equal(0.25);
+    expect(byProp('edges')['line-color']).to.equal(0.75);
   });
 
   it('validates the [0, 1] range', function () {

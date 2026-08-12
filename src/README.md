@@ -775,10 +775,23 @@ The channel-opacity split (round 13 B1): `background-opacity`,
 stored channel alphas at write time (element `opacity` stays the
 master multiplier, its own column).  The arrow fold is
 base × opacity × line-opacity (v3's effective arrow opacity), all
-four props take CPU mappers, and readback is folded.  A non-1 (or
-mapped) channel opacity demotes the sibling color channel's GPU
-mapper eval to the CPU path (the kernel would overwrite the folded
-bytes) — a recorded scope note.
+four props take CPU mappers, and readback is folded.
+
+**A constant channel opacity does not demote its colour channel**
+(round 66.3).  The multiplier rides the packed program and the kernel
+folds it in the shader (`domain.w`) exactly as the CPU write path does
+— the mechanism the arrow programs have used since round 13, now
+resolved per colour prop.  Only a *mapped* channel opacity still
+demotes, its value varying per element.  This is a performance rule
+before it is a correctness one: an unowned colour channel re-derives
+per element on the CPU on every data write, so before this a sheet
+that said `line-opacity: 0.25` paid **3.5×** on every restyle of a
+mapped colour (measured, 50k data writes on the 465k-edge fixture:
+91 → 26 ms to the next frame) for a property a web developer
+reasonably expects to be the cheap one.  Verified by rendering the
+same scene both ways — a *mapped* opacity with a constant range takes
+the CPU path and resolves to the same value — and diffing: **zero
+differing pixels**, with `style()` agreeing on both paths.
 
 Note the pre-existing band rule:
 the node FS picks border *or* fill per fragment, so a translucent

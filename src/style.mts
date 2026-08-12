@@ -4200,6 +4200,36 @@ const PAINT_PROPS: Record<GroupName, ReadonlySet<string>> = {
   ]),
 };
 
+/**
+ * The constant channel opacity that folds into a colour prop's stored
+ * alpha (round 66.3), so a kernel program can apply the same factor the
+ * CPU write path does.
+ *
+ * Arrow colours answer 1 here deliberately: their fold is the edge
+ * opacity and the packer already resolves it from `paintContext`, which
+ * also covers the mapped case the constant path cannot.
+ *
+ * @param group — the element group the prop belongs to
+ * @param prop — the colour prop being packed
+ * @param computed — that group's resolved constants
+ * @returns the multiplier to fold, or 1 when the channel folds nothing
+ */
+const constOpacityFor = (
+  group: GroupName,
+  prop: string,
+  computed: Computed,
+): number => {
+  if (group === 'nodes') {
+    return prop === 'background-color'
+      ? computed.backgroundOpacity
+      : prop === 'border-color'
+        ? computed.borderOpacity
+        : 1;
+  }
+
+  return prop === 'line-color' ? computed.lineOpacity : 1;
+};
+
 const compileChannel = (
   group: GroupName,
   prop: string,
@@ -6699,20 +6729,26 @@ export class StyleEngine {
     }
 
     // B1: the channel-opacity split folds into stored alphas at write
-    // time; a color program in the kernel would overwrite the folded
-    // bytes, so a non-1 (or mapped) channel opacity demotes that color
-    // channel's GPU eval to the CPU path — a recorded scope note
+    // time, so a kernel colour program has to fold the same factor or it
+    // overwrites the folded bytes.  Round 66.3: when the channel opacity
+    // is a **constant** the kernel does exactly that — the multiplier
+    // rides the program as `alphaMul` and the shader applies it
+    // (`domain.w`), which is the mechanism the arrow programs have used
+    // since round 13.  Only a *mapped* channel opacity still demotes: its
+    // value varies per element, and evaluating it in the kernel is a
+    // separate question (the state `case` form, which these sheets use,
+    // is not packable at all).
     const computed = def.computed;
     const mapped = (prop: string): boolean =>
       def.mappers.some((bm) => bm.m.prop === prop);
     const demoted = new Set<string>();
 
     if (group === 'nodes') {
-      if (computed.backgroundOpacity !== 1 || mapped('background-opacity')) {
+      if (mapped('background-opacity')) {
         demoted.add('background-color');
       }
 
-      if (computed.borderOpacity !== 1 || mapped('border-opacity')) {
+      if (mapped('border-opacity')) {
         demoted.add('border-color');
       }
 
@@ -6730,7 +6766,7 @@ export class StyleEngine {
         }
       }
     } else {
-      if (computed.lineOpacity !== 1 || mapped('line-opacity')) {
+      if (mapped('line-opacity')) {
         demoted.add('line-color');
         demoted.add('source-arrow-color');
         demoted.add('target-arrow-color');
@@ -6783,6 +6819,7 @@ export class StyleEngine {
       .map((bm) => ({
         m: bm.m,
         fallback: bm.m.fallback ?? bm.channel.default(group),
+        alphaMul: constOpacityFor(group, bm.m.prop, computed),
       }));
   }
 
@@ -8096,7 +8133,8 @@ export class StyleEngine {
           : formatRgba(r, g, b, a);
       }
     } else if (owned.has(prop)) {
-      const bm = this.defFor(ref).mappers.find((bm) => bm.m.prop === prop);
+      const def = this.defFor(ref);
+      const bm = def.mappers.find((bm) => bm.m.prop === prop);
 
       if (bm != null) {
         const value = bindEvaluator(
@@ -8107,9 +8145,20 @@ export class StyleEngine {
           this.readValue,
         )(ref.slot);
 
-        return typeof value === 'number'
-          ? value
-          : formatRgba(value[0], value[1], value[2], value[3]);
+        if (typeof value === 'number') {
+          return value;
+        }
+
+        // the stored bytes carry the channel opacity folded in, and the
+        // kernel folds the same constant (round 66.3) — so re-evaluating
+        // here has to fold it too, or a constant-opacity sheet reports a
+        // different alpha than it stores and than it draws
+        const [r, g, b, a] = foldRgba(
+          value,
+          constOpacityFor(ref.group, prop, def.computed),
+        );
+
+        return formatRgba(r, g, b, a);
       }
     }
 

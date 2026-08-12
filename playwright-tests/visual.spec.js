@@ -3306,6 +3306,144 @@ test.describe('WebGPU visual goldens', () => {
 
     expect(big, 'image ink above the floor').toBeGreaterThan(200);
   });
+
+  // Round 66.3: a constant channel opacity no longer demotes its colour
+  // channel off the eval kernel — the multiplier rides the packed
+  // program and the shader folds it (`domain.w`) exactly as the CPU
+  // write path does.  This is the claim that the two produce the *same
+  // bytes*, and it is a self-comparison rather than a golden on purpose:
+  // the control is in the test.
+  //
+  // The CPU side is forced by mapping the opacity to a constant range —
+  // a *mapped* channel opacity still demotes, so both scenes resolve to
+  // the same value by different paths.  Degrade the fold (drop
+  // `alphaMul` in `packPrograms`) and the two diverge.
+  test('the kernel folds a constant channel opacity as the CPU does', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const scene = (mode) => {
+      const ramp = {
+        data: 'x',
+        scale: 'linear',
+        domain: [0, 1],
+        range: ['#cc0033', '#009966'],
+      };
+      // mapped-with-a-constant-range: same value everywhere, CPU path
+      const flat = (v) => ({
+        data: 'x',
+        scale: 'linear',
+        domain: [0, 1],
+        range: [v, v],
+      });
+      const opacity = (v) => (mode === 'kernel' ? v : flat(v));
+      const nodes = [];
+      const edges = [];
+
+      for (let i = 0; i < 36; i++) {
+        nodes.push({
+          data: { id: `n${i}`, x: i / 35 },
+          position: {
+            x: -180 + (i % 6) * 72,
+            y: -110 + Math.floor(i / 6) * 45,
+          },
+        });
+      }
+      for (let i = 0; i < 30; i++) {
+        edges.push({
+          data: {
+            id: `e${i}`,
+            source: `n${i}`,
+            target: `n${i + 6}`,
+            x: i / 29,
+          },
+        });
+      }
+
+      return {
+        elements: [...nodes, ...edges],
+        style: {
+          nodes: {
+            width: 34,
+            height: 34,
+            'background-color': ramp,
+            'background-opacity': opacity(0.5),
+            'border-width': 6,
+            'border-color': ramp,
+            'border-opacity': opacity(0.25),
+          },
+          edges: {
+            width: 7,
+            'line-color': ramp,
+            'line-opacity': opacity(0.75),
+          },
+        },
+        zoom: 1,
+        pan: { x: 200, y: 150 },
+      };
+    };
+
+    const shots = {};
+
+    for (const mode of ['kernel', 'cpu']) {
+      await makeReadyCy(page, scene(mode));
+      await waitFrames(page);
+
+      const owned = await page.evaluate(() => {
+        const o = window.cy._styleEngine.gpuOwnedProps;
+
+        return {
+          nodes: [...(o.nodes || [])],
+          edges: [...(o.edges || [])],
+          fill: window.cy.$id('n20').style('background-color'),
+          line: window.cy.$id('e10').style('line-color'),
+        };
+      });
+
+      // the precondition: the two scenes really do take different paths
+      if (mode === 'kernel') {
+        expect(owned.nodes, 'kernel owns the node colours').toContain(
+          'background-color',
+        );
+        expect(owned.edges, 'kernel owns line-color').toContain('line-color');
+      } else {
+        expect(owned.nodes, 'mapped opacity demotes').toEqual([]);
+        expect(owned.edges, 'mapped opacity demotes').toEqual([]);
+      }
+
+      shots[mode] = {
+        png: decodePng(await exportPng(page, { bg: '#fff' })),
+        owned,
+      };
+    }
+
+    // style() must agree too: it re-evaluates for a kernel-owned prop,
+    // and has to fold the same constant it stores and draws
+    expect(shots.kernel.owned.fill).toBe(shots.cpu.owned.fill);
+    expect(shots.kernel.owned.line).toBe(shots.cpu.owned.line);
+
+    const a = shots.kernel.png;
+    const b = shots.cpu.png;
+
+    expect(a.width, 'same canvas').toBe(b.width);
+    expect(a.height, 'same canvas').toBe(b.height);
+
+    let differing = 0;
+
+    for (let i = 0; i < a.data.length; i += 4) {
+      if (
+        a.data[i] !== b.data[i] ||
+        a.data[i + 1] !== b.data[i + 1] ||
+        a.data[i + 2] !== b.data[i + 2] ||
+        a.data[i + 3] !== b.data[i + 3]
+      ) {
+        differing++;
+      }
+    }
+
+    expect(differing, 'kernel-folded and CPU-folded pixels').toBe(0);
+  });
 });
 
 test.describe('v3-vs-v4 render parity', () => {

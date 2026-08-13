@@ -5,8 +5,11 @@ permissions:
   id-token: write # Required for OIDC
 
 on:
+  # Only invoked from release.yml. Trusted publishing on npmjs.com validates
+  # the filename of the top-level workflow of the run, and the trusted
+  # publisher config names release.yml, so dispatching this workflow directly
+  # would fail the OIDC exchange.
   workflow_call:
-  workflow_dispatch:
 
 jobs:
   publish:

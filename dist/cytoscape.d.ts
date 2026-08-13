@@ -1749,6 +1749,9 @@ declare class CurveIndex {
   private pending;
   /** non-loop blob-family edges awaiting per-edge derivation */
   private pendingSlots;
+  /** inside a bulk load: per-pair marks are suppressed, and `endBulk`
+   * marks the union they would have accumulated (round 67) */
+  private bulk;
   private warnedCap;
   private warnedEndptDist;
   /**
@@ -1759,6 +1762,31 @@ declare class CurveIndex {
    *   `bezier` (and has no compound relation) never builds one.
    */
   constructor(host: CurveHost);
+  /**
+   * Enter a bulk load: stop accumulating per-pair marks.
+   *
+   * Every edge's style apply marks its pair, because in isolation any
+   * one of them may change a bundle.  Over a whole load that is one
+   * `Set` insert per edge — 464,657 of them on this repo's largest
+   * fixture, measured at ~110 ms — deriving nothing that one pass over
+   * the finished index would not: at the end of a load *every* pair is
+   * new, so the union of the marks is the whole map.
+   *
+   * `endBulk` marks that union, so the flush's result is unchanged.
+   * Per-*slot* marks (the 12b blob families) are untouched: those are
+   * per-edge by nature and there is no union to take.
+   *
+   * Nothing may read a derived curve param inside the window — a flush
+   * during it derives only what has been marked, which is deliberately
+   * less than the load implies.  The bulk add path holds the window
+   * across the store adds and the style pass, and nothing between them
+   * reads geometry.
+   */
+  beginBulk(): void;
+  /** Leave a bulk load and mark what it implies: every pair the map
+   * holds (it is only built at all once something styles bezier or a
+   * compound relation appears) and every loop list. */
+  endBulk(): void;
   /**
    * Store an edge's styled curve record (the StyleEngine's write path).
    * A changed record marks the edge's pair for re-derivation; a bezier
@@ -2477,6 +2505,35 @@ declare class GraphStore implements ModelView {
    * geometry accessors.
    */
   flushDerived(): void;
+  /**
+   * Open a bulk-load window on the derived indexes (round 67): the curve
+   * index stops accumulating one pair mark per edge and takes their
+   * union at `endBulkLoad`, which on a whole-graph load is the whole
+   * pair map.  Must be paired in a `finally` — see `CurveIndex.beginBulk`
+   * for what may not happen inside the window.
+   */
+  beginBulkLoad(): void;
+  /** Close a bulk-load window and mark the derivations it implies. */
+  endBulkLoad(): void;
+  /**
+   * Copy every style-owned edge column from the run's first slot across
+   * the rest of it (round 67.2), and mark each column's span once.
+   *
+   * The run must be contiguous and ascending — the caller checks, and a
+   * bulk load's slots are exactly that.  Filling proceeds by doubling
+   * (`copyWithin` over an ever-larger prefix), so a 464,657-slot run is
+   * ~19 MB of `memmove` rather than 464,657 × 17 setter calls: measured
+   * 0.1 ns per element against 26 ns for one `setScalar`, whose cost is
+   * mostly the two string-keyed lookups behind `column( id )`.
+   *
+   * Safety rests entirely on {@link EDGE_PER_ELEMENT_COLUMNS} being the
+   * complete list of edge columns a shared styled record does *not*
+   * determine; a spec pins the two lists against `COLUMN_SPECS`.
+   *
+   * @param start — the run's first slot, which is also the template
+   * @param count — how many slots the run covers, template included
+   */
+  replicateEdgeStyle(start: number, count: number): void;
   /**
    * The hierarchy flush's write sink: derived parent geometry lands in
    * the real columns (position, size, outerHalf) with normal dirty
@@ -3739,6 +3796,18 @@ declare class StyleEngine {
    * styled before — the first application on add is instant (v3's rule),
    * and a recycled slot's fresh generation fails the check on its own. */
   private styledGen;
+  /**
+   * How many edge runs have taken the round-67.2 bulk route.
+   *
+   * Internal, and not a statistic anyone needs at runtime — it exists so
+   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
+   * it a comparison against the per-element route passes just as well
+   * when the gate declined, which is exactly what the first version of
+   * that spec did: its fixture mapped `curve-style` and `label`, neither
+   * of which has a narrow writer, so every assertion compared the
+   * per-element path against itself.
+   */
+  _bulkRuns: number;
   /** Round 24.1: the open transition capture (one per group-def pass). */
   private txn;
   /** id → normalized prop → raw value: the live bypass declarations
@@ -4039,6 +4108,71 @@ declare class StyleEngine {
    */
   private applyMapped;
   /**
+   * The structural half of the bulk-edge gate (round 67.2): whether this
+   * run *could* be written from one template slot and filled.
+   *
+   * Nodes decline outright — their branch hands out per-slot blob
+   * records (custom polygons, images, charts) whose refs a copy would
+   * alias.  The rest is what the fill needs: enough slots to pay for the
+   * scans, one contiguous ascending range so each column is a single
+   * `copyWithin` chain, no open transition capture (which diffs per
+   * slot) and no per-element bypasses.
+   *
+   * `bulkEdgeWriters` carries the other half — what the *mappers* allow.
+   *
+   * @param group — the group being applied
+   * @param slots — the run, in apply order
+   * @returns whether the structural preconditions hold
+   */
+  private bulkEdgeRun;
+  /** Whether every slot in the run carries the same masked flag word —
+   * i.e. whether anything reading state alone can vary across it.  True
+   * at rest, which is what a freshly loaded graph is. */
+  private uniformMaskedWord;
+  /**
+   * The narrow writers a bulk edge run needs, or null when the run's
+   * mappers rule the route out (round 67.2).  `bulkEdgeRun` carries the
+   * structural half of the gate.
+   *
+   * The route writes one template slot and fills every
+   * `EDGE_STYLE_COLUMNS` column from it, so it is admissible exactly
+   * when each mapped prop either
+   *
+   *   1. has a `fastStateWriter` — which by round 61's invariant writes
+   *      *every* column that prop affects, so the fill's value for it is
+   *      overwritten per slot; or
+   *   2. reads state flags only, over a run whose masked flag word never
+   *      changes — then its value is the template's for every slot and
+   *      the fill is already right.  This is the clause that matters in
+   *      practice: a freshly loaded graph has nothing selected, so the
+   *      selection affordances this repo's sheets map (`line-opacity`,
+   *      which has no narrow writer and could not have one without the
+   *      whole B1 fold cluster) cost the route nothing.
+   *
+   * Anything else declines and the ordinary per-element loop runs.
+   *
+   * @param group — the group being applied
+   * @param active — the mappers this pass will evaluate
+   * @param uniformState — whether the run's masked flag word is constant
+   * @returns the writers to run per slot, or null to decline
+   */
+  private bulkEdgeWriters;
+  /**
+   * Apply a contiguous edge run from one template slot (round 67.2).
+   *
+   * The template takes the ordinary `write()`, so every side effect the
+   * edge branch has — the arrow-scale and arrow-width meters, the curve
+   * record, the label sidecar, the transition-free channel funnel —
+   * happens exactly as it always did.  `replicateEdgeStyle` then fills
+   * every style-owned column from it, and each remaining slot pays only
+   * its own mapped props (through the narrow writers) plus the per-slot
+   * half of the edge branch.
+   *
+   * Measured on a 464,657-edge fixture: 26 ns per `setScalar` against
+   * 0.1 ns per element for the fill.
+   */
+  private applyBulkEdges;
+  /**
    * Apply a group whose mappers read only state flags: one record per
    * distinct flag combination, cached on the def, instead of a program
    * run per element.
@@ -4248,6 +4382,22 @@ declare class StyleEngine {
    */
   private write;
   private writeChannels;
+  /**
+   * The edge channels that land in `EDGE_STYLE_COLUMNS` — every edge
+   * column a styled record fully determines (round 67.2).  Split from
+   * the per-slot half below so the bulk apply can run this once for a
+   * run's template slot and fill the rest of the columns from it, while
+   * still calling `writeEdgePerSlot` for every slot.  One definition,
+   * two callers, as with the round-61 narrow writers.
+   */
+  private writeEdgeColumns;
+  /**
+   * The edge work a column copy cannot carry: the two flag bits (the
+   * flags word holds per-element bits too), the invisibility cascade,
+   * the curve index's own per-slot record, and the label sidecar.  Runs
+   * for every slot on both paths.
+   */
+  private writeEdgePerSlot;
   /** warn-once flag for the multi-image cap (recorded: 4 per node) */
   private warnedImageCap;
   /**
@@ -5201,6 +5351,11 @@ interface ClosenessCentralityOptions {
   directed?: boolean;
   /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
   harmonic?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Read by the whole-collection `closenessCentralityNormalized` only —
+   * the single-root `closenessCentrality` is a cheap Dijkstra walk and
+   * stays synchronous on the CPU. */
+  executor?: AlgoExecutor;
 }
 interface ClosenessCentralityNormalizedResult {
   closeness(node: Collection): number;
@@ -5291,6 +5446,183 @@ interface AffinityPropagationOptions {
   attributes?: AffinityAttributeFn[];
   /** where the run executes; see `AlgoExecutor` (default 'auto') */
   executor?: AlgoExecutor;
+}
+//#endregion
+//#region src/algorithms/triangle-counting.d.mts
+interface TriangleCountOptions {
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) matmul beats the CPU's O(Σ deg²) sparse walk. */
+  executor?: AlgoExecutor;
+}
+interface TriangleCountResult {
+  /** how many triangles pass through the node */
+  triangles(node: Collection): number | undefined;
+  /** 2T / (deg · (deg − 1)) — the local clustering coefficient */
+  clusteringCoefficient(node: Collection): number | undefined;
+  /** distinct triangles in the collection */
+  totalTriangles: number;
+  /** 3 · triangles / connected triples — the global coefficient */
+  transitivity: number;
+}
+//#endregion
+//#region src/algorithms/neighborhood-similarity.d.mts
+/** How a pair's shared-neighbor count is normalized: Jaccard divides
+ * by the union, cosine by the geometric mean of the sizes, overlap by
+ * the smaller size. */
+type SimilarityMetric = 'jaccard' | 'cosine' | 'overlap';
+interface NeighborhoodSimilarityOptions {
+  /** the normalization (default 'jaccard') */
+  metric?: SimilarityMetric;
+  /** compare out-neighborhoods instead of undirected ones */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) matmul beats the CPU's O(n² + Σ deg²) wedge walk. */
+  executor?: AlgoExecutor;
+}
+interface NeighborhoodSimilarityResult {
+  /** the two nodes' similarity in [0, 1], or undefined when either
+   * node is outside the collection */
+  similarity(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/katz-centrality.d.mts
+interface KatzCentralityOptions {
+  /** the walk attenuation per step (default 0.1); must be positive,
+   * and under 1/λ_max of the adjacency for the iteration to converge */
+  alpha?: number;
+  /** the baseline every node starts each step with (default 1) */
+  beta?: number;
+  /** iteration cap when the tolerance is never met (default 200) */
+  maxIterations?: number;
+  /** stop once Σ|Δx| < n · tolerance (default 1e-6) */
+  tolerance?: number;
+  /** count incoming walks only */
+  directed?: boolean;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Like `pageRank`, 'auto' always stays on the sparse CPU iteration;
+   * the GPU path serves an explicit 'gpu'. */
+  executor?: AlgoExecutor;
+}
+interface KatzCentralityResult {
+  /** the node's converged walk sum, or undefined outside the collection */
+  katz(node: Collection): number | undefined;
+  /** the same, normalized by the maximum */
+  katzNormalized(node: Collection): number;
+  /** British-spelling alias of `katzNormalized` */
+  katzNormalised(node: Collection): number;
+}
+//#endregion
+//#region src/algorithms/sim-rank.d.mts
+interface SimRankOptions {
+  /** the decay per neighborhood step (default 0.8); must sit in (0, 1) */
+  dampingFactor?: number;
+  /** iteration cap when the tolerance is never met (default 50) */
+  maxIterations?: number;
+  /** stop once max |Δs| ≤ tolerance (default 1e-4) */
+  tolerance?: number;
+  /** compare in-neighborhoods (the classic form) instead of undirected ones */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) products beat the CPU's O(n·m)-per-iteration sparse form. */
+  executor?: AlgoExecutor;
+}
+interface SimRankResult {
+  /** the pair's SimRank score in [0, 1], or undefined when either
+   * node is outside the collection */
+  similarity(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/random-walk.d.mts
+interface RandomWalkWithRestartOptions {
+  /** the nodes the walk restarts at (required for the seed form) */
+  seeds?: Collection | null;
+  /** the restart probability c (default 0.15); must sit in (0, 1) */
+  restartProbability?: number;
+  /** iteration cap when the tolerance is never met (default 200) */
+  maxIterations?: number;
+  /** stop once the L1 step drops under `tolerance` (default 1e-6) —
+   * per column, for the proximity form */
+  tolerance?: number;
+  /** walk out-edges only */
+  directed?: boolean;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the proximity form routes to the
+   * GPU only on dense graphs (the CPU solves per column at O(E) per
+   * step, so sparse graphs are its outright). */
+  executor?: AlgoExecutor;
+}
+interface RandomWalkWithRestartResult {
+  /** the node's stationary probability, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface RandomWalkWithRestartProximityResult {
+  /** the stationary probability of `to` for the walk restarting at
+   * `from`, or undefined when either node is outside the collection */
+  proximity(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/heat-kernel.d.mts
+interface HeatDiffusionOptions {
+  /** the nodes the heat starts on (required for the seed form) */
+  seeds?: Collection | null;
+  /** how long the heat flows (default 0.1); must be positive */
+  time?: number;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the kernel form routes to the GPU
+   * only on dense graphs. */
+  executor?: AlgoExecutor;
+}
+interface HeatDiffusionResult {
+  /** the node's share of the diffused heat, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface HeatKernelResult {
+  /** the heat at `to` after unit heat starts at `from` (symmetric),
+   * or undefined when either node is outside the collection */
+  heat(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/effective-resistance.d.mts
+interface EffectiveResistanceOptions {
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+interface EffectiveResistanceResult {
+  /** the effective resistance between the nodes (Infinity across
+   * components), or undefined when either node is outside the
+   * collection */
+  resistance(a: Collection, b: Collection): number | undefined;
+  /** the expected round-trip steps of the random walk — the
+   * component volume times the resistance */
+  commuteTime(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/motif-census.d.mts
+/** The sixteen triad classes, in Holland–Leinhardt order. */
+declare const TRIAD_CLASSES: readonly ['003', '012', '102', '021D', '021U', '021C', '111D', '111U', '030T', '030C', '201', '120D', '120U', '120C', '210', '300'];
+type TriadClass = (typeof TRIAD_CLASSES)[number];
+interface MotifCensusOptions {
+  /** read edge direction (default true — the census is a directed
+   * notion; `false` reads every edge as mutual, so only 003/102/201/
+   * 300 can be non-zero) */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) trace products beat the CPU's O(Σ deg²) wedge walks. */
+  executor?: AlgoExecutor;
+}
+interface MotifCensusResult {
+  /** the sixteen counts; they sum to C(n, 3) */
+  counts: Record<TriadClass, number>;
 }
 //#endregion
 //#region src/event.d.mts
@@ -7310,12 +7642,19 @@ declare class Collection {
   closenessCentrality(options?: ClosenessCentralityOptions): number;
   cc: this['closenessCentrality'];
   /**
-   * Closeness centrality for every node, normalized to [0, 1].
+   * Closeness centrality for every node, normalized to [0, 1].  Async
+   * (round 69): the whole-collection form is the O(n³) all-pairs tier,
+   * so like `floydWarshall` it returns a promise and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
+   * relaxation runs; 'cpu' is the reproducible reference.  The
+   * single-root `closenessCentrality` stays synchronous.
    *
-   * @param options — `{ weight, directed, harmonic }`
-   * @returns a `closeness` accessor
+   * @param options — `{ weight, directed, harmonic, executor }`
+   * @returns a promise of a `closeness` accessor
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
-  closenessCentralityNormalized(options?: ClosenessCentralityOptions): ClosenessCentralityNormalizedResult;
+  closenessCentralityNormalized(options?: ClosenessCentralityOptions): Promise<ClosenessCentralityNormalizedResult>;
   ccn: this['closenessCentralityNormalized'];
   closenessCentralityNormalised: this['closenessCentralityNormalized'];
   /**
@@ -7333,6 +7672,173 @@ declare class Collection {
    */
   betweennessCentrality(options?: BetweennessCentralityOptions): Promise<BetweennessCentralityResult>;
   bc: this['betweennessCentrality'];
+  /**
+   * Katz centrality — attenuated walk counting, where a node is
+   * central when many short walks end at it and a walk of length k is
+   * worth alphaᵏ.  Async (round 69): returns a promise, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the iteration
+   * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
+   * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ alpha, beta, maxIterations, tolerance,
+   *   directed, weight, executor }`
+   * @returns a promise of the `{ katz, katzNormalized }` accessors
+   * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  katzCentrality(options?: KatzCentralityOptions): Promise<KatzCentralityResult>;
+  /**
+   * Triangle counting: per-node triangle counts, local clustering
+   * coefficients, and the collection's transitivity, read over the
+   * simple undirected graph (direction ignored, parallel edges
+   * collapsed, loops excluded).  Async (round 69): returns a promise,
+   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * where the counting runs — under 'auto' the GPU's A²∘A matmul is
+   * used only on graphs dense enough to beat the CPU's sparse walk.
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ executor }`
+   * @returns a promise of `{ triangles, clusteringCoefficient,
+   *   totalTriangles, transitivity }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
+   */
+  triangleCount(options?: TriangleCountOptions): Promise<TriangleCountResult>;
+  /**
+   * Neighborhood similarity — pairwise Jaccard, cosine or overlap
+   * coefficients over neighbor sets (deduped; loops excluded;
+   * `directed: true` compares out-neighborhoods).  The result is
+   * all-pairs, so it holds O(n²) counts like `floydWarshall`.  Async
+   * (round 69): returns a promise, and `executor` ('cpu' | 'gpu' |
+   * 'auto', default 'auto') picks where the shared-neighbor counts
+   * are computed — under 'auto' the GPU's A·Aᵀ matmul is used only on
+   * graphs dense enough to beat the CPU's wedge walk.  v4-only — v3
+   * has no counterpart.
+   *
+   * @param options — `{ metric, directed, executor }`
+   * @returns a promise of the `{ similarity }` accessor
+   * @throws if `executor` or `metric` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  neighborhoodSimilarity(options?: NeighborhoodSimilarityOptions): Promise<NeighborhoodSimilarityResult>;
+  /**
+   * SimRank — "two nodes are similar when their neighbors are
+   * similar", the Jeh–Widom recursive fixed point, iterated as dense
+   * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where
+   * the iteration runs — under 'auto' the GPU only on graphs dense
+   * enough to beat the CPU's sparse form.  The undirected default
+   * compares all neighbors; `directed: true` compares the classic
+   * in-neighborhoods.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ dampingFactor, maxIterations, tolerance,
+   *   directed, executor }`
+   * @returns a promise of the `{ similarity }` accessor
+   * @throws if `executor` or `dampingFactor` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  simRank(options?: SimRankOptions): Promise<SimRankResult>;
+  /**
+   * Random walk with restart — network propagation from a `seeds`
+   * collection: a walker follows edges with probability 1−c and
+   * restarts at the seeds with probability c, and the stationary
+   * distribution scores every node by proximity to the seeds.  Async
+   * (round 70); the vector iteration is O(E) per step on the CPU, so
+   * there is no GPU path — an explicit `executor: 'gpu'` rejects and
+   * points at `randomWalkWithRestartProximity`.  On directed graphs a
+   * node with no out-edges absorbs the walk (scores can sum below 1).
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, restartProbability, maxIterations,
+   *   tolerance, directed, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `restartProbability` is invalid, or if
+   *   `seeds` holds no node of the collection
+   */
+  randomWalkWithRestart(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartResult>;
+  /**
+   * All-pairs random-walk-with-restart proximity — the full matrix
+   * S = c·(I − (1−c)·W)⁻¹, whose column s is the walk restarting at
+   * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between one sparse solve per column on the CPU and
+   * the dense Neumann iteration on the GPU — under 'auto' the GPU
+   * only on graphs dense enough to beat the per-column solves.
+   * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ restartProbability, maxIterations, tolerance,
+   *   directed, weight, executor }`
+   * @returns a promise of the `{ proximity }` accessor
+   * @throws if `executor` or `restartProbability` is invalid; rejects
+   *   if `executor: 'gpu'` is unavailable in this environment
+   */
+  randomWalkWithRestartProximity(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartProximityResult>;
+  /**
+   * Heat diffusion from a `seeds` collection: unit heat spread over
+   * the seeds flows along edges for `time`, through the kernel
+   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved.
+   * Async (round 70); the vector form is O(E) per series term on the
+   * CPU, so there is no GPU path — an explicit `executor: 'gpu'`
+   * rejects and points at `heatKernel`.  Edges are read undirected
+   * with positive weights.  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, time, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `time` is invalid, if `seeds` holds no
+   *   node of the collection, or if an edge weight is not positive
+   */
+  heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult>;
+  /**
+   * The all-pairs heat kernel exp(−t·L) — `heat(from, to)` is the
+   * heat at `to` after unit heat starts at `from` (symmetric).  Async
+   * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * picks between per-column sparse series on the CPU and the dense
+   * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
+   * on dense graphs.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ time, weight, executor }`
+   * @returns a promise of the `{ heat }` accessor
+   * @throws if `executor` or `time` is invalid, or if an edge weight
+   *   is not positive
+   */
+  heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult>;
+  /**
+   * Effective resistance and commute time — the graph as a resistor
+   * network (weights are conductances): `resistance(a, b)` from the
+   * Laplacian pseudo-inverse, `commuteTime(a, b)` the expected
+   * round-trip steps of the random walk (component volume ×
+   * resistance).  Pairs in different components answer Infinity.
+   * Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between dense f64 elimination on the CPU and
+   * Newton–Schulz matmul iteration on the GPU; both are O(n³), so
+   * 'auto' takes the GPU on size alone.  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ weight, executor }`
+   * @returns a promise of the `{ resistance, commuteTime }` accessors
+   * @throws if `executor` is invalid; rejects if an edge weight is
+   *   not positive or `executor: 'gpu'` is unavailable
+   */
+  effectiveResistance(options?: EffectiveResistanceOptions): Promise<EffectiveResistanceResult>;
+  /**
+   * The triad census — every three-node subgraph classified into the
+   * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
+   * feed-forward loop).  The counts sum to C(n, 3).  Async (round
+   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * between sparse wedge walks on the CPU and matmul trace products
+   * on the GPU — under 'auto' the GPU only on dense graphs.
+   * `directed: false` reads every edge as mutual, so only 003 / 102 /
+   * 201 / 300 (empty / one-edge / path / triangle) can be non-zero.
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ directed, executor }`
+   * @returns a promise of `{ counts }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
+   */
+  motifCensus(options?: MotifCensusOptions): Promise<MotifCensusResult>;
   /**
    * k-means clustering in attribute space.  Like v3's clustering
    * algorithms this works on handles and `attributes` accessors rather
@@ -8234,6 +8740,7 @@ declare class Core {
    * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void;
+  private _bulkAddInner;
   /** Per-element `add` for a columnar bulk, nodes before edges. */
   private _emitBulkAdds;
   /**

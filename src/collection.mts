@@ -47,7 +47,7 @@ import {
   degreeCentrality as degreeCentralityImpl,
   degreeCentralityNormalized as degreeCentralityNormalizedImpl,
   closenessCentrality as closenessCentralityImpl,
-  closenessCentralityNormalized as closenessCentralityNormalizedImpl,
+  closenessCentralityNormalizedAsync as closenessCentralityNormalizedImpl,
   betweennessCentralityAsync as betweennessCentralityImpl,
   kMeansAsync as kMeansImpl,
   kMedoidsAsync as kMedoidsImpl,
@@ -55,6 +55,16 @@ import {
   hierarchicalClusteringAsync as hierarchicalClusteringImpl,
   markovClusteringAsync as markovClusteringImpl,
   affinityPropagationAsync as affinityPropagationImpl,
+  triangleCountAsync as triangleCountImpl,
+  neighborhoodSimilarityAsync as neighborhoodSimilarityImpl,
+  katzCentralityAsync as katzCentralityImpl,
+  simRankAsync as simRankImpl,
+  randomWalkWithRestartAsync as randomWalkWithRestartImpl,
+  randomWalkWithRestartProximityAsync as rwrProximityImpl,
+  heatDiffusionAsync as heatDiffusionImpl,
+  heatKernelAsync as heatKernelImpl,
+  effectiveResistanceAsync as effectiveResistanceImpl,
+  motifCensusAsync as motifCensusImpl,
 } from './algorithms/index.mjs';
 import type {
   SearchArgs,
@@ -87,6 +97,24 @@ import type {
   HierarchicalClusteringOptions,
   MarkovClusteringOptions,
   AffinityPropagationOptions,
+  TriangleCountOptions,
+  TriangleCountResult,
+  NeighborhoodSimilarityOptions,
+  NeighborhoodSimilarityResult,
+  KatzCentralityOptions,
+  KatzCentralityResult,
+  SimRankOptions,
+  SimRankResult,
+  RandomWalkWithRestartOptions,
+  RandomWalkWithRestartResult,
+  RandomWalkWithRestartProximityResult,
+  HeatDiffusionOptions,
+  HeatDiffusionResult,
+  HeatKernelResult,
+  EffectiveResistanceOptions,
+  EffectiveResistanceResult,
+  MotifCensusOptions,
+  MotifCensusResult,
 } from './algorithms/index.mjs';
 import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
@@ -5624,14 +5652,21 @@ export class Collection {
   declare cc: this['closenessCentrality'];
 
   /**
-   * Closeness centrality for every node, normalized to [0, 1].
+   * Closeness centrality for every node, normalized to [0, 1].  Async
+   * (round 69): the whole-collection form is the O(n³) all-pairs tier,
+   * so like `floydWarshall` it returns a promise and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
+   * relaxation runs; 'cpu' is the reproducible reference.  The
+   * single-root `closenessCentrality` stays synchronous.
    *
-   * @param options — `{ weight, directed, harmonic }`
-   * @returns a `closeness` accessor
+   * @param options — `{ weight, directed, harmonic, executor }`
+   * @returns a promise of a `closeness` accessor
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
    */
   closenessCentralityNormalized(
     options?: ClosenessCentralityOptions,
-  ): ClosenessCentralityNormalizedResult {
+  ): Promise<ClosenessCentralityNormalizedResult> {
     return closenessCentralityNormalizedImpl(this, options);
   }
 
@@ -5658,6 +5693,213 @@ export class Collection {
   }
 
   declare bc: this['betweennessCentrality'];
+
+  /**
+   * Katz centrality — attenuated walk counting, where a node is
+   * central when many short walks end at it and a walk of length k is
+   * worth alphaᵏ.  Async (round 69): returns a promise, and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the iteration
+   * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
+   * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ alpha, beta, maxIterations, tolerance,
+   *   directed, weight, executor }`
+   * @returns a promise of the `{ katz, katzNormalized }` accessors
+   * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  katzCentrality(
+    options?: KatzCentralityOptions,
+  ): Promise<KatzCentralityResult> {
+    return katzCentralityImpl(this, options);
+  }
+
+  /**
+   * Triangle counting: per-node triangle counts, local clustering
+   * coefficients, and the collection's transitivity, read over the
+   * simple undirected graph (direction ignored, parallel edges
+   * collapsed, loops excluded).  Async (round 69): returns a promise,
+   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * where the counting runs — under 'auto' the GPU's A²∘A matmul is
+   * used only on graphs dense enough to beat the CPU's sparse walk.
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ executor }`
+   * @returns a promise of `{ triangles, clusteringCoefficient,
+   *   totalTriangles, transitivity }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
+   */
+  triangleCount(options?: TriangleCountOptions): Promise<TriangleCountResult> {
+    return triangleCountImpl(this, options);
+  }
+
+  /**
+   * Neighborhood similarity — pairwise Jaccard, cosine or overlap
+   * coefficients over neighbor sets (deduped; loops excluded;
+   * `directed: true` compares out-neighborhoods).  The result is
+   * all-pairs, so it holds O(n²) counts like `floydWarshall`.  Async
+   * (round 69): returns a promise, and `executor` ('cpu' | 'gpu' |
+   * 'auto', default 'auto') picks where the shared-neighbor counts
+   * are computed — under 'auto' the GPU's A·Aᵀ matmul is used only on
+   * graphs dense enough to beat the CPU's wedge walk.  v4-only — v3
+   * has no counterpart.
+   *
+   * @param options — `{ metric, directed, executor }`
+   * @returns a promise of the `{ similarity }` accessor
+   * @throws if `executor` or `metric` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  neighborhoodSimilarity(
+    options?: NeighborhoodSimilarityOptions,
+  ): Promise<NeighborhoodSimilarityResult> {
+    return neighborhoodSimilarityImpl(this, options);
+  }
+
+  /**
+   * SimRank — "two nodes are similar when their neighbors are
+   * similar", the Jeh–Widom recursive fixed point, iterated as dense
+   * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where
+   * the iteration runs — under 'auto' the GPU only on graphs dense
+   * enough to beat the CPU's sparse form.  The undirected default
+   * compares all neighbors; `directed: true` compares the classic
+   * in-neighborhoods.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ dampingFactor, maxIterations, tolerance,
+   *   directed, executor }`
+   * @returns a promise of the `{ similarity }` accessor
+   * @throws if `executor` or `dampingFactor` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
+   */
+  simRank(options?: SimRankOptions): Promise<SimRankResult> {
+    return simRankImpl(this, options);
+  }
+
+  /**
+   * Random walk with restart — network propagation from a `seeds`
+   * collection: a walker follows edges with probability 1−c and
+   * restarts at the seeds with probability c, and the stationary
+   * distribution scores every node by proximity to the seeds.  Async
+   * (round 70); the vector iteration is O(E) per step on the CPU, so
+   * there is no GPU path — an explicit `executor: 'gpu'` rejects and
+   * points at `randomWalkWithRestartProximity`.  On directed graphs a
+   * node with no out-edges absorbs the walk (scores can sum below 1).
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, restartProbability, maxIterations,
+   *   tolerance, directed, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `restartProbability` is invalid, or if
+   *   `seeds` holds no node of the collection
+   */
+  randomWalkWithRestart(
+    options?: RandomWalkWithRestartOptions,
+  ): Promise<RandomWalkWithRestartResult> {
+    return randomWalkWithRestartImpl(this, options);
+  }
+
+  /**
+   * All-pairs random-walk-with-restart proximity — the full matrix
+   * S = c·(I − (1−c)·W)⁻¹, whose column s is the walk restarting at
+   * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between one sparse solve per column on the CPU and
+   * the dense Neumann iteration on the GPU — under 'auto' the GPU
+   * only on graphs dense enough to beat the per-column solves.
+   * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ restartProbability, maxIterations, tolerance,
+   *   directed, weight, executor }`
+   * @returns a promise of the `{ proximity }` accessor
+   * @throws if `executor` or `restartProbability` is invalid; rejects
+   *   if `executor: 'gpu'` is unavailable in this environment
+   */
+  randomWalkWithRestartProximity(
+    options?: RandomWalkWithRestartOptions,
+  ): Promise<RandomWalkWithRestartProximityResult> {
+    return rwrProximityImpl(this, options);
+  }
+
+  /**
+   * Heat diffusion from a `seeds` collection: unit heat spread over
+   * the seeds flows along edges for `time`, through the kernel
+   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved.
+   * Async (round 70); the vector form is O(E) per series term on the
+   * CPU, so there is no GPU path — an explicit `executor: 'gpu'`
+   * rejects and points at `heatKernel`.  Edges are read undirected
+   * with positive weights.  v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ seeds, time, weight, executor }`
+   * @returns a promise of the `{ score }` accessor
+   * @throws if `executor` or `time` is invalid, if `seeds` holds no
+   *   node of the collection, or if an edge weight is not positive
+   */
+  heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult> {
+    return heatDiffusionImpl(this, options);
+  }
+
+  /**
+   * The all-pairs heat kernel exp(−t·L) — `heat(from, to)` is the
+   * heat at `to` after unit heat starts at `from` (symmetric).  Async
+   * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * picks between per-column sparse series on the CPU and the dense
+   * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
+   * on dense graphs.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ time, weight, executor }`
+   * @returns a promise of the `{ heat }` accessor
+   * @throws if `executor` or `time` is invalid, or if an edge weight
+   *   is not positive
+   */
+  heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult> {
+    return heatKernelImpl(this, options);
+  }
+
+  /**
+   * Effective resistance and commute time — the graph as a resistor
+   * network (weights are conductances): `resistance(a, b)` from the
+   * Laplacian pseudo-inverse, `commuteTime(a, b)` the expected
+   * round-trip steps of the random walk (component volume ×
+   * resistance).  Pairs in different components answer Infinity.
+   * Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
+   * 'auto') picks between dense f64 elimination on the CPU and
+   * Newton–Schulz matmul iteration on the GPU; both are O(n³), so
+   * 'auto' takes the GPU on size alone.  v4-only — v3 has no
+   * counterpart.
+   *
+   * @param options — `{ weight, executor }`
+   * @returns a promise of the `{ resistance, commuteTime }` accessors
+   * @throws if `executor` is invalid; rejects if an edge weight is
+   *   not positive or `executor: 'gpu'` is unavailable
+   */
+  effectiveResistance(
+    options?: EffectiveResistanceOptions,
+  ): Promise<EffectiveResistanceResult> {
+    return effectiveResistanceImpl(this, options);
+  }
+
+  /**
+   * The triad census — every three-node subgraph classified into the
+   * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
+   * feed-forward loop).  The counts sum to C(n, 3).  Async (round
+   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * between sparse wedge walks on the CPU and matmul trace products
+   * on the GPU — under 'auto' the GPU only on dense graphs.
+   * `directed: false` reads every edge as mutual, so only 003 / 102 /
+   * 201 / 300 (empty / one-edge / path / triangle) can be non-zero.
+   * v4-only — v3 has no counterpart.
+   *
+   * @param options — `{ directed, executor }`
+   * @returns a promise of `{ counts }`
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
+   *   unavailable in this environment
+   */
+  motifCensus(options?: MotifCensusOptions): Promise<MotifCensusResult> {
+    return motifCensusImpl(this, options);
+  }
 
   /**
    * k-means clustering in attribute space.  Like v3's clustering

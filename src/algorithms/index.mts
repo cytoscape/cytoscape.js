@@ -47,6 +47,7 @@ export type {
 export {
   closenessCentrality,
   closenessCentralityNormalized,
+  closenessCentralityNormalizedAsync,
 } from './closeness-centrality.mjs';
 export type {
   ClosenessCentralityOptions,
@@ -89,6 +90,65 @@ export {
   affinityPropagationAsync,
 } from './affinity-propagation.mjs';
 export type { AffinityPropagationOptions } from './affinity-propagation.mjs';
+export { triangleCount, triangleCountAsync } from './triangle-counting.mjs';
+export type {
+  TriangleCountOptions,
+  TriangleCountResult,
+} from './triangle-counting.mjs';
+export {
+  neighborhoodSimilarity,
+  neighborhoodSimilarityAsync,
+} from './neighborhood-similarity.mjs';
+export type {
+  NeighborhoodSimilarityOptions,
+  NeighborhoodSimilarityResult,
+  SimilarityMetric,
+} from './neighborhood-similarity.mjs';
+export { katzCentrality, katzCentralityAsync } from './katz-centrality.mjs';
+export type {
+  KatzCentralityOptions,
+  KatzCentralityResult,
+} from './katz-centrality.mjs';
+export { simRank, simRankAsync } from './sim-rank.mjs';
+export type { SimRankOptions, SimRankResult } from './sim-rank.mjs';
+export {
+  randomWalkWithRestartAsync,
+  randomWalkWithRestartProximityAsync,
+  rwrProximity,
+} from './random-walk.mjs';
+export type {
+  RandomWalkWithRestartOptions,
+  RandomWalkWithRestartResult,
+  RandomWalkWithRestartProximityResult,
+} from './random-walk.mjs';
+export {
+  heatDiffusionAsync,
+  heatKernel,
+  heatKernelAsync,
+} from './heat-kernel.mjs';
+export type {
+  HeatDiffusionOptions,
+  HeatDiffusionResult,
+  HeatKernelResult,
+} from './heat-kernel.mjs';
+export {
+  effectiveResistance,
+  effectiveResistanceAsync,
+} from './effective-resistance.mjs';
+export type {
+  EffectiveResistanceOptions,
+  EffectiveResistanceResult,
+} from './effective-resistance.mjs';
+export {
+  motifCensus,
+  motifCensusAsync,
+  TRIAD_CLASSES,
+} from './motif-census.mjs';
+export type {
+  MotifCensusOptions,
+  MotifCensusResult,
+  TriadClass,
+} from './motif-census.mjs';
 export type { DistanceMetric } from './clustering-distances.mjs';
 export type { WeightFn } from './algo-shared.mjs';
 export type { AlgoExecutor } from './executor.mjs';

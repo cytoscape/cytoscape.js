@@ -624,7 +624,25 @@ iterative — deep graphs cannot overflow the JS stack),
 `closenessCentrality`/`cc` (+normalized), `betweennessCentrality`/`bc`,
 `kMeans`, `kMedoids`, `fuzzyCMeans`/`fcm`, `hierarchicalClustering`/
 `hca`, `markovClustering`/`mcl`, `affinityPropagation`/`ap`
-— the full v3 algorithm surface.
+— the full v3 algorithm surface — plus the v4-only families designed
+matmul-first for the GPU tier.  Round 69: `triangleCount` (per-node
+triangles, local clustering coefficients, transitivity — A²∘A),
+`neighborhoodSimilarity` (pairwise Jaccard/cosine/overlap over
+neighbor sets — A·Aᵀ) and `katzCentrality` (attenuated walk counting).
+Round 70, aimed at network-biology workloads: `randomWalkWithRestart`
+(seed propagation) and `randomWalkWithRestartProximity` (the all-pairs
+matrix via Neumann matmul iteration), `heatDiffusion`/`heatKernel`
+(exp(−tL) by scaling-and-squaring), `effectiveResistance` (the
+Laplacian pseudo-inverse via f64 elimination on the CPU and
+Newton–Schulz matmuls on the GPU — O(n³) both sides, so the GPU wins
+at every density), `simRank` (two matmuls per iteration) and
+`motifCensus` (the 16-class triad census from seven trace primitives,
+pinned by a brute-force classifier spec; '030T' = the feed-forward
+loop).  All of them read the collection as a simple graph (parallel
+edges collapse, loops excluded); the seed forms of RWR and heat
+diffusion are CPU-only by design — O(E) sparse walks with nothing for
+a kernel to win — and an explicit `executor: 'gpu'` on them rejects,
+pointing at the dense form.
 
 Graph walks are slot-native over the
 CSR adjacency; the attribute-space clustering algorithms work on
@@ -633,16 +651,23 @@ node arguments are collections (selector strings throw) and
 `weight`/`heuristic`/`attributes` are plain functions — and, since
 round 65, **the expensive whole-graph tier is async with a GPU
 executor**: `pageRank`, `floydWarshall`, `betweennessCentrality`,
-`markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`,
-`fuzzyCMeans` and `hierarchicalClustering` return promises, and an
-`executor` option ('cpu' | 'gpu' | 'auto', default 'auto') picks where
-the maths runs.  'cpu' is the bit-reproducible f64 reference (the
+`closenessCentralityNormalized` (round 69 — its GPU path rides the
+blocked FW kernels and folds each distance row on the device, so the
+readback is n floats rather than the n² matrix), `markovClustering`,
+`affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans`,
+`hierarchicalClustering` and the rounds-69/70 families return
+promises, and an `executor` option ('cpu' | 'gpu' | 'auto', default
+'auto') picks where the maths runs.  'cpu' is the bit-reproducible f64 reference (the
 spec, and what headless Node always runs); 'gpu' runs the WGSL kernels
 and rejects rather than degrading when WebGPU or the algorithm's GPU
 path is missing (weighted betweenness, custom distance functions, and
 attribute-less feature runs are contracted CPU-only — kernels never
 call back into user code); 'auto' takes the GPU above a per-family
-measured crossover and otherwise the CPU, falling back only on
+measured crossover — for the rounds-69/70 iterated-product families a
+*density* gate as well, since their sparse CPU walks own sparse
+graphs however large, and for `katzCentrality` never (the pageRank
+verdict for the same iteration shape) — and otherwise the CPU,
+falling back only on
 acquisition failure or an input past the device's buffer limits — a
 kernel error propagates.  GPU results may differ from CPU results in
 f32 detail (the force layout's round-18.4 determinism precedent);

@@ -117,6 +117,34 @@ that compile and then behave differently.
   (O(E) per iteration — orders of magnitude on sparse graphs) and the
   hierarchical merge engine went flat-typed, leaving the GPU no edge
   to win there.
+- **Eight new algorithm families, designed matmul-first for the GPU
+  tier** (rounds 69–70), all on the same async `executor` contract
+  and with no v3 counterpart.  Round 69: **`eles.triangleCount()`**
+  (per-node triangle counts, local clustering coefficients, total
+  triangles and transitivity — A²∘A on the GPU),
+  **`eles.neighborhoodSimilarity()`** (pairwise Jaccard / cosine /
+  overlap coefficients over neighbor sets — A·Aᵀ on the GPU) and
+  **`eles.katzCentrality()`** (attenuated walk counting; like
+  PageRank its sparse CPU iteration owns `'auto'` and the GPU path
+  serves an explicit `'gpu'`).  Round 70, aimed at network-biology
+  workloads: **`eles.randomWalkWithRestart()`** (seed-set network
+  propagation — the disease-gene-prioritization primitive) and
+  **`eles.randomWalkWithRestartProximity()`** (the all-pairs
+  proximity matrix, a Neumann matmul iteration on the GPU),
+  **`eles.heatDiffusion()`** / **`eles.heatKernel()`** (HotNet-style
+  heat propagation; exp(−t·L) by scaling-and-squaring on the GPU),
+  **`eles.effectiveResistance()`** (resistance distance and commute
+  time off the Laplacian pseudo-inverse — f64 elimination on the CPU,
+  Newton–Schulz matmul iteration on the GPU; O(n³) on both sides, so
+  the GPU wins at every density), **`eles.simRank()`** (the Jeh–Widom
+  recursive similarity, two matmuls per iteration) and
+  **`eles.motifCensus()`** (the sixteen-class Holland–Leinhardt triad
+  census — '030T' is the feed-forward loop — computed from seven
+  trace primitives and pinned by a brute-force classifier spec).
+  The whole-collection `closenessCentralityNormalized` joined the
+  async tier in round 69: its GPU path rides the blocked
+  Floyd–Warshall kernels and folds each distance row on the device,
+  reading back n floats instead of the n² matrix.
 
 ### Changed
 
@@ -127,13 +155,15 @@ that compile and then behave differently.
   edges, then leaf nodes, then labels; slot order within a stream.
 - **Animations run concurrently by channel** and sequence by promise;
   overlapping channels evict the older animation in place.
-- **The expensive whole-graph algorithms are async** (round 65): the
-  nine methods above return promises — `await` the call, then use the
-  result exactly as in v3.  Runtime option validation on them surfaces
-  as a rejection; a bad `executor` value still throws synchronously.
-  The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
-  `bellmanFord`, `kruskal`, components, degree/closeness centrality)
-  stays synchronous.
+- **The expensive whole-graph algorithms are async** (round 65; the
+  closeness family joined in round 69): the executor-tier methods
+  above return promises — `await` the call, then use the result
+  exactly as in v3.  Runtime option validation on them surfaces as a
+  rejection; a bad `executor` value still throws synchronously.  The
+  traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`, `bellmanFord`,
+  `kruskal`, components, degree centrality and the single-root
+  `closenessCentrality`) stays synchronous; only the O(n³)
+  whole-collection `closenessCentralityNormalized` moved.
 - **`hierarchicalClustering`'s `mean` linkage works** (round 65.10) —
   a deliberate deviation: v3's mean linkage never assigned the cluster
   sizes its weighted-average formula read, so the first mean merge

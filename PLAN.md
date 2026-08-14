@@ -4390,6 +4390,47 @@ round-17 contract" consumer that round 51's bake re-runs against the
 published tarballs.  The queue is otherwise as the previous
 paragraphs left it.
 
+**Amended later on 2026-08-14: the tenth sitting swept the idea
+backlog into a fifteen-item shortlist** (the sitting's record is at
+the end of this file) and scheduled two things from it: **round 72**
+(the algorithm perf follow-ups logged by 65.8/69.6/70.4, gathered
+into one round — full plan at the end of this file), and a **scoping
+round for the WebGL fallback renderer** (ledger item 18b) to run
+before the fallback's pre/post-4.0.0 positioning is decided — the
+maintainer explicitly declined to make that call without data on
+what WebGL2 can carry of the v4 contract.  The reserved rounds
+46/49/50/51 and the open ledger questions (18, 23, 27) are
+unchanged.
+
+**Amended the same day, again: every shortlisted item now carries a
+full plan — rounds 72 through 86, all at the end of this file.**
+72 the algorithm perf follow-ups; 73 the WebGL2 fallback scoping
+round (the feasibility record, not code); 74 the worker-pool CPU
+executor (ledger 29); 75 the DX polish bundle; 76 the small style
+wins bundle; 77 SVG vector export; 78 headless Node image
+generation; 79 official JSON schemas; 80 node charts (heat, bars,
+the slice ceiling); 81 the annotations layer; 82 cluster hulls +
+collapse/aggregation proxies; 83 GPU edge bundling; 84
+attribute-table and filter affordances; 85 the layouts round; 86
+the worker-hosted renderer.  The numbers are identifiers, not an
+execution order: 72 runs first (decided at the sitting), 73 early
+because its record gates the release-shape decision, 86 explicitly
+depends on 73's outcome, and the rest interleave small bundles
+between the large arcs at the maintainer's discretion.  Planning
+verified every plan's premises against the source, and two
+shortlist items dissolved on contact: **gradients are already
+landed** (round 13 C2 shipped the whole surface, golden and v3
+parity scene included — round 76 closes the demand log honestly
+instead of building), and **container auto-resize mostly exists**
+(an unrecorded ResizeObserver since round 42 — round 75 records,
+routes and tests it rather than building it).  Three plans
+recommend splitting at a named seam before execution (76's
+screen-space sizing, 82's hulls/collapse halves, 85's force
+constraints); each split is the round's first Open item.  Every
+plan ends with an **Open:** paragraph of maintainer decisions to
+take at that round's own sitting — none are decided by the plans
+themselves.
+
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
 The head of the design queue: v4 renders `curve-style: straight` only,
@@ -20331,3 +20372,3293 @@ fit affordance the spiral example should expose (checked in 71.6, not
 assumed); whether `extensions/` eventually gains the force layout as
 a second first-party package (out of scope, noted for round 51's
 triage); provenance on `cyext release`, parked for round 50.
+
+## Design sitting (2026-08-14, tenth) — the idea backlog swept into a shortlist
+
+Three research sweeps ran before this sitting: the repo's own record
+(this file's ledger and follow-up notes, `src/README.md`'s hooks),
+the GitHub tracker (open **and** closed — the tracker is aggressively
+triaged at 15 open issues, so demand signal lives almost entirely in
+closed ones), and the ecosystem (Cytoscape Web, EnrichmentMap web,
+GeneMANIA, Cytoscape desktop parity, the comparison literature).  The
+finding that organises everything else: **the strongest demand signal
+is what the ecosystem apps had to build around the library.**
+Cytoscape Web ships three layout engines, two export extensions, a
+layered-canvas annotation renderer and a full CX2 visual-style
+conversion layer; EnrichmentMap web ships five extensions (fcose,
+layers, bubblesets, automove, pdf-export).  Each of those is a
+candidate feature with a guaranteed first consumer.
+
+Checked against source before listing, because several perennial
+tracker asks turn out to be *done* in v4 already: combined
+pan+zoom/fit viewport animation in one `animate()` (#2966 — the
+viewport channel in `AnimateOptions`), source/target edge labels
+(#382), and of course the GPU tier itself.  Declined territory was
+not re-proposed (round 40's warning policy, 41.5's preventDefault,
+z-index, classes, selector strings, style functions).
+
+**The shortlist — fifteen items kept by the maintainer:**
+
+- **SVG vector export** — #639 (2014, the most-demanded export
+  feature ever filed); both flagship apps bolt on third-party
+  svg/pdf extensions for publication figures.  v4 computes all
+  geometry CPU-side (routing, arrows, labels), so this is a
+  serializer, not a second renderer.
+- **Official JSON schemas** for elements/styles/layouts — #3487.
+- **Headless Node image generation** (obsolete cytosnap) — #2561,
+  #954; research-gated (Dawn-in-Node vs SVG-in-headless).
+- **Annotations layer** — model-space text/shapes/images, z-ordered
+  with the graph; the desktop-parity item with the longest paper
+  trail (Cytoscape Web renders desktop annotations read-only via a
+  layered canvas today).
+- **More node chart kinds** — ring/bar/heat-strip, high slice
+  counts, on the round-23 surface (whose record already says
+  "consider other charts"); EnrichmentMap's core visual.
+- **Cluster hulls/bubble sets + expand-collapse aggregation** — the
+  AutoAnnotate/EM idiom plus issue #3486's own "cluster or component
+  proxies" LOD plan.
+- **GPU edge bundling** — #2332; desktop parity; headline
+  large-graph visual.
+- **WebGL fallback renderer** — ledger 18b, scheduled below as a
+  scoping round first.
+- **Worker-pool CPU executor** — ledger 29, measure-first gate as
+  written there.
+- **Algorithm perf follow-ups** — scheduled as round 72, plan below.
+- **Worker/OffscreenCanvas-hosted renderer** — #1350/#2799; frees
+  the main thread entirely.
+- **DX polish bundle** — container auto-resize (#2401), font-load
+  re-raster (#3408 + the round-9.7 logged follow-up), iterable
+  collections (`Symbol.iterator`, verified absent), a public
+  elements-at-position API (#1209 — `pickNodeAt` and the GPU pick
+  exist, unexposed), wheel/gesture tuning toggles (#1905 family —
+  explicit toggles are the sanctioned mechanism; 41.5 declined
+  preventDefault, not toggles), viewport counts (#2283).
+- **Small style wins bundle** — gradients (#2091/#3407),
+  zoom-invariant screen-space sizing (#789), `text-border-style`
+  (the one recorded not-yet style gap), and the ledger-23
+  arrow-precision/17th-arrowhead decision.
+- **Attribute-table / filter affordances** — columnar column views
+  plus fast predicate/degree/topology filters, feeding table UIs
+  (Cytoscape Web's TableModel/TableBrowser/FilterModel; desktop
+  filters parity).  The columnar store is uniquely positioned here.
+- **Layouts** — radial tree (#2493), constraints on the force layout
+  (absorbs fcose's main draw — fcose #54/#53), edge-length control
+  (#1514), per-side compound padding (the logged hook).
+
+**Not shortlisted:** CX2 import/export with visual styles (the
+research's top cross-source candidate, set aside by the maintainer at
+this sitting), multilevel force refinement (stays a logged
+direction), file splitting (ledger 26, stays a direction).
+
+**Two sequencing decisions, made at the sitting:**
+
+1. **The WebGL fallback's pre/post-4.0.0 positioning is decided
+   after a scoping round, not now.**  It is the one shortlist item
+   that changes what 4.0 *is* — WebGPU-only at launch versus reach
+   on Firefox stable and weak GPUs — and the call gets made with
+   data on what WebGL2 can and cannot carry of the v4 contract
+   (instancing paths for the pipelines, compute-culling and picking
+   substitutes, the SDF label pipeline).  The scoping round produces
+   a written feasibility record, not code.
+2. **Round 72 (algorithm perf follow-ups) runs first** — a natural
+   continuation of rounds 65/69/70 while their context is fresh,
+   with every input already logged as a follow-up.
+
+## Round 72 plan — the algorithm perf follow-ups, gathered (planned 2026-08-14)
+
+Rounds 65.8, 69.6 and 70.4 each closed leaving logged follow-ups;
+this round gathers them.  Planning re-read the sources rather than
+the logged sentences, which mattered twice: one item is mostly
+**stale** (the "two-stage reductions" — 65.8 already landed
+workgroup-per-line tree reductions; the live remainder is a
+coalescing defect), and one is bigger than its sentence (the
+closeness BFS path changes the CPU side's asymptotics, not just the
+GPU's).  What the code does today, verified:
+
+1. **pageRank/Katz GPU SpMV is genuinely dense** —
+   `algo-gpu-pagerank.mts` uploads the full n×n f32 matrix from
+   `buildPageRankMatrix` and runs the workgroup-per-row `MATVEC`;
+   `algo-gpu-katz.mts` reuses the same kernel.  The CPU sides went
+   sparse in 65.10 (O(E+n)/iteration), which is why both wrappers
+   pass `minGpuN: Infinity` (`page-rank.mts:54`,
+   `katz-centrality.mts:119`) — the kernels serve only explicit
+   `'gpu'` and the parity suite.
+2. **AP's `A_UPDATE` walks `rr[j*n+i]`/`a[j*n+i]` with stride n** —
+   uncoalesced column access, ~2.6 ms/iteration at n=1024 per the
+   65.8 record.  The surviving single-workgroup epilogues
+   (PR/Katz epilogues, `AP_CONVERGE`) cost microseconds.
+3. **Closeness is Floyd–Warshall on both executors** — O(n³) even
+   unweighted.  The GPU already owns a batched level-synchronous
+   BFS in `algo-gpu-brandes.mts` whose forward half is exactly the
+   distance computation closeness needs, but it is not exported as
+   a reusable plan the way `fwRelaxPlan` is.
+4. **The heat family is combinatorial-Laplacian only** —
+   `buildHeatStructure` builds L = D − A; no `laplacian` option.
+   A normalized Laplacian (‖L_norm‖ ≤ 2) would bound `squarings`
+   by t alone instead of by weighted degree.
+5. **No device-side timing exists on the algo path** —
+   `acquireAlgoGpu` requests no features; the machinery exists on
+   the render side (`src/render/gpu-timer.mts`).
+
+Standing debt the round absorbs: the 69.6/70.4 **crossover sweep on
+the benchmark machine never ran** — the density gates (n²/32,
+n²/16), closeness's `GPU_MIN_N` and the resistance parity bound are
+still starting figures — and the `EQUIVALENT_HARNESSES` entry for
+the bench-file moves is unaddable until a run under the new hash is
+published.
+
+### 72.1 — sparse CSR SpMV for pageRank + Katz
+
+The one change that could flip the 65.10/69.4 `'auto'` verdicts.  A
+shared CSR plan (new `algo-gpu-spmv.mts`): rowPtr/colIdx/vals upload
+(O(E) instead of O(n²) — which also lifts the n²-buffer `assertFits`
+ceiling), a workgroup-per-row CSR kernel replacing `MATVEC` for
+these two families only (the dense matmul families are untouched).
+Katz is the easy half: CSR of α·Aᵀ (both directions when undirected,
+as the CPU gather does) plus the existing `KATZ_EPILOGUE`.  pageRank
+needs the structural split the CPU made in 65.10: the kernel
+computes only the edge-gather term; the teleport and dangling
+rank-1 terms move into the epilogue (a dangling-index buffer; the
+epilogue already tree-reduces Σtmp, it gains Σv and Σ_dangling·v).
+The dense builders become GPU-dead and are removed; d.ts
+regenerated.
+
+**Verified by** the existing pageRank/Katz parity specs — tolerance
+absorbs the summation-order change — after one control run with the
+CSR vals deliberately skewed proves they discriminate the *new*
+path.  **Measure-first gate:** the CPU is 0.3–0.6 ms on the sparse
+fixture and per-iteration dispatch overhead alone may exceed that at
+bench sizes.  If the SpMV wins only past some edge count, `'auto'`
+gains an **edge-count gate** (more edges favor the GPU here — the
+inverse of the triangle family's density gate), machine-stamped; if
+it never wins, `Infinity` stays and the wrapper comments carry the
+measured number — the losing configuration stays measured, the
+`pageRankDense` precedent.
+
+### 72.2 — AP coalescing, and the reduction item closed honestly
+
+(a) Close the stale half on the record: measure the surviving
+single-workgroup epilogues once in isolation, record the µs figure,
+and decline a true two-stage reduction (it adds a dispatch per
+iteration to save microseconds).  (b) The live remainder: coalesce
+`A_UPDATE`'s stride-n walks via a transposed R copy — either
+`R_UPDATE` writes rrᵀ alongside rr (it already owns the row) or a
+tiled transpose kernel joins the iteration; `A_UPDATE` then reads
+rows of rrᵀ/aᵀ coalesced.  **Measure-first gate:** confirm the
+~2.6 ms/iteration figure still stands locally before writing the
+kernel; land only if iteration time moves ≥ ~20%, else record and
+drop.  **Verified by** the AP parity spec (identical-partition,
+discrete — it reruns green or the transpose is wrong) plus one
+skewed-transpose control; the `affinityPropagation` bench row
+re-prices it; the crossover (currently 256) re-tunes in 72.6.
+
+### 72.3 — closeness centrality: the unweighted BFS path
+
+Decision: build it, **CPU first** — the BFS reference is a
+guaranteed asymptotic win (O(n·m) vs O(n³)) independent of any GPU
+question, and it is the 65.10 pageRank story again: once the CPU
+goes sparse, the honest `'auto'` gate changes shape.
+
+(a) **CPU:** when `weight` is absent, per-source BFS accumulating
+row sums directly (reuse `closenessOfRowSum`/`closenessResultFrom`);
+weighted inputs keep FW on both executors (the weighted-betweenness
+contract precedent).  Unweighted distances are exact integers on
+both paths, so plain-mode sums are bit-identical and harmonic sums
+differ only in f64 summation order — pin with a Node spec comparing
+BFS vs FW rows on unweighted fixtures, plus a disconnected fixture.
+(b) **Measure:** if the CPU BFS beats the GPU-FW route at every
+bench size on sparse graphs (expected), the sparse-unweighted
+`'auto'` route to GPU-FW is already wrong and gets density-gated
+regardless of (c).  (c) **GPU, gated on (b)'s numbers:** extract the
+forward-BFS half of `algo-gpu-brandes.mts` as an exported plan (the
+`fwRelaxPlan` refactor pattern from 69.1) — batched level-sync
+distances, frontier-empty probes, no sigma/delta sweep — plus a
+per-batch row fold with the existing unreachable-sentinel
+discipline.  If the sparse CPU owns the family the way it owns
+pageRank, the GPU BFS serves only explicit `'gpu'` or is logged with
+the measurement attached.
+
+**Bench:** the existing unweighted closeness row silently switches
+paths — a `src/` change, correct per the fingerprint rules, but the
+round record must say the row's meaning moved.  Add a **weighted**
+closeness row so the FW route stays measured rather than asserted;
+extend the unweighted row's sizes upward within the REPS×slow-side
+budget rule from 70.4.  Parity spec addition for the GPU path if
+built (sparse unweighted multi-component fixture, both modes), with
+a control run red (drop the unreachable mark or skew the level
+increment).
+
+### 72.4 — `laplacian: 'normalized'` for the heat family
+
+A `laplacian?: 'combinatorial' | 'normalized'` option (default
+`'combinatorial'`) on the heat options, honored by `heatDiffusion`
+and `heatKernel`.  Implementation lands almost entirely in
+`buildHeatStructure`: normalized scales `ws[a] → w/√(d_s·d_t)` with
+a 1/0 diagonal (an isolated node's heat stays put), norm bound
+‖L_norm‖∞ ≤ 2 so `squarings = ceil(log2(4t))⁺` independent of
+degree; `diffuseVector` and the GPU dense build consume the same
+struct unchanged.  One new throw (invalid value) with its spec.
+**Verified by** closed-form Node specs on a **weighted pair** —
+weight 4 discriminates the modes: combinatorial L = [[4,−4],[−4,4]],
+normalized [[1,−1],[−1,1]] — plus a triangle; the parity spec runs
+heatKernel normalized (1e-4, symmetry — and asserts the *absence* of
+row conservation deliberately, a combinatorial-only invariant);
+control with the √-scaling skewed.  JSDoc, d.ts, `src/README.md`,
+MIGRATING/CHANGELOG rows.  No new bench row — same cost shape, and
+changing the existing row's mode would break cross-run
+comparability; its comment notes it prices combinatorial.
+
+### 72.5 — device-side bench rows (optional)
+
+Adopt only if 72.1–72.3's tuning needs the kernel-vs-transfer split.
+`acquireAlgoGpu` requests `'timestamp-query'` when the adapter
+offers it; a bench-only timer hook on `AlgoGpu` consulted by
+`submitPass` (reuse `gpu-timer.mts`'s querySet/resolve machinery,
+accumulating across the multiple submits Brandes-style runs make);
+the bench gains a `gpu (device)` row per family beside
+`cpu`/`gpu`/`gpu first call`, each asserting 0 < device ≤ wall-gpu —
+its purpose is attribution, exactly what an SpMV/BFS crossover
+argument needs.  **Batch all bench-file edits** (this plus 72.3's
+rows) so the `algorithms-gpu` fingerprint moves once.
+
+### 72.6 — the sweep, the re-tune, and the close (hardware-gated)
+
+On the benchmark machine: full `benchmark:algorithms-gpu`
+(SwiftShader refused, adapter identity reported), published
+`--repeat 3` serial.  From the measurements, one commit re-tunes
+every touched `'auto'` constant — the 72.1 edge gate or `Infinity`,
+the AP crossover, the closeness gates for both routes — **plus the
+standing 69.6/70.4 debt**: the triangle/similarity density gates,
+closeness `GPU_MIN_N`, the resistance parity bound on that card's
+f32.  Every constant's comment machine-stamped.  Then the
+`EQUIVALENT_HARNESSES` entries the published run now permits.
+Standing close: this record, `src/README.md`,
+MIGRATING/CHANGELOG rows for the public surface (the `laplacian`
+option, the closeness path note), `EXECUTIVE_SUMMARY.md` rewritten
+from this file, d.ts regenerated, gates green (`test:js`,
+`test:modules`, `test:throws` at zero, JSDoc 100%, the Playwright
+`algorithms-gpu` project).
+
+### Risks named at planning
+
+- 72.1's epilogue restructure changes pageRank's summation shape —
+  the tie-tolerant parity ordering invariant (65.5) exists for
+  exactly this; do not tighten it.
+- 72.3 changes what an existing bench row measures without a
+  harness edit.  Correct per the fingerprint rules, but only the
+  round record can say so — and the weighted row exists so the
+  comparison page can attribute the move.
+- The stranded-doc-block hazard has fired in this tier before
+  (65.4, 65.8), and 72.3's Brandes extraction is the same refactor
+  shape — run the JSDoc gate before each commit.
+- Sequencing: 72.1–72.5 land before 72.6 so the sweep and the
+  re-tune happen exactly once.
+
+## Round 73 plan — the WebGL2 fallback, scoped (planned 2026-08-14)
+
+Ledger 18b, run as the tenth sitting's sequencing decision 1 wrote it:
+the fallback's pre/post-4.0.0 positioning is decided *after* this
+round, on data, and **this round produces a written feasibility
+record, not code**.  The direction entered the record beside item 18
+(the sixth sitting, 2026-08-06): a possible WebGL fallback renderer
+for platforms that cannot support WebGPU — logged, never scoped.
+Planning read the renderer rather than the sentence, and the shape of
+the question changed twice: two subsystems assumed to need porting
+already have complete CPU fallbacks sitting in the architecture
+(tweens, force), and one assumed-hard piece (SDF labels) is the most
+portable thing in the renderer.  What the code does today, verified:
+
+1. **The contract is storage-buffer-shaped.**  `src/contract.mts` is
+   the co-signed column layout; `column-mirror.mts:13-14` uploads
+   dirty spans as byte-for-byte copies into storage buffers.  Several
+   columns exist *only* to fit WebGPU's base 8-storage-buffer-per-
+   stage budget — `node.outerHalf` (contract.mts:498-507),
+   `node.outerGeom` (round 58), the `edge.width` mirror lane — and
+   the curved-edge VS binds 6 columns + the curve blob + the visible
+   list, exactly 8 (`curved-edge-pipeline.mts:11-19`).  WebGL2 has
+   **no storage buffers in any stage**; the substitute is vertex
+   pulling via `texelFetch` from data textures (≥ 16 vertex texture
+   units guaranteed; RGBA32F/R32UI textures, slot → texel
+   addressing), since UBOs bottom out at 16 KiB.  The budget that
+   shaped the column layout dissolves and is replaced by a
+   texture-encoding layer where `ColumnMirror` stands today.
+2. **Culling and indirect draws have no WebGL2 form.**
+   `cull.mts:6-28`: a three-dispatch order-preserving compute
+   compaction into visible lists + `drawIndexedIndirect` args per
+   group, reused by the pick pass for cursor-region culling.  WebGL2
+   has neither compute nor indirect draw.  Two substitutes exist:
+   CPU compaction per dirty frame (writing a visible-index texture;
+   the store's columns are CPU-canonical, so the predicates can run
+   where `cpu-pick.mts` already runs), or draw-every-slot with a
+   vertex-stage collapse of invisible instances.  Cost unknown —
+   this is 73.2 (b).
+3. **Picking is three stages today** — pick-cull compute, a 64×64
+   r32uint cursor-tile draw, a 3-buffer readback ring doubling as a
+   pick cache (`picking.mts:4-34`) — and **nodes never touch it**:
+   the sync CPU pick (`renderer.mts:580-615`, `cpu-pick.mts:36-49`)
+   reads the CPU-canonical columns and carries over *unchanged*.
+   The WebGL2 substitute for the edge tile: R32UI is
+   color-renderable in core WebGL2, and `readPixels` into a
+   PIXEL_PACK_BUFFER polled through `fenceSync` gives a
+   non-blocking readback of the same tile; region culling comes
+   from the CPU cull or a scissor.  Latency delta unmeasured —
+   73.2 (c).
+4. **SDF labels are portable.**  `glyph-atlas.mts:1-10`: canvas-2D
+   raster + Felzenszwalb–Huttenlocher EDT into one r8unorm atlas;
+   the FS smooths at 0.5 with `fwidth`.  Derivatives are core ESSL
+   3.00, R8 is core, `writeTexture` maps to `texSubImage2D`, and
+   the LOD inputs (`labelFadePx`, `minZoomedFontSize`) are uniform
+   math.  Glyph instancing rides the same vertex-pulling answer as
+   every pipeline.  Low risk; not spiked.
+5. **The adaptive scale controller already runs blind.**  It is pure
+   and clock-injected (`scale-controller.mts:20`), and its
+   stall-ratio fallback (`scale-controller.mts:8-9, 32-35`) exists
+   for exactly the case WebGL2 makes common:
+   `EXT_disjoint_timer_query_webgl2` is widely disabled
+   (to-verify per browser at 73.3), so `gpu-timer.mts` mostly has
+   no substitute and `stats().gpuFrameMs` reports 0, which
+   `public-types.mts:571` already documents.  The Catmull-Rom
+   upscaler is a straight GLSL port.
+6. **The tween fallback already exists, structurally.**  The GPU
+   tween is a pure executor; the CPU is the reference and re-derives
+   on settle with no readback (`gpu-tween.mts:10-35`), geometry
+   channels are CPU-side even today, and the AnimationManager routes
+   to the GPU only `if (this.sink != null && ani.gpuEligible)`
+   (`animation.mts:2175`) — with no sink it runs wholly on the CPU.
+   The fallback's cost is per-frame column writes + span uploads,
+   which is precisely the cost rounds 24/25 built the offload to
+   avoid; the record quotes those benchmarks rather than
+   remeasuring.
+7. **The force integrator has no WebGL2 equivalent** — grid scatter
+   by atomics, a monopole pyramid, an 8-storage-binding gather
+   (`gpu-force.mts:1-54`); transform feedback has no scatter and no
+   atomics.  But the CPU reference simulation (round 18.1,
+   `layout/force-sim.mts`) is the documented spec, and the layout
+   duck-types `renderer.startForce` (`layout/force.mts:426-445`) —
+   absent it, force runs on the CPU.  Fallback = CPU sim; the
+   measured CPU-vs-GPU gap is the recorded cost.
+8. **The mapper eval pass is the same shape**: a GPU offload of
+   paint-channel data mappers (`mapper-runtime.mts:19-24`) over a
+   CPU-canonical restyle path that headless instances exercise
+   daily.  Fallback = the CPU path, priced by existing rows.
+9. **The algo GPU tier needs no port and gets none.**  It is
+   compute-only by construction (`algo-gpu.mts:1-22`), and the
+   executor contract already covers absence: `'auto'` falls back to
+   CPU on acquisition failure only, `'gpu'` rejects loudly
+   (`executor.mts` header).  On a WebGL-fallback platform that is
+   exactly the behaviour today's contract specifies — unchanged.
+   Transform-feedback rewrites of matmul/BFS kernels are declined
+   as a research project with no consumer.
+10. **Device loss recovery translates.**  The core re-mounts on an
+    external loss (`core.mts:2909-2960`); WebGL2's
+    `webglcontextlost`/`restored` events drive the same re-mount
+    shape.
+
+The cross-cutting fact the decision framework turns on: rounds 12+
+built **dual CPU/WGSL implementations that agree by construction**,
+and a WebGL renderer makes every drawn thing a *triple*.
+`shaders.mts` is 183 KB; that, not any single subsystem, is the
+maintenance headline.  Standing item served in passing: ledger 18
+(tween warm-up, "revisit with data" — who runs software adapters?) is
+answered by the same reach data 73.3 fetches; the record notes it.
+
+### 73.1 — enumerate the contract surface consumed per pipeline
+
+Read-only.  For each pipeline — node, node-layer (overlay/underlay),
+ghost, edge, curved-edge, arrow, curved-arrow, chart, image, label
+(nodes + edge + the two end streams) — plus the four compute
+subsystems (cull, picking, tween, mapper eval, force): the exact
+columns/blobs bound per stage (the `VERTEX_COLUMNS`/
+`FRAGMENT_COLUMNS` constants each pipeline declares), the WebGPU
+features assumed (storage buffers, compute, indirect draw,
+`unpack4x8unorm`, r32uint/r8 formats, texture arrays + the mip blit
+chain of `image-arrays.mts:1-30` — WebGL2 note: `generateMipmap` is
+*native* there, one of the few places the port is simpler), and the
+WebGL2 substitute with a cost class: free / texture-pull /
+CPU-per-frame / absent-with-CPU-fallback / absent.  **Verified by**
+checking every table row against the pipeline source and
+contract.mts's own budget notes — a row the source contradicts is
+the enumeration failing its control.  Output: the table, in this
+round's record.
+
+### 73.2 — spike-measure the three riskiest substitutes
+
+A **disposable spike, marked as such**: branch
+`spike/webgl2-fallback`, never merged, deleted once the record
+quotes it; a standalone page, deliberately outside `debug/` and
+`playwright-page/` (no parallel harness joins the repo).  Three
+measurements, chosen because each alone could flip the verdict, and
+decided against spiking anything else (labels and tweens: portability
+known, fallbacks exist — spiking them would measure the calendar):
+
+(a) **Vertex pulling at scale** — instanced edge quads pulling
+positions/endpoints/width from RGBA32F textures via `texelFetch`, at
+`ndex-x-large` scale (465k edges), against the WebGPU renderer's
+measured frame cost on the same box and scene.
+(b) **The cull substitute** — CPU compaction per frame at 100k-800k
+elements (predicate walk + visible-index upload, ms measured
+separately) versus draw-everything-with-VS-collapse, both against
+the compute-cull frame.  This also prices the loss of pick-region
+culling.
+(c) **Pick readback** — the R32UI tile + PBO + `fenceSync` path's
+hover latency versus `Picking.lastLatencyMs` on the same scene.
+
+Rules: a **real adapter** — SwiftShader refused for the perf claims
+(the benchmark:algorithms-gpu rule), adapter identity and machine
+recorded beside every number; probe from a served page (the
+18.5/27.9 rule); nothing enters `benchmark/published/` — the harness
+fingerprint discipline exists to keep that archive honest, and a
+disposable page has no place in it.  Each spike scene runs once with
+its substitute deliberately degraded, so a number that cannot move
+is caught before it is believed.
+
+### 73.3 — the record, the sizing, the recommendation
+
+The written feasibility record, assembled from 73.1's table and
+73.2's numbers, one section per subsystem: what WebGL2 carries, at
+what measured or quoted cost, what is absent, and the user-visible
+degradation (no `'gpu'` algo executor, CPU force, CPU tween cost
+curve, `gpuFrameMs` 0).  Then:
+
+- **Reach data, fetched not assumed**: WebFetch caniuse (webgpu,
+  webgl2, offscreencanvas) + vendor release notes, into a
+  per-browser/per-OS table stamped with the fetch date — Firefox
+  stable and blocklisted/older GPUs are the population the fallback
+  exists for.  Include the *in-worker* availability columns for both
+  APIs, so round 86 reads this table instead of refetching.
+- **Sizing the real fallback arc**: a rounds-scale estimate — GLSL
+  ports of the shader families, the texture-pull data layer standing
+  where ColumnMirror stands, CPU cull, the pick port — plus the
+  standing tax: triple-implementation upkeep on every future drawn
+  feature, and the parity-suite implication (the honest gate is a
+  live v4-webgl-vs-v4-webgpu diff project on the v3-parity harness
+  shape, plus its own goldens and CI browser cost).
+- **The recommendation, framed for the maintainer**: pre-4.0 (reach
+  at launch; delays 4.0 by the arc; two renderers forever), post-4.0
+  (WebGPU-only launch, fallback as 4.x if the reach table demands
+  it), or never (document headless + the reach data).  The call is
+  the maintainer's, made on this record — sequencing decision 1.
+- **Where the record lives**: appended to PLAN.md as this round's
+  record — the repo's design records (sittings, round records) live
+  here — with a short entry added to `src/README.md`'s "Design
+  decisions" section pointing at it, because a fallback decision
+  changes what the package claims to *require* and src/README.md is
+  the maintained scope doc.  Closing sweep as standing:
+  EXECUTIVE_SUMMARY.md rewritten, the ledger annotated (18b gains
+  its data; 18's reach question gains the same).
+
+### Risks named at planning
+
+- A spike measures its own naivety unless it replicates enough of
+  the render-on-dirty structure to discriminate — hence the
+  degraded-substitute control on each scene, the same rule the
+  parity suite lives by.
+- No `src/` changes land, so the code gates don't bind this round;
+  the docs-sweep and summary-rewrite rules still do.
+- Browser-support claims go stale fastest of anything this repo
+  records: every reach figure carries its fetch date, and the record
+  says explicitly that they are claims to re-verify at decision
+  time, not facts to build on.
+- The temptation this round must resist is scoping by porting: the
+  moment a spike file starts resembling a pipeline, it has exceeded
+  its mandate — the branch name and the deletion rule are the
+  guard.
+
+**Open:** confirmation of the record's home (PLAN.md record +
+src/README.md pointer, as proposed, versus a standalone document);
+whether the spike runs on the benchmark machine (the numbers want the
+same adapter the published renderer profile uses); whether the record
+should also price a **partial** fallback (nodes/edges/labels only —
+no charts, images, ghosts at first) as a third positioning option;
+and the framework weights — reach versus two-renderer maintenance
+versus parity-suite cost — which are the maintainer's to set at the
+sitting that consumes this record.
+
+## Round 74 plan — the worker-pool CPU executor (planned 2026-08-14)
+
+The seed is ledger item 29 (raised at 65.10): the per-source-parallel
+algorithms behind a pool of plain workers — Node `worker_threads`,
+browser `Worker`, transferable typed arrays, no SharedArrayBuffer and
+so no COOP/COEP, deliberately not wasm (SIMD reorders float sums, wasm
+threads inherit the SAB constraint, and a toolchain fights code
+standard 7).  Planning re-read the sources rather than the ledger's
+sentences, which mattered twice: the ledger's **bit-reproducibility
+claim is half wrong** (fact 5 below), and the per-source-parallel
+family is larger than the one algorithm the ledger names (fact 3).
+What the code does today, verified:
+
+1. **Weighted betweenness is contracted CPU-only and is n independent
+   Dijkstras** — `betweenness-centrality.mts:52-57` passes `gpu: null`
+   with the no-GPU-path rejection message whenever `weight` is given,
+   and the reference loop (`:207-277`) runs one heap-driven Dijkstra
+   per source, accumulating `C[w] += e[w]` (`:270`) across sources.
+   The only cross-source coupling is that sum.
+2. **The weight is a user closure and cannot cross a worker** —
+   `weightAt` (`algo-shared.mts:198-207`) calls the caller's fn on an
+   interned element per edge slot.  A worker snapshot must
+   pre-evaluate weights on the main thread into a Float64Array, one
+   per representative edge, with the same edge choice
+   `buildBrandesNeighbors` makes (`betweenness-centrality.mts:70-134`
+   — which also returns `number[][]`, so the snapshot flattens to CSR
+   rowPtr/colIdx anyway).
+3. **The per-source-parallel family is five wide, not one.**  Beyond
+   weighted betweenness: unweighted betweenness (same loop, but it has
+   a GPU lane with a measured 512 crossover,
+   `betweenness-centrality.mts:43-49`); `heatKernel`'s n independent
+   `diffuseVector` columns (`heat-kernel.mts:344`); `rwrProximity`'s n
+   independent `solveWalk` columns (`random-walk.mts:402`); and — only
+   once round 72.3 lands — the closeness per-source BFS (today
+   closeness is Floyd–Warshall on both executors,
+   `closeness-centrality.mts:146-148`).  `motifCensus`'s s-loop
+   (`motif-census.mts:160`) shares dyad counters mid-walk and is not
+   independent; excluded.
+4. **The executor contract has the slot** — `AlgoExecutor` is
+   `'cpu' | 'gpu' | 'auto'` (`executor.mts:36`), `runAlgo` routes with
+   per-family `minGpuN` and falls back to CPU only on acquisition
+   failure or `GpuUnfitError` (`executor.mts:116-141`), and the GPU
+   side caches a lazy module singleton with a `_resetAlgoGpu` test
+   hook (`algo-gpu.mts:32`, `:95`) — the exact lifecycle shape the
+   pool should copy.
+5. **The ledger's bit-identity claim does not survive re-derivation.**
+   Contiguous source ranges merged in range order give
+   `(c0+c1)+(c2+c3)`, the sequential reference `((c0+c1)+c2)+c3` —
+   different f64 grouping wherever an output sums *across* sources
+   (betweenness's `C[w]`).  What contiguous ranges *do* buy, exactly:
+   any family whose output element is computed whole from one source
+   (closeness scores, heat/RWR columns) is **bit-identical** to the
+   CPU reference, and betweenness is **deterministic per input** if
+   the partition is a pure function of n (never of pool size), with
+   CPU parity at f64-tight tolerance — far tighter than the GPU's f32
+   invariants, but not bits.
+6. **No worker exists anywhere in the tree today** (grep: zero hits
+   for `worker_threads`/`new Worker` outside `node_modules`), and the
+   build emits five single-file bundles (`rolldown.config.mjs`) whose
+   agreement the packaging chain gates — a second emitted worker
+   chunk would break every one of them.
+
+**Entry condition — the measure-first gate, as ledger 29 wrote it:**
+weighted betweenness at n=2048 through 4- and 8-worker pools against
+the sequential reference on the same box; the round proceeds past 74.1
+only if the 8-worker speedup clears **~3× after pool-startup
+amortization**, and the per-worker CSR copy cost is re-checked against
+SAB before concluding SAB is unnecessary.  If the gate fails, the
+numbers go in this record, ledger 29 closes as measured-and-declined
+(the `pageRankDense` losing-configuration precedent), and 74.2–74.5 do
+not run.
+
+Round-72 interaction, stated up front: round 72 is planned the same
+sitting and sequenced first (the round-71 sitting's decision 2).  The
+closeness workers lane depends on 72.3's BFS path existing; if 74 runs
+before 72.3 lands, closeness stays out of 74.3's wiring and is logged.
+Both rounds edit the algorithm bench files, so their fingerprint moves
+land batched per suite, not interleaved.
+
+### 74.1 — the gate measurement
+
+A standalone probe, scratch at the root (`bc-workers.scratch.mjs` —
+the `d2.scratch.mjs` shape; disposable, its numbers live here in the
+round record), run as plain `.mjs` **without tsx**: the sequential
+baseline goes through `build/cytoscape.esm.mjs`, because a per-source
+loop that builds closures is exactly the shape the `__name` lesson
+says tsx distorts.  The worker half hand-rolls what 74.2 would ship:
+a self-contained body function (CSR Dijkstra–Brandes over
+rowPtr/colIdx/weights, indexed heap inline), spawned via
+`worker_threads`.  Fixture: the deterministic degree-4 graph at
+n=2048 with a data-driven weight (sizes from `bench-size.mjs`, never
+`graph.mjs` — the v3-free rule).  Measured, each `--repeat 3`-style
+thrice: sequential reference; 4- and 8-worker warm runs (pool reused,
+per-call snapshot included); cold first call (spawn + first run, the
+amortization the gate names); the snapshot build + per-worker
+structured-clone cost in isolation; and the same clone measured
+against a SAB variant (Node needs no isolation flags, so the probe
+can price both).  Record: the 3× verdict, the 4→8 scaling shape, the
+clone-vs-SAB delta (expected trivial at ~100 KB CSR; if it is not,
+that finding goes to the maintainer before 74.2), and a browser spot
+check of the same body through a Blob worker on the debug page —
+manual, numbers noted, because 74.2's one-code-path claim rests on it.
+
+### 74.2 — the pool: lifecycle and the worker entry
+
+Two new files.  `src/algorithms/algo-worker-body.mts`: the worker
+body as one exported, fully self-contained function — no imports, no
+outer references, no class syntax — that receives jobs and answers
+results through a tiny injected port adapter.  It computes one
+contiguous source range of Brandes–Dijkstra over a CSR snapshot and
+returns the range's partial `C` as a *transferred* Float64Array.
+`src/algorithms/algo-workers.mts`: the pool — a lazy module singleton
+(the `algo-gpu.mts:32` shape) with `_resetAlgoWorkers()` beside it
+(the `:95` precedent); size `min(availableParallelism() - 1, 8)`
+(Node) / `hardwareConcurrency - 1` capped likewise (browser) as a
+starting figure, 74.5 stamps it; Node workers `unref()`ed so a pool
+never holds a process open.
+
+The bundle carries the worker entry as **source text, not a chunk**:
+the pool stringifies the body (`Function.prototype.toString`), wraps
+it in an environment preamble, and constructs Node workers with
+`new Worker(src, { eval: true })` and browser workers from
+`URL.createObjectURL(new Blob([src]))`.  This keeps all five
+single-file bundles single-file and asks nothing of rolldown's worker
+bundling (which exists for chunk-emitting outputs but is declined
+here *by shape*, not capability — to-verify only if the string path
+fails).  Three hazards named now: tsx injects `__name` wrappers on
+closure creation (the AGENTS hot-path lesson), so the preamble
+defines a no-op `__name` before evaluating the body, and 74.4's
+bare-scope spec is the tripwire for any *other* helper a transpiler
+sneaks in; Node's eval-mode worker source is CJS-flavored (the
+preamble `require`s `node:worker_threads` for its port) — to-verify
+on the pinned Node; and a CSP `worker-src` policy can refuse blob
+workers — construction failure under `'auto'` falls back to CPU
+exactly as GPU acquisition failure does (`executor.mts:124-128`),
+and an explicit `'workers'` rejects loudly.
+
+Determinism is designed here, honestly (fact 5): the partition is a
+pure function of n alone — fixed range count, never the pool size —
+and the merge adds range partials in range order.  So the workers
+executor is bit-stable across runs, machines and pool sizes; the
+per-column families are additionally bit-identical to `'cpu'`; and
+betweenness is documented as f64-tight-but-not-bit-equal to the
+reference, which corrects ledger 29's sentence on the record.
+Weights are pre-evaluated main-thread into the snapshot (fact 2);
+the CSR is structured-cloned per worker (priced in 74.1), results
+come back transferred.
+
+### 74.3 — the 'workers' executor, wired
+
+`AlgoExecutor` grows `'workers'` (`executor.mts:36`), `resolveExecutor`
+accepts it and its throw message updates (`:66-68`), and `runAlgo`
+grows a workers lane with a per-family `minWorkersN`: explicit
+`'workers'` rejects loudly when the family has no workers path or the
+environment cannot construct one; `'auto'` keeps its GPU preference
+where a GPU lane exists and fits, then takes workers when there is no
+GPU path, no adapter, or a `GpuUnfitError` — and n clears
+`WORKERS_MIN_N` (a starting figure from 74.1, stamped in 74.5) — then
+CPU.  Wired this round: **weighted betweenness** (the headline — its
+`gpu: null` slot at `betweenness-centrality.mts:52` gains the workers
+lane) and **unweighted betweenness** (workers behind the GPU's 512
+crossover until 74.5 measures the three-way ordering).  Enumerated
+and scope-gated: heatKernel and rwrProximity join only if 74.1's
+scaling generalizes to the column shape (each is a mechanical column
+partition, bit-identical by fact 5); closeness joins only after
+72.3's BFS lands.  Whatever is not wired is logged with its reason.
+JSDoc on every `executor` option doc that now names four values,
+d.ts regenerated, `src/README.md`'s executor section extended,
+MIGRATING/CHANGELOG rows for the public value.
+
+### 74.4 — tests: parity, throws, soak
+
+Node parity (`test/algorithms-workers.mjs`): cpu-vs-workers weighted
+betweenness at tolerance with the tie-tolerant ordering invariant
+(the 65.5 shape — do not tighten it past fact 5's grouping analysis);
+**exact bit-equality** asserted where it truly holds — the per-column
+families if wired, and closeness plain sums post-72.3 (integer
+distances, exact in f64).  Pool-size independence is its own spec:
+forced pools of 1, 2 and 3 workers answer identical bits.  Controls
+before trusting any of it: skew one range's partial, drop a range —
+each spec goes red or it discriminates nothing.  Every new guard is
+pinned in `test/` (the throw gate reads neither `test/modules/` nor
+`test/soak/`): the invalid-executor message, the explicit-'workers'
+rejection under a stubbed `Worker` constructor (the stubbed-navigator
+precedent in `test/algorithms-executor.mjs`).  A module spec proves
+the entry-carriage claim where it can actually break: extract the
+stringified body from the built ESM *and* UMD and under tsx, evaluate
+it with `new Function` in a bare scope (a stray `__name` or helper is
+a ReferenceError), and ping a real `worker_threads` worker through
+it.  Soak (`test/soak/workers.mjs`, under `--expose-gc`): repeated
+runs grow neither worker count nor reachable instances (WeakRef
+collection, not bytes — the 48.1 rule, with the probe's own control
+first); `_resetAlgoWorkers` lets workers collect; two instances
+interleaving runs stay isolated (`isolation.mjs` shape); and a
+spawned child process exits cleanly after a workers run — the
+`unref()` claim, asserted rather than believed.  Browser: one
+Playwright spec beside `algorithms-gpu.spec.js` running cpu-vs-workers
+through the built UMD — it needs no adapter and carries no
+`hasAdapter` skip (the `routing.spec.js` precedent), and it is the
+one place the Blob path and the *minified* stringified body are
+exercised for real.
+
+### 74.5 — bench rows, crossover constants, and the close
+
+New standalone `benchmark/algorithms-workers.mjs` under its own
+profile (the 65.9 precedent — standard results shape, promoted by
+`benchmark:publish`): per wired family, `cpu` / `workers` /
+`workers first call` rows, sized where 74.1 showed separation so the
+rows discriminate; each row asserts it ran where its name says via a
+pool stats hook (runs, worker count — the row-asserts-its-property
+rule) and the cpu row asserts the pool stayed untouched.  The suite
+saturates cores, so it schedules **exclusive** under `--jobs` —
+`schedule.mjs:209` keys exclusivity on `browser: true` today, so the
+job table gains the flag under an honest name; a new file has no
+archive, so no `EQUIVALENT_HARNESSES` question arises.  On the
+benchmark machine: publish `--repeat 3` serial, then one commit
+stamps `WORKERS_MIN_N` per family and the pool-size cap with the
+machine and figures, and — where GPU and workers lanes coexist —
+re-checks the three-way `'auto'` ordering against the GPU crossovers
+(jointly with 72.6's sweep if round 72 has landed, so each suite's
+fingerprint moves once).  Standing close: this record, the ledger-29
+entry closed with its correction noted, `src/README.md`,
+MIGRATING/CHANGELOG, `EXECUTIVE_SUMMARY.md` rewritten from this file,
+d.ts regenerated, `npm run format`, gates green (`test:js`,
+`test:modules`, `test:soak`, `test:throws` at zero, JSDoc 100%, the
+new Playwright spec).
+
+### Risks named at planning
+
+- The stringified-body scheme is the round's novel mechanism and its
+  failure mode is environmental: a transpiler helper in the body, an
+  eval-mode semantics change, a CSP refusal.  Each has a named
+  tripwire (the bare-scope spec, the pinned-Node verify, the loud
+  explicit-'workers' rejection); the residual risk is `'auto'`
+  *silently* never using workers on locked-down pages — accepted, as
+  the exact symmetry of GPU acquisition failure, and documented.
+- Fact 5 corrects a ledger claim this plan was asked to build on.
+  The parity specs must not overclaim: bit-equality only where
+  derived, tolerance elsewhere, and the executor-contract comment in
+  `executor.mts` updated so the determinism ladder (cpu > workers >
+  gpu) is written where callers read it.
+- Oversubscription: a pool at cores−1 beside the test runner's own
+  parallelism is the Playwright half-cores lesson in Node form — the
+  soak and parity specs force small pools, and only the exclusive
+  bench job runs wide.
+- Sequencing: 74.1 gates everything; 72.3 gates closeness; bench
+  edits batch with 72's so each fingerprint moves once.
+
+**Open:** four maintainer decisions.  (1) The public name of the
+executor value — `'workers'` as planned, or `'threads'`; it ships in
+d.ts and is expensive to rename later.  (2) Whether `'auto'` may ever
+prefer workers over a *present* GPU where both lanes exist — the plan
+keeps GPU precedence until 74.5 measures a family where workers win
+on real hardware, but that default is a policy, not a measurement.
+(3) Whether betweenness's not-bit-identical merge is accepted as
+designed (fixed partition, f64-tight parity — recommended), or exact
+bit-identity is bought with per-source delta replay at O(n²) transfer
+— the cost that made the ledger's claim tempting and wrong.  (4)
+Whether a `poolSize` option ships publicly now or the cap stays an
+internal stamped constant until someone asks — and, smaller, whether
+the 74.1 probe is committed as a scratch (the `d2.scratch.mjs`
+precedent) or discarded once its numbers are in this record.
+
+## Round 75 plan — the DX polish bundle (planned 2026-08-14)
+
+Six small items from the backlog's DX bundle, each re-verified
+against the source before planning — which mattered immediately:
+two of the six are further along than their backlog sentences say.
+The auto-resize observer **already exists**, unrecorded and
+untested; the font re-raster hook **already lands the hard half**
+(the round-10 `loadingdone` listener re-measures and re-rasters
+everything), and what remains are its edge cases.  What the code
+does today, verified:
+
+1. **Container auto-resize (#2401) is two-thirds landed.**  The
+   renderer installs a `ResizeObserver` on the container at
+   construction (`src/render/renderer.mts:356-360`, arriving with
+   the round-42 restructure blob; no PLAN.md round records it) and
+   disconnects it on destroy (`renderer.mts:458`); `resize()`
+   itself (`renderer.mts:402-410`) re-applies size and schedules a
+   redraw, and its own doc comment already describes the observer.
+   Headless is a structural no-op — no renderer exists to observe.
+   The gaps: the observer calls `renderer.resize()` directly, so
+   the public `'resize'` event fires only from manual `cy.resize()`
+   (`src/core.mts:2008-2013`); no option gates the observer; and
+   **no spec anywhere exercises the observer path** — grep
+   `playwright-tests/` for `resize`: nothing.
+2. **Font-load re-raster (#3408 + the round-9.7 follow-up) landed
+   its core in round 10.**  `renderer.mts:302-317` hooks
+   `document.fonts` `'loadingdone'` → `labelLayer.reraster()`
+   (`src/render/label-layer.mts:70-74`: atlas reset, shaping memo
+   cleared, `markAllLabelsDirty` — a full re-measure, not just new
+   pixels), removed on destroy (`renderer.mts:462-468`), pinned by
+   a Playwright spec (`renderer.spec.js:5102`).  The verified
+   gaps: (a) *any* `loadingdone` — an unrelated icon font — costs
+   a full atlas re-raster and every-label re-layout; (b) the spec's
+   own comment names the constraint — "a set-initiated load, so
+   the FontFaceSet fires 'loadingdone'" — and the other order,
+   `face.load()` *then* `document.fonts.add(face)`, fires no event
+   at all, leaving fallback glyphs forever; (c) no
+   `document.fonts.ready` belt exists; (d) there is no user escape
+   hatch — `setFont` with the same family early-returns
+   (`src/render/glyph-atlas.mts:243-249`).
+3. **Collections are not iterable.**  `Symbol.iterator` appears
+   nowhere in `src/`; iteration is `forEach`/`each`
+   (`src/collection.mts:683,6321`), `toArray`, and numeric index +
+   `length` (`collection.mts:232-238`, interned singleton handles
+   per slot).  `cy.add` takes `ElementsInput`
+   (`src/public-types.mts:134-139`): defs (array or
+   `{nodes,edges}`), columnar, or a wire `ArrayBuffer`/view —
+   no generic iterables.  Hazard verified for the design: typed
+   arrays are themselves iterable, so any iterable branch must sit
+   *after* the wire-payload checks.
+4. **The elements-at-position internals are public in one half
+   already.**  `cy.pick(x, y)` — async, CSS px, exact, null when
+   headless — has shipped since the pick work
+   (`core.mts:1980-1984`), resolving through the 3-stage renderer
+   pick (`renderer.mts:521-568`: sync CPU node pick → cached tile
+   → GPU edge tile).  The sync CPU node pick `pickNodeSync`
+   (`renderer.mts:580`) is what the pointer layer uses for
+   pan-vs-grab (`src/interact/pointer.mts:371`) — but it is absent
+   from `RendererLike` (`core.mts:82-95`), so no public surface
+   reaches it.  #1209 reduces to: expose the sync half, and name
+   the pair.
+5. **Gesture toggles: the quartet + tuning options exist
+   (`public-types.mts:610-672`), the wheel is hardwired, and one
+   real deviation surfaced.**  `onWheel`
+   (`pointer.mts:235-277`) calls `e.preventDefault()`
+   **unconditionally, before** the `userZoomingEnabled` check — so
+   a zoom-disabled v4 canvas still swallows page scroll, where v3
+   preventDefaults only when all four pan/zoom toggles allow it
+   (`v3/src/extensions/renderer/base/load-listeners.mts:
+   1130-1131`).  Trackpad pinch arrives as ctrl+wheel through the
+   same path (`pointer.mts:50-51`).  Drag-from-element panning
+   needs **no new toggle**: per-element `pannable` exists
+   (`public-types.mts:33`, edges default true), `panify`/
+   `unpanify` exist (`collection.mts:3772,3782`), pannable
+   overrides grabbable in `canDrag` (`pointer.mts:494`), and a
+   press on any non-draggable node already pans
+   (`pointer.mts:385-387`).  The 41.5 decree stands: toggles are
+   the whole story, `preventDefault()` is browser-level only —
+   new *options* are the sanctioned mechanism.
+6. **Cull counts are on-device only.**  The compaction's scan
+   writes `instanceCount` into the indirect args
+   (`src/render/cull.mts:445`) in a buffer created
+   `STORAGE | INDIRECT` — no `COPY_SRC`, and no readback of it
+   exists anywhere (`cull.mts:862`); `stats()` reports *store*
+   counts, not visible ones (`renderer.mts:382-383`).  So the
+   decision the backlog left open is decided by the code: **exact
+   viewport counts need a readback, so the API is async** — the
+   `picking.mts` staging/coalescing pattern is the in-repo
+   precedent.  The model-space sync form already exists as a
+   composition: `cy.elementsInBox(...)` (`core.mts:1274`) over
+   `cy.extent()` (`core.mts:1824`) — geometric containment, which
+   deliberately does not see draw-tier hide/LOD.
+
+Sequencing: the items are independent, but three of them edit
+`renderer.mts`; those land in sequence (75.1 → 75.2 → 75.6) while
+the core/pointer items (75.3, 75.4, 75.5) interleave freely.  Each
+pass lands whole — specs, JSDoc (`@param`/`@returns`/`@throws` at
+100%), d.ts regen, MIGRATING/CHANGELOG rows where public surface
+moves — so an item slipping does not hold the bundle.
+
+### 75.1 — auto-resize, recorded and closed honestly
+
+No new machinery; the round makes the existing observer true and
+proven.  (a) Route the observer through the core: the callback
+becomes `this.cy.resize()` so observer-driven resizes fire the
+public `'resize'` event exactly as manual calls do — one path, one
+emit (no loop: `applySize` touches the canvas, and the canvas's
+CSS size is 100% of the container, so the observer does not
+re-fire from its own work).  (b) Decline the opt-out option and
+the debounce, in writing: the observer *is* the v4 contract (the
+`resize()` doc comment already says so), ResizeObserver batches
+per frame and `applySize` is cheap, and `cy.resize()` stays for
+what an observer cannot see (a devicePixelRatio change).  (c) The
+missing coverage: a Playwright spec that resizes the container
+element, awaits the `'resize'` event and asserts the canvas's
+device-pixel dimensions followed — **control**: the same scene
+with the observer disconnected must time out the event.  (d)
+Record the observer's existence and provenance in
+`src/README.md`; MIGRATING row ("no manual `cy.resize()` on
+container resize — v3 needed one").
+
+### 75.2 — the font edge cases, and the escape hatch question
+
+Three verified gaps, smallest honest fix for each.  (a)
+**Family-filter the re-raster**: `onFontsLoadingDone` reads the
+event's `fontfaces` and re-rasters only when a loaded face's
+family matches the atlas font (normalized: case, quotes) — an
+unrelated font no longer costs an every-label re-layout.
+Conservative fallback: an event with no readable face list
+re-rasters as today (WebKit's event payload here is to-verify).
+The match logic lands as a pure exported function with a
+`test/modules/` spec; **control**: force the filter to answer
+false and the round-10 Playwright late-font spec must fail.  (b)
+**A `document.fonts.ready` one-shot belt**: the atlas marks
+itself *provisional* when it rasters any glyph while
+`document.fonts.check(font)` is false; `document.fonts.ready`
+resolution re-checks and re-rasters once if still provisional —
+covering a face that finishes between atlas construction and
+listener traffic.  (c) **The load-then-add orphan**
+(`face.load()` before `document.fonts.add`): no event exists for
+it, period.  The plan's mechanism: while provisional, each
+*rendered* frame re-checks `document.fonts.check` (a sync string
+lookup) and re-rasters on the flip — this catches the orphan on
+any page that is animating or interacting; a page fully at rest
+with a post-hoc font add stays wrong until any redraw, which the
+JSDoc states, with "add before load" as the documented order.
+Whether that residual deserves a low-frequency timer is left to
+the maintainer (Open).  New Playwright spec pinning the orphan
+order end-to-end; **control**: provisional flag forced false.
+
+### 75.3 — iterable collections
+
+`Collection.prototype[Symbol.iterator]` yielding the interned
+singleton handles off `_arr()` — so `[...eles][0] === eles[0]`
+(the identity story is already the interning contract,
+`collection.mts:226-229`), `for..of`, spread and `Array.from`
+all work, and iteration sees the members at collection creation
+(refs are immutable; dead members yield as stale handles, exactly
+as `forEach` passes them).  d.ts: `Collection` implements
+`Iterable<Collection>`.  `cy.add` gains generic iterables of
+element definitions, materialized with `Array.from` — the branch
+sits **after** `isSerializedElements`/`ArrayBuffer.isView` and
+the columnar discriminant, because typed arrays are iterable and
+a wire payload must never be walked as defs; a bare string (also
+iterable) falls through to the existing def-validation errors, so
+no new throw site is expected — if one proves necessary, it lands
+with its spec for the zero-tolerance gate.  Specs extend
+`test/collection-iteration.mjs` (identity, order, spread,
+`Array.from`, empty collection, post-removal iteration) plus a
+`cy.add(generator)` spec and a
+`cy.add(wireBufferAsUint8Array)`-still-decodes regression;
+**control**: an iterator yielding reversed order must fail the
+order assertion.  MIGRATING row (v3 collections were not iterable
+either — this is a v4 addition, not a parity item).
+
+### 75.4 — the public sync node pick
+
+Expose the half that interaction already trusts: `pickNodeSync`
+joins `RendererLike`, and the core gains the sync counterpart of
+`cy.pick` — CPU, nodes only, exact (halo-free, like `cy.pick`;
+the 57.9 halos stay the gesture's), CSS px relative to the
+container, `Collection | null`, null when headless (matching
+`cy.pick`'s headless null — the draw-tier frame parameters
+belong to a renderer).  Working name `cy.pickNode(x, y)`, final
+name a maintainer call (Open).  The two-API shape is justified by
+how interaction itself uses picking: pan-vs-grab *must* answer in
+the same microtask (`pointer.mts:369-374`), edges genuinely need
+the GPU tile — so the public surface mirrors the real split
+rather than inventing a third path.  JSDoc cross-references the
+pair and the halo note; d.ts regen; MIGRATING row (#1209 — v3
+never had a public form).  Specs: Playwright (hit, miss,
+topmost-overlap agreement with `cy.pick`, an edge answering only
+through `cy.pick`); Node spec for the headless null.  Control:
+the shape-aware assertions from `test/cpu-pick.mjs` are the
+template — a spec named for slanted-outline picking must fail
+with the shape test swapped for the bounding box (the round-27
+lesson, verbatim).
+
+### 75.5 — wheel behavior, scoped to two changes
+
+Both inside the 41.5 settlement: options-level toggles, and the
+library only ever preventDefaults events it consumes.  (a) **Fix
+the deviation**: `onWheel` preventDefaults only when it will act
+(zooming enabled, or the configured behavior consumes the event)
+— restoring v3's contract that a zoom-disabled canvas lets the
+page scroll.  This is a behavior fix, not an option.  Playwright
+spec on a scrollable page: `userZoomingEnabled(false)`, wheel
+over the canvas, assert `window.scrollY` moved and zoom did not;
+**control**: revert the ordering.  (b) **One new option +
+accessor**, `wheelBehavior: 'zoom' | 'pan' | 'modifier-zoom'`
+(default `'zoom'`, the current behavior; accessor in the
+`wheelSensitivity` pattern, settable at runtime).  `'pan'`:
+wheel pans by delta (gated by `panningEnabled`/
+`userPanningEnabled`), ctrl+wheel — the pinch encoding — still
+zooms, so trackpads keep pinch-zoom.  `'modifier-zoom'`: plain
+wheel is **not consumed** (no preventDefault; the page scrolls —
+the embedded-map idiom of #1905/#3287), ctrl- or meta-wheel
+zooms; pinch keeps working for free since it arrives as
+ctrl+wheel.  Whether wheel-pan emits a `'scrollpan'` sibling to
+`'scrollzoom'` in the 17.4 vocabulary is a maintainer call
+(Open).  **Deliberately excluded, named**: a wheel-pan speed
+multiplier, axis swap/inversion options, configurable modifier
+keys, touch-gesture remapping, any preventable-gesture mechanism
+(41.5, permanently), and a drag-from-element panning toggle —
+verified already expressible (per-element `pannable`/`panify`,
+`autoungrabify`, and the press-on-undraggable-pans default at
+`pointer.mts:385-387`), so a new option would duplicate surface.
+MIGRATING table row + `test/modules/migration-guide.mjs` update;
+Node specs for the accessor plumbing; Playwright specs per mode;
+**control**: swap the mode branch and each mode's spec must fail.
+
+### 75.6 — viewport counts, async because the code says so
+
+`cy.viewportCounts(): Promise<{ nodes, edges } | null>` — null
+when headless (the `cy.pick` precedent; Open to a reject
+instead).  Implementation: the cull groups' indirect args gain
+`COPY_SRC` (to-verify against Dawn's usage validation, expected
+fine); the renderer copies the `instanceCount` u32 of the four
+element groups (node + parentNode, edge + curvedEdge) into one
+small staging buffer — the copy encoded **after** the cull
+dispatches in the same submission, so the numbers are exactly the
+frame's — then `mapAsync`.  When the scene is clean, the request
+schedules a frame (render-on-dirty stays intact; a pick-style
+count-only frame is the cheap path).  Concurrent requests
+coalesce latest-wins and resolve together; destroy/device-loss
+resolves null (both patterns from `picking.mts`).  Glyph streams
+are excluded and the JSDoc says why: those counts are glyph
+instances, not labels.  The JSDoc also names the sync
+alternative — `cy.elementsInBox(...cy.extent())` — and the
+deliberate difference (model-space geometry; no hide/LOD).  The
+mask form (visible-list readback → a Collection) is logged as a
+follow-up, not built: counts serve #2283's stated need, and the
+list is a larger readback with a compaction-order contract worth
+its own round.  Specs: Playwright — known scene, exact count;
+pan half the graph out, count moves; `visibility: hidden`
+excluded; **control**: read args offset 0 (`indexCount`,
+constant 6) instead of offset 4 and every count spec must fail.
+Node: headless null; throw specs for any new guard, gate at
+zero.
+
+### 75.7 — the close
+
+MIGRATING/CHANGELOG rows for the five public-surface moves
+(pickNode, wheelBehavior + the preventDefault fix, viewportCounts,
+iterables, the auto-resize event note), `src/README.md` sweep
+(the observer's provenance, the font contract, the pick pair),
+d.ts regenerated and committed, `EXECUTIVE_SUMMARY.md` rewritten
+from this file, gates green: `test:js`, `test:modules`,
+`test:throws` at zero, JSDoc three-tag 100%, oxfmt, the
+`renderer` Playwright project, and goldens untouched (nothing
+here should move a pixel; if one moves, that is a finding).
+
+### Risks named at planning
+
+- Every new Playwright spec runs on SwiftShader behind the frame
+  driver: wheel and resize specs must poll for state
+  (`untilMidFlight`'s rule), never sleep to an offset, and the
+  first `animate()`-free frames still pay first-use pipeline
+  compilation.
+- The font family filter can suppress a legitimate re-raster if
+  normalization misses a spelling (quoted families, fallback
+  lists); the conservative no-face-list fallback bounds the
+  damage, and the control run proves the filter can fail red.
+- Routing the observer through `cy.resize()` emits `'resize'`
+  from a browser callback — any listener that itself resizes the
+  container can oscillate.  That is app behavior, but the spec
+  suite should include the guard case (observer fires during an
+  in-flight `applySize`), and the plan asserts no feedback loop
+  from the canvas's own sizing.
+- `STORAGE | INDIRECT | COPY_SRC` is expected valid everywhere
+  WebGPU ships, but it is marked to-verify; if a backend rejects
+  it, the fallback is a tiny dedicated copy of the args via a
+  compute pass, not a feature cut.
+- The stranded-doc-block hazard: 75.4 and 75.5 insert members
+  into the two largest doc surfaces (`core.mts`, `pointer.mts`)
+  — run the JSDoc gate before each commit, and read the d.ts
+  hover text for the neighbors of every insertion.
+
+**Open:** the maintainer decisions this plan parks rather than
+guesses.  (1) Naming: `cy.pickNode` vs `cy.nodeAt` for the sync
+pick, and `'modifier-zoom'` vs `'ctrl-zoom'` for the wheel value.
+(2) Headless answers: null (planned) vs reject for
+`viewportCounts`, and whether the sync node pick should *compute*
+headless from the viewport at dpr 1 instead of answering null —
+feasible, since the CPU pick reads only store columns and frame
+params.  (3) Whether wheel-pan joins the 17.4 event vocabulary as
+`'scrollpan'` or emits nothing.  (4) The font orphan residual: is
+the rendered-frame re-check plus documented ordering enough, or
+does a low-frequency provisional-state timer earn its keep?  (5)
+Confirming the two declines recorded here as decisions: no
+auto-resize opt-out option, and no debounce.
+
+## Round 76 plan — the small style wins bundle (planned 2026-08-14)
+
+Four items gathered from the demand log.  Planning re-read the
+sources rather than the demand's sentences, which mattered twice:
+the gradients item is **already landed** — round 13 C2 shipped the
+whole surface the demand asks for, with a golden and a *live v3
+parity scene*, because v3 has had `background-fill`/`line-fill`
+gradients since 3.6/3.7 and the demand's premise that they have no
+v3 counterpart is itself stale — and the screen-space-sizing item
+is bigger than a bundle slot.  What the code does today, verified:
+
+1. **Gradients exist.**  `background-fill`
+   (solid | linear-gradient | radial-gradient) with
+   `background-gradient-stop-colors`/`-positions`/`-direction`
+   (`src/style.mts:812-814`) and `line-fill` with stops along the
+   drawn span (`src/style.mts:903-904`), packed into the
+   `node.gradient`/`edge.gradient` Uint32Array×8 columns with the
+   recorded 5-stop cap (`src/contract.mts:565-575`); sRGB
+   interpolation, stop lists constants-only, enums mapper-capable
+   (`src/README.md:853-862`).  Pinned by the `gradients` golden
+   (`playwright-tests/visual.spec.js:2211`) and a live parity
+   scene that drives *v3's own* gradient props
+   (`visual.spec.js:5996`).  What does not exist: no benchmark
+   row prices the gradient fragment path, anywhere.
+2. **`text-border-style` is the one honest gap.**
+   `text-border-width`/`-color`/`-opacity` exist
+   (`src/style.mts:874-876`) and draw in `fsLabel` as a band
+   inward from the padded box on solid quads
+   (`src/render/shaders.mts:4411-4419`); the style keyword is
+   recorded not-yet (`CHANGELOG.md:244`, `MIGRATING.md:314/548`)
+   by round 38's deliberate docs-first call
+   (`src/README.md:4042`): the label box is a different pipeline
+   and node-border dashing made nothing free there.  The solid
+   quad's shape id rides `uv1.x` (`shaders.mts:4379`); `uv1.y`
+   appears unbound on solid quads (`glyph-buffer.mts:219` — the
+   spare lane a style id would take; **to-verify** at
+   implementation).
+3. **Screen-space sizing touches every model-px reader.**
+   `boundingBox()` reads `node.size` in model px
+   (`src/collection.mts:2899`) with labels *in* the box by
+   default (round 16.4, `collection.mts:2846`); `fit` derives
+   zoom from that box (`src/core.mts:1754`) — a screen-px
+   element's bounds depend on zoom, so fit becomes a fixpoint
+   problem.  The GPU cull computes extents as size × zoomDpr and
+   bakes the label LOD floor as a zoomDpr threshold
+   (`src/render/cull.mts:153,189,389-419`); the CPU pick scales
+   model sizes by zoomDpr per candidate
+   (`src/render/cpu-pick.mts:106-107`); arrow trims and curve
+   geometry consume `edge.width` model px per vertex.
+4. **Ledger 23's arithmetic, re-derived.**  `edge.arrowShapes`
+   holds arrow-scale ×16 in bits 24..31 with bits 18..23 reserved
+   (`src/contract.mts:374-397`); the measured cost is 1.8% on
+   every arrow quantity at `arrow-scale: 1.4` (ledger item 23).
+   The round-56 SHOWS_LINE flags live at bits 18/19 **of the
+   mirror copy only**, and the contract already warns they move
+   if the reserve is spent (`contract.mts:400-427`).  The part
+   the ledger does not spell out: a full 14-bit ×128 spend uses
+   all 32 bits (16 id + 2 hollow + 14 scale) and leaves the
+   mirror word *no room* for its two flags; a 12-bit ×64 spend
+   (bits 20..31) keeps mirror 18/19 free and still quarters the
+   error.
+
+### 76.1 — gradients: the stale item closed honestly
+
+No new props.  Scope: sweep the three demand issues
+(#2091/#3407/#2207) against the shipped surface and add the
+MIGRATING/CHANGELOG sentences that close them; correct the demand
+log (v3 *has* gradients — the parity scene is the proof); add the
+missing measurement — a render-bench pair scene, solid vs
+gradient fills at the 25k size (`benchmark/render-bench.mjs`, the
+solid/dashed hexagon-border pair's shape at :121-133; compare
+device rows).  **Measure-first gate:** the pair *is* the gate —
+the border precedent says a fragment premium may be unmeasurable
+at scene level; record the number either way.  A close-up scene
+is deliberately declined: a gradient error is a ramp, not a
+boundary effect, so magnification buys the diff nothing — record
+the reasoning.  Batch the bench edit with 80.3's scene (below) so
+the renderer fingerprint moves once.  Files:
+`benchmark/render-bench.mjs`, `benchmark/render-bench.html`,
+`MIGRATING.md`, `CHANGELOG.md`, `src/README.md`.
+
+### 76.2 — screen-space sizing: read, decide, split
+
+The reading supports a split, and this pass says so.  The
+knock-ons are structural, not shader-local: the bb/fit fixpoint
+(a screen-px element's box must either evaluate at the current
+zoom — making `boundingBox()` zoom-dependent, a semantics change
+`fit`/`animate` and every caller inherits — or stay excluded the
+way v3 excluded labels), a per-element branch in the cull
+kernels, the CPU pick's scale term, the baked label LOD
+thresholds, and every per-vertex consumer of `edge.width`.  That
+is a round, not a bundle slot.  76.2 delivers the design for the
+sitting: property scope proposal (**first tranche: `font-size`
+only** — fixed-px labels are the bulk of #789's nineteen
+comments, and labels are the one surface with an existing
+exclusion story; node size/edge width follow only if the label
+round proves the bb rule), and the API shape — per-property unit
+(a `'12 screen'` suffix string, the `'N%'` precedent; no
+functions, the serializable-sheet rule) versus a per-sheet flag —
+plus the bb rule choice.  The implementation is proposed as its
+own round with this skeleton attached.  Nothing else lands in 76.
+
+### 76.3 — `text-border-style`
+
+Parse v3's enum (solid | dotted | dashed | double) into a
+computed field, carry it to the solid-quad glyph record (the
+spare `uv1.y` lane; if occupied in fact, the record grows a word
+— measure the glyph-buffer size cost first), and give `fsLabel` a
+dash-gated perimeter coordinate for the rect/round-rect box —
+round 38's closed-form tier shape, and the easy tier only: no
+polygon case exists here.  Derivatives hoist above the branch
+(the chart-FS uniformity rule).  Dash constants come from reading
+v3's `drawText` source, not from assumption; if v3's `double` is
+degenerate the way its outline double is
+(`src/README.md:4035-4038`), record and match.  Verification: a
+golden with all four styles on labeled nodes and edges; a live
+close-up parity scene vs v3 at zoom ≥ 2 (round 38's lesson: at
+zoom 1 a solid border reads within a percent of a dashed one)
+with a feature-off control past the bound; Node specs for
+parse/readback/throw.  No new bench row — dash-gated label-box
+fragments are a smaller frame share than the hexagon-border case
+that already measured unmeasurable; the record says so.  Files:
+`src/style.mts`, `src/render/glyph-buffer.mts`,
+`src/render/shaders.mts`, `test/` label specs,
+`playwright-tests/visual.spec.js`, `MIGRATING.md`, `CHANGELOG.md`.
+
+### 76.4 — ledger 23, forced
+
+This round puts the reserve on the sitting's table with the costs
+priced, and item 23 closes whichever way it goes.  (a)
+**De-quantize**, two flavors: 14-bit ×128 (0.11% error; evicts
+the mirror's two SHOWS_LINE flags, which then need a new home —
+none is free in `edge.width`'s two lanes) or 12-bit ×64 (bits
+20..31; ~0.4% error; mirror flags stay put; bits 18..19 remain
+reserved).  Branch plan: repack `ARROW_SHIFT_SCALE`,
+`packArrowShapes`, the shader unpacks, the mirror derivation; the
+routing ledger's two-sided bands **fail by design** and force the
+re-measure (the item's own note); arrow goldens regenerate —
+diff-read first, exact-goldens rule.  (b) **Hold the span for a
+17th arrow shape**: verified, no candidate shape is named
+anywhere in the ledger or the demand log — evidence the sitting
+weighs, not a decision.  (c) **Leave it**: 1.8% is sub-pixel at
+most zooms; zero cost.  **Measure-first gate:** before any
+repack, re-run `routing-ledger.mjs` and confirm the residuals
+still center where round 56 left them.
+
+### Risks named at planning
+
+- Goldens are exact; branch (a) moves every arrow golden with a
+  non-representable scale — regenerate deliberately, never widen.
+- `fsLabel` gains a non-trivial branch: derivatives before
+  non-uniform control flow, or the device-error guard fires.
+- Two render-bench scene additions this round (76.1, 80.3) —
+  batch them so the `renderer` fingerprint moves once.
+- The stale-item lesson: 76.1's record must correct the premise
+  (v3 has gradients) so no future round re-plans this.
+
+**Open:** the ledger-23 call itself (a/b/c — and within (a), the
+12-bit flavor that keeps the mirror flags vs the 14-bit flavor
+that moves them); whether the screen-space round is approved, its
+API shape (unit suffix vs sheet flag) and the bb rule
+(zoom-evaluated vs excluded); whether gradient stop lists should
+ever take the `{ data }` passthrough (declined by default — no
+named consumer); `text-border-style: double` behavior if v3's
+proves degenerate.
+
+## Round 77 plan — SVG vector export (planned 2026-08-14)
+
+Issue #639 (2014) is the most-demanded export feature ever filed
+against this library, and both flagship consumers — Cytoscape Web
+and EnrichmentMap web — bolt on third-party `cytoscape-svg` +
+`cytoscape-pdf-export` for publication figures.  The design
+sitting's thesis was that v4 makes this a *serializer*, not a
+second renderer, because the geometry is CPU-side.  Planning
+verified that claim member by member, and it holds with one
+exception worth naming.  What the code does today:
+
+1. **Image export is `png()`/`jpg()` only, promise-only, and
+   renderer-bound** — `core.mts:2053`/`2064` route through
+   `_exportImage` (`core.mts:2070`), which throws on headless
+   instances (`core.mts:2087-2091`), calls
+   `renderer.exportImage()` (`render/renderer.mts:657`, offscreen
+   render + GPU readback), and encodes through a DOM canvas
+   (`core.mts:2094-2102`).  The option surface is `ExportOptions`
+   (`public-types.mts:338-358`): `bg`, `full`, `scale` or
+   `maxWidth`/`maxHeight`, `quality`, `output`.  The view math —
+   full-graph bounds vs viewport, the scale fit — is
+   `computeExportView` (`renderer.mts:833`).
+2. **Edge routing is CPU-canonical.**  `store/curve-index.mts`
+   derives every family's route (v3's derivation verbatim, per its
+   header), and the public accessors read it with no renderer:
+   `controlPoints()` (`collection.mts:3347`), `segmentPoints()`
+   (`collection.mts:3400`), endpoints including the *arrow* points
+   `asx/asy` recorded `spacing` behind each boundary
+   (`collection.mts:3442-3482`, `curve-geometry.mts:202`, `:811`),
+   and midpoint + tangent (`curve-geometry.mts:1899`).  This is
+   exactly the surface `routing.spec.js` compares numerically with
+   no WebGPU adapter and no frame drawn.
+3. **Arrow polygons are CPU tables; arrow *rotation* is the one
+   GPU-only derivation.**  `shape-points.mts:185` holds
+   `ARROW_POINTS` in v3's arrow frame (tip at (0,0), lateral
+   ±0.15), plus the compound tables and the computed
+   `ARROW_MAX_BACK`/`ARROW_AXIAL_DEPTH`.  The head's
+   position+rotation quad is built in the arrow vertex shader; the
+   CPU carries twins of `boundaryOffset`/`arrowGap`/`arrowSpacing`
+   (`curve-geometry.mts:66`, `:117-134`) but no per-end *angle*
+   accessor exists today (to-verify at build time: none found by
+   grep; the serializer derives angles from the stored routes'
+   end tangents, which is new CPU code with a WGSL twin to agree
+   with).
+4. **Label shaping is a pure CPU module with injected advances**
+   (`label-wrap.mts:1-28`): the renderer's LabelLayer runs it with
+   real atlas advances (exact dims fed back to the store,
+   `label-layer.mts:169`), the headless estimator with flat
+   per-character advances (`graph-store.mts:4029`, a recorded
+   approximation).  Labels are model-space only, which is what
+   makes export WYSIWYG (`src/README.md`, "Labels are model-space
+   only").  The font is one global family/style/weight feeding one
+   atlas (`style.mts:493` default `sans-serif`;
+   `graph-store.mts:280`) — SVG `<text>` can carry that exact CSS
+   font string, and there is no per-element font to represent.
+5. **Everything else the SVG needs has CPU style records:**
+   gradients (`background-fill` linear/radial with ≤5 stops,
+   `style.mts:268-273` → `<linearGradient>`/`<radialGradient>`
+   defs), line/border dashes already normalized to two on/off
+   pairs (`style.mts:359-365`, `:250-257` → `stroke-dasharray`),
+   pie/stripe chart records (`style.mts:1685-1690`), node shape
+   polygon tables (`shape-points.mts`, the same tables the SDF and
+   the exact CPU pick consume), corner radii, hollow/filled arrow
+   fills (`style.mts:378-381`).  Paint order is explicit in
+   `drawScene` (`renderer.mts:1710`): parent bodies under
+   everything, then parent decorations, edges, arrows, node
+   underlays/bodies/images/charts/overlays, node labels, edge
+   labels — SVG is painter's order, so the serializer emits in
+   that sequence and the round-14 z-decisions carry over for free.
+
+One trap verified so it is designed around: edge opacity is folded
+into the stored arrow alpha at style-write time
+(`arrow-pipeline.mts` header comment) — the serializer reads
+**style records and store sidecars**, never the GPU-mirrored
+columns, or it inherits render-encoding artifacts.
+
+### 77.1 — the serializer core: nodes, paint order, viewport
+
+New `src/svg-export.mts`: a pure string builder (no DOM — the
+round-78 headless path depends on this) over the store + style
+engine.  Scope: the export view math extracted from
+`computeExportView` into a shared renderer-free helper (full =
+`store.boundingBox()`, viewport = container or
+headless dims; `scale`/`maxWidth`/`maxHeight` set the SVG
+width/height while the viewBox carries model coords — no texture
+cap applies, record that as the deviation it is), `bg`, node
+bodies from the shape tables (polygons as `<path>`,
+ellipse/rectangle/round-rect analytic), borders with style/dash,
+gradients as defs, opacity, visibility/display gating as the cull
+does.  Files: `src/svg-export.mts`, `src/core.mts` (`cy.svg()`),
+`src/public-types.mts` (`SvgExportOptions extends` the shared
+subset of `ExportOptions`, minus `quality`, plus `output:
+'string' | 'base64uri' | 'blob'`).  Returns a promise for
+consistency with `png()`/`jpg()` even though the common path is
+synchronous — image embedding (77.4) is genuinely async, and one
+signature is kinder than two.  New throws (empty-graph `full`,
+zero-sized viewport, invalid `output`) each with a spec — the
+throw gate stays at zero.  **Verification:** Node specs asserting
+structure on the string (element counts, path data numerically
+against `position()`/size getters), each shown able to fail by
+skewing the serializer's transform.
+
+### 77.2 — edges and arrows: the routes serialized
+
+Scope: every curve family from the accessors' own data — straight
+(chord between the round-55 boundary endpoints), bundled bezier
+(quadratic `Q` through the control point), unbundled bezier,
+segments (`L` runs), round-segments/round-taxi (arc corners — see
+the gate below), taxi, haystack, loops — plus `stroke-dasharray`
+from the normalized pairs and the arrow heads: `ARROW_POINTS`
+polygons placed at the CPU arrow points with angles derived from
+the route end tangents (the one new geometry derivation, kept in
+`curve-geometry.mts` beside its WGSL twins so the agreement is
+by-construction like gap/spacing), hollow heads as stroked paths,
+mid-arrows at the midpoint+tangent.  **Measure-first gate:**
+round-segments/round-taxi corners and loop curves can be emitted
+as true arcs/beziers or as sampled polylines at the shader's
+`CURVE_SEGS`; build the analytic form only if a sampled control
+scene shows visible divergence at close-up zoom — otherwise
+sampling wins on simplicity and matches the GPU by construction.
+**Verification:** Node specs diffing emitted path anchor points
+against `controlPoints()`/`segmentPoints()`/endpoint accessors
+numerically (the routing.spec.js discipline, in-process); control:
+skew the tangent derivation and watch the arrow-angle spec fail.
+
+### 77.3 — labels: real text, pinned breaks
+
+The fidelity call, stated as contract: **SVG uses real `<text>`,
+not SDF glyph quads.**  Line breaking is *pinned* by the export —
+the serializer runs the same `breakLines` the renderer ran, with
+the renderer's atlas advances when a renderer exists, and emits
+one `<text>`/`<tspan>` per broken line with explicit x/y and
+`text-anchor` from the justification — so a viewer's font engine
+can never reflow the block; only intra-line glyph spacing may
+differ from the GPU raster.  Scope: halign/valign anchoring,
+`text-rotation` incl. edge `autorotate` (a `rotate` transform at
+the midpoint tangent), text outline as paint-order stroke, text
+background rect, margins, end labels, `min-zoomed-font-size`/LOD
+evaluated at the export scale exactly as the GPU export does
+(`src/README.md`, round 9.6).  The global font family/style/weight
+is emitted verbatim on a group.  **Verification:** Node structural
+specs (line count and per-line text against `estimateBlock`'s
+breaks); browser parity in 77.5.
+
+### 77.4 — images, charts, compounds, the rest of the surface
+
+Background images as `<image>` (async: data-URI embedding via the
+image registry when the raster is held, URL passthrough
+otherwise — the CORS/embedding split is an Open item), pie/stripe
+charts as arc-wedge/band paths clipped to the node shape,
+compound parent bodies in their draw position, ghost/underlay/
+overlay quads, selection styling deliberately **excluded** (the
+canvas overlay rule: v4 exports never include the selection box —
+same here).  A `src/README.md` section writes the **fidelity
+contract** as a table: representable exactly / representable with
+recorded deviation (text rasterizes through the viewer's font
+engine; overlapping translucent hollow arrows composite rather
+than erase — the round-56 recorded deviation carries over) / not
+represented (anything GPU-transient like mid-tween GPU-owned
+positions: the serializer reads the CPU model, so a mid-animation
+`svg()` sees the CPU-stale value — recorded, with the `png()`
+contrast stated).
+
+### 77.5 — the parity suite: rasterize and compare, with controls
+
+New `playwright-tests/svg-parity.spec.js` + a scene page under
+`playwright-page/`: for each scene, render live, `cy.png()` at
+scale 1, `cy.svg()`, inject the SVG **inline** into the page (an
+`<img>`-loaded SVG cannot reach the document's fonts; inline
+`<svg>` uses the vendored Open Sans the label harness already
+loads), screenshot the SVG element, pixelmatch the pair under a
+per-scene bound.  Scenes are per-feature and built to expose, not
+conceal (the round-55/56 lessons: hollow and translucent heads,
+thick-line/small-head, many ends, close-up tier at zoom 3-4 where
+AA cannot hide geometry).  Label scenes carry their own looser
+bound with the reason written down (Skia text vs SDF text is a
+real, accepted difference); geometry scenes stay tight because
+their ink is identical by construction.  **Every scene runs its
+control once, deliberately broken** (serializer transform skewed,
+arrow angle negated, dash pattern dropped) and the mismatch must
+jump — a scene that cannot fail is deleted, per the standing rule.
+**Measure-first gate:** if the all-features composite scene cannot
+discriminate under any bound (AA noise dominating), it is dropped
+in favor of the per-feature set alone, and that finding is
+recorded rather than tolerated.
+
+### 77.6 — close
+
+JSDoc (`@param`/`@returns`/`@throws` at 100%), d.ts regenerated,
+`src/README.md` fidelity contract, MIGRATING/CHANGELOG rows (v3
+had no core SVG; the `cytoscape-svg` extension's users are the
+audience), `EXECUTIVE_SUMMARY.md` rewritten, gates green
+(`test:js`, `test:modules`, `test:throws` at zero, Playwright
+incl. the new suite).
+
+### Risks named at planning
+
+The SDF-vs-real-text divergence is the honest ceiling on pixel
+parity — the design accepts it as contract rather than chasing
+glyph-quad SVG output, and the per-line pinning bounds the damage
+to intra-line spacing.  The arrow-angle derivation is new CPU
+geometry with a shader twin; it gets the gap/spacing treatment
+(shared constants, generated agreement) or it will drift.  Output
+size on the 465k-edge fixture is unmeasured — measure before
+promising anything; a `full` export of ndex-x-large may be a
+string no viewer opens, and that is an editorial limit to
+document, not an engineering fix this round.  The serializer
+reading style records means every future style prop has an SVG
+half to consider; the fidelity-contract table in `src/README.md`
+is where that debt becomes visible instead of silent.
+
+**Open:** whether `svg()` throws on headless instances in this
+round (renderer-free by construction, but label advances degrade
+to the flat estimate — round 78 owns making that respectable, so
+the conservative call is to allow it and record the estimate
+deviation now); image embedding policy (data-URI embed vs href
+passthrough, a CORS and file-size trade the maintainer should
+pick); whether hollow *mid* arrows — already a recorded GPU
+deviation (open call 21) — are drawn trimmed in SVG or kept
+deviation-identical; PDF stays out of scope (SVG is the input
+every PDF toolchain wants — say so in the docs and close #639's
+sibling asks by pointer).
+
+## Round 78 plan — headless Node image generation (planned 2026-08-14)
+
+The cytosnap replacement (#2561, #954): cytosnap spawns a whole
+Chrome to screenshot v3; the ask is figures out of plain Node.
+Round 77 makes the cheap route real — SVG is a string, and the
+serializer was built DOM-free on purpose.  What the code does
+today, verified:
+
+1. **The entire Node test tier runs headless instances** — no
+   container, no DOM, no adapter; a headless instance is ready
+   immediately (`core.mts:338`) with `headlessWidth`/
+   `headlessHeight` standing in for the container
+   (`core.mts:284-285`, `public-types.mts:666-668`).  Routing,
+   style, layouts (the CPU force included) and every accessor the
+   round-77 serializer reads are exercised headless by `test:js`
+   today.
+2. **`png()`/`jpg()` are structurally browser-bound twice over**:
+   the readback needs a renderer (throws headless,
+   `core.mts:2087-2091`) and the encode needs a DOM canvas
+   (`core.mts:2094-2102`).  The renderer needs `navigator.gpu`
+   (`gpu-context.mts:43`) and a container element.
+3. **Label measurement is the one degraded surface.**  The glyph
+   atlas rasters through canvas 2D (`glyph-atlas.mts` header) and
+   cannot exist in Node; headless label dims come from
+   `estimateBlock` with flat per-character advances
+   (`graph-store.mts:4029`), a recorded approximation
+   (`label-wrap.mts:9-11`).  So a Node `svg()` gets correct
+   geometry, correct single-line label *placement*, and
+   approximate wrapped-line *breaks* — the breaks are pinned into
+   the output (77.3), so they are deterministic, just not
+   identical to a browser's.
+4. **Nothing else breaks.**  Background images never decode in
+   Node (the registry's decode path is browser-only) — the SVG
+   href-passthrough form still serializes; gradients, dashes,
+   charts, arrows, compounds are all CPU records.
+
+### 78.1 — `svg()` headless, made contractual
+
+Scope: whatever 77 left renderer-coupled is severed (the export
+view helper reads headless dims; no `document` anywhere on the
+path — a Node spec imports the serializer and proves it); the
+label-estimate deviation is promoted from accident to documented
+contract, with a spec pinning that a wrapped label's Node output
+carries the estimator's breaks exactly.  Files:
+`src/svg-export.mts`, `test/svg-export-headless.mjs`.
+**Verification:** a cross-environment structural spec — the same
+fixture serialized in Node (`test/`) and in the browser
+(Playwright, reusing 77's page) must agree byte-for-byte outside
+the label blocks, and the label blocks must differ only in line
+breaking (control: perturb the Node serializer's viewport math and
+watch the structural half fail).  **Measure-first gate:** measure
+the Node-vs-browser wrapped-label divergence on the label-heavy
+debug fixtures first; if flat advances break lines grossly (not
+just slightly), 78.2's metrics option is justified — if the
+divergence is a few px of ragged edge, ship the estimate and
+record the measurement instead of building machinery.
+
+### 78.2 — optional real metrics in Node (gated on 78.1's measure)
+
+Only if the gate fires: `svg({ advanceOf })` — an injected
+per-character advance function, the exact shape `breakLines`
+already takes (`label-wrap.mts:82`), so the library adds an
+option, not a dependency.  The docs show wiring it to `fontkit` or
+a measured-once advance table; the library itself takes no font
+dependency and no new tool.  A spec injects a fake metric and
+asserts the breaks move (its control: the same spec with the
+option ignored must fail).
+
+### 78.3 — PNG in Node: the resvg question, structured for the maintainer
+
+The route: rasterize 77's SVG with `@resvg/resvg-js` (Rust, no
+Chrome, font files loadable).  Deliberately **not** a dependency
+of cytoscape in any form this round proposes by default — the
+deliverable is (a) a documented recipe (MIGRATING/README: headless
+instance → layout → `svg()` → resvg → PNG file, fonts supplied by
+the caller), and (b) a decision memo for the maintainer with the
+options priced: recipe-only / `optionalDependencies` /
+a small companion package (the cyext-round precedent of a nested
+package keeping the root install clean — ci-node must stay
+dependency-free either way, per the standing invariant).  If the
+maintainer adopts a dependency form, a `test/modules/` spec
+rasterizes one scene and structurally checks dimensions — kept
+out of `ci-node`'s required path only if install cost demands it,
+and then *loudly* (the parity-suite rule: fail with instructions,
+never soft-skip).
+
+### 78.4 — Dawn/WebGPU-in-Node: an investigation pass, go/no-go
+
+True PNG parity (the real renderer, no browser) means WebGPU
+bindings in Node — Dawn builds (`webgpu`/`node-webgpu` packages)
+or Deno's WGPU.  This is explicitly an *investigation with a
+written record*, the WebGL-scoping-round shape, not assumed work:
+stand up the renderer against a Node WebGPU device in a scratch
+tree and answer: does device/pipeline creation succeed on our
+shader set; does the readback path work; what replaces the
+container/canvas surface (the renderer draws to a texture for
+export anyway — the export path may need *no* surface, which is
+the interesting finding to chase); what are the platform-prebuild
+and maintenance costs.  Go criteria written before the
+investigation starts: all pipelines compile, export readback
+bit-stable vs browser SwiftShader within the visual project's
+experience, prebuilds for the three CI platforms.  No-go leaves
+the SVG route as the answer and the record as the reason —
+"blocked, no adapter here" has been wrongly concluded twice in
+this repo, so the record must show the actual probe output.
+
+### 78.5 — close
+
+Docs: a "headless figures" page section in `src/README.md` +
+MIGRATING (the cytosnap audience), CHANGELOG row,
+`EXECUTIVE_SUMMARY.md` rewrite, gates green.  The cytosnap
+repository itself gets an issue comment/pointer only on the
+maintainer's say-so.
+
+### Risks named at planning
+
+The flat-advance estimate is the load-bearing risk: if real-world
+labels break badly in Node, the "cheap route" ships figures
+people won't publish — which is why 78.1 measures before 78.2
+builds, on the repo's own fixtures rather than toys.  The resvg
+question is a dependency-policy question wearing a feature's
+clothes; structuring it as a memo keeps this round from making a
+packaging decision that is round 50's to own.  The Dawn
+investigation can eat unbounded time; the pre-written go/no-go
+criteria and the scratch-tree constraint (no `src/` changes from
+an investigation) bound it.
+
+**Open:** the resvg adoption form (recipe / optionalDependency /
+companion package); whether `cy.png()` should ever *exist*
+headless (only meaningful if 78.4 goes — otherwise the honest
+answer is "no, use svg()", documented); the Dawn go/no-go
+criteria sign-off before 78.4 runs; whether the metrics option
+(78.2) is wanted even if the measurement says the estimate
+suffices.
+
+## Round 79 plan — official JSON schemas (planned 2026-08-14)
+
+Issue #3487, the maintainer's own: JSON Schema documents for the
+formats consumers hand this library.  v4 is unusually well-placed
+for this because of a round-8 decision the schemas inherit: **no
+style functions — everything in a stylesheet is serializable**, so
+the entire input surface is JSON-representable by construction.
+What the code does today, verified:
+
+1. **The formats and where their truth lives.**  Element
+   definitions: `ElementDefinition`/`ElementsDefinition`
+   (`public-types.mts:9-44`; group inference and the accepted
+   shapes in `element-defs.mts:10-64`).  The columnar bulk form:
+   `ColumnarElements` with `PackedIds`/`DictColumn`
+   (`public-types.mts:46-134`).  The object stylesheet:
+   `Stylesheet` (`public-types.mts:295`) — but `StyleProps` is
+   `Record<string, StylePropValue>` (`public-types.mts:284`),
+   deliberately stringly, so **the real acceptance surface lives
+   in `style.mts`**: the per-group property lists
+   (`style.mts:805+`, `:890+`) and the per-property validators
+   that throw on unknown names and bad values.  Layout options:
+   the per-layout interfaces (`public-types.mts:370-525`) with the
+   name set enumerated — and enforced by a throw — in
+   `core.mts:703-737`.  The envelope: `CytoscapeOptions`
+   (`public-types.mts:610`).  The wire format is *binary*
+   (`wire.mts` header) — no JSON Schema applies; its JSON-side
+   equivalent is the columnar form.
+2. **Generated-from-types is the wrong pipeline here.**  The docs
+   generator reads JSDoc as text and is gated against the shipped
+   declaration (`scripts/docs-generate.mjs:1-40`,
+   `test/docs-generate.mjs`); the d.ts chain is
+   `rolldown.dts.config.mjs` → `scripts/build-dts.mjs`.  Nothing
+   in that chain can emit JSON Schema, a generator would be a new
+   build tool (code standard 7), and — decisive — the types are
+   *vacuous exactly where a schema is valuable*: a type-derived
+   stylesheet schema says "strings map to strings-or-numbers" and
+   nothing about which properties exist or which values they take.
+   Decision: **hand-written schemas, spec-gated against the
+   running library** — the `test/modules/migration-guide.mjs`
+   precedent, whose whole design is "a prose claim about runtime
+   behaviour verifies itself by probing the library"
+   (`migration-guide.mjs:9-25`, the `nameKnown` probe at `:53-70`).
+3. **The fixture supply exists.**  `debug/fixtures.js` produces
+   every harness network's element defs through one exported
+   `toGpuElements` (already exercised by
+   `test/modules/debug-harness.mjs`), and `debug/styles.js` holds
+   fourteen real hand-authored v4 sheets, including the ported
+   enrichmentmap.org style — the exact documents the schemas must
+   accept.
+4. **No JSON Schema validator exists in the tree** — devDeps
+   (`package.json:132-157`) carry none, so the gate needs one
+   (test-only; ships nothing).
+
+### 79.1 — the harness: validator, gate shape, element schemas
+
+`schemas/` at the repo root: `element.schema.json`,
+`elements.schema.json` (the three accepted shapes: single, array,
+`{nodes, edges}` — mirroring `partitionDefs`), and
+`columnar-elements.schema.json`; draft 2020-12, `$id`s under a
+base URL reserved as an Open item.  A devDep validator (ajv
+proposed; sign-off under Open — precedent: pixelmatch/pngjs are
+test-only devDeps) and `test/modules/schemas.mjs`: every
+`debug/fixtures.js` network's defs and a swept set of `test/`
+fixture defs must validate.  **Controls, run once deliberately:**
+corrupt one fixture def (edge without `target`) — red; delete a
+schema property — the acceptance half red.  The gate direction is
+stated in the spec's header: the schema must accept everything
+the library accepts and *reject what it rejects where the library
+is strict* (`inferGroup`'s group throw, `element-defs.mts:12-16`,
+is pinned both sides).
+
+### 79.2 — the stylesheet schema, gated bidirectionally
+
+The centerpiece and the drift risk.  `stylesheet.schema.json`
+enumerates the per-group property names and the value shapes the
+compiler accepts — constants, and the mapper DSL
+(`Mapper`/`Condition`/`CaseMapper`,
+`public-types.mts:157-268`) as schema objects, which the
+no-style-functions rule makes possible at all.  The value spaces
+JSON Schema cannot fully carry (CSS color strings, the percent
+forms) validate as `type` + pattern where cheap, with the spec —
+not the schema — remaining the authority on deep value validity;
+that division is written into the schema's own `description`.
+**The drift gate, both directions:** (a) every property name the
+schema enumerates, per group, must compile in a live sheet (the
+`nameKnown` probe); (b) every property the live compiler accepts
+must appear in the schema — enumerated by importing `style.mts`'s
+own property lists from `test/modules/` (internal imports are the
+tier's precedent), so **a future round adding a style prop
+without touching the schema fails this spec**, which is the
+"fails when the schema drifts from the running library"
+requirement made mechanical.  Controls: add a fake property to
+the schema — (a) red; remove a real one — (b) red.  The fourteen
+`debug/styles.js` sheets all validate; the migration guide's
+rejected-property table cross-checks as *non*-members.
+
+### 79.3 — layout options and the envelope
+
+`layout-options.schema.json`: a `oneOf` over the seven built-in
+names (the enum pinned against `core.mts:703-737` — the spec
+probes that every schema name constructs and every non-schema
+name throws, reusing the existing throw's spec fixture), each
+branch carrying that layout's options from the interfaces plus
+the shared `LayoutBaseOptions`.  Policy decision, taken here and
+recorded: `additionalProperties` stays **permissive** for layout
+options, because the runtime ignores unknown keys (to-verify in
+79.3's first commit by probing; if the runtime is strict anywhere,
+the schema tightens to match — the library is always the
+authority).  The `impl` extension form validates as an escape
+branch (object with `impl`) rather than being schematized.
+`cytoscape-options.schema.json` composes the pieces
+(`elements` | columnar | wire-`ArrayBuffer` noted as out of JSON
+scope, `style`, `layout`, the renderer/headless knobs from
+`public-types.mts:610+`).
+
+### 79.4 — shipping, and the close
+
+Where schemas live for a consumer: the npm tarball (a `schemas/`
+entry in `files` — `test/modules/packaging.mjs`'s allowlist gate
+is run *before* the manifest edit so the failure is the control,
+the round-71 discipline) and the status site (a schemas page in
+`scripts/status-build.mjs`, rendering each document plus its
+validation-run summary — the one place a human sees schema and
+fixtures together).  Standing close: JSDoc untouched surfaces
+stay at 100% (no public runtime API is added by this round unless
+the Open item below lands one), `src/README.md` gains the schema
+contract section (what validates, what stays the library's job),
+MIGRATING/CHANGELOG rows, `EXECUTIVE_SUMMARY.md` rewritten, gates
+green including the new spec file under `test:modules`.
+
+### Risks named at planning
+
+The stylesheet schema creates a third place a style property
+lives (compiler, docs, schema) — the bidirectional 79.2 gate is
+the entire defense, and it must import the compiler's own tables
+rather than a hand-copied list or it is two documents drifting in
+sync.  Value-space fidelity is a permanent partial: a schema pass
+does not mean a sheet compiles, and saying otherwise in the docs
+would be a defect — the contract prose owns that line.  The
+validator devDep must stay out of the shipped dependency graph
+and out of `src/` entirely.  Schema versioning is deliberately
+naive this round (the schemas describe `4.0.0-unstable`'s
+surface; they version with the package) — inventing a schema
+evolution policy before 4.0.0 ships would be design ahead of
+need.
+
+**Open:** the `$id` base URL (js.cytoscape.org/schemas/… needs
+the maintainer's say on the domain and round 46's site shape);
+the validator choice (ajv vs a lighter draft-2020-12 validator —
+a devDep either way, maintainer sign-off); whether a runtime
+`cytoscape.validate( doc, kind )` helper should ever exist (out
+of scope here — it would drag a validator into the bundle; noted
+because #3487's consumers may ask); whether the schemas are
+submitted to SchemaStore once stable; whether the columnar form's
+schema ships in v1 of this or follows once the wire docs settle
+(79.1 drafts it; the maintainer can hold it back at review).
+
+## Round 80 plan — node charts: heat, bars, and the slice ceiling (planned 2026-08-14)
+
+Round 23's third-sitting call — "definitely yes, and consider
+other charts in future" — comes due.  The consumers are named:
+EnrichmentMap's core visuals are per-node charts (its default
+multi-dataset chart is a *radial heat map* — equal sectors
+colored by NES through a diverging scale — plus linear heat
+strips and data-set pies; `debug/styles.js:76` already notes RdBu
+as its regulation palette); Cytoscape Web caps pies at 16 slices
+and misrenders desktop's 26-slice pies (their issue #589);
+desktop's enhancedGraphics draws pie/ring/bar/heat-strip/line.
+What the code does today, verified:
+
+1. The chart family is 8 props (`src/style.mts:797-804`), with
+   `chart-values` taking the `{ data }` per-element passthrough
+   and `chart-colors` constants-only (list or named scheme).
+   Readback decodes the **record**, not the computed
+   (`style.mts:5227-5252` read through `chartAt`), which
+   constrains the design below.
+2. **The slice ceiling is policy, not packing.**
+   `CHART_MAX_SLICES = 16` (`src/contract.mts:277`) is enforced
+   in exactly one truncation loop (`style.mts:9365`); the packed
+   ref is `offset | n << 24` (`graph-store.mts:853`) — 24-bit
+   offset, 8-bit count, so the packing carries **255** slices and
+   16-slice v3 parity was the only reason for 16.  The FS walks
+   the stops O(n) per fragment (`shaders.mts:4900`).  Raising the
+   cap is a constant plus specs, not a contract change.
+3. **Donuts already exist** — `chart: pie` + `chart-hole`
+   (round 23 call 1).  "Ring/donut" is not a new kind.
+4. The value loop is pie/stripes-shaped: negatives skip as
+   sidecar junk and the running total clamps at 1
+   (`style.mts:9360-9382`).  NES values are signed — heat and bar
+   kinds cannot reuse it unchanged.
+5. Colors resolve at style-write (round 23 call 2), and the
+   mapper DSL already compiles diverging scales and named schemes
+   (`src/style-scales.mts:214,444-455`) — the value→color half of
+   a heat chart exists, uncabled.
+6. The chart pass binds one uniform + 8 storage buffers, seven
+   FS-visible (`chart-pipeline.mts:70-88`); new kinds need **no
+   new bindings** — everything rides the record blob.
+7. Bench: `benchmark/store.mjs:249` prices chart record writes;
+   no renderer scene draws a chart.
+
+Kinds decided at planning, each with its named consumer:
+**heat-strip** (EnrichmentMap's linear heat strip;
+enhancedGraphics heatstripchart), **radial-heat** (EnrichmentMap's
+default chart), **bar** (enhancedGraphics barchart; an up/down NES
+strip is a signed bar chart).  **Declined:** ring/donut (exists —
+recorded), line charts (no consumer among the named apps'
+shipped defaults — logged, not foreclosed).  The design's spine:
+**heat kinds are record-build variants, not shader work** — the
+record keeps the author's values (readback stays exact through
+`chartAt`) with colors resolved per value through a new
+`chart-scale` at style-write; the FS treats the new kind ids as
+aliases of the pie/stripes geometry, indexing region
+`floor(t·n)` directly — O(1) per fragment, cheaper than the pie
+walk.  Only bar adds a real FS branch.
+
+### 80.1 — `chart-scale` + the heat kinds
+
+`chart` grows `heat-strip | radial-heat` (kind ids
+`CHART_HEAT_STRIP`/`CHART_RADIAL_HEAT` in `contract.mts`, stored
+in the record so readback answers the author's kind).
+`chart-scale` — a constants-only serializable object
+`{ scale, domain, range }` compiled by the mapper DSL's scale
+compiler (diverging keeps its explicit `[min, mid, max]` throw) —
+maps each chart value to a color at style-write; heat kinds
+**throw when it is absent** (fail-loudly; a heat chart without a
+scale has no meaning) and `chart-direction` applies to
+heat-strip.  `writeChart` branches by kind: the heat path takes
+signed values verbatim (no fraction clamp, no negative skip) and
+writes scale-resolved colors; `chart-colors` on a heat kind is a
+sheet error.  The FS adds two alias compares
+(heat-strip → the stripes branch with equal bands, radial-heat →
+the pie branch with equal sectors, both indexing by region rather
+than walking stops).  Tests-first Node specs in `test/charts.mjs`:
+parse/throws/readback, signed values, scale resolution, refresh
+on data writes of the values key — and the round-23.2 trap
+re-checked: the new scalar props join the mapper-capable set, and
+the chart-refresh fast path still re-routes through the full
+mapped write when defs carry mappers.
+
+### 80.2 — the bar kind
+
+`CHART_BAR`: n equal columns across the `chart-size`d sub-box
+(vertical bars default; `chart-direction: horizontal` flips the
+axis), heights normalized by **`chart-domain`** (`[min, max]`
+pair, constants-only, default `[0, 1]`; a signed domain places
+the baseline at 0's position).  The header grows
+`CHART_HEADER` 7 → 9 (`domainMin`, `domainMax` — a blob-record
+format change, invisible to the mirror, which copies the blob
+wholesale; the contract comment is updated first, per the
+contract-first rule).  Colors: `chart-scale` when set, else the
+palette cycle (v3-free design, recorded).  FS branch: column
+index, coverage against the signed height with px-space AA at
+column boundaries and the bar top — every derivative hoisted
+above the branch (the uniformity rule this shader already
+follows).  Golden: signed bars about a mid baseline on a bordered
+ellipse (the clip path is what the scene must expose).
+
+### 80.3 — the slice ceiling, measured then raised
+
+**Measure-first gate:** the FS stop walk is O(n) per fragment —
+before choosing the cap, price it with a render-bench pair scene
+(25k charted nodes, 16 vs 64 slices; the only difference is the
+loop count, so the pair discriminates by construction; batched
+with 76.1's scene edit).  Then raise `CHART_MAX_SLICES`
+(proposal: **64** — covers desktop's 26-slice pies with headroom;
+255 is the packing bound) and decide the overflow policy: today
+longer lists truncate silently (the recorded cap), and Web's #589
+is precisely a silent-misrender complaint — proposal: warn-once
++ truncate (a throw on a 65-entry *data-driven* array would take
+down a frame on one element's sidecar).  Golden
+`charts-many-slices`: a 26-slice pie (the #589 case) beside a
+cap-bound case; control: the cap dropped back to 16 must fail it.
+`benchmark/store.mjs`'s chart sweep gains rows per kind × slice
+count, each asserting the kind and n it claims to price (the
+row-asserts-its-property rule).
+
+### 80.4 — verification + close
+
+Goldens per kind with feature-off controls, plus one *magnified*
+chart golden (slice-boundary AA is a boundary effect — the
+close-up lesson applies to goldens too).  Parity: the existing
+pie/stripes scenes re-run untouched; the new kinds have **no v3
+counterpart** (v3's numbered props stop at pie/stripes-16), so
+goldens + the magnified scene stand in — the record says so
+explicitly.  `debug/styles.js` gains an EnrichmentMap radial-heat
++ NES-bar sheet on the em-web fixture and the page gets opened
+(something has to).  Standing close: JSDoc/`@throws`/`@param`
+gates at 100%, `test:throws` at zero (the new heat/domain
+throws each get their deterministic spec), d.ts regenerated,
+`src/README.md` chart section rewritten, MIGRATING/CHANGELOG
+rows, `EXECUTIVE_SUMMARY.md` rewritten from this file.
+
+### Risks named at planning
+
+- WGSL uniformity in the bar branch — derivatives before
+  non-uniform flow; the device-error guard catches it, but catch
+  it in review first.
+- The `writeChart` kind branch sits beside round 23.2's
+  chart-refresh trap; its two shipped fixes are the regression
+  surface — spec both paths per new kind.
+- Goldens are exact: the cap raise must not move
+  `charts-pie-stripes` (nothing in it exceeds 16 slices — assert
+  by re-running, not by assumption).
+- A 64-slice record is 9 + 192 floats; blob compaction pressure
+  is priced by the store sweep, not guessed.
+- The stranded-doc-block hazard (seventeen instances by round 36)
+  — run the JSDoc gate per commit; `contract.mts` comment edits
+  are its favorite terrain.
+
+**Open:** the cap value (64 proposed; 32 if the pair scene says
+the walk costs; 255 is the bound); overflow warn-once vs throw;
+the `chart-scale` shape (one object vs three flat props); whether
+heat kinds throwing on a missing scale is right, or a default
+scheme + domain-from-extent is wanted (the fail-loudly reading
+says throw); and the declined line kind staying declined.
+
+## Round 81 plan — the annotations layer (planned 2026-08-14)
+
+v4 contains no annotation code of any kind (`grep -ri annotation
+src/` answers zero lines), and the ecosystem demand is the tenth
+sitting's shortlist entry with "the longest paper trail": Cytoscape
+Web renders desktop annotations today *beside* cytoscape.js, through
+a layered-canvas library (cytoscape/cyannotation-cx2js — its own
+description: "Renders Cytoscape Desktop annotations from CX files
+via cytoscape.js-canvas"; Web's PRs #400 "Render annotations for
+cy.js networks", #426, and #526 "Support linear gradient fill for
+annotations" — titles verified 2026-08-14).  Read-only, off to the
+side, and reimplemented per app is exactly the shape of a missing
+core feature.
+
+The wire dialect, verified from that converter's source
+(`src/cx_to_cy_canvas.js`) rather than from its README (which
+documents nothing): annotations live in the CX `networkAttributes`
+aspect as an element named `__Annotations` whose value is a list of
+strings, each a `|`-joined list of `key=value` pairs
+(`getAnnotationElementsFromNiceCX`).  Common keys: `uuid`, `type`
+(Java FQNs — `ShapeAnnotation`, `TextAnnotation`,
+`BoundedTextAnnotation`, `ArrowAnnotation`, `ImageAnnotation`,
+`GroupAnnotation`), `canvas` (`foreground` | `background` — desktop
+has exactly two annotation canvases), integer `z` (the converter
+sorts each canvas descending and draws in that order, so *lower* z
+paints later and sits on top), `x`/`y`/`width`/`height`, and `zoom`
+(a recorded scale the converter divides sizes and font sizes by).
+Shapes carry `shapeType` (`RECTANGLE`, `ROUNDEDRECTANGLE`,
+`ELLIPSE`, `TRIANGLE`, `PENTAGON`, `HEXAGON`, `OCTAGON`, `STAR5`,
+`STAR6`, `PARALLELOGRAM`, `CUSTOM` with an `M/L/Q/C` path string),
+`fillColor` (int RGB) + `fillOpacity` (0–100), `edgeColor` /
+`edgeOpacity` / `edgeThickness`; text carries `text`, `fontSize`,
+`fontFamily`, `fontStyle`, `color`.  Two honesty notes from the
+same read: the reference converter's `ArrowAnnotation` body is
+commented out in full ("would take a great deal of math … left for
+later work"), and `ImageAnnotation`/`GroupAnnotation` are not
+handled at all — so the "parity" baseline Web ships is shapes and
+text only.
+
+What v4 offers to build on, verified: draw order is structural and
+z-index is dropped for good (`src/README.md:1307`), with the one
+logged escape being a single boolean **elevated tier**
+(`src/README.md:1321`; PLAN.md round-14 sitting: "never arbitrary
+integer stacking").  The store's groups are exactly two —
+`GroupName = 'nodes' | 'edges'` (`src/contract.mts:12`) — and that
+spelling is load-bearing across `StoreDelta.resized`
+(`src/contract.mts:879`), `ModelView` (`src/contract.mts:990`), the
+mirror, the cull kernels and the wire header.  The contract already
+has a precedent for model-owned data that is *not* a column: the
+label sidecar (`LabelEntry`, `src/contract.mts:911`; the store's
+per-stream arrays at `src/store/graph-store.mts:268`) and the four
+optional blob-dirt channels on the delta (`src/contract.mts:889`).
+The frame is a render-on-dirty loop whose scene pass runs prepass →
+parents → edges/arrows → ghosts → node bodies → image/chart/overlay
+→ labels (`src/render/renderer.mts:44`).  Node picking is a
+synchronous CPU scan (`src/render/cpu-pick.mts:35`), and
+pointerdown already decides pan-vs-grab from it
+(`src/interact/pointer.mts:22`).  Images have a refcounted pool
+with warn-once decode failure (`src/image-registry.mts:17`).
+Labels are SDF from one atlas keyed by character, so `font-family`
+is a global constant (`src/README.md:1926`).  Removed elements are
+terminally dead (`src/README.md:1998`).  Extension points stay
+demand-gated deferred (`src/README.md:4996`) — this round builds a
+core feature, not a hook.
+
+### Design calls
+
+1. **Representation: a store-owned sidecar table, not a third
+   element group.**  Annotations are authored singletons in the
+   tens, not data populations in the hundreds of thousands: they
+   take no part in selectors, mappers, layouts, algorithms,
+   adjacency, or the columnar dirty-span machinery that exists to
+   price element churn.  Promoting `GroupName` to a three-way union
+   would touch every co-signed surface in `src/contract.mts`, the
+   wire header, the mirror and every cull kernel, to buy reuse the
+   feature does not want (per-population styling) or does not need
+   (GPU picking of tens of items).  Instead: an `AnnotationTable`
+   owned by the store — the label-sidecar precedent — holding an
+   ordered list per tier, a monotonically-assigned id, an alive
+   generation (so removed handles read as dead, the terminal-death
+   contract applied unchanged: no restore, re-adding from a kept
+   definition is the app's job), and one coarse dirty flag on the
+   delta (`annotations?: true` beside the blob channels — the
+   whole population re-uploads when anything changes, which at
+   tens of records is cheaper than span bookkeeping).  Rejected:
+   the third columnar group — churn across the whole contract for
+   machinery annotations cannot exercise; also rejected: a pure
+   renderer-side feature — the model must own annotations so
+   headless instances can import, hold and export them with no
+   canvas, which is the Cytoscape Web server-side story.
+
+2. **Layering: two structural tiers, no z integer.**  Each
+   annotation carries `layer: 'background' | 'foreground'`
+   (default `'foreground'`) — precisely desktop's two canvases,
+   and precisely v4's philosophy: the tier is the single-boolean
+   structural placement the elevated-tier hook already sketched,
+   arriving on annotations first.  Background draws after the
+   depth prepass and before parent bodies (depth-tested against
+   opaque node interiors exactly as edges are — free early-z,
+   correct under translucent nodes); foreground draws after
+   labels, no depth.  Within a tier, draw order is list order,
+   insertion at the end; desktop's integer `z` exists only at the
+   wire boundary — import sorts each canvas by the converter's
+   own comparator once and discards the integers, export
+   synthesizes fresh ones from list position.  Rejected: a stored
+   per-annotation z-index — re-litigates the 2026-08-01 decision
+   for no consumer; the two-tier + list-order model reproduces
+   every desktop file's paint order exactly.
+
+3. **Style: direct properties on the annotation object; no
+   stylesheet participation.**  An annotation is one authored
+   thing, not a keyed member of a population — there is no data
+   column to map from and no state vocabulary to condition on.
+   Properties are plain serializable values (`fillColor`,
+   `fillOpacity`, `borderColor`, `borderWidth`, `shape`, `text`,
+   `fontSize`, geometry…), which is the desktop model verbatim and
+   keeps interop 1:1; the no-style-functions rule holds trivially
+   because there is nowhere to put one.  Validation is fail-loud
+   per the error policy: unknown `kind`, unknown shape keyword,
+   non-finite geometry, and updates against a dead handle all
+   throw, each with a spec (the throw gate is at zero and stays
+   there).  Rejected: an `annotations` sheet group with mappers —
+   it would drag the compiler, the columns and the GPU mapper
+   runtime into a feature whose population is countable on hands.
+
+4. **Interaction: minimal v1 = hit-test + move, default inert;
+   render-only is the fallback, maintainer chooses.**  Recommended
+   scope (81.4): a CPU hit test over the lists (reverse draw
+   order; foreground before elements, background only when no
+   element hits — desktop's own reachability), a programmatic
+   `update()` move, and pointer drag *only* for annotations
+   opted in with `movable: true` — the default is
+   pointer-transparent, so a graph with imported annotations
+   behaves byte-for-byte like today's Web read-only rendering
+   unless the app opts in.  Events on the core (annotations are
+   not event targets; no bubbling): `annotationgrab` /
+   `annotationdrag` / `annotationfree` / `annotationtap`, payload
+   = the handle.  Resize/rotate handles and any editing chrome are
+   permanently the app's job.  The rejected-but-offered
+   alternative: render-only v1 (drop 81.4 whole; the API and hit
+   test become a later round) — it still covers the first
+   consumer, and the pass is severable to the commit.
+
+5. **Interop: the `__Annotations` dialect is the wire story.**  A
+   pure module (no instance, no renderer) parses the `|`-separated
+   `key=value` records into v4 annotation definitions and
+   serializes back: `annotationsFromCx()` / `annotationsToCx()`,
+   exported as named exports beside the default (they attach as
+   properties of the UMD global; the packaging and d.ts-surface
+   specs pick them up).  Unrecognized keys are preserved
+   per-annotation in a `foreign` bag and re-emitted on export, so
+   a desktop file round-trips its content even where v4 renders a
+   deviation (fonts, below) — the cheap honesty a bridge format
+   owes.  Import maps `shapeType` onto v4's existing SDF shape ids
+   (`RECTANGLE`/`ROUNDEDRECTANGLE`/`ELLIPSE` plus the regular
+   polygons and stars); `CUSTOM` paths warn once, are not drawn,
+   and survive in `foreign` (the image-decode-failure precedent:
+   degrade visibly-absent, never crash).  `ArrowAnnotation`'s
+   endpoint attachment resolves to static coordinates at import
+   (recorded deviation: endpoints do not track their targets —
+   the reference converter draws nothing at all here, so this
+   *exceeds* the parity baseline).  `zoom` normalizes into model
+   px once at the border.  Annotations do not join the CYGE binary
+   format in v1 — they are small and object-shaped, the
+   graph-data-as-JSON reasoning (`src/wire.mts:36`) applied again.
+   Rejected: inventing a v4-native annotation JSON dialect first —
+   the desktop dialect has the installed base and the first
+   consumer; v4's constructor option simply takes the parsed
+   definition objects.
+
+6. **Text: rendered in the instance's one global face — stated,
+   not fudged.**  The glyph atlas is keyed by character with one
+   font per atlas by design (`src/README.md:1926`); per-annotation
+   `fontFamily`/`fontStyle` would re-key it by (font, char) and is
+   out of scope, same as it is for labels.  v1 honors `text`,
+   `fontSize` and `color`; the imported family/style ride the
+   `foreign` bag so export returns them untouched.  This goes in
+   "Known deviations from v3" — strictly, deviations from
+   *desktop* — as its own entry, beside `CUSTOM` shapes and
+   non-tracking arrow endpoints.
+
+### 81.1 — the model: contract types, the sidecar, the API
+
+The `Annotation` definition union in `src/contract.mts` (kinds:
+`shape` — with optional centered `text`, covering desktop's
+BoundedText — `text`, `line`, `arrow`, `image`) plus the tier
+type and the delta's `annotations?` flag; the `AnnotationTable`
+in `src/store/` (add/remove/update/list per tier, id + generation,
+dirty signaling through the store's existing invalidate channel);
+the core surface — constructor option `annotations: [...]`,
+`cy.addAnnotation(def)` returning a handle,
+`cy.annotations()` returning the live handles, handle
+`update(patch)` / `remove()` / getters.  Headless-complete: every
+spec in this pass runs in `test/` under the Node tier.  All new
+throws (invalid kind/shape/geometry, dead-handle update) get
+message-asserted specs; JSDoc on every public member (the gate is
+at 100% and the d.ts regenerates); `src/README.md` gains the
+design-decisions entry.  Files: `src/contract.mts`,
+`src/store/annotation-table.mts` (new), `src/store/graph-store.mts`,
+`src/core.mts`, `src/public-types.mts`.  Verification: `test:js`,
+`test:modules`, `test:throws` at zero, `test:soak` (the sidecar
+joins the churn/leak tier — annotations across destroy cycles
+must collect).
+
+### 81.2 — the draw: two tiers in the frame graph
+
+Renderer-side mirror of the annotation lists into small instance
+buffers (full re-upload on the dirty flag — tens of records), and
+three deferred-compiled pipelines (the round-53 first-frame rule:
+nothing compiles until the first annotation exists): shapes (one
+instanced quad pipeline reusing the node SDF shape functions from
+`shaders.mts` — rect/round-rect/ellipse/polygons cost no new
+distance code; `line`/`arrow` reuse the arrowhead SDFs), text
+(glyph runs laid through the existing `GlyphAtlas` into a fifth
+`GlyphBuffer`; anchor positions baked into the instances and
+rebuilt on move — annotations are few and moves are rare, so no
+shader change and no slot-reference scheme), and images (through
+the `ImageRegistry` pool + a variant of the image pipeline).  Two
+draw sites: background after the prepass, before parents,
+depth-tested; foreground after labels.  No GPU cull: a CPU
+frustum test per annotation per frame, drawn direct rather than
+indirect — at tens of instances the cull dispatch would cost more
+than it saves, and the honest bench row (81.6) prices the claim.
+All new WGSL literals carry the `wgsl` tag.  Files:
+`src/render/annotation-pipeline.mts` (new),
+`src/render/renderer.mts`, `src/render/shaders.mts`,
+`src/render/label-layer.mts`.  Verification: 81.3's goldens;
+`debug/` gains an annotations toggle on one fixture and the page
+gets driven (AGENTS.md code standard 5).
+
+### 81.3 — goldens built to expose the tiers, with failing controls
+
+New `visual` scenes constructed so the *ordering* is the
+measurement, not hidden under opaque paint (the round-55/56
+lesson): a translucent background rectangle straddling nodes and
+edges (its color must show through nothing and be shown through
+by nothing it sits under), a translucent foreground ellipse over
+an edge bundle and labels, a text annotation beside a node label
+at matching font size, an arrow/line pair, an image annotation
+over the canvas edge (crop check via `expectGraphFits` /
+`useViewport`).  Controls, each run once and observed red: flip
+one scene's tier (`background` ↔ `foreground`) — the diff must
+jump; disable the annotation draw entirely — every scene fails.
+Goldens are exact (zero differing pixels) and generated on Linux;
+the text scene inherits the label-scene platform note.  There is
+no v3 parity diff to run — v3 has no annotations — so goldens +
+controls carry this feature alone, and the round record says so.
+
+### 81.4 — interaction (the maintainer's scope call)
+
+If minimal-v1 is chosen: the hit-test walk (foreground reverse
+list order → existing element paths → background), `movable`
+drag through the pointer state machine (a new mode beside
+pan/grab/box; position writes go through the store so the dirty
+flag schedules frames), the four core events, and
+`cy.annotationAt(position)` public.  Specs: hit order pinned
+(foreground annotation over a node wins; inert annotation never
+intercepts — the control: mark it movable and the same gesture
+must grab it), drag writes verified headlessly through the
+table, and a Playwright gesture spec on the served page.
+Renderer/gesture changes get a `debug/` drive.  If render-only
+is chosen, this pass is dropped whole and its API surface waits.
+
+### 81.5 — interop: the CX dialect, round-tripped
+
+`src/annotation-cx.mts` (new): the parser/serializer pair as pure
+functions, the `foreign` round-trip, the z-sort at import, the
+`zoom` normalization, warn-once for `CUSTOM`/`GroupAnnotation`
+(groups flatten; members import individually), and the throws for
+structurally invalid records (a record with no `type`, an
+unparseable numeric) — fuzz-shaped malformations get
+deterministic pins in `test/` since the throw gate cannot see
+soak-only guards (AGENTS.md).  Fixtures: annotation strings
+excerpted from cyannotation-cx2js's own example `.cx` resources,
+vendored small under `test/fixtures/`, with the spec asserting
+per-key values after the round trip, not just that parsing
+succeeded (the round-46.5 dictionary-column lesson: a payload can
+lose a whole field and still look plausible).  Named exports join
+`src/index.mts`; `test:types:surface` and the packaging spec are
+the gates that notice.
+
+### 81.6 — the bench row, and the close
+
+One renderer-profile scene pricing frame cost at N annotations
+over a mid-size graph, run at two N values so the row
+discriminates — it must move with N, and its comment says what
+would make it not move (opaque overdraw hiding the tier work).
+Standing close: `src/README.md` (design decision, the three
+recorded deviations, the follow-up hook for what v1 excludes),
+MIGRATING/CHANGELOG rows (new public surface; "v3 had no
+annotations — this is a desktop-parity addition" stated plainly),
+AGENTS.md untouched unless a new directory appeared (none
+should), d.ts regenerated, `EXECUTIVE_SUMMARY.md` rewritten from
+this file, all gates green including JSDoc 100% and throws at
+zero.
+
+### Risks named at planning
+
+The largest is scope gravity: desktop annotations trail an editor
+UI, rotation, gradients (Web's #526), and group semantics, and
+every one is out of v1 — the pass list draws the line at
+render + dialect (+ minimal interaction), and the Open paragraph
+is where the rest lives rather than the diff.  Second, the
+foreground tier draws after labels with no depth, so it is the
+first pipeline family outside the early-z scheme; if a scene ever
+puts hundreds of large translucent foreground annotations over a
+dense graph the overdraw is unmitigated — the 81.6 row exists to
+keep that priced rather than assumed.  Third, 81.4 touches the
+pointer state machine, historically the code most likely to
+regress invisibly to Node suites — the debug-harness drive is
+mandatory there, not advisory.  Fourth, the dialect is
+reverse-engineered from a converter, not from a spec: keys
+verified against `cx_to_cy_canvas.js` are cited above, but
+`ImageAnnotation`'s key set and desktop's exact z conventions are
+**to-verify** against a real desktop export before 81.5 hardens —
+the fixtures pass exists to force that check.  Sequencing: 81.1 →
+81.2 → 81.3 strictly; 81.4 and 81.5 are independent of each other;
+81.6 last.
+
+**Open:** the 81.4 scope call — minimal interaction (recommended)
+versus render-only; whether annotations ever join `cy.fit()` /
+`boundingBox()` (v1 excludes them, recorded — an opt-in flag is
+the natural follow-up if Web asks); a reorder affordance
+(`bringToFront`/`sendToBack` within a tier) — v1 ships insertion
+order only; whether the CYGE binary format gains an optional
+annotations section once Web consumes the feature at scale;
+`GroupAnnotation` fidelity beyond flatten-and-preserve; and
+whether `line`/`arrow` annotations should later re-resolve
+attachment to live node positions (tracking endpoints), which
+would move them from sidecar-static toward store-coupled and
+deserves its own sitting.
+
+## Round 82 plan — cluster hulls + collapse/aggregation proxies (planned 2026-08-14)
+
+The LOD section of issue #3486 names "cluster or component proxies"
+as a progressive-detail tool; the AutoAnnotate/EnrichmentMap idiom
+(shaded, labelled cluster regions) is the visual half of the same
+idea, and EM web today fakes it with cytoscape-bubblesets + automove
+over v3.  This round designs both natively.  What the code does
+today, verified:
+
+1. **Draw order is structural and z-index is gone for good**
+   (`src/README.md:1307`): the scene pass runs depth prepass →
+   compound parents → edges/arrows → ghosts → node bodies +
+   image/chart/overlay → labels (`src/render/renderer.mts:50-52`).
+   A hull tier therefore gets a *position in the pass*, not a
+   z value — first in the scene pass, under the parent bodies.
+2. **No classes, no selector strings** (`src/README.md:1303`;
+   `src/matcher.mts:14`).  The query IR is a plain serializable
+   object — per-group flag tests plus data-sidecar conditions in the
+   case-mapper vocabulary (`src/matcher.mts:49-78`); unknown keys
+   throw (`src/matcher.mts:187-193`).  A hull grouping has the same
+   two honest declaration forms available: a data key, or explicit
+   ids.
+3. **Removed elements are terminally dead** (`src/README.md:1998`) —
+   no `restore()`, no import-form `cy.json()`.  But the **display
+   tier** is exactly the non-destructive hiding collapse needs:
+   `show()`/`hide()` is structural state (`src/collection.mts:
+   3644-3673`, `GraphStore.setVisibility` at
+   `src/store/graph-store.mts:1795`) — a hidden element draws
+   nothing, picks nothing, takes no space, and *hidden children
+   leave their parent's auto-bounds*; a parent with no shown
+   children keeps its position at its stashed style size — v3's
+   degenerate fallback (`src/store/hierarchy.mts:306-309, 371-377`).
+   That fallback is, verbatim, the collapsed-proxy rendering: hide
+   the children and the parent *already* draws as a normal node at
+   its style size.
+4. **The compound machinery is a narrow-host sidecar**
+   (`src/store/hierarchy.mts:38-44`): parent links, child lists,
+   depth, lazily-flushed derived geometry, never touching columns
+   directly.  The same pattern (and the CurveIndex's lazy
+   `flush()`) is the mold for a HullIndex.
+5. **Dirty tracking is one coalesced span per column per frame**
+   (`src/store/dirty.mts:13-19`, `mark` at :57), drained by the
+   renderer's `takeDelta`.  Hull recompute can key off the
+   `node.position` span the same way — over-recompute inside the
+   span hull is the accepted cost, per the tracker's own doc.
+6. **Labels are four slot-keyed glyph streams** over one SDF atlas
+   (`src/render/label-layer.mts:14-25`); the owner word carries
+   slot + a rotate flag (`src/render/glyph-buffer.mts:18`).  A
+   hull-label stream is a fifth GlyphBuffer keyed by hull index.
+7. **The harness already has the exact fixtures this round needs**
+   (`debug/networks.js:23-38`): `em-web` ships
+   `mcode_cluster_id` on 354/569 nodes, and `em-web-clustered`
+   materialises those 41 MCODE clusters as real compound parents.
+8. Serialization gap, verified: element `json()` exports
+   selected/selectable/locked/grabbable/pannable but **not the
+   display-tier hidden state** (`src/collection.mts:920-940`), and
+   the wire format's flag list has no hidden column
+   (`src/wire.mts:66-77`).  Collapsed state does not round-trip
+   today; the round must decide whether it starts to.
+9. To-verify at implementation: whether built-in layouts skip
+   display-hidden nodes (a grep over `src/layout/` finds no
+   SHOWN/hidden test, so the presumption is they do not).
+
+**Design calls.**
+
+- **Hulls are declared by data key, not by member list.**
+  `cy.hulls({ groupBy: 'mcode_cluster_id', ... })` — one hull per
+  distinct value, membership read straight from the columnar
+  sidecar, elements with the key absent belong to no hull (the
+  matcher's missing-value rule).  This is AutoAnnotate's own model
+  (clusters are node attributes) and it makes membership *live*: a
+  data write moves a node between hulls through the existing
+  watched-key machinery, and there is no second membership store to
+  keep alive across add/remove.  Rejected: explicit member-id
+  lists — a parallel membership structure with its own
+  staleness rules; an app that has lists writes them into a key.
+  Rejected: compound-parent hulls — a hull around a compound
+  duplicates the parent body the renderer already draws.
+- **Geometry is a padded, corner-rounded convex hull**, computed on
+  the CPU per dirty hull (hull of member outer boxes, O(k log k),
+  Minkowski-padded; corners arc-sampled), drawn on the GPU as a
+  triangle fan (convex ⇒ fan is valid) plus a border strip.
+  Rejected for v1: bubble-set concave outlines — a marching-squares
+  field costs O(grid cells × members) per recompute per drag frame,
+  which is precisely the jank EM web lives with today.  Logged as
+  the v2 candidate instead: a fragment-shader SDF blob
+  (smooth-union of member discs + intra-cluster capsules) — GPU-
+  native concavity with no CPU field, but per-pixel cost O(members)
+  needs a member cap and coarse tiling, so it enters only behind a
+  measurement.
+- **Hulls draw first in the scene pass** — structurally under
+  parents, edges and nodes.  No pick surface in v1 (a recorded
+  deviation from desktop AutoAnnotate's selectable annotations).
+- **Collapse is non-destructive by construction**: `hide()` the
+  member nodes (edges follow — an edge with a hidden endpoint
+  leaves bounds and draw via the existing endpoint gating), keep
+  every original element alive in the store, and let the compound
+  parent *be* the proxy via the degenerate fallback (finding 3).
+  Nothing is removed on collapse, so terminal-death never bites.
+  Only the derived **meta-edges** are added on collapse and removed
+  on expand — they are cheap to recreate, which is the one shape of
+  element for which terminal death is free.  Rejected: a shadow
+  "removed but restorable" tier — it re-opens the 2026-07-27
+  decision for one feature.
+- **v1 collapses compound parents only** (`em-web-clustered` is the
+  fixture; EM's collapse is compound-shaped; iVis's
+  expand-collapse tracker is compound-based).  Data-key clusters
+  get the hull idiom; a helper that wraps a key's clusters in
+  parents can come later.  Meta-edges are real elements with
+  deterministic ids (`meta:<parentId>:<otherId>`), one per
+  (collapsed side, outside endpoint) pair, so layouts, algorithms,
+  queries, picking and export all work on the collapsed graph with
+  zero new code paths.
+- **v1 aggregation: `collapsedCount` always; summed numeric keys on
+  request** (`aggregate: { sum: ['weight'] }`), the sums written
+  *under the original key names* — so an existing
+  width-by-weight mapper styles meta-edges with no sheet change
+  (EM's summed-edge behaviour).  Means are derivable; min/max wait
+  for demand.
+- **Collapsed state is session state in v1.**  Adding a hidden
+  column to the wire format is a version bump (`src/wire.mts:57`)
+  and `json()` would need the field too; before paying that,
+  ship `cy.collapsed()` (the collection of collapsed parents) and
+  document re-collapse-after-load as the app idiom — consistent
+  with "re-adding from kept definitions is the app's job".  The
+  Open paragraph carries the round-trip question.
+- **One round or two?  Split — and this plan is written at the
+  seam.**  The halves share only one wire: hidden members leave
+  their hull, which the HullIndex gets *free* from the SHOWN mask
+  it already tests.  Hulls are a renderer feature (a pipeline, a
+  glyph stream, goldens); collapse is a model feature (a sidecar,
+  aggregation semantics, events) with nearly no renderer work.
+  Sizing: hulls ≈ 1.5× a typical round (a new draw tier + labels),
+  collapse ≈ 1×.  Recommendation: land 82.1–82.3 and close; run
+  82.4–82.6 as the next round.  If the maintainer wants one round,
+  the passes stand as ordered.
+
+### 82.1 — the HullIndex (store tier)
+
+New `src/store/hull-index.mts` on the hierarchy/curve narrow-host
+pattern: the `cy.hulls( spec | null )` declaration (get/set;
+serializable; unknown keys throw — the matcher precedent), the
+value→members index off the `groupBy` column, and per-hull padded
+convex-hull geometry flushed lazily.  Dirt: membership from
+watched-key data writes and add/remove/show/hide; geometry from the
+`node.position` span (recompute hulls intersecting the span) and
+from `outerHalf` changes.  Hidden members are excluded by the SHOWN
+mask; a hull with < 1 shown member emits nothing.  Spec props v1:
+`groupBy`, `padding`, `fill`, `fill-opacity`, `border-width`,
+`border-color`, `border-opacity`, `label` (on/off + per-value text
+map, default the value itself) — constants plus a per-value
+override map; no mappers in v1.  **Verified by** Node specs: hulls
+over a fixture with known membership (geometry containment —
+every shown member's outer box inside its hull, padding respected),
+membership moves on a data write, hide/show flips, and every new
+throw pinned (`test:throws` at zero).  Files: `src/store/
+hull-index.mts`, `src/store/graph-store.mts`, `src/core.mts`,
+`src/public-types.mts`.
+
+### 82.2 — the hull pipeline (render tier)
+
+New `src/render/hull-pipeline.mts` + a `wgsl`-tagged shader: fill
+fan + border strip per hull from a hull-vertex storage buffer the
+mirror uploads on hull dirt, drawn first in the scene pass
+(`renderer.mts` drawScene) — structurally under everything, no
+depth participation.  Not pickable; excluded from `boundingBox()`
+and fit in v1 (hulls follow content, recorded).  **Verified by**
+goldens: a clustered scene with hulls (exact, per the round-57.1e
+rule) plus the two controls that must fail — the hull pass dropped
+(diff jumps) and the draw moved after edges (nodes/edges no longer
+paint over the fill; per AGENTS.md, the scene is built so the hull
+is *not* hidden under opaque bodies — translucent fill, visible
+borders).  No v3 parity scene exists (v3 has no hulls) — goldens
+plus the debug page are the coverage, recorded.  Files:
+`src/render/hull-pipeline.mts`, `src/render/renderer.mts`,
+`src/render/column-mirror.mts`, `src/render/shaders.mts`.
+
+### 82.3 — hull labels, the harness, and the price
+
+A fifth GlyphBuffer keyed by hull index, anchored top-center of
+the hull, laid through the existing atlas/wrap path; far-zoom
+behaviour is the LOD point of hulls, so hull labels are exempt
+from the glyph fade floor (recorded; the per-hull count is tiny).
+`debug/`: hulls toggle on `em-web` via `mcode_cluster_id`
+(excluding 'None'), sanity-driven per code standard 5.  Bench: a
+new `benchmark/hulls.mjs` row pricing per-frame hull recompute
+under a synthetic drag on em-web (41 hulls) and a generated
+500-cluster scene — each row **prints the hull count and total
+member count it recomputed** (the row asserts the property it is
+named for), plus an at-rest row proving a clean frame recomputes
+zero hulls.  **Measure-first gate:** if the drag row shows hull
+recompute above ~1 ms at the 500-cluster scale, geometry moves
+from per-frame to a per-frame budget (stale hulls lag a frame)
+before any GPU-side scheme is considered.  Docs: JSDoc (100%,
+`@param`/`@returns`/`@throws` gated), `src/README.md` section,
+MIGRATING row (bubblesets/automove → `cy.hulls`), CHANGELOG,
+d.ts regenerated.  **The seam: the round can close here.**
+
+### 82.4 — collapse/expand (model tier)
+
+New `src/store/collapse-index.mts` (narrow-host again):
+`parents.collapse( opts )` / `parents.expand()` /
+`node.collapsed()` / `cy.collapsed()`.  Collapse: assert the
+target is a parent (throw otherwise — fail loudly), `hide()` its
+descendants, compute boundary-crossing edges (hidden-by-endpoint,
+including meta-edges of already-collapsed inner parents, which
+makes nesting compose), add aggregated meta-edges with
+deterministic ids, emit `collapse`.  Expand: remove this parent's
+meta-edges, `show()` descendants (their own collapsed sub-parents
+keep *their* descendants hidden via own-state flags), re-aggregate
+one level down, emit `expand`.  v1 rule, documented loudly: the
+display tier of a collapsed parent's descendants belongs to
+collapse — an app's own `hide()` under a collapsed parent is
+overridden on expand (recorded deviation; revisit on demand).
+**Verified by** Node specs: collapse/expand round-trip restores the
+exact shown set and bounds; crossing-edge aggregation counts;
+collapsed↔collapsed pair yields one meta-edge; nested
+collapse/expand in both orders; every throw pinned; and a
+`test:soak` churn spec (repeated collapse/expand cycles — the
+meta-edge add/remove churn is profile 2 of the compaction
+analysis, and the id blob/CSR meters must hold it).
+
+### 82.5 — aggregation + the API surface priced
+
+`aggregate: { sum: [...] }` semantics (absent values contribute
+nothing; non-numeric values under a summed key throw — loudly,
+not NaN), `collapsedCount` always written; directed pairs fold to
+one meta-edge per unordered pair in v1 (Open below).  Bench: a
+`benchmark/collapse.mjs` row collapsing all 41 em-web-clustered
+parents and expanding them, printing the meta-edge count it
+created (the discriminating property); a row against v3 +
+expand-collapse extension is impossible in the Node tier (the
+extension is browser-shaped) — the row prices v4 against its own
+budget instead, recorded.  Goldens: collapsed em-web-clustered
+scene + the control (expand ⇒ diff jumps); a hulls+collapse scene
+proving a fully-hidden cluster's hull vanishes — the one coupling
+wire, asserted where it lives.
+
+### 82.6 — the close
+
+Standing close: this record, `src/README.md` (Design decisions +
+deviations: hull tier, collapse-owns-display rule, session-state
+serialization), MIGRATING/CHANGELOG rows,
+`EXECUTIVE_SUMMARY.md` rewritten, d.ts regenerated, gates green
+(`test:js`, `test:modules`, `test:soak`, `test:throws` at zero,
+JSDoc 100%, Playwright visual + renderer projects), bench runs
+published serial `--repeat 3` with all bench-file edits batched so
+each profile's fingerprint moves once.
+
+### Risks named at planning
+
+- The degenerate-fallback proxy depends on the parent's stashed
+  style size and position surviving an all-hidden flip
+  (`hierarchy.mts:371-377` reads current position) — a parent that
+  was *never* positioned independently needs a defined collapsed
+  position (children centroid at collapse time, written once).
+  Pin it with a spec before building on it.
+- Layouts likely move hidden nodes (finding 9) — a layout after
+  collapse then expand may scatter revealed children.  Verify
+  early; if true, the v1 answer is documentation (run layouts on
+  shown subsets), not a layout change.
+- The hull pipeline is a new always-first draw; a zero-hull graph
+  must pay nothing (the ghost-pipeline precedent: skip outright at
+  count 0) — assert it in the at-rest bench row.
+- Stranded-doc-block hazard on the two new sidecars — run the
+  JSDoc gate per commit.
+
+**Open:** (1) Split confirmation: close after 82.3 and run
+82.4–82.6 as the next round, or one long round?  (2) Should
+collapsed/hidden state join the wire format (version 5) and
+`json()` so collapse survives a round-trip, or stay session state?
+(3) Hull pick surface: is click-a-hull (select members? an event
+only?) wanted enough to justify a pick tier, and if so in which
+round?  (4) Directed meta-edges: fold to one per unordered pair
+(v1) or keep per-direction aggregates?  (5) Hull label text
+source: is the per-value map enough, or is a second data key
+(`labelBy`) wanted in v1?  (6) The SDF-blob concave hull: log as
+an extension candidate (cyext, round 71) or keep as core v2?
+
+## Round 83 plan — GPU edge bundling (planned 2026-08-14)
+
+Issue #2332 asked for edge bundling in 2019 and was closed
+unfixed; desktop has it; it is the headline large-graph visual the
+v4 architecture exists to make cheap (#3486's rendering thesis).
+What the code does today, verified:
+
+1. **Curved edges are one instance per edge over a fixed strip**:
+   `CURVE_SEGS = 24` quads (`src/curve-geometry.mts:55`), vertex
+   shader evaluates the curve from live positions + per-edge
+   params (`src/render/curved-edge-pipeline.mts:10-19`), inside
+   the 8-storage-buffer budget.
+2. **Variable-length curve records live in the CurveBlob**
+   (`src/store/curve-blob.mts:3-30`): the f32×4
+   `edge.curveParams` column holds `[blobOffset, dev, n, kind]`
+   headers into a compacting pool; records are
+   **position-independent — offsets/weights in the endpoint
+   frame — so drags/layouts follow on-GPU with zero blob traffic**
+   (`curve-blob.mts:16-19`).  Segment records cap at
+   `MAX_CURVE_PTS = 11` interior points
+   (`src/curve-geometry.mts:728`).
+3. **The CurveIndex owns styled records and derives params
+   lazily** (`src/store/curve-index.mts:29-66`); the 12b families
+   never bundle pairs and write per-edge blob records.
+4. **Arrows and picking already ride the curved stream**: heads
+   point along the curve's end tangent
+   (`src/render/curved-arrow-pipeline.mts:10-16`); edges pick on
+   the GPU via the same strip in the cursor-tile pass
+   (`src/render/renderer.mts:1202, 1339-1363`).
+5. **The async algorithm tier has the executor contract this
+   operation should reuse** (`src/algorithms/executor.mts:1-25`):
+   Promise-returning, `executor: 'cpu' | 'gpu' | 'auto'`, CPU as
+   the bit-reproducible spec, `GPU_MIN_N = 256` as the auto
+   floor (:44), `runAlgo` routing (:90), kernels on the
+   compute-only `acquireAlgoGpu` context — no canvas, headless
+   parity suite in the Playwright `algorithms-gpu` project.
+6. **LOD interplay exists today**: far-zoom edge decimation draws
+   a hash-stable 1-in-N subset (PLAN.md:1679) — bundled edges
+   decimate like any others.
+7. **Per-element bypasses are id-keyed sheet declarations**
+   (`src/README.md:718-731`), constants-only, O(bypassed) apply —
+   designed for few elements, relevant below as the rejected
+   output form.
+
+**Design calls.**
+
+- **Algorithm: density-based bundling (KDEEB/CUBu family), not
+  FDEB.**  FDEB's compatibility measure is pairwise —
+  O(E²) pairs times P points per iteration; at 100k edges that is
+  5×10⁹ pair terms per iteration before any force is summed, and
+  no executor makes that a headline.  The density approach is
+  O(E·P) splat + O(cells) blur + O(E·P) gradient advection per
+  iteration — linear in edges, GPU-native, and the published CUBu
+  line bundles ~10⁶ edges in real time on commodity GPUs.  The
+  measured-crossover story is therefore not FDEB-vs-KDEEB (FDEB
+  loses asymptotically before any measurement); it is
+  **CPU-KDEEB vs GPU-KDEEB**, same algorithm on both executors —
+  the round-65 shape, with the crossover constant measured on the
+  benchmark machine and machine-stamped.  Rejected: shipping FDEB
+  as the CPU path "because it is the classic" — two algorithms
+  means the parity suite compares nothing.
+- **API: an explicit async operation, not a style value.**
+  `cy.bundleEdges( options ) → Promise<BundleResult>`, options
+  `{ executor, iterations, cellPx, smoothing, edges? }` (unknown
+  keys throw).  A `curve-style: 'bundled'` prop is rejected on the
+  style system's own contract: every styled record is re-derivable
+  from (style, endpoints) alone and stays fresh automatically
+  (`src/README.md:1340-1342`), while a bundled shape depends on
+  *every other edge's positions* and is expensive and iterative —
+  a style value would either lie about freshness or re-run a
+  global operation on every drag.  The algorithm tier's
+  explicit-async precedent (finding 5) fits exactly: expensive,
+  global, environment-dependent, resolves with stats
+  (`{ iterations, edgesBundled, msTotal }` — `edgesBundled` is
+  what the bench rows print).
+- **Output lives in the curve tier as a new operation-owned record
+  kind**, `CURVE_BUNDLED`: per-edge polylines of up to
+  `CURVE_SEGS − 1 = 23` interior points, stored in the CurveBlob
+  **in the endpoint frame** — so the existing
+  position-independence contract holds and a post-bundle drag
+  deforms the bundle plausibly on-GPU with zero blob traffic;
+  re-run to re-tighten (documented).  The record is flagged
+  operation-owned: a style write to that edge's curve family drops
+  the override (style wins; recorded), `cy.unbundleEdges()` clears
+  all.  `segmentPoints()` answers with the bundled polyline, which
+  gives the numeric no-pixels verification tier (the
+  routing.spec.js precedent).  Rejected: emitting per-edge
+  `segment-distances` bypasses — canonical and serializable, but
+  id-keyed O(bundled) sheet entries are the wrong shape at 10⁵
+  edges, a bypass beats the sheet forever (muddying app bypasses),
+  and segments cap at 11 interior points where the strip affords
+  23.  Serialization instead: `BundleResult` carries a columnar
+  payload (edge ids + counts + offsets) that
+  `cy.bundleEdges({ preset: result })` re-applies — the
+  preset-layout precedent, and consistent with "kept definitions
+  are the app's job".
+- **Kernels are compute-only on the AlgoGpu context**: splat
+  polyline segments into a u32 fixed-point density grid with
+  atomics (no float-blend feature dependency, no render pass),
+  separable box/Gaussian blur, per-point gradient advection with
+  endpoint pinning, Laplacian smoothing, resample — all
+  `wgsl`-tagged.  Positions upload O(N) per run; no entanglement
+  with the frame loop, and headless-with-adapter environments run
+  it exactly like the round-65 tier.
+
+### 83.1 — the CPU reference + the operation surface
+
+`src/algorithms/edge-bundling.mts`: the f64 reference KDEEB loop
+(grid splat, blur, advect, smooth, resample to ≤ 23 interior
+points), `cy.bundleEdges` entry through
+`resolveExecutor`/`runAlgo`, result/preset shapes, throws
+(unknown option keys, bad iteration/cell values, `edges`
+collection from another instance — the round-48.4 guard) each with
+specs.  **Verified by** Node specs asserting the property bundling
+is named for: on a two-cluster parallel-edge fixture, mean
+pairwise midpoint distance among compatible edges *decreases* by a
+pinned factor, endpoints stay bit-identical (pinned), and a
+control run with advection zeroed fails the convergence assertion.
+Files: `src/algorithms/edge-bundling.mts`, `src/core.mts`,
+`src/public-types.mts`.
+
+### 83.2 — the curve tier learns `CURVE_BUNDLED`
+
+Store: the record kind in `curve-index.mts`/`curve-blob.mts`
+(operation-owned flag, style-write drop rule, compaction
+relocation), the bb term in the store scan (conservative polyline
+hull — the round-12a pattern), `segmentPoints()`.  Render: the
+kind dispatch in `CURVED_EDGE_SHADER` (walk the 23-point
+polyline across the 24-quad strip), the arrow end-tangent case,
+FLAG_CURVED set so cull/pick/arrows ride the existing curved
+stream unchanged.  **Verified by** goldens: a bundled scene
+(exact) with the control run unbundled — the diff must jump — and
+a **close-up** golden at zoom 3-4 per the round-56 rule (bundle
+geometry, not AA, must own the mismatch); a pick spec asserting a
+click on the bundled *arc* hits the edge and a click on the old
+straight chord misses (run once with bundling disabled to prove it
+discriminates); the deformation contract pinned numerically (move
+an endpoint, `segmentPoints()` follows in the endpoint frame with
+no re-run).  Files: `src/store/curve-index.mts`,
+`src/store/curve-blob.mts`, `src/render/shaders.mts`,
+`src/render/curved-edge-pipeline.mts`,
+`src/render/curved-arrow-pipeline.mts`.
+
+### 83.3 — the GPU kernels + parity
+
+`src/algorithms/algo-gpu-bundling.mts`: the four kernels above,
+`GpuUnfitError` on grids/buffers past device limits, accumulation
+order pinned where atomics make sums order-free (fixed-point
+splat is add-commutative — state it in the kernel doc).
+**Verified by** the `algorithms-gpu` Playwright parity spec:
+CPU-vs-GPU bundled polylines within a pinned tolerance (f32 vs
+f64, the round-65 determinism contract) on the two-cluster fixture
+and a multi-component one, plus one control with the blur radius
+skewed on the GPU side only — the spec must go red.  **Measure-first
+gate:** before tuning `minGpuN` for `'auto'`, measure both
+executors at three sizes on real hardware via
+`benchmark:algorithms-gpu` (SwiftShader refused, adapter identity
+printed); if the CPU owns every bench size, the GPU path serves
+explicit `'gpu'` only and the constant stays `Infinity` with the
+measured number in the wrapper comment — the `pageRankDense`
+precedent, a losing configuration kept measured.
+
+### 83.4 — the price, the crossover, and the close
+
+Bench: rows in `benchmark/algorithms-gpu-bench.mjs` (`cpu` /
+`gpu` / `gpu first call` for bundling — **each row prints
+`edgesBundled` and refuses to publish a row that bundled zero**,
+the round-39.1 rule in this round's shape) and a renderer-profile
+scene pricing the bundled curved stream per frame against the
+same graph straight (the row prints how many instances took the
+`CURVE_BUNDLED` path).  All bench-file edits batched so each
+profile's harness fingerprint moves once; publish serial,
+`--repeat 3`, per the standing rules.  Interaction cost recorded
+honestly: hover over a dense bundle resolves to the topmost slot
+(slot order — no z-index, structural, documented).  `debug/`
+gains a bundle button on the generated dense scene.  Standing
+close: this record, `src/README.md` (the operation-owned record
+contract, the style-wins drop rule, the deformation contract),
+MIGRATING/CHANGELOG, `EXECUTIVE_SUMMARY.md` rewritten, d.ts
+regenerated, JSDoc/throws gates at 100%/zero, oxfmt clean.
+
+### Risks named at planning
+
+- The 23-interior-point cap may read coarse on screen-length
+  edges; the close-up golden is the detector.  The escape hatch —
+  raising `CURVE_SEGS` — reprices *every* curved edge's VS work,
+  so it happens only behind the renderer bench row.
+- The blob's operation-owned records join compaction; a
+  relocation defect corrupts silently.  The soak tier gets a
+  bundle/unbundle churn spec before 83.3 lands.
+- u32 fixed-point splat can saturate on dense grids; the kernel
+  clamps and the parity fixture includes a worst-case cell.
+- The pick spec's chord-miss assertion depends on cursor-tile
+  size; verify it discriminates (run with bundling off) before
+  trusting green.
+
+**Open:** (1) Progress surface: is a per-iteration event (or an
+`animate: true`-style live application, the layout precedent)
+wanted in v1, or does the promise-plus-stats shape suffice until
+asked?  (2) Should `BundleResult` presets round-trip through the
+wire format (a new section, version bump) or stay an app-held
+payload?  (3) Arrowheads at bundle ends: endpoints stay pinned so
+heads fan at nodes — acceptable, or should v1 offer
+`arrow-scale`-style de-emphasis guidance in docs only?  (4) Does
+bundling belong partly in cyext (round 71) as the extension
+showcase instead of core — and if core, is the operation namespaced
+(`cy.bundleEdges`) or grouped under a future `cy.ops` tier?
+
+## Round 84 plan — attribute-table and filter affordances (planned 2026-08-14)
+
+The consumer case: Cytoscape Web built its TableModel/TableBrowser
+(glide-data-grid) and FilterModel *on top of* cytoscape.js by copying
+every element's data out into its own store, and desktop treats the
+network table and filters as core UI.  v4's sidecar is already the
+columnar store a table wants — the round's job is to stop making a
+grid copy it.  What the code does today, verified:
+
+1. **The sidecar is columnar and typed already** — per-(group, key)
+   columns: numbers as Float64Array + presence bytes, strings
+   dictionary-encoded (1-based Uint32Array, 0 = absent) with per-entry
+   refcounts and an order-preserving compaction that bumps a
+   per-column `epoch`, mixed as a plain-array fallback
+   (`data-store.mts:34-55`, compaction 622-661).  `keys()` answers the
+   union in first-write order — over the group's *history*, empty
+   columns stand (`data-store.mts:197`).  `reader()` hoists column
+   resolution out of a scan (`:153`), and `exportColumns` already
+   emits index-aligned wire shapes per key (`:207`).  `DataStore.epoch`
+   bumps on every value write/clear/ingest and deliberately not on
+   dict compaction or slot remap (`:105-109`) — one counter over both
+   groups.
+2. **Whole-object `data()` is epoch-keyed** (`collection.mts:2253-2262`,
+   round 62.4): two reads with no write between return the same
+   object.  A naive grid binding `data()` per row therefore pays one
+   object per row, re-materialized after every write burst.
+3. **The query IR** (`matcher.mts:49-78`): group + state booleans +
+   structural terms + per-key data conditions
+   (`eq/ne/lt/lte/gt/gte/in`, exactly one op; unknown keys and ops
+   throw, `:127-139`, `:187-193`).  Whole-graph scans hoist per-key
+   readers (`graph-store.mts:4221-4230`); `Collection.filter` on a
+   subset does **not** — it calls `store.data.get` per element per
+   condition (`collection.mts:1330`).  Nothing consults the
+   dictionary: a string `eq` re-compares strings per slot where one
+   dict lookup plus a u32 compare per slot would do.
+4. **No topology predicates**: degree is O(1) off the CSR
+   (`adjacency.mts:253`, `:264`) but the IR has no degree term;
+   "connected to X" is spelled `neighborhood()` + intersection today.
+5. **Change signals exist but are fine-grained**: element data writes
+   emit `data` per element, listener-gated
+   (`collection.mts:2324`, `:2377`), with no changed-keys payload;
+   graph-level `cy.data()` also emits `data` (`core.mts:2131-2143`);
+   `add`/`remove` fire per element.  The epoch — the natural coarse
+   invalidation key — is private.
+6. **Collections are eager**: a result is a refs array plus interned
+   handles (`collection.mts:319-352`), and every speed mechanism
+   around them (the `elements()` memo, `_dataObj`, `_eles`, packed-key
+   maps) assumes immutable eager refs.  `scanRefsInto` writes refs in
+   insertion order (`graph-store.mts:4198-4205`).
+
+Scope honesty up front: v4 ships columns, keys, coverage and fast
+predicates; the grid, its sorting/column UI and the filter-builder UI
+stay app-level.
+
+### 84.1 — the column view API
+
+The read surface a data grid renders 100k rows from without
+materializing 100k objects:
+
+- `cy.dataKeys( group )` → `[ { key, kind, coverage } ]` — `kind` is
+  the column's (`'number' | 'string' | 'mixed'`), `coverage` how many
+  live elements carry a value.  Keys are the historical union, stated
+  in the JSDoc (a cleared key stays listed at coverage 0 — the
+  documented `keys()` semantics, not a defect).
+- `cy.dataColumn( group, key )` and `eles.dataColumn( key )` — a
+  **snapshot** in exactly the shapes `exportColumns` already emits
+  (Float64Array with NaN holes / `{ dict, indices }` / plain array),
+  aligned to a stated row order: insertion order for the core form
+  (the `scanRefsInto` order, which is also `cy.nodes()` order), the
+  collection's own order for the collection form.  Snapshot rather
+  than live view, decided: dict compaction remaps indices **in
+  place** (`data-store.mts:647-652`), so a live view would silently
+  re-key under a consumer's feet.  The snapshot carries the DataStore
+  epoch at capture so "still current?" is one int compare.
+- **Synthesized columns**: `id` (and edge `source`/`target`, node
+  `parent`) are first-class, not sidecar (`collection.mts:2264-2277`)
+  — the surface synthesizes them as columns too (ids off the id blob,
+  no per-element handles), or a grid has rows it cannot label.
+- **Subscription**: the epoch goes public (naming open), and the
+  existing `data`/`add`/`remove` events are the triggers — a grid
+  listens, marks dirty, and re-pulls invalidated columns at most once
+  a frame with the epoch compare deciding whether anything moved.
+  Whether the `data` event gains a written-keys payload is an open
+  call (additive to the Event shape; without it invalidation is
+  per-store, not per-column).
+
+**Verified by** specs asserting each column kind round-trips values
+(the round-46.5 lesson: assert every column *carries values*, with the
+read-the-dict-as-an-array control failing on every fixture), coverage
+against hand-counted fixtures, epoch movement on write and
+non-movement on read, and snapshot isolation across a forced dict
+compaction.  **Measure-first gate:** coverage — measure an on-demand
+presence scan at 200k before adding a maintained per-column counter to
+`set`/`clearValue` (the hottest sidecar paths); if the scan is
+microseconds, on-demand wins and the write path stays untouched.
+
+### 84.2 — fast filters over columns
+
+- **Column-compiled conditions**: compile each data condition against
+  its column's kind once per filter — string `eq` resolves the value
+  to a dict index once, then u32 compares per slot; `in` becomes a
+  Set of dict indices; numeric ops test the Float64Array + presence
+  byte directly; mixed columns keep the generic `testCondition`.  The
+  case-mapper absence rule (a missing value fails every op, `ne`
+  included) must survive the accelerated path — a spec pins it per
+  kind.  One `compileColumnTest` helper serves both `scanRefsInto`
+  and `Collection.filter`, and `filter` also gains the reader hoist
+  it lacks today (`collection.mts:1330` vs
+  `graph-store.mts:4222-4230`).
+- **Topology predicates**, per the matcher's own extension note
+  (`matcher.mts:23-26`): `degree` / `inDegree` / `outDegree` as
+  numeric-bound terms (nodes-only — an edges-restricted query throws,
+  the structural-term shape at `matcher.mts:237-241`), answered O(1)
+  per slot off the CSR; and `adjacentTo: id | id[]` (nodes matching
+  when adjacent to any listed node), built once per filter as a
+  slot-membership set from the CSR rows.  Serializable, no functions
+  — a FilterModel can persist every query it builds.
+- **Lazy collections: declined, recorded.**  Collections are eager by
+  architecture and everything fast about them assumes it; the
+  non-materializing consumer is the column view (84.1) — a grid never
+  asks for a collection at all, and a filter result that will be
+  styled or selected wants a real one.  New IR keys join
+  `QUERY_KEYS`, so a typo still throws.
+
+### 84.3 — bench rows that discriminate, and the close
+
+All `benchmark/data.mjs` edits land in **one batch** so the
+fingerprint moves once (the round-68 rule).  Rows: `dataColumn 200k`
+against the naive per-element loop (which must call `data()` per row
+— and must write one value between passes, or the 62.4 cache makes
+the naive side measure the memo rather than materialization);
+`filter string eq (dict)` and `filter numeric range` against the
+predicate-fn spelling; `filter degree ≥ k` against the traversal
+spelling.  Every row asserts its result count is > 0 and < N (a
+filter matching nothing or everything prices a scan, not a filter)
+and asserts result-set equality across the compared spellings.
+Controls, run once: the dict acceleration disabled (string compares)
+must move the eq row; the CSR degree term swapped for per-element
+`degree()` must move the degree row.  **Measure-first gate:** before
+the dict path lands in the *subset* `filter`, measure the reader
+hoist alone at bench N — if hoisting closes most of the gap there,
+the dict path lands only in the whole-graph scan and the subset
+number is recorded instead.  Standing close: JSDoc with
+`@param`/`@throws`/`@returns` at 100%, d.ts regenerated,
+`src/README.md` gains the table-affordances section,
+MIGRATING/CHANGELOG rows, `test:throws` at zero.
+
+### Risks named at planning
+
+- A chatty writer plus a per-frame column puller is a copy storm
+  (800 KB per 100k-row f64 column); the epoch compare and batching
+  bound it, but the record must carry the measured re-pull cost, not
+  assert it away.
+- Two invalidation keys exist — the store epoch (values) and the
+  per-column dict epoch (indices; `data-store.mts:27-31`, the GPU
+  ordinal LUT precedent).  A snapshot consumer holding raw indices
+  must be told about both or it repacks late; the snapshot shape has
+  to carry them together.
+- Adding a keys payload to the `data` event changes an emitted shape
+  consumers already see — keep it additive and spec the no-listener
+  fast path stays listener-gated (`collection.mts:2324`).
+
+**Open:** the surface's naming — flat members (`cy.dataKeys`,
+`cy.dataColumn`) or one `cy.table( group )` view object; whether the
+`data` event gains a written-keys payload now or waits for demand;
+whether `adjacentTo` ships nodes-only in v1 (edges' `incidentTo` twin
+deferred); whether the epoch is exposed raw or wrapped in a
+`changedSince( token )` shape; and coverage counter vs on-demand scan
+if the measurement lands near the line.
+
+## Round 85 plan — the layouts round: radial, force constraints, edge length, per-side padding (planned 2026-08-14)
+
+Four demands with issue numbers attached, gathered.  What the code
+does today, verified:
+
+1. **Built-ins**: grid/preset/circle/concentric/breadthfirst/random/
+   force, dispatched by name with an unknown name throwing
+   (`core.mts:703-735`).  Concentric is *metric*-driven — a
+   `concentric` score (default degree) bins nodes into rings by
+   `levelWidth` (`concentric.mts:14-36`); breadthfirst's
+   `circle: true` rings each BFS depth with uniform per-index angles
+   (`breadthfirst.mts:384-394`).  Neither allocates a subtree an
+   angular wedge, so a node's children scatter around the ring far
+   from its sector — the hierarchy-aware allocation is exactly
+   #2493's ask (issue text to-verify; cited from the round brief).
+2. **Two layout shapes exist**: handle-level discrete layouts through
+   the `layoutPositions` finisher (`breadthfirst.mts:422`; circle/
+   concentric/random likewise) and the columnar round-17
+   LayoutContext (`layout/contract.mts` — `nodeSlots`/`endpoints`/
+   `positions`/`setPositions` plus the same finisher), with force as
+   the contract's production consumer.
+3. **`edgeLength` already exists and is per-edge**: a number or plain
+   fn resolved once into a Float32Array (`force.mts:33-36`,
+   `239-249`) consumed by both executors (`force-sim.mts:107-108`;
+   `gpu-force.mts:417`, uploaded at `584-586`), nesting multiplier
+   applied after (`:243-245`).  #1514's per-edge control is therefore
+   *built*; what is missing is a serializable spelling — a fn cannot
+   ride `cy.json()` or the wire.
+4. **Fixed nodes exist**: locked nodes pin (`force.mts:173-182`),
+   ride bit 31 of the slot map into the GPU kernel
+   (`gpu-force.mts:34-35`), and suppress the settle re-pack.  No
+   alignment or relative-placement machinery exists anywhere.
+5. **The GPU iteration** is eight dispatches encoded k-per-submit
+   (`gpu-force.mts:822-837`) with a 4-byte convergence staging read
+   as the sole readback (`:44-48`) — a CPU-side projection per tick
+   would need the per-tick readback the architecture forbids, so
+   constraints run on-device or the run demotes to the CPU executor
+   (the 14.11 compound precedent, `force.mts:7-11`).
+6. **The compound clamp is centered by decided design**
+   (`hierarchy.mts:11-25`): the flush materializes the children-bb
+   center with symmetric padding and `coreW = max( bbW, minWidth )`
+   (`hierarchy.mts:385-391`); compound props enter via
+   `style.mts:4861-4871` and read back at `5686-5687`; the per-side
+   hook is logged (`src/README.md:2415-2416`, `:4943`).
+
+### 85.1 — the radial tree layout (#2493)
+
+New `src/layout/radial.mts`, `cy.layout({ name: 'radial' })` joining
+the dispatch and its throw message.  Discrete, breadthfirst's shape:
+roots as a collection or id array (a selector string throws — the
+`breadthfirst.mts:113-117` precedent), a BFS tree per root (round-10
+slot-native bfs; non-tree edges just draw, recorded — breadthfirst's
+stance), then **hierarchy-aware angular allocation**: each node's
+wedge is a share of its parent's proportional to its subtree's weight
+(`weight: 'leaves' | 'subtree'`, default `'leaves'` — no functions),
+placed at its wedge bisector at radius depth × `levelSpacing`
+(derived from the bounding box when unset).  Multiple roots partition
+the sweep proportionally to their trees.  Options: `roots`,
+`startAngle`, `sweep`, `clockwise`, `levelSpacing`, `weight`, plus
+the shared plumbing (fit/padding/boundingBox/spacingFactor/animate/
+transform) through the finisher.  Leaves only; parents derive (the
+standing compound rule).  **Verified by** `test/layout-radial.mjs`
+with `headlessWidth`/`headlessHeight` set (the AGENTS.md rule):
+a child's angle inside its parent's wedge, monotone radius by depth,
+sibling wedges disjoint, and the unbalanced fixture's heavy subtree
+measurably wider — with the control swapping the allocation for
+breadthfirst-circle's uniform index spacing, which must go red.
+Bench row in `layouts.mjs` (batched with 85.3's edit): an unbalanced
+2000-node tree, the row asserting in-row the property it is named for
+(distinct radii == depth count; the heavy subtree's angular span
+exceeds the light's).  No v3 twin exists (v3 has no radial); the
+comparison partner is v4's own breadthfirst-circle, pricing what the
+hierarchy-awareness costs.
+
+### 85.2 — constraints on the force layout (fcose #54/#53 absorbed)
+
+v1 kinds: **fixed** — already spelled `lock()`; document the
+equivalence rather than add a second spelling; **alignment** —
+`alignment: { horizontal?: string[][], vertical?: string[][] }`
+(fcose's shape; id arrays, serializable), groups sharing a node merge
+transitively; **relative placement** —
+`relativePlacement: [{ left, right, gap? } | { top, bottom, gap? }]`.
+Validation fails loudly at start: unknown ids throw, a constraint
+cycle in the placement DAG throws, two locked members of one
+alignment group at different coordinates throw.
+
+Method: **constraint projection after each integration step** — the
+IPSep/CoLa-lineage standard, and what fcose itself runs.  CPU
+executor first and as spec: per tick, alignment groups snap the
+constrained coordinate to the group mean (a locked member pins the
+group to its coordinate), violated relative pairs split the
+correction Jacobi-style, pinned nodes never move.  Projection order
+vs the displacement fold is load-bearing: fold-then-project reads as
+never settling, project-then-fold can settle while violated — a spec
+pins that constrained runs both converge and satisfy.  The spectral
+seed is constraint-blind, so the run projects once before the first
+tick to shorten the transient.  The settle re-pack translates whole
+components and is already skipped for locked nodes; the skip extends
+to any constrained run.
+
+GPU: **measure-first gate**.  The candidate shape is one `constrain`
+dispatch appended after `apply` per iteration — alignment groups as a
+[starts][members] buffer, one workgroup per group tree-reducing the
+mean (v1 caps a group at one workgroup's reduction width), relative
+pairs as a Jacobi pair list.  But constraints are user-authored
+(tens, not 100k), so first *measure the demotion*: the renderer bench
+runs the constrained scene on the CPU executor against the
+unconstrained GPU run.  If the demotion is acceptable at target
+sizes, v1's contract is "constrained runs take the CPU executor"
+(the compound precedent, documented) and the kernel is logged with
+the number attached; if not, the kernel is built.  Either way the
+losing configuration stays measured.  **Verified by** seeded CPU
+specs (spread < eps at settle per aligned group; gaps satisfied;
+every throw message-asserted), the control deleting the projection
+step (every geometry spec red, the convergence spec not hanging), and
+a bench row that **verifies constraints were active**: the timed row
+asserts alignment spread < eps at end while its unconstrained twin on
+the same fixture shows a large spread — the delta prices projection.
+
+### 85.3 — `edgeLength` gets its serializable form (#1514)
+
+`edgeLength?: number | { data: string, default?: number }` — the
+`{ data }` form reads the per-edge numeric column once at start
+through the hoisted `store.data.reader`; a missing value takes
+`default` (else `DEFAULT_EDGE_LENGTH`, `force.mts:68`); a key whose
+column is string/mixed **throws**, naming key and kind (silent
+defaulting is how a typo'd key would lay out plausibly wrong).  The
+nesting multiplier applies after, unchanged; both executors consume
+the same Float32Array, zero sim changes.  The fn form stays for now
+(removal is a breaking call — see Open).  **Verified by** a seeded
+CPU run on a path graph with data lengths 50/200 asserting the
+settled neighbor-distance ratio, against the constant-`edgeLength`
+control reading ~1:1 — the pair discriminates; plus the throw spec.
+No new bench row: same cost shape as the fn form; the force row's
+comment notes the option.  d.ts + `public-types.mts:486-488`.
+
+### 85.4 — per-side compound padding (the logged hook)
+
+Four parents-group props — `padding-left` / `padding-right` /
+`padding-top` / `padding-bottom` — each px or `'N%'` like `padding`
+(same pfValue convention, same `relativeTo` basis), defaulting to
+`padding` when unset.  Plumbing: `CompoundStyle` grows four optional
+fields (`hierarchy.mts:19-25`); the flush resolves each side and
+materializes `w = coreW + padL + padR`,
+`cx' = cx + ( padR − padL ) / 2` (same for y) — the centered
+*min-size* clamp itself is untouched, per the round-14 decision the
+hook records (`src/README.md:2415`).  Readback via the existing
+compound plans (`style.mts:5686-5687` pattern); `padding()` keeps
+answering the uniform prop, documented.  Compound props outside the
+parents group throw (existing rule).  The round-25 padding tween
+writes `{ padding }` alone through the partial-update path whose own
+comment warns about resets (`hierarchy.mts:279-281`) — a spec pins a
+padding tween leaving `padding-left` standing, because that path is
+exactly where the defect would hide.  **Verified by**
+compound-bounds specs with headless dims (asymmetric padding shifts
+the parent box the computed amount; children bb unchanged; the
+zero-one-side control goes red) and one open of the debug compound
+fixture (the "something has to open the page" rule).
+
+### Sizing, and whether the round splits
+
+Recommend **splitting**: 85.1/85.3/85.4 are each single-subsystem
+and discrete-spec'd — together one normal round.  85.2 touches both
+executors, possibly a new WGSL kernel, the renderer bench, and
+carries a measure-first gate that can change its own shape mid-round
+— round-59-shaped, a round on its own.  So: round 85 = radial +
+edge length + per-side padding; the constraints pass becomes its own
+follow-on round with its design recorded here once.  If the
+maintainer keeps it whole, 85.2 lands last so its gate cannot stall
+the other three.
+
+### Risks named at planning
+
+- The projection/fold ordering (85.2) has a wrong answer in each
+  direction; only the paired convergence-plus-satisfaction spec
+  catches both.
+- The radial control must actually fail — run it once (the
+  round-27 "check that a new spec can fail" rule); a wedge assertion
+  loose enough to pass uniform spacing measures nothing.
+- All `layouts.mjs` edits batch into one commit so the benchmark
+  fingerprint moves once (round 68).
+- Every geometry spec sets `headlessWidth`/`headlessHeight` or it
+  tests a different graph than the one that ships (the AGENTS.md
+  rule).
+- 85.3's kind-mismatch throw should share round 84's column-kind
+  vocabulary so the two rounds' messages agree.
+- The stranded-doc-block hazard applies to the dispatch-table and
+  options-type edits — run the JSDoc gate before each commit.
+
+**Open:** the split call (recommended: the constraints pass runs as
+its own follow-on round); keep or deprecate the fn form of
+`edgeLength` — and whether the answer is a *policy* covering
+concentric's fn defaults (`concentric.mts:27-28`), the standing
+serializability exception, or one option's call; radial's default
+weight (`'leaves'` recommended) and whether multi-root sector
+partitioning matches desktop's radial expectations; the constraint
+v1 surface — the alignment-group reduction cap, whether
+cross-component relative placement is in, and whether CPU-executor
+demotion is an acceptable v1 contract for the fcose #54/#53
+consumers; per-side padding percent support vs px-only.
+
+## Round 86 plan — the worker-hosted renderer (OffscreenCanvas) (planned 2026-08-14)
+
+The oldest renderer demand on the tracker (#1350, #2799): move
+rendering off the main thread entirely.  WebGPU works in workers
+(Chrome; other engines to-verify — round 73's reach table carries the
+in-worker columns for exactly this).  Planning verified the coupling
+before designing, and the finding that organises the round: **the
+model↔renderer boundary is already message-shaped, and the one
+load-bearing sync API never touches the GPU.**  What the code does
+today, verified:
+
+1. The renderer reads the model only through `ModelView`
+   (contract.mts:990-1030): typed-array columns, **one coalesced
+   dirty span per column** per frame (`store/dirty.mts:47-68`,
+   `take()`-and-clear at :103), the four blobs under the same span
+   rules (`StoreDelta`, contract.mts:878-896), the label sidecar
+   with its own dirty list, `parentOrder()`, and the image
+   registry.  `ColumnMirror` consumes it as byte-for-byte span
+   copies (column-mirror.mts:13-14).  So the question the plan was
+   asked — are the diffs already enumerable? — is answered by
+   reading: the delta the renderer drains each frame *is* the
+   enumeration, and a `(columnId, start, end, bytes)` message
+   carries it verbatim.
+2. But the renderer also holds direct core refs beyond ModelView:
+   `cy._store` (37 call sites), `cy._styleEngine` (the
+   `arrowEnds`/`midArrowEnds` tables, renderer.mts:1839-1869),
+   `cy._viewport` (pan/zoom read per frame, renderer.mts:595, 2478),
+   `cy._ele` for pick decode (renderer.mts:617-636), and —
+   the deepest coupling — `cy._animations`: **the frame loop is the
+   animation clock** (`attachDriver` at renderer.mts:1171,
+   `cy._animations.tick(t0)` at renderer.mts:1276).  The core's own
+   view of the renderer is, by contrast, already narrow and mostly
+   async: `RendererLike` (core.mts:82-95) — destroy / pick
+   (Promise) / requestRender / resize / stats / forceActive /
+   exportImage (Promise) — plus the force layout duck-typing
+   `renderer.startForce` (layout/force.mts:426-445).
+3. The sync surface: `pickNodeSync` (renderer.mts:580; five pointer
+   call sites, the pan-vs-grab decision at pointer.mts:342) resolves
+   through `pickNodeAt` over the **CPU-canonical columns**
+   (renderer.mts:602, cpu-pick.mts:36-41) — no GPU, no renderer
+   state beyond view constants.  With the store staying main-side,
+   the sync pick stays main-side and **stays sync**.  `exportImage`
+   and `pick` are Promises already; `stats()` is a sync counter
+   snapshot.
+4. Events: the pointer handler binds to the **renderer's canvas**
+   (pointer.mts:1693 — not the container, correcting the planning
+   premise) and writes back through the core API.  Under
+   `transferControlToOffscreen()` the canvas element stays in the
+   DOM and keeps receiving events, so input needs no forwarding at
+   all — only what the frame already consumes (viewport state,
+   diffs) crosses.
+5. The wire format (`wire.mts:17-25`) is the precedent and the seed
+   for the **initial full-state transfer**; per-frame traffic is
+   spans, not the wire format.
+
+Design, pass 1: **renderer-only in the worker** — store, style,
+animation manager, layouts and pointer all stay on main.  A
+main-side `RendererProxy` implements `RendererLike`; a worker-side
+`RemoteModelView` implements `ModelView` over local typed arrays fed
+by span messages; the frame loop, mirror and pipelines run in the
+worker unchanged.  The named hard couplings and their resolutions:
+the animation manager reclaims its own rAF loop (it already owns one
+for the sink-less case, animation.mts:1740-1750) and the tween sink
+becomes a register/unregister proxy — the settle contract
+("re-derive on CPU, no readback", gpu-tween.mts:16-19) survives
+untouched, a designed-for property; pick decode + staleness
+revalidation (renderer.mts:617-636) moves main-side over raw ids;
+image decodes move to the worker (`createImageBitmap` +
+transferables); device loss forwards out and the core's re-mount
+recovery (core.mts:2917) tears down and respawns the worker;
+`startForce` is deferred or proxied — decided in-round on 86.1's
+cadence numbers.
+
+### 86.1 — the coupling audit and the messaging contract, written first
+
+Enumerate every renderer→core touch (the census above is the start)
+and classify each: served by RemoteModelView / moved main-side /
+forwarded / deferred.  Write the message schema — init transfer
+(wire-format-seeded), per-batch delta (spans + blobs + label entries
++ viewport + tween registrations), pick request/reply, export,
+resize, devicelost, stats snapshot — as a typed module under the
+contract.mts discipline: co-signed, changed first.
+**Measure-first gate:** the per-frame copy cost.  A CPU-side
+position animation or layout tick dirties a span covering most of
+`node.position`; measure copy + transfer at harness scale
+(`ndex-x-large`) before committing to the copy design.
+SharedArrayBuffer would erase the copy but demands cross-origin
+isolation the library cannot impose on embedders, so it can only
+ever be an opt-in tier — priced here, decided by the maintainer
+(Open).
+
+### 86.2 — extract the seam (behaviour-neutral, lands alone)
+
+The renderer stops reaching into `cy._*`: it takes at construction a
+ModelView, a viewport view, the style arrow tables, and a tween-sink
+registration surface; pick decode moves core-side.  No worker yet —
+the same-thread path remains the default and must stay
+byte-identical.  **Verified by** the full existing suite with the
+goldens moving zero pixels, plus the round-42 restructure rule: a
+green suite proves the paths resolve, so the proof is the call-site
+diff audited against the one change the pass is allowed to make.
+This pass is independently valuable — it is also the seam a WebGL
+fallback renderer or a headless-Node renderer would mount through —
+which is why it is separated from 86.3.
+
+### 86.3 — the worker host, behind `renderer: { worker: true }`
+
+Opt-in on `RendererOptions` (public-types.mts:528); the default is
+untouched.  The worker bundle question — a rolldown worker entry
+versus spawning from the existing UMD — is decided with
+`test/modules/packaging.mjs`'s gates in mind, not around them.
+Fail-loudly: absent OffscreenCanvas / worker-side
+`navigator.gpu`, mount rejects with a clear message on the
+`index.mts:60-65` precedent (whether a documented capability probe
+should accompany it is an Open call — never a silent same-thread
+fallback).  **Verified by**: a worker variant of a golden *subset*
+diffed exact-zero against the same scenes' same-thread goldens (same
+SwiftShader pin — the strongest available parity statement); the
+renderer project's interaction specs run once under the worker
+config; and a soak spec asserting the worker is terminated and the
+instance collected across create/destroy cycles (the WeakRef
+discipline).  The frame-driver note is re-verified deliberately:
+worker rAF under CI's SwiftShader has never been measured here, and
+the mid-flight specs' polling rule already assumes nothing about
+when frames land.
+
+### 86.4 — measure, record, close
+
+A benchmark row whose subject is the point: **main-thread occupancy
+per frame** under drag/animation at harness scale, worker versus
+same-thread — total frame time would measure nothing, since the work
+does not shrink, it moves.  Plus the pick-latency delta (one hop).
+New suite ⇒ new fingerprint; publish serial per the standing rules.
+Close: src/README.md section, MIGRATING/CHANGELOG rows if any public
+surface moved, JSDoc gates, d.ts regenerated, this record.
+
+### The round-73 dependency, flagged
+
+This round's architecture **depends on round 73's outcome**, and
+86.2 is where it bites.  If a WebGL fallback is built — pre- or
+post-4.0 — the worker split must sit *above* renderer choice: the
+message schema and RemoteModelView renderer-agnostic (nothing
+WebGPU-typed in the contract), or the matrix becomes two renderers ×
+two hosts with private plumbing in each cell.  If 73 recommends
+never, the seam may keep WebGPU types and stay simpler.  Also
+re-checked after 73: WebGL2-in-worker OffscreenCanvas support is
+likely *broader* than WebGPU-in-worker (to-verify — 73.3's reach
+table carries both columns), which could invert which renderer the
+worker host serves first.  Whichever assumption this round builds
+on, the record states it and names what 73's data would have to say
+to overturn it.
+
+### Risks named at planning
+
+- The per-frame copy can eat the win on position-heavy frames: GPU
+  force and GPU position tweens publish on-device (no spans), but
+  CPU layouts and CPU-channel animations produce near-full-column
+  spans every tick.  86.1's gate exists because this number decides
+  the design, not tunes it.
+- Worker rAF throttling differs per engine and changes background-
+  tab behaviour; document against today's main-thread throttling
+  rather than fixing what is not this round's subject.
+- Two host configurations widen the Playwright surface; the worker
+  tier runs a golden subset, exact where it runs, rather than
+  doubling all 45.
+- 86.2 is the stranded-doc-block refactor shape (65.4/65.8, 72.3's
+  warning) — the JSDoc gate runs before each commit.
+- `stats()` under a worker is a mirrored snapshot; a spec that
+  samples it must key off `gpuFrameReadings` transitions, exactly as
+  its doc comment already instructs (public-types.mts:573-577).
+
+**Open:** the option shape and the unavailable behaviour (reject
+loudly as planned, with or without a public capability probe); the
+SharedArrayBuffer opt-in tier — pursue, or decline with the
+measurement recorded; whether `stats()` stays a documented
+stale-snapshot or goes async (recommendation: sync snapshot plus a
+freshness field); the worker option's own pre/post-4.0 positioning —
+it is additive and opt-in, so unlike 73's subject it does not change
+what 4.0 *is*, and the recommendation is post-4.0 unless 73's
+outcome bundles the two splits into one boundary round; whether
+`startForce` crosses the boundary in pass 1 or waits; and whether
+86.2 should be pulled forward to land beside round 73's decision,
+since it is the seam both futures share.

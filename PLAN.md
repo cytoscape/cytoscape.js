@@ -24345,3 +24345,655 @@ it leaves call sites untouched); whether `show`/`hide` and the
 they deviate from v3's privacy deliberately); whether `Viewport`
 leaves the public tier entirely (recommended: yes, absent a consumer
 path that holds one); and the alias-family question in class 4.
+
+
+## Rounds 91–97 — the maintainer's screen pass (raised 2026-08-18)
+
+Seven defects from driving the debug harness, one round each.  Every
+mechanism below was **verified before planning** — reproduced in a
+served page against the built UMD bundle (the round-27.9 rule: probe
+from a served page, never `about:blank`), with the v3-vs-v4 cases
+diffed live on `playwright-page/parity.html`.  The repro scripts are
+throwaway; what each round keeps is the pinned mechanism and the spec
+that will hold it.  Performance trade-offs are named per round — most
+of these sit on hot paths (the frame loop, the whole-graph fit scan,
+the per-vertex curve evaluation, the glyph atlas, the pick path), so
+each fix carries its measurement, not just its scene.
+
+
+## Round 91 plan — resize without distortion (raised by the maintainer 2026-08-18)
+
+The maintainer, resizing the debug page: the network view stretches
+or squishes with the window.  What the code does today, verified:
+
+1. **The steady state is already correct.**  Measured on a served
+   page: an 800×600 container resized to 1300×500 leaves the backing
+   store at exactly 1300×500, circles round, zoom and pan untouched —
+   the `ResizeObserver` (`src/render/renderer.mts:356-360`) calls
+   `resize()` → `applySize()` (`renderer.mts:2407-2415`), which sizes
+   `canvas.width/height` from `container.clientWidth × dpr`.  So the
+   distortion is **transient, not steady-state** — but during a live
+   window drag "transient" is every frame of the drag.
+2. **The stretch mechanism is the `100%` canvas CSS plus a
+   frame-late redraw.**  v4's canvas is styled `width/height: 100%`
+   (`renderer.mts:330-331`), so the compositor scales whatever was
+   last presented to the new CSS size immediately; the redraw that
+   would correct it is `schedule()`d to the *next* rAF
+   (`renderer.mts:402-410`, :1236-1247), and ResizeObserver callbacks
+   run *after* this frame's rAF in the event-loop rendering steps —
+   so every resize step composites at least one frame of
+   stale-content-stretched-to-new-size.  A continuous drag is a
+   continuous rubber-band.
+3. **v3 is structurally immune, and not by redrawing faster.**  v3
+   sizes its canvases in **fixed CSS px**, written only inside the
+   synchronous redraw (`canvas.style.width = width + 'px'`,
+   `v3/src/extensions/renderer/canvas/drawing-redraw.mts:219-239`),
+   and its resize handler is *debounced 100 ms*
+   (`v3/src/extensions/renderer/base/load-listeners.mts:326-343`).
+   During a drag a v3 canvas is momentarily the wrong *size*
+   (letterboxed), never the wrong *shape* — stale coverage reads as
+   lag; stale stretch reads as the graph deforming.
+4. **`dpr` is frozen at construction** (`renderer.mts:319-322`) where
+   v3 reads `devicePixelRatio` live per redraw
+   (`drawing-redraw.mts:12`).  A browser-zoom change or a move to a
+   different-density monitor leaves v4 rasterizing at the stale
+   ratio — uniform blur rather than stretch, but the same round owns
+   it: `applySize` is the one consumer.  Note browser zoom does not
+   change `clientWidth` (CSS px), so the ResizeObserver alone will
+   not catch it — the standard hook is a `matchMedia('(resolution:
+   …)')` listener re-armed per change.
+5. `cy.resize()` is public (`src/core.mts:2008-2011`) and the debug
+   container is a plain absolutely-positioned box
+   (`debug/style.css:2`), so nothing harness-side contributes.
+
+### 91.1 — the canvas presents at the size it was drawn
+
+Two candidate shapes, decided by driving the page, cheapest first:
+
+- **Synchronous frame in `resize()`** (recommended first look): call
+  `frame()` directly after `applySize()` instead of `schedule()`ing.
+  ResizeObserver runs before paint in the same rendering update, so
+  the frame that composites the new layout composites new content —
+  the stretched frame never exists.  Cost: nothing new per frame
+  (RO fires at most once per frame); the care point is re-entrancy
+  (a `frame()` mid-rAF-chain must not double-tick animations — the
+  clock is `performance.now()`-driven, but assert it).
+- **v3's fixed-px canvas CSS**, written in `applySize`: even when a
+  frame is late, a wrongly-*sized* canvas letterboxes rather than
+  distorts.  Belt-and-braces with the above; costs a style write per
+  actual size change.
+
+**Verified by** a Playwright spec that resizes the container and
+asserts, without waiting extra frames, that the presented pixels are
+undistorted — render one filled circle, resize, screenshot on the
+next compositor frame, assert the ink's width/height ratio (the
+steady-state half is cheap; the transient half is the reason the
+spec exists, and if the harness cannot observe a single compositor
+frame deterministically, the spec asserts the synchronous-path
+invariant instead: after `resize()` returns, the canvas has already
+presented at the new size).  Plus the standing rule: drive `debug/`
+and drag the window edge, before and after.
+
+### 91.2 — live pixel ratio
+
+`applySize` re-reads `devicePixelRatio` when `opts.pixelRatio` is
+`'auto'`/absent (the constructor keeps honouring an explicit number),
+and a `matchMedia` resolution listener — re-armed per change, removed
+on destroy — triggers `resize()` so browser zoom re-rasterizes.  The
+scene/depth/pick targets already rebuild off canvas size, and the
+label thresholds already scale by `dpr`; the sweep is checking the
+few places that cached `this.dpr` at init.
+
+**Verified by** a spec that flips a mocked `devicePixelRatio` (CDP
+`Emulation.setDeviceMetricsOverride` in the renderer project) and
+asserts the backing store follows; control: pin `pixelRatio: 1` and
+assert it does not.
+
+### Risks named at planning
+
+- A synchronous `frame()` from the RO callback runs GPU submits
+  inside the rendering steps — Dawn is fine with it, but the frame
+  must tolerate `canvas.width === 0` (already guarded,
+  `renderer.mts:1263`) and a destroyed renderer racing a late RO
+  fire (already guarded, :403).
+- Goldens and parity scenes never resize, so none should move; if
+  one does, something leaked into the steady state.
+- The debounce question: v3 debounced 100 ms to keep canvas
+  reallocation off the drag's critical path.  v4 reallocates no
+  canvas DOM (one canvas, `width`/`height` writes) and the swapchain
+  resize is the browser's own; if profiling shows reallocation churn
+  in `ensureSceneTarget` during drags (a texture rebuild per step),
+  the fix is a short settle for the *offscreen targets only* — never
+  for the presented size, which is what must track the drag.
+
+**Open:** whether 91.1 ships both halves or the synchronous frame
+alone (recommended: both — the fixed-px CSS also covers the
+no-ResizeObserver fallback path, where today nothing resizes at
+all); whether a `devicePixelRatio` change should also emit `resize`
+on the core (recommended: yes — v3's `cy.resize()` semantics).
+
+
+## Round 92 plan — the compound fit, from conservative to exact (raised by the maintainer 2026-08-18)
+
+The maintainer: the compound fixture does not fit to screen
+properly.  Reproduced on the page (930×900 viewport, the fixture's
+own `cy.fit(undefined, 30)`), and the residual is round 54's own
+recorded cushion, now judged on screen and found not modest:
+
+1. **Measured today**: fit zoom 0.874 against an exact-box fit of
+   1.077 (`Collection.boundingBox` reads 807.7×637.3 for the graph;
+   (930−60)/807.7 = 1.077) — a **1.23× over-frame**, matching round
+   54's recorded "~1.25×, the kept p2 cushion showing".
+2. **The slack is asymmetric, so it also de-centers.**  54.1's
+   directional compound-loop box grows **up and left only**; `fit`
+   centers the conservative box, so the graph sits visibly
+   down-right with dead space up-left — the screenshot shows it
+   plainly.  An over-frame reads as "zoomed out a bit"; an
+   off-center over-frame reads as "fit is broken", which is what was
+   reported.
+3. **The formulation already has its successor in the same
+   function.**  54.2 moved taxi from a margin bound to the
+   **memoized exact curve bb** (`curveBBAt`, epoch-invalidated,
+   already computed per curved edge by the box-selection path) after
+   the sweep proved the margin unsound.  The compound-loop and
+   blob-bezier kinds still ride the conservative terms; extending
+   the exact tier to them removes both the 1.23× and the asymmetry
+   in one move, with no new bound to prove sound — exact ⊇ nothing.
+4. The cull kernels keep their conservative terms deliberately
+   (43.13/54's standing rule: over-inclusion in a cull costs
+   efficiency, never correctness).  This round touches the two CPU
+   scan sites only (`GraphStore.boundingBox`,
+   `Collection.boundingBoxAt`), like 54 before it.
+
+### 92.1 — exact curve bounds for the remaining conservative kinds
+
+`CURVE_CMPD` and the weight-extrapolated blob kinds take the
+`curveBBAt` route in both scan sites; the p2-cushion terms for those
+kinds are deleted rather than tightened (54.3's precedent —
+`curveBoxMargin()` died the same way).  The staleness question 54.1
+raised (p2's 2× cushion as the memo's staleness allowance) must be
+re-answered for the exact tier: `curveBBAt` is epoch-invalidated, so
+freshness is structural, not margin-based — confirm the epoch covers
+every input the compound-loop geometry reads (positions, outer
+halves, the loop params), which is the round's one soundness task.
+
+**The cost is the round's gate, measured not assumed.**  The scan's
+headline property is the ndex fast path (235 → 15 ms when the
+columnar scan landed).  `benchmark/spatial.mjs` already carries the
+round-54 group (warm 86 µs / cold 162 µs on the 100-parent
+fixture); this round re-measures warm and cold on that row, adds the
+ndex-shaped case (curved share ~0: the cost must not move at all
+where no edge is curved), and publishes per the `--repeat 3` rule.
+If the cold scan regresses beyond the page's own noise band on a
+realistic mix, the fallback is a hybrid: exact for the kinds that
+misframe (compound loops are rare and expensive to over-bound),
+conservative for the rest — recorded either way.
+
+**Verified by** the 54 sweep re-run (conservative ⊇ exact holds
+trivially once both sides are exact — the sweep then pins
+exact-vs-flattened-route containment instead, both directions); the
+compound fixture's fit driven on the page with the zoom asserted
+near 1.077 (spec sets `headlessWidth/Height` to 930×900 — the
+round-43.12 trap); and a centering assertion (left and right
+margins within a few px of each other), which is the spec the
+asymmetry defect was missing all along.  Control: reintroduce the
+directional slack once — the centering spec must go red.
+
+### Risks named at planning
+
+- First-fit cost on a cold instance now derives curve geometry for
+  every compound-loop/blob edge before the first frame; the memo
+  amortizes it but the *first* `fit()` is startup-visible.  Measure
+  on em-web-clustered (41 parents, real data) before and after.
+- `boundingBoxAt` (hypothetical positions — `layoutPositions`' bounds
+  source) takes the same change via `curveRouteAtPositions`; layouts
+  call it in loops, so the layout benches watch it.
+- The fixture's fit was *photographed* in round 54's record as
+  acceptable; this round supersedes that judgement — update
+  `src/README.md`'s bounds paragraph and the round-54 cross-refs in
+  the same commit, per the docs-travel rule.
+
+**Open:** whether the whole-graph store scan keeps *any*
+conservative kind once compound loops go exact (recommended: yes —
+haystack/straight stay pure-columnar; exactness is bought only where
+the box was visibly wrong); whether `fit` should ever pad
+asymmetrically to compensate residual slack (recommended: no — fix
+the box, not the frame).
+
+
+## Round 93 plan — curve smoothness: spend the 24 quads where the bend is (raised by the maintainer 2026-08-18)
+
+The maintainer: some curved edges render as visible chord chains
+while bundled beziers are smooth.  Reproduced and mechanism pinned:
+
+1. **Every curved edge is one strip of `CURVE_SEGS = 24` quads**
+   (`src/curve-geometry.mts:55`; indexCount 6×24 per instance,
+   `src/render/cull.mts:803`), evaluated in the vertex shader.
+2. **The analytic families spend all 24 on one curve.**  Bezier,
+   loop and compound loop sample `curvePoint(g, idx/24)`
+   (`src/render/shaders.mts:3130-3160`) — 24 chords per quadratic,
+   smooth at any sane zoom.  That is exactly the "bundled beziers
+   look smooth" observation.
+3. **The route families split the same 24 uniformly across
+   pieces.**  `quadPieceW` (`shaders.mts:947-964`) hands each piece
+   ⌊24/pieces⌋ or so subdivisions regardless of what the piece is;
+   round-segments spends `2n+1` pieces for `n` interior points
+   (`routePieceCountW`, :939-943), round-taxi similarly.  A
+   radius-50 arc therefore gets 3–8 chords while pixel-straight legs
+   — which need exactly 1 — consume the rest.  Measured on the
+   parity page: a round-taxi radius-50 corner at zoom 3 renders as
+   ~6 visible facets in v4 beside v3's perfect arc.  The unbundled
+   bezier (MULTI, C1 spline through inserted midpoints, :967-985)
+   has the same shape of problem at 24/n chords per quadratic piece.
+4. v3 has no such budget — canvas `arc()`/`quadraticCurveTo()` are
+   analytically rasterized — so every chord is a v4-only artifact,
+   and the round-56 close-up tier is where it shows (AA does not
+   scale with zoom; chords do).
+
+### 93.1 — curvature-weighted subdivision allocation
+
+The recommended fix spends the existing budget instead of raising
+it: `quadPieceW` weights pieces by **bend** — an arc piece by its
+sweep angle, a multibezier piece by its control's deviation from the
+chord, a straight leg exactly 1 quad — normalized to the same 24.
+Zero new vertices, a few extra ALU in a shader whose loop already
+walks all 24 subdivisions for dash length (:3152-3159).  The
+allocation must stay **canonical per vertex index** (both quads
+sharing an index compute identical geometry — the watertight rule
+the strip already lives by), which it is, being a pure function of
+the route params.  Sagitta check at the budget: a 90° arc given 20
+of 24 chords has max chord error r(1−cos 2.25°) ≈ 0.0008 r — at
+radius 50, zoom 4, dpr 2: 0.3 device px.  Invisible; no budget raise
+needed for arcs.  The unbundled spline's worst case (few controls,
+deep bend) gets the same treatment and is measured, not assumed.
+
+**Every consumer of the subdivision map moves in the same commit** —
+the co-signed rule applied to geometry: the CPU flatten twin
+(`curve-geometry.mts:504` — "a CPU flatten at the same K", used by
+bounds and picking), the route-family layer VS (`vsCurvedLayer`),
+the dash arc-length loops, and the curved-arrow placement
+(`curved-arrow-pipeline.mts:259`).  A spec pins CPU-flatten ==
+GPU-vertex at every index over a fixture of every family (the
+existing twin-parity shape).
+
+### 93.2 — the budget itself, priced
+
+If 93.1 leaves a family visibly faceted (candidates: many-point
+round-segments, where 2n+1 pieces at n=11 leaves ~1 chord per arc),
+the follow-up is raising `CURVE_SEGS` — priced first: vertex count
+is linear in drawn curved edges, so `benchmark:renderer` on the
+curve-heavy scenes and `benchmark/curves.mjs` decide 24→32/48, and
+the number is chosen by measurement, not taste.  A zoom-adaptive
+indexCount (the indirect args are written per frame) is recorded as
+the further step and deliberately not taken until a real scene needs
+it — it couples the cull pass to zoom in a way nothing else does.
+
+**Verified by** close-up parity scenes (round 56 rules: short edges,
+zoom 3–4, and **count the corners** — several bends per edge) for
+round-taxi, round-segments and unbundled-bezier, with controls
+(allocation reverted to uniform must jump each scene past its
+bound); the twin-parity spec above; goldens that touch curved edges
+regenerate (exact goldens — read the diffs).  The v3-default and
+edge-types harness pages get driven per the standing rule.
+
+### Risks named at planning
+
+- The subdivision map is load-bearing for **dashes** (u runs along
+  the polyline) and **mid-arrow placement**; both must be asserted
+  in the parity scenes, not assumed unaffected — a dash pattern that
+  breathes when allocation changes is the regression to catch.
+- Piece boundaries must still land exactly on subdivision indices
+  (straight legs stay pixel-straight); the weighted allocator keeps
+  the integer-boundary construction, only the shares change.
+- WGSL edits follow the house rules (tagged literals, no
+  interpolation in comments); the routing numbers must not move at
+  all — `routing.spec.js` is the control that costs nothing.
+
+**Open:** the bend metric for multibezier pieces (sweep-angle proxy
+vs flattened-length ratio — decide by which keeps the allocator
+branchless); whether haystack/straight-triangle need anything (no —
+they are straight by construction); whether 93.2 runs at all
+(measure after 93.1).
+
+
+## Round 94 plan — label fidelity under zoom (raised by the maintainer 2026-08-18)
+
+The maintainer: labels break down in quality when zoomed in a fair
+bit.  Reproduced: at zoom 4 (font-size 14 → 56 displayed px) v4's
+glyphs go soft, corners round off, and a 'g' descender deforms,
+beside a v3 render that is crisp at every zoom.  Mechanism, pinned:
+
+1. **The atlas is a runtime single-channel SDF at a fixed 32 px per
+   glyph** (`src/render/glyph-atlas.mts:15`, TinySDF-style: canvas2d
+   alpha raster → Euclidean distance transform, pad 6, radius 8,
+   1024² r8unorm, ~1 MiB).  The header's claim — "crisp at any zoom
+   from one 32px-per-glyph atlas" (:9, restated at
+   `shaders.mts:4387-4388`) — is true of the *edge AA* (fwidth-based,
+   scale-free) and false of the *letterform*: raster + EDT
+   quantization error is baked in SDF px, so it magnifies linearly
+   with displayed-px / 32, and single-channel SDFs round every sharp
+   corner at ~1 SDF px radius by construction.  At 56 displayed px
+   that is ~2 px of visible corner rot; at zoom 1 it is sub-pixel,
+   which is why nothing noticed before the maintainer zoomed.
+2. v3 rasterizes text per frame at the current zoom (canvas
+   `fillText` under the zoom transform), so it is crisp everywhere
+   and pays for it on every frame — the design v4 rejected for
+   throughput.  The ask is not v3's cost model; it is more fidelity
+   from the atlas model, bought cheaply.
+3. **The re-raster machinery already exists**: `labelLayer.reraster()`
+   re-rasters every cached glyph today when web fonts finish loading
+   (`renderer.mts:302-317`, `label-layer.mts:70-72`), and the
+   zoom-promotion meter pattern (15.6, `schedulePromotionCheck`,
+   `renderer.mts:351`) already watches zoom to re-tier images — the
+   two halves of a zoom-tiered atlas are built and shipping.
+
+### 94.1 — measure the two cheap levers, ship the winner
+
+- **Lever A — raise `SDF_FONT_SIZE` 32 → 64** (atlas 1024 → 2048,
+  1 → 4 MiB, EDT per glyph 4× on a one-time cost): halves every
+  artifact's on-screen size at a given zoom, uniformly, no runtime
+  machinery.  Measure the raster stall (the em-web glyph population
+  on first frame — the atlas rasters on demand) and the memory.
+- **Lever B — a zoom-tiered re-raster**: keep 32 px as the base
+  tier; when the promotion meter reports sustained zoom past a
+  threshold, re-raster *the glyphs in use* at 64/128 px into new
+  shelves and swap runs, exactly as the font-loading re-raster does.
+  Costs nothing until someone zooms; costs a visible one-frame
+  sharpen when they do (the image promotion tier has the same
+  behaviour and it reads fine).
+- **MSDF is investigated and expected to be declined**: sharp
+  corners at any scale, but a faithful MSDF needs the glyph's vector
+  outline, which canvas2d does not expose — raster-derived MSDFs are
+  exactly the fragile hand-derived second implementation this repo
+  keeps declining.  If declined, the decline is recorded with the
+  reason (no-deps rule + fidelity risk), per house practice.
+
+The round ships A, B, or A+B based on measured quality-per-cost at
+zoom 3–6 over the labels fixture; the quality judgement is a
+close-up golden set, the cost judgement is the label benches plus
+first-frame timings.
+
+**Verified by** close-up label goldens (zoom 4, the round-56 tier —
+which today has **no zoomed label scene**, itself a gap this round
+closes) regenerated intentionally; a live parity diff against v3 at
+zoom 4 with a bound the pre-change render measurably fails (run the
+control: today's render must exceed the bound, or the scene is not
+discriminating); the soak tier watches atlas growth if B ships
+(shelf churn across zoom cycles must plateau, not grow — the leak
+gate's reachability rule applied to texture shelves).
+
+### Risks named at planning
+
+- Every label golden regenerates if A ships (the raster changes
+  everywhere); read the diffs, per the exact-golden rule.
+- B's swap must not tear mid-frame (runs re-point atlas UVs while a
+  frame is in flight) — the font-loading re-raster already solves
+  this; reuse its sequencing, do not invent a second one.
+- The 'g'-descender deformation seen in the repro may be quad/pad
+  clipping rather than SDF error (outline width eats into the 6 px
+  pad) — check `SDF_PAD` against the worst outline before choosing
+  levers, since a clipped quad no tier fixes.
+- dpr interacts: a dpr-2 display at zoom 2 already shows 4× — 91.2's
+  live dpr work makes the meter's input honest; land 91 first or
+  meter on displayed px directly.
+
+**Open:** the tier thresholds and count for B (recommended: one
+extra tier at 64 px triggered near displayed 40 px, judged on the
+goldens); whether the atlas grows to 2048 in both levers (A: yes by
+necessity; B: only on first promotion).
+
+
+## Round 95 plan — the outline goes under the ink (raised by the maintainer 2026-08-18)
+
+The maintainer: label outlines overlap the previous characters of a
+word, cutting white notches into the letters.  Reproduced at zoom 1
+(the notches are visible in 'Wavelength' at 14 px) and worse zoomed.
+Mechanism, pinned:
+
+1. **v4 computes fill and outline in one fragment pass per glyph
+   quad** (`src/render/shaders.mts:4426-4435`: fill alpha from the
+   0.5 threshold, outline from `0.5 − outlineWidth`, maxed) and
+   alpha-blends the quads **in glyph order**.  Glyph quads overlap
+   by construction — each carries the SDF pad halo (6/32 of the em)
+   past its ink, and advances are narrower than ink + 2×pad — so
+   glyph N's opaque outline ring composites *over* glyph N−1's
+   already-blended fill.  The notch is the next letter's white ring
+   biting the previous letter.
+2. **v3 never composites a stroke over a fill within a line**: it
+   draws `strokeText` for the whole line, then `fillText` over it
+   (`v3/src/extensions/renderer/canvas/drawing-label-text.mts:
+   399-413`) — all outline under all ink, per wrapped line.
+3. The fix is therefore a **draw-order** fix, not a shader-math fix:
+   outline first for the run, fill second.  The label pipeline draws
+   one indirect instanced pass off the culled glyph list
+   (`label-pipeline.mts:185-205`); a phase uniform (outline-only /
+   fill-only thresholds in `fsLabel`) turns that into two passes
+   over the same instances with no new buffers.
+
+### 95.1 — the two-phase label draw
+
+Pass 1 renders outline coverage only (skipped entirely — one branch
+on a per-frame flag — when no visible label carries an outline);
+pass 2 renders fill (plus outline-under-fill mixing as today for the
+colour, minus the max that lets a ring beat ink).  The granularity
+question is the one real decision: **global two-phase** (all visible
+labels' outlines, then all fills) is one extra draw call and matches
+v3 everywhere except where two *different* labels overlap — there v3
+draws label B's stroke over label A's ink and v4 would not.  Per-run
+phases inside one pass would match v3 exactly but breaks the single
+instanced draw into per-run draws, which is the label pipeline's
+whole cost model.  Recommended: global two-phase, deviation recorded
+(overlapping distinct labels are already unreadable in both
+libraries; within-word legibility is what the defect is about).
+Text-background quads (`solid` path, :4393-4423) stay in the fill
+pass under both phases — they already draw under their own run.
+
+**Cost, priced before landing**: the second pass doubles label
+vertex work and rasterized quads only when outlines are in use, and
+only for the visible set the cull already produced.  Measure on the
+labels-heavy bench scene with outlines on and off; the
+outline-free path must measure unchanged (the flag skips pass 1
+before any GPU work).
+
+**Verified by** a golden of an outlined multi-word label (today's
+render fails it — the notches are pixels, so the control is the
+diff itself), a close-up golden at zoom 4, and a live parity diff
+against v3 on the same scene with the bound tuned per round 55's
+lesson (dark ink, contrasting outline, several words — the
+configuration that *exposes* the defect, since same-colour outlines
+paint over it); plus the standing drive of `?network=v3-default`,
+whose edge labels all carry `text-outline-width: 2`.
+
+### Risks named at planning
+
+- Every outlined-label golden regenerates; the label parity bounds
+  retune downward, never up.
+- The fill pass must keep the outline *colour* mixing at the glyph
+  boundary (the `mix(outlineColor.rgb, color.rgb, fillA)` term) or
+  edges get a dark AA fringe on light outlines — the phase split
+  changes coverage, not the colour math.
+- Edge labels ride the same shader (`EDGE_LABEL_SHADER`,
+  :4442-4443) — both pipelines take the phase, or edge labels keep
+  the notch.
+- Rotated labels overlap differently; one golden rotates (v3-default
+  has the 38°/45° pair ready-made).
+
+**Open:** whether pass 1 also underlays the text-background quad
+order (v3 draws background under both; v4's solid path already does
+— confirm, don't assume); whether the per-run exact-parity variant
+is worth a follow-up if a real scene surfaces the distinct-label
+case (recommended: no, record it).
+
+
+## Round 96 plan — the v3-default `eh`, restored by bypasses (raised by the maintainer 2026-08-18)
+
+The maintainer: on `?network=v3-default`, edge `eh` "seems not quite
+right".  Investigated, and the renderer is exonerated:
+
+1. **Given v3's exact parameters, v4 routes `eh` identically** —
+   measured through the parity page: `segmentPoints()`, endpoints
+   and midpoint agree to the last float
+   ((140,150)/(200,150)/(260,150); endpoints ±76.96/323.04), and the
+   side-by-side render matches.  The defect is not in
+   round-segments.
+2. **The debug sheet cannot give `eh` its own arrays, and says so.**
+   v3 styles `#eh` as round-segments with `segment-distances:
+   [-50,-50,-50]`, weights `[0.25,0.5,0.75]`, radii `[50,50,50]`
+   (`v3/debug/init.js:141-147`).  v4's list-valued curve props take
+   constants only (the recorded 12b scope note,
+   `src/style.mts:3486-3489`), so the whole edges section shares one
+   parameterisation — `[20,-80]`/`[0.25,0.5]`/`[20,20]`
+   (`debug/styles.js:672-676`), chosen to demo the family, not to
+   match `eh`.  On screen that is a different curve entirely (a
+   two-segment S against v3's three-segment flat-top), and the
+   sheet's own header records the deviation
+   (`debug/styles.js:564-572`).
+3. **Round 63's `bypasses` section closes it, verified**: a bypass
+   entry carrying v3's arrays for `eh` produces v3's exact
+   `segmentPoints` — bypasses are per-element constants, which is
+   precisely what per-edge list props are.  The sheet's header even
+   names bypasses as "the other spelling" without noticing that for
+   the *list* props it is the **only** spelling (no mapper form
+   exists).
+4. What remains visually after the arrays match is arc faceting at
+   the radius-50 corners — round 93's defect, deliberately not this
+   round's.
+5. **The segment families have zero numeric parity coverage**:
+   `routing.spec.js` probes bezier/taxi-era scenes and nothing with
+   `segmentPoints()` (grep) — which is why nothing was watching this
+   configuration.
+
+### 96.1 — the sheet carries v3's per-edge arrays
+
+`debug/styles.js`'s v3Default sheet gains a `bypasses` section with
+v3's arrays for the four edges v3 parameterises individually: `ab`
+(control-point-distances/-weights), `bc`, `ed`, `eh` (their three
+different segment arrays).  The shared constants remain as the
+family defaults for every other edge.  The header's deviation
+paragraph is rewritten in the same commit — after this it records a
+*closed* limitation with the bypass spelling shown, and the "what is
+genuinely lost" sentence dies, because nothing is.
+
+**Verified by** `test/modules/debug-harness.mjs` growing an
+assertion that the v3-default fixture's `eh`/`ed`/`bc`/`ab` route
+points match v3's values (hard-coded from the v3 probe — the fixture
+is the spec's fixture, so the numbers are stable), and by driving
+the page against v3's own debug page side by side, per the standing
+rule.  Control: drop the bypass section once — the spec must go red
+on all four edges.
+
+### 96.2 — segment-family routing parity scenes
+
+`routing.spec.js` gains segments / round-segments / round-taxi
+scenes (v3's `eh` and `ed` parameterisations verbatim, plus a
+negative-distance and an extrapolated-weight case), comparing
+`segmentPoints()`, endpoints and midpoint through the existing
+symmetric probe.  No adapter, no pixels — the suite's whole point —
+so no `hasAdapter` skip (the standing note).  Control per round 27:
+perturb one array in one side's options and watch the probe name the
+field.
+
+### Risks named at planning
+
+- Bypasses interact with selection styling in the harness (the
+  sheet re-states selection affordances); a bypass on curve params
+  touches no colour channel, so nothing should move — the
+  debug-harness selection spec is the existing gate.
+- The v3 probe values encode v3's current build; if v3's fixture
+  ever changes (it must not — it is a parity baseline), the spec
+  says so loudly.
+- None of this touches `src/`; if 96.2's probe surfaces a *real*
+  routing divergence in the negative/extrapolated cases, that is a
+  finding for its own fix, not something to absorb into this round.
+
+**Open:** whether the other demo sheets (edge-types ports) want the
+same bypass treatment for their per-edge arrays (check while in
+there; same mechanism); whether `MIGRATING.md`'s list-props note
+should name bypasses as the porting path for v3 sheets that mapped
+them (recommended: yes, one sentence).
+
+
+## Round 97 plan — the pick order: leaf, then edge, then parent (raised by the maintainer 2026-08-18)
+
+The maintainer: on the clustered enrichment-map network, a click on
+an edge inside a compound parent selects the parent.  Reproduced
+(`cy.pick` at an edge midpoint inside a parent answers the parent)
+and pinned:
+
+1. **`renderer.pick()` consults the CPU node pick first and returns
+   *any* node hit — parents included — without ever asking the edge
+   tile** (`src/render/renderer.mts:552-557`: `cpuPickNode` hit ⇒
+   return).  The edge pick (cached tile or GPU pass) runs only when
+   no node was hit.
+2. **The node scan itself already knows better**: `cpu-pick.mts`
+   scans leaves first and lets parents answer only when no leaf hits
+   ("a parent can never swallow its children's picks",
+   `src/render/cpu-pick.mts:77-79`) — the tiering exists, it just
+   is not exposed to the node-vs-edge combine.
+3. **The correct order is the draw order**, which v4 itself renders:
+   parents under edges under leaves (the structural z-order the
+   sheet docs record, `debug/styles.js:16-18`).  What you see is
+   what you pick is the pick pass's own stated contract
+   (`renderer.mts:2526-2527`).  So: leaf > edge > parent.
+4. Both gesture seats route through the same `renderer.pick()`
+   (press at `src/interact/pointer.mts:746`, hover at :1579), so one
+   fix covers click, tap-select, hover and the cursor work round 89
+   builds on hover.
+
+### 97.1 — the three-tier resolve
+
+`cpuPickNode` splits its answer into the tier it already computes
+(leaf hit vs parent hit).  `pick()` returns a leaf immediately;
+otherwise it consults the edge path (cached tile, then the async
+pass) and returns the edge on a hit; otherwise the parent, if one
+was under the point.  The parent slot is held across the await — the
+CPU scan does not re-run.
+
+**The cost is confined to clicks and hovers inside parent bodies**:
+those go from synchronous-parent to awaiting the edge tile once
+(the tile is 64×64, cursor-centered, cached across picks at the
+same spot, and pick-only frames skip scene work —
+`picking.mts:6-11`, `renderer.mts:53`).  Hover is already throttled
+(25 ms) and async end to end, so the added latency class already
+exists; the press path awaits today for plain-background edge picks,
+so no new state machine.  Measure pick latency on em-web-clustered
+(the stats overlay prints it) before and after; the parent-miss
+fast path (point in no parent, no edge) must not regress at all.
+
+**Verified by** a Playwright spec in the renderer project: an edge
+crossing a parent's body, pick/tap at its midpoint → the edge; tap
+beside it inside the parent → the parent; tap a child leaf → the
+leaf (the tier the fix must not break); the same three through a
+press-select gesture, since selection is where the defect was felt.
+Control: with the tier split reverted, the first assertion must go
+red.  A headless-safe unit for the leaf/parent split lands in
+`test/modules/` against `cpu-pick` directly (the module is pure over
+the view snapshot — no adapter needed).  And the standing rule:
+drive `?network=em-web-clustered` and click edges inside clusters.
+
+### Risks named at planning
+
+- `pads` semantics: the edge halo (`edgePadPx`) and node halo
+  (`nodePadPx`) are v3's `findNearestElement` thresholds (57.9) — a
+  padded *parent* hit must not beat an exact edge hit; the tier
+  order resolves before halos widen anything, and the spec covers a
+  padded gesture pick explicitly.
+- `text-events`/pointer-transparent nodes already fall through the
+  CPU scan (`cpu-pick.mts:99`) — the tier split must preserve that
+  fall-through on both tiers.
+- The hover path (round 89's cursor map rides it) starts answering
+  "edge" where it answered "parent"; that is the fix working, but
+  the hover-driven HOVERED flag styling on parents changes visibly —
+  call it out in the round record and CHANGELOG (v3 behaved this
+  way, so it is parity restored, not new behaviour).
+- A pick awaited mid-destroy must tolerate teardown — the existing
+  pick promise path already does; the held parent slot must not
+  outlive a compaction (re-validate the slot after the await, the
+  epoch is at hand).
+
+**Open:** whether a *descendant parent* inside another parent picks
+above an edge (v3 draw order says any node body above the edge
+layer wins — verify v3's actual `findNearestElement` tie-break
+in-round and match it); whether `cy.pick`'s JSDoc should state the
+tier order as contract (recommended: yes — it ships as hover text,
+and this defect is exactly a contract nobody had written down).

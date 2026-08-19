@@ -217,8 +217,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Documentation site | Prose to be written by hand; the generated API model is ready |
+| Documentation site | Prose to be written by hand; the generated API model is ready — including install instructions for npm, pnpm, yarn, bun and Deno |
 | Cross-platform validation | macOS/Metal, Windows/D3D12, real-device touch |
+| Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |
 | Release engineering | The release workflows are still v3's, and are marked as not yet adapted |
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 

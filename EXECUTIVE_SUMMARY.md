@@ -5,7 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-12, as round 68 closed.
+- **Last updated**: 2026-08-19, after the mid-August planning wave (last
+  landed work: 12 Aug).
 
 ## How to maintain this file
 
@@ -38,7 +39,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,245 unit · 427 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,245 unit · 428 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 373 members over 48 sections, gated at 100% |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -215,17 +216,36 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 ## Not yet built
 
+The release path:
+
 | | |
 |---|---|
 | Documentation site | Prose to be written by hand; the generated API model is ready — including install instructions for npm, pnpm, yarn, bun and Deno |
 | Cross-platform validation | macOS/Metal, Windows/D3D12, real-device touch |
-| Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |
 | Release engineering | The release workflows are still v3's, and are marked as not yet adapted |
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 
-- Logged as directions, unscheduled: per-element style-override *ergonomics*
-  through the declarative mapper system; splitting the largest implementation
-  files.
+The planned queue — each item has a written plan in `PLAN.md`, verified
+against the source before planning (the mid-August planning wave):
+
+| | |
+|---|---|
+| Screen-pass fixes | Seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, node outlines drawn over the ink, the classic compound demo's look restored, and pick order (leaf beats edge beats parent) |
+| Edge-layer polish | Stroke caps and corners, arrowhead reach, and pointer cursors that say what a gesture will do |
+| API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
+| Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |
+| Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
+| Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
+| Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
+| App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
+| Layouts | Radial layout, force constraints, edge-length control, per-side padding; packing made reusable and the layout→renderer handoff decoupled from animation |
+| Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
+| WebGL2 fallback | Scoped: what a browser without WebGPU gets |
+| Worker-hosted renderer | The renderer moved off the main thread via OffscreenCanvas |
+
+- Logged as directions, unscheduled: splitting the largest implementation
+  files, and a fresh idea-ledger sweep of ~20 further candidates awaiting
+  scheduling.
 
 ## How this project works
 

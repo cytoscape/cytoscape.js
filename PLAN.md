@@ -13995,6 +13995,14 @@ along with everything else about how this model is rendered.
   is archived through the existing versioned-docs mechanism
   (`versions.json`), so old links keep resolving; the Pages deploy in
   the release workflows re-points.
+- **Install instructions per package manager** (added 2026-08-19,
+  with the runtime rounds 98–100): getting started shows the install
+  for npm, pnpm, yarn and bun side by side, plus Deno's
+  `npm:cytoscape@^4` specifier and the plain `<script>` CDN form
+  (the `unpkg`/`jsdelivr` fields already point at the min UMD).  One
+  snippet per manager, kept adjacent so drift is visible; if round
+  99.3's JSR memo lands as a publish, the Deno snippet gains the JSR
+  spelling.
 
 ## Round 47 — the migration guide + CHANGELOG (planned 2026-08-04; landed 2026-08-04)
 
@@ -25322,3 +25330,320 @@ layer wins — verify v3's actual `findNearestElement` tie-break
 in-round and match it); whether `cy.pick`'s JSDoc should state the
 tier order as contract (recommended: yes — it ships as hover text,
 and this defect is exactly a contract nobody had written down).
+
+
+## Rounds 98–100 — the runtime rounds (raised by the maintainer 2026-08-19)
+
+The ask: **first-class support for Bun and Deno in addition to
+Node**, and a third round that scopes what other JavaScript
+environments are worth supporting.  Orthogonal to round 49
+(cross-platform validation is about OSes and GPU backends; this is
+about JS runtimes) and feeding rounds 50 (publishing) and 78.4 (the
+WebGPU-outside-a-browser investigation, which already names Deno's
+WGPU as a candidate).  What the code does today, verified:
+
+1. **`src/` imports zero runtime built-ins and zero bare
+   specifiers** — no `node:` import anywhere, no dependency in
+   `package.json` (`dependencies` is absent), and the one grep hit
+   for a bare specifier (`from 'fcose-gpu'`,
+   `src/layout/contract.mts:8`) is inside a JSDoc example, not an
+   import.  The library is runtime-clean *by fact* — but **not by
+   gate**: `test/modules/import-graph.mjs` classifies bare
+   specifiers as "a dependency, not a repo edge" and skips them
+   (its own comment, ~line 73), so a `node:fs` import added
+   tomorrow passes the invariant that reads as pinning this.
+2. **The headless path already speaks web-platform, not Node**:
+   `TextEncoder`/`TextDecoder` (`src/wire.mts:228,438`,
+   `src/store/id-map.mts:34-35`), `queueMicrotask`
+   (`src/store/dirty.mts:153`), `performance.now()` with a
+   `Date.now()` fallback (`src/animation.mts:2241`), and the
+   animation auto-driver already guards `requestAnimationFrame`
+   behind a `typeof` check with a 16 ms `setTimeout` fallback
+   (`animation.mts:1741-1748`).  Everything named is in the
+   WinterTC minimum-common-API baseline.
+3. **The GPU algorithm tier needs no canvas and no DOM.**
+   `src/algorithms/algo-gpu.mts` says it in its header — "a
+   headless instance can run GPU algorithms wherever
+   `navigator.gpu` exists" — and gates on
+   `globalThis.navigator?.gpu` (:44).  **Deno ships native
+   WebGPU**, so executor `'gpu'` plausibly runs under plain Deno
+   with no browser in the room.  The renderer proper stays
+   browser-bound (canvas + container, `gpu-context.mts:32-35`).
+4. **Nothing runs any artifact of this repo under any runtime but
+   Node and the Playwright browsers.**  `engines` says
+   `node >= 24`, CI is `ci-node` + the `ci-browser` matrix
+   (`tests.yml:13,39`), the Node tier runs `src/` through tsx, and
+   the standing note that almost nothing exercises the built
+   bundles applies doubly here: no bundle has ever been *loaded*
+   by Bun or Deno on this repo's watch.
+5. **The test suite is `node:test` + chai behind a shim**
+   (`test/node-test-setup.mjs`), over `.mts` sources imported
+   through `.mjs` specifiers with tsx doing the remap.  Whether
+   Bun's runner/Node-compat and Deno's do both of those jobs is a
+   measurement, not an assumption, and the plan below treats it as
+   one.
+
+The split: round 98 makes the support *true and gated* (the
+invariant pinned, a cross-runtime smoke tier over the built
+bundles, CI).  Round 99 makes it *first-class* (the native test
+runners measured, Deno's own adapter driving the GPU executors,
+the install and publish story).  Round 100 is the scoping round
+for everything else.
+
+
+## Round 98 plan — Bun and Deno run the package: the contract pinned and smoked (raised by the maintainer 2026-08-19)
+
+### 98.1 — the runtime-clean invariant, pinned
+
+`test/modules/import-graph.mjs` gains the assertion its header
+already implies: **the set of non-relative specifiers under `src/`
+is empty** — which forbids `node:*`, `bun:*`, `deno:*` and bare
+package imports in one clause, and turns "runs on any
+standards-shaped runtime" from a fortunate fact into a gated one.
+Care point, named before it bites: the scanner is regex-over-text,
+and `src/layout/contract.mts:8` shows a bare specifier inside a
+doc-comment example *today* — so the scan must strip comments (or
+join-then-classify, `signatureOf`-style) rather than grow a
+`file:line` allowlist that round 37.1 taught us goes stale by
+insertion.  **Control:** add a `node:path` import to one module
+and watch the new clause fail; re-run with the import inside a doc
+comment and watch it *not* fail.
+
+### 98.2 — the cross-runtime smoke, one file, three runtimes
+
+`test/runtimes/smoke.mjs`: plain asserts, **zero test framework,
+zero imports beyond the bundle under test** — the same file runs
+as `node smoke.mjs`, `bun smoke.mjs`, and
+`deno run --allow-read smoke.mjs`, and the exit code is the
+contract.  It loads the **built bundles** (ESM on all three; CJS
+on Node and Bun, and on Deno if its require-compat holds — a
+measurement recorded either way), which makes this tier the
+bundle-level coverage the testing notes keep saying barely exists.
+What it asserts, drawn from the tiers that must work headless:
+
+- factory + headless init with `headlessWidth`/`headlessHeight`
+  set (the standing rule — a smoke that inherits 800×600 by luck
+  is testing a different graph);
+- definition-form load and the wire round-trip, asserting **each
+  dictionary column still carries values** after the trip — the
+  round-46.5 lesson, verbatim, because a compat layer that hands
+  back a subtly wrong `TextDecoder` produces exactly that
+  plausible-looking graph with no labels;
+- style: a sheet with constants, scale mappers and a bypass
+  compiles and reads back expected *values* (assert values, never
+  completion);
+- layouts: grid + a few CPU-force ticks;
+- algorithms: one sync, one async through the promise tier with
+  `executor: 'cpu'` — which also pins microtask/timer semantics
+  (`dirty.mts`'s `queueMicrotask` flush ordering) on each runtime;
+- events, `json()`, and the bypasses section export.
+
+Wire it as `test:runtimes:node` / `test:runtimes:bun` /
+`test:runtimes:deno` npm scripts, each `run-s build …` so a stale
+bundle cannot pass for a fresh one (the 2026-08-06 lesson).
+**Control:** point the smoke at a bundle path that does not exist
+and at a deliberately degraded reader (the 46.5 dict-as-array
+control) — both must fail on all three runtimes, loudly, never a
+soft-skip (the parity-suite rule: a smoke that quietly stops
+running is worth less than one that is absent).
+
+### 98.3 — fix what the smoke finds, budgeted
+
+Expected small — item 2 above is why — but the budget is real and
+each fix lands with its assertion added to the smoke, so the fix
+is pinned where it was found.  If a fix wants a runtime
+conditional, the shape is the animation driver's existing one
+(feature-test the global, never `typeof Deno`-style runtime
+sniffing): capability checks age well, identity checks are the
+UA-string mistake wearing a new coat.
+
+### 98.4 — CI: `ci-bun` and `ci-deno`
+
+Two new jobs in `tests.yml`, shaped like `ci-node`: checkout,
+official setup action, root `npm ci`, `npm run build`, run the
+smoke.  No v3 install (the Node-tier invariant extends to these
+jobs).  Version policy: **latest stable plus a pinned floor**,
+the floor recorded where the docs state support (98.4 writes the
+sentence, 99.3 gives it a home) — `engines` cannot express Bun or
+Deno and stays `node >= 24`.  Before pushing, reproduce both jobs
+in a detached worktree with a fresh install — round 53's rule,
+and both of round 53's chronic failures were exactly
+fresh-checkout artifacts.
+
+### Risks named at planning
+
+- **A compat layer can pass a smoke while differing subtly** —
+  which is why every smoke assertion is on values and ordering,
+  not on "it didn't throw".
+- **Bun and Deno move fast.**  A runtime bump that breaks the job
+  is handled like a browser bump breaking a golden: read the
+  failure, then move the pin — never widen the assertion.
+- The smoke file must stay import-free and framework-free or it
+  silently becomes a fourth test tier with its own compat needs;
+  a `test/modules/` spec can lint that (its import list is
+  enumerable).
+
+**Open:** whether the smoke also loads the *minified* bundles
+(recommended: yes for ESM-min — it is what CDN users run, and the
+cost is one more import); whether `ci-bun`/`ci-deno` gate merges
+from day one or observe for a week first (recommended: gate —
+an observing job is a soft-skip with extra steps).
+
+
+## Round 99 plan — Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story (raised by the maintainer 2026-08-19)
+
+### 99.1 — the full suite under the native runners, measured
+
+Can Bun and Deno run the real Node tier — `node:test` + chai +
+the `.mjs`→`.mts` remap tsx does today?  This is an experiment
+with a written record, not assumed work.  Method: run `test:js`'s
+glob under each runtime's Node-compat, and **compare the executed
+test count to Node's** — the enumerator rule, because the failure
+mode to fear is not red, it is a runner that skips what it cannot
+parse and reads green at a fraction of the suite.  Acceptable
+outcomes, pre-declared: (a) a runtime runs the suite whole, and a
+CI job is added running it; (b) it cannot, the record says exactly
+where (the shim? the remap? chai?), and **the 98.2 smoke stays the
+cross-runtime contract** — the suite remains Node's.  Both are
+fine; a silent half-run is the only failure.
+
+### 99.2 — Deno's native WebGPU drives the GPU executors
+
+The flagship: the round-65 async algorithm tier with
+`executor: 'gpu'` under plain Deno — no browser, no Dawn-in-Node
+build, `algo-gpu.mts` already gating on `navigator.gpu` alone.
+Go/no-go criteria written before the probe, 78.4-style: pipelines
+compile on our WGSL set; CPU-vs-GPU parity holds by reusing the
+`algorithms-gpu` parity spec *shape* (same fixtures, same bounds)
+in a Deno-runnable form; the adapter is **identified in the
+record** (the benchmark tier refuses SwiftShader for pricing —
+the same honesty here: name Deno's backend, and note wgpu is not
+Dawn, so this is also the first non-Dawn WGSL compile our shaders
+get).  Findings feed 78.4's decision memo either way — a *go*
+here is the cheapest "WebGPU outside a browser" answer on the
+table.  Standing rule adapted: no "blocked, no adapter" without a
+probe from a real Deno script with the permission flags right.
+
+### 99.3 — the install story and the publish surfaces
+
+- **Docs**: an install section covering npm, pnpm, yarn and bun,
+  plus Deno's `npm:cytoscape@^4` specifier and the CDN `<script>`
+  form — landing in `src/README.md`/`MIGRATING.md` now and in the
+  round-46 site when it builds (round 46's plan carries the
+  matching bullet as of today).  One snippet per manager, kept
+  adjacent so drift is visible.
+- **A runtime-support statement** with the tier language round
+  100 firms up: which runtimes are CI-gated, at what floor.
+- **JSR: a decision memo, not a decision** — the 78.3 shape,
+  because publishing is round 50's to own.  Priced options:
+  npm-only (Deno consumes `npm:` fine today), or an additional
+  JSR publish (what it wants from `dist/`, what it does to the
+  release workflows, who asks for it).
+
+### 99.4 — close
+
+CHANGELOG row, `MIGRATING.md` (the headless/cytosnap audience
+overlaps the server-runtime audience), `AGENTS.md` gains the
+smoke tier under Development flow, `EXECUTIVE_SUMMARY.md`
+rewritten per the standing rule, gates green.
+
+### Risks named at planning
+
+- 99.1's compat surface is the moving target 98 already named,
+  squared — pin the versions the record was taken on, and date
+  the record; a "Bun cannot X" sentence is a claim future rounds
+  must re-measure, per the plans-are-claims rule.
+- 99.2 can eat unbounded time chasing wgpu/Dawn divergence; the
+  pre-written go/no-go and the scratch-tree constraint (no `src/`
+  changes from an investigation) bound it, as they bound 78.4.
+- Coordination: ledger item 29's worker pool spells its workers
+  `node:worker_threads` / browser `Worker` — if round 74 lands
+  first, its runtime seam should prefer the Web Worker API where
+  it exists (Bun and Deno both have it; Node does not), or the
+  pool becomes the one v4 feature that is Node-shaped.  Named
+  here so neither round discovers it in review.
+
+**Open:** whether a green 99.1 job gates or only ci-node does
+(recommended: the smoke gates everywhere, the full-suite jobs
+gate only where they run whole); whether 99.2's parity subset
+joins CI on a Deno runner or stays a recorded manual probe until
+GitHub's runners say what adapter they give it; the JSR memo's
+recommendation (leaning npm-only until someone asks).
+
+
+## Round 100 plan — the runtime horizon: which other JavaScript environments are worth supporting (raised by the maintainer 2026-08-19)
+
+An investigation round with a written record — the WebGL-scoping
+shape.  No `src/` changes except where a one-line capability
+guard buys a whole environment (the `animation.mts`
+rAF-fallback shape), each such line with a spec.
+
+### 100.1 — the capability ladder, stated once
+
+What each tier of v4 *actually* needs, so environments are judged
+against requirements rather than vibes:
+
+- **T0 — headless core** (store, wire, style, layouts,
+  CPU algorithms, `json()`, and round 77's `svg()` when it
+  lands): the WinterTC baseline v4 already confines itself to —
+  typed arrays, TextEncoder/Decoder, `queueMicrotask`, timers.
+- **T1 — + Web Workers**: the round-74 pool.
+- **T2 — + WebGPU**: the GPU executors (no canvas — 99.2's
+  tier), then the renderer's export path if 78.4 goes.
+- **T3 — + DOM/canvas**: the full renderer, glyph atlas, image
+  decode, gestures — browsers and browser-shells only.
+
+### 100.2 — the candidates, each run through the 98.2 smoke
+
+Measured, not assumed — the smoke is the instrument, and for
+each environment the record says which tier it reaches and names
+the first failing assertion when it misses:
+
+- **Cloudflare Workers / workerd** (locally via the wrangler dev
+  runtime): the real use case is server-side layout, metrics and
+  `svg()` at the edge; the thing to measure is T0 under the CPU
+  budget an isolate actually grants, on a real fixture, not a toy.
+- **Vercel Edge and friends** — workerd-adjacent; record, do not
+  re-investigate.
+- **Electron / Tauri-with-Node-sidecar**: expected to be Node +
+  Chromium wearing a trenchcoat; verify with the smoke and one
+  renderer sanity check, one line of record each.
+- **React Native / Hermes**: T0 would put the graph *model* and
+  algorithms in apps; Hermes' standard-library gaps are exactly
+  what the smoke enumerates.
+- **Embedded engines (QuickJS, GraalJS)**: long tail; run the
+  smoke where it is cheap, record-only, no support claim.
+- **Service workers / worklets**: T0/T1 contexts inside the
+  browser; round 86 owns the worker-hosted *renderer*, so this
+  round only checks the model tier loads there.
+
+### 100.3 — the deliverable: a support matrix with teeth
+
+A tiered statement, docs-side: **Tier 1** — CI-gated (Node, Bun,
+Deno, the Playwright browsers); **Tier 2** — expected-to-work
+(WinterTC-baseline environments; the smoke is run against them at
+release time, the round-51 bake being the natural first
+occasion); **Tier 3** — recorded as unsupported *with the failing
+assertion named*, so the answer to "does it run on X" is a link,
+not a shrug.  Anything that earns real work becomes a ledger item
+with its measurement attached, not a bullet in this round.
+
+### Risks named at planning
+
+- The environment zoo is unbounded; the pre-agreed candidate list
+  and the ladder bound it, and "record-only" is a legitimate
+  verdict.
+- A smoke that *completes* in an exotic environment with subtly
+  wrong values is the 98.2 risk again, and the same answer
+  applies: the smoke asserts values and ordering, so "runs" means
+  "computed the right numbers".
+- Publishing a support matrix creates an expectation of
+  maintenance; Tier 2's release-time cadence is the deliberate
+  ceiling, and the matrix says so in its own text.
+
+**Open:** whether workerd joins CI as a Tier-1½ (cheap and
+high-signal if the wrangler runtime is stable on runners);
+whether the matrix lives in `src/README.md` or becomes a docs-site
+page in round 46 (recommended: README now, page at 46); whether
+React Native demand justifies a tracked example app (default no —
+wait for an issue with a real use case).

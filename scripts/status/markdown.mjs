@@ -76,11 +76,13 @@ const GLOB = /[*?]|\/$/;
 /**
  * Spellings the documents **quote** rather than point at: a path that was
  * correct once, named in a record of the rename that retired it or in a
- * lesson about a sweep that missed it.  Every one is correct prose and none
- * of them can resolve, so without this list the build warns eight times on
- * every run and the warning becomes something to ignore — which is worse
- * than not having it, since the same sweep that produced these eight also
- * surfaced four *genuinely* stale pointers.
+ * lesson about a sweep that missed it — or a path in *another tree*
+ * entirely (an external repo's source a plan cites, a scaffold template's
+ * own file) that happens to spell like one of ours.  Every one is correct
+ * prose and none of them can resolve, so without this list the build warns
+ * eight times on every run and the warning becomes something to ignore —
+ * which is worse than not having it, since the same sweep that produced
+ * these eight also surfaced four *genuinely* stale pointers.
  *
  * A heuristic ("skip anything that looks historical") cannot draw that line,
  * so this is an allowlist on round 37.1's terms — maintained, and checked in
@@ -105,6 +107,80 @@ export const HISTORICAL_PATHS = {
   'test/gpu-':
     'AGENTS.md quotes it as the *substitution* the round-42 sweep grepped for, which is why it missed the two spellings above',
   'typescript/tests/gpu': 'the other half of that quoted substitution',
+  'src/cx_to_cy_canvas.js':
+    "another repo's file — the CX converter round 81 reverse-engineered the annotation dialect from; cited as a source, not pointed at",
+  'test/layout.mjs':
+    "the cyext scaffold template's own spec file (round 71) — a file of the *generated* extension package, not this repo's test/",
+};
+
+/**
+ * Files a **planned** round names before they exist.  A plan that spells
+ * out its files is more checkable, not less, so these are exempt from the
+ * unresolved-path warning — but on the same maintained-allowlist terms as
+ * `HISTORICAL_PATHS`, checked in both directions by
+ * `test/modules/status-site.mjs`:
+ *
+ *   - an entry no document mentions any more **fails** (the plan was
+ *     edited; the exemption goes with it);
+ *   - an entry that starts **resolving fails** — the round landed, the
+ *     path is a live pointer now, and leaving the entry would hand its
+ *     exemption to the next unrelated typo of the same spelling.
+ *
+ * So the lifecycle is enforced, not hoped for: plan names the file here,
+ * round lands the file, the gate goes red until the entry is removed.
+ *
+ * @type {Record<string, string>}
+ */
+export const PLANNED_PATHS = {
+  // round 74 — the worker-pool CPU executor
+  'src/algorithms/algo-workers.mts':
+    'planned by round 74 (the worker-pool CPU executor)',
+  'src/algorithms/algo-worker-body.mts':
+    'planned by round 74 (the worker-pool CPU executor)',
+  'test/algorithms-workers.mjs':
+    'planned by round 74 (the worker-pool CPU executor)',
+  'test/soak/workers.mjs': 'planned by round 74 (the worker-pool CPU executor)',
+  'benchmark/algorithms-workers.mjs':
+    'planned by round 74 (the worker-pool CPU executor)',
+  // rounds 77/78 — SVG export and headless figures
+  'src/svg-export.mts': 'planned by round 77 (SVG vector export)',
+  'playwright-tests/svg-parity.spec.js':
+    'planned by round 77 (SVG vector export)',
+  'test/svg-export-headless.mjs':
+    'planned by round 78 (headless Node image generation)',
+  // round 79 — official JSON schemas
+  'test/modules/schemas.mjs': 'planned by round 79 (official JSON schemas)',
+  // round 81 — the annotations layer
+  'src/store/annotation-table.mts':
+    'planned by round 81 (the annotations layer)',
+  'src/render/annotation-pipeline.mts':
+    'planned by round 81 (the annotations layer)',
+  'src/annotation-cx.mts': 'planned by round 81 (the annotations layer)',
+  // round 82 — cluster hulls + collapse/aggregation proxies
+  'src/store/hull-index.mts':
+    'planned by round 82 (cluster hulls + collapse proxies)',
+  'src/render/hull-pipeline.mts':
+    'planned by round 82 (cluster hulls + collapse proxies)',
+  'src/store/collapse-index.mts':
+    'planned by round 82 (cluster hulls + collapse proxies)',
+  'benchmark/hulls.mjs':
+    'planned by round 82 (cluster hulls + collapse proxies)',
+  'benchmark/collapse.mjs':
+    'planned by round 82 (cluster hulls + collapse proxies)',
+  // round 83 — GPU edge bundling
+  'src/algorithms/edge-bundling.mts': 'planned by round 83 (GPU edge bundling)',
+  'src/algorithms/algo-gpu-bundling.mts':
+    'planned by round 83 (GPU edge bundling)',
+  // round 85 — the layouts round
+  'src/layout/radial.mts': 'planned by round 85 (the layouts round)',
+  'test/layout-radial.mjs': 'planned by round 85 (the layouts round)',
+  // round 87 — layout mechanics
+  'src/layout/pack.mts': 'planned by round 87 (layout mechanics)',
+  // round 89 — pointer cursors
+  'src/interact/cursor.mts': 'planned by round 89 (pointer cursors)',
+  // round 98 — the runtime rounds
+  'test/runtimes/smoke.mjs':
+    'planned by round 98 (the cross-runtime smoke tier)',
 };
 
 /**
@@ -175,8 +251,9 @@ export function resolveRepoPath(path, root) {
  * @param maxDepth — deepest heading level in the TOC
  * @returns `{ html, toc, title, paths }` — `paths` is every rooted repo path
  *   found in a code span with whether it resolved and, when it did not, the
- *   `HISTORICAL_PATHS` reason it is quoted rather than broken; the build
- *   warns on the ones with neither
+ *   `HISTORICAL_PATHS` reason it is quoted rather than broken or the
+ *   `PLANNED_PATHS` round that names it ahead of landing; the build warns
+ *   on the ones with none of the three
  */
 export function renderMarkdown(
   md,
@@ -241,14 +318,24 @@ export function renderMarkdown(
 
       const hit = resolveRepoPath(raw, root);
       const historical = HISTORICAL_PATHS[raw];
+      const planned = PLANNED_PATHS[raw];
 
-      paths.push({ path: raw, resolved: hit, historical: historical ?? null });
+      paths.push({
+        path: raw,
+        resolved: hit,
+        historical: historical ?? null,
+        planned: planned ?? null,
+      });
 
-      // a quoted spelling is still marked in the page — the reader should be
-      // able to see that it names nothing — but it is not a *warning*, and
-      // the title says which of the two it is
+      // a quoted or planned spelling is still marked in the page — the
+      // reader should be able to see that it names nothing yet — but it is
+      // not a *warning*, and the title says which of the three it is
       if (historical != null && hit == null) {
         return `<code class="path-historical" title="${esc(historical)}">${safe}</code>`;
+      }
+
+      if (planned != null && hit == null) {
+        return `<code class="path-planned" title="${esc(planned)}">${safe}</code>`;
       }
 
       if (hit == null) {

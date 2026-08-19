@@ -24,6 +24,7 @@ import {
 import { goldenTitles } from '../../scripts/status/goldens-page.mjs';
 import {
   HISTORICAL_PATHS,
+  PLANNED_PATHS,
   renderMarkdown,
   resolveRepoPath,
 } from '../../scripts/status/markdown.mjs';
@@ -773,30 +774,39 @@ describe("status site: the documents' paths (round 57.6)", function () {
     expect(warnings.filter((w) => /documented path/.test(w))).to.eql([]);
   });
 
+  // both allowlists ride the same two-direction checks: `HISTORICAL_PATHS`
+  // (quoted spellings) and `PLANNED_PATHS` (files a planned round names
+  // before they exist).  For a planned entry the resolve check is the
+  // lifecycle: the round lands, the file exists, and the gate goes red
+  // until the entry is removed — so an exemption cannot outlive its reason
+  const EXEMPT = { ...HISTORICAL_PATHS, ...PLANNED_PATHS };
+
   it('every exempt spelling is still quoted by some document', function () {
     const quoted = new Set(rendered.flatMap((r) => r.paths.map((p) => p.path)));
 
     // an entry nobody mentions any more is a dead exemption, and the next
     // spelling to go stale inherits nothing from it — but it is exactly the
     // kind of line that rots quietly, so it fails here instead
-    expect(Object.keys(HISTORICAL_PATHS).filter((k) => !quoted.has(k))).to.eql(
-      [],
-    );
+    expect(Object.keys(EXEMPT).filter((k) => !quoted.has(k))).to.eql([]);
   });
 
   it('no exempt spelling resolves — one that does is a live pointer', function () {
     expect(
-      Object.keys(HISTORICAL_PATHS).filter(
-        (k) => resolveRepoPath(k, ROOT) != null,
-      ),
+      Object.keys(EXEMPT).filter((k) => resolveRepoPath(k, ROOT) != null),
     ).to.eql([]);
   });
 
   it('every exemption carries a reason', function () {
     expect(
-      Object.entries(HISTORICAL_PATHS)
+      Object.entries(EXEMPT)
         .filter(([, why]) => typeof why !== 'string' || why.trim() === '')
         .map(([k]) => k),
+    ).to.eql([]);
+  });
+
+  it('no spelling sits on both lists — a path cannot be quoted and planned', function () {
+    expect(
+      Object.keys(HISTORICAL_PATHS).filter((k) => PLANNED_PATHS[k] != null),
     ).to.eql([]);
   });
 
@@ -805,16 +815,20 @@ describe("status site: the documents' paths (round 57.6)", function () {
       'A retired name: `src/gpu/README.md`.',
       '',
       'A broken one: `src/does-not-exist.mts`.',
+      '',
+      'A planned one: `test/runtimes/smoke.mjs`.',
     ].join('\n');
 
     const { html } = renderMarkdown(md, { root: ROOT });
 
     expect(html).to.contain('path-historical');
     expect(html).to.contain('path-missing');
+    expect(html).to.contain('path-planned');
 
-    // the control: without the allowlist the two are indistinguishable, so
-    // the reason string has to reach the page
+    // the control: without the allowlists the three are indistinguishable,
+    // so the reason strings have to reach the page
     expect(html).to.contain(HISTORICAL_PATHS['src/gpu/README.md']);
+    expect(html).to.contain(PLANNED_PATHS['test/runtimes/smoke.mjs']);
   });
 });
 

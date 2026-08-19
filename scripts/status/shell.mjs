@@ -81,6 +81,9 @@ code.path-missing { border-color: #d03b3b; text-decoration: underline dotted #d0
 /* a spelling the documents quote rather than point at: marked, not flagged,
    and its title says which rename retired it (round 57.6) */
 code.path-historical { text-decoration: underline dotted var(--muted); }
+/* a file a planned round names before it exists: same marking as a quoted
+   spelling, and the title names the round that plans it */
+code.path-planned { text-decoration: underline dotted var(--muted); }
 /* PLAN.md renders to ~840 KB in one page; this is what makes that affordable */
 .doc-section { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 .toc {

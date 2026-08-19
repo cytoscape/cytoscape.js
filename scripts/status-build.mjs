@@ -162,10 +162,11 @@ export function buildPlan({
       const md = readFileSync(path, 'utf8');
       const { html, toc, paths } = renderMarkdown(md, mdCtx);
       // a spelling in `HISTORICAL_PATHS` is quoted rather than pointed at
-      // and can never resolve, so warning about it every build only teaches
-      // the reader to skip the warning (round 57.6)
+      // and can never resolve, and one in `PLANNED_PATHS` is a planned
+      // round naming its files ahead of landing — warning about either on
+      // every build only teaches the reader to skip the warning (round 57.6)
       const unresolved = paths.filter(
-        (p) => p.resolved == null && p.historical == null,
+        (p) => p.resolved == null && p.historical == null && p.planned == null,
       );
 
       if (unresolved.length > 0) {

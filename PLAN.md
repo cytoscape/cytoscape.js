@@ -1461,6 +1461,323 @@ rather than from a blank page.
     and re-check the per-worker copy cost of the CSR against
     SharedArrayBuffer before concluding SAB is unnecessary.
 
+*Items 30–50 entered 2026-08-19 — a brainstorm sitting swept against
+the scheduled rounds 71–97, so nothing below duplicates a scheduled
+round.  Four asks raised the same day were already covered and are
+pointed at rather than re-logged: annotations are round 81, the
+table/filter affordances are round 84, the WebGL2 fallback is round
+73 (whose plan now carries the sequencing note raised today), and
+the create-react-app-style extension scaffold is round 71's
+`cyext init`.  Two of the sitting's other candidates already live in
+this file and stay where they are: the file split is item 26, and
+per-component discrete layouts / layout-lifecycle unification / the
+bulk discrete-animate tween are round 87's "suggested further
+directions".*
+
+30. **Golden coverage, enumerated — what no golden sees** (raised
+    2026-08-19).  The visual suite is ~45 goldens plus the parity
+    scenes, and this repo's most repeated visual-testing lesson is
+    that a golden only measures what is not painted over.  Nothing
+    enumerates the inverse: which style properties have *no pixels
+    riding on them at all*.  The round builds the enumerator the
+    audits already model (`bench-coverage.mjs`'s shape): instrument
+    the style engine while the golden scenes render and record which
+    (property, non-default value) pairs are exercised, then diff
+    against the full compiled-property list.  Second tier, for the
+    exercised-but-occluded class: a scripted degrade control — reset
+    one property to its default, re-render, count pixels moved —
+    run over a chosen subset, since a property that moves zero
+    pixels when deleted is decoration in that scene.
+    **First measurement**: the count of style properties for which
+    no golden scene sets a non-default value.  Expect the number to
+    be embarrassing; rounds 27/55/56 each found scenes measuring
+    nothing, one property at a time.
+31. **Scripted gesture traces — the interactions get parity
+    scenes** (raised 2026-08-19).  Goldens cover static frames;
+    gestures are verified by Node specs plus a person driving
+    `debug/`.  The round adds a Playwright tier that replays
+    recorded pointer traces — drag, box select, wheel zoom, pinch,
+    cxt press, grab-and-throw — against both renderers on
+    `parity.html` and diffs *end states numerically*
+    (`routing.spec.js`'s method, not pixels): positions, the
+    selection set, pan/zoom.  Round 89.3 already builds real-browser
+    gesture driving for cursors; this generalizes its machinery.
+    The known traps are already written down: mid-flight assertions
+    poll (never sleep-to-offset), and the frame driver is
+    load-bearing under SwiftShader.
+    **First measurement**: the inventory — which gestures have any
+    browser-level assertion today, and which have only headless
+    synthetic-event coverage.
+32. **The benchmark coverage audit graduates** (raised 2026-08-19).
+    `bench-coverage.mjs` stays report-only *deliberately* — it is
+    heuristic where the gated three are not — so graduation is not
+    "flip it to gate": it is round 30's triage applied to benches.
+    Every public member ends in one of three states: a row that
+    discriminates, a keyed exemption with a reason (audited, so a
+    stale entry fails — the throw gate's rule), or a recorded
+    not-perf-relevant call.  Only after the triage does the audit
+    gate at zero, and only if the heuristic's false positives were
+    fixed rather than exempted around.
+    **First measurement**: the current uncovered count and its
+    composition — how much is one-line trivia versus real hot
+    surface — which decides whether this is a round or an
+    afternoon.
+33. **Mutation testing as the automated control** (raised
+    2026-08-19).  The repo's most productive habit is the hand-made
+    control: break the behaviour deliberately, watch the spec fail.
+    The round automates the cheap subset — swap comparison
+    operators, negate guards, delete `throw` branches — over one
+    subsystem at a time, runs the narrowest suite that claims to
+    cover it, and reports mutants no spec killed.  Constraint that
+    makes it a round: runtime.  Whole-tree mutation over `npm test`
+    is days; per-file scoping with narrowed test selection is the
+    design problem, and the tool must respect the `.mts`-via-`.mjs`
+    import convention.
+    **First measurement**: mutation-survival rate on `src/style.mts`
+    (the largest file, 7.9k lines) under `test:js` alone — the
+    survivor list *is* the finding, whatever the tooling verdict.
+34. **A renderer soak tier** (raised 2026-08-19).  `test:soak`
+    churns the model; nothing churns the GPU side for hours.  The
+    round adds a browser soak: repeated add/remove/restyle/zoom
+    cycles on a real adapter, tracking the renderer's *own*
+    allocation ledger (buffer bytes, atlas pages, realloc counts —
+    Dawn exposes no VRAM meter, so the instrumentation is ours),
+    plus repeated device-loss/recovery cycles where 48.5 does one.
+    Growth that trends is the failure, exactly as in the Node tier
+    — and the first spec must be the probe's own control (a
+    deliberately-leaked buffer must show), or every spec after it
+    passes by doing nothing.
+    **First measurement**: tracked allocation totals over 10k
+    add/remove/restyle cycles at fixed graph size — flat or not.
+35. **The scale ceiling** (raised 2026-08-19).  The largest thing
+    v4 has ever rendered is the 465k-edge `ndex-x-large`.  Nothing
+    records where it actually breaks — 1M? 5M? — or *which*
+    subsystem fails first: ingest, style apply, the curve blob, the
+    atlas, cull, pick, or a device limit at buffer creation.  The
+    round builds a synthetic-growth harness (the `debug/`
+    generators are the seed) that bisects to first failure per
+    subsystem, documents the ceiling in `src/README.md` as a
+    measured number rather than a hope, and raises the cheapest
+    limiter.  Companion to item 36; likely the same harness.
+    **First measurement**: the bisect at 1M/2M/5M edges on the
+    RX 580 — failure mode and owning subsystem for each.
+36. **The VRAM budget, and failing gracefully** (raised
+    2026-08-19).  Device *loss* is tested; allocation *failure* is
+    not — nothing defines what a `createBuffer` failure mid-session
+    does today (probably an unhandled error or a lost device,
+    neither chosen).  The round prices bytes-per-node/edge/label
+    across the pipelines (measured, not derived from the contract),
+    publishes the figure, and designs the degradation order —
+    plausibly labels first, then charts/images, then curve
+    subdivision — so an out-of-memory frame degrades instead of
+    dying.  v4 fails loudly by design; this is the one place
+    "loudly" should mean "visibly worse", not "gone".
+    **First measurement**: force an allocation failure on a real
+    adapter and record what actually happens now; then the
+    per-element byte price at three graph sizes.
+37. **Accessibility** (raised 2026-08-19).  A canvas renderer is
+    invisible to assistive tech, and no scheduled round touches it.
+    Scope, in priority order: keyboard navigation (a focus model —
+    tab into the graph, arrows traverse neighbours, keys pan/zoom);
+    a generated DOM/ARIA mirror describing the focused element and
+    its neighbourhood (scoped — mirroring 465k elements is not a
+    plan); a renderer-drawn focus indicator (the pick-ring look is
+    the obvious carrier); and `prefers-reduced-motion` honoured by
+    the tween layer (collapse animated transitions to their end
+    states).  The ecosystem apps have had to solve none of this
+    *because the library never gave them a substrate* — which is
+    the tenth sitting's demand-signal argument in reverse.
+    **First measurement**: a screen-reader transcript over
+    `debug/index.html` (predictably: silence), and an inventory of
+    what Cytoscape Web built or skipped for a11y.
+38. **Label internationalization — CJK first** (raised 2026-08-19;
+    **the maintainer's priority order: CJK is highest after
+    Latin**).  The label pipeline shapes Latin-simple text: no CJK
+    line-breaking, no bidi/RTL, unknown emoji behaviour, and a
+    glyph atlas sized for alphabets rather than for the thousands
+    of distinct glyphs a CJK graph carries.  The CJK tier is
+    tractable precisely because CJK needs no shaping: the work is
+    (a) atlas capacity — growth and eviction policy under
+    thousand-glyph label sets; (b) line-breaking without spaces —
+    break-anywhere plus the kinsoku prohibition classes; (c) a font
+    fallback chain, since the vendored Open Sans has no CJK and
+    today's fallback behaviour is whatever canvas-2D rasterizes.
+    RTL/bidi is a separate later tier — it *does* need shaping,
+    which means a real dependency decision against code standard 7
+    — and emoji/color fonts later still.
+    **First measurement**: render a CJK-labelled fixture beside v3
+    in the harness and catalogue what is wrong; count atlas pages
+    consumed by ~500 distinct CJK glyphs.
+39. **Lasso selection + public spatial queries** (raised
+    2026-08-19).  v3.30 added lasso; v4 has box selection only (no
+    `lasso` anywhere in `src/`).  The columns are CPU-canonical and
+    the cull/pick tier already answers box and point questions, so
+    a polygon-containment query is an extension of what exists, not
+    a new index.  Pair it with the API it implies: public spatial
+    queries — nearest node, k-nearest, elements-in-polygon —
+    beside round 75.4's public sync pick, since every app that
+    wants lasso wants those next.
+    **First measurement**: what `cull.mts`/`cpu-pick.mts` already
+    provide toward polygon containment, and the cost of
+    point-in-polygon over 100k nodes at a realistic vertex count.
+40. **Compound drag-and-drop reparenting** (raised 2026-08-19).
+    The `compound-drag-and-drop` extension is a standing ecosystem
+    bolt-on, and v4 owns everything it needs: the hierarchy lives
+    in `store/hierarchy.mts`, `move({ parent })` exists, and the
+    drag gesture is ours.  Scope question to settle first —
+    primitives or gesture: drop-target resolution during drag +
+    a preview affordance (primitives an extension composes), versus
+    the full gesture in core.  The v3 extension is the requirements
+    document: enumerate what it reimplements versus what it would
+    call.
+    **First measurement**: that enumeration, plus what drop-target
+    resolve costs per pointermove at depth (it is a point query
+    against parent boxes the hierarchy already maintains).
+41. **Undo, on the columnar store** (raised 2026-08-19).  Every
+    editor app builds an undo stack over this library; `cy.batch()`
+    exists but no history does.  The columnar store is uniquely
+    placed: a snapshot is typed-array copies (the wire format
+    already serializes columns), so the design fork is snapshots
+    (simple, memory-priced) versus an inverse-operation log
+    (cheap per-op, but every mutating API — data, bypasses,
+    hierarchy moves, element add/remove, viewport? — must emit its
+    inverse, which is a completeness obligation the audits would
+    have to learn).  Batch boundaries are the natural transaction
+    marks.
+    **First measurement**: snapshot cost — bytes and milliseconds —
+    at 100k elements, and restore cost; that number decides the
+    fork before any API is designed.
+42. **Viewport constraints** (raised 2026-08-19).  Min/max zoom
+    exist; pan is unbounded, and "keep the graph on screen" is a
+    perennial app-level reimplementation (the #1905 family's other
+    half — round 75.5 takes the wheel *toggles*, not bounds).
+    Scope: an optional pan/zoom constraint — clamp the viewport to
+    the graph extent plus margin — with the semantics question
+    being *where* the clamp lives (every viewport writer funnels
+    through the camera; gestures, `fit`, animations and the
+    constraint must agree, and the gesture feel — hard clamp versus
+    rubber-band — is a design call).
+    **First measurement**: the closed-issue inventory of what was
+    actually asked for, then the writer inventory — every code
+    path that sets pan/zoom, to confirm one funnel exists.
+43. **The wire format goes public** (raised 2026-08-19).  Round
+    46.5's binary format is 2.7× smaller at rest than JSON and
+    fuzz-hardened since 48.3, but it is an internal fixture
+    vehicle: undocumented, unversioned, no public API.  Promoting
+    it means: a version/feature-flag header and written evolution
+    rules (the format becomes contract — columns must be stable
+    across releases or negotiated), a documented layout, a schema
+    home beside round 79's, and public save/load on the core.
+    The cost is the commitment, not the code.
+    **First measurement**: what the current encoding lacks for
+    evolution — is there any version field at all, and which
+    column ids would break if the contract reordered.
+44. **A v3→v4 codemod** (raised 2026-08-19).  `MIGRATING.md` is
+    prose, but its property table is machine-checked
+    (`test/modules/migration-guide.mjs`) — a codemod can be driven
+    from the same data, so guide and tool cannot drift apart.
+    Scope: the mechanical 80% (renames, option moves, event-name
+    changes, `style()` → bypasses spellings), with the
+    non-mechanical remainder *flagged, not transformed* — selector
+    strings to the mapper DSL and style functions are design
+    decisions, and a codemod that guesses them is worse than one
+    that points.
+    **First measurement**: run the candidate transform over v3's
+    own documentation snippets and one real app's source, and
+    count clean conversions versus flags versus misses.
+45. **Typed element data** (raised 2026-08-19).  The shipped
+    `d.ts` types `data()` as `any`-shaped; the ask is generics —
+    `cytoscape<NodeData, EdgeData>( … )` — flowing through
+    `data()`, the mapper DSL's field references, and event
+    payloads.  Two risks make it measure-first: whether the
+    `build:types` pipeline (rolldown-dts) preserves generic
+    parameters end-to-end at all, and whether the sheet DSL's
+    string-keyed field references can be typed without wrecking
+    inference for the untyped default case (they must degrade to
+    today's types when no generic is given).
+    **First measurement**: a two-member prototype through
+    `npm run build:types` — if generics survive to
+    `dist/cytoscape.d.ts` with hover docs intact, the round is
+    real; if not, the round is first a build-pipeline round.
+46. **Framework bindings, React first** (raised 2026-08-19).
+    `react-cytoscapejs` is stale and every consumer rebuilds the
+    same lifecycle glue.  An official wrapper owns: mount/destroy
+    (StrictMode's double-mount included), container resize, and
+    prop-diffing that batches element/style updates instead of
+    re-init.  Build it with round 71's toolchain — which doubles
+    as cyext validation on a non-layout extension, the round-71
+    plan's own stated risk.  Vue/Svelte follow the same skeleton
+    if React proves the shape.
+    **First measurement**: what the stale wrapper gets wrong
+    against v4's lifecycle, enumerated — destroy timing, resize,
+    double-mount, update batching — as the requirements list.
+47. **A devtools panel** (raised 2026-08-19).  `debug/` already
+    has the instruments — the stats overlay, frame timings
+    (`gpu-timer.mts`), store counts — but they are welded to the
+    harness.  The round packages an opt-in inspector for app
+    developers: frame-graph timings, per-pipeline draw stats,
+    store/dirty-tracking introspection, pick debugging.  Form
+    factor is the design call: an in-page overlay an app enables,
+    versus a browser-extension panel; the overlay is v1 (no
+    extension-store dependency).
+    **First measurement**: the dependency inventory — which of
+    the harness's instruments read public API versus reach into
+    internals, since that boundary decides what the panel can be
+    without growing the public surface.
+48. **PDF export over the SVG serializer** (raised 2026-08-19).
+    Round 77 builds the SVG serializer; EnrichmentMap web ships a
+    pdf-export extension today, so the first consumer exists
+    before the feature does.  Publication figures are the driver
+    (it is why #639 is the most-demanded export ever filed).  The
+    hard part is text: fonts must embed or outline, and the
+    fidelity question is whether an svg-to-pdf library preserves
+    round 77's output or a direct PDF backend is needed.
+    **First measurement**: run 77's output through the
+    svg2pdf-class candidates, rasterize both, and diff — the
+    parity harness round 77.5 builds is reusable verbatim.
+49. **The layout portfolio — one excellent layout per use case,
+    layered/hierarchical first** (maintainer, 2026-08-19: v4
+    should ship a *better* set of built-ins than v3 — one really
+    good layout per main use case, and "comparable to dagre" is
+    the named bar for hierarchical).  Today v4 has grid, preset,
+    circle, concentric, breadthfirst, random and the GPU force;
+    round 85 adds radial tree, force constraints, `edgeLength`
+    and per-side padding.  The audit: enumerate the use cases —
+    layered/DAG, tree, force/organic, circular/attribute-grouped,
+    component packing — and name the flagship for each, against
+    what the ecosystem apps actually ship (Cytoscape Web carries
+    three layout engines because the built-ins weren't enough;
+    that is the demand signal).  The known hole is
+    layered/hierarchical: nothing in v4 or the plan is
+    Sugiyama-class (ranking, crossing minimization, coordinate
+    assignment; compound-aware; port/edge-routing aware at the
+    elk end).  Build-vs-port is the first call — dagre is
+    unmaintained, elkjs is huge, and round 59's pattern (the CPU
+    reference is the spec; GPU assist only where a phase is
+    parallel) applies if built.
+    **First measurement**: the use-case × current-coverage
+    matrix, then a quality harness — crossings, edge-length
+    variance, area, runtime at N — run over dagre and elkjs on
+    real DAG fixtures, so "comparable to dagre" is a measured
+    bar before anything is designed.
+50. **The v3 extension ports** (maintainer, 2026-08-19: the most
+    important v3 extensions need v4 ports).  Round 71 builds the
+    toolchain and one example; this is the campaign that uses it.
+    The list is not "all of them": several are absorbed by
+    scheduled rounds — expand-collapse and bubblesets by 82,
+    layers largely by 81, pdf-export by 77/item 48, dagre by item
+    49 — and `eh`'s *look* returns via round 96's bypasses while
+    the edge-drawing gesture itself still needs a port.  The
+    likely port tier: fcose (both flagship apps), edgehandles,
+    automove, popper, cxtmenu/context-menus, panzoom, navigator.
+    Each port is also cyext validation on a different extension
+    shape (gesture, layout, UI overlay), which is exactly the
+    coverage round 71's example layout does not give.
+    **First measurement**: rank v3 extensions by npm downloads
+    and flagship-app usage, map each against rounds 71–97 for
+    absorption, and let the remainder *be* the port list — with
+    the first port chosen for shape-coverage, not popularity.
+
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass (originally on `feature/webgpu`, branched from the TS refactor PR #3477; the work now lives on `v4`) builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.
@@ -20655,6 +20972,14 @@ from this file, d.ts regenerated, gates green (`test:js`,
   re-tune happen exactly once.
 
 ## Round 73 plan — the WebGL2 fallback, scoped (planned 2026-08-14)
+
+**Sequencing note (maintainer, 2026-08-19):** the *implementation*
+round — if this scoping record says go — starts late: after most or
+all other rounds, or at minimum once the rendering design decisions
+are locked down (the render-affecting rounds 86, 88 and the 91–95
+screen pass), because a fallback written against a moving render
+contract re-pays its port on every contract change.  This scoping
+round itself can run any time.
 
 Ledger 18b, run as the tenth sitting's sequencing decision 1 wrote it:
 the fallback's pre/post-4.0.0 positioning is decided *after* this

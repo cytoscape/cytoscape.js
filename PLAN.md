@@ -25765,3 +25765,466 @@ kin) are explicitly exempt (recommended: yes — quiet is for
 verification, not debugging); whether the status build and the
 benchmark runners join later (default no — agents run those *for*
 their output).
+
+
+## Rounds 102–107 — the ecosystem rounds (proposed and approved in direction 2026-08-20)
+
+A sweep for new rounds serving performance and the flagship apps
+(Cytoscape Web, GeneMANIA, EnrichmentMap web), checked against
+rounds 71–101 and ledger items 30–50 so nothing here duplicates
+scheduled or logged work, and every premise below verified against
+the source before planning (the round-37 rule).  The maintainer
+approved all six in direction on 2026-08-20; **each plan is a
+first independent expansion, to be refined with maintainer
+feedback before scheduling** — the open-questions lists name the
+decisions that need that feedback, and nothing below is committed
+until a plan survives it.
+
+One decision taken the same day, recorded because the tenth
+sitting had left it provisional: **CX2 import/export stays out of
+core.**  The rationale, the maintainer's: it is too big, and the
+core-versus-extension line has to be drawn somewhere — a format
+conversion layer carrying its own visual-style model is the
+textbook extension.  If it gets built, round 71's toolchain is the
+vehicle and item 50's port list is where it slots; no core round
+will take it.
+
+Who each round serves: 102 and 104 are the visible-app-impact
+pair (every flagship app's hover idiom; labels at scale); 103 is
+perceived load time at app scale; 105 is GeneMANIA's signature
+shape plus the fixture that anchors it; 106 unblocks the item-50
+navigator/minimap tier and the round-47 devtools direction; 107
+is server-driven apps and item 46's React wrapper.
+
+
+## Round 102 plan — transient emphasis: hover highlight without touching the sheet (proposed 2026-08-20)
+
+The gesture every flagship app implements: hover or select a
+node, emphasize its neighbourhood, dim everything else, restore
+on leave — re-evaluated on every mousemove.  What v4 gives them
+today, verified:
+
+- The interact tier already runs a throttled hover pick and
+  drives `FLAG_HOVERED` (`src/interact/pointer.mts` `hoverPick`,
+  ~:1563; `::hovered` in `src/contract.mts:137`), so the hovered
+  element *itself* is sheet-addressable state.
+- The other half — membership of "the hovered neighbourhood" and
+  "everything else" — is not expressible as a state condition:
+  v4 has no classes by decided design (`src/README.md:1303`), so
+  an app must write per-element state on every hover change —
+  round-63 bypasses over the neighbourhood plus a dim over the
+  rest, or a data field every element's mapper reads.  Both are
+  whole-graph writes per mousemove: the exact shape round 60.4
+  had to rescue for select (banded select+unselect 53.7 µs on
+  the diff path against 392 µs when a lone id clause nulled the
+  partition).
+
+Two candidate designs, both carried to the measurement because
+they trade different things:
+
+- **(a) Emphasis as store state.**  New flag bits
+  (`FLAG_EMPHASISED`, `FLAG_DIMMED` — or one bit with "dimmed is
+  everyone else" as a sheet-side reading), a bulk setter
+  (`cy.emphasize( eles )` / `eles.emphasize()`) that writes the
+  flag delta as one diff pass, and the sheet conditions on the
+  new pseudo-states like any other.  Reuses the 60.4/61 diff
+  machinery, keeps stored truth and `style()` readback honest,
+  and the app decides what dimming *looks like* in its own
+  sheet.  Cost: a banded style reapply per hover change, and two
+  contract bits (a `src/contract.mts`-first change, its own
+  rule).
+- **(b) Emphasis as a renderer overlay.**  A per-element u8
+  column consumed by the shaders as a compositing factor (dim
+  multiplies toward a configured colour/alpha; emphasized draws
+  unchanged or brightened — the shader hover-brighten precedent
+  exists), written straight from a collection and never entering
+  the style engine.  Cheapest per-event cost by construction,
+  but it is a second styling mechanism beside the sheet — the
+  thing rounds 8/29.3 spent removing — and `style()` readback
+  would not see it, which demands an explicit "transient view
+  state, never truth" contract if it is chosen.
+
+The measurements decide, through the built bundle at
+ndex-x-large scale (19,607 nodes / 464,657 edges):
+
+1. **The app spelling today**: bypass-based neighbourhood
+   emphasize + rest-dim per hover change — µs per mousemove, and
+   whether it holds a moving pointer at 60 fps.  If this already
+   fits the frame budget, the round collapses to a documented
+   recipe plus at most the bulk-setter sugar.
+2. **Design (a)**: flag delta + banded reapply for a typical
+   neighbourhood (degree ~10) and for a hub, since the hub is
+   what an app actually hovers.
+3. **Design (b)**: column write + upload cost, and the full-frame
+   shader cost of the multiply.
+4. **The query itself**: `neighborhood()` per mousemove at that
+   scale — if the query dominates, the fast path needs a
+   slot-native neighbourhood walk, not a style mechanism.
+
+Controls named at planning: the perf spec asserts the *shape* —
+per-event cost O(neighbourhood), not O(V), pinned by measuring
+two graph sizes and asserting the ratio; if (b) is chosen, the
+dim look gets a golden built the round-56 way (a scene where the
+dim is what the pixels measure, degrade control proving it).
+
+**Open (maintainer):** whether dimming is a style concern
+(design a, sheet-visible) or a view concern (design b, overlay)
+— the same instinct as the CX2 line, applied inward; whether the
+setter is core API or the first `cyext` gesture example (round
+71 wants a non-layout validation case); naming — emphasize /
+highlight / spotlight — and whether `::dimmed` is derived or
+set; whether select gets the same treatment ("dim unselected")
+in the same round.
+
+
+## Round 103 plan — progressive ingest: a first frame before the last byte (proposed 2026-08-20)
+
+Rounds 66/67 took monolithic init from 2899 ms to 1756 ms and
+then to 622 ms headless (1.92× in one A/B), but the pipeline
+shape is unchanged: fetch → parse → init → first frame, strictly
+serial, first pixel after the last byte.  For app-scale loads —
+GeneMANIA results over a slow link, Cytoscape Web sessions — the
+next factor of perceived speed is not another 2× on init, it is
+showing a correct partial graph early.  The verified constraints
+that shape the design:
+
+- **A wire/columnar payload is self-contained by construction**:
+  edge endpoints are u32 indices *into that payload's nodes*
+  (`src/public-types.mts:90-97`; the wire sections mirror it),
+  so a later chunk's edges cannot name an earlier chunk's nodes
+  at all today.  Chunking therefore means one of: vertex-closed
+  subgraph chunks with **cut edges carried in definition form**
+  (id-keyed, the slow path, but it works today); or an id-keyed
+  endpoint mode in the columnar/wire ingest — a format evolution
+  that belongs with item 43's version-header work, not alone.
+- The round-67 browser decomposition (fetch 105 / parse 175 /
+  convert 105 / init 1150 / ready 100 / first frame 85–400 ms)
+  is the baseline instrument and stays the harness for this
+  round; the wire path already removes the parse row.
+
+The plan, measure-first:
+
+1. **The zero-format-change baseline**: split ndex-x-large into
+   k = 10 chunks, `cytoscape()` on chunk one, `cy.add()` per
+   subsequent chunk, cut edges as definitions.  Measure
+   time-to-first-frame, total time versus monolithic (the churn
+   factor), and *where* the churn lands — per-add style apply,
+   curve re-derivation (`CurveIndex` re-derives a pair when a
+   member arrives), renderer reallocation cadence under 10×
+   growth.  This number decides whether the round is an API
+   round or first a churn-fixing round.
+2. **The API sketch**, refined after (1): a chunk-accepting load
+   — `cytoscape( { elements: asyncIterable, ... } )` or an
+   explicit `cy.load( stream )` — with a **viewport policy**
+   stated up front (fit once on the first chunk, then hold;
+   never re-fit per chunk — the screen must not jump), progress
+   events per chunk, and `cy.ready` meaning "first chunk
+   rendered" with a second signal for "complete" (naming open).
+3. **Positions**: the streamed case that matters ships
+   server-computed positions (preset), which is both flagship
+   apps' shape.  Running a generated layout per chunk is
+   explicitly out of scope; one open question below covers the
+   layout-after-complete convention.
+4. **The wire evolution decision**, taken jointly with item 43:
+   if (1) shows cut-edge definitions dominating, the id-keyed
+   endpoint mode (or a row-group segmented format) becomes the
+   payload of promoting the format, and the two rounds should
+   merge rather than evolve the header twice.
+
+Controls: the chunked load's end state must be **columns-equal**
+to the monolithic load of the same fixture (the round-42 method
+applied to store state, not files); the first-frame spec asserts
+a frame rendered while a later chunk is knowably absent (assert
+the precondition, the 48.5 rule).
+
+Risks: event semantics are public API (what does `add` batching
+look like per chunk; does a layout started mid-stream see a
+moving target — recommended: refuse or queue); a progressive
+render shows an incorrect *partial* graph by design, and the
+docs must say what is guaranteed (every rendered element is
+correct; completeness arrives).
+
+**Open (maintainer):** API spelling (options-form async iterable
+versus explicit `load()`); the ready/complete event names;
+whether chunking joins item 43's public format now (one header
+evolution) or stays app-side (the app slices its own subgraphs);
+minimum chunk granularity worth supporting before overhead eats
+the win.
+
+
+## Round 104 plan — label decluttering: priority and collision at scale (proposed 2026-08-20)
+
+Verified: label LOD is zoom-fade only — `labelFadePx` /
+`labelMinPx` (`src/public-types.mts:537-545`) — and nothing in
+`src/render/` knows whether two labels overlap.  At fit zoom on
+a large graph the label layer is soup, which is why apps hide
+labels wholesale; GeneMANIA's actual requirement is sharper and
+better: *the top-ranked genes are always labelled*.  v3 has
+nothing here either, so this is a v4 deviation-by-addition,
+documented as such.
+
+Three pieces:
+
+- **Priority, data-driven.**  A style property
+  (`label-priority`, mapper-able — `data( score )`, degree, or a
+  constant per group), so importance comes from the graph, not
+  from insertion order.  Ties break by slot for determinism.
+- **The cull.**  A screen-space occupancy pass over the drawn
+  labels, highest priority first — greedy grid, not exact
+  geometry: a label claims its screen rect's cells, a
+  lower-priority label that would land on claimed cells is
+  culled (hidden, not faded — a half-faded loser reads as a
+  rendering bug).  Runs on viewport settle and on label
+  dirtiness, CPU-side first: the drawn-label count at fit is
+  what the census below measures, and a GPU variant is a logged
+  follow-up only if the CPU pass misses budget.
+- **Stability.**  Hysteresis — a shown label keeps its claim
+  until the challenger beats it by a margin — so slow pans do
+  not strobe winners; winners deterministic across frames at
+  fixed viewport.  This state is renderer-local by contract
+  (never stored truth, never serialized, never readback).
+
+Measure first:
+
+1. The census: drawn labels at fit on em-web and ndex-x-large,
+   and what fraction overlap another label's rect — the number
+   that says how bad the soup actually is.
+2. The greedy pass's cost at those counts (it is a sort plus a
+   linear claim walk; the sort is the suspect).
+3. A scripted-pan flicker probe: winners across 60 frames of a
+   slow pan, count of flips without hysteresis and with.
+
+Sequencing note: rounds 38 (CJK) and 94 (label fidelity under
+zoom) touch the same pipeline; this round is orthogonal to both
+(it decides *whether* a label draws, they decide *how*), but the
+three should not interleave mid-flight.
+
+Controls: the cull spec renders a dense scene with the cull
+disabled and asserts the overlap count jumps (the control *is*
+the census re-run); the priority spec swaps two elements'
+priorities and asserts the winner swaps; the fade interaction is
+pinned by a spec at the fade boundary — cull decides membership,
+fade decides alpha, and the order (cull sees the pre-fade set)
+is asserted, not assumed.
+
+Named file: `src/render/label-declutter.mts`.
+
+**Open (maintainer):** default off (recommended for 4.0 —
+opt-in via `label-declutter: cull`, default `none`) or on;
+whether edge labels join in the same round (they overlap worst,
+but their rects move with routing); the property names; whether
+the priority property should also drive the *fade* order at the
+LOD boundary (probably yes, and cheap, but it changes an
+existing behaviour).
+
+
+## Round 105 plan — parallel edges at GeneMANIA width, and a GeneMANIA fixture (proposed 2026-08-20)
+
+GeneMANIA's signature look is tens of parallel edges per gene
+pair, one per interaction network, coloured by network type.
+Verified: v4's bundling is v3's verbatim (`src/store/curve-index.mts`
+— pair-keyed membership, lazily built, per-member offsets) with
+no cap on bundle width, and haystack ships
+(`haystack-radius`, `CURVE_HAYSTACK`).  So the premise is not "a
+feature is missing" — it is that **nothing has ever measured or
+even rendered the width-30 shape** in this repo, and the pair map,
+derivation, pick and draw all have width-dependent costs nothing
+prices.
+
+The work:
+
+- **The fixture first.**  A real GeneMANIA result network with a
+  hand-authored v4 sheet joins `debug/styles.js` and the
+  networks list — the em-web pattern, where a real flagship
+  sheet became the anchor for the style benchmarks and the
+  harness's most-opened page.  If the export needs slimming, the
+  derivation is recorded the `debug/slim-ndex.mjs` way — a
+  re-runnable script, not a mystery blob.  The fixture is also
+  the visual acceptance test: opened beside genemania.org.
+- **The width sweep**: `benchmark/bundles.mjs` — ingest, curve
+  derivation, a render frame, and pick, at bundle widths 2 / 8 /
+  32, v3 beside, **each row asserting the width it is named
+  for** (the 39.1 rule: a fixture can be styled into a mode it
+  never enters, and `bezier` bundles multi-edges only).
+- **Pick on dense bundles**: with 30 edges in one corridor the
+  hit halos (57.9) mean many candidates within threshold — what
+  v3 resolves, what we resolve, and whether the answer is stable
+  frame to frame.  A spec per outcome, not a shrug.
+- **The look**: a parity scene with wide bundles at both tiers —
+  zoom 1 and the round-56 close-up — built by the count-the-ends
+  rule (more members, not fatter ones), plus a golden.  The
+  offsets formula is v3's, so parity should be tight; if it is
+  not, the diff names the field via the routing harness, which
+  already speaks `controlPoints()`.
+- **A priced question, not a feature**: whether wide bundles
+  deserve LOD aggregation (draw one representative edge per
+  bundle below a zoom threshold).  If the sweep shows width
+  dominating frame cost at GeneMANIA scale, that finding is
+  logged toward round 82's proxy tier with the number attached;
+  building it here is out of scope.
+
+First measurement: the sweep, and the fixture on screen beside
+the real app — in that order, so the numbers exist before
+opinions do.
+
+**Open (maintainer):** which GeneMANIA export (organism, query
+size) makes the canonical fixture; whether the fixture's sheet
+uses per-network colour via dictionary data column (the natural
+v4 spelling) — worth deciding deliberately since it becomes the
+reference sheet for the multi-edge idiom; whether haystack at
+width belongs in the sweep (v3's answer for this shape at scale)
+so the docs can recommend a mode by number.
+
+
+## Round 106 plan — N viewers, one store (proposed 2026-08-20)
+
+Verified premise: the dirty tracker is documented and built
+single-consumer — "there is exactly one consumer (the renderer's
+frame)" (`src/store/dirty.mts` ~:95), a drain returns the spans
+and resets them, and a second reader would see nothing.  One
+renderer, one viewport, one container is assumed from
+`src/index.mts` wiring on down.  Meanwhile three planned
+consumers want a second reader: the navigator/minimap of item
+50's port tier, round 47's devtools overlay (which wants to
+*observe* without disturbing), and any linked-view comparison
+UI.  This round builds the seam they all share, then proves it
+with the smallest real second view.
+
+Scope, deliberately layered:
+
+1. **Consumer cursors in `DirtyTracker`.**  Registered
+   consumers; spans retire when the *last* registrant drains;
+   the resized flag per consumer.  The hard requirement is that
+   the one-consumer case stays allocation- and cost-identical —
+   this tracker sits under every mutation, so the change ships
+   with a before/after benchmark row and the contract's
+   co-signed comment updated first (`src/contract.mts` rule).
+2. **The view split, named.**  Inventory of what is actually
+   view state versus model state: pan/zoom live in core's
+   viewport today (`src/viewport.mts`, core-owned), the canvas
+   and container in the renderer, hover/gesture state in
+   interact.  Multi-view forces "viewport is per-view" — which
+   is a public-API semantics question (viewport events, `fit`,
+   `extent` — whose viewport?), and the inventory is the
+   design input, not the design.
+3. **A second view, minimal.**  Renderer + viewport, read-only
+   (no interact tier), driven correct-first (full re-upload is
+   acceptable for the spike) — the minimap shape.  Its existence
+   is the proof the seam works; its performance is follow-up.
+
+The design fork the maintainer decides: a **view** as a light
+handle (`cy.addView( container, opts )` → renderer + viewport +
+optional interact, sharing store, style, and the element API of
+the one core) versus views as sibling core facades over a shared
+store (uniform API per view, but events, batching and destroy
+semantics multiply).  The handle is recommended — it matches
+"one graph, several windows", keeps the public surface small,
+and the sibling-facade shape can be built on top later if an app
+proves the need.
+
+Measurements first: the single-consumer inventory (every drain
+site, every `container`/`canvas` owner, every core field that is
+secretly view state — a grep-and-read pass with the list as the
+deliverable); the tracker change's cost at one consumer (must be
+zero within noise); the spike's frame cost at two views on
+ndex-x-large.
+
+Controls: a two-consumer spec where each drains at a different
+cadence and both converge to the same column state (the
+round-46.5 columns-equal method); the one-consumer perf row as a
+regression gate; destroy-order specs (view destroyed before
+core, core before view — both defined, neither leaking; the
+soak tier's isolation suite is the home).
+
+Risks: per-view style divergence (a minimap wants simplified
+style) is explicitly **out** of this round — one sheet, N
+viewports; a per-view LOD override knob is the most that sneaks
+in, and only if free.  Interaction ownership stays with the
+primary view in this round.
+
+**Open (maintainer):** the fork above; viewport event semantics
+(namespaced per view versus event carries a view ref — the
+round-41 event model has opinions); whether the devtools
+overlay's read-only observer is the same registration or a
+cheaper tap; whether `png()`/export binds to a view (it should —
+it already renders through a viewport).
+
+
+## Round 107 plan — patch: id-keyed reconcile of a fresh payload (proposed 2026-08-20)
+
+Verified premise: `cy.json()` is export-only **by decided
+design** — the import form throws
+(`src/core.mts:2802-2817`), and the record says restoring from
+kept definitions is the app's job.  This round does not reopen
+that decision, and the plan says so explicitly: `json( obj )`
+restores a *serialized session*; **patch reconciles a data
+refresh** — the same logical graph, next query result — into the
+live instance.  Compute adds / removes / updates by id, apply as
+one batch, and everything attached to surviving elements
+survives: selection, positions (unless the payload moves them),
+bypasses (id-keyed, so they survive by construction), running
+animations, listeners, viewport.  The consumers exist before the
+API: GeneMANIA re-query, Cytoscape Web backend sync, and item
+46's React wrapper, whose prop-diffing is exactly this and would
+otherwise be reimplemented per app, badly.
+
+Semantics fixed at planning (the maintainer-feedback core):
+
+- **Mode**: default `reconcile` — an id absent from the payload
+  is removed; `merge` (absent = kept) available by option.  The
+  default matches "this is the new result".
+- **Data**: per-element *replace* of the data record, not deep
+  merge — deep merge is the API nobody can predict; `merge`
+  mode's keep applies per element, not per key.
+- **Positions**: present in payload → written; absent → kept.
+- **Endpoints**: an edge whose source/target changed identity is
+  a remove + add, not an update — rewiring is not a patch.
+- **Never touched**: the sheet, the viewport, listeners,
+  scratch.  Elements only.
+- **Returned**: the diff — `{ added, removed, updated }`
+  collections — because every consumer's next line wants it.
+
+Input forms: definitions, columnar, wire buffer — one funnel
+with round 66's load path, not a parallel one.  The columnar and
+wire paths are the fast tier: ids resolve through the id-map
+(string id ⇄ slot, blob-native), and a data column can be
+compared column-against-store without materializing objects;
+the definition form goes through the same reconcile at
+definition speed.
+
+Measure first, because the fork between "sugar over
+remove/add" and "store-level columnar reconcile" is a factor
+nobody has priced:
+
+1. destroy + recreate (the honest baseline apps use today);
+2. app-side diff through the public API (`remove()` + `add()` +
+   `batchData`);
+3. a store-level columnar patch prototype;
+   — each at 100k elements with 90% / 50% / 10% id overlap.
+   GeneMANIA-shaped refreshes are high-overlap, so the 90% row
+   is the headline; the 10% row guards the degenerate case
+   (a patch that is worse than recreate below some overlap must
+   say so in its docs, with the number).
+
+Controls: the **identity patch** — payload equal to state — must
+produce an empty diff, zero element events, and zero net dirty
+spans (spec asserts all three, and its control perturbs one
+data value to prove the assertions bite); the event contract —
+adds fire `add`, removes fire `remove`, updates fire `data` /
+position events, once each, inside one batch — pinned by a
+listener-census spec; end-state equivalence — patch(A→B) leaves
+columns equal to a fresh load of B modulo the preserved state,
+the columns-equal method again.
+
+Named file: `src/store/patch.mts`.
+
+**Open (maintainer):** the name (`patch` / `reconcile` /
+`merge` — `patch` recommended; `merge` is the mode name);
+whether a `keepPositions` option class is needed beyond
+present-wins (Cytoscape Web may want "never move what the user
+moved" — arguably app policy via the returned diff);
+whether patch emits one summary event (`patch`, with the diff)
+beside the per-element events, for apps that only want the
+summary; whether the React wrapper (item 46) should be
+sequenced immediately after as its first consumer, which would
+validate the API before it hardens.

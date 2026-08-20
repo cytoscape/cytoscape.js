@@ -241,6 +241,7 @@ against the source before planning (the mid-August planning wave):
 | Layouts | Radial layout, force constraints, edge-length control, per-side padding; packing made reusable and the layout→renderer handoff decoupled from animation |
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
+| Quiet verification | `:quiet` twins of the test/lint/typecheck/build scripts for agents: a green run prints nothing, a red run prints only the actual failures — a green `test:node` currently spends ~3,800 lines saying "nothing failed" |
 | Worker-hosted renderer | The renderer moved off the main thread via OffscreenCanvas |
 
 - Logged as directions, unscheduled: splitting the largest implementation

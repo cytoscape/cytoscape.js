@@ -181,6 +181,13 @@ export const PLANNED_PATHS = {
   // round 98 — the runtime rounds
   'test/runtimes/smoke.mjs':
     'planned by round 98 (the cross-runtime smoke tier)',
+  // round 101 — quiet verification
+  'test/quiet-reporter.mjs': 'planned by round 101 (quiet verification)',
+  'scripts/quiet-run.mjs': 'planned by round 101 (quiet verification)',
+  'playwright-tests/quiet-reporter.js':
+    'planned by round 101 (quiet verification)',
+  'test/modules/quiet-scripts.mjs':
+    'planned by round 101 (quiet verification)',
 };
 
 /**

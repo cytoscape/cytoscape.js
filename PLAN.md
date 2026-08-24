@@ -24679,6 +24679,109 @@ they deviate from v3's privacy deliberately); whether `Viewport`
 leaves the public tier entirely (recommended: yes, absent a consumer
 path that holds one); and the alias-family question in class 4.
 
+### Round 90 — the rulings, and the plan restated as passes (maintainer, 2026-08-24)
+
+The maintainer reviewed the audit and ruled on the headline items; the
+round is approved to land under the structure below.  Three of the
+plan's own recommendations were **overruled**, which is the audit
+working as designed — the tables were proposals.  The rulings:
+
+1. **The privacy mechanism is `@internal`** (the plan's
+   recommendation, confirmed).  Member-grained, and three consumers
+   must respect it, none of which do today (verified — the string
+   appears nowhere in `scripts/`): the jsdoc-coverage scanner moves a
+   tagged member from the public tier to the internal tier (it still
+   requires a doc comment — internal means *hidden from consumers*,
+   not undocumented — and the `@param`/`@returns`/`@throws` gates stop
+   applying, since those exist for shipped hover text); the docs
+   generator omits tagged members; and the d.ts build strips them
+   from `dist/cytoscape.d.ts` (`rolldown-plugin-dts` carries doc
+   blocks through, so the tag is visible in the declaration text and
+   a post-pass in `scripts/build-dts.mjs` can remove block +
+   declaration).  Each consumer gets a spec with a control: tag a
+   member, assert it vanishes from that consumer's output; untag,
+   assert it returns.
+2. **The seven flagged members**, ruled member by member:
+   `forceRender`, `onRender`/`offRender` and `mutableElements` are
+   **removed** (`onRender` was pure sugar for `on('render', …)`;
+   `mutableElements` is `elements()` by another name — v4 has no
+   immutable collections, so the name describes a v3 distinction that
+   no longer exists); `instanceString` (Core, Collection, Event) is
+   **demoted to `@internal`** rather than removed — zero callers in
+   `src/`, but a benchmark row and the decided-drops sweep call it,
+   and demotion keeps them at zero migration cost (maintainer,
+   amending the initial remove ruling); `silentPosition(s)` and
+   `silentShift` are **demoted to `@internal`** — the plan's
+   keep-public recommendation is overruled; the layout path is
+   `ctx.setPositions`/`layoutPositions` and consumers should not see
+   the silent family (zero `src/` callers, verified); and
+   `cy.renderer()` (and `Collection.renderer()`) are **demoted to
+   `@internal`**, with the stats story resolved by option (b): a new
+   typed **`cy.stats()`** passthrough (`RendererStats | null`,
+   null when headless) so the one documented consumer surface that
+   lived behind `renderer()` survives the demotion.  The debug
+   page's stats overlay moves to `cy.stats()` with it.
+3. **The events API is ruled by one principle: analogous to Node's
+   `EventEmitter`, plus `pon`.**  So `addListener`/`removeListener`
+   stay (they are Node's own spellings), `pon` stays (the maintainer
+   likes it), **`bind`/`unbind` are removed**, and
+   `listen`/`unlisten` — which the plan's class-4 list did not even
+   name — are removed by the same principle, being neither Node's
+   spellings nor load-bearing anywhere in this repo.  One addition
+   completes the analogy: **`once` joins as an alias of `one`**
+   (Node's spelling beside v3's), on Core and Collection both.
+4. **Class 2 lands as recommended**: the `StyleEngine` machinery
+   (~28 members — `readProp`/`readProps`, `applyAll`/`applyBulk`,
+   `paintInputs`/`paintContext`, `setGpuOwned`, `refreshMapped`/
+   `refreshState`, `onCompacted`, the arrow/opacity readers, …) is
+   tagged `@internal`, keeping public the consumer handful:
+   `setSheet`, `json`, `update`, and round 63's bypass surface.
+   `AnimationManager`'s GPU-driver members are tagged the same way;
+   the `Animation` handle a consumer holds is untouched.
+   **`Viewport` leaves the public tier entirely** — nothing hands a
+   consumer one (`cy._viewport` is private, `index.mts` exports
+   nothing viewport-shaped) — by dropping `src/viewport.mts` from
+   `PUBLIC_API` and stripping the class from the declaration.
+5. **The remaining class-1 table**, delegated to the round with the
+   leanings endorsed: *keep, documented as deliberate* —
+   `zoomRange`, `multiClickDebounceTime`, `isReady`, `headless`,
+   `styleEnabled`, `hasCompoundNodes`, `hasElementWithId` (both
+   owners), `window`, `options`, `indexOf`/`indexOfId`,
+   `takesUpSpace`, `interactive`, `padding`,
+   `paddedWidth`/`paddedHeight`, `show`/`hide`; *demote to
+   `@internal`* — `batching`, `getFitViewport`/`getCenterPan`
+   (they back `animate()`'s fit/center), `element`, `byGroup`,
+   `isBundledBezier`, `inactive`/`activate`/`unactivate`,
+   `boundingBoxAt` (`layoutPositions`' bounds source); *remove* —
+   `batchData` (`@internal` **and** "for backwards compatibility"
+   in v3 — legacy twice over, and `data()` covers it).
+
+Two insights from the pre-implementation verification, recorded so
+the implementation sweeps for them:
+
+- **`src/animation.mts:690` has a runtime error message that advises
+  `onRender` by name** — the exact defect class round 31 existed for
+  (an error advising a removed form), found *before* landing this
+  time.  The close therefore includes a dead-name sweep over runtime
+  strings and doc comments, not only over markdown.
+- **`benchmark/surface.mjs` has rows calling `mutableElements` and
+  the silent family** — the `mutableElements` row dies with the
+  member and the silent rows survive demotion; either way the suite
+  file changes, so its harness fingerprint moves, and all benchmark
+  edits land batched in one commit (the round-68/72 rule).
+
+The passes: **90.0** the `@internal` mechanism across the three
+consumers, specs with controls, built first because every demotion
+rides on it; **90.1** the seven ruled members (removals, demotions,
+`cy.stats()`); **90.2** the machinery classes and `Viewport`;
+**90.3** the remaining class-1 table as ruled above; **90.4** the
+event-alias family (`bind`/`unbind`/`listen`/`unlisten` out, `once`
+in); **90.5** the close — MIGRATING/CHANGELOG rows per removal,
+`dist/cytoscape.d.ts` regenerated, the alias table and
+`src/README.md` swept, the dead-name sweep, coverage gates re-tallied
+(the public tier shrinks by design), quiet gates green, and
+`EXECUTIVE_SUMMARY.md` rewritten from this file.
+
 
 ## Rounds 91–97 — the maintainer's screen pass (raised 2026-08-18)
 

@@ -184,8 +184,7 @@ export const PLANNED_PATHS = {
   'test/runtimes/smoke.mjs':
     'planned by round 98 (the cross-runtime smoke tier)',
   // rounds 102–107 — the ecosystem rounds
-  'src/render/label-declutter.mts':
-    'planned by round 104 (label decluttering)',
+  'src/render/label-declutter.mts': 'planned by round 104 (label decluttering)',
   'benchmark/bundles.mjs':
     'planned by round 105 (parallel edges at GeneMANIA width)',
   'src/store/patch.mts': 'planned by round 107 (id-keyed reconcile)',

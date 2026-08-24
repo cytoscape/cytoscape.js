@@ -49,6 +49,18 @@ export const PUBLIC_API = [
   'src/event.mts',
 ];
 
+// Round 90: the member-grained privacy marker.  A member whose doc block
+// carries `@internal` is *demoted*: it stays documented (internal means
+// hidden from consumers, not undocumented), but it moves from the public
+// tier to the internal tier, the `@param`/`@returns`/`@throws` gates stop
+// applying to it (those exist for shipped hover text, and an internal
+// member ships none), the docs generator omits it, and the d.ts build
+// strips it from `dist/cytoscape.d.ts` (`scripts/build-dts.mjs`).
+// `PUBLIC_API` is a *file* list, so before this tag the tier boundary was
+// file-grained where the truth is member-grained — the renderer calls
+// these members cross-module, so TS `private` cannot mark them.
+export const INTERNAL_RE = /@internal\b/;
+
 // A member declaration at class-body indentation: an optional modifier run,
 // then the name, then `(`, `:` or `=`. Deliberately anchored at two spaces so
 // nested function bodies inside a method never match.
@@ -249,6 +261,7 @@ export function auditFile(file) {
       currentClass = null;
 
       const name = fn[1] ?? fn[2];
+      const doc = docAbove(lines, i);
 
       members.push({
         name,
@@ -256,7 +269,8 @@ export function auditFile(file) {
         line: i + 1,
         isMethod: true,
         banner: null,
-        doc: docAbove(lines, i),
+        doc,
+        internal: INTERNAL_RE.test(doc),
       });
 
       if (hasDocAbove(lines, i)) documented++;
@@ -310,6 +324,8 @@ export function auditFile(file) {
 
     if (sig) overloaded.add(name);
 
+    const doc = docAbove(lines, i);
+
     // MEMBER_RE's tail distinguishes a call signature from a field
     // (`(` vs `:`/`=`), which the benchmark audit needs: a field is not
     // something a benchmark can call
@@ -324,7 +340,8 @@ export function auditFile(file) {
           .charAt(0),
       ),
       banner,
-      doc: docAbove(lines, i),
+      doc,
+      internal: INTERNAL_RE.test(doc),
     });
 
     if (hasDocAbove(lines, i)) documented++;
@@ -456,6 +473,10 @@ export function auditThrowTags(file) {
       name = `${currentClass}.${member}`;
     } else continue;
 
+    // an @internal member is not consumer surface, so its tags are not
+    // shipped hover text — the three tag gates stop at the tier boundary
+    if (INTERNAL_RE.test(docAbove(lines, i))) continue;
+
     if (!/throw new/.test(memberBody(lines, i))) continue;
 
     if (/@throws/.test(docAbove(lines, i))) tagged++;
@@ -534,6 +555,7 @@ export function auditParamTags(file) {
     if (!sig && overloaded.has(name)) continue;
     if (sig) overloaded.add(name);
     if (!args.trim()) continue; // takes nothing: nothing to describe
+    if (INTERNAL_RE.test(docAbove(lines, i))) continue; // demoted (round 90)
 
     if (/@param/.test(docAbove(lines, i))) tagged++;
     else missing.push(`${currentClass}.${name} (${rel}:${i + 1})`);
@@ -547,6 +569,7 @@ export function auditParamTags(file) {
   // exported function reach docmaker exactly as a method's do.
   for (const fn of exportedFns(lines)) {
     if (!fn.args.trim()) continue;
+    if (INTERNAL_RE.test(docAbove(lines, fn.line))) continue; // round 90
 
     if (/@param/.test(docAbove(lines, fn.line))) tagged++;
     else missing.push(`${fn.name} (${rel}:${fn.line + 1})`);
@@ -809,6 +832,7 @@ export function auditReturnTags(file) {
     const ret = returnAnnotation(signatureOf(lines, i));
 
     if (ret === null || VOID_RETURN_RE.test(ret)) continue;
+    if (INTERNAL_RE.test(docAbove(lines, i))) continue; // demoted (round 90)
 
     if (/@returns/.test(docAbove(lines, i))) tagged++;
     else missing.push(`${name} (${rel}:${i + 1}) -> ${ret}`);
@@ -934,6 +958,23 @@ export function audit() {
   };
 
   const isPublic = (f) => PUBLIC_API.includes(f.file);
+
+  // Round 90: the tier boundary is member-grained.  An `@internal`-tagged
+  // member of a PUBLIC_API file counts in the internal tier, not the public
+  // one.  A tagged member has a doc block by construction (the tag lives in
+  // it), so the move shifts documented counts only — the missing lists are
+  // untouched.
+  const movedByFile = (list) =>
+    list.reduce((n, f) => n + f.members.filter((m) => m.internal).length, 0);
+  const rescale = (t, delta) => {
+    t.documented += delta;
+    t.total += delta;
+    t.pct = t.total === 0 ? 100 : (t.documented / t.total) * 100;
+
+    return t;
+  };
+  const moved = movedByFile(files.filter(isPublic));
+
   const throwTags = sources()
     .map(auditThrowTags)
     .filter((f) => f.tagged + f.missing.length > 0);
@@ -947,8 +988,8 @@ export function audit() {
     .filter((f) => f.stranded.length > 0);
 
   return {
-    public: tier(files.filter(isPublic)),
-    internal: tier(files.filter((f) => !isPublic(f))),
+    public: rescale(tier(files.filter(isPublic)), -moved),
+    internal: rescale(tier(files.filter((f) => !isPublic(f))), moved),
     files,
     // round 31.2: `@throws` accuracy over the same members, public tier only
     // — the tier whose comments ship as `.d.ts` hover text

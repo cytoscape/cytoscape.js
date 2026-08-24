@@ -222,6 +222,10 @@ export function generate() {
     const { members } = auditFile(join(ROOT, rel));
 
     for (const m of members) {
+      // round 90: an @internal member is demoted out of the consumer
+      // surface — not documentation this generator publishes
+      if (m.internal) continue;
+
       const prefix = prefixFor(m, statics);
 
       if (prefix == null) {

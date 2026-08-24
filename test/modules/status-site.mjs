@@ -759,10 +759,17 @@ describe("status site: the documents' paths (round 57.6)", function () {
   // are: an entry nothing mentions is dead, and an entry that resolves is
   // no longer historical.
 
+  // Round 108.2: read each document the way the build does.  `PLAN.md` is
+  // assembled from `plan/rounds/*` now, and a spec that read the head alone
+  // would see 8% of the record — which is how the two-direction exemption
+  // check would start reporting every round's quoted spelling as dead.
+  const textOf = (d) =>
+    d.assemble ? d.assemble(ROOT) : readFileSync(join(ROOT, d.file), 'utf8');
+
   const rendered = DOCUMENTS.filter((d) => existsSync(join(ROOT, d.file))).map(
     (d) => ({
       file: d.file,
-      ...renderMarkdown(readFileSync(join(ROOT, d.file), 'utf8'), {
+      ...renderMarkdown(textOf(d), {
         root: ROOT,
       }),
     }),

@@ -134,6 +134,9 @@ export const HISTORICAL_PATHS = {
  * @type {Record<string, string>}
  */
 export const PLANNED_PATHS = {
+  // round 108.1 — the agent-docs gate
+  'test/modules/agent-docs.mjs':
+    'planned by round 108.1 (the agent-docs byte budget and path gate)',
   // round 74 — the worker-pool CPU executor
   'src/algorithms/algo-workers.mts':
     'planned by round 74 (the worker-pool CPU executor)',

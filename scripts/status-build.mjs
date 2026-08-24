@@ -46,6 +46,7 @@ import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
 import { planBenchmarks, BENCH_CSS } from './status/bench-pages.mjs';
 import { indexPage, INDEX_CSS } from './status/index-page.mjs';
+import { assemble as assemblePlan } from './plan-record.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -68,6 +69,12 @@ export const DOCUMENTS = [
     title: 'Development record',
     blurb:
       'Every round, its plan, what it found and the controls that proved it.',
+    // Round 108.2 split the record into `plan/rounds/NNN-slug.md`; the page
+    // stays one continuous document, assembled from `PLAN.md` plus every
+    // section file in order.  `assemble()` is the same function the split
+    // was verified with, so what this renders is byte-identical to the
+    // pre-split file.
+    assemble: assemblePlan,
   },
   {
     file: 'src/README.md',
@@ -159,7 +166,7 @@ export function buildPlan({
         continue;
       }
 
-      const md = readFileSync(path, 'utf8');
+      const md = doc.assemble ? doc.assemble(root) : readFileSync(path, 'utf8');
       const { html, toc, paths } = renderMarkdown(md, mdCtx);
       // a spelling in `HISTORICAL_PATHS` is quoted rather than pointed at
       // and can never resolve, and one in `PLANNED_PATHS` is a planned

@@ -4260,13 +4260,6 @@ declare class Collection {
    */
   cy(): Core;
   /**
-   * The first element as a length-1 collection (empty collection when empty).
-   *
-   * @returns a length-1 collection, or an empty one — v4 has no separate
-   *   element type, so this narrows rather than unwraps
-   */
-  element(): Collection;
-  /**
    * An empty collection in the same core.
    *
    * Takes no arguments, and throws if given any — the same round-64
@@ -4282,6 +4275,8 @@ declare class Collection {
   /**
    * Whether this collection contains an element with the given id.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param id — the element id
    * @returns true when a member has that id
    */
@@ -4289,12 +4284,16 @@ declare class Collection {
   /**
    * Index of an element within this collection.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param ele — the element to find; only its first element is used
    * @returns the index, or -1 when it is not in this collection
    */
   indexOf(ele: Collection): number;
   /**
    * Position of the element with this id within the collection.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @param id — the element id
    * @returns the index, or -1 when absent
@@ -4604,11 +4603,6 @@ declare class Collection {
    * @returns a collection of one element, or an empty collection
    */
   getElementById(id: string): Collection;
-  /** Split into { nodes, edges }. */
-  byGroup(): {
-    nodes: Collection;
-    edges: Collection;
-  };
   /**
    * All elements of the graph not in this collection.
    *
@@ -4989,12 +4983,16 @@ declare class Collection {
    * bb/fit and size their compound parents — even when `visibility:
    * 'hidden'` keeps them from rendering.  display-tier hide() clears it.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns whether the element occupies space — since round 22 this can
    *   differ from `visible()`, which is the paint tier
    */
   takesUpSpace(): boolean;
   /** Whether the element can be interacted with: visible and not
    * pointer-transparent (`events: 'no'` — round 20.2).
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns whether any pointer path will resolve to this element; it
    *   rides `visible()`, so an element hidden either way is inert
@@ -5013,6 +5011,8 @@ declare class Collection {
    * (no compound-free `padding` prop); parents answer the resolved
    * auto-bounds padding (round 14.3).
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns the resolved padding in model px — 0 for leaves and for any
    *   graph with no compounds at all, the derived value for a parent;
    *   undefined when the collection is empty
@@ -5020,6 +5020,8 @@ declare class Collection {
   padding(): number | undefined;
   /**
    * The drawn box: core dims + 2 x padding (v3's paddedWidth).
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns the padded width — identical to `width()` for leaves, which
    *   have no padding; undefined when empty or removed
@@ -5029,6 +5031,8 @@ declare class Collection {
    * The drawn box height: content height plus twice the padding (v3's
    * `paddedHeight`).  Identical to `height()` for leaves, which have no
    * padding.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns the padded height, or undefined when empty or removed
    */
@@ -5191,16 +5195,6 @@ declare class Collection {
    * @returns the rendered endpoint, or undefined for non-edges
    */
   renderedTargetEndpoint(): Position | undefined;
-  /** Whether the edge participates in bezier bundling — v3 semantics:
-   * a style check (`curve-style: bezier`), true even for the lone or
-   * odd-middle member that renders straight.
-   *
-   * @returns whether the *styled record* says bezier — a question about
-   *   style, not about the rendered shape, which is why a lone edge under
-   *   `curve-style: bezier` answers true while drawing as a line.  False
-   *   for nodes and for removed elements
-   */
-  isBundledBezier(): boolean;
   /** The edge's curve control points (model coords): one for a bundled
    * bezier, two for a self-loop, the control list for an unbundled
    * bezier, undefined otherwise — v3's getControlPoints surface
@@ -5336,6 +5330,8 @@ declare class Collection {
    * the `visibility` style property instead (round 22), and for a fade
    * use an `opacity` transition.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns this collection, for chaining
    */
   show(): this;
@@ -5344,6 +5340,8 @@ declare class Collection {
    * drawing and picking, leave the bounding box and their ancestors'
    * auto-bounds, and their bezier bundles re-fan without them.
    * Descendants of a hidden node are gated too.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns this collection, for chaining
    */
@@ -5380,26 +5378,6 @@ declare class Collection {
    *   held — transient interaction state, not a persisted property
    */
   active(): boolean;
-  /**
-   * True when the first element is live and not active (v3 `inactive()`).
-   *
-   * @returns not simply the negation of `active()`: a removed element is
-   *   neither active nor inactive, so both read false for it
-   */
-  inactive(): boolean;
-  /**
-   * Put these elements into the transient pressed ("active") state, the
-   * one the pointer layer sets while a press is held.
-   *
-   * @returns this collection, for chaining
-   */
-  activate(): this;
-  /**
-   * Clear the pressed ("active") state.
-   *
-   * @returns this collection, for chaining
-   */
-  unactivate(): this;
   /**
    * Whether dragging the first element pans the graph instead of grabbing it.
    *
@@ -5725,25 +5703,6 @@ declare class Collection {
    */
   component(): Collection;
   private _nodeSlotSet;
-  /**
-   * The bounding box this collection would have if its nodes sat at the
-   * given hypothetical positions (a position fn or one shared position) —
-   * v3's boundingBoxAt, computed directly with no store writes.  Edges
-   * span their endpoints' hypothetical (or, outside the collection,
-   * current) positions.
-   *
-   * @param fn — one position shared by every node, or `( node, i ) =>
-   *   position` evaluated per node in this collection's order
-   * @returns the hypothetical box, in model coordinates
-   */
-  boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-    w: number;
-    h: number;
-  };
   /**
    * Node dimensions for layout spacing, as v3's layoutDimensions.
    *
@@ -7294,13 +7253,6 @@ declare class Core {
    */
   style(sheet?: Stylesheet): StyleEngine;
   /**
-   * True while inside a startBatch()/endBatch() pair.
-   *
-   * @returns whether a batch is open at *any* depth — nesting is counted,
-   *   and only the outermost `endBatch` flushes the deferred style work
-   */
-  batching(): boolean;
-  /**
    * Slot-moving compaction, explicit form (round 19.5): move live
    * elements down to a dense slot prefix so `highWater`, column capacity
    * and pass-iteration widths shrink to the current graph instead of its
@@ -7375,13 +7327,6 @@ declare class Core {
    * @returns this core, for chaining
    */
   batch(fn: () => void): this;
-  /**
-   * v3 compat: per-id data() patches applied in one batch.
-   *
-   * @param map — element id → the data keys to merge into that element
-   * @returns this core, for chaining
-   */
-  batchData(map: Record<string, Record<string, unknown>>): this;
   /**
    * Make a layout over the whole graph.  The layout does not run until you
    * call `.run()` on it.
@@ -7887,6 +7832,8 @@ declare class Core {
   /**
    * Set both zoom bounds; accepts (min, max) or { min, max }.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param min — the minimum zoom, or an object carrying both bounds
    * @param max — the maximum zoom, when `min` is a number
    * @returns this core, for chaining
@@ -7908,26 +7855,6 @@ declare class Core {
   }): this;
   /** Reset the viewport to zoom 1, pan (0, 0). */
   reset(): this;
-  /**
-   * The { zoom, pan } that would fit the given elements — computed, not
-   * applied.
-   *
-   * @param eles — the elements to fit; omit for the whole graph
-   * @param padding — rendered px of margin to leave on every side
-   * @returns the viewport, or null when there is nothing to fit
-   */
-  getFitViewport(eles?: Collection, padding?: number): {
-    zoom: number;
-    pan: Position;
-  } | null;
-  /**
-   * The pan that would center the given elements.
-   *
-   * @param eles — the elements to center; omit for the whole graph
-   * @param zoom — the zoom to center at; defaults to the current one
-   * @returns the pan, or null when there is nothing to center
-   */
-  getCenterPan(eles?: Collection, zoom?: number): Position | null;
   /**
    * Async GPU pick at a rendered (CSS px) position; resolves with the
    * element under the point or null (always null when headless).
@@ -8133,6 +8060,8 @@ declare class Core {
   /**
    * The dbltap/onetap debounce window in ms (v3 parity; default 250).
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param ms — the window to set; omit to read it
    * @returns the window, or this when setting
    * @throws if `ms` is not a finite non-negative number
@@ -8181,6 +8110,8 @@ declare class Core {
    * Whether the render pipeline is usable yet.  Always true on a headless
    * instance; on a rendered one this flips when `cy.ready` resolves.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true once rendering can proceed
    */
   isReady(): boolean;
@@ -8188,6 +8119,8 @@ declare class Core {
    * Whether this instance has no container and therefore no GPU — the
    * Node-testable mode, in which every model API works and the render,
    * pick and image-export paths are no-ops or reject.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns true when running headless
    */
@@ -8197,6 +8130,8 @@ declare class Core {
    * derives geometry from stored style channels rather than treating
    * style as an optional layer.  Kept so v3 code that checks it works.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true
    */
   styleEnabled(): boolean;
@@ -8205,6 +8140,8 @@ declare class Core {
    * compound tier changes paint evaluation and draw order; the renderer
    * pays nothing for compounds while this is false.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true when the graph has at least one parent/child relation
    */
   hasCompoundNodes(): boolean;
@@ -8212,6 +8149,8 @@ declare class Core {
    * Whether an element with this id exists, via the O(1) id index —
    * cheaper than `getElementById( id ).nonempty()` because no handle is
    * materialized.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @param id — the element id
    * @returns true when the graph holds that element
@@ -8223,11 +8162,15 @@ declare class Core {
    * The `window` this instance renders into, or null when there is no DOM
    * (Node).  v3 parity, for extensions that need the hosting realm.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns the global window, or null outside a browser
    */
   window(): (Window & typeof globalThis) | null;
   /**
    * The options the instance was constructed with.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns the caller's own options object, held by reference — not a
    *   copy and not a defaults-resolved view, so an option the caller

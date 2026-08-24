@@ -407,6 +407,7 @@ export class Core {
    *
    * @returns whether a batch is open at *any* depth — nesting is counted,
    *   and only the outermost `endBatch` flushes the deferred style work
+   * @internal
    */
   batching(): boolean {
     return this._batchDepth > 0;
@@ -657,20 +658,6 @@ export class Core {
     }
 
     return this;
-  }
-
-  /**
-   * v3 compat: per-id data() patches applied in one batch.
-   *
-   * @param map — element id → the data keys to merge into that element
-   * @returns this core, for chaining
-   */
-  batchData(map: Record<string, Record<string, unknown>>): this {
-    return this.batch(() => {
-      for (const id of Object.keys(map)) {
-        this.getElementById(id).data(map[id]);
-      }
-    });
   }
 
   // -- layout --
@@ -1884,6 +1871,8 @@ export class Core {
   /**
    * Set both zoom bounds; accepts (min, max) or { min, max }.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param min — the minimum zoom, or an object carrying both bounds
    * @param max — the maximum zoom, when `min` is a number
    * @returns this core, for chaining
@@ -1943,6 +1932,7 @@ export class Core {
    * @param eles — the elements to fit; omit for the whole graph
    * @param padding — rendered px of margin to leave on every side
    * @returns the viewport, or null when there is nothing to fit
+   * @internal
    */
   getFitViewport(
     eles?: Collection,
@@ -1959,6 +1949,7 @@ export class Core {
    * @param eles — the elements to center; omit for the whole graph
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan, or null when there is nothing to center
+   * @internal
    */
   getCenterPan(eles?: Collection, zoom?: number): Position | null {
     const bb = this._boundsOf(eles);
@@ -2444,6 +2435,8 @@ export class Core {
   /**
    * The dbltap/onetap debounce window in ms (v3 parity; default 250).
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param ms — the window to set; omit to read it
    * @returns the window, or this when setting
    * @throws if `ms` is not a finite non-negative number
@@ -2589,6 +2582,8 @@ export class Core {
    * Whether the render pipeline is usable yet.  Always true on a headless
    * instance; on a rendered one this flips when `cy.ready` resolves.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true once rendering can proceed
    */
   isReady(): boolean {
@@ -2599,6 +2594,8 @@ export class Core {
    * Whether this instance has no container and therefore no GPU — the
    * Node-testable mode, in which every model API works and the render,
    * pick and image-export paths are no-ops or reject.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns true when running headless
    */
@@ -2611,6 +2608,8 @@ export class Core {
    * derives geometry from stored style channels rather than treating
    * style as an optional layer.  Kept so v3 code that checks it works.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true
    */
   styleEnabled(): boolean {
@@ -2622,6 +2621,8 @@ export class Core {
    * compound tier changes paint evaluation and draw order; the renderer
    * pays nothing for compounds while this is false.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns true when the graph has at least one parent/child relation
    */
   hasCompoundNodes(): boolean {
@@ -2632,6 +2633,8 @@ export class Core {
    * Whether an element with this id exists, via the O(1) id index —
    * cheaper than `getElementById( id ).nonempty()` because no handle is
    * materialized.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @param id — the element id
    * @returns true when the graph holds that element
@@ -2649,6 +2652,8 @@ export class Core {
    * The `window` this instance renders into, or null when there is no DOM
    * (Node).  v3 parity, for extensions that need the hosting realm.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns the global window, or null outside a browser
    */
   window(): (Window & typeof globalThis) | null {
@@ -2657,6 +2662,8 @@ export class Core {
 
   /**
    * The options the instance was constructed with.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns the caller's own options object, held by reference — not a
    *   copy and not a defaults-resolved view, so an option the caller

@@ -132,10 +132,14 @@ describe('gpu/batch', function () {
     expect(cy.batching()).to.be.false;
   });
 
-  it('batchData applies per-id patches in one batch', function () {
-    cy.batchData({
-      a: { weight: 10 },
-      b: { weight: 20 },
+  it('batchData is gone (round 90) — batch + data covers it', function () {
+    // v3 marked batchData @internal and "for backwards compatibility";
+    // the idiom is a plain batch over data() writes
+    expect(cy.batchData).to.equal(undefined);
+
+    cy.batch(() => {
+      cy.$id('a').data({ weight: 10 });
+      cy.$id('b').data({ weight: 20 });
     });
 
     expect(cy.$id('a').data('weight')).to.equal(10);

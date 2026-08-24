@@ -518,6 +518,7 @@ export class Collection {
    *
    * @returns a length-1 collection, or an empty one — v4 has no separate
    *   element type, so this narrows rather than unwraps
+   * @internal
    */
   element(): Collection {
     return this.eq(0);
@@ -551,6 +552,8 @@ export class Collection {
   /**
    * Whether this collection contains an element with the given id.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @param id — the element id
    * @returns true when a member has that id
    */
@@ -560,6 +563,8 @@ export class Collection {
 
   /**
    * Index of an element within this collection.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @param ele — the element to find; only its first element is used
    * @returns the index, or -1 when it is not in this collection
@@ -588,6 +593,8 @@ export class Collection {
 
   /**
    * Position of the element with this id within the collection.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @param id — the element id
    * @returns the index, or -1 when absent
@@ -1393,7 +1400,9 @@ export class Collection {
     return this._spawn([]);
   }
 
-  /** Split into { nodes, edges }. */
+  /** Split into { nodes, edges }.
+   *
+   * @internal */
   byGroup(): { nodes: Collection; edges: Collection } {
     return { nodes: this.nodes(), edges: this.edges() };
   }
@@ -2708,6 +2717,8 @@ export class Collection {
    * bb/fit and size their compound parents — even when `visibility:
    * 'hidden'` keeps them from rendering.  display-tier hide() clears it.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns whether the element occupies space — since round 22 this can
    *   differ from `visible()`, which is the paint tier
    */
@@ -2717,6 +2728,8 @@ export class Collection {
 
   /** Whether the element can be interacted with: visible and not
    * pointer-transparent (`events: 'no'` — round 20.2).
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns whether any pointer path will resolve to this element; it
    *   rides `visible()`, so an element hidden either way is inert
@@ -2747,6 +2760,8 @@ export class Collection {
    * (no compound-free `padding` prop); parents answer the resolved
    * auto-bounds padding (round 14.3).
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns the resolved padding in model px — 0 for leaves and for any
    *   graph with no compounds at all, the derived value for a parent;
    *   undefined when the collection is empty
@@ -2772,6 +2787,8 @@ export class Collection {
   /**
    * The drawn box: core dims + 2 x padding (v3's paddedWidth).
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns the padded width — identical to `width()` for leaves, which
    *   have no padding; undefined when empty or removed
    */
@@ -2783,6 +2800,8 @@ export class Collection {
    * The drawn box height: content height plus twice the padding (v3's
    * `paddedHeight`).  Identical to `height()` for leaves, which have no
    * padding.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns the padded height, or undefined when empty or removed
    */
@@ -3329,6 +3348,7 @@ export class Collection {
    *   style, not about the rendered shape, which is why a lone edge under
    *   `curve-style: bezier` answers true while drawing as a line.  False
    *   for nodes and for removed elements
+   * @internal
    */
   isBundledBezier(): boolean {
     const ref = this._first();
@@ -3655,6 +3675,8 @@ export class Collection {
    * the `visibility` style property instead (round 22), and for a fade
    * use an `opacity` transition.
    *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
+   *
    * @returns this collection, for chaining
    */
   show(): this {
@@ -3666,6 +3688,8 @@ export class Collection {
    * drawing and picking, leave the bounding box and their ancestors'
    * auto-bounds, and their bezier bundles re-fan without them.
    * Descendants of a hidden node are gated too.
+   *
+   * Public in v4 by decision (round 90) — v3 kept its counterpart internal.
    *
    * @returns this collection, for chaining
    */
@@ -3729,6 +3753,7 @@ export class Collection {
    *
    * @returns not simply the negation of `active()`: a removed element is
    *   neither active nor inactive, so both read false for it
+   * @internal
    */
   inactive(): boolean {
     const ref = this._first();
@@ -3745,6 +3770,7 @@ export class Collection {
    * one the pointer layer sets while a press is held.
    *
    * @returns this collection, for chaining
+   * @internal
    */
   activate(): this {
     return this._setBit(FLAG_ACTIVE, true);
@@ -3754,6 +3780,7 @@ export class Collection {
    * Clear the pressed ("active") state.
    *
    * @returns this collection, for chaining
+   * @internal
    */
   unactivate(): this {
     return this._setBit(FLAG_ACTIVE, false);
@@ -5082,6 +5109,7 @@ export class Collection {
    * @param fn — one position shared by every node, or `( node, i ) =>
    *   position` evaluated per node in this collection's order
    * @returns the hypothetical box, in model coordinates
+   * @internal
    */
   boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
     x1: number;

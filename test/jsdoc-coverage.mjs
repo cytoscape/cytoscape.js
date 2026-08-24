@@ -165,10 +165,10 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function () {
     it('finds a non-trivial number of value-returning members to check', function () {
       // the ratchet, moved with the surface: 276 at round 36's completion,
       // 277 once 37.3 brought the entry point inside the audit, 278 with
-      // round 41's event and emitter — and *down* to 259 in round 90,
+      // round 41's event and emitter — and *down* to 254 in round 90,
       // which demoted the machinery members (@internal) out of the
       // public tier; a demotion shrinks this tally by design
-      expect(result.returnTags.tagged).to.be.at.least(259);
+      expect(result.returnTags.tagged).to.be.at.least(254);
     });
   });
 

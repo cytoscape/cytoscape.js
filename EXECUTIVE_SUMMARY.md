@@ -39,7 +39,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,245 unit · 428 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,245 unit · 467 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 373 members over 48 sections, gated at 100% |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -181,6 +181,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys the network-biology propagation toolbox on the existing kernel
     machinery; five more parity specs, each proven able to fail; measured on
     an M2: RWR proximity 119×, SimRank 45× at n=1024.
+- **24 Aug** — verification goes quiet for agents
+  - Every verification script gained a `:quiet` twin (`npm run -s
+    test:quiet` and friends) that prints only actual failures: a green run
+    is zero bytes — measured, a green `test:node` had been ~3,800 lines /
+    ~226 KB of pass marks — and a red run prints the failing tests' blocks
+    and nothing else.  A failures-only `node:test` reporter, a
+    capture-and-replay wrapper for tools with no quiet mode, a Playwright
+    twin, and a gate that keeps each quiet script identical to its loud
+    original modulo the reporter flag, so the pairs cannot drift.  CI and
+    the interactive debug scripts stay loud deliberately.
+  - Buys agent context spent on failures instead of on green; the first full
+    quiet run proved the point by printing exactly one real failure (a
+    planned-paths gate its own new files had tripped) and nothing else.
 
 ---
 
@@ -241,7 +254,6 @@ against the source before planning (the mid-August planning wave):
 | Layouts | Radial layout, force constraints, edge-length control, per-side padding; packing made reusable and the layout→renderer handoff decoupled from animation |
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Quiet verification | `:quiet` twins of the test/lint/typecheck/build scripts for agents: a green run prints nothing, a red run prints only the actual failures — a green `test:node` currently spends ~3,800 lines saying "nothing failed" |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
 | Worker-hosted renderer | The renderer moved off the main thread via OffscreenCanvas |
 

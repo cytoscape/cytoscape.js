@@ -20,7 +20,7 @@ round is written.
 | 6 | — | — | note | [Verification — all green (the pass-1 record; each later round's Landed section carries its own tallies)](rounds/006-verification-all-green-the-pass-1-record-each-later-round-s.md) |
 | 7 | — | — | note | [Known deviations (accepted; detailed in src/README.md)](rounds/007-known-deviations-accepted-detailed-in-src-readme-md.md) |
 | 8 | — | — | note | [Follow-ups (informed by the benchmark)](rounds/008-follow-ups-informed-by-the-benchmark.md) |
-| 9 | — | — | note | [API gaps vs v3](rounds/009-api-gaps-vs-v3.md) |
+| 9 | — | — | landed | [API gaps vs v3](rounds/009-api-gaps-vs-v3.md) |
 | 10 | — | — | note | [Selector removal + stylesheet reshape (v4 API direction)](rounds/010-selector-removal-stylesheet-reshape-v4-api-direction.md) |
 | 11 | 7 | 2026-07-24 | landed | [Landed (round 7 — the mapper DSL, 2026-07-24)](rounds/011-landed-round-7-the-mapper-dsl-2026-07-24.md) |
 | 12 | 8 | 2026-07-24 | landed | [Landed (round 8 — conditionals + fn removal, 2026-07-24)](rounds/012-landed-round-8-conditionals-fn-removal-2026-07-24.md) |
@@ -102,7 +102,7 @@ round is written.
 | 88 | 56 | 2026-08-07 | landed | [Round 56 — the arrow gap, landed (2026-08-07)](rounds/088-round-56-the-arrow-gap-landed-2026-08-07.md) |
 | 89 | 57 | 2026-08-07 | plan | [Round 57 plan — cleanup (raised by the maintainer 2026-08-07)](rounds/089-round-57-plan-cleanup-raised-by-the-maintainer-2026-08-07.md) |
 | 90 | 41.5 | 2026-08-08 | landed | [Round 41.5 docs-first — the preventable-gesture proposal (written 2026-08-08; declined 2026-08-09 — the round does not run)](rounds/090-round-41-5-docs-first-the-preventable-gesture-proposal-writt.md) |
-| 91 | 58 | 2026-08-09 | plan | [Round 58 plan — the arrow trim reaches the anchors and the layer strokes (ledger item 24; planned 2026-08-09)](rounds/091-round-58-plan-the-arrow-trim-reaches-the-anchors-and-the-lay.md) |
+| 91 | 58 | 2026-08-09 | landed | [Round 58 plan — the arrow trim reaches the anchors and the layer strokes (ledger item 24; planned 2026-08-09)](rounds/091-round-58-plan-the-arrow-trim-reaches-the-anchors-and-the-lay.md) |
 | 92 | 59 | 2026-08-09 | plan | [Round 59 plan — the force layout, made sound and made good (raised by the maintainer 2026-08-09)](rounds/092-round-59-plan-the-force-layout-made-sound-and-made-good-rais.md) |
 | 93 | 60 | 2026-08-09 | plan | [Round 60 plan — the performance record, kept honest (raised by the maintainer 2026-08-09)](rounds/093-round-60-plan-the-performance-record-kept-honest-raised-by-t.md) |
 | 94 | 61 | 2026-08-09 | plan | [Round 61 plan — the select regression: state flips write the diff, not the element (planned 2026-08-09)](rounds/094-round-61-plan-the-select-regression-state-flips-write-the-di.md) |
@@ -157,4 +157,4 @@ round is written.
 | 143 | 106 | 2026-08-20 | plan | [Round 106 plan — N viewers, one store (proposed 2026-08-20)](rounds/143-round-106-plan-n-viewers-one-store-proposed-2026-08-20.md) |
 | 144 | 107 | 2026-08-20 | plan | [Round 107 plan — patch: id-keyed reconcile of a fresh payload (proposed 2026-08-20)](rounds/144-round-107-plan-patch-id-keyed-reconcile-of-a-fresh-payload-p.md) |
 | 145 | 101 | 2026-08-24 | landed | [Round 101 — quiet verification: green prints nothing, red prints only failures (2026-08-24)](rounds/145-round-101-quiet-verification-green-prints-nothing-red-prints.md) |
-| 146 | 108 | 2026-08-24 | plan | [Round 108 plan — agent ergonomics: what the two agents load, search and trip over (raised by the maintainer 2026-08-24)](rounds/146-round-108-plan-agent-ergonomics-what-the-two-agents-load-sea.md) |
+| 146 | 108 | 2026-08-24 | landed | [Round 108 plan — agent ergonomics: what the two agents load, search and trip over (raised by the maintainer 2026-08-24)](rounds/146-round-108-plan-agent-ergonomics-what-the-two-agents-load-sea.md) |

@@ -115,7 +115,11 @@ export function readSections(root) {
         title,
         round: roundOf(title),
         date: dateOf(title),
-        kind: kindOf(title),
+        // A round's plan and its record are one file since 108.2, so the
+        // heading alone would file a landed round as still planned.  The
+        // body is the better evidence: a `Landed` subsection means the work
+        // happened, whatever the heading was written as beforehand.
+        kind: /^#{2,3} Landed\b/m.test(text) ? 'landed' : kindOf(title),
       };
     });
 }

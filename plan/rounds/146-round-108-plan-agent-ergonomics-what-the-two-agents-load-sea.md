@@ -241,3 +241,118 @@ one.
 beside the code they describe; whether `PLAN.md` keeps its name as
 the entry point once it is an index (assumed yes — every document
 in the repo points at it).
+
+### Landed (round 108 — 2026-08-24)
+
+All six items, in the order they were done, each verified as it landed.
+`npm run -s test:node:quiet` green (zero bytes) at the close, plus
+`test:types:all`.
+
+**108.4 — the worktree that could neither ship nor be seen.**  Done
+first because it was breaking the maintainer's build at the moment the
+round was written.  `.npmignore` gains `.claude`; control run live —
+with a file under `.claude/`, `npm pack --dry-run` listed 2 such files
+before the entry and 0 after, against 141 of 278 in the tree that
+prompted it.  `.gitignore` gains `/.claude/worktrees/`, because Claude
+Code writes that rule into `.git/info/exclude`, which is local to one
+clone and never travels.  `test/modules/packaging.mjs` gains the case.
+
+The tree-walking audit the plan called for **came back clean**, and that
+is worth recording rather than quietly dropping: every other walker roots
+at a specific directory (`newestMtime` at `src/`, the jsdoc and throw
+audits at `src/`, bench coverage at `benchmark/`, the goldens page at its
+PNG directory), so `npm pack` was the only tool that saw the second copy
+of the repo — it reads neither `.gitignore` nor `.git/info/exclude` for
+this.
+
+**The round-90 worktree was not deleted.**  It holds **8 commits not on
+`v4`** (`round-90-api-cleanup`, through `8b992283`), which is real work,
+not garbage; removing it is the maintainer's call and the `.npmignore`
+fix already makes the tree green and safe to release.  The closing-sweep
+rule (`git worktree list`) is in the process list either way.
+
+**108.3 — v3 frozen and quiet.**  `v3/AGENTS.md` (plus the one-line
+`v3/CLAUDE.md` that imports it, as at the root), and a root `.ignore`.
+Measured after: `style` 462 hits -> **186**, `renderer` -> 112,
+`boundingBox` -> 73, `controlPoints` -> 20, with
+`rg --no-ignore -g 'v3/**'` documented in both files as the way back in.
+
+**108.5 — the inner loop.**  `npm run -s verify:quiet` (typecheck + lint
++ `test:js`) at **9.6 s** measured, against `test:node`'s ~88 s.  Both
+twins land together and the new twin is registered in
+`test/modules/quiet-scripts.mjs`, which enumerates in both directions.
+
+**108.6 — the cruft.**  `d2.scratch.mjs` (which carried an absolute path
+into the author's home directory), `tmp/x.json` and `tests-examples/`
+removed; `/tmp` added to `.gitignore`.
+
+**108.2 — the record becomes files.**  146 sections moved to
+`plan/rounds/NNN-slug.md`; `PLAN.md` keeps the standing sections and
+lands at 108 KB from 1.5 MB.  **The byte-identity control passed on the
+first run** — head plus every section file, concatenated in order,
+reproduces the pre-split file exactly, 1,524,666 bytes over 146 files —
+and it passed because nothing was added to the section text: a round file
+is its `##` section verbatim, and every column the index shows is parsed
+back out of the heading, which already carried round number, date and
+kind.  `scripts/plan-record.mjs` + `scripts/plan-index.mjs`
+(`npm run plan:index`, with `--check`), gated by
+`test/modules/plan-record.mjs`; the status site assembles the whole
+record through the same function and still renders it as one 1.9 MB page.
+
+**108.1 — `AGENTS.md` becomes an instruction sheet.**  **62,818 ->
+10,303 bytes, an 84% cut** (~15.7k -> ~2.6k tokens paid by every session
+of both agents), with 58 KB of lessons moved verbatim into five
+`docs/agents/` notes.  What replaced them is the thing F7 said was
+missing: a routing table keyed by *what you are about to do*.
+`test/modules/agent-docs.mjs` gates the budget, the links in both
+directions, every rooted path and every `npm run` name.
+
+### What the round found that it had not planned for
+
+Four gates fired on work this round did, and each one is the answer to
+"was that gate worth its maintenance?":
+
+- **`.npmignore` is a denylist, so every new top-level directory ships.**
+  It happened twice in one round — `plan/` and `docs/` both went into the
+  tarball until they were listed — and both were caught by round 44.2's
+  markdown *allowlist*, which exists precisely because the denylist cannot
+  notice a directory nobody thought of.  The 141-file worktree was the
+  same failure in a third guise.
+- **A spec that reads a document from disk stops reading the document.**
+  `test/modules/status-site.mjs` verified the path exemptions against
+  `PLAN.md`; after the split that was 8% of the record, and it reported
+  33 live spellings as dead exemptions.  It reads through the document's
+  assemble hook now, as the build does.  Generalisation worth keeping: when
+  a document gains an *assembly step*, every reader of it is a caller to
+  check, not just the renderer.
+- **The agent-docs gate found drift the moment it existed** — three paths
+  written relative to `src/`, five round-42 spellings that are quoted
+  rather than pointed at.  The five became an audited exemption list on
+  the same two-direction terms as the status site's `HISTORICAL_PATHS`.
+- **The site would have lost what the root file gave up.**  Moving 58 KB
+  out of `AGENTS.md` would have deleted it from the published contributor
+  guide; the five notes are published pages now.
+
+### Noticed while verifying: a pre-existing flake
+
+`test/force-layout.mjs:265` — *"uncurls a chain: the spectral seed
+reaches what refinement cannot (59.4)"* — failed **2 of 4** full
+`test:node` runs on this machine and passed 3 of 3 when its file was run
+alone, always with the **identical** value (346.456 against a bound of
+936).  A repeated identical number rules out ordinary stochasticity: the
+spec is seeded (`seed: 7`), so the likely mechanism is that the force
+phase's iteration count is load-dependent, which makes the result a
+function of how busy the box is rather than of the layout.
+
+**Not this round's doing, and not this round's to fix**: `git diff
+12eccd14..HEAD -- src` is empty, so nothing here can reach that code
+path.  Logged because a spec that fails 50% of the time under load is
+worse for an agent than one that fails always — it teaches the agent to
+re-run rather than to read.  Worth its own item.
+
+### Open, carried forward
+
+- Whether `.claude/worktrees/round-90` and its branch are kept — 8
+  unmerged commits, the maintainer's call.
+- The notes live at `docs/agents/`, as assumed at planning; `PLAN.md`
+  keeps its name as the record's entry point.

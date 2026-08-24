@@ -6289,8 +6289,6 @@ export class Collection {
   }
 
   declare once: this['one'];
-  declare listen: this['on'];
-  declare bind: this['on'];
 
   /**
    * Stop listening on each element of this collection.
@@ -6309,8 +6307,6 @@ export class Collection {
   }
 
   declare removeListener: this['off'];
-  declare unlisten: this['off'];
-  declare unbind: this['off'];
 
   /**
    * Emit an event on each element, bubbling through compound ancestors
@@ -6412,10 +6408,6 @@ Collection.prototype.addListener = Collection.prototype.on;
 Collection.prototype.removeListener = Collection.prototype.off;
 Collection.prototype.trigger = Collection.prototype.emit;
 Collection.prototype.once = Collection.prototype.one;
-Collection.prototype.listen = Collection.prototype.on;
-Collection.prototype.bind = Collection.prototype.on;
-Collection.prototype.unlisten = Collection.prototype.off;
-Collection.prototype.unbind = Collection.prototype.off;
 Collection.prototype.pon = Collection.prototype.promiseOn;
 Collection.prototype.attr = Collection.prototype.data;
 Collection.prototype.removeAttr = Collection.prototype.removeData;

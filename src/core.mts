@@ -1413,9 +1413,6 @@ export class Core {
 
   declare addListener: this['on'];
 
-  declare listen: this['on'];
-  declare bind: this['on'];
-
   /**
    * Like `on()`, but the handler runs at most once and then removes
    * itself.
@@ -1508,8 +1505,6 @@ export class Core {
   }
 
   declare removeListener: this['off'];
-  declare unlisten: this['off'];
-  declare unbind: this['off'];
 
   /**
    * Remove every listener on the core, including element-bound and
@@ -3211,11 +3206,7 @@ Core.prototype.centre = Core.prototype.center;
 Core.prototype.$ = Core.prototype.filter;
 Core.prototype.byId = Core.prototype.getElementById;
 Core.prototype.addListener = Core.prototype.on;
-Core.prototype.listen = Core.prototype.on;
-Core.prototype.bind = Core.prototype.on;
 Core.prototype.removeListener = Core.prototype.off;
-Core.prototype.unlisten = Core.prototype.off;
-Core.prototype.unbind = Core.prototype.off;
 Core.prototype.once = Core.prototype.one;
 Core.prototype.pon = Core.prototype.promiseOn;
 Core.prototype.trigger = Core.prototype.emit;

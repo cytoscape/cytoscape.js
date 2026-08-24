@@ -6274,8 +6274,6 @@ declare class Collection {
    */
   one(events: string, callback?: EventHandler): this;
   once: this['one'];
-  listen: this['on'];
-  bind: this['on'];
   /**
    * Stop listening on each element of this collection.
    *
@@ -6286,8 +6284,6 @@ declare class Collection {
    */
   off(events: string, callback?: EventHandler): this;
   removeListener: this['off'];
-  unlisten: this['off'];
-  unbind: this['off'];
   /**
    * Emit an event on each element, bubbling through compound ancestors
    * to the core.
@@ -7615,8 +7611,6 @@ declare class Core {
    */
   on(events: string, predicate: ElePredicate, callback: EventHandler): this;
   addListener: this['on'];
-  listen: this['on'];
-  bind: this['on'];
   /**
    * Like `on()`, but the handler runs at most once and then removes
    * itself.
@@ -7664,8 +7658,6 @@ declare class Core {
    */
   off(events: string, predicate: ElePredicate, callback: EventHandler): this;
   removeListener: this['off'];
-  unlisten: this['off'];
-  unbind: this['off'];
   /**
    * Remove every listener on the core, including element-bound and
    * delegated ones.

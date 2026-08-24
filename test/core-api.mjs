@@ -119,18 +119,23 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function (
     expect(fired).to.equal(1);
   });
 
-  it('event aliases: once, listen/bind, unlisten/unbind, pon', function () {
+  it('event aliases: the Node-emitter set plus pon (round 90)', function () {
     var count = 0;
     cy.once('tap', () => count++);
     cy.emit('tap');
     cy.emit('tap');
     expect(count).to.equal(1);
 
-    expect(cy.listen).to.equal(cy.on);
-    expect(cy.bind).to.equal(cy.on);
-    expect(cy.unlisten).to.equal(cy.off);
-    expect(cy.unbind).to.equal(cy.off);
+    // the ruling: analogous to Node's EventEmitter, plus pon
+    expect(cy.addListener).to.equal(cy.on);
+    expect(cy.removeListener).to.equal(cy.off);
     expect(typeof cy.pon).to.equal('function');
+
+    // bind/unbind/listen/unlisten left with the jQuery era
+    expect(cy.bind).to.equal(undefined);
+    expect(cy.unbind).to.equal(undefined);
+    expect(cy.listen).to.equal(undefined);
+    expect(cy.unlisten).to.equal(undefined);
   });
 
   it('makeLayout / createLayout aliases build a layout without running it', function () {

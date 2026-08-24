@@ -6016,6 +6016,7 @@ export class StyleEngine {
    * Bumps when the paint-mapper state changes (sheet set, or a GPU-owned
    * live auto-domain extent moved) — the renderer's mapper runtime pulls
    * on this to repack its program buffers.
+   * @internal
    */
   paintVersion = 0;
 
@@ -6250,6 +6251,7 @@ export class StyleEngine {
    * @param computed — the slot's sheet-resolved record (never mutated)
    * @param patch — the captured field pairs for the slot's bypass
    * @returns a fresh record with the bypassed fields replaced
+   * @internal
    */
   mergeBypass(computed: Computed, patch: BypassPatch): Computed {
     const merged = { ...computed } as unknown as Record<string, unknown>;
@@ -6415,7 +6417,8 @@ export class StyleEngine {
 
   /** Round 24.1: receives the diffed transition tweens — wired by the
    * core to AnimationManager.start (the round-21 eviction gives uniform
-   * latest-wins); null in engine-only contexts disables capture. */
+   * latest-wins); null in engine-only contexts disables capture.
+   * @internal */
   transitionSink:
     | ((
         refs: Ref[],
@@ -6502,6 +6505,7 @@ export class StyleEngine {
    *
    * @returns the live record — `setSheet` replaces it wholesale, so a
    *   held reference reads the *previous* sheet's theming after a swap
+   * @internal
    */
   core(): CoreStyle {
     return this.coreStyle;
@@ -6741,6 +6745,7 @@ export class StyleEngine {
    *
    * @param group — the element group to collect for
    * @returns each eligible mapper with the fallback its channel resolves to
+   * @internal
    */
   paintInputs(group: GroupName): { m: CompiledMapper; fallback: Evaluated }[] {
     const def = this.defs[group];
@@ -6852,6 +6857,7 @@ export class StyleEngine {
    *
    * @param group — the element group to read the sheet for
    * @returns the constants the kernel needs to fold arrow alpha itself
+   * @internal
    */
   paintContext(group: GroupName): {
     opacityMapped: boolean;
@@ -6897,6 +6903,7 @@ export class StyleEngine {
    *
    * @param group — the element group the kernel runs over
    * @param props — the props it evaluates; replaces the previous set
+   * @internal
    */
   setGpuOwned(group: GroupName, props: Iterable<string>): void {
     this.gpuOwnedProps[group] = new Set(props);
@@ -6909,6 +6916,7 @@ export class StyleEngine {
    * @param group — the element group being written
    * @param keys — the data() keys the write touches
    * @returns true when any mapped channel or label depends on one of them
+   * @internal
    */
   stylesDependOnData(group: GroupName, keys: string[]): boolean {
     // plain loops, no closures: this gate runs twice on every data()
@@ -6956,6 +6964,7 @@ export class StyleEngine {
    * @param group — the element group whose flag is changing
    * @param key — the reserved condition key, e.g. `'::selected'`
    * @returns true when the change must re-evaluate mappers
+   * @internal
    */
   dependsOnState(group: GroupName, key: string): boolean {
     return this.stylesDependOnData(group, [key]);
@@ -6969,12 +6978,15 @@ export class StyleEngine {
    * @param group — the element group
    * @param prop — the normalized property name
    * @returns true when the prop is kernel-owned
+   * @internal
    */
   ownsProp(group: GroupName, prop: string): boolean {
     return this.gpuOwnedProps[group].has(prop);
   }
 
-  /** Which arrow ends the current stylesheet can enable. */
+  /** Which arrow ends the current stylesheet can enable.
+   *
+   * @internal */
   get arrowEnds(): { source: boolean; target: boolean } {
     return this.arrows;
   }
@@ -6983,6 +6995,7 @@ export class StyleEngine {
    * Which mid-edge arrow ends the current sheet can enable.  The
    * renderer skips the mid-arrow draw entirely when neither is
    * possible.
+   * @internal
    */
   get midArrowEnds(): { source: boolean; target: boolean } {
     return this.midArrows;
@@ -7022,6 +7035,7 @@ export class StyleEngine {
   /**
    * Apply the sheet across every live element of both groups.  This is
    * the whole-graph pass a sheet change or a batch flush runs.
+   * @internal
    */
   applyAll(): void {
     this.applyBulk('nodes', this.store.slotsOrdered('nodes'));
@@ -7035,6 +7049,7 @@ export class StyleEngine {
    *
    * @param group — the element group to style
    * @param slots — the live slots to write; must all be of that group
+   * @internal
    */
   applyBulk(group: GroupName, slots: ArrayLike<number>): void {
     if (slots.length === 0) {
@@ -7462,7 +7477,8 @@ export class StyleEngine {
 
   /** Slot compaction: live elements moved (and took fresh generations) —
    * refresh the styled marks over the live slots, all of which have been
-   * styled (style applies on add, and compaction never runs mid-batch). */
+   * styled (style applies on add, and compaction never runs mid-batch).
+   * @internal */
   onCompacted(): void {
     for (const group of ['nodes', 'edges'] as const) {
       const table = this.store.table(group);
@@ -7964,6 +7980,7 @@ export class StyleEngine {
    * Resolve and write one element's channels.
    *
    * @param ref — the element to style; a stale ref is a no-op
+   * @internal
    */
   apply(ref: Ref): void {
     if (!this.store.isCurrent(ref)) {
@@ -7984,6 +8001,7 @@ export class StyleEngine {
    * @param group — the element group that was written
    * @param slots — the written slots
    * @param keys — the data() keys written, which gate what re-evaluates
+   * @internal
    */
   refreshMapped(
     group: GroupName,
@@ -8037,6 +8055,7 @@ export class StyleEngine {
    * @param group — the element group whose flag flipped
    * @param key — the reserved condition key ('::selected', '::active', …)
    * @param slots — the slots whose bit actually changed
+   * @internal
    */
   refreshState(group: GroupName, key: string, slots: ArrayLike<number>): void {
     // the structural pair changes def resolution, not just values
@@ -8325,6 +8344,7 @@ export class StyleEngine {
    *   other element group
    * @throws if the name is not a v4 style property at all — a typo must
    *   fail loudly rather than read as undefined
+   * @internal
    */
   readProp(ref: Ref, propRaw: string): string | number | undefined {
     // The per-raw-name read plan (round 62.4): one Map hit replaces the
@@ -8441,6 +8461,7 @@ export class StyleEngine {
    *
    * @param ref — the element to read
    * @returns every readable prop of its group, by name
+   * @internal
    */
   readProps(ref: Ref): Record<string, string | number> {
     const props = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
@@ -8460,6 +8481,7 @@ export class StyleEngine {
    *
    * @returns the edges group's resolved `line-opacity`, the factor an
    *   arrow's stored alpha was folded with
+   * @internal
    */
   lineOpacityConst(): number {
     return (this.defs.edges.computed as Computed).lineOpacity;
@@ -8468,7 +8490,8 @@ export class StyleEngine {
   /** The sheet's arrow-width modes (constants-only props) — an
    * edge-width tween needs these to carry the style-write-resolved
    * `edge.arrowWidths` along (round 25.2): 'match-line' and percent
-   * forms baked the width, plain numbers did not. */
+   * forms baked the width, plain numbers did not.
+   * @internal */
   arrowWidthModes(): {
     source: number | 'match-line' | { percent: number };
     target: number | 'match-line' | { percent: number };
@@ -8495,6 +8518,7 @@ export class StyleEngine {
    *   `'target-arrow-color'`
    * @returns the unfolded RGBA, or the no-arrow value when that end
    *   draws no arrow
+   * @internal
    */
   arrowBase(ref: Ref, colorProp: string): RGBA {
     const def = this.defs.edges;

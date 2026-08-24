@@ -510,6 +510,7 @@ const mixOklab = (data: Float32Array, i: number, e: number): RGBA => {
  *   it is handed to has nothing to capture at play time — which is what
  *   keeps a whole-channel transition one bulk record instead of one
  *   Animation per element
+ * @internal
  */
 export const buildChannelWrite = (
   column: TweenColumn,
@@ -551,10 +552,14 @@ export const buildChannelWrite = (
 export class Animation {
   // -- state --
 
-  /** the elements being animated (empty for a viewport animation) */
+  /** the elements being animated (empty for a viewport animation)
+   *
+   * @internal */
   readonly refs: Ref[];
 
-  /** true when this animates the viewport rather than elements */
+  /** true when this animates the viewport rather than elements
+   *
+   * @internal */
   readonly isViewport: boolean;
   private store: GraphStore;
   private styleEngine: StyleEngine | null;
@@ -581,6 +586,7 @@ export class Animation {
    * `durationScale`, which is 1 for every curve except a spring (whose
    * duration is perceptual — the pace of the key movement — leaving the
    * settling tail to run past it).
+   * @internal
    */
   readonly durationMs: number;
   /**
@@ -588,11 +594,16 @@ export class Animation {
    * progression array.  One curve layer, two executors — the CPU tick
    * calls it directly and the GPU kernel reads it out of its params, so
    * the two agree to float precision without parallel implementations.
+   * @internal
    */
   readonly easingProgram: EasingProgram;
-  /** set when the renderer's GPU tween runtime drives this animation */
+  /** set when the renderer's GPU tween runtime drives this animation
+   *
+   * @internal */
   gpuDriven = false;
-  /** batch id in the GPU tween runtime (null until registered) */
+  /** batch id in the GPU tween runtime (null until registered)
+   *
+   * @internal */
   gpuId: number | null = null;
   /** round 24.1: a transition built from pre-resolved ChannelWrites —
    * capture is a no-op and eligibility/columns derive from the writes */
@@ -602,7 +613,8 @@ export class Animation {
   private pausedAt: number | null = null;
   /** the shared clock as of the last manager tick — what pause/resume/
    * reverse/progress read, so the controls stay deterministic under
-   * test-driven ticks (the manager stamps it every advance) */
+   * test-driven ticks (the manager stamps it every advance)
+   * @internal */
   lastNow = 0;
 
   /**
@@ -618,6 +630,7 @@ export class Animation {
    * @returns an animation whose values are already resolved — it never
    *   reads the columns at play time, so the restyle's own diff is the
    *   only place stored truth is consulted
+   * @internal
    */
   static preset(
     store: GraphStore,
@@ -649,6 +662,7 @@ export class Animation {
    * @throws if `easing` is a function — a closure cannot cross to the
    *   device, so accepting one would make the curve depend on whether
    *   the animation got offloaded
+   * @internal
    */
   constructor(
     store: GraphStore,
@@ -718,6 +732,7 @@ export class Animation {
    * @returns whether it is over, *not* whether it succeeded — a stop and
    *   a natural completion are the same answer here, and both resolve
    *   the promise
+   * @internal
    */
   get done(): boolean {
     return this._done;
@@ -735,6 +750,7 @@ export class Animation {
    * one.  A no-op tween (`delay()`) touches nothing.
    *
    * @returns the set of column ids, computed once and cached
+   * @internal
    */
   touchedColumns(): ReadonlySet<string> {
     if (this._columns == null) {
@@ -767,6 +783,7 @@ export class Animation {
    * @returns whether this animation tweens the pan — the pair are
    *   separate channels, so a pan animation and a zoom animation run
    *   together rather than evicting each other
+   * @internal
    */
   get hasPan(): boolean {
     return this.pan != null;
@@ -777,6 +794,7 @@ export class Animation {
    *
    * @returns whether the zoom channel is claimed; see `hasPan` for why
    *   the two are tracked apart
+   * @internal
    */
   get hasZoom(): boolean {
     return this.zoom != null;
@@ -790,6 +808,7 @@ export class Animation {
    *
    * @param store — the store that just compacted, whose forwarding chain
    *   resolves the pre-move refs
+   * @internal
    */
   repairRefs(store: GraphStore): void {
     for (const ref of this.refs) {
@@ -812,12 +831,15 @@ export class Animation {
    * @returns whether values are actually moving — false *during* the
    *   delay, when the animation is live and owns its channels but has
    *   not started interpolating
+   * @internal
    */
   get running(): boolean {
     return this.started && !this._done;
   }
 
-  /** A promise that resolves when the animation completes (or is stopped). */
+  /** A promise that resolves when the animation completes (or is stopped).
+   *
+   * @internal */
   promise(): Promise<void> {
     if (this._done) {
       return Promise.resolve();
@@ -833,6 +855,7 @@ export class Animation {
    *
    * @param now — the shared clock in ms
    * @returns true when the animation finished on this tick
+   * @internal
    */
   tick(now: number): boolean {
     this.lastNow = now;
@@ -877,6 +900,7 @@ export class Animation {
    *
    * @param jumpToEnd — apply the final frame first, instead of freezing
    *   at the value the tween reached
+   * @internal
    */
   stop(jumpToEnd: boolean): void {
     if (this._done) {
@@ -904,6 +928,7 @@ export class Animation {
    *
    * @returns whether the clock is frozen; a paused animation is not a
    *   stopped one — it still holds its channels against everything else
+   * @internal
    */
   get paused(): boolean {
     return this._paused;
@@ -916,6 +941,7 @@ export class Animation {
    * @returns the eased-time input in [0, 1], *before* the easing curve is
    *   applied — so it is linear in wall time, not in the value being
    *   tweened
+   * @internal
    */
   get progress(): number {
     if (this._done) {
@@ -938,6 +964,7 @@ export class Animation {
    * Freeze in place.
    *
    * @param now — the clock to freeze against; defaults to the last tick
+   * @internal
    */
   pause(now: number = this.lastNow): void {
     if (this._done || this._paused) {
@@ -952,6 +979,7 @@ export class Animation {
    * Continue, excluding the paused span from the timeline.
    *
    * @param now — the clock to resume against; defaults to the last tick
+   * @internal
    */
   resume(now: number = this.lastNow): void {
     if (!this._paused) {
@@ -972,6 +1000,7 @@ export class Animation {
    * included; v3's start/end swap carried the same rule).  Reversing
    * inside the delay completes at the captured start state.  Works
    * paused (the frozen value is the pivot) — resume plays backward.
+   * @internal
    */
   reverse(): void {
     if (this._done) {
@@ -1004,6 +1033,7 @@ export class Animation {
    * pause or reverse (the caller unregisters the batch).
    *
    * @param now — the clock to evaluate at; defaults to the last tick
+   * @internal
    */
   applyNow(now: number = this.lastNow): void {
     if (this._done) {
@@ -1076,6 +1106,7 @@ export class Animation {
    * @returns whether **every** write may offload — all-or-nothing per
    *   animation, so one geometry channel among the writes keeps the whole
    *   animation on the CPU rather than splitting it
+   * @internal
    */
   get gpuEligible(): boolean {
     if (this._barred) {
@@ -1121,6 +1152,7 @@ export class Animation {
    *
    * @param now — the clock the batch's params are anchored to
    * @returns one ChannelWrite per tweened column
+   * @internal
    */
   gpuBatches(now: number): ChannelWrite[] {
     if (this.startTime == null) {
@@ -1138,6 +1170,7 @@ export class Animation {
    * capture.
    *
    * @param now — the clock of that first tick
+   * @internal
    */
   schedule(now: number): void {
     if (this.startTime == null) {
@@ -1151,6 +1184,7 @@ export class Animation {
    * @returns the instant interpolation begins — the delay is already
    *   added in, so this is not the moment `play()` was called; 0 before
    *   the animation has been scheduled at all
+   * @internal
    */
   get startMs(): number {
     return this.startTime ?? 0;
@@ -1165,6 +1199,7 @@ export class Animation {
    * would ever dirty the column to reconcile them.
    *
    * @param now — the clock to settle at; t = 1 on natural completion
+   * @internal
    */
   settleGpu(now: number): void {
     if (this._done) {
@@ -1193,6 +1228,7 @@ export class Animation {
    * CPU slot arrays.  The caller unregisters the GPU batch.
    *
    * @param now — the clock whose value is written to the CPU columns
+   * @internal
    */
   demoteGpu(now: number): void {
     this._barred = true;
@@ -1754,6 +1790,7 @@ export class AnimationManager {
    *
    * @param sink — the renderer's tween sink; the manager cedes its
    *   auto-loop to the render loop while it is attached
+   * @internal
    */
   attachDriver(sink: GpuTweenSink): void {
     this.sink = sink;
@@ -1763,6 +1800,7 @@ export class AnimationManager {
   /**
    * Give the clock back: settle every GPU-driven animation onto the CPU
    * columns and drop the sink.  Called when the renderer goes away.
+   * @internal
    */
   detachDriver(): void {
     this.settleGpuAll();
@@ -1773,7 +1811,8 @@ export class AnimationManager {
   /** Settle every GPU-driven animation onto the CPU columns.  Round
    * 14.11: a reparent mid-flight moves the tweened slots under the
    * auto-bounds/fold derivations, which read the CPU columns — the
-   * store's reparent hook settles active leases before they go stale. */
+   * store's reparent hook settles active leases before they go stale.
+   * @internal */
   settleGpuAll(): void {
     for (const ani of this.allRunning()) {
       if (ani.gpuId != null) {
@@ -1803,6 +1842,7 @@ export class AnimationManager {
    * its batch, and keeps running as a CPU tween (whose slot lists 19.3's
    * `onCompacted` repair re-points).  Unlike `settleGpuAll` (the
    * reparent path), the animation is *not* finished early.
+   * @internal
    */
   demoteGpuAll(): void {
     if (this.sink == null) {
@@ -1824,6 +1864,7 @@ export class AnimationManager {
    * the store compacted (`demoteGpuAll`).
    *
    * @param store — the store that just compacted
+   * @internal
    */
   onCompacted(store: GraphStore): void {
     const next = new Map<number, Animation[]>();
@@ -1859,6 +1900,7 @@ export class AnimationManager {
    * channels compose.  Nudges the driver (or starts the auto-loop).
    *
    * @param ani — the animation to run
+   * @internal
    */
   start(ani: Animation): void {
     if (ani.isViewport) {
@@ -2034,6 +2076,7 @@ export class AnimationManager {
    *
    * @param jumpToEnd — finish at the target instead of freezing at the
    *   current value
+   * @internal
    */
   stopViewport(jumpToEnd: boolean): void {
     for (const ani of this.viewportRunning) {
@@ -2052,6 +2095,7 @@ export class AnimationManager {
    * uploads; resume re-acquires through the normal advance path.
    *
    * @param ani — the animation to freeze
+   * @internal
    */
   pauseAni(ani: Animation): void {
     if (ani.done || ani.paused) {
@@ -2075,6 +2119,7 @@ export class AnimationManager {
    * clock.
    *
    * @param ani — the animation to resume
+   * @internal
    */
   resumeAni(ani: Animation): void {
     if (ani.done || !ani.paused) {
@@ -2096,6 +2141,7 @@ export class AnimationManager {
    * swapped writes on the remapped clock.
    *
    * @param ani — the animation to reverse
+   * @internal
    */
   reverseAni(ani: Animation): void {
     if (ani.done) {
@@ -2128,6 +2174,7 @@ export class AnimationManager {
    *
    * @param now — the shared clock in ms
    * @returns true while any animation remains active
+   * @internal
    */
   tick(now: number): boolean {
     const advanced = new Set<Animation>();

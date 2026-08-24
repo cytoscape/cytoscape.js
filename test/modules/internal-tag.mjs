@@ -181,29 +181,34 @@ declare function keptFn(): void;
 
   describe('the demotion holds on the real tree', function () {
     it('no scanner-internal member appears in the generated docs model', function () {
+      // keyed by source location, not bare name: an internal member may
+      // legitimately share a name with a published member of another class
+      // (Animation.promise is internal, AnimationHandleImpl.promise ships)
       const internal = new Set();
 
       for (const rel of PUBLIC_API) {
         for (const m of auditFile(join(ROOT, rel)).members) {
-          if (m.internal) internal.add(m.name);
+          if (m.internal) internal.add(`${rel}:${m.line}`);
         }
       }
 
-      const published = new Set();
+      const published = [];
 
       for (const section of generate().sections) {
         for (const child of section.sections) {
           for (const fn of child.fns) {
-            published.add(fn.name.split('.').pop());
+            published.push(fn);
           }
         }
       }
 
       // the walk itself is guarded: an empty model means the shape drifted
       // and this spec went blind, which must read as red, not pass
-      expect(published.size).to.be.at.least(100);
+      expect(published.length).to.be.at.least(100);
 
-      const leaked = [...internal].filter((name) => published.has(name));
+      const leaked = published
+        .filter((fn) => internal.has(fn.src))
+        .map((fn) => `${fn.name} (${fn.src})`);
 
       expect(leaked, 'internal members in the docs model').to.deep.equal([]);
     });

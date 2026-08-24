@@ -27,7 +27,11 @@ export const PUBLIC_API = [
   'src/index.mts',
   'src/core.mts',
   'src/collection.mts',
-  'src/viewport.mts',
+  // Round 90: `src/viewport.mts` left this list — nothing hands a consumer
+  // a Viewport (`cy._viewport` is internal), every member duplicates cy's
+  // own viewport surface under another spelling, and the class is stripped
+  // from the shipped declaration.  BoundsLike stays exported for the
+  // members that take one.
   'src/animation.mts',
   'src/style.mts',
   'src/columnar.mts',

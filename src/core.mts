@@ -21,7 +21,7 @@ import { compileQuery } from './matcher.mjs';
 import type { FlagTest, Query } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
 import type { CompiledCondition } from './style-scales.mjs';
-import { Viewport } from './viewport.mjs';
+import { Viewport, type ZoomOptions, type Extent } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import {
   Animation,
@@ -147,6 +147,9 @@ export class Core {
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
   private _recoveringDevice: boolean;
+  /** the zoom/pan state object — reach it through cy's own viewport
+   * surface
+   * @internal */
   _viewport: Viewport;
 
   // -- lifecycle --
@@ -1587,7 +1590,7 @@ export class Core {
    *   to zoom about a fixed point; omit to read
    * @returns the current zoom when reading, this core when setting
    */
-  zoom(zoom?: number | Parameters<Viewport['setZoom']>[0]): number | this {
+  zoom(zoom?: number | ZoomOptions): number | this {
     if (zoom === undefined) {
       return this._viewport.zoom();
     }
@@ -1821,7 +1824,7 @@ export class Core {
    * @returns the visible extent in model coordinates
    * @see Core#renderedExtent for the same box in rendered coordinates
    */
-  extent(): ReturnType<Viewport['extent']> {
+  extent(): Extent {
     return this._viewport.extent();
   }
 
@@ -1833,7 +1836,7 @@ export class Core {
    *   projected into model coordinates
    * @see Core#extent for the model-coordinate form
    */
-  renderedExtent(): ReturnType<Viewport['renderedExtent']> {
+  renderedExtent(): Extent {
     return this._viewport.renderedExtent();
   }
 

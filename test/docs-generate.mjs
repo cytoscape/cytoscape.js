@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  DTS_NAMES,
   generate,
   NAMESPACES,
   NOT_PUBLISHED,
@@ -52,12 +53,14 @@ const DTS = readFileSync(join(ROOT, 'dist/cytoscape.d.ts'), 'utf8');
  * spaces and so never match; doc-comment bodies start with `*`.
  */
 function dtsMembers(className) {
-  const start = DTS.indexOf(`declare class ${className} {`);
+  // round 90: a documented class can ship under another name —
+  // AnimationHandleImpl ships as the AnimationHandle interface
+  const header = DTS_NAMES[className] ?? `declare class ${className} {`;
+  const start = DTS.indexOf(header);
 
-  expect(
-    start,
-    `no declare class ${className} in the shipped d.ts`,
-  ).to.be.greaterThan(-1);
+  expect(start, `no ${header.trim()} in the shipped d.ts`).to.be.greaterThan(
+    -1,
+  );
 
   const rest = DTS.slice(start).split('\n');
   const members = new Set();

@@ -26,7 +26,9 @@ export interface BoundsLike {
   h: number;
 }
 
-/** What the viewport needs from its owner (the core): rendered dimensions. */
+/** What the viewport needs from its owner (the core): rendered
+ * dimensions.
+ * @internal */
 export interface ViewportHost {
   width(): number;
   height(): number;
@@ -35,12 +37,21 @@ export interface ViewportHost {
 /**
  * Core-owned zoom/pan state and viewport math.  Pure state — the core wraps
  * the setters and emits zoom/pan/viewport/fit events.
+ *
+ * Internal since round 90: nothing hands a consumer one — every member
+ * duplicates `cy`'s own viewport surface under another spelling.  The class
+ * itself stays in the declaration (the `Core._viewport` field needs the
+ * name); every member is tagged, so it ships as an opaque shell.
  */
 export class Viewport {
-  /** Lower zoom bound; the current zoom is clamped into it on every set. */
+  /** Lower zoom bound; the current zoom is clamped into it on every set.
+   *
+   * @internal */
   minZoom: number;
 
-  /** Upper zoom bound; the current zoom is clamped into it on every set. */
+  /** Upper zoom bound; the current zoom is clamped into it on every set.
+   *
+   * @internal */
   maxZoom: number;
 
   private host: ViewportHost;
@@ -55,6 +66,7 @@ export class Viewport {
    * @param opts — initial `zoom` (default 1, clamped) and `pan` (default
    *   the origin), plus the `minZoom`/`maxZoom` bounds, which default
    *   wide enough (1e-50 … 1e50) to be effectively unbounded
+   * @internal
    */
   constructor(
     host: ViewportHost,
@@ -76,6 +88,7 @@ export class Viewport {
    * The current zoom level.
    *
    * @returns model-to-rendered scale
+   * @internal
    */
   zoom(): number {
     return this._zoom;
@@ -87,6 +100,7 @@ export class Viewport {
    * @returns the rendered-space translation applied before the zoom; the
    *   *same* object on every call, which the setters replace rather than
    *   mutate, so a caller that wants a stable snapshot must copy it
+   * @internal
    */
   pan(): Position {
     return this._pan;
@@ -98,6 +112,7 @@ export class Viewport {
    * @param zoom — the level, or `{ level, position | renderedPosition }`
    *   to keep that point stationary while zooming
    * @returns true when the state changed
+   * @internal
    */
   setZoom(zoom: number | ZoomOptions): boolean {
     let level: number;
@@ -158,6 +173,7 @@ export class Viewport {
    * @param pan — the rendered-space pan; non-numeric components are
    *   rejected rather than written
    * @returns true when the state changed
+   * @internal
    */
   setPan(pan: Position): boolean {
     if (typeof pan.x !== 'number' || typeof pan.y !== 'number') {
@@ -177,6 +193,7 @@ export class Viewport {
    *
    * @param delta — the offset to add; missing components count as 0
    * @returns true when the pan changed
+   * @internal
    */
   panBy(delta: Position): boolean {
     return this.setPan({
@@ -190,6 +207,7 @@ export class Viewport {
    *
    * @param min — the new lower bound
    * @returns true when the current zoom moved to satisfy it
+   * @internal
    */
   setMinZoom(min: number): boolean {
     this.minZoom = min;
@@ -202,6 +220,7 @@ export class Viewport {
    *
    * @param max — the new upper bound
    * @returns true when the current zoom moved to satisfy it
+   * @internal
    */
   setMaxZoom(max: number): boolean {
     this.maxZoom = max;
@@ -228,6 +247,7 @@ export class Viewport {
    * @param bb — the model-space bounds to fit
    * @param padding — rendered px of margin on every side
    * @returns the fitting viewport, with the zoom clamped to the bounds
+   * @internal
    */
   fitViewport(
     bb: BoundsLike,
@@ -254,6 +274,7 @@ export class Viewport {
    * @param bb — the model-space bounds to fit
    * @param padding — rendered px of margin on every side
    * @returns true when the state changed
+   * @internal
    */
   fit(bb: BoundsLike, padding: number = 0): boolean {
     const { zoom, pan } = this.fitViewport(bb, padding);
@@ -272,6 +293,7 @@ export class Viewport {
    * @param bb — the model-space bounds to center
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan
+   * @internal
    */
   centerPan(bb: BoundsLike, zoom: number = this._zoom): Position {
     return {
@@ -285,6 +307,7 @@ export class Viewport {
    *
    * @param bb — the model-space bounds to center
    * @returns true when the state changed
+   * @internal
    */
   centerOn(bb: BoundsLike): boolean {
     return this.setPan(this.centerPan(bb));
@@ -296,6 +319,7 @@ export class Viewport {
    * @returns the canvas rectangle in rendered px, always anchored at the
    *   origin — pan and zoom move the *content*, not this box, so it
    *   answers the container's size and nothing about the view
+   * @internal
    */
   renderedExtent(): Extent {
     const w = this.host.width();
@@ -310,6 +334,7 @@ export class Viewport {
    * @returns the container's rendered box projected back through the
    *   current pan and zoom — so it moves as the view moves, and its `w`/`h`
    *   shrink as the zoom rises
+   * @internal
    */
   extent(): Extent {
     const zoom = this._zoom;
@@ -327,6 +352,7 @@ export class Viewport {
    *
    * @param pos — the model-space point
    * @returns the rendered-space point
+   * @internal
    */
   modelToRendered(pos: Position): Position {
     return {
@@ -341,6 +367,7 @@ export class Viewport {
    *
    * @param pos — the rendered-space point
    * @returns the model-space point
+   * @internal
    */
   renderedToModel(pos: Position): Position {
     return {

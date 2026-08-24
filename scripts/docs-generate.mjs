@@ -54,10 +54,25 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 export const NAMESPACES = {
   Core: 'cy',
   Collection: 'eles',
-  Animation: 'ani',
+  // Round 90: `ani` documents the handle a caller actually holds.  The
+  // `Animation` class is machinery (every member @internal since round 90)
+  // and left the shipped declaration with the demotion; the impl class
+  // carries the doc comments, and the declaration's counterpart is the
+  // `AnimationHandle` interface (see DTS_NAMES).
+  AnimationHandleImpl: 'ani',
   CustomLayout: 'layout',
   LayoutContext: 'ctx',
   Event: 'event',
+};
+
+/**
+ * Where a documented class ships under a different name in the declaration:
+ * `AnimationHandleImpl` implements — and is typed to consumers as — the
+ * `AnimationHandle` interface.  `test/docs-generate.mjs` reads this for its
+ * cross-check.
+ */
+export const DTS_NAMES = {
+  AnimationHandleImpl: 'interface AnimationHandle {',
 };
 
 /**
@@ -77,7 +92,9 @@ export const NOT_PUBLISHED = {
   StyleEngine:
     'the sheet compiler behind `cy.style()` and the read-only style getters; not constructible or reachable from a consumer',
   AnimationManager:
-    'the per-core scheduler behind `eles.animate()`; the handle a caller holds is Animation',
+    'the per-core scheduler behind `eles.animate()`; the handle a caller holds is AnimationHandle',
+  Animation:
+    'the tween machinery behind a running animation (columns, GPU offload, the shared clock); the handle a caller holds is AnimationHandle, and every member here is @internal since round 90',
   Emitter:
     'the listener store behind `on`/`off`/`emit`; a consumer never holds one',
 };
@@ -223,8 +240,10 @@ export function generate() {
 
     for (const m of members) {
       // round 90: an @internal member is demoted out of the consumer
-      // surface — not documentation this generator publishes
-      if (m.internal) continue;
+      // surface — not documentation this generator publishes; and a
+      // constructor is not a reference entry (a consumer never calls one
+      // directly — every published class is reached through a factory)
+      if (m.internal || m.name === 'constructor') continue;
 
       const prefix = prefixFor(m, statics);
 

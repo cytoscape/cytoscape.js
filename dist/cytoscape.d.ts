@@ -3311,96 +3311,6 @@ declare class GraphStore implements ModelView {
   private compactOrder;
 }
 //#endregion
-//#region src/style-scales.d.mts
-type RGBA$1 = [number, number, number, number];
-type Transform = {
-  kind: 'identity';
-} | {
-  kind: 'log';
-  base: number;
-} | {
-  kind: 'pow';
-  exponent: number;
-} | {
-  kind: 'symlog';
-  constant: number;
-};
-type OutputStops = {
-  kind: 'number';
-  values: Float64Array;
-} | {
-  kind: 'color';
-  space: 'oklab' | 'srgb';
-  /** n×3 channel triples in `space` (OKLab floats, or sRGB bytes) */
-  triples: Float64Array;
-  /** n alpha bytes, interpolated separately (straight, not premultiplied) */
-  alpha: Float64Array;
-};
-/** A compiled condition over one data key (data-only; CPU-evaluated). */
-type CompiledCondition = {
-  key: string;
-  op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
-  /** booleans back the reserved '::parent'/'::child' (round 14.7) and
-   * '::selected' (round 57.1) keys */
-  value: string | number | boolean | (string | number)[];
-};
-type Program = {
-  kind: 'passthrough';
-} | {
-  kind: 'const';
-  value: number | RGBA$1;
-} | {
-  kind: 'case';
-  /** ordered clauses; conds AND-ed within a clause, first matching wins */
-  clauses: {
-    conds: CompiledCondition[];
-    value: number | RGBA$1;
-  }[];
-  elseValue: number | RGBA$1;
-} | {
-  kind: 'continuous';
-  transform: Transform;
-  /** ascending transformed input stops, length = output stop count ≥ 2 */
-  inStops: Float64Array;
-  /** untransformed domain endpoints (clamping happens pre-transform) */
-  lo: number;
-  hi: number;
-  outStops: OutputStops;
-  clamp: boolean;
-  autoDomain: boolean;
-  /** the extent the auto stops were built from (null until first bind) */
-  applied: [number, number] | null;
-} | {
-  kind: 'discrete';
-  /** ascending cut points, length = outputs.length − 1 */
-  cuts: Float64Array;
-  outputs: (number | RGBA$1)[];
-  /** quantize-with-auto-domain only (cuts recompute from the extent) */
-  autoDomain: boolean;
-  applied: [number, number] | null;
-} | {
-  kind: 'ordinal';
-  map: Map<string | number, number | RGBA$1>;
-};
-/** What the target style channel stores (label mappers never reach here). */
-type ChannelKind = 'number' | 'color' | 'enum';
-interface CompiledMapper {
-  /** primary data key (a single-key scale mapper; '' for conditionals) — the GPU-pack path */
-  key: string;
-  /** every data key this mapper reads — the refresh-dependency set */
-  keys: string[];
-  kind: ChannelKind;
-  prop: string;
-  program: Program;
-  /** parsed spec fallback; null = use the channel default */
-  fallback: number | RGBA$1 | null;
-  parseEnum: ((value: unknown) => number | null) | null;
-  /** the original spec object, never mutated (json() fidelity) */
-  spec: MapperSpec;
-}
-/** Output of a bound evaluator: the channel value for one slot. */
-type Evaluated = number | RGBA$1;
-//#endregion
 //#region src/matcher.d.mts
 /** One data comparison; exactly one op per condition object. */
 interface DataCondition {
@@ -3450,1148 +3360,6 @@ interface Query {
   orphan?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
   data?: Record<string, DataCondition | string | number | boolean | null>;
-}
-//#endregion
-//#region src/easing.d.mts
-type Easing = (t: number) => number;
-interface EasingProgram {
-  /** one of EASING_KIND */
-  kind: number;
-  /** control points (x1, y1, x2, y2) when kind is bezier */
-  bezier: readonly [number, number, number, number] | null;
-  /** flat (x, y) pairs when kind is points; x ascending across [0, 1] */
-  points: Float32Array | null;
-  /**
-   * Multiplies the requested duration.  Always 1 except for springs: their
-   * `duration` is the *perceptual* duration — the pace of the key movement
-   * — and the animation runs on past it to finish settling.
-   */
-  durationScale: number;
-  /** the CPU evaluator */
-  fn: Easing;
-}
-//#endregion
-//#region src/style.d.mts
-/** One styled end of source/target-endpoint (12c): the parsed form of
- * v3's edgeEndpoint type.  Angles store the *effective* radians (the
- * 12-o'clock start already applied); point pct components store the
- * fraction (v3's pfValue). */
-interface EndpointEnd {
-  mode: number;
-  a: number;
-  b: number;
-  pct: number;
-}
-type RGBA = [number, number, number, number];
-/** Resolved channel values for one element, before writing to columns. */
-interface NodeComputed {
-  /** text-rotation in radians (27.7); NaN is not valid on nodes. */
-  textRotation: number;
-  fillColor: RGBA;
-  borderColor: RGBA;
-  width: number;
-  height: number;
-  shape: number;
-  opacity: number;
-  borderWidth: number;
-  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
-  eventsEnabled: boolean;
-  /** text-events (round 20.3): true = the label box picks the node (FLAG_TEXT_EVENTS) */
-  textEvents: boolean;
-  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
-  invisible: boolean;
-  /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
-  chartKind: number;
-  /** constant value list (null when unset or the data passthrough is used) */
-  chartValues: number[] | null;
-  /** the `{ data: key }` passthrough key (per-element arrays) */
-  chartValuesKey: string | null;
-  /** resolved palette (null = the default category10 scheme) */
-  chartColors: RGBA[] | null;
-  chartSize: number;
-  chartHole: number;
-  chartStartAngle: number;
-  /** stripes: 0 = vertical (bands advance top->bottom), 1 = horizontal */
-  chartDirection: number;
-  chartOpacity: number;
-  /** literal label text ('' for none) when labelKey is null */
-  label: string;
-  /** `data(key)` mapper key ('id' reads the first-class id) */
-  labelKey: string | null;
-  fontSize: number;
-  textColor: RGBA;
-  /** effectively global: one font per glyph atlas (keyed by character) */
-  fontFamily: string;
-  /** font-style + font-weight (round 13 D1): global constants like
-   * font-family — the atlas rasters one face */
-  fontStyle: string;
-  fontWeight: string;
-  textOutlineWidth: number;
-  textOutlineColor: RGBA;
-  textOutlineOpacity: number;
-  textBgColor: RGBA;
-  textBgOpacity: number;
-  textBgPadding: number;
-  textMarginX: number;
-  textMarginY: number;
-  /** min-zoomed-font-size (round 13 D2): hide the label when
-   * font-size x zoom x dpr drops below this (device px; 0 = off) */
-  minZoomedFontSize: number;
-  /** text-halign (round 13 D3): 0 left, 1 center, 2 right */
-  textHalign: number;
-  /** text-valign (D3): 0 top, 1 center, 2 bottom.  v4's default is
-   * 'bottom' (the round-10 below-node placement) — v3 defaults to
-   * 'top'; a recorded deviation */
-  textValign: number;
-  /** corner-radius (round 13 B2): model px, -1 = 'auto' (v3's
-   * min(w/4, h/4, 8)) — round-rectangle only */
-  cornerRadius: number;
-  /** border-position (B2): 0 center (v3's default), 1 inside, 2 outside */
-  borderPosition: number;
-  /** border-style (round 38): 0 solid, 1 dashed, 2 dotted, 3 double */
-  borderStyle: number;
-  /** border-dash-pattern (round 38), normalized to two on/off pairs
-   * like the edge twin (v3's default [4, 2] stores as [4, 2, 4, 2]) */
-  borderDashPattern: number[];
-  /** border-dash-offset (round 38), model px */
-  borderDashOffset: number;
-  /** outline-style (round 38): same ids; `double` draws solid (v3's
-   * drawOutline has no double branch — a quirk kept for parity) */
-  outlineStyle: number;
-  /** node outline (round 13 B5): a solid ring outside the border */
-  outlineColor: RGBA;
-  outlineOpacity: number;
-  outlineWidth: number;
-  outlineOffset: number;
-  /** shape-polygon-points (C3): flat unit [x, y, ...] pairs for the
-   * 'polygon' shape (v3's normalized [-1, 1] space) */
-  shapePolygonPoints: number[];
-  /** background-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
-  backgroundFill: number;
-  /** background gradient stops (C2; constants-only, capped at 5) */
-  backgroundGradientStopColors: RGBA[];
-  backgroundGradientStopPositions: number[] | null;
-  backgroundGradientDirection: number;
-  /** background-opacity (round 13 B1): folds into the stored fill alpha */
-  backgroundOpacity: number;
-  /** border-opacity (B1): folds into the stored border alpha */
-  borderOpacity: number;
-  /** text-opacity (B1): v3's parentOpacity for the label block — folds
-   * into the stored text/outline/background alphas */
-  textOpacity: number;
-  /** text-transform (B6): 0 none, 1 uppercase, 2 lowercase */
-  textTransform: number;
-  /** text-wrap (16.2): 0 none, 1 wrap, 2 ellipsis */
-  textWrap: number;
-  /** text-max-width, model px */
-  textMaxWidth: number;
-  /** line-height multiplier */
-  lineHeight: number;
-  /** text-overflow-wrap: 0 whitespace, 1 anywhere */
-  textOverflowWrap: number;
-  /** text-justification: -1 auto (resolves against halign at write) */
-  textJustification: number;
-  /** text-background-shape (B6): 0 rectangle, 1 round-rectangle */
-  textBgShape: number;
-  /** text-border (B6): a band inward from the padded background box */
-  textBorderWidth: number;
-  textBorderColor: RGBA;
-  textBorderOpacity: number;
-  ghost: boolean;
-  ghostOffsetX: number;
-  ghostOffsetY: number;
-  ghostOpacity: number;
-  overlayColor: RGBA;
-  overlayOpacity: number;
-  overlayPadding: number;
-  /** 0 round-rectangle, 1 ellipse */
-  overlayShape: number;
-  /** model px; -1 = 'auto' (v3's min(w/4, h/4, 8)) */
-  overlayRadius: number;
-  underlayColor: RGBA;
-  underlayOpacity: number;
-  underlayPadding: number;
-  underlayShape: number;
-  underlayRadius: number;
-  backgroundImage: string[];
-  backgroundFit: number[];
-  backgroundImageOpacity: number[];
-  backgroundPositionX: BgLen[];
-  backgroundPositionY: BgLen[];
-  backgroundOffsetX: BgLen[];
-  backgroundOffsetY: BgLen[];
-  backgroundWidth: BgSize[];
-  backgroundHeight: BgSize[];
-  backgroundRepeat: number[];
-  backgroundClip: number[];
-  backgroundImageContainment: number[];
-  backgroundImageSmoothing: boolean[];
-  /** one per node (the registry dedup key includes it) */
-  backgroundImageCrossorigin: string;
-  /** background-image-type per image: 0 auto (rgba), 1 sdf-icon */
-  backgroundImageType: number[];
-  /** the sdf-icon tint (render-time color, mapper-capable) */
-  backgroundImageColor: RGBA;
-}
-interface EdgeComputed {
-  lineColor: RGBA;
-  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
-  eventsEnabled: boolean;
-  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
-  invisible: boolean;
-  /** line-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
-  lineFill: number;
-  lineGradientStopColors: RGBA[];
-  lineGradientStopPositions: number[] | null;
-  /** line-opacity (round 13 B1): folds into the stored line alpha and
-   * the arrow fold (v3's effective opacities) */
-  lineOpacity: number;
-  /** line-outline casing (round 13 B4): width sticks out width/2 per
-   * side (v3's lineWidth = edgeWidth + line-outline-width) */
-  lineOutlineWidth: number;
-  lineOutlineColor: RGBA;
-  /** line-cap (round 13 B3): 0 butt, 1 round, 2 square */
-  lineCap: number;
-  /** line-dash-pattern (B3), normalized to two on/off pairs */
-  lineDashPattern: number[];
-  /** line-dash-offset (B3), model px */
-  lineDashOffset: number;
-  width: number;
-  opacity: number;
-  /** 0 solid, 1 dashed, 2 dotted (contract LINE_* ids) */
-  lineStyle: number;
-  sourceArrowShape: ArrowShape;
-  sourceArrowColor: RGBA;
-  targetArrowShape: ArrowShape;
-  targetArrowColor: RGBA;
-  /** arrow-scale (B7): scales every arrowhead on the edge */
-  arrowScale: number;
-  /** mid arrows (C1): anchored at the curve/route midpoint */
-  midSourceArrowShape: ArrowShape;
-  midSourceArrowColor: RGBA;
-  midTargetArrowShape: ArrowShape;
-  midTargetArrowColor: RGBA;
-  /** arrow-fill per end (B7): 0 filled, 1 hollow */
-  sourceArrowFill: number;
-  targetArrowFill: number;
-  /** hollow stroke widths per end, model px ('match-line' and % resolve
-   * at write against the edge width) */
-  sourceArrowWidth: number | 'match-line' | {
-    percent: number;
-  };
-  targetArrowWidth: number | 'match-line' | {
-    percent: number;
-  };
-  label: string;
-  labelKey: string | null;
-  fontSize: number;
-  textColor: RGBA;
-  textOutlineWidth: number;
-  textOutlineColor: RGBA;
-  textOutlineOpacity: number;
-  textBgColor: RGBA;
-  textBgOpacity: number;
-  textBgPadding: number;
-  textMarginX: number;
-  textMarginY: number;
-  /**
-   * text-rotation in radians, with NaN meaning `autorotate` (27.7).
-   * Numeric rotations apply to any label; autorotate is edge-only,
-   * since it resolves from the edge's own slope.
-   */
-  textRotation: number;
-  sourceLabel: string;
-  sourceLabelKey: string | null;
-  sourceTextOffset: number;
-  sourceTextMarginX: number;
-  sourceTextMarginY: number;
-  sourceTextRotation: number;
-  targetLabel: string;
-  targetLabelKey: string | null;
-  targetTextOffset: number;
-  targetTextMarginX: number;
-  targetTextMarginY: number;
-  targetTextRotation: number;
-  curveStyle: number;
-  controlPointStepSize: number;
-  controlPointWeight: number;
-  loopDirection: number;
-  loopSweep: number;
-  controlPointDistances: number[] | null;
-  controlPointWeights: number[];
-  segmentDistances: number[];
-  segmentWeights: number[];
-  segmentRadii: number[];
-  /** radius-type per point: 1 = arc-radius, 0 = influence-radius */
-  radiusTypes: number[];
-  /** EDGE_DIST_* id */
-  edgeDistances: number;
-  taxiDirection: number;
-  haystackRadius: number;
-  sourceEndpoint: EndpointEnd;
-  targetEndpoint: EndpointEnd;
-  sourceDistanceFromNode: number;
-  targetDistanceFromNode: number;
-  /** percent turns store the fraction (v3 pfValue); px turns the px */
-  taxiTurn: number;
-  taxiTurnPercent: boolean;
-  taxiTurnMinDistance: number;
-  taxiRadius: number;
-}
-type Computed = NodeComputed & EdgeComputed;
-type ArrowShape = 'none' | 'triangle' | 'vee' | 'chevron' | 'circle' | 'square' | 'diamond' | 'tee' | 'triangle-tee' | 'circle-triangle' | 'triangle-cross' | 'triangle-backcurve';
-/** Core (viewport-level) theming (round 13 A2): v3's core-selector
- * props, resolved once per sheet — constants only (there is no element
- * to map over). */
-interface CoreStyle {
-  selectionBoxColor: RGBA;
-  selectionBoxOpacity: number;
-  selectionBoxBorderColor: RGBA;
-  selectionBoxBorderWidth: number;
-  activeBgColor: RGBA;
-  activeBgOpacity: number;
-  activeBgSize: number;
-}
-/**
- * One id's bypass, resolved for one group: the `Computed` fields its
- * props assign, captured once at parse time (round 63.2) so the write
- * funnel's merge is field copies with no per-write parsing.
- */
-type BypassPatch = readonly (readonly [string, unknown])[];
-declare class StyleEngine {
-  private store;
-  /**
-   * The narrow view of this engine that the module-scope property
-   * readers receive (35.2).  Built once here rather than per read, and
-   * its getters stay live across a sheet swap that replaces `defs`.
-   */
-  private readonly readCtx;
-  /** per-raw-name read plans (round 62.4): normalization, group
-   * membership, the transition/arrow classifications and the reader,
-   * resolved once per spelling — all from module tables no sheet swap
-   * changes, so the cache is immortal per engine */
-  private readonly readPlans;
-  private sheet;
-  private defs;
-  /** the parents-group compound style, applied per parent slot */
-  private parentCompound;
-  /** normalized channel props the parents overlay resolves differently
-   * from the nodes group (defaults + the user parents block) — a
-   * GPU-mapped nodes channel in this set demotes to the CPU path */
-  private parentsOverride;
-  private arrows;
-  private midArrows;
-  /**
-   * Bumps when the paint-mapper state changes (sheet set, or a GPU-owned
-   * live auto-domain extent moved) — the renderer's mapper runtime pulls
-   * on this to repack its program buffers.
-   */
-  paintVersion: number;
-  /** props per group the GPU eval kernel currently owns (set by the runtime). */
-  private gpuOwnedProps;
-  /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
-  private demoted;
-  /** Round 24.1: styled-generation marks (gen + 1; 0 = never styled).  A
-   * slot joins transition diffs only when its *current* element has been
-   * styled before — the first application on add is instant (v3's rule),
-   * and a recycled slot's fresh generation fails the check on its own. */
-  private styledGen;
-  /**
-   * How many edge runs have taken the round-67.2 bulk route.
-   *
-   * Internal, and not a statistic anyone needs at runtime — it exists so
-   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
-   * it a comparison against the per-element route passes just as well
-   * when the gate declined, which is exactly what the first version of
-   * that spec did: its fixture mapped `curve-style` and `label`, neither
-   * of which has a narrow writer, so every assertion compared the
-   * per-element path against itself.
-   */
-  _bulkRuns: number;
-  /** Round 24.1: the open transition capture (one per group-def pass). */
-  private txn;
-  /** id → normalized prop → raw value: the live bypass declarations
-   * (the `bypasses` sheet section plus the sugar methods' writes),
-   * exported by `json()`.  Id-keyed declarations, not element state —
-   * an entry survives remove/re-add and may name an id that does not
-   * exist yet (inert until it does). */
-  private bypassRaw;
-  /** id → per-group parsed patches.  Both groups parse at declaration
-   * time (the id may not resolve yet); null marks a group whose guards
-   * reject the entry's props (e.g. a curve prop never applies to a
-   * node), decided when the id resolves. */
-  private bypassParsed;
-  /** slot → patch per group, resolved lazily against the store's
-   * structure epoch — adds, removes and compaction all bump it, and a
-   * re-resolution is O(declared ids), never O(elements). */
-  private bypassSlots;
-  private bypassEpoch;
-  /** normalized prop → live declaration count across ids — what
-   * `paintInputs` demotes by (a kernel-owned mapper would overwrite a
-   * bypassed slot's stored bytes on its next dispatch). */
-  private bypassPropCounts;
-  /** Whether any bypass is declared — the zero-cost gate every touched
-   * path checks first (the round-63 performance contract).
-   *
-   * @returns true when at least one id has a live bypass declaration
-   */
-  hasBypasses(): boolean;
-  /** Validate a sheet's `bypasses` section into installable entries —
-   * called before any engine state mutates, so a bad section throws
-   * from `setSheet` with nothing half-applied. */
-  private validateBypasses;
-  /** Parse one entry's props for both groups; a group whose guards
-   * reject them parses null, and both rejecting is the caller's error. */
-  private parseBypassGroups;
-  /** Install validated bypass entries (whole-replace — `setSheet`'s
-   * swap semantics: the section is replaced like any other). */
-  private installBypasses;
-  /** Re-resolve declared ids to live slots when the structure epoch
-   * moved — O(declared ids) per structural change, amortized over the
-   * writes between changes, and nothing at all when no bypass exists. */
-  private rebuildBypassSlots;
-  /** The bypass patch for a slot, or null.  O(1) after the lazy
-   * epoch-checked re-resolution. */
-  private bypassPatchAt;
-  /**
-   * Clone-and-patch: the write funnel's bypass merge (round 63.3).  A
-   * method rather than an inline spread so specs can count invocations
-   * — a bypass-free instance must never reach it, which is the
-   * performance contract's zero-cost gate made testable.
-   *
-   * @param computed — the slot's sheet-resolved record (never mutated)
-   * @param patch — the captured field pairs for the slot's bypass
-   * @returns a fresh record with the bypassed fields replaced
-   */
-  mergeBypass(computed: Computed, patch: BypassPatch): Computed;
-  /**
-   * Set bypass props for one live element — the sugar path behind
-   * `ele.style( name, value )` (round 63.4).  Unlike the sheet
-   * section, whose entries parse against both groups because their ids
-   * may not have resolved yet, this validates against the element's
-   * own group, so a wrong-group prop throws with the group's own
-   * message.  The slot re-applies through the normal single-slot apply
-   * afterwards, which is what makes transitions and the write-funnel
-   * merge ride the same path every restyle does.
-   *
-   * @param ref — the live element's ref (the caller validates liveness)
-   * @param id — its id, the declaration key
-   * @param props — prop → constant, dash-case or camelCase
-   * @throws on a mapper value, a global font prop, a transition config
-   *   prop, a wrong-group prop, or an invalid value
-   */
-  setBypass(ref: Ref, id: string, props: Record<string, unknown>): void;
-  /**
-   * Remove bypass props for one live element — the path behind
-   * `ele.removeStyle( name? )` (round 63.4).  Removing re-applies the
-   * slot, so the sheet-resolved values return through the normal
-   * funnel (transitions included).
-   *
-   * @param ref — the live element's ref
-   * @param id — its id, the declaration key
-   * @param name — the prop to remove, either spelling; omit to clear
-   *   the element's whole declaration
-   */
-  removeBypass(ref: Ref, id: string, name?: string): void;
-  /** Patch one slot's entry in the resolved maps after a sugar write —
-   * only when the maps are current (stale maps re-resolve wholesale at
-   * the next write anyway). */
-  private refreshBypassSlot;
-  /** Round 24.1: receives the diffed transition tweens — wired by the
-   * core to AnimationManager.start (the round-21 eviction gives uniform
-   * latest-wins); null in engine-only contexts disables capture. */
-  transitionSink: ((refs: Ref[], writes: ChannelWrite[], opts: {
-    duration: number;
-    delay: number;
-    easing: string;
-  }) => void) | null;
-  /** value reader for mapper/condition keys ('id' is first-class, not in
-   * the sidecar; the reserved '::' keys answer a case condition from the
-   * flags column — the structural pair since round 14.7, the state
-   * family since 57.1) */
-  private readValue;
-  /**
-   * @param store — the columnar store whose channel columns this engine
-   *   resolves style into
-   */
-  constructor(store: GraphStore);
-  private coreStyle;
-  /**
-   * The resolved core theming props (round 13 A2).
-   *
-   * @returns the live record — `setSheet` replaces it wholesale, so a
-   *   held reference reads the *previous* sheet's theming after a swap
-   */
-  core(): CoreStyle;
-  /**
-   * Replace the stylesheet and re-apply it to every live element,
-   * mapped channels included.
-   *
-   * The sheet is a plain `{ nodes, edges, parents, core }` object of
-   * prop objects — no selector blocks, no style functions.  The
-   * `parents` group overlays the `nodes` block under v3's `:parent`
-   * defaults.
-   *
-   * @param sheet — the stylesheet to install
-   * @param apply — when false, compile and validate without applying;
-   *   the core uses this to defer the apply to the outermost
-   *   `endBatch()` while still throwing on a bad sheet at the call site
-   * @throws on an unknown sheet key, an unknown property, or an invalid
-   *   value
-   */
-  setSheet(sheet: Stylesheet, apply?: boolean): void;
-  /**
-   * Paint-channel mappers with resolved fallbacks (the runtime's pack
-   * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
-   * the shape gates the stored arrow alpha, and splitting that fold
-   * between CPU and kernel would race.
-   *
-   * @param group — the element group to collect for
-   * @returns each eligible mapper with the fallback its channel resolves to
-   */
-  paintInputs(group: GroupName): {
-    m: CompiledMapper;
-    fallback: Evaluated;
-  }[];
-  /**
-   * Edge-sheet constants for the kernel's arrow-alpha folding.
-   *
-   * @param group — the element group to read the sheet for
-   * @returns the constants the kernel needs to fold arrow alpha itself
-   */
-  paintContext(group: GroupName): {
-    opacityMapped: boolean;
-    constOpacity: number;
-    source: {
-      enabled: boolean;
-      colorMapped: boolean;
-      constColor: RGBA;
-    };
-    target: {
-      enabled: boolean;
-      colorMapped: boolean;
-      constColor: RGBA;
-    };
-  } | null;
-  /**
-   * The runtime reports which props its kernel evaluates: the data-write
-   * refresh skips their CPU evaluation (the whole point of GPU eval) and
-   * the read-back getters evaluate the shared IR lazily instead of
-   * trusting the stale stored bytes.
-   *
-   * @param group — the element group the kernel runs over
-   * @param props — the props it evaluates; replaces the previous set
-   */
-  setGpuOwned(group: GroupName, props: Iterable<string>): void;
-  /**
-   * Whether a data write can change the group's computed style — the gate
-   * that keeps an unrelated write from costing a restyle.
-   *
-   * @param group — the element group being written
-   * @param keys — the data() keys the write touches
-   * @returns true when any mapped channel or label depends on one of them
-   */
-  stylesDependOnData(group: GroupName, keys: string[]): boolean;
-  /**
-   * Whether the current sheet styles a flag state — i.e. whether
-   * flipping that bit has to restyle at all.  Every flag-write choke
-   * point asks this before doing any work, so a sheet that says nothing
-   * about a state pays one Set lookup when it changes.
-   *
-   * v4's default stylesheet says yes for two of them.  Selection: nodes'
-   * `background-color`, edges' `line-color` and the four arrow colours
-   * are `{ selected: true }` case mappers.  Press: the `overlay-*` props
-   * are `{ active: true }` ones.  A sheet that declares those props
-   * replaces the rule and the state becomes free again — which is the
-   * same trade round 4 made when v4 still had `:selected` blocks,
-   * arriving from the other direction.
-   *
-   * @param group — the element group whose flag is changing
-   * @param key — the reserved condition key, e.g. `'::selected'`
-   * @returns true when the change must re-evaluate mappers
-   */
-  dependsOnState(group: GroupName, key: string): boolean;
-  /**
-   * Whether the eval kernel currently owns this prop's stored bytes —
-   * the gate a direct column read carries so it never reports a value
-   * a kernel has made stale (round 62.6; the same rule readProp keeps).
-   *
-   * @param group — the element group
-   * @param prop — the normalized property name
-   * @returns true when the prop is kernel-owned
-   */
-  ownsProp(group: GroupName, prop: string): boolean;
-  /** Which arrow ends the current stylesheet can enable. */
-  get arrowEnds(): {
-    source: boolean;
-    target: boolean;
-  };
-  /**
-   * Which mid-edge arrow ends the current sheet can enable.  The
-   * renderer skips the mid-arrow draw entirely when neither is
-   * possible.
-   */
-  get midArrowEnds(): {
-    source: boolean;
-    target: boolean;
-  };
-  /**
-   * The installed stylesheet, as given.  Part of `cy.json()`'s export.
-   *
-   * @returns the sheet object (live, not a copy — treat as read-only)
-   */
-  json(): Stylesheet;
-  /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
-  update(): void;
-  /**
-   * Apply the sheet across every live element of both groups.  This is
-   * the whole-graph pass a sheet change or a batch flush runs.
-   */
-  applyAll(): void;
-  /**
-   * Bulk apply over *live* slots of one group.  The group resolves once
-   * (the per-element cost is only the column writes); mapped channels
-   * evaluate per element in applyMapped.
-   *
-   * @param group — the element group to style
-   * @param slots — the live slots to write; must all be of that group
-   */
-  applyBulk(group: GroupName, slots: ArrayLike<number>): void;
-  /**
-   * The parents' compound-style write with the padding transition
-   * capture (round 25.4): diff the declared padding around the sheet
-   * write, snap on a px↔% unit flip (tweening across units has no
-   * meaning — recorded), and restore the held pre-restyle value
-   * (CSS's delay rule, like the channel diffs).
-   */
-  private applyCompoundStyle;
-  private applyGroupDef;
-  /**
-   * Open a transition capture for one group-def apply pass: every
-   * already-styled slot the pass writes gets its tweenable channels
-   * diffed on stored truth.  Null (capture off) when nothing can
-   * transition — unconfigured specs cost nothing.
-   */
-  private openTxn;
-  /** Close a capture: pack the accumulated diffs into bulk ChannelWrites
-   * (one per column — never per-element animations) and hand them to the
-   * sink as one transition animation. */
-  private closeTxn;
-  private readTxnValue;
-  /** Pre-write snapshot of one slot's capture channels (mains + rides). */
-  private txnPre;
-  /**
-   * Post-write diff of one slot: record each moved channel (from = the
-   * snapshot, to = the newly stored value) and *restore* the old value —
-   * the store holds the pre-restyle state until the tween's first
-   * post-delay tick, so sync reads during a transition-delay report the
-   * old value (CSS's rule) and no frame can flash the target.
-   */
-  private txnPost;
-  private wasStyled;
-  private markStyled;
-  /** Slot compaction: live elements moved (and took fresh generations) —
-   * refresh the styled marks over the live slots, all of which have been
-   * styled (style applies on add, and compaction never runs mid-batch). */
-  onCompacted(): void;
-  /** The group def resolving one element: the parents overlay for parent
-   * nodes (round 14.6), else the element's own group. */
-  private defFor;
-  /** All live slots the given def styles (partitioned under compounds). */
-  private allSlotsFor;
-  /**
-   * Scratch-evaluate every mapped channel and write whole elements — the
-   * per-channel write would break the cross-channel couplings that live
-   * in write() (circle collapse, arrow-alpha folding, the label anchor).
-   * Live auto-domain extents re-check here; a changed extent escalates
-   * the pass to the whole group (every slot's mapping moved).
-   */
-  private applyMapped;
-  /**
-   * The structural half of the bulk-edge gate (round 67.2): whether this
-   * run *could* be written from one template slot and filled.
-   *
-   * Nodes decline outright — their branch hands out per-slot blob
-   * records (custom polygons, images, charts) whose refs a copy would
-   * alias.  The rest is what the fill needs: enough slots to pay for the
-   * scans, one contiguous ascending range so each column is a single
-   * `copyWithin` chain, no open transition capture (which diffs per
-   * slot) and no per-element bypasses.
-   *
-   * `bulkEdgeWriters` carries the other half — what the *mappers* allow.
-   *
-   * @param group — the group being applied
-   * @param slots — the run, in apply order
-   * @returns whether the structural preconditions hold
-   */
-  private bulkEdgeRun;
-  /** Whether every slot in the run carries the same masked flag word —
-   * i.e. whether anything reading state alone can vary across it.  True
-   * at rest, which is what a freshly loaded graph is. */
-  private uniformMaskedWord;
-  /**
-   * The narrow writers a bulk edge run needs, or null when the run's
-   * mappers rule the route out (round 67.2).  `bulkEdgeRun` carries the
-   * structural half of the gate.
-   *
-   * The route writes one template slot and fills every
-   * `EDGE_STYLE_COLUMNS` column from it, so it is admissible exactly
-   * when each mapped prop either
-   *
-   *   1. has a `fastStateWriter` — which by round 61's invariant writes
-   *      *every* column that prop affects, so the fill's value for it is
-   *      overwritten per slot; or
-   *   2. reads state flags only, over a run whose masked flag word never
-   *      changes — then its value is the template's for every slot and
-   *      the fill is already right.  This is the clause that matters in
-   *      practice: a freshly loaded graph has nothing selected, so the
-   *      selection affordances this repo's sheets map (`line-opacity`,
-   *      which has no narrow writer and could not have one without the
-   *      whole B1 fold cluster) cost the route nothing.
-   *
-   * Anything else declines and the ordinary per-element loop runs.
-   *
-   * @param group — the group being applied
-   * @param active — the mappers this pass will evaluate
-   * @param uniformState — whether the run's masked flag word is constant
-   * @returns the writers to run per slot, or null to decline
-   */
-  private bulkEdgeWriters;
-  /**
-   * Apply a contiguous edge run from one template slot (round 67.2).
-   *
-   * The template takes the ordinary `write()`, so every side effect the
-   * edge branch has — the arrow-scale and arrow-width meters, the curve
-   * record, the label sidecar, the transition-free channel funnel —
-   * happens exactly as it always did.  `replicateEdgeStyle` then fills
-   * every style-owned column from it, and each remaining slot pays only
-   * its own mapped props (through the narrow writers) plus the per-slot
-   * half of the edge branch.
-   *
-   * Measured on a 464,657-edge fixture: 26 ns per `setScalar` against
-   * 0.1 ns per element for the fill.
-   */
-  private applyBulkEdges;
-  /**
-   * Apply a group whose mappers read only state flags: one record per
-   * distinct flag combination, cached on the def, instead of a program
-   * run per element.
-   *
-   * The cache is unbounded in principle and tiny in practice — its size
-   * is 2^(number of distinct bits the sheet's conditions read), and a
-   * sheet reads one or two.  It lives on the def, so a sheet swap
-   * discards it with the def that built it.
-   */
-  private applyPartitioned;
-  /** The partition record for one masked flag word — cached on the def,
-   * resolved on the first miss (round 57.1). */
-  private partRecordFor;
-  /** Resolve one flag combination into a computed record (cache miss). */
-  private partitionRecord;
-  /**
-   * Re-check live auto-domain extents against the data; returns true when
-   * any moved (the caller escalates to the whole group).  A moved extent
-   * on a GPU-owned program also bumps paintVersion so the runtime repacks
-   * its program uniform and re-evaluates in full.
-   */
-  private checkAutoExtents;
-  /**
-   * Resolve and write one element's channels.
-   *
-   * @param ref — the element to style; a stale ref is a no-op
-   */
-  apply(ref: Ref): void;
-  /**
-   * The data-write refresh: re-derive the mapped channels of the written
-   * slots, gated per group on the written keys.  A label-only dependency
-   * pays just the label text recompute (setLabel no-ops when the entry is
-   * unchanged); mapped channels re-evaluate through the whole-element
-   * scratch pass, which also escalates to the full group when a live
-   * auto-domain extent moved.
-   *
-   * @param group — the element group that was written
-   * @param slots — the written slots
-   * @param keys — the data() keys written, which gate what re-evaluates
-   */
-  refreshMapped(group: GroupName, slots: ArrayLike<number>, keys: string[]): void;
-  /**
-   * The state-flip refresh (round 61) — `core.onStateChange`'s entry,
-   * replacing the `refreshMapped` route that made every select restyle
-   * whole elements (the 60.4 regression).  A flipped bit is the one
-   * event whose styling consequence is knowable up front: for a
-   * partitioned def the old masked word is the new word with `key`'s bit
-   * flipped back, both records are cached, and the channels that differ
-   * between them — one on a default-sheet node, five on a default-sheet
-   * edge — are written narrowly instead of through the ~25-call full
-   * `write()`.
-   *
-   * The general path is kept wherever it is the correct one: an
-   * unpartitioned def (a data mapper puts the group per-element anyway),
-   * a live transition spec (the txn capture is the general path's), a
-   * demoted group, and the structural pseudo-keys (a parent flip changes
-   * *which def* resolves the slot — the reparent hooks own that).  A
-   * diff containing any channel without a narrow writer falls back to
-   * the full `write()` of the target record per slot, byte-for-byte the
-   * old behaviour.
-   *
-   * @param group — the element group whose flag flipped
-   * @param key — the reserved condition key ('::selected', '::active', …)
-   * @param slots — the slots whose bit actually changed
-   */
-  refreshState(group: GroupName, key: string, slots: ArrayLike<number>): void;
-  /** One def's share of a state flip: the fast diff path, or the
-   * general `refreshGroupDef` wherever that one is correct (see
-   * `refreshState`). */
-  private refreshStateDef;
-  /**
-   * The writers for the channels that differ between two partition
-   * records — cached per unordered pair of masked flag words (the
-   * changed set is symmetric; which record to write is the caller's).
-   * Null when some differing channel has no narrow writer: that pair
-   * takes the full `write()`.
-   */
-  private partitionDiffWriters;
-  private refreshGroupDef;
-  private refreshGroupDefInner;
-  /**
-   * One resolved prop for a live element.
-   *
-   * @param ref — the element to read
-   * @param propRaw — a style property name
-   * @returns the stored value, or undefined when the prop belongs to the
-   *   other element group
-   * @throws if the name is not a v4 style property at all — a typo must
-   *   fail loudly rather than read as undefined
-   */
-  readProp(ref: Ref, propRaw: string): string | number | undefined;
-  /**
-   * All resolved props of a live element's group.
-   *
-   * @param ref — the element to read
-   * @returns every readable prop of its group, by name
-   */
-  readProps(ref: Ref): Record<string, string | number>;
-  /**
-   * The constant line-opacity (B1) — the arrow-fold factor animation
-   * needs (a mapped line-opacity never coexists with kernel-owned
-   * arrows, so the constant is the truth).
-   *
-   * @returns the edges group's resolved `line-opacity`, the factor an
-   *   arrow's stored alpha was folded with
-   */
-  lineOpacityConst(): number;
-  /** The sheet's arrow-width modes (constants-only props) — an
-   * edge-width tween needs these to carry the style-write-resolved
-   * `edge.arrowWidths` along (round 25.2): 'match-line' and percent
-   * forms baked the width, plain numbers did not. */
-  arrowWidthModes(): {
-    source: number | 'match-line' | {
-      percent: number;
-    };
-    target: number | 'match-line' | {
-      percent: number;
-    };
-  };
-  /**
-   * An arrow's colour *before* the edge-opacity fold.
-   *
-   * The arrow vertex stage sits at WebGPU's base 8-storage-buffer
-   * limit, so edge opacity is pre-folded into the stored arrow alpha —
-   * which means the stored bytes cannot recover the base when the
-   * folded opacity was 0.  Animations and transitions that move edge
-   * opacity read the base from here instead.
-   *
-   * @param ref — the edge
-   * @param colorProp — `'source-arrow-color'` or
-   *   `'target-arrow-color'`
-   * @returns the unfolded RGBA, or the no-arrow value when that end
-   *   draws no arrow
-   */
-  arrowBase(ref: Ref, colorProp: string): RGBA;
-  /**
-   * The stored-arrow-bytes truth when the kernel owns edge paint: the base
-   * colour with alpha folded by the (mapped or constant) opacity.  Shapes
-   * are never kernel-owned (mapped shapes demote edge paint to the CPU), so
-   * the computed constants decide the gate.
-   */
-  private foldedArrow;
-  /** One edge prop for a slot: the mapper's value when mapped, else the constant. */
-  private evalEdgeProp;
-  /** Resolved label channels: the sidecar when labelled, else the sheet. */
-  private labelChannels;
-  /**
-   * Defaults + props for one group ('width' is shared; the group's own
-   * default wins).  Mapper specs compile into `mappersOut`; the label
-   * passthrough rides the labelKey channel instead.
-   */
-  private resolveConst;
-  /** Stored-truth readback for the background-image family (15.2). */
-  private readImageProp;
-  /** Write `node.fillColor` (the B1 background-opacity fold). */
-  private writeNodeFillColor;
-  /** Write `node.borderColor` (the B1 border-opacity fold). */
-  private writeNodeBorderColor;
-  /** Write `node.opacity` — under compounds the store folds the
-   * ancestor product itself (round 14.4), so one call is complete. */
-  private writeNodeOpacity;
-  /** Write the `node.overlay` layer record (the A2 opacity fold). */
-  private writeNodeOverlay;
-  /** Write the `node.underlay` layer record (the A2 opacity fold). */
-  private writeNodeUnderlay;
-  /** Write `edge.lineColor` (the B1 line-opacity fold). */
-  private writeEdgeLineColor;
-  /**
-   * The B1 arrow fold: v3's effective arrow opacity is opacity ×
-   * line-opacity.  A 'none' end — or any end of a haystack edge, which
-   * draws no arrows (v3 skips them) — stores NO_ARROW, so the getters
-   * read 'none' (the recorded deviation: v3's pstyle still reports the
-   * declared shape).
-   */
-  private edgeArrowRgba;
-  /** Write `edge.sourceArrow` — `setColor` re-derives the round-56
-   * shows-line bits itself, so one call is complete. */
-  private writeEdgeSourceArrowColor;
-  /** Write `edge.targetArrow` (see the source twin). */
-  private writeEdgeTargetArrowColor;
-  /** Write `edge.midSourceArrow` — `setMidArrow` maintains the live
-   * mid-arrow count, so one call is complete. */
-  private writeEdgeMidSourceArrowColor;
-  /** Write `edge.midTargetArrow` (see the source twin). */
-  private writeEdgeMidTargetArrowColor;
-  /** Write the `edge.overlay` stroke record (A2: stroke = width +
-   * 2·padding, derived here so the layer shaders need no width
-   * binding). */
-  private writeEdgeOverlay;
-  /** Write the `edge.underlay` stroke record (see the overlay twin). */
-  private writeEdgeUnderlay;
-  /**
-   * The narrow writer for one normalized prop, or null when the prop has
-   * cross-channel consequences the writers above cannot carry — geometry
-   * (bb/cull/pick/label anchors), labels, charts, the edge-opacity fold
-   * cluster — in which case a state flip that moves it falls back to the
-   * full `write()` of the target record, byte-for-byte the general
-   * path's behaviour.  The layer props share one writer per record
-   * because they land in one packed store call.
-   */
-  private fastStateWriter;
-  /**
-   * The one channel funnel, wrapped by the transition capture (round
-   * 24.1): an already-styled slot written inside an open capture gets
-   * its tweenable channels snapshotted before and diffed after — the
-   * body itself stays transition-blind.
-   */
-  private write;
-  private writeChannels;
-  /**
-   * The edge channels that land in `EDGE_STYLE_COLUMNS` — every edge
-   * column a styled record fully determines (round 67.2).  Split from
-   * the per-slot half below so the bulk apply can run this once for a
-   * run's template slot and fill the rest of the columns from it, while
-   * still calling `writeEdgePerSlot` for every slot.  One definition,
-   * two callers, as with the round-61 narrow writers.
-   */
-  private writeEdgeColumns;
-  /**
-   * The edge work a column copy cannot carry: the two flag bits (the
-   * flags word holds per-element bits too), the invisibility cascade,
-   * the curve index's own per-slot record, and the label sidecar.  Runs
-   * for every slot on both paths.
-   */
-  private writeEdgePerSlot;
-  /** warn-once flag for the multi-image cap (recorded: 4 per node) */
-  private warnedImageCap;
-  /**
-   * Resolve and store a node's chart record (round 23).  Values come
-   * from the constant list or the `{ data: key }` passthrough (a
-   * per-element array; non-arrays and invalid entries mean no chart);
-   * slices cap at CHART_MAX_SLICES and the running total clamps at 1
-   * (v3's percent semantics — the remainder stays unpainted).  Colors
-   * cycle the palette (category10 by default) and fold chart-opacity
-   * into their alphas (the B1 pattern; the header keeps the exact
-   * opacity for readback).
-   */
-  private writeChart;
-  /** Resolve a node's background-image records and store them (15.2). */
-  private writeImages;
-  /** Resolve an element's label text from its computed channels and store it. */
-  private writeLabel;
-}
-//#endregion
-//#region src/viewport.d.mts
-interface ZoomOptions {
-  level: number;
-  /** model point to keep fixed while zooming */
-  position?: Position;
-  /** rendered (on-screen) point to keep fixed while zooming */
-  renderedPosition?: Position;
-}
-interface Extent {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  w: number;
-  h: number;
-}
-interface BoundsLike {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  w: number;
-  h: number;
-}
-/** What the viewport needs from its owner (the core): rendered dimensions. */
-interface ViewportHost {
-  width(): number;
-  height(): number;
-}
-/**
- * Core-owned zoom/pan state and viewport math.  Pure state — the core wraps
- * the setters and emits zoom/pan/viewport/fit events.
- */
-declare class Viewport {
-  /** Lower zoom bound; the current zoom is clamped into it on every set. */
-  minZoom: number;
-  /** Upper zoom bound; the current zoom is clamped into it on every set. */
-  maxZoom: number;
-  private host;
-  private _zoom;
-  /** the live pan object (round 62.6: read directly by Core.pan()'s
-   * getter — one field hop where a method call showed; setters replace
-   * the object rather than mutating it, the round-5 contract) */
-  _pan: Position;
-  /**
-   * @param host — supplies the rendered viewport dimensions (the core)
-   * @param opts — initial `zoom` (default 1, clamped) and `pan` (default
-   *   the origin), plus the `minZoom`/`maxZoom` bounds, which default
-   *   wide enough (1e-50 … 1e50) to be effectively unbounded
-   */
-  constructor(host: ViewportHost, opts?: {
-    zoom?: number;
-    pan?: Position;
-    minZoom?: number;
-    maxZoom?: number;
-  });
-  /**
-   * The current zoom level.
-   *
-   * @returns model-to-rendered scale
-   */
-  zoom(): number;
-  /**
-   * The current pan.  Live internal object (as in v3) — treat as read-only.
-   *
-   * @returns the rendered-space translation applied before the zoom; the
-   *   *same* object on every call, which the setters replace rather than
-   *   mutate, so a caller that wants a stable snapshot must copy it
-   */
-  pan(): Position;
-  /**
-   * Set the zoom, optionally about a fixed point.
-   *
-   * @param zoom — the level, or `{ level, position | renderedPosition }`
-   *   to keep that point stationary while zooming
-   * @returns true when the state changed
-   */
-  setZoom(zoom: number | ZoomOptions): boolean;
-  /**
-   * Set the pan.
-   *
-   * @param pan — the rendered-space pan; non-numeric components are
-   *   rejected rather than written
-   * @returns true when the state changed
-   */
-  setPan(pan: Position): boolean;
-  /**
-   * Shift the pan by a rendered-space delta.
-   *
-   * @param delta — the offset to add; missing components count as 0
-   * @returns true when the pan changed
-   */
-  panBy(delta: Position): boolean;
-  /**
-   * Set the min zoom bound and re-clamp the current zoom.
-   *
-   * @param min — the new lower bound
-   * @returns true when the current zoom moved to satisfy it
-   */
-  setMinZoom(min: number): boolean;
-  /**
-   * Set the max zoom bound and re-clamp the current zoom.
-   *
-   * @param max — the new upper bound
-   * @returns true when the current zoom moved to satisfy it
-   */
-  setMaxZoom(max: number): boolean;
-  private reclampZoom;
-  /**
-   * The { zoom, pan } that would fit the given bounds — computed, not
-   * applied.
-   *
-   * @param bb — the model-space bounds to fit
-   * @param padding — rendered px of margin on every side
-   * @returns the fitting viewport, with the zoom clamped to the bounds
-   */
-  fitViewport(bb: BoundsLike, padding?: number): {
-    zoom: number;
-    pan: Position;
-  };
-  /**
-   * Compute-and-apply a fit to the given bounds.
-   *
-   * @param bb — the model-space bounds to fit
-   * @param padding — rendered px of margin on every side
-   * @returns true when the state changed
-   */
-  fit(bb: BoundsLike, padding?: number): boolean;
-  /**
-   * The pan that would center the given bounds.
-   *
-   * @param bb — the model-space bounds to center
-   * @param zoom — the zoom to center at; defaults to the current one
-   * @returns the pan
-   */
-  centerPan(bb: BoundsLike, zoom?: number): Position;
-  /**
-   * Pan (keeping the zoom) so the given bounds are centered.
-   *
-   * @param bb — the model-space bounds to center
-   * @returns true when the state changed
-   */
-  centerOn(bb: BoundsLike): boolean;
-  /**
-   * The rendered (on-screen) viewport rectangle.
-   *
-   * @returns the canvas rectangle in rendered px, always anchored at the
-   *   origin — pan and zoom move the *content*, not this box, so it
-   *   answers the container's size and nothing about the view
-   */
-  renderedExtent(): Extent;
-  /**
-   * The model-coordinate rectangle currently visible.
-   *
-   * @returns the container's rendered box projected back through the
-   *   current pan and zoom — so it moves as the view moves, and its `w`/`h`
-   *   shrink as the zoom rises
-   */
-  extent(): Extent;
-  /**
-   * Project a model-space point into rendered (CSS px) space.
-   *
-   * @param pos — the model-space point
-   * @returns the rendered-space point
-   */
-  modelToRendered(pos: Position): Position;
-  /**
-   * Unproject a rendered (CSS px) point back into model space — the
-   * inverse of `modelToRendered`.
-   *
-   * @param pos — the rendered-space point
-   * @returns the model-space point
-   */
-  renderedToModel(pos: Position): Position;
-  private clampZoom;
 }
 //#endregion
 //#region src/animation.d.mts
@@ -4664,361 +3432,6 @@ interface AnimateOptions {
   delay?: number;
   complete?: () => void;
 }
-type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize';
-/**
- * Tween write targets: the real columns plus the pseudo-columns of the
- * round-25 geometry kinds — compound padding (25.4: a per-parent
- * compound style input routed through `updateCompoundStyle`, resolved
- * by the auto-bounds flush) and label font-size (25.5: the label
- * sidecar, patched per tick through `setLabelFontSize` — an edge's
- * write drives its end-label streams and fontSize-derived anchorY
- * along).
- */
-type TweenColumn = ColumnId | 'node.padding' | 'node.fontSize' | 'edge.fontSize';
-/**
- * One column's worth of resolved tween data, captured once at start.
- *
- * `data` is what both executors read.  Per slot: position `(fx, fy, tx,
- * ty)`; scalar `(from, to)`; colour two OKLab vec4s `(L, a, b, alpha)`,
- * alpha normalized — pre-converted on the CPU so the kernel only needs the
- * OKLab→sRGB direction it already has, and so both sides interpolate the
- * exact same numbers.
- */
-interface ChannelWrite {
-  column: TweenColumn;
-  kind: WriteKind;
-  /** the column has no CPU consumer, so a GPU tween may own it outright */
-  paint: boolean;
-  /** parallel to `slots`; carries the generation for liveness checks */
-  refs: Ref[];
-  slots: Uint32Array;
-  data: Float32Array;
-  /** scalar bounds against easing overshoot (see StyleChannel) */
-  min: number;
-  max: number;
-  /** round 25: which component a `lane` write targets.  Lane writes are
-   * geometry-tier (never GPU-registered) and route through the store's
-   * cascading lane writer. */
-  lane?: number;
-}
-/**
- * One element (or viewport) animation.  `refs` is empty for a viewport
- * animation.  Start values are captured lazily on the first tick after
- * the delay elapses, so queued animations pick up the true state left by
- * whatever ran before them.
- */
-declare class Animation {
-  /** the elements being animated (empty for a viewport animation) */
-  readonly refs: Ref[];
-  /** true when this animates the viewport rather than elements */
-  readonly isViewport: boolean;
-  private store;
-  private styleEngine;
-  private viewport;
-  private duration;
-  private easing;
-  private delay;
-  private style;
-  private position;
-  private pan;
-  private zoom;
-  private onComplete;
-  private startTime;
-  private started;
-  private captured;
-  private writes;
-  private fromPan;
-  private fromZoom;
-  private _done;
-  private resolvers;
-  /**
-   * The animation's real length: the requested duration times the easing's
-   * `durationScale`, which is 1 for every curve except a spring (whose
-   * duration is perceptual — the pace of the key movement — leaving the
-   * settling tail to run past it).
-   */
-  readonly durationMs: number;
-  /**
-   * The compiled easing: a kind plus either a bezier tuple or a
-   * progression array.  One curve layer, two executors — the CPU tick
-   * calls it directly and the GPU kernel reads it out of its params, so
-   * the two agree to float precision without parallel implementations.
-   */
-  readonly easingProgram: EasingProgram;
-  /** set when the renderer's GPU tween runtime drives this animation */
-  gpuDriven: boolean;
-  /** batch id in the GPU tween runtime (null until registered) */
-  gpuId: number | null;
-  /** round 24.1: a transition built from pre-resolved ChannelWrites —
-   * capture is a no-op and eligibility/columns derive from the writes */
-  private preset;
-  /** round 24.3: paused state — values hold, the promise stays pending */
-  private _paused;
-  private pausedAt;
-  /** the shared clock as of the last manager tick — what pause/resume/
-   * reverse/progress read, so the controls stay deterministic under
-   * test-driven ticks (the manager stamps it every advance) */
-  lastNow: number;
-  /**
-   * A transition animation (round 24.1): the style engine diffed stored
-   * truth around a restyle into per-column writes; nothing to capture.
-   *
-   * @param store — the store whose columns the writes address
-   * @param refs — the elements the transition covers, for eviction and
-   *   ref repair; the writes carry their own slot lists
-   * @param writes — the diffed per-column from/to records
-   * @param opts — `duration`, and the `delay`/`easing` the sheet's
-   *   `transition-*` config resolved to
-   * @returns an animation whose values are already resolved — it never
-   *   reads the columns at play time, so the restyle's own diff is the
-   *   only place stored truth is consulted
-   */
-  static preset(store: GraphStore, refs: Ref[], writes: ChannelWrite[], opts: {
-    duration: number;
-    delay?: number;
-    easing?: string;
-  }): Animation;
-  /**
-   * Build an animation.  Reached through `eles.animate()`/
-   * `eles.animation()` and `cy.animate()`/`cy.animation()` rather than
-   * constructed directly.
-   *
-   * @param store — the columnar store the tween writes into
-   * @param viewport — the viewport, for a viewport animation
-   * @param refs — the elements to animate
-   * @param isViewport — whether this targets the viewport
-   * @param opts — targets, `duration`, `easing`, `delay`, `complete`
-   * @param styleEngine — needed to resolve style targets and the arrow
-   *   colour fold
-   * @throws if `easing` is a function — a closure cannot cross to the
-   *   device, so accepting one would make the curve depend on whether
-   *   the animation got offloaded
-   */
-  constructor(store: GraphStore, viewport: Viewport | null, refs: Ref[], isViewport: boolean, opts: AnimateOptions, styleEngine?: StyleEngine | null);
-  /**
-   * True once the animation has completed or been stopped.
-   *
-   * @returns whether it is over, *not* whether it succeeded — a stop and
-   *   a natural completion are the same answer here, and both resolve
-   *   the promise
-   */
-  get done(): boolean;
-  /** Columns this animation writes (round 21: the concurrency contract —
-   * animations sharing an element may run together iff these are
-   * disjoint).  A no-op tween (delay()) touches nothing. */
-  private _columns;
-  /**
-   * The store columns this animation writes — the round-21 concurrency
-   * contract: two animations on the same element run together exactly
-   * when their column sets are disjoint, and overlap evicts the older
-   * one.  A no-op tween (`delay()`) touches nothing.
-   *
-   * @returns the set of column ids, computed once and cached
-   */
-  touchedColumns(): ReadonlySet<string>;
-  /**
-   * Viewport channels (round 21): pan and zoom compose when disjoint.
-   *
-   * @returns whether this animation tweens the pan — the pair are
-   *   separate channels, so a pan animation and a zoom animation run
-   *   together rather than evicting each other
-   */
-  get hasPan(): boolean;
-  /**
-   * Whether this viewport animation tweens the zoom.
-   *
-   * @returns whether the zoom channel is claimed; see `hasPan` for why
-   *   the two are tracked apart
-   */
-  get hasZoom(): boolean;
-  /**
-   * Slot compaction (19.3): repair the target and channel-write refs
-   * through the store's forwarding (in place) and re-point the parallel
-   * slot arrays — `apply` indexes columns by `slots[i]`, which would
-   * otherwise write the tween into whatever moved into the old slot.
-   *
-   * @param store — the store that just compacted, whose forwarding chain
-   *   resolves the pre-move refs
-   */
-  repairRefs(store: GraphStore): void;
-  /**
-   * True once the delay has elapsed and interpolation is under way.
-   *
-   * @returns whether values are actually moving — false *during* the
-   *   delay, when the animation is live and owns its channels but has
-   *   not started interpolating
-   */
-  get running(): boolean;
-  /** A promise that resolves when the animation completes (or is stopped). */
-  promise(): Promise<void>;
-  /**
-   * Advance this animation.
-   *
-   * @param now — the shared clock in ms
-   * @returns true when the animation finished on this tick
-   */
-  tick(now: number): boolean;
-  /**
-   * Stop now.
-   *
-   * @param jumpToEnd — apply the final frame first, instead of freezing
-   *   at the value the tween reached
-   */
-  stop(jumpToEnd: boolean): void;
-  /**
-   * Whether the animation is paused: values hold where they are and the
-   * promise stays pending.  A paused animation still owns its channels,
-   * so the round-21 eviction stops it like any running one.
-   *
-   * @returns whether the clock is frozen; a paused animation is not a
-   *   stopped one — it still holds its channels against everything else
-   */
-  get paused(): boolean;
-  /**
-   * Elapsed fraction of the duration (0 before start, 1 when done;
-   * frozen at the pause point while paused).  Read-only — no scrubbing.
-   *
-   * @returns the eased-time input in [0, 1], *before* the easing curve is
-   *   applied — so it is linear in wall time, not in the value being
-   *   tweened
-   */
-  get progress(): number;
-  /**
-   * Freeze in place.
-   *
-   * @param now — the clock to freeze against; defaults to the last tick
-   */
-  pause(now?: number): void;
-  /**
-   * Continue, excluding the paused span from the timeline.
-   *
-   * @param now — the clock to resume against; defaults to the last tick
-   */
-  resume(now?: number): void;
-  /**
-   * Swap the tween's ends and remap elapsed to `1 − t`, so the current
-   * value is continuous (exactly for point-symmetric easings — linear
-   * included; v3's start/end swap carried the same rule).  Reversing
-   * inside the delay completes at the captured start state.  Works
-   * paused (the frozen value is the pivot) — resume plays backward.
-   */
-  reverse(): void;
-  /** Write the value reached at `now` onto the CPU columns without
-   * finishing — how a GPU-driven animation leaves the device for a
-   * pause or reverse (the caller unregisters the batch).
-   *
-   * @param now — the clock to evaluate at; defaults to the last tick
-   */
-  applyNow(now?: number): void;
-  /** Swap every write's from/to halves (and the viewport targets). */
-  private swapEnds;
-  /** set when a slot compaction demoted this animation mid-flight: the
-   * rest of its run stays on the CPU (its GPU buffers held old slots) */
-  private _barred;
-  /**
-   * Whether the GPU tween runtime can drive this animation outright.
-   *
-   * All-or-nothing: one non-offloadable channel keeps the whole
-   * animation on the CPU, so a column is never half-owned.  Position
-   * qualifies under the round-9 lease (the pass barrier lets cull and
-   * the edge shaders read the tweened positions, so edges follow for
-   * free); paint qualifies because nothing on the CPU reads it;
-   * geometry channels and the viewport do not — geometry is read by
-   * cull, the CPU pick replica and every columnar scan, so it stays
-   * CPU-canonical (round 25).
-   *
-   * @returns whether **every** write may offload — all-or-nothing per
-   *   animation, so one geometry channel among the writes keeps the whole
-   *   animation on the CPU rather than splitting it
-   */
-  get gpuEligible(): boolean;
-  /**
-   * Resolve this animation into per-column GPU batches, capturing start
-   * values.  Sets the start clock so CPU settle and GPU evaluation share
-   * it.
-   *
-   * @param now — the clock the batch's params are anchored to
-   * @returns one ChannelWrite per tweened column
-   */
-  gpuBatches(now: number): ChannelWrite[];
-  /**
-   * Pin the start clock on the first tick, so `startMs` reads true before
-   * capture.
-   *
-   * @param now — the clock of that first tick
-   */
-  schedule(now: number): void;
-  /**
-   * Start time in the shared clock (set once scheduled); ms.
-   *
-   * @returns the instant interpolation begins — the delay is already
-   *   added in, so this is not the moment `play()` was called; 0 before
-   *   the animation has been scheduled at all
-   */
-  get startMs(): number;
-  /**
-   * Settle a GPU-driven animation onto the CPU columns at `now` and finish
-   * it — the tween is CPU-reproducible, so the exact current value is
-   * `lerp(from, to, ease(t))` (t = 1 on natural completion).  Also how an
-   * interrupted animation lands: without it the CPU would keep the start
-   * values while the GPU buffers hold the last frame drawn, and nothing
-   * would ever dirty the column to reconcile them.
-   *
-   * @param now — the clock to settle at; t = 1 on natural completion
-   */
-  settleGpu(now: number): void;
-  /**
-   * Leave the GPU path mid-flight without ending the animation (slot
-   * compaction, 19.4): write the exact value reached onto the CPU
-   * columns and keep ticking as a CPU tween — the device-side slot
-   * buffers held pre-compaction slots, and 19.3's repair re-points the
-   * CPU slot arrays.  The caller unregisters the GPU batch.
-   *
-   * @param now — the clock whose value is written to the CPU columns
-   */
-  demoteGpu(now: number): void;
-  /**
-   * Resolve the animation into `ChannelWrite`s against the live elements.
-   * Idempotent — the first capture wins, so a queued animation still picks
-   * up the state its predecessor left, and a GPU-driven animation settles
-   * against the values it registered with.
-   */
-  private capture;
-  private positionWrite;
-  private scalarWrite;
-  /** Round 25.4: tween a parent's declared compound padding — from is
-   * the stored declaration in its declared unit; the auto-bounds flush
-   * resolves it per tick. */
-  private paddingWrite;
-  /** Round 25.5: tween a label's font-size — from is the sidecar
-   * entry's current value (refs are pre-filtered to labelled slots). */
-  private fontSizeWrite;
-  /** Round 25: tween one component of a multi-lane column (node size).
-   * Geometry-tier by construction — lane writes never offload. */
-  private laneWrite;
-  private colorWrite;
-  /**
-   * Ride-along writes for an edge-width tween (25.2): the derived
-   * channels that resolve against the width at style-write, all linear
-   * in it.  Strokes ride additively from stored truth
-   * (to = stored + Δwidth — mapper-resolved paddings/outline widths
-   * need no engine round trip), gated per slot on the layer being
-   * enabled; hollow-arrow strokes ride by mode ('match-line' → the
-   * target width, percent → pct × target; plain numbers never baked
-   * the width, so they stay).  Arrow-width modes are constants-only
-   * sheet props, answered by the engine.
-   */
-  private captureEdgeWidthRides;
-  /** Arrow colour writes that keep the pre-folded alpha in step with an edge-opacity tween. */
-  private captureArrowFold;
-  private apply;
-  private finish;
-}
-/** The renderer's GPU tween executor, seen by the manager. */
-interface GpuTweenSink {
-  register(id: number, writes: readonly ChannelWrite[], start: number, duration: number, easing: EasingProgram): void;
-  unregister(id: number): void;
-}
 /**
  * Per-core animation manager (round 21: no queue).  Every started
  * animation runs immediately; animations sharing an element compose when
@@ -5047,53 +3460,9 @@ declare class AnimationManager {
    *   pans or zooms
    */
   constructor(onTick: () => void);
-  /**
-   * The renderer takes over the clock and provides the GPU tween sink.
-   *
-   * @param sink — the renderer's tween sink; the manager cedes its
-   *   auto-loop to the render loop while it is attached
-   */
-  attachDriver(sink: GpuTweenSink): void;
-  /**
-   * Give the clock back: settle every GPU-driven animation onto the CPU
-   * columns and drop the sink.  Called when the renderer goes away.
-   */
-  detachDriver(): void;
-  /** Settle every GPU-driven animation onto the CPU columns.  Round
-   * 14.11: a reparent mid-flight moves the tweened slots under the
-   * auto-bounds/fold derivations, which read the CPU columns — the
-   * store's reparent hook settles active leases before they go stale. */
-  settleGpuAll(): void;
   /** Every distinct running element animation (one entry per animation,
    * however many refs it spans). */
   private allRunning;
-  /**
-   * Slot compaction (19.4): demote every GPU-driven animation to the CPU
-   * path — the device-side slot buffers hold pre-compaction slots.  Each
-   * writes the exact value it reached onto the CPU columns, unregisters
-   * its batch, and keeps running as a CPU tween (whose slot lists 19.3's
-   * `onCompacted` repair re-points).  Unlike `settleGpuAll` (the
-   * reparent path), the animation is *not* finished early.
-   */
-  demoteGpuAll(): void;
-  /**
-   * Slot compaction (19.3): repair every queued animation's refs/slots
-   * and re-key the per-element queues (keys pack the pre-move identity).
-   * GPU-driven animations were demoted to the CPU by the caller before
-   * the store compacted (`demoteGpuAll`).
-   *
-   * @param store — the store that just compacted
-   */
-  onCompacted(store: GraphStore): void;
-  /**
-   * Start an animation (round 21: immediately — there is no queue).  A
-   * running animation sharing a ref *and* a channel column with the new
-   * one is stopped in place first (whole-animation eviction); disjoint
-   * channels compose.  Nudges the driver (or starts the auto-loop).
-   *
-   * @param ani — the animation to run
-   */
-  start(ani: Animation): void;
   /** Drop an animation from every ref's running set. */
   private remove;
   /**
@@ -5138,49 +3507,6 @@ declare class AnimationManager {
    * it got to) or the two would diverge with nothing to reconcile them.
    */
   private stopOne;
-  /**
-   * Stop every running viewport animation.
-   *
-   * @param jumpToEnd — finish at the target instead of freezing at the
-   *   current value
-   */
-  stopViewport(jumpToEnd: boolean): void;
-  /**
-   * Pause one animation.  A GPU-driven one settles its lease first —
-   * the device is released and the CPU columns hold the exact value it
-   * reached — so the freeze is readable and the mirror resumes its
-   * uploads; resume re-acquires through the normal advance path.
-   *
-   * @param ani — the animation to freeze
-   */
-  pauseAni(ani: Animation): void;
-  /**
-   * Resume a paused animation.  The paused span is excluded from the
-   * timeline, so the remaining motion keeps its original pace, and a
-   * previously GPU-driven tween re-acquires the device on the shifted
-   * clock.
-   *
-   * @param ani — the animation to resume
-   */
-  resumeAni(ani: Animation): void;
-  /**
-   * Reverse one animation in place.  A GPU-driven one leaves the device
-   * at its current value first; the next advance re-registers the
-   * swapped writes on the remapped clock.
-   *
-   * @param ani — the animation to reverse
-   */
-  reverseAni(ani: Animation): void;
-  /**
-   * Advance every running animation to `now`; drop finished ones.
-   * Position and paint animations route to the GPU sink when one is
-   * attached (registered once, driven on-device, completion detected here
-   * from the shared clock).
-   *
-   * @param now — the shared clock in ms
-   * @returns true while any animation remains active
-   */
-  tick(now: number): boolean;
   /** Advance one animation; returns true when it is finished. */
   private advanceOne;
   private schedule;
@@ -8035,6 +6361,439 @@ interface Qualifier {
   fn?: ElePredicate;
 }
 //#endregion
+//#region src/viewport.d.mts
+interface ZoomOptions {
+  level: number;
+  /** model point to keep fixed while zooming */
+  position?: Position;
+  /** rendered (on-screen) point to keep fixed while zooming */
+  renderedPosition?: Position;
+}
+interface Extent {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  w: number;
+  h: number;
+}
+//#endregion
+//#region src/style.d.mts
+declare class StyleEngine {
+  private store;
+  /**
+   * The narrow view of this engine that the module-scope property
+   * readers receive (35.2).  Built once here rather than per read, and
+   * its getters stay live across a sheet swap that replaces `defs`.
+   */
+  private readonly readCtx;
+  /** per-raw-name read plans (round 62.4): normalization, group
+   * membership, the transition/arrow classifications and the reader,
+   * resolved once per spelling — all from module tables no sheet swap
+   * changes, so the cache is immortal per engine */
+  private readonly readPlans;
+  private sheet;
+  private defs;
+  /** the parents-group compound style, applied per parent slot */
+  private parentCompound;
+  /** normalized channel props the parents overlay resolves differently
+   * from the nodes group (defaults + the user parents block) — a
+   * GPU-mapped nodes channel in this set demotes to the CPU path */
+  private parentsOverride;
+  private arrows;
+  private midArrows;
+  /** props per group the GPU eval kernel currently owns (set by the runtime). */
+  private gpuOwnedProps;
+  /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
+  private demoted;
+  /** Round 24.1: styled-generation marks (gen + 1; 0 = never styled).  A
+   * slot joins transition diffs only when its *current* element has been
+   * styled before — the first application on add is instant (v3's rule),
+   * and a recycled slot's fresh generation fails the check on its own. */
+  private styledGen;
+  /**
+   * How many edge runs have taken the round-67.2 bulk route.
+   *
+   * Internal, and not a statistic anyone needs at runtime — it exists so
+   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
+   * it a comparison against the per-element route passes just as well
+   * when the gate declined, which is exactly what the first version of
+   * that spec did: its fixture mapped `curve-style` and `label`, neither
+   * of which has a narrow writer, so every assertion compared the
+   * per-element path against itself.
+   */
+  _bulkRuns: number;
+  /** Round 24.1: the open transition capture (one per group-def pass). */
+  private txn;
+  /** id → normalized prop → raw value: the live bypass declarations
+   * (the `bypasses` sheet section plus the sugar methods' writes),
+   * exported by `json()`.  Id-keyed declarations, not element state —
+   * an entry survives remove/re-add and may name an id that does not
+   * exist yet (inert until it does). */
+  private bypassRaw;
+  /** id → per-group parsed patches.  Both groups parse at declaration
+   * time (the id may not resolve yet); null marks a group whose guards
+   * reject the entry's props (e.g. a curve prop never applies to a
+   * node), decided when the id resolves. */
+  private bypassParsed;
+  /** slot → patch per group, resolved lazily against the store's
+   * structure epoch — adds, removes and compaction all bump it, and a
+   * re-resolution is O(declared ids), never O(elements). */
+  private bypassSlots;
+  private bypassEpoch;
+  /** normalized prop → live declaration count across ids — what
+   * `paintInputs` demotes by (a kernel-owned mapper would overwrite a
+   * bypassed slot's stored bytes on its next dispatch). */
+  private bypassPropCounts;
+  /** Whether any bypass is declared — the zero-cost gate every touched
+   * path checks first (the round-63 performance contract).
+   *
+   * @returns true when at least one id has a live bypass declaration
+   */
+  hasBypasses(): boolean;
+  /** Validate a sheet's `bypasses` section into installable entries —
+   * called before any engine state mutates, so a bad section throws
+   * from `setSheet` with nothing half-applied. */
+  private validateBypasses;
+  /** Parse one entry's props for both groups; a group whose guards
+   * reject them parses null, and both rejecting is the caller's error. */
+  private parseBypassGroups;
+  /** Install validated bypass entries (whole-replace — `setSheet`'s
+   * swap semantics: the section is replaced like any other). */
+  private installBypasses;
+  /** Re-resolve declared ids to live slots when the structure epoch
+   * moved — O(declared ids) per structural change, amortized over the
+   * writes between changes, and nothing at all when no bypass exists. */
+  private rebuildBypassSlots;
+  /** The bypass patch for a slot, or null.  O(1) after the lazy
+   * epoch-checked re-resolution. */
+  private bypassPatchAt;
+  /**
+   * Set bypass props for one live element — the sugar path behind
+   * `ele.style( name, value )` (round 63.4).  Unlike the sheet
+   * section, whose entries parse against both groups because their ids
+   * may not have resolved yet, this validates against the element's
+   * own group, so a wrong-group prop throws with the group's own
+   * message.  The slot re-applies through the normal single-slot apply
+   * afterwards, which is what makes transitions and the write-funnel
+   * merge ride the same path every restyle does.
+   *
+   * @param ref — the live element's ref (the caller validates liveness)
+   * @param id — its id, the declaration key
+   * @param props — prop → constant, dash-case or camelCase
+   * @throws on a mapper value, a global font prop, a transition config
+   *   prop, a wrong-group prop, or an invalid value
+   */
+  setBypass(ref: Ref, id: string, props: Record<string, unknown>): void;
+  /**
+   * Remove bypass props for one live element — the path behind
+   * `ele.removeStyle( name? )` (round 63.4).  Removing re-applies the
+   * slot, so the sheet-resolved values return through the normal
+   * funnel (transitions included).
+   *
+   * @param ref — the live element's ref
+   * @param id — its id, the declaration key
+   * @param name — the prop to remove, either spelling; omit to clear
+   *   the element's whole declaration
+   */
+  removeBypass(ref: Ref, id: string, name?: string): void;
+  /** Patch one slot's entry in the resolved maps after a sugar write —
+   * only when the maps are current (stale maps re-resolve wholesale at
+   * the next write anyway). */
+  private refreshBypassSlot;
+  /** value reader for mapper/condition keys ('id' is first-class, not in
+   * the sidecar; the reserved '::' keys answer a case condition from the
+   * flags column — the structural pair since round 14.7, the state
+   * family since 57.1) */
+  private readValue;
+  /**
+   * @param store — the columnar store whose channel columns this engine
+   *   resolves style into
+   */
+  constructor(store: GraphStore);
+  private coreStyle;
+  /**
+   * Replace the stylesheet and re-apply it to every live element,
+   * mapped channels included.
+   *
+   * The sheet is a plain `{ nodes, edges, parents, core }` object of
+   * prop objects — no selector blocks, no style functions.  The
+   * `parents` group overlays the `nodes` block under v3's `:parent`
+   * defaults.
+   *
+   * @param sheet — the stylesheet to install
+   * @param apply — when false, compile and validate without applying;
+   *   the core uses this to defer the apply to the outermost
+   *   `endBatch()` while still throwing on a bad sheet at the call site
+   * @throws on an unknown sheet key, an unknown property, or an invalid
+   *   value
+   */
+  setSheet(sheet: Stylesheet, apply?: boolean): void;
+  /**
+   * The installed stylesheet, as given.  Part of `cy.json()`'s export.
+   *
+   * @returns the sheet object (live, not a copy — treat as read-only)
+   */
+  json(): Stylesheet;
+  /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
+  update(): void;
+  /**
+   * The parents' compound-style write with the padding transition
+   * capture (round 25.4): diff the declared padding around the sheet
+   * write, snap on a px↔% unit flip (tweening across units has no
+   * meaning — recorded), and restore the held pre-restyle value
+   * (CSS's delay rule, like the channel diffs).
+   */
+  private applyCompoundStyle;
+  private applyGroupDef;
+  /**
+   * Open a transition capture for one group-def apply pass: every
+   * already-styled slot the pass writes gets its tweenable channels
+   * diffed on stored truth.  Null (capture off) when nothing can
+   * transition — unconfigured specs cost nothing.
+   */
+  private openTxn;
+  /** Close a capture: pack the accumulated diffs into bulk ChannelWrites
+   * (one per column — never per-element animations) and hand them to the
+   * sink as one transition animation. */
+  private closeTxn;
+  private readTxnValue;
+  /** Pre-write snapshot of one slot's capture channels (mains + rides). */
+  private txnPre;
+  /**
+   * Post-write diff of one slot: record each moved channel (from = the
+   * snapshot, to = the newly stored value) and *restore* the old value —
+   * the store holds the pre-restyle state until the tween's first
+   * post-delay tick, so sync reads during a transition-delay report the
+   * old value (CSS's rule) and no frame can flash the target.
+   */
+  private txnPost;
+  private wasStyled;
+  private markStyled;
+  /** The group def resolving one element: the parents overlay for parent
+   * nodes (round 14.6), else the element's own group. */
+  private defFor;
+  /** All live slots the given def styles (partitioned under compounds). */
+  private allSlotsFor;
+  /**
+   * Scratch-evaluate every mapped channel and write whole elements — the
+   * per-channel write would break the cross-channel couplings that live
+   * in write() (circle collapse, arrow-alpha folding, the label anchor).
+   * Live auto-domain extents re-check here; a changed extent escalates
+   * the pass to the whole group (every slot's mapping moved).
+   */
+  private applyMapped;
+  /**
+   * The structural half of the bulk-edge gate (round 67.2): whether this
+   * run *could* be written from one template slot and filled.
+   *
+   * Nodes decline outright — their branch hands out per-slot blob
+   * records (custom polygons, images, charts) whose refs a copy would
+   * alias.  The rest is what the fill needs: enough slots to pay for the
+   * scans, one contiguous ascending range so each column is a single
+   * `copyWithin` chain, no open transition capture (which diffs per
+   * slot) and no per-element bypasses.
+   *
+   * `bulkEdgeWriters` carries the other half — what the *mappers* allow.
+   *
+   * @param group — the group being applied
+   * @param slots — the run, in apply order
+   * @returns whether the structural preconditions hold
+   */
+  private bulkEdgeRun;
+  /** Whether every slot in the run carries the same masked flag word —
+   * i.e. whether anything reading state alone can vary across it.  True
+   * at rest, which is what a freshly loaded graph is. */
+  private uniformMaskedWord;
+  /**
+   * The narrow writers a bulk edge run needs, or null when the run's
+   * mappers rule the route out (round 67.2).  `bulkEdgeRun` carries the
+   * structural half of the gate.
+   *
+   * The route writes one template slot and fills every
+   * `EDGE_STYLE_COLUMNS` column from it, so it is admissible exactly
+   * when each mapped prop either
+   *
+   *   1. has a `fastStateWriter` — which by round 61's invariant writes
+   *      *every* column that prop affects, so the fill's value for it is
+   *      overwritten per slot; or
+   *   2. reads state flags only, over a run whose masked flag word never
+   *      changes — then its value is the template's for every slot and
+   *      the fill is already right.  This is the clause that matters in
+   *      practice: a freshly loaded graph has nothing selected, so the
+   *      selection affordances this repo's sheets map (`line-opacity`,
+   *      which has no narrow writer and could not have one without the
+   *      whole B1 fold cluster) cost the route nothing.
+   *
+   * Anything else declines and the ordinary per-element loop runs.
+   *
+   * @param group — the group being applied
+   * @param active — the mappers this pass will evaluate
+   * @param uniformState — whether the run's masked flag word is constant
+   * @returns the writers to run per slot, or null to decline
+   */
+  private bulkEdgeWriters;
+  /**
+   * Apply a contiguous edge run from one template slot (round 67.2).
+   *
+   * The template takes the ordinary `write()`, so every side effect the
+   * edge branch has — the arrow-scale and arrow-width meters, the curve
+   * record, the label sidecar, the transition-free channel funnel —
+   * happens exactly as it always did.  `replicateEdgeStyle` then fills
+   * every style-owned column from it, and each remaining slot pays only
+   * its own mapped props (through the narrow writers) plus the per-slot
+   * half of the edge branch.
+   *
+   * Measured on a 464,657-edge fixture: 26 ns per `setScalar` against
+   * 0.1 ns per element for the fill.
+   */
+  private applyBulkEdges;
+  /**
+   * Apply a group whose mappers read only state flags: one record per
+   * distinct flag combination, cached on the def, instead of a program
+   * run per element.
+   *
+   * The cache is unbounded in principle and tiny in practice — its size
+   * is 2^(number of distinct bits the sheet's conditions read), and a
+   * sheet reads one or two.  It lives on the def, so a sheet swap
+   * discards it with the def that built it.
+   */
+  private applyPartitioned;
+  /** The partition record for one masked flag word — cached on the def,
+   * resolved on the first miss (round 57.1). */
+  private partRecordFor;
+  /** Resolve one flag combination into a computed record (cache miss). */
+  private partitionRecord;
+  /**
+   * Re-check live auto-domain extents against the data; returns true when
+   * any moved (the caller escalates to the whole group).  A moved extent
+   * on a GPU-owned program also bumps paintVersion so the runtime repacks
+   * its program uniform and re-evaluates in full.
+   */
+  private checkAutoExtents;
+  /** One def's share of a state flip: the fast diff path, or the
+   * general `refreshGroupDef` wherever that one is correct (see
+   * `refreshState`). */
+  private refreshStateDef;
+  /**
+   * The writers for the channels that differ between two partition
+   * records — cached per unordered pair of masked flag words (the
+   * changed set is symmetric; which record to write is the caller's).
+   * Null when some differing channel has no narrow writer: that pair
+   * takes the full `write()`.
+   */
+  private partitionDiffWriters;
+  private refreshGroupDef;
+  private refreshGroupDefInner;
+  /**
+   * The stored-arrow-bytes truth when the kernel owns edge paint: the base
+   * colour with alpha folded by the (mapped or constant) opacity.  Shapes
+   * are never kernel-owned (mapped shapes demote edge paint to the CPU), so
+   * the computed constants decide the gate.
+   */
+  private foldedArrow;
+  /** One edge prop for a slot: the mapper's value when mapped, else the constant. */
+  private evalEdgeProp;
+  /** Resolved label channels: the sidecar when labelled, else the sheet. */
+  private labelChannels;
+  /**
+   * Defaults + props for one group ('width' is shared; the group's own
+   * default wins).  Mapper specs compile into `mappersOut`; the label
+   * passthrough rides the labelKey channel instead.
+   */
+  private resolveConst;
+  /** Stored-truth readback for the background-image family (15.2). */
+  private readImageProp;
+  /** Write `node.fillColor` (the B1 background-opacity fold). */
+  private writeNodeFillColor;
+  /** Write `node.borderColor` (the B1 border-opacity fold). */
+  private writeNodeBorderColor;
+  /** Write `node.opacity` — under compounds the store folds the
+   * ancestor product itself (round 14.4), so one call is complete. */
+  private writeNodeOpacity;
+  /** Write the `node.overlay` layer record (the A2 opacity fold). */
+  private writeNodeOverlay;
+  /** Write the `node.underlay` layer record (the A2 opacity fold). */
+  private writeNodeUnderlay;
+  /** Write `edge.lineColor` (the B1 line-opacity fold). */
+  private writeEdgeLineColor;
+  /**
+   * The B1 arrow fold: v3's effective arrow opacity is opacity ×
+   * line-opacity.  A 'none' end — or any end of a haystack edge, which
+   * draws no arrows (v3 skips them) — stores NO_ARROW, so the getters
+   * read 'none' (the recorded deviation: v3's pstyle still reports the
+   * declared shape).
+   */
+  private edgeArrowRgba;
+  /** Write `edge.sourceArrow` — `setColor` re-derives the round-56
+   * shows-line bits itself, so one call is complete. */
+  private writeEdgeSourceArrowColor;
+  /** Write `edge.targetArrow` (see the source twin). */
+  private writeEdgeTargetArrowColor;
+  /** Write `edge.midSourceArrow` — `setMidArrow` maintains the live
+   * mid-arrow count, so one call is complete. */
+  private writeEdgeMidSourceArrowColor;
+  /** Write `edge.midTargetArrow` (see the source twin). */
+  private writeEdgeMidTargetArrowColor;
+  /** Write the `edge.overlay` stroke record (A2: stroke = width +
+   * 2·padding, derived here so the layer shaders need no width
+   * binding). */
+  private writeEdgeOverlay;
+  /** Write the `edge.underlay` stroke record (see the overlay twin). */
+  private writeEdgeUnderlay;
+  /**
+   * The narrow writer for one normalized prop, or null when the prop has
+   * cross-channel consequences the writers above cannot carry — geometry
+   * (bb/cull/pick/label anchors), labels, charts, the edge-opacity fold
+   * cluster — in which case a state flip that moves it falls back to the
+   * full `write()` of the target record, byte-for-byte the general
+   * path's behaviour.  The layer props share one writer per record
+   * because they land in one packed store call.
+   */
+  private fastStateWriter;
+  /**
+   * The one channel funnel, wrapped by the transition capture (round
+   * 24.1): an already-styled slot written inside an open capture gets
+   * its tweenable channels snapshotted before and diffed after — the
+   * body itself stays transition-blind.
+   */
+  private write;
+  private writeChannels;
+  /**
+   * The edge channels that land in `EDGE_STYLE_COLUMNS` — every edge
+   * column a styled record fully determines (round 67.2).  Split from
+   * the per-slot half below so the bulk apply can run this once for a
+   * run's template slot and fill the rest of the columns from it, while
+   * still calling `writeEdgePerSlot` for every slot.  One definition,
+   * two callers, as with the round-61 narrow writers.
+   */
+  private writeEdgeColumns;
+  /**
+   * The edge work a column copy cannot carry: the two flag bits (the
+   * flags word holds per-element bits too), the invisibility cascade,
+   * the curve index's own per-slot record, and the label sidecar.  Runs
+   * for every slot on both paths.
+   */
+  private writeEdgePerSlot;
+  /** warn-once flag for the multi-image cap (recorded: 4 per node) */
+  private warnedImageCap;
+  /**
+   * Resolve and store a node's chart record (round 23).  Values come
+   * from the constant list or the `{ data: key }` passthrough (a
+   * per-element array; non-arrays and invalid entries mean no chart);
+   * slices cap at CHART_MAX_SLICES and the running total clamps at 1
+   * (v3's percent semantics — the remainder stays unpainted).  Colors
+   * cycle the palette (category10 by default) and fold chart-opacity
+   * into their alphas (the B1 pattern; the header keeps the exact
+   * opacity for readback).
+   */
+  private writeChart;
+  /** Resolve a node's background-image records and store them (15.2). */
+  private writeImages;
+  /** Resolve an element's label text from its computed channels and store it. */
+  private writeLabel;
+}
+//#endregion
 //#region src/layout/contract.d.mts
 interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
@@ -8444,7 +7203,6 @@ declare class Core {
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
   private _recoveringDevice;
-  _viewport: Viewport;
   /** resolves once the render pipeline is usable (immediately when headless) */
   ready: Promise<Core>;
   /** true once the render pipeline is usable (immediately when headless) */
@@ -9006,7 +7764,7 @@ declare class Core {
    *   to zoom about a fixed point; omit to read
    * @returns the current zoom when reading, this core when setting
    */
-  zoom(zoom?: number | Parameters<Viewport['setZoom']>[0]): number | this;
+  zoom(zoom?: number | ZoomOptions): number | this;
   /**
    * Get the pan offset, or set it.  Setting is a no-op while
    * `panningEnabled()` is false.
@@ -9097,7 +7855,7 @@ declare class Core {
    * @returns the visible extent in model coordinates
    * @see Core#renderedExtent for the same box in rendered coordinates
    */
-  extent(): ReturnType<Viewport['extent']>;
+  extent(): Extent;
   /**
    * The rendered (on-screen) viewport rectangle.
    *
@@ -9106,7 +7864,7 @@ declare class Core {
    *   projected into model coordinates
    * @see Core#extent for the model-coordinate form
    */
-  renderedExtent(): ReturnType<Viewport['renderedExtent']>;
+  renderedExtent(): Extent;
   /** Rendered dimensions as { width, height }. */
   size(): {
     width: number;

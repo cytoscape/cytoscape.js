@@ -156,13 +156,16 @@ cmp(
   (c) => c.cy.hasElementWithId('n1') + c.cy.hasCompoundNodes(),
 );
 cmp('core', 'options()', (c) => c.cy.options());
-// This row was the finding that became round 34.2: v4's
-// `mutableElements()` materialized the whole graph on every call (it is
-// `elements()`) where v3's is O(1).  It is now memoized against a store
-// structure epoch — 121 µs → 20 ns — and the row stays as the thing
-// that would notice a regression.
-cmp('core', 'mutableElements() (v4 materializes; v3 is O(1))', (c) =>
-  c.cy.mutableElements(),
+// The row here was round 34.2's finding: `mutableElements()` materialized
+// the whole graph per call (121 µs → 20 ns once memoized).  Round 90
+// removed the member — it was `elements()` by another name — so the row
+// that watches for a memo regression now reads through `elements()`,
+// which rides the same cache.  v3 keeps its own spelling.
+pair(
+  'core',
+  'elements() memo hit (was mutableElements, round 90)',
+  (c) => c.cy.mutableElements(),
+  (c) => c.cy.elements(),
 );
 cmp(
   'core',
@@ -520,22 +523,39 @@ only('element data', 'label()', (c) => c.node.label());
 // round record.  Members that are inherently browser-only (`png`/`jpg`,
 // `mount`/`unmount`) or asynchronous by contract (`promiseOn`) stay out
 // and are named in the record rather than silently missing.
-cmp('core', 'batchData()', (c) => {
-  c.cy.batchData({ n0: { foo: c.i } });
-});
+// round 90 removed batchData (v3-legacy twice over); the idiom it named
+// is priced here so the replacement stays honest against v3's helper
+pair(
+  'core',
+  'batch + per-id data() (was batchData, round 90)',
+  (c) => {
+    c.cy.batchData({ n0: { foo: c.i } });
+  },
+  (c) => {
+    c.cy.batch(() => {
+      c.cy.$id('n0').data({ foo: c.i });
+    });
+  },
+);
 cmp('core', 'animated()', (c) => c.cy.animated());
 cmp('core', 'zoomRange get', (c) => c.cy.zoomRange());
-cmp('core', 'forceRender() (headless no-op)', (c) => {
-  c.cy.forceRender();
-});
 cmp('core', 'resize() / invalidateSize()', (c) => {
   c.cy.resize();
 });
-cmp('core', 'onRender + offRender', (c) => {
-  const h = () => {};
-  c.cy.onRender(h);
-  c.cy.offRender(h);
-});
+pair(
+  'core',
+  "on('render') + off('render') (was onRender/offRender, round 90)",
+  (c) => {
+    const h = () => {};
+    c.cy.onRender(h);
+    c.cy.offRender(h);
+  },
+  (c) => {
+    const h = () => {};
+    c.cy.on('render', h);
+    c.cy.off('render', h);
+  },
+);
 cmp('core', 'removeScratch()', (c) => {
   c.cy.scratch('tmp', 1);
   c.cy.removeScratch('tmp');

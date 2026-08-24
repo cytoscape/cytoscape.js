@@ -300,13 +300,14 @@ const paramDefs = {
     let lastTime = performance.now();
 
     setInterval(() => {
-      const renderer = cy && cy.renderer();
+      // cy.stats() is the public snapshot since round 90 (renderer() is
+      // @internal); null when there is no renderer yet
+      const stats = cy && cy.stats();
 
-      if (renderer == null) {
+      if (stats == null) {
         return;
       }
 
-      const stats = renderer.stats();
       const now = performance.now();
       const dt = (now - lastTime) / 1000;
       const fps = (stats.frames - lastFrames) / dt;

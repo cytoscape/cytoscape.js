@@ -687,7 +687,7 @@ export class Animation {
     if ('step' in (opts as Record<string, unknown>)) {
       throw new Error(
         `The 'step' callback is not supported in v4 — ` +
-          `observe progress via 'onRender' or poll between awaits`,
+          `observe progress via cy.on( 'render', … ) or poll between awaits`,
       );
     }
 

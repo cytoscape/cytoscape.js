@@ -141,10 +141,12 @@ export class Event {
   }
 
   /**
-   * v3's type tag, kept because `is.event()`-style checks and user code read
-   * it.
+   * v3's type tag, kept at runtime because `is.event()`-style checks and
+   * user code read it; demoted from the typed surface in round 90 with
+   * its Core and Collection counterparts.
    *
    * @returns the string `'event'`
+   * @internal
    */
   instanceString(): string {
     return 'event';

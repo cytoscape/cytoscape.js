@@ -216,7 +216,8 @@ cy.compact();
 const exportOpts: ExportOptions = { full: true, scale: 2, output: 'blob' };
 const png: Promise<string | Blob> = cy.png(exportOpts);
 
-const stats: RendererStats | undefined = cy.renderer()?.stats();
+// round 90: renderer() left the typed surface; stats() is the public snapshot
+const stats: RendererStats | null = cy.stats();
 
 void [
   cy,

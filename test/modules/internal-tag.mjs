@@ -8,7 +8,13 @@ import {
 import { stripInternal } from '../../scripts/build-dts.mjs';
 import { generate } from '../../scripts/docs-generate.mjs';
 import { expect } from 'chai';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

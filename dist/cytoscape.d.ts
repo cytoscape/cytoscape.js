@@ -5693,13 +5693,6 @@ declare class Event {
    */
   constructor(props?: EventProps);
   /**
-   * v3's type tag, kept because `is.event()`-style checks and user code read
-   * it.
-   *
-   * @returns the string `'event'`
-   */
-  instanceString(): string;
-  /**
    * Mark the event's default as prevented, and prevent the DOM event's
    * default when one is attached.
    *
@@ -5933,13 +5926,6 @@ declare class Collection {
    */
   _keySet(): Map<number, number>;
   /**
-   * The type tag `'collection'` — the counterpart of the core's
-   * `'core'`, for code that accepts either.
-   *
-   * @returns `'collection'`
-   */
-  instanceString(): string;
-  /**
    * The core this collection belongs to.
    *
    * @returns the instance that owns these elements — a collection cannot
@@ -5947,14 +5933,6 @@ declare class Collection {
    *   against a foreign collection would violate
    */
   cy(): Core;
-  /**
-   * The renderer, or null when headless.
-   *
-   * @returns the renderer, or null on a headless instance — the model is
-   *   CPU-canonical, so a null renderer costs drawing, picking and image
-   *   export and nothing else
-   */
-  renderer(): Core['_renderer'];
   /**
    * The first element as a length-1 collection (empty collection when empty).
    *
@@ -6377,16 +6355,6 @@ declare class Collection {
    *   edges and removed elements), this collection when writing
    */
   position(dim?: string | Position, value?: number): Position | number | undefined | this;
-  /**
-   * Like `position()`, but a write emits no `position` event.  For bulk
-   * or intermediate moves — a layout's own iterations — where per-step
-   * events would be noise.
-   *
-   * @param dim — `'x'`/`'y'`, or a `{ x, y }` object
-   * @param value — the new coordinate, with the `'x'`/`'y'` form
-   * @returns the position when reading, this collection when writing
-   */
-  silentPosition(dim?: string | Position, value?: number): Position | number | undefined | this;
   modelPosition: this['position'];
   point: this['position'];
   private _positionImpl;
@@ -6398,13 +6366,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   positions(pos: Position | ElePositionFn): this;
-  /**
-   * Like `positions()`, but emits no `position` events.
-   *
-   * @param pos — a `{ x, y }` for all of them, or `( ele, i ) => pos`
-   * @returns this collection, for chaining
-   */
-  silentPositions(pos: Position | ElePositionFn): this;
   modelPositions: this['positions'];
   points: this['positions'];
   /**
@@ -6496,14 +6457,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   shift(dim: string | Position, value?: number): this;
-  /**
-   * Like `shift()`, but emits no `position` events.
-   *
-   * @param dim — `'x'`/`'y'`, or a `{ x, y }` offset
-   * @param value — the offset, with the `'x'`/`'y'` form
-   * @returns this collection, for chaining
-   */
-  silentShift(dim: string | Position, value?: number): this;
   private _shift;
   /**
    * Compound-relative position: the model position minus the immediate
@@ -8534,7 +8487,7 @@ declare class Core {
   /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
   private _allCache;
   /** round 62.6: the whole-graph memo flattened to one field, so the
-   * `elements()`/`mutableElements()` hit is a single load — nulled by
+   * `elements()` hit is a single load — nulled by
    * the same push-invalidation as `_allCache` */
   private _allEles;
   _animations: AnimationManager;
@@ -8854,7 +8807,7 @@ declare class Core {
    * epoch (round 34.2).
    *
    * These are the calls an app makes in a loop, and each one was an
-   * O(V+E) scan plus a handle intern per element — `mutableElements()`
+   * O(V+E) scan plus a handle intern per element — the whole-graph read
    * measured 121 µs at 2000 nodes against v3's 18 ns, because v3 hands
    * back a live internal collection and v4 built a fresh one every
    * time.  A v4 collection is an immutable snapshot, so the only thing
@@ -9233,35 +9186,18 @@ declare class Core {
    */
   pick(x: number, y: number): Promise<Collection | null>;
   /**
-   * The renderer, or null when headless.  Its `stats()` carry the frame
-   * timings, cache hit rates and pass counters — note that `cpuFrameMs`
-   * is encode/submit cost only (submission is fire-and-forget), so
-   * reconcile fps against `gpuFrameMs`.
+   * The renderer's frame statistics, or null when headless.  The snapshot
+   * carries the frame timings, cache hit rates and pass counters — note
+   * that `cpuFrameMs` is encode/submit cost only (submission is
+   * fire-and-forget), so reconcile fps against `gpuFrameMs`.
    *
-   * @returns the renderer, or null on a headless instance
+   * @returns a {@link RendererStats} snapshot, or null on a headless
+   *   instance
    */
-  renderer(): RendererLike | null;
-  /** Force a redraw next frame (no-op when headless; the loop is render-on-dirty). */
-  forceRender(): this;
+  stats(): RendererStats | null;
   /** Re-measure the container and redraw (no-op when headless). */
   resize(): this;
   invalidateSize: this['resize'];
-  /**
-   * Run a callback after each rendered frame — sugar for
-   * `on( 'render', … )`.  With no animation queue and no `step` callback,
-   * this plus animation promises is how v4 observes progress.
-   *
-   * @param callback — the per-frame handler
-   * @returns this core, for chaining
-   */
-  onRender(callback: EventHandler): this;
-  /**
-   * Stop running a per-frame callback.
-   *
-   * @param callback — the handler to remove; omit to remove all of them
-   * @returns this core, for chaining
-   */
-  offRender(callback?: EventHandler): this;
   /**
    * Export the rendered graph as a PNG.  Async — the pixels live on the
    * GPU (offscreen render + readback), unlike v3's synchronous base64
@@ -9484,13 +9420,6 @@ declare class Core {
    */
   tapholdDuration(ms?: number): number | this;
   /**
-   * The type tag `'core'` — the counterpart of a collection's
-   * `'collection'`, for code that accepts either.
-   *
-   * @returns `'core'`
-   */
-  instanceString(): string;
-  /**
    * Whether the render pipeline is usable yet.  Always true on a headless
    * instance; on a rendered one this flips when `cy.ready` resolves.
    *
@@ -9532,13 +9461,6 @@ declare class Core {
   hasElementWithId(id: string): boolean;
   $id: this['getElementById'];
   byId: this['getElementById'];
-  /**
-   * All elements (the prototype has no immutable/"read-only"
-   * collections) — `elements()` by another name, memo included.
-   *
-   * @returns every element in the graph
-   */
-  mutableElements(): Collection;
   /**
    * The `window` this instance renders into, or null when there is no DOM
    * (Node).  v3 parity, for extensions that need the hosting realm.

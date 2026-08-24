@@ -480,9 +480,11 @@ export class Collection {
 
   /**
    * The type tag `'collection'` — the counterpart of the core's
-   * `'core'`, for code that accepts either.
+   * `'core'`, for code that accepts either.  Demoted in round 90: v3
+   * never documented it, and v4 has no caller.
    *
    * @returns `'collection'`
+   * @internal
    */
   instanceString(): string {
     return 'collection';
@@ -505,6 +507,7 @@ export class Collection {
    * @returns the renderer, or null on a headless instance — the model is
    *   CPU-canonical, so a null renderer costs drawing, picking and image
    *   export and nothing else
+   * @internal
    */
   renderer(): Core['_renderer'] {
     return this._cy._renderer;
@@ -1546,6 +1549,7 @@ export class Collection {
    * @param dim — `'x'`/`'y'`, or a `{ x, y }` object
    * @param value — the new coordinate, with the `'x'`/`'y'` form
    * @returns the position when reading, this collection when writing
+   * @internal
    */
   silentPosition(
     dim?: string | Position,
@@ -1609,6 +1613,7 @@ export class Collection {
    *
    * @param pos — a `{ x, y }` for all of them, or `( ele, i ) => pos`
    * @returns this collection, for chaining
+   * @internal
    */
   silentPositions(pos: Position | ElePositionFn): this {
     return this._positions(pos, true);
@@ -1913,6 +1918,7 @@ export class Collection {
    * @param dim — `'x'`/`'y'`, or a `{ x, y }` offset
    * @param value — the offset, with the `'x'`/`'y'` form
    * @returns this collection, for chaining
+   * @internal
    */
   silentShift(dim: string | Position, value?: number): this {
     return this._shift(dim, value, true);

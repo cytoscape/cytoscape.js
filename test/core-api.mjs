@@ -39,10 +39,6 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function (
     expect(cy.$id).to.equal(cy.getElementById);
   });
 
-  it('mutableElements() returns all elements', function () {
-    expect(cy.mutableElements().length).to.equal(3);
-  });
-
   it('options() returns the ctor options', function () {
     var opts = { headlessWidth: 123 };
     var cy2 = cytoscape(opts);
@@ -96,9 +92,10 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function (
     expect(cy.scratch('_k')).to.equal(undefined);
   });
 
-  it('renderer() is null when headless; forceRender/resize are no-ops', function () {
+  it('renderer()/stats() are null when headless; resize is a no-op', function () {
+    // renderer() is @internal since round 90 but stays at runtime
     expect(cy.renderer()).to.equal(null);
-    expect(cy.forceRender()).to.equal(cy);
+    expect(cy.stats()).to.equal(null);
     expect(cy.resize()).to.equal(cy);
   });
 
@@ -109,15 +106,15 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function (
     expect(fired).to.equal(1);
   });
 
-  it('onRender/offRender register on the render event', function () {
+  it("on('render') observes frames (onRender/offRender removed, round 90)", function () {
     var fired = 0;
     var cb = () => fired++;
 
-    cy.onRender(cb);
+    cy.on('render', cb);
     cy.emit('render');
     expect(fired).to.equal(1);
 
-    cy.offRender(cb);
+    cy.off('render', cb);
     cy.emit('render');
     expect(fired).to.equal(1);
   });
@@ -359,12 +356,14 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function (
       );
     });
 
-    it('mutableElements() rides the same cache', function () {
-      expect(cy.mutableElements()).to.equal(cy.elements());
+    it('the whole-graph memo invalidates on structure change', function () {
+      // mutableElements() was removed in round 90 — it was elements()
+      // by another name; the memo invariant it pinned lives on here
+      expect(cy.elements()).to.equal(cy.elements());
 
       cy.add({ data: { id: 'n9' } });
 
-      expect(cy.mutableElements().length).to.equal(4);
+      expect(cy.elements().length).to.equal(4);
     });
   });
 });

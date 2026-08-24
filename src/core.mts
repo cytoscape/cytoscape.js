@@ -195,7 +195,7 @@ export class Core {
   /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
   private _allCache: AllCache | null = null;
   /** round 62.6: the whole-graph memo flattened to one field, so the
-   * `elements()`/`mutableElements()` hit is a single load — nulled by
+   * `elements()` hit is a single load — nulled by
    * the same push-invalidation as `_allCache` */
   private _allEles: Collection | null = null;
   _animations: AnimationManager;
@@ -260,7 +260,7 @@ export class Core {
       this._styleEngine.refreshState(group, key, slots);
     };
     // round 62.5b: push-invalidate the whole-graph collection cache, so
-    // the memo-hit read (elements()/mutableElements()) needs no epoch
+    // the memo-hit read (`elements()`) needs no epoch
     // compare at all
     this._store.onStructureChange = () => {
       this._allCache = null;
@@ -1176,7 +1176,7 @@ export class Core {
    * epoch (round 34.2).
    *
    * These are the calls an app makes in a loop, and each one was an
-   * O(V+E) scan plus a handle intern per element — `mutableElements()`
+   * O(V+E) scan plus a handle intern per element — the whole-graph read
    * measured 121 µs at 2000 nodes against v3's 18 ns, because v3 hands
    * back a live internal collection and v4 built a fresh one every
    * time.  A v4 collection is an immutable snapshot, so the only thing
@@ -1986,22 +1986,29 @@ export class Core {
   // -- renderer --
 
   /**
-   * The renderer, or null when headless.  Its `stats()` carry the frame
-   * timings, cache hit rates and pass counters — note that `cpuFrameMs`
-   * is encode/submit cost only (submission is fire-and-forget), so
-   * reconcile fps against `gpuFrameMs`.
+   * The renderer, or null when headless.  Demoted from the public surface
+   * in round 90 — v3 marks its equivalent `@internal`, and the one piece
+   * of it a consumer was documented to reach, `stats()`, is public as
+   * `cy.stats()`.
    *
    * @returns the renderer, or null on a headless instance
+   * @internal
    */
   renderer(): RendererLike | null {
     return this._renderer;
   }
 
-  /** Force a redraw next frame (no-op when headless; the loop is render-on-dirty). */
-  forceRender(): this {
-    this._renderer?.requestRender();
-
-    return this;
+  /**
+   * The renderer's frame statistics, or null when headless.  The snapshot
+   * carries the frame timings, cache hit rates and pass counters — note
+   * that `cpuFrameMs` is encode/submit cost only (submission is
+   * fire-and-forget), so reconcile fps against `gpuFrameMs`.
+   *
+   * @returns a {@link RendererStats} snapshot, or null on a headless
+   *   instance
+   */
+  stats(): RendererStats | null {
+    return this._renderer?.stats() ?? null;
   }
 
   /** Re-measure the container and redraw (no-op when headless). */
@@ -2013,28 +2020,6 @@ export class Core {
   }
 
   declare invalidateSize: this['resize'];
-
-  /**
-   * Run a callback after each rendered frame — sugar for
-   * `on( 'render', … )`.  With no animation queue and no `step` callback,
-   * this plus animation promises is how v4 observes progress.
-   *
-   * @param callback — the per-frame handler
-   * @returns this core, for chaining
-   */
-  onRender(callback: EventHandler): this {
-    return this.on('render', callback);
-  }
-
-  /**
-   * Stop running a per-frame callback.
-   *
-   * @param callback — the handler to remove; omit to remove all of them
-   * @returns this core, for chaining
-   */
-  offRender(callback?: EventHandler): this {
-    return this.off('render', callback);
-  }
 
   // -- image export --
 
@@ -2586,9 +2571,12 @@ export class Core {
 
   /**
    * The type tag `'core'` — the counterpart of a collection's
-   * `'collection'`, for code that accepts either.
+   * `'collection'`, for code that accepts either.  Demoted in round 90:
+   * v3 never documented it (it fed v3's is-checks), and v4 has no
+   * caller.
    *
    * @returns `'core'`
+   * @internal
    */
   instanceString(): string {
     return 'core';
@@ -2653,18 +2641,6 @@ export class Core {
 
   // round 64: a brevity alias of getElementById, beside $id
   declare byId: this['getElementById'];
-
-  /**
-   * All elements (the prototype has no immutable/"read-only"
-   * collections) — `elements()` by another name, memo included.
-   *
-   * @returns every element in the graph
-   */
-  mutableElements(): Collection {
-    // the memo hit inlined (round 62.4), push-invalidated (62.5b),
-    // flattened to one field load (62.6)
-    return this._allEles ?? this._allOf(null);
-  }
 
   /**
    * The `window` this instance renders into, or null when there is no DOM

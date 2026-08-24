@@ -1,27 +1,41 @@
 name: Release
+run-name: Release (${{ inputs.type }})
 
 # Single entry point for all releases. Trusted publishing on npmjs.com
 # validates the filename of the top-level workflow of the run, and only one
 # trusted publisher configuration is allowed per package, so every release
 # must start from this workflow. The trusted publisher config on npmjs.com
 # must name release.yml as the workflow filename.
+#
+# If the npm_publish job fails after the release job succeeded (e.g. a
+# transient registry error), recover with 'Re-run failed jobs' on the failed
+# run. Do NOT dispatch a new release: the version bump has already been
+# committed and pushed, so a fresh dispatch would bump the version again and
+# leave the previous version unpublished on npm.
 on:
   workflow_dispatch:
     inputs:
       type:
+        # No default: an input-less API/CLI dispatch must fail (422) rather
+        # than silently run a release; the UI dropdown still works.
         description: 'Release type'
         required: true
-        default: 'patch'
         type: choice
         options:
           - patch
           - feature
 
+# Serialize releases: overlapping runs would race their pushes to master and
+# unstable and could publish an untagged tree.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   patch-release:
     if: ${{ inputs.type == 'patch' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     environment: prod
     steps:
       - name: Set branch name
@@ -123,7 +137,7 @@ jobs:
     if: ${{ inputs.type == 'feature' }}
     runs-on: ubuntu-latest
     environment: prod
-    timeout-minutes: 10
+    timeout-minutes: 60
     steps:
       - name: checkout unstable branch
         uses: actions/checkout@v7

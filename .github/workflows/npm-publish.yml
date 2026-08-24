@@ -9,12 +9,17 @@ on:
   # the filename of the top-level workflow of the run, and the trusted
   # publisher config names release.yml, so dispatching this workflow directly
   # would fail the OIDC exchange.
+  #
+  # There is deliberately no workflow_dispatch: if this job fails after a
+  # successful release job, use 'Re-run failed jobs' on the release.yml run.
+  # That keeps release.yml as the top-level workflow for OIDC and avoids
+  # re-running the version bump.
   workflow_call:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     environment: prod
 
     steps:

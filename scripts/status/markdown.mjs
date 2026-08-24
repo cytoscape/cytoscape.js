@@ -111,6 +111,8 @@ export const HISTORICAL_PATHS = {
     "another repo's file — the CX converter round 81 reverse-engineered the annotation dialect from; cited as a source, not pointed at",
   'test/layout.mjs':
     "the cyext scaffold template's own spec file (round 71) — a file of the *generated* extension package, not this repo's test/",
+  'playwright-tests/quiet-reporter.js':
+    "round 101's plan named .js; the round shipped .mjs (tsx treats a .js in this no-type package as CJS) and the record quotes both spellings",
 };
 
 /**
@@ -187,13 +189,10 @@ export const PLANNED_PATHS = {
   'benchmark/bundles.mjs':
     'planned by round 105 (parallel edges at GeneMANIA width)',
   'src/store/patch.mts': 'planned by round 107 (id-keyed reconcile)',
-  // round 101 — quiet verification
-  'test/quiet-reporter.mjs': 'planned by round 101 (quiet verification)',
-  'scripts/quiet-run.mjs': 'planned by round 101 (quiet verification)',
-  'playwright-tests/quiet-reporter.js':
-    'planned by round 101 (quiet verification)',
-  'test/modules/quiet-scripts.mjs':
-    'planned by round 101 (quiet verification)',
+  // round 101 (quiet verification) landed 2026-08-24: its three .mjs
+  // entries left this list when the files began resolving, exactly the
+  // lifecycle documented above; the planned-but-renamed .js spelling
+  // moved to HISTORICAL_PATHS.
 };
 
 /**

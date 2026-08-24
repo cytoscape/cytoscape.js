@@ -169,7 +169,7 @@ const collectLcov = () => {
         '--test-reporter=lcov',
         `--test-reporter-destination=${out}`,
         '--test',
-        'test/!(types-*|node-test-setup).mjs',
+        'test/!(types-*|node-test-setup|quiet-reporter).mjs',
       ],
       {
         cwd: ROOT,

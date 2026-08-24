@@ -23,6 +23,9 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+# scratch (round 108 found `d2.scratch.mjs` and `tmp/x.json` tracked)
+/tmp
+
 # agent worktrees (Claude Code's `.claude/worktrees/`, Codex's equivalent).
 # Claude Code writes the same rule into `.git/info/exclude`, which is local to
 # one clone and never travels; this is the portable half.

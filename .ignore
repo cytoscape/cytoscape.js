@@ -1,0 +1,21 @@
+# Search defaults for ripgrep and fd (round 108).  This file is NOT a
+# .gitignore: nothing listed here is untracked, and git does not read it.
+# It exists because ~57% of every repo-wide search hit was v3 — measured
+# 2026-08-24: `style` 457 hits repo-wide against 189 outside v3,
+# `renderer` 213/117, `boundingBox` 116/73, `controlPoints` 37/20 — a
+# codebase agents and people are usually not working on, drowning the one
+# they are.
+#
+# v3 is still searched deliberately, for parity questions.  Do it
+# explicitly, and the flag is the whole difference:
+#
+#     rg --no-ignore -g 'v3/**' <pattern>
+#     rg --no-ignore -e 'cy.on' v3/documentation/docmaker.json
+#
+v3/
+
+# Build output: regenerated, never read for meaning.  (`build/`, `dist/`
+# and `node_modules/` are already hidden by .gitignore, which rg reads.)
+status/
+test-results/
+playwright-report/

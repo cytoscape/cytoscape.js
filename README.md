@@ -143,29 +143,29 @@ The default test scripts run directly against the source code.  Tests can altern
 
 ### Patch version
 
-1. Go to [Actions > Patch release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
+1. Go to [Actions > Release](https://github.com/cytoscape/cytoscape.js/actions/workflows/release.yml)
 1. Go to the 'Run workflow' dropdown
-1. [Optional] The 'master' branch should be preselected for you
+1. Select 'patch' in the 'Release type' dropdown
 1. Press the green 'Run workflow' button
 1. Close the milestone for the release
 
-<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-patch.png" width="300">
-
 ### Feature version
 
-1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release.yml)
+1. Go to [Actions > Release](https://github.com/cytoscape/cytoscape.js/actions/workflows/release.yml)
 1. Go to the 'Run workflow' dropdown
-1. [Optional] The 'unstable' branch should be preselected for you
+1. Select 'feature' in the 'Release type' dropdown
 1. Press the green 'Run workflow' button
 1. Close the milestone for the release
 1. Make the release announcement [on the blog](https://github.com/cytoscape/cytoscape.js-blog)
 
-<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-feature.png" width="300">
-
 ### Notes on GitHub Actions UI
 
 - 'Use workflow from' in the GitHub UI selects the branch from which the workflow YML file is selected.  Since the workflow files should usually be the same on the master and unstable branches, it shouldn't matter what's selected.
-- 'Branch to run the action on' in the GitHub UI is preselected for you.  You don't need to change it.
+- The release workflow itself checks out the right branches for the selected release type; you don't need to select a branch.
+
+### Recovering from a failed npm publish
+
+If the 'npm publish' job fails after the release job succeeded (e.g. a transient npm registry error), open the failed run and use 'Re-run failed jobs'.  Do not dispatch a new release: the version bump has already been committed and pushed, so a fresh dispatch would bump the version again and leave the previous version unpublished on npm.
 
 ## Tests
 

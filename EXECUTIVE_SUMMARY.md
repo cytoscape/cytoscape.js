@@ -210,6 +210,28 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a typed surface that matches intent — 460 → 355 public members, the
     declaration 9,695 → 8,387 lines — with every removal a MIGRATING row and
     every demotion still working at runtime.
+- **24 Aug** — the repo itself is made workable by an agent
+  - The instructions, the record and the search results were all costing
+    more than the work.  `AGENTS.md` — which both Codex and Claude Code load
+    verbatim before a session knows what it is for — went from **62,818 to
+    10,303 bytes** (~15.7k to ~2.6k tokens), with every hard-won lesson
+    moved *verbatim* into five `docs/agents/` notes and a routing table
+    keyed by what you are about to do put in their place.  The 1.5 MB
+    development record — past what any agent can open — became one file per
+    section under `plan/rounds/`, verified byte-identical to the original
+    (1,524,666 bytes over 146 files) and still published as one page.  v3,
+    which is 821 of 1,290 tracked files and ~57% of every search hit, is
+    now declared frozen in its own nested `AGENTS.md` and skipped by
+    default in search (`style`: 462 hits to 186).
+  - One live defect fell out of the review: a Claude Code worktree left
+    behind after an earlier round put **141 of 278 files into `npm pack`**
+    and had turned `test:modules` red, because `.npmignore` is a denylist
+    with no entry for a directory that did not exist when it was written.
+    Fixed, gated, and the closing sweep now checks `git worktree list`.
+  - Buys a named inner loop (`npm run -s verify`, 9.6 s against the
+    88-second gate) and four new gates that keep all of the above from
+    growing back: a byte budget on `AGENTS.md`, its paths and script names
+    checked, and the record's index held in step with its files.
 
 ---
 

@@ -156,7 +156,6 @@ describe('packaging: the tarball', () => {
       'typescript/',
       'v3/',
       '.github/',
-      'tests-examples/',
       'build/',
       'status/',
     ];
@@ -169,6 +168,27 @@ describe('packaging: the tarball', () => {
         `${prefix} must not ship (${hits.slice(0, 3).join(', ')})`,
       ).to.have.lengthOf(0);
     }
+  });
+
+  it('ships nothing from an agent worktree (round 108)', () => {
+    // Round 108's finding, measured on the maintainer's own checkout: a
+    // Claude Code worktree left behind under `.claude/worktrees/` put **141
+    // of 278** packed files into the tarball — a whole second copy of the
+    // repo, on an abandoned branch, 352 MB on disk.  Nothing was wrong with
+    // the tooling; `.npmignore` is a denylist and no one had thought of a
+    // directory that did not exist when it was written.
+    //
+    // Git hides those worktrees through `.git/info/exclude`, which is local
+    // to one clone and which `npm pack` does not read at all, so this is
+    // exactly the class of exclusion that has to be asserted rather than
+    // assumed.  The control is live: create a file under `.claude/` and
+    // re-run pack — it fails without the `.npmignore` entry.
+    const hits = files.filter((f) => f.startsWith('.claude'));
+
+    expect(
+      hits,
+      `agent harness state must not ship (${hits.slice(0, 3).join(', ')})`,
+    ).to.have.lengthOf(0);
   });
 
   it('ships exactly the markdown a consumer needs, and nothing else', () => {

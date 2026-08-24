@@ -46,6 +46,7 @@ import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
 import { planBenchmarks, BENCH_CSS } from './status/bench-pages.mjs';
 import { indexPage, INDEX_CSS } from './status/index-page.mjs';
+import { assemble as assemblePlan } from './plan-record.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -68,6 +69,12 @@ export const DOCUMENTS = [
     title: 'Development record',
     blurb:
       'Every round, its plan, what it found and the controls that proved it.',
+    // Round 108.2 split the record into `plan/rounds/NNN-slug.md`; the page
+    // stays one continuous document, assembled from `PLAN.md` plus every
+    // section file in order.  `assemble()` is the same function the split
+    // was verified with, so what this renders is byte-identical to the
+    // pre-split file.
+    assemble: assemblePlan,
   },
   {
     file: 'src/README.md',
@@ -104,6 +111,44 @@ export const DOCUMENTS = [
     nav: null,
     title: 'Contributor guide',
     blurb: 'The conventions and the hard-won testing rules.',
+  },
+  // round 108.1 moved AGENTS.md's lessons into these; the site publishes
+  // them so the contributor guide is still whole here, not a set of links
+  // to files a reader of the site cannot open
+  {
+    file: 'docs/agents/architecture.md',
+    to: 'agents-architecture.html',
+    nav: null,
+    title: 'Agent notes: architecture',
+    blurb: 'The repository, directory by directory.',
+  },
+  {
+    file: 'docs/agents/testing.md',
+    to: 'agents-testing.html',
+    nav: null,
+    title: 'Agent notes: testing',
+    blurb: 'The suites, and what a spec has to do to count.',
+  },
+  {
+    file: 'docs/agents/rendering.md',
+    to: 'agents-rendering.html',
+    nav: null,
+    title: 'Agent notes: rendering',
+    blurb: 'The renderer, the shaders and the debug harness.',
+  },
+  {
+    file: 'docs/agents/benchmarking.md',
+    to: 'agents-benchmarking.html',
+    nav: null,
+    title: 'Agent notes: benchmarking',
+    blurb: 'Making a row measure the thing it is named for.',
+  },
+  {
+    file: 'docs/agents/documentation.md',
+    to: 'agents-documentation.html',
+    nav: null,
+    title: 'Agent notes: documentation',
+    blurb: 'The JSDoc gates and the records.',
   },
   {
     file: 'CONTRIBUTING.md',
@@ -159,7 +204,7 @@ export function buildPlan({
         continue;
       }
 
-      const md = readFileSync(path, 'utf8');
+      const md = doc.assemble ? doc.assemble(root) : readFileSync(path, 'utf8');
       const { html, toc, paths } = renderMarkdown(md, mdCtx);
       // a spelling in `HISTORICAL_PATHS` is quoted rather than pointed at
       // and can never resolve, and one in `PLANNED_PATHS` is a planned

@@ -1,0 +1,157 @@
+/*
+Round 108.2: the development record is a directory now, and this is what
+keeps it honest.
+
+`PLAN.md` was 1.5 MB — ~381k tokens over 146 sections — so no agent could
+read the document written for it, and every round-closing edit was a blind
+append at the tail.  The sections moved to `plan/rounds/NNN-slug.md`, and the
+split was verified the only way a restructure can be: the head plus every
+section file, in order, reproduced the pre-split file **byte for byte**
+(1,524,666 bytes, 146 files).
+
+That control ran once, at the split.  What has to keep running is everything
+that can drift afterwards: an index nobody regenerated, a file named outside
+the convention, a section with no heading, two files claiming one position.
+Each of those fails quietly — a stale index still renders, and a heading-less
+file still concatenates — which is exactly why they are asserted here.
+*/
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { expect } from 'chai';
+
+import {
+  readSections,
+  renderIndex,
+  assemble,
+  roundOf,
+  kindOf,
+  ROUNDS_DIR,
+  INDEX_FILE,
+} from '../../scripts/plan-record.mjs';
+
+const ROOT = fileURLToPath(new URL('../..', import.meta.url));
+const dir = join(ROOT, ROUNDS_DIR);
+const sections = readSections(ROOT);
+
+describe('the development record', () => {
+  it('has section files to index', () => {
+    // The control for every assertion below: an empty directory satisfies
+    // "every file is well named" and "the index matches" trivially.
+    expect(existsSync(dir), `${ROUNDS_DIR} is missing`).to.equal(true);
+    expect(sections.length).to.be.greaterThan(100);
+  });
+
+  it('names every section file NNN-slug.md', () => {
+    for (const file of readdirSync(dir)) {
+      expect(file, `${file} is not a section file`).to.match(
+        /^\d{3}-[a-z0-9-]+\.md$/,
+      );
+    }
+  });
+
+  it('numbers the sections uniquely and without gaps', () => {
+    // A duplicate prefix is the failure mode of writing a round by hand:
+    // two files sort adjacently, both render, and the index shows one
+    // position twice.
+    const seqs = sections.map((s) => s.seq);
+
+    expect(new Set(seqs).size, 'duplicate section numbers').to.equal(
+      seqs.length,
+    );
+    expect(seqs).to.deep.equal(seqs.map((_, i) => i + 1));
+  });
+
+  it('starts every section with its `##` heading', () => {
+    for (const s of sections) {
+      const text = readFileSync(join(dir, s.file), 'utf8');
+
+      expect(
+        text.startsWith('## '),
+        `${s.file} does not open with a heading`,
+      ).to.equal(true);
+      expect(s.title, `${s.file} has an empty heading`).to.not.equal('');
+    }
+  });
+
+  it('keeps plan/INDEX.md in step with the files on disk', () => {
+    // The whole point of a generated index: `npm run plan:index` is the fix,
+    // and a red build here is the only thing that makes anyone run it.
+    const current = readFileSync(join(ROOT, INDEX_FILE), 'utf8');
+
+    expect(current, 'run `npm run plan:index`').to.equal(renderIndex(sections));
+  });
+
+  it('links every section from the index exactly once', () => {
+    const index = readFileSync(join(ROOT, INDEX_FILE), 'utf8');
+
+    for (const s of sections) {
+      const href = `rounds/${s.file}`;
+      const hits = index.split(href).length - 1;
+
+      expect(hits, `${s.file} is linked ${hits} times`).to.equal(1);
+    }
+  });
+
+  it('assembles into the whole record, with PLAN.md first', () => {
+    // What the status site publishes.  Asserting the parts are all present
+    // is the cheap half; asserting the *order* is the half that matters,
+    // since a record whose rounds are shuffled reads as a different history.
+    const whole = assemble(ROOT);
+    const head = readFileSync(join(ROOT, 'PLAN.md'), 'utf8');
+
+    expect(whole.startsWith(head)).to.equal(true);
+
+    let at = head.length;
+
+    for (const s of sections) {
+      const text = readFileSync(join(dir, s.file), 'utf8');
+      const found = whole.indexOf(text, at);
+
+      expect(
+        found,
+        `${s.file} is out of order in the assembled record`,
+      ).to.be.greaterThan(-1);
+      at = found + text.length;
+    }
+
+    expect(whole.length).to.be.greaterThan(1_000_000);
+  });
+
+  it('keeps PLAN.md itself readable in one sitting', () => {
+    // The reason for the split.  Left ungated, the head grows back — this
+    // file is where rounds were appended for a year.  The budget is the
+    // standing sections plus room to maintain them, well under what a
+    // reader or an agent can hold.
+    const bytes = readFileSync(join(ROOT, 'PLAN.md')).length;
+
+    expect(
+      bytes,
+      'PLAN.md is growing back; new rounds go in plan/rounds/',
+    ).to.be.lessThan(200 * 1024);
+  });
+
+  it('parses the round number and kind out of a heading', () => {
+    // These two derive the index's columns from prose, so they are the part
+    // most likely to be silently wrong.  Cases taken from real headings.
+    expect(
+      roundOf('Round 12 plan — curved edges (planned 2026-07-29)'),
+    ).to.equal('12');
+    expect(
+      roundOf('Landed (round 12a — bundled bezier + self-loops)'),
+    ).to.equal('12a');
+    expect(roundOf('Round 46.5 — the status site')).to.equal('46.5');
+    expect(roundOf('Rounds 102–107 — the ecosystem rounds')).to.equal(
+      '102–107',
+    );
+    expect(roundOf('Context')).to.equal(null);
+
+    expect(
+      kindOf('Round 12 plan — curved edges (planned 2026-07-29)'),
+    ).to.equal('plan');
+    expect(kindOf('Landed (round 9 — animation, 2026-07-24)')).to.equal(
+      'landed',
+    );
+    expect(kindOf('v3 → v4 parity gap analysis (2026-07-28)')).to.equal('note');
+  });
+});

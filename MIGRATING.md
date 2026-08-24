@@ -221,7 +221,8 @@ channels stops the older one in place — its promise resolves, its values
 freeze, and the new one captures from there.
 
 There is no `queue` option, and the spelling **throws** (there is no queue to
-opt out of). The v3 `step` callback is out too: use `onRender` plus promises.
+opt out of). The v3 `step` callback is out too: use `cy.on( 'render', … )`
+plus promises.
 `stop()` lost its `clearQueue` argument — it is `stop( jumpToEnd )` now.
 
 ### 5. Removed elements are terminally dead
@@ -535,6 +536,17 @@ instances are not emitters.
 Deliberately, with no replacement planned:
 
 - classes, selector strings, style functions
+- the round-90 API review's removals: `cy.forceRender()`,
+  `cy.batchData()` (a plain `batch()` over `data()` writes),
+  `cy.mutableElements()` (it was `elements()` by another name),
+  `onRender`/`offRender` (use `cy.on( 'render', … )`), and the
+  `bind`/`unbind`/`listen`/`unlisten` listener aliases — the event
+  surface follows Node's `EventEmitter` spellings
+  (`on`/`off`/`once`/`addListener`/`removeListener`), plus `pon`
+- also from round 90, demoted rather than removed: `cy.renderer()`,
+  `instanceString()` and the `silentPosition(s)`/`silentShift` writes
+  still work but left the typed surface (`@internal`); `cy.stats()` is
+  the public frame-stats snapshot that replaces `cy.renderer().stats()`
 - `z-index` and companions; `sortByZIndex`, `zDepth`
 - `restore`/`clone`/`copy`, `cy.json()` import
 - event namespaces; the `vmouse*` aliases and raw mouse/touch re-emits

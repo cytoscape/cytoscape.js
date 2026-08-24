@@ -201,6 +201,16 @@ that compile and then behave differently.
 
 ### Removed
 
+- **The round-90 API review's parity baggage**: `cy.forceRender()`,
+  `cy.batchData()`, `cy.mutableElements()` (it was `elements()` by
+  another name), `onRender`/`offRender` (use `cy.on( 'render', … )`),
+  and the `bind`/`unbind`/`listen`/`unlisten` listener aliases — the
+  event surface follows Node's `EventEmitter` spellings, plus `pon`.
+  Demoted rather than removed (working, but `@internal` and out of the
+  typed surface): `cy.renderer()` — `cy.stats()` is the public
+  frame-stats snapshot in its place — `instanceString()`, the
+  `silentPosition(s)`/`silentShift` writes, the `StyleEngine` and
+  animation machinery, and the `Viewport` class.
 - **Selector strings**, everywhere — and `cy.$()` with them (`cy.$id()` is
   the id lookup). Passing one throws, naming the replacement.
 - **Classes** (`addClass`/`removeClass`/`toggleClass`/`hasClass`/

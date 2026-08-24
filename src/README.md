@@ -545,9 +545,11 @@ sources in both directions — the type declaration alone would keep the
 typecheck green if a wiring line were deleted.
 
 Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
-plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
-`renderedExtent`, `size`), events (with the usual aliases +
-`onRender`/`offRender`; delegation via predicate functions), graph
+plus `reset`, `viewport`, `zoomRange`, `renderedExtent`, `size`;
+`getFitViewport`/`getCenterPan` are `@internal` since round 90), events
+(Node's `EventEmitter` spellings plus `pon` since round 90 —
+`bind`/`unbind`/`listen`/`unlisten` are gone, and `on( 'render', … )`
+replaced `onRender`/`offRender`; delegation via predicate functions), graph
 manipulation, `style()` (the `{ nodes, edges, parents, core }`
 sheet), `layout()`/
 `makeLayout` (grid, preset, circle, concentric, breadthfirst, random,
@@ -559,9 +561,12 @@ plumbing with spacingFactor/transform/animate — an animated layout
 fits by animating the viewport to the box at the *final* positions,
 concurrently with the node tweens), `pick()`, `png()`/`jpg()` (async image
 export — see the design decisions below),
-`renderer()`/`forceRender()`/`resize()`, graph-level
-`data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
-`batchData`/`batching` — see below), `json()` (export-only),
+`stats()`/`resize()` (round 90: `renderer()` is `@internal`,
+`forceRender` is gone — the loop is render-on-dirty — and `cy.stats()`
+is the public frame-stats snapshot), graph-level
+`data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`;
+`batchData` was removed and `batching` demoted in round 90), `json()`
+(export-only),
 box selection (`elementsInBox` + the pointer gesture — mouse/pen,
 and the round-20.5 three-finger touch box),
 `selectionType`, `boxSelectionIncludesLabels` (round 16.5) and
@@ -572,14 +577,17 @@ ctor options + getter/setters, see the gestures notes below),
 interaction gating
 (`autolock`/`autoungrabify`/`autounselectify`,
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
-`boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
-`headless`, `mutableElements`, `hasElementWithId`/`$id`, `options`),
+`boxSelectionEnabled`), introspection (`isReady`, `headless`,
+`hasElementWithId`/`$id`, `options`; round 90 removed
+`mutableElements` — it was `elements()` — and demoted
+`instanceString`),
 `destroy()`, `width()`/`height()`, and `compact()` (round 19 — the
 explicit form of the automatic slot-compaction trigger; see below;
 `gc` is its alias since round 39.3).
-Collections: `cy()`/`renderer()`/`element()`, events, graph
+Collections: `cy()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
-rendered, `shift`, silent variants, edge `midpoint`/endpoints —
+rendered, `shift`; the silent variants — and `renderer()`/`element()` —
+are `@internal` since round 90, edge `midpoint`/endpoints —
 curve-aware since round 12a, along with `controlPoints`/
 `renderedControlPoints`/`isBundledBezier`, and — 12b —
 `segmentPoints`/`renderedSegmentPoints` for segments/taxi edges, with
@@ -588,7 +596,8 @@ haystack edges answer endpoints/midpoint/bb with their offset
 points, and manual-endpoint edges resolve everything through the
 route evaluator),
 iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
-filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
+filtering (`diff`, `absoluteComplement`, set aliases; `byGroup` is
+`@internal` since round 90),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,
 `successors`/`predecessors`, `edgesWith`/`edgesTo`,
 `parallelEdges`/`codirectedEdges`, `components`), the compound
@@ -1505,7 +1514,7 @@ each is deliberate, not a pass-1 deferral:
   promise resolves, values freeze, any GPU lease settles) and the
   new one captures from there.  There is no `queue` option (nothing
   to opt out of — the spelling throws) and no v3 `step` callback
-  (`onRender` + promises observe progress).
+  (`on( 'render', … )` + promises observe progress).
 
   The
   `pause`/`progress`/`reverse` controls and style transitions were
@@ -3368,7 +3377,9 @@ shared one varies ±30%):
   (or the scope collection's refs) instead of interning a handle per
   element.  Order is preserved exactly — layouts place by index — and
   specs pin it against `cy.nodes()`/`cy.edges()`.
-- **`mutableElements()` — 121 µs → 20 ns** (round 34.2): the three
+- **`mutableElements()` — 121 µs → 20 ns** (round 34.2; the member was
+  removed in round 90 — it was `elements()` by another name, and the
+  memo lives on under that spelling): the three
   unfiltered collections (`elements`, `nodes`, `edges` with no query)
   are memoized.  Round 34.2 keyed the memo on a store *structure
   epoch* — a counter and not a count, so add-one-remove-one between

@@ -40,7 +40,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | | |
 |---|---|
 | Automated tests | 2,245 unit · 467 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
-| Documented API | 373 members over 48 sections, gated at 100% |
+| Documented API | 325 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
@@ -194,6 +194,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys agent context spent on failures instead of on green; the first full
     quiet run proved the point by printing exactly one real failure (a
     planned-paths gate its own new files had tripped) and nothing else.
+- **24 Aug** — the parity pass audited: the API sheds what it never meant to ship
+  - The early rounds copied v3's surface aggressively, and the bill came due:
+    the public tier carried members v3 itself kept internal.  A new
+    member-grained `@internal` tag now runs through the coverage scanner, the
+    docs generator and the shipped declaration (which oxc already half
+    honored, unnoticed); the maintainer ruled on every headline member.
+    Removed: `forceRender`, `onRender`/`offRender`, `mutableElements`,
+    `batchData`, and the `bind`/`unbind`/`listen`/`unlisten` listener
+    aliases — the event surface now follows Node's `EventEmitter` spellings,
+    plus `pon`.  Demoted to internal: `renderer()` (with a new public
+    `cy.stats()` snapshot in its place), `instanceString`, the silent
+    position writes, the style-engine and animation machinery, and the
+    whole `Viewport` class.
+  - Buys a typed surface that matches intent — 460 → 355 public members, the
+    declaration 9,695 → 8,387 lines — with every removal a MIGRATING row and
+    every demotion still working at runtime.
 
 ---
 
@@ -218,6 +234,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `motifCensus`.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
+- **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
+  `mutableElements`, `onRender`/`offRender` and the jQuery-era
+  `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener
+  spellings follow Node's `EventEmitter`, plus `pon`; `cy.stats()`
+  replaces `cy.renderer().stats()`.
 
 ## Open decisions
 

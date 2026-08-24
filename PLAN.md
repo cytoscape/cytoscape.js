@@ -9,7 +9,10 @@ design-decisions doc, and `EXECUTIVE_SUMMARY.md` is the five-minute
 version of this file for someone who will never open it.
 
 **Where the rounds are** (round 108.2): each `##` section of this record
-is its own file under **`plan/rounds/NNN-slug.md`**, indexed in
+is its own file under **`plan/rounds/`**, named
+**`YYYY-MM-DD-NN-rndRRRR-description.md`** — when it was written, a
+counter among the sections sharing that date, and the round it is about
+(`rnd0000` for the sections that are not rounds) — and indexed in
 **`plan/INDEX.md`** (generated — `npm run plan:index`).  This file keeps
 only the parts that are *maintained* rather than appended to, which is
 what makes it readable in one sitting; the record itself had reached

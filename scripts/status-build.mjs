@@ -69,7 +69,7 @@ export const DOCUMENTS = [
     title: 'Development record',
     blurb:
       'Every round, its plan, what it found and the controls that proved it.',
-    // Round 108.2 split the record into `plan/rounds/NNN-slug.md`; the page
+    // Round 108.2 split the record into one file per section; the page
     // stays one continuous document, assembled from `PLAN.md` plus every
     // section file in order.  `assemble()` is the same function the split
     // was verified with, so what this renders is byte-identical to the

@@ -158,6 +158,7 @@ describe('packaging: the tarball', () => {
       '.github/',
       'build/',
       'status/',
+      'dev/',
     ];
 
     for (const prefix of dev) {

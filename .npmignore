@@ -15,6 +15,12 @@ test-results
 build
 /status
 
+# agent harness state — the worktrees an agent creates hold a whole second
+# copy of the repo (round 108 found 141 of 278 packed files coming from one
+# abandoned 352 MB worktree).  `.npmignore` is a denylist, so a directory
+# nobody thought of ships by default; `test/modules/packaging.mjs` gates this.
+.claude
+
 # development config and tooling
 .github
 .oxlintrc.json

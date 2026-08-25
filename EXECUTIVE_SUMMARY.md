@@ -10,8 +10,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 ## How to maintain this file
 
-- **[`PLAN.md`](PLAN.md) is the source; this file is derived from it.** Nothing
-  is recorded here that is not recorded there first.
+- **The development record is the source; this file is derived from it.** That
+  record is the round files under `plan/rounds/`, indexed in `plan/INDEX.md`,
+  plus [`PLAN.md`](PLAN.md)'s standing sections. Nothing is recorded here that
+  is not recorded there first.
+- **This is the only cross-round summary of the work, by design** (round
+  108.4). `PLAN.md` used to carry a second one and it silently stopped at
+  round 64; the duplicate was removed rather than revived, which makes the
+  rule below the thing keeping this history current.
 - **Rewrite when a round closes** — by re-reading the record and restating it,
   never by appending.
 - **Point form only.** Short points, high level, readable in five minutes.
@@ -19,8 +25,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   **what it buys** — the benefit, not the implementation. A change earns a line
   only if it changed what the library *is* or what it can do; most do not.
 - **No round narrative.** Rounds, file names, sub-round numbering and
-  implementation detail belong in `PLAN.md`. Round numbers appear here only
-  where one is the sole handle on an open question.
+  implementation detail belong in the round files. Round numbers appear here
+  only where one is the sole handle on an open question.
 - **Restate, don't append.** Later work routinely changes what an earlier
   decision meant, so earlier days need correcting too.
 - **Facts, not judgement.** The numbers table below stays current; assessments
@@ -281,8 +287,8 @@ The release path:
 | Release engineering | The release workflows are still v3's, and are marked as not yet adapted |
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 
-The planned queue — each item has a written plan in `PLAN.md`, verified
-against the source before planning (the mid-August planning wave):
+The planned queue — each item has a written plan under `plan/rounds/`,
+verified against the source before planning (the mid-August planning wave):
 
 | | |
 |---|---|

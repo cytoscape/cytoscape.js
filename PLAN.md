@@ -21,400 +21,37 @@ round is a new file in `plan/rounds/`, then `npm run plan:index`.  The
 status site still publishes the whole thing as one page, assembled from
 this file plus every section in order.
 
-Three sections here are kept current rather than appended to, and they
-are where to start: **"Open calls for the maintainer"** (every question
-waiting on a decision, plus the ideas logged for later), **"Suggested
-sequencing"** (what is built, what is not, and what nobody has written
-down yet), and the round-by-round summary immediately below.
+Two sections here are kept current rather than appended to, and they
+are where to start: **"Process"** (the rules every round is held to)
+and **"Open calls for the maintainer"** (every question waiting on a
+decision, plus the ideas logged for later).
 
 **Status: implemented and evolving** on the `v4` branch (started as
-`feature/webgpu`).  The base pass (11 commits, `e30542cf4..9b177c193`)
-landed first — including SDF node labels, pulled into scope so labelled
-rendering could be assessed for performance — and subsequent rounds
-(follow-ups, API gap closure, the selector removal, mappers, animation,
-image export, label testability, the round-10 parity sprint, round-11
-slot-stable compaction, edge-label autorotate) are recorded below as
-"Landed (round N)" sections, each verified green when it landed.
+`feature/webgpu`); the base pass was 11 commits, `e30542cf4..9b177c193`.
 
-Rounds 12–14 are the three big parity rounds, all complete: the
-round-12 curved-edges plan has both flagged calls signed off, pass
-12a (bundled bezier + self-loops) landed 2026-07-30, and pass 12b
-(unbundled bezier + segments + taxi) landed 2026-07-30/31, and pass
-12c (endpoints + haystack/straight-triangle) landed 2026-07-30/31 —
-**round 12 is complete**.
+**What happened, and where to read it** (round 108.4).  This file used to
+open here with a round-by-round prose summary of the work.  It is gone,
+and its removal is the point rather than a tidy-up: it was a third copy
+of a history two better-kept documents already hold, and the only copy
+nothing obliged anyone to update.  It had stopped at **round 64** while
+44 further rounds landed behind it — so the record opened by summarising
+itself up to a point it no longer reached, which is worse than not
+summarising itself at all.
 
-The round-13 style-prop parity plan
-(2026-07-30, at the end of this file) landed in full on 2026-07-31 —
-**round 13 is complete** (12c → A1–A2 → B1–B7 → C1–C3 → D1–D4, every
-item with Node specs plus a golden and/or a live v3 pixel-parity
-scene).
+- **The five-minute version is [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md)**,
+  which `AGENTS.md` requires be rewritten from the record whenever a
+  round closes.  That ritual is why it is current and this was not.
+- **What a particular round did is in that round's own file**, found
+  through `plan/INDEX.md` — generated, so it cannot go stale the way
+  prose does.
+- **What v4 *is*, as opposed to how it got here, is `src/README.md`** —
+  the maintained scope, deviations and design-decisions doc.
 
-The round-14 compound-nodes plan (2026-07-31, at the end of
-this file) landed in full the same day — **round 14 is complete**
-(14.0 docs-first → 14.1–14.8 model/CPU → 14.9–14.11 renderer/
-interaction → 14.12 benchmarks, every item tests-first with Node
-specs, and the renderer items with goldens + live v3 pixel-parity
-scenes).
+Nothing was lost: every sentence the summary carried about a round is in
+that round's own file, verbatim since 108.2.
 
-A 2026-08-01 design sitting **dropped z-index outright**
-(decided design) and scoped rounds 15–18 — background images,
-multiline labels + label bb, the event vocabulary + extension
-contract, and the GPU force layout — and all four rounds **landed in
-full the same day** (plans + per-item records at the end of this
-file; every item tests-first, 2142 Node + 60 module tests and
-138 Playwright specs green at the close).
-
-**Round 19** (2026-08-01)
-landed slot-moving compaction — the last open architecture item —
-and **round 20** (2026-08-01, the plan at the end of this file)
-closed gap item 8: the interaction tuning options
-(`wheelSensitivity`, the tap-threshold pair, `tapholdDuration`), the
-`events`/`text-events` pointer-transparency props, and the
-two-finger-cxt + three-finger-box touch gestures (2190 Node tests
-and 147 Playwright specs green at the close).
-
-A **third design
-sitting** (2026-08-01) took three user calls and scoped rounds
-21–23, all landed the same day: **round 21** removed the animation
-queue (concurrency by channel, promises as the sequencing
-mechanism), **round 22** split display/visibility (show/hide stays
-the structural tier — now re-fanning bezier bundles — and the
-`visibility` style prop is paint-only invisibility keeping space
-and bundle ranks, via a derived FLAG_DRAWN and a one-line WGSL mask
-flip), and **round 23** brought node charts (v3's 101 pie/stripe
-props as the lean list-valued `chart` family — data-driven values,
-scheme palettes, donut holes — with the pie parity scene at 0.000%
-against v3; 2214 Node tests and 151 Playwright specs green at the
-close).
-
-Rounds 24–28 (2026-08-01/03) closed the remaining ledger
-work — style transitions and the animation controls (24), the
-geometry tweens (25), the authoring surface of JSDoc + shipped
-declarations (26), the visual-parity remnants of v3's shape and
-arrowhead vocabularies (27), and the no-call remainder (28) — after
-which **what was left of the ledger was open calls rather than
-effort**.
-
-Rounds 29–30 (2026-08-03) therefore work a different axis:
-not what is unbuilt but what is **unpinned** — the alias surface, the
-decided drops at the API boundary and the curve premium in 29, and
-v4's **error contract** in 30, which took the throw sites the Node
-suite never runs from 34 to 0.  Rounds 31–32 (2026-08-03) stayed on
-that axis and moved it onto the *documented* contract: 31 found the
-one error message advising a form v4 rejects and took `@throws` to
-16/16 under a gate, and 32 took `@param` to 221/221 under the same
-gate, the boundary drawn by docmaker's own per-argument shape.
-
-**Round 33** (2026-08-03, at the end of this file) took the same
-question to the third measurement axis — *what costs what* — where
-roughly a third of the prototype had no benchmark at all and the
-report's job table ran half the suites that existed.  Fourteen suites
-became 22, the report grew an `--all` profile that runs every one of
-them (closing open call 7), and the round's most useful output is the
-**five slow paths it found and localized** — the style getters, the
-compound emit walk, the layout contract's per-run materialization,
-`mutableElements()` and `indexOf()` — each logged rather than fixed,
-because a measurement round measures.
-
-**Round 34** (2026-08-03) then
-fixed all five: three now sit at parity with v3 (`indexOf`,
-`mutableElements`, and the emit path's new no-listener gate), the style
-getters went 5.8× → 2.3× by memoizing `normalizeProp`, and the layout
-contract's per-run cost fell 333 µs → 795 ns.  Two of the five findings
-were **corrected while being fixed** — the style gap was inflated by
-tsx's `__name` wrapper, and the row round 33 cited for the emit finding
-never reached the emit path — which is the round's own lesson: check a
-hot-path finding against the built bundle before rewriting anything.
-
-**Round 35** (2026-08-03) came from the maintainer asking why the
-residual was shaped the way it was — a 150-case switch behind the style
-getters — and replaced it with a dispatch table, which *flattens* the
-per-property spread (5.1× → 2.3×) rather than uniformly lowering it.
-
-**Round 36** (2026-08-04) is the **completion round**: with the rest of
-this file's remainder being open calls, it took the tail that needs no
-decision — `@returns` to 276/276 (written, ungated at the time; round
-37.1 has since gated it, and the surface is 279/279), the
-`@param` gate's own blind spot (exported functions; 229/229 then,
-232/232 now — round 37.3 added the entry point and round 45 a whole
-file the tier had never listed), the
-browser-only throw tier closed by four specs and three
-reclassifications, the two un-benchmarked collection members, and three
-measurements promised here and never taken.
-
-It also shipped a
-**stranded-doc-block check**, which found six more instances of this
-codebase's most repeated documentation defect on its first run — one of
-them shipping in the declarations.
-
-A **fifth design sitting** (2026-08-04) then took **every open call in
-the ledger** with the maintainer and scoped the **production-readiness
-roadmap**: rounds 37–51, from the governance close-out (gates, the alias
-split, the strictness closures) through the full `border-style` port, the
-v4 Event, the `v3/` repo restructure that makes v4 the package's default
-export, the docs generator and v4 site, the migration guide, robustness
-and cross-platform passes, to a published **4.0.0**.  The per-item
-decisions are recorded in "Open calls for the maintainer" below; the
-sitting record and the round 37–51 plans are at the end of this file.
-
-**Rounds 37, 39, 41 and 42 have since landed** (2026-08-04): **37** the
-governance close-out (throw coverage and `@returns` now gate, the alias
-split), **39** the decided feature tail (overlap box selection, graph data
-on the wire, `cy.gc()`), **41** the v4 Event and emitter — complete except
-functional `preventDefault()` for gesture defaults, which became an open
-call when the enumeration turned out not to be derivable from v3 — and
-**42** the great restructure, which changed no behaviour and made v4 *the*
-package: this source promoted from `src/gpu/` to `src/`, v3 moved whole
-into a self-contained, still-buildable `v3/`, and the root `package.json`
-became `cytoscape@4.0.0-unstable`.
-
-**Round 43** (2026-08-04) was inserted
-ahead of the release sequence — the **debug harness**, which turned out to be
-both broken (four of its seven networks 404'd, a round-42 regression) and
-misleading (its style sanitizer was so far behind the engine that every fixture
-rendered flat and unlabelled); it also fixed the background-grab indicator,
-which had never followed the cursor.
-
-A **maintainer review pass on
-2026-08-05** then found three more things only opening the page could —
-LiveReload had never connected on either project, box selection cost seconds
-of forced layout in the harness's own event log, and the compound fixture was
-not the verbatim port its record claimed — the last of which turned up a
-library defect underneath it: the conservative `fit()` scan was inflating
-compound graphs by a chord term belonging to a different curve kind (recorded
-as 43.10–43.13 and open call 16).
-
-**Rounds 44, 45, 47 and 48 then
-landed** (2026-08-04/05), taken in that order because they are the release
-sequence's decision-free part: **44** the packaging gates, whose finding was
-that two of its own three items were never open questions at all (v3's
-tracked `dist/` answers what ships at release) and that what was missing was
-a check that the manifest, the build and the tarball agree; **45** the docs
-generator, which turns nineteen rounds of gated JSDoc into 362 documented
-members and found four things on the way — including that `event.mts` sat
-outside the audit's public tier and that the layout-extension contract
-shipped no types at all; **47** the migration guide and CHANGELOG, whose
-property table is *measured* against both libraries rather than remembered
-(v4 accepts 153 of v3's 291 style property names); and **48** the soak tier,
-which found **four defects** — a corrupt wire buffer that made a load never
-return, two more that cost 25.9 s and 5.7 s, and identity comparing equal
-across two instances, so that `union()` silently dropped the other graph's
-elements.
-
-**Round 46.5** (2026-08-05) was then inserted at the
-maintainer's request, outside the release sequence: the **status site**,
-a deployable preview of the branch — the harness, the benchmark archive,
-the API reference and the repository documents compiled into a gitignored
-`status/` and served from Cloudflare Pages.  It also gave the benchmark
-report the machine provenance a published premium needs, and found four
-things by building it, one of which (a code span in *this file* holding
-`<script>`) broke every page on the site until a browser was pointed at
-it.
-
-**Round 38 landed 2026-08-08**: scoping
-it found three sub-calls the sitting did not reach (open call 1) —
-**taken at the sixth design sitting (2026-08-06)**, which swept the
-whole open backlog (items 14–16 ratified, round 52's build-step call
-taken, item 12 given its direction, the round-54 bounds round
-scheduled) — and the round then built the full scope, its record beside
-the plan.  **Round 40 is a design
-sitting**, its taxonomy-first prep approved at the same sitting.
-
-**Round 55** (2026-08-06) was then inserted ahead of 38, after a
-maintainer opened `debug/?network=v3-default` and reported five things no
-test could see — because every golden is v4-vs-v4 and the parity scenes
-that could have caught them deliberately drew no arrows.  It built the
-missing measurement: a **numeric v3-vs-v4 routing harness** comparing
-both libraries' routed geometry field by field, an ink floor on all 29
-parity scenes (twelve had none), three arrow parity scenes, and Node
-twins pinning the boundary-approximation tier to v3's own math.
-
-Its
-headline finding was a negative one — **v4's curve routing is correct**,
-taxi and segments matching v3 exactly including the axis-aligned
-degenerates — which moved the search downstream to the strip and the
-arrows.  It fixed the `round-taxi` NaN that made `boundingBox()` answer
-all-null, logged two public-API calls (items 19–20), and left **its arrow
-gap port unlanded**, with failing tests and verified constants in place.
-
-**Round 56** (2026-08-07) landed that port and rather more: v3's `gap`
-and `spacing` on both the CPU and in generated WGSL, the hollow-head
-*stroke clipping* nobody had predicted — found by rendering the scene
-rather than by reading the code — a **close-up parity tier** that views
-short edges at zoom 3-5 where anti-aliasing no longer hides geometry,
-and the six goldens that had been silently **cropping the graph**, one of
-them losing a third of its canvas including four arrowheads whose mapper
-clauses had never been written.  Four of its own inherited predictions
-were corrected by measurement; the round record has them.
-
-**Round 57** (2026-08-07 to 08) is the cleanup round the maintainer
-raised, and it is six items with one thread: the repository adopts
-`oxfmt`, these two documents are made readable and honest about how far
-v4 is from ready, `debug/` gains four networks ported from v3's demos,
-the status build stops warning about paths it should not, and the default
-look moves onto v3's.
-
-Its most useful outputs are the things a tool found rather than the
-things it built: reformatting the tree exposed five public members
-invisible to the `@param` gate, two audits whose detection fell silently,
-and one **false pass in the throw gate**.
-
-**And the item that looked smallest turned out to be a design round.**
-"Make the default look like v3's" was first built as shader constants,
-with two deviations recorded to explain what that cost — v4's selection
-colour always winning where v3's is a default, and a hover brighten v3
-has no rule for.  The maintainer rejected both, and the premise under
-them was the finding: v4 has no *selectors*, but it has **conditions**,
-and `{ when: { selected: true } }` had been compilable since round 14.7.
-So state became a condition (57.1d), v3's three affordance blocks became
-entries in v4's default stylesheet that any user block replaces, the
-hard-coded highlights left the shaders, and the query API — which could
-match three states where the sheet could style nine — was compiled from
-the same table (57.1f).  Regenerating the goldens for it found **six**
-whose committed pixels no longer matched the code, hidden by tolerances
-granted for text antialiasing; the goldens are exact now (57.1e).
-
-**2026-08-08 closed everything fully specced that this machine can
-run.**  **Round 52** landed WGSL minification — 19.0 KiB gzipped off
-the download, pixel-identical under the exact goldens — and **round
-54** the bounds round, taking the compound fixture's fit zoom
-0.607 → 0.822 and catching a pre-existing taxi soundness hole with its
-new randomized sweep on its first run.  (Round 38 landed the same day;
-its entry is above.)
-
-**Round 48 completed** with 48.6, the three
-limit edges its record had left "still to do" — the 256-layer image
-cap, a full glyph atlas and the export texture cap, each specced at
-its exact edge with five controls.  **Round 40's approved
-taxonomy-first prep ran** (198 throw sites classified, ~11 demotion
-candidates; the sitting reacts to a measured list), and **round 41.5's
-docs-first proposal was written** — the preventable-gesture map, at
-the end of this file, awaiting the maintainer's reaction.
-
-**2026-08-09 (seventh design sitting): both long-open questions
-closed, each by declining the surface its prep had priced.**  Round 40
-closes with **no new API at all** — with the demotion list measured at
-~11 sites and half of it undermined by the missing fallback renderer,
-the maintainer's call is that errors and warnings stay exactly as
-built: every throw stays a throw, the 14 warn sites stay warns, and
-`cytoscape.warnings()` is not built.  And item 12 closes as
-**toggles-only**: `preventDefault()` suppresses the browser's default
-and nothing else, gesture defaults stay controlled by their explicit
-toggles, and round 41.5's four rows are not built.  **Ledger item 24
-was scheduled as round 58** at the same sitting, after its cost was
-assessed as negligible — and **round 58 landed the same day**: the
-trim reaches the layer strokes and every anchor (labels, mid arrows —
-a third consumer the item had not named), both new close-up parity
-scenes at **0.000%** against v3, and the scene drafts surfaced a new
-divergence logged as item 27 (v3's edge layer band is `2 × padding`
-wide, v4's `width + 2 × padding`).  What the queue holds now is in the
-"Amended 2026-08-09" paragraph of "Suggested sequencing": round 46
-(sketch-specced) and 49–51 (other platforms or release credentials).
-
-**Round 59** (2026-08-09, raised by the maintainer the same day)
-rebuilt the force layout's model.  Scoping measured the round-18
-model as explicit-Euler unstable past node degree ~20 — em-web ended
-at a 3e11-px bounding box (the maintainer's "invisible on fit"), the
-compound fixture NaN'd, and NaN read as *converged* — and two research
-sweeps (FA2, cosmos.gl, sfdp, fCoSE, CoSE-Bilkent, G6, d3-force)
-shaped the rebuild: d3's degree-normalised springs + a displacement
-cap (stability by construction), a grid-pyramid far field under one
-inverse-square law (cosmos.gl's shipped scheme — the force kernel
-stays at 7 storage bindings via a grid-buffer fold), component
-anchors + constant gravity + a settle re-pack (v3's own
-`separateComponents`), fCoSE's landmark-MDS spectral seed (a 40-node
-chain: 3208 px end-to-end against 346 under the old scatter), and the
-Bilkent compound gravity + nesting on the CPU executor.  ndex-x-large
-(mean degree 47, the explosive shape) now converges live on the GPU
-in 1.3 s and fits at zoom 0.76.  Four options added
-(`componentSpacing`, `init`, `nestingFactor`, `gravityCompound`);
-`repulsion`/`stiffness`/`gravity` keep their names with new units.
-
-**Round 60** (2026-08-09, raised by the maintainer the same day) is
-the performance record, kept honest: the status site gains
-**cross-commit benchmark comparison pages** — per-row p50 across the
-published runs of one (machine, profile), the movers beyond ±10% with
-the frozen-v3 twin as a per-row noise control, and a whole-run drift
-figure, so a regression is read against the machine's own noise —
-plus benchmark rows for the rounds nothing priced (the 57.1d
-state-condition partition, and the finding that a 256-band select
-costs 9 µs under a constant sheet and 989 µs under a fully
-state-conditioned one; the round-59 seed split; the 57.9 hit halo at
-~2%, effectively free) and specs for `executePlan()` (the
-53.2-recorded gap) and the benchmark index.  Two of its own rows were
-caught measuring nothing by their controls, and one of those catches
-became ledger item 28.  Running both profiles fresh through the new
-comparison then **found a real regression on its first use** — the
-57.1d default sheet makes every select restyle, flipping bulk select
-from 38× faster than v3 to 3.3× slower — with the measured headroom
-logged in the 60.4 record; the renderer tier read clean (−0.7%
-drift).
-
-**Round 61** (2026-08-09, the same day) took that headroom: a state
-flip now routes through `StyleEngine.refreshState`, which diffs the
-two partition records once per flag pair and writes only the
-differing channels through writers factored out of `writeChannels` —
-one colour write per selected node under the default sheet, against
-the ~25-call full `write()` the general refresh ran per slot.
-Measured through the built bundle, the 256-band select+unselect went
-**541.9 → 63.5 µs** (constant sheet: 15.5 µs), and the regressed
-`mutators` row reads ~8.5× *faster* than v3 again (6.30 ms →
-250.9 µs).  Geometry/label/chart diffs, live transitions,
-unpartitioned defs and demoted groups all keep the full write —
-correctness by fallback, pinned by controls that fail exactly the
-specs written for them.
-
-**Round 62** (2026-08-09/10) took the maintainer's flat goal — *every
-benchmark for v4 should beat v3* — and met it: the published idle-box
-`--all` run carries **287 v3/gpu pairs with zero v3-faster rows**
-(geometric mean 11×, narrowest margin 1.03×), reached across ten
-verification runs (28 → 0 losers).  Twenty-eight rows were genuinely
-losing and got real fixes (the prototype-method animation handle, the
-epoch-keyed whole-object `data()` cache — ledger 17b/17c — per-name
-style read plans, the id → index map, the CSR-in-place traversal
-walk); the last few "losers" were **the harness measuring itself**,
-pinned by controls: a shared op closure samples the first-declared
-side against monomorphic ICs (62.5c's pre-warm fixes it), and below
-~10 ns a row sits at the harness floor where group-order artifacts own
-the sign — `pan() get` lost eight straight runs in-suite while reading
-**4× v4-faster** in per-process loops, and now does 32 reads per
-sample.  Node tier, gates and Playwright green throughout; the goal is
-a snapshot, not a floor — the published archive plus the comparison
-pages are the standing regression net.
-
-**Round 63** (2026-08-10) brought the per-element bypass back —
-ledger item 25, reopened by the maintainer ("bypasses are worth a
-discussion"), decided at the eighth sitting, and landed the same day
-under one requirement set above the rest: **fast**.  Not the logged
-case-rewrite shape, which measurement killed on three walls (it
-cannot compose with a scale-mapped channel — `then`/`else` are
-scalars; one id clause nulls the 57.1d partition for its whole group
-and re-opens the round-60.4 select regression, 53.7 → 392 µs
-measured; and the chain is O(k·V)) — but a first-class **`bypasses`
-stylesheet section**: id-keyed constant declarations merged at the
-write funnel, with v3's method spellings back as sugar
-(`ele.style( name, value )`, `removeStyle`), v3's
-bypass-beats-everything precedence, export from `cy.json()` (better
-than v3, which drops bypasses on export), and sheet swaps replacing
-the section.  The contract's numbers: bypass-free graphs measure
-unchanged (the state-only select reads 48.0 µs against the
-pre-round 53.7), punch-outs are O(bypassed), and the set path is
-**2× faster than v3** through the built bundles.  The round also
-pinned the amendment that style prop keys take **dash-case and
-camelCase everywhere** — measured already true at every entry
-point, now a contract with a sweep spec and its control.
-
-**Round 64** (2026-08-10, the ninth sitting's three calls, landed the
-same day) closed ledger item 28 — `cy.collection()` **throws on any
-argument** instead of silently answering the empty collection — and
-took two aliases: **`cy.$` returns** as a plain alias of `filter()`
-over the v4 query API (selector strings still throw, through filter's
-own rejection), and **`cy.byId`** joins `$id`/`getElementById`.  The
-alias table grew to 87 rows; three controls run, each failing its
-pin.  The open ledger questions are down to three: 18, 23, 27.
-
-**v4 is not close to a release, and this file is not a route to one.**
-The round list is the currently *documented* set, not a plan for
+**v4 is not close to a release, and this record is not a route to one.**
+The rounds on file are the currently *documented* set, not a plan for
 everything v4 needs before 4.0: several rounds are known to be needed
 and are not logged yet, and four of the rounds that have shipped — 43,
 46.5, 55 and 56 — were each inserted after the sequence they interrupt
@@ -436,8 +73,8 @@ each true about their own scope and say nothing about the distance to
 4.0.  They are kept as written, because each is accurate history; this
 paragraph is here so the sum of them is not mistaken for a claim.
 
-`src/README.md` is the maintained scope / deviations doc; this file
-records each round's plan and outcome.
+`src/README.md` is the maintained scope / deviations doc; the files in
+`plan/rounds/` record each round's plan and outcome.
 
 ## Process (applies to all work under this plan)
 
@@ -496,16 +133,17 @@ records each round's plan and outcome.
   arrows and numeric `text-rotation` were still unbuilt — the round
   had just built all three).
 
-  **Three** places here drift on almost
-  every round and are worth grepping by name: the **"Needs a call"
-  gap ledger**, whose per-item "Still open:" lines outlive the work
-  that closes them; the **"Suggested sequencing"** summary of what
-  remains; and — added 2026-08-03 — **"Gaps with direction already
-  set"**, which had gone *seventeen rounds* without a sweep: seven of
-  its eight entries still described landed work as pending, and its
-  z-index entry still promised to restore `zDepth`/`sortByZIndex`
-  two days after z-index was dropped outright.  A round record is not
-  the whole record.
+  The blocks that drifted worst were the standing summaries of what
+  remained — a gap ledger whose per-item "Still open:" lines outlived
+  the work that closed them, and a "Gaps with direction already set"
+  list that went *seventeen rounds* without a sweep, seven of its eight
+  entries still describing landed work as pending and its z-index entry
+  still promising to restore `zDepth`/`sortByZIndex` two days after
+  z-index was dropped outright.  Those blocks are gone (round 108.4
+  took the last of them), which removes the drift by removing the
+  duplicate: **what remains** now lives once, in "Open calls for the
+  maintainer" below and in `EXECUTIVE_SUMMARY.md`.  Sweep those two.
+  A round record is not the whole record.
 - **Anything needing the maintainer's decision goes in "Open calls for
   the maintainer"** (section added 2026-08-03), not only into the
   round record that found it.  That covers scope calls *and*
@@ -535,7 +173,7 @@ appears to authorize it.
 
 **2026-08-04 (fifth design sitting): every call below was taken with
 the maintainer.**  Each item now carries its decision and the round
-that executes it (rounds 37–51, planned at the end of this file).  The
+that executes it (rounds 37–51, planned in `plan/rounds/`).  The
 one question that stays genuinely open is the **error policy** inside
 item 4 — the maintainer flagged it for real design work rather than a
 quick answer — which converts into round 40's design sitting instead of
@@ -982,7 +620,7 @@ docs checks), and each is left in place pending the call.
     menu (already unconditional) excluded, and bubbled prevention
     stopping the core default via 14.5's shared-Event machinery.
     **The docs-first proposal is written (2026-08-08)** — the section
-    "Round 41.5 docs-first" at the end of this file: the toggle map is
+    "Round 41.5 docs-first" in `plan/rounds/`: the toggle map is
     complete (three of four rows have existing toggles at both grains;
     the background clear is coarse-only, with no new option
     recommended), rows 1–3 are implementable as emitted today, and row
@@ -1080,7 +718,7 @@ docs checks), and each is left in place pending the call.
     in a renderer bound on instance/fragment count, and both precedents
     for freeing the binding (the layout split, the pre-derived
     `edgeLayer` stroke width) added no measured frame cost.  The plan
-    is at the end of this file.
+    is in `plan/rounds/`.
     ***Landed as round 58 the same day — this item is closed.***  The
     freed binding is the fused `node.outerGeom` column; the fix reached
     a third consumer the entry had not named (the straight mid-arrow
@@ -1149,7 +787,7 @@ sitting (2026-08-06)** — the type exports stay, the cross-instance
 throw stays, the tighter compound fit stays — so this section's review
 debt is cleared.  Item 16's logged follow-up is no longer merely
 logged: the **bounds round is scheduled as round 54**, before round 49
-(the plan stub is at the end of this file).  *Round 54 landed
+(the plan stub is in `plan/rounds/`).  *Round 54 landed
 2026-08-08 — fit zoom 0.607 → 0.822 on the compound fixture, and its
 sweep caught a taxi soundness hole on its first run; see the record.*
 
@@ -1419,7 +1057,7 @@ rather than from a blank page.
     returning as sugar over it, v3's bypass-beats-everything
     precedence, export as a named section, and **performance as the
     maintainer's stated top requirement**.  The full proposal is
-    the round-63 plan at the end of this file.
+    the round-63 plan in `plan/rounds/`.
     ***Approved with two amendments the same day (2026-08-10), and
     scheduled as round 63***: the sheet section's key is **`bypasses`**
     (not `overrides`), and style property keys accept **both dash-case

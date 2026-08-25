@@ -15,7 +15,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   plus [`PLAN.md`](PLAN.md)'s standing sections. Nothing is recorded here that
   is not recorded there first.
 - **This is the only cross-round summary of the work, by design** (round
-  108.4). `PLAN.md` used to carry a second one and it silently stopped at
+  108.8). `PLAN.md` used to carry a second one and it silently stopped at
   round 64; the duplicate was removed rather than revived, which makes the
   rule below the thing keeping this history current.
 - **Rewrite when a round closes** — by re-reading the record and restating it,

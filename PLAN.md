@@ -29,7 +29,7 @@ decision, plus the ideas logged for later).
 **Status: implemented and evolving** on the `v4` branch (started as
 `feature/webgpu`); the base pass was 11 commits, `e30542cf4..9b177c193`.
 
-**What happened, and where to read it** (round 108.4).  This file used to
+**What happened, and where to read it** (round 108.8).  This file used to
 open here with a round-by-round prose summary of the work.  It is gone,
 and its removal is the point rather than a tidy-up: it was a third copy
 of a history two better-kept documents already hold, and the only copy
@@ -97,12 +97,15 @@ paragraph is here so the sum of them is not mistaken for a claim.
   files into `npm pack` and turned `test:modules` red, because it holds a
   whole second copy of the repo.  Remove a landed round's worktree when
   the round closes.
-- **`EXECUTIVE_SUMMARY.md` is rewritten from this file when a round closes**
+- **`EXECUTIVE_SUMMARY.md` is rewritten from the record when a round closes**
   (rule added 2026-08-05, round 46.5).  That file is the five-minute version
-  for a reader who will never open this one — organised by calendar week, in
+  for a reader who will never open the record — organised by calendar week, in
   outcomes and decisions rather than rounds and file names.  It is **derived**:
-  this file stays the source of truth, and nothing is recorded there that is
-  not recorded here first.
+  the round files stay the source of truth, and nothing is recorded there that
+  is not recorded in them first.  Since round 108.8 it is also the record's
+  **only** cross-round narrative, so this rule is the single thing keeping that
+  history current — a missed rewrite is how the summary this file used to
+  carry came to stop at round 64.
   Three things make the rewrite honest rather than mechanical.  **Restate, do
   not append** — a new week is not the only thing that changes, because later
   rounds routinely reveal what an earlier decision actually meant, and the
@@ -139,7 +142,7 @@ paragraph is here so the sum of them is not mistaken for a claim.
   list that went *seventeen rounds* without a sweep, seven of its eight
   entries still describing landed work as pending and its z-index entry
   still promising to restore `zDepth`/`sortByZIndex` two days after
-  z-index was dropped outright.  Those blocks are gone (round 108.4
+  z-index was dropped outright.  Those blocks are gone (round 108.8
   took the last of them), which removes the drift by removing the
   duplicate: **what remains** now lives once, in "Open calls for the
   maintainer" below and in `EXECUTIVE_SUMMARY.md`.  Sweep those two.
@@ -163,505 +166,37 @@ swept with the rest of this file at the end of each round — an item
 leaves only when the call is made, and a round that discovers a new
 one adds it here rather than burying it in its own record.
 
-Two kinds of entry live here: *scope calls* (work deliberately not
-done pending a decision) and **contradictions** — places where the
-code and this file's own decided-design ledger disagree, usually
-because an autonomous round kept or added something the ledger says
-was dropped.  Contradictions are logged, never silently patched:
+Entries are of three kinds: **contradictions** — places where the code
+and this file's own decided-design ledger disagree, usually because an
+autonomous round kept or added something the ledger says was dropped —
+**new open calls** raised by a round, and **logged ideas**, raised but
+not scoped.  Contradictions are logged, never silently patched:
 removing public API is the maintainer's call even when a ledger entry
 appears to authorize it.
 
-**2026-08-04 (fifth design sitting): every call below was taken with
-the maintainer.**  Each item now carries its decision and the round
-that executes it (rounds 37–51, planned in `plan/rounds/`).  The
-one question that stays genuinely open is the **error policy** inside
-item 4 — the maintainer flagged it for real design work rather than a
-quick answer — which converts into round 40's design sitting instead of
-closing here.
+*Scope calls* — work deliberately not done pending a decision — were a
+fourth kind, and the subsection is gone because all eight of its entries
+had been taken and executed.  **Item numbers are stable identifiers and
+are never reused**, so the gaps below are deliberate: a round record
+citing "item 12" must keep resolving to item 12.
 
-**Rounds 37, 39, 41 and 42 have since landed** (2026-08-04).  Round 37
-executed the four items it owns — item 8 (both audits now gate), item 9
-(the alias split), item 10 (constructor strictness at the type layer) and
-item 11 (event names stay open, documented).  Round 39 closed items 2 and
-5 and the `cy.gc()` half of 4; round 41 closed item 6 and the DOM half of
-item 12.
+**As last swept** (2026-08-10, the ninth design sitting), the genuinely
+open questions were **items 18, 23 and 27**; every other call this ledger
+had raised was taken.  Rounds have landed since without a sweep of this
+section, so read that as the last confirmed state rather than as today's.
 
-Round 42 closed no ledger item — the packaging decision was the
-sitting's, not an open call — but it took two calls its own plan had left
-to docs-first (the `gpu-` prefixes drop; the five shared utility modules
-duplicate) and a third the plan had not foreseen (the v4 identity rename:
-factory, bundles, declaration and UMD global are all `cytoscape` now).
-That rename **left the `Gpu*` exported type names behind** — logged as item
-13 rather than done, because they are public surface — and the maintainer
-took the call the same day, so 42.6 finished it.  Each is marked below, and
-the rest still read as described until their rounds ship.
-
-**A second question is now genuinely open**, beside the error policy:
-round 41 found that item 12's remaining half — *which* gesture defaults
-`preventDefault()` suppresses — cannot be derived from v3 the way the
-round-41 plan assumed, because v3 never reads `isDefaultPrevented`
-either.  That list is a v4 contract still to be designed.  Round 38 also
-acquired three sub-calls, logged inside item 1, that the sitting did not
-reach.  Round 42 raised and closed a third (item 13, the `Gpu*` exported
-type names) inside the same day, so the count of genuinely open questions
-is unchanged at two.
-
-**2026-08-06 (sixth design sitting): the accumulated backlog was swept
-with the maintainer.**  Round 38's three sub-calls are taken (item 1 —
-the round is unblocked), items 14–16 are ratified as decided design
-(item 16's follow-up bounds round is **scheduled as round 54**, before
-round 49), round 52's build-step call is taken and its miniray call
-logged as item 17, the round-53.1 tween warm-up question joins the
-ledger as item 18, and item 12 gains its direction — **explicit gesture
-toggles first**; the enumeration holds for 41.5's docs-first.
-
-The
-genuinely open questions are now: the **error policy** (round 40, whose
-taxonomy-first prep the sitting approved) and the **preventDefault
-enumeration** (item 12, direction set), plus the two conditional
-entries in items 17–18.  The sitting's record is at the end of this
-file.
-
-**2026-08-08: both open questions now have their prep in hand, and
-neither is closed.**  Round 40's approved taxonomy-first prep ran —
-198 throw sites classified, ~11 demotion candidates in two families,
-the measured recommendation in the round-40 section — so its sitting
-reacts to a list rather than starting from the sites.  And item 12's
-docs-first proposal is written ("Round 41.5 docs-first", at the end of
-this file): the toggle map is complete, three of the four tabled rows
-are implementable as emitted today, and the `tapstart` → grab row is
-recommended dropped because the press handler grabs before it emits.
-Each still awaits the maintainer — a sitting for 40, a reaction for
-41.5.
-
-**2026-08-09 (seventh design sitting): both are closed, and neither
-builds anything.**  The error policy: with the recoverable tier
-measured at ~11 sites in two families (GPU acquisition, image export)
-and the acquisition half undermined by the missing fallback renderer,
-the maintainer chose to **leave the errors thrown — and the warnings
-as they are**.  No demotion, no `errorPolicy`, and no
-`cytoscape.warnings()`: the fail-loudly contract stands whole, and the
-14 `console.warn` sites stay plain warns.  The preventDefault
-enumeration: **explicit toggles are the whole gesture-control story**
-— `preventDefault()` is browser-level only, permanently, and none of
-41.5's four rows is built.  The gesture half of `event.preventDefault`
-is now decided design rather than an open half.  With those two taken,
-the ledger's genuinely open questions are down to the deferred
-`arrow-scale` reserve (item 23) and the conditional tween warm-up
-(item 18).  The sitting also scheduled **ledger item 24 as round 58**.
-
-**Two joined later the same day** (2026-08-09, added here by round
-60's sweep — round 58's sweep had left item 27 only in the
-what-remains amendment, against this section's own rule): **item 27**
-(v4's edge underlay/overlay band is `width + 2 × padding` wide where
-v3's is `2 × padding` — round 58) and **item 28** (`cy.collection`
-silently ignores an argument v3 builds from — round 60).  So the
-ledger's genuinely open questions stand at four: 18, 23, 27, 28.
-
-**2026-08-10 (eighth design sitting): ledger item 25 gains its
-direction.**  The maintainer reopened the bypass idea ("bypasses are
-worth a discussion") and the sitting took four calls: the ergonomics
-return as a first-class **`overrides` sheet section** — *not* the
-logged case-rewrite spelling, which measurement killed on three walls
-— with the v3 method spellings coming back as sugar over it, v3's
-bypass-beats-everything precedence, and export as a named section
-that sheet swaps replace.  One requirement was set above the rest,
-mid-sitting: **the implementation must be fast/performant**.
-Design-doc first: the proposal, with its measurements, went to the
-end of this file — and **the maintainer approved it the same day with
-two amendments** (the section key is `bypasses`, and style prop keys
-accept dash-case *and* camelCase everywhere in the API), so it became
-the **round-63 plan — which landed the same day** (the records are in
-that section).  The genuinely open questions are unchanged at four
-(18, 23, 27, 28); item 25 is closed.
-
-**2026-08-10 (ninth design sitting): item 28 closed — throw — plus
-two aliases.**  `cy.collection()` throws on any argument (the silent
-empty-collection answer was the one method boundary where a typo did
-nothing); `cy.$` returns as a plain alias of `filter()` over the v4
-query API, in line with `cy.$id()` (selector strings still throw);
-and `cy.byId` joins `$id`/`getElementById` for brevity.  All three
-landed as **round 64** the same day.  The genuinely open questions
-are down to **three: 18, 23, 27**.
-
-### Scope calls
-
-1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
-   unported v3 style pair.
-
-   Technique settled, cost known in three
-   tiers: circle/rect/round-rect are closed-form (~30 lines);
-   ellipse is closed-form but approximate (arc length is elliptic —
-   uneven dashes on eccentric ellipses, a recordable deviation); the
-   polygon family (the round-* shapes, `barrel`, the custom
-   `polygon`) needs the SDF loop to track the argmin edge and a
-   cumulative perimeter, roughly
-   doubling polygon fragment cost *where a dash is enabled*.  The
-   call: ship the cheap subset (a genuine v3 deviation — v3 dashes
-   any shape) or cover everything.  `double` is not a dash at all and
-   works on every shape either way.
-   **Call taken (2026-08-04, fifth sitting): full coverage** — every
-   shape, the polygon tier included, its ~2× dashed-polygon fragment
-   cost accepted.  Executes as **round 38**.
-   **Three sub-calls the sitting did not reach**, found 2026-08-04 by
-   reading v3's `drawing-nodes.mts` against v4's style surface while
-   scoping the round.  They are logged rather than decided because each
-   changes what round 38 *builds*, and the round's own verification
-   (live v3 parity diffs per tier) will surface all three as pixel
-   differences if they are guessed at:
-   - **`double` does not draw a second band in v3 — it erases.**  v3
-     strokes the border solid, then re-strokes at `borderWidth / 3`
-     under `globalCompositeOperation = 'destination-out'`, which
-     removes a middle stripe from *everything already painted*: the
-     node's own fill, the edges under it, the background.  So a v3
-     `double` border shows the page through the gap, where round 38's
-     plan says "a second inner band" — which would show the *fill*
-     there.  v4 can reproduce the erase (return alpha 0 for stripe
-     fragments in the node FS, since fill and border are one draw), but
-     it interacts with the depth prepass, and it is a call, not a
-     detail.
-   - **`dashed` borders need a pattern.**  v3 reads
-     `border-dash-pattern` (default `[4, 2]`) and `border-dash-offset`
-     (default 0); v4 has neither, though it has the exact edge
-     equivalents (`line-dash-pattern`/`-offset`).  Either the two props
-     come with round 38 or `dashed` hardcodes v3's default — parity for
-     default styling, a drop for anything else.  Note `outline-style`
-     has no such question: v3 hardcodes `[4, 2]` there (and `[1, 1]`
-     for `dotted`), taking no props at all.
-   - **`border-cap` / `border-join`** are v3 props with no v4
-     counterpart, and the SDF band has no natural notion of either —
-     dash ends are perpendicular cuts (butt) by construction, which is
-     the deviation v4 already records for edge-layer strokes.  Drop
-     them explicitly or record the deviation; either way the round
-     should say so rather than leave them unmentioned.
-   `text-border-style` was already flagged for the round's docs-first
-   stage and is unaffected by these.
-   **All three sub-calls taken (2026-08-06, sixth sitting) — round 38
-   is unblocked:**
-   - **`double` ports v3's erase** (alpha-0 stripe fragments — fill and
-     border are one draw), with double-bordered nodes excluded from the
-     opaque depth prepass on the gradient-fill precedent (they are few,
-     and the tier's live parity diff is the gate; the fall-back to an
-     inner band exists if the prepass interaction turns out worse than
-     expected, in which case the round records the deviation instead).
-   - **`border-dash-pattern` / `border-dash-offset` both port** — the
-     standard parse/mapper/stored-truth plumbing v4 already has for the
-     edge twins, so `dashed` borders are full v3 parity rather than
-     default-pattern-only.
-   - **`border-cap` / `border-join` drop**, recorded as a deviation
-     beside the existing edge-layer butt-cut note (dash ends are
-     perpendicular cuts by construction), with rows in the migration
-     guide.
-   ***Executed — round 38 landed 2026-08-08.***  All three sub-calls
-   shipped as specified; the one thing the build reversed was its own
-   plan's ellipse approximation (exact arc length instead — the
-   deviation could not discriminate; see the round-38 record).
-2. **The overlap box-selection mode** (gap item 8) — v4 selects by
-   containment only; v3 also offers overlap.  Deferred as a
-   demand-gated hook, not v3-surface-critical.
-   **Call taken (2026-08-04): build** —
-   `boxSelectionMode: 'contain' | 'overlap'` per the logged round-20
-   shape (bb-intersect for nodes, segment/route-vs-rect for edges).
-   ***Landed as round 39.1 (2026-08-04)** — this item is closed.  Two
-   things the item did not say, now recorded: v3 spells the same choice
-   as a **per-element style prop** (`box-selection`) rather than a core
-   option, and `cy.elementsInBox()` deliberately stays pure containment,
-   so the mode is read by the gesture alone.*
-3. **Core/collection extension points** (gap item 10) — the layout
-   contract landed in round 17; the other two extension categories
-   stay out on the reasoning that mappers and predicates cover the
-   common cases.  Revisit on demand.
-   **Call taken (2026-08-04): stays out** — deferred by decision,
-   demand-gated exactly as logged.  Closed; not in the 4.0 scope.
-4. **`cy.gc()` and `cytoscape.warnings()`** (gap item 12) — round 19's
-   `compact()` answers what `gc` was for, and v4 does warn in several
-   places (a deferred `compact()`, a full glyph atlas), so there is
-   something for `warnings()` to silence.  The call is whether either
-   name survives.
-   **Call taken in part (2026-08-04): both names return.**  `cy.gc()`
-   lands as the explicit alias of `compact()` (**round 39** —
-   ***landed as 39.3, 2026-08-04***);
-   `cytoscape.warnings()` builds, but its *shape* is deliberately
-   still open — the maintainer flagged the **error policy** itself for
-   real design work: v3 mostly avoided throwing because a throw can
-   crash an app where ignoring is recoverable, and `warnings()` could
-   take options (disable all warnings; demote thrown errors to
-   warnings — "the demotion option could be useful... needs more
-   discussion and thought").  That question is **round 40's design
-   sitting**; this is the one part of the ledger that stays open.
-   ***Closed (2026-08-09, seventh sitting): `cytoscape.warnings()` is
-   not built after all.***  The taxonomy-first prep measured the
-   demotion case at ~11 sites, half of them meaningless without a
-   fallback renderer, and the maintainer's call on that evidence was
-   to keep **errors and warnings exactly as built** — every throw a
-   throw, the 14 warn sites plain `console.warn`, and no global or
-   per-instance toggle over either.  The 2026-08-04 "both names
-   return" reading is thereby corrected: `cy.gc()` returned (39.3);
-   `warnings()` did not.  See the round-40 section for the decision
-   record.
-5. **Graph-level `data` in the binary wire format** (gap item 12) —
-   `cy.json()` already exports it; `serializeElements` is
-   elements-only.  Since `cy.serialize()` output feeds `cy.add()`,
-   including graph data raises whether adding elements should
-   overwrite the target's `data()`.
-   **Call taken (2026-08-04): build** — the wire gains a graph-data
-   section (format version bump; older buffers keep loading).  The
-   add-semantics half is decided at **round 39's** docs-first stage,
-   with the lean recorded there: `options.elements` applies graph
-   data, `cy.add( buffer )` ignores it (adding elements must not
-   clobber the target's `data()`).
-   ***Landed as round 39.2 (2026-08-04)** — this item is closed, at that
-   lean, with a spec for each half run against the other
-   implementation.  Format version 4; the section is one JSON string
-   rather than a column, since graph data is a single small object
-   where everything else in the format is per element.*
-6. **A v4-specific event type** (logged 26.5) — v4 *emitted* the shared
-   v3 `Event`, so `event.target` typed as `unknown` in the shipped
-   declarations.  A v4 event type is a design call, not an oversight.
-   **Call taken (2026-08-04): build the v4 Event** — v4 gets its own
-   Event class *and emitter* (severing the last shared-module import
-   of v3's `src/emitter.mts`, a prerequisite of the round-42
-   restructure): typed `target`, `originalEvent` populated by the
-   pointer layer, **`preventDefault()` supported and functional** (the
-   preventable gesture defaults are enumerated at the round's
-   docs-first stage), and **no namespace machinery at all**.  Executes
-   as **round 41**, resolving item 12 with it.
-   ***Landed as round 41 (2026-08-04)** — this item is closed: 41.1 the
-   Event (typed `target`, no namespace field), 41.2 the emitter, 41.4
-   `originalEvent`, 41.6 the exported types.  Two of the plan's premises
-   above were wrong and are corrected in the round record: severing the
-   emitter did **not** sever v4's last shared-module import (five utility
-   modules remain, now audited), and `preventDefault()`'s gesture half
-   could not be enumerated at a docs-first stage because there is no v3
-   behaviour to read — that half stays open, in item 12.*
-7. ~~**Six benchmark suites are outside the report**~~ (logged 29.6) —
-   **closed by round 33.10** (2026-08-03).  `report.mjs` grew a third
-   profile: `--all` runs every standalone sweep beside the quick
-   v3-vs-v4 tier, and the two manually-timed suites (`curves`,
-   `labels`) join the job table through `finishManualRun`, which shapes
-   their one-shot rows into the report's format.  No `gpuOnly` marker
-   was needed — the renderer already drew groups without a v3/gpu pair
-   as individual labelled rows.  The quick profile is deliberately
-   unchanged.
-8. **Whether error-contract coverage becomes a gate** (logged 30.4) —
-   `scripts/throw-coverage.mjs` reports it and deliberately does
-   not enforce it, because a floor is a policy call with three parts:
-   whether a **new Node-reachable throw with no spec should fail the
-   build** (the reading is 0 today, so a zero-tolerance gate would
-   hold as of this round); what to do about the **browser-only
-   sites** (13 when this call was written, 10 since round 36.4), which
-   the Node measurement cannot see at all and which only the `renderer`
-   project can pin; and whether the
-   `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or a
-   one-off note.  The JSDoc-coverage precedent (a script plus a test
-   that gates it) is right there, so this is a decision about appetite
-   rather than about mechanism.
-   Note that rounds 31.2 and 32 *did* gate the two documentation
-   rules (`@throws`, `@param`) in `test/jsdoc-coverage.mjs`, on the
-   reasoning that documentation completeness was already gated here by
-   round 26 — so this call is specifically about **test** coverage,
-   and the two decisions are meant to be readable side by side.
-   **Updated by round 36.4**: the reading is now 176 run, **10
-   browser-only, 5 unreachable**, 0 Node-reachable and never run — the
-   browser tier is finished (four specs, three reclassifications), so a
-   zero-tolerance gate would hold today with less of the tier resting on
-   "the Node measurement cannot see it".  The second part of the call is
-   correspondingly smaller.  Round 36 also declined to gate its own two
-   new audits (`@returns`, stranded doc blocks), keeping the report-only
-   family at three and the gated family at three — the same shape this
-   call is about.
-   **Call taken (2026-08-04): gate throw coverage *and* `@returns`.**
-   ***Landed as round 37.1 (2026-08-04)** — this item is closed.*
-   Throw coverage becomes a zero-tolerance gate on Node-reachable
-   never-run sites, with `UNREACHABLE`/`MISATTRIBUTED` as maintained
-   allowlists; `@returns` ratchets at 276/276.  Stranded doc blocks
-   and bench coverage stay report-only — each is heuristic in a way
-   the gated audits are not.  Executes as **round 37**.
+The sitting-by-sitting history — the fifth through ninth design sittings,
+which round executed what, and the running count of open questions after
+each — is not repeated here.  It is in the design-sitting records under
+`plan/rounds/`, and it was the clearest example of what this file kept
+badly: the log that stood here stopped at round 64, and no later round
+updated the count it kept restating.  A taken call now leaves this
+section, which is what the rule above always said.
 
 ### Contradictions between the code and the decided-design ledger
 
 Each was found by reading the code against this file (rounds 28–29's
 docs checks), and each is left in place pending the call.
-
-9. **The legacy-alias triage was applied unevenly** (found 2026-08-03).
-   The 2026-07-29 triage dropped the no-dash shape spellings and the
-   `autolockNodes`/`autoungrabifyNodes` aliases under "one name per
-   concept".  In the code, `roundrectangle` still compiles (while
-   `cutrectangle` and `concavehexagon` throw), and
-   `cy.autolockNodes()` / `cy.autoungrabifyNodes()` are declared,
-   wired and working — round 29.1's alias table now pins them.
-   **One call over three names.**  If it goes the ledger's way, the
-   two rows in `test/aliases.mjs`, their wiring and `declare`
-   lines in `core.mts`, and the `roundrectangle` line in
-   `test/decided-drops.mjs` come out together.
-   ***Landed as round 37.2 (2026-08-04)** — this item is closed; the
-   spelling turned out to be accepted in three enums rather than one,
-   and drops from all three.*
-   **Call taken (2026-08-04): split.**  `roundrectangle` is
-   **dropped** — it throws like `cutrectangle` and `concavehexagon`,
-   the triage enforced as written — while `autolockNodes` /
-   `autoungrabifyNodes` are **kept** as deliberate, recorded
-   exceptions to one-name-per-concept ("possibly useful").  Executes
-   as **round 37**; the decided-design ledger's legacy-alias line
-   gains the two-name exception in the same pass.
-10. **Unknown constructor options are silently ignored** (found
-    2026-08-03), including the four canvas-era options the triage
-    explicitly dropped: `{ motionBlur: true }` constructs happily and
-    round-trips through `cy.options()`, as does
-    `{ totallyUnknownOption: 1 }`.  v4 throws on an unknown sheet key,
-    an unknown style property and an unknown query key — on the
-    stated reasoning that a typo must fail loudly — and the
-    constructor is the one entry point that does not.  The call: match
-    the rest of the surface (and with what allowance for
-    forward-compatible options?), or record the constructor as
-    deliberately permissive.
-    ***Landed as round 37.3 (2026-08-04)** — this item is closed; the
-    options type needed no tightening, and the round found the entry
-    point sitting outside every JSDoc audit while writing the test.*
-    **Call taken (2026-08-04): the constructor stays
-    runtime-permissive by design.**  Excess options are a build-time
-    concern — tsc's excess-property checking on the typed options
-    object already flags `{ motionBlur: true }` — and v4 does not
-    replicate at runtime what the types check at build time.  Round 37
-    pins that the type actually rejects it (a compile-only consumer
-    test) and records the decision in the ledger and the ctor's JSDoc.
-11. **Dropped event names register silently** (found 2026-08-03).
-    Round 17 dropped the `vmouse*` aliases and v3's raw mouse/touch
-    re-emits, but `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
-    `cy.on('click', h)` and `cy.on('touchstart', h)` all register
-    cleanly and then never fire — a v3 handler that silently does
-    nothing.  Event *namespaces* were recorded here as the same story
-    — "`cy.on('tap.ns', h)` never fires, not for `tap` and not for
-    `tap.ns` either" — and **round 37.4 measured that and found it
-    wrong on the second half**.  v4 *then still imported* v3's emitter,
-    so namespaces parsed and worked in full v3 semantics: `on('tap.ns')`
-    listened for
-    `tap` qualified by `.ns`, `emit('tap.ns')` runs both it and any
-    plain `tap` listener, `emit('tap.other')` runs only the plain one,
-    and `off('tap.ns')` removes it.  The true statement is narrower:
-    **v4 never emits a qualified name**, so a namespaced listener sees
-    application emits and never a library event.  **Round 41.2 removed
-    the machinery** (2026-08-04) by giving v4 its own emitter, which is
-    what finally made the design ("no namespaces") and the code agree:
-    a type is now matched whole, so `'tap.ns'` is one literal name.
-    Note the constraint on any fix: custom event names must stay
-    legal (`emit('myevent')` is supported), so the answer is a
-    curated denylist of known-v3 spellings that throws or warns, not
-    a blanket rule.  29.3 fixed the neighbouring case — a *selector
-    string* as an event qualifier now throws instead of detonating
-    inside the emitter — but the event *name* side is untouched.
-    ***Landed as round 37.4 (2026-08-04)** — this item is closed, and
-    the round corrected the namespace half of the evidence above: the
-    machinery was live at that point, in full v3 semantics, with only
-    v4's own emits unqualified.  **Round 41.2 has since removed it.***
-    **Call taken (2026-08-04): event names stay open — no denylist.**
-    v3 supports custom events (`node.emit('foo')`) and v4 keeps that,
-    so names cannot be gated; dropped v3 spellings register and simply
-    never fire, documented as such.  **Closed by round 37.4** (docs +
-    specs, no runtime change), which also corrected the namespace half
-    of this item: the machinery is live, not merely unexercised — v4
-    never *emits* a qualified name, but a hand-emitted one behaves as
-    it does in v3.  **Round 41.2 removed the machinery** while leaving
-    names free, as planned.
-12. **`event.preventDefault()` reaches the DOM but no v4 gesture**
-    (logged as "exists and does nothing" from round 27's fact-check,
-    and half-fixed since).  It *did* nothing at all: v4 emitted the
-    shared v3 `Event`, so the method was present and set
-    `isDefaultPrevented` while no v4 code read the flag.  Since round
-    41 v4's own Event carries `originalEvent`, so the call now
-    suppresses the **browser's** default; what it still cannot do is
-    suppress a v4 *gesture* default, which stays gated by options.
-    Same family as 10: the call was whether it throws, is removed from
-    the v4 event, or stays documented-as-inert.
-    **Call taken (2026-08-04): resolved by item 6's v4 Event.**
-    `preventDefault()` is kept and becomes **functional** — the
-    interaction layer reads `isDefaultPrevented` at the enumerated
-    preventable gesture defaults — landing with the v4 Event in
-    **round 41**.
-    ***Half landed, and the other half needs one more call*** (round
-    41.4, 2026-08-04).  The DOM half works: `originalEvent` is
-    populated by the interaction layer, so `preventDefault()` now
-    reaches the browser's default and `isDefaultPrevented()` reports
-    truthfully.  The *gesture* half did not land, because the
-    enumeration round 41's plan called for could not be derived the way
-    it says.  The plan reads "docs-first enumerates the preventable
-    gesture defaults **from v3-source reading**" — and v3 never reads
-    `isDefaultPrevented` either (measured 2026-08-04: the only
-    references in v3's whole tree are the two that *set* it and its type
-    declaration).  So there is no v3 behaviour to port; the list is a v4
-    contract to be **designed**, and each entry is a decision about what
-    an application may take over.
-    The question, concretely: which of v4's gesture defaults does a
-    handler's `preventDefault()` suppress?  The candidates the sitting
-    named — tap-selection and tap-clear, grab initiation, box start —
-    plus the ones it did not: pan and wheel-zoom (already gated by
-    options), taphold, and whether prevention on a *bubbled* element
-    event stops the core's default too.  Each needs a spec proving both
-    directions, which is cheap once the list exists.
-    Logged rather than guessed at because a wrong list is worse than
-    none: an app that learns `preventDefault()` suppresses selection
-    will depend on it.
-    **Direction set (2026-08-06, sixth sitting); the enumeration holds
-    for 41.5's docs-first.**  The maintainer's rule: gestures get
-    **explicit toggles first** — the `panningEnabled()` pattern exists
-    precisely to make gesture control easy and explicit — and no
-    gesture default may be controllable *only* through
-    `preventDefault()`.  Supporting both is on the table, with the
-    toggle primary and `preventDefault()` a per-event complement.  So
-    41.5's docs-first must map each candidate default to its explicit
-    toggle (existing — `autoungrabify`, `autounselectify`,
-    `boxSelectionEnabled`, `userPanningEnabled`/`userZoomingEnabled` —
-    or to be added) before proposing any preventDefault rows.  A
-    four-row table was tabled at the sitting for that stage to react
-    to: `tapstart` on an element → grab initiation; `tap` on an
-    element → the selection toggle; `tap` on the core → the background
-    clear; `boxend` → applying the box's selection — with pan/wheel
-    (option-gated, high-frequency), taphold (no default) and the cxt
-    menu (already unconditional) excluded, and bubbled prevention
-    stopping the core default via 14.5's shared-Event machinery.
-    **The docs-first proposal is written (2026-08-08)** — the section
-    "Round 41.5 docs-first" in `plan/rounds/`: the toggle map is
-    complete (three of four rows have existing toggles at both grains;
-    the background clear is coarse-only, with no new option
-    recommended), rows 1–3 are implementable as emitted today, and row
-    4 (`tapstart` → grab) is **not** — the press handler grabs before
-    it emits — so the proposal recommends dropping that row and logging
-    the emit reorder as its own later call.  Awaiting the maintainer's
-    reaction; the round does not start before it.
-    ***Closed (2026-08-09, seventh sitting): toggles only — no rows at
-    all.***  The maintainer went further than the proposal's
-    recommendation: not just row 4 but the whole table is declined.
-    `preventDefault()` is **browser-level only** as the permanent
-    contract — it suppresses the DOM default through `originalEvent`
-    and nothing else — and gesture defaults are controlled exclusively
-    by their explicit toggles (`autoungrabify`, `autounselectify`,
-    `boxSelectionEnabled`, `userPanningEnabled`/`userZoomingEnabled`,
-    and the per-element grains).  Round 41.5 does not run; no emit
-    reorder is logged, since nothing now wants it.  The
-    `Event.preventDefault` doc comment's description of the gesture
-    half becomes decided design rather than a gap.
-13. ~~**The `Gpu*` exported type names**~~ — **closed by round 42.6**
-    (2026-08-04).  Round 42 renamed the package's *identity* — factory,
-    bundles, declaration, UMD global — but stopped at the exported **type**
-    names, which still read `GpuCore`, `GpuCollection`, `GpuEvent`,
-    `GpuStylesheet`, `CytoscapeGpuOptions` and 37 others.  The `Gpu` there
-    meant "the prototype, as opposed to v3" at a time when both lived in one
-    package; once v4 *was* the package it meant nothing, and a consumer was
-    writing `const cy: GpuCore = cytoscape( opts )`.  Logged rather than
-    swept because it is public surface.
-    **Call taken (2026-08-04): remove the prefixes, no deprecated aliases.**
-    The prerelease line has no published consumers to break — `./gpu` is
-    aliased because *v3's* users type it, which is a different situation —
-    so carrying both spellings would only preserve a name nobody has yet
-    written.  `Core`, `Collection`, `Event`, `Stylesheet`,
-    `CytoscapeOptions`, and so on through all 42 exports.
-    **Six names keep the prefix, deliberately**: `GpuContext`, `GpuTimer`,
-    `GpuForceRuntime`, `GpuTweenRuntime`, `GpuTweenSink` and `GpuWriteKind`
-    — every one of them internal, and every one naming the *device* half
-    against a CPU counterpart, which is the same rule that kept the
-    `gpu-*.mts` file names in round 42.1.
-
-    None is exported.
 
 23. **`arrow-scale` is quantized to 1/16, and it is not only readback**
     (round 56, 2026-08-07).  `edge.arrowShapes` stores the scale as an
@@ -700,33 +235,6 @@ docs checks), and each is left in place pending the call.
     why round 56's own need for two flag bits was met from `edge.width`'s
     mirror lane instead, leaving all six bits of the real column intact.
 
-24. **Where the arrow trim cannot reach** (round 56, 2026-08-07) — two
-    places the gap is not applied, both because a vertex stage is at the
-    8-storage-buffer budget with no slot for `edge.width`, and a layout
-    entry counts even for a binding the shader never reads:
-    - **edge labels** anchor at the untrimmed midpoint, ~2.6 model px
-      from what `midpoint()` answers on an arrowed bezier;
-    - **overlay / underlay / casing strokes** run a gap further than v3's,
-      which strokes its casing along the shortened path.
-    Neither is a decision — the fix is to free a binding, and the
-    curved-edge pipeline's own layout split is the precedent.  Logged
-    rather than attempted inside a round that had already grown large.
-    **Scheduled as round 58 (2026-08-09, seventh sitting)**, after the
-    maintainer asked what it would cost: the trim math already runs per
-    vertex on every curved-edge strip, both new populations (edge-label
-    glyphs, layer-stroke quads) are small fractions of the vertex work
-    in a renderer bound on instance/fragment count, and both precedents
-    for freeing the binding (the layout split, the pre-derived
-    `edgeLayer` stroke width) added no measured frame cost.  The plan
-    is in `plan/rounds/`.
-    ***Landed as round 58 the same day — this item is closed.***  The
-    freed binding is the fused `node.outerGeom` column; the fix reached
-    a third consumer the entry had not named (the straight mid-arrow
-    anchor, which was the centre chord where `midpoint()` answers v3's
-    four-point mean); both new close-up parity scenes read **0.000%**
-    against v3 with controls failing at 7.7x and 27.9x their bounds.
-    See the round-58 record.
-
 27. **v4's edge underlay/overlay band is `width + 2 × padding` wide;
     v3's is `2 × padding`** (round 58, 2026-08-09).  Found by a parity
     scene draft: underlay + small heads on a short edge read 7.105%
@@ -751,150 +259,13 @@ docs checks), and each is left in place pending the call.
     rounds these strokes' caps where v4 butt-cuts, and v3's erase-only
     compositing where heads overlap.
 
-28. **`cy.collection( anything )` silently ignores its argument** (round
-    60.2, 2026-08-09).  v4's `collection()` is the zero-argument empty
-    accumulator; v3's `collection( eles?, opts? )` also builds from a
-    string, an element array or a collection.  So the v3-shaped call
-    `cy.collection( arrayOfEles )` type-errors at build time but at
-    runtime returns the **empty collection**, silently — which is how a
-    round-60.2 benchmark band came to select nothing in 53 ns.  v4
-    throws on an unknown query key, an unknown sheet key and an unknown
-    `boundingBox()` option on the stated reasoning that a typo must not
-    silently do nothing; this is the same shape at a method boundary.
-    The call: throw on any argument (fail loudly, plus a
-    migration-guide row), port the array-building form, or record the
-    permissiveness as deliberate.  Logged rather than patched — it is
-    public surface either way.
-    ***Closed (2026-08-10, ninth sitting): throw on any argument —
-    landed as round 64 the same day***, together with two aliases taken
-    at the same sitting: `cy.$` returns as a plain alias of `filter()`
-    over the v4 query API (in line with `cy.$id()`; selector strings
-    still throw through filter's own rejection), and `cy.byId` joins
-    `$id`/`getElementById` for brevity.  See the round-64 record.
-
-### Public-surface changes made without a call, logged rather than buried
-
-None of these needed a decision to *make* — one is a missing export and
-the other two are wrong answers — so none was held.  All three are
-visible to a consumer, which is why they are here and not only in a round
-record: the standing rule is that the maintainer reads this section
-before deciding anything about v4's surface, and "we changed it because
-it was obviously broken" is exactly the sentence that should be
-reviewable.
-
-**All three were reviewed individually and ratified at the sixth
-sitting (2026-08-06)** — the type exports stay, the cross-instance
-throw stays, the tighter compound fit stays — so this section's review
-debt is cleared.  Item 16's logged follow-up is no longer merely
-logged: the **bounds round is scheduled as round 54**, before round 49
-(the plan stub is in `plan/rounds/`).  *Round 54 landed
-2026-08-08 — fit zoom 0.607 → 0.822 on the compound fixture, and its
-sweep caught a taxi soundness hole on its first run; see the record.*
-
-14. **The layout contract's types now ship** (round 45, 2026-08-04).
-    Round 17 made `cy.layout({ impl })` the whole extension story — an
-    import passed straight in, no registry — and round 34.6 noticed in
-    passing that `LayoutContext` "is not in the shipped declarations at
-    all; it appears only inside a doc comment", but nobody drew the
-    consequence: `CustomLayoutOptions` shipped while the two types an
-    external author actually writes against did not, so `run( ctx )`
-    typed its parameter `any` in the one surface the contract exists to
-    make obvious.
-
-    `LayoutContext`, `LayoutImpl` and `CustomLayout` are
-    now exported from the entry point, on the precedent of round 41.6
-    exporting the event types for the identical reason.  The type-surface
-    audit caught it as an unexpected export, which is that audit working;
-    42 → 45 type exports.  **To reverse**: drop the re-export line in
-    `src/index.mts` and the three names from `EXPECTED_EXPORTS`.
-15. **Comparing elements across two instances now throws** (round 48.4,
-    2026-08-04).  A ref is `{ group, slot, gen }` and identity packs
-    those three, all of which are per instance — so the first node of one
-    graph and the first node of another packed identically, and all
-    twelve methods round 29.3 guarded answered accordingly: `same()`
-    **true**, `contains()` true, `indexOf()` 0, `intersection()`
-    everything, `difference()` nothing, and `union()` silently dropping
-    the other graph's elements (two graphs of two nodes united to two,
-    reading back the first graph's data twice).
-
-    They now reject a
-    collection from another instance, through the same
-    `assertCollection` guard round 29.3 added to those exact twelve for
-    the same stated reason.
-    Recorded because it *is* a behaviour change a consumer can see, and
-    because v3 is inconsistent here rather than right — measured: v3's
-    `same()` answers false, but its `union()` of 2 + 2 gives 2 and its
-    `difference()` gives 0 — so "match v3" is not available as an answer.
-    The alternative to throwing would be a cross-instance identity, which
-    v4 cannot represent: a `_refs` slot is meaningless outside its store.
-    **To reverse**: drop the `cy` argument from `assertCollection`.
-16. **A no-argument `cy.fit()` frames compound graphs tighter** (round 43.13,
-    2026-08-05).
-
-    The conservative whole-graph scan added the *chord length* to
-    every box-bounded edge except taxi — a term that describes a
-    weight-extrapolated blob route, inherited by `CURVE_CMPD` when round 14.10
-    put compound loops behind the same flag.  On `debug/`'s compound fixture the
-    scan read 1718 × 1572 against an exact 802 × 637, so `fit()` drew the graph
-    at a third of its size; removing the three compound-loop edges made the two
-    boxes identical, which is what localized it.
-    Recorded because it *is* visible: any app whose graph has a
-    parent↔descendant edge or a parent self-loop now gets a different zoom and
-    pan from `cy.fit()`/`cy.center()` than it did.  The direction is the safe
-    one — the box only shrinks, and it still contains the exact box (pinned by a
-    spec, and by a 512-edge sweep over 60 randomly-shaped compound graphs run
-    before the change) — so this is a wrong answer corrected rather than a
-    policy chosen.  The `render/cull.mts` twin keeps its chord deliberately:
-    over-inclusion in a cull costs efficiency, never correctness.
-    **To reverse**: drop `&& kind !== CURVE_CMPD` from the two
-    `FLAG_CURVED_BOX` branches (`GraphStore.boundingBox`,
-    `Collection.boundingBoxAt`).
-
-**Two more joined at round 62** (2026-08-09, the every-benchmark-beats-v3
-round), both cache-shaped and both mirroring the ratified round-34.2
-`elements()` memo:
-
-17b. **Whole-object `data()` returns the same object until something
-    invalidates it** (62.4).  Rebuilding the object from the columns per
-    call could not beat v3's return-the-stored-pointer, so the built
-    object caches on the handle against the DataStore's write epoch plus
-    the synthesized fields' inputs (parent slot / endpoints) and the
-    ref's generation.  Two calls with no write between them return the
-    *same object*; a caller mutating the snapshot sees its own mutation
-    until the next data write.  v3 goes further — it hands out its live
-    internal object, where mutation corrupts the actual store — so v4's
-    exposure is strictly narrower.  Pinned by four specs in
-    `test/data.mjs` (identity, write/reparent/re-point invalidation, no
-    cross-element leak).  **To reverse**: delete the `_dataObj` check
-    and always build.
-17c. **Animation handles carry prototype methods** (62.4).  The nine
-    per-handle arrow closures became `AnimationHandleImpl` methods — a
-    handle was ~2.9 µs to build through tsx against v3's ~0.5 for
-    methods that never differ.  The narrowing: a destructured method
-    must be re-bound by the caller, exactly as v3's own animation
-    object behaves.  **To reverse**: inline the closure object back
-    into `animation()`.
-
 ### New open calls (sixth sitting, 2026-08-06)
 
-Two questions that had been living only in round records — against the
+Questions that had been living only in round records — against the
 standing rule that every open question surfaces here — plus the
-conditional halves of calls the sitting took.
+conditional halves of calls the sitting took.  Item 17's condition was
+resolved by measurement and its entry has left.
 
-17. **miniray as a devDependency** (round 52's call 2, conditional).
-    The sitting took call 1 — the 52.1 comment-strip build step
-    **builds**, before round 50 cuts the alpha — and left this one on
-    the plan's own terms: 52.3 (generate static WGSL from
-    `contract.mts` + identifier renaming via miniray, 4.35 MiB of
-    Go-compiled WASM for an estimated single-digit-KiB gzipped gain)
-    is reached **only if 52.1's measured number disappoints**, and the
-    estimate must be measured on one shader before any machinery is
-    built.  Expected outcome: never taken.
-    ***Resolved by measurement (2026-08-08, round 52 landed): the
-    condition is false.***  52.1 took 19.0 KiB gzipped, above its own
-    17.8 estimate, so the trigger never fired; miniray is not added.
-    The entry stays as the record of the reserve plan, closed unless a
-    future round reopens bundle size.
 18. **Warm the tween pipelines at init?** (round 53.1's left-open
     judgement.)  A user's *first* `animate()` on a software adapter
     stalls up to ~1.8 s because Dawn compiles the tween compute
@@ -1015,59 +386,6 @@ raised is an idea nobody finds — and each carries the first thing that
 would have to be measured, so picking one up starts from a question
 rather than from a blank page.
 
-25. **Bring the bypass UX back, spelled as a `case` mapper** (raised
-    2026-08-07).  v4 removed the per-element style bypass by decided
-    design: `ele.style( name, value )` throws (29.3), and round 31.1
-    corrected its message to name the declarative replacement.  The idea
-    is to give the *ergonomics* back without giving the mechanism back —
-    a bypass call rewrites the sheet so that element gets the value
-    through a `case` clause keyed on its id, which keeps every value
-    analyzable, serializable and GPU-evaluable (round 8's invariant, and
-    the whole reason the fn form went).
-    Three things to measure before building any of it, in this order:
-    - **What the clause chain costs.**  `case` is CPU-evaluated and
-      first-match-wins over an ordered list, so N bypassed elements is an
-      N-clause chain evaluated per element of the group — quadratic in
-      the thing an app does most (`benchmark/style.mjs` is the suite).  A
-      per-id index over the clauses is the obvious answer and is a change
-      to the mapper IR, not to the sugar.
-    - **What `style()` reads back afterwards.**  Stored truth is v4's
-      readback rule, so a bypass would read back like any other resolved
-      value — but `cy.style()` and `cy.json()` would now export a sheet
-      the app never wrote.  That is a real surface change and probably
-      the deciding question.
-    - **What removes one.**  v3 has `removeStyle`; here it is "drop the
-      clause", which needs the clause to be identifiable, which is why
-      the keying is a design call rather than an implementation detail.
-
-    **Direction set (2026-08-10, eighth design sitting): the ergonomics
-    return, but not in this shape.**  The three measures were taken
-    through the built bundle, and two of them killed the case-rewrite
-    spelling outright: one id clause in an otherwise state-conditioned
-    sheet nulls the 57.1d partition for its whole group and re-opens
-    the round-60.4 select regression (256-band select+unselect
-    **53.7 → 392.0 µs**, measured), and the chain cost is the
-    predicted O(k·V) (k = 1000 clauses: 6.2× on applyAll).  A third
-    wall this entry had not seen: a `case` clause's `then`/`else`
-    parse to scalars, so a scale-mapped channel — em-web's
-    `background-color`, the flagship sheet — cannot take the wrapper
-    at all without a mapper-IR change.  The direction is a first-class
-    **`overrides` sheet section** instead (id-keyed constants applied
-    as an overlay at the write funnel), with the v3 method spellings
-    returning as sugar over it, v3's bypass-beats-everything
-    precedence, export as a named section, and **performance as the
-    maintainer's stated top requirement**.  The full proposal is
-    the round-63 plan in `plan/rounds/`.
-    ***Approved with two amendments the same day (2026-08-10), and
-    scheduled as round 63***: the sheet section's key is **`bypasses`**
-    (not `overrides`), and style property keys accept **both dash-case
-    and camelCase everywhere in the API** — in the bypasses and in
-    every other place a prop name is taken.
-    ***Landed as round 63 the same day — this item is closed.***  The
-    29.3 setter throw is reversed, the section exports, and the
-    performance contract held under measurement (the set path 2×
-    faster than v3 through the built bundles; bypass-free selects
-    unchanged).  See the round-63 plan and records.
 26. **Split the big implementation files, v4's way** (raised
     2026-08-07).  `style.mts` is 7.9k lines, `collection.mts` 5.8k,
     `store/graph-store.mts` 5.0k, `render/shaders.mts` 4.3k, `core.mts`

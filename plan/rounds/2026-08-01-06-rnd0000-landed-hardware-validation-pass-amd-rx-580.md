@@ -1,4 +1,4 @@
-## Landed (hardware validation pass — AMD RX 580, 2026-08-01)
+## Hardware validation pass — AMD RX 580
 
 The first full benchmark run of the prototype on real hardware:
 Radeon RX 580 (RADV, `amd gcn-4`) on an i9-9900K under Linux,

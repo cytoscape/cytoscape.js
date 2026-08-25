@@ -1,4 +1,4 @@
-## Landed (edge-label autorotate, 2026-07-29)
+## Edge-label autorotate
 
 The last item on the autonomous shelf, cleared while planning round 12:
 `text-rotation: autorotate` for edge labels, one isolated commit.

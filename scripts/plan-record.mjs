@@ -1,5 +1,7 @@
 /*
 Round 108.2: the development record, as files an agent can actually open.
+Round 108.9: the heading says what the section is; the filename says which
+round, when, and what kind of section it is.
 
 `PLAN.md` had grown to 1.5 MB — ~381k tokens over 146 `##` sections — which
 is past what any coding agent can read, and past what a person reads too.
@@ -8,29 +10,31 @@ reachable one.  So the sections live one file each under `plan/rounds/`, and
 `PLAN.md` keeps only the parts it maintains rather than appends to: the
 running summary, the process rules, and the open calls for the maintainer.
 
-**The filename is `YYYY-MM-DD-NN-rndRRRR-description.md`** — the date the
-section was written, a counter among the sections sharing that date, and the
-round the section is about.  The prefix was a bare record sequence until this
-renaming; the round number was the one thing a reader knew ("what did round
-106 say?") and the one thing the name did not carry, so finding a section
-meant grepping the index.  `rnd0000` marks a section that is not a round at
-all (the pass-1 notes, the design sittings, the parity gap analysis); a
-fractional or lettered round keeps its form after the padding (`rnd0009.4`,
-`rnd0012a`), and a heading that scopes several rounds joins them with an
-underscore (`rnd0091_0097`), since `-` already separates the fields.
+**The filename is `YYYY-MM-DD-NN-rndRRRR-kind-description.md`** — the date
+the section was written, a counter among the sections sharing that date, the
+round the section is about, and whether it is a `plan`, a `landed` record or
+a `note`.  `rnd0000` marks a section that is not a round at all (the pass-1
+notes, the design sittings, the parity gap analysis); a fractional or
+lettered round keeps its form after the padding (`rnd0009.4`, `rnd0012a`),
+and a section that scopes several rounds joins them with an underscore
+(`rnd0091_0097`), since `-` already separates the fields.
+
+**The heading is a title, not a label.**  It was
+`## Round 15 plan — background images (planned 2026-08-01)`: four fields of
+bookkeeping wrapped around the two words that say what the section is.  Every
+one of those fields is in the filename, and repeating them in the prose
+bought nothing but a heading nobody could skim.  So the heading is now
+`## Background images`, and the index reads the round, the date and the kind
+off the name — which is why nothing here parses prose any more.
 
 Two things make the split safe rather than merely tidy:
 
 1. **Nothing was added to the section text.**  A round file is its `##`
-   section verbatim — no front matter, no wrapper.  Every piece of metadata
-   the index shows (round number, date, kind) is parsed back out of the
-   heading, which already carried all three.  That is what let the split be
-   verified the only way a restructure can be: `PLAN.md` plus every round
-   file, in order, reproduced the pre-split file **byte for byte**
-   (1,524,666 bytes, 146 files) — round 42's rule applied to a document.
-   The heading stays the source of truth after the renaming: the filename
-   repeats the round and the date, and `test/modules/plan-record.mjs` fails
-   the build if the two disagree, so the name cannot rot away from the text.
+   section — no front matter, no wrapper — and only the heading line has
+   ever been rewritten.  That is what let the split be verified the only way
+   a restructure can be: `PLAN.md` plus every round file, in order,
+   reproduced the pre-split file **byte for byte** (1,524,666 bytes, 146
+   files) — round 42's rule applied to a document.
 2. **`assemble()` reconstructs the whole record on demand**, which is how the
    status site still publishes one continuous "Development record" page.
 
@@ -46,31 +50,16 @@ export const ROUNDS_DIR = join('plan', 'rounds');
 /** The generated index, relative to the repo root. */
 export const INDEX_FILE = join('plan', 'INDEX.md');
 
-/**
- * The round number in a section heading, as written — `'12a'`, `'46.5'`,
- * `'102–107'` for a heading that scopes several — or `null` for the
- * sections that are not rounds at all (the parity gap analysis, the design
- * sittings, the directory layout).
- */
-export function roundOf(title) {
-  const span = /\brounds\s+(\d+(?:\.\d+)*)\s*[–-]\s*(\d+(?:\.\d+)*)/i.exec(
-    title,
-  );
-
-  if (span) {
-    return `${span[1]}–${span[2]}`;
-  }
-
-  const one = /\bround\s+(\d+(?:\.\d+)*[a-z]?)\b/i.exec(title);
-
-  return one ? one[1] : null;
-}
+/** The three kinds of section, as the filename spells them. */
+export const KINDS = ['plan', 'landed', 'note'];
 
 /**
  * A round number as the filename's `rnd` field: zero-padded to four digits,
  * any fractional or lettered part kept as written, a span joined with `_`.
+ * This is what names a new section file.
  *
- * @param round — the result of {@link roundOf}; `null` for a non-round.
+ * @param round — the round as a reader says it (`'106'`, `'9.4'`, `'12a'`,
+ *   `'102–107'`); `null` for a section that is not about a round.
  * @returns `'rnd0106'`, `'rnd0009.4'`, `'rnd0012a'`, `'rnd0091_0097'`, or
  *   `'rnd0000'` when the section is not about a round.
  */
@@ -90,57 +79,57 @@ export function roundKey(round) {
 }
 
 /**
+ * The inverse of {@link roundKey}: the round as a reader says it, which is
+ * what the index's Round column shows.
+ *
+ * @param key — the filename's `rnd` field.
+ * @returns `'106'`, `'9.4'`, `'12a'`, `'102–107'`, or `null` for `rnd0000`.
+ */
+export function roundLabel(key) {
+  const body = key.replace(/^rnd/, '');
+  const strip = (v) => v.replace(/^0+(?=\d)/, '');
+  const [from, to] = body.split('_');
+
+  if (from === '0000') {
+    return null;
+  }
+
+  return to ? `${strip(from)}–${strip(to)}` : strip(from);
+}
+
+/**
  * The shape every section filename has.  The round field tracks what
- * {@link roundOf} accepts — any depth of sub-round (`108.2.1`), an optional
- * letter (`12a`), and optionally a span of two of those.
+ * {@link roundKey} produces — any depth of sub-round (`108.2.1`), an
+ * optional letter (`12a`), and optionally a span of two of those.
  */
 const ROUND_FIELD = String.raw`\d{4}(?:\.\d+)*[a-z]?`;
 export const FILE_PATTERN = new RegExp(
-  String.raw`^(\d{4}-\d{2}-\d{2})-(\d{2})-(rnd${ROUND_FIELD}(?:_${ROUND_FIELD})?)-([a-z0-9-]+)\.md$`,
+  String.raw`^(\d{4}-\d{2}-\d{2})-(\d{2})-(rnd${ROUND_FIELD}(?:_${ROUND_FIELD})?)` +
+    String.raw`-(plan|landed|note)-([a-z0-9-]+)\.md$`,
 );
 
 /**
  * The metadata a section filename carries, or `null` if it is not named to
- * the convention.
+ * the convention.  This is the only place section metadata comes from: the
+ * heading is prose, and prose is what the old parser kept getting wrong.
  *
- * @param file — the basename, e.g. `2026-08-20-07-rnd0106-n-viewers.md`.
- * @returns `{ date, index, roundKey, slug }`.
+ * @param file — the basename, e.g.
+ *   `2026-08-20-07-rnd0106-plan-n-viewers-one-store.md`.
+ * @returns `{ date, index, roundKey, round, kind, slug }`.
  */
 export function parseName(file) {
   const m = FILE_PATTERN.exec(file);
 
   return m
-    ? { date: m[1], index: Number(m[2]), roundKey: m[3], slug: m[4] }
+    ? {
+        date: m[1],
+        index: Number(m[2]),
+        roundKey: m[3],
+        round: roundLabel(m[3]),
+        kind: m[4],
+        slug: m[5],
+      }
     : null;
-}
-
-/** The first ISO date in a heading, or `null`. */
-export function dateOf(title) {
-  const m = /(\d{4}-\d{2}-\d{2})/.exec(title);
-
-  return m ? m[1] : null;
-}
-
-/**
- * What kind of section this is: a `plan` written before the work, a `landed`
- * record written after it, or a `note` (analysis, a design sitting, a
- * standing reference).  Read from the heading's own wording, which has been
- * consistent since round 7.
- */
-export function kindOf(title) {
-  if (/^landed\b/i.test(title)) {
-    return 'landed';
-  }
-
-  if (/\bplan\b\s*—/i.test(title) || /\bplan\s*\(/i.test(title)) {
-    return 'plan';
-  }
-
-  if (/^rounds?\s+[\d.]+/i.test(title)) {
-    return 'landed';
-  }
-
-  return 'note';
 }
 
 /** The `##` heading of a section file, without the marker. */
@@ -155,14 +144,13 @@ export function titleOf(text) {
  * the date then the within-date counter.
  *
  * `seq` is that position, numbered from one.  It is derived rather than
- * stored: the filename carried a record sequence before the rename, and a
+ * stored: the filename carried a record sequence before round 108.7, and a
  * stored ordinal is the field that goes stale the moment a section is
  * inserted between two others.
  *
  * @param root — the repo root.
- * @returns one entry per file: `{ file, seq, title, round, date, kind }`.
- *   `date` prefers the filename's, which every section has, and falls back
- *   to the heading's only if a file is named outside the convention.
+ * @returns one entry per file: `{ file, seq, title, round, date, kind }`,
+ *   where everything but the title is read off the filename.
  */
 export function readSections(root) {
   const dir = join(root, ROUNDS_DIR);
@@ -175,20 +163,15 @@ export function readSections(root) {
     .filter((f) => f.endsWith('.md'))
     .sort()
     .map((file, i) => {
-      const text = readFileSync(join(dir, file), 'utf8');
-      const title = titleOf(text);
+      const name = parseName(file);
 
       return {
         file,
         seq: i + 1,
-        title,
-        round: roundOf(title),
-        date: parseName(file)?.date ?? dateOf(title),
-        // A round's plan and its record are one file since 108.2, so the
-        // heading alone would file a landed round as still planned.  The
-        // body is the better evidence: a `Landed` subsection means the work
-        // happened, whatever the heading was written as beforehand.
-        kind: /^#{2,3} Landed\b/m.test(text) ? 'landed' : kindOf(title),
+        title: titleOf(readFileSync(join(dir, file), 'utf8')),
+        round: name?.round ?? null,
+        date: name?.date ?? null,
+        kind: name?.kind ?? 'note',
       };
     });
 }

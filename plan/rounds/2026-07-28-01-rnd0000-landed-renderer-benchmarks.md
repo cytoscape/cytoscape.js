@@ -1,4 +1,4 @@
-## Landed (renderer benchmarks, 2026-07-28)
+## Renderer benchmarks
 
 The renderer's recorded numbers (fps tables, pan ms/frame, pick latency,
 init/export costs) were manual debug-harness measurements; this makes

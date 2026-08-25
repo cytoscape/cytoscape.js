@@ -9,10 +9,12 @@ was verified the only way a restructure can be: the head plus every section
 file, in order, reproduced the pre-split file **byte for byte**
 (1,524,666 bytes, 146 files).
 
-The names then became `YYYY-MM-DD-NN-rndRRRR-description.md`, so the one
-thing a reader knows about a section — its round — is the thing the filename
-leads with.  That adds a failure mode the bare sequence did not have: a name
-that disagrees with the heading it sits above.  Hence the agreement gate.
+The names then became `YYYY-MM-DD-NN-rndRRRR-kind-description.md` (rounds
+108.7 and 108.9), so everything a reader knows about a section before opening
+it — round, date, kind — is in the name, and the `##` heading is free to be a
+title.  That moved the failure mode: nothing parses prose any more, so what
+has to be asserted is that the name is well formed and that the heading has
+stopped repeating it.
 
 That control ran once, at the split.  What has to keep running is everything
 that can drift afterwards: an index nobody regenerated, a file named outside
@@ -29,10 +31,8 @@ import {
   readSections,
   renderIndex,
   assemble,
-  roundOf,
   roundKey,
-  kindOf,
-  dateOf,
+  roundLabel,
   parseName,
   FILE_PATTERN,
   ROUNDS_DIR,
@@ -51,7 +51,7 @@ describe('the development record', () => {
     expect(sections.length).to.be.greaterThan(100);
   });
 
-  it('names every section file YYYY-MM-DD-NN-rndRRRR-description.md', () => {
+  it('names every section file YYYY-MM-DD-NN-rndRRRR-kind-slug.md', () => {
     for (const file of readdirSync(dir)) {
       expect(file, `${file} is not a section file`).to.match(FILE_PATTERN);
     }
@@ -77,22 +77,19 @@ describe('the development record', () => {
     }
   });
 
-  it('agrees with each heading about the round and the date', () => {
-    // The name repeats what the heading says, and a repeat that nobody
-    // checks is a lie waiting to happen — rename a file to the wrong round
-    // and every future reader trusts the name over the text.
+  it('keeps the bookkeeping out of the headings', () => {
+    // The point of round 108.9.  A heading that says
+    // `Round 15 plan — background images (planned 2026-08-01)` repeats three
+    // fields the filename already carries, and the repeat is what rots: the
+    // name is renamed, the prose is not.  So a heading may name another
+    // round in passing, but it may not open by labelling itself one.
     for (const s of sections) {
-      const name = parseName(s.file);
-
-      expect(name.roundKey, `${s.file} names the wrong round`).to.equal(
-        roundKey(s.round),
+      expect(s.title, `${s.file} still labels itself`).to.not.match(
+        /^(landed\b|rounds?\s+\d)/i,
       );
-
-      const heading = dateOf(s.title);
-
-      if (heading != null) {
-        expect(name.date, `${s.file} names the wrong date`).to.equal(heading);
-      }
+      expect(s.title, `${s.file} still dates itself`).to.not.match(
+        /\(\s*(planned|landed|proposed|raised|written|scheduled)\b/i,
+      );
     }
   });
 
@@ -165,28 +162,30 @@ describe('the development record', () => {
     ).to.be.lessThan(200 * 1024);
   });
 
-  it('parses the round number and kind out of a heading', () => {
-    // These two derive the index's columns from prose, so they are the part
-    // most likely to be silently wrong.  Cases taken from real headings.
-    expect(
-      roundOf('Round 12 plan — curved edges (planned 2026-07-29)'),
-    ).to.equal('12');
-    expect(
-      roundOf('Landed (round 12a — bundled bezier + self-loops)'),
-    ).to.equal('12a');
-    expect(roundOf('Round 46.5 — the status site')).to.equal('46.5');
-    expect(roundOf('Rounds 102–107 — the ecosystem rounds')).to.equal(
-      '102–107',
+  it('reads the round, the date and the kind off the filename', () => {
+    // These are the index's columns, and the name is now their only source.
+    const name = parseName(
+      '2026-08-20-07-rnd0106-plan-n-viewers-one-store.md',
     );
-    expect(roundOf('Context')).to.equal(null);
 
-    expect(
-      kindOf('Round 12 plan — curved edges (planned 2026-07-29)'),
-    ).to.equal('plan');
-    expect(kindOf('Landed (round 9 — animation, 2026-07-24)')).to.equal(
-      'landed',
+    expect(name).to.deep.equal({
+      date: '2026-08-20',
+      index: 7,
+      roundKey: 'rnd0106',
+      round: '106',
+      kind: 'plan',
+      slug: 'n-viewers-one-store',
+    });
+
+    expect(parseName('2026-08-20-07-rnd0106-n-viewers-one-store.md')).to.equal(
+      null,
     );
-    expect(kindOf('v3 → v4 parity gap analysis (2026-07-28)')).to.equal('note');
+    expect(
+      parseName('2026-07-22-01-rnd0000-note-context.md').round,
+    ).to.equal(null);
+    expect(roundLabel('rnd0009.4')).to.equal('9.4');
+    expect(roundLabel('rnd0012a')).to.equal('12a');
+    expect(roundLabel('rnd0102_0107')).to.equal('102–107');
   });
 
   it('renders a round number as the filename field', () => {
@@ -201,7 +200,7 @@ describe('the development record', () => {
     // and each of those is a name the pattern accepts
     for (const key of ['rnd0106', 'rnd0009.4', 'rnd0012a', 'rnd0102_0107']) {
       expect(
-        parseName(`2026-08-20-07-${key}-a-section.md`)?.roundKey,
+        parseName(`2026-08-20-07-${key}-plan-a-section.md`)?.roundKey,
         `${key} is not parsed back`,
       ).to.equal(key);
     }

@@ -8,7 +8,7 @@ calls for the maintainer — are in [`../PLAN.md`](../PLAN.md); everything
 below is a section file under [`rounds/`](rounds/), which is where a new
 round is written.
 
-148 sections.
+149 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -160,3 +160,4 @@ round is written.
 | 146 | 108 | 2026-08-24 | landed | [Round 108 plan — agent ergonomics: what the two agents load, search and trip over (raised by the maintainer 2026-08-24)](rounds/2026-08-24-02-rnd0108-round-108-plan-agent-ergonomics-what-the-two-agents-load-sea.md) |
 | 147 | 90 | 2026-08-24 | landed | [Round 90 — API review and cleanup, landed (2026-08-24)](rounds/2026-08-24-03-rnd0090-round-90-api-review-and-cleanup-landed.md) |
 | 148 | 108.3 | 2026-08-24 | landed | [Round 108.3 — the record's filenames carry the round (2026-08-24)](rounds/2026-08-24-04-rnd0108.3-the-record-s-filenames-carry-the-round.md) |
+| 149 | 108.4 | 2026-08-25 | landed | [Round 108.4 — `PLAN.md` stops summarising itself (2026-08-25)](rounds/2026-08-25-01-rnd0108.4-plan-md-stops-summarising-itself.md) |

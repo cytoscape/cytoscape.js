@@ -10,10 +10,15 @@ version of this file for someone who will never open it.
 
 **Where the rounds are** (round 108.2): each `##` section of this record
 is its own file under **`plan/rounds/`**, named
-**`YYYY-MM-DD-NN-rndRRRR-description.md`** — when it was written, a
-counter among the sections sharing that date, and the round it is about
-(`rnd0000` for the sections that are not rounds) — and indexed in
-**`plan/INDEX.md`** (generated — `npm run plan:index`).  This file keeps
+**`YYYY-MM-DD-NN-rndRRRR-kind-description.md`** — when it was written, a
+counter among the sections sharing that date, the round it is about
+(`rnd0000` for the sections that are not rounds) and its kind (`plan`,
+`landed` or `note`) — and indexed in **`plan/INDEX.md`** (generated —
+`npm run plan:index`).  **The name carries the bookkeeping so the `##`
+heading can be a title** (round 108.9): headings read `## Background
+images`, not `## Round 15 plan — background images (planned
+2026-08-01)`, and the index reads the round, the date and the kind off
+the filename rather than parsing them back out of prose.  This file keeps
 only the parts that are *maintained* rather than appended to, which is
 what makes it readable in one sitting; the record itself had reached
 1.5 MB, past what any reader — and any coding agent — can open.  A new
@@ -88,9 +93,12 @@ paragraph is here so the sum of them is not mistaken for a claim.
   same commit as the work they describe, not batched at the end.
   Since round 108.2 a round's plan and its landed record are **one file**
   in `plan/rounds/`, so amending it is an edit to a small file rather
-  than a blind append to a 1.5 MB one; run `npm run plan:index` after
-  adding a section, and `test/modules/plan-record.mjs` fails the build if
-  the index has drifted.
+  than a blind append to a 1.5 MB one; when a planned round lands,
+  rename its file's `plan` field to `landed`.  Run `npm run plan:index`
+  after adding or renaming a section, and `test/modules/plan-record.mjs`
+  fails the build if the index has drifted — or if a heading has gone
+  back to labelling itself with the round, the date or the kind that the
+  filename already carries.
 - **The closing sweep checks `git worktree list`** (rule added 2026-08-24,
   round 108.4).  An agent worktree left behind after a round is not
   harmless: one abandoned tree under `.claude/worktrees/` put 141 of 278

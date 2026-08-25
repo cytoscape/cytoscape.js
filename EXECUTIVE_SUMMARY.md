@@ -238,6 +238,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     88-second gate) and four new gates that keep all of the above from
     growing back: a byte budget on `AGENTS.md`, its paths and script names
     checked, and the record's index held in step with its files.
+- **25 Aug** — the record is made skimmable
+  - `PLAN.md` stopped summarising itself (round 108.8): the round-by-round
+    prose at its head was a third copy of a history two better-kept
+    documents already hold, and the only copy nothing obliged anyone to
+    update — it had stopped at round 64 while 44 further rounds landed.
+  - Every section heading became a **title** rather than a label (round
+    108.9).  109 of 149 opened with `Round N`, 94 carried a parenthetical
+    lifecycle date, and all of it was already in the filename; headings
+    now average **33.9 characters, down from 72.6**, and the filename took
+    a `kind` field (`plan` / `landed` / `note`) so nothing reads metadata
+    out of prose any more.
+  - Buys an index you can scan for the section you want, and three prose
+    regexes deleted in favour of one filename parse.
 
 ---
 

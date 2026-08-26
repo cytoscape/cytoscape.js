@@ -4514,7 +4514,11 @@ export class GraphStore implements ModelView {
     }
 
     // straight edges keep the endpoint-center approximation containment
-    // uses, so the two modes agree about where the edge *is*
+    // uses: the two modes agree with each other, but since round 56 the
+    // drawn line stops short of its arrowheads, so both are a little
+    // longer than the ink.  Kept deliberately (ledger item 22): a stub
+    // of an edge beside a node is not a distinction box selection is
+    // making, and the cheap answer is the right one on UX grounds
     const pos = this.column('node.position') as Float32Array;
     const s = endpoints[slot * 2];
     const t = endpoints[slot * 2 + 1];

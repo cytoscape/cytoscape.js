@@ -276,7 +276,26 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     // a straight 39-link chain at ideal length 60 spans ~2340; curled
     // scatters land at a small fraction of that.  0.4x is generous —
     // it discriminates curled from straight, not good from perfect.
-    expect(await chainSpread()).to.be.greaterThan(39 * 60 * 0.4);
+    const spread = await chainSpread();
+
+    // This spec has failed intermittently in the full tier (rounds 86,
+    // 108 and 109), always at the same value, and a bare "346.4557 is
+    // not above 936" told three rounds nothing.  So on failure it
+    // re-measures the scatter path here and says whether the number it
+    // got is that path's — which is the whole diagnosis, in the
+    // failure message, on the run that saw it.
+    if (spread <= 39 * 60 * 0.4) {
+      const scatter = await chainSpread({ init: 'scatter' });
+      const same = Math.abs(spread - scatter) < 1e-6;
+
+      expect.fail(
+        `chain spread ${spread}; the scatter path measures ${scatter} in ` +
+          `this same process, so the spectral seed ` +
+          `${same ? 'did not run' : 'ran and did not uncurl the chain'}`,
+      );
+    }
+
+    expect(spread).to.be.greaterThan(39 * 60 * 0.4);
   });
 
   it('the chain spec discriminates the seed, not the machine (round 109)', async function () {

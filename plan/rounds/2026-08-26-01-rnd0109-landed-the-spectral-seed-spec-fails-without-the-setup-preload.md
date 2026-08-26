@@ -63,10 +63,10 @@ invocation it still reaches what refinement cannot.
 
 ### Landed
 
-**Landed 2026-08-26 — and the plan above was wrong about its own
-observation, which is the finding.**  Both halves of the premise
-failed measurement, and the mechanism turned out to be nameable
-without finding the invocation at all.
+**Landed 2026-08-26.**  The plan's premise was wrong in its first
+sentence and right about the spec: there is no invocation-shape
+sensitivity, and there *is* an intermittent failure, which this round
+measured, named, and left instrumented rather than fixed.
 
 **The stated repro does not run.**  The plan says the file "still
 loads (it imports `./node-test-setup.mjs` itself)" without the
@@ -80,50 +80,76 @@ node --import tsx --test test/force-layout.mjs
 
 dies at `describe is not defined` before a single spec runs — verified
 at HEAD and at the round-86 base `73873cd0`, where `src/layout/` and
-`test/force-layout.mjs` are byte-identical to today's.  There is no
-half-working invocation to instrument, so there was no
-registration-order diff to take: the hypothesis was falsified rather
-than tested.
+`test/force-layout.mjs` are byte-identical to today's.  So the
+import-order hypothesis had nothing to instrument: it was falsified,
+not tested.  Round 108 had in fact already recorded the true shape and
+this round's plan did not find it — the spec failed **2 of 4 full
+`test:node` runs** on 2026-08-24 and passed 3 of 3 run alone, "always
+with the identical value".  A round reading only round 86's note
+inherited round 86's diagnosis.
 
-**What 346.4557 is.**  The number the round-86 run recorded is not a
-curled scatter *near* some bound — it is exactly what this fixture
-produces with the spectral seed skipped.  Measured both paths on the
-chain, same seed, same process:
+**What 346.4557 is.**  Not a curled scatter *near* some bound — it is
+exactly what this fixture produces with the spectral seed skipped.
+Both paths, same seed, same process:
 
 | `init` | n0→n39 spread |
 | --- | --: |
 | `spectral` (default) | 3207.7853 |
-| `scatter` | **346.4558** |
+| `scatter` | **346.45575009003477** |
 
-Round 86 recorded 346.4557.  So whatever that run was, the spectral
-seed did not run in it — `spectralSeed` is pure and deterministic
-(pivot choice, BFS order, a hash-seeded power iteration, the jitter),
-takes no global state, and the layout has no wall-clock termination,
-so nothing about *how the process was started* can reach it.  The
-remaining candidates are all branch-local to the round-86 worktree,
-and none of them is reproducible from what the record kept.
+Round 86 recorded 346.4557 and round 108 recorded 346.456.  So in
+every failing run the spectral seed contributed nothing — which is a
+much narrower statement than "the layout runs differently", and it
+rules out the whole family of explanations the plan was reaching for:
+`spectralSeed` is pure and deterministic (pivot choice, BFS order, a
+hash-seeded power iteration, the jitter), it reads no global state,
+there is no `Math.random` in `src/layout/` outside the `random`
+layout, and neither the seed nor the sim has any wall-clock or
+iteration-budget term that a busy machine could move.
 
-**So the spec was given the assertion that can say this.**  The
-existing bound (`> 936`) says "not curled"; it cannot say *why*.  The
-new sibling spec measures both paths in one process and asserts the
-gap — the scatter path must land under the old bound, and spectral
-must clear it by 4x — so a regression that quietly falls back to the
-scatter seed fails **by name** instead of as a number near a
-threshold.  Its control: `spectralSeed`'s call site stubbed out, both
-specs red, and the failing value printed as `346.45575009003477` —
-round 86's number to seven more digits than it recorded.
+**Reproduced once here, and not with a probe attached.**  One failure
+in 3 uninstrumented `test:js` runs (the same value to 17 digits);
+then **0 in 20** further runs — 12 with a probe inside the seeding
+branch, 6 with a failure-only probe carrying the layout's inputs, 2
+under 16 concurrent CPU hogs.  Every probed run recorded identical
+inputs (`meanL` 60, one component of 40, 39 edges, byte-identical
+seeded positions) and a spectral embedding that worked.  Instrumenting
+the branch appears to perturb whatever the failure needs, which is
+itself evidence: the inputs are not what varies.
+
+**So the round left the diagnosis in the spec instead of a fix.**
+Three rounds have now read the same bare assertion failure —
+"346.4557 is not above 936" — and each guessed a different mechanism
+from it.  The spec now re-measures the scatter path *in the failing
+process* and says which of the two possible failures happened:
+
+```
+chain spread 346.45575009003477; the scatter path measures
+346.45575009003477 in this same process, so the spectral seed did not run
+```
+
+A sibling spec asserts the same discrimination on every run (scatter
+under the old bound, spectral clearing it by 4x), so a regression that
+falls back to the scatter seed fails by name rather than as a number
+near a threshold.  Control for both: `spectralSeed`'s call site
+stubbed out — both red, printing the message above.
+
+**The residual, logged as ledger item 52**: the flake itself, with the
+next measurement named (catch one failing run with a probe that is
+cheap enough not to move it, and compare the *seeded* positions, since
+the inputs are now known to be constant).
 
 **The one real harness defect, fixed.**  A wrong invocation does not
 half-work, but it does fail illegibly — `ReferenceError: describe is
 not defined` names neither the shim nor the preload — and the tier
 offered no way to run a single spec file, which is why the round-86
-agent hand-rolled one. `npm run -s test:js:one -- test/<file>.mjs` is
+agent hand-rolled one.  `npm run -s test:js:one -- test/<file>.mjs` is
 the tier's own invocation with the glob left off; it is in
 `AGENTS.md`'s command table and explained in
-`docs/agents/testing.md`. The plan's other idea — a guard in the shim
+`docs/agents/testing.md`.  The plan's other idea — a guard in the shim
 that fails loudly when it is not preloaded — was dropped as
 unbuildable in that form: the shim *is* the preload, so it cannot
 observe a run that omits it.
 
-**Non-goal held**: nothing about the force layout changed.  The
-diff is one spec file, one npm script, and two documentation lines.
+**Non-goal held**: `src/` is untouched.  The diff is one spec file,
+one npm script, and two documentation lines.

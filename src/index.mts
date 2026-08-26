@@ -2,6 +2,8 @@ import { Core } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
+import { WorkerRenderer } from './render/worker-renderer.mjs';
+import { runRenderWorker } from './render/worker-main.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
@@ -91,14 +93,20 @@ export default function cytoscape(options: CytoscapeOptions = {}): Core {
       );
     }
 
-    const renderer = new Renderer(
-      coreRenderHost(cy, () => createBrowserImageDecoder()),
-      container,
-      {
-        pixelRatio: options.pixelRatio,
-        ...options.renderer,
-      },
-    );
+    const rendererOpts = {
+      pixelRatio: options.pixelRatio,
+      ...options.renderer,
+    };
+    // the worker host (round 86.3): same seam, the engine in a worker;
+    // rejects loudly where unsupported, never a silent fallback
+    const renderer =
+      options.renderer?.worker === true
+        ? new WorkerRenderer(cy, container, rendererOpts)
+        : new Renderer(
+            coreRenderHost(cy, () => createBrowserImageDecoder()),
+            container,
+            rendererOpts,
+          );
 
     renderer.onDeviceLost = (message) => cy._handleDeviceLost(message);
     cy._pointer = new PointerHandler(cy, renderer);
@@ -122,3 +130,10 @@ export default function cytoscape(options: CytoscapeOptions = {}): Core {
 cytoscape.toColumnarElements = toColumnarElements;
 cytoscape.serializeElements = serializeElements;
 cytoscape.deserializeElements = deserializeElements;
+// the worker-side entry (round 86.3): the proxy's spawn bootstrap loads
+// this same bundle inside a worker and calls it.  Underscored because it
+// is the machinery's own hook, not API — and assigned through a cast so
+// neither the shipped declaration nor the docs generator picks it up as
+// a factory static
+(cytoscape as unknown as { __runRenderWorker__: unknown }).__runRenderWorker__ =
+  runRenderWorker;

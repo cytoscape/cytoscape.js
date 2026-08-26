@@ -3973,6 +3973,33 @@ Node tier green.
 This seam is what a worker host, a WebGL fallback renderer (round 73)
 or a headless-Node renderer mounts through.
 
+**The worker host (round 86.3), behind `renderer: { worker: true }`.**
+The same engine runs in a worker against a `RemoteModelView`
+(`src/render/remote-view.mts`) fed by transferable span batches
+(`src/render/worker-protocol.mts` — the message contract, maintained
+under the contract.mts discipline); the main thread keeps the canonical
+store, the canvas element (control transferred; pointer events still
+land on it), the sync CPU node pick, the animation clock and export
+view resolution (`src/render/worker-renderer.mts`, the proxy).  The
+worker is spawned from the bundle's own URL — `importScripts` for the
+UMD script tag, a buffered dynamic import for native-ESM loads — so one
+build artifact serves both threads (`cytoscape.__runRenderWorker__`,
+underscored machinery, excluded from the docs and the shipped
+declaration).  Mounting rejects loudly without Worker/OffscreenCanvas
+or worker-side WebGPU; there is no silent same-thread fallback.
+Verified: the same scene exported through both hosts diffs **exact-zero**
+on the pinned adapter, and mutation/viewport/pick/export/label-dims
+round trips are spec'd (`playwright-tests/worker-renderer.spec.js`,
+`test/modules/worker-renderer.mjs` — the protocol crossing a real
+structuredClone).
+
+Pass-1 deferrals, recorded in the round record: background images are
+not drawn under the worker host (loud one-time error event); GPU
+tweens, the GPU force integrator and the page's @font-face labels take
+their CPU/fallback paths (the animation manager keeps its own rAF
+clock; `startForce` is absent on the proxy, so the force layout uses
+its CPU executor).
+
 ## Porting from v3 (round 47)
 
 `MIGRATING.md` at the repo root is the porting guide, and it ships in the

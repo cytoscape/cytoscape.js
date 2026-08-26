@@ -209,7 +209,12 @@ export function factoryStatics() {
   const src = readFileSync(join(ROOT, 'src/index.mts'), 'utf8');
 
   return new Set(
-    [...src.matchAll(/^cytoscape\.([A-Za-z_$][\w$]*)\s*=/gm)].map((m) => m[1]),
+    [...src.matchAll(/^cytoscape\.([A-Za-z_$][\w$]*)\s*=/gm)]
+      .map((m) => m[1])
+      // underscore-prefixed statics are the machinery's own hooks, not
+      // API (round 86.3's __runRenderWorker__ is the worker bootstrap's
+      // entry) — the docs never publish them
+      .filter((name) => !name.startsWith('_')),
   );
 }
 

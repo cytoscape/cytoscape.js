@@ -63,7 +63,7 @@ export interface ExportedImage {
 }
 
 /** resolved export viewport: output px dimensions + the Frame transform */
-interface ExportView {
+export interface ExportView {
   wPx: number;
   hPx: number;
   panX: number;
@@ -153,12 +153,107 @@ const exportScale = (w: number, h: number, opts: ExportOptions): number => {
   return scale;
 };
 
+/**
+ * Resolve export options into an {@link ExportView} — output px
+ * dimensions plus the Frame transform — against the container's CSS
+ * size, the model bounds and the viewport.  Pure of the renderer so
+ * the worker proxy (round 86.3) resolves views on the main thread,
+ * where all three inputs live, and ships the result across.
+ *
+ * @param opts — the public export options
+ * @param containerW — the container's CSS px width
+ * @param containerH — the container's CSS px height
+ * @param boundingBox — the model bounds provider (full-graph exports)
+ * @param viewport — the current pan/zoom (viewport exports)
+ * @returns the resolved view
+ * @throws for an invalid bg colour, an empty full-graph export, or a
+ *   zero-sized container
+ */
+export const resolveExportView = (
+  opts: ExportOptions,
+  containerW: number,
+  containerH: number,
+  boundingBox: () => {
+    x1: number;
+    y1: number;
+    w: number;
+    h: number;
+  } | null,
+  viewport: { pan(): { x: number; y: number }; zoom(): number },
+): ExportView => {
+  let bg: ExportView['bg'] = null;
+
+  if (opts.bg != null) {
+    const tuple = color2tuple(opts.bg);
+
+    if (tuple == null) {
+      throw new Error(
+        `The value '${String(opts.bg)}' is not a valid colour for 'bg'`,
+      );
+    }
+
+    bg = [tuple[0], tuple[1], tuple[2], tuple[3] ?? 1];
+  }
+
+  let w: number, h: number, panX: number, panY: number, zoom: number;
+
+  if (opts.full === true) {
+    const bb = boundingBox();
+
+    if (bb == null) {
+      throw new Error('Cannot export a full-graph image of an empty graph');
+    }
+
+    const scale = exportScale(bb.w, bb.h, opts);
+
+    w = bb.w * scale;
+    h = bb.h * scale;
+    panX = -bb.x1 * scale;
+    panY = -bb.y1 * scale;
+    zoom = scale;
+  } else {
+    if (containerW === 0 || containerH === 0) {
+      throw new Error('Cannot export the viewport of a zero-sized container');
+    }
+
+    const scale = exportScale(containerW, containerH, opts);
+    const pan = viewport.pan();
+
+    w = containerW * scale;
+    h = containerH * scale;
+    panX = pan.x * scale;
+    panY = pan.y * scale;
+    zoom = viewport.zoom() * scale;
+  }
+
+  const wPx = Math.max(1, Math.round(w));
+  const hPx = Math.max(1, Math.round(h));
+
+  return { wPx, hPx, panX, panY, zoom, bg };
+};
+
+/**
+ * A worker mount (round 86.3): the main thread created the canvas
+ * element, transferred control, and resolved the sizes — the engine
+ * draws to the OffscreenCanvas and is told sizes explicitly (a worker
+ * has no layout to observe and no devicePixelRatio of its own).
+ */
+export interface OffscreenMount {
+  canvas: OffscreenCanvas;
+  /** initial size in device px */
+  width: number;
+  height: number;
+  /** the resolved device-pixel ratio (CSS px × dpr = device px) */
+  dpr: number;
+}
+
 export class Renderer {
   /** resolves when the device is acquired and the first frame can draw */
   ready: Promise<void>;
-  /** the canvas this renderer created inside the container and owns; it
-   * is removed from the DOM by destroy() */
-  canvas: HTMLCanvasElement;
+  /** the canvas this renderer draws to: created inside the container and
+   * removed by destroy() on the same-thread path, or the transferred
+   * OffscreenCanvas under a worker mount */
+  canvas: HTMLCanvasElement | OffscreenCanvas;
 
   protected host: RenderHost;
   protected store: RenderStoreView;
@@ -167,7 +262,7 @@ export class Renderer {
   protected dpr: number;
   protected destroyed: boolean;
 
-  private container: HTMLElement;
+  private container: HTMLElement | null;
   private opts: RendererOptions;
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
@@ -246,12 +341,14 @@ export class Renderer {
    */
   constructor(
     host: RenderHost,
-    container: HTMLElement,
+    mount: HTMLElement | OffscreenMount,
     opts: RendererOptions & { pixelRatio?: number | 'auto' } = {},
   ) {
+    const offscreen = 'canvas' in mount ? (mount as OffscreenMount) : null;
+
     this.host = host;
     this.store = host.store;
-    this.container = container;
+    this.container = offscreen == null ? (mount as HTMLElement) : null;
     this.opts = opts;
     this.device = null;
     this.context = null;
@@ -315,30 +412,42 @@ export class Renderer {
       document.fonts.addEventListener('loadingdone', this.onFontsLoadingDone);
     }
 
-    this.dpr =
-      opts.pixelRatio == null || opts.pixelRatio === 'auto'
-        ? globalThis.devicePixelRatio || 1
-        : opts.pixelRatio;
+    if (offscreen != null) {
+      // worker mount: the canvas came transferred and pre-sized; the
+      // main thread resolved the dpr (a worker has none of its own)
+      this.dpr = offscreen.dpr;
+      this.canvas = offscreen.canvas;
+      this.canvas.width = Math.max(1, offscreen.width);
+      this.canvas.height = Math.max(1, offscreen.height);
+    } else {
+      const container = mount as HTMLElement;
 
-    const doc = container.ownerDocument as Document;
+      this.dpr =
+        opts.pixelRatio == null || opts.pixelRatio === 'auto'
+          ? globalThis.devicePixelRatio || 1
+          : opts.pixelRatio;
 
-    this.canvas = doc.createElement('canvas');
-    this.canvas.style.position = 'absolute';
-    this.canvas.style.top = '0';
-    this.canvas.style.left = '0';
-    this.canvas.style.width = '100%';
-    this.canvas.style.height = '100%';
-    this.canvas.style.display = 'block';
+      const doc = container.ownerDocument as Document;
+      const canvas = doc.createElement('canvas');
 
-    if (
-      doc.defaultView != null &&
-      doc.defaultView.getComputedStyle(container).position === 'static'
-    ) {
-      container.style.position = 'relative';
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.display = 'block';
+
+      if (
+        doc.defaultView != null &&
+        doc.defaultView.getComputedStyle(container).position === 'static'
+      ) {
+        container.style.position = 'relative';
+      }
+
+      container.appendChild(canvas);
+      this.canvas = canvas;
+      this.applySize();
     }
-
-    container.appendChild(this.canvas);
-    this.applySize();
 
     this.offInvalidate = host.store.onInvalidate(() => {
       this.needsRedraw = true;
@@ -352,10 +461,13 @@ export class Renderer {
     });
 
     this.resizeObserver =
-      typeof ResizeObserver !== 'undefined'
+      this.container != null && typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(() => this.resize())
         : null;
-    this.resizeObserver?.observe(container);
+
+    if (this.container != null) {
+      this.resizeObserver?.observe(this.container);
+    }
 
     this.ready = this.init();
   }
@@ -510,7 +622,10 @@ export class Renderer {
     this.pickUniform?.destroy();
     this.exportUniform?.destroy();
     this.device?.destroy();
-    this.canvas.remove();
+
+    if (this.canvas instanceof HTMLCanvasElement) {
+      this.canvas.remove(); // an OffscreenCanvas has no DOM presence
+    }
   }
 
   // -- picking --
@@ -660,6 +775,35 @@ export class Renderer {
         // let the fresh rasters upload before the export frame encodes
         this.imageArrays?.sync(this.store.images);
       }
+    }
+
+    return this.exportFromView(view);
+  }
+
+  /**
+   * Queue an export of a pre-resolved view (round 86.3): the worker
+   * proxy computes the view on the main thread — where the container's
+   * CSS size and the model bounding box live — and the engine validates
+   * it against the device and renders it.  The same-thread
+   * `exportImage` funnels through here too.
+   *
+   * @param view — output px dimensions + the Frame transform
+   * @returns straight-alpha RGBA pixels, as `exportImage`
+   */
+  async exportFromView(view: ExportView): Promise<ExportedImage> {
+    await this.ready;
+
+    if (this.destroyed || this.device == null) {
+      throw new Error('Cannot export an image: the renderer is destroyed');
+    }
+
+    const limit = this.device.limits.maxTextureDimension2D;
+
+    if (view.wPx > limit || view.hPx > limit) {
+      throw new Error(
+        `The export dimensions ${view.wPx}×${view.hPx} exceed the device's ${limit}px texture limit; ` +
+          `use maxWidth/maxHeight or a smaller scale`,
+      );
     }
 
     return new Promise((resolve, reject) => {
@@ -814,68 +958,17 @@ export class Renderer {
 
   /** Resolve the export options to output dimensions + Frame transform. */
   private computeExportView(opts: ExportOptions): ExportView {
-    const device = this.device as GPUDevice;
-    let bg: ExportView['bg'] = null;
+    // same-thread only: a worker engine has no container, and its proxy
+    // resolves views on the main thread (exportFromView)
+    const container = this.container as HTMLElement;
 
-    if (opts.bg != null) {
-      const tuple = color2tuple(opts.bg);
-
-      if (tuple == null) {
-        throw new Error(
-          `The value '${String(opts.bg)}' is not a valid colour for 'bg'`,
-        );
-      }
-
-      bg = [tuple[0], tuple[1], tuple[2], tuple[3] ?? 1];
-    }
-
-    let w: number, h: number, panX: number, panY: number, zoom: number;
-
-    if (opts.full === true) {
-      const bb = this.store.boundingBox();
-
-      if (bb == null) {
-        throw new Error('Cannot export a full-graph image of an empty graph');
-      }
-
-      const scale = exportScale(bb.w, bb.h, opts);
-
-      w = bb.w * scale;
-      h = bb.h * scale;
-      panX = -bb.x1 * scale;
-      panY = -bb.y1 * scale;
-      zoom = scale;
-    } else {
-      const cw = this.container.clientWidth;
-      const ch = this.container.clientHeight;
-
-      if (cw === 0 || ch === 0) {
-        throw new Error('Cannot export the viewport of a zero-sized container');
-      }
-
-      const scale = exportScale(cw, ch, opts);
-      const viewport = this.host.viewport;
-      const pan = viewport.pan();
-
-      w = cw * scale;
-      h = ch * scale;
-      panX = pan.x * scale;
-      panY = pan.y * scale;
-      zoom = viewport.zoom() * scale;
-    }
-
-    const wPx = Math.max(1, Math.round(w));
-    const hPx = Math.max(1, Math.round(h));
-    const limit = device.limits.maxTextureDimension2D;
-
-    if (wPx > limit || hPx > limit) {
-      throw new Error(
-        `The export dimensions ${wPx}×${hPx} exceed the device's ${limit}px texture limit; ` +
-          `use maxWidth/maxHeight or a smaller scale`,
-      );
-    }
-
-    return { wPx, hPx, panX, panY, zoom, bg };
+    return resolveExportView(
+      opts,
+      container.clientWidth,
+      container.clientHeight,
+      () => this.store.boundingBox(),
+      this.host.viewport,
+    );
   }
 
   /** The export Frame uniform: output px viewport, dpr-free transform,
@@ -2400,13 +2493,44 @@ export class Renderer {
   }
 
   private applySize(): void {
-    const w = Math.max(1, Math.round(this.container.clientWidth * this.dpr));
-    const h = Math.max(1, Math.round(this.container.clientHeight * this.dpr));
+    const container = this.container;
+
+    if (container == null) {
+      return; // worker mount: sizes arrive via setSize()
+    }
+
+    const w = Math.max(1, Math.round(container.clientWidth * this.dpr));
+    const h = Math.max(1, Math.round(container.clientHeight * this.dpr));
 
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
     }
+  }
+
+  /**
+   * Explicit device-px resize for the worker mount (round 86.3), where
+   * the main thread observes the container and messages the new size.
+   * The same-thread path keeps its ResizeObserver + applySize.
+   *
+   * @param wPx — canvas width in device px (floored to 1)
+   * @param hPx — canvas height in device px (floored to 1)
+   */
+  setSize(wPx: number, hPx: number): void {
+    if (this.destroyed) {
+      return;
+    }
+
+    const w = Math.max(1, Math.round(wPx));
+    const h = Math.max(1, Math.round(hPx));
+
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
+
+    this.needsRedraw = true;
+    this.schedule();
   }
 
   /** Low-res scene target dimensions (must match writeFrameUniform). */

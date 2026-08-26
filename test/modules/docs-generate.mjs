@@ -175,5 +175,8 @@ describe('docs generator: factoryStatics', () => {
       'serializeElements',
       'toColumnarElements',
     ]);
+    // the worker bootstrap's __runRenderWorker__ hangs off the factory
+    // too (round 86.3); underscore hooks are machinery and never publish
+    expect(statics.has('__runRenderWorker__')).to.equal(false);
   });
 });

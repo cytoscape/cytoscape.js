@@ -168,7 +168,7 @@ export class GlyphAtlas {
   fontWeight: string;
 
   private device: GPUDevice;
-  private ctx: CanvasRenderingContext2D;
+  private ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
   private cache: Map<string, GlyphMetrics | null>;
   private penX: number;
   private penY: number;
@@ -204,12 +204,23 @@ export class GlyphAtlas {
       minFilter: 'linear',
     });
 
-    const canvas = document.createElement('canvas');
+    // a worker host (round 86.3) has no document; OffscreenCanvas
+    // rasterizes identically for the atlas's greyscale coverage reads
+    const canvas =
+      typeof document !== 'undefined'
+        ? (() => {
+            const el = document.createElement('canvas');
 
-    canvas.width = SDF_FONT_SIZE * 4;
-    canvas.height = ROW_HEIGHT;
+            el.width = SDF_FONT_SIZE * 4;
+            el.height = ROW_HEIGHT;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            return el;
+          })()
+        : new OffscreenCanvas(SDF_FONT_SIZE * 4, ROW_HEIGHT);
+
+    const ctx = canvas.getContext('2d', {
+      willReadFrequently: true,
+    }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
 
     if (ctx == null) {
       throw new Error(

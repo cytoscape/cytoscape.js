@@ -34,6 +34,15 @@ const transform = {
   target: 'es2018',
 };
 
+// the non-ESM outputs (UMD/CJS) have no import.meta; define it away so
+// the worker spawner's ESM-detection branch (round 86.3,
+// worker-renderer.mts) compiles to its documented fallback — the
+// document.currentScript path — instead of emitting a build warning
+const transformNonEsm = {
+  ...transform,
+  define: { 'import.meta': '({})' },
+};
+
 const envVariables = {
   'process.env.VERSION': JSON.stringify(VERSION),
   'process.env.NODE_ENV': JSON.stringify(NODE_ENV),
@@ -58,7 +67,7 @@ const configs = [
   {
     input,
     resolve,
-    transform,
+    transform: transformNonEsm,
     output: {
       file: 'build/cytoscape.umd.js',
       format: 'umd',
@@ -75,7 +84,7 @@ const configs = [
   {
     input,
     resolve,
-    transform,
+    transform: transformNonEsm,
     output: {
       file: 'build/cytoscape.min.js',
       format: 'umd',
@@ -108,7 +117,7 @@ const configs = [
   {
     input,
     resolve,
-    transform,
+    transform: transformNonEsm,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     plugins: [
       wgslMinifyPlugin(),

@@ -1135,6 +1135,18 @@ interface RendererOptions {
   renderScaleMax?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
+  /**
+   * Host the renderer in a worker via OffscreenCanvas (round 86.3):
+   * the frame loop, GPU pipelines and uploads leave the main thread,
+   * which keeps the page responsive under render load.  The model
+   * stays main-side and synchronous; per-frame deltas cross as
+   * transferable span messages.  Requires Worker + OffscreenCanvas +
+   * WebGPU-in-worker support, and mounting rejects loudly without
+   * them — there is no silent same-thread fallback.  Pass-1
+   * deferrals, recorded in the round record: background images are
+   * not drawn, and tweens/the force layout take their CPU executors.
+   */
+  worker?: boolean;
 }
 /** Snapshot returned by `cy.renderer().stats()`. */
 interface RendererStats {
@@ -7127,7 +7139,10 @@ type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | Concentr
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 interface RendererLike {
   destroy(): void;
-  pick(x: number, y: number): Promise<Collection | null>;
+  /** resolves with the packed pick id under the point (a slot + 1, with
+   * the edge namespace bit for edges), or null for background — decoded
+   * and re-validated by {@link Core._decodePick} (round 86.2) */
+  pick(x: number, y: number): Promise<number | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;

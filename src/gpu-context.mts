@@ -29,7 +29,7 @@ export interface GpuContext {
  * @throws if `navigator.gpu` is missing, or no adapter can be acquired
  */
 export const initGpuContext = async (
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | OffscreenCanvas,
   onLost: (info: GPUDeviceLostInfo) => void,
 ): Promise<GpuContext> => {
   const gpu = navigator.gpu;

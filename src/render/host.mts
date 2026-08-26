@@ -51,9 +51,7 @@ export interface RenderStoreView extends ModelView {
    * are current; a no-op on a remote view (the producer flushed) */
   flushDerived(): void;
   /** model-space bounds, for full-graph export views */
-  boundingBox(
-    includeLabels?: boolean,
-  ): {
+  boundingBox(includeLabels?: boolean): {
     x1: number;
     y1: number;
     x2: number;

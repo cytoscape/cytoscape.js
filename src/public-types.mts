@@ -561,6 +561,18 @@ export interface RendererOptions {
   renderScaleMax?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
+  /**
+   * Host the renderer in a worker via OffscreenCanvas (round 86.3):
+   * the frame loop, GPU pipelines and uploads leave the main thread,
+   * which keeps the page responsive under render load.  The model
+   * stays main-side and synchronous; per-frame deltas cross as
+   * transferable span messages.  Requires Worker + OffscreenCanvas +
+   * WebGPU-in-worker support, and mounting rejects loudly without
+   * them — there is no silent same-thread fallback.  Pass-1
+   * deferrals, recorded in the round record: background images are
+   * not drawn, and tweens/the force layout take their CPU executors.
+   */
+  worker?: boolean;
 }
 
 /** Snapshot returned by `cy.renderer().stats()`. */

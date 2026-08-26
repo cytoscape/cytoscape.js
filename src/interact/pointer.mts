@@ -9,6 +9,22 @@ import {
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
+
+/**
+ * What the gesture layer needs from a renderer (round 86.3): the DOM
+ * canvas to listen on, the sync node pick that decides pan-vs-grab, and
+ * the async pick.  Satisfied by the same-thread {@link Renderer} and by
+ * the worker proxy alike.
+ */
+export interface GestureRenderer {
+  canvas: HTMLCanvasElement | OffscreenCanvas;
+  pick(
+    x: number,
+    y: number,
+    pads?: { edgePadPx?: number; nodePadPx?: number },
+  ): Promise<number | null>;
+  pickNodeSync(x: number, y: number, padPx?: number): number | null;
+}
 import type { Position } from '../public-types.mjs';
 
 /*
@@ -99,7 +115,7 @@ const isMultSelKeyDown = (e: PointerEvent): boolean => {
 
 export class PointerHandler {
   private cy: Core;
-  private renderer: Renderer;
+  private renderer: GestureRenderer;
   private canvas: HTMLCanvasElement;
   private hovered: Collection | null;
   private lastPick: Collection | null;
@@ -157,10 +173,13 @@ export class PointerHandler {
    *   the usual events fire and the usual dirty spans upload
    * @param renderer — supplies the canvas to listen on and the async pick
    */
-  constructor(cy: Core, renderer: Renderer) {
+  constructor(cy: Core, renderer: GestureRenderer) {
     this.cy = cy;
     this.renderer = renderer;
-    this.canvas = renderer.canvas;
+    // both mounts hand the gesture layer a DOM canvas: the same-thread
+    // renderer creates one, and the worker proxy keeps the element whose
+    // control it transferred (round 86.3)
+    this.canvas = renderer.canvas as HTMLCanvasElement;
     this.hovered = null;
     this.lastPick = null;
     this.pickInFlight = false;

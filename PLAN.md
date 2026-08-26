@@ -766,3 +766,35 @@ directions".*
     absorption, and let the remainder *be* the port list — with
     the first port chosen for shape-coverage, not popularity.
 
+51. **Round 86's worker-host deferrals** (logged 2026-08-26, from
+    the round-86 landed record — surfaced here per the standing
+    rule that a deferral recorded only where it was made is a
+    deferral nobody finds).  Three capabilities the worker host
+    (`renderer: { worker: true }`) ships without, each correct
+    today by falling back rather than failing silently:
+    - **Background images in the worker.**  The proxy zeroes the
+      image count and emits one loud error event; nothing is
+      drawn.  The build-out is `createImageBitmap` decodes in the
+      worker with rasters as transferables — the plan's own
+      design — plus mirroring the ImageRegistry's entry lifecycle
+      across the boundary.
+    - **GPU tweens and `startForce` across the boundary.**  The
+      animation manager keeps its own main-side rAF clock (no
+      sink attaches) so every tween takes the CPU path, and the
+      proxy has no `startForce`, so the force layout uses its CPU
+      executor.  Both are correct; the cost is exactly the
+      per-frame span traffic 86.1 priced (0.086 ms at harness
+      scale).  The build-out is a register/unregister sink proxy
+      and a force-inputs message.
+    - **Page `@font-face` labels in the worker.**  A worker's
+      FontFaceSet does not inherit the document's registrations,
+      so worker-rasterized labels fall back to system faces (why
+      the 86.3 exact-parity scene excludes labels).  Options:
+      load faces into the worker's own FontFaceSet from URLs the
+      app provides, or raster glyphs main-side and transfer.
+    **First measurement**: for images, entry-lifecycle traffic on
+    an image-heavy fixture (bytes and messages per second); for
+    tweens/force, the span traffic of a real animated session
+    under the worker host against the 86.1 numbers; for fonts, a
+    worker `FontFaceSet.load` spike proving the face actually
+    applies to OffscreenCanvas 2D rasterization in each engine.

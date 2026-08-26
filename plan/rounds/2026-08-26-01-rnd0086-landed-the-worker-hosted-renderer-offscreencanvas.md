@@ -155,11 +155,14 @@ event; `createImageBitmap` decodes are the follow-up), GPU tweens and
 copy cost of their per-frame spans is exactly what 86.1 priced),
 `@font-face` labels in the worker (the worker's FontFaceSet does not
 inherit the page's registrations; system faces render), and the
-SharedArrayBuffer tier (declined on 86.1's numbers).  One incidental
-find: `test/force-layout.mjs`'s spectral-seed spec fails when the file
-runs *standalone* on this machine while passing in the full tier —
-pre-existing at the branch base, unrelated to this round, left for its
-owner.
+SharedArrayBuffer tier (declined on 86.1's numbers).  The three
+worker-host deferrals are also logged as **ledger item 51**, so they
+are findable from the open-calls ledger and not only from this record.
+One incidental find, since diagnosed to invocation shape and given its
+own round (**round 109**): `test/force-layout.mjs`'s spectral-seed
+spec fails deterministically when the file runs without the tier's
+`--import ./test/node-test-setup.mjs` preload, and passes 13/13 with
+it — pre-existing at the branch base, unrelated to this round.
 
 ### 86.4 — the measurement: whose thread pays
 

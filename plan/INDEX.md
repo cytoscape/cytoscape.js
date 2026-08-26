@@ -8,7 +8,7 @@ calls for the maintainer — are in [`../PLAN.md`](../PLAN.md); everything
 below is a section file under [`rounds/`](rounds/), which is where a new
 round is written.
 
-151 sections.
+152 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -163,3 +163,4 @@ round is written.
 | 149 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
 | 150 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
 | 151 | 86 | 2026-08-26 | landed | [The worker-hosted renderer, landed](rounds/2026-08-26-01-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |
+| 152 | 109 | 2026-08-26 | plan | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-02-rnd0109-plan-the-spectral-seed-spec-fails-without-the-setup-preload.md) |

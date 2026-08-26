@@ -339,6 +339,8 @@ verified against the source before planning (the mid-August planning wave):
 | Layouts | Radial layout, force constraints, edge-length control, per-side padding; packing made reusable and the layout→renderer handoff decoupled from animation |
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
+| Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |
+| Harness invocation guard | Round 109: the spectral-seed spec fails deterministically without the tier's setup preload; find the mechanism, then make the wrong invocation fail loudly |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation

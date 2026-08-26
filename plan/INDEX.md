@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–39, 41–48, 52–70, 86, 90, 101, 108, 111 |
-| planned | 40, 49–51, 71–85, 87–89, 91–100, 102–107, 109–110 |
+| landed | 7–39, 41–48, 52–70, 86, 90, 101, 108–109, 111 |
+| planned | 40, 49–51, 71–85, 87–89, 91–100, 102–107, 110 |
 
 ## The sections
 
@@ -173,6 +173,6 @@ A round can land with an item held open; the round file says which.
 | 144 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-02-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |
 | 145 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
 | 146 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
-| 147 | 109 | 2026-08-26 | plan | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-01-rnd0109-plan-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
+| 147 | 109 | 2026-08-26 | landed | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-01-rnd0109-landed-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
 | 148 | 110 | 2026-08-26 | plan | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-02-rnd0110-plan-zero-copy-the-copy-census-and-what-each-copy-buys.md) |
 | 149 | 111 | 2026-08-26 | landed | [The kind field tells the truth](rounds/2026-08-26-03-rnd0111-landed-the-kind-field-tells-the-truth.md) |

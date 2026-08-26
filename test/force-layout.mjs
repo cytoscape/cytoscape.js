@@ -236,10 +236,8 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     expect(cy.$id('n0').position()).to.deep.equal({ x: 4000, y: 4000 });
   });
 
-  it('uncurls a chain: the spectral seed reaches what refinement cannot (59.4)', async function () {
-    // a 40-node path.  From a random scatter, every short-range model
-    // curls it (round 18's own recorded limit); the landmark-MDS seed
-    // embeds it near-collinear and the force phase preserves that.
+  // a 40-node path, the chain fixture both spectral specs measure
+  const CHAIN = () => {
     const elements = [];
 
     for (let i = 0; i < 40; i++) {
@@ -252,17 +250,48 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       }
     }
 
-    const cy = cytoscape({ elements });
+    return elements;
+  };
 
-    await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+  /** end-to-end spread of the laid-out chain under one init mode */
+  const chainSpread = async (init) => {
+    const cy = cytoscape({ elements: CHAIN() });
+
+    await cy
+      .layout({ name: 'force', seed: 7, fit: false, ...init })
+      .run()
+      .promise();
 
     const a = cy.$id('n0').position();
     const b = cy.$id('n39').position();
 
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  };
+
+  it('uncurls a chain: the spectral seed reaches what refinement cannot (59.4)', async function () {
+    // From a random scatter, every short-range model curls the chain
+    // (round 18's own recorded limit); the landmark-MDS seed embeds it
+    // near-collinear and the force phase preserves that.
+    //
     // a straight 39-link chain at ideal length 60 spans ~2340; curled
     // scatters land at a small fraction of that.  0.4x is generous —
     // it discriminates curled from straight, not good from perfect.
-    expect(Math.hypot(b.x - a.x, b.y - a.y)).to.be.greaterThan(39 * 60 * 0.4);
+    expect(await chainSpread()).to.be.greaterThan(39 * 60 * 0.4);
+  });
+
+  it('the chain spec discriminates the seed, not the machine (round 109)', async function () {
+    // Round 86 saw the spec above fail at 346.4557 and round 109's plan
+    // read it as harness sensitivity.  It is not: 346.4557 is exactly
+    // what `init: 'scatter'` produces on this fixture, so whatever that
+    // run did, the spectral seed did not run.  The absolute bound above
+    // cannot say that; this one does, by measuring both paths in one
+    // process and asserting the gap between them.  A regression that
+    // silently falls back to the scatter path fails here by name.
+    const spectral = await chainSpread();
+    const scatter = await chainSpread({ init: 'scatter' });
+
+    expect(scatter).to.be.lessThan(39 * 60 * 0.4);
+    expect(spectral).to.be.greaterThan(scatter * 4);
   });
 
   it("init: 'scatter' keeps the plain seeded start; unknown init throws (59.4)", async function () {

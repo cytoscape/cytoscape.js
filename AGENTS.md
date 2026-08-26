@@ -90,6 +90,7 @@ drift.
 | Command | Time | What it is |
 | --- | --: | --- |
 | `npm run -s verify` | ~9 s | typecheck + lint + `test:js` — **the inner loop** |
+| `npm run -s test:js:one -- test/<f>.mjs` | — | one spec file, with the shim preloaded |
 | `npm run -s test:node:quiet` | ~90 s | the gate before handing work back |
 | `npm run -s test:quiet` | minutes | the Node tier plus Playwright (the quiet `npm test`) |
 | `npm run build` | ~1 s | all bundles; only needed when changing the build |

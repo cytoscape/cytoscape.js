@@ -113,6 +113,7 @@
     "test:node:quiet": "run-s typecheck:quiet test:js:quiet test:modules:quiet test:soak:quiet test:throws:quiet lint:quiet",
     "test:js": "node --import tsx --import ./test/node-test-setup.mjs --test \"test/!(types-*|node-test-setup|quiet-reporter).mjs\"",
     "test:js:quiet": "node --import tsx --import ./test/node-test-setup.mjs --test --test-reporter=./test/quiet-reporter.mjs \"test/!(types-*|node-test-setup|quiet-reporter).mjs\"",
+    "test:js:one": "node --import tsx --import ./test/node-test-setup.mjs --test",
     "test:js:debug": "node --import tsx --import ./test/node-test-setup.mjs --inspect-brk --test --test-concurrency=1 \"test/!(types-*|node-test-setup|quiet-reporter).mjs\"",
     "test:modules": "run-s build test:modules:run",
     "test:modules:quiet": "run-s build:quiet test:modules:run:quiet",

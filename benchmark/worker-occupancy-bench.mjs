@@ -37,9 +37,12 @@ import { chromium } from '@playwright/test';
 const DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(DIR, '..');
 const PORT = 3397;
-const N_NODES = 20000; // harness scale: ndex-x-large carries 19,607
-const N_EDGES = 30000;
-const FRAMES = 240;
+// harness scale by default (ndex-x-large carries 19,607 nodes); the
+// env knobs exist because SwiftShader at that scale runs at 0.4 fps —
+// the small software-adapter datapoint needs a small scene
+const N_NODES = Number(process.env.BENCH_NODES ?? 20000);
+const N_EDGES = Number(process.env.BENCH_EDGES ?? 30000);
+const FRAMES = Number(process.env.BENCH_FRAMES ?? 240);
 const PICKS = 40;
 
 const MIME = {

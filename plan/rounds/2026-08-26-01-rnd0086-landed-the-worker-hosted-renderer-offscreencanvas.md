@@ -194,6 +194,19 @@ Read honestly, three findings:
   at full cadence when the main thread is idle, pinning the writer
   contention as the cause.
 
+**The software-adapter case, measured rather than assumed** (the
+plan's frame-driver note said worker rAF under SwiftShader had never
+been measured here; now it has).  At harness scale SwiftShader is
+simply unusable — the same-thread writer loop measured **2,527
+ms/frame (0.4 fps)** before the run was cut off — so the datapoint
+comes from a 2,000-node / 3,000-edge scene: both hosts are
+compositor-bound at 2–3 fps (the rAF cadence waits on software
+rasterization regardless of which thread encodes), the worker host
+again painted **every frame (60/60 and 59/60) against same-thread's
+31/60 and 41/60**, and it added ~30% to the main rAF interval.  The
+conclusion transfers: on a software adapter the worker cannot make
+SwiftShader fast, it can only keep paint cadence — which it does.
+
 **The recommendation the plan left open is taken by these numbers:
 the worker host stays opt-in, and post-4.0.**  It is additive, its
 costs are real but small, and its benefit today is smoothness under

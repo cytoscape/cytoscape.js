@@ -251,6 +251,29 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     out of prose any more.
   - Buys an index you can scan for the section you want, and three prose
     regexes deleted in favour of one filename parse.
+- **26 Aug** — the renderer leaves the main thread (round 86)
+  - Measure-first gate (86.1): the worst-case per-frame copy — the whole
+    position column crossing the thread boundary — is **0.035 ms** at
+    harness scale, so the copy design was committed and the
+    SharedArrayBuffer tier declined with the measurement recorded.
+  - The seam (86.2): the renderer takes everything through one
+    `RenderHost` (`src/render/host.mts`) and speaks slots and pick ids
+    only; behaviour-neutral, all 45 goldens exact-zero.  The same seam is
+    what a WebGL fallback (round 73) or a headless-Node renderer mounts
+    through.
+  - The worker host (86.3): `renderer: { worker: true }` runs the same
+    engine in a worker over a transferred OffscreenCanvas, fed by
+    transferable span batches; the canonical store, sync picks, the
+    canvas element and the animation clock stay main-side.  Worker-vs-main
+    exports diff exact-zero on the pinned adapter.  Pass-1 deferrals
+    recorded: worker background images, GPU tweens/force across the
+    boundary, page @font-face labels.
+  - Measured (86.4): under a saturated main loop the worker host painted
+    **236 of 240 frames against same-thread's 120** at equal main-thread
+    busyness; costs are ~0.7 ms/frame of batch traffic and +0.6 ms pick
+    round trip.  On this real-GPU box the renderer's own main-thread cost
+    was already ~0.2 ms/frame, so the win is cadence isolation, not
+    occupancy — the recommendation stays opt-in and post-4.0.
 
 ---
 
@@ -317,7 +340,6 @@ verified against the source before planning (the mid-August planning wave):
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
-| Worker-hosted renderer | The renderer moved off the main thread via OffscreenCanvas |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, and a fresh idea-ledger sweep of ~20 further candidates awaiting

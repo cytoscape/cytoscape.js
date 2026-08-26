@@ -153,6 +153,49 @@ runs *standalone* on this machine while passing in the full tier —
 pre-existing at the branch base, unrelated to this round, left for its
 owner.
 
-### 86.4 — the measurement
+### 86.4 — the measurement: whose thread pays
 
-(recorded with the pass)
+`benchmark/worker-occupancy-bench.mjs` measures the subject the plan
+named — main-thread cost per frame, worker versus same-thread — under
+the 86.1 gate's worst case made real: a main-side rAF loop rewriting
+every position of a 20,000-node / 30,000-edge graph each frame (the
+shape of an external CPU layout tick or a whole-graph drag), plus a
+renderer-dominated control (viewport spin, writer trivial) and the
+pick-latency delta.  240 frames per mode, warmed, on this machine's
+**real AMD adapter** (the run prints the adapter identity and carries
+a `--swiftshader` mode for the software-adapter case):
+
+| mode | writer loop | main busy | renderer cpuFrame | pick rtt | frames drawn |
+| --- | --: | --: | --: | --: | --: |
+| same-thread | 16.90 ms/frame (59.2 fps) | 52% | 0.20 ms (on main) | 0.4 ms | **120 / 240** |
+| worker: true | 17.54 ms/frame (57.0 fps) | 52% | 0.20 ms (in worker) | 1.0 ms | **236 / 240** |
+| same-thread, viewport spin | 16.94 ms/frame | 51% | 0.20 ms | — | 238 / 240 |
+| worker, viewport spin | 17.60 ms/frame | 51% | 0.20 ms | — | 236 / 240 |
+
+Read honestly, three findings:
+
+- **The costs are as 86.1 predicted and small**: ~0.7 ms/frame of
+  batch build + post on the writer loop, and +0.6 ms on the async
+  edge-pick round trip (the one hop).
+- **The occupancy win is negligible on this hardware — and that is a
+  finding about v4, not about the worker.**  The same-thread
+  renderer's whole per-frame CPU cost at this scale is **~0.2 ms**:
+  the render-on-dirty architecture already keeps the main thread
+  nearly idle, so there is little occupancy left to move.  The
+  worker's occupancy case rests on configurations where that number
+  is large — software adapters, heavier scenes — not on healthy
+  desktop GPUs.
+- **The visible benefit is cadence isolation.**  With the main loop
+  saturated by the writer, the same-thread host painted **half its
+  frames (120/240)** — the writer and the renderer's rAF contend for
+  the same 16.7 ms — while the worker host painted **236/240**: the
+  graph stays visually smooth under exactly the load that degrades
+  the same-thread path.  The viewport-spin control shows both hosts
+  at full cadence when the main thread is idle, pinning the writer
+  contention as the cause.
+
+**The recommendation the plan left open is taken by these numbers:
+the worker host stays opt-in, and post-4.0.**  It is additive, its
+costs are real but small, and its benefit today is smoothness under
+main-thread saturation rather than a wholesale occupancy win —
+worth having, not worth changing what 4.0 is.

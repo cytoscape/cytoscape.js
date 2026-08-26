@@ -8,7 +8,7 @@ calls for the maintainer — are in [`../PLAN.md`](../PLAN.md); everything
 below is a section file under [`rounds/`](rounds/), which is where a new
 round is written.
 
-153 sections.
+148 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -31,7 +31,7 @@ round is written.
 | 17 | 9.6 | 2026-07-27 | landed | [Image export and the visual regression harness](rounds/2026-07-27-03-rnd0009.6-landed-image-export-and-the-visual-regression-harness.md) |
 | 18 | 9.7 | 2026-07-27 | landed | [Label testability and `font-family`](rounds/2026-07-27-04-rnd0009.7-landed-label-testability-and-font-family.md) |
 | 19 | 10 | 2026-07-27 | note | [Edge labels, as logged and then built](rounds/2026-07-27-05-rnd0010-note-edge-labels-as-logged-and-then-built.md) |
-| 20 | 10 | 2026-07-27 | plan | [The autonomous parity sprint](rounds/2026-07-27-06-rnd0010-plan-the-autonomous-parity-sprint.md) |
+| 20 | 10 | 2026-07-27 | landed | [The autonomous parity sprint](rounds/2026-07-27-06-rnd0010-landed-the-autonomous-parity-sprint.md) |
 | 21 | — | 2026-07-28 | landed | [Renderer benchmarks](rounds/2026-07-28-01-rnd0000-landed-renderer-benchmarks.md) |
 | 22 | — | 2026-07-28 | landed | [The benchmark HTML report](rounds/2026-07-28-02-rnd0000-landed-the-benchmark-html-report.md) |
 | 23 | — | 2026-07-28 | note | [v3 → v4 parity gap analysis](rounds/2026-07-28-03-rnd0000-note-v3-to-v4-parity-gap-analysis.md) |
@@ -43,125 +43,120 @@ round is written.
 | 29 | 12a | 2026-07-30 | landed | [Bundled bezier and self-loops](rounds/2026-07-30-01-rnd0012a-landed-bundled-bezier-and-self-loops.md) |
 | 30 | 12b | 2026-07-30 | landed | [Unbundled bezier, segments and taxi](rounds/2026-07-30-02-rnd0012b-landed-unbundled-bezier-segments-and-taxi.md) |
 | 31 | 12c | 2026-07-30 | landed | [Endpoints, haystack and straight-triangle](rounds/2026-07-30-03-rnd0012c-landed-endpoints-haystack-and-straight-triangle.md) |
-| 32 | 13 | 2026-07-30 | plan | [Style-prop parity](rounds/2026-07-30-04-rnd0013-plan-style-prop-parity.md) |
-| 33 | 13 | 2026-07-31 | landed | [Style-prop parity](rounds/2026-07-31-01-rnd0013-landed-style-prop-parity.md) |
-| 34 | 14 | 2026-07-31 | plan | [Compound nodes](rounds/2026-07-31-02-rnd0014-plan-compound-nodes.md) |
-| 35 | 15–18 | 2026-08-01 | note | [Design sitting — z-index dropped, rounds 15–18 scoped](rounds/2026-08-01-01-rnd0015_0018-note-design-sitting-z-index-dropped-rounds-15-18-scoped.md) |
-| 36 | 15 | 2026-08-01 | plan | [Background images](rounds/2026-08-01-02-rnd0015-plan-background-images.md) |
-| 37 | 16 | 2026-08-01 | plan | [Multiline labels and label bounding boxes](rounds/2026-08-01-03-rnd0016-plan-multiline-labels-and-label-bounding-boxes.md) |
-| 38 | 17 | 2026-08-01 | plan | [Event vocabulary and the extension contract](rounds/2026-08-01-04-rnd0017-plan-event-vocabulary-and-the-extension-contract.md) |
-| 39 | 18 | 2026-08-01 | plan | [GPU force layout](rounds/2026-08-01-05-rnd0018-plan-gpu-force-layout.md) |
-| 40 | — | 2026-08-01 | landed | [Hardware validation pass — AMD RX 580](rounds/2026-08-01-06-rnd0000-landed-hardware-validation-pass-amd-rx-580.md) |
-| 41 | — | 2026-08-01 | landed | [The pick-ring look](rounds/2026-08-01-07-rnd0000-landed-the-pick-ring-look.md) |
-| 42 | 19 | 2026-08-01 | plan | [Slot-moving compaction](rounds/2026-08-01-08-rnd0019-plan-slot-moving-compaction.md) |
-| 43 | 19 | 2026-08-01 | landed | [Slot-moving compaction](rounds/2026-08-01-09-rnd0019-landed-slot-moving-compaction.md) |
-| 44 | 20 | 2026-08-01 | plan | [Interaction options and touch parity](rounds/2026-08-01-10-rnd0020-plan-interaction-options-and-touch-parity.md) |
-| 45 | — | 2026-08-01 | note | [The third design sitting — animation trims, display/visibility, charts](rounds/2026-08-01-11-rnd0000-note-the-third-design-sitting-animation-trims-display-charts.md) |
-| 46 | 21 | 2026-08-01 | plan | [Animation queue removal](rounds/2026-08-01-12-rnd0021-plan-animation-queue-removal.md) |
-| 47 | 22 | 2026-08-01 | plan | [The display/visibility split](rounds/2026-08-01-13-rnd0022-plan-the-display-visibility-split.md) |
-| 48 | 23 | 2026-08-01 | plan | [Node charts: pie and stripes](rounds/2026-08-01-14-rnd0023-plan-node-charts-pie-and-stripes.md) |
-| 49 | — | 2026-08-01 | note | [The fourth design sitting — style transitions and animation controls](rounds/2026-08-01-15-rnd0000-note-the-fourth-design-sitting-style-transitions-and-controls.md) |
-| 50 | 24 | 2026-08-01 | plan | [Style transitions and animation controls](rounds/2026-08-01-16-rnd0024-plan-style-transitions-and-animation-controls.md) |
-| 51 | 25 | 2026-08-02 | plan | [Geometry tweens](rounds/2026-08-02-01-rnd0025-plan-geometry-tweens.md) |
-| 52 | 26 | 2026-08-02 | plan | [The authoring surface: JSDoc and shipped types](rounds/2026-08-02-02-rnd0026-plan-the-authoring-surface-jsdoc-and-shipped-types.md) |
-| 53 | — | 2026-08-02 | note | [A Node-suite flake, observed once and unreproduced](rounds/2026-08-02-03-rnd0000-note-a-node-suite-flake-observed-once-and-unreproduced.md) |
-| 54 | 27 | 2026-08-02 | plan | [The parity remnants](rounds/2026-08-02-04-rnd0027-plan-the-parity-remnants.md) |
-| 55 | 28 | 2026-08-03 | plan | [The no-call remainder](rounds/2026-08-03-01-rnd0028-plan-the-no-call-remainder.md) |
-| 56 | 29 | 2026-08-03 | plan | [Test and benchmark hardening](rounds/2026-08-03-02-rnd0029-plan-test-and-benchmark-hardening.md) |
-| 57 | 30 | 2026-08-03 | plan | [The error contract](rounds/2026-08-03-03-rnd0030-plan-the-error-contract.md) |
-| 58 | 31 | 2026-08-03 | plan | [The documented contract](rounds/2026-08-03-04-rnd0031-plan-the-documented-contract.md) |
-| 59 | 32 | 2026-08-03 | plan | [`@param` completeness](rounds/2026-08-03-05-rnd0032-plan-param-completeness.md) |
-| 60 | 33 | 2026-08-03 | plan | [The benchmark sweep](rounds/2026-08-03-06-rnd0033-plan-the-benchmark-sweep.md) |
-| 61 | 34 | 2026-08-03 | plan | [Fixing what the benchmark sweep measured](rounds/2026-08-03-07-rnd0034-plan-fixing-what-the-benchmark-sweep-measured.md) |
-| 62 | 35 | 2026-08-03 | plan | [The style-read dispatch table](rounds/2026-08-03-08-rnd0035-plan-the-style-read-dispatch-table.md) |
-| 63 | 36 | 2026-08-04 | plan | [The completion round](rounds/2026-08-04-01-rnd0036-plan-the-completion-round.md) |
-| 64 | — | 2026-08-04 | note | [The fifth design sitting — the production-readiness roadmap](rounds/2026-08-04-02-rnd0000-note-the-fifth-design-sitting-the-production-readiness.md) |
-| 65 | 37 | 2026-08-04 | plan | [Governance close-out](rounds/2026-08-04-03-rnd0037-plan-governance-close-out.md) |
-| 66 | 38 | 2026-08-04 | landed | [`border-style` and `outline-style`, full coverage](rounds/2026-08-04-04-rnd0038-landed-border-style-and-outline-style-full-coverage.md) |
-| 67 | 39 | 2026-08-04 | plan | [The decided feature tail](rounds/2026-08-04-05-rnd0039-plan-the-decided-feature-tail.md) |
-| 68 | 40 | 2026-08-04 | plan | [The error policy and `cytoscape.warnings()`](rounds/2026-08-04-06-rnd0040-plan-the-error-policy-and-cytoscape-warnings.md) |
-| 69 | 41 | 2026-08-04 | plan | [The v4 Event and emitter](rounds/2026-08-04-07-rnd0041-plan-the-v4-event-and-emitter.md) |
-| 70 | 42 | 2026-08-04 | plan | [The great restructure](rounds/2026-08-04-08-rnd0042-plan-the-great-restructure.md) |
-| 71 | 43 | 2026-08-04 | landed | [The debug harness](rounds/2026-08-04-09-rnd0043-landed-the-debug-harness.md) |
-| 72 | 44 | 2026-08-04 | landed | [Packaging and publish hardening](rounds/2026-08-04-10-rnd0044-landed-packaging-and-publish-hardening.md) |
-| 73 | 45 | 2026-08-04 | landed | [The docs generator](rounds/2026-08-04-11-rnd0045-landed-the-docs-generator.md) |
-| 74 | 46 | 2026-08-04 | plan | [The v4 docs site](rounds/2026-08-04-12-rnd0046-plan-the-v4-docs-site.md) |
-| 75 | 47 | 2026-08-04 | landed | [The migration guide and CHANGELOG](rounds/2026-08-04-13-rnd0047-landed-the-migration-guide-and-changelog.md) |
-| 76 | 48 | 2026-08-04 | landed | [Robustness and soak](rounds/2026-08-04-14-rnd0048-landed-robustness-and-soak.md) |
-| 77 | 49 | 2026-08-04 | plan | [Cross-platform validation](rounds/2026-08-04-15-rnd0049-plan-cross-platform-validation.md) |
-| 78 | 50 | 2026-08-04 | plan | [Release engineering](rounds/2026-08-04-16-rnd0050-plan-release-engineering.md) |
-| 79 | 51 | 2026-08-04 | plan | [The release bake → 4.0.0](rounds/2026-08-04-17-rnd0051-plan-the-release-bake-to-4-0-0.md) |
-| 80 | 43 | 2026-08-05 | landed | [What the debug harness's first real user found](rounds/2026-08-05-01-rnd0043-landed-what-the-debug-harness-s-first-real-user-found.md) |
-| 81 | 46.5 | 2026-08-05 | landed | [The status site](rounds/2026-08-05-02-rnd0046.5-landed-the-status-site.md) |
-| 82 | 46.6 | 2026-08-05 | landed | [v3's default debug graph](rounds/2026-08-05-03-rnd0046.6-landed-v3-s-default-debug-graph.md) |
-| 83 | 52 | 2026-08-05 | landed | [WGSL minification](rounds/2026-08-05-04-rnd0052-landed-wgsl-minification.md) |
-| 84 | 53 | 2026-08-06 | landed | [CI, green then fast](rounds/2026-08-06-01-rnd0053-landed-ci-green-then-fast.md) |
-| 85 | — | 2026-08-06 | note | [The sixth design sitting — the backlog sweep](rounds/2026-08-06-02-rnd0000-note-the-sixth-design-sitting-the-backlog-sweep.md) |
-| 86 | 54 | 2026-08-06 | landed | [The bounds round](rounds/2026-08-06-03-rnd0054-landed-the-bounds-round.md) |
-| 87 | 55 | 2026-08-06 | landed | [Edge routing and arrow parity, measured](rounds/2026-08-06-04-rnd0055-landed-edge-routing-and-arrow-parity-measured.md) |
-| 88 | 56 | 2026-08-07 | landed | [The arrow gap](rounds/2026-08-07-01-rnd0056-landed-the-arrow-gap.md) |
-| 89 | 57 | 2026-08-07 | plan | [Cleanup](rounds/2026-08-07-02-rnd0057-plan-cleanup.md) |
-| 90 | 41.5 | 2026-08-08 | landed | [The preventable-gesture proposal, declined](rounds/2026-08-08-01-rnd0041.5-landed-the-preventable-gesture-proposal-declined.md) |
-| 91 | 58 | 2026-08-09 | landed | [The arrow trim reaches the anchors and the layer strokes](rounds/2026-08-09-01-rnd0058-landed-the-arrow-trim-reaches-the-anchors-and-the-layer-strokes.md) |
-| 92 | 59 | 2026-08-09 | plan | [The force layout, made sound and made good](rounds/2026-08-09-02-rnd0059-plan-the-force-layout-made-sound-and-made-good.md) |
-| 93 | 60 | 2026-08-09 | plan | [The performance record, kept honest](rounds/2026-08-09-03-rnd0060-plan-the-performance-record-kept-honest.md) |
-| 94 | 61 | 2026-08-09 | plan | [The select regression: state flips write the diff, not the element](rounds/2026-08-09-04-rnd0061-plan-the-select-regression-state-flips-write-the-diff-not-the.md) |
-| 95 | 62 | 2026-08-09 | plan | [Every benchmark beats v3](rounds/2026-08-09-05-rnd0062-plan-every-benchmark-beats-v3.md) |
-| 96 | 63 | 2026-08-10 | plan | [Per-element bypasses](rounds/2026-08-10-01-rnd0063-plan-per-element-bypasses.md) |
-| 97 | 64 | 2026-08-10 | landed | [The collection guard and the query aliases](rounds/2026-08-10-02-rnd0064-landed-the-collection-guard-and-the-query-aliases.md) |
-| 98 | 65 | 2026-08-10 | landed | [The async algorithm tier and the GPU executors](rounds/2026-08-10-03-rnd0065-landed-the-async-algorithm-tier-and-the-gpu-executors.md) |
-| 99 | 66 | 2026-08-11 | landed | [The definition-form load takes the columnar path](rounds/2026-08-11-01-rnd0066-landed-the-definition-form-load-takes-the-columnar-path.md) |
-| 100 | 67 | 2026-08-11 | landed | [The load path, decomposed and attacked in order](rounds/2026-08-11-02-rnd0067-landed-the-load-path-decomposed-and-attacked-in-order.md) |
-| 101 | 68 | 2026-08-12 | landed | [The benchmark suite's wall clock](rounds/2026-08-12-01-rnd0068-landed-the-benchmark-suite-s-wall-clock.md) |
-| 102 | 69 | 2026-08-12 | landed | [The matmul-first families](rounds/2026-08-12-02-rnd0069-landed-the-matmul-first-families.md) |
-| 103 | 70 | 2026-08-12 | landed | [The propagation tier: network biology's algorithms](rounds/2026-08-12-03-rnd0070-landed-the-propagation-tier-network-biology-s-algorithms.md) |
-| 104 | 71 | 2026-08-14 | plan | [cyext: the extension toolchain](rounds/2026-08-14-01-rnd0071-plan-cyext-the-extension-toolchain.md) |
-| 105 | — | 2026-08-14 | note | [The tenth design sitting — the idea backlog swept into a shortlist](rounds/2026-08-14-02-rnd0000-note-the-tenth-design-sitting-the-idea-backlog-swept-into-a.md) |
-| 106 | 72 | 2026-08-14 | plan | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-plan-the-algorithm-perf-follow-ups-gathered.md) |
-| 107 | 73 | 2026-08-14 | plan | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md) |
-| 108 | 74 | 2026-08-14 | plan | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-plan-the-worker-pool-cpu-executor.md) |
-| 109 | 75 | 2026-08-14 | plan | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-plan-the-dx-polish-bundle.md) |
-| 110 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
-| 111 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
-| 112 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
-| 113 | 79 | 2026-08-14 | plan | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-plan-official-json-schemas.md) |
-| 114 | 80 | 2026-08-14 | plan | [Node charts: heat, bars, and the slice ceiling](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
-| 115 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
-| 116 | 82 | 2026-08-14 | plan | [Cluster hulls and collapse/aggregation proxies](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
-| 117 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |
-| 118 | 84 | 2026-08-14 | plan | [Attribute-table and filter affordances](rounds/2026-08-14-15-rnd0084-plan-attribute-table-and-filter-affordances.md) |
-| 119 | 85 | 2026-08-14 | plan | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-plan-the-layouts-round-radial-force-constraints-edge-length.md) |
-| 120 | 86 | 2026-08-14 | plan | [The worker-hosted renderer (OffscreenCanvas)](rounds/2026-08-14-17-rnd0086-plan-the-worker-hosted-renderer-offscreencanvas.md) |
-| 121 | 87 | 2026-08-17 | plan | [Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps](rounds/2026-08-17-01-rnd0087-plan-layout-mechanics-packing-made-reusable-the-handoff-from.md) |
-| 122 | 88 | 2026-08-17 | plan | [Edge layer strokes: the caps, the corners and the arrow reach](rounds/2026-08-17-02-rnd0088-plan-edge-layer-strokes-the-caps-the-corners-and-the-arrow.md) |
-| 123 | 89 | 2026-08-17 | plan | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-plan-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
-| 124 | 90 | 2026-08-17 | plan | [API review and cleanup: the parity pass audited](rounds/2026-08-17-04-rnd0090-plan-api-review-and-cleanup-the-parity-pass-audited.md) |
-| 125 | 91–97 | 2026-08-18 | landed | [The maintainer's screen pass](rounds/2026-08-18-01-rnd0091_0097-landed-the-maintainer-s-screen-pass.md) |
-| 126 | 91 | 2026-08-18 | plan | [Resize without distortion](rounds/2026-08-18-02-rnd0091-plan-resize-without-distortion.md) |
-| 127 | 92 | 2026-08-18 | plan | [The compound fit, from conservative to exact](rounds/2026-08-18-03-rnd0092-plan-the-compound-fit-from-conservative-to-exact.md) |
-| 128 | 93 | 2026-08-18 | plan | [Curve smoothness: spend the 24 quads where the bend is](rounds/2026-08-18-04-rnd0093-plan-curve-smoothness-spend-the-24-quads-where-the-bend-is.md) |
-| 129 | 94 | 2026-08-18 | plan | [Label fidelity under zoom](rounds/2026-08-18-05-rnd0094-plan-label-fidelity-under-zoom.md) |
-| 130 | 95 | 2026-08-18 | plan | [The outline goes under the ink](rounds/2026-08-18-06-rnd0095-plan-the-outline-goes-under-the-ink.md) |
-| 131 | 96 | 2026-08-18 | plan | [The v3-default `eh`, restored by bypasses](rounds/2026-08-18-07-rnd0096-plan-the-v3-default-eh-restored-by-bypasses.md) |
-| 132 | 97 | 2026-08-18 | plan | [The pick order: leaf, then edge, then parent](rounds/2026-08-18-08-rnd0097-plan-the-pick-order-leaf-then-edge-then-parent.md) |
-| 133 | 98–100 | 2026-08-19 | landed | [The runtime rounds](rounds/2026-08-19-01-rnd0098_0100-landed-the-runtime-rounds.md) |
-| 134 | 98 | 2026-08-19 | plan | [Bun and Deno run the package: the contract pinned and smoked](rounds/2026-08-19-02-rnd0098-plan-bun-and-deno-run-the-package-the-contract-pinned-and.md) |
-| 135 | 99 | 2026-08-19 | plan | [Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story](rounds/2026-08-19-03-rnd0099-plan-bun-and-deno-first-class-the-native-runners-measured-s.md) |
-| 136 | 100 | 2026-08-19 | plan | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-plan-the-runtime-horizon-which-other-javascript-environments.md) |
-| 137 | 101 | 2026-08-20 | plan | [Quiet verification: the scripts agents run print only failures](rounds/2026-08-20-01-rnd0101-plan-quiet-verification-the-scripts-agents-run-print-only.md) |
-| 138 | 102–107 | 2026-08-20 | landed | [The ecosystem rounds](rounds/2026-08-20-02-rnd0102_0107-landed-the-ecosystem-rounds.md) |
-| 139 | 102 | 2026-08-20 | plan | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-plan-transient-emphasis-hover-highlight-without-touching-the.md) |
-| 140 | 103 | 2026-08-20 | plan | [Progressive ingest: a first frame before the last byte](rounds/2026-08-20-04-rnd0103-plan-progressive-ingest-a-first-frame-before-the-last-byte.md) |
-| 141 | 104 | 2026-08-20 | plan | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-plan-label-decluttering-priority-and-collision-at-scale.md) |
-| 142 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |
-| 143 | 106 | 2026-08-20 | plan | [N viewers, one store](rounds/2026-08-20-07-rnd0106-plan-n-viewers-one-store.md) |
-| 144 | 107 | 2026-08-20 | plan | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-plan-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
-| 145 | 101 | 2026-08-24 | landed | [Quiet verification: green prints nothing, red prints only failures](rounds/2026-08-24-01-rnd0101-landed-quiet-verification-green-prints-nothing-red-prints-only.md) |
-| 146 | 108 | 2026-08-24 | landed | [Agent ergonomics: what the two agents load, search and trip over](rounds/2026-08-24-02-rnd0108-landed-agent-ergonomics-what-the-two-agents-load-search-and.md) |
-| 147 | 90 | 2026-08-24 | landed | [API review and cleanup](rounds/2026-08-24-03-rnd0090-landed-api-review-and-cleanup.md) |
-| 148 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-04-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |
-| 149 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
-| 150 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
-| 151 | 86 | 2026-08-26 | landed | [The worker-hosted renderer, landed](rounds/2026-08-26-01-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |
-| 152 | 109 | 2026-08-26 | plan | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-02-rnd0109-plan-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
-| 153 | 110 | 2026-08-26 | plan | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-03-rnd0110-plan-zero-copy-the-copy-census-and-what-each-copy-buys.md) |
+| 32 | 13 | 2026-07-30 | landed | [Style-prop parity](rounds/2026-07-30-04-rnd0013-landed-style-prop-parity.md) |
+| 33 | 14 | 2026-07-31 | landed | [Compound nodes](rounds/2026-07-31-01-rnd0014-landed-compound-nodes.md) |
+| 34 | 15–18 | 2026-08-01 | note | [Design sitting — z-index dropped, rounds 15–18 scoped](rounds/2026-08-01-01-rnd0015_0018-note-design-sitting-z-index-dropped-rounds-15-18-scoped.md) |
+| 35 | 15 | 2026-08-01 | landed | [Background images](rounds/2026-08-01-02-rnd0015-landed-background-images.md) |
+| 36 | 16 | 2026-08-01 | landed | [Multiline labels and label bounding boxes](rounds/2026-08-01-03-rnd0016-landed-multiline-labels-and-label-bounding-boxes.md) |
+| 37 | 17 | 2026-08-01 | landed | [Event vocabulary and the extension contract](rounds/2026-08-01-04-rnd0017-landed-event-vocabulary-and-the-extension-contract.md) |
+| 38 | 18 | 2026-08-01 | landed | [GPU force layout](rounds/2026-08-01-05-rnd0018-landed-gpu-force-layout.md) |
+| 39 | — | 2026-08-01 | landed | [Hardware validation pass — AMD RX 580](rounds/2026-08-01-06-rnd0000-landed-hardware-validation-pass-amd-rx-580.md) |
+| 40 | — | 2026-08-01 | landed | [The pick-ring look](rounds/2026-08-01-07-rnd0000-landed-the-pick-ring-look.md) |
+| 41 | 19 | 2026-08-01 | landed | [Slot-moving compaction](rounds/2026-08-01-08-rnd0019-landed-slot-moving-compaction.md) |
+| 42 | 20 | 2026-08-01 | landed | [Interaction options and touch parity](rounds/2026-08-01-09-rnd0020-landed-interaction-options-and-touch-parity.md) |
+| 43 | — | 2026-08-01 | note | [The third design sitting — animation trims, display/visibility, charts](rounds/2026-08-01-10-rnd0000-note-the-third-design-sitting-animation-trims-display-charts.md) |
+| 44 | 21 | 2026-08-01 | landed | [Animation queue removal](rounds/2026-08-01-11-rnd0021-landed-animation-queue-removal.md) |
+| 45 | 22 | 2026-08-01 | landed | [The display/visibility split](rounds/2026-08-01-12-rnd0022-landed-the-display-visibility-split.md) |
+| 46 | 23 | 2026-08-01 | landed | [Node charts: pie and stripes](rounds/2026-08-01-13-rnd0023-landed-node-charts-pie-and-stripes.md) |
+| 47 | — | 2026-08-01 | note | [The fourth design sitting — style transitions and animation controls](rounds/2026-08-01-14-rnd0000-note-the-fourth-design-sitting-style-transitions-and-controls.md) |
+| 48 | 24 | 2026-08-01 | landed | [Style transitions and animation controls](rounds/2026-08-01-15-rnd0024-landed-style-transitions-and-animation-controls.md) |
+| 49 | 25 | 2026-08-02 | landed | [Geometry tweens](rounds/2026-08-02-01-rnd0025-landed-geometry-tweens.md) |
+| 50 | 26 | 2026-08-02 | landed | [The authoring surface: JSDoc and shipped types](rounds/2026-08-02-02-rnd0026-landed-the-authoring-surface-jsdoc-and-shipped-types.md) |
+| 51 | — | 2026-08-02 | note | [A Node-suite flake, observed once and unreproduced](rounds/2026-08-02-03-rnd0000-note-a-node-suite-flake-observed-once-and-unreproduced.md) |
+| 52 | 27 | 2026-08-02 | landed | [The parity remnants](rounds/2026-08-02-04-rnd0027-landed-the-parity-remnants.md) |
+| 53 | 28 | 2026-08-03 | landed | [The no-call remainder](rounds/2026-08-03-01-rnd0028-landed-the-no-call-remainder.md) |
+| 54 | 29 | 2026-08-03 | landed | [Test and benchmark hardening](rounds/2026-08-03-02-rnd0029-landed-test-and-benchmark-hardening.md) |
+| 55 | 30 | 2026-08-03 | landed | [The error contract](rounds/2026-08-03-03-rnd0030-landed-the-error-contract.md) |
+| 56 | 31 | 2026-08-03 | landed | [The documented contract](rounds/2026-08-03-04-rnd0031-landed-the-documented-contract.md) |
+| 57 | 32 | 2026-08-03 | landed | [`@param` completeness](rounds/2026-08-03-05-rnd0032-landed-param-completeness.md) |
+| 58 | 33 | 2026-08-03 | landed | [The benchmark sweep](rounds/2026-08-03-06-rnd0033-landed-the-benchmark-sweep.md) |
+| 59 | 34 | 2026-08-03 | landed | [Fixing what the benchmark sweep measured](rounds/2026-08-03-07-rnd0034-landed-fixing-what-the-benchmark-sweep-measured.md) |
+| 60 | 35 | 2026-08-03 | landed | [The style-read dispatch table](rounds/2026-08-03-08-rnd0035-landed-the-style-read-dispatch-table.md) |
+| 61 | 36 | 2026-08-04 | landed | [The completion round](rounds/2026-08-04-01-rnd0036-landed-the-completion-round.md) |
+| 62 | — | 2026-08-04 | note | [The fifth design sitting — the production-readiness roadmap](rounds/2026-08-04-02-rnd0000-note-the-fifth-design-sitting-the-production-readiness.md) |
+| 63 | 37 | 2026-08-04 | landed | [Governance close-out](rounds/2026-08-04-03-rnd0037-landed-governance-close-out.md) |
+| 64 | 38 | 2026-08-04 | landed | [`border-style` and `outline-style`, full coverage](rounds/2026-08-04-04-rnd0038-landed-border-style-and-outline-style-full-coverage.md) |
+| 65 | 39 | 2026-08-04 | landed | [The decided feature tail](rounds/2026-08-04-05-rnd0039-landed-the-decided-feature-tail.md) |
+| 66 | 40 | 2026-08-04 | plan | [The error policy and `cytoscape.warnings()`](rounds/2026-08-04-06-rnd0040-plan-the-error-policy-and-cytoscape-warnings.md) |
+| 67 | 41 | 2026-08-04 | landed | [The v4 Event and emitter](rounds/2026-08-04-07-rnd0041-landed-the-v4-event-and-emitter.md) |
+| 68 | 42 | 2026-08-04 | landed | [The great restructure](rounds/2026-08-04-08-rnd0042-landed-the-great-restructure.md) |
+| 69 | 43 | 2026-08-04 | landed | [The debug harness](rounds/2026-08-04-09-rnd0043-landed-the-debug-harness.md) |
+| 70 | 44 | 2026-08-04 | landed | [Packaging and publish hardening](rounds/2026-08-04-10-rnd0044-landed-packaging-and-publish-hardening.md) |
+| 71 | 45 | 2026-08-04 | landed | [The docs generator](rounds/2026-08-04-11-rnd0045-landed-the-docs-generator.md) |
+| 72 | 46 | 2026-08-04 | plan | [The v4 docs site](rounds/2026-08-04-12-rnd0046-plan-the-v4-docs-site.md) |
+| 73 | 47 | 2026-08-04 | landed | [The migration guide and CHANGELOG](rounds/2026-08-04-13-rnd0047-landed-the-migration-guide-and-changelog.md) |
+| 74 | 48 | 2026-08-04 | landed | [Robustness and soak](rounds/2026-08-04-14-rnd0048-landed-robustness-and-soak.md) |
+| 75 | 49 | 2026-08-04 | plan | [Cross-platform validation](rounds/2026-08-04-15-rnd0049-plan-cross-platform-validation.md) |
+| 76 | 50 | 2026-08-04 | plan | [Release engineering](rounds/2026-08-04-16-rnd0050-plan-release-engineering.md) |
+| 77 | 51 | 2026-08-04 | plan | [The release bake → 4.0.0](rounds/2026-08-04-17-rnd0051-plan-the-release-bake-to-4-0-0.md) |
+| 78 | 43 | 2026-08-05 | landed | [What the debug harness's first real user found](rounds/2026-08-05-01-rnd0043-landed-what-the-debug-harness-s-first-real-user-found.md) |
+| 79 | 46.5 | 2026-08-05 | landed | [The status site](rounds/2026-08-05-02-rnd0046.5-landed-the-status-site.md) |
+| 80 | 46.6 | 2026-08-05 | landed | [v3's default debug graph](rounds/2026-08-05-03-rnd0046.6-landed-v3-s-default-debug-graph.md) |
+| 81 | 52 | 2026-08-05 | landed | [WGSL minification](rounds/2026-08-05-04-rnd0052-landed-wgsl-minification.md) |
+| 82 | 53 | 2026-08-06 | landed | [CI, green then fast](rounds/2026-08-06-01-rnd0053-landed-ci-green-then-fast.md) |
+| 83 | — | 2026-08-06 | note | [The sixth design sitting — the backlog sweep](rounds/2026-08-06-02-rnd0000-note-the-sixth-design-sitting-the-backlog-sweep.md) |
+| 84 | 54 | 2026-08-06 | landed | [The bounds round](rounds/2026-08-06-03-rnd0054-landed-the-bounds-round.md) |
+| 85 | 55 | 2026-08-06 | landed | [Edge routing and arrow parity, measured](rounds/2026-08-06-04-rnd0055-landed-edge-routing-and-arrow-parity-measured.md) |
+| 86 | 56 | 2026-08-07 | landed | [The arrow gap](rounds/2026-08-07-01-rnd0056-landed-the-arrow-gap.md) |
+| 87 | 57 | 2026-08-07 | landed | [Cleanup](rounds/2026-08-07-02-rnd0057-landed-cleanup.md) |
+| 88 | 41.5 | 2026-08-08 | landed | [The preventable-gesture proposal, declined](rounds/2026-08-08-01-rnd0041.5-landed-the-preventable-gesture-proposal-declined.md) |
+| 89 | 58 | 2026-08-09 | landed | [The arrow trim reaches the anchors and the layer strokes](rounds/2026-08-09-01-rnd0058-landed-the-arrow-trim-reaches-the-anchors-and-the-layer-strokes.md) |
+| 90 | 59 | 2026-08-09 | landed | [The force layout, made sound and made good](rounds/2026-08-09-02-rnd0059-landed-the-force-layout-made-sound-and-made-good.md) |
+| 91 | 60 | 2026-08-09 | landed | [The performance record, kept honest](rounds/2026-08-09-03-rnd0060-landed-the-performance-record-kept-honest.md) |
+| 92 | 61 | 2026-08-09 | landed | [The select regression: state flips write the diff, not the element](rounds/2026-08-09-04-rnd0061-landed-the-select-regression-state-flips-write-the-diff-not-the.md) |
+| 93 | 62 | 2026-08-09 | landed | [Every benchmark beats v3](rounds/2026-08-09-05-rnd0062-landed-every-benchmark-beats-v3.md) |
+| 94 | 63 | 2026-08-10 | landed | [Per-element bypasses](rounds/2026-08-10-01-rnd0063-landed-per-element-bypasses.md) |
+| 95 | 64 | 2026-08-10 | landed | [The collection guard and the query aliases](rounds/2026-08-10-02-rnd0064-landed-the-collection-guard-and-the-query-aliases.md) |
+| 96 | 65 | 2026-08-10 | landed | [The async algorithm tier and the GPU executors](rounds/2026-08-10-03-rnd0065-landed-the-async-algorithm-tier-and-the-gpu-executors.md) |
+| 97 | 66 | 2026-08-11 | landed | [The definition-form load takes the columnar path](rounds/2026-08-11-01-rnd0066-landed-the-definition-form-load-takes-the-columnar-path.md) |
+| 98 | 67 | 2026-08-11 | landed | [The load path, decomposed and attacked in order](rounds/2026-08-11-02-rnd0067-landed-the-load-path-decomposed-and-attacked-in-order.md) |
+| 99 | 68 | 2026-08-12 | landed | [The benchmark suite's wall clock](rounds/2026-08-12-01-rnd0068-landed-the-benchmark-suite-s-wall-clock.md) |
+| 100 | 69 | 2026-08-12 | landed | [The matmul-first families](rounds/2026-08-12-02-rnd0069-landed-the-matmul-first-families.md) |
+| 101 | 70 | 2026-08-12 | landed | [The propagation tier: network biology's algorithms](rounds/2026-08-12-03-rnd0070-landed-the-propagation-tier-network-biology-s-algorithms.md) |
+| 102 | 71 | 2026-08-14 | plan | [cyext: the extension toolchain](rounds/2026-08-14-01-rnd0071-plan-cyext-the-extension-toolchain.md) |
+| 103 | — | 2026-08-14 | note | [The tenth design sitting — the idea backlog swept into a shortlist](rounds/2026-08-14-02-rnd0000-note-the-tenth-design-sitting-the-idea-backlog-swept-into-a.md) |
+| 104 | 72 | 2026-08-14 | plan | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-plan-the-algorithm-perf-follow-ups-gathered.md) |
+| 105 | 73 | 2026-08-14 | plan | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md) |
+| 106 | 74 | 2026-08-14 | plan | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-plan-the-worker-pool-cpu-executor.md) |
+| 107 | 75 | 2026-08-14 | plan | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-plan-the-dx-polish-bundle.md) |
+| 108 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
+| 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
+| 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
+| 111 | 79 | 2026-08-14 | plan | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-plan-official-json-schemas.md) |
+| 112 | 80 | 2026-08-14 | plan | [Node charts: heat, bars, and the slice ceiling](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
+| 113 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
+| 114 | 82 | 2026-08-14 | plan | [Cluster hulls and collapse/aggregation proxies](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
+| 115 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |
+| 116 | 84 | 2026-08-14 | plan | [Attribute-table and filter affordances](rounds/2026-08-14-15-rnd0084-plan-attribute-table-and-filter-affordances.md) |
+| 117 | 85 | 2026-08-14 | plan | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-plan-the-layouts-round-radial-force-constraints-edge-length.md) |
+| 118 | 86 | 2026-08-14 | landed | [The worker-hosted renderer (OffscreenCanvas)](rounds/2026-08-14-17-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |
+| 119 | 87 | 2026-08-17 | plan | [Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps](rounds/2026-08-17-01-rnd0087-plan-layout-mechanics-packing-made-reusable-the-handoff-from.md) |
+| 120 | 88 | 2026-08-17 | plan | [Edge layer strokes: the caps, the corners and the arrow reach](rounds/2026-08-17-02-rnd0088-plan-edge-layer-strokes-the-caps-the-corners-and-the-arrow.md) |
+| 121 | 89 | 2026-08-17 | plan | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-plan-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
+| 122 | 90 | 2026-08-17 | landed | [API review and cleanup: the parity pass audited](rounds/2026-08-17-04-rnd0090-landed-api-review-and-cleanup-the-parity-pass-audited.md) |
+| 123 | 91–97 | 2026-08-18 | note | [The maintainer's screen pass](rounds/2026-08-18-01-rnd0091_0097-note-the-maintainer-s-screen-pass.md) |
+| 124 | 91 | 2026-08-18 | plan | [Resize without distortion](rounds/2026-08-18-02-rnd0091-plan-resize-without-distortion.md) |
+| 125 | 92 | 2026-08-18 | plan | [The compound fit, from conservative to exact](rounds/2026-08-18-03-rnd0092-plan-the-compound-fit-from-conservative-to-exact.md) |
+| 126 | 93 | 2026-08-18 | plan | [Curve smoothness: spend the 24 quads where the bend is](rounds/2026-08-18-04-rnd0093-plan-curve-smoothness-spend-the-24-quads-where-the-bend-is.md) |
+| 127 | 94 | 2026-08-18 | plan | [Label fidelity under zoom](rounds/2026-08-18-05-rnd0094-plan-label-fidelity-under-zoom.md) |
+| 128 | 95 | 2026-08-18 | plan | [The outline goes under the ink](rounds/2026-08-18-06-rnd0095-plan-the-outline-goes-under-the-ink.md) |
+| 129 | 96 | 2026-08-18 | plan | [The v3-default `eh`, restored by bypasses](rounds/2026-08-18-07-rnd0096-plan-the-v3-default-eh-restored-by-bypasses.md) |
+| 130 | 97 | 2026-08-18 | plan | [The pick order: leaf, then edge, then parent](rounds/2026-08-18-08-rnd0097-plan-the-pick-order-leaf-then-edge-then-parent.md) |
+| 131 | 98–100 | 2026-08-19 | note | [The runtime rounds](rounds/2026-08-19-01-rnd0098_0100-note-the-runtime-rounds.md) |
+| 132 | 98 | 2026-08-19 | plan | [Bun and Deno run the package: the contract pinned and smoked](rounds/2026-08-19-02-rnd0098-plan-bun-and-deno-run-the-package-the-contract-pinned-and.md) |
+| 133 | 99 | 2026-08-19 | plan | [Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story](rounds/2026-08-19-03-rnd0099-plan-bun-and-deno-first-class-the-native-runners-measured-s.md) |
+| 134 | 100 | 2026-08-19 | plan | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-plan-the-runtime-horizon-which-other-javascript-environments.md) |
+| 135 | 101 | 2026-08-20 | landed | [Quiet verification: the scripts agents run print only failures](rounds/2026-08-20-01-rnd0101-landed-quiet-verification-the-scripts-agents-run-print-only.md) |
+| 136 | 102–107 | 2026-08-20 | note | [The ecosystem rounds](rounds/2026-08-20-02-rnd0102_0107-note-the-ecosystem-rounds.md) |
+| 137 | 102 | 2026-08-20 | plan | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-plan-transient-emphasis-hover-highlight-without-touching-the.md) |
+| 138 | 103 | 2026-08-20 | plan | [Progressive ingest: a first frame before the last byte](rounds/2026-08-20-04-rnd0103-plan-progressive-ingest-a-first-frame-before-the-last-byte.md) |
+| 139 | 104 | 2026-08-20 | plan | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-plan-label-decluttering-priority-and-collision-at-scale.md) |
+| 140 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |
+| 141 | 106 | 2026-08-20 | plan | [N viewers, one store](rounds/2026-08-20-07-rnd0106-plan-n-viewers-one-store.md) |
+| 142 | 107 | 2026-08-20 | plan | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-plan-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
+| 143 | 108 | 2026-08-24 | landed | [Agent ergonomics: what the two agents load, search and trip over](rounds/2026-08-24-01-rnd0108-landed-agent-ergonomics-what-the-two-agents-load-search-and.md) |
+| 144 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-02-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |
+| 145 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
+| 146 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
+| 147 | 109 | 2026-08-26 | plan | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-01-rnd0109-plan-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
+| 148 | 110 | 2026-08-26 | plan | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-02-rnd0110-plan-zero-copy-the-copy-census-and-what-each-copy-buys.md) |

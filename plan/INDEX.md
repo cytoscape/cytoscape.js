@@ -8,7 +8,7 @@ calls for the maintainer — are in [`../PLAN.md`](../PLAN.md); everything
 below is a section file under [`rounds/`](rounds/), which is where a new
 round is written.
 
-150 sections.
+151 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -162,3 +162,4 @@ round is written.
 | 148 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-04-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |
 | 149 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
 | 150 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
+| 151 | 86 | 2026-08-26 | landed | [The worker-hosted renderer, landed](rounds/2026-08-26-01-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |

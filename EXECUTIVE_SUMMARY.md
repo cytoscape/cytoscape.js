@@ -5,8 +5,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-26, after the worker-hosted renderer (round 86)
-  and the record's state gates (round 111).
+- **Last updated**: 2026-08-26, after the worker-hosted renderer (round 86),
+  the record's state gates (round 111), the spectral-seed spec (round 109) and
+  a sweep of the open-calls ledger.
 
 ## How to maintain this file
 
@@ -45,7 +46,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,245 unit · 467 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,237 unit · 467 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 325 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -287,6 +288,26 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a generated "Which rounds landed" table in `plan/INDEX.md` and two
     gates that keep it honest: a `plan` file may not record its own landing,
     and no round may be filed as both a plan and a landed record.
+- **26 Aug** — the record answers for itself: a spec that diagnoses, a ledger swept
+  - Round 109 was planned as a hunt for a harness sensitivity and measurement
+    falsified its premise: the invocation it blamed cannot run at all (no spec
+    imports the test shim, so the unpreloaded form dies at `describe is not
+    defined`).  What is real is an intermittent full-tier failure of one force
+    layout spec, at a value identified as **exactly** the non-spectral seed's
+    result — which rules out the whole family of explanations two earlier
+    rounds had reached for, since nothing in that code path reads global state
+    or the clock.  It is instrumentation-shy (0 failures in 20 probed runs),
+    so the round left the diagnosis in the spec: on failure it re-measures the
+    other path in the same process and names which failure happened.
+  - The open-calls ledger was swept for the first time in sixteen days and
+    fourteen rounds.  One decided-but-undone action was finally done (a
+    comment the maintainer ruled on 2026-08-06); one item's "first
+    measurement" was taken rather than described; two calls that lived only
+    inside round records joined the ledger.
+  - Buys a failure that reports instead of puzzling — three rounds had read
+    the same bare assertion and each guessed a different mechanism — and a
+    ledger that is again what it claims to be: the one place a question
+    waiting on the maintainer can be found.
 
 ---
 
@@ -355,7 +376,6 @@ round, and is regenerated rather than maintained:
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
 | Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |
-| Harness invocation guard | Round 109: the spectral-seed spec fails deterministically without the tier's setup preload; find the mechanism, then make the wrong invocation fail loudly |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation

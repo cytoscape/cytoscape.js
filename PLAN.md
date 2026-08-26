@@ -99,6 +99,18 @@ paragraph is here so the sum of them is not mistaken for a claim.
   fails the build if the index has drifted — or if a heading has gone
   back to labelling itself with the round, the date or the kind that the
   filename already carries.
+- **The kind field is the round's state, for every round** (rule made
+  enforceable 2026-08-26, round 111).  Round 111 renamed the 33 rounds
+  that had shipped inside a file still named `plan`, merged the five
+  pre-108.2 rounds that had a separate plan and landed section into the
+  one-file shape, and re-kinded three planning sweeps to `note`.  So the
+  rule has no exceptions left, and three gates hold it: a `plan` file may
+  not record its own landing (a self-declaration, or a checklist with
+  nothing left open), no round may be filed as both a `plan` and a
+  `landed` record, and `plan/INDEX.md` publishes the derived state — a
+  round is **landed** once a section names it so, its own or one of its
+  sub-rounds'.  A round may land with an item held for a call; its file
+  says which, and the round is still landed.
 - **The closing sweep checks `git worktree list`** (rule added 2026-08-24,
   round 108.4).  An agent worktree left behind after a round is not
   harmless: one abandoned tree under `.claude/worktrees/` put 141 of 278

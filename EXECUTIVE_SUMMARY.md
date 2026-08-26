@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-19, after the mid-August planning wave (last
-  landed work: 12 Aug).
+- **Last updated**: 2026-08-26, after the worker-hosted renderer (round 86)
+  and the record's state gates (round 111).
 
 ## How to maintain this file
 
@@ -274,6 +274,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     round trip.  On this real-GPU box the renderer's own main-thread cost
     was already ~0.2 ms/frame, so the win is cadence isolation, not
     occupancy — the recommendation stays opt-in and post-4.0.
+- **26 Aug** — the record says which rounds landed (round 111)
+  - Thirty-three rounds that had shipped sat in files still named `plan`,
+    because the filename convention arrived at round 108.7 and the rounds
+    before it had their plan amended in place — round 10's own file opens
+    `**Round complete (2026-07-27)**`.  Read through the index, the planned
+    queue looked three times its real size.
+  - Renamed on the evidence in each file; five pre-108.2 rounds merged into
+    the one-file-per-round shape; three planning sweeps re-kinded from
+    `landed` to `note` — filed as landed, they had marked seventeen unbuilt
+    rounds as shipped.
+  - Buys a generated "Which rounds landed" table in `plan/INDEX.md` and two
+    gates that keep it honest: a `plan` file may not record its own landing,
+    and no round may be filed as both a plan and a landed record.
 
 ---
 
@@ -324,7 +337,9 @@ The release path:
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 
 The planned queue — each item has a written plan under `plan/rounds/`,
-verified against the source before planning (the mid-August planning wave):
+verified against the source before planning (the mid-August planning wave).
+`plan/INDEX.md` derives the same split from the section filenames, round by
+round, and is regenerated rather than maintained:
 
 | | |
 |---|---|

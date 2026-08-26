@@ -339,11 +339,7 @@ export class PointerHandler {
       this.capture(e.pointerId);
 
       const pos = this.eventPos(e);
-      const target = this.renderer.pickNodeSync(
-        pos.x,
-        pos.y,
-        padsOf(e).nodePadPx,
-      );
+      const target = this.nodeAt(pos.x, pos.y, padsOf(e).nodePadPx);
 
       this.cxtDown = {
         pointerId: e.pointerId,
@@ -368,11 +364,7 @@ export class PointerHandler {
 
     // pan-vs-grab from a synchronous CPU node pick — current, with v3's
     // hit halo for this pointer type (57.9)
-    const picked = this.renderer.pickNodeSync(
-      pos.x,
-      pos.y,
-      padsOf(e).nodePadPx,
-    );
+    const picked = this.nodeAt(pos.x, pos.y, padsOf(e).nodePadPx);
     // box selection overrides grabbing (as in v3): a multiple-select-key
     // press boxes even over a node, as does any press when panning is
     // disabled; mouse/pen only for now (v4 has no touch box gesture)
@@ -743,7 +735,9 @@ export class PointerHandler {
     let picked: Collection | null = null;
 
     try {
-      picked = await this.renderer.pick(pos.x, pos.y, pads);
+      picked = this.cy._decodePick(
+        await this.renderer.pick(pos.x, pos.y, pads),
+      );
     } catch {
       // a device lost mid-pick reads as a background press
     }
@@ -947,8 +941,8 @@ export class PointerHandler {
 
     const [a, b] = [...this.touches.values()];
     const target =
-      this.renderer.pickNodeSync(a.x, a.y, TOUCH_PADS.nodePadPx) ??
-      this.renderer.pickNodeSync(b.x, b.y, TOUCH_PADS.nodePadPx); // v3: nodes only, finger 1 first
+      this.nodeAt(a.x, a.y, TOUCH_PADS.nodePadPx) ??
+      this.nodeAt(b.x, b.y, TOUCH_PADS.nodePadPx); // v3: nodes only, finger 1 first
 
     this.touchCxt = {
       target,
@@ -1444,7 +1438,7 @@ export class PointerHandler {
 
     this.lastDragHoverAt = now;
 
-    const ele = this.renderer.pickNodeSync(pos.x, pos.y, nodePadPx);
+    const ele = this.nodeAt(pos.x, pos.y, nodePadPx);
     const prev = this.dragHover;
 
     if (prev === ele) {
@@ -1576,7 +1570,9 @@ export class PointerHandler {
     this.lastHoverAt = now;
     this.pickInFlight = true;
 
-    this.renderer.pick(pos.x, pos.y, pads).then((ele) => {
+    this.renderer.pick(pos.x, pos.y, pads).then((id) => {
+      const ele = this.cy._decodePick(id);
+
       this.pickInFlight = false;
       this.lastPick = ele;
       this.updateHover(ele, pos);
@@ -1667,6 +1663,17 @@ export class PointerHandler {
     const rect = this.canvas.getBoundingClientRect();
 
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  /**
+   * Synchronous node pick wrapped to an element (round 86.2): the
+   * renderer answers slots, and the element handle is made here, where
+   * the core is in reach.
+   */
+  private nodeAt(x: number, y: number, padPx: number): Collection | null {
+    const slot = this.renderer.pickNodeSync(x, y, padPx);
+
+    return slot == null ? null : this.cy._ele('nodes', slot);
   }
 
   private listen(

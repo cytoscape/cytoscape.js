@@ -3940,6 +3940,39 @@ A deferred pipeline moves a failure from mount to first draw.  The
 `visual` Playwright project draws every gated feature, which is what makes
 that checkable.
 
+## The model↔renderer seam (round 86)
+
+The renderer takes everything it consumes from one `RenderHost`
+(`src/render/host.mts`) handed to its constructor; it imports nothing
+from the core or the collection.  The host is the enumerated census of
+the model↔renderer boundary:
+
+- `RenderStoreView` — the contract's `ModelView` plus the reads the
+  renderer and label layer actually make beyond it (frame-uniform
+  scalars, draw-gating counts, `flushDerived`, `boundingBox`,
+  `compactEpoch`, `takeMapperSpans`, `nodeImagesAt`, the label font
+  surface and the `setLabelDims` write-back).  `GraphStore` satisfies
+  it structurally.  A new renderer read has to be added here, visibly,
+  before it compiles.
+- `ViewportView` (`pan()`/`zoom()`, read per frame), `AnimationClock`
+  (tick/active/attachDriver/detachDriver), `arrowEnds()` /
+  `midArrowEnds()`, `onViewportChange`, `emitRender`/`emitError`.
+- Two capability seams: `gpuMappers` (null ⇒ no GPU mapper runtime is
+  built and the CPU-applied style columns stay canonical) and
+  `createImageDecoder` (null ⇒ the image registry gets no rasterizer).
+
+**Picks are slots and ids at this boundary.**  `Renderer.pick()`
+resolves a packed pick id (a node's `slot + 1`; edges carry
+`EDGE_PICK_BIT`), `pickNodeSync()` a slot; `Core._decodePick` decodes
+and re-validates (a GPU pick can be up to two frames stale) and makes
+the element handle.  The same-thread host (`coreRenderHost`) is a thin
+closure over the core, and the seam pass was verified behaviour-neutral:
+all 45 goldens exact-zero, the renderer interaction suite and the full
+Node tier green.
+
+This seam is what a worker host, a WebGL fallback renderer (round 73)
+or a headless-Node renderer mounts through.
+
 ## Porting from v3 (round 47)
 
 `MIGRATING.md` at the repo root is the porting guide, and it ships in the

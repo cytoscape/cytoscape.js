@@ -19,17 +19,14 @@ import { MapperRuntime } from './mapper-runtime.mjs';
 import { ImageArrays } from './image-arrays.mjs';
 import { ImagePipeline } from './image-pipeline.mjs';
 import { ChartPipeline } from './chart-pipeline.mjs';
-import { createBrowserImageDecoder } from './image-decoder.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { GpuForceRuntime } from './gpu-force.mjs';
 import type { ForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
-import { FLAG_ALIVE } from '../contract.mjs';
 import { color2tuple } from '../util/colors.mjs';
-import type { Core } from '../core.mjs';
-import type { Collection } from '../collection.mjs';
+import type { RenderHost, RenderStoreView } from './host.mjs';
 import type {
   ExportOptions,
   RendererOptions,
@@ -163,7 +160,8 @@ export class Renderer {
    * is removed from the DOM by destroy() */
   canvas: HTMLCanvasElement;
 
-  protected cy: Core;
+  protected host: RenderHost;
+  protected store: RenderStoreView;
   protected device: GPUDevice | null;
   protected mirror: ColumnMirror | null;
   protected dpr: number;
@@ -188,7 +186,7 @@ export class Renderer {
   private frameRequested: boolean;
   private resizeObserver: ResizeObserver | null;
   private offInvalidate: () => void;
-  private onViewport: () => void;
+  private offViewport: () => void;
   private frameCount: number;
   private cpuFrameMs: number;
   private gpuTimer: GpuTimer | null;
@@ -247,11 +245,12 @@ export class Renderer {
    * render scale
    */
   constructor(
-    cy: Core,
+    host: RenderHost,
     container: HTMLElement,
     opts: RendererOptions & { pixelRatio?: number | 'auto' } = {},
   ) {
-    this.cy = cy;
+    this.host = host;
+    this.store = host.store;
     this.container = container;
     this.opts = opts;
     this.device = null;
@@ -341,17 +340,16 @@ export class Renderer {
     container.appendChild(this.canvas);
     this.applySize();
 
-    this.offInvalidate = cy._store.onInvalidate(() => {
+    this.offInvalidate = host.store.onInvalidate(() => {
       this.needsRedraw = true;
       this.schedule();
     });
-    this.onViewport = () => {
+    this.offViewport = host.onViewportChange(() => {
       this.needsRedraw = true;
       this.picking?.invalidateCache(); // cached pick tile is in device px
       this.schedulePromotionCheck(); // svg zoom-promotion meter (15.6)
       this.schedule();
-    };
-    cy.on('viewport', this.onViewport);
+    });
 
     this.resizeObserver =
       typeof ResizeObserver !== 'undefined'
@@ -379,8 +377,8 @@ export class Renderer {
       uploadedBytes:
         (this.mirror?.uploadedBytes ?? 0) +
         (this.labelLayer?.uploadedBytes() ?? 0),
-      nodes: this.cy._store.count('nodes'),
-      edges: this.cy._store.count('edges'),
+      nodes: this.store.count('nodes'),
+      edges: this.store.count('edges'),
       glyphs: this.labelLayer?.count() ?? 0,
       pickLatencyMs: this.pickLatencyMs(),
       pickDeferrals: this.picking?.deferrals ?? 0,
@@ -457,7 +455,7 @@ export class Renderer {
 
     this.resizeObserver?.disconnect();
     this.offInvalidate();
-    this.cy.off('viewport', this.onViewport);
+    this.offViewport();
 
     if (this.onFontsLoadingDone != null) {
       document.fonts.removeEventListener(
@@ -473,7 +471,7 @@ export class Renderer {
     this.imageArrays = null;
     this.forceRuntime?.destroy();
     this.forceRuntime = null;
-    this.cy._store.images.setDecoder(null); // headless again on unmount
+    this.store.images.setDecoder(null); // headless again on unmount
 
     if (this.imagePromoteTimer != null) {
       clearTimeout(this.imagePromoteTimer);
@@ -504,7 +502,7 @@ export class Renderer {
     this.upscaler?.destroy();
     this.sceneTarget?.destroy();
     this.depthTarget?.destroy();
-    this.cy._animations.detachDriver();
+    this.host.animations.detachDriver();
     this.mapperRuntime?.destroy();
     this.tweenRuntime?.destroy();
     this.mirror?.destroy();
@@ -518,9 +516,14 @@ export class Renderer {
   // -- picking --
 
   /**
-   * Pick at a rendered (CSS px) position.  Resolves with the element under
-   * the point, or null for background/unknown.  Three stages, cheapest
-   * first:
+   * Pick at a rendered (CSS px) position.  Resolves with the packed pick
+   * id of the element under the point — a node's `slot + 1`, or an edge's
+   * `slot + 1` with {@link EDGE_PICK_BIT} set — or null for
+   * background/unknown.  Decoding an id to an element (and re-validating
+   * it against the live model, since a GPU pick can be up to two frames
+   * stale) is the core's job (`Core._decodePick`, round 86.2): the
+   * renderer speaks slots and ids only, so a worker host can answer
+   * picks over a message channel.  Three stages, cheapest first:
    *
    * 1. nodes: synchronous CPU pick — exact, zero GPU work, answers in the
    *    same microtask (nodes draw over edges, so a node hit shadows them);
@@ -536,7 +539,7 @@ export class Renderer {
     x: number,
     y: number,
     pads?: { edgePadPx?: number; nodePadPx?: number },
-  ): Promise<Collection | null> {
+  ): Promise<number | null> {
     if (this.destroyed || !this.isReady || this.picking == null) {
       return null;
     }
@@ -552,39 +555,40 @@ export class Renderer {
     const nodeSlot = this.cpuPickNode(xPx, yPx, nodePadPx);
 
     if (nodeSlot != null) {
-      return this.cy._ele('nodes', nodeSlot);
+      return nodeSlot + 1; // the node id namespace: slot + 1, high bit clear
     }
 
     const cached = this.picking.cachedIdAt(xPx, yPx, edgePadPx);
 
     if (cached != null) {
-      return this.decodePick(cached);
+      return cached === 0 ? null : cached;
     }
 
     const promise = this.picking.request(xPx, yPx, edgePadPx);
 
     this.schedule(); // the pick pass runs with the next frame
 
-    return this.decodePick(await promise);
+    const id = await promise;
+
+    return id == null || id === 0 ? null : id;
   }
 
   /**
    * Synchronous CPU node pick at a rendered (CSS px) position — exact and
-   * current (no in-flight staleness).  Edges are not considered; they
-   * resolve through the async `pick()`.
+   * current (no in-flight staleness).  Answers the node's slot; wrapping
+   * it into a Collection is the caller's job (round 86.2).  Edges are not
+   * considered; they resolve through the async `pick()`.
    *
    * @param padPx — hit halo in CSS px (57.9): v3's nodeThreshold,
    *   inflating every node's tested size by the halo on each side;
    *   0 (the default) picks exactly what is drawn
    */
-  pickNodeSync(x: number, y: number, padPx: number = 0): Collection | null {
+  pickNodeSync(x: number, y: number, padPx: number = 0): number | null {
     if (this.destroyed || !this.isReady) {
       return null;
     }
 
-    const slot = this.cpuPickNode(x * this.dpr, y * this.dpr, padPx * this.dpr);
-
-    return slot == null ? null : this.cy._ele('nodes', slot);
+    return this.cpuPickNode(x * this.dpr, y * this.dpr, padPx * this.dpr);
   }
 
   private cpuPickNode(
@@ -592,15 +596,15 @@ export class Renderer {
     yPx: number,
     padPx: number = 0,
   ): number | null {
-    const viewport = this.cy._viewport;
+    const viewport = this.host.viewport;
     const pan = viewport.pan();
     const opts = this.opts;
 
-    this.cy._store.flushDerived(); // parent geometry is derived (round 14.9)
+    this.store.flushDerived(); // parent geometry is derived (round 14.9)
 
     // same view state as writePickUniform: native device px, no renderScale
     return pickNodeAt(
-      this.cy._store,
+      this.store,
       {
         panXPx: pan.x * this.dpr,
         panYPx: pan.y * this.dpr,
@@ -612,27 +616,6 @@ export class Renderer {
       xPx,
       yPx,
     );
-  }
-
-  private decodePick(id: number | null): Collection | null {
-    if (id == null || id === 0) {
-      return null;
-    }
-
-    const isEdge = (id & EDGE_PICK_BIT) !== 0;
-    const group = isEdge ? 'edges' : 'nodes';
-    const slot = (isEdge ? id & ~EDGE_PICK_BIT : id) - 1;
-    const store = this.cy._store;
-
-    // the pick may be up to 2 frames stale: re-validate against the model
-    if (
-      slot >= store.highWater(group) ||
-      !store.hasFlag(group, slot, FLAG_ALIVE)
-    ) {
-      return null;
-    }
-
-    return this.cy._ele(group, slot);
   }
 
   private pickLatencyMs(): number {
@@ -666,16 +649,16 @@ export class Renderer {
     // 15.6: a high-scale export can demand resolution the screen never
     // did — re-raster vector images at the export scale and wait for
     // the decodes (bounded), so the WYSIWYG figure is crisp
-    if (this.cy._store.imageCount() > 0) {
+    if (this.store.imageCount() > 0) {
       this.promoteVectors(view.zoom, false);
 
-      if (this.cy._store.images.busy()) {
+      if (this.store.images.busy()) {
         await Promise.race([
-          this.cy._store.images.whenSettled(),
+          this.store.images.whenSettled(),
           new Promise<void>((resolve) => setTimeout(resolve, 2000)),
         ]);
         // let the fresh rasters upload before the export frame encodes
-        this.imageArrays?.sync(this.cy._store.images);
+        this.imageArrays?.sync(this.store.images);
       }
     }
 
@@ -727,7 +710,7 @@ export class Renderer {
   /** Debounced svg zoom-promotion check (15.6): runs shortly after the
    * viewport settles, never per wheel tick. */
   private schedulePromotionCheck(): void {
-    if (this.cy._store.imageCount() === 0) {
+    if (this.store.imageCount() === 0) {
       return;
     }
 
@@ -756,7 +739,7 @@ export class Renderer {
     zoomDprOverride?: number,
     checkViewport: boolean = true,
   ): void {
-    const store = this.cy._store;
+    const store = this.store;
 
     if (store.imageCount() === 0) {
       return;
@@ -849,7 +832,7 @@ export class Renderer {
     let w: number, h: number, panX: number, panY: number, zoom: number;
 
     if (opts.full === true) {
-      const bb = this.cy._store.boundingBox();
+      const bb = this.store.boundingBox();
 
       if (bb == null) {
         throw new Error('Cannot export a full-graph image of an empty graph');
@@ -871,7 +854,7 @@ export class Renderer {
       }
 
       const scale = exportScale(cw, ch, opts);
-      const viewport = this.cy._viewport;
+      const viewport = this.host.viewport;
       const pan = viewport.pan();
 
       w = cw * scale;
@@ -923,11 +906,11 @@ export class Renderer {
       : 0;
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
-    f[11] = this.cy._store.curveSlack();
-    f[12] = this.cy._store.haystackSlack();
-    f[13] = this.cy._store.outlineSlack();
-    f[14] = this.cy._store.arrowScaleMax();
-    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
+    f[11] = this.store.curveSlack();
+    f[12] = this.store.haystackSlack();
+    f[13] = this.store.outlineSlack();
+    f[14] = this.store.arrowScaleMax();
+    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX; // export scale is the figure's own resolution
 
     device.queue.writeBuffer(
@@ -1120,9 +1103,7 @@ export class Renderer {
         if (this.onDeviceLost != null) {
           this.onDeviceLost(info.message);
         } else {
-          this.cy.emit({ type: 'error' }, [
-            `WebGPU device lost: ${info.message}`,
-          ]);
+          this.host.emitError(`WebGPU device lost: ${info.message}`);
         }
       },
     );
@@ -1147,18 +1128,27 @@ export class Renderer {
     // backing arrays first, though: their usual flush point is takeDelta,
     // whose result is discarded here (the 12a init-order lesson, which
     // round 14.9 re-hit for the hierarchy flush)
-    this.cy._store.flushDerived();
-    this.mirror = new ColumnMirror(device, this.cy._store);
-    this.cy._store.takeDelta();
+    this.store.flushDerived();
+    this.mirror = new ColumnMirror(device, this.store);
+    this.store.takeDelta();
 
     // the CPU-applied base is current at init, so pre-ready data spans are
-    // covered too; the runtime's first update() configures + fully evaluates
-    this.mapperRuntime = new MapperRuntime(
-      device,
-      this.cy._store,
-      this.cy._styleEngine,
-      this.mirror,
-    );
+    // covered too; the runtime's first update() configures + fully
+    // evaluates.  No mapper seam (a worker host, 86.2) means no runtime:
+    // the CPU-applied style columns stay canonical and nothing is ever
+    // marked GPU-owned, so correctness is unchanged — data-driven style
+    // updates just cost their CPU apply.
+    const mappers = this.host.gpuMappers;
+
+    this.mapperRuntime =
+      mappers == null
+        ? null
+        : new MapperRuntime(
+            device,
+            mappers.store,
+            mappers.styleEngine,
+            this.mirror,
+          );
 
     // GPU tweens: any mirrored column + the mirror version (rebinds on
     // realloc).  Attaching makes the animation manager route position and
@@ -1168,8 +1158,8 @@ export class Renderer {
       (id) => (this.mirror as ColumnMirror).buffer(id),
       () => (this.mirror as ColumnMirror).version,
     );
-    this.cy._animations.attachDriver(this.tweenRuntime);
-    this.cy._store.takeMapperSpans();
+    this.host.animations.attachDriver(this.tweenRuntime);
+    this.store.takeMapperSpans();
 
     this.pickUniform = device.createBuffer({
       label: 'cy-gpu:pick-frame-uniform',
@@ -1215,15 +1205,20 @@ export class Renderer {
     // pipelines" section: each is built the first time its own draw runs.
     this.nodePipeline = new NodePipeline(device, format, kernels.visibleLayout);
     this.imageArrays = new ImageArrays(device);
-    // the browser rasterizer: entries acquired while headless kick now
-    this.cy._store.images.setDecoder(createBrowserImageDecoder());
+    // the environment's rasterizer: entries acquired while headless kick
+    // now (null where the host cannot decode — the worker host, pass 1)
+    const decoder = this.host.createImageDecoder();
+
+    if (decoder != null) {
+      this.store.images.setDecoder(decoder);
+    }
     this.edgePipeline = new EdgePipeline(device, format, kernels.visibleLayout);
     this.arrowPipeline = new ArrowPipeline(
       device,
       format,
       kernels.visibleLayout,
     );
-    this.labelLayer = new LabelLayer(device, this.cy._store);
+    this.labelLayer = new LabelLayer(device, this.store);
     this.picking = new Picking(device);
     this.upscaler = this.scaleCtl.min < 1 ? new Upscaler(device, format) : null;
     this.gpuTimer = GpuTimer.isSupported(device) ? new GpuTimer(device) : null;
@@ -1265,7 +1260,7 @@ export class Renderer {
     }
 
     const t0 = performance.now();
-    const store = this.cy._store;
+    const store = this.store;
     let delta: ReturnType<typeof store.takeDelta> | null = null;
 
     // advance animations on our frame clock (CPU tweens write columns →
@@ -1273,7 +1268,7 @@ export class Renderer {
     // GPU-owned while its batch runs so the mirror won't clobber it; the
     // settle in tick() releases ownership before setTweenOwned below, so
     // the settled values upload on this same frame
-    this.cy._animations.tick(t0);
+    this.host.animations.tick(t0);
 
     // a live force run owns node.position like a tween lease (18.3)
     const forceOwned =
@@ -1291,7 +1286,7 @@ export class Renderer {
       this.forceRuntime.pollConvergence();
     }
 
-    if (this.cy._animations.active()) {
+    if (this.host.animations.active()) {
       this.needsRedraw = true;
     }
 
@@ -1492,7 +1487,7 @@ export class Renderer {
       );
 
       this.frameCount++;
-      this.cy.emit('render');
+      this.host.emitRender();
 
       // adaptive resolution: feed the drawn frame's GPU cost to the
       // controller and rearm the idle settle-to-max timer
@@ -1529,7 +1524,7 @@ export class Renderer {
     if (
       store.hasDirty() ||
       this.needsRedraw ||
-      this.cy._animations.active() ||
+      this.host.animations.active() ||
       this.forceRuntime != null || // a live force run drives the clock (18.3)
       (picking?.hasPending() ?? false) ||
       this.pendingExports.length > 0
@@ -1714,7 +1709,7 @@ export class Renderer {
   ): void {
     const device = this.device as GPUDevice;
     const mirror = this.mirror as ColumnMirror;
-    const store = this.cy._store;
+    const store = this.store;
     // the curved stream draws nothing until some edge has curved, so its
     // two pipelines stay uncompiled until then (see "deferred pipelines")
     const curved = store.hasCurvedEdges();
@@ -1836,7 +1831,7 @@ export class Renderer {
       mirror,
       store.highWater('edges'),
       cull.edge,
-      this.cy._styleEngine.arrowEnds,
+      this.host.arrowEnds(),
     );
     curvedArrows?.draw(
       pass,
@@ -1845,7 +1840,7 @@ export class Renderer {
       mirror,
       store.highWater('edges'),
       cull.curved,
-      this.cy._styleEngine.arrowEnds,
+      this.host.arrowEnds(),
     );
 
     if (store.midArrowCount() > 0) {
@@ -1857,7 +1852,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.edge,
-        this.cy._styleEngine.midArrowEnds,
+        this.host.midArrowEnds(),
       );
       curvedArrows?.drawMid(
         pass,
@@ -1866,7 +1861,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.curved,
-        this.cy._styleEngine.midArrowEnds,
+        this.host.midArrowEnds(),
       );
     }
     if (store.edgeOverlayCount() > 0) {
@@ -2063,7 +2058,7 @@ export class Renderer {
     now: number = 0,
   ): void {
     const mirror = this.mirror as ColumnMirror;
-    const store = this.cy._store;
+    const store = this.store;
     const labelLayer = this.labelLayer;
     const mv = `${mirror.version}`;
 
@@ -2327,7 +2322,7 @@ export class Renderer {
       ],
     });
 
-    const store = this.cy._store;
+    const store = this.store;
 
     // edges and their arrowheads; node picks are answered synchronously
     // on the CPU.  Arrows (57.10) write the same id as their edge's
@@ -2350,7 +2345,7 @@ export class Renderer {
       mirror,
       store.highWater('edges'),
       pickCull.edge,
-      this.cy._styleEngine.arrowEnds,
+      this.host.arrowEnds(),
       true,
     );
 
@@ -2371,7 +2366,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         pickCull.curved,
-        this.cy._styleEngine.arrowEnds,
+        this.host.arrowEnds(),
         true,
       );
     }
@@ -2384,7 +2379,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         pickCull.edge,
-        this.cy._styleEngine.midArrowEnds,
+        this.host.midArrowEnds(),
         true,
       );
 
@@ -2396,7 +2391,7 @@ export class Renderer {
           mirror,
           store.highWater('edges'),
           pickCull.curved,
-          this.cy._styleEngine.midArrowEnds,
+          this.host.midArrowEnds(),
           true,
         );
       }
@@ -2475,7 +2470,7 @@ export class Renderer {
   }
 
   private writeFrameUniform(): void {
-    const viewport = this.cy._viewport;
+    const viewport = this.host.viewport;
     const zoom = viewport.zoom();
     const pan = viewport.pan();
     const f = this.frameData;
@@ -2502,11 +2497,11 @@ export class Renderer {
     // in render px on purpose — sub-render-pixel geometry can't rasterize.
     f[9] = (opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX) * this.scaleCtl.scale;
     f[10] = (opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX) * this.scaleCtl.scale;
-    f[11] = this.cy._store.curveSlack(); // model px; shaders scale by zoomDpr
-    f[12] = this.cy._store.haystackSlack();
-    f[13] = this.cy._store.outlineSlack();
-    f[14] = this.cy._store.arrowScaleMax();
-    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
+    f[11] = this.store.curveSlack(); // model px; shaders scale by zoomDpr
+    f[12] = this.store.haystackSlack();
+    f[13] = this.store.outlineSlack();
+    f[14] = this.store.arrowScaleMax();
+    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * this.scaleCtl.scale; // displayed px, like labelMinPx
 
     (this.device as GPUDevice).queue.writeBuffer(
@@ -2527,7 +2522,7 @@ export class Renderer {
    * you see is what you pick.
    */
   private writePickUniform(xPx: number, yPx: number, padPx: number): void {
-    const viewport = this.cy._viewport;
+    const viewport = this.host.viewport;
     const zoom = viewport.zoom();
     const pan = viewport.pan();
     const f = this.pickFrameData;
@@ -2548,11 +2543,11 @@ export class Renderer {
     f[8] = 0; // edge dimming never affects pick coverage
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
-    f[11] = this.cy._store.curveSlack();
-    f[12] = this.cy._store.haystackSlack();
-    f[13] = this.cy._store.outlineSlack();
-    f[14] = this.cy._store.arrowScaleMax();
-    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
+    f[11] = this.store.curveSlack();
+    f[12] = this.store.haystackSlack();
+    f[13] = this.store.outlineSlack();
+    f[14] = this.store.arrowScaleMax();
+    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * this.scaleCtl.scale; // displayed px, like labelMinPx
     f[16] = 1; // pickMode (20.2): the edge cull kernels drop events:'no' edges here only
     // 57.9: v3's edgeThreshold — the edge pick quads, their fragment

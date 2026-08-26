@@ -1,5 +1,7 @@
 import { Core } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
+import { coreRenderHost } from './render/host.mjs';
+import { createBrowserImageDecoder } from './render/image-decoder.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
@@ -89,10 +91,14 @@ export default function cytoscape(options: CytoscapeOptions = {}): Core {
       );
     }
 
-    const renderer = new Renderer(cy, container, {
-      pixelRatio: options.pixelRatio,
-      ...options.renderer,
-    });
+    const renderer = new Renderer(
+      coreRenderHost(cy, () => createBrowserImageDecoder()),
+      container,
+      {
+        pixelRatio: options.pixelRatio,
+        ...options.renderer,
+      },
+    );
 
     renderer.onDeviceLost = (message) => cy._handleDeviceLost(message);
     cy._pointer = new PointerHandler(cy, renderer);

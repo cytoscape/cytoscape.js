@@ -2,7 +2,7 @@ import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
 import { layoutLabelBlock, WRAP_NONE } from '../label-wrap.mjs';
 import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
-import type { GraphStore } from '../store/graph-store.mjs';
+import type { RenderStoreView } from './host.mjs';
 import type { LabelStream } from '../contract.mjs';
 
 /**
@@ -23,7 +23,7 @@ export class LabelLayer {
   /** the target end-label stream (round 13 D4), keyed by edge slot */
   targetGlyphs: GlyphBuffer;
 
-  private store: GraphStore;
+  private store: RenderStoreView;
   /** the shaping memo (16.3): line breaking is zoom-invariant (labels
    * are model-space), so identical (text, wrap params) pairs share one
    * laid block; the cache clears with the atlas face. */
@@ -44,7 +44,7 @@ export class LabelLayer {
    * @param store — the graph store this layer reads label entries and
    * the label-dirty channel from, and writes laid dimensions back to
    */
-  constructor(device: GPUDevice, store: GraphStore) {
+  constructor(device: GPUDevice, store: RenderStoreView) {
     this.store = store;
     this.atlas = new GlyphAtlas(device);
     this.glyphs = new GlyphBuffer(device);

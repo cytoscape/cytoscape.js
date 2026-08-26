@@ -53,6 +53,7 @@ import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
 import {
+  FLAG_ALIVE,
   FLAG_GRABBABLE,
   FLAG_LOCKED,
   FLAG_PANNABLE,
@@ -60,6 +61,7 @@ import {
   FLAG_SELECTED,
   NO_SLOT,
 } from './contract.mjs';
+import { EDGE_PICK_BIT } from './render/picking.mjs';
 import { NO_PARENT } from './public-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
@@ -81,7 +83,10 @@ import type { EleFilterFn } from './collection.mjs';
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 export interface RendererLike {
   destroy(): void;
-  pick(x: number, y: number): Promise<Collection | null>;
+  /** resolves with the packed pick id under the point (a slot + 1, with
+   * the edge namespace bit for edges), or null for background — decoded
+   * and re-validated by {@link Core._decodePick} (round 86.2) */
+  pick(x: number, y: number): Promise<number | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
@@ -1966,10 +1971,40 @@ export class Core {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  pick(x: number, y: number): Promise<Collection | null> {
+  async pick(x: number, y: number): Promise<Collection | null> {
     return this._renderer != null
-      ? this._renderer.pick(x, y)
-      : Promise.resolve(null);
+      ? this._decodePick(await this._renderer.pick(x, y))
+      : null;
+  }
+
+  /**
+   * Decode a renderer pick id to a live element (round 86.2, moved here
+   * from the renderer so it speaks slots and ids only).  A GPU pick can
+   * be up to two frames stale, so the slot is re-validated against the
+   * model before an element handle is made.
+   *
+   * @param id — the packed pick id (slot + 1; edges carry the namespace
+   *   bit), or null/0 for background
+   * @returns the element, or null when the id is background or stale
+   * @internal
+   */
+  _decodePick(id: number | null): Collection | null {
+    if (id == null || id === 0) {
+      return null;
+    }
+
+    const isEdge = (id & EDGE_PICK_BIT) !== 0;
+    const group: GroupName = isEdge ? 'edges' : 'nodes';
+    const slot = (isEdge ? id & ~EDGE_PICK_BIT : id) - 1;
+
+    if (
+      slot >= this._store.highWater(group) ||
+      !this._store.hasFlag(group, slot, FLAG_ALIVE)
+    ) {
+      return null;
+    }
+
+    return this._ele(group, slot);
   }
 
   // -- renderer --

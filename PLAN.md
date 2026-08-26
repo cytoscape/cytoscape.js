@@ -200,10 +200,16 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-08-10, the ninth design sitting), the genuinely
-open questions were **items 18, 23 and 27**; every other call this ledger
-had raised was taken.  Rounds have landed since without a sweep of this
-section, so read that as the last confirmed state rather than as today's.
+**As last swept** (2026-08-26), the genuinely open questions are
+**items 18, 23 and 27** — the three the ninth design sitting (2026-08-10)
+left open, none of which a round has taken since.  What the 2026-08-26
+sweep changed: item 22's decided action was finally *done* (the comment,
+sixteen rounds after the code), item 32's first measurement was taken and
+is recorded on the item, and two entries were added for calls that had
+been living only in round records — **item 52** (round 109's residual
+flake) and **item 53** (the round-90 worktree's unmerged branch, raised
+by round 108 and carried in its record alone).  Item 51 had already been
+lifted out of round 86's record on 2026-08-26.
 
 The sitting-by-sitting history — the fifth through ninth design sittings,
 which round executed what, and the running count of open questions after
@@ -396,6 +402,12 @@ resolved by measurement and its entry has left.
     answer is the right one on UX grounds.  The comment is the thing to
     fix, not the code — this entry exists so that a later reader finds
     a decision rather than an inconsistency.
+    **Done 2026-08-26**, and the delay is the lesson: the call was taken
+    on 2026-08-06 and the one-line edit it authorized sat undone through
+    sixteen rounds, because a ledger entry that reads as *decided* is
+    read as *finished*.  The comment at `graph-store.mts` now states the
+    agreement the two modes do have, the round-56 trim neither accounts
+    for, and why the approximation is kept.
 
 ### Logged round ideas (raised, not scoped)
 
@@ -522,6 +534,27 @@ directions".*
     composition — how much is one-line trivia versus real hot
     surface — which decides whether this is a round or an
     afternoon.
+    **Taken 2026-08-26** (`node scripts/bench-coverage.mjs
+    --verbose`): **331/394 callable members, 84.0%**, so 63
+    uncovered — and the composition says the triage is an afternoon,
+    because most of the 63 are not what the item assumed.  Fifty-six
+    sit in three files that no benchmark calls *by name* because
+    applications do not either: `animation.mts` (29 — `Animation`
+    and `AnimationManager` internals: `gpuEligible`, `settleGpu`,
+    `demoteGpuAll`, `onCompacted`), `style.mts` (22 — `StyleEngine`
+    internals: `applyBulk`, `refreshMapped`, `paintInputs`,
+    `arrowBase`), and `event.mts` (3, constructor included).  Every
+    one of those is exercised by benchmarks *through* the public
+    call that drives it, which is precisely the under-detection the
+    script's own header warns about — so they are exemptions with
+    reasons, not missing rows.  What is left is small and real: five
+    `Collection` members with no benchmark at all
+    (`breadthFirstSearch`, `depthFirstSearch`,
+    `randomWalkWithRestart`, `heatDiffusion`, plus the constructor),
+    `buildColumnar`, `LayoutContext.eles`, and three constructors.
+    **So the round is: four algorithm rows, then an exemption list
+    with a reason each, then gate at zero** — and the gate's real
+    content is the exemption list, which is the part that rots.
 33. **Mutation testing as the automated control** (raised
     2026-08-19).  The repo's most productive habit is the hand-made
     control: break the behaviour deliberately, watch the spec fail.
@@ -810,3 +843,44 @@ directions".*
     under the worker host against the 86.1 numbers; for fonts, a
     worker `FontFaceSet.load` spike proving the face actually
     applies to OffscreenCanvas 2D rasterization in each engine.
+
+52. **The chain spec's intermittent failure, still unexplained**
+    (logged 2026-08-26, round 109).  `test/force-layout.mjs`'s
+    *"uncurls a chain"* fails in full-tier runs at a rate around
+    one in four (round 108: 2 of 4; round 109: 1 of 3), always at
+    **346.45575009003477**, which round 109 identified as exactly
+    the `init: 'scatter'` result on that fixture — so in a failing
+    run the spectral seed contributes nothing.  What that rules
+    out is most of the search space: `spectralSeed` is pure and
+    deterministic, reads no global state, and neither it nor the
+    sim has a wall-clock or load-dependent term; the two
+    hypotheses on file (round 86's invocation shape, round 108's
+    load-dependent iteration count) are both falsified by the
+    code.  It survives instrumentation-shyly: 0 failures in 20
+    probed runs, including 2 under 16 concurrent CPU hogs, with
+    every probed run recording byte-identical layout inputs.  The
+    spec now prints the diagnosis when it fires (it re-measures
+    the scatter path in the failing process and names which of the
+    two failures happened), so the next occurrence reports rather
+    than puzzles.
+    **First measurement**: catch one failing run with a probe
+    cheap enough not to move it — the seeded positions before and
+    after `spectralSeed`, held in memory and flushed at exit —
+    since the inputs are already known to be constant and it is
+    the *effect* that goes missing.
+
+53. **The merged round branches** (logged 2026-08-26; raised by
+    round 108, which carried it only in its own record).  Round
+    108 left open "whether `.claude/worktrees/round-90` and its
+    branch are kept — 8 unmerged commits, the maintainer's call".
+    **Measured at the sweep: the question has answered itself.**
+    No worktree remains (`git worktree list` is one line), and all
+    four round branches are fully merged into `v4` —
+    `round-90-api-cleanup` (`8b992283`, 0 ahead / 30 behind),
+    `feature/round-86-worker-renderer` (`ac2d7d8f`),
+    `worktree-plan-round-numbering` (`b87f9812`) and
+    `worktree-round-108-agent-ergonomics` (`c4398416`).  Nothing is
+    at risk in deleting them and nothing is lost by keeping them,
+    so this stays a call rather than a cleanup: `git branch -d` on
+    those four names is the whole action, and the tips are written
+    here so it is reversible from this file alone.

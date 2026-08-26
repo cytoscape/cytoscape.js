@@ -35,10 +35,18 @@ transfer-based trip is 0.7 ms.  Two calls fall out of the numbers:
   slice per message, buffer transferred (transfer beats clone 2–3×
   and frees the sender's copy).
 - **The SharedArrayBuffer opt-in tier is declined, with the
-  measurement recorded** (the plan's own alternative resolution).
-  SAB would erase a cost that measures at 0.1 ms while demanding
-  cross-origin isolation the library cannot impose on embedders.
-  Revisit only if a real app measures span traffic above ~1 ms/frame.
+  measurement recorded** (the plan's own alternative resolution) —
+  including the head-to-head, run under the same one-in-flight
+  protocol.  A SAB design crosses only a `{start, end}` notice, so it
+  is flat ~0.02 ms at every size; against the committed transfer
+  round trip that saves **0.07 ms/frame at harness scale** (0.086 →
+  0.018 ms), 0.14 ms at 100k nodes and 0.73 ms at 500k (0.747 →
+  0.022 ms).  The relative win (4–34×) is real; the absolute win is
+  noise against a 16.7 ms budget, and it would be bought with the
+  cross-origin isolation SAB demands of every embedder plus a
+  tearing-safety design (double buffering or epoch fencing) the
+  measured row does not yet pay for.  Revisit only if a real app
+  measures span traffic above ~1 ms/frame.
 
 ### 86.2 — the seam: the renderer takes a host
 

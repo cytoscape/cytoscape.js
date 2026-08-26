@@ -8,6 +8,21 @@ calls for the maintainer — are in [`../PLAN.md`](../PLAN.md); everything
 below is a section file under [`rounds/`](rounds/), which is where a new
 round is written.
 
+## Which rounds landed
+
+Derived from the section filenames (round 111), which is why it cannot
+go stale: a round is **landed** once a section named `landed` exists for
+it or for one of its sub-rounds — round 12 landed as 12a/12b/12c — and
+is **planned** while only its plan and the notes around it are on file.
+A round can land with an item held open; the round file says which.
+
+| State | Rounds |
+| --- | --- |
+| landed | 7–39, 41–48, 52–70, 86, 90, 101, 108 |
+| planned | 40, 49–51, 71–85, 87–89, 91–100, 102–107, 109–110 |
+
+## The sections
+
 148 sections.
 
 | # | Round | Date | Kind | Section |

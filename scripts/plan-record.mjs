@@ -209,6 +209,12 @@ export function renderIndex(sections) {
     return `| ${s.seq} | ${s.round ?? '—'} | ${s.date ?? '—'} | ${s.kind} | ${link} |`;
   });
 
+  const states = roundStates(sections);
+  const of = (state) =>
+    formatRuns([...states].filter(([, v]) => v === state).map(([n]) => n));
+  const landed = of('landed');
+  const planned = of('planned');
+
   return [
     '# The development record — index',
     '',
@@ -220,6 +226,21 @@ export function renderIndex(sections) {
     'below is a section file under [`rounds/`](rounds/), which is where a new',
     'round is written.',
     '',
+    '## Which rounds landed',
+    '',
+    'Derived from the section filenames (round 111), which is why it cannot',
+    'go stale: a round is **landed** once a section named `landed` exists for',
+    'it or for one of its sub-rounds — round 12 landed as 12a/12b/12c — and',
+    'is **planned** while only its plan and the notes around it are on file.',
+    'A round can land with an item held open; the round file says which.',
+    '',
+    '| State | Rounds |',
+    '| --- | --- |',
+    `| landed | ${landed} |`,
+    `| planned | ${planned} |`,
+    '',
+    '## The sections',
+    '',
     `${sections.length} sections.`,
     '',
     '| # | Round | Date | Kind | Section |',
@@ -227,4 +248,128 @@ export function renderIndex(sections) {
     ...rows,
     '',
   ].join('\n');
+}
+
+/*
+Round 111: which rounds landed, read off the names rather than the prose.
+
+The kind field answered that question for the rounds written after 108.2,
+when a round's plan and its landed record became one file that is renamed
+when the work ships.  It did not answer it for the 33 rounds written before
+that, whose plan file was amended in place — round 60's items each say
+`— landed:` inside a file still named `plan`, and round 10's opens
+`**Round complete (2026-07-27): all 17 items landed**`.  Reading the index
+alone, every one of those looked unbuilt.
+
+Two things keep it from drifting back.  {@link landingEvidence} is the
+gate: a file named `plan` that records its own landing fails the build.
+And {@link roundStates} derives the per-round state the index now prints,
+so the answer is generated from the names instead of recalled.
+*/
+
+/**
+ * What a section's text says about its own landing — the three forms the
+ * record actually used before the kind field carried it.
+ *
+ * The round number is matched and compared to the file's own, because a
+ * plan routinely says a *different* round is complete: round 28's plan
+ * opens by noting round 27 is complete apart from 27.8.
+ *
+ * @param text — the section's markdown.
+ * @param round — the round the section is about, as {@link roundLabel}
+ *   spells it; `null` for a section that is not about a round.
+ * @returns `{ declares, ticked, open }` — whether the text declares this
+ *   round landed, and its checklist tallies.
+ */
+export function landingEvidence(text, round) {
+  const own = (m) => m == null || round == null || m === round;
+  const declares =
+    /^\*\*Round complete\b/m.test(text) ||
+    /^\*\*Landed \d{4}-\d{2}-\d{2}\b/m.test(text) ||
+    [...text.matchAll(/\*\*Round ([\d.a-z]+) is complete\b/g)].some((m) =>
+      own(m[1]),
+    );
+
+  return {
+    declares,
+    ticked: (text.match(/^ *- \[x\] /gm) ?? []).length,
+    open: (text.match(/^ *- \[ \] /gm) ?? []).length,
+  };
+}
+
+/**
+ * The base round a section file is about — `9.4`, `12a` and `12` all
+ * belong to round 12's sub-rounds or to round 12 itself, and a span
+ * (`rnd0091_0097`) belongs to every round it covers.
+ *
+ * @param key — the filename's `rnd` field.
+ * @returns the base round numbers, ascending; empty for `rnd0000`.
+ */
+export function baseRounds(key) {
+  const label = roundLabel(key);
+
+  if (label == null) {
+    return [];
+  }
+
+  const [from, to] = label.split('–').map((v) => parseInt(v, 10));
+
+  if (to == null) {
+    return [from];
+  }
+
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
+
+/**
+ * Every round the record covers, and whether it landed.
+ *
+ * A round is **landed** when a section named `landed` exists for it or for
+ * one of its sub-rounds — round 12 landed as 12a/12b/12c, and its own file
+ * is the plan those three fulfilled.  Otherwise its plan is on file and the
+ * work is not: the state is **planned**.  A `note` never lands a round; the
+ * three planning sweeps that scoped rounds 91–107 are notes for exactly
+ * that reason.
+ *
+ * @param sections — the result of {@link readSections}.
+ * @returns a Map from base round number to `'landed'` or `'planned'`,
+ *   ascending by round.
+ */
+export function roundStates(sections) {
+  const states = new Map();
+
+  for (const s of sections) {
+    const key = roundKey(s.round);
+
+    for (const n of baseRounds(key)) {
+      if (states.get(n) !== 'landed') {
+        states.set(n, s.kind === 'landed' ? 'landed' : 'planned');
+      }
+    }
+  }
+
+  return new Map([...states].sort((a, b) => a[0] - b[0]));
+}
+
+/**
+ * A sorted list of round numbers as a reader wants to read it: runs of
+ * consecutive numbers collapse to `7–11`.
+ *
+ * @param rounds — ascending round numbers.
+ * @returns e.g. `'7–11, 13–37, 39'`.
+ */
+export function formatRuns(rounds) {
+  const runs = [];
+
+  for (const n of rounds) {
+    const last = runs.at(-1);
+
+    if (last && n === last[1] + 1) {
+      last[1] = n;
+    } else {
+      runs.push([n, n]);
+    }
+  }
+
+  return runs.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(', ');
 }

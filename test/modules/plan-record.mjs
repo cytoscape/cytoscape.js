@@ -34,6 +34,10 @@ import {
   roundKey,
   roundLabel,
   parseName,
+  landingEvidence,
+  baseRounds,
+  roundStates,
+  formatRuns,
   FILE_PATTERN,
   ROUNDS_DIR,
   INDEX_FILE,
@@ -160,6 +164,118 @@ describe('the development record', () => {
       bytes,
       'PLAN.md is growing back; new rounds go in plan/rounds/',
     ).to.be.lessThan(200 * 1024);
+  });
+
+  it('names a section landed once its own file records the landing', () => {
+    // Round 111.  Thirty-three rounds sat in files named `plan` after they
+    // shipped, because before 108.2 a round's plan and its landed record
+    // were two files and only the second was named for the outcome.  Read
+    // through the index, every one of them looked unbuilt — the question
+    // "which rounds are done?" had no answer the record could give.
+    //
+    // So a `plan` file may not record its own landing.  Both forms the
+    // record used are caught: the self-declaration, and a checklist with
+    // nothing left open.
+    for (const s of sections.filter((x) => x.kind === 'plan')) {
+      const text = readFileSync(join(dir, s.file), 'utf8');
+      const { declares, ticked, open } = landingEvidence(text, s.round);
+
+      expect(declares, `${s.file} declares it landed; rename it`).to.equal(
+        false,
+      );
+      expect(
+        ticked > 0 && open === 0,
+        `${s.file} has all ${ticked} items ticked; rename it`,
+      ).to.equal(false);
+    }
+  });
+
+  it("reads a landing declaration only about the section's own round", () => {
+    // The control for the gate above, and the reason it parses the round
+    // number rather than the phrase: round 28's plan opens by saying round
+    // 27 is complete apart from 27.8.  A regex that ignored whose round it
+    // was would have renamed 28 for a sentence about 27.
+    const evidence = (text, round) => landingEvidence(text, round);
+
+    expect(evidence('**Round 34 is complete.**', '34').declares).to.equal(true);
+    expect(evidence('**Round 27 is complete** apart', '28').declares).to.equal(
+      false,
+    );
+    expect(evidence('**Round complete (2026-07-27)**', '10').declares).to.equal(
+      true,
+    );
+    expect(
+      evidence('**Landed 2026-08-04.**  The plan', '42').declares,
+    ).to.equal(true);
+    expect(evidence('a plan for round 42', '42').declares).to.equal(false);
+
+    const list = '- [x] **1** done\n- [ ] **2** not\n';
+
+    expect(evidence(list, '1')).to.deep.equal({
+      declares: false,
+      ticked: 1,
+      open: 1,
+    });
+  });
+
+  it('keeps a round to one section file per kind pair', () => {
+    // Since 108.2 a round is one file, renamed when it lands.  The five
+    // pre-108.2 rounds that had a separate plan and landed section (13, 19,
+    // 86, 90, 101) were merged into that shape by round 111, so this now
+    // holds for the whole record: nothing is both planned and landed, which
+    // is what makes the derived state below a single lookup.
+    const kinds = new Map();
+
+    for (const s of sections) {
+      const key = roundKey(s.round);
+
+      kinds.set(key, [...(kinds.get(key) ?? []), s.kind]);
+    }
+
+    for (const [key, list] of kinds) {
+      expect(
+        list.includes('plan') && list.includes('landed'),
+        `${key} is filed as both a plan and a landed record`,
+      ).to.equal(false);
+    }
+  });
+
+  it('derives which rounds landed, and publishes it in the index', () => {
+    // What a reader actually wants from the index, and the reason the kinds
+    // above have to be true.  A round is landed when a section names it so —
+    // its own, or one of its sub-rounds', since round 12 landed as 12a/12b/
+    // 12c and round 108 as 108.7/108.8/108.9.
+    const states = roundStates(sections);
+
+    expect(baseRounds('rnd0009.4')).to.deep.equal([9]);
+    expect(baseRounds('rnd0012a')).to.deep.equal([12]);
+    expect(baseRounds('rnd0091_0097')).to.deep.equal([
+      91, 92, 93, 94, 95, 96, 97,
+    ]);
+    expect(baseRounds('rnd0000')).to.deep.equal([]);
+
+    expect(states.get(10), 'round 10 landed as its own file').to.equal(
+      'landed',
+    );
+    expect(states.get(12), 'round 12 landed as 12a/12b/12c').to.equal('landed');
+    expect(states.get(86), 'round 86 landed').to.equal('landed');
+    expect(states.get(40), 'round 40 is a plan only').to.equal('planned');
+    expect(states.get(91), 'the screen pass is scoped, not built').to.equal(
+      'planned',
+    );
+    expect(
+      [...states.values()].every((v) => v === 'landed' || v === 'planned'),
+    ).to.equal(true);
+
+    // and the index prints both rows, so the answer is published rather
+    // than recomputed by whoever asks
+    const index = readFileSync(join(ROOT, INDEX_FILE), 'utf8');
+    const runs = (state) =>
+      formatRuns([...states].filter(([, v]) => v === state).map(([n]) => n));
+
+    expect(index).to.contain(`| landed | ${runs('landed')} |`);
+    expect(index).to.contain(`| planned | ${runs('planned')} |`);
+    expect(formatRuns([7, 8, 9, 11, 13, 14])).to.equal('7–9, 11, 13–14');
   });
 
   it('reads the round, the date and the kind off the filename', () => {

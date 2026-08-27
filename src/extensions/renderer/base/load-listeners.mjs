@@ -1038,20 +1038,10 @@ BRp.load = function(){
 
   }, false );
 
-  var wheelDeltas = []; // log of first N wheel deltas
+  var wheelDeltas = []; // log of first N wheel deltas' magnitudes
   var wheelDeltaN = 4; // how many events to log
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
-
-  var allAreDivisibleBy = function( list, factor ){
-    for( var i = 0; i < list.length; i++ ){
-      if( list[i] % factor !== 0 ){
-        return false;
-      }
-    }
-
-    return true;
-  }
 
   var allAreSameMagnitude = function(list) {
     var firstMag = Math.abs(list[0]);
@@ -1062,7 +1052,7 @@ BRp.load = function(){
     }
     return true;
   }
-      
+
   var wheelHandler = function( e ){
     var clamp = false;
     var delta = e.deltaY;
@@ -1081,26 +1071,30 @@ BRp.load = function(){
 
     if (inaccurateScrollDevice == null) {
       if (wheelDeltas.length >= wheelDeltaN) { // use log to determine if inaccurate
+        inaccurateScrollDevice = false;
         var wds = wheelDeltas;
-        inaccurateScrollDevice = allAreDivisibleBy(wds, 5);
 
-        if (!inaccurateScrollDevice) { // check for all large values of exact same magnitude
-          var firstMag = Math.abs(wds[0]);
-
-          inaccurateScrollDevice = allAreSameMagnitude(wds) && firstMag > 5;
-        }
-        
-        if (inaccurateScrollDevice) {
-          for (var i = 0; i < wds.length; i++) {
-            inaccurateScrollFactor = Math.min(Math.abs(wds[i]), inaccurateScrollFactor);
+        if (wds[0] >= 5) {
+          var factor;
+          // an array of equal integers "x" will have a GCD of x, so in that
+          // case there is no need to have a separate "allAreSameMagnitude"
+          // check. but the GCD function only supports integers, so keeping
+          // both checks allows arrays of equal floating-point numbers
+          if (allAreSameMagnitude(wds)) {
+            factor = wds[0];
+          } else {
+            factor = math.gcdMultipleZeroIfNonInt(wds);
+          }
+          if (factor > 1) {
+            inaccurateScrollDevice = true;
+            inaccurateScrollFactor = factor;
           }
         }
-
         // console.log('Sampled wheel deltas:', wds);
         // console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
         // console.log('inaccurateScrollFactor:', inaccurateScrollFactor);
       } else { // clamp and log until we reach N
-        wheelDeltas.push(delta);
+        wheelDeltas.push(Math.abs(delta));
         clamp = true;
         // console.log('Clamping initial wheel events until we get a good sample');
       }
@@ -1651,11 +1645,16 @@ BRp.load = function(){
             .emit(makeEvent('freeon'))
           ;
 
-          draggedEles.emit(makeEvent('free'));
+          if( draggedEles ){
+            draggedEles.emit(makeEvent('free'));
+          }
 
           if( r.dragData.didDrag ){
             start.emit(makeEvent('dragfreeon'));
-            draggedEles.emit(makeEvent('dragfree'));
+
+            if( draggedEles ){
+              draggedEles.emit(makeEvent('dragfree'));
+            }
           }
         }
 

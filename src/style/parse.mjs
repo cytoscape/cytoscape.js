@@ -382,7 +382,9 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       pfValue: tuple,
-      strValue: 'rgb(' + tuple[0] + ',' + tuple[1] + ',' + tuple[2] + ')', // n.b. no spaces b/c of multiple support
+      strValue: tuple[3] == null // n.b. no spaces b/c of multiple support
+        ? 'rgb(' + tuple[0] + ',' + tuple[1] + ',' + tuple[2] + ')'
+        : 'rgba(' + tuple[0] + ',' + tuple[1] + ',' + tuple[2] + ',' + tuple[3] + ')',
       bypass: propIsBypass
     };
 

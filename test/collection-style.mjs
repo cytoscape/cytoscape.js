@@ -240,6 +240,18 @@ describe('Collection style', function(){
       expect( cy.$('#n1').numericStyleUnits('background-color') ).to.not.exist;
     });
 
+    it('ele.numericStyle() returns a colour with an alpha channel as [r, g, b, a]', function() {
+      const ret = cy.$('#n1').style('background-color', 'rgba(0, 1, 2, 0.5)').numericStyle('background-color');
+
+      expect ( ret ).to.be.an.instanceof(Array);
+      expect ( ret ).to.have.property('length', 4);
+      expect( ret[0] ).to.equal( 0 );
+      expect( ret[1] ).to.equal( 1 );
+      expect( ret[2] ).to.equal( 2 );
+      expect( ret[3] ).to.equal( 0.5 );
+      expect( cy.$('#n1').numericStyleUnits('background-color') ).to.not.exist;
+    });
+
     it('ele.numericStyle() returns red as [255, 0, 0]', function(){
       var ret = cy.$('#n1').style('background-color', 'red').numericStyle('background-color');
 
@@ -248,6 +260,18 @@ describe('Collection style', function(){
       expect( ret[0] ).to.equal( 255 );
       expect( ret[1] ).to.equal( 0 );
       expect( ret[2] ).to.equal( 0 );
+      expect( cy.$('#n1').numericStyleUnits('background-color') ).to.not.exist;
+    });
+
+    it('ele.numericStyle() returns transparent as [0, 0, 0, 0]', function(){
+      var ret = cy.$('#n1').style('background-color', 'transparent').numericStyle('background-color');
+
+      expect( ret ).to.be.an.instanceOf(Array);
+      expect( ret ).to.have.property('length', 4);
+      expect( ret[0] ).to.equal( 0 );
+      expect( ret[1] ).to.equal( 0 );
+      expect( ret[2] ).to.equal( 0 );
+      expect( ret[3] ).to.equal( 0 );
       expect( cy.$('#n1').numericStyleUnits('background-color') ).to.not.exist;
     });
 

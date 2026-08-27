@@ -1,7 +1,9 @@
  
-## Release instructions
+## Manual release instructions
 
- 
+> [!WARNING]
+> These are legacy instructions for releasing by hand, kept as a last-resort fallback.  Normal releases go through the [Release workflow](https://github.com/cytoscape/cytoscape.js/actions/workflows/release.yml) — see `Release.md`.  In particular, `npm publish` from a local machine requires a token or interactive login and downgrades the package's trusted-publishing status on npm (pnpm reports this as `TRUST_DOWNGRADE`).  If only the npm publish step of an automated release failed, use 'Re-run failed jobs' on the failed run instead of publishing manually.
+
  1. Add the upcoming release version in [version.json](https://github.com/cytoscape/cytoscape.js/blob/unstable/documentation/versions.json) file.
  2. Ensure that [milestones](https://github.com/cytoscape/cytoscape.js/milestones) exist for the releases that you would like to make.  Each milestone should contain its corresponding issues and pull requests.
  1. For patch releases, do the back-port patch release before the corresponding current  release.  This ensures that npm lists the current version as the latest one.

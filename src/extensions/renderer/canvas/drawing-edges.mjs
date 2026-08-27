@@ -66,7 +66,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     context.lineCap = lineCap;
 
     if (lineOutlineWidth > 0) {
-      r.colorStrokeStyle( context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity );
+      r.colorStrokeStyle( context, lineOutlineColor, strokeOpacity );
     } else {
       // do not draw any lineOutline
       context.lineCap = 'butt'; // reset for other drawing functions
@@ -160,8 +160,7 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
   
     let padding = edge.pstyle(`${overlayOrUnderlay}-padding`).pfValue;
     let width = 2 * padding;
-    let color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
-  
+
     context.lineWidth = width;
   
     if( rs.edgeType === 'self' && !usePaths ){
@@ -170,8 +169,29 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
       context.lineCap = 'round';
     }
   
-    r.colorStrokeStyle( context, color[0], color[1], color[2], opacity );
-  
+    let fillStyle = edge.pstyle(`${overlayOrUnderlay}-fill`)?.value;
+
+    if (fillStyle === 'linear-gradient' || fillStyle === 'radial-gradient') {
+      const gradient = r.createGradientStyleFor(
+        context,
+        overlayOrUnderlay,
+        edge,
+        fillStyle,
+        opacity,
+      );
+
+      if (gradient) {
+        context.strokeStyle = gradient;
+      } else {
+        // fallback to single‑color if gradient config is invalid
+        const color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
+        r.colorStrokeStyle(context, color, opacity);
+      }
+    } else {
+      const color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
+      r.colorStrokeStyle(context, color, opacity);
+    }
+    
     r.drawEdgePath(
       edge,
       context,
@@ -340,8 +360,8 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   if( opacity !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
     context.globalCompositeOperation = 'destination-out';
 
-    self.colorFillStyle( context, 255, 255, 255, 1 );
-    self.colorStrokeStyle( context, 255, 255, 255, 1 );
+    self.colorFillStyle( context, [255, 255, 255], 1 );
+    self.colorStrokeStyle( context, [255, 255, 255], 1 );
 
     self.drawArrowShape( edge, context,
       arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix
@@ -351,8 +371,8 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   } // otherwise, the opaque arrow clears it for free :)
 
   let color = edge.pstyle( prefix + '-arrow-color' ).value;
-  self.colorFillStyle( context, color[0], color[1], color[2], opacity );
-  self.colorStrokeStyle( context, color[0], color[1], color[2], opacity );
+  self.colorFillStyle( context, color, opacity );
+  self.colorStrokeStyle( context, color, opacity );
 
   self.drawArrowShape( edge, context,
     arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix

@@ -1,6 +1,7 @@
 import * as math from '../../../math.mjs';
 import * as is from '../../../is.mjs';
 import * as util from '../../../util/index.mjs';
+import { getArrowScale } from '../../../style/arrow-scale.mjs';
 
 var BRp = {};
 
@@ -74,8 +75,8 @@ BRp.registerArrowShapes = function(){
     return ret;
   };
 
-  var standardGap = function( edge ) {
-    return edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).pfValue * 2;
+  var standardGap = function( edge, prefix ) {
+    return edge.pstyle( 'width' ).pfValue * getArrowScale( edge, prefix ) * 2;
   };
 
   var defineArrowShape = function( name, defn ){
@@ -108,7 +109,7 @@ BRp.registerArrowShapes = function(){
         renderer.arrowShapeImpl( 'polygon' )( context, points );
       },
 
-      spacing: function( edge ){
+      spacing: function( edge, prefix ){
         return 0;
       },
 
@@ -203,8 +204,8 @@ BRp.registerArrowShapes = function(){
       var triPts = transformPoints(this.pointsTr, size, angle, translation);
       renderer.arrowShapeImpl(this.name)(context, triPts, translation.x, translation.y, this.radius * size);
     },
-    spacing: function spacing(edge) {
-      return renderer.getArrowWidth(edge.pstyle('width').pfValue, edge.pstyle('arrow-scale').value) * this.radius;
+    spacing: function spacing(edge, prefix) {
+      return renderer.getArrowWidth(edge.pstyle('width').pfValue, getArrowScale(edge, prefix)) * this.radius;
     }
   } );
 
@@ -279,8 +280,8 @@ BRp.registerArrowShapes = function(){
       renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
     },
 
-    spacing: function( edge ){
-      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+    spacing: function( edge, prefix ){
+      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue, getArrowScale( edge, prefix ) )
         * this.radius;
     }
   } );
@@ -293,11 +294,11 @@ BRp.registerArrowShapes = function(){
       0.15, 0
     ],
 
-    spacing: function( edge ){
+    spacing: function( edge, prefix ){
       return 1;
     },
 
-    gap: function( edge ){
+    gap: function( edge, prefix ){
       return 1;
     }
   } );
@@ -319,8 +320,8 @@ BRp.registerArrowShapes = function(){
       0, 0
     ],
 
-    gap: function( edge ){
-      return edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).value;
+    gap: function( edge, prefix ){
+      return edge.pstyle( 'width' ).pfValue * getArrowScale( edge, prefix );
     }
   } );
 
@@ -334,8 +335,8 @@ BRp.registerArrowShapes = function(){
       0.15, -0.15
     ],
 
-    gap: function( edge ){
-      return 0.95 * edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).value;
+    gap: function( edge, prefix ){
+      return 0.95 * edge.pstyle( 'width' ).pfValue * getArrowScale( edge, prefix );
     }
   } );
 

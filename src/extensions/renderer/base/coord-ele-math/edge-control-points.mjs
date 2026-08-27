@@ -4,6 +4,7 @@ import * as util from '../../../../util/index.mjs';
 import Map from '../../../../map.mjs';
 import {getRoundCorner} from "../../../../round.mjs";
 import {endsWith} from "../../../../util/index.mjs";
+import { getMaxArrowScale } from '../../../../style/arrow-scale.mjs';
 
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
@@ -493,7 +494,8 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
     let badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
     let minCpADistFactor = 3;
-    let arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+    // both ends are corrected here, so size against the largest arrow on the edge
+    let arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, getMaxArrowScale( edge ) )
       * this.arrowShapeWidth;
     let minCpADist = minCpADistFactor * arrowW;
 

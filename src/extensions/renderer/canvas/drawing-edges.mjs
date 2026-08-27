@@ -2,6 +2,7 @@
 
 import * as util from '../../../util/index.mjs';
 import {drawPreparedRoundCorner} from "../../../round.mjs";
+import { getArrowScale } from '../../../style/arrow-scale.mjs';
 
 let CRp = {};
 
@@ -387,10 +388,8 @@ CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth
   let canvasContext = context;
   let translation = { x, y };
   let shapeImpl = r.arrowShapes[ shape ];
-  let defaultScale = edge.pstyle('arrow-scale').value;
-  let prefixScaleProp = edge.pstyle(`${prefix}-arrow-scale`, false);
-  let scaleUsed = prefixScaleProp != null ? prefixScaleProp.value : defaultScale;
-  let size = this.getArrowWidth(edgeWidth, scaleUsed);
+  let scale = getArrowScale( edge, prefix );
+  let size = this.getArrowWidth( edgeWidth, scale );
 
   if( usePaths ){
     let cache = r.arrowPathCache = r.arrowPathCache || [];

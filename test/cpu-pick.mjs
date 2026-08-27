@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { GraphStore } from '../src/store/graph-store.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt, pickNodeTierAt } from '../src/render/cpu-pick.mjs';
 import {
+  FLAG_NO_EVENTS,
   FLAG_VISIBLE,
   SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE,
@@ -318,6 +319,87 @@ describe('gpu/render: CPU node pick', function () {
       expect(pickNodeAt(store, frame, 0, 0)).to.equal(leaf);
       expect(pickNodeAt(store, frame, 12, 0)).to.equal(inner); // inner band
       expect(pickNodeAt(store, frame, 30, 0)).to.equal(outer); // outer band
+    });
+  });
+
+  describe('the draw tier a hit came from (round 97.1)', function () {
+    // `renderer.pick()` resolves leaf > edge > parent, the reverse of what
+    // v4 draws (parents in one pre-edge stream, then edges, then leaves).
+    // The node scan cannot see edges, so what it owes the combine is which
+    // *tier* answered: a leaf shadows the edges under it, a parent does
+    // not.  These are the headless half of the round-97 spec — the
+    // node-vs-edge half needs a GPU tile and lives in the renderer project.
+    it('a leaf hit reports the leaf tier', function () {
+      var child = addNode('child', 0, 0, 20, 20, SHAPE_RECTANGLE);
+      var parent = addNode('parent', 0, 0, 30, 30, SHAPE_RECTANGLE);
+
+      store.setParent(child, parent);
+      store.setCompoundStyle(parent, { padding: 20 });
+      store.flushDerived();
+
+      expect(pickNodeTierAt(store, frame, 0, 0)).to.eql({
+        slot: child,
+        isParent: false,
+      });
+    });
+
+    it('a parent-band hit reports the parent tier', function () {
+      var child = addNode('child', 0, 0, 20, 20, SHAPE_RECTANGLE);
+      var parent = addNode('parent', 0, 0, 30, 30, SHAPE_RECTANGLE);
+
+      store.setParent(child, parent);
+      store.setCompoundStyle(parent, { padding: 20 }); // box spans ±30
+      store.flushDerived();
+
+      expect(pickNodeTierAt(store, frame, 25, 0)).to.eql({
+        slot: parent,
+        isParent: true,
+      });
+    });
+
+    it('a nested parent is still the parent tier — depth changes nothing', function () {
+      // the decided flat rule (2026-08-27): v4 draws every parent in the
+      // same pre-edge stream, so an inner parent is no more above an edge
+      // than an outer one is, and both must yield to it
+      var leaf = addNode('leaf', 0, 0, 10, 10, SHAPE_RECTANGLE);
+      var inner = addNode('inner', 0, 0, 30, 30, SHAPE_RECTANGLE);
+      var outer = addNode('outer', 0, 0, 30, 30, SHAPE_RECTANGLE);
+
+      store.setParent(leaf, inner);
+      store.setParent(inner, outer);
+      store.setCompoundStyle(inner, { padding: 10 }); // inner ±15
+      store.setCompoundStyle(outer, { padding: 30 }); // outer ±35
+      store.flushDerived();
+
+      expect(pickNodeTierAt(store, frame, 12, 0)).to.eql({
+        slot: inner,
+        isParent: true,
+      });
+      expect(pickNodeTierAt(store, frame, 30, 0)).to.eql({
+        slot: outer,
+        isParent: true,
+      });
+      expect(pickNodeTierAt(store, frame, 0, 0).isParent).to.equal(false);
+    });
+
+    it('a pointer-transparent parent falls through on the parent tier too', function () {
+      // events:'no' nodes are transparent to the scan (20.2); the tier
+      // split must not resurrect them as parent-tier answers
+      var child = addNode('child', 0, 0, 20, 20, SHAPE_RECTANGLE);
+      var parent = addNode('parent', 0, 0, 30, 30, SHAPE_RECTANGLE);
+
+      store.setParent(child, parent);
+      store.setCompoundStyle(parent, { padding: 20 });
+      store.setFlag('nodes', parent, FLAG_NO_EVENTS, true);
+      store.flushDerived();
+
+      expect(pickNodeTierAt(store, frame, 25, 0)).to.equal(null);
+    });
+
+    it('answers null over background, on both tiers', function () {
+      addNode('a', 0, 0, 20, 20, SHAPE_RECTANGLE);
+
+      expect(pickNodeTierAt(store, frame, 200, 200)).to.equal(null);
     });
   });
 

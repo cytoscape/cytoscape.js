@@ -72,6 +72,20 @@ export interface CpuPickFrame {
 }
 
 /**
+ * A node hit, with the draw tier it came from (round 97.1).  The tier is
+ * what the node-vs-edge combine needs: v4 draws every compound parent in
+ * one *pre-edge* stream (`cull.mts`, `HierarchyIndex.parentOrder()`), so
+ * a leaf hit shadows the edges under it while a parent hit sits beneath
+ * them and must yield to any edge at the same point.
+ */
+export interface NodePickTier {
+  /** the node's slot */
+  slot: number;
+  /** true when the hit came from the parent (pre-edge) tier */
+  isParent: boolean;
+}
+
+/**
  * Topmost shown node at device-px (xPx, yPx), or null.  Two passes
  * mirroring draw order (round 14.9): leaves scan descending slot (the
  * leaf stream's overwrite order), and only when no leaf hits do parents
@@ -84,6 +98,22 @@ export function pickNodeAt(
   xPx: number,
   yPx: number,
 ): number | null {
+  return pickNodeTierAt(view, frame, xPx, yPx)?.slot ?? null;
+}
+
+/**
+ * The same scan as {@link pickNodeAt}, answering *which tier* the hit
+ * came from (round 97.1) — the distinction `renderer.pick()` needs to
+ * resolve leaf > edge > parent, which is the reverse of what v4 draws.
+ * The parent pass still runs only when no leaf hits, so the tiered form
+ * costs exactly what the plain one does.
+ */
+export function pickNodeTierAt(
+  view: ModelView,
+  frame: CpuPickFrame,
+  xPx: number,
+  yPx: number,
+): NodePickTier | null {
   const flags = view.column('node.flags') as Uint32Array;
   const pos = view.column('node.position') as Float32Array;
   const size = view.column('node.size') as Uint32Array | Float32Array;
@@ -212,7 +242,7 @@ export function pickNodeAt(
     } // the parent pass below
 
     if (hits(slot)) {
-      return slot;
+      return { slot, isParent: false };
     }
   }
 
@@ -220,7 +250,7 @@ export function pickNodeAt(
 
   for (let i = order.length - 1; i >= 0; i--) {
     if (hits(order[i])) {
-      return order[i];
+      return { slot: order[i], isParent: true };
     }
   }
 

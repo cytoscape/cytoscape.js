@@ -76,10 +76,63 @@ drive `?network=em-web-clustered` and click edges inside clusters.
   outlive a compaction (re-validate the slot after the await, the
   epoch is at hand).
 
-**Open:** whether a *descendant parent* inside another parent picks
-above an edge (v3 draw order says any node body above the edge
-layer wins — verify v3's actual `findNearestElement` tie-break
-in-round and match it); whether `cy.pick`'s JSDoc should state the
-tier order as contract (recommended: yes — it ships as hover text,
-and this defect is exactly a contract nobody had written down).
+### Both opens, decided by the maintainer (2026-08-27)
+
+The two questions this plan left open were put to the maintainer with
+the draw orders measured on both sides first, because the answer to
+the first turned on a premise the plan had stated backwards.
+
+**The premise, corrected.**  The plan wrote that "v3 draw order says
+any node body above the edge layer wins", implying v4 has an *edge
+layer* that parents sit above.  It does not, and neither library is
+shaped that way:
+
+- **v4 draws every compound parent in one pre-edge stream**, sorted
+  (depth asc, slot asc) — `src/render/cull.mts:150` ("compound
+  parents draw in their own pre-edge stream", round 14.9) over
+  `HierarchyIndex.parentOrder()` (`src/store/hierarchy.mts:55-59`,
+  `:214-231`).  So on v4's screen *every* parent is under *every*
+  edge, at every nesting depth.  There is no per-depth interleave to
+  match.
+- **v3 interleaves by compound depth.**  `zIndexSort`
+  (`v3/src/collection/zsort.mts:16-56`) orders by `z-compound-depth`
+  first and only *within* a depth puts edges under nodes
+  (`z-index-compare: auto`); `findNearestElements` then walks that
+  list in reverse draw order and takes the first hit
+  (`v3/src/extensions/renderer/base/coord-ele-math/coords.mts:328-337`,
+  returning `near[0]`).  v3's pick order therefore *is* v3's draw
+  order, and a depth-1 parent does beat a depth-0 edge there.
+
+So "match v3" and "match what v4 draws" are different fixes, and the
+first would have pick answering a parent the renderer drew *beneath*
+the edge — breaking the pick pass's own WYSIWYG contract
+(`renderer.mts:2526-2527`), which is the contract this round exists
+to restore.
+
+**Call taken: the flat rule — leaf > edge > any parent, at every
+depth.**  It is the reverse of v4's actual draw order (parents,
+edges, leaves, labels) and therefore consistent with the screen,
+which is the UX test the maintainer set.  Nesting depth changes
+nothing about the node-vs-edge combine; the deepest-parent-wins
+ordering *within* the parent tier stays exactly as `cpu-pick.mts`
+already computes it (reverse `parentOrder()`).
+
+v3's per-depth interleave becomes a **recorded deviation**, and it is
+a consequence of a decision already taken rather than a new one:
+v3's order is driven by `z-index` and `z-compound-depth`, both of
+which v4 dropped outright on 2026-08-01 (the third design sitting;
+`debug/styles.js:15-18` states the replacement — draw order in v4 is
+structural).  A library with no z-index cannot reproduce an order
+derived from one.  Also not ported, and recorded with it: v3's
+compound-only preference for an edge's *connected nodes* over the
+edge itself (`coords.mts:245-249`), which exists to soften the same
+interleave.
+
+**Call taken: yes, the tier order is documented.**  `cy.pick`'s JSDoc
+states leaf > edge > any parent as contract — it ships as editor
+hover text through the shipped declaration and into the generated
+docs, and this defect is precisely a contract nobody had written
+down.  The CHANGELOG entry carries it too, together with the visible
+consequence the risks list names: hover styling on parent bodies
+stops firing where an edge lies under the cursor.
 

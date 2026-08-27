@@ -1264,9 +1264,6 @@
     },
 
     teardown: function(){
-      cy.off( 'tap', 'edge', cy.scratch('arrowScaleOnTap') );
-      cy.removeScratch('arrowScaleOnTap');
-
       cy.elements().remove();
       cy.style().resetToDefault();
 

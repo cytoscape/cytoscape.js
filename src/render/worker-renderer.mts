@@ -1,4 +1,5 @@
-import { pickNodeAt } from './cpu-pick.mjs';
+import { pickNodeTierAt, type NodePickTier } from './cpu-pick.mjs';
+import { EDGE_PICK_BIT } from './picking.mjs';
 import { resolveExportView } from './renderer.mjs';
 import type { ExportedImage } from './renderer.mjs';
 import { buildBatch, collectTransfers } from './worker-protocol.mjs';
@@ -323,6 +324,13 @@ export class WorkerRenderer {
    * synchronously current, over the canonical columns; edges cross to
    * the worker's GPU pick and come back as a packed id.
    *
+   * The tiers are the same-thread renderer's — **leaf > edge > parent**
+   * (round 97.1) — and they have to resolve here rather than in the
+   * worker, because the worker only has the mirrored view while the node
+   * columns are canonical on this thread: a leaf answers outright, a
+   * parent is held while the worker's edge pick runs, and only an *edge*
+   * id from the worker outranks it.
+   *
    * @param x — rendered (CSS px) x
    * @param y — rendered (CSS px) y
    * @param pads — hit halos in CSS px (the gesture layer's thresholds)
@@ -337,15 +345,17 @@ export class WorkerRenderer {
       return null;
     }
 
-    const nodeSlot = this.pickNodeSync(x, y, pads?.nodePadPx ?? 0);
+    const nodeHit = this.pickNodeTierSync(x, y, pads?.nodePadPx ?? 0);
 
-    if (nodeSlot != null) {
-      return nodeSlot + 1;
+    if (nodeHit != null && !nodeHit.isParent) {
+      return nodeHit.slot + 1;
     }
 
+    const parentSlot = nodeHit?.slot ?? null;
+    const epoch = this.cy._store.compactEpoch;
     const id = this.nextRequestId++;
 
-    return new Promise<number | null>((resolve) => {
+    const answer = await new Promise<number | null>((resolve) => {
       this.pendingPicks.set(id, resolve);
       this.post({
         kind: 'pick',
@@ -356,6 +366,22 @@ export class WorkerRenderer {
         nodePadPx: 0, // nodes already answered above
       });
     });
+
+    if (answer != null && (answer & EDGE_PICK_BIT) !== 0) {
+      return answer;
+    }
+
+    if (parentSlot == null || this.destroyed) {
+      return null;
+    }
+
+    // slots move under compaction (19.4) — the held slot survives the
+    // await only while the epoch does
+    if (this.cy._store.compactEpoch !== epoch) {
+      return this.pickNodeTierSync(x, y, pads?.nodePadPx ?? 0)?.slot ?? null;
+    }
+
+    return parentSlot + 1;
   }
 
   /**
@@ -368,6 +394,15 @@ export class WorkerRenderer {
    * @returns the node's slot, or null
    */
   pickNodeSync(x: number, y: number, padPx: number = 0): number | null {
+    return this.pickNodeTierSync(x, y, padPx)?.slot ?? null;
+  }
+
+  /** the same scan, carrying the draw tier the hit came from (97.1) */
+  private pickNodeTierSync(
+    x: number,
+    y: number,
+    padPx: number = 0,
+  ): NodePickTier | null {
     if (this.destroyed) {
       return null;
     }
@@ -378,7 +413,7 @@ export class WorkerRenderer {
 
     cy._store.flushDerived();
 
-    return pickNodeAt(
+    return pickNodeTierAt(
       cy._store,
       {
         panXPx: pan.x * this.dpr,

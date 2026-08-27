@@ -341,6 +341,66 @@ test.describe('WebGPU renderer', () => {
     expect(onEdge).toBe('ab');
   });
 
+  // Round 97: a click on an edge crossing a compound parent's body used to
+  // select the parent, because `pick()` returned any CPU node hit before it
+  // ever asked the edge tile.  v4 draws every parent in one *pre-edge*
+  // stream, so the parent is the thing *underneath* — the tiers resolve
+  // leaf > edge > parent, the reverse of the draw order.  The fixture puts
+  // an edge across a parent's body, well clear of both children.
+  const COMPOUND_PICK_GRAPH = {
+    elements: [
+      { data: { id: 'p' } },
+      { data: { id: 'c1', parent: 'p' }, position: { x: -100, y: 0 } },
+      { data: { id: 'c2', parent: 'p' }, position: { x: 100, y: 0 } },
+      // the edge's own nodes sit outside the parent; the span crosses it
+      { data: { id: 'x' }, position: { x: -320, y: 60 } },
+      { data: { id: 'y' }, position: { x: 320, y: 60 } },
+      { data: { id: 'xy', source: 'x', target: 'y' } },
+    ],
+    style: {
+      nodes: { width: 30, height: 30 },
+      parents: { padding: 60 }, // parent box: ±115 × ±75
+      edges: { width: 6, 'curve-style': 'straight' },
+    },
+    zoom: 1,
+  };
+
+  test('pick() resolves leaf > edge > parent inside a compound body', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    await makeReadyCy(page, COMPOUND_PICK_GRAPH);
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const picked = await page.evaluate(async (center) => {
+      const at = async (dx, dy) => {
+        const ele = await window.cy.pick(center.x + dx, center.y + dy);
+
+        return ele == null ? null : ele.id();
+      };
+
+      return {
+        // on the edge, inside the parent's body: the edge (the defect)
+        onEdge: await at(0, 60),
+        // inside the parent, clear of the edge and both children: the parent
+        inParent: await at(0, -50),
+        // on a child: the leaf tier, which the fix must not break
+        onLeaf: await at(-100, 0),
+        // outside everything
+        onBackground: await at(0, -300),
+      };
+    }, center);
+
+    expect(picked.onEdge).toBe('xy');
+    expect(picked.inParent).toBe('p');
+    expect(picked.onLeaf).toBe('c1');
+    expect(picked.onBackground).toBe(null);
+  });
+
   test('saturating edge picks across frames never yields spurious nulls', async ({
     page,
   }) => {

@@ -1,6 +1,6 @@
 import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
-import { pickNodeAt } from './cpu-pick.mjs';
+import { pickNodeTierAt, type NodePickTier } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import { NodeLayerPipeline } from './node-layer-pipeline.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
@@ -641,7 +641,7 @@ export class Renderer {
    * picks over a message channel.  Three stages, cheapest first:
    *
    * 1. nodes: synchronous CPU pick — exact, zero GPU work, answers in the
-   *    same microtask (nodes draw over edges, so a node hit shadows them);
+   *    same microtask;
    * 2. the cached pick tile: while the cursor stays inside the last GPU
    *    tile and nothing invalidated it, edge/background answers are
    *    instant;
@@ -649,6 +649,22 @@ export class Renderer {
    *    work, so latency is ~one rAF plus bounded in-flight GPU work
    *    (latest-wins coalescing; requests never queue up — a saturated
    *    staging ring defers the coalesced request a frame, never drops it).
+   *
+   * **The tiers resolve leaf > edge > parent** (round 97.1), which is the
+   * reverse of what v4 draws — every compound parent draws in one
+   * *pre-edge* stream (`cull.mts`, `HierarchyIndex.parentOrder()`), then
+   * edges, then leaves — so what you see is what you pick, the pick
+   * pass's own contract.  A leaf hit therefore answers from stage 1 and
+   * skips the GPU entirely; a *parent* hit is held while stages 2–3
+   * answer and is returned only over background.  The cost lands where
+   * the defect was: a click or hover inside a parent body now awaits the
+   * edge tile once, where it used to answer synchronously.
+   *
+   * v3 resolves the same three by its own draw order, which interleaves
+   * parents and edges by compound depth (`zsort.mts`, driven by `z-index`
+   * / `z-compound-depth` — both dropped in v4, 2026-08-01), so a deeply
+   * nested v3 parent can beat a shallower edge.  v4's flat tier is the
+   * deviation that follows, recorded in `src/README.md`.
    */
   async pick(
     x: number,
@@ -667,25 +683,49 @@ export class Renderer {
     const edgePadPx = (pads?.edgePadPx ?? 0) * this.dpr;
     const nodePadPx = (pads?.nodePadPx ?? 0) * this.dpr;
 
-    const nodeSlot = this.cpuPickNode(xPx, yPx, nodePadPx);
+    const nodeHit = this.cpuPickNodeTier(xPx, yPx, nodePadPx);
 
-    if (nodeSlot != null) {
-      return nodeSlot + 1; // the node id namespace: slot + 1, high bit clear
+    if (nodeHit != null && !nodeHit.isParent) {
+      // the node id namespace: slot + 1, high bit clear.  A leaf draws
+      // over every edge, so nothing below it can win — no GPU work.
+      return nodeHit.slot + 1;
     }
+
+    // 97.1: a parent body draws *under* the edges crossing it, so its hit
+    // is held while the edge tier answers, and spends only over background
+    const parentSlot = nodeHit?.slot ?? null;
+    const overParent = (): number | null =>
+      parentSlot == null ? null : parentSlot + 1;
 
     const cached = this.picking.cachedIdAt(xPx, yPx, edgePadPx);
 
     if (cached != null) {
-      return cached === 0 ? null : cached;
+      return cached === 0 ? overParent() : cached;
     }
 
+    const epoch = this.store.compactEpoch;
     const promise = this.picking.request(xPx, yPx, edgePadPx);
 
     this.schedule(); // the pick pass runs with the next frame
 
     const id = await promise;
 
-    return id == null || id === 0 ? null : id;
+    if (id != null && id !== 0) {
+      return id;
+    }
+
+    if (parentSlot == null || this.destroyed || !this.isReady) {
+      return null;
+    }
+
+    // slots move under compaction (19.4), so a held slot only survives an
+    // await while the epoch does; otherwise the scan re-runs against the
+    // current columns, which is cheap next to the roundtrip just paid
+    if (this.store.compactEpoch !== epoch) {
+      return this.cpuPickNodeTier(xPx, yPx, nodePadPx)?.slot ?? null;
+    }
+
+    return overParent();
   }
 
   /**
@@ -711,6 +751,15 @@ export class Renderer {
     yPx: number,
     padPx: number = 0,
   ): number | null {
+    return this.cpuPickNodeTier(xPx, yPx, padPx)?.slot ?? null;
+  }
+
+  /** the same scan, carrying the draw tier the hit came from (97.1) */
+  private cpuPickNodeTier(
+    xPx: number,
+    yPx: number,
+    padPx: number = 0,
+  ): NodePickTier | null {
     const viewport = this.host.viewport;
     const pan = viewport.pan();
     const opts = this.opts;
@@ -718,7 +767,7 @@ export class Renderer {
     this.store.flushDerived(); // parent geometry is derived (round 14.9)
 
     // same view state as writePickUniform: native device px, no renderScale
-    return pickNodeAt(
+    return pickNodeTierAt(
       this.store,
       {
         panXPx: pan.x * this.dpr,

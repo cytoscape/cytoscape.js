@@ -114,7 +114,7 @@ export const FILE_PATTERN = new RegExp(
  * heading is prose, and prose is what the old parser kept getting wrong.
  *
  * @param file — the basename, e.g.
- *   `2026-08-20-07-rnd0106-plan-n-viewers-one-store.md`.
+ *   `2026-08-20-07-rnd0106-plan-n-viewers-by-cloning.md`.
  * @returns `{ date, index, roundKey, round, kind, slug }`.
  */
 export function parseName(file) {

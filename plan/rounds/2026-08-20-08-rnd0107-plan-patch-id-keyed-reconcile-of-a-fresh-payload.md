@@ -14,7 +14,9 @@ bypasses (id-keyed, so they survive by construction), running
 animations, listeners, viewport.  The consumers exist before the
 API: GeneMANIA re-query, Cytoscape Web backend sync, and item
 46's React wrapper, whose prop-diffing is exactly this and would
-otherwise be reimplemented per app, badly.
+otherwise be reimplemented per app, badly.  Round 106's replan
+(2026-08-27) added a fourth: a live-following `cy.clone()` syncs by
+throttled reconcile, and its minimap proof lands with this round.
 
 Semantics fixed at planning (the maintainer-feedback core):
 

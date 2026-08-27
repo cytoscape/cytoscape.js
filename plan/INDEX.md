@@ -167,7 +167,7 @@ A round can land with an item held open; the round file says which.
 | 138 | 103 | 2026-08-20 | plan | [Progressive ingest: a first frame before the last byte](rounds/2026-08-20-04-rnd0103-plan-progressive-ingest-a-first-frame-before-the-last-byte.md) |
 | 139 | 104 | 2026-08-20 | plan | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-plan-label-decluttering-priority-and-collision-at-scale.md) |
 | 140 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |
-| 141 | 106 | 2026-08-20 | plan | [N viewers, one store](rounds/2026-08-20-07-rnd0106-plan-n-viewers-one-store.md) |
+| 141 | 106 | 2026-08-20 | plan | [N viewers, by cloning](rounds/2026-08-20-07-rnd0106-plan-n-viewers-by-cloning.md) |
 | 142 | 107 | 2026-08-20 | plan | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-plan-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
 | 143 | 108 | 2026-08-24 | landed | [Agent ergonomics: what the two agents load, search and trip over](rounds/2026-08-24-01-rnd0108-landed-agent-ergonomics-what-the-two-agents-load-search-and.md) |
 | 144 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-02-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |

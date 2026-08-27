@@ -280,7 +280,7 @@ describe('the development record', () => {
 
   it('reads the round, the date and the kind off the filename', () => {
     // These are the index's columns, and the name is now their only source.
-    const name = parseName('2026-08-20-07-rnd0106-plan-n-viewers-one-store.md');
+    const name = parseName('2026-08-20-07-rnd0106-plan-n-viewers-by-cloning.md');
 
     expect(name).to.deep.equal({
       date: '2026-08-20',
@@ -288,10 +288,10 @@ describe('the development record', () => {
       roundKey: 'rnd0106',
       round: '106',
       kind: 'plan',
-      slug: 'n-viewers-one-store',
+      slug: 'n-viewers-by-cloning',
     });
 
-    expect(parseName('2026-08-20-07-rnd0106-n-viewers-one-store.md')).to.equal(
+    expect(parseName('2026-08-20-07-rnd0106-n-viewers-by-cloning.md')).to.equal(
       null,
     );
     expect(parseName('2026-07-22-01-rnd0000-note-context.md').round).to.equal(

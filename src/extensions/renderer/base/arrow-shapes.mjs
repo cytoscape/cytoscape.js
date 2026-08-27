@@ -154,8 +154,8 @@ BRp.registerArrowShapes = function(){
       renderer.arrowShapeImpl( this.name )( context, ptsTrans, ctrlPtTrans );
     },
 
-    gap: function( edge ) {
-      return standardGap(edge) * 0.8;
+    gap: function( edge, prefix ) {
+      return standardGap(edge, prefix) * 0.8;
     }
   } );
 
@@ -261,8 +261,8 @@ BRp.registerArrowShapes = function(){
       0, -0.15
     ],
 
-    gap: function( edge ){
-      return standardGap(edge) * 0.525;
+    gap: function( edge, prefix ){
+      return standardGap(edge, prefix) * 0.525;
     }
   } );
 

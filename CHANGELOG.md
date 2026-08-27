@@ -153,6 +153,19 @@ that compile and then behave differently.
   is a `case` condition rather than a `:selected`-style block.
 - **Draw order is structural** and stays that way: compound parents, then
   edges, then leaf nodes, then labels; slot order within a stream.
+- **Picking answers in the reverse of that order: leaf, then edge, then
+  compound parent** (round 97), so what you see is what you pick.  A click
+  or hover on an edge crossing a parent's body now answers the *edge*,
+  where it used to answer the parent the renderer had drawn underneath it;
+  nesting depth does not change the order, and among parents the deepest
+  still wins.  `cy.pick()` states the order as contract.  Two visible
+  consequences: hover styling on a parent body stops firing where an edge
+  lies under the cursor (v3 behaves this way, so it is parity restored),
+  and a click inside a parent body waits for the edge tile — one GPU
+  roundtrip — where it used to answer synchronously.  v3 ordered these by
+  `z-index` / `z-compound-depth`, which v4 does not have, so a deeply
+  nested v3 parent could beat a shallower edge where v4's edge wins.
+  Dragging is unchanged: a press still grabs the parent body it lands on.
 - **Animations run concurrently by channel** and sequence by promise;
   overlapping channels evict the older animation in place.
 - **The expensive whole-graph algorithms are async** (round 65; the

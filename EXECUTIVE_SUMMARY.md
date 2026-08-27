@@ -46,7 +46,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,237 unit · 467 module · 24 soak · 396 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,242 unit · 511 module · 24 soak · 412 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 325 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -309,6 +309,31 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     ledger that is again what it claims to be: the one place a question
     waiting on the maintainer can be found.
 
+- **27 Aug** — what you see is what you pick
+  - Round 97: a click on an edge crossing a compound parent's body selected the
+    *parent*.  The renderer draws every parent in one stream **under** the edges,
+    so picking was answering with the thing drawn underneath — the one place it
+    contradicted its own "what you see is what you pick" contract.  Picking now
+    resolves **leaf, then edge, then parent**, the reverse of the draw order, and
+    `cy.pick()` states that order as contract where nothing had written it down.
+  - Both of the round's open questions went to the maintainer with the two
+    libraries' draw orders measured first, which was the point: the plan's
+    premise about the nested case was backwards.  v4 has no "edge layer" that
+    parent bodies sit above, and v3's interleave-by-depth follows from
+    `z-index` / `z-compound-depth` — dropped from v4 on 1 Aug.  So there was no
+    v3 tie-break left to match, and the flat rule (depth changes nothing) is the
+    only one consistent with what v4 draws.
+  - The plan's other claim — that both gesture seats route through the same pick
+    — was false for the press seat, and the spec caught it: `cy.pick` said
+    "edge" while the click still selected the parent.  A parent grab is now
+    *provisional* (it starts instantly, so dragging a cluster keeps its feel,
+    and is dropped if an edge outranks it), and a release that has not moved
+    waits for that answer before it taps.
+  - Buys the reported defect fixed at the seat where it was felt, an ordering
+    users can rely on rather than infer, and one recorded deviation: an app that
+    relied on a deeply nested v3 parent out-ranking a shallower edge now gets
+    the edge.
+
 ---
 
 ## What changed for users of v3
@@ -332,6 +357,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `motifCensus`.
 - **`cy.collection()` throws if passed an argument**; **`cy.$()` and
   `cy.byId()`** restored as aliases.
+- **Overlapping elements pick in a stated order** (27 Aug): leaf node, then
+  edge, then compound parent — the reverse of v4's structural draw order.  v3
+  ordered the same three by `z-index` / `z-compound-depth`, which v4 does not
+  have, so a deeply nested v3 parent that used to out-rank a shallower edge now
+  loses to it.  Hover styling on a parent body likewise stops firing where an
+  edge lies under the cursor, which is v3's behaviour restored.
 - **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
   `mutableElements`, `onRender`/`offRender` and the jQuery-era
   `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener
@@ -364,7 +395,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, node outlines drawn over the ink, the classic compound demo's look restored, and pick order (leaf beats edge beats parent) |
+| Screen-pass fixes | Six of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, node outlines drawn over the ink, and the classic compound demo's look restored.  The seventh, pick order, landed 27 Aug |
 | Edge-layer polish | Stroke caps and corners, arrowhead reach, and pointer cursors that say what a gesture will do |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |

@@ -528,6 +528,11 @@ instances are not emitters.
   `findNearestElement` hit halos (8/24 rendered px around edges and their
   arrowheads for mouse/touch, 2/8 around nodes), so a press can land where
   `pick` answers null; the halo belongs to the gesture, not the API.
+  When elements overlap it answers **leaf, then edge, then compound
+  parent** (round 97) — the reverse of v4's structural draw order, and
+  contract.  v3 ordered the same three by `z-index`/`z-compound-depth`,
+  neither of which v4 has, so an app that relied on a deeply nested v3
+  parent out-ranking a shallower edge will now get the edge.
 
 ---
 

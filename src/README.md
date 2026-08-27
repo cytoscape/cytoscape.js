@@ -2578,7 +2578,42 @@ permuted slots, so its visible list is already in paint order with
 no GPU sorting.  The CPU node pick mirrors this in two passes —
 leaves by descending slot, then parents in reverse permutation
 order — so a parent never swallows its children's picks and the
-padding band picks the parent.  Recorded deviations: parents are
+padding band picks the parent.
+
+**Round 97.1 carried that draw order into the node-vs-edge combine:
+`pick()` resolves leaf > edge > parent**, the reverse of what is
+drawn.  Before it, any CPU node hit answered before the edge tile was
+ever consulted, so a click on an edge crossing a parent's body
+selected the parent the renderer had drawn *underneath* the edge — the
+one place picking contradicted its own "what you see is what you pick"
+contract.  A leaf still answers synchronously with no GPU work; a
+*parent* hit is now held while the cached tile (then the GPU pass)
+answers, and spends only over background, so the added latency lands
+exactly on clicks and hovers inside parent bodies.  **Nesting depth
+does not enter into it**: every parent draws in the same pre-edge
+stream, so an inner parent is no more above an edge than an outer one,
+and among parents the deepest still wins.  The press seat carries the
+same rule (`src/interact/pointer.mts`): a parent grab is *provisional*
+— it starts immediately, so dragging a parent body keeps its
+zero-latency feel — and is dropped, with the balancing `free`/`freeon`,
+if the edge tier outranks it before the press moves; a release that has
+not moved waits for that answer before it taps, which is what makes a
+fast click select the edge rather than the parent under it.
+Recorded deviation from v3: v3 orders these by `z-index` /
+`z-compound-depth` (`zsort.mts` — compound depth first, edges under
+nodes only *within* a depth) and its `findNearestElement` walks that
+same z-sorted list, so a deeply nested v3 parent can beat a shallower
+edge.  v4 dropped both properties on 2026-08-01, so the interleave has
+no v4 spelling; the flat tier is the consequence.  Not ported with it:
+v3's compound-only preference for an edge's *connected nodes* over the
+edge itself (`coords.mts` — a softener for the same interleave).
+Two residuals, deliberate: the **pan-vs-grab** decision and the
+`taphold` target still read the synchronous nodes-only pick, so a
+press-and-drag that starts on an edge inside a parent drags the parent
+(the sync seat cannot see edges without the GPU tile — the same
+recorded limit `dragHoverPick` carries).
+
+Recorded deviations: parents are
 excluded from the early-z prepass (their interiors must not kill
 the edges/children drawn over them — they lose the occlusion
 benefit); parent ghost/underlay/overlay/label decorations keep

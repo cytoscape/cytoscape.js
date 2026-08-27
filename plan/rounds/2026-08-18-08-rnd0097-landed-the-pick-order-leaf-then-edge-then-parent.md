@@ -136,3 +136,100 @@ down.  The CHANGELOG entry carries it too, together with the visible
 consequence the risks list names: hover styling on parent bodies
 stops firing where an edge lies under the cursor.
 
+
+### Landed (2026-08-27)
+
+The tier resolves leaf > edge > parent, in both hosts and at both
+gesture seats, and the contract is written down.  Four things the plan
+did not have right are recorded below, because two of them were the
+work.
+
+**97.1 — the three-tier resolve.**  `cpu-pick.mts` gains
+`pickNodeTierAt`, which answers `{ slot, isParent }`; `pickNodeAt` is
+now one line over it, so its ~30 existing callers (specs, benchmarks,
+the two hosts' `pickNodeSync`) are untouched and the parent pass still
+runs only when no leaf hits — the tiered form costs exactly what the
+plain one did.  `Renderer.pick()` returns a leaf immediately (no GPU
+work, as before), holds a *parent* hit while the cached tile and then
+the GPU pass answer, and spends it only over background.
+`WorkerRenderer.pick()` does the same across the message channel, where
+it also has to: the node columns are canonical on the main thread and
+the worker only mirrors them, so only an *edge* id from the worker may
+outrank the parent held here.
+
+The held slot is guarded by
+`compactEpoch` rather than by hope — compaction moves slots (19.4), so
+if the epoch changed across the await the scan re-runs against the
+current columns, which is cheap next to the roundtrip just paid.
+
+**The plan's premise about nesting was backwards, and the maintainer's
+call turned on it.**  The plan said "v3 draw order says any node body
+above the edge layer wins".  There is no such layer: v4 draws *every*
+parent in one pre-edge stream sorted (depth asc, slot asc)
+(`cull.mts:150`, `HierarchyIndex.parentOrder()`), so every parent is
+under every edge at every depth, while v3 interleaves by compound depth
+(`v3/src/collection/zsort.mts` — `z-compound-depth` first, edges under
+nodes only *within* a depth) and picks by walking that same z-sorted
+list in reverse (`coords.mts:328-337`).  "Match v3" and "match what v4
+draws" were therefore different fixes, and the first would have picked
+a parent the renderer drew beneath the edge.  Both opens were put to
+the maintainer with that measured (the decisions are recorded in full
+above): **the flat rule at every depth**, and **yes, document it**.
+
+**What the plan got wrong about the gesture seats, and what it cost.**
+The plan asserted that "both gesture seats route through the same
+`renderer.pick()`", so one fix would cover click, tap-select and hover.
+The hover seat does.  The press seat does not: `onPointerDown` resolves
+pan-vs-grab from the *synchronous, nodes-only* `nodeAt`, and only calls
+`resolvePressTarget` when that found nothing (`mode === 'pan' &&
+grabbed == null`).  With a parent under the cursor the sync pick
+answered the parent, the async pick was never started, and the release
+tapped `down.grabbed` — so `cy.pick` said "edge" while the click still
+selected the parent.  The Playwright spec caught it in exactly that
+shape: the pick assertion went green and the selection assertion stayed
+red on `p`.  Selection is where the defect was reported, so this was
+in scope, and it took two further changes:
+
+- **A parent grab is provisional** (`DownState.provisional`).  It still
+  starts synchronously, so dragging a parent body keeps its
+  zero-latency feel, but the press also kicks off `resolvePressTarget`;
+  if the edge tier outranks the parent before the press moves, the grab
+  is dropped (`dropProvisionalGrab`) with the `free`/`freeon` that
+  balances the `grab`/`grabon` already emitted (17.2), and the gesture
+  becomes a pan — which is what a press on a bare edge is.  A press
+  that has already moved owns its drag and keeps it.
+- **A release that did not move waits for that answer** before it taps.
+  A click can easily be faster than the tile, and the tap target is
+  read synchronously at release, so without this the fix is invisible
+  to exactly the gesture that reported it.  The wait is confined to the
+  provisional case; every other press taps synchronously as before.
+  `tap` reads `this.domEvent` for `originalEvent`, and the listener
+  wrapper clears it in a `finally` (41.4), so the DOM event is captured
+  and restored around the deferred call.
+
+**Two residuals, deliberate and recorded** (in `src/README.md` beside
+the fix): the pan-vs-grab decision and the `taphold` target still read
+the nodes-only sync pick, so a press-and-*drag* starting on an edge
+inside a parent drags the parent.  The sync seat cannot see edges
+without the GPU tile — the same limit `dragHoverPick` already records —
+and deferring the grab itself would put a roundtrip in front of every
+parent drag, which is the cost this design exists to avoid.
+
+**Verification.**  `test/cpu-pick.mjs` grows five tier specs (leaf tier,
+parent band, nested-parent depth, the `events: 'no'` fall-through on
+the parent tier, background); `playwright-tests/renderer.spec.js` grows
+the pick spec (edge inside the parent → the edge; inside the parent
+clear of it → the parent; on a child → the leaf; off-graph → null) and
+the press-select spec that drove the seat finding.  **Controls, both
+run:** with `pickNodeTierAt`'s parent branch reporting the leaf tier,
+two headless specs go red; with `renderer.pick()`'s tier check reverted
+to "any node hit wins", both browser specs go red.  Green: `verify`,
+the Node tier (`test:node:quiet`), and the full renderer project (144
+passed, 1 skipped).
+
+**One repo-hygiene note for the next round:** collapse
+`import { x, type T }` rather than adding an `import type` line beside
+it.  The second line shifted `src/render/renderer.mts` by one and broke
+four `throw-coverage` specs against the `MISATTRIBUTED` allowlist's
+`renderer.mts:150` — a line-numbered exemption is a tripwire on any
+import edit in an audited file.

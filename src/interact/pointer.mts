@@ -106,6 +106,14 @@ interface DownState {
   shift: boolean;
   /** boxstart has been emitted for this gesture */
   boxStarted?: boolean;
+  /**
+   * The press landed on a compound *parent*, whose body draws under the
+   * edges crossing it (97.1) — so the grab, and the tap target with it,
+   * stand only until the edge tier answers through `pending`.
+   */
+  provisional?: boolean;
+  /** the async press target, in flight; resolves with the picked element */
+  pending?: Promise<Collection | null>;
 }
 
 /** Whether a multiple-select key is held (as in v3). */
@@ -415,6 +423,7 @@ export class PointerHandler {
       pointerId: e.pointerId,
       mode: boxing ? 'box' : canDrag ? 'grab' : 'pan',
       grabbed: picked,
+      provisional: picked != null && picked.isParent(),
       dragSet,
       startX: pos.x,
       startY: pos.y,
@@ -454,9 +463,15 @@ export class PointerHandler {
     // a press the node pick missed may still be on an *edge* — the CPU
     // pick knows nodes only; edges answer through the async GPU pick —
     // so the press affordance (v3's `:active` on the edge, or the
-    // active-bg circle on true background) waits for that answer
-    if (this.down.mode === 'pan' && this.down.grabbed == null) {
-      void this.resolvePressTarget(this.down, pos, padsOf(e));
+    // active-bg circle on true background) waits for that answer.
+    // A press that landed on a compound *parent* waits too (97.1): a
+    // parent body draws under the edges crossing it, so the sync scan's
+    // answer is provisional until the edge tier has spoken.
+    if (
+      (this.down.mode === 'pan' && this.down.grabbed == null) ||
+      this.down.provisional === true
+    ) {
+      this.down.pending = this.resolvePressTarget(this.down, pos, padsOf(e));
     }
 
     // press-and-hold: 'taphold' unless the press moves or ends first
@@ -749,7 +764,7 @@ export class PointerHandler {
     down: DownState,
     pos: Position,
     pads: typeof MOUSE_PADS,
-  ): Promise<void> {
+  ): Promise<Collection | null> {
     const model = this.cy._viewport.renderedToModel(pos);
     let picked: Collection | null = null;
 
@@ -761,23 +776,64 @@ export class PointerHandler {
       // a device lost mid-pick reads as a background press
     }
 
-    if (this.down !== down) {
-      return; // the press already ended; the release dropped FLAG_ACTIVE
-    }
+    const hit = picked != null && picked.inside() ? picked : null;
+    // the press may already have ended — the answer still resolves, because
+    // a release that did not move waits for it (97.1); only the *affordance*
+    // is dropped, which the release already undid
+    const live = this.down === down;
 
-    if (picked != null && picked.inside()) {
-      this.lastPick = picked; // the tap target for the release
-
-      if (!down.moved) {
-        this.setPressed(picked);
-
-        return;
+    if (hit != null) {
+      // 97.1: the press landed on a parent body and the edge tier
+      // outranked it, so the parent's grab was provisional — hand the
+      // gesture to the edge, which is not draggable, so the press means
+      // a pan, exactly as a press on a bare edge does.  A press that has
+      // already moved owns its drag and keeps it.
+      if (live && down.grabbed != null && hit !== down.grabbed && !down.moved) {
+        this.dropProvisionalGrab(down, pos);
       }
+
+      this.lastPick = hit; // the tap target for the release
+
+      if (live && !down.moved) {
+        this.setPressed(hit);
+      }
+
+      return hit;
     }
 
-    const p = this.cy._viewport.modelToRendered(model);
+    if (live) {
+      const p = this.cy._viewport.modelToRendered(model);
 
-    this.showActiveBg(p.x, p.y);
+      this.showActiveBg(p.x, p.y);
+    }
+
+    return null;
+  }
+
+  /**
+   * Undo a grab the async press target overruled (round 97.1).  Only a
+   * *parent* grab is ever provisional — a leaf answers the pick outright
+   * — and only while the press has not moved, so nothing has been dragged
+   * and there is no `dragfree` to emit; the `free`/`freeon` pair still
+   * balances the `grab`/`grabon` the press emitted (17.2).
+   */
+  private dropProvisionalGrab(down: DownState, pos: Position): void {
+    if (down.dragSet != null) {
+      for (let i = 0; i < down.dragSet.length; i++) {
+        this.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
+      }
+    } else if (down.grabbed != null) {
+      this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
+    }
+
+    if (down.mode === 'grab' && down.grabbed != null) {
+      this.emitDragState('free', down.grabbed, down.dragSet, pos);
+      this.emitDragState('freeon', down.grabbed, null, pos);
+    }
+
+    down.mode = 'pan';
+    down.grabbed = null;
+    down.dragSet = null;
   }
 
   /**
@@ -883,10 +939,33 @@ export class PointerHandler {
     }
 
     if (!down.moved) {
-      this.tap(
-        down.grabbed ?? (this.lastPick?.inside() ? this.lastPick : null),
-        e,
-      );
+      const fallback = (): Collection | null =>
+        down.grabbed ?? (this.lastPick?.inside() ? this.lastPick : null);
+
+      if (down.provisional === true && down.pending != null) {
+        // 97.1: the parent under the press only holds the tap while no
+        // edge is above it, and that answer is a GPU roundtrip away.  A
+        // click faster than the tile would otherwise select the parent
+        // the renderer drew *underneath* the edge the user aimed at, so
+        // this one case waits.  The DOM event is restored around the
+        // deferred call, since `tap` reads it for `originalEvent` and
+        // the listener wrapper has long since cleared it (41.4).
+        const dom = this.domEvent;
+
+        void down.pending.then((resolved) => {
+          const prev = this.domEvent;
+
+          this.domEvent = dom;
+
+          try {
+            this.tap(resolved ?? fallback(), e);
+          } finally {
+            this.domEvent = prev;
+          }
+        });
+      } else {
+        this.tap(fallback(), e);
+      }
     } else if (down.mode === 'box') {
       this.boxEnd(down, e);
     }

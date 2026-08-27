@@ -401,6 +401,43 @@ test.describe('WebGPU renderer', () => {
     expect(picked.onBackground).toBe(null);
   });
 
+  test('a press inside a compound body selects the edge under it, not the parent', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // selection is where the defect was felt, so the gesture seat is
+    // asserted too — it routes through the same renderer.pick()
+    await makeReadyCy(page, COMPOUND_PICK_GRAPH);
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const clickAt = async (dx, dy) => {
+      await page.evaluate(() => window.cy.elements().unselect());
+      await page.mouse.move(center.x + dx, center.y + dy);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    // the press target resolves through an await, so poll rather than
+    // sleep-to-offset (the standing rule for mid-flight gesture state)
+    const selected = () =>
+      page.evaluate(() =>
+        window.cy
+          .elements({ selected: true })
+          .map((e) => e.id())
+          .join(','),
+      );
+
+    await clickAt(0, 60);
+    await expect.poll(selected).toBe('xy');
+
+    await clickAt(0, -50);
+    await expect.poll(selected).toBe('p');
+  });
+
   test('saturating edge picks across frames never yields spurious nulls', async ({
     page,
   }) => {

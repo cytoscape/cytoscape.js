@@ -7872,6 +7872,16 @@ declare class Core {
    * land where this method answers null; the halo belongs to the
    * gesture, not the API.
    *
+   * **What wins when elements overlap, as contract** (round 97.1): a
+   * non-parent node, then an edge, then a compound parent — the reverse
+   * of the order v4 draws them in (parents, edges, leaves), so the
+   * answer is always the topmost thing drawn at that point.  Nesting
+   * depth does not change it: a parent inside another parent still draws
+   * under every edge, and among parents the deepest wins.  v3 ordered
+   * these by `z-index` / `z-compound-depth` instead, which v4 does not
+   * have, so a deeply nested v3 parent could beat a shallower edge where
+   * v4's edge wins.
+   *
    * @param x — rendered (CSS px) x, relative to the container
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null

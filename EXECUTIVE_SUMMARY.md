@@ -508,15 +508,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     reads 0.004% against v3 where the uniform allocation reads 0.099%;
     the numeric routing suite confirmed no routing number moved.  One
     golden moved by 2 px — the round-segments scene, its arcs smoother.
-  - The budget itself was measured and deliberately not raised: a
-    5-corner round route still gets ~3 chords per arc (0.384% against
-    v3, visibly chorded), and the arithmetic says 48 quads — not 32 —
-    is the number worth pricing; pricing needs the renderer benchmark,
-    which refuses software adapters by design, so the raise is recorded
-    with its probe for a hardware session.
+  - The budget itself was then priced on hardware (93.2, this box's
+    RX 580) and raised 24 → 32: the 5-corner probe's 0.384% collapses
+    to 0.003% while the 25k-curved scene's device time stays under the
+    frame budget (9.6 → 13.2 ms, wall on the vsync floor).  48 — the
+    number the deferral's arithmetic favoured — measured 25.7 ms device
+    and 33 ms wall (two vsync frames) for no measurable gain over 32,
+    and was declined: the dash arc-length loop prices the budget
+    superlinearly.  Twelve curved-scene goldens regenerated, each diff
+    read first; no routing number moved.
   - Buys magnified round corners drawn as arcs — the reported defect
-    class fixed with zero new vertices, and the residual case named
-    with numbers instead of left to be rediscovered.
+    class fixed with zero new vertices, and the residual case measured,
+    named, and then closed by the hardware-priced raise.
 
 - **28 Aug** — zoomed-in labels stop going soft (round 94)
   - The maintainer's screen-pass report that labels "break down in

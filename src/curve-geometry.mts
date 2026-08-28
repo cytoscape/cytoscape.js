@@ -50,9 +50,15 @@ recorded deviation from v3's exact per-shape intersections.
 */
 
 /** quads per curved edge instance — one fixed subdivision for the whole
- * curved stream (one indirect draw needs one indexCount).  24 keeps the
- * flattening error of typical bundle offsets and loops under ~1 px. */
-export const CURVE_SEGS = 24;
+ * curved stream (one indirect draw needs one indexCount).  Raised 24 → 32
+ * in round 93.2, priced on hardware (RX 580): 24 left a many-piece route
+ * (5 rounded corners = 11 pieces) ~3 chords per arc — 0.384% v3 mismatch
+ * on the close-up probe — while 32 closes it to 0.003% and the 25k-curved
+ * scene's device time stays under the frame budget (9.6 → 13.2 ms);
+ * 48 measured 25.7 ms device / 33 ms wall (two vsync frames) for no
+ * measurable probe gain, so it was declined — the dash arc-length loop
+ * is O(CURVE_SEGS²) per edge, so the budget prices superlinearly. */
+export const CURVE_SEGS = 32;
 
 /** v3's impossible-bezier guards (edge-control-points.mts). */
 export const AVOID_IMPOSSIBLE_BEZIER = 0.01;

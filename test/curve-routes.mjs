@@ -394,10 +394,12 @@ describe('gpu/curve-routes: 12b route geometry', function () {
     it('a radius-50 arc flattens to within 0.05 model px of the true circle', function () {
       // the maintainer's round-93 case: one 90-degree round-taxi corner
       // at radius 50 rendered as ~6 visible facets under the uniform
-      // split (3-8 chords); bend-weighting gives the arc 22 of 24
-      // chords, whose worst sagitta is r(1 - cos(sweep/2k)) ~ 0.03 px.
-      // The uniform split's 8 chords measure ~0.24 px here, so this
-      // bound fails by 5x if the allocation regresses.
+      // split; bend-weighting gives the arc 30 of the 32 chords
+      // (round 93.2's budget), whose worst sagitta
+      // r(1 - cos(sweep/2k)) measures 0.017 px.  A uniform split's 11
+      // chords put it at ~0.13 px by the same closed form (0.24
+      // measured for 8 chords at the old 24 budget), so this bound
+      // fails by 2.5x+ if the allocation regresses.
       const route = evalWith(
         CURVE_TAXI,
         taxiBlob({ dir: TAXI_VERTICAL, turn: 5, pct: 0, round: 1, radius: 50 }),
@@ -451,10 +453,12 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       // the dash coordinate is the accumulated chord length of the drawn
       // polyline, so a coarse arc shortens every dash cycle along it —
       // the "dash pattern that breathes" regression the round-93 plan
-      // names.  True arc length here: r * sweep = 50 * pi/2 = 78.54; the
-      // uniform split's 8 chords sum to 78.42 (0.12 short), the
-      // bend-weighted 22 chords to 78.51 — so the 0.05 bound fails by
-      // 2.4x if the allocation regresses
+      // names.  True arc length here: r * sweep = 50 * pi/2 = 78.54; at
+      // round 93.2's 32 budget the bend-weighted 30 chords sum to 78.53
+      // (0.009 short) while a uniform split's 11 chords come to ~78.47
+      // (~0.07 short, past the 0.05 bound; the margin was 2.4x at the
+      // old 24 budget) — so the bound still fails if the allocation
+      // regresses
       const route = evalWith(
         CURVE_TAXI,
         taxiBlob({ dir: TAXI_VERTICAL, turn: 5, pct: 0, round: 1, radius: 50 }),
@@ -558,9 +562,9 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       expect(at48.reduce((a, b) => a + b, 0)).to.equal(48);
       expect(Math.min(...at48)).to.be.at.least(1);
 
-      const at24 = pieceCounts(route);
+      const atDefault = pieceCounts(route);
 
-      expect(at24.reduce((a, b) => a + b, 0)).to.equal(CURVE_SEGS);
+      expect(atDefault.reduce((a, b) => a + b, 0)).to.equal(CURVE_SEGS);
     });
 
     it('allocRouteQuads pins the last piece end to the budget', function () {
@@ -641,10 +645,14 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       expect(route.qx[2]).to.be.closeTo(67.5, 1e-9);
       expect(route.qy[2]).to.be.closeTo(-40, 1e-9);
 
-      // with P=2 over 24 quads, idx 12 is the piece boundary = m12
+      // the two equal pieces split the budget in half, so the piece
+      // boundary is segEnd[0] (CURVE_SEGS / 2 for an even budget) and
+      // the vertex there is the inserted midpoint m12
       const p = { x: 0, y: 0 };
 
-      routeVertex(route, 12, p);
+      allocRouteQuads(route);
+      expect(route.segEnd[0]).to.equal(CURVE_SEGS / 2);
+      routeVertex(route, route.segEnd[0], p);
       expect(p.x).to.be.closeTo((32.5 + 67.5) / 2, 1e-9);
       expect(p.y).to.be.closeTo(0, 1e-9);
     });
@@ -671,7 +679,7 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       const p = { x: 0, y: 0 };
 
       routeMidpoint(route, m);
-      routeVertex(route, 12, p); // t = 0.5 of the single piece
+      routeVertex(route, CURVE_SEGS / 2, p); // t = 0.5 of the single piece
 
       expect(m.x).to.be.closeTo(p.x, 1e-9);
       expect(m.y).to.be.closeTo(p.y, 1e-9);
@@ -707,12 +715,15 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       const route = evalWith(CURVE_SEGMENTS, sharpBlob, 2);
       const p = { x: 0, y: 0 };
 
-      // P = 3 legs over 24 quads => 8 quads per leg
-      routeVertex(route, 8, p);
+      // P = 3 equal legs keep the uniform split, and every piece
+      // boundary lands exactly on a subdivision index — segEnd holds
+      // those indices at any budget
+      allocRouteQuads(route);
+      routeVertex(route, route.segEnd[0], p);
       expect(p.x).to.be.closeTo(32.5, 1e-9);
       expect(p.y).to.be.closeTo(30, 1e-9);
 
-      routeVertex(route, 16, p);
+      routeVertex(route, route.segEnd[1], p);
       expect(p.x).to.be.closeTo(67.5, 1e-9);
       expect(p.y).to.be.closeTo(30, 1e-9);
     });
@@ -807,13 +818,16 @@ describe('gpu/curve-routes: 12b route geometry', function () {
         );
 
         // P=5, bend-weighted (round 93): the straight legs take one
-        // quad each and the two equal corners split the 19 leftover
-        // quads 9/10, so piece 1 (the first arc) spans indices 1..11
-        routeVertex(route, 1, p);
+        // quad each and the two equal corners split the leftover, so
+        // piece 1 (the first arc) spans segEnd[0]..segEnd[1] — derived
+        // from the allocator so the spec holds at any budget
+        allocRouteQuads(route);
+        expect(route.segEnd[0]).to.equal(1); // the first leg keeps 1 quad
+        routeVertex(route, route.segEnd[0], p);
         expect(p.x).to.be.closeTo(corner.startX, 1e-9);
         expect(p.y).to.be.closeTo(corner.startY, 1e-9);
 
-        routeVertex(route, 11, p);
+        routeVertex(route, route.segEnd[1], p);
         expect(p.x).to.be.closeTo(corner.stopX, 1e-9);
         expect(p.y).to.be.closeTo(corner.stopY, 1e-9);
       });

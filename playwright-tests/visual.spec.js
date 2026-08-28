@@ -3674,6 +3674,7 @@ test.describe('v3-vs-v4 render parity', () => {
     curves: 0.002,
     layers: 0.002,
     midarrow: 0.002,
+    bends: 0.0003,
   };
 
   let deviceErrors = [];
@@ -7049,6 +7050,96 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.curves },
+    );
+  });
+
+  test('parity close-up: bent routes are smooth, not chord chains (round 93)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // Round 93: the bend-weighted subdivision.  The uniform split spent
+    // most of the 24-quad strip on pixel-straight legs, so a magnified
+    // arc rendered as a visible chord chain beside v3's analytic
+    // rasterization.
+    //
+    // Measured 2026-08-28: **0.004%** bend-weighted, against **0.099%**
+    // with the allocation deliberately reverted to uniform (`noBend =
+    // true` in both twins) — a 25x jump, so the control fails the
+    // 0.03% bound by 3.3x and the scene measures the allocation, not
+    // ambient AA.
+    //
+    // The scene frames the *bends*, not the edges: one large-radius
+    // corner per route family placed inside the zoom-3 frame with the
+    // straight legs running off it.  That deviates from the close-up
+    // tier's short-edges rule deliberately — that rule keeps arrow
+    // *ends* in frame, and nothing here draws a head; what has to be in
+    // frame is the arc, and a radius-50 arc needs legs the 400x300
+    // frame cannot hold.  The first draft followed the rule instead
+    // (whole short edges, radius 10-12 corners) and measured 0.006%
+    // with the fix and 0.005% with the control: sub-half-pixel facets,
+    // a scene that discriminated nothing.
+    const elements = [
+      // a deep bend concentrated in one quadratic of a 3-control
+      // multibezier — the outer pieces are near-straight, so the
+      // uniform split's 8 chords bow visibly at the apex
+      { data: { id: 'ba' }, position: { x: -150, y: 45 } },
+      { data: { id: 'bb' }, position: { x: 150, y: 45 } },
+      {
+        data: {
+          id: 'be',
+          kind: 'unbundled-bezier',
+          source: 'ba',
+          target: 'bb',
+        },
+      },
+      // a radius-40 round-segments corner at (-43, 35)
+      { data: { id: 'sa' }, position: { x: -150, y: -25 } },
+      { data: { id: 'sb' }, position: { x: 150, y: -25 } },
+      {
+        data: { id: 'se', kind: 'round-segments', source: 'sa', target: 'sb' },
+      },
+      // a radius-50 round-taxi corner at (40, -48) — the maintainer's
+      // reported case: ~6 visible facets under the uniform split
+      { data: { id: 'ta' }, position: { x: -110, y: -48 } },
+      { data: { id: 'tb' }, position: { x: 190, y: 112 } },
+      { data: { id: 'te', kind: 'round-taxi', source: 'ta', target: 'tb' } },
+    ];
+    const shared = {
+      width: 4,
+      'line-color': '#2c3e50',
+      'control-point-distances': [5, -75, 5],
+      'control-point-weights': [0.2, 0.5, 0.8],
+      'segment-distances': [60, -60],
+      'segment-weights': [0.35, 0.65],
+      'segment-radii': 40,
+      'taxi-direction': 'horizontal',
+      'taxi-turn': '50%',
+      'taxi-radius': 50,
+    };
+    const v3Style = [
+      {
+        selector: 'node',
+        style: { width: 10, height: 10, 'background-color': '#c0392b' },
+      },
+      { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
+      ...['unbundled-bezier', 'round-segments', 'round-taxi'].map((kind) => ({
+        selector: `edge[kind = "${kind}"]`,
+        style: { 'curve-style': kind },
+      })),
+    ];
+    const v4Style = {
+      nodes: { width: 10, height: 10, 'background-color': '#c0392b' },
+      edges: { 'curve-style': { data: 'kind' }, ...shared },
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-bends',
+      elements,
+      v3Style,
+      v4Style,
+      { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.bends },
     );
   });
 

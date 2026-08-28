@@ -1571,6 +1571,14 @@ export class Renderer {
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
 
+    // a graph built while already zoomed in promotes its labels on
+    // arrival (round 94, the 15.6 fresh-upload rule): construction sets
+    // the viewport without firing a viewport event, so a larger label
+    // landing re-arms the debounced meter here
+    if (this.labelLayer?.takeMaxFontRose() ?? false) {
+      this.schedulePromotionCheck();
+    }
+
     // background images (15.3): reclaim freed layers, upload rasters that
     // landed since the last frame (+ their mip chains, own submits).
     // Fresh uploads re-check the promotion meter — a graph built while

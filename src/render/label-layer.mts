@@ -53,6 +53,10 @@ export class LabelLayer {
    * promotion meter's input.  Monotone — a removed label never lowers
    * it — which errs toward promoting, never toward staying soft. */
   private maxFontSize = 0;
+  /** set when a process() pass raises maxFontSize; drained by the
+   * renderer to re-check the promotion meter, so a graph built while
+   * already zoomed in promotes on arrival (the 15.6 fresh-upload rule) */
+  private maxFontRose = false;
 
   /**
    * Creates the atlas and all four glyph streams.  Nothing is laid out
@@ -132,6 +136,19 @@ export class LabelLayer {
     return this.atlas.tier < SDF_TIER_MAX && this.maxFontSize > 0;
   }
 
+  /** Returns-and-clears the "a larger label arrived" flag (round 94):
+   * the renderer re-checks the promotion meter on it, so a graph built
+   * while already zoomed in — construction never fires a viewport
+   * event — still promotes on arrival, exactly as fresh image uploads
+   * re-check the svg meter (15.6). */
+  takeMaxFontRose(): boolean {
+    const rose = this.maxFontRose;
+
+    this.maxFontRose = false;
+
+    return rose;
+  }
+
   /** cumulative glyph bytes written to the GPU across all four streams
    * (stats); the atlas's own texture uploads are not counted here */
   uploadedBytes(): number {
@@ -191,6 +208,7 @@ export class LabelLayer {
 
       if (entry.fontSize > this.maxFontSize) {
         this.maxFontSize = entry.fontSize; // the promotion meter's input
+        this.maxFontRose = true;
       }
 
       const scale = entry.fontSize / SDF_FONT_SIZE;

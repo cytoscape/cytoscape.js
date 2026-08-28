@@ -747,6 +747,15 @@ bypass demotes its GPU mapper eval while one exists (count-gated,
 reversible), and the set path measures 2× *faster* than v3's through
 the built bundles.
 
+One consequence worth naming (round 96): for the **list-valued curve
+props** — `control-point-distances`/`-weights`,
+`segment-distances`/`-weights`/`-radii`, which take constants only and
+reject mappers — the bypass is the **only** per-edge spelling, so it is
+the porting path for a v3 sheet that gave edges their own arrays
+(`MIGRATING.md` says so; the debug harness's v3-default and edge-types
+sheets do so, spec-pinned to v3's routed values, and a routing-parity
+scene measures the bypass path against v3's id selectors).
+
 Ghost props (round 13 A1): `ghost` ('yes' | 'no'), `ghost-offset-x/y`
 and `ghost-opacity` duplicate the *basic node body* — shape, border,
 background — at the offset as one extra instance draw under the node

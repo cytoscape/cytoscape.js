@@ -47,7 +47,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 |---|---|
 | Automated tests | 2,260 unit · 513 module · 24 soak · 424 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -368,6 +368,26 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     file's own round number, so round 79's item-level "ships nothing" does not
     close round 79.
 
+- **28 Aug** — the v3-default `eh`, restored by bypasses (round 96)
+  - The maintainer's screen-pass report that `eh` "seems not quite right" on
+    `?network=v3-default`, closed with the renderer exonerated: given v3's
+    exact parameters, v4 routes the curve identically to the last float.  The
+    sheet was the defect — the list-valued curve props take constants only, so
+    the port had collapsed v3's four per-edge arrays to one per family and
+    `eh` drew a different curve entirely.
+  - A round-63 bypass entry is a per-element constant, which is exactly what a
+    per-edge array is — for the list props the bypass is the *only* per-edge
+    spelling, and the sheet now carries v3's four arrays that way, pinned by a
+    spec whose `ed`/`eh` numbers are v3's own (probe-verified, exact).  Half
+    the recorded deviation turned out never visible: the family constants
+    *were* `ab`'s and `bc`'s arrays.
+  - The routing-parity suite gains its first segment-family scene — v3's
+    arrays verbatim plus mixed-sign and extrapolated-weight cases, the v4 side
+    parameterised through bypasses — measured clean at 50 fields, max delta
+    2.55e-6 model px.  The edge-types demo's two unbundled-bezier rows draw
+    different curves again by the same mechanism, and `MIGRATING.md` names
+    bypasses as the porting path for per-edge list-prop arrays.
+
 ---
 
 ## What changed for users of v3
@@ -429,7 +449,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Six of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, node outlines drawn over the ink, and the classic compound demo's look restored.  The seventh, pick order, landed 27 Aug |
+| Screen-pass fixes | Five of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, and node outlines drawn over the ink.  Pick order landed 27 Aug; the classic demo's `eh` curve, restored by bypasses, landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |

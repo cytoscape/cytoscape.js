@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
     <style>
+      /* fixed test font (OFL, via the @fontsource/open-sans devDependency),
+         as on index.html: the round-94 label parity scene renders text on
+         both sides, and the diff is only meaningful when both rasterize
+         the same pinned face — specs pre-load it with document.fonts.load
+         before creating either instance */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 400;
+        src: url('../node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2') format('woff2');
+      }
+
       body {
         font-family: helvetica, arial, sans-serif;
         margin: 0;

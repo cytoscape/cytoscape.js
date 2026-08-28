@@ -159,6 +159,24 @@ test.describe('WebGPU visual goldens', () => {
     ).toBeLessThanOrEqual(0.5);
   };
 
+  /**
+   * Wait until the glyph atlas reaches the promoted tier (round 94).
+   *
+   * A scene that zooms past the promotion threshold re-rasters its
+   * labels ~250 ms after the viewport settles, so a golden exported on
+   * frame count alone races the sharpen — sometimes soft, sometimes
+   * crisp, and the diff flakes either way.  Polling the public stats
+   * counter pins which side of the swap the export sees.
+   */
+  const waitForAtlasTier = async (page, tier = 2) => {
+    await page.waitForFunction(
+      (tier) => window.cy.stats().glyphAtlasTier >= tier,
+      tier,
+      { timeout: 10000 },
+    );
+    await waitFrames(page, 2);
+  };
+
   const checkGolden = (name, uri, testInfo, opts = {}) => {
     // throws with diff artifacts on mismatch; writes the golden under
     // UPDATE_GOLDENS=1
@@ -1847,6 +1865,12 @@ test.describe('WebGPU visual goldens', () => {
     // fwidth fringe bleeding into the neighbour's ink, a fringe zoom 4
     // narrows fourfold.  The zoom-1 golden above is the discriminating
     // control; this one answers "did the close-up rendering change?"
+    //
+    // Since round 94 the zoom promotes the atlas to the 64 px tier —
+    // 14 px at zoom 4 displays 56 px, past the 40 px threshold — so the
+    // export waits for the promoted re-raster (the golden would
+    // otherwise race the 250 ms settle meter) and pins the ring *and*
+    // the sharpened letterforms under it.
     await useViewport(page, 800, 300);
     await page.evaluate(async () => {
       await document.fonts.load(`32px 'Open Sans'`);
@@ -1866,12 +1890,67 @@ test.describe('WebGPU visual goldens', () => {
       window.cy.zoom(4);
       window.cy.center();
     });
+    await waitForAtlasTier(page);
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-outline-closeup');
     checkGolden(
       'label-outline-closeup',
       await exportPng(page, { bg: '#888' }),
+      testInfo,
+    );
+  });
+
+  test('golden: plain labels close up at zoom 4 — the promoted tier (round 94)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The round-56 close-up tier had no zoomed *label* scene, which is
+    // how the base raster's softness shipped unpinned.  This one views
+    // ordinary 14 px labels at zoom 4 (displayed 56 px, past the
+    // promotion threshold) with no outline and no box — the pure
+    // letterform, corners and a 'g' descender included, exported only
+    // after the tier-2 re-raster lands.  The instance is *built* at
+    // zoom 4, so the scene also pins the arrival promotion (a graph
+    // loaded already zoomed must sharpen without any viewport event).
+    await useViewport(page, 800, 300);
+    await page.evaluate(async () => {
+      await document.fonts.load(`32px 'Open Sans'`);
+
+      if (!document.fonts.check(`32px 'Open Sans'`)) {
+        throw new Error('Open Sans did not load');
+      }
+    });
+
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a', text: 'Regime gap 25' }, position: { x: 0, y: -18 } },
+        { data: { id: 'b', text: 'Weight kg query' }, position: { x: 0, y: 18 } },
+      ],
+      style: {
+        nodes: {
+          width: 4,
+          height: 4,
+          'background-color': '#b2bec3',
+          label: { data: 'text' },
+          'font-size': 14,
+          'font-family': `'Open Sans', sans-serif`,
+          color: '#2d3436',
+          'text-valign': 'center',
+          'text-halign': 'center',
+        },
+      },
+      zoom: 4,
+      pan: { x: 400, y: 150 },
+    });
+    await waitForAtlasTier(page);
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'labels-zoom-closeup');
+    checkGolden(
+      'labels-zoom-closeup',
+      await exportPng(page, { bg: '#fff' }),
       testInfo,
     );
   });
@@ -3675,6 +3754,7 @@ test.describe('v3-vs-v4 render parity', () => {
     layers: 0.002,
     midarrow: 0.002,
     bends: 0.0003,
+    labels: 0.004,
   };
 
   let deviceErrors = [];
@@ -7227,5 +7307,113 @@ test.describe('v3-vs-v4 render parity', () => {
       v4Style,
       { zoom: 4, minInk: 4000, bound: CLOSE_UP_BOUND.midarrow },
     );
+  });
+
+  test('parity close-up: label letterforms at zoom 4 (round 94)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    /*
+     * The round-94 fidelity scene: text at 96 displayed px (24 px font
+     * at zoom 4), where the base 32 px raster is magnified 4x and its
+     * baked raster + EDT quantization error is multi-pixel structure —
+     * rounded corners, lumpy stems, a deformed 'g' descender — while
+     * the promoted 64 px tier stays clean.  Letterform-dominated by
+     * construction: near-invisible 2 px nodes, short descender- and
+     * corner-rich words that fit the frame whole (the round-56 rule:
+     * clipped glyphs quietly become tests of stem middles).
+     *
+     * The two placement policies differ by design — v4 centers the
+     * line box where v3 centers its measured text box, a recorded
+     * deviation pinned by v4's own goldens — and that offset (~0.28 em
+     * down) is bigger than the letterform signal, so the v4 side
+     * compensates with text-margin-y −6.75 (measured: ink boxes align
+     * to the device px at this font size).  What remains is glyph
+     * shape, which is what the scene is named for.
+     *
+     * Measured 2026-08-28 (SwiftShader, threshold 0.2): promoted
+     * **0.112%** across repeated runs; the tier-1 control (promotion
+     * disabled at the meter) **1.202%** — 10.7x, so the bound of 0.4%
+     * fails the pre-round render three times over and passes the
+     * promoted one with a 3.6x margin.
+     */
+    const elements = [
+      { data: { id: 'a', text: 'Regs 25' }, position: { x: 0, y: -16 } },
+      { data: { id: 'b', text: 'gkqe Mx' }, position: { x: 0, y: 16 } },
+    ];
+    const shared = {
+      width: 2,
+      height: 2,
+      'background-opacity': 0,
+      'font-size': 24,
+      'font-family': 'Open Sans',
+      color: '#111111',
+      'text-valign': 'center',
+      'text-halign': 'center',
+    };
+    const v3Style = [
+      { selector: 'node', style: { ...shared, label: 'data(text)' } },
+    ];
+    const v4Style = {
+      nodes: { ...shared, label: { data: 'text' }, 'text-margin-y': -6.75 },
+    };
+
+    const { v3uri, v4uri } = await page.evaluate(
+      async ({ elements, v3Style, v4Style }) => {
+        // both rasters must come from the same pinned face — the atlas
+        // and v3's canvas fillText alike — so the font loads first
+        await document.fonts.load(`32px 'Open Sans'`);
+
+        if (!document.fonts.check(`32px 'Open Sans'`)) {
+          throw new Error('Open Sans did not load');
+        }
+
+        const cloneEles = () => JSON.parse(JSON.stringify(elements));
+        const viewport = { zoom: 4, pan: { x: 200, y: 150 } };
+        const cy3 = window.makeV3({
+          elements: cloneEles(),
+          style: v3Style,
+          layout: { name: 'preset', fit: false },
+          ...viewport,
+        });
+        const cy4 = window.makeV4({
+          elements: cloneEles(),
+          style: v4Style,
+          ...viewport,
+        });
+
+        await cy4.ready;
+
+        // built already zoomed, the debounced meter promotes on arrival;
+        // the poll makes the sharpened frame deterministic rather than a
+        // race against the 250 ms settle window
+        for (let i = 0; i < 100; i++) {
+          if (cy4.stats().glyphAtlasTier === 2) {
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+
+        if (cy4.stats().glyphAtlasTier !== 2) {
+          throw new Error('the label atlas never promoted to tier 2');
+        }
+
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        return {
+          v3uri: cy3.png({ bg: '#fff' }),
+          v4uri: await cy4.png({ bg: '#fff' }),
+        };
+      },
+      { elements, v3Style, v4Style },
+    );
+
+    expectParityImages(v3uri, v4uri, 'parity-closeup-labels', testInfo, {
+      minInk: 6000,
+      bound: CLOSE_UP_BOUND.labels,
+    });
   });
 });

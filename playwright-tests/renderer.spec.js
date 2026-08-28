@@ -5492,6 +5492,69 @@ test.describe('WebGPU renderer', () => {
     expect(ratio).toBeGreaterThan(0.0005);
   });
 
+  test('the atlas promotes to the 64 px tier on sustained zoom, one-way (round 94)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // 14 px at zoom 1 displays 14 px — far under the 40 px promotion
+    // threshold — so the settle meter must leave the base tier alone;
+    // at zoom 4 it displays 56 px and must promote ~250 ms after the
+    // viewport settles.  Promotion is one-way: zooming back out keeps
+    // the 64 px raster (a promoted atlas draws the base zoom
+    // identically, and demoting would churn shelves on zoom cycles).
+    await makeReadyCy(page, {
+      elements: [{ data: { id: 'a' }, position: { x: 0, y: 0 } }],
+      style: {
+        nodes: {
+          width: 40,
+          height: 40,
+          'background-color': '#ddd',
+          label: 'Regime gap',
+          'font-size': 14,
+          color: '#000',
+        },
+      },
+      zoom: 1,
+    });
+    await centerPan(page);
+    await waitFrames(page);
+
+    const tier = () => page.evaluate(() => window.cy.stats().glyphAtlasTier);
+
+    expect(await tier()).toBe(1);
+
+    // the negative control: give the debounced meter (250 ms) ample
+    // time to fire wrongly at zoom 1 before asserting it did not.  A
+    // wall-clock wait rather than a state poll, unavoidably — "nothing
+    // happened" has no state to wait for — but bounded well past the
+    // debounce, so a meter that promotes at zoom 1 fails here every
+    // time rather than intermittently.
+    await page.waitForTimeout(700);
+
+    expect(await tier()).toBe(1);
+
+    const glyphsBefore = await page.evaluate(
+      () => window.cy.stats().glyphs,
+    );
+
+    await page.evaluate(() => window.cy.zoom(4));
+    await page.waitForFunction(() => window.cy.stats().glyphAtlasTier === 2);
+    await waitFrames(page);
+
+    // the swap rebuilt the runs, not grew them: same glyph count
+    expect(await page.evaluate(() => window.cy.stats().glyphs)).toBe(
+      glyphsBefore,
+    );
+
+    // one-way: zooming back out re-runs the settle meter and must not
+    // demote (same wall-clock shape as the zoom-1 control above)
+    await page.evaluate(() => window.cy.zoom(1));
+    await page.waitForTimeout(700);
+
+    expect(await tier()).toBe(2);
+  });
+
   test('edge labels render at the midpoint and follow endpoint moves on-GPU', async ({
     page,
   }) => {

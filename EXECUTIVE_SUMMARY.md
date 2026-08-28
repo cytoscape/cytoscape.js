@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after the compound fit went from
-  conservative to exact (round 92).
+- **Last updated**: 2026-08-28, after label outlines went under the ink
+  (round 95).
 
 ## How to maintain this file
 
@@ -45,9 +45,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,260 unit · 515 module · 24 soak · 424 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,260 unit · 520 module · 24 soak · 427 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 48 goldens compared **exactly** — zero differing pixels · 46 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -411,6 +411,32 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys compound graphs that fill the screen a fit was asked for, on real
     data and the fixtures alike.
 
+- **28 Aug** — the outline goes under the ink (round 95)
+  - The maintainer's screen-pass report that label outlines cut white notches
+    into the previous letters of a word, closed at its mechanism: glyph quads
+    overlap by construction, and the one-pass label draw composited each
+    glyph's opaque outline ring over the previous letter's already-blended
+    fill.  v3 strokes the whole line and fills over it; v4 now draws every
+    label stream's outline coverage first and every fill over it — two
+    specializations of the one label shader, same instances, no new buffers.
+  - Priced before landing, on the renderer bench's new outlined twin of the
+    wrapped-label scene: outline-free rendering is unchanged against the
+    published baseline to the microsecond (streams without an outlined glyph
+    skip the extra pass before any GPU work), and outlines cost +0.087 ms
+    (+1.5%) of device time at the zoomed-in label view.
+  - Two measurements the coverage keeps: the notches are a zoom-1-scale
+    artifact of the outline cap's anti-aliasing fringe (the pre-fix close-up
+    at zoom 4 differs by only 15 px, so the zoom-1 golden carries the
+    discrimination), and the v3 parity ratio is blind to outline defects
+    outright — outline presence is asserted by an inked-pixel floor instead,
+    which separates the two decisively where the ratio measures nothing.
+  - One recorded deviation: the split is global across labels where v3's is
+    per line, so where two distinct labels overlap, v3 strokes the later
+    label over the earlier one's ink and v4 does not — both being unreadable
+    there, per-run parity was declined rather than deferred.
+  - Buys legible outlined labels — every word on the classic demo's edges,
+    and any app styling text with `text-outline-width` — at every zoom.
+
 ---
 
 ## What changed for users of v3
@@ -472,7 +498,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Four of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, curve smoothness spent where the bend is, label fidelity under zoom, and node outlines drawn over the ink.  Pick order landed 27 Aug; the classic demo's `eh` curve and the compound fit landed 28 Aug |
+| Screen-pass fixes | Three of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, curve smoothness spent where the bend is, and label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit and label outlines under the ink landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |

@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 86, 89–90, 92, 96–97, 101, 108–109, 111 |
-| planned | 49–51, 71–85, 87–88, 91, 93–95, 98–100, 102–107, 110 |
+| landed | 7–48, 52–70, 86, 89–90, 92, 95–97, 101, 108–109, 111 |
+| planned | 49–51, 71–85, 87–88, 91, 93–94, 98–100, 102–107, 110 |
 
 ## The sections
 
@@ -154,7 +154,7 @@ A round can land with an item held open; the round file says which.
 | 125 | 92 | 2026-08-18 | landed | [The compound fit, from conservative to exact](rounds/2026-08-18-03-rnd0092-landed-the-compound-fit-from-conservative-to-exact.md) |
 | 126 | 93 | 2026-08-18 | plan | [Curve smoothness: spend the 24 quads where the bend is](rounds/2026-08-18-04-rnd0093-plan-curve-smoothness-spend-the-24-quads-where-the-bend-is.md) |
 | 127 | 94 | 2026-08-18 | plan | [Label fidelity under zoom](rounds/2026-08-18-05-rnd0094-plan-label-fidelity-under-zoom.md) |
-| 128 | 95 | 2026-08-18 | plan | [The outline goes under the ink](rounds/2026-08-18-06-rnd0095-plan-the-outline-goes-under-the-ink.md) |
+| 128 | 95 | 2026-08-18 | landed | [The outline goes under the ink](rounds/2026-08-18-06-rnd0095-landed-the-outline-goes-under-the-ink.md) |
 | 129 | 96 | 2026-08-18 | landed | [The v3-default `eh`, restored by bypasses](rounds/2026-08-18-07-rnd0096-landed-the-v3-default-eh-restored-by-bypasses.md) |
 | 130 | 97 | 2026-08-18 | landed | [The pick order: leaf, then edge, then parent](rounds/2026-08-18-08-rnd0097-landed-the-pick-order-leaf-then-edge-then-parent.md) |
 | 131 | 98–100 | 2026-08-19 | note | [The runtime rounds](rounds/2026-08-19-01-rnd0098_0100-note-the-runtime-rounds.md) |

@@ -2462,6 +2462,25 @@ by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
+**Text outlines draw under the ink, globally per frame (round 95).**
+Glyph quads overlap by construction (each carries the SDF pad halo
+past its ink), so a single fill+outline pass composited each glyph's
+opaque outline ring over the previous letter's already-blended fill —
+white notches cut into every outlined word.  v3 strokes the whole
+line, then fills over it; v4 now specializes the label shader
+(a `LABEL_PHASE` pipeline-overridable constant — same module, same
+instances, no extra buffers) and encodes every stream's outline
+coverage before every stream's fill.  Streams without an outlined
+glyph skip the outline pass before any GPU work (a count the glyph
+buffer maintains), so outline-free rendering encodes exactly the
+passes it did before.  The recorded deviation: the split is global
+across labels where v3's is per wrapped line, so where two *distinct*
+labels overlap, v3 strokes the later label over the earlier one's ink
+and v4 keeps all outline under all ink — both are unreadable there,
+and within-word legibility is what the defect was about.  Text
+background quads stay in the fill pass, under their own run, as v3
+draws them under both.
+
 Events: **no namespaces**, in the design and — since round 41.2 — in the
 code.  v4 dropped the `'tap.foo'` form (unused, and a per-emit parse
 cost), but until round 41 it imported v3's emitter and so inherited v3's

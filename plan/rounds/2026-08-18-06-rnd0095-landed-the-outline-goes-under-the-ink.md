@@ -79,3 +79,68 @@ order (v3 draws background under both; v4's solid path already does
 is worth a follow-up if a real scene surfaces the distinct-label
 case (recommended: no, record it).
 
+### Landed (2026-08-28)
+
+Landed as planned: global two-phase, the recommended granularity, with
+both opens taken as recommended.  The background-quad question was
+confirmed rather than assumed — the solid branch draws inside its own
+run's fill order, and pass 1 now returns zero for solid quads
+explicitly, so the box sits under both phases; the per-run
+exact-parity variant is declined and recorded (`src/README.md` carries
+the deviation: where two *distinct* labels overlap, v3 strokes the
+later label over the earlier one's ink and v4 keeps all outline under
+all ink).
+
+**The mechanism, as shipped.**  `LABEL_PHASE` is a pipeline-overridable
+constant on the one label shader module — not the phase *uniform* the
+plan sketched, and better than it: two specializations of the same
+module share the bind groups and buffers outright, and no per-draw
+uniform write exists to get wrong.  Phase 1 renders outline coverage
+only (zero for solid quads and outline-free glyphs); phase 0 renders
+fill, keeping the `mix(outlineColor.rgb, color.rgb, fillA)` boundary
+term — the risk note held: coverage changed, not colour math — and
+dropping the `max()` that let a ring beat ink.  The outline pipeline
+compiles lazily on the first outlined draw.  The per-frame flag is a
+per-stream count the GlyphBuffer maintains across set/replace/clear/
+compact (solid quads excluded — their outline words are the B6
+text-border), pinned by `test/modules/glyph-outline-flag.mjs` because
+a stale count fails silently in both directions: stuck-true pays a
+second pass every frame, stuck-false erases every outline.
+
+**The cost, priced.**  A `gen-25k-wrap-outline` renderer-bench row
+joins the outline-free wrapped-label scene it varies.  On the amd
+gcn-4 adapter: the outline-free row is unchanged against the published
+13 Aug baseline to the microsecond (fit-all labels 4.555 ms, zoomed-in
+labels 5.946 vs 5.948 ms device p50), and the outlined row pays
++0.087 ms (+1.5%) device time at the zoomed-in label view, nothing
+measurable at fit-all, where the LOD has faded most glyphs.  Wall
+stays at the 16.7 ms vsync floor everywhere.
+
+**Verified by** the planned coverage, each control measured:
+`label-outline-words` (three multi-word outlined labels — one rotated
+38°, one boxed; dark ink, white outline) fails by 1,984 px (1.653%) on
+the pre-95 renderer — the notches are the diff, exactly as planned.
+`label-visuals` regenerated (170 px moved on its outlined node's
+word); no other golden moved, and the full visual project is green.
+`?network=v3-default` drove clean in a scripted browser (206 glyphs,
+no device errors), its outlined edge labels intact at zoom 3.
+
+**Two measurements the plan did not predict.**  First, the close-up
+tier: the pre-95 render differs by only **15 px** at zoom 4 on the
+same words.  At 14 px the requested 2 px outline saturates the 0.45
+SDF-unit cap, so the zoom-1 notches are that capped ring's *fwidth
+fringe* bleeding into the neighbour's ink — a fringe zoom 4 narrows
+fourfold.  The close-up golden stays as a regression pin with a
+comment saying exactly what it does not test; the zoom-1 golden
+carries the discrimination.  Second, the parity ratio cannot see
+outline defects at all through cross-renderer raster noise: the pre-95
+notches measure 2.105% against 2.103% fixed, and even zeroing the v4
+outline entirely reads 2.097% — a pale outline on the white page sits
+under any workable pixelmatch threshold, and a saturated red one
+raises ambient to 4.975% without separating either.  So
+`parity-outlined-labels` splits the assertion per round 55's actual
+lesson: the ratio guards *placement* (ambient 2.103%, bound 2.5% —
+tuned downward from the suite's 3%), and outline *presence* is the ink
+floor's job — v4 inks 10,840 px with outlines against 4,872 without,
+floor 8,000, decisive where the ratio is blind.
+

@@ -12,6 +12,7 @@ import type {
   Collection,
   ColumnarElements,
   Core,
+  CursorMap,
   Event,
   ElementsDefinition,
   ExportOptions,
@@ -54,9 +55,24 @@ const options: CytoscapeOptions = {
   style,
   wheelSensitivity: 1,
   boxSelectionIncludesLabels: false,
+  // round 89: both accepted shapes of the cursor option, since the
+  // partial-map form is the half a boolean-only type would still accept
+  pointerCursors: { pan: 'move', hoverNode: '' },
 };
 
 const cy: Core = cytoscape(options);
+
+// the other option shape, and the runtime setter beside its sibling
+// toggles.  The accessor returns the getter/setter union every other core
+// toggle returns, so a reader narrows exactly as it does for those.
+const cursorsOff: CytoscapeOptions = { pointerCursors: false };
+const cursorSetting = cy.pointerCursors() as boolean | Partial<CursorMap>;
+
+cy.pointerCursors(true);
+cy.pointerCursors({ box: 'cell' });
+
+void cursorsOff;
+void cursorSetting;
 
 // -- unknown constructor options are a build-time error (round 37.3) --
 //

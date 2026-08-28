@@ -66,6 +66,7 @@ import { NO_PARENT } from './public-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   BoxSelectionMode,
+  CursorMap,
   CytoscapeOptions,
   ColumnarElements,
   ElementDefinition,
@@ -148,7 +149,7 @@ export class Core {
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   /** the pointer handler paired with the renderer (torn down on unmount) */
-  _pointer: { destroy(): void } | null;
+  _pointer: { destroy(): void; applyCursor(): void } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
   private _recoveringDevice: boolean;
@@ -190,6 +191,8 @@ export class Core {
    * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
   private _boxSelectionIncludesLabels: boolean;
   private _boxSelectionMode: BoxSelectionMode;
+  /** round 89: whether — and how — the canvas writes gesture cursors */
+  private _pointerCursors: boolean | Partial<CursorMap>;
   private _selectionType: 'single' | 'additive';
   private _multiClickDebounceTime: number;
   /** round 20.1: the interaction option quartet (v3 defaults) */
@@ -306,6 +309,7 @@ export class Core {
     this._boxSelectionIncludesLabels =
       options.boxSelectionIncludesLabels ?? false;
     this._boxSelectionMode = 'contain';
+    this._pointerCursors = options.pointerCursors ?? true;
     this._selectionType = 'single';
     this._multiClickDebounceTime = 250; // v3's default
     this._wheelSensitivity = 1; // v3's default (a multiplier on the zoom rate)
@@ -2444,6 +2448,42 @@ export class Core {
     }
 
     this._boxSelectionEnabled = bool;
+
+    return this;
+  }
+
+  /**
+   * Get or set whether the canvas writes CSS cursors for the gesture
+   * affordances (round 89): `grab` over a draggable node and `grabbing`
+   * while it or the background is being dragged, `pointer` over any
+   * other interactive element, `crosshair` while box-selecting.
+   *
+   * Three shapes.  `true` (the default) takes the built-in map; `false`
+   * means the interaction layer never touches `style.cursor` at all —
+   * for an app that sets its own, which is what every v3 app did, since
+   * v3 set no cursors and left the affordance to userland.  An object
+   * overrides individual entries (`{ pan: 'move' }`) and falls back to
+   * the defaults for the rest, where `''` means inherit.
+   *
+   * Idle over background is `''` rather than `default` for that same
+   * reason: v4's canvas fills its container, so an inline cursor would
+   * override the app's own, and a v4 instance with nothing to say says
+   * nothing.  A touch pointer never gets a cursor either way.
+   *
+   * @param cursors — the setting to apply; omit to read the current one
+   * @returns the setting, or this core when setting
+   */
+  pointerCursors(
+    cursors?: boolean | Partial<CursorMap>,
+  ): boolean | Partial<CursorMap> | this {
+    if (cursors === undefined) {
+      return this._pointerCursors;
+    }
+
+    this._pointerCursors = cursors;
+    // a runtime flip has to reach the canvas now, not at the next pointer
+    // event: turning cursors off while one reads `grab` must clear it
+    this._pointer?.applyCursor();
 
     return this;
   }

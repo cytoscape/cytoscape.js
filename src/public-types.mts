@@ -619,6 +619,46 @@ export interface RendererStats {
  */
 export type BoxSelectionMode = 'contain' | 'overlap';
 
+/**
+ * What the pointer is doing and what it is over, as the cursor map reads
+ * it (round 89.1).  `gesture` is the press mode the interaction layer
+ * decided at pointerdown — a press outranks hover, so a drag that
+ * crosses another node keeps saying `grabbing`.
+ */
+export interface CursorState {
+  /** the active press, or `'idle'` between gestures */
+  gesture: 'idle' | 'pan' | 'grab' | 'box';
+  /** what the hover pick found: nothing, an element, or a node the drag
+   * predicate accepts (grabbable, unlocked, not animating) */
+  hover: 'none' | 'element' | 'draggable-node';
+  /** the pointer's `pointerType`; `'touch'` never gets a cursor */
+  pointerType: string;
+}
+
+/**
+ * The CSS cursor per interaction state (round 89).  Every value is a CSS
+ * cursor keyword, or `''` meaning inherit — which hands that state back
+ * to whatever the app's own container sets, and is the default for
+ * `idle` so a v4 canvas is silent where it has nothing to say.
+ *
+ * v3 set no cursors at all, so nothing here is a v3 deviation; the
+ * defaults are the standard browser affordances.
+ */
+export interface CursorMap {
+  /** no gesture, nothing under the pointer (default `''` — inherit) */
+  idle: string;
+  /** hovering any interactive element (default `'pointer'`) */
+  hoverElement: string;
+  /** hovering a node the drag predicate accepts (default `'grab'`) */
+  hoverNode: string;
+  /** an active pan press (default `'grabbing'`) */
+  pan: string;
+  /** an active node-drag press (default `'grabbing'`) */
+  grab: string;
+  /** an active box-selection press (default `'crosshair'`) */
+  box: string;
+}
+
 export interface CytoscapeOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
@@ -675,6 +715,14 @@ export interface CytoscapeOptions {
   /** unmoved-press duration before 'taphold' fires, in ms (default
    * 500 — v3's hardcoded constant, configurable in v4).  Round 20.1. */
   tapholdDuration?: number;
+  /** whether the canvas writes CSS cursors for the gesture affordances —
+   * `grab`/`grabbing` around dragging, `pointer` over an element,
+   * `crosshair` while boxing (default true).  Round 89.
+   *
+   * `false` means the interaction layer never touches `style.cursor`, for
+   * an app that sets its own; an object overrides individual entries
+   * (`{ pan: 'move' }`), where `''` means inherit. */
+  pointerCursors?: boolean | Partial<CursorMap>;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

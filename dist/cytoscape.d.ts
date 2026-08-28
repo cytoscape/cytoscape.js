@@ -1190,6 +1190,44 @@ interface RendererStats {
  * an appearance, and v4 keeps the interaction quartet on the core.
  */
 type BoxSelectionMode = 'contain' | 'overlap';
+/**
+ * What the pointer is doing and what it is over, as the cursor map reads
+ * it (round 89.1).  `gesture` is the press mode the interaction layer
+ * decided at pointerdown — a press outranks hover, so a drag that
+ * crosses another node keeps saying `grabbing`.
+ */
+interface CursorState {
+  /** the active press, or `'idle'` between gestures */
+  gesture: 'idle' | 'pan' | 'grab' | 'box';
+  /** what the hover pick found: nothing, an element, or a node the drag
+   * predicate accepts (grabbable, unlocked, not animating) */
+  hover: 'none' | 'element' | 'draggable-node';
+  /** the pointer's `pointerType`; `'touch'` never gets a cursor */
+  pointerType: string;
+}
+/**
+ * The CSS cursor per interaction state (round 89).  Every value is a CSS
+ * cursor keyword, or `''` meaning inherit — which hands that state back
+ * to whatever the app's own container sets, and is the default for
+ * `idle` so a v4 canvas is silent where it has nothing to say.
+ *
+ * v3 set no cursors at all, so nothing here is a v3 deviation; the
+ * defaults are the standard browser affordances.
+ */
+interface CursorMap {
+  /** no gesture, nothing under the pointer (default `''` — inherit) */
+  idle: string;
+  /** hovering any interactive element (default `'pointer'`) */
+  hoverElement: string;
+  /** hovering a node the drag predicate accepts (default `'grab'`) */
+  hoverNode: string;
+  /** an active pan press (default `'grabbing'`) */
+  pan: string;
+  /** an active node-drag press (default `'grabbing'`) */
+  grab: string;
+  /** an active box-selection press (default `'crosshair'`) */
+  box: string;
+}
 interface CytoscapeOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
@@ -1246,6 +1284,14 @@ interface CytoscapeOptions {
   /** unmoved-press duration before 'taphold' fires, in ms (default
    * 500 — v3's hardcoded constant, configurable in v4).  Round 20.1. */
   tapholdDuration?: number;
+  /** whether the canvas writes CSS cursors for the gesture affordances —
+   * `grab`/`grabbing` around dragging, `pointer` over an element,
+   * `crosshair` while boxing (default true).  Round 89.
+   *
+   * `false` means the interaction layer never touches `style.cursor`, for
+   * an app that sets its own; an object overrides individual entries
+   * (`{ pan: 'move' }`), where `''` means inherit. */
+  pointerCursors?: boolean | Partial<CursorMap>;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;
@@ -7169,6 +7215,7 @@ declare class Core {
   /** the pointer handler paired with the renderer (torn down on unmount) */
   _pointer: {
     destroy(): void;
+    applyCursor(): void;
   } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
@@ -7202,6 +7249,8 @@ declare class Core {
    * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
   private _boxSelectionIncludesLabels;
   private _boxSelectionMode;
+  /** round 89: whether — and how — the canvas writes gesture cursors */
+  private _pointerCursors;
   private _selectionType;
   private _multiClickDebounceTime;
   /** round 20.1: the interaction option quartet (v3 defaults) */
@@ -8065,6 +8114,28 @@ declare class Core {
    */
   boxSelectionEnabled(bool?: boolean): boolean | this;
   /**
+   * Get or set whether the canvas writes CSS cursors for the gesture
+   * affordances (round 89): `grab` over a draggable node and `grabbing`
+   * while it or the background is being dragged, `pointer` over any
+   * other interactive element, `crosshair` while box-selecting.
+   *
+   * Three shapes.  `true` (the default) takes the built-in map; `false`
+   * means the interaction layer never touches `style.cursor` at all —
+   * for an app that sets its own, which is what every v3 app did, since
+   * v3 set no cursors and left the affordance to userland.  An object
+   * overrides individual entries (`{ pan: 'move' }`) and falls back to
+   * the defaults for the rest, where `''` means inherit.
+   *
+   * Idle over background is `''` rather than `default` for that same
+   * reason: v4's canvas fills its container, so an inline cursor would
+   * override the app's own, and a v4 instance with nothing to say says
+   * nothing.  A touch pointer never gets a cursor either way.
+   *
+   * @param cursors — the setting to apply; omit to read the current one
+   * @returns the setting, or this core when setting
+   */
+  pointerCursors(cursors?: boolean | Partial<CursorMap>): boolean | Partial<CursorMap> | this;
+  /**
    * How user selection composes: 'single' (a tap or box replaces the
    * selection) or 'additive' (taps toggle and boxes add, as if a
    * multiple-select key were always held).
@@ -8408,5 +8479,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

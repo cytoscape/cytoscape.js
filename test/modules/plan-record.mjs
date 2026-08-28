@@ -289,9 +289,10 @@ describe('the development record', () => {
       states.get(40),
       'round 40 closed at its sitting, shipping nothing',
     ).to.equal('landed');
-    expect(states.get(91), 'the screen pass is scoped, not built').to.equal(
-      'planned',
-    );
+    expect(
+      states.get(93),
+      "the screen pass's curve round is scoped, not built",
+    ).to.equal('planned');
     expect(
       [...states.values()].every((v) => v === 'landed' || v === 'planned'),
     ).to.equal(true);

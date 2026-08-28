@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after label outlines went under the ink
-  (round 95).
+- **Last updated**: 2026-08-28, after resize without distortion
+  (round 91).
 
 ## How to maintain this file
 
@@ -437,6 +437,28 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys legible outlined labels — every word on the classic demo's edges,
     and any app styling text with `text-outline-width` — at every zoom.
 
+- **28 Aug** — resize without distortion (round 91)
+  - The maintainer's screen-pass report that the network view stretches and
+    squishes while the window is dragged, closed at its mechanism: the steady
+    state was already right, but a `100%`-CSS canvas let the compositor scale
+    stale content to the new layout for at least one frame — ResizeObserver
+    callbacks run after this update's rAF, and the redraw was scheduled to
+    the next one, so a continuous drag was a continuous rubber-band.
+  - `resize()` now draws its frame synchronously — the observer runs before
+    paint, so the frame that composites the new layout composites new
+    content and the stretched frame never exists — and the canvas CSS box is
+    written in fixed px (v3's shape), so any frame that is still late — the
+    no-observer path, the worker mount — letterboxes instead of stretching.
+    Measured on the debug harness: one frame per drag step, ~0.5 ms each.
+  - The same round un-froze the device-pixel ratio: `'auto'` is now live —
+    re-read per measure and watched by a resolution media query — so browser
+    zoom or a monitor move re-rasterizes (and emits `resize` on the core,
+    v3's semantics) instead of blurring at the construction-time ratio; an
+    explicit `pixelRatio` number stays pinned, both directions spec-pinned.
+  - Buys a window drag that reads as a window drag — coverage catching up,
+    never the graph deforming — and crisp rendering across monitor and
+    browser-zoom changes.
+
 ---
 
 ## What changed for users of v3
@@ -498,7 +520,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Three of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, curve smoothness spent where the bend is, and label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit and label outlines under the ink landed 28 Aug |
+| Screen-pass fixes | Two of the seven rendering/interaction defects found by driving the debug page remain, each mechanism pinned before planning: curve smoothness spent where the bend is, and label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit, label outlines under the ink and resize without distortion landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |

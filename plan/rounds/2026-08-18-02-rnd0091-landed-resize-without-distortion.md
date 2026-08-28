@@ -109,3 +109,89 @@ no-ResizeObserver fallback path, where today nothing resizes at
 all); whether a `devicePixelRatio` change should also emit `resize`
 on the core (recommended: yes — v3's `cy.resize()` semantics).
 
+### Landed (2026-08-28)
+
+Landed as planned, both opens taken as recommended: **91.1 ships both
+halves** (the synchronous frame *and* v3's fixed-px canvas CSS), and a
+device-pixel-ratio change **emits `resize` on the core** — v3's
+`cy.resize()` semantics.
+
+**91.1, as shipped.**  `resize()` calls `frame()` directly after
+`applySize()` whenever the renderer is ready: ResizeObserver callbacks
+run after this rendering update's rAF and before its paint, so the
+frame that composites the new layout composites new content — the
+stretched frame never exists.  The named re-entrancy risk resolved two
+ways: the animation clock is `performance.now()`-driven, so an extra
+tick inside the same rendering update advances no tween beyond wall
+clock; and the one true recursion — a
+`cy.resize()` called from inside a `render` handler — is cut by an
+`inFrame` latch that falls back to the scheduler (`frame()` became a
+latch wrapper over `frameBody()`).  `applySize` now writes the canvas
+CSS box in fixed px (`clientWidth`/`clientHeight`), so whenever a
+frame *is* late — the no-ResizeObserver path, or the worker mount,
+which is always at least a message late — the canvas letterboxes
+rather than stretches.  Both halves are mirrored on the worker mount:
+the proxy re-fits the CSS box synchronously in its `resize()` and at
+mount.
+
+**91.2, as shipped.**  `applySize` re-reads `devicePixelRatio` per
+measure when the ctor option was `'auto'`/absent (the constructor
+keeps honouring an explicit number), and a matchMedia
+`(resolution: …dppx)` listener — re-armed per change, torn down on
+destroy — triggers `resize()` and emits `resize` on the core through
+a new `RenderHost.emitResize()` seam.  A ratio change drops the
+cached pick tile (device-px addressed), in both `applySize` and
+`setSize`.  The worker mount keeps its ratio pinned worker-side and
+receives updates explicitly: the proxy re-reads the live ratio, arms
+the same matchMedia watch, and the `resize` protocol message now
+carries `dpr`, which `setSize` applies — so worker-side edge picks
+scale correctly after a zoom change.  The planned sweep of cached
+`this.dpr` consumers found none stale: every same-thread consumer
+reads the field live per call, labels scale through the per-frame
+`zoomDpr` uniform, and the CPU pick params are built per pick.
+
+**Verified by** three tiers, every control run and failed on cue.
+`test/modules/renderer-resize.mjs` exercises the DOM-facing half
+headless against a fake document (fixed-px CSS at mount and re-fit,
+live-ratio re-read, pinned-ratio control, matchMedia arm → fire →
+re-arm → emit → destroy teardown; controls: the fixed-px write
+removed fails 2 specs, the ratio re-read removed fails 2, the
+re-arm/emit removed fails 1).  In `playwright-tests/renderer.spec.js`,
+the 91.1 spec asserts the synchronous-path invariant the plan named:
+sampled in the same task as `cy.resize()` — no await, no rAF —
+`stats().frames` has already advanced and the canvas is already at
+the new size in both device px and CSS px; then the steady-state ink
+of a 100 px circle stays square within 2 px after a 500×300 reshape,
+and a bare layout change with no `resize()` call still re-measures
+through the ResizeObserver (control: the pre-91 `schedule()` shape
+fails the frames assertion deterministically).  The 91.2 spec runs a
+real CDP `Emulation.setDeviceMetricsOverride` — with one measured
+surprise below — plus a stubbed-input pass through the real bundle
+and the pinned-ratio control; a worker spec pins the proxy's fixed-px
+CSS re-fit and the size crossing to the worker's backing store
+(control: the resize-path CSS write reverted to `100%` fails it).
+
+**One measurement the plan did not predict.**  Headless Chromium's
+CDP metrics override moves `devicePixelRatio` and flips a resolution
+query's `matches`, but **never dispatches the matchMedia change
+event** (measured: 1 s of driven frames, `matches` false, zero
+events) — and Playwright's own emulation re-asserts its viewport
+override under screenshots, silently clobbering the CDP ratio back.
+So the browser spec splits per the plan's own escape hatch: part A
+pins the applySize re-read against the *real* override through one
+`cy.resize()`; part B stubs the two platform inputs in-page
+(matchMedia + `devicePixelRatio`) and fires the armed listener, so
+everything from the handler down — re-measure, re-rasterize, emit,
+re-arm — runs through the shipped bundle; the event *dispatch* itself
+is the platform's contract, pinned headless in the Node spec's fake
+and un-pinnable in this harness.
+
+**The debounce question** stayed answered as planned: no debounce
+anywhere on the presented size.  A scripted seven-step window drag on
+the debug harness (`?network=v3-default`) drew exactly one
+synchronous frame per step — `stats().frames` 2 → 9 — with the
+canvas device-px and CSS-px sizes tracking every step, per-frame cost
+steady at ~0.5 ms CPU / 0.5 ms GPU, and no device errors; the
+offscreen scene/depth targets rebuild per size change as before, and
+the goldens and parity scenes moved by nothing (the steady state was
+already correct, and stayed so).

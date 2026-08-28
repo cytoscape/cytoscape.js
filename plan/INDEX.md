@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 86, 89–90, 92, 95–97, 101, 108–109, 111 |
-| planned | 49–51, 71–85, 87–88, 91, 93–94, 98–100, 102–107, 110 |
+| landed | 7–48, 52–70, 86, 89–92, 95–97, 101, 108–109, 111 |
+| planned | 49–51, 71–85, 87–88, 93–94, 98–100, 102–107, 110 |
 
 ## The sections
 
@@ -150,7 +150,7 @@ A round can land with an item held open; the round file says which.
 | 121 | 89 | 2026-08-17 | landed | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-landed-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
 | 122 | 90 | 2026-08-17 | landed | [API review and cleanup: the parity pass audited](rounds/2026-08-17-04-rnd0090-landed-api-review-and-cleanup-the-parity-pass-audited.md) |
 | 123 | 91–97 | 2026-08-18 | note | [The maintainer's screen pass](rounds/2026-08-18-01-rnd0091_0097-note-the-maintainer-s-screen-pass.md) |
-| 124 | 91 | 2026-08-18 | plan | [Resize without distortion](rounds/2026-08-18-02-rnd0091-plan-resize-without-distortion.md) |
+| 124 | 91 | 2026-08-18 | landed | [Resize without distortion](rounds/2026-08-18-02-rnd0091-landed-resize-without-distortion.md) |
 | 125 | 92 | 2026-08-18 | landed | [The compound fit, from conservative to exact](rounds/2026-08-18-03-rnd0092-landed-the-compound-fit-from-conservative-to-exact.md) |
 | 126 | 93 | 2026-08-18 | plan | [Curve smoothness: spend the 24 quads where the bend is](rounds/2026-08-18-04-rnd0093-plan-curve-smoothness-spend-the-24-quads-where-the-bend-is.md) |
 | 127 | 94 | 2026-08-18 | plan | [Label fidelity under zoom](rounds/2026-08-18-05-rnd0094-plan-label-fidelity-under-zoom.md) |

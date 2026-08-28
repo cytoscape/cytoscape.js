@@ -1,9 +1,25 @@
-import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
+import {
+  GlyphAtlas,
+  SDF_FONT_SIZE,
+  SDF_RADIUS,
+  SDF_TIER_MAX,
+} from './glyph-atlas.mjs';
 import { layoutLabelBlock, WRAP_NONE } from '../label-wrap.mjs';
 import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { RenderStoreView } from './host.mjs';
 import type { LabelStream } from '../contract.mjs';
+
+/**
+ * The zoom-tier promotion threshold (round 94), displayed device px of
+ * the em: when the largest label in use would display taller than this,
+ * the atlas re-rasters at the 64 px tier.  40 px sits where the base
+ * tier's baked raster error (~1 SDF px, magnified by displayed/32)
+ * passes ~1.25 displayed px — visibly soft corners — while a promoted
+ * raster stays sub-px up to displayed 64.  Judged on the round's
+ * close-up goldens at zoom 4.
+ */
+export const LABEL_PROMOTE_PX = 40;
 
 /**
  * Consumes the model's label-dirty channel each frame: lays out changed
@@ -33,6 +49,10 @@ export class LabelLayer {
   memoHits = 0;
   /** shaping-memo misses since construction (stats) */
   memoMisses = 0;
+  /** the largest label font size processed, model px (round 94): the
+   * promotion meter's input.  Monotone — a removed label never lowers
+   * it — which errs toward promoting, never toward staying soft. */
+  private maxFontSize = 0;
 
   /**
    * Creates the atlas and all four glyph streams.  Nothing is laid out
@@ -71,6 +91,45 @@ export class LabelLayer {
     this.atlas.reraster();
     this.shapeMemo.clear(); // metrics may change with the real face
     this.store.markAllLabelsDirty();
+  }
+
+  /**
+   * The zoom-tier promotion meter (round 94).  Given the displayed
+   * device px per model px (zoom × dpr, render-scale-free — readability
+   * is judged in displayed px, like the label LOD thresholds), promotes
+   * the atlas to the 64 px raster tier when the largest label in use
+   * would display taller than LABEL_PROMOTE_PX — the point where the
+   * base raster's baked quantization error turns visibly soft.  The
+   * swap reuses the font-loading re-raster's sequencing exactly: clear
+   * the atlas and the shaping memo, mark every label dirty, and the
+   * next frame's process() rebuilds all runs against the new raster
+   * before anything draws — no mid-frame tear.  One-way by design
+   * (zoom cycles must not churn shelves; a promoted atlas draws the
+   * base zoom identically), so demand hysteresis is unnecessary.
+   *
+   * @param zoomDpr — displayed device px per model px
+   * @returns whether a promotion happened (the caller schedules a frame)
+   */
+  maybePromote(zoomDpr: number): boolean {
+    if (!this.canPromote()) {
+      return false;
+    }
+
+    if (this.maxFontSize * zoomDpr <= LABEL_PROMOTE_PX) {
+      return false;
+    }
+
+    this.atlas.setTier(this.atlas.tier + 1);
+    this.shapeMemo.clear(); // tier rounding shifts metrics sub-px
+    this.store.markAllLabelsDirty();
+
+    return true;
+  }
+
+  /** whether a promotion is still possible (below the top tier, with at
+   * least one label seen) — gates scheduling the debounced meter */
+  canPromote(): boolean {
+    return this.atlas.tier < SDF_TIER_MAX && this.maxFontSize > 0;
   }
 
   /** cumulative glyph bytes written to the GPU across all four streams
@@ -128,6 +187,10 @@ export class LabelLayer {
         glyphs.set(slot, null);
 
         continue;
+      }
+
+      if (entry.fontSize > this.maxFontSize) {
+        this.maxFontSize = entry.fontSize; // the promotion meter's input
       }
 
       const scale = entry.fontSize / SDF_FONT_SIZE;

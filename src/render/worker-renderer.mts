@@ -210,6 +210,7 @@ export class WorkerRenderer {
       mapperDispatches: 0,
       labelShapeHits: 0,
       labelShapeMisses: 0,
+      glyphAtlasTier: 1,
     };
 
     const doc = container.ownerDocument as Document;

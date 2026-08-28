@@ -604,6 +604,11 @@ export interface RendererStats {
   /** shaping-memo hits/misses (round 16.5): shared label texts shape once */
   labelShapeHits: number;
   labelShapeMisses: number;
+  /** the glyph atlas raster tier (round 94): 1 = the 32 px base raster,
+   * 2 = the 64 px raster the zoom meter promotes to when the largest
+   * label in use displays taller than ~40 device px.  Promotion is
+   * one-way for the renderer's lifetime. */
+  glyphAtlasTier: number;
 }
 
 /**

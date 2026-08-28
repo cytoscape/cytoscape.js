@@ -145,7 +145,10 @@ export class LabelPipeline {
     mirror: ColumnMirror,
     atlas: GlyphAtlas,
   ): GPUBindGroup {
-    const key = `${mirror.version}:${glyphs.version}`;
+    // the atlas generation joins the key (round 94): a tier promotion
+    // replaces the texture object, and a cached group would keep the
+    // destroyed one bound
+    const key = `${mirror.version}:${glyphs.version}:${atlas.generation}`;
     let perUniform = this.bindGroups.get(uniform);
 
     if (perUniform == null) {

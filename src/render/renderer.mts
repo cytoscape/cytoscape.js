@@ -511,6 +511,7 @@ export class Renderer {
       // the shaping memo (16.5): shared texts shape once per face
       labelShapeHits: this.labelLayer?.memoHits ?? 0,
       labelShapeMisses: this.labelLayer?.memoMisses ?? 0,
+      glyphAtlasTier: this.labelLayer?.atlas.tier ?? 1,
     };
   }
 
@@ -925,6 +926,13 @@ export class Renderer {
       );
     }
 
+    // a high-scale export can demand label resolution the screen never
+    // did (round 94, the 15.6 image rule applied to text): promote the
+    // atlas tier at the export scale so the WYSIWYG figure is crisp.
+    // Safe here because the export encodes inside the frame loop after
+    // labelLayer.process() rebuilds the freshly-dirtied runs.
+    this.labelLayer?.maybePromote(view.zoom);
+
     return new Promise((resolve, reject) => {
       this.pendingExports.push({ view, resolve, reject });
       this.schedule();
@@ -970,10 +978,14 @@ export class Renderer {
     this.forceRuntime = null;
   }
 
-  /** Debounced svg zoom-promotion check (15.6): runs shortly after the
-   * viewport settles, never per wheel tick. */
+  /** Debounced zoom-promotion check: the svg re-raster meter (15.6)
+   * and the label atlas tier meter (round 94) share one settle timer —
+   * both run shortly after the viewport settles, never per wheel tick. */
   private schedulePromotionCheck(): void {
-    if (this.store.imageCount() === 0) {
+    if (
+      this.store.imageCount() === 0 &&
+      !(this.labelLayer?.canPromote() ?? false)
+    ) {
       return;
     }
 
@@ -986,8 +998,22 @@ export class Renderer {
 
       if (!this.destroyed && this.isReady) {
         this.promoteVectors();
+        this.promoteLabelTier();
       }
     }, 250);
+  }
+
+  /** The label half of the settle meter (round 94): displayed device px
+   * are zoom × dpr — deliberately render-scale-free, like the label LOD
+   * thresholds, since readability is judged at native resolution.  The
+   * label layer owns the threshold and the one-way tier policy. */
+  private promoteLabelTier(): void {
+    const zoomDpr = this.host.viewport.zoom() * this.dpr;
+
+    if (this.labelLayer?.maybePromote(zoomDpr) ?? false) {
+      this.needsRedraw = true;
+      this.schedule();
+    }
   }
 
   /**

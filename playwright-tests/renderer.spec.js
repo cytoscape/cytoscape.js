@@ -7991,4 +7991,296 @@ test.describe('WebGPU renderer', () => {
     expect(advised.message).toMatch(/maxWidth\/maxHeight or a smaller scale/);
     expect(advised.ok).toBe(true);
   });
+  /*
+  Round 89.3: the gestures drive the cursors, in a real browser.
+
+  The pure map is asserted exhaustively from Node (`test/pointer-cursors.mjs`);
+  what only a browser can see is that the *writer* runs at every transition
+  and, more to the point, restores at every gesture end.  Every assertion
+  polls `canvas.style.cursor` — the hover pick is asynchronous and throttled
+  (25 ms plus a pick round-trip), and the house rule against sleeping to an
+  offset applies verbatim.
+
+  `pointerCursors: false` is this block's own control: with the feature off
+  every positive assertion below must invert, which the last test asserts
+  over the same gestures.
+  */
+  test.describe('pointer cursors', () => {
+    const CURSOR_GRAPH = {
+      elements: [
+        { data: { id: 'a' }, position: { x: -80, y: 0 } },
+        { data: { id: 'b' }, position: { x: 80, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 40, height: 40, 'background-color': 'red' },
+        edges: { width: 6, 'line-color': 'blue' },
+      },
+      zoom: 1,
+    };
+
+    /** What the canvas and the document root currently say. */
+    const cursors = async (page) =>
+      await page.evaluate(() => ({
+        canvas: document.querySelector('#cytoscape canvas').style.cursor,
+        root: document.documentElement.style.cursor,
+      }));
+
+    const canvasCursor = async (page) => (await cursors(page)).canvas;
+
+    /** Where an element is on screen *now* — a pan or a node drag moves it,
+     * so a second gesture aimed at a remembered coordinate misses. */
+    const at = async (page, id) =>
+      await page.evaluate((id) => {
+        const ele = window.cy.$id(id);
+        const p = ele.isNode()
+          ? ele.renderedPosition()
+          : ele.renderedMidpoint();
+
+        return { x: p.x, y: p.y };
+      }, id);
+
+    /** What the hover pick currently reports, by id. */
+    const hoveredId = async (page) =>
+      await page.evaluate(() => {
+        const h = window.cy.elements({ hovered: true });
+
+        return h.length === 0 ? null : h[0].id();
+      });
+
+    /**
+     * Park the pointer on an element and wait until the hover pick has
+     * actually landed on it.
+     *
+     * Hover picking is throttled to 25 ms and latest-wins, so the *last*
+     * move of a `steps` batch is routinely dropped — moving once and then
+     * polling the cursor waits for a pick that will never be asked for.
+     * Nudging inside the poll is what makes the state reachable without
+     * sleeping to an offset, and waiting on the *hover* rather than on the
+     * cursor is what lets the `pointerCursors: false` control assert that
+     * the hover happened and the cursor still did not move.
+     */
+    const hoverOnto = async (page, id) => {
+      const p = await at(page, id);
+
+      await expect
+        .poll(async () => {
+          await page.mouse.move(p.x + 1, p.y);
+          await page.mouse.move(p.x, p.y);
+
+          return await hoveredId(page);
+        })
+        .toBe(id);
+
+      return p;
+    };
+
+    /** Park the pointer on empty background and wait for the hover to clear. */
+    const hoverOffAll = async (page, p) => {
+      await expect
+        .poll(async () => {
+          await page.mouse.move(p.x + 1, p.y);
+          await page.mouse.move(p.x, p.y);
+
+          return await hoveredId(page);
+        })
+        .toBe(null);
+    };
+
+    test('hover says grab over a draggable node and pointer over an edge', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, CURSOR_GRAPH);
+
+      const center = await centerPan(page);
+
+      await hoverOnto(page, 'a');
+
+      expect(await canvasCursor(page), 'over a draggable node').toBe('grab');
+
+      await hoverOnto(page, 'ab');
+
+      expect(await canvasCursor(page), 'over an edge').toBe('pointer');
+
+      // off both: idle over background inherits, deliberately not `default`
+      await hoverOffAll(page, { x: center.x, y: center.y - 200 });
+
+      expect(await canvasCursor(page), 'over background').toBe('');
+    });
+
+    test('a node the drag predicate refuses hovers as pointer', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, CURSOR_GRAPH);
+
+      const center = await centerPan(page);
+
+      await hoverOnto(page, 'a');
+
+      expect(await canvasCursor(page)).toBe('grab');
+
+      await page.evaluate(() => window.cy.autoungrabify(true));
+      // leave and re-enter, so the hover transition runs again on the
+      // same node under the new predicate
+      await hoverOffAll(page, { x: center.x, y: center.y - 200 });
+      await hoverOnto(page, 'a');
+
+      expect(await canvasCursor(page), 'ungrabified: no grab to offer').toBe(
+        'pointer',
+      );
+    });
+
+    test('a press says grabbing and mirrors onto the document', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, CURSOR_GRAPH);
+
+      const center = await centerPan(page);
+
+      // background first: a pan press
+      await page.mouse.move(center.x, center.y - 200);
+      await page.mouse.down();
+
+      await expect.poll(() => canvasCursor(page)).toBe('grabbing');
+
+      // fact 4: pointer capture routes events, not the cursor, so a drag
+      // that leaves the canvas needs the root element to carry the
+      // affordance.  This page's container fills the viewport, so the
+      // excursion itself cannot be staged here — the mirror it depends on
+      // can, and the Node spec pins the save/restore of the page's own value.
+      expect((await cursors(page)).root).toBe('grabbing');
+
+      await page.mouse.move(center.x + 60, center.y - 160, { steps: 4 });
+
+      expect(await canvasCursor(page)).toBe('grabbing');
+
+      await page.mouse.up();
+
+      await expect.poll(() => canvasCursor(page)).toBe('');
+      expect((await cursors(page)).root, 'the mirror comes off').toBe('');
+
+      // and again on a node, where the press mode is 'grab' rather than
+      // 'pan'.  The pan above moved the viewport, so the node is asked
+      // where it is rather than assumed to be where it started.
+      const a = await hoverOnto(page, 'a');
+
+      expect(await canvasCursor(page)).toBe('grab');
+
+      await page.mouse.down();
+
+      expect(await canvasCursor(page)).toBe('grabbing');
+
+      await page.mouse.move(a.x + 40, a.y + 30, { steps: 4 });
+      await page.mouse.up();
+
+      // the node came with the pointer, so it is still under it
+      await expect.poll(() => canvasCursor(page)).toBe('grab');
+      expect((await cursors(page)).root).toBe('');
+    });
+
+    test('a multiple-select-key drag says crosshair and restores at boxend', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, CURSOR_GRAPH);
+
+      const center = await centerPan(page);
+
+      await page.mouse.move(center.x - 200, center.y - 150);
+      await page.keyboard.down('Shift');
+      await page.mouse.down();
+
+      await expect.poll(() => canvasCursor(page)).toBe('crosshair');
+
+      await page.mouse.move(center.x + 200, center.y + 150, { steps: 6 });
+
+      expect(await canvasCursor(page)).toBe('crosshair');
+
+      await page.mouse.up();
+      await page.keyboard.up('Shift');
+
+      await expect.poll(() => canvasCursor(page)).toBe('');
+      expect((await cursors(page)).root).toBe('');
+    });
+
+    test('pointercancel mid-pan restores, where a sticky grabbing would hide', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, CURSOR_GRAPH);
+
+      const center = await centerPan(page);
+
+      await page.mouse.move(center.x, center.y - 200);
+      await page.mouse.down();
+
+      await expect.poll(() => canvasCursor(page)).toBe('grabbing');
+
+      // the browser fires this when it takes the gesture over (a scroll
+      // hand-off, a system gesture); there is no Playwright verb for it, so
+      // the event is dispatched at the canvas the way the browser would
+      await page.evaluate(() => {
+        document
+          .querySelector('#cytoscape canvas')
+          .dispatchEvent(
+            new PointerEvent('pointercancel', {
+              pointerId: 1,
+              pointerType: 'mouse',
+              bubbles: true,
+            }),
+          );
+      });
+
+      await expect.poll(() => canvasCursor(page)).toBe('');
+      expect((await cursors(page)).root).toBe('');
+
+      await page.mouse.up();
+    });
+
+    test('pointerCursors false writes nothing through any of it', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      // the control for every test above: same gestures, feature off
+      await makeReadyCy(page, { ...CURSOR_GRAPH, pointerCursors: false });
+
+      await centerPan(page);
+
+      // `hoverOnto` waits on the hover pick, not on the cursor, so each
+      // assertion below is "the hover really landed, and nothing was
+      // written anyway" rather than "nothing happened yet"
+      const a = await hoverOnto(page, 'a');
+
+      expect(await canvasCursor(page), 'hovering a node').toBe('');
+
+      await page.mouse.down();
+
+      expect(await canvasCursor(page), 'dragging it').toBe('');
+      expect((await cursors(page)).root, 'no document mirror').toBe('');
+
+      await page.mouse.move(a.x + 40, a.y + 30, { steps: 4 });
+      await page.mouse.up();
+
+      await hoverOnto(page, 'ab');
+
+      expect(await canvasCursor(page), 'hovering an edge').toBe('');
+
+      // and the flip back is live: no new gesture needed
+      await hoverOnto(page, 'a');
+      await page.evaluate(() => window.cy.pointerCursors(true));
+
+      expect(await canvasCursor(page), 'the setter reaches the canvas').toBe(
+        'grab',
+      );
+    });
+  });
 });

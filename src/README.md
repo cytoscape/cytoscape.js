@@ -494,6 +494,38 @@ its first run — the headless path already spoke web-platform — so the
 round's fix budget went unspent.  Details in the "Runtimes" section
 below.
 
+Round 94 (2026-08-28, the screen pass's label-fidelity round) made
+zoomed-in labels stop going soft.  The atlas header claimed "crisp at
+any zoom from one 32px-per-glyph atlas", and it was true of the *edge
+AA* (fwidth-based, scale-free) and false of the *letterform*: raster +
+EDT quantization error is baked into the field at raster resolution,
+so it magnifies as displayed px / 32 — at zoom 4 a 14 px label carries
+~2 px of corner rot and a deformed 'g' descender.  The fix is a
+**zoom-tiered re-raster** (the plan's lever B): a settle-debounced
+meter — the svg image meter's twin, sharing its timer — watches the
+largest label's displayed px (font x zoom x dpr, render-scale-free)
+and past 40 px re-rasters every glyph in use at **64 px per glyph**
+into a 2048 atlas, swapping runs with the font-loading re-raster's
+exact sequencing (no mid-frame tear; bind groups re-key on the atlas
+generation).  Metrics normalize to base-tier SDF px, so layout, the
+shaping memo and the run math never see the raster resolution.
+Promotion is one-way (a promoted atlas draws zoom 1 identically;
+demand cycles must not churn shelves), covers graphs *built* already
+zoomed (the 15.6 fresh-upload rule) and image exports at the export
+scale, and reports as `stats().glyphAtlasTier`.  Costs, measured:
+nothing until someone zooms; then one EDT re-raster (~39 ms for a
+96-glyph population, 0.41 ms/glyph — 2.1x the base tier's 0.19) and
+3 MiB of texture, once.  Lever A (raise the base to 64 px) was
+measured and declined — it moves the 4x raster cost onto every
+graph's first paint and 4 MiB onto every graph's memory for the same
+zoom-4 quality — and MSDF stays declined (a faithful MSDF needs the
+vector outline canvas2d does not expose; a raster-derived one is the
+fragile hand-derived second implementation this repo keeps refusing).
+The verifying parity scene is the close-up tier's first label scene:
+letterform-dominated at 96 displayed px, the promoted render reads
+0.112% against v3 where the pre-round render reads 1.202% against a
+0.4% bound.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order
@@ -2520,7 +2552,14 @@ come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
 by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
-below the `labelFadePx` LOD threshold.
+below the `labelFadePx` LOD threshold.  The atlas is **zoom-tiered**
+(round 94): the base tier rasters at 32 px per glyph, and when the
+largest label in use would display taller than 40 device px the
+settle-debounced meter re-rasters every glyph in use at 64 px into a
+2048 atlas (one-way, ~250 ms after the viewport settles — the svg
+image promotion's pattern, sharing its timer), because the fwidth AA
+is scale-free but the letterform's baked raster error is not.
+`stats().glyphAtlasTier` reports which tier is live.
 
 **Text outlines draw under the ink, globally per frame (round 95).**
 Glyph quads overlap by construction (each carries the SDF pad halo

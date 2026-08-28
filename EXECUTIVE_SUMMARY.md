@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after curved edges spend their quads
-  where the bend is (round 93).
+- **Last updated**: 2026-08-28, after zoomed-in labels stop going soft
+  (round 94) — the last of the seven screen-pass rounds.
 
 ## How to maintain this file
 
@@ -45,9 +45,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,268 unit · 538 module · 24 soak · 428 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,268 unit · 548 module · 24 soak · 440 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 48 goldens compared **exactly** — zero differing pixels · 47 live v3-vs-v4 pixel-parity scenes, 8 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -518,6 +518,32 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     class fixed with zero new vertices, and the residual case named
     with numbers instead of left to be rediscovered.
 
+- **28 Aug** — zoomed-in labels stop going soft (round 94)
+  - The maintainer's screen-pass report that labels "break down in
+    quality when zoomed in a fair bit", closed at its mechanism: the
+    glyph atlas's edge AA is scale-free but its *letterform* is not —
+    raster + EDT quantization error is baked in at the fixed 32 px per
+    glyph and magnifies linearly with displayed size, rounding corners
+    and deforming descenders by ~2 px at zoom 4.
+  - The atlas is now zoom-tiered: a settle-debounced meter (the svg
+    image promotion's twin, sharing its timer) watches the largest
+    label's displayed pixels and, past 40, re-rasters every glyph in
+    use at 64 px — one-way, covering graphs built already zoomed and
+    image exports at the export scale, with the swap sequenced so no
+    frame ever mixes old and new raster.  Costs nothing until someone
+    zooms; then one ~39 ms re-raster and 3 MiB of texture, once.
+  - Verified by the close-up tier's first label scenes: a
+    letterform-dominated live parity diff reads 0.112% against v3
+    where the pre-round render reads 1.202% against a 0.4% bound, and
+    zoomed goldens export only after the public stats counter reports
+    the promoted tier, so the sharpen cannot race the diff.  Raising
+    the base raster for everyone (4× first-paint cost, 4 MiB
+    everywhere) and raster-derived MSDF were both measured or assessed
+    and declined, with the reasons recorded.
+  - Buys crisp labels at the zooms people actually inspect graphs at —
+    and closes the screen pass: all seven defects the maintainer found
+    in one sitting are landed.
+
 ---
 
 ## What changed for users of v3
@@ -579,7 +605,6 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | One of the seven rendering/interaction defects found by driving the debug page remains, its mechanism pinned before planning: label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit, label outlines under the ink, resize without distortion and curve smoothness landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`.  Still planned: the native Bun/Deno test runners measured, Deno's native WebGPU driving the GPU algorithm executors and the install/publish story, then a scoping pass over other environments (edge workers, React Native, Electron) |

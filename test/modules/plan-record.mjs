@@ -294,7 +294,11 @@ describe('the development record', () => {
     );
     expect(
       states.get(94),
-      "the screen pass's label-fidelity round is scoped, not built",
+      "the screen pass's label-fidelity round landed",
+    ).to.equal('landed');
+    expect(
+      states.get(104),
+      'the label-decluttering round is scoped, not built',
     ).to.equal('planned');
     expect(
       [...states.values()].every((v) => v === 'landed' || v === 'planned'),

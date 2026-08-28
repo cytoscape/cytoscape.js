@@ -84,3 +84,105 @@ extra tier at 64 px triggered near displayed 40 px, judged on the
 goldens); whether the atlas grows to 2048 in both levers (A: yes by
 necessity; B: only on first promotion).
 
+### Landed (2026-08-28)
+
+**Lever B shipped; A and MSDF declined on measurement.**  The atlas is
+zoom-tiered: `GlyphAtlas.setTier` rasters at `SDF_FONT_SIZE × tier`
+with pad and encoded radius scaled together, so the SDF halo and the
+field's em-span are tier-invariant and the outline-width conversion
+needed no change.  Metrics normalize back to base-tier SDF px —
+layout, the shaping memo and the run scale math never see the raster
+resolution (pinned headless: a leaked raster px is a strict spec
+failure).  One extra tier at 64 px, as recommended; the texture grows
+1024 → 2048 (1 → 4 MiB) only on first promotion, answering the open
+question — and the bind-group cache keys on a new atlas `generation`,
+since the texture object is the one identity the promotion replaces.
+
+**The meter.**  `LabelLayer.maybePromote(zoomDpr)`: monotone max label
+font size × displayed device px per model px (zoom × dpr,
+render-scale-free like the label LOD thresholds — 91.2's live dpr
+landed first, so the input is honest on density changes), threshold
+`LABEL_PROMOTE_PX = 40`.  It runs on the image meter's own
+settle-debounced timer (never per wheel tick), *and* — a gap the round
+found — on arrival: construction sets the viewport without firing a
+viewport event, so a graph built already zoomed never promoted until
+the label layer learned to flag a process() pass that raised its max
+font size (the 15.6 fresh-upload rule applied to text).  Image exports
+promote at the export scale in `exportFromView`, both same-thread and
+worker paths; the export frame's process() rebuilds the runs before
+the encode.  Promotion is **one-way**: a promoted atlas draws zoom 1
+identically, so demotion would buy back 3 MiB at the price of shelf
+churn on zoom cycles — the soak concern dissolves by construction, and
+the plateau is pinned (twenty zoom cycles after promotion create no
+further textures).  `stats().glyphAtlasTier` publishes the state; the
+swap reuses the font-loading re-raster's sequencing verbatim (atlas
+reset + shaping-memo clear + markAllLabelsDirty, rebuilt by the next
+frame's process() before anything draws), per the plan's tear risk.
+
+**The costs, measured.**  EDT per glyph 0.19 ms base, 0.41 ms promoted
+(2.1× for 4× the pixels — the O(n) transform's per-pass overhead
+amortizing; two new rows in `benchmark/labels.mjs` price a 96-glyph
+em-web-sized population at ~18 vs ~39 ms).  Lever A would have moved
+that 4× onto every graph's first paint and 4 MiB onto every graph, for
+identical zoom-4 quality — declined and recorded.  MSDF declined as
+planned (no vector outline from canvas2d; a raster-derived MSDF is the
+fragile second implementation the no-deps rule exists to refuse).  In
+the debug harness (`?network=labels`, 209 glyphs, SwiftShader) the
+promotion lands 258 ms after the zoom settles and the sharpen frame's
+cpuFrameMs is 16.7.  The pad risk note was checked and held: the
+outline clamp (0.45 × SDF_RADIUS = 3.6 SDF px) sits inside the 6 px
+pad at every tier, so the 'g'-descender deformation was SDF error, not
+quad clipping — confirmed by the promoted render.
+
+**Verified by** — each control run and failing on cue:
+
+- `test/modules/glyph-atlas-tier.mjs` (10 specs over a fake
+  proportional-metrics canvas): tier-free metrics, the 2048 growth +
+  generation bump + old-texture destroy, double-resolution cells in
+  the grown uv space, no-op same-tier setTier, the texture plateau,
+  and the meter (under-threshold no-op; promotion re-lays every run at
+  an unchanged model size, budgeted at the raster's own ceil
+  quantization; one-way including never demoting; monotone across
+  removals).  Five controls: un-normalized advances, no generation
+  bump, a two-way meter (whose first draft hid behind canPromote and
+  failed nothing — itself the testing note's lesson, rebuilt until it
+  bit), promotion without markAllLabelsDirty, churning setTier.
+- `parity-closeup-labels`, the close-up tier's first label scene:
+  letterform-dominated by construction (2 px invisible nodes, short
+  descender/corner-rich words wholly on frame, 24 px font at zoom 4 =
+  96 displayed px, both sides on the pinned Open Sans — parity.html
+  gains the @font-face).  The placement policies differ by design and
+  the ~0.28 em block-centering offset out-signals the letterforms
+  (measured 11.3% mismatch dominated by it, tier-invariant), so the
+  scene compensates with text-margin-y −6.75 and what remains is glyph
+  shape.  Promoted **0.112%**, the tier-1 control **1.202%**, bound
+  0.4% — the pre-round render fails it 3× over, as the plan demanded.
+  A promoted-but-soft raster control reads 18.3%.  A finding for the
+  suite: the diff's AA-exclusion classifies sub-2 px softness as
+  antialiasing, so the raw ratio *under-weights* exactly this defect
+  until displayed px push the error into multi-pixel structure —
+  which is why the scene runs at 96 displayed px rather than zoom 4
+  over 14 px text.
+- `labels-zoom-closeup`, the round-56 tier's first zoomed label golden
+  (14 px labels at zoom 4, built already zoomed, so it pins the
+  arrival promotion too), exported only after `stats()` reports tier 2
+  — `waitForAtlasTier`, because frame-count exports race the 250 ms
+  settle meter.  `label-outline-closeup` gains the same wait and
+  regenerated: read against the old PNG, the move is exactly the
+  sharpen.  Every other golden is byte-stable across the full visual
+  project (130 specs) — the base-tier raster path is arithmetically
+  unchanged.
+- The renderer spec drives the meter through public stats: no
+  promotion at zoom 1 (bounded wall-clock control past the debounce),
+  promotion after zoom 4 settles, unchanged glyph count across the
+  swap, no demotion on zoom-out; with the threshold disabled at source
+  the spec fails on cue.
+
+**Deviations from the plan.**  The zoom-promotion meter was not
+extended from `promoteVectors` itself (its demand walk is per-image
+column data); the label half shares the *timer* and the settle
+semantics, and the label layer owns its own one-line meter — same
+pattern, no second debounce.  The close-up parity scene runs its
+letterforms at 96 displayed px via a 24 px font at zoom 4 rather than
+14 px text, for the AA-exclusion reason above; the 14 px case is
+carried by the golden instead.

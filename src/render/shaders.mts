@@ -4486,7 +4486,9 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 @fragment
 fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   // the SDF encodes the glyph edge at 0.5; fwidth-based smoothing keeps
-  // text crisp at any zoom from the one 32px-per-glyph atlas.  (Sampled
+  // the edge AA scale-free.  The letterform itself is only as good as
+  // the raster baked into the field, which is why the atlas re-rasters
+  // at the 64 px tier under sustained zoom (round 94).  (Sampled
   // unconditionally: a branch around textureSample would be non-uniform.)
   let s = textureSample(atlas, atlasSampler, in.uv).r;
   let w = max(fwidth(s), 1e-4); // derivatives before any non-uniform branch

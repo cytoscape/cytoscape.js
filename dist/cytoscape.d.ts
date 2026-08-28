@@ -1177,6 +1177,11 @@ interface RendererStats {
   /** shaping-memo hits/misses (round 16.5): shared label texts shape once */
   labelShapeHits: number;
   labelShapeMisses: number;
+  /** the glyph atlas raster tier (round 94): 1 = the 32 px base raster,
+   * 2 = the 64 px raster the zoom meter promotes to when the largest
+   * label in use displays taller than ~40 device px.  Promotion is
+   * one-way for the renderer's lifetime. */
+  glyphAtlasTier: number;
 }
 /**
  * How the box-selection gesture decides what the band caught (round
@@ -2095,6 +2100,15 @@ interface CurveRoute {
   asy: number;
   aex: number;
   aey: number;
+  /** round 93: the bend-weighted subdivision map — the piece count and
+   * the cumulative piece end indices (`segEnd[p]` = the first
+   * subdivision index after piece p) at the `allocSegs` the map was
+   * built for.  `allocSegs` 0 means not built: `evalRoute` invalidates
+   * it (the evaluators share scratch instances) and `routeQuadPiece`
+   * rebuilds on first read. */
+  pieces: number;
+  allocSegs: number;
+  segEnd: Uint8Array;
 }
 //#endregion
 //#region src/store/graph-store.d.mts

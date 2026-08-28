@@ -804,12 +804,12 @@ var styles = (function () {
           },
           'straight',
         ),
-        // One parameterisation per family, not per edge: these are list props
-        // and list props are constants-only, so v3's separate arrays for its
-        // single and multiple unbundled-bezier rows collapse to one.  That is
-        // why the two rows draw the same curve here and different ones there,
-        // and it is the same limit round 46.6 recorded porting v3's default
-        // graph.
+        // These list props are constants-only, so v3's *multi* row's arrays
+        // serve as the family constants; the single unbundled-bezier row's
+        // own arrays (120 / 0.1 in v3) ride a bypass below — the list props'
+        // only per-edge spelling (round 96), the same mechanism that closed
+        // the v3-default port's deviation.  The two rows draw different
+        // curves again, which is the demo's point.
         'control-point-distances': [40, -40],
         'control-point-weights': [0.25, 0.75],
         'segment-distances': [40, -40],
@@ -820,6 +820,14 @@ var styles = (function () {
         'taxi-turn': 20,
         'taxi-turn-min-distance': 5,
         'taxi-radius': 10,
+      },
+      // v3's single unbundled-bezier row (`s1-0` is the fixture's id for
+      // it): `control-point-distances: 120, control-point-weights: 0.1`
+      bypasses: {
+        's1-0': {
+          'control-point-distances': [120],
+          'control-point-weights': [0.1],
+        },
       },
     };
   }

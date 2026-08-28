@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 86, 89–92, 95–97, 101, 108–109, 111 |
-| planned | 49–51, 71–85, 87–88, 93–94, 98–100, 102–107, 110 |
+| landed | 7–48, 52–70, 86, 89–92, 95–98, 101, 108–109, 111 |
+| planned | 49–51, 71–85, 87–88, 93–94, 99–100, 102–107, 110 |
 
 ## The sections
 
@@ -158,7 +158,7 @@ A round can land with an item held open; the round file says which.
 | 129 | 96 | 2026-08-18 | landed | [The v3-default `eh`, restored by bypasses](rounds/2026-08-18-07-rnd0096-landed-the-v3-default-eh-restored-by-bypasses.md) |
 | 130 | 97 | 2026-08-18 | landed | [The pick order: leaf, then edge, then parent](rounds/2026-08-18-08-rnd0097-landed-the-pick-order-leaf-then-edge-then-parent.md) |
 | 131 | 98–100 | 2026-08-19 | note | [The runtime rounds](rounds/2026-08-19-01-rnd0098_0100-note-the-runtime-rounds.md) |
-| 132 | 98 | 2026-08-19 | plan | [Bun and Deno run the package: the contract pinned and smoked](rounds/2026-08-19-02-rnd0098-plan-bun-and-deno-run-the-package-the-contract-pinned-and.md) |
+| 132 | 98 | 2026-08-19 | landed | [Bun and Deno run the package: the contract pinned and smoked](rounds/2026-08-19-02-rnd0098-landed-bun-and-deno-run-the-package-the-contract-pinned-and.md) |
 | 133 | 99 | 2026-08-19 | plan | [Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story](rounds/2026-08-19-03-rnd0099-plan-bun-and-deno-first-class-the-native-runners-measured-s.md) |
 | 134 | 100 | 2026-08-19 | plan | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-plan-the-runtime-horizon-which-other-javascript-environments.md) |
 | 135 | 101 | 2026-08-20 | landed | [Quiet verification: the scripts agents run print only failures](rounds/2026-08-20-01-rnd0101-landed-quiet-verification-the-scripts-agents-run-print-only.md) |

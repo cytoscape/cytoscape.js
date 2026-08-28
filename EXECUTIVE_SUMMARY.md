@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after resize without distortion
-  (round 91).
+- **Last updated**: 2026-08-28, after Bun and Deno run the package
+  (round 98).
 
 ## How to maintain this file
 
@@ -45,13 +45,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,260 unit · 520 module · 24 soak · 427 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,260 unit · 538 module · 24 soak · 427 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 48 goldens compared **exactly** — zero differing pixels · 46 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
-| CI | Green as of 2026-08-06; `npm test` passes from a clean checkout |
+| Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
+| CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
 ---
 
@@ -459,6 +460,31 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     never the graph deforming — and crisp rendering across monitor and
     browser-zoom changes.
 
+- **28 Aug** — Bun and Deno run the package (round 98)
+  - The library was runtime-clean by fact — no `node:*` import, no
+    dependency, the headless path speaking only web-platform API — but not
+    by gate: the import audit deliberately skipped bare specifiers, and no
+    artifact of the repo had ever been *loaded* by Bun or Deno.  Both
+    halves are now pinned: the audit asserts the set of non-relative
+    specifiers under `src/` is empty (comments stripped first, so a
+    doc-comment example cannot trip it), and one framework-free smoke file
+    runs the built ESM, minified-ESM and CJS bundles under Node, Bun and
+    Deno — headless init, the wire round-trip with every dictionary column
+    checked value-for-value, style mappers and bypasses read back as
+    values, layouts, sync and async algorithms on the CPU executor,
+    events and the json() export.  Deno's require-compat held when
+    measured, so the CJS bundle is contract on all three.
+  - The smoke found zero defects on its first run, and every assertion is
+    on values and ordering rather than "it didn't throw", because a compat
+    layer can pass a completion check while handing back a subtly wrong
+    decoder — the degraded-reader control produces exactly the
+    plausible-looking graph with no labels, and fails loudly on all three
+    runtimes.
+  - Buys a support claim that is a gate rather than a hope: `ci-bun` and
+    `ci-deno` smoke every push at latest stable plus a pinned floor
+    (Bun 1.4.0, Deno 2.9.6), and a `node:fs` import added tomorrow is a
+    red build today.
+
 ---
 
 ## What changed for users of v3
@@ -523,7 +549,7 @@ round, and is regenerated rather than maintained:
 | Screen-pass fixes | Two of the seven rendering/interaction defects found by driving the debug page remain, each mechanism pinned before planning: curve smoothness spent where the bend is, and label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit, label outlines under the ink and resize without distortion landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
-| Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |
+| Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`.  Still planned: the native Bun/Deno test runners measured, Deno's native WebGPU driving the GPU algorithm executors and the install/publish story, then a scoping pass over other environments (edge workers, React Native, Electron) |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |

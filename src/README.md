@@ -480,6 +480,20 @@ pinned (spec-pinned both ways), the cached pick tile drops on a ratio
 change (it is device-px addressed), and the worker proxy posts the
 re-resolved ratio with each resize message.
 
+Round 98 (2026-08-28, the first of the runtime rounds) made "runs on
+Bun and Deno" true and gated rather than fortunate.  The import-graph
+spec now asserts the set of non-relative specifiers under `src/` is
+empty (no `node:*`/`bun:*`/`deno:*`, no bare package — the scanner
+strips comments with a string-aware walk first); a framework-free
+cross-runtime smoke (`test/runtimes/smoke.mjs`) runs the built ESM,
+minified-ESM and CJS bundles under Node, Bun and Deno with the exit
+code as the contract, asserting values and ordering — never "it didn't
+throw"; and `ci-bun`/`ci-deno` gate merges at latest stable plus a
+pinned floor (Bun 1.4.0, Deno 2.9.6).  The smoke found zero defects on
+its first run — the headless path already spoke web-platform — so the
+round's fix budget went unspent.  Details in the "Runtimes" section
+below.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order

@@ -823,7 +823,7 @@ describe("status site: the documents' paths (round 57.6)", function () {
       '',
       'A broken one: `src/does-not-exist.mts`.',
       '',
-      'A planned one: `test/runtimes/smoke.mjs`.',
+      'A planned one: `src/layout/radial.mts`.',
     ].join('\n');
 
     const { html } = renderMarkdown(md, { root: ROOT });
@@ -835,7 +835,7 @@ describe("status site: the documents' paths (round 57.6)", function () {
     // the control: without the allowlists the three are indistinguishable,
     // so the reason strings have to reach the page
     expect(html).to.contain(HISTORICAL_PATHS['src/gpu/README.md']);
-    expect(html).to.contain(PLANNED_PATHS['test/runtimes/smoke.mjs']);
+    expect(html).to.contain(PLANNED_PATHS['src/layout/radial.mts']);
   });
 });
 

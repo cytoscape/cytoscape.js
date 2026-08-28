@@ -711,14 +711,27 @@ The math is v3's, ported verbatim:
   body offsets per edge-distances.
 
 The drawn subdivision: every curved edge is one strip of CURVE_SEGS
-quads (one indirect draw needs one indexCount), and `quadPiece` maps
-subdivision indices onto the route's pieces so that piece boundaries
-land exactly on subdivision indices — straight legs stay pixel-straight
-and sharp corners stay sharp regardless of how the quads distribute.
-That requires pieces ≤ CURVE_SEGS, so the interior point counts are
-capped (MAX_MULTI_CTRL controls, MAX_CURVE_PTS segment points) — a
-recorded deviation from v3's unbounded lists; derivation clamps with a
-console warning.
+quads (one indirect draw needs one indexCount), and `routeQuadPiece`
+maps subdivision indices onto the route's pieces so that piece
+boundaries land exactly on subdivision indices — straight legs stay
+pixel-straight and sharp corners stay sharp regardless of how the quads
+distribute.  That requires pieces ≤ CURVE_SEGS, so the interior point
+counts are capped (MAX_MULTI_CTRL controls, MAX_CURVE_PTS segment
+points) — a recorded deviation from v3's unbounded lists; derivation
+clamps with a console warning.
+
+Round 93: the quads distribute by **bend**, not uniformly.  Each piece
+gets one mandatory quad (a straight leg needs exactly one), and the
+leftover budget splits proportionally to each piece's tangent turn — an
+arc piece by its sweep angle (π minus the interior angle between its
+legs), a multibezier piece by the turn between its control legs, a
+straight leg zero — so a 90° round-taxi corner gets ~20 chords instead
+of the 3–8 the uniform split left it beside pixel-straight legs.  A
+route with no bend at all (sharp polylines) keeps a uniform split.  The
+allocation is a pure function of the evaluated route, so it stays
+canonical per subdivision index (the watertight-strip rule), and it is
+computed lazily on the first map read because the evaluators share
+scratch instances (`evalRoute` invalidates `allocSegs`).
 */
 
 /** interior-point caps: keep every route piece ≥ 1 quad of CURVE_SEGS
@@ -726,6 +739,10 @@ console warning.
  * multibezier piece to stay smooth. */
 export const MAX_MULTI_CTRL = 8;
 export const MAX_CURVE_PTS = 11;
+
+/** the most pieces any route can have: round routes spend 2n+1 pieces
+ * on n interior points (leg, arc, leg, ..., leg). */
+export const MAX_ROUTE_PIECES = 2 * MAX_CURVE_PTS + 1;
 
 /** edge-distances modes as stored in the blob records. */
 export const EDGE_DIST_INTERSECTION = 0;
@@ -814,6 +831,15 @@ export interface CurveRoute {
   asy: number;
   aex: number;
   aey: number;
+  /** round 93: the bend-weighted subdivision map — the piece count and
+   * the cumulative piece end indices (`segEnd[p]` = the first
+   * subdivision index after piece p) at the `allocSegs` the map was
+   * built for.  `allocSegs` 0 means not built: `evalRoute` invalidates
+   * it (the evaluators share scratch instances) and `routeQuadPiece`
+   * rebuilds on first read. */
+  pieces: number;
+  allocSegs: number;
+  segEnd: Uint8Array;
 }
 
 /** A zeroed `CurveRoute` for callers to reuse as an `out` scratch.  Its
@@ -831,6 +857,9 @@ export const emptyCurveRoute = (): CurveRoute => ({
   asy: 0,
   aex: 0,
   aey: 0,
+  pieces: 0,
+  allocSegs: 0,
+  segEnd: new Uint8Array(MAX_ROUTE_PIECES),
 });
 
 /** The intersection frame shared by MULTI and SEGMENTS (and the 12a
@@ -919,6 +948,7 @@ export const evalRoute = (
   out.kind = base;
   out.round = false;
   out.n = 0;
+  out.allocSegs = 0; // round 93: the subdivision map follows the new route
 
   // the intersection-frame boundary points (kept for ENDPT_LINE)
   let fSix = 0,
@@ -1715,43 +1745,151 @@ export const routePieceCount = (route: CurveRoute): number => {
   return route.round ? 2 * route.n + 1 : route.n + 1;
 };
 
+/** below this total bend (radians) a route counts as straight and the
+ * leftover quads distribute uniformly — the bend-weighted split would
+ * otherwise hand everything to sub-arcsecond noise. */
+const BEND_EPS = 1e-4;
+
 /**
- * Map a subdivision index (0..segs) onto (piece, local t): quads
- * distribute as evenly as integers allow (the first `segs % P` pieces
- * get one extra), and every piece boundary lands exactly on a
- * subdivision index.  Requires P ≤ segs (the derivation caps interior
- * counts to guarantee it).  The WGSL twin implements the same closed
- * form.
+ * The tangent-turn bend of piece p, in radians — the round-93 weight:
+ * an arc piece turns by its sweep angle (π minus the interior angle
+ * between its legs — the radius only scales the arc, never its sweep,
+ * and the clamped-`lenOut` case keeps the same sweep too), a
+ * multibezier piece by the angle between its control legs (a
+ * quadratic's tangent rotates monotonically from `c - a` to `b - c`),
+ * and a straight leg by zero.  Degenerate legs and radius-0 corners —
+ * where `computeCorner` draws no arc — weigh zero.  The WGSL twin is
+ * `pieceBendW`.
  */
-export const quadPiece = (
-  pieces: number,
-  segs: number,
+const pieceBend = (route: CurveRoute, p: number): number => {
+  if (route.kind === CURVE_MULTI) {
+    if (route.n === 0) {
+      return 0;
+    } // the chord: one straight piece
+
+    const cx = route.qx[p + 1];
+    const cy = route.qy[p + 1];
+    const ax = p === 0 ? route.qx[0] : (route.qx[p] + cx) / 2;
+    const ay = p === 0 ? route.qy[0] : (route.qy[p] + cy) / 2;
+    const bx =
+      p === route.n - 1 ? route.qx[route.n + 1] : (cx + route.qx[p + 2]) / 2;
+    const by =
+      p === route.n - 1 ? route.qy[route.n + 1] : (cy + route.qy[p + 2]) / 2;
+    const ux = cx - ax;
+    const uy = cy - ay;
+    const vx = bx - cx;
+    const vy = by - cy;
+
+    if (ux * ux + uy * uy < 1e-12 || vx * vx + vy * vy < 1e-12) {
+      return 0;
+    }
+
+    return Math.atan2(Math.abs(ux * vy - uy * vx), ux * vx + uy * vy);
+  }
+
+  if (!route.round || (p & 1) === 0) {
+    return 0;
+  } // straight legs, sharp polylines
+
+  const j = (p - 1) / 2;
+
+  if (!(route.radius[j] > 0)) {
+    return 0;
+  } // no arc drawn at this corner
+
+  const v1x = route.qx[j] - route.qx[j + 1];
+  const v1y = route.qy[j] - route.qy[j + 1];
+  const v2x = route.qx[j + 2] - route.qx[j + 1];
+  const v2y = route.qy[j + 2] - route.qy[j + 1];
+
+  if (v1x * v1x + v1y * v1y < 1e-12 || v2x * v2x + v2y * v2y < 1e-12) {
+    return 0;
+  }
+
+  return Math.atan2(Math.abs(v1x * v2y - v1y * v2x), -(v1x * v2x + v1y * v2y));
+};
+
+/** module-level weight scratch — the allocator never allocates */
+const bendScratch = new Float64Array(MAX_ROUTE_PIECES);
+
+/**
+ * Build the route's subdivision map (round 93): every piece gets one
+ * mandatory quad, and the `segs - P` leftover quads split
+ * proportionally to the pieces' bend weights by cumulative floor —
+ * `segEnd[p] = (p + 1) + ⌊leftover · cum(p)/W⌋` — so the map is
+ * monotone, every piece keeps ≥ 1 quad, and every piece boundary lands
+ * exactly on a subdivision index.  A route with no bend (W ≤ BEND_EPS)
+ * splits uniformly.  Requires P ≤ segs (the derivation caps interior
+ * counts to guarantee it).  The WGSL twin is `allocRouteQuadsW`.
+ */
+export const allocRouteQuads = (
+  route: CurveRoute,
+  segs: number = CURVE_SEGS,
+): void => {
+  const P = routePieceCount(route);
+  let W = 0;
+
+  for (let p = 0; p < P; p++) {
+    const b = pieceBend(route, p);
+
+    bendScratch[p] = b;
+    W += b;
+  }
+
+  const noBend = !(W > BEND_EPS);
+  const total = noBend ? P : W;
+  const leftover = segs - P;
+  let cum = 0;
+
+  for (let p = 0; p < P; p++) {
+    cum += noBend ? 1 : bendScratch[p];
+    // the 1e-4 nudge keeps exact ties deterministic across the f64/f32
+    // twins: a symmetric route's split lands exactly on an integer, and
+    // without it the floor answers 10 or 11 on rounding noise — the CPU
+    // flatten and the GPU strip would disagree by one whole subdivision
+    route.segEnd[p] = p + 1 + Math.floor((leftover * cum) / total + 1e-4);
+  }
+
+  // the final cum equals the total bit-for-bit (same additions), but
+  // the multiply/divide can still round below `leftover`: pin the end
+  route.segEnd[P - 1] = segs;
+  route.pieces = P;
+  route.allocSegs = segs;
+};
+
+/**
+ * Map a subdivision index (0..segs) onto (piece, local t) through the
+ * route's bend-weighted map, rebuilding it if it is not current for
+ * this `segs` (the evaluators share scratch instances, so `evalRoute`
+ * invalidates rather than rebuilds).  The WGSL twin is `quadPieceW`.
+ */
+export const routeQuadPiece = (
+  route: CurveRoute,
   idx: number,
   out: { piece: number; t: number },
+  segs: number = CURVE_SEGS,
 ): void => {
+  if (route.allocSegs !== segs) {
+    allocRouteQuads(route, segs);
+  }
+
   if (idx >= segs) {
-    out.piece = pieces - 1;
+    out.piece = route.pieces - 1;
     out.t = 1;
 
     return;
   }
 
-  const base = Math.floor(segs / pieces);
-  const extra = segs % pieces;
-  const threshold = (base + 1) * extra;
+  let start = 0;
+  let p = 0;
 
-  if (idx < threshold) {
-    const piece = Math.floor(idx / (base + 1));
-
-    out.piece = piece;
-    out.t = (idx - piece * (base + 1)) / (base + 1);
-  } else {
-    const j = idx - threshold;
-    const piece = extra + Math.floor(j / base);
-
-    out.piece = piece;
-    out.t = (j - (piece - extra) * base) / base;
+  while (idx >= route.segEnd[p]) {
+    start = route.segEnd[p];
+    p++;
   }
+
+  out.piece = p;
+  out.t = (idx - start) / (route.segEnd[p] - start);
 };
 
 /** Sweep from a0 to a1 in the canvas-arc direction (ccw = decreasing). */
@@ -1786,9 +1924,7 @@ export const routeVertex = (
   out: { x: number; y: number },
   segs: number = CURVE_SEGS,
 ): void => {
-  const P = routePieceCount(route);
-
-  quadPiece(P, segs, idx, quadPieceScratch);
+  routeQuadPiece(route, idx, quadPieceScratch, segs);
 
   const p = quadPieceScratch.piece;
   const t = quadPieceScratch.t;

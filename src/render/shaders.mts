@@ -33,6 +33,7 @@ import {
   AVOID_IMPOSSIBLE_BEZIER_L,
   CURVE_SEGS,
   MAX_CURVE_PTS,
+  MAX_ROUTE_PIECES,
 } from '../curve-geometry.mjs';
 // the packing constants are interpolated into the WGSL below, so the
 // shaders and the store read one source of truth (round 27.1)
@@ -488,6 +489,9 @@ fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
 export const ROUTE_WGSL = wgsl`
 const CURVE_SEGS_U: u32 = ${CURVE_SEGS}u;
 const MAX_ROUTE_PTS: u32 = ${MAX_CURVE_PTS}u;
+const MAX_ROUTE_PIECES_W: u32 = ${MAX_ROUTE_PIECES}u;
+// below this total bend a route counts as straight (uniform split)
+const BEND_EPS: f32 = 1e-4;
 const ROUTE_PI: f32 = 3.14159265358979;
 // 12c manual endpoints: kinds >= 8 prefix their blob record with the
 // 10-float endpoint block [mode, a, b, pctBits, dist] x 2 (see
@@ -565,6 +569,12 @@ struct Route {
   arcMode: array<u32, ${MAX_CURVE_PTS}>,
   aS: vec2f, // 56: the source arrow point (spacing behind the endpoint)
   aE: vec2f, // 56: the target arrow point
+  // round 93: the bend-weighted subdivision map (allocRouteQuadsW) —
+  // segEnd[p] is the first subdivision index after piece p.  Only the
+  // entry points that read the map through quadPieceW fill it; the
+  // arrow/label stages never subdivide and skip the alloc.
+  pieces: u32,
+  segEnd: array<u32, ${MAX_ROUTE_PIECES}>,
 }
 
 struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f, fsi: vec2f, fti: vec2f }
@@ -942,30 +952,102 @@ fn routePieceCountW(r: ptr<function, Route>) -> u32 {
   return (*r).n + 1u;
 }
 
-// subdivision index -> (piece, local t); piece boundaries land exactly
-// on indices (requires pieces <= CURVE_SEGS — derivation caps counts)
-fn quadPieceW(pieces: u32, idx: u32) -> vec2f {
-  if (idx >= CURVE_SEGS_U) { return vec2f(f32(pieces - 1u), 1.0); }
+// the tangent-turn bend of piece p, radians — the pieceBend twin
+// (round 93): an arc piece by its sweep (pi minus the interior angle
+// between its legs — the radius scales the arc, never the sweep), a
+// multibezier piece by the turn between its control legs, a straight
+// leg zero.  Degenerate legs and radius-0 corners weigh zero.
+fn pieceBendW(r: ptr<function, Route>, p: u32) -> f32 {
+  if ((*r).kind == 3.0) { // MULTI
+    if ((*r).n == 0u) { return 0.0; } // the chord: one straight piece
 
-  let base = CURVE_SEGS_U / pieces;
-  let extra = CURVE_SEGS_U % pieces;
-  let threshold = (base + 1u) * extra;
+    let c = (*r).q[p + 1u];
+    var a = (*r).q[0u];
+    var b = (*r).q[(*r).n + 1u];
 
-  if (idx < threshold) {
-    let piece = idx / (base + 1u);
+    if (p != 0u) { a = ((*r).q[p] + c) * 0.5; }
+    if (p != (*r).n - 1u) { b = (c + (*r).q[p + 2u]) * 0.5; }
 
-    return vec2f(f32(piece), f32(idx - piece * (base + 1u)) / f32(base + 1u));
+    let u = c - a;
+    let v = b - c;
+
+    if (dot(u, u) < 1e-12 || dot(v, v) < 1e-12) { return 0.0; }
+
+    return atan2(abs(u.x * v.y - u.y * v.x), dot(u, v));
   }
 
-  let j = idx - threshold;
-  let piece = extra + j / base;
+  if ((*r).round == 0u || (p & 1u) == 0u) { return 0.0; } // straight legs
 
-  return vec2f(f32(piece), f32(j - (piece - extra) * base) / f32(base));
+  let j = (p - 1u) / 2u;
+
+  if (!((*r).radius[j] > 0.0)) { return 0.0; } // no arc at this corner
+
+  let v1 = (*r).q[j] - (*r).q[j + 1u];
+  let v2 = (*r).q[j + 2u] - (*r).q[j + 1u];
+
+  if (dot(v1, v1) < 1e-12 || dot(v2, v2) < 1e-12) { return 0.0; }
+
+  return atan2(abs(v1.x * v2.y - v1.y * v2.x), -dot(v1, v2));
+}
+
+// build the subdivision map (round 93) — the allocRouteQuads twin:
+// one mandatory quad per piece, the leftover split proportionally to
+// the bend weights by cumulative floor, so the map is monotone, every
+// piece keeps >= 1 quad and every piece boundary lands exactly on a
+// subdivision index.  No bend at all: uniform split.  Pure function of
+// the evaluated route, so canonical per index (the watertight rule).
+fn allocRouteQuadsW(r: ptr<function, Route>) {
+  let pieces = routePieceCountW(r);
+  var w: array<f32, ${MAX_ROUTE_PIECES}>;
+  var total = 0.0;
+
+  for (var p = 0u; p < pieces; p = p + 1u) {
+    let b = pieceBendW(r, p);
+
+    w[p] = b;
+    total = total + b;
+  }
+
+  let noBend = !(total > BEND_EPS);
+  let denom = select(total, f32(pieces), noBend);
+  let leftover = f32(CURVE_SEGS_U - pieces);
+  var cum = 0.0;
+
+  for (var p = 0u; p < pieces; p = p + 1u) {
+    cum = cum + select(w[p], 1.0, noBend);
+    // the 1e-4 nudge keeps exact ties deterministic across the f64/f32
+    // twins — see allocRouteQuads
+    (*r).segEnd[p] = p + 1u + u32(floor(leftover * cum / denom + 1e-4));
+  }
+
+  // the multiply/divide can round below the leftover: pin the end
+  (*r).segEnd[pieces - 1u] = CURVE_SEGS_U;
+  (*r).pieces = pieces;
+}
+
+// subdivision index -> (piece, local t) through the bend-weighted map;
+// requires allocRouteQuadsW to have run on this route
+fn quadPieceW(r: ptr<function, Route>, idx: u32) -> vec2f {
+  if (idx >= CURVE_SEGS_U) { return vec2f(f32((*r).pieces - 1u), 1.0); }
+
+  var start = 0u;
+  var p = 0u;
+
+  for (var i = 0u; i < MAX_ROUTE_PIECES_W; i = i + 1u) {
+    let e = (*r).segEnd[p];
+
+    if (idx < e) { break; }
+
+    start = e;
+    p = p + 1u;
+  }
+
+  return vec2f(f32(p), f32(idx - start) / f32((*r).segEnd[p] - start));
 }
 
 // the route point at subdivision index idx — the routeVertex twin
 fn routeVertexW(r: ptr<function, Route>, idx: u32) -> vec2f {
-  let pt = quadPieceW(routePieceCountW(r), idx);
+  let pt = quadPieceW(r, idx);
   let p = u32(pt.x);
   let t = pt.y;
 
@@ -3165,6 +3247,10 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
       arrowTrimOf(widths[slot])
     );
 
+    // round 93: build the bend-weighted subdivision map before any
+    // routeVertexW read — the dash loop below walks all of it
+    allocRouteQuadsW(&route);
+
     p = routeVertexW(&route, tIdx);
 
     // discrete miter normal from the neighbouring subdivision points:
@@ -3323,6 +3409,8 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
       nodePositions[ends.y], gb.xy, u32(gb.z),
       trim
     );
+
+    allocRouteQuadsW(&route); // round 93: the map feeds routeVertexW
 
     p = routeVertexW(&route, tIdx);
 

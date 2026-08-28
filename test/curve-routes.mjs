@@ -13,7 +13,9 @@ import {
   flattenRoute,
   routeMidpoint,
   routePieceCount,
-  quadPiece,
+  allocRouteQuads,
+  routeQuadPiece,
+  MAX_ROUTE_PIECES,
   computeCorner,
   emptyRouteCorner,
   arcSweep,
@@ -230,18 +232,90 @@ describe('gpu/curve-routes: 12b route geometry', function () {
     });
   });
 
-  describe('quadPiece allocator', function () {
+  describe('routeQuadPiece allocator (round 93: bend-weighted)', function () {
+    /** quads per piece over the drawn subdivision */
+    const pieceCounts = (route, segs = CURVE_SEGS) => {
+      const out = { piece: 0, t: 0 };
+      const counts = new Array(routePieceCount(route)).fill(0);
+
+      for (let idx = 0; idx < segs; idx++) {
+        routeQuadPiece(route, idx, out, segs);
+        counts[out.piece]++;
+      }
+
+      return counts;
+    };
+
+    // one route per family shape the allocator distinguishes
+    const fixtures = () => [
+      [
+        'sharp segments',
+        evalWith(
+          CURVE_SEGMENTS,
+          [EDGE_DIST_INTERSECTION, 0, 30, 0.25, 0, 0, 30, 0.75, 0, 0],
+          2,
+        ),
+      ],
+      [
+        'round segments',
+        evalWith(
+          CURVE_SEGMENTS,
+          [EDGE_DIST_INTERSECTION, 1, 30, 0.25, 8, 1, 30, 0.75, 8, 1],
+          2,
+        ),
+      ],
+      [
+        'round taxi',
+        evalWith(CURVE_TAXI, taxiBlob({ round: 1, radius: 12 }), 0, [
+          0,
+          0,
+          15,
+          15,
+          SHAPE_CIRCLE,
+          10,
+          200,
+          15,
+          15,
+          SHAPE_CIRCLE,
+        ]),
+      ],
+      [
+        'sharp taxi',
+        evalWith(CURVE_TAXI, taxiBlob(), 0, [
+          0,
+          0,
+          15,
+          15,
+          SHAPE_CIRCLE,
+          10,
+          200,
+          15,
+          15,
+          SHAPE_CIRCLE,
+        ]),
+      ],
+      [
+        'multibezier n=2',
+        evalWith(CURVE_MULTI, [EDGE_DIST_INTERSECTION, 40, 0.25, -40, 0.75], 2),
+      ],
+      [
+        'multibezier n=1',
+        evalWith(CURVE_MULTI, [EDGE_DIST_INTERSECTION, 40, 0.5], 1),
+      ],
+    ];
+
     it('lands every piece boundary exactly on a subdivision index', function () {
       const out = { piece: 0, t: 0 };
 
-      for (let P = 1; P <= 23; P++) {
+      for (const [label, route] of fixtures()) {
+        const P = routePieceCount(route);
         const starts = new Set();
         let lastPiece = -1;
 
         for (let idx = 0; idx < CURVE_SEGS; idx++) {
-          quadPiece(P, CURVE_SEGS, idx, out);
+          routeQuadPiece(route, idx, out);
 
-          expect(out.piece).to.be.at.least(lastPiece); // monotone
+          expect(out.piece, label).to.be.at.least(lastPiece); // monotone
           if (out.t === 0) {
             starts.add(out.piece);
           }
@@ -249,28 +323,205 @@ describe('gpu/curve-routes: 12b route geometry', function () {
         }
 
         // every piece starts at t=0 on some index
-        expect(starts.size, `P=${P}`).to.equal(P);
+        expect(starts.size, label).to.equal(P);
 
-        quadPiece(P, CURVE_SEGS, CURVE_SEGS, out);
-        expect(out.piece).to.equal(P - 1);
-        expect(out.t).to.equal(1);
+        routeQuadPiece(route, CURVE_SEGS, out);
+        expect(out.piece, label).to.equal(P - 1);
+        expect(out.t, label).to.equal(1);
       }
     });
 
-    it('distributes quads within one of each other', function () {
-      const out = { piece: 0, t: 0 };
+    it('every piece keeps at least one quad, and the budget is spent exactly', function () {
+      for (const [label, route] of fixtures()) {
+        const counts = pieceCounts(route);
 
-      for (let P = 1; P <= 23; P++) {
-        const counts = new Array(P).fill(0);
-
-        for (let idx = 0; idx < CURVE_SEGS; idx++) {
-          quadPiece(P, CURVE_SEGS, idx, out);
-          counts[out.piece]++;
-        }
-
-        expect(Math.max(...counts) - Math.min(...counts)).to.be.at.most(1);
-        expect(counts.reduce((a, b) => a + b, 0)).to.equal(CURVE_SEGS);
+        expect(Math.min(...counts), label).to.be.at.least(1);
+        expect(
+          counts.reduce((a, b) => a + b, 0),
+          label,
+        ).to.equal(CURVE_SEGS);
       }
+    });
+
+    it('straight legs get exactly one quad when the route has bends', function () {
+      // round taxi: pieces leg, arc, leg, arc, leg — the legs are
+      // pixel-straight and one quad draws each exactly, so the whole
+      // leftover goes to the two arcs
+      const route = evalWith(
+        CURVE_TAXI,
+        taxiBlob({ round: 1, radius: 12 }),
+        0,
+        [0, 0, 15, 15, SHAPE_CIRCLE, 10, 200, 15, 15, SHAPE_CIRCLE],
+      );
+      const counts = pieceCounts(route);
+
+      expect(counts).to.have.length(5);
+      expect(counts[0]).to.equal(1);
+      expect(counts[2]).to.equal(1);
+      expect(counts[4]).to.equal(1);
+      // the two ~90-degree arcs split the remaining 19 near-evenly
+      expect(counts[1]).to.be.at.least(9);
+      expect(counts[3]).to.be.at.least(9);
+    });
+
+    it('a deeper corner gets more quads than a shallower one', function () {
+      // both corners rounded, but the second bends much harder: point 2
+      // sits far off the frame so the turn at it approaches 180 degrees
+      const route = evalWith(
+        CURVE_SEGMENTS,
+        [EDGE_DIST_INTERSECTION, 1, 8, 0.3, 6, 1, 60, 0.5, 6, 1],
+        2,
+      );
+      const counts = pieceCounts(route);
+
+      expect(counts[3], 'the deep corner').to.be.greaterThan(counts[1]);
+      expect(counts[0]).to.equal(1); // legs stay at one quad
+      expect(counts[2]).to.equal(1);
+      expect(counts[4]).to.equal(1);
+    });
+
+    it('routes with no bend keep the uniform split', function () {
+      for (const [label, route] of [fixtures()[0], fixtures()[3]]) {
+        const counts = pieceCounts(route);
+
+        expect(
+          Math.max(...counts) - Math.min(...counts),
+          `${label} spreads evenly`,
+        ).to.be.at.most(1);
+      }
+    });
+
+    it('a radius-50 arc flattens to within 0.05 model px of the true circle', function () {
+      // the maintainer's round-93 case: one 90-degree round-taxi corner
+      // at radius 50 rendered as ~6 visible facets under the uniform
+      // split (3-8 chords); bend-weighting gives the arc 22 of 24
+      // chords, whose worst sagitta is r(1 - cos(sweep/2k)) ~ 0.03 px.
+      // The uniform split's 8 chords measure ~0.24 px here, so this
+      // bound fails by 5x if the allocation regresses.
+      const route = evalWith(
+        CURVE_TAXI,
+        taxiBlob({ dir: TAXI_VERTICAL, turn: 5, pct: 0, round: 1, radius: 50 }),
+        0,
+        [0, 0, 15, 15, SHAPE_CIRCLE, 220, 300, 15, 15, SHAPE_CIRCLE],
+      );
+
+      expect(routePieceCount(route)).to.equal(3); // leg, arc, leg (L-shape)
+
+      const corner = computeCorner(
+        emptyRouteCorner(),
+        route.qx[0],
+        route.qy[0],
+        route.qx[1],
+        route.qy[1],
+        route.qx[2],
+        route.qy[2],
+        50,
+        true,
+      );
+
+      expect(corner.r).to.be.closeTo(50, 1e-9);
+
+      const out = { piece: 0, t: 0 };
+      const a = { x: 0, y: 0 };
+      const b = { x: 0, y: 0 };
+      let maxSagitta = 0;
+
+      for (let idx = 0; idx < CURVE_SEGS; idx++) {
+        routeQuadPiece(route, idx, out);
+
+        if (out.piece !== 1) {
+          continue;
+        } // the arc piece
+
+        routeVertex(route, idx, a);
+        routeVertex(route, idx + 1, b);
+
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        const sagitta = corner.r - Math.hypot(mx - corner.cx, my - corner.cy);
+
+        maxSagitta = Math.max(maxSagitta, sagitta);
+      }
+
+      expect(maxSagitta).to.be.greaterThan(0); // the probe saw the arc
+      expect(maxSagitta).to.be.at.most(0.05);
+    });
+
+    it('re-evaluating into the same scratch rebuilds the map', function () {
+      // the evaluators share scratch instances, so a stale map from the
+      // previous edge is the failure mode to pin: a round route's
+      // leg-1 arc-heavy map must not leak into a sharp route
+      const route = emptyCurveRoute();
+
+      evalRoute(
+        route,
+        CURVE_TAXI,
+        taxiBlob({ round: 1, radius: 12 }),
+        0,
+        0,
+        0,
+        0,
+        15,
+        15,
+        SHAPE_CIRCLE,
+        10,
+        200,
+        15,
+        15,
+        SHAPE_CIRCLE,
+      );
+
+      expect(pieceCounts(route)[0]).to.equal(1); // bend-weighted
+
+      evalRoute(
+        route,
+        CURVE_SEGMENTS,
+        [EDGE_DIST_INTERSECTION, 0, 30, 0.25, 0, 0, 30, 0.75, 0, 0],
+        0,
+        2,
+        0,
+        0,
+        15,
+        15,
+        SHAPE_CIRCLE,
+        100,
+        0,
+        15,
+        15,
+        SHAPE_CIRCLE,
+      );
+
+      const counts = pieceCounts(route);
+
+      expect(Math.max(...counts) - Math.min(...counts)).to.be.at.most(1);
+    });
+
+    it('rebuilds for a non-default subdivision and back', function () {
+      const route = evalWith(
+        CURVE_TAXI,
+        taxiBlob({ round: 1, radius: 12 }),
+        0,
+        [0, 0, 15, 15, SHAPE_CIRCLE, 10, 200, 15, 15, SHAPE_CIRCLE],
+      );
+      const at48 = pieceCounts(route, 48);
+
+      expect(at48.reduce((a, b) => a + b, 0)).to.equal(48);
+      expect(Math.min(...at48)).to.be.at.least(1);
+
+      const at24 = pieceCounts(route);
+
+      expect(at24.reduce((a, b) => a + b, 0)).to.equal(CURVE_SEGS);
+    });
+
+    it('allocRouteQuads pins the last piece end to the budget', function () {
+      const route = evalWith(
+        CURVE_SEGMENTS,
+        [EDGE_DIST_INTERSECTION, 1, 30, 0.25, 8, 1, 30, 0.75, 8, 1],
+        2,
+      );
+
+      allocRouteQuads(route);
+      expect(route.segEnd[route.pieces - 1]).to.equal(CURVE_SEGS);
     });
   });
 
@@ -477,7 +728,7 @@ describe('gpu/curve-routes: 12b route geometry', function () {
         );
 
         for (let idx = 0; idx <= CURVE_SEGS; idx++) {
-          quadPiece(routePieceCount(route), CURVE_SEGS, idx, out);
+          routeQuadPiece(route, idx, out);
 
           if (out.piece === 1) {
             // the first corner's arc
@@ -505,13 +756,14 @@ describe('gpu/curve-routes: 12b route geometry', function () {
           true,
         );
 
-        // P=5: quads 24/5 -> pieces 0..3 get 5,5,5,5? extra = 24 % 5 = 4 =>
-        // pieces 0..3 get 5 quads, piece 4 gets 4; piece 1 (arc) starts at idx 5
-        routeVertex(route, 5, p);
+        // P=5, bend-weighted (round 93): the straight legs take one
+        // quad each and the two equal corners split the 19 leftover
+        // quads 9/10, so piece 1 (the first arc) spans indices 1..11
+        routeVertex(route, 1, p);
         expect(p.x).to.be.closeTo(corner.startX, 1e-9);
         expect(p.y).to.be.closeTo(corner.startY, 1e-9);
 
-        routeVertex(route, 10, p);
+        routeVertex(route, 11, p);
         expect(p.x).to.be.closeTo(corner.stopX, 1e-9);
         expect(p.y).to.be.closeTo(corner.stopY, 1e-9);
       });

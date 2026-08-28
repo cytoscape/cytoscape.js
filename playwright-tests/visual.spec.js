@@ -1756,6 +1756,126 @@ test.describe('WebGPU visual goldens', () => {
     );
   });
 
+  /**
+   * The round-95 scene: dark ink with a *contrasting* outline over
+   * several words — the configuration that exposes the outline-order
+   * defect, since a same-colour outline paints over it.  Before the
+   * two-phase draw, each glyph's opaque outline ring composited over
+   * the previous letter's ink and cut light notches into every word,
+   * and the control is the diff itself: the pre-95 render fails this
+   * golden by 1,984 px (1.653%) — the notches.  The rotated node is
+   * here because rotated glyph quads overlap differently; the boxed
+   * node pins the background quad staying under both phases.
+   */
+  const OUTLINE_WORDS_SCENE = {
+    elements: [
+      {
+        data: { id: 'Wavelength Wavelength', kind: 'words' },
+        position: { x: 0, y: -85 },
+      },
+      {
+        data: { id: 'Notch Watch Vans', kind: 'rot' },
+        position: { x: 0, y: 5 },
+      },
+      {
+        data: { id: 'Wavelength Boxed', kind: 'boxed' },
+        position: { x: 0, y: 90 },
+      },
+    ],
+    style: {
+      nodes: {
+        width: 30,
+        height: 20,
+        'background-color': '#dfe6e9',
+        label: { data: 'id' },
+        'font-size': 14,
+        'font-family': `'Open Sans', sans-serif`,
+        color: '#2d3436',
+        'text-outline-width': 2,
+        'text-outline-color': '#ffffff',
+        'text-rotation': {
+          case: [{ when: { data: 'kind', eq: 'rot' }, then: 0.663 }], // 38°
+          else: 0,
+        },
+        'text-background-color': '#ffeaa7',
+        'text-background-opacity': {
+          case: [{ when: { data: 'kind', eq: 'boxed' }, then: 1 }],
+          else: 0,
+        },
+        'text-background-padding': 2,
+      },
+    },
+  };
+
+  test('golden: outlined words — the outline under the ink (round 95)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    await page.evaluate(async () => {
+      await document.fonts.load(`32px 'Open Sans'`);
+
+      if (!document.fonts.check(`32px 'Open Sans'`)) {
+        throw new Error('Open Sans did not load');
+      }
+    });
+
+    await makeReadyCy(page, {
+      ...OUTLINE_WORDS_SCENE,
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'label-outline-words');
+    checkGolden(
+      'label-outline-words',
+      await exportPng(page, { bg: '#888' }),
+      testInfo,
+    );
+  });
+
+  test('golden: outlined words close up at zoom 4 (round 95)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the close-up pins the zoomed look of the ring itself.  Note what
+    // it does not do: the pre-95 render differs by only 15 px here —
+    // at 14px the requested 2px outline saturates the 0.45 SDF-unit
+    // cap, and the zoom-1 notches on this scene are that capped ring's
+    // fwidth fringe bleeding into the neighbour's ink, a fringe zoom 4
+    // narrows fourfold.  The zoom-1 golden above is the discriminating
+    // control; this one answers "did the close-up rendering change?"
+    await useViewport(page, 800, 300);
+    await page.evaluate(async () => {
+      await document.fonts.load(`32px 'Open Sans'`);
+
+      if (!document.fonts.check(`32px 'Open Sans'`)) {
+        throw new Error('Open Sans did not load');
+      }
+    });
+
+    await makeReadyCy(page, {
+      elements: [OUTLINE_WORDS_SCENE.elements[0]],
+      style: OUTLINE_WORDS_SCENE.style,
+      zoom: 1,
+      pan: { x: 400, y: 150 },
+    });
+    await page.evaluate(() => {
+      window.cy.zoom(4);
+      window.cy.center();
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'label-outline-closeup');
+    checkGolden(
+      'label-outline-closeup',
+      await exportPng(page, { bg: '#888' }),
+      testInfo,
+    );
+  });
+
   test('golden: haystack edges (round 12c)', async ({ page }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
@@ -4343,6 +4463,81 @@ test.describe('v3-vs-v4 render parity', () => {
       bound: 0.03,
       threshold: 0.3,
       minInk: 1500,
+    });
+  });
+
+  test('parity: outlined labels — outline under ink (round 95)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Dark ink, a contrasting outline, several words: v3 strokes the
+    // whole line and fills over it, and round 95 makes v4 layer the
+    // same way, so this scene's agreement is the round's live parity.
+    // Every bound is from the scene's own measurements (2026-08-28).
+    // The ratio is the *placement* guard: ambient glyph noise measures
+    // 2.103% (canvas-vs-SDF raster, threshold 0.3), bounded at 2.5%.
+    // What the ratio cannot see, measured rather than assumed: the
+    // pre-95 notch pixels (2.105% — inside the ring band the raster
+    // noise already mismatches; the label-outline-words golden is the
+    // notch control) and even total outline loss (2.097% with the v4
+    // outline zeroed — a pale outline on the white page sits under any
+    // workable pixelmatch threshold; a saturated red outline at
+    // threshold 0.2 raises ambient to 4.975% and still cannot separate
+    // it).  Outline *presence* is therefore the ink floor's assertion:
+    // v4 inks 10,840 px with outlines against 4,872 without, so the
+    // 8,000 floor separates the two decisively.
+    const common = {
+      width: 30,
+      height: 20,
+      'background-color': '#dfe6e9',
+      label: 'Wavelength Watch Vans',
+      'font-size': 24,
+      color: '#2d3436',
+      'text-outline-width': 3,
+      'text-outline-color': '#ffdd59',
+      'text-valign': 'bottom',
+      'text-halign': 'center',
+    };
+    const elements = [
+      { data: { id: 'w1' }, position: { x: 0, y: -70 } },
+      { data: { id: 'w2' }, position: { x: 0, y: 30 } },
+    ];
+    const v3Style = [{ selector: 'node', style: common }];
+    const v4Style = { nodes: common };
+
+    const { v3uri, v4uri } = await page.evaluate(
+      async ({ elements, v3Style, v4Style }) => {
+        const cloneEles = () => JSON.parse(JSON.stringify(elements));
+        const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+        const cy3 = window.makeV3({
+          elements: cloneEles(),
+          style: v3Style,
+          layout: { name: 'preset', fit: false },
+          ...viewport,
+        });
+        const cy4 = window.makeV4({
+          elements: cloneEles(),
+          style: v4Style,
+          ...viewport,
+        });
+
+        await cy4.ready;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        return {
+          v3uri: cy3.png({ bg: '#fff' }),
+          v4uri: await cy4.png({ bg: '#fff' }),
+        };
+      },
+      { elements, v3Style, v4Style },
+    );
+
+    expectParityImages(v3uri, v4uri, 'parity-outlined-labels', testInfo, {
+      bound: 0.025,
+      threshold: 0.3,
+      minInk: 8000,
     });
   });
 

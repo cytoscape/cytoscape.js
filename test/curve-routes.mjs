@@ -447,6 +447,56 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       expect(maxSagitta).to.be.at.most(0.05);
     });
 
+    it('the flattened arc length tracks the true arc length (dashes ride it)', function () {
+      // the dash coordinate is the accumulated chord length of the drawn
+      // polyline, so a coarse arc shortens every dash cycle along it —
+      // the "dash pattern that breathes" regression the round-93 plan
+      // names.  True arc length here: r * sweep = 50 * pi/2 = 78.54; the
+      // uniform split's 8 chords sum to 78.42 (0.12 short), the
+      // bend-weighted 22 chords to 78.51 — so the 0.05 bound fails by
+      // 2.4x if the allocation regresses
+      const route = evalWith(
+        CURVE_TAXI,
+        taxiBlob({ dir: TAXI_VERTICAL, turn: 5, pct: 0, round: 1, radius: 50 }),
+        0,
+        [0, 0, 15, 15, SHAPE_CIRCLE, 220, 300, 15, 15, SHAPE_CIRCLE],
+      );
+      const corner = computeCorner(
+        emptyRouteCorner(),
+        route.qx[0],
+        route.qy[0],
+        route.qx[1],
+        route.qy[1],
+        route.qx[2],
+        route.qy[2],
+        50,
+        true,
+      );
+      const sweep = Math.abs(arcSweep(corner.a0, corner.a1, corner.ccw));
+      const trueArc = corner.r * sweep;
+
+      const out = { piece: 0, t: 0 };
+      const a = { x: 0, y: 0 };
+      const b = { x: 0, y: 0 };
+      let chordSum = 0;
+
+      for (let idx = 0; idx < CURVE_SEGS; idx++) {
+        routeQuadPiece(route, idx, out);
+
+        if (out.piece !== 1) {
+          continue;
+        } // the arc piece
+
+        routeVertex(route, idx, a);
+        routeVertex(route, idx + 1, b);
+        chordSum += Math.hypot(b.x - a.x, b.y - a.y);
+      }
+
+      expect(trueArc).to.be.greaterThan(78); // the fixture is the 90-degree arc
+      expect(trueArc - chordSum).to.be.at.least(0); // chords never overshoot
+      expect(trueArc - chordSum).to.be.at.most(0.05);
+    });
+
     it('re-evaluating into the same scratch rebuilds the map', function () {
       // the evaluators share scratch instances, so a stale map from the
       // previous edge is the failure mode to pin: a round route's

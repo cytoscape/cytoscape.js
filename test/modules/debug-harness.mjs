@@ -830,6 +830,125 @@ describe('debug harness (round 43)', function () {
     });
   });
 
+  describe("the v3-default sheet's per-edge curve arrays (round 96)", function () {
+    /*
+    v3 gives four of this graph's edges their own curve arrays
+    (`v3/debug/init.js`): `ab` its control-point lists, `bc`, `ed` and
+    `eh` their three different segment lists.  v4's list-valued curve
+    props take constants only (the recorded 12b scope note), so the port
+    carried one parameterisation per family and recorded the deviation —
+    which is what the maintainer saw on `?network=v3-default`: `eh` drew
+    a two-segment S where v3 draws a three-segment flat-top.  Round 63's
+    `bypasses` section closes it: a bypass entry is a per-element
+    constant, which is exactly what a per-edge array is, so for the list
+    props it is the *only* per-edge spelling.
+
+    The numbers are hard-coded from the round-96 probe: both libraries
+    loaded on `playwright-page/parity.html` with these exact positions
+    and parameters, and for `ed` and `eh` (ellipse endpoints) v3 and v4
+    agreed **to the last float** — so the `ed`/`eh` values below are
+    v3's own.  `ab`/`bc` route through node `b`, a round-hexagon, whose
+    boundary v4 approximates by its inscribed ellipse (the ledgered
+    deviation in `playwright-tests/lib/routing-ledger.mjs`); their
+    interior points sat within 0.9 model px of v3's in the same probe,
+    and the values pinned here are v4's own.
+
+    The layout is the page's (`grid`, cols 3) with the bounding box the
+    page gets from its viewport pinned explicitly, so the positions —
+    and with them every number below — are deterministic headless.
+
+    Control (run once, 2026-08-28): with the sheet's `bypasses` section
+    deleted, all four edges fail — which is why the sheet's shared
+    family constants are deliberately distinct from every bypass entry.
+    */
+
+    const closeTo = (p, [x, y], what) => {
+      expect(p, `${what} is missing`).to.exist;
+      expect(p.x, `${what}.x`).to.be.closeTo(x, 1e-9);
+      expect(p.y, `${what}.y`).to.be.closeTo(y, 1e-9);
+    };
+
+    const ROUTES = {
+      // v3's values, matched exactly (ellipse endpoints, no approximation)
+      ed: {
+        seg: [[400, 400]],
+        src: [581.6642425845017, 309.16787870774914],
+        tgt: [218.33575741549828, 309.16787870774914],
+        mid: [400, 400],
+      },
+      eh: {
+        seg: [
+          [650, 360.25],
+          [650, 400],
+          [650, 439.75],
+        ],
+        src: [613.0915604122578, 315.77533029677056],
+        tgt: [613.0915604122578, 484.22466970322944],
+        mid: [650, 400],
+      },
+      // v4's values, within 0.9 model px of v3's (inscribed-ellipse tier)
+      ab: {
+        ctrl: [
+          [307.25, 120],
+          [394, 0],
+          [480.75, 120],
+        ],
+        mid: [394, 30],
+      },
+      bc: {
+        seg: [
+          [696.25, 120],
+          [760, 20],
+        ],
+        mid: [728.125, 70],
+      },
+    };
+
+    it("eh/ed/bc/ab route with v3's arrays, not the family defaults", function () {
+      this.timeout?.(120000);
+
+      const def = networks['v3-default'];
+      const elements = elementsFor('v3-default', def);
+      const sheet = styles.sheet('production', 'v3-default', elements, def);
+
+      expect(
+        sheet.bypasses,
+        'the v3-default sheet lost its bypasses section',
+      ).to.have.keys(['ab', 'bc', 'ed', 'eh']);
+
+      const cy = cytoscape({
+        elements: { nodes: elements.nodes, edges: elements.edges },
+        style: sheet,
+      });
+
+      cy.layout({
+        name: 'grid',
+        cols: 3,
+        fit: false,
+        boundingBox: { x1: 0, y1: 0, w: 1200, h: 600 },
+      }).run();
+
+      for (const [id, want] of Object.entries(ROUTES)) {
+        const e = cy.$id(id);
+        const pts = want.ctrl ? e.controlPoints() : e.segmentPoints();
+        const kind = want.ctrl ? 'controlPoints' : 'segmentPoints';
+        const wantPts = want.ctrl ?? want.seg;
+
+        expect(pts, `${id}.${kind}()`).to.have.length(wantPts.length);
+        wantPts.forEach((p, i) => closeTo(pts[i], p, `${id}.${kind}()[${i}]`));
+
+        closeTo(e.midpoint(), want.mid, `${id}.midpoint()`);
+
+        if (want.src) {
+          closeTo(e.sourceEndpoint(), want.src, `${id}.sourceEndpoint()`);
+          closeTo(e.targetEndpoint(), want.tgt, `${id}.targetEndpoint()`);
+        }
+      }
+
+      cy.destroy();
+    });
+  });
+
   describe('the dev server the page expects', function () {
     it('binds livereload on every interface', function () {
       // `livereload-setup.js` builds the client URL from `location.hostname`,

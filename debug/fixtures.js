@@ -398,9 +398,10 @@ var fixtures = (function () {
   function edgeTypesFixture() {
     // v3 spells the families as classes and gives `ab`, `bc` and friends their
     // own control-point and segment arrays.  v4's list-valued curve params are
-    // constants-only (the round-12b scope rule), so a family gets one
-    // parameterisation — recorded on the sheet, and the same limit round 46.6
-    // hit porting v3's default graph.
+    // constants-only (the round-12b scope rule), so the sheet carries one
+    // parameterisation per family — and, since round 96, per-edge arrays as
+    // `bypasses` entries where v3's rows differ, the same closure the
+    // v3-default port got.
     //
     // `count` is how many parallel edges the row draws, which is the whole
     // point for `bezier` (it bundles multi-edges only, so a lone bezier edge

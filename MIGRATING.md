@@ -200,6 +200,11 @@ drops bypasses on export — and a full `cy.style( sheet )` **replaces**
 the live bypasses like any other section (v3's survive sheet swaps;
 spread the exported sheet to keep them).  Values are constants only —
 mappers remain the per-element mechanism for anything data-driven.
+For the list-valued curve props (`control-point-distances`/`-weights`,
+`segment-distances`/`-weights`/`-radii`), which accept constants only
+and reject mappers, the bypass is the porting path for a v3 sheet that
+gave edges their own arrays — a per-edge array *is* a per-element
+constant, so for those props the bypass is the only per-edge spelling.
 
 **CSS-string stylesheets and `cytoscape.stylesheet()` are gone** with the
 block form.

@@ -3954,6 +3954,41 @@ and `./gpu` resolves to identical files.  It deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
 
+## Runtimes: Bun and Deno run the package (round 98)
+
+**Supported runtimes: Node >= 24 (`engines`), Bun >= 1.4 and Deno >= 2.9
+run the built bundles** — `engines` cannot express Bun or Deno, so their
+floors live in this sentence and in `ci-bun`/`ci-deno`'s version matrix
+(latest stable plus the pinned floor), and a runtime bump that breaks CI
+moves the pin after reading the failure, never the assertion.  The claim
+rests on two gates, not on fortune:
+
+- **The runtime-clean invariant** (98.1): the set of non-relative import
+  specifiers under `src/` is empty — no `node:*`, no `bun:*`, no
+  `deno:*`, no bare package — asserted by
+  `test/modules/import-graph.mjs` over comment-stripped sources.
+  Everything the headless path needs (`TextEncoder`/`TextDecoder`,
+  `queueMicrotask`, `performance.now()`, typed arrays) is in the
+  WinterTC minimum-common-API baseline every standards-shaped runtime
+  ships.
+- **The cross-runtime smoke** (98.2): `test/runtimes/smoke.mjs`, one
+  framework-free file run as `node`/`bun`/`deno run --allow-read`, loads
+  the ESM, minified-ESM and CJS bundles and asserts values and ordering
+  — headless init, the wire round-trip with every dictionary column
+  checked value-for-value, style constants + a scale mapper + a bypass,
+  grid + CPU-force ticks, one sync and one async algorithm with
+  `executor: 'cpu'`, events, `json()` and the bypasses export.  Deno's
+  require-compat held when measured (2.9.6), so the CJS bundle is
+  contract on all three runtimes.  `npm run test:runtimes:node` /
+  `:bun` / `:deno` each build first; the smoke found **zero defects**
+  at landing (98.3's budget went unspent), which is what item 2 of the
+  runtime-rounds note predicted — the headless path already spoke
+  web-platform, and now both halves are gated rather than fortunate.
+
+The renderer proper stays browser-bound (canvas + container).  Deno's
+native WebGPU as a driver for the GPU *algorithm* executors is round
+99's measurement, not this one's.
+
 ## Shipped shaders: WGSL minified at build time (round 52)
 
 The bundles do not ship the WGSL as written.  Every multi-line shader

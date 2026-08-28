@@ -34,6 +34,64 @@ jobs:
     - name: Verify type definitions
       run: npm run test:types:all
 
+  # v4's runtime tier (round 98): the built bundles smoked under Bun and
+  # Deno, gating merges from day one (an observing job is a soft-skip with
+  # extra steps).  Each job is shaped like `ci-node` — checkout, official
+  # setup action, root `npm ci`, `npm run build` — and no v3 install (the
+  # Node-tier invariant extends here).  The matrix runs **latest stable plus
+  # a pinned floor**; the floor is the oldest version the smoke is known to
+  # pass on (measured at landing: Bun 1.4.0, Deno 2.9.6 — `engines` cannot
+  # express either, so the floor lives here and in the support sentence in
+  # src/README.md).  A runtime bump that breaks the job is handled like a
+  # browser bump breaking a golden: read the failure, then move the pin —
+  # never widen the assertion.
+  ci-bun:
+    runs-on: ubuntu-latest
+    # see the note on `ci-node` above
+    strategy:
+      fail-fast: false
+      matrix:
+        bun-version: ['1.4.0', 'latest']
+    name: ci-bun (${{ matrix.bun-version }})
+    steps:
+    - uses: actions/checkout@v6
+    # Node runs the install and the rolldown build; Bun runs the smoke.
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ matrix.bun-version }}
+    - name: Install dependencies
+      run: npm ci
+    - name: Build the bundles
+      run: npm run build
+    - name: Run the cross-runtime smoke under Bun
+      run: bun test/runtimes/smoke.mjs
+
+  ci-deno:
+    runs-on: ubuntu-latest
+    # see the note on `ci-node` above
+    strategy:
+      fail-fast: false
+      matrix:
+        deno-version: ['2.9.6', 'latest']
+    name: ci-deno (${{ matrix.deno-version }})
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+    - uses: denoland/setup-deno@v2
+      with:
+        deno-version: ${{ matrix.deno-version }}
+    - name: Install dependencies
+      run: npm ci
+    - name: Build the bundles
+      run: npm run build
+    - name: Run the cross-runtime smoke under Deno
+      run: deno run --allow-read test/runtimes/smoke.mjs
+
   # v4's browser tier, one job per Playwright project.  Each installs only
   # the browser it drives; only `visual` needs v3's bundle.
   ci-browser:

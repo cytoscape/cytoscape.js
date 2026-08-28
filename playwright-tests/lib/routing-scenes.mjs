@@ -688,6 +688,130 @@ const asymmetricArrows = () => {
   };
 };
 
+/**
+ * R12 — per-edge segment arrays, carried as bypasses (round 96).
+ *
+ * Until this scene the suite had **zero** numeric coverage of a
+ * `segmentPoints()` route with declared arrays richer than R3's shared
+ * two-entry lists — which is why nothing was watching the configuration
+ * the maintainer reported on `?network=v3-default` (`eh` drew a
+ * different curve entirely, for a sheet reason, and no spec could have
+ * said so).  The first two edges are v3's `eh` and `ed`
+ * parameterisations **verbatim** (`v3/debug/init.js`), at the fixture's
+ * own orientations (a downward vertical and a leftward horizontal —
+ * legal for *declared* points, unlike taxi's derived degenerates); then
+ * v3-default's round-taxi parameterisation, a mixed-sign-distance case
+ * and an extrapolated-weight case (weights outside [0,1] extrapolate
+ * along the chord in both libraries).
+ *
+ * The v4 side carries the per-edge arrays in the sheet's `bypasses`
+ * section — for the constants-only list props the bypass is the *only*
+ * per-edge spelling, and it is the mechanism the debug sheet now uses —
+ * so this scene is also the bypass path measured against v3's id
+ * selectors.
+ *
+ * Control (round 27's rule, run once): perturb one array on one side
+ * only — e.g. `-50.5` in the *bypass* copy of `eh`'s distances — and
+ * the probe names `eh`'s interior fields.  Both sides here derive from
+ * the one `rows` table, so the perturbation has to be applied to one
+ * side's built style, not to the table.
+ */
+const segmentArrays = () => {
+  const rows = [
+    {
+      id: 'eh',
+      fam: 'round-segments',
+      dx: 0,
+      dy: 200,
+      props: {
+        'segment-distances': [-50, -50, -50],
+        'segment-weights': [0.25, 0.5, 0.75],
+        'segment-radii': [50, 50, 50],
+      },
+    },
+    {
+      id: 'ed',
+      fam: 'segments',
+      dx: -360,
+      dy: 0,
+      props: {
+        'segment-distances': [-100],
+        'segment-weights': [0.5],
+      },
+    },
+    {
+      id: 'rt',
+      fam: 'round-taxi',
+      dx: 220,
+      dy: 160,
+      props: {
+        'taxi-direction': 'downward',
+        'taxi-turn-min-distance': 50,
+        'taxi-radius': 50,
+      },
+    },
+    {
+      id: 'neg',
+      fam: 'round-segments',
+      dx: 240,
+      dy: 140,
+      props: {
+        'segment-distances': [-40, 30],
+        'segment-weights': [0.3, 0.7],
+        'segment-radii': [20, 20],
+      },
+    },
+    {
+      id: 'xw',
+      fam: 'segments',
+      dx: 260,
+      dy: 0,
+      props: {
+        'segment-distances': [40, 40],
+        'segment-weights': [-0.25, 1.25],
+      },
+    },
+  ];
+  const elements = [];
+  const edges = [];
+  const bypasses = {};
+
+  rows.forEach((row, i) => {
+    // keep leftward/negative chords on-canvas: offset the source instead
+    const x = Math.max(0, -row.dx);
+    const y = i * 300;
+
+    elements.push(
+      node(`${row.id}-s`, x, y),
+      node(`${row.id}-t`, x + row.dx, y + row.dy),
+    );
+    elements.push(edge(row.id, `${row.id}-s`, `${row.id}-t`, row.fam));
+    edges.push(row.id);
+    bypasses[row.id] = row.props;
+  });
+
+  return {
+    name: 'segment-arrays',
+    tolClass: 'derived',
+    note: "v3-default's per-edge arrays (eh, ed, round-taxi) plus mixed-sign and extrapolated weights, as bypasses",
+    elements,
+    edges,
+    v3Style: [
+      { selector: 'node', style: { ...NODE } },
+      { selector: 'edge', style: { 'curve-style': 'straight' } },
+      ...rows.map((row) => ({
+        selector: `#${row.id}`,
+        style: { 'curve-style': row.fam, ...row.props },
+      })),
+    ],
+    v4Style: {
+      nodes: { width: 30, height: 30, 'background-color': '#c0392b' },
+      edges: { 'curve-style': { data: 'fam' } },
+      bypasses,
+    },
+  };
+};
+
 export const SCENES = [
   base(),
   families(),
@@ -700,6 +824,7 @@ export const SCENES = [
   loops(),
   curvedArrows(),
   asymmetricArrows(),
+  segmentArrays(),
 ];
 
 export const sceneByName = (name) => SCENES.find((s) => s.name === name);

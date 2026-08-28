@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-27, after the pick order (round 97) and the
-  pointer cursors (round 89).
+- **Last updated**: 2026-08-28, after the compound fit went from
+  conservative to exact (round 92).
 
 ## How to maintain this file
 
@@ -45,7 +45,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,260 unit · 513 module · 24 soak · 424 browser (some skip for want of a WebGPU adapter) |
+| Automated tests | 2,260 unit · 515 module · 24 soak · 424 browser (some skip for want of a WebGPU adapter) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -388,6 +388,29 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     different curves again by the same mechanism, and `MIGRATING.md` names
     bypasses as the porting path for per-edge list-prop arrays.
 
+- **28 Aug** — the compound fit, from conservative to exact (round 92)
+  - The maintainer's screen-pass report that the compound fixture "does not
+    fit to screen properly", closed at its cause: the fit scan's conservative
+    compound-loop bound over-framed the fixture 1.23×, and because its slack
+    grew up-left only, `fit` — which centers the box it is given — sat every
+    compound graph visibly down-right.  An over-frame reads as "zoomed out a
+    bit"; an off-center over-frame reads as "fit is broken", which is what
+    was reported.
+  - The fix extends the tier round 54 had already built for taxi: every
+    box-bounded curve kind (compound loops, taxi, extrapolated weights) now
+    reads the exact memoized curve box in both CPU fit-scan sites, so the
+    conservative terms — and both defects — are deleted rather than tuned.
+    The fixture fits at the exact box's own zoom (0.874 → 1.077), centered
+    to the pixel, with a centering assertion standing where none had been.
+  - Freshness is structural, not margin-based: every input the geometry
+    reads writes through the same epoch that invalidates the memo, checked
+    setter by setter.  The warm scan got 4× faster in the bargain (a fresh
+    memo now answers without evaluating the curve); a straight-edge graph's
+    scan is untouched, and the one cost — a cold scan's first pass over the
+    affected kinds — was measured and recorded, not assumed away.
+  - Buys compound graphs that fill the screen a fit was asked for, on real
+    data and the fixtures alike.
+
 ---
 
 ## What changed for users of v3
@@ -449,7 +472,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Five of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, and node outlines drawn over the ink.  Pick order landed 27 Aug; the classic demo's `eh` curve, restored by bypasses, landed 28 Aug |
+| Screen-pass fixes | Four of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, curve smoothness spent where the bend is, label fidelity under zoom, and node outlines drawn over the ink.  Pick order landed 27 Aug; the classic demo's `eh` curve and the compound fit landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |

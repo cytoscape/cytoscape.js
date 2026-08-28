@@ -1,21 +1,29 @@
 import { expect } from 'chai';
 import cytoscape from '../../src/index.mjs';
+import { FLAG_CURVED_BOX, CURVE_STRAIGHT } from '../../src/contract.mjs';
 
 /*
 Round 54: the randomized soundness sweep, promoted from 43.13's one-off
-measurement to a standing gate.
+measurement to a standing gate.  Round 92 sharpened what it pins.
 
-The conservative fit scan (`GraphStore.boundingBox`) was reformulated:
-compound loops take a directional per-edge box (the union of the two
-endpoint outer boxes grown by the stored excursion bound p2 up and left
-only), and box-bounded routes (taxi, weight-extrapolated blobs) add the
-edge's own endpoints' outer halves instead of the global nodeHalfMax.
-Tighter bounds buy nothing if one graph shape somewhere under-contains —
-fit may over-fit, never under — so this sweep drives the property over
-randomized compound graphs: node sizes, positions, padding, nesting,
-step sizes, taxi turns and extrapolated weights all drawn from a seeded
-generator, and for every graph the conservative box must contain the
-exact `cy.elements().boundingBox()` in all four directions.
+The fit scan (`GraphStore.boundingBox`) tiers its edge terms: the
+box-bounded kinds (compound loops, taxi, weight-extrapolated blobs) are
+EXACT via the memoized flattened curve bb — round 54 made taxi exact
+when this sweep caught, on its first run, a forced-direction route
+escaping any node-half margin, and round 92 retired the remaining
+conservative terms (the directional compound-loop p2 box, the per-edge
+outer-half + chord margin) because their cushion over-framed and
+de-centered compound fits — while the chord-bounded kinds (bezier,
+loops) keep the cheap hull bound.  Two properties, both directions of
+the old containment:
+
+  1. SOUNDNESS, every graph: the scan box contains the exact
+     `cy.elements().boundingBox()` in all four directions — fit may
+     over-fit, never under.
+  2. EXACTNESS, every graph whose curved edges are all box-bounded: the
+     scan box *equals* the exact box, which is what pins that the exact
+     tier is live (with a conservative term reintroduced the sweep goes
+     red here, not in the containment half).
 
 Deterministic on purpose: a fixed-seed LCG, so a failure reproduces and
 CI cannot flake.  The graph count trades coverage against suite time;
@@ -34,11 +42,12 @@ const lcg = (seed) => {
 
 const GRAPHS = 60;
 
-describe('bounds sweep (round 54)', function () {
-  it('the conservative box contains the exact box over randomized compound graphs', function () {
+describe('bounds sweep (rounds 54/92)', function () {
+  it('the scan box contains the exact box — and equals it where every curve is box-bounded', function () {
     const rnd = lcg(0xc0ffee);
     const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
     const between = (lo, hi) => lo + rnd() * (hi - lo);
+    let exactGraphs = 0;
 
     for (let g = 0; g < GRAPHS; g++) {
       // -- build a random compound graph --
@@ -135,18 +144,56 @@ describe('bounds sweep (round 54)', function () {
         elements: { nodes, edges },
       });
 
-      const conservative = cy._store.boundingBox();
+      const scan = cy._store.boundingBox();
       const exact = cy.elements().boundingBox();
       const label = `graph ${g} (${styleKind}${nested ? ', nested' : ''})`;
 
-      expect(conservative, label).to.not.equal(null);
-      expect(conservative.x1, `${label} x1`).to.be.at.most(exact.x1 + 1e-6);
-      expect(conservative.y1, `${label} y1`).to.be.at.most(exact.y1 + 1e-6);
-      expect(conservative.x2, `${label} x2`).to.be.at.least(exact.x2 - 1e-6);
-      expect(conservative.y2, `${label} y2`).to.be.at.least(exact.y2 - 1e-6);
+      expect(scan, label).to.not.equal(null);
+      expect(scan.x1, `${label} x1`).to.be.at.most(exact.x1 + 1e-6);
+      expect(scan.y1, `${label} y1`).to.be.at.most(exact.y1 + 1e-6);
+      expect(scan.x2, `${label} x2`).to.be.at.least(exact.x2 - 1e-6);
+      expect(scan.y2, `${label} y2`).to.be.at.least(exact.y2 - 1e-6);
+
+      // exactness (round 92): when every curved edge is a box-bounded
+      // kind, the scan reads the same memoized bbs the exact tier does,
+      // so the boxes must coincide — the assertion a reintroduced
+      // conservative term fails.  A leaf self-loop or a bundled-bezier
+      // pair (the random e0..e2 can produce both) keeps its chord-hull
+      // bound, so those graphs stay containment-only.
+      cy._store.flushDerived();
+
+      const params = cy._store.column('edge.curveParams');
+      let allBox = true;
+
+      cy.edges().forEach((edge) => {
+        const slot = edge._first().slot;
+        const kind = params[slot * 4 + 3];
+
+        if (
+          kind !== CURVE_STRAIGHT &&
+          !cy._store.hasFlag('edges', slot, FLAG_CURVED_BOX)
+        ) {
+          allBox = false;
+        }
+      });
+
+      if (allBox) {
+        exactGraphs++;
+        expect(scan.x1, `${label} exact x1`).to.be.closeTo(exact.x1, 1e-6);
+        expect(scan.y1, `${label} exact y1`).to.be.closeTo(exact.y1, 1e-6);
+        expect(scan.x2, `${label} exact x2`).to.be.closeTo(exact.x2, 1e-6);
+        expect(scan.y2, `${label} exact y2`).to.be.closeTo(exact.y2, 1e-6);
+      }
 
       cy.destroy();
     }
+
+    // the exactness half must actually run — a generator drift that
+    // stopped producing all-box graphs would leave it asserting nothing
+    // (39 of the 60 seeded graphs exercise it today)
+    expect(exactGraphs, 'graphs exercising the exactness half').to.be.at.least(
+      10,
+    );
   });
 
   it('taxi is exact in the scan: forced-direction overshoot included, unrelated giants excluded', function () {
@@ -261,13 +308,16 @@ describe('bounds sweep (round 54)', function () {
     const slot = cy.$id('ap')._first().slot;
     const p2 = Math.abs(cy._store.column('edge.curveParams')[slot * 4 + 2]);
     const box = cy._store.boundingBox();
+    const exact = cy.$id('ap').boundingBox();
 
-    // the loop's corner is its OWN nodes' union corner minus p2 — the
-    // 400px node two thousand px away contributes nothing to it (under
-    // the global-margin formulation x1 would sit a further ~200px out,
-    // and y2 would hang p2 + 200 below a graph whose lowest ink is
-    // big's own bottom edge at 200)
-    expect(box.x1).to.be.closeTo(-15 - p2, 0.01);
+    // the loop's corner is its OWN exact excursion (round 92; round 54
+    // held it at the union corner minus p2) — the 400px node two
+    // thousand px away contributes nothing to it (under the
+    // global-margin formulation x1 would sit a further ~200px out, and
+    // y2 would hang p2 + 200 below a graph whose lowest ink is big's
+    // own bottom edge at 200)
+    expect(box.x1).to.be.closeTo(exact.x1, 0.01);
+    expect(box.x1).to.be.greaterThan(-15 - p2 + 1); // tighter than 54's pin
     expect(box.y2).to.be.closeTo(200, 0.01); // big's own bottom edge
 
     cy.destroy();

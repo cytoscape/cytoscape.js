@@ -658,6 +658,58 @@ describe('debug harness (round 43)', function () {
       cy.destroy();
     });
 
+    it('the compound fixture fits to screen: exact zoom, centered', function () {
+      // The maintainer's round-92 report: the compound fixture "does not
+      // fit to screen properly".  Round 54's directional compound-loop
+      // slack over-framed the fit 1.23x, and because it grew up-left
+      // only, `fit` (which centers the box it is given) sat the graph
+      // visibly down-right — measured margins 194/30 left/right and
+      // 254/89 top/bottom at zoom 0.874 against an exact-box 1.077.
+      // The box-bounded kinds read the exact memoized curve bb now, so
+      // the fit is the exact box's fit, centered.  The centering
+      // assertion is the spec the asymmetry defect was missing all
+      // along: reintroduce a one-sided conservative term and it goes
+      // red while a zoom-only assertion could stay green under a
+      // symmetric cushion.
+      const def = networks['compound-fixture'];
+      const elements = elementsFor('compound-fixture', def);
+      const cy = cytoscape({
+        elements: { nodes: elements.nodes, edges: elements.edges },
+        style: styles.sheet('production', 'compound-fixture', elements, def),
+        layout: def.layout,
+        // the debug page's real dimensions — the 43.12 trap: a fit spec
+        // that reads cy.width()/height() at the headless default is
+        // testing a different graph than the one that broke
+        headlessWidth: 930,
+        headlessHeight: 900,
+      });
+
+      cy.fit(undefined, 30);
+
+      const zoom = cy.zoom();
+      const pan = cy.pan();
+      const exact = cy.elements().boundingBox();
+      const exactZoom = Math.min((930 - 60) / exact.w, (900 - 60) / exact.h);
+
+      // the fixture measured 0.874 before round 92 — a 1.23x over-frame
+      expect(zoom, 'fit zoom is the exact box fit').to.be.closeTo(
+        exactZoom,
+        0.001,
+      );
+      expect(zoom).to.be.greaterThan(1); // 1.077 as measured
+
+      // centered: the exact box's rendered margins match side to side
+      const left = exact.x1 * zoom + pan.x;
+      const right = 930 - (exact.x2 * zoom + pan.x);
+      const top = exact.y1 * zoom + pan.y;
+      const bottom = 900 - (exact.y2 * zoom + pan.y);
+
+      expect(left, 'left vs right margin').to.be.closeTo(right, 3);
+      expect(top, 'top vs bottom margin').to.be.closeTo(bottom, 3);
+
+      cy.destroy();
+    });
+
     it('the clustered variant really is compound', function () {
       const def = networks['em-web-clustered'];
       const elements = elementsFor('em-web-clustered', def);

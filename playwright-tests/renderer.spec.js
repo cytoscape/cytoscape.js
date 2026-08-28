@@ -8228,15 +8228,13 @@ test.describe('WebGPU renderer', () => {
       // hand-off, a system gesture); there is no Playwright verb for it, so
       // the event is dispatched at the canvas the way the browser would
       await page.evaluate(() => {
-        document
-          .querySelector('#cytoscape canvas')
-          .dispatchEvent(
-            new PointerEvent('pointercancel', {
-              pointerId: 1,
-              pointerType: 'mouse',
-              bubbles: true,
-            }),
-          );
+        document.querySelector('#cytoscape canvas').dispatchEvent(
+          new PointerEvent('pointercancel', {
+            pointerId: 1,
+            pointerType: 'mouse',
+            bubbles: true,
+          }),
+        );
       });
 
       await expect.poll(() => canvasCursor(page)).toBe('');

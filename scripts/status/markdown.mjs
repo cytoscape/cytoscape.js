@@ -179,7 +179,6 @@ export const PLANNED_PATHS = {
   // round 87 — layout mechanics
   'src/layout/pack.mts': 'planned by round 87 (layout mechanics)',
   // round 89 — pointer cursors
-  'src/interact/cursor.mts': 'planned by round 89 (pointer cursors)',
   // round 98 — the runtime rounds
   'test/runtimes/smoke.mjs':
     'planned by round 98 (the cross-runtime smoke tier)',

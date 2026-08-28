@@ -776,6 +776,60 @@ describe('debug harness (round 43)', function () {
     });
   });
 
+  describe('the core toggles', function () {
+    /* Round 89.4 added a `pointerCursors` checkbox, and the failure mode a
+       new control has is silent: `boolControl` returns early when its
+       selector matches nothing, so a typo'd id — or a control added to
+       `toggles.js` and forgotten in `index.html` — is a checkbox that
+       simply never appears and never fires.  Nothing in the page says so.
+
+       So the property to hold is that every selector `toggles.js` reaches
+       for exists in the markup, and that every control it wires names a
+       core member that exists on a real instance.  Both are text checks
+       against the page's own sources, which is what a headless process
+       can honestly do here. */
+    const togglesSrc = readFileSync(join(DEBUG, 'toggles.js'), 'utf8');
+    const html = readFileSync(join(DEBUG, 'index.html'), 'utf8');
+
+    it('wires every control to an element the page actually has', function () {
+      // every selector literal the file names, whether it goes straight to
+      // `$()` or through one of the three control factories
+      const ids = [...togglesSrc.matchAll(/'#([\w-]+)'/g)].map((m) => m[1]);
+
+      expect(
+        ids.length,
+        'toggles.js stopped naming any control',
+      ).to.be.at.least(14);
+      expect(ids, 'the round-89 checkbox').to.include('pointer-cursors-check');
+
+      for (const id of ids) {
+        expect(html, `#${id} is wired but not in index.html`).to.include(
+          `id="${id}"`,
+        );
+      }
+    });
+
+    it('names only core members that exist', function () {
+      // the getter half of each control, `(cy) => cy.<member>(...)`
+      const members = new Set(
+        [...togglesSrc.matchAll(/\(cy\) => cy\.(\w+)\(/g)].map((m) => m[1]),
+      );
+      const cy = cytoscape();
+
+      expect(members.has('pointerCursors'), 'the round-89 toggle').to.equal(
+        true,
+      );
+
+      for (const name of members) {
+        expect(typeof cy[name], `cy.${name} is wired but absent`).to.equal(
+          'function',
+        );
+      }
+
+      cy.destroy();
+    });
+  });
+
   describe('the dev server the page expects', function () {
     it('binds livereload on every interface', function () {
       // `livereload-setup.js` builds the client URL from `location.hostname`,

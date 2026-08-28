@@ -8,7 +8,8 @@
 //     carries over unchanged.  Extended with select/unselect/show/hide/remove.
 //   * "Core toggles" — v3 keeps these in its View section.  Carried over, plus
 //     the ones v3's page never had: box selection, selection type, the zoom
-//     range, wheel sensitivity, and the two v4-only box-selection knobs.
+//     range, wheel sensitivity, the two v4-only box-selection knobs, and
+//     round 89's pointerCursors.
 
 (function () {
   // -- toggles on the current selection ------------------------------------
@@ -103,6 +104,14 @@
     '#box-labels-check',
     (cy) => cy.boxSelectionIncludesLabels(),
     (cy, v) => cy.boxSelectionIncludesLabels(v),
+  );
+  // round 89: also v4-only — v3 set no cursors at all.  The checkbox is the
+  // boolean half of the option; the partial-map form is API-only, and
+  // reading `!== false` is what keeps a map showing as on.
+  boolControl(
+    '#pointer-cursors-check',
+    (cy) => cy.pointerCursors() !== false,
+    (cy, v) => cy.pointerCursors(v),
   );
 
   const selectControl = (sel, get, set) => {

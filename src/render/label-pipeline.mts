@@ -7,15 +7,31 @@ import type { CulledGroup } from './cull.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
 import type { GlyphAtlas } from './glyph-atlas.mjs';
 
+/** Which of the round-95 label phases a draw encodes. */
+export type LabelPhase = 'fill' | 'outline';
+
 /**
  * SDF label render pipeline: one instance per glyph, pulled from the
  * GlyphBuffer, with node positions/flags read from the column mirror so
  * labels track their nodes on-GPU.  Labels draw after nodes and are not
  * pickable.
+ *
+ * Round 95: the shader is specialized (LABEL_PHASE override constant)
+ * into a fill variant and an outline-coverage variant, so the renderer
+ * can draw every stream's outlines under every stream's fill — v3's
+ * stroke-the-line-then-fill order, which is what keeps a glyph's
+ * outline ring from cutting notches into the previous letter's ink.
+ * The outline variant is compiled lazily on first use, so a graph
+ * without text outlines never pays for it.
  */
 export class LabelPipeline {
-  private pipeline: GPURenderPipeline;
+  private fillPipeline: GPURenderPipeline;
+  private outlinePipeline: GPURenderPipeline | null;
   private bindLayout: GPUBindGroupLayout;
+  private layout: GPUPipelineLayout;
+  private module: GPUShaderModule;
+  private format: GPUTextureFormat;
+  private variant: 'node' | 'edge';
   private quadIndex: GPUBuffer;
   private edge: boolean;
   /** cached per (uniform buffer, glyph stream) — the edge pipeline
@@ -45,8 +61,10 @@ export class LabelPipeline {
     variant: 'node' | 'edge' = 'node',
   ) {
     this.edge = variant === 'edge';
+    this.variant = variant;
+    this.format = format;
 
-    const module = device.createShaderModule({
+    this.module = device.createShaderModule({
       label: `cy-gpu:${variant}-label-shader`,
       code: this.edge ? EDGE_LABEL_SHADER : LABEL_SHADER,
     });
@@ -87,16 +105,28 @@ export class LabelPipeline {
       ],
     });
 
-    this.pipeline = device.createRenderPipeline({
-      label: `cy-gpu:${variant}-label-pipeline`,
-      layout: device.createPipelineLayout({
-        bindGroupLayouts: [this.bindLayout, visibleLayout],
-      }),
-      vertex: { module, entryPoint: 'vsLabel' },
+    this.layout = device.createPipelineLayout({
+      bindGroupLayouts: [this.bindLayout, visibleLayout],
+    });
+    this.fillPipeline = this.createPhasePipeline(device, 'fill');
+    this.outlinePipeline = null; // lazily built on the first outlined draw
+    this.bindGroups = new Map();
+  }
+
+  /** One phase's specialization of the shared module (round 95). */
+  private createPhasePipeline(
+    device: GPUDevice,
+    phase: LabelPhase,
+  ): GPURenderPipeline {
+    return device.createRenderPipeline({
+      label: `cy-gpu:${this.variant}-label-pipeline:${phase}`,
+      layout: this.layout,
+      vertex: { module: this.module, entryPoint: 'vsLabel' },
       fragment: {
-        module,
+        module: this.module,
         entryPoint: 'fsLabel',
-        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+        constants: { LABEL_PHASE: phase === 'outline' ? 1 : 0 },
+        targets: [{ format: this.format, blend: PREMULTIPLIED_BLEND }],
       },
       primitive: { topology: 'triangle-list' },
       // labels draw over everything (no depth test)
@@ -106,8 +136,6 @@ export class LabelPipeline {
         depthCompare: 'always',
       },
     });
-
-    this.bindGroups = new Map();
   }
 
   private ensureBindGroup(
@@ -171,6 +199,14 @@ export class LabelPipeline {
    * glyph stream (mid, source, target — round 13 D4), each with its own
    * cached bind group.
    *
+   * Round 95: `phase` picks the shader specialization.  The renderer
+   * encodes an `'outline'` draw for every stream that holds an outlined
+   * glyph, then a `'fill'` draw for every stream, so all outline
+   * coverage lands under all ink — v3's per-line stroke-then-fill
+   * order, globalized (the recorded deviation: where two *distinct*
+   * labels overlap, v3 strokes the later label over the earlier one's
+   * ink and v4 does not).
+   *
    * @param pass — the scene render pass being encoded
    * @param device — the device, for lazy bind group rebuilds
    * @param uniform — the Frame uniform; bind groups are cached per buffer
@@ -181,6 +217,7 @@ export class LabelPipeline {
    * already hold every glyph the stream references
    * @param cull — the culled group whose visible list and indirect args
    * this draw uses
+   * @param phase — which round-95 phase to encode (default `'fill'`)
    */
   draw(
     pass: GPURenderPassEncoder,
@@ -190,12 +227,21 @@ export class LabelPipeline {
     mirror: ColumnMirror,
     atlas: GlyphAtlas,
     cull: CulledGroup,
+    phase: LabelPhase = 'fill',
   ): void {
     if (glyphs.highWater === 0) {
       return;
     }
 
-    pass.setPipeline(this.pipeline);
+    if (phase === 'outline' && this.outlinePipeline == null) {
+      this.outlinePipeline = this.createPhasePipeline(device, 'outline');
+    }
+
+    pass.setPipeline(
+      phase === 'outline'
+        ? (this.outlinePipeline as GPURenderPipeline)
+        : this.fillPipeline,
+    );
     pass.setBindGroup(
       0,
       this.ensureBindGroup(device, uniform, glyphs, mirror, atlas),

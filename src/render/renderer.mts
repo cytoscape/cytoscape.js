@@ -2101,56 +2101,71 @@ export class Renderer {
     // built until some stream has one (see "deferred pipelines")
     const labels = this.labelLayer;
 
-    if (labels != null && labels.glyphs.highWater > 0) {
-      this.labels()?.draw(
-        pass,
-        device,
-        uniform,
-        labels.glyphs,
-        mirror,
-        labels.atlas,
-        cull.glyph,
-      );
+    if (labels == null) {
+      return;
     }
 
-    if (
-      labels != null &&
-      (labels.edgeGlyphs.highWater > 0 ||
-        labels.sourceGlyphs.highWater > 0 ||
-        labels.targetGlyphs.highWater > 0)
-    ) {
-      const edgeLabels = this.edgeLabels();
+    const nodeStream = labels.glyphs.highWater > 0;
+    const edgeStreams =
+      labels.edgeGlyphs.highWater > 0 ||
+      labels.sourceGlyphs.highWater > 0 ||
+      labels.targetGlyphs.highWater > 0;
+    const nodeLabels = nodeStream ? this.labels() : null;
+    const edgeLabels = edgeStreams ? this.edgeLabels() : null;
 
-      edgeLabels?.draw(
-        pass,
-        device,
-        uniform,
-        labels.edgeGlyphs,
-        mirror,
-        labels.atlas,
-        cull.edgeGlyph,
-      );
+    // round 95: the outline goes under the ink.  Glyph quads overlap by
+    // construction, so a one-pass draw composites glyph N's outline
+    // ring over glyph N-1's fill — white notches in every outlined
+    // word.  Encode every stream's outline coverage first, then every
+    // fill over it (v3 strokes the line, then fills; here the split is
+    // global across streams — a recorded deviation where two *distinct*
+    // labels overlap).  Streams without an outlined glyph skip the
+    // extra pass before any GPU work, so the outline-free path encodes
+    // exactly what it did before.
+    const drawPhase = (phase: 'fill' | 'outline'): void => {
+      if (nodeStream && (phase === 'fill' || labels.glyphs.hasOutline())) {
+        nodeLabels?.draw(
+          pass,
+          device,
+          uniform,
+          labels.glyphs,
+          mirror,
+          labels.atlas,
+          cull.glyph,
+          phase,
+        );
+      }
+
+      if (!edgeStreams) {
+        return;
+      }
+
       // the end-label streams (D4) share the pipeline; their glyphs
       // carry the endParam re-anchor
-      edgeLabels?.draw(
-        pass,
-        device,
-        uniform,
-        labels.sourceGlyphs,
-        mirror,
-        labels.atlas,
-        cull.sourceGlyph,
-      );
-      edgeLabels?.draw(
-        pass,
-        device,
-        uniform,
-        labels.targetGlyphs,
-        mirror,
-        labels.atlas,
-        cull.targetGlyph,
-      );
-    }
+      const streams = [
+        [labels.edgeGlyphs, cull.edgeGlyph],
+        [labels.sourceGlyphs, cull.sourceGlyph],
+        [labels.targetGlyphs, cull.targetGlyph],
+      ] as const;
+
+      for (const [glyphs, culled] of streams) {
+        if (phase === 'fill' || glyphs.hasOutline()) {
+          edgeLabels?.draw(
+            pass,
+            device,
+            uniform,
+            glyphs,
+            mirror,
+            labels.atlas,
+            culled,
+            phase,
+          );
+        }
+      }
+    };
+
+    drawPhase('outline');
+    drawPhase('fill');
   }
 
   /** Shortly after drawing stops, re-render one frame at max scale so

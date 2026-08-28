@@ -4194,6 +4194,19 @@ ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGS
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
 ${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(6) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, 0] (round 58)\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;'}
 
+// Round 95: the outline goes under the ink.  Glyph quads overlap by
+// construction (each carries the SDF pad halo past its ink), and one
+// combined fill+outline pass composites glyph N's opaque outline ring
+// over glyph N-1's already-blended fill — the white notches cut into a
+// word's letters.  v3 never does this: it strokes the whole line, then
+// fills over it.  So the pipeline specializes this constant into two
+// variants — outline coverage only (1), drawn for every stream first,
+// then fill (0) over it — same module, same instances, no new buffers.
+// The fill variant keeps the boundary colour mixing and drops the max
+// that let a ring beat ink; the renderer skips the outline pass
+// entirely for streams with no outlined glyph.
+override LABEL_PHASE: u32 = 0u;
+
 struct LabelVSOut {
   @builtin(position) position: vec4f,
   @location(0) uv: vec2f,
@@ -4391,6 +4404,12 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   let w = max(fwidth(s), 1e-4); // derivatives before any non-uniform branch
 
   if (in.solid != 0u) { // text background quad (B6: shape + border)
+    // background quads already draw under their own run; they belong
+    // to the fill pass under both phases (round 95)
+    if (LABEL_PHASE == 1u) {
+      return vec4f(0.0);
+    }
+
     let half = in.quadPx * 0.5;
     let p = (in.local - vec2f(0.5)) * in.quadPx;
     var sdq: f32;
@@ -4424,17 +4443,34 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   }
 
   let fillA = clamp((s - 0.5) / w + 0.5, 0.0, 1.0);
-  var rgb = in.color.rgb;
-  var alpha = fillA * in.color.a;
+  let outlined = in.outlineWidth > 0.0 && in.outlineColor.a > 0.0;
 
-  // text-outline: a second, lower distance threshold ringing the glyph
-  if (in.outlineWidth > 0.0 && in.outlineColor.a > 0.0) {
+  // text-outline: a second, lower distance threshold ringing the glyph.
+  // Pass 1 (round 95) draws the whole outline coverage — the fill pass
+  // inks over it, exactly v3's strokeText-then-fillText layering.
+  if (LABEL_PHASE == 1u) {
+    if (!outlined) {
+      return vec4f(0.0);
+    }
+
     let outerA = clamp((s - (0.5 - in.outlineWidth)) / w + 0.5, 0.0, 1.0);
-    rgb = mix(in.outlineColor.rgb, in.color.rgb, fillA);
-    alpha = max(alpha, outerA * in.outlineColor.a);
+    let a = outerA * in.outlineColor.a * in.fade;
+
+    return vec4f(in.outlineColor.rgb * a, a); // premultiplied
   }
 
-  alpha = alpha * in.fade;
+  var rgb = in.color.rgb;
+
+  // the phase split changes coverage, not the colour math: the fill
+  // pass keeps the boundary mixing (or edges get a dark AA fringe on
+  // light outlines) and drops the old max(alpha, ring alpha), which is
+  // what let a glyph's ring beat the previous letter's ink
+  if (outlined) {
+    rgb = mix(in.outlineColor.rgb, in.color.rgb, fillA);
+  }
+
+  let alpha = fillA * in.color.a * in.fade;
+
   return vec4f(rgb * alpha, alpha); // premultiplied
 }
 `;

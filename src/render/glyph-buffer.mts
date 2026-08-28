@@ -55,7 +55,38 @@ const COMPACT_MIN = 64;
 interface Range {
   start: number;
   count: number;
+  /** glyphs in the run that draw an outline ring (round 95); summed
+   * into `outlinedTotal` so the renderer can skip the outline pass on
+   * streams without one */
+  outlined: number;
 }
+
+/**
+ * Count the glyphs in an interleaved run that will draw an outline
+ * ring: non-solid (u0 >= 0), outline width > 0, outline alpha > 0.
+ * Solid background quads reuse the outline words as their text-border
+ * (B6) and draw in the fill pass regardless, so they never count.
+ */
+const countOutlined = (glyphWords: Uint32Array): number => {
+  const f32 = new Float32Array(
+    glyphWords.buffer,
+    glyphWords.byteOffset,
+    glyphWords.length,
+  );
+  let n = 0;
+
+  for (let at = 0; at < glyphWords.length; at += GLYPH_WORDS) {
+    if (
+      f32[at + 6] >= 0 && // not a solid background quad
+      f32[at + 11] > 0 && // outline half-width, SDF sample units
+      glyphWords[at + 10] >>> 24 !== 0 // packed outline alpha byte
+    ) {
+      n++;
+    }
+  }
+
+  return n;
+};
 
 export class GlyphBuffer {
   /** bumps whenever the GPU buffer is reallocated ⇒ bind groups must be rebuilt */
@@ -69,6 +100,7 @@ export class GlyphBuffer {
   private cap: number;
   private words: Uint32Array;
   private ranges: Map<number, Range>;
+  private outlinedTotal: number;
   private garbage: number;
   private dirtyStart: number;
   private dirtyEnd: number;
@@ -95,6 +127,7 @@ export class GlyphBuffer {
     this.cap = initialCap;
     this.words = new Uint32Array(initialCap * GLYPH_WORDS);
     this.ranges = new Map();
+    this.outlinedTotal = 0;
     this.garbage = 0;
     this.dirtyStart = Infinity;
     this.dirtyEnd = 0;
@@ -107,6 +140,16 @@ export class GlyphBuffer {
   /** live glyph count (for stats) */
   count(): number {
     return this.highWater - this.garbage;
+  }
+
+  /**
+   * Whether any live glyph in the stream draws an outline ring.  The
+   * renderer's round-95 outline pass (all outlines under all fills, so
+   * a glyph's ring never bites the previous letter's ink) is skipped
+   * per stream — before any GPU work — when this is false.
+   */
+  hasOutline(): boolean {
+    return this.outlinedTotal > 0;
   }
 
   /**
@@ -133,6 +176,7 @@ export class GlyphBuffer {
     }
 
     this.ranges.clear();
+    this.outlinedTotal = 0;
     this.garbage = 0;
     this.highWater = 0;
     this.dirtyStart = Infinity;
@@ -156,6 +200,10 @@ export class GlyphBuffer {
       glyphWords != null &&
       glyphWords.length === old.count * GLYPH_WORDS
     ) {
+      const outlined = countOutlined(glyphWords);
+
+      this.outlinedTotal += outlined - old.outlined;
+      old.outlined = outlined;
       this.words.set(glyphWords, old.start * GLYPH_WORDS);
       this.markDirty(old.start, old.start + old.count);
 
@@ -169,6 +217,7 @@ export class GlyphBuffer {
 
       this.markDirty(old.start, old.start + old.count);
       this.ranges.delete(nodeSlot);
+      this.outlinedTotal -= old.outlined;
       this.garbage += old.count;
     }
 
@@ -179,11 +228,14 @@ export class GlyphBuffer {
         throw new Error('Glyph data must be a whole number of glyphs');
       }
 
+      const outlined = countOutlined(glyphWords);
+
       this.ensureCapacity(this.highWater + count);
       this.words.set(glyphWords, this.highWater * GLYPH_WORDS);
-      this.ranges.set(nodeSlot, { start: this.highWater, count });
+      this.ranges.set(nodeSlot, { start: this.highWater, count, outlined });
       this.markDirty(this.highWater, this.highWater + count);
       this.highWater += count;
+      this.outlinedTotal += outlined;
     }
 
     if (this.garbage > COMPACT_MIN && this.garbage > this.highWater / 2) {
@@ -293,7 +345,11 @@ export class GlyphBuffer {
         write * GLYPH_WORDS,
       );
 
-      this.ranges.set(nodeSlot, { start: write, count: range.count });
+      this.ranges.set(nodeSlot, {
+        start: write,
+        count: range.count,
+        outlined: range.outlined,
+      });
       write += range.count;
     }
 

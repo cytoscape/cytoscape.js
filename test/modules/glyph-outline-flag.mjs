@@ -1,9 +1,6 @@
 import { expect } from 'chai';
 
-import {
-  GlyphBuffer,
-  GLYPH_WORDS,
-} from '../../src/render/glyph-buffer.mjs';
+import { GlyphBuffer, GLYPH_WORDS } from '../../src/render/glyph-buffer.mjs';
 
 /*
 Round 95 draws label outlines in their own pass, under every fill, so a

@@ -337,6 +337,12 @@ declare namespace cytoscape {
          * The default value is false.
          */
         autounselectify?: boolean;
+        /**
+         * Debounce time in milliseconds to check for a `dblclick` event before executing the `oneclick` event.
+         *
+         * The default value is 250.
+         */
+        multiClickDebounceTime?: number;
 
         ///////////////////////////////////////
         // rendering options:

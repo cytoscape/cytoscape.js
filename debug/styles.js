@@ -559,17 +559,22 @@ var styles = (function () {
   // `[source = "c"][target = "e"]`, …).  v4 has no selectors, so each of
   // those becomes a `case` mapper over `data( 'id' )` — declarative and
   // serializable.  (Round 63's `bypasses` section is the other spelling
-  // now; the mappers stay because this sheet is also the mapper demo.)
+  // for most props; the mappers stay because this sheet is also the mapper
+  // demo.)
   //
-  // **One deviation, and it is a real limit rather than a shortcut.**  The
+  // **The former deviation, closed by bypasses (round 96).**  The
   // list-valued curve parameters — `control-point-distances`/`-weights`,
   // `segment-distances`/`-weights`/`-radii` — and the arrow *widths* accept
   // constants only; they reject mappers outright.  v3 gives `ab`, `bc`, `eh`
-  // and `ed` each their own arrays.  v4 cannot, so each family gets one
-  // parameterisation here.  It costs nothing visually, because a family's
-  // parameters are only read by edges *of* that family: `control-point-*`
-  // reaches only the unbundled bezier, `segment-*` only the segment kinds.
-  // What is genuinely lost is v3's *three different* segment arrays.
+  // and `ed` each their own arrays, and a `case` mapper cannot carry them —
+  // but a round-63 bypass entry is a per-element *constant*, which is
+  // exactly what a per-edge array is.  So for the list props the bypass is
+  // not the other spelling but the only one, and the `bypasses` section
+  // below carries v3's four arrays verbatim (`v3/debug/init.js`).  The
+  // constants in the edges block remain as the family defaults for any
+  // other edge switched into those families.  Nothing is lost any more;
+  // `test/modules/debug-harness.mjs` pins the four edges' route points to
+  // v3's values.
   function v3Default(elements, def) {
     var byId = function (map, fallback) {
       var cases = Object.keys(map).map(function (id) {
@@ -646,7 +651,6 @@ var styles = (function () {
         'mid-target-arrow-color': selectable('#5b6472'),
         'source-arrow-fill': 'hollow',
         'target-arrow-fill': 'hollow',
-        // the one v3 line this sheet cannot vary per edge (see above)
         'curve-style': byId(
           {
             ab: 'unbundled-bezier',
@@ -668,11 +672,16 @@ var styles = (function () {
           },
           'bezier',
         ),
-        'control-point-distances': [20, -100, 20],
-        'control-point-weights': [0.25, 0.5, 0.75],
-        'segment-distances': [20, -80],
-        'segment-weights': [0.25, 0.5],
-        'segment-radii': [20, 20],
+        // Family defaults for any edge *toggled* into these families — every
+        // edge that starts in one carries its own arrays in `bypasses` below.
+        // Deliberately distinct from every bypass entry, so the spec's
+        // control (drop the section, watch all four edges move) can prove
+        // each entry load-bearing.
+        'control-point-distances': [30, -120, 30],
+        'control-point-weights': [0.2, 0.5, 0.8],
+        'segment-distances': [30, -60],
+        'segment-weights': [0.3, 0.6],
+        'segment-radii': [15, 15],
         'haystack-radius': 0.5,
         'taxi-direction': 'downward',
         'taxi-turn-min-distance': 50,
@@ -690,6 +699,27 @@ var styles = (function () {
         'text-margin-y': -4,
         'font-size': 12,
         color: '#2f4f42',
+      },
+      // v3's per-edge curve arrays, verbatim (`v3/debug/init.js`) — the
+      // list props' only per-edge spelling; see the note above the function
+      bypasses: {
+        ab: {
+          'control-point-distances': [20, -100, 20],
+          'control-point-weights': [0.25, 0.5, 0.75],
+        },
+        bc: {
+          'segment-distances': [20, -80],
+          'segment-weights': [0.25, 0.5],
+        },
+        ed: {
+          'segment-distances': [-100],
+          'segment-weights': [0.5],
+        },
+        eh: {
+          'segment-distances': [-50, -50, -50],
+          'segment-weights': [0.25, 0.5, 0.75],
+          'segment-radii': [50, 50, 50],
+        },
       },
     };
   }

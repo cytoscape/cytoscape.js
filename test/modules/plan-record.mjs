@@ -176,13 +176,24 @@ describe('the development record', () => {
     // So a `plan` file may not record its own landing.  Both forms the
     // record used are caught: the self-declaration, and a checklist with
     // nothing left open.
+    //
+    // Round 111.1 adds the third: a round whose sitting closed it having
+    // decided to build nothing.  Round 40 sat in the planned queue for
+    // nineteen days after its own file said `So round 40 ships **nothing**`,
+    // because 111's forms all look for a landing and there was none to
+    // declare.  A round that shipped nothing is still a round nobody has to
+    // do, and the queue is what the kind field is read for.
     for (const s of sections.filter((x) => x.kind === 'plan')) {
       const text = readFileSync(join(dir, s.file), 'utf8');
-      const { declares, ticked, open } = landingEvidence(text, s.round);
+      const { declares, closes, ticked, open } = landingEvidence(text, s.round);
 
       expect(declares, `${s.file} declares it landed; rename it`).to.equal(
         false,
       );
+      expect(
+        closes,
+        `${s.file} records the round closed with nothing shipped; rename it`,
+      ).to.equal(false);
       expect(
         ticked > 0 && open === 0,
         `${s.file} has all ${ticked} items ticked; rename it`,
@@ -209,10 +220,25 @@ describe('the development record', () => {
     ).to.equal(true);
     expect(evidence('a plan for round 42', '42').declares).to.equal(false);
 
+    // Round 111.1's form, held to the same rule: round 79's plan says an
+    // item of its own "ships nothing" (test-only), which must not read as
+    // the round closing, and a sitting that closes round 40 must not close
+    // round 39.
+    expect(evidence('So round 40 ships **nothing**:', '40').closes).to.equal(
+      true,
+    );
+    expect(evidence('So round 40 ships **nothing**:', '39').closes).to.equal(
+      false,
+    );
+    expect(evidence('(test-only; ships nothing).', '79').closes).to.equal(
+      false,
+    );
+
     const list = '- [x] **1** done\n- [ ] **2** not\n';
 
     expect(evidence(list, '1')).to.deep.equal({
       declares: false,
+      closes: false,
       ticked: 1,
       open: 1,
     });
@@ -259,7 +285,10 @@ describe('the development record', () => {
     );
     expect(states.get(12), 'round 12 landed as 12a/12b/12c').to.equal('landed');
     expect(states.get(86), 'round 86 landed').to.equal('landed');
-    expect(states.get(40), 'round 40 is a plan only').to.equal('planned');
+    expect(
+      states.get(40),
+      'round 40 closed at its sitting, shipping nothing',
+    ).to.equal('landed');
     expect(states.get(91), 'the screen pass is scoped, not built').to.equal(
       'planned',
     );

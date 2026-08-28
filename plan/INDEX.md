@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–39, 41–48, 52–70, 86, 89–90, 97, 101, 108–109, 111 |
-| planned | 40, 49–51, 71–85, 87–88, 91–96, 98–100, 102–107, 110 |
+| landed | 7–48, 52–70, 86, 89–90, 97, 101, 108–109, 111 |
+| planned | 49–51, 71–85, 87–88, 91–96, 98–100, 102–107, 110 |
 
 ## The sections
 
-149 sections.
+150 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -92,7 +92,7 @@ A round can land with an item held open; the round file says which.
 | 63 | 37 | 2026-08-04 | landed | [Governance close-out](rounds/2026-08-04-03-rnd0037-landed-governance-close-out.md) |
 | 64 | 38 | 2026-08-04 | landed | [`border-style` and `outline-style`, full coverage](rounds/2026-08-04-04-rnd0038-landed-border-style-and-outline-style-full-coverage.md) |
 | 65 | 39 | 2026-08-04 | landed | [The decided feature tail](rounds/2026-08-04-05-rnd0039-landed-the-decided-feature-tail.md) |
-| 66 | 40 | 2026-08-04 | plan | [The error policy and `cytoscape.warnings()`](rounds/2026-08-04-06-rnd0040-plan-the-error-policy-and-cytoscape-warnings.md) |
+| 66 | 40 | 2026-08-04 | landed | [The error policy and `cytoscape.warnings()`](rounds/2026-08-04-06-rnd0040-landed-the-error-policy-and-cytoscape-warnings.md) |
 | 67 | 41 | 2026-08-04 | landed | [The v4 Event and emitter](rounds/2026-08-04-07-rnd0041-landed-the-v4-event-and-emitter.md) |
 | 68 | 42 | 2026-08-04 | landed | [The great restructure](rounds/2026-08-04-08-rnd0042-landed-the-great-restructure.md) |
 | 69 | 43 | 2026-08-04 | landed | [The debug harness](rounds/2026-08-04-09-rnd0043-landed-the-debug-harness.md) |
@@ -176,3 +176,4 @@ A round can land with an item held open; the round file says which.
 | 147 | 109 | 2026-08-26 | landed | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-01-rnd0109-landed-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
 | 148 | 110 | 2026-08-26 | plan | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-02-rnd0110-plan-zero-copy-the-copy-census-and-what-each-copy-buys.md) |
 | 149 | 111 | 2026-08-26 | landed | [The kind field tells the truth](rounds/2026-08-26-03-rnd0111-landed-the-kind-field-tells-the-truth.md) |
+| 150 | 111.1 | 2026-08-28 | landed | [A round that shipped nothing is still closed](rounds/2026-08-28-01-rnd0111.1-landed-a-round-that-shipped-nothing-is-still-closed.md) |

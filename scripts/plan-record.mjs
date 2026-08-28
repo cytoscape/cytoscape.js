@@ -268,18 +268,27 @@ so the answer is generated from the names instead of recalled.
 */
 
 /**
- * What a section's text says about its own landing — the three forms the
- * record actually used before the kind field carried it.
+ * What a section's text says about its own outcome — the forms the record
+ * actually used before the kind field carried it.
  *
- * The round number is matched and compared to the file's own, because a
- * plan routinely says a *different* round is complete: round 28's plan
- * opens by noting round 27 is complete apart from 27.8.
+ * A round leaves the planned queue two ways, and both are read here.  It
+ * **lands**, in the three spellings round 111 catalogued.  Or its sitting
+ * **closes** it having decided to build nothing — round 40, whose file says
+ * `So round 40 ships **nothing**` and which the landing forms cannot see,
+ * because there was no landing to declare.  Round 111 renamed 33 files on
+ * the first kind and missed the second; a round that shipped nothing is
+ * still a round nobody has to do.
+ *
+ * The round number is matched and compared to the file's own in both,
+ * because a plan routinely says a *different* round is complete: round 28's
+ * plan opens by noting round 27 is complete apart from 27.8.
  *
  * @param text — the section's markdown.
  * @param round — the round the section is about, as {@link roundLabel}
  *   spells it; `null` for a section that is not about a round.
- * @returns `{ declares, ticked, open }` — whether the text declares this
- *   round landed, and its checklist tallies.
+ * @returns `{ declares, closes, ticked, open }` — whether the text declares
+ *   this round landed, whether it records the round closed with nothing
+ *   shipped, and its checklist tallies.
  */
 export function landingEvidence(text, round) {
   const own = (m) => m == null || round == null || m === round;
@@ -289,9 +298,13 @@ export function landingEvidence(text, round) {
     [...text.matchAll(/\*\*Round ([\d.a-z]+) is complete\b/g)].some((m) =>
       own(m[1]),
     );
+  const closes = [
+    ...text.matchAll(/\bround ([\d.a-z]+) ships \*\*nothing\*\*/gi),
+  ].some((m) => own(m[1]));
 
   return {
     declares,
+    closes,
     ticked: (text.match(/^ *- \[x\] /gm) ?? []).length,
     open: (text.match(/^ *- \[ \] /gm) ?? []).length,
   };

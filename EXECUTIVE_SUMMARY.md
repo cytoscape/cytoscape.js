@@ -351,6 +351,23 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys the affordance every other graph canvas has, without taking the one
     a ported v3 app already sets.
 
+- **28 Aug** — a round that shipped nothing is still closed (round 111.1)
+  - Round 111 taught the record to say which rounds landed, and missed the one
+    that ended by deciding to build nothing.  Round 40's design sitting closed
+    the error-policy question on 9 Aug — no `cytoscape.warnings()`, no
+    `errorPolicy`, no re-tiering, with the 198-site taxonomy left as the
+    recorded rationale for the fail-loudly contract standing whole — and every
+    form the gate knew looks for evidence that something *shipped*.
+  - So the generated table read `planned 40` for nineteen days while another
+    section of the same record already read "~~Round 40~~ closed with no new
+    surface", and this summary had never listed it as pending.  The derived
+    view is trusted because it cannot go stale, which makes an incomplete
+    input the most confidently wrong thing in the repo.
+  - Buys `landed 7–48` running unbroken, and a third clause in the gate — a
+    `plan` file may not record its own *close* either — matched against the
+    file's own round number, so round 79's item-level "ships nothing" does not
+    close round 79.
+
 ---
 
 ## What changed for users of v3

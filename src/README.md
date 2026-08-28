@@ -428,7 +428,19 @@ sweep caught, on its first run, a forced-direction taxi overshooting
 any node-half margin by its turn.  Fit zoom on the compound fixture:
 0.607 → 0.822.  The sweep is a standing gate now
 (`test/modules/bounds-sweep.mjs`); the compound-loop section below
-carries the formulation.
+carries the formulation.  **Round 92 (2026-08-28, raised by the
+maintainer) finished the move from conservative to exact**: the
+compound-loop and weight-extrapolated terms 54 had kept conservative
+now read the same memoized exact curve bb taxi does, in both CPU scan
+sites — the kept p2 cushion still over-framed the compound fixture
+1.23× and, growing up-left only, de-centered every compound fit
+(fit centers the box it is given, so one-sided slack reads as "fit is
+broken").  Fit zoom on the compound fixture: 0.822 → **1.077**, the
+exact box's own fit, centered to the pixel; the warm scan got 4×
+faster as a side effect (a fresh memo now answers without evaluating
+the curve).  The sweep pins exactness both directions where every
+curve is box-bounded; the cull kernels keep their conservative terms
+deliberately (43.13's standing rule).
 
 Round 59 (2026-08-09, raised by the maintainer) rebuilt the force
 layout's model after it was measured diverging exponentially on any
@@ -2215,7 +2227,9 @@ each is deliberate, not a pass-1 deferral:
     expensive-geometry design: the flattened polyline at the drawn
     subdivision, memoized per edge against a store-wide geometry epoch
     (any geometry write invalidates every cached box — over-broad but
-    sound); fit/cull keep the conservative bounds.
+    sound); the cull kernels keep the conservative bounds, and the fit
+    scan keeps them for the chord-bounded kinds only (the box-bounded
+    kinds read this same memo since rounds 54/92).
   - *CPU costs (round 29.4, Node sweep, `benchmark/curves.mjs`,
     20k nodes / 40k bundled-bezier edges, every row against the
     straight graph of the same shape)*: **derivation is deferred to the
@@ -2736,25 +2750,43 @@ excursion bound feeding `curveSlack()` (a 2× stretch margin —
 stretch grows only logarithmically with node size, and parent
 resizes refresh the bound; recorded).
 
-**The conservative fit box is *directional* for this kind** (round
-54, 2026-08-08; the chord-term correction preceding it was
-2026-08-05): a compound loop contributes the union of its two
-endpoints' outer boxes grown by the stored excursion bound `p2`
-**up and left only** — v3's construction hangs both controls off
-that union's top-left corner, so right and down the edge adds
-nothing beyond the nodes the node pass already scanned.  The full
-`p2` is kept rather than the tight `p2 / 2` (it carries the
-curve-index's recorded 2× staleness cushion, and halving it would
-be zero-margin at freshness).  The same round made the remaining
-box-bounded margins **per-edge** — the edge's own endpoints' outer
-halves, never the global `nodeHalfMax` one big parent could
-inflate — and made **taxi exact** in the scan via the memoized
-curve bb, because the round's randomized soundness sweep caught a
-forced-direction taxi (a `downward` route whose target sits above)
-overshooting any node-half margin by its turn on the sweep's first
-run.  Measured on `debug/`'s compound fixture (930 × 900): fit
-zoom 0.607 → 0.822, the residual per-axis over-frame ~1.25× (the
-kept cushion), down from ~1.8×.
+**The fit box is *exact* for this kind** (round 92, 2026-08-28;
+superseding round 54's directional conservative box, 2026-08-08,
+and the chord-term correction preceding it, 2026-08-05): a
+compound loop contributes the memoized exact curve bb
+(`curveBBAt`, epoch-invalidated — the box the box-selection path
+and public `.boundingBox()` already compute), in both CPU scan
+sites (`GraphStore.boundingBox` and `Collection.boundingBoxAt`,
+the latter via `curveBBAtPositions` at the hypothetical centres).
+The history is three formulations, each measured on `debug/`'s
+compound fixture (930 × 900): the pre-54 disc of `p2 + the global
+nodeHalfMax` around both endpoint centres fit at zoom 0.607
+(~1.8× over-framed); round 54's directional box — the union of
+the two endpoints' outer boxes grown by the stored excursion
+bound `p2` up and left only, keeping the full `p2` as the
+curve-index's recorded 2× staleness cushion — fit at 0.822, and
+the same round made the remaining box-bounded margins **per-edge**
+and **taxi exact** via the memoized curve bb, because its
+randomized soundness sweep caught a forced-direction taxi (a
+`downward` route whose target sits above) overshooting any
+node-half margin by its turn on the sweep's first run; round 92
+retired the two conservative terms 54 had kept (the directional
+`p2` box, the extrapolated-weight outer-half + chord margin)
+because the cushion still over-framed 1.23× and — the half a zoom
+number does not show — grew **up-left only**, so `fit`, which
+centers the box it is given, sat every compound graph visibly
+down-right (measured margins 194/30 left/right, 254/89
+top/bottom).  Fit zoom now **1.077**, the exact box's own fit,
+centered to the pixel; freshness of the exact tier is structural
+rather than margin-based (every input the geometry reads —
+positions, sizes/borders and materialized parent auto-bounds
+through `outerHalf`, shapes, curve params, arrow trim — writes
+through a `geoEpoch`-bumping path).  The warm scan is 4× faster
+than 54's (a fresh memo answers without evaluating the curve —
+20 µs vs 82 on the 100-parent benchmark fixture); the cold scan
+(a geometry write per call) pays 154 → 204 µs there, on a fixture
+built entirely of the two exact kinds, and a straight-edge
+(ndex-shaped) scan is unmoved at ~35 µs.
 
 Before those corrections the scan added the chord length here —
 a term that belongs to the *weight-extrapolated* blob routes

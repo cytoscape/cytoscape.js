@@ -1,9 +1,6 @@
 import {
-  CURVE_CMPD,
-  CURVE_HAS_ENDPT,
   CURVE_MULTI,
   CURVE_STRAIGHT,
-  CURVE_TAXI,
   FLAG_ACTIVE,
   FLAG_ALIVE,
   FLAG_CURVED_BOX,
@@ -5177,40 +5174,41 @@ export class Collection {
 
       const edge = this._cy._ele('edges', ref.slot);
 
-      // curved edges expand by the conservative hull deviation — exact
-      // eval at hypothetical positions isn't needed for a fit target.
-      // The formulation is round 54's, twinned with
-      // `GraphStore.boundingBox`: compound loops take a directional
-      // per-edge box (controls hang up-left of the union of the two
-      // outer boxes by at most the stored p2), and box-bounded routes
-      // add the edge's own endpoints' outer halves — never the global
-      // nodeHalfMax — plus the chord for weight extrapolation only.
+      // curved edges: chord-bounded kinds expand by the conservative
+      // hull deviation — cheap, symmetric, and tight enough for a fit
+      // target — twinned with `GraphStore.boundingBox`.
       const at = ref.slot * 4;
       const kind = curveParams[at + 3];
       const source = edge.source();
       const target = edge.target();
       const sPos = posMap.get(source) ?? (source.position() as Position);
       const tPos = posMap.get(target) ?? (target.position() as Position);
-      const sOW = (source.outerWidth() ?? 0) / 2;
-      const sOH = (source.outerHeight() ?? 0) / 2;
-      const tOW = (target.outerWidth() ?? 0) / 2;
-      const tOH = (target.outerHeight() ?? 0) / 2;
 
-      if (kind === CURVE_CMPD) {
-        const p2 = Math.abs(curveParams[at + 2]);
+      // box-bounded kinds — compound loops, taxi, extrapolated
+      // weights — evaluate EXACTLY at the hypothetical centres
+      // (rounds 54/92, the same tiering as the whole-graph scan):
+      // round 54's sweep caught a forced-direction taxi escaping any
+      // node-half margin, and round 92 retired the compound-loop and
+      // extrapolated-margin terms whose p2 cushion misframed and
+      // de-centered compound fits.  The flattened polyline hull-bounds
+      // the drawn path.
+      if ((edgeFlags[ref.slot] & FLAG_CURVED_BOX) !== 0) {
+        const bb = this._store.curveBBAtPositions(
+          ref.slot,
+          sPos.x,
+          sPos.y,
+          tPos.x,
+          tPos.y,
+        );
 
-        expandPoint(
-          Math.min(sPos.x - sOW, tPos.x - tOW) - p2,
-          Math.min(sPos.y - sOH, tPos.y - tOH) - p2,
-        );
-        expandPoint(
-          Math.max(sPos.x + sOW, tPos.x + tOW),
-          Math.max(sPos.y + sOH, tPos.y + tOH),
-        );
-        continue;
+        if (bb != null) {
+          expandPoint(bb.x1, bb.y1);
+          expandPoint(bb.x2, bb.y2);
+          continue;
+        }
       }
 
-      let dev =
+      const dev =
         kind === CURVE_STRAIGHT
           ? 0
           : headerDeviation(
@@ -5219,35 +5217,6 @@ export class Collection {
               curveParams[at + 1],
               curveParams[at + 2],
             );
-
-      if ((edgeFlags[ref.slot] & FLAG_CURVED_BOX) !== 0) {
-        const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
-
-        // taxi routes exactly, at the hypothetical centres (round 54):
-        // a forced-direction route overshoots by the turn, which no
-        // node-half margin bounds — see the twin in GraphStore.  The
-        // raw route points hull-bound the drawn path (rounded corners
-        // stay inside their corner's polyline).
-        if (base === CURVE_TAXI) {
-          const route = this._store.curveRouteAtPositions(
-            ref.slot,
-            sPos.x,
-            sPos.y,
-            tPos.x,
-            tPos.y,
-          );
-
-          if (route != null) {
-            for (let k = 0; k < route.n + 2; k++) {
-              expandPoint(route.qx[k], route.qy[k]);
-            }
-            continue;
-          }
-        }
-
-        dev += Math.max(sOW, sOH, tOW, tOH);
-        dev += Math.hypot(tPos.x - sPos.x, tPos.y - sPos.y);
-      }
 
       for (const pos of [sPos, tPos]) {
         expandPoint(pos.x - dev, pos.y - dev);

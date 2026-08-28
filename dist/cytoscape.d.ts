@@ -3028,6 +3028,22 @@ declare class GraphStore implements ModelView {
    */
   curveRouteAtPositions(slot: number, sx: number, sy: number, tx: number, ty: number, out?: CurveRoute): CurveRoute | null;
   /**
+   * The same curve evaluation as `curveEvalAt`, at *hypothetical*
+   * endpoint centres (round 92) — `curveBBAtPositions`' eval-kind half,
+   * the CurveEval twin of `curveRouteAtPositions`.  Everything but the
+   * two positions (params, outer halves, shapes, trim) reads the live
+   * columns; the caller supplies where the nodes would be.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @param out — optional eval to fill (the shared scratch otherwise)
+   * @returns the eval, or null for a blob-backed or straight edge
+   */
+  curveEvalAtPositions(slot: number, sx: number, sy: number, tx: number, ty: number, out?: CurveEval): CurveEval | null;
+  /**
    * The haystack endpoint pair of an edge (12c; null unless the edge's
    * derived kind is CURVE_HAYSTACK): the hash-stable offset points
    * inside each node body, computed from the params column + live
@@ -3082,10 +3098,32 @@ declare class GraphStore implements ModelView {
    * The exact bounding box of a curved edge (null for straight ones):
    * the flattened polyline at the drawn subdivision, memoized per slot
    * against the geometry epoch — the "exact lazy CPU eval" tier of the
-   * expensive-geometry design (public `.bb()` reads this; fit and cull
-   * use the conservative bounds instead).
+   * expensive-geometry design (public `.bb()`, and since round 92 the
+   * fit scan's box-bounded kinds, read this; the cull kernels keep
+   * their conservative bounds).
    */
   curveBBAt(slot: number): {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null;
+  /**
+   * The exact bounding box of a curved edge at *hypothetical* endpoint
+   * centres (round 92) — `Collection.boundingBoxAt`'s tier for the
+   * box-bounded kinds, twinned with what `curveBBAt` answers at the
+   * live centres.  Not memoized: hypothetical positions have no epoch,
+   * and the caller (a layout's fit target) evaluates each edge once
+   * per call anyway.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @returns the box, or null for a straight/haystack edge
+   */
+  curveBBAtPositions(slot: number, sx: number, sy: number, tx: number, ty: number): {
     x1: number;
     y1: number;
     x2: number;
@@ -3301,11 +3339,11 @@ declare class GraphStore implements ModelView {
    * (size/2 + border/2), grown by their outline, overlay/underlay
    * padding, ghost offset and label box where those apply.  Edges
    * contribute their own extent as a first-class term: the two endpoint
-   * node centers, grown by the conservative curve deviation for curved
-   * edges — the hull bound for chord-bounded kinds, plus the node-half
-   * margin (+ chord length for extrapolated weights) for box-bounded
-   * ones (rounds 12a/12b; the exact lazy curve bb is
-   * Collection.boundingBox's tier).  Future edge geometry (arrow
+   * node centers, grown by the conservative hull deviation for
+   * chord-bounded curved kinds (rounds 12a/12b), while the box-bounded
+   * kinds — compound loops, taxi, extrapolated weights — read the
+   * exact memoized curve bb (rounds 54/92: conservative margins for
+   * them misframed compound fits).  Future edge geometry (arrow
    * heads, 12c endpoints) extends the edge term here and there
    * together.  Only the space tier counts (round 22): display-hidden
    * elements are excluded, `visibility: 'hidden'` ones still take

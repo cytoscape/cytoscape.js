@@ -104,6 +104,47 @@ export const IMG_STRIDE = 12;
  * never allocate on the hot path */
 const shortenScratch = { x: 0, y: 0 };
 
+/** scratch point for the exact-curve-bb sampling below */
+const sampleScratch = { x: 0, y: 0 };
+
+/** Hull of a curved edge's flattened polyline at the drawn subdivision —
+ * the sampling shared by `curveBBAt` (live centres, memoized by its
+ * caller) and `curveBBAtPositions` (hypothetical centres, unmemoized).
+ * Exactly one of `ev`/`route` is non-null. */
+const sampleCurveBB = (
+  ev: CurveEval | null,
+  route: CurveRoute | null,
+): { x1: number; y1: number; x2: number; y2: number } => {
+  const p = sampleScratch;
+  let x1 = Infinity,
+    y1 = Infinity,
+    x2 = -Infinity,
+    y2 = -Infinity;
+
+  for (let i = 0; i <= CURVE_SEGS; i++) {
+    if (ev != null) {
+      curvePointAt(ev, i / CURVE_SEGS, p);
+    } else {
+      routeVertex(route as CurveRoute, i, p);
+    }
+
+    if (p.x < x1) {
+      x1 = p.x;
+    }
+    if (p.y < y1) {
+      y1 = p.y;
+    }
+    if (p.x > x2) {
+      x2 = p.x;
+    }
+    if (p.y > y2) {
+      y2 = p.y;
+    }
+  }
+
+  return { x1, y1, x2, y2 };
+};
+
 /** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
 export interface BgLen {
   v: number;
@@ -3495,6 +3536,65 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * The same curve evaluation as `curveEvalAt`, at *hypothetical*
+   * endpoint centres (round 92) — `curveBBAtPositions`' eval-kind half,
+   * the CurveEval twin of `curveRouteAtPositions`.  Everything but the
+   * two positions (params, outer halves, shapes, trim) reads the live
+   * columns; the caller supplies where the nodes would be.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @param out — optional eval to fill (the shared scratch otherwise)
+   * @returns the eval, or null for a blob-backed or straight edge
+   */
+  curveEvalAtPositions(
+    slot: number,
+    sx: number,
+    sy: number,
+    tx: number,
+    ty: number,
+    out: CurveEval = this.curveScratch,
+  ): CurveEval | null {
+    this.flushDerived();
+
+    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const at = slot * 4;
+    const kind = params[at + 3];
+
+    if (kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD) {
+      return null;
+    }
+
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const s = endpoints[at / 2];
+    const t = endpoints[at / 2 + 1];
+
+    return evalCurve(
+      out,
+      kind,
+      params[at],
+      params[at + 1],
+      params[at + 2],
+      sx,
+      sy,
+      outer[s * 2],
+      outer[s * 2 + 1],
+      shape[s],
+      tx,
+      ty,
+      outer[t * 2],
+      outer[t * 2 + 1],
+      shape[t],
+      this.arrowTrimAt(slot),
+    );
+  }
+
+  /**
    * The haystack endpoint pair of an edge (12c; null unless the edge's
    * derived kind is CURVE_HAYSTACK): the hash-stable offset points
    * inside each node body, computed from the params column + live
@@ -3648,16 +3748,29 @@ export class GraphStore implements ModelView {
    * The exact bounding box of a curved edge (null for straight ones):
    * the flattened polyline at the drawn subdivision, memoized per slot
    * against the geometry epoch — the "exact lazy CPU eval" tier of the
-   * expensive-geometry design (public `.bb()` reads this; fit and cull
-   * use the conservative bounds instead).
+   * expensive-geometry design (public `.bb()`, and since round 92 the
+   * fit scan's box-bounded kinds, read this; the cull kernels keep
+   * their conservative bounds).
    */
   curveBBAt(
     slot: number,
   ): { x1: number; y1: number; x2: number; y2: number } | null {
-    const ev = this.curveEvalAt(slot);
-    const route = ev == null ? this.curveRouteAt(slot) : null;
+    // flush before anything: derivation writes params, and a parent
+    // auto-bounds materialization bumps the epoch this memo checks
+    this.flushDerived();
 
-    if (ev == null && route == null) {
+    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const kind = params[slot * 4 + 3];
+    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
+
+    if (
+      kind !== CURVE_BEZIER &&
+      kind !== CURVE_LOOP &&
+      kind !== CURVE_CMPD &&
+      base !== CURVE_MULTI &&
+      base !== CURVE_SEGMENTS &&
+      base !== CURVE_TAXI
+    ) {
       return null;
     }
 
@@ -3673,6 +3786,9 @@ export class GraphStore implements ModelView {
 
     const at = slot * 4;
 
+    // a fresh memo answers without evaluating the curve at all (round
+    // 92 — the eval used to run before this check, which made every
+    // warm read pay a full route/curve evaluation it then threw away)
     if (this.edgeBBEpoch[slot] === this.geoEpoch) {
       return {
         x1: this.edgeBB[at],
@@ -3682,40 +3798,55 @@ export class GraphStore implements ModelView {
       };
     }
 
-    const p = { x: 0, y: 0 };
-    let x1 = Infinity,
-      y1 = Infinity,
-      x2 = -Infinity,
-      y2 = -Infinity;
+    const ev = this.curveEvalAt(slot);
+    const route = ev == null ? this.curveRouteAt(slot) : null;
 
-    for (let i = 0; i <= CURVE_SEGS; i++) {
-      if (ev != null) {
-        curvePointAt(ev, i / CURVE_SEGS, p);
-      } else {
-        routeVertex(route as CurveRoute, i, p);
-      }
-
-      if (p.x < x1) {
-        x1 = p.x;
-      }
-      if (p.y < y1) {
-        y1 = p.y;
-      }
-      if (p.x > x2) {
-        x2 = p.x;
-      }
-      if (p.y > y2) {
-        y2 = p.y;
-      }
+    if (ev == null && route == null) {
+      return null;
     }
 
-    this.edgeBBEpoch[slot] = this.geoEpoch;
-    this.edgeBB[at] = x1;
-    this.edgeBB[at + 1] = y1;
-    this.edgeBB[at + 2] = x2;
-    this.edgeBB[at + 3] = y2;
+    const box = sampleCurveBB(ev, route);
 
-    return { x1, y1, x2, y2 };
+    this.edgeBBEpoch[slot] = this.geoEpoch;
+    this.edgeBB[at] = box.x1;
+    this.edgeBB[at + 1] = box.y1;
+    this.edgeBB[at + 2] = box.x2;
+    this.edgeBB[at + 3] = box.y2;
+
+    return box;
+  }
+
+  /**
+   * The exact bounding box of a curved edge at *hypothetical* endpoint
+   * centres (round 92) — `Collection.boundingBoxAt`'s tier for the
+   * box-bounded kinds, twinned with what `curveBBAt` answers at the
+   * live centres.  Not memoized: hypothetical positions have no epoch,
+   * and the caller (a layout's fit target) evaluates each edge once
+   * per call anyway.
+   *
+   * @param slot — the edge slot
+   * @param sx — hypothetical source centre x
+   * @param sy — hypothetical source centre y
+   * @param tx — hypothetical target centre x
+   * @param ty — hypothetical target centre y
+   * @returns the box, or null for a straight/haystack edge
+   */
+  curveBBAtPositions(
+    slot: number,
+    sx: number,
+    sy: number,
+    tx: number,
+    ty: number,
+  ): { x1: number; y1: number; x2: number; y2: number } | null {
+    const ev = this.curveEvalAtPositions(slot, sx, sy, tx, ty);
+    const route =
+      ev == null ? this.curveRouteAtPositions(slot, sx, sy, tx, ty) : null;
+
+    if (ev == null && route == null) {
+      return null;
+    }
+
+    return sampleCurveBB(ev, route);
   }
 
   /**
@@ -4628,11 +4759,11 @@ export class GraphStore implements ModelView {
    * (size/2 + border/2), grown by their outline, overlay/underlay
    * padding, ghost offset and label box where those apply.  Edges
    * contribute their own extent as a first-class term: the two endpoint
-   * node centers, grown by the conservative curve deviation for curved
-   * edges — the hull bound for chord-bounded kinds, plus the node-half
-   * margin (+ chord length for extrapolated weights) for box-bounded
-   * ones (rounds 12a/12b; the exact lazy curve bb is
-   * Collection.boundingBox's tier).  Future edge geometry (arrow
+   * node centers, grown by the conservative hull deviation for
+   * chord-bounded curved kinds (rounds 12a/12b), while the box-bounded
+   * kinds — compound loops, taxi, extrapolated weights — read the
+   * exact memoized curve bb (rounds 54/92: conservative margins for
+   * them misframed compound fits).  Future edge geometry (arrow
    * heads, 12c endpoints) extends the edge term here and there
    * together.  Only the space tier counts (round 22): display-hidden
    * elements are excluded, `visibility: 'hidden'` ones still take
@@ -4769,7 +4900,6 @@ export class GraphStore implements ModelView {
     const endpoints = this.column('edge.endpoints') as Uint32Array;
     const curveParams = this.column('edge.curveParams') as Float32Array;
     const edgeFlags = this.column('edge.flags') as Uint32Array;
-    const outerHalf = this.column('node.outerHalf') as Float32Array;
 
     this.forEachAlive('edges', (slot) => {
       // the space tier (round 22): hidden edges — or edges with a hidden
@@ -4782,68 +4912,46 @@ export class GraphStore implements ModelView {
         return;
       }
 
-      // curved edges: the conservative hull bound — the quadratic lies
-      // within the endpoint/control hull, whose controls sit at most
-      // the header deviation from the center segment (exact lazy bb is
-      // the collection's job; fit may slightly over-fit, never under).
+      // curved edges: chord-bounded kinds take the conservative hull
+      // bound — the quadratic lies within the endpoint/control hull,
+      // whose controls sit at most the header deviation from the center
+      // segment.  Cheap, symmetric and tight enough that exactness buys
+      // no visible framing (fit may slightly over-fit, never under).
       const at = slot * 4;
       const kind = curveParams[at + 3];
       const labelSlack = anyEdgeLabels ? this.edgeLabelSlack(slot) : 0;
 
-      // compound loops are *directional* (round 54): v3's
-      // findCompoundLoopPoints hangs both controls off the top-left
-      // corner of the union of the two endpoint outer boxes, offset at
-      // most the stored excursion bound p2 (its 2x cushion is the
-      // curve-index's recorded staleness allowance) — one control up,
-      // the other left.  The curve lies in the hull of those controls
-      // and boundary points on the node outlines, so the box is the
-      // per-edge union of outer boxes grown by p2 up and left ONLY —
-      // where the old disc of (p2 + global nodeHalfMax) around both
-      // endpoint centres grew every direction by a bound one big parent
-      // set for the whole graph, over-fitting every compound app ~1.8x.
-      if (kind === CURVE_CMPD) {
-        const s = endpoints[slot * 2];
-        const t = endpoints[slot * 2 + 1];
-        const p2 = Math.abs(curveParams[at + 2]);
-        const left =
-          Math.min(
-            pos[s * 2] - outerHalf[s * 2],
-            pos[t * 2] - outerHalf[t * 2],
-          ) -
-          p2 -
-          labelSlack;
-        const top =
-          Math.min(
-            pos[s * 2 + 1] - outerHalf[s * 2 + 1],
-            pos[t * 2 + 1] - outerHalf[t * 2 + 1],
-          ) -
-          p2 -
-          labelSlack;
-        const right =
-          Math.max(
-            pos[s * 2] + outerHalf[s * 2],
-            pos[t * 2] + outerHalf[t * 2],
-          ) + labelSlack;
-        const bottom =
-          Math.max(
-            pos[s * 2 + 1] + outerHalf[s * 2 + 1],
-            pos[t * 2 + 1] + outerHalf[t * 2 + 1],
-          ) + labelSlack;
+      // box-bounded kinds — compound loops (14.10) and the blob routes
+      // no chord bound covers (taxi, extrapolated weights) — are EXACT
+      // here via the memoized flattened bb (curveBBAt,
+      // epoch-invalidated), which the box-selection path already
+      // computes per curved edge, so the scan pays it once per geometry
+      // change rather than per call.  Round 54 made taxi exact when its
+      // sweep caught a forced-direction route escaping any node-half
+      // margin; round 92 retired the two remaining conservative terms —
+      // the directional compound-loop box and the per-edge outer-half +
+      // chord margin — because the kept p2 cushion over-framed the
+      // compound fixture 1.23x and, growing up-left only, de-centered
+      // every compound fit (fit centers the box it is given).
+      if ((edgeFlags[slot] & FLAG_CURVED_BOX) !== 0) {
+        const bb = this.curveBBAt(slot);
 
-        if (left < x1) {
-          x1 = left;
-        }
-        if (top < y1) {
-          y1 = top;
-        }
-        if (right > x2) {
-          x2 = right;
-        }
-        if (bottom > y2) {
-          y2 = bottom;
-        }
+        if (bb != null) {
+          if (bb.x1 - labelSlack < x1) {
+            x1 = bb.x1 - labelSlack;
+          }
+          if (bb.y1 - labelSlack < y1) {
+            y1 = bb.y1 - labelSlack;
+          }
+          if (bb.x2 + labelSlack > x2) {
+            x2 = bb.x2 + labelSlack;
+          }
+          if (bb.y2 + labelSlack > y2) {
+            y2 = bb.y2 + labelSlack;
+          }
 
-        return;
+          return;
+        }
       }
 
       let dev =
@@ -4855,61 +4963,6 @@ export class GraphStore implements ModelView {
               curveParams[at + 1],
               curveParams[at + 2],
             );
-
-      if ((edgeFlags[slot] & FLAG_CURVED_BOX) !== 0) {
-        const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
-
-        // taxi is EXACT here (round 54): no margin formula covers it —
-        // a forced-direction route (`downward` with the target above)
-        // overshoots both endpoints by the turn, which round 54's sweep
-        // caught escaping a per-edge node-half margin, and the Z/L
-        // fallbacks have their own excursions.  The memoized flattened
-        // bb (curveBBAt, epoch-invalidated) is what the box-selection
-        // path already computes per curved edge, so a fit scan pays it
-        // once per geometry change rather than per call.
-        if (base === CURVE_TAXI) {
-          const bb = this.curveBBAt(slot);
-
-          if (bb != null) {
-            if (bb.x1 - labelSlack < x1) {
-              x1 = bb.x1 - labelSlack;
-            }
-            if (bb.y1 - labelSlack < y1) {
-              y1 = bb.y1 - labelSlack;
-            }
-            if (bb.x2 + labelSlack > x2) {
-              x2 = bb.x2 + labelSlack;
-            }
-            if (bb.y2 + labelSlack > y2) {
-              y2 = bb.y2 + labelSlack;
-            }
-
-            return;
-          }
-        }
-
-        // the remaining box-bounded kinds are the *weight-extrapolated*
-        // blob routes: they add the edge's OWN endpoints' outer halves
-        // (round 54 — not the global nodeHalfMax the cull kernels use,
-        // which let one big parent inflate every box-bounded edge) plus
-        // the chord length, since a `control-point-weight` outside
-        // [0, 1] puts the control that far beyond an endpoint along the
-        // chord (sound for weights in [-1, 2], the same envelope the
-        // old global form bounded).
-        const s = endpoints[slot * 2];
-        const t = endpoints[slot * 2 + 1];
-
-        dev += Math.max(
-          outerHalf[s * 2],
-          outerHalf[s * 2 + 1],
-          outerHalf[t * 2],
-          outerHalf[t * 2 + 1],
-        );
-        dev += Math.hypot(
-          pos[t * 2] - pos[s * 2],
-          pos[t * 2 + 1] - pos[s * 2 + 1],
-        );
-      }
 
       // edge labels (16.4): conservative — the block-covering radius,
       // valid wherever the anchor lands along the drawn path

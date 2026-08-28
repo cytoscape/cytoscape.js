@@ -17,6 +17,7 @@ import {
   OFLOW_WHITESPACE,
   JUSTIFY_CENTER,
 } from '../src/label-wrap.mjs';
+import { computeSdf, SDF_PAD, SDF_RADIUS } from '../src/render/glyph-atlas.mjs';
 import { GraphStore } from '../src/store/graph-store.mjs';
 import { finishManualRun } from './bench-run.mjs';
 
@@ -37,13 +38,13 @@ const texts = Array.from(
 
 const rows = [];
 
-const time = (label, fn) => {
+const time = (label, fn, per = N, unit = 'label') => {
   const t0 = performance.now();
   const out = fn();
   const ms = performance.now() - t0;
 
   console.log(
-    `${label}: ${ms.toFixed(1)} ms (${((ms * 1e6) / N).toFixed(0)} ns/label)`,
+    `${label}: ${ms.toFixed(1)} ms (${((ms * 1e6) / per).toFixed(0)} ns/${unit})`,
   );
   rows.push({ label, ms });
 
@@ -118,6 +119,54 @@ time(`setLabel (rewrite) x ${N}`, () => {
 });
 
 time(`boundingBox with ${N} label terms`, () => store.boundingBox());
+
+/*
+Round 94: the EDT per glyph, both raster tiers.  This is the price of a
+tier promotion (and of the em-web first-frame glyph population): the
+atlas re-rasters every glyph in use through computeSdf, and tier 2's
+cells hold 4x the pixels.  Priced per glyph over a typical Latin cell
+(0.55 x 0.95 em of ink plus pads) with a real ink pattern — a filled
+block with a hole, so the two EDT passes traverse genuine seed
+distributions rather than a degenerate all-zero grid.  GLYPHS scales
+the batch to an em-web-sized population, so the row reads as "one full
+re-raster costs this".
+*/
+const GLYPHS = 96;
+
+const sdfRow = (tier) => {
+  const cellW = Math.round(0.55 * 32 * tier) + 2 * SDF_PAD * tier;
+  const cellH = Math.round(0.95 * 32 * tier) + 2 * SDF_PAD * tier;
+  const alpha = new Uint8Array(cellW * cellH);
+
+  for (let y = 4 * tier; y < cellH - 4 * tier; y++) {
+    for (let x = 3 * tier; x < cellW - 3 * tier; x++) {
+      const hole =
+        y > cellH * 0.3 && y < cellH * 0.6 && x > cellW * 0.3 && x < cellW * 0.6;
+
+      alpha[y * cellW + x] = hole ? 0 : 255;
+    }
+  }
+
+  time(
+    `computeSdf tier ${tier} (${cellW}x${cellH}) x ${GLYPHS} glyphs`,
+    () => {
+      let sum = 0;
+
+      for (let g = 0; g < GLYPHS; g++) {
+        const sdf = computeSdf(alpha, cellW, cellH, SDF_RADIUS * tier);
+
+        sum += sdf[0];
+      }
+
+      return sum;
+    },
+    GLYPHS,
+    'glyph',
+  );
+};
+
+sdfRow(1);
+sdfRow(2);
 
 // join report.mjs's job table (round 33.10)
 finishManualRun(

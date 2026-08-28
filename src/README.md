@@ -2394,7 +2394,30 @@ each is deliberate, not a pass-1 deferral:
     dual impls, same blob) maps subdivision indices onto route pieces
     so **piece boundaries land exactly on indices**: legs stay
     pixel-straight and corners exact regardless of quad distribution
-    (hence the 8-control/11-point caps).  Sharp corners join with a
+    (hence the 8-control/11-point caps).  Since round 93 the quads
+    distribute by **bend**, not uniformly: every piece keeps one
+    mandatory quad (a straight leg needs exactly one) and the
+    leftover splits proportionally to each piece's tangent turn — an
+    arc piece by its sweep angle, a multibezier piece by the turn
+    between its control legs — by cumulative floor
+    (`allocRouteQuads` / `allocRouteQuadsW`), so a 90° round-taxi
+    corner gets ~20 chords where the uniform split left it 3–8
+    beside pixel-straight legs.  A no-bend route keeps the uniform
+    split; the map is a pure function of the evaluated route
+    (canonical per index — the watertight rule), built lazily on the
+    CPU (the evaluators share scratch; `evalRoute` invalidates) and
+    once per invocation on the GPU by the two entry points that
+    subdivide.  The dash coordinate accumulates the same polyline's
+    chord lengths, so dashes follow the map by construction — pinned
+    by the arc-length spec in `test/curve-routes.mjs`; mid-arrows
+    anchor through the analytic route midpoint and never read the
+    map.  Known residual (the 93.2 candidate, measured and
+    deferred): a many-point round route — 5+ rounded corners is 11+
+    pieces — still leaves ~3 chords per arc even weighted (0.384%
+    v3 mismatch at zoom 3, 5 points at radius 20), because the
+    budget itself is 24; raising CURVE_SEGS is priced by
+    `benchmark:renderer`'s curve scenes on a hardware adapter, which
+    that bench requires by design.  Sharp corners join with a
     **clamped discrete miter** (v3's canvas sets `lineJoin: 'round'`
     on edge paths — a recorded deviation confined to the outer join
     wedge; the live parity diff still measures 0 px at 8 px strokes);
@@ -4521,7 +4544,10 @@ fragment premium is **unmeasurable at scene level** on real hardware
   12a analytic evaluation, the 12b route families evaluate their
   route (from the curve param blob) with piece boundaries landing
   exactly on subdivision indices — legs pixel-straight, corners
-  exact — and discrete miter normals at sharp corners.
+  exact — discrete miter normals at sharp corners, and the strip's
+  quads distributed by bend (round 93: arcs by sweep, straight legs
+  one quad each), so magnified round corners draw as arcs rather
+  than chord chains.
 
   Deviations,
   all recorded: node boundaries use the arrow tier's approximations

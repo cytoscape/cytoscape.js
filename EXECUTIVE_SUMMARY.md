@@ -5,8 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after Bun and Deno run the package
-  (round 98).
+- **Last updated**: 2026-08-28, after curved edges spend their quads
+  where the bend is (round 93).
 
 ## How to maintain this file
 
@@ -45,9 +45,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,260 unit · 538 module · 24 soak · 427 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,268 unit · 538 module · 24 soak · 428 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 48 goldens compared **exactly** — zero differing pixels · 46 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 48 goldens compared **exactly** — zero differing pixels · 47 live v3-vs-v4 pixel-parity scenes, 8 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
@@ -485,6 +485,39 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     (Bun 1.4.0, Deno 2.9.6), and a `node:fs` import added tomorrow is a
     red build today.
 
+- **28 Aug** — curves spend their quads where the bend is (round 93)
+  - The maintainer's screen-pass report that some curved edges render as
+    visible chord chains while bundled beziers stay smooth, closed at its
+    mechanism: every curved edge is one 24-quad strip, and the route
+    families (unbundled bezier, round-segments, round-taxi) split it
+    *uniformly* across their pieces — so pixel-straight legs, which need
+    exactly one quad, consumed the subdivisions their arcs needed, and a
+    radius-50 corner drew as ~6 facets.  The bundled bezier spends all 24
+    on one curve, which is why it never showed the defect.
+  - The allocator now weights each piece by its tangent turn — an arc by
+    its sweep, a bezier piece by the turn between its control legs, a
+    straight leg zero — with one mandatory quad per piece and piece
+    boundaries still landing exactly on subdivision indices, so legs stay
+    pixel-straight and nothing new is drawn: the same budget, spent where
+    the bend is.  Both twins (the CPU flatten that bounds/picking read,
+    and the vertex shader) moved together, and dashes follow by
+    construction because their coordinate is the same polyline's length.
+  - Verified at three tiers with controls: the radius-50 corner now
+    flattens 22 chords (max error 0.24 → 0.03 model px, asserted); a new
+    close-up parity scene framing one large-radius corner per family
+    reads 0.004% against v3 where the uniform allocation reads 0.099%;
+    the numeric routing suite confirmed no routing number moved.  One
+    golden moved by 2 px — the round-segments scene, its arcs smoother.
+  - The budget itself was measured and deliberately not raised: a
+    5-corner round route still gets ~3 chords per arc (0.384% against
+    v3, visibly chorded), and the arithmetic says 48 quads — not 32 —
+    is the number worth pricing; pricing needs the renderer benchmark,
+    which refuses software adapters by design, so the raise is recorded
+    with its probe for a hardware session.
+  - Buys magnified round corners drawn as arcs — the reported defect
+    class fixed with zero new vertices, and the residual case named
+    with numbers instead of left to be rediscovered.
+
 ---
 
 ## What changed for users of v3
@@ -546,7 +579,7 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Screen-pass fixes | Two of the seven rendering/interaction defects found by driving the debug page remain, each mechanism pinned before planning: curve smoothness spent where the bend is, and label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit, label outlines under the ink and resize without distortion landed 28 Aug |
+| Screen-pass fixes | One of the seven rendering/interaction defects found by driving the debug page remains, its mechanism pinned before planning: label fidelity under zoom.  Pick order landed 27 Aug; the classic demo's `eh` curve, the compound fit, label outlines under the ink, resize without distortion and curve smoothness landed 28 Aug |
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`.  Still planned: the native Bun/Deno test runners measured, Deno's native WebGPU driving the GPU algorithm executors and the install/publish story, then a scoping pass over other environments (edge workers, React Native, Electron) |

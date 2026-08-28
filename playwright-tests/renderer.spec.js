@@ -2569,6 +2569,248 @@ test.describe('WebGPU renderer', () => {
     expect(picked).toBe('a');
   });
 
+  test('resize() presents synchronously at the new size (round 91.1)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // one filled circle: distortion, if any, shows as an oval
+    await makeReadyCy(page, {
+      elements: [{ data: { id: 'a' }, position: { x: 0, y: 0 } }],
+      style: {
+        nodes: {
+          'background-color': 'red',
+          width: 100,
+          height: 100,
+          shape: 'ellipse',
+        },
+      },
+      zoom: 1,
+    });
+
+    // Shrink the container to a different aspect and resize.  Everything
+    // below is sampled synchronously — same task, no await, no rAF —
+    // because the round-91.1 contract is that `cy.resize()` has already
+    // sized and drawn by the time it returns: the ResizeObserver (and
+    // this call) run before the rendering update's paint, so the frame
+    // that composites the new layout must composite new content.  The
+    // pre-91 shape (a schedule()d redraw) fails the frames assertion
+    // here deterministically.
+    const sync = await page.evaluate(() => {
+      const container = document.getElementById('cytoscape');
+      const canvas = document.querySelector('canvas');
+      const framesBefore = window.cy.stats().frames;
+
+      container.style.width = '500px';
+      container.style.height = '300px';
+      window.cy.resize();
+
+      return {
+        framesBefore,
+        framesAfter: window.cy.stats().frames,
+        w: canvas.width,
+        h: canvas.height,
+        cssW: canvas.style.width,
+        cssH: canvas.style.height,
+      };
+    });
+
+    // a frame drew inside the resize() call itself…
+    expect(sync.framesAfter).toBeGreaterThan(sync.framesBefore);
+    // …at the new backing size (deviceScaleFactor 1 in this project)…
+    expect(sync.w).toBe(500);
+    expect(sync.h).toBe(300);
+    // …and the CSS box is fixed px, so a late frame could only ever
+    // letterbox, never stretch
+    expect(sync.cssW).toBe('500px');
+    expect(sync.cssH).toBe('300px');
+
+    // steady state: the presented ink is undistorted — the circle's
+    // bounding box stays square within antialiasing
+    await page.evaluate(() => {
+      window.cy.pan({ x: 250, y: 150 });
+    });
+    await waitFrames(page);
+
+    const shot = decodePng(
+      await page.screenshot({
+        clip: { x: 250 - 70, y: 150 - 70, width: 140, height: 140 },
+      }),
+    );
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+
+    for (let y = 0; y < shot.height; y++) {
+      for (let x = 0; x < shot.width; x++) {
+        const i = (y * shot.width + x) * 4;
+
+        if (
+          shot.data[i] > 150 &&
+          shot.data[i + 1] < 100 &&
+          shot.data[i + 2] < 100
+        ) {
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    const inkW = maxX - minX + 1;
+    const inkH = maxY - minY + 1;
+
+    expect(inkW).toBeGreaterThan(90); // the circle is actually in frame
+    expect(Math.abs(inkW - inkH)).toBeLessThanOrEqual(2);
+
+    // the ResizeObserver path stays wired: a bare layout change with no
+    // cy.resize() call still re-measures on its own
+    await page.evaluate(() => {
+      document.getElementById('cytoscape').style.width = '640px';
+    });
+    await expect
+      .poll(
+        async () =>
+          await page.evaluate(() => document.querySelector('canvas').width),
+      )
+      .toBe(640);
+  });
+
+  test("an 'auto' pixelRatio follows devicePixelRatio; a pinned one stays (round 91.2)", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'CDP device-metrics emulation is chromium-only',
+    );
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Part A: applySize re-reads the live ratio.  A real CDP metrics
+    // override moves the page's devicePixelRatio, and one cy.resize()
+    // re-rasterizes at it — synchronously (91.1).  The override moves
+    // the ratio but headless emulation never dispatches the matchMedia
+    // change event (measured: `matches` flips, no event, 1 s), so the
+    // listener link is pinned in part B instead, and headless-free in
+    // test/modules/renderer-resize.mjs.
+    await makeReadyCy(page, RED_NODE_GRAPH); // pixelRatio unset ⇒ 'auto'
+
+    const cdp = await page.context().newCDPSession(page);
+
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 800,
+      height: 600,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+
+    // precondition: the override actually moved the page's ratio
+    expect(await page.evaluate(() => window.devicePixelRatio)).toBe(2);
+
+    const resized = await page.evaluate(() => {
+      window.cy.resize();
+
+      const canvas = document.querySelector('canvas');
+
+      return { ratio: canvas.width / canvas.clientWidth };
+    });
+
+    expect(resized.ratio).toBe(2); // re-rasterized, not blurred
+    await cdp.send('Emulation.clearDeviceMetricsOverride');
+
+    // Part B: the armed resolution listener drives the same path
+    // unprompted.  The two platform inputs are stubbed in-page — the
+    // fake matchMedia records what the bundle arms, and firing its
+    // listeners is the change the browser delivers on a zoom or a
+    // monitor move — so everything from the handler down (re-measure,
+    // re-rasterize, emit resize, re-arm) runs for real.
+    await page.evaluate(() => window.cy.destroy());
+    await page.evaluate(() => {
+      window.__mqls = [];
+      window.matchMedia = (query) => {
+        const q = {
+          query,
+          matches: false,
+          listeners: [],
+          addEventListener: (_type, cb) => q.listeners.push(cb),
+          removeEventListener: (_type, cb) => {
+            const i = q.listeners.indexOf(cb);
+
+            if (i >= 0) {
+              q.listeners.splice(i, 1);
+            }
+          },
+        };
+
+        window.__mqls.push(q);
+
+        return q;
+      };
+      window.__dpr = window.devicePixelRatio;
+      Object.defineProperty(window, 'devicePixelRatio', {
+        configurable: true,
+        get: () => window.__dpr,
+      });
+    });
+    await makeReadyCy(page, RED_NODE_GRAPH);
+
+    const fired = await page.evaluate(() => {
+      window.__resizes = 0;
+      window.cy.on('resize', () => window.__resizes++);
+
+      const armed = window.__mqls.filter((q) => q.listeners.length > 0);
+      const q = armed[armed.length - 1];
+
+      window.__dpr = 2;
+      q.listeners.slice().forEach((cb) => cb());
+
+      const canvas = document.querySelector('canvas');
+
+      return {
+        armedCount: armed.length,
+        query: q.query,
+        ratio: canvas.width / canvas.clientWidth,
+        resizes: window.__resizes,
+        rearmed: window.__mqls
+          .filter((x) => x.listeners.length > 0)
+          .map((x) => x.query),
+      };
+    });
+
+    expect(fired.armedCount).toBe(1);
+    expect(fired.query).toBe('(resolution: 1dppx)');
+    expect(fired.ratio).toBe(2); // the backing store followed
+    expect(fired.resizes).toBeGreaterThan(0); // v3's cy.resize() semantics
+    expect(fired.rearmed).toEqual(['(resolution: 2dppx)']); // re-armed
+
+    // Part C: control — an explicit pixelRatio arms no query and stays
+    // pinned through the same devicePixelRatio move
+    await page.evaluate(() => window.cy.destroy());
+    await makeReadyCy(
+      page,
+      Object.assign({}, RED_NODE_GRAPH, { pixelRatio: 1 }),
+    );
+
+    const pinned = await page.evaluate(() => {
+      const armed = window.__mqls.filter((q) => q.listeners.length > 0);
+
+      window.__dpr = 3;
+      window.cy.resize();
+
+      const canvas = document.querySelector('canvas');
+
+      return {
+        armed: armed.length,
+        ratio: canvas.width / canvas.clientWidth,
+      };
+    });
+
+    expect(pinned.armed).toBe(0); // the destroy released part B's query
+    expect(pinned.ratio).toBe(1);
+  });
+
   test("a pressed node draws v3's :active overlay (round 57.1c)", async ({
     page,
   }) => {

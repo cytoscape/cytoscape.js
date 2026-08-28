@@ -319,6 +319,64 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     await destroyCy(page);
   });
 
+  test('resize crosses to the worker; the canvas CSS box is fixed px (round 91)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(
+      !(await hasWorkerCanvas(page)),
+      'no OffscreenCanvas worker support',
+    );
+
+    await makeReadyCy(
+      page,
+      Object.assign({}, SCENE, { renderer: { worker: true } }),
+    );
+
+    // fixed px from the mount (the letterbox-not-stretch shape, 91.1):
+    // a worker frame is always at least a message late behind a layout
+    // change, so the CSS box must never scale stale content
+    const before = await page.evaluate(() => {
+      const canvas = document.querySelector('canvas');
+
+      return { cssW: canvas.style.width, cssH: canvas.style.height };
+    });
+
+    expect(before.cssW).toBe('400px');
+    expect(before.cssH).toBe('300px');
+
+    // the proxy re-fits the CSS box synchronously in resize()…
+    const after = await page.evaluate(() => {
+      const container = document.getElementById('cytoscape');
+
+      container.style.width = '250px';
+      container.style.height = '280px';
+      window.cy.resize();
+
+      const canvas = document.querySelector('canvas');
+
+      return { cssW: canvas.style.width, cssH: canvas.style.height };
+    });
+
+    expect(after.cssW).toBe('250px');
+    expect(after.cssH).toBe('280px');
+
+    // …and the new device-px size crosses to the worker's backing
+    // store, which the placeholder canvas reflects on commit
+    await expect
+      .poll(
+        async () =>
+          await page.evaluate(() => {
+            const canvas = document.querySelector('canvas');
+
+            return { w: canvas.width, h: canvas.height };
+          }),
+      )
+      .toEqual({ w: 250, h: 280 });
+
+    await destroyCy(page);
+  });
+
   test('create/destroy cycles leave no stuck worker instance', async ({
     page,
   }) => {

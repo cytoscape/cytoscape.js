@@ -25,7 +25,8 @@ export interface GestureRenderer {
   ): Promise<number | null>;
   pickNodeSync(x: number, y: number, padPx?: number): number | null;
 }
-import type { Position } from '../public-types.mjs';
+import type { CursorMap, CursorState, Position } from '../public-types.mjs';
+import { cursorFor } from './cursor.mjs';
 
 /*
 Pointer/wheel interaction over the WebGPU canvas:
@@ -162,6 +163,15 @@ export class PointerHandler {
   } | null;
   /** the node under the cursor during an active press (17.3) */
   private dragHover: Collection | null = null;
+  /** the cursor keyword last written to the canvas (round 89.1); the
+   * writer compares against it so a steady state costs no DOM write */
+  private cursor = '';
+  /** the page's own `documentElement` cursor, saved while a drag mirrors
+   * onto it, and put back on every release path (round 89.1, fact 4) */
+  private docCursor: string | null = null;
+  /** the pointer type of the last DOM event, since a cursor is a
+   * property of the *device* and touch never gets one */
+  private pointerType = 'mouse';
   private lastDragHoverAt = 0;
   private tapholdTimer: ReturnType<typeof setTimeout> | null;
   private onetapTimer: ReturnType<typeof setTimeout> | null;
@@ -255,6 +265,10 @@ export class PointerHandler {
       this.activeEl.remove();
       this.activeEl = null;
     }
+
+    // destroy also runs on the device-loss re-mount (round 10), so a
+    // cursor left behind here would outlive the handler that set it
+    this.releaseCursor();
   }
 
   // -- handlers --
@@ -1712,6 +1726,10 @@ export class PointerHandler {
         originalEvent: this.domEvent ?? undefined,
       }); // 17.1
     }
+
+    // the hover pick resolves a frame after the move that asked for it,
+    // outside the listener wrapper — so this transition writes its own
+    this.applyCursor();
   }
 
   /**
@@ -1739,6 +1757,89 @@ export class PointerHandler {
     if (ele != null) {
       this.setFlagOn(ele, FLAG_ACTIVE, true);
     }
+  }
+
+  /**
+   * Recompute the cursor from the state this handler already tracks and
+   * write it, once, if it changed (round 89.1).
+   *
+   * Called from the DOM-listener wrapper — so *every* handler ends by
+   * restoring the affordance, which is the one thing the plan named as
+   * the place a sticky `grabbing` hides — from `updateHover`, which
+   * resolves asynchronously outside that wrapper, and from
+   * `cy.pointerCursors()` when the setting is flipped at runtime.
+   *
+   * The document-level mirror is fact 4 of the round: a drag runs under
+   * `setPointerCapture`, which routes *events*, not the cursor, so while
+   * the pointer is physically outside the canvas the element underneath
+   * decides what is shown.  An active press therefore also writes the
+   * root element's cursor, saving whatever the page had there and
+   * putting it back on release.
+   */
+  applyCursor(): void {
+    const next = cursorFor(
+      this.cursorState(),
+      this.cy.pointerCursors() as boolean | Partial<CursorMap>,
+    );
+
+    if (next !== this.cursor) {
+      this.canvas.style.cursor = next;
+      this.cursor = next;
+    }
+
+    const root = this.canvas.ownerDocument?.documentElement;
+
+    if (root == null) {
+      return;
+    }
+
+    if (this.down != null && next !== '') {
+      if (this.docCursor == null) {
+        this.docCursor = root.style.cursor;
+      }
+
+      root.style.cursor = next;
+    } else if (this.docCursor != null) {
+      root.style.cursor = this.docCursor;
+      this.docCursor = null;
+    }
+  }
+
+  /** What the cursor map is asked about: the press mode (which outranks
+   * hover — a drag across another node keeps saying `grabbing`), what
+   * the hover pick found, and the device. */
+  private cursorState(): CursorState {
+    const hovered = this.hovered;
+    let hover: CursorState['hover'] = 'none';
+
+    if (hovered != null && hovered.inside()) {
+      hover =
+        hovered.isNode() && this.canDrag(hovered)
+          ? 'draggable-node'
+          : 'element';
+    }
+
+    return {
+      gesture: this.down?.mode ?? 'idle',
+      hover,
+      pointerType: this.pointerType,
+    };
+  }
+
+  /** Hand the canvas and the page their cursors back (destroy). */
+  private releaseCursor(): void {
+    if (this.cursor !== '') {
+      this.canvas.style.cursor = '';
+      this.cursor = '';
+    }
+
+    const root = this.canvas.ownerDocument?.documentElement;
+
+    if (root != null && this.docCursor != null) {
+      root.style.cursor = this.docCursor;
+    }
+
+    this.docCursor = null;
   }
 
   private setFlagOn(ele: Collection, bit: number, on: boolean): void {
@@ -1788,10 +1889,23 @@ export class PointerHandler {
     const wrapped = (e: Event): void => {
       this.domEvent = e;
 
+      if ('pointerType' in e) {
+        this.pointerType = (e as PointerEvent).pointerType;
+      }
+
       try {
         handler(e);
       } finally {
         this.domEvent = null;
+        // round 89.1: the cursor is re-derived after *every* DOM handler
+        // rather than at the seven transitions that can change it.  The
+        // plan enumerated those transitions; this is a superset, and the
+        // reason to prefer it is the plan's own risk note — every
+        // gesture-end path must restore, and the ones where a sticky
+        // `grabbing` hides are the cancel paths nobody enumerates
+        // correctly (pinch degradation, the touch cxt split, the
+        // three-finger box).  The cost is one string compare per event.
+        this.applyCursor();
       }
     };
 

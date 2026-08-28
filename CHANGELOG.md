@@ -35,6 +35,16 @@ that compile and then behave differently.
   nodes), arrowheads are hit targets (hollow counts as filled, as in
   v3), and pressing any element — edges included — shows v3's `:active`
   overlay; `cy.pick( x, y )` stays exact.
+- **Pointer cursors** (round 89): the canvas carries the standard
+  affordances — `grab` over a draggable node, `grabbing` while it or the
+  background is being dragged, `pointer` over any other interactive
+  element, `crosshair` while box-selecting — and mirrors an active drag
+  onto the document element, so the affordance survives a pointer-captured
+  drag that leaves the canvas.  v3 set no cursors at all, so idle over
+  background stays `''` (inherit) and the userland `mouseover`/`mouseout`
+  recipe every v3 app used still shows through.  `pointerCursors: false`
+  turns the writer off entirely; an object overrides individual entries
+  (`{ pan: 'move' }`).  A touch pointer never gets a cursor.
 - **`cy.$()` is back** (round 64) as a plain alias of `cy.filter()`
   over the query/predicate forms (selector strings still throw), and
   **`cy.byId()`** joins `$id`/`getElementById` as the brevity id

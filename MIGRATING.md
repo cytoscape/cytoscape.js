@@ -407,6 +407,7 @@ app trips on after everything else works.
 | `:selected` / `:parent:selected` | default-sheet blocks any later block beats | the same rule, as a `{ when: { selected: true } }` condition in v4's default stylesheet — so naming `background-color` yourself still replaces it, exactly as in v3 |
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 | The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `closenessCentralityNormalized`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
+| Pointer cursors | none — v3 set no CSS cursor at all, and apps wrote `container.style.cursor` from `mouseover`/`mouseout` | **the canvas writes them** (`grab`/`grabbing`, `pointer`, `crosshair`).  Idle over background stays `''`, so the v3 recipe still shows through where v4 is silent; an app whose own cursor code now fights the defaults passes `pointerCursors: false` |
 | `hierarchicalClustering` `mean` linkage | silently broken — an unset size field made the first mean merge write NaN distances, degenerating the clustering | **works**: sizes are tracked, so `mean` is the weighted-average linkage both libraries always documented |
 
 **The whole-graph tier is async, and `executor` picks where it runs.** The
@@ -464,9 +465,9 @@ culling and the adaptive render scale solve without degrading output.
 
 New, and worth setting: `boxSelectionMode`, `boxSelectionIncludesLabels`,
 `wheelSensitivity`, `desktopTapThreshold`, `touchTapThreshold`,
-`tapholdDuration`, `multiClickDebounceTime`, `pixelRatio`, and the `renderer`
-block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`, `imageMinPx`,
-`imageMaxSize`).
+`tapholdDuration`, `multiClickDebounceTime`, `pixelRatio`, `pointerCursors`,
+and the `renderer` block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`,
+`imageMinPx`, `imageMaxSize`).
 
 ---
 

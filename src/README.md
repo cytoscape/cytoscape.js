@@ -1223,6 +1223,69 @@ calls made deliberately rather than by accretion:
   in none at all, so the one surface the contract exists to make obvious
   was the one an external author had to type by hand.
 
+## Pointer cursors (round 89)
+
+The canvas says what a gesture will do.  **v3 set no CSS cursor
+anywhere** — not in `v3/src/`, not in v4's before this round — and left
+the affordance to userland, where the standard recipe is a
+`mouseover`/`mouseout` pair writing `container.style.cursor`.  v4's
+canvas fills its container, so an inline *canvas* cursor overrides
+exactly that recipe, and the whole design is shaped around not breaking
+it.
+
+- **The map is pure and lives in `src/interact/cursor.mts`**:
+  `cursorFor( { gesture, hover, pointerType }, setting )` returns a CSS
+  cursor keyword, and writes nothing.  That is what makes every cell of
+  gesture x hover x pointer type assertable from Node, where there is no
+  canvas — `test/pointer-cursors.mjs`.
+- **The defaults**: `pointer` over any interactive element, `grab` over a
+  node the drag predicate accepts, `grabbing` from the pointerdown of a
+  pan or grab press (not from the tap-threshold flip — the feedback is
+  immediate, and a tap restores within the click), `crosshair` for a
+  box-selection press, and **`''` (inherit) idle over background**.  The
+  last is deliberate and is the compat decision: a v4 instance with
+  nothing to say leaves the app's own container cursor in force.
+  `default` would be the compat-breaking spelling.
+- **A press outranks hover.**  The gesture is decided once at
+  pointerdown, so a drag that crosses another node keeps saying
+  `grabbing` rather than flickering.
+- **Touch never gets a cursor.**  There is nothing to show, and a
+  keyword written for a finger would stick after it lifts.
+- **An active drag mirrors onto `documentElement`.**  Drags run under
+  `setPointerCapture`, which routes *events*, not the cursor: while the
+  pointer is physically outside the canvas the browser shows whatever the
+  element underneath declares.  The mirror saves the page's own root
+  cursor and puts it back on every release path.
+- **`pointerCursors`** (`boolean | Partial<CursorMap>`, default `true`,
+  with a runtime `cy.pointerCursors()` beside its sibling toggles):
+  `false` means the layer never touches `style.cursor`; an object
+  overrides individual entries (`{ pan: 'move' }`), where `''` hands one
+  state back to the app.  A runtime flip reaches the canvas immediately
+  rather than at the next pointer event.  It is also the browser suite's
+  own control — with the feature off, every positive assertion inverts.
+
+**One deviation from the plan, deliberately.**  Round 89.1 enumerated the
+seven transitions the writer should hook (`updateHover`, pointerdown,
+pointerup/pointercancel, the three gesture-cancel paths, `destroy`).  The
+writer instead runs from the **DOM-listener wrapper** — the same
+`finally` that clears `originalEvent` (41.4) — plus `updateHover`, which
+resolves asynchronously outside it, plus `destroy`.  That is a superset,
+and the plan's own risk note is the reason to prefer it: *every*
+gesture-end path must restore, and the ones where a sticky `grabbing`
+hides are the cancel paths nobody enumerates correctly — pinch
+degradation, the touch cxt split, the three-finger box, each of which
+clears `this.down` in its own branch.  The cost is one string compare per
+DOM event, against handlers that already pick and emit.
+
+Recorded, not scheduled: a `cursor` **style property** in the sheet DSL
+(`node.clickable { cursor: pointer }`) is the CSS-shaped end state and
+needs a dictionary column and a contract change; the state map covers the
+common cases without either.  A cxt-gesture cursor is cheap once the
+writer exists and was skipped because v3 suppresses the browser menu and
+no app expectation exists.  A `progress` cursor for long synchronous work
+was **declined**: 87.2 removed the largest sync stall, and a cursor that
+says "wait" is the wrong fix for work that should not block.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

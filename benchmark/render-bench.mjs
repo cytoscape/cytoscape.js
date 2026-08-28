@@ -94,6 +94,16 @@ const SCENES = [
     label: 'generated 25k × 50k wrapped labels',
     page: { n: 25000, m: 50000, wrap: true },
   },
+  // round 95: the two-phase outline draw's price, on the same wrapped
+  // scene.  The outline-free row above must measure unchanged (the
+  // per-stream flag skips the outline pass before any GPU work); this
+  // row's delta against it is the second label pass over the same
+  // visible set.
+  {
+    key: 'gen-25k-wrap-outline',
+    label: 'generated 25k × 50k wrapped outlined labels',
+    page: { n: 25000, m: 50000, wrap: true, outline: true },
+  },
   {
     key: 'gen-25k-invisible',
     label: 'generated 25k × 50k half-invisible / half-inert',

@@ -97,6 +97,14 @@
             } );
           }
 
+          // round 95: the outlined variant prices the two-phase label
+          // draw (outline pass under the fill pass)
+          if( spec.outline === true && labels ){
+            Object.assign( node, {
+              'text-outline-width': 2, 'text-outline-color': '#ffffff'
+            } );
+          }
+
           const blocks = [
             { selector: 'node', style: node },
             { selector: 'edge', style: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 } }
@@ -349,6 +357,14 @@
             if( scene.spec.wrap === true && labels ){
               nodesStyle = Object.assign( {}, nodesStyle, {
                 'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
+              } );
+            }
+
+            // round 95: the outlined variant prices the two-phase
+            // label draw (outline pass under the fill pass)
+            if( scene.spec.outline === true && labels ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'text-outline-width': 2, 'text-outline-color': '#ffffff'
               } );
             }
 

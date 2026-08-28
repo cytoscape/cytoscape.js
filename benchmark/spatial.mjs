@@ -512,15 +512,18 @@ if (has('bounds')) {
     });
   }
 
-  // Round 54 reformulated the conservative scan's edge terms: compound
-  // loops take a directional per-edge box and taxi is EXACT via the
-  // memoized curve bb (curveBBAt) rather than a margin disc.  This
-  // fixture is built of exactly those two kinds so the row prices what
-  // changed — and it asserts the property it is named for (the 33.x
-  // rule), since a fixture styled into a mode it never enters measures
-  // nothing.  Two rows: warm is the steady state (curve bbs memoized),
-  // cold pays one geometry write per call, which re-derives every taxi
-  // bb — the post-layout fit cost.
+  // Rounds 54/92 tiered the scan's edge terms: the box-bounded kinds —
+  // compound loops AND taxi since round 92 (round 54 took taxi exact
+  // and left compound loops a directional p2 box whose cushion
+  // misframed compound fits) — are EXACT via the memoized curve bb
+  // (curveBBAt).  This fixture is built of exactly those two kinds so
+  // the row prices what changed — and it asserts the property it is
+  // named for (the 33.x rule), since a fixture styled into a mode it
+  // never enters measures nothing.  Two rows: warm is the steady state
+  // (curve bbs memoized — round 92 also made a fresh memo answer
+  // without evaluating the curve, which this row watches), cold pays
+  // one geometry write per call, which re-derives every curve bb — the
+  // post-layout fit cost.
   {
     const P = Math.max(4, Math.floor(N / 20));
     const nodes = [];
@@ -589,20 +592,78 @@ if (has('bounds')) {
     const mover = cpd.$id('c1_0');
     let flip = 0;
 
-    group(
-      'bounds: compound + taxi conservative scan (round 54, v4 only)',
-      () => {
-        summary(() => {
-          bench('warm (curve bbs memoized)', () =>
-            do_not_optimize(cpd._store.boundingBox()));
-          bench('cold (geometry write per call)', () => {
-            flip = 1 - flip;
-            mover.position({ x: 90 + flip, y: 0 });
-            do_not_optimize(cpd._store.boundingBox());
-          });
+    group('bounds: compound + taxi exact scan (rounds 54/92, v4 only)', () => {
+      summary(() => {
+        bench('warm (curve bbs memoized)', () =>
+          do_not_optimize(cpd._store.boundingBox()));
+        bench('cold (geometry write per call)', () => {
+          flip = 1 - flip;
+          mover.position({ x: 90 + flip, y: 0 });
+          do_not_optimize(cpd._store.boundingBox());
         });
-      },
-    );
+      });
+    });
+
+    // The ndex-shaped control (round 92): the scan's headline property
+    // is the straight-edge fast path (the 235 -> 15 ms columnar-scan
+    // win), and the exact tier must cost it NOTHING — a box-kind branch
+    // is behind a flag no straight edge carries.  Same element counts
+    // as the fixture above, every edge straight; the row asserts its
+    // own shape for the same reason the fixture above does.
+    const straightNodes = [];
+    const straightEdges = [];
+
+    for (let i = 0; i < P * 4; i++) {
+      straightNodes.push({
+        data: { id: `s${i}` },
+        position: { x: (i % 40) * 30, y: Math.floor(i / 40) * 30 },
+      });
+
+      if (i > 0) {
+        straightEdges.push({
+          data: { id: `se${i}`, source: `s${i - 1}`, target: `s${i}` },
+        });
+        if (i > 1) {
+          straightEdges.push({
+            data: { id: `sf${i}`, source: `s${i - 2}`, target: `s${i}` },
+          });
+        }
+      }
+    }
+
+    const straight = cytoscape({
+      elements: { nodes: straightNodes, edges: straightEdges },
+    });
+
+    instances.push(straight);
+    straight._store.flushDerived();
+
+    const sParams = straight._store.column('edge.curveParams');
+    let curvedCount = 0;
+
+    for (let s = 0; s < straightEdges.length; s++) {
+      if (sParams[s * 4 + 3] !== 0) curvedCount++;
+    }
+
+    if (curvedCount !== 0) {
+      console.log(
+        `  !! ndex-shaped bounds fixture has ${curvedCount} curved edges — the row measures nothing`,
+      );
+    }
+
+    const sMover = straight.$id('s1');
+    let sFlip = 0;
+
+    group('bounds: straight-only scan (ndex-shaped, round 92, v4 only)', () => {
+      summary(() => {
+        bench('warm', () => do_not_optimize(straight._store.boundingBox()));
+        bench('cold (geometry write per call)', () => {
+          sFlip = 1 - sFlip;
+          sMover.position({ x: 30 + sFlip, y: 0 });
+          do_not_optimize(straight._store.boundingBox());
+        });
+      });
+    });
   }
 }
 

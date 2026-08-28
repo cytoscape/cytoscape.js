@@ -19,7 +19,7 @@ deleting a word of them.
 | Add or change a public API member | `npm run -s verify`, `npm run build:types`, `npm run -s test:throws:quiet` | [`docs/agents/documentation.md`](docs/agents/documentation.md) |
 | Add or interpret a benchmark | `npm run benchmark` / `npm run benchmark:all` | [`docs/agents/benchmarking.md`](docs/agents/benchmarking.md) |
 | Store, wire-format, lifecycle or multi-instance work | also `npm run -s test:soak:quiet` | [`docs/agents/testing.md`](docs/agents/testing.md) |
-| Bundle or packaging work | `npm run build`, `npm run build:types`, `npm run -s test:modules:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
+| Bundle or packaging work | `npm run build`, `npm run build:types`, `npm run -s test:modules:quiet`, `npm run -s test:runtimes:node:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
 | Change the harness, the docs or the report | `npm run status` then `npm run status:serve` — **open it** | [`docs/agents/rendering.md`](docs/agents/rendering.md) |
 | Anything in `v3/` | see `v3/AGENTS.md` — it is frozen | — |
 | Broad, or unsure | `npm run -s test:quiet` | this file |

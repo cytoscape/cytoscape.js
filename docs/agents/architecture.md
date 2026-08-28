@@ -30,7 +30,7 @@ routes, these files explain.
 
 ## `test/`
 
-- `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under `--expose-gc`.
+- `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under `--expose-gc`.  `test/runtimes/` holds the round-98 cross-runtime smoke — one framework-free file the `test:runtimes:node`/`test:runtimes:bun`/`test:runtimes:deno` scripts run over the built bundles; see `docs/agents/testing.md`.
 
 ## `typescript/`
 

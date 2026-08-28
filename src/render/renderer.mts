@@ -280,6 +280,9 @@ export class Renderer {
   private isReady: boolean;
   private frameRequested: boolean;
   private resizeObserver: ResizeObserver | null;
+  /** re-entrancy latch (91.1): a `cy.resize()` from inside a 'render'
+   * handler must schedule rather than recurse into frame() */
+  private inFrame = false;
   private offInvalidate: () => void;
   private offViewport: () => void;
   private frameCount: number;
@@ -430,11 +433,11 @@ export class Renderer {
       const doc = container.ownerDocument as Document;
       const canvas = doc.createElement('canvas');
 
+      // no width/height CSS here: applySize below writes the fixed-px
+      // box (91.1) — see its doc for why fixed px rather than `100%`
       canvas.style.position = 'absolute';
       canvas.style.top = '0';
       canvas.style.left = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
       canvas.style.display = 'block';
 
       if (
@@ -503,11 +506,22 @@ export class Renderer {
   }
 
   /**
-   * Resize the canvas to the container and redraw.  Wired to a
-   * ResizeObserver on the container, so callers only need this when the
-   * size changes without one firing (no ResizeObserver, or a device-pixel
-   * ratio change).  The scene and depth targets are not reallocated here
-   * — the next frame notices the new size and rebuilds them.
+   * Resize the canvas to the container and redraw — synchronously
+   * (91.1).  Wired to a ResizeObserver on the container, so callers only
+   * need this when the size changes without one firing (no
+   * ResizeObserver, or a device-pixel ratio change).  The scene and
+   * depth targets are not reallocated here — the frame notices the new
+   * size and rebuilds them.
+   *
+   * The frame is drawn inside this call rather than scheduled because
+   * ResizeObserver callbacks run *after* this rendering update's rAF and
+   * *before* its paint: a `schedule()`d redraw lands a frame late, and
+   * with any stale presentation the compositor scales old content to the
+   * new layout — every step of a live window drag showed the graph
+   * stretched.  Drawing here means the frame that composites the new
+   * layout composites new content; the stretched frame never exists.
+   * Before readiness, or re-entrantly from a 'render' handler, it falls
+   * back to the scheduler.
    */
   resize(): void {
     if (this.destroyed) {
@@ -516,7 +530,12 @@ export class Renderer {
 
     this.applySize();
     this.needsRedraw = true;
-    this.schedule();
+
+    if (this.isReady && !this.inFrame) {
+      this.frame();
+    } else {
+      this.schedule();
+    }
   }
 
   /** True while a GPU force-layout run owns the position column (18.3) —
@@ -1384,6 +1403,16 @@ export class Renderer {
   }
 
   private frame(): void {
+    this.inFrame = true;
+
+    try {
+      this.frameBody();
+    } finally {
+      this.inFrame = false;
+    }
+  }
+
+  private frameBody(): void {
     const device = this.device;
     const context = this.context;
     const mirror = this.mirror;
@@ -2556,6 +2585,16 @@ export class Renderer {
     pass.end();
   }
 
+  /**
+   * Measure the container and size both halves of the canvas from it:
+   * the backing store in device px (clientWidth × dpr) and the CSS box
+   * in fixed px (91.1).  Fixed px rather than `100%` is v3's shape:
+   * whenever a redraw is late behind a layout change, a wrongly-*sized*
+   * canvas letterboxes where a `100%` canvas stretches whatever was last
+   * presented — stale coverage reads as lag; stale stretch reads as the
+   * graph deforming.  It also covers the no-ResizeObserver path, where
+   * nothing re-measures until `cy.resize()`.
+   */
   private applySize(): void {
     const container = this.container;
 
@@ -2563,12 +2602,23 @@ export class Renderer {
       return; // worker mount: sizes arrive via setSize()
     }
 
-    const w = Math.max(1, Math.round(container.clientWidth * this.dpr));
-    const h = Math.max(1, Math.round(container.clientHeight * this.dpr));
+    const cssW = container.clientWidth;
+    const cssH = container.clientHeight;
+    const w = Math.max(1, Math.round(cssW * this.dpr));
+    const h = Math.max(1, Math.round(cssH * this.dpr));
 
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
+    }
+
+    const style = (this.canvas as HTMLCanvasElement).style;
+    const wPx = `${cssW}px`;
+    const hPx = `${cssH}px`;
+
+    if (style.width !== wPx || style.height !== hPx) {
+      style.width = wPx;
+      style.height = hPx;
     }
   }
 

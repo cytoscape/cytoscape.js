@@ -209,12 +209,14 @@ export class WorkerRenderer {
 
     const doc = container.ownerDocument as Document;
 
+    // fixed-px CSS rather than `100%`, as the same-thread renderer
+    // (91.1): a worker frame is always at least a message late behind a
+    // layout change, and a wrongly-*sized* canvas letterboxes where a
+    // `100%` canvas stretches the stale presentation to the new box
     this.canvas = doc.createElement('canvas');
     this.canvas.style.position = 'absolute';
     this.canvas.style.top = '0';
     this.canvas.style.left = '0';
-    this.canvas.style.width = '100%';
-    this.canvas.style.height = '100%';
     this.canvas.style.display = 'block';
 
     if (
@@ -226,8 +228,14 @@ export class WorkerRenderer {
 
     container.appendChild(this.canvas);
 
-    const width = Math.max(1, Math.round(container.clientWidth * this.dpr));
-    const height = Math.max(1, Math.round(container.clientHeight * this.dpr));
+    const cssW = container.clientWidth;
+    const cssH = container.clientHeight;
+
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
+
+    const width = Math.max(1, Math.round(cssW * this.dpr));
+    const height = Math.max(1, Math.round(cssH * this.dpr));
     const offscreen = this.canvas.transferControlToOffscreen();
 
     this.worker = spawnRenderWorker();
@@ -291,16 +299,24 @@ export class WorkerRenderer {
     return this.lastStats;
   }
 
-  /** Post the container's current device-px size to the worker. */
+  /**
+   * Post the container's current device-px size to the worker, and
+   * re-fit the canvas CSS box in fixed px (91.1).
+   */
   resize(): void {
     if (this.destroyed) {
       return;
     }
 
+    const cssW = this.container.clientWidth;
+    const cssH = this.container.clientHeight;
+
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
     this.post({
       kind: 'resize',
-      width: Math.max(1, Math.round(this.container.clientWidth * this.dpr)),
-      height: Math.max(1, Math.round(this.container.clientHeight * this.dpr)),
+      width: Math.max(1, Math.round(cssW * this.dpr)),
+      height: Math.max(1, Math.round(cssH * this.dpr)),
     });
   }
 

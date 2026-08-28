@@ -94,9 +94,8 @@ they are straight by construction); whether 93.2 runs at all
 
 ### Landed (2026-08-28)
 
-**93.1 landed as planned; 93.2 was measured and deliberately not
-taken** — the candidate is real but pricing it needs a hardware
-adapter (below).  The open bend metric resolved to the **sweep-angle
+**93.1 landed as planned; 93.2 was measured, deferred to a hardware
+session, and then priced and taken at 32** (below).  The open bend metric resolved to the **sweep-angle
 form for both families**, which is what keeps the allocator
 branchless: an arc piece weighs its sweep (π minus the interior angle
 between its legs — `atan2(|cross|, -dot)`; the radius scales the arc,
@@ -166,15 +165,44 @@ routes' arcs.  The harness pages were driven per the standing rule
 (`edge-types`, `v3-default`, plus zoomed fits onto the round-taxi and
 round-segments corners): clean arcs, no facets, no device errors.
 
-**93.2, measured and deferred.**  The plan's candidate is confirmed:
-a 5-point round-segments zigzag (11 pieces) leaves ~3 chords per arc
-even bend-weighted — 13 leftover quads over 5 arcs — measuring
-**0.384%** against v3 at zoom 3 (radius 20), visibly chorded crests.
-The arithmetic says the number worth pricing is 48, not 32: at 32
-segs the same route gets ~5 chords per arc (~1.2 device px sagitta at
-that probe's scale), at 48 ~8 chords (~0.5 px).  Pricing per the plan
-runs `benchmark:renderer`'s curve scenes, and that bench **aborts on
-software rasterizers by design** — this session's only adapter is
-SwiftShader, so the raise is deferred to a hardware session with the
-probe recorded here to rerun.  The zoom-adaptive indexCount remains
-the recorded further step, deliberately not taken.
+**93.2, priced and taken (2026-08-28).**  The deferred raise ran on
+hardware: `benchmark:renderer --scene gen-25k-curved` on this box's
+RX 580 — the adapter line reads `adapter: amd gcn-4 · dpr 2 ·
+1280×800 · render scale pinned to 1` (RADV, the round-0 validation
+box; the earlier "SwiftShader-only" reading came from an ad-hoc
+launch flag the harness never passes).  Measured at 24 / 32 / 48
+(device = timestamp-query GPU-pass p50 on the 25k × 50k curved
+scene; probe = the 5-corner round-segments zigzag above, diffed
+against v3 on parity.html with pixelmatch 0.2 — SwiftShader there,
+deliberately, it is a pixel probe):
+
+| segs | probe          | device fit-all / far-zoom / zoomed-in | wall p50 | curves.mjs cold read |
+| ---- | -------------- | ------------------------------------- | -------- | -------------------- |
+| 24   | 0.384% (461px) | 9.64 / 9.64 / 3.83 ms                 | 16.7 ms  | 30.1 ms (1.90×)      |
+| 32   | 0.003% (4px)   | 13.19 / 14.14 / 3.78 ms               | 16.7 ms  | 40.1 ms (2.57×)      |
+| 48   | 0.000% (0px)   | 25.71 / 26.62 / 4.05 ms               | 33.2 ms  | 44.8 ms (2.75×)      |
+
+**The number is 32**, not the 48 the deferral's arithmetic favoured:
+that arithmetic estimated ~1.2 device px of sagitta left at 32, and
+the measured probe overrules it — 4 of 120,000 pixels differ, the
+chorded crests gone.  48's price is real and superlinear (×2 the
+segs costs ×2.7 the device time — the dash arc-length loop is
+O(segs²) per edge) and lifts the scene's wall time off the vsync
+floor to two frames (33 ms), for no measurable gain over 32.  Init
+is flat (156/155/154 ms) and the zoomed-in pass is culling-bound,
+not segs-bound; the CPU premium moves with the flatten as expected
+(cold first-read 30 → 40 ms, `elementsInBox` 3.60× → 3.81×) and the
+warm rows hold.  Landed with the constant: the three specs that
+hardcoded 24-derived subdivision indices now derive them from
+`allocRouteQuads`/`segEnd` (plus the odd-count Q(0.5) index as
+CURVE_SEGS / 2), so the suite holds at any budget — the
+uniform-allocation control still fails six specs, the generalized
+corner-join among them — and the radius-50 sagitta / dash arc-length
+bounds only tightened (0.017 px and 0.009 short at 32, both well
+under the 0.05 bounds, with a uniform split still failing both).
+Twelve goldens moved, every one a curved-edge scene; each diff was
+read before regenerating and is confined to the curved ink
+(chord-position and dash-phase shifts along beziers, loops and round
+corners).  `parity-closeup-bends` held and `routing.spec.js` ran 28
+green — no routing number moved.  The zoom-adaptive indexCount
+remains the recorded further step, deliberately not taken.

@@ -2327,7 +2327,8 @@ each is deliberate, not a pass-1 deferral:
     run-to-run (the unchanged re-fan row read 3.79× when first published
     and 2.66–2.98× on re-measurement); read them as magnitudes.
   - *Rendering (12a)*: curved edges draw in their own pipeline — one
-    instance per edge as a strip of 24 quads whose vertex shader
+    instance per edge as a strip of 32 quads (`CURVE_SEGS`; 24 until
+    round 93.2 priced the raise on hardware) whose vertex shader
     evaluates the curve analytically from live positions + the params
     column (the WGSL twin of `curve-geometry.mts`), extruding along
     the curve normal at each vertex's own t so the strip is watertight
@@ -2443,13 +2444,17 @@ each is deliberate, not a pass-1 deferral:
     chord lengths, so dashes follow the map by construction — pinned
     by the arc-length spec in `test/curve-routes.mjs`; mid-arrows
     anchor through the analytic route midpoint and never read the
-    map.  Known residual (the 93.2 candidate, measured and
-    deferred): a many-point round route — 5+ rounded corners is 11+
-    pieces — still leaves ~3 chords per arc even weighted (0.384%
-    v3 mismatch at zoom 3, 5 points at radius 20), because the
-    budget itself is 24; raising CURVE_SEGS is priced by
-    `benchmark:renderer`'s curve scenes on a hardware adapter, which
-    that bench requires by design.  Sharp corners join with a
+    map.  The 93.2 residual — a many-point round route (5+
+    rounded corners is 11+ pieces) kept ~3 chords per arc even
+    weighted, 0.384% v3 mismatch at zoom 3 with 5 points at radius
+    20 — closed when the budget itself was priced on hardware
+    (RX 580, round 93.2): CURVE_SEGS 24 → 32 takes that probe to
+    0.003% while the 25k curved scene's device time stays under the
+    frame budget (9.6 → 13.2 ms, wall on the vsync floor); 48
+    measured 25.7 ms device / 33 ms wall (two vsync frames) for no
+    measurable probe gain and was declined — the dash arc-length
+    loop is O(CURVE_SEGS²) per edge, so the budget prices
+    superlinearly.  Sharp corners join with a
     **clamped discrete miter** (v3's canvas sets `lineJoin: 'round'`
     on edge paths — a recorded deviation confined to the outer join
     wedge; the live parity diff still measures 0 px at 8 px strokes);
@@ -4578,15 +4583,16 @@ fragment premium is **unmeasurable at scene level** on real hardware
 - **Curved edges (rounds 12a/12b)**: `curve-style: bezier` bundles and
   self-loops (12a) plus `unbundled-bezier`, `segments`,
   `round-segments`, `taxi` and `round-taxi` (12b) all render on-GPU
-  in **one curved stream** of 24-quad strips evaluated from live
+  in **one curved stream** of 32-quad strips evaluated from live
   positions (see the design decision above): bezier/loops keep the
   12a analytic evaluation, the 12b route families evaluate their
   route (from the curve param blob) with piece boundaries landing
   exactly on subdivision indices — legs pixel-straight, corners
   exact — discrete miter normals at sharp corners, and the strip's
   quads distributed by bend (round 93: arcs by sweep, straight legs
-  one quad each), so magnified round corners draw as arcs rather
-  than chord chains.
+  one quad each; round 93.2 raised the budget 24 → 32, priced on
+  hardware), so magnified round corners draw as arcs rather than
+  chord chains.
 
   Deviations,
   all recorded: node boundaries use the arrow tier's approximations

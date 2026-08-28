@@ -72,6 +72,111 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
+// Returns true if (x, y) is inside the label of ele.
+BRp.checkLabelHitAt = function( ele, x, y, prefix, th ){
+  var _p = ele._private;
+  var prefixDash = prefix ? prefix + '-' : '';
+
+  ele.boundingBox();
+  var bb = _p.labelBounds[ prefix || 'main' ];
+  var text = ele.pstyle( prefixDash + 'label' ).value;
+  var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
+
+  if( !eventsEnabled || !text || !bb ){ return false; }
+
+  var lx = util.getPrefixedProperty( _p.rscratch, 'labelX', prefix );
+  var ly = util.getPrefixedProperty( _p.rscratch, 'labelY', prefix );
+  var theta = util.getPrefixedProperty( _p.rscratch, 'labelAngle', prefix );
+  var ox = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
+  var oy = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
+
+  var lx1 = bb.x1 - th - ox;
+  var lx2 = bb.x2 + th - ox;
+  var ly1 = bb.y1 - th - oy;
+  var ly2 = bb.y2 + th - oy;
+
+  if( theta ){
+    var cos = Math.cos( theta );
+    var sin = Math.sin( theta );
+    var rotate = function( px, py ){
+      px = px - lx; py = py - ly;
+      return { x: px * cos - py * sin + lx, y: px * sin + py * cos + ly };
+    };
+    var px1y1 = rotate( lx1, ly1 );
+    var px1y2 = rotate( lx1, ly2 );
+    var px2y1 = rotate( lx2, ly1 );
+    var px2y2 = rotate( lx2, ly2 );
+    var points = [
+      px1y1.x + ox, px1y1.y + oy,
+      px2y1.x + ox, px2y1.y + oy,
+      px2y2.x + ox, px2y2.y + oy,
+      px1y2.x + ox, px1y2.y + oy
+    ];
+    return math.pointInsidePolygonPoints( x, y, points );
+  } else {
+    return math.inBoundingBox( bb, x, y );
+  }
+};
+
+// Returns all elements from eles that are hit by (x, y), sorted topmost first.
+// options: { includeBody, includeMainLabels, includeSourceLabels, includeTargetLabels, isTouch }
+BRp.hitTestAt = function( x, y, eles, options ){
+  var r = this;
+  var zoom = r.cy.zoom();
+  var opts = options || {};
+  var isTouch            = opts.isTouch;
+  var includeBody        = opts.includeBody        !== false;
+  var includeMainLabels  = opts.includeMainLabels  !== false;
+  var includeSourceLabels = opts.includeSourceLabels !== false;
+  var includeTargetLabels = opts.includeTargetLabels !== false;
+  var nodeThreshold  = ( isTouch ? 8 : 2 ) / zoom;
+  var labelThreshold = ( isTouch ? 8 : 2 ) / zoom;
+
+  var eleIds = new Set();
+  for( var i = 0; i < eles.length; i++ ){ eleIds.add( eles[i]._private.data.id ); }
+
+  var zSorted = r.getCachedZSortedEles();
+  var matches = [];
+
+  for( var i = zSorted.length - 1; i >= 0; i-- ){ // reverse = topmost first
+    var ele = zSorted[ i ];
+    if( !eleIds.has( ele._private.data.id ) ){ continue; }
+
+    var hit = false;
+
+    if( ele.isNode() ){
+      if( includeBody ){
+        var width  = ele.outerWidth()  + 2 * nodeThreshold;
+        var height = ele.outerHeight() + 2 * nodeThreshold;
+        var pos    = ele.position();
+        if( pos.x - width/2 <= x && x <= pos.x + width/2 &&
+            pos.y - height/2 <= y && y <= pos.y + height/2 ){
+          var cornerRadius = ele.pstyle('corner-radius').value === 'auto' ? 'auto' : ele.pstyle('corner-radius').pfValue;
+          var shape = r.nodeShapes[ r.getNodeShape( ele ) ];
+          hit = shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, ele._private.rscratch );
+        }
+      }
+      if( !hit && includeMainLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, null, labelThreshold );
+      }
+    } else { // edge
+      if( includeMainLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, null,     labelThreshold );
+      }
+      if( includeSourceLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold );
+      }
+      if( includeTargetLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
+      }
+    }
+
+    if( hit ){ matches.push( ele ); }
+  }
+
+  return matches;
+};
+
 BRp.findNearestElement = function( x, y, interactiveElementsOnly, isTouch ){
   return this.findNearestElements( x, y, interactiveElementsOnly, isTouch )[0];
 };
@@ -230,79 +335,11 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     }
   }
 
-  function preprop( obj, name, pre ){
-    return util.getPrefixedProperty( obj, name, pre );
-  }
-
   function checkLabel( ele, prefix ){
-    var _p = ele._private;
-    var th = labelThreshold;
-
-    var prefixDash;
-    if( prefix ){
-      prefixDash = prefix + '-';
-    } else {
-      prefixDash = '';
+    if( self.checkLabelHitAt( ele, x, y, prefix, labelThreshold ) ){
+      addEle( ele );
+      return true;
     }
-
-    ele.boundingBox();
-    var bb = _p.labelBounds[prefix || 'main'];
-
-    var text = ele.pstyle( prefixDash + 'label' ).value;
-    var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
-
-    if( !eventsEnabled || !text ){ return; }
-
-    var lx = preprop( _p.rscratch, 'labelX', prefix );
-    var ly = preprop( _p.rscratch, 'labelY', prefix );
-
-    var theta = preprop( _p.rscratch, 'labelAngle', prefix );
-
-    var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
-    let oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
-
-    var lx1 = bb.x1 - th - ox; // (-ox, -oy) as bb already includes margin
-    var lx2 = bb.x2 + th - ox; // and rotation is about (lx, ly)
-    var ly1 = bb.y1 - th - oy;
-    var ly2 = bb.y2 + th - oy;
-
-    if( theta ){
-      var cos = Math.cos( theta );
-      var sin = Math.sin( theta );
-
-      var rotate = function( x, y ){
-        x = x - lx;
-        y = y - ly;
-
-        return {
-          x: x * cos - y * sin + lx,
-          y: x * sin + y * cos + ly
-        };
-      };
-
-      var px1y1 = rotate( lx1, ly1 );
-      var px1y2 = rotate( lx1, ly2 );
-      var px2y1 = rotate( lx2, ly1 );
-      var px2y2 = rotate( lx2, ly2 );
-
-      var points = [ // with the margin added after the rotation is applied
-        px1y1.x + ox, px1y1.y + oy,
-        px2y1.x + ox, px2y1.y + oy,
-        px2y2.x + ox, px2y2.y + oy,
-        px1y2.x + ox, px1y2.y + oy
-      ];
-
-      if( math.pointInsidePolygonPoints( x, y, points ) ){
-        addEle( ele );
-        return true;
-      }
-    } else { // do a cheaper bb check
-      if( math.inBoundingBox( bb, x, y ) ){
-        addEle( ele );
-        return true;
-      }
-    }
-
   }
 
   for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence

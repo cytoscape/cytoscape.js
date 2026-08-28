@@ -1925,8 +1925,14 @@ test.describe('WebGPU visual goldens', () => {
 
     await makeReadyCy(page, {
       elements: [
-        { data: { id: 'a', text: 'Regime gap 25' }, position: { x: 0, y: -18 } },
-        { data: { id: 'b', text: 'Weight kg query' }, position: { x: 0, y: 18 } },
+        {
+          data: { id: 'a', text: 'Regime gap 25' },
+          position: { x: 0, y: -18 },
+        },
+        {
+          data: { id: 'b', text: 'Weight kg query' },
+          position: { x: 0, y: 18 },
+        },
       ],
       style: {
         nodes: {

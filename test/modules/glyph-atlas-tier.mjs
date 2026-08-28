@@ -99,7 +99,13 @@ const makeDevice = () => {
     textures,
     writes,
     createTexture(desc) {
-      const tex = { size: desc.size, destroyed: false, destroy() { this.destroyed = true; } };
+      const tex = {
+        size: desc.size,
+        destroyed: false,
+        destroy() {
+          this.destroyed = true;
+        },
+      };
 
       textures.push(tex);
 
@@ -197,7 +203,8 @@ describe('glyph atlas zoom tiers (round 94)', () => {
     atlas.metrics('A');
 
     const texturesBefore = device.textures.length;
-    const rasters = atlas
+    const rasters =
+      atlas
       // reach into the fake to count re-rasters
       ['ctx'].fillTextCalls;
 
@@ -232,7 +239,12 @@ describe('glyph atlas zoom tiers (round 94)', () => {
 
 /** The label layer's meter, over a minimal fake store view. */
 const makeStore = (entries) => {
-  const dirty = { nodes: [...entries.keys()], edges: [], edgeSource: [], edgeTarget: [] };
+  const dirty = {
+    nodes: [...entries.keys()],
+    edges: [],
+    edgeSource: [],
+    edgeTarget: [],
+  };
 
   return {
     labelFont: 'sans-serif',
@@ -348,7 +360,12 @@ describe('label tier promotion meter (round 94)', () => {
   });
 
   it('meters on the largest label seen, monotone across removals', () => {
-    store = makeStore(new Map([[0, entry(8)], [1, entry(20)]]));
+    store = makeStore(
+      new Map([
+        [0, entry(8)],
+        [1, entry(20)],
+      ]),
+    );
     layer = new LabelLayer(makeDevice(), store);
     layer.process();
 
@@ -362,7 +379,9 @@ const captureRun = (layer) => {
   const words = layer.glyphs['words'];
   const f32 = new Float32Array(words.buffer);
   const high = layer.glyphs.highWater;
-  const x = [], w = [], h = [];
+  const x = [],
+    w = [],
+    h = [];
   let count = 0;
 
   for (let i = 0; i < high; i++) {

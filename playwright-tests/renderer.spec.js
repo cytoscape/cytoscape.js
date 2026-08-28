@@ -5534,9 +5534,7 @@ test.describe('WebGPU renderer', () => {
 
     expect(await tier()).toBe(1);
 
-    const glyphsBefore = await page.evaluate(
-      () => window.cy.stats().glyphs,
-    );
+    const glyphsBefore = await page.evaluate(() => window.cy.stats().glyphs);
 
     await page.evaluate(() => window.cy.zoom(4));
     await page.waitForFunction(() => window.cy.stats().glyphAtlasTier === 2);

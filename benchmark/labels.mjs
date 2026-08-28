@@ -141,7 +141,10 @@ const sdfRow = (tier) => {
   for (let y = 4 * tier; y < cellH - 4 * tier; y++) {
     for (let x = 3 * tier; x < cellW - 3 * tier; x++) {
       const hole =
-        y > cellH * 0.3 && y < cellH * 0.6 && x > cellW * 0.3 && x < cellW * 0.6;
+        y > cellH * 0.3 &&
+        y < cellH * 0.6 &&
+        x > cellW * 0.3 &&
+        x < cellW * 0.6;
 
       alpha[y * cellW + x] = hole ? 0 : 255;
     }

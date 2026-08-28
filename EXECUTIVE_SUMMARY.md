@@ -5,9 +5,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-26, after the worker-hosted renderer (round 86),
-  the record's state gates (round 111), the spectral-seed spec (round 109) and
-  a sweep of the open-calls ledger.
+- **Last updated**: 2026-08-27, after the pick order (round 97) and the
+  pointer cursors (round 89).
 
 ## How to maintain this file
 
@@ -46,8 +45,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,242 unit · 511 module · 24 soak · 412 browser (some skip for want of a WebGPU adapter) |
-| Documented API | 325 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Automated tests | 2,260 unit · 513 module · 24 soak · 424 browser (some skip for want of a WebGPU adapter) |
+| Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 46 goldens compared **exactly** — zero differing pixels · 45 live v3-vs-v4 pixel-parity scenes, 7 of them close-ups at zoom 3–4 · 11 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
 | Style parity | v4 accepts 157 of v3's 291 style property names; the rest dropped by decision |
@@ -333,6 +332,24 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     users can rely on rather than infer, and one recorded deviation: an app that
     relied on a deeply nested v3 parent out-ranking a shallower edge now gets
     the edge.
+  - Round 89: the canvas now says what a gesture will do.  Neither library set
+    a CSS cursor anywhere, so a graph canvas showed the browser default through
+    panning, dragging and box selection alike.  It carries the standard pair
+    now — `grab` over a draggable node, `grabbing` while it or the background
+    moves — plus `pointer` over anything else clickable and `crosshair` while
+    boxing, and it keeps the affordance during a drag that leaves the canvas.
+  - The compatibility decision is what shapes it: v3 apps set cursors
+    themselves, from `mouseover`/`mouseout` on the container, and v4's canvas
+    fills that container — so **idle over background writes nothing at all**,
+    leaving the app's own cursor in force wherever v4 has nothing to say.
+    `pointerCursors: false` turns the writer off outright, and an object
+    overrides individual states.  A touch pointer never gets a cursor.
+  - The plan said to hook seven specific gesture transitions; the code derives
+    the cursor after *every* pointer event instead, because the press state is
+    cleared in six places and three of them are touch paths no enumeration had
+    listed — each a sticky "grabbing" waiting to happen on a hybrid device.
+  - Buys the affordance every other graph canvas has, without taking the one
+    a ported v3 app already sets.
 
 ---
 
@@ -396,7 +413,7 @@ round, and is regenerated rather than maintained:
 | | |
 |---|---|
 | Screen-pass fixes | Six of the seven rendering/interaction defects found by driving the debug page, each mechanism pinned before planning: transient resize distortion, the too-conservative compound fit, curve smoothness spent where the bend is, label fidelity under zoom, node outlines drawn over the ink, and the classic compound demo's look restored.  The seventh, pick order, landed 27 Aug |
-| Edge-layer polish | Stroke caps and corners, arrowhead reach, and pointer cursors that say what a gesture will do |
+| Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | Bun and Deno first-class: a gate pinning that the source imports no runtime built-ins (true today, unenforced), a smoke tier running the built bundles on all three runtimes in CI, Deno's native WebGPU driving the GPU algorithm executors, then a scoping pass over other environments (edge workers, React Native, Electron) |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |

@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–39, 41–48, 52–70, 86, 90, 97, 101, 108–109, 111 |
-| planned | 40, 49–51, 71–85, 87–89, 91–96, 98–100, 102–107, 110 |
+| landed | 7–39, 41–48, 52–70, 86, 89–90, 97, 101, 108–109, 111 |
+| planned | 40, 49–51, 71–85, 87–88, 91–96, 98–100, 102–107, 110 |
 
 ## The sections
 
@@ -147,7 +147,7 @@ A round can land with an item held open; the round file says which.
 | 118 | 86 | 2026-08-14 | landed | [The worker-hosted renderer (OffscreenCanvas)](rounds/2026-08-14-17-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |
 | 119 | 87 | 2026-08-17 | plan | [Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps](rounds/2026-08-17-01-rnd0087-plan-layout-mechanics-packing-made-reusable-the-handoff-from.md) |
 | 120 | 88 | 2026-08-17 | plan | [Edge layer strokes: the caps, the corners and the arrow reach](rounds/2026-08-17-02-rnd0088-plan-edge-layer-strokes-the-caps-the-corners-and-the-arrow.md) |
-| 121 | 89 | 2026-08-17 | plan | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-plan-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
+| 121 | 89 | 2026-08-17 | landed | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-landed-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
 | 122 | 90 | 2026-08-17 | landed | [API review and cleanup: the parity pass audited](rounds/2026-08-17-04-rnd0090-landed-api-review-and-cleanup-the-parity-pass-audited.md) |
 | 123 | 91–97 | 2026-08-18 | note | [The maintainer's screen pass](rounds/2026-08-18-01-rnd0091_0097-note-the-maintainer-s-screen-pass.md) |
 | 124 | 91 | 2026-08-18 | plan | [Resize without distortion](rounds/2026-08-18-02-rnd0091-plan-resize-without-distortion.md) |

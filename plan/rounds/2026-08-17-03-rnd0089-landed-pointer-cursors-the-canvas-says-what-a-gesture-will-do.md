@@ -179,3 +179,140 @@ mid-drag document-level mirror ships in v1 (recommended: yes — it is
 what makes release-outside-canvas honest) or the writer stays
 canvas-only; whether `pointerCursors` needs the runtime setter
 (recommended: yes, matching every sibling toggle).
+
+### Landed (2026-08-27)
+
+The canvas carries the affordances, every gesture-end path puts them
+back, and `pointerCursors` turns the whole thing off.  The plan's five
+verified facts were re-checked before starting and all five held —
+including fact 1, that nothing in either library sets `style.cursor`,
+which a grep confirmed still true.  Every "Open" was taken as
+recommended.  Three things the plan did not have right are recorded
+below; two of them changed the code.
+
+**89.1 — the map.**  `src/interact/cursor.mts` is pure: `cursorFor( {
+gesture, hover, pointerType }, setting )` and a `DEFAULT_CURSORS`
+constant, no DOM.  That is what makes every cell of gesture x hover x
+pointer type assertable from Node, and it is why the browser tier can
+then test the *writes* rather than the decisions behind them.
+`CursorState` and `CursorMap` live in `public-types.mts` beside
+`BoxSelectionMode`, so `export type *` carries them to consumers.
+
+**89.1 — the writer, and the plan's one wrong instruction.**  The plan
+enumerated seven transitions for `PointerHandler` to hook.  It hooks the
+**DOM-listener wrapper** instead — the same `finally` that clears
+`originalEvent` (41.4) — plus `updateHover`, which resolves
+asynchronously outside that wrapper, plus `destroy`.
+
+The reason is the
+plan's own risk note.  `this.down` is cleared in **six** places, and
+three of them are touch paths the plan's list does not name:
+`beginPinch`, `beginTouchCxt` and the three-finger `touchBoxMove`.  Each
+would have been a live sticky-`grabbing` path on a hybrid device, and
+each is the kind of branch an enumeration gets wrong quietly.  Deriving
+the cursor after every DOM handler is a superset that cannot miss one,
+and it costs a string compare per event against handlers that already
+pick and emit.  The plan's enumeration was not wrong about *those seven*
+— it was wrong that seven was the count.
+
+**The document mirror ships, and the release-outside-canvas spec does
+not.**  The plan made the mirror conditional on that spec ("it ships
+only with the release-outside-canvas spec proving every path restores
+it, or it drops to canvas-only").  `playwright-page`'s container fills
+the viewport, so there is no outside to release into without resizing
+the shared page — round 91's territory, and not a change to make from
+here.  The condition is met a different way, and the substitution is
+recorded rather than glossed: the browser suite asserts the *mirror*
+(`documentElement` reads `grabbing` mid-drag, `''` at every release, on
+pan, grab, box and cancel), and `test/pointer-cursors.mjs` asserts the
+half a full-viewport page cannot — that the mirror **saves and restores
+the page's own root cursor** rather than clobbering it, with a `wait`
+planted before the drag and read back after.  The mirror is the
+mechanism the excursion depends on; both halves of it are pinned.
+
+**89.2 — the option.**  `pointerCursors?: boolean | Partial<CursorMap>`,
+default `true`, with `cy.pointerCursors()` in the getter/setter shape
+every sibling toggle uses.  No validation and no throw: a typo'd map key
+is a no-op, and the constructor's stated design (fifth sitting) is that
+option strictness resolves at the type layer.  One thing the plan did
+not think of: **a runtime flip has to reach the canvas immediately**, or
+turning cursors off while one reads `grab` leaves it there until the
+next pointer event.  The setter calls the handler's `applyCursor()`, and
+`Core._pointer`'s structural type grew the method for it.  It is not
+in `cy.json()`, matching every other v4-only option.
+
+**89.3 — the browser tier**, and three things the specs had to be
+taught, each a first draft that passed or hung for the wrong reason:
+
+- **A gesture moves its own target.**  A pan moves the viewport and a
+  node drag moves the node, so a second gesture aimed at a remembered
+  coordinate misses.  Two specs failed on exactly that before `at()`
+  started asking the element where it is now.
+- **The last move of a `steps` batch is routinely dropped.**  Hover
+  picking is throttled to 25 ms and latest-wins, so moving once and then
+  polling the cursor waits for a pick nothing will ever ask for — two
+  more specs failed here.  `hoverOnto` nudges *inside* the poll, which
+  is state-driven, not a sleep-to-offset.
+- **Waiting on the hover is what makes the control honest.**  With
+  `pointerCursors: false` a poll for `''` passes instantly and proves
+  nothing.  Waiting for the pick to land first turns each assertion into
+  "the hover really happened, and nothing was written anyway" —
+  testing.md's rule about asserting the precondition when the end state
+  satisfies the predicate on its own.
+
+**Controls, three of them, all landing:**
+
+| control | result |
+| --- | --- |
+| `cursorFor` keyed to return `''` unconditionally | 10 of 18 Node specs red |
+| the map intact, only the DOM write neutered | 6 of 18 Node specs red |
+| `applyCursor()` made a no-op | all 6 browser specs red |
+
+The first two failing for different reasons is the point: the two tiers
+fail for their own reasons rather than each other's.  The debug-harness
+gate has its own pair — mistype the checkbox id in `index.html`, rename
+the member in `toggles.js`, one each.
+
+**89.4 — the harness, driven.**  A `pointerCursors` checkbox joins Core
+toggles, and the page was driven in a scripted browser on
+`?network=em-web` — the rule this round could not have satisfied any
+other way, since the feature is observable only by a person or a browser:
+
+    at rest          canvas ''         root ''
+    hovering a node  canvas 'grab'     root ''
+    pressed, drag    canvas 'grabbing' root 'grabbing'
+    released         canvas 'grab'     root ''
+    checkbox off     canvas ''         setting false
+    hover, off       canvas ''         setting false
+
+One row looked like a defect for a moment and is not: re-checking the
+box reads `''`, not `grab`, because clicking a side-panel control moves
+the pointer off the canvas, `pointerleave` clears the hover, and
+idle-over-nothing is the right answer.
+
+`test/modules/debug-harness.mjs` gained a gate for the failure mode a
+new control has, which is silence: `boolControl` returns early when its
+selector matches nothing, so a typo'd id is a checkbox that never
+appears and never fires.  Two text checks — every selector literal
+`toggles.js` names exists in `index.html`, and every core member its
+getters call exists on a real instance.
+
+`scripts/status/markdown.mjs` dropped `src/interact/cursor.mts` from
+`PLANNED_PATHS`, which is that list's designed lifecycle: a planned
+round names a file before it exists, the round lands, and the "no exempt
+spelling resolves" spec goes red until the entry is removed.  It went
+red on this round's first `test:modules` run.
+
+**Verification.**  `npm run -s test:node:quiet` green (2260 Node specs);
+`npx playwright test --project=renderer` green; `npm run build:types`
+regenerated `dist/cytoscape.d.ts` — the docs gate fails on a documented
+member the declaration does not carry, which is how the first run caught
+that it had not been rebuilt.
+
+**Recorded, not scheduled** (unchanged from the plan): a `cursor` style
+property in the sheet DSL is the CSS-shaped end state and needs a
+dictionary column plus a contract change; a cxt-gesture cursor is cheap
+once the writer exists and waits on an app expectation; a `progress`
+cursor for long synchronous work is **declined** — 87.2 removed the
+largest sync stall, and a cursor that says "wait" is the wrong fix for
+work that should not block.

@@ -95,6 +95,10 @@ export function runRenderWorker(
               stats: (engine as Renderer).stats(),
             });
           },
+          // never fires here: the dpr listener arms only on a container
+          // mount, and a worker has no matchMedia — the main thread
+          // re-resolves the ratio and emits on the core itself (91.2)
+          emitResize: () => {},
           emitError: (message) => post({ kind: 'error', message }),
           gpuMappers: null,
           createImageDecoder: () => null,
@@ -140,7 +144,7 @@ export function runRenderWorker(
       }
 
       case 'resize': {
-        engine?.setSize(msg.width, msg.height);
+        engine?.setSize(msg.width, msg.height, msg.dpr);
         break;
       }
 

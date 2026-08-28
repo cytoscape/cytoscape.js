@@ -135,6 +135,11 @@ export class WorkerRenderer {
   private opts: RendererOptions;
   private worker: Worker;
   private dpr: number;
+  /** live device-pixel-ratio tracking (91.2), as the same-thread
+   * renderer: true when the ctor left `pixelRatio` 'auto' */
+  private autoDpr: boolean;
+  /** tears down the armed matchMedia resolution listener (91.2) */
+  private offDprChange: (() => void) | null = null;
   private destroyed = false;
   private offInvalidate: () => void;
   private onViewport: () => void;
@@ -185,10 +190,10 @@ export class WorkerRenderer {
     this.cy = cy;
     this.container = container;
     this.opts = opts;
-    this.dpr =
-      opts.pixelRatio == null || opts.pixelRatio === 'auto'
-        ? globalThis.devicePixelRatio || 1
-        : opts.pixelRatio;
+    this.autoDpr = opts.pixelRatio == null || opts.pixelRatio === 'auto';
+    this.dpr = this.autoDpr
+      ? globalThis.devicePixelRatio || 1
+      : (opts.pixelRatio as number);
     this.lastStats = {
       frames: 0,
       cpuFrameMs: 0,
@@ -286,6 +291,7 @@ export class WorkerRenderer {
         ? new ResizeObserver(() => this.resize())
         : null;
     this.resizeObserver?.observe(container);
+    this.armDprListener();
   }
 
   /**
@@ -300,12 +306,17 @@ export class WorkerRenderer {
   }
 
   /**
-   * Post the container's current device-px size to the worker, and
+   * Post the container's current device-px size — and the re-resolved
+   * device-pixel ratio when it is 'auto' (91.2) — to the worker, and
    * re-fit the canvas CSS box in fixed px (91.1).
    */
   resize(): void {
     if (this.destroyed) {
       return;
+    }
+
+    if (this.autoDpr) {
+      this.dpr = globalThis.devicePixelRatio || 1;
     }
 
     const cssW = this.container.clientWidth;
@@ -317,7 +328,40 @@ export class WorkerRenderer {
       kind: 'resize',
       width: Math.max(1, Math.round(cssW * this.dpr)),
       height: Math.max(1, Math.round(cssH * this.dpr)),
+      dpr: this.dpr,
     });
+  }
+
+  /**
+   * The same matchMedia resolution watch as the same-thread renderer
+   * (91.2), re-armed per change: a `devicePixelRatio` change never moves
+   * `clientWidth`, so the ResizeObserver misses it.  The handler
+   * re-measures through `resize()` — which re-reads the live ratio and
+   * posts it with the size — and emits `resize` on the core, v3's
+   * `cy.resize()` semantics.
+   */
+  private armDprListener(): void {
+    if (!this.autoDpr || typeof matchMedia === 'undefined') {
+      return;
+    }
+
+    const query = matchMedia(`(resolution: ${this.dpr}dppx)`);
+    const onChange = (): void => {
+      if (this.destroyed) {
+        return;
+      }
+
+      this.offDprChange?.(); // drop the stale-ratio query
+      this.resize();
+      this.cy.emit('resize');
+      this.armDprListener(); // re-arm at the new ratio
+    };
+
+    query.addEventListener('change', onChange);
+    this.offDprChange = () => {
+      query.removeEventListener('change', onChange);
+      this.offDprChange = null;
+    };
   }
 
   /**
@@ -488,6 +532,7 @@ export class WorkerRenderer {
 
     this.destroyed = true;
     this.resizeObserver?.disconnect();
+    this.offDprChange?.();
     this.offInvalidate();
     this.cy.off('viewport', this.onViewport);
     this.cy._animations.detachDriver();

@@ -457,6 +457,29 @@ executor.  ndex-x-large — mean degree 47, the explosive shape —
 converges live on the GPU in 1.3 s and fits at zoom 0.76.  The
 force-layout section below carries the model.
 
+Round 91 (2026-08-28, raised by the maintainer — the first of the
+screen-pass rounds) is the resize round: the network view stretched and
+squished while the window was dragged.  The steady state was already
+correct; the distortion was the transient — a `100%`-CSS canvas lets
+the compositor scale *stale* content to the new layout for at least one
+frame, because ResizeObserver callbacks run after this update's rAF and
+the redraw was `schedule()`d to the next one.  `resize()` now draws the
+frame synchronously (the RO callback runs before paint, so the frame
+that composites the new layout composites new content — the stretched
+frame never exists), and `applySize` writes the canvas CSS box in
+fixed px, v3's shape — a late frame can then only letterbox, never
+stretch — with both halves mirrored on the worker mount.  The same
+round un-froze the device-pixel ratio: with `pixelRatio: 'auto'` (the
+default) every measure re-reads `devicePixelRatio`, and a matchMedia
+resolution query — re-armed per change, torn down on destroy —
+triggers the re-measure and emits `resize` on the core (v3's
+`cy.resize()` semantics), so browser zoom or a move to a
+different-density monitor re-rasterizes instead of blurring at the
+construction-time ratio.  An explicit `pixelRatio` number stays
+pinned (spec-pinned both ways), the cached pick tile drops on a ratio
+change (it is device-px addressed), and the worker proxy posts the
+re-resolved ratio with each resize message.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order
@@ -4905,7 +4928,11 @@ fragment premium is **unmeasurable at scene level** on real hardware
   `pixelRatio` (`'auto'` |
   number — the ctor option overriding the renderer's device pixel
   ratio) predates the round and is spec-pinned since it: the backing
-  store scales by it while picking stays css-px addressed.
+  store scales by it while picking stays css-px addressed.  Since
+  round 91 `'auto'` is *live* — re-read on every measure and watched
+  by a matchMedia resolution query, so browser zoom and monitor moves
+  re-rasterize (and emit `resize` on the core) rather than blurring at
+  the construction-time ratio; an explicit number stays pinned.
 - **Box selection**: with `boxSelectionEnabled` (default on), a drag
   while a multiple-select key (shift/ctrl/cmd) is held — or any drag
   when panning is disabled — draws a selection box (a DOM overlay above

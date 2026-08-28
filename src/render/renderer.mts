@@ -280,6 +280,11 @@ export class Renderer {
   private isReady: boolean;
   private frameRequested: boolean;
   private resizeObserver: ResizeObserver | null;
+  /** live device-pixel-ratio tracking (91.2): true when the ctor left
+   * `pixelRatio` 'auto', so every measure re-reads `devicePixelRatio` */
+  private autoDpr: boolean;
+  /** tears down the armed matchMedia resolution listener (91.2) */
+  private offDprChange: (() => void) | null = null;
   /** re-entrancy latch (91.1): a `cy.resize()` from inside a 'render'
    * handler must schedule rather than recurse into frame() */
   private inFrame = false;
@@ -417,7 +422,9 @@ export class Renderer {
 
     if (offscreen != null) {
       // worker mount: the canvas came transferred and pre-sized; the
-      // main thread resolved the dpr (a worker has none of its own)
+      // main thread resolved the dpr (a worker has none of its own) and
+      // re-resolves it per resize (setSize carries the ratio, 91.2)
+      this.autoDpr = false;
       this.dpr = offscreen.dpr;
       this.canvas = offscreen.canvas;
       this.canvas.width = Math.max(1, offscreen.width);
@@ -425,10 +432,10 @@ export class Renderer {
     } else {
       const container = mount as HTMLElement;
 
-      this.dpr =
-        opts.pixelRatio == null || opts.pixelRatio === 'auto'
-          ? globalThis.devicePixelRatio || 1
-          : opts.pixelRatio;
+      this.autoDpr = opts.pixelRatio == null || opts.pixelRatio === 'auto';
+      this.dpr = this.autoDpr
+        ? globalThis.devicePixelRatio || 1
+        : (opts.pixelRatio as number);
 
       const doc = container.ownerDocument as Document;
       const canvas = doc.createElement('canvas');
@@ -471,6 +478,8 @@ export class Renderer {
     if (this.container != null) {
       this.resizeObserver?.observe(this.container);
     }
+
+    this.armDprListener();
 
     this.ready = this.init();
   }
@@ -538,6 +547,47 @@ export class Renderer {
     }
   }
 
+  /**
+   * Watch for device-pixel-ratio changes (91.2): browser zoom or a move
+   * to a different-density monitor changes `devicePixelRatio` without
+   * changing `clientWidth` (CSS px), so the ResizeObserver never fires —
+   * the standing hook is a matchMedia resolution query, re-armed per
+   * change because a query only matches the ratio it was built with.
+   * Armed only while the ratio is 'auto'; an explicit `pixelRatio`
+   * number stays pinned, and a worker mount has no matchMedia (the main
+   * thread re-resolves and setSize carries the ratio).  The change
+   * handler re-measures through `resize()` (applySize re-reads the live
+   * ratio) and emits `resize` on the core — v3's `cy.resize()`
+   * semantics for a re-rasterizing viewport.
+   */
+  private armDprListener(): void {
+    if (
+      !this.autoDpr ||
+      this.container == null ||
+      typeof matchMedia === 'undefined'
+    ) {
+      return;
+    }
+
+    const query = matchMedia(`(resolution: ${this.dpr}dppx)`);
+    const onChange = (): void => {
+      if (this.destroyed) {
+        return;
+      }
+
+      this.offDprChange?.(); // drop the stale-ratio query
+      this.resize(); // applySize re-reads devicePixelRatio
+      this.host.emitResize();
+      this.armDprListener(); // re-arm at the new ratio
+    };
+
+    query.addEventListener('change', onChange);
+    this.offDprChange = () => {
+      query.removeEventListener('change', onChange);
+      this.offDprChange = null;
+    };
+  }
+
   /** True while a GPU force-layout run owns the position column (18.3) —
    * a slot compaction must defer rather than move slots under the sim. */
   forceActive(): boolean {
@@ -585,6 +635,7 @@ export class Renderer {
     }
 
     this.resizeObserver?.disconnect();
+    this.offDprChange?.();
     this.offInvalidate();
     this.offViewport();
 
@@ -2594,12 +2645,26 @@ export class Renderer {
    * presented — stale coverage reads as lag; stale stretch reads as the
    * graph deforming.  It also covers the no-ResizeObserver path, where
    * nothing re-measures until `cy.resize()`.
+   *
+   * With `pixelRatio: 'auto'` the device-pixel ratio is re-read per
+   * measure (91.2), so a browser-zoom or monitor-density change
+   * re-rasterizes rather than blurring at the construction-time ratio; a
+   * ratio change drops the cached pick tile (device px).
    */
   private applySize(): void {
     const container = this.container;
 
     if (container == null) {
       return; // worker mount: sizes arrive via setSize()
+    }
+
+    if (this.autoDpr) {
+      const live = globalThis.devicePixelRatio || 1;
+
+      if (live !== this.dpr) {
+        this.dpr = live;
+        this.picking?.invalidateCache(); // cached pick tile is device px
+      }
     }
 
     const cssW = container.clientWidth;
@@ -2629,10 +2694,17 @@ export class Renderer {
    *
    * @param wPx — canvas width in device px (floored to 1)
    * @param hPx — canvas height in device px (floored to 1)
+   * @param dpr — the main thread's re-resolved device-pixel ratio
+   *   (91.2); omitted, the current ratio stands
    */
-  setSize(wPx: number, hPx: number): void {
+  setSize(wPx: number, hPx: number, dpr?: number): void {
     if (this.destroyed) {
       return;
+    }
+
+    if (dpr != null && dpr !== this.dpr) {
+      this.dpr = dpr;
+      this.picking?.invalidateCache(); // cached pick tile is device px
     }
 
     const w = Math.max(1, Math.round(wPx));

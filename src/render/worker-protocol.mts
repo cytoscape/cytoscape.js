@@ -138,7 +138,7 @@ export type MainMessage =
     }
   | { kind: 'batch'; batch: StoreBatch }
   | { kind: 'viewport'; viewport: WireViewport }
-  | { kind: 'resize'; width: number; height: number }
+  | { kind: 'resize'; width: number; height: number; dpr: number }
   | {
       kind: 'pick';
       id: number;

@@ -136,6 +136,9 @@ export interface RenderHost {
   onViewportChange(cb: () => void): () => void;
   /** a frame was drawn (the core's 'render' event) */
   emitRender(): void;
+  /** the viewport re-measured without `cy.resize()` — a device-pixel-
+   * ratio change re-rasterized (the core's 'resize' event, 91.2) */
+  emitResize(): void;
   /** a fatal renderer error with no better channel (the 'error' event) */
   emitError(message: string): void;
   /**
@@ -176,6 +179,7 @@ export function coreRenderHost(
       return () => cy.off('viewport', cb);
     },
     emitRender: () => cy.emit('render'),
+    emitResize: () => cy.emit('resize'),
     emitError: (message) => cy.emit({ type: 'error' }, [message]),
     gpuMappers: { store: cy._store, styleEngine: cy._styleEngine },
     createImageDecoder,

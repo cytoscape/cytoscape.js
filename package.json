@@ -156,6 +156,7 @@
     "benchmark:algorithms-gpu": "node --import tsx benchmark/algorithms-gpu-bench.mjs",
     "benchmark:publish": "node scripts/benchmark-publish.mjs",
     "machine": "node scripts/machine-info.mjs",
+    "gpu": "node scripts/gpu-info.mjs",
     "status": "node scripts/status-build.mjs",
     "status:all": "run-s build docs:api status",
     "status:serve": "http-server status -p 3335 -s -c -1 -o"

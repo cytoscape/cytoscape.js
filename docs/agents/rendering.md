@@ -21,6 +21,24 @@ the fixtures need their own controls.
 
 - **Something has to open the page.** `debug/` now has specs, and they are worth having, but round 43 shipped with its own risk note saying they prove sheets *compile* and not that anything still looks right — and one day later a maintainer opening the page found three defects, one of which (a conservative `fit()` inflating compound graphs ~2×) was in `src/` and visible in every app with a compound graph. When a change touches the harness, the renderer or bounds, drive the page: `npm run watch`, or a scripted browser that loads `debug/index.html`, screenshots it, and compares against `v3/debug/`'s equivalent.
 
+## The adapter you got is not the GPU the box has
+
+- **Run `npm run gpu` before writing "this environment has no GPU" or
+  deferring hardware work.**  It launches Chromium with the harness's own
+  WebGPU/Vulkan flags and prints a HARDWARE / SOFTWARE-ONLY / UNKNOWN
+  verdict.  Twice a session has read a SwiftShader adapter label in an
+  ad-hoc scripted browser and concluded the box had no GPU — on a machine
+  with a discrete RX 580 — because its launch flags fell back to software
+  (round 93.2 was the second time).  Two facts the script keeps separate:
+  the *card being present* (lspci inventory) and the *browser reaching it*
+  (adapter identity); only the second licenses a GPU benchmark number or a
+  deferral.  Two footguns it encodes: `navigator.gpu` is unavailable on
+  `about:blank` (the probe serves a loopback http page), and a failed probe
+  reports UNKNOWN (exit 1) rather than "no GPU", so a broken environment
+  cannot manufacture the very conclusion the script exists to prevent.
+  Goldens stay pinned to SwiftShader regardless — the verdict governs
+  benchmarks and hardware-only work, not the visual suite.
+
 ## A columnar payload can lose a whole column silently
 
 - **A columnar payload can lose a whole column silently, and the page still looks plausible.**  Round 46.5 re-encoded the harness fixtures into the binary wire format, and the first reader treated a *dictionary* column (`{ dict, indices }`, 1-based, 0 = absent) as a plain array — so every string column in every fixture came back `undefined`.  The graph still rendered: right node count, right edges, right positions, no labels and no categorical colours.  Nothing throws on that.  When a format has more than one column encoding, the spec has to assert **each column still carries values after the round trip**, not that the payload parsed; the control (read the dict as an array) must fail on every fixture.

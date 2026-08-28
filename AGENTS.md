@@ -95,6 +95,7 @@ drift.
 | `npm run -s test:quiet` | minutes | the Node tier plus Playwright (the quiet `npm test`) |
 | `npm run build` | ~1 s | all bundles; only needed when changing the build |
 | `npm run watch` | — | the dev harness at http://localhost:3333/ |
+| `npm run -s gpu` | ~5 s | if/what GPU the harness browser reaches — **run before claiming SwiftShader-only** |
 | `npm run status` / `status:serve` | — | the status site (port 3335) |
 | `npm run plan:index` | — | regenerate `plan/INDEX.md` after adding a round |
 

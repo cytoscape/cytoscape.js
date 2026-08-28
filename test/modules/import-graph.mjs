@@ -27,6 +27,18 @@ broken; now it is the passing answer, and a regex that stops matching reads
 identical to a clean tree.  The controls below therefore moved: they count
 *internal* edges and source files, both of which stay large, so a broken
 walk still fails loudly.
+
+Round 98.1 adds the clause this header always implied: **the set of
+non-relative specifiers under `src/` is empty.**  Until then the scanner
+classified a bare specifier as "a dependency, not a repo edge" and skipped
+it, so a `node:fs` import added tomorrow would have passed the invariant
+that reads as pinning runtime-cleanness.  One clause now forbids `node:*`,
+`bun:*`, `deno:*` and bare packages alike — which is what "runs on any
+standards-shaped runtime" rests on (the round-98 smoke tier is the
+measurement; this is the gate).  The scanner strips comments first — with a
+string-aware walk, not another regex — because `src/layout/contract.mts`
+carries `from 'fcose-gpu'` inside a doc-comment example, and a `file:line`
+allowlist for it would go stale by insertion (the round-37.1 lesson).
 */
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
@@ -57,22 +69,101 @@ const srcFiles = (dir = SRC, out = []) => {
   return out;
 };
 
-/** Every relative `from '...'` specifier in src, resolved and classified. */
+/**
+ * The source with comments removed, strings left intact.  A character walk
+ * rather than a regex, because the failure modes differ: a regex comment
+ * stripper eats `'//'` inside a string (and with it any import later on the
+ * line), while this walk tracks whether it is inside a `'…'`/`"…"`/`` `…` ``
+ * literal and only opens a comment outside one.  Escapes are honoured;
+ * template interpolation is not parsed (a `${}` holding a comment would
+ * survive), which no source here does and the edge counts below would catch
+ * degrading.
+ */
+const stripComments = (src) => {
+  let out = '';
+  // '' = code; otherwise the active delimiter: ', ", `, //, /*
+  let mode = '';
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    const two = src.slice(i, i + 2);
+
+    if (mode === '//') {
+      if (ch === '\n') {
+        mode = '';
+        out += ch;
+      }
+      continue;
+    }
+
+    if (mode === '/*') {
+      if (two === '*/') {
+        mode = '';
+        i++;
+      } else if (ch === '\n') {
+        out += ch; // keep line numbers meaningful for failure output
+      }
+      continue;
+    }
+
+    if (mode !== '') {
+      // inside a string literal
+      if (ch === '\\') {
+        out += two;
+        i++;
+        continue;
+      }
+      if (ch === mode) {
+        mode = '';
+      }
+      out += ch;
+      continue;
+    }
+
+    if (two === '//' || two === '/*') {
+      mode = two;
+      i++;
+      continue;
+    }
+
+    if (ch === "'" || ch === '"' || ch === '`') {
+      mode = ch;
+    }
+
+    out += ch;
+  }
+
+  return out;
+};
+
+/**
+ * Every import specifier in comment-stripped src, classified.  `from '…'`
+ * covers both `import` and `export … from`; `import( '…' )` would cover a
+ * dynamic import if one ever appears (v4 has none today, and no require).
+ */
 const allEdges = () => {
   const outward = new Map();
+  const bare = new Map();
   let internal = 0;
 
   for (const file of srcFiles()) {
-    const src = readFileSync(file, 'utf8');
+    const src = stripComments(readFileSync(file, 'utf8'));
 
-    // `from '...'` covers both `import` and `export ... from`; v4 has no
-    // dynamic imports and no require
-    for (const m of src.matchAll(/from\s+'([^']+)'/g)) {
+    for (const m of src.matchAll(
+      /(?:from\s+|import\s+|import\s*\(\s*)'([^']+)'/g,
+    )) {
       const spec = m[1];
 
       if (!spec.startsWith('.')) {
+        // round 98.1: a non-relative specifier is a runtime or package
+        // dependency, and src has none — see the header
+        if (!bare.has(spec)) {
+          bare.set(spec, []);
+        }
+
+        bare.get(spec).push(relative(ROOT, file));
         continue;
-      } // bare = a dependency, not a repo edge
+      }
 
       const target = resolve(dirname(file), spec);
 
@@ -91,11 +182,11 @@ const allEdges = () => {
     }
   }
 
-  return { outward, internal };
+  return { outward, bare, internal };
 };
 
 describe('import graph: what src reaches outside itself (round 41.3, 42)', function () {
-  const { outward, internal } = allEdges();
+  const { outward, bare, internal } = allEdges();
 
   it('imports nothing outside src', function () {
     const unlisted = [...outward.keys()]
@@ -108,6 +199,19 @@ describe('import graph: what src reaches outside itself (round 41.3, 42)', funct
         unlisted
           .map((k) => `${k}  (from ${outward.get(k).join(', ')})`)
           .join('\n  '),
+    ).to.deep.equal([]);
+  });
+
+  it('imports no runtime built-in and no bare package (round 98.1)', function () {
+    // the runtime-clean invariant: no `node:*`, `bun:*`, `deno:*`, no bare
+    // package — one clause, because they are one property: the bundles run
+    // wherever the web-platform baseline exists, with nothing to resolve
+    const specs = [...bare.keys()].sort();
+
+    expect(
+      specs,
+      'non-relative imports in src:\n  ' +
+        specs.map((s) => `${s}  (from ${bare.get(s).join(', ')})`).join('\n  '),
     ).to.deep.equal([]);
   });
 
@@ -162,6 +266,23 @@ describe('import graph: what src reaches outside itself (round 41.3, 42)', funct
       srcFiles().length,
       'the file walk found too few sources',
     ).to.be.at.least(80);
+  });
+
+  it('strips a comment without eating the code around it', function () {
+    // the stripper's own control, inline: the doc-comment specifier that
+    // motivated stripping must vanish, and a string holding `//` must not
+    // take the rest of its line with it
+    const stripped = stripComments(
+      "import { a } from './a.mjs';\n" +
+        "// import { b } from 'node:fs';\n" +
+        "/* from 'fcose-gpu' */ const u = 'http://x'; import 'left.mjs';\n",
+    );
+
+    expect(stripped).to.contain("from './a.mjs'");
+    expect(stripped).to.not.contain('node:fs');
+    expect(stripped).to.not.contain('fcose-gpu');
+    expect(stripped).to.contain("'http://x'");
+    expect(stripped).to.contain("import 'left.mjs'");
   });
 
   it('gives every shared module a reason, not just a name', function () {

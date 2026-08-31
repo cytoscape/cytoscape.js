@@ -210,6 +210,7 @@ describe('the migration guide: behavioural claims', () => {
       'concentric',
       'breadthfirst',
       'random',
+      'radial',
       'force',
     ]) {
       expect(

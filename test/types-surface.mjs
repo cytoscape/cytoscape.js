@@ -41,6 +41,8 @@ const EXPECTED_EXPORTS = new Set([
   'ConcentricLayoutOptions',
   'Condition',
   'Core',
+  'CursorMap', // round 89
+  'CursorState', // round 89
   // round 45: the layout-extension contract's own types.  `CustomLayoutOptions`
   // shipped from the start while the two types an external author actually
   // writes against did not — `LayoutContext` was in no declaration at all

@@ -36,7 +36,7 @@ const styfn = {};
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
-    arrowScale: { number: true, unitless: true, min: 0, strictMin: true, enums: [ 'inherit' ] },
+    arrowScale: { number: true, unitless: true, min: 0, enums: [ 'inherit' ] },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizeMaybePercent: { number: true, allowPercent: true }, // allows negative

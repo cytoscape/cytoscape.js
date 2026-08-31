@@ -80,6 +80,35 @@ describe('Style arrow scale', function(){
     expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
   });
 
+  it('accepts an override of 0', function(){
+    makeCy([
+      { selector: 'edge', style: { 'arrow-scale': 3, 'target-arrow-scale': 0 } }
+    ]);
+
+    expect( edge.pstyle('target-arrow-scale').value ).to.equal( 0 );
+    expect( getArrowScale( edge, 'target' ) ).to.equal( 0 );
+    expect( getArrowScale( edge, 'source' ) ).to.equal( 3 );
+  });
+
+  it('accepts an override of 0 set as a bypass', function(){
+    makeCy([
+      { selector: 'edge', style: { 'arrow-scale': 3 } }
+    ]);
+
+    edge.style('source-arrow-scale', 0);
+
+    expect( getArrowScale( edge, 'source' ) ).to.equal( 0 );
+    expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
+  });
+
+  it('rejects a negative override', function(){
+    makeCy([
+      { selector: 'edge', style: { 'arrow-scale': 3, 'target-arrow-scale': -1 } }
+    ]);
+
+    expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
+  });
+
   it('treats an explicit `inherit` as no override', function(){
     makeCy([
       { selector: 'edge', style: { 'arrow-scale': 3, 'source-arrow-scale': 'inherit' } }

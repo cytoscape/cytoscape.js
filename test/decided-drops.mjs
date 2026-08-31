@@ -223,10 +223,16 @@ describe('gpu/decided drops (29.3)', function () {
         'background-blacken',
         'bounds-expansion',
         'content',
-        'padding-left',
       ]) {
         expect(sheetThrows({ [prop]: 1 }), prop).to.throw(/unsupported/);
       }
+
+      // padding-left left this triage in round 85.4: it exists again,
+      // as a parents-group compound prop — on a nodes sheet it now
+      // throws the group rule rather than 'unsupported'
+      expect(sheetThrows({ 'padding-left': 1 })).to.throw(
+        /belongs to the parents group/,
+      );
     });
 
     it('the no-dash shape spellings', function () {

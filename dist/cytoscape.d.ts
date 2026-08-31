@@ -2101,6 +2101,13 @@ declare class CurveIndex {
 }
 //#endregion
 //#region src/store/hierarchy.d.mts
+/** One side's padding override (85.4): px, or a pfValue fraction when
+ * `unit` is '%', resolved against the children bb per the record's
+ * `relativeTo` — the same convention as the uniform `padding`. */
+interface SidePadding {
+  value: number;
+  unit: 'px' | '%';
+}
 /**
  * Per-parent compound style inputs (CPU-only; written by the StyleEngine
  * via GraphStore.setCompoundStyle).  `padding` is px, or a fraction when
@@ -2108,6 +2115,10 @@ declare class CurveIndex {
  * children bb per `relativeTo`.  The four v3 min-size bias props are
  * dropped by decided design (round 14): the min clamp splits overflow
  * evenly about the children center — exactly v3's default-bias behavior.
+ * The per-side paddings (85.4 — the hook that decision logged) default
+ * to the uniform `padding` when unset; a set side replaces it on that
+ * side only, growing the box asymmetrically about the untouched
+ * centered clamp.
  */
 interface CompoundStyle {
   padding: number;
@@ -2115,6 +2126,10 @@ interface CompoundStyle {
   relativeTo: 'width' | 'height' | 'average' | 'min' | 'max';
   minWidth: number;
   minHeight: number;
+  paddingLeft?: SidePadding;
+  paddingRight?: SidePadding;
+  paddingTop?: SidePadding;
+  paddingBottom?: SidePadding;
 }
 //#endregion
 //#region src/curve-geometry.d.mts
@@ -2722,8 +2737,12 @@ declare class GraphStore implements ModelView {
   /** Partial compound-style update over the current record — the
    * padding tween's write (round 25.4; see HierarchyIndex). */
   updateCompoundStyle(slot: number, style: Partial<CompoundStyle>): void;
-  /** The parent's resolved px padding (0 for leaves); flush first. */
+  /** The parent's resolved px padding (0 for leaves); flush first.
+   * Always the uniform prop's value, per-side overrides or not (85.4). */
   paddingOf(slot: number): number;
+  /** The parent's per-axis padding sums [left+right, top+bottom]
+   * (85.4) — what core-size readbacks subtract; flush first. */
+  paddingSumsOf(slot: number): [number, number];
   /** The declared compound style record (the style readbacks' truth). */
   compoundStyleOf(slot: number): CompoundStyle;
   /**

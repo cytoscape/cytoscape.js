@@ -1765,11 +1765,20 @@ export class GraphStore implements ModelView {
     this.hierarchy.updateCompoundStyle(slot, style);
   }
 
-  /** The parent's resolved px padding (0 for leaves); flush first. */
+  /** The parent's resolved px padding (0 for leaves); flush first.
+   * Always the uniform prop's value, per-side overrides or not (85.4). */
   paddingOf(slot: number): number {
     this.flushDerived();
 
     return this.hierarchy.paddingOf(slot);
+  }
+
+  /** The parent's per-axis padding sums [left+right, top+bottom]
+   * (85.4) — what core-size readbacks subtract; flush first. */
+  paddingSumsOf(slot: number): [number, number] {
+    this.flushDerived();
+
+    return this.hierarchy.paddingSumsOf(slot);
   }
 
   /** The declared compound style record (the style readbacks' truth). */

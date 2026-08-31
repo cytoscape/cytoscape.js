@@ -875,6 +875,10 @@ const NODE_READ: ReadonlySet<string> = new Set([
   'text-border-color',
   'text-border-opacity',
   'padding',
+  'padding-left',
+  'padding-right',
+  'padding-top',
+  'padding-bottom',
   'padding-relative-to',
   'min-width',
   'min-height',
@@ -4779,6 +4783,10 @@ const PARENT_CHANNEL_OVERLAY: StyleProps = {
 /** The parents-group compound props (constants only; not channels). */
 const COMPOUND_PROPS: ReadonlySet<string> = new Set([
   'padding',
+  'padding-left',
+  'padding-right',
+  'padding-top',
+  'padding-bottom',
   'padding-relative-to',
   'min-width',
   'min-height',
@@ -4843,6 +4851,49 @@ const splitCompoundProps = (
           throw new Error(
             `Invalid padding '${String(value)}' (a number of px, or 'N%')`,
           );
+        }
+
+        break;
+      }
+
+      case 'padding-left':
+      case 'padding-right':
+      case 'padding-top':
+      case 'padding-bottom': {
+        // 85.4: same spelling as `padding` (px number, or 'N%' resolved
+        // per `padding-relative-to`); unset sides take the uniform value
+        let side: { value: number; unit: 'px' | '%' };
+
+        if (typeof value === 'string') {
+          const m = /^\s*([\d.]+)\s*%\s*$/.exec(value);
+
+          if (m == null) {
+            throw new Error(
+              `Invalid ${norm} '${value}' (a number of px, or 'N%')`,
+            );
+          }
+
+          side = { value: Number(m[1]) / 100, unit: '%' };
+        } else if (
+          typeof value === 'number' &&
+          value >= 0 &&
+          Number.isFinite(value)
+        ) {
+          side = { value, unit: 'px' };
+        } else {
+          throw new Error(
+            `Invalid ${norm} '${String(value)}' (a number of px, or 'N%')`,
+          );
+        }
+
+        if (norm === 'padding-left') {
+          compound.paddingLeft = side;
+        } else if (norm === 'padding-right') {
+          compound.paddingRight = side;
+        } else if (norm === 'padding-top') {
+          compound.paddingTop = side;
+        } else {
+          compound.paddingBottom = side;
         }
 
         break;
@@ -5675,6 +5726,26 @@ defineReader(['padding'], (store, slot, ref, engine) => {
 
   return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
 });
+
+// per-side padding (85.4): a set side reads back its own spelling;
+// unset reads back the uniform padding's, which is what applies
+for (const [prop, field] of [
+  ['padding-left', 'paddingLeft'],
+  ['padding-right', 'paddingRight'],
+  ['padding-top', 'paddingTop'],
+  ['padding-bottom', 'paddingBottom'],
+]) {
+  defineReader([prop], (store, slot, ref, engine) => {
+    const cs = engine.store.compoundStyleOf(ref.slot);
+    const side = cs[field as 'paddingLeft'];
+
+    if (side == null) {
+      return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
+    }
+
+    return side.unit === '%' ? `${side.value * 100}%` : side.value;
+  });
+}
 
 defineReader(
   ['padding-relative-to'],

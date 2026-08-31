@@ -283,3 +283,147 @@ describe('gpu/store: compound auto-bounds (round 14.3)', function () {
     expect(entry.anchorY).to.equal(130 / 2 + 4);
   });
 });
+
+// round 85.4: per-side compound padding — padding-left/right/top/bottom,
+// each px or 'N%' like `padding` (same pfValue convention, same
+// relativeTo basis), defaulting to the uniform value when unset.  The
+// centered min-size clamp itself is untouched (the round-14 decision);
+// the box grows per side about it, so the parent's centre shifts by
+// half the imbalance while the children bb never moves.
+describe('gpu/store: per-side compound padding (round 85.4)', function () {
+  // children bb: x [-15, 115] (w 130), y [-15, 15] (h 30), centre (50, 0)
+  const mkSides = (parents) =>
+    cytoscape({
+      style: { parents: { borderWidth: 0, ...parents } },
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+        ],
+        edges: [],
+      },
+    });
+
+  it('one padded side grows the box that side only', function () {
+    const cy = mkSides({ padding: 0, paddingLeft: 20 });
+    const p = cy.$id('p');
+
+    // the box grows 20 leftward: centre shifts left by 10
+    expect(p.position()).to.deep.equal({ x: 40, y: 0 });
+    expect(p.paddedWidth()).to.equal(150);
+    expect(p.paddedHeight()).to.equal(30);
+    // the core readback subtracts the true per-axis sums
+    expect(p.width()).to.equal(130);
+    expect(p.height()).to.equal(30);
+    // `padding()` keeps answering the uniform prop (documented)
+    expect(p.padding()).to.equal(0);
+    // the children never move
+    expect(cy.$id('a').position()).to.deep.equal({ x: 0, y: 0 });
+    expect(cy.$id('b').position()).to.deep.equal({ x: 100, y: 0 });
+
+    const bb = p.boundingBox({ includeLabels: false });
+
+    expect(bb.x1).to.equal(-35); // -15 - 20
+    expect(bb.x2).to.equal(115); // untouched right edge
+  });
+
+  it('a zero side under a nonzero uniform padding shrinks that side (the control)', function () {
+    // an implementation that ignored the sides would read the uniform
+    // values here (w 150, centre 50) — this is the zero-one-side
+    // control, and it must disagree with the uniform reading
+    const cy = mkSides({ padding: 10, paddingLeft: 0 });
+    const p = cy.$id('p');
+
+    expect(p.paddedWidth()).to.equal(140); // 130 + 0 + 10
+    expect(p.position().x).to.equal(55); // 50 + (10 - 0) / 2
+    expect(p.paddedHeight()).to.equal(50); // top/bottom keep the uniform 10
+    expect(p.width()).to.equal(130);
+  });
+
+  it('vertical sides shift the centre in y', function () {
+    const cy = mkSides({ padding: 0, paddingTop: 40 });
+    const p = cy.$id('p');
+
+    expect(p.position()).to.deep.equal({ x: 50, y: -20 });
+    expect(p.paddedHeight()).to.equal(70);
+    expect(p.paddedWidth()).to.equal(130);
+  });
+
+  it("percent sides resolve like `padding` ('N%' of the relativeTo basis)", function () {
+    const cy = mkSides({ padding: 0, paddingLeft: '10%' }); // of width 130
+    const p = cy.$id('p');
+
+    expect(p.paddedWidth()).to.be.closeTo(143, 1e-3);
+    expect(p.position().x).to.be.closeTo(50 - 6.5, 1e-3);
+    expect(p.style('padding-left')).to.equal('10%');
+  });
+
+  it('the centered min-size clamp is untouched by side padding', function () {
+    const cy = mkSides({ padding: 0, paddingLeft: 20, minWidth: 200 });
+    const p = cy.$id('p');
+
+    // the clamp centres the 200 core about the children centre first;
+    // the side padding then grows the clamped box leftward
+    expect(p.paddedWidth()).to.equal(220);
+    expect(p.width()).to.equal(200);
+    expect(p.position().x).to.equal(40); // 50 - 20/2
+  });
+
+  it('readbacks: a set side answers its spelling, an unset side the uniform', function () {
+    const cy = mkSides({ padding: 10, paddingLeft: 30 });
+    const p = cy.$id('p');
+
+    expect(p.style('padding-left')).to.equal(30);
+    expect(p.style('padding-right')).to.equal(10); // falls back to uniform
+    expect(p.style('padding')).to.equal(10);
+  });
+
+  it('a padding tween write leaves padding-left standing (the 25.4 path)', function () {
+    // the round-25 padding tween writes { padding } alone through
+    // updateCompoundStyle, whose own comment warns about resets — this
+    // is exactly where the defect would hide
+    const cy = mkSides({ padding: 10, paddingLeft: 30 });
+    const store = cy._store;
+    const slot = slotOf(cy, 'p');
+
+    store.updateCompoundStyle(slot, { padding: 20 });
+
+    const p = cy.$id('p');
+
+    expect(p.style('padding-left')).to.equal(30);
+    expect(p.style('padding')).to.equal(20);
+    // geometry agrees: left keeps 30, the other three sides take 20
+    expect(p.paddedWidth()).to.equal(130 + 30 + 20);
+    expect(p.position().x).to.equal(50 + (20 - 30) / 2);
+  });
+
+  it('sheet writes reset omitted sides (unlike the tween path)', function () {
+    const cy = mkSides({ padding: 10, paddingLeft: 30 });
+
+    cy.style({ parents: { borderWidth: 0, padding: 10 } });
+
+    const p = cy.$id('p');
+
+    expect(p.style('padding-left')).to.equal(10); // back to the uniform
+    expect(p.paddedWidth()).to.equal(150);
+  });
+
+  it('throws outside the parents group (the existing rule)', function () {
+    expect(() =>
+      cytoscape({
+        style: { nodes: { paddingLeft: 5 } },
+        elements: [],
+      }),
+    ).to.throw(/belongs to the parents group/);
+  });
+
+  it('throws on a malformed side value', function () {
+    expect(() => mkSides({ padding: 0, paddingLeft: 'wide' })).to.throw(
+      /Invalid padding-left 'wide' \(a number of px, or 'N%'\)/,
+    );
+    expect(() => mkSides({ padding: 0, paddingTop: -3 })).to.throw(
+      /Invalid padding-top/,
+    );
+  });
+});

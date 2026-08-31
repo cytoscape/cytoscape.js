@@ -2203,7 +2203,9 @@ export class Collection {
 
       const size = store.column('node.size') as Float32Array;
 
-      return size[ref.slot * 2 + axis] - 2 * store.paddingOf(ref.slot);
+      // the per-axis sums, so asymmetric per-side padding (85.4)
+      // still reads back the true core size
+      return size[ref.slot * 2 + axis] - store.paddingSumsOf(ref.slot)[axis];
     }
 
     return (store.column('node.size') as Float32Array)[ref.slot * 2 + axis];

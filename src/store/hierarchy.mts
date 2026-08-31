@@ -8,6 +8,14 @@ import {
 
 const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
 
+/** One side's padding override (85.4): px, or a pfValue fraction when
+ * `unit` is '%', resolved against the children bb per the record's
+ * `relativeTo` — the same convention as the uniform `padding`. */
+export interface SidePadding {
+  value: number;
+  unit: 'px' | '%';
+}
+
 /**
  * Per-parent compound style inputs (CPU-only; written by the StyleEngine
  * via GraphStore.setCompoundStyle).  `padding` is px, or a fraction when
@@ -15,6 +23,10 @@ const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
  * children bb per `relativeTo`.  The four v3 min-size bias props are
  * dropped by decided design (round 14): the min clamp splits overflow
  * evenly about the children center — exactly v3's default-bias behavior.
+ * The per-side paddings (85.4 — the hook that decision logged) default
+ * to the uniform `padding` when unset; a set side replaces it on that
+ * side only, growing the box asymmetrically about the untouched
+ * centered clamp.
  */
 export interface CompoundStyle {
   padding: number;
@@ -22,6 +34,10 @@ export interface CompoundStyle {
   relativeTo: 'width' | 'height' | 'average' | 'min' | 'max';
   minWidth: number;
   minHeight: number;
+  paddingLeft?: SidePadding;
+  paddingRight?: SidePadding;
+  paddingTop?: SidePadding;
+  paddingBottom?: SidePadding;
 }
 
 const COMPOUND_STYLE_DEFAULTS: CompoundStyle = {
@@ -105,6 +121,8 @@ export class HierarchyIndex {
   private compoundStyle: Map<number, CompoundStyle>;
   /** the resolved px padding written at the last flush, per parent */
   private resolvedPad: Map<number, number>;
+  /** [left, right, top, bottom] where any per-side padding is set (85.4) */
+  private resolvedSides: Map<number, [number, number, number, number]>;
 
   /**
    * @param host — the store's narrow callback surface; the index never
@@ -123,6 +141,7 @@ export class HierarchyIndex {
     this.pending = new Set();
     this.compoundStyle = new Map();
     this.resolvedPad = new Map();
+    this.resolvedSides = new Map();
   }
 
   // -- reads --
@@ -290,9 +309,27 @@ export class HierarchyIndex {
     this.markGeo(slot);
   }
 
-  /** The px padding resolved at the last flush (0 for non-parents). */
+  /** The px padding resolved at the last flush (0 for non-parents).
+   * Always the *uniform* prop's value — `padding()` keeps answering it
+   * even when per-side overrides apply (85.4, documented). */
   paddingOf(slot: number): number {
     return this.resolvedPad.get(slot) ?? 0;
+  }
+
+  /** The per-axis padding sums at the last flush, [left+right,
+   * top+bottom] — what the core-size readback subtracts from the
+   * stored (padded) box.  Falls back to twice the uniform padding
+   * when no per-side override is set (85.4). */
+  paddingSumsOf(slot: number): [number, number] {
+    const sides = this.resolvedSides.get(slot);
+
+    if (sides != null) {
+      return [sides[0] + sides[1], sides[2] + sides[3]];
+    }
+
+    const pad = this.resolvedPad.get(slot) ?? 0;
+
+    return [2 * pad, 2 * pad];
   }
 
   /** The declared compound style record (defaults for leaves). */
@@ -388,7 +425,52 @@ export class HierarchyIndex {
       const coreH = Math.max(bbH, style.minHeight);
 
       this.resolvedPad.set(slot, pad);
-      this.host.materialize(slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad);
+
+      // per-side padding (85.4): each side defaults to the uniform pad;
+      // the centered min-size clamp above is untouched (the round-14
+      // decision), and the box grows per side about it — the centre
+      // shifts by half the side imbalance
+      if (
+        style.paddingLeft == null &&
+        style.paddingRight == null &&
+        style.paddingTop == null &&
+        style.paddingBottom == null
+      ) {
+        this.resolvedSides.delete(slot);
+        this.host.materialize(slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad);
+      } else {
+        const padL = resolveSidePadding(
+          style.paddingLeft,
+          style,
+          bbW,
+          bbH,
+          pad,
+        );
+        const padR = resolveSidePadding(
+          style.paddingRight,
+          style,
+          bbW,
+          bbH,
+          pad,
+        );
+        const padT = resolveSidePadding(style.paddingTop, style, bbW, bbH, pad);
+        const padB = resolveSidePadding(
+          style.paddingBottom,
+          style,
+          bbW,
+          bbH,
+          pad,
+        );
+
+        this.resolvedSides.set(slot, [padL, padR, padT, padB]);
+        this.host.materialize(
+          slot,
+          cx + (padR - padL) / 2,
+          cy + (padB - padT) / 2,
+          coreW + padL + padR,
+          coreH + padT + padB,
+        );
+      }
     }
   }
 
@@ -645,30 +727,60 @@ export class HierarchyIndex {
 
 const EMPTY: readonly number[] = [];
 
-/** v3's computePaddingValues: px verbatim; '%' is a fraction (pfValue)
- * of the children bb per padding-relative-to (zero-guarded like v3). */
+/** One padding value against the children bb: px verbatim; '%' is a
+ * fraction (pfValue) per padding-relative-to (zero-guarded like v3). */
+const resolvePaddingValue = (
+  value: number,
+  unit: 'px' | '%',
+  relativeTo: CompoundStyle['relativeTo'],
+  bbW: number,
+  bbH: number,
+): number => {
+  if (value === 0) {
+    return 0;
+  }
+  if (unit === 'px') {
+    return value;
+  }
+
+  switch (relativeTo) {
+    case 'width':
+      return bbW > 0 ? value * bbW : 0;
+    case 'height':
+      return bbH > 0 ? value * bbH : 0;
+    case 'average':
+      return bbW > 0 && bbH > 0 ? (value * (bbW + bbH)) / 2 : 0;
+    case 'min':
+      return bbW > 0 && bbH > 0 ? value * Math.min(bbW, bbH) : 0;
+    case 'max':
+      return bbW > 0 && bbH > 0 ? value * Math.max(bbW, bbH) : 0;
+  }
+};
+
+/** v3's computePaddingValues, for the uniform `padding` prop. */
 const resolvePadding = (
   style: CompoundStyle,
   bbW: number,
   bbH: number,
-): number => {
-  if (style.padding === 0) {
-    return 0;
-  }
-  if (style.paddingUnit === 'px') {
-    return style.padding;
-  }
+): number =>
+  resolvePaddingValue(
+    style.padding,
+    style.paddingUnit,
+    style.relativeTo,
+    bbW,
+    bbH,
+  );
 
-  switch (style.relativeTo) {
-    case 'width':
-      return bbW > 0 ? style.padding * bbW : 0;
-    case 'height':
-      return bbH > 0 ? style.padding * bbH : 0;
-    case 'average':
-      return bbW > 0 && bbH > 0 ? (style.padding * (bbW + bbH)) / 2 : 0;
-    case 'min':
-      return bbW > 0 && bbH > 0 ? style.padding * Math.min(bbW, bbH) : 0;
-    case 'max':
-      return bbW > 0 && bbH > 0 ? style.padding * Math.max(bbW, bbH) : 0;
-  }
-};
+/** One side's padding (85.4): the override when set — same pfValue
+ * convention and `relativeTo` basis as the uniform prop — else the
+ * already-resolved uniform padding. */
+const resolveSidePadding = (
+  side: SidePadding | undefined,
+  style: CompoundStyle,
+  bbW: number,
+  bbH: number,
+  fallback: number,
+): number =>
+  side == null
+    ? fallback
+    : resolvePaddingValue(side.value, side.unit, style.relativeTo, bbW, bbH);

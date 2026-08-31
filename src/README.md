@@ -2653,8 +2653,11 @@ the deviations list below.
 
 v3 compound surface *not* ported (the
 usual one-name-per-concept and geometry-tier calls): the four
-min-size bias props (the centered clamp instead; a future round may
-add per-side padding props), `compound-sizing-wrt-labels: 'include'`
+min-size bias props (the centered clamp instead; round 85.4 added
+per-side padding props — `padding-left`/`-right`/`-top`/`-bottom`,
+each px or 'N%' like `padding`, defaulting to the uniform value —
+which cover the bias use cases without touching the clamp),
+`compound-sizing-wrt-labels: 'include'`
 (compound auto-sizing reads child body extents, not labels — the
 reason narrowed by round 16.4, which put labels into public bb/fit),
 `:parent:selected` restyling, and
@@ -2715,13 +2718,17 @@ is v3's `updateCompoundBounds` math: direct children's
 border-inclusive extents (hidden children excluded — v3's
 display:none rule), padding in px or % of the pre-clamp children bb
 per `padding-relative-to`, the **centered** `min-width`/`min-height`
-clamp (the four bias props are dropped by decided design — a future
-round may add per-side padding props instead), and a degenerate
+clamp (the four bias props are dropped by decided design — round
+85.4's per-side padding props are the replacement: the clamp stays
+centered, then each side's padding grows the box about it, the
+centre shifting by half the imbalance), and a degenerate
 fallback to the stashed style size at the stored position when no
 shown children remain.
 
 The stored size is the padded/drawn box:
-`width()`/`height()` subtract 2·padding (v3's autoWidth/autoHeight),
+`width()`/`height()` subtract the per-axis padding sums — 2·padding,
+or left+right / top+bottom under 85.4's per-side props (v3's
+autoWidth/autoHeight),
 `paddedWidth`/`paddedHeight` return the drawn box, `outerWidth` adds
 the border, and `padding()` answers the resolved padding.  Setting a
 parent's position shifts its whole subtree by the delta (locked
@@ -5339,10 +5346,11 @@ it here in round 57.4.*
   lazy ref repair, and the auto + explicit trigger pair.  The
   slot-stable tier (id blob, CSR adjacency, string dictionaries) has
   self-compacted since round 11.  No architecture hooks remain open;
-  demand-gated feature hooks (the elevated draw tier, per-side
-  compound padding, multilevel force refinement, more layouts, future
+  demand-gated feature hooks (the elevated draw tier, multilevel
+  force refinement, more layouts, future
   chart kinds on the round-23 surface) stay
-  logged in their sections above.
+  logged in their sections above; per-side compound padding closed —
+  round 85.4.
 - **Open API follow-ups**: ~~the animation controls and style
   transitions~~ — **closed by round 24** (2026-08-01, the design
   bullets above): transitions landed with the stored-truth trigger

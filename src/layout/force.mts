@@ -22,9 +22,8 @@ import {
   computeComponents,
   packAnchors,
   packComponentsExact,
-  seedAroundAnchors,
-  spectralSeed,
-} from './force-init.mjs';
+} from './pack.mjs';
+import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';

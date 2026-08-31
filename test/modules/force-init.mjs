@@ -3,8 +3,10 @@ import {
   computeComponents,
   packAnchors,
   estimateComponentRadius,
-  seedAroundAnchors,
   packComponentsExact,
+} from '../../src/layout/pack.mjs';
+import {
+  seedAroundAnchors,
   spectralSeed,
 } from '../../src/layout/force-init.mjs';
 

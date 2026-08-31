@@ -382,6 +382,30 @@ describe('gpu/style: background images (round 15.2)', function () {
     }
   });
 
+  it('rejects an empty per-image list, an out-of-range opacity and a bad crossorigin', function () {
+    // message-asserted: three guards in the per-image parse loop
+    expect(() =>
+      mk({ nodes: { 'background-image': 'i.png', 'background-fit': [] } }),
+    ).to.throw(/background-fit list must not be empty/);
+
+    expect(() =>
+      mk({
+        nodes: { 'background-image': 'i.png', 'background-image-opacity': 2 },
+      }),
+    ).to.throw(/background-image-opacity '2' must be within \[0, 1\]/);
+
+    expect(() =>
+      mk({
+        nodes: {
+          'background-image': 'i.png',
+          'background-image-crossorigin': 'foo',
+        },
+      }),
+    ).to.throw(
+      /background-image-crossorigin 'foo' is unsupported; use anonymous/,
+    );
+  });
+
   it('rejects a negative background-width/-height', function () {
     expect(() =>
       mk({ nodes: { 'background-image': 'i.png', 'background-width': -5 } }),

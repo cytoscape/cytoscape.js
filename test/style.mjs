@@ -148,6 +148,12 @@ describe('gpu/style', function () {
       );
     });
 
+    it('throws on an unknown edge-distances keyword, listing the vocabulary', function () {
+      expect(() => cy.style({ edges: { 'edge-distances': 'nope' } })).to.throw(
+        /edge-distances 'nope' is unsupported .* intersection/,
+      );
+    });
+
     it('supports line-style with readback (round 10)', function () {
       var styleIdOf = (id) => {
         var ref = cy._store.lookup(id);

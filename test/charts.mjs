@@ -162,6 +162,13 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(() =>
       makeCy({ chart: 'pie', 'chart-colors': 'no-such-scheme' }),
     ).to.throw();
+    // message-asserted: the wrong-shape guards, not just wrong values
+    expect(() => makeCy({ chart: 'pie', 'chart-values': true })).to.throw(
+      /chart-values 'true' must be a number list/,
+    );
+    expect(() =>
+      makeCy({ chart: 'pie', 'chart-values': [0.5], 'chart-colors': 5 }),
+    ).to.throw(/chart-colors '5' must be a color list or scheme name/);
     expect(() => cytoscape({ style: { edges: { chart: 'pie' } } })).to.throw(
       /node style property/,
     );

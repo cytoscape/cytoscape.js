@@ -49,6 +49,11 @@ describe('gpu/labels: model', function () {
       expect(function () {
         cy.style({ nodes: { label: 'mapData(w, 0, 1, a, b)' } });
       }).to.throw();
+
+      // the end-label twin shares the rule but not the guard
+      expect(function () {
+        cy.style({ edges: { 'source-label': 'mapData(w, 0, 1)' } });
+      }).to.throw(/source-label value 'mapData\(w, 0, 1\)' is unsupported/);
     });
 
     it('applies font-size and color with v3-like defaults', function () {

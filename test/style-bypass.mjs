@@ -251,6 +251,12 @@ describe('per-element bypasses (round 63)', function () {
         cytoscape({ style: { bypasses: { a: { 'font-family': 'serif' } } } }),
       ).to.throw(/font/i);
 
+      expect(() =>
+        cytoscape({
+          style: { bypasses: { a: { 'transition-duration': 100 } } },
+        }),
+      ).to.throw(/per-group engine config/);
+
       expect(() => cytoscape({ style: { bypasses: { a: 3 } } })).to.throw(
         /bypass/i,
       );

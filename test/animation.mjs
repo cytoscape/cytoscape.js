@@ -198,6 +198,26 @@ describe('gpu/animation', function () {
           }),
       ).to.throw(/unsupported/);
     });
+
+    it('throws on unparseable style targets, naming the value', function () {
+      const store = storeWith();
+      const ref = store.ref('nodes', store.lookup('a').slot);
+
+      // message-asserted: the colour and scalar guards live in one loop
+      expect(
+        () =>
+          new Animation(store, null, [ref], false, {
+            style: { 'background-color': 'notacolor' },
+          }),
+      ).to.throw(/Invalid animation colour 'notacolor'/);
+
+      expect(
+        () =>
+          new Animation(store, null, [ref], false, {
+            style: { opacity: 'wide' },
+          }),
+      ).to.throw(/Invalid animation number 'wide'/);
+    });
   });
 
   describe('overshooting easings', function () {

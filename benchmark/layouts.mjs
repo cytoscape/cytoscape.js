@@ -292,6 +292,69 @@ if (OP == null || 'force'.includes(OP)) {
   });
 }
 
+// -- force constraints (85.2) ------------------------------------------------
+// The projection's price, on the CPU executor both sides so the delta
+// is the projection alone.  The row verifies constraints were active
+// (in-row, outside the timed loop): the constrained settle's aligned
+// spread reads < eps while the unconstrained twin's is large — a row
+// whose constraint plumbing silently disengaged fails here rather
+// than pricing nothing.
+if (OP == null || 'constrained'.includes(OP)) {
+  const constrainedCy = gpuInstance();
+  const plainCy = gpuInstance();
+  const alignment = { horizontal: [['n0', 'n50', 'n100', 'n150']] };
+  const opts = {
+    name: 'force',
+    animate: false,
+    fit: false,
+    iterations: 20,
+    randomize: true,
+    seed: 1,
+  };
+
+  const spreadOf = (cy) => {
+    const ys = alignment.horizontal[0].map((id) => cy.$id(id).position().y);
+
+    return Math.max(...ys) - Math.min(...ys);
+  };
+
+  constrainedCy.layout({ ...opts, iterations: 400, alignment }).run();
+  plainCy.layout({ ...opts, iterations: 400 }).run();
+
+  const constrainedSpread = spreadOf(constrainedCy);
+  const plainSpread = spreadOf(plainCy);
+
+  if (constrainedSpread > 1e-3) {
+    throw new Error(
+      `constrained row: aligned spread ${constrainedSpread} — the ` +
+        `constraints were not active, the row would price nothing`,
+    );
+  }
+
+  if (plainSpread < 10) {
+    throw new Error(
+      `constrained row: the unconstrained twin's spread ${plainSpread} is ` +
+        `too small to discriminate — the fixture is degenerate`,
+    );
+  }
+
+  console.log(
+    `  constrained fixture: aligned spread ${constrainedSpread.toFixed(4)} ` +
+      `vs unconstrained ${plainSpread.toFixed(1)} — the delta below is the projection`,
+  );
+
+  group('layout: force constrained vs plain (CPU, 20 iterations)', () => {
+    summary(() => {
+      bench('constrained', () => {
+        constrainedCy.layout({ ...opts, alignment }).run();
+      });
+      bench('plain', () => {
+        plainCy.layout(opts).run();
+      });
+    });
+  });
+}
+
 // The round-59 seed split, made re-runnable: 59.7 recorded "the one-time
 // spectral seed (~12 ms warm at 2k) dominates the 20-iteration row" as a
 // one-off decomposition, and a figure nobody can re-run is a record

@@ -514,6 +514,36 @@ for (const scene of scenes) {
               'cpu (sync, pre-87.2 path)',
               oneShotStats(s.cpuMs),
             );
+
+            // 85.2's measure-first gate: the constrained run demotes to
+            // the sync CPU settle, so its price against the silent GPU
+            // settle above IS the demotion.  The spread is the in-row
+            // assertion that the constraints were active.
+            const c = await step('constrainedSettleScenario');
+
+            if (c.spread > 1e-3) {
+              console.log(
+                `  gpu constrained settle: REFUSED — aligned spread ` +
+                  `${c.spread.toFixed(3)}, the constraints were not active`,
+              );
+            } else {
+              console.log(
+                `  gpu constrained settle (CPU-demoted): ${c.cpuMs.toFixed(0)} ms ` +
+                  `main-thread vs ${s.gpuMs.toFixed(0)} ms silent GPU — the demotion price`,
+              );
+              pushBench(
+                groups,
+                'layout: constrained settle — the 85.2 demotion',
+                'cpu (constrained, demoted)',
+                oneShotStats(c.cpuMs),
+              );
+              pushBench(
+                groups,
+                'layout: constrained settle — the 85.2 demotion',
+                'gpu (unconstrained silent)',
+                oneShotStats(s.gpuMs),
+              );
+            }
           }
         }
 

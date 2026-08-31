@@ -786,10 +786,35 @@
           return { gpuMs, cpuMs, frames, timedOut: cap.timedOut };
         }
 
+        // round 85.2 (--layout, gpu side only): the measure-first gate on
+        // the constraint demotion.  A constrained run takes the CPU
+        // executor (projection is CPU-side per tick), so the price of a
+        // constraint is the whole silent-GPU-vs-sync-CPU gap — this
+        // measures the constrained sync settle on the rendered instance
+        // (the actual demoted path) for the runner to report against the
+        // silent GPU settle.  The in-row assertion that the constraints
+        // were active is the aligned spread; that the run demoted is its
+        // synchronousness (positions settled on the line after run()).
+        async function constrainedSettleScenario(){
+          const groupIds = [ 'n0', 'n100', 'n200', 'n300' ].filter( id => cy.$id( id ).length > 0 );
+          const t0 = performance.now();
+
+          cy.layout( {
+            name: 'force', animate: false, seed: 1, iterations: 300, fit: false,
+            alignment: { horizontal: [ groupIds ] }
+          } ).run();
+
+          const cpuMs = performance.now() - t0;
+          const ys = groupIds.map( id => cy.$id( id ).position().y );
+          const spread = Math.max( ...ys ) - Math.min( ...ys );
+
+          return { cpuMs, spread };
+        }
+
         window.bench = {
           loadScene, createInstance, destroyInstance,
           panScenario, pickScenario, compactionScenario, exportPng, forceLayoutScenario,
-          silentSettleScenario,
+          silentSettleScenario, constrainedSettleScenario,
           hasGpu: () => typeof navigator !== 'undefined' && navigator.gpu != null
         };
       } )();

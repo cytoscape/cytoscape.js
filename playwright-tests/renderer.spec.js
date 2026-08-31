@@ -8362,17 +8362,31 @@ test.describe('WebGPU renderer', () => {
      * sleeping to an offset, and waiting on the *hover* rather than on the
      * cursor is what lets the `pointerCursors: false` control assert that
      * the hover happened and the cursor still did not move.
+     *
+     * The timeout is generous because the pick pipeline, like the tween
+     * pipelines above, compiles on first use — a page's *first* hover pick
+     * under SwiftShader on a loaded CI runner can outlast expect.poll's
+     * default 5 s.  The tests that hover only after a press had already
+     * warmed the pick path passed on CI while every cold-first-hover test
+     * failed all three attempts.  Per the suite's rule, the timeout is not
+     * what makes these specs honest: each caller asserts the cursor (or
+     * its absence) *after* the poll lands on the hover state.
      */
+    const HOVER_PICK_TIMEOUT_MS = 30_000;
+
     const hoverOnto = async (page, id) => {
       const p = await at(page, id);
 
       await expect
-        .poll(async () => {
-          await page.mouse.move(p.x + 1, p.y);
-          await page.mouse.move(p.x, p.y);
+        .poll(
+          async () => {
+            await page.mouse.move(p.x + 1, p.y);
+            await page.mouse.move(p.x, p.y);
 
-          return await hoveredId(page);
-        })
+            return await hoveredId(page);
+          },
+          { timeout: HOVER_PICK_TIMEOUT_MS },
+        )
         .toBe(id);
 
       return p;
@@ -8381,12 +8395,15 @@ test.describe('WebGPU renderer', () => {
     /** Park the pointer on empty background and wait for the hover to clear. */
     const hoverOffAll = async (page, p) => {
       await expect
-        .poll(async () => {
-          await page.mouse.move(p.x + 1, p.y);
-          await page.mouse.move(p.x, p.y);
+        .poll(
+          async () => {
+            await page.mouse.move(p.x + 1, p.y);
+            await page.mouse.move(p.x, p.y);
 
-          return await hoveredId(page);
-        })
+            return await hoveredId(page);
+          },
+          { timeout: HOVER_PICK_TIMEOUT_MS },
+        )
         .toBe(null);
     };
 

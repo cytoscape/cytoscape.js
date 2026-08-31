@@ -497,7 +497,11 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   seed?: number;
   /** fresh seeded scatter (default) vs relaxing current positions */
   randomize?: boolean;
-  /** live display: stream positions per frame while the sim runs */
+  /** live display: stream positions per frame while the sim runs;
+   * false shows nothing until convergence.  Presentation only (87.2):
+   * a rendered flat-graph run is async for both values — read
+   * positions at `layoutstop` / `promise()`.  Headless runs stay
+   * synchronous. */
   animate?: boolean;
   /** iterations per animation frame (animate: true; default 3) */
   stepsPerFrame?: number;

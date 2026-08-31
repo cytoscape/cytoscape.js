@@ -1962,7 +1962,140 @@ test.describe('WebGPU renderer', () => {
     expect(result.linkLen).toBeLessThan(250);
   });
 
-  test('GPU and CPU force executors agree on invariants (round 18.4)', async ({
+  test('a silent force run shows no intermediate motion (round 87.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // 87.2: animate: false on a flat rendered graph takes the GPU
+    // integrator but publishes off-mirror — the screen must hold the
+    // pre-run frame for the whole run, CPU reads must keep their
+    // pre-run values (there is no lease and nothing writes), and the
+    // settle must land in one visible write.  Poll-based throughout:
+    // each sample compares live state, never a sleep-to-offset.
+    await makeReadyCy(page, {
+      elements: (() => {
+        const els = [];
+
+        for (let i = 0; i < 24; i++) {
+          const a = (i / 24) * 2 * Math.PI;
+
+          els.push({
+            data: { id: 'n' + i },
+            position: { x: Math.cos(a) * 120, y: Math.sin(a) * 120 },
+          });
+          els.push({
+            data: {
+              id: 'e' + i,
+              source: 'n' + i,
+              target: 'n' + ((i + 1) % 24),
+            },
+          });
+        }
+
+        return els;
+      })(),
+      style: { nodes: { width: 12, height: 12 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    const before = (await page.screenshot()).toString('base64');
+    const posBefore = await page.evaluate(() => ({
+      ...window.cy.$id('n7').position(),
+    }));
+
+    // a provably long run (threshold 0, tiny decay — the 18.3 recipe)
+    await page.evaluate(() => {
+      window.__silent = window.cy.layout({
+        name: 'force',
+        seed: 5,
+        animate: false,
+        fit: false,
+        iterations: 100000,
+        threshold: 0,
+        decay: 0.0005,
+        stepsPerFrame: 6,
+      });
+      window.__silentResolved = false;
+      window.__silent.run();
+      window.__silent.promise().then(() => {
+        window.__silentResolved = true;
+      });
+    });
+
+    // sample while the run is live: every screenshot equals the
+    // pre-run frame and CPU reads are unmoved.  Each screenshot forces
+    // a frame, so the sampling also drives the sim's dispatches.
+    let samples = 0;
+    const deadline = Date.now() + 700;
+
+    while (Date.now() < deadline) {
+      const shot = (await page.screenshot()).toString('base64');
+      const state = await page.evaluate(() => ({
+        resolved: window.__silentResolved,
+        pos: { ...window.cy.$id('n7').position() },
+      }));
+
+      expect(state.resolved, 'the run outlived the sample (async now)').toBe(
+        false,
+      );
+      expect(shot, 'the screen holds the pre-run frame').toBe(before);
+      expect(state.pos).toEqual(posBefore);
+      samples++;
+    }
+
+    expect(samples).toBeGreaterThan(2);
+
+    // stop → the one settle readback lands real coordinates
+    await page.evaluate(async () => {
+      window.__silent.stop();
+      await window.__silent.promise();
+    });
+    await waitFrames(page, 5);
+
+    const settled = await page.evaluate(() => ({
+      ...window.cy.$id('n7').position(),
+    }));
+    const moved = Math.hypot(settled.x - posBefore.x, settled.y - posBefore.y);
+
+    expect(moved, 'the settle landed').toBeGreaterThan(5);
+    expect((await page.screenshot()).toString('base64')).not.toBe(before);
+
+    // control: the same run in present mode must show motion mid-run —
+    // polled generously, since the first animate of a page pays the
+    // pipeline-compile stall
+    const preControl = (await page.screenshot()).toString('base64');
+
+    await page.evaluate(() => {
+      window.__present = window.cy.layout({
+        name: 'force',
+        seed: 5,
+        animate: true,
+        fit: false,
+        iterations: 100000,
+        threshold: 0,
+        decay: 0.0005,
+        stepsPerFrame: 6,
+      });
+      window.__present.run();
+    });
+
+    await untilMidFlight(
+      page,
+      async () => (await page.screenshot()).toString('base64'),
+      (shot) => shot !== preControl,
+      { timeout: 15000, what: 'visible motion in present mode' },
+    );
+
+    await page.evaluate(async () => {
+      window.__present.stop();
+      await window.__present.promise();
+    });
+  });
+
+  test('CPU, silent-GPU and presenting-GPU force executors agree on invariants (18.4 + 87.2)', async ({
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
@@ -2013,9 +2146,9 @@ test.describe('WebGPU renderer', () => {
 
     const stats = await page.evaluate(async () => {
       const cy = window.cy;
-      const collect = () => {
+      const collect = (inst = cy) => {
         const out = { linkSum: 0, links: 0, nan: 0, maxR: 0 };
-        const edges = cy.edges();
+        const edges = inst.edges();
 
         for (let i = 0; i < edges.length; i++) {
           const s = edges[i].source().position();
@@ -2031,7 +2164,7 @@ test.describe('WebGPU renderer', () => {
           out.links++;
         }
 
-        const nodes = cy.nodes();
+        const nodes = inst.nodes();
 
         for (let i = 0; i < nodes.length; i++) {
           const p = nodes[i].position();
@@ -2048,16 +2181,36 @@ test.describe('WebGPU renderer', () => {
       };
       const opts = { name: 'force', seed: 11, fit: false, iterations: 400 };
 
-      // the CPU executor (animate: false takes the reference path)
-      await cy
+      // the CPU reference: a headless twin of the same graph — since
+      // 87.2 a *rendered* animate: false run takes the silent GPU
+      // path, so headless is the CPU executor's spelling
+      const headless = window.cytoscape({
+        headlessWidth: 400,
+        headlessHeight: 300,
+        elements: cy.elements().jsons(),
+      });
+
+      await headless
         .layout({ ...opts, animate: false })
         .run()
         .promise();
 
-      const cpu = collect();
-      const cpuBb = cy.elements().boundingBox({ includeLabels: false });
+      const cpu = collect(headless);
+      const cpuBb = headless.elements().boundingBox({ includeLabels: false });
 
-      // the GPU executor (animate: true on a flat rendered graph)
+      headless.destroy();
+
+      // the silent GPU executor (87.2: animate: false on a flat
+      // rendered graph — integrates off-mirror, settles in one write)
+      await cy
+        .layout({ ...opts, animate: false, stepsPerFrame: 8 })
+        .run()
+        .promise();
+
+      const silent = collect();
+      const silentBb = cy.elements().boundingBox({ includeLabels: false });
+
+      // the presenting GPU executor (animate: true)
       await cy
         .layout({ ...opts, animate: true, stepsPerFrame: 8 })
         .run()
@@ -2066,27 +2219,35 @@ test.describe('WebGPU renderer', () => {
       const gpu = collect();
       const gpuBb = cy.elements().boundingBox({ includeLabels: false });
 
-      return { cpu, gpu, cpuBb, gpuBb };
+      return { cpu, silent, gpu, cpuBb, silentBb, gpuBb };
     });
 
     // hard invariants: no NaN, everything in frame
     expect(stats.cpu.nan).toBe(0);
+    expect(stats.silent.nan).toBe(0);
     expect(stats.gpu.nan).toBe(0);
+    expect(stats.silent.maxR).toBeLessThan(5000);
     expect(stats.gpu.maxR).toBeLessThan(5000);
 
-    // soft parity: the two executors' layouts share summary statistics
+    // soft parity: the executors' layouts share summary statistics
     // (trajectories are deliberately not bit-agreed — recorded)
     const cpuMean = stats.cpu.linkSum / stats.cpu.links;
+    const silentMean = stats.silent.linkSum / stats.silent.links;
     const gpuMean = stats.gpu.linkSum / stats.gpu.links;
 
+    expect(silentMean).toBeGreaterThan(cpuMean * 0.6);
+    expect(silentMean).toBeLessThan(cpuMean * 1.7);
     expect(gpuMean).toBeGreaterThan(cpuMean * 0.6);
     expect(gpuMean).toBeLessThan(cpuMean * 1.7);
+    expect(stats.silentBb.w).toBeGreaterThan(stats.cpuBb.w * 0.4);
+    expect(stats.silentBb.w).toBeLessThan(stats.cpuBb.w * 2.5);
     expect(stats.gpuBb.w).toBeGreaterThan(stats.cpuBb.w * 0.4);
     expect(stats.gpuBb.w).toBeLessThan(stats.cpuBb.w * 2.5);
 
     // and the settle flushed derived geometry: the bb reflects the
     // settled coordinates (layoutstop ordering)
     expect(stats.gpuBb.w).toBeGreaterThan(100);
+    expect(stats.silentBb.w).toBeGreaterThan(100);
   });
 
   test('the GPU far field reaches past the grid cutoff (round 59.3)', async ({

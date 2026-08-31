@@ -944,16 +944,25 @@ export class Renderer {
   /** the live GPU force integrator (round 18.3), while a run holds it */
   private forceRuntime: GpuForceRuntime | null = null;
   private forceStepsPerFrame = 3;
+  private forcePresents = true;
 
   /**
    * Start the GPU force integrator (18.3): returns null when the device
-   * isn't ready (the layout falls back to the CPU executor).  While
-   * attached, node.position is GPU-owned (the tween lease machinery) and
-   * the frame loop encodes the sim ahead of the cull pass.
+   * isn't ready (the layout falls back to the CPU executor).  The frame
+   * loop encodes the sim ahead of the cull pass either way; `present`
+   * decides what the run publishes into (87.2).  Presenting —
+   * `animate: true` — publishes into the mirror's position column, so
+   * node.position is GPU-owned for the run (the tween lease machinery)
+   * and the graph moves on screen.  A silent run publishes into a
+   * runtime-owned scratch buffer instead: the mirror column is never
+   * touched, no ownership is taken, and the screen holds the pre-run
+   * frame until the settle readback lands the final positions through
+   * the normal dirty-span upload.
    */
   startForce(
     inputs: ForceInputs,
     stepsPerFrame: number,
+    present: boolean = true,
   ): GpuForceRuntime | null {
     if (
       this.destroyed ||
@@ -966,6 +975,7 @@ export class Renderer {
 
     this.forceRuntime = new GpuForceRuntime(this.device, inputs);
     this.forceStepsPerFrame = stepsPerFrame;
+    this.forcePresents = present;
     this.needsRedraw = true;
     this.schedule();
 
@@ -1518,9 +1528,13 @@ export class Renderer {
     // the settled values upload on this same frame
     this.host.animations.tick(t0);
 
-    // a live force run owns node.position like a tween lease (18.3)
+    // a live *presenting* force run owns node.position like a tween
+    // lease (18.3); a silent run (87.2) publishes into its own scratch
+    // buffer and leaves the mirror column alone
     const forceOwned =
-      this.forceRuntime != null && !this.forceRuntime.converged()
+      this.forceRuntime != null &&
+      this.forcePresents &&
+      !this.forceRuntime.converged()
         ? this.forceRuntime.ownedColumns()
         : [];
 
@@ -1654,11 +1668,15 @@ export class Renderer {
 
       // the GPU force integrator (18.3): its iterations advance the
       // sim and publish into the mirror's position buffer before the
-      // cull pass reads it — edges and labels follow for free
+      // cull pass reads it — edges and labels follow for free.  A
+      // silent run (87.2) publishes into the runtime's own scratch
+      // buffer instead, so the draw keeps reading the pre-run column
       if (this.forceRuntime != null && !this.forceRuntime.converged()) {
         this.forceRuntime.encode(
           encoder,
-          mirror.buffer('node.position'),
+          this.forcePresents
+            ? mirror.buffer('node.position')
+            : this.forceRuntime.silentTarget(),
           this.forceStepsPerFrame,
         );
       }

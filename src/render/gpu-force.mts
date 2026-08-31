@@ -750,9 +750,45 @@ export class GpuForceRuntime {
    * skip them — without that, a stale CPU write would clobber the
    * positions the apply kernel publishes each iteration.  Ownership must
    * be released once readPositions() has settled the values back.
+   *
+   * A silent run (87.2) never takes ownership: it publishes into
+   * `silentTarget()` instead of the mirror's column, so the mirror is
+   * simply not involved.
    */
   ownedColumns(): string[] {
     return ['node.position'];
+  }
+
+  /**
+   * The publish target for a non-presenting run (87.2): a runtime-owned,
+   * slot-capacity scratch buffer the apply kernel scatters into instead
+   * of the mirror's position column.  Nothing reads it — the settle
+   * comes from `readPositions()`, which reads the sim-indexed positions
+   * — so the screen keeps drawing the untouched mirror column for the
+   * whole run.  Created lazily, destroyed with the rest of the buffers.
+   *
+   * @returns the scratch publish buffer, sized to the highest slot in
+   *   the publish map
+   */
+  silentTarget(): GPUBuffer {
+    let buf = this.buffersByName.get('silentColumn');
+
+    if (buf == null) {
+      let maxSlot = 0;
+
+      for (const slot of this.inputs.slots) {
+        maxSlot = Math.max(maxSlot, slot);
+      }
+
+      buf = this.device.createBuffer({
+        label: 'cy-gpu:force-silent-column',
+        size: (maxSlot + 1) * 8,
+        usage: BUFFER_USAGE.STORAGE,
+      });
+      this.buffersByName.set('silentColumn', buf);
+    }
+
+    return buf;
   }
 
   /**

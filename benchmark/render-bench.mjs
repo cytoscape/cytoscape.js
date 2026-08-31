@@ -478,6 +478,45 @@ for (const scene of scenes) {
           oneShotStats(r.wallMs),
         );
 
+        // 87.2: the animate: false settle — silent GPU vs the sync CPU
+        // path it replaced (gpu side only; v3 has no silent GPU form).
+        // The frames delta is the in-row assertion that the silent run
+        // really ran on the device — a fallback to the sync CPU path
+        // presents no frames, and the row is refused rather than
+        // silently pricing the wrong thing.
+        if (side === 'gpu') {
+          const s = await step(
+            'silentSettleScenario',
+            LAYOUT_UNCAPPED ? 0 : LAYOUT_CAP_MS,
+          );
+
+          if (s.frames < 2) {
+            console.log(
+              `  gpu silent settle: REFUSED — ${s.frames} frames presented, ` +
+                `the run did not take the silent GPU path`,
+            );
+          } else {
+            console.log(
+              `  gpu silent settle: ${s.gpuMs.toFixed(0)} ms ` +
+                `(${s.frames} frames)` +
+                (s.timedOut ? ' — wall-clock cap (floor value)' : '') +
+                `; sync CPU settle ${s.cpuMs.toFixed(0)} ms main-thread`,
+            );
+            pushBench(
+              groups,
+              'layout: animate:false settle (87.2)',
+              'gpu (silent)',
+              oneShotStats(s.gpuMs),
+            );
+            pushBench(
+              groups,
+              'layout: animate:false settle (87.2)',
+              'cpu (sync, pre-87.2 path)',
+              oneShotStats(s.cpuMs),
+            );
+          }
+        }
+
         await step('destroyInstance');
         continue;
       }

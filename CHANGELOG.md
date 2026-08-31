@@ -176,6 +176,17 @@ that compile and then behave differently.
   `z-index` / `z-compound-depth`, which v4 does not have, so a deeply
   nested v3 parent could beat a shallower edge where v4's edge wins.
   Dragging is unchanged: a press still grabs the parent body it lands on.
+- **`force` under `animate: false` on a rendered flat graph is async**
+  (round 87.2): executor choice is availability-driven, so a flat
+  rendered graph with a device hands integration to the GPU for both
+  animate values, where it used to run the CPU sim synchronously on
+  the main thread.  `animate` is presentation only — true streams
+  positions to the screen per frame, false integrates silently
+  off-mirror and the screen holds the pre-run frame until the settle
+  lands in one write.  The visible consequence: positions are readable
+  at `layoutstop` / `promise()`, not on the line after `run()`.
+  Headless and compound-graph runs keep the synchronous CPU path, so
+  specs and servers are unaffected.
 - **Animations run concurrently by channel** and sequence by promise;
   overlapping channels evict the older animation in place.
 - **The expensive whole-graph algorithms are async** (round 65; the

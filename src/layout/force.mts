@@ -8,7 +8,9 @@ Executors: the CPU reference simulation always exists (headless
 instances, compound graphs — a GPU lease would leave the CPU columns
 the auto-bounds derivation reads stale, the 14.11 rule) and is the
 correctness spec; the GPU fast path (18.3) takes over per-iteration
-integration for flat rendered graphs under `animate: true`.
+integration for flat rendered graphs regardless of `animate` (87.2 —
+`animate` is presentation only: true presents each frame, false runs
+silently and lands the settle in one write).
 
 Scoping: leaves only (parents derive from their placed children);
 locked nodes are *pinned* — they take part in every force pair but
@@ -43,7 +45,11 @@ export interface ForceRunOptions {
   /** fresh seeded scatter (true) vs relaxing the current positions */
   randomize?: boolean;
   /** live display: positions stream to the store per frame while the
-   * sim runs; false runs to convergence and applies once */
+   * sim runs; false shows nothing until convergence and applies once.
+   * Presentation only (87.2): executor choice is availability-driven,
+   * and a rendered flat-graph run is async for both values — read
+   * positions at `layoutstop` / `promise()`, not on the next line.
+   * Headless runs stay synchronous. */
   animate?: boolean;
   fit?: boolean;
   padding?: number;
@@ -93,20 +99,27 @@ export class ForceLayoutImpl implements LayoutImpl {
 
   /**
    * Run the simulation.  Two executors, one spec: the CPU reference is
-   * always available (headless instances, compound graphs,
-   * `animate: false`) and is what the specs pin, while under
-   * `animate: true` on a flat rendered graph the GPU integrator takes
-   * over — six dispatches per iteration encoded ahead of the cull pass,
-   * so 100k-node layouts animate live with edges and labels following
-   * on-device.
+   * always available (headless instances, compound graphs, no device)
+   * and is what the specs pin, while on a flat rendered graph the GPU
+   * integrator takes over for **both** animate values (87.2 —
+   * availability-driven, not animate-driven): seven named passes plus a
+   * per-level reduce per iteration, encoded ahead of the cull pass, so
+   * 100k-node layouts settle with edges and labels following on-device.
    *
-   * While the GPU integrator runs it owns `node.position` (the tween
-   * lease), so CPU position reads are stale for the duration;
-   * convergence triggers a single readback that settles the columns.
+   * `animate` is presentation only.  A presenting run owns
+   * `node.position` (the tween lease), so CPU position reads are stale
+   * for the duration; a silent run publishes off-mirror and the screen
+   * holds the pre-run frame.  Either way convergence triggers a single
+   * readback that settles the columns — a rendered flat-graph run is
+   * async for both animate values, settling at `layoutstop` /
+   * `promise()` (87.2's named semantics change; headless is the
+   * synchronous spelling).
    *
    * @param ctx — the layout context: unlocked leaf slots, live position
    *   views, O(1) CSR degrees and the bulk `setPositions` write
-   * @returns a promise that resolves at convergence when animating
+   * @returns a promise that resolves at convergence, or void when the
+   *   run completed synchronously (headless / compound / no device
+   *   under `animate: false`)
    */
   run(ctx: LayoutContext): void | Promise<void> {
     const cy = ctx.cy;
@@ -413,13 +426,18 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     this.stopped = false;
 
-    // the GPU fast path (18.3): flat rendered graphs under live
-    // animation hand per-iteration integration to the device — the
-    // position column is GPU-owned for the run (the tween lease), CPU
-    // reads are stale mid-run, and one readback settles on convergence
-    // (the round-9 design).  Compounds demote to the CPU executor (a
-    // lease would starve the auto-bounds derivation — the 14.11 rule).
-    if (options.animate === true && !store.hasCompounds()) {
+    // the GPU fast path (18.3; availability-driven since 87.2): flat
+    // rendered graphs hand per-iteration integration to the device for
+    // *both* animate values.  Presenting (animate: true): the position
+    // column is GPU-owned for the run (the tween lease), CPU reads are
+    // stale mid-run, and one readback settles on convergence (the
+    // round-9 design).  Silent (animate: false): the run publishes into
+    // a runtime-owned buffer, the screen holds the pre-run frame, and
+    // the same single readback settles — the run is async either way
+    // (the 87.2 semantics change: settle at layoutstop / promise()).
+    // Compounds demote to the CPU executor (a lease would starve the
+    // auto-bounds derivation — the 14.11 rule).
+    if (!store.hasCompounds()) {
       const renderer = cy.renderer() as Renderer | null;
 
       if (renderer != null && typeof renderer.startForce === 'function') {
@@ -460,6 +478,7 @@ export class ForceLayoutImpl implements LayoutImpl {
             },
           },
           options.stepsPerFrame ?? 3,
+          options.animate === true,
         );
 
         if (runtime != null) {
@@ -477,7 +496,10 @@ export class ForceLayoutImpl implements LayoutImpl {
     }
 
     if (options.animate !== true) {
-      // settle-then-draw: run to convergence synchronously, apply once
+      // settle-then-draw on the CPU executor: run to convergence
+      // synchronously, apply once.  Reached only when the GPU
+      // integrator is unavailable (headless, compounds, no device) —
+      // a flat rendered graph took the silent GPU path above (87.2)
       while (!sim.converged() && !this.stopped) {
         sim.step(50);
       }

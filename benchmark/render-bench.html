@@ -744,9 +744,52 @@
           return { wallMs: performance.now() - t0, frames: null, fps: null, timedOut: cap.timedOut };
         }
 
+        // round 87.2 (--layout, gpu side only): what the animate: false
+        // semantics change buys.  The silent GPU settle (the new
+        // behaviour: integrate off-mirror, frames drive dispatches, one
+        // settle write) against the synchronous CPU settle (the old
+        // behaviour, still reachable headless — same executor, same
+        // main-thread cost) on a headless twin of the same graph.  The
+        // in-row assertion that the silent run really took the GPU path
+        // is the frames delta: a silent GPU run needs frames to drive
+        // its dispatches, while the sync CPU run blocks the thread and
+        // presents none — a device-less fallback would report ~0 frames
+        // and the runner refuses the row.  The cap watchdog rides rAF so
+        // it can only stop the GPU run; the sync run cannot yield to it
+        // by definition (the runner-side bail covers it).
+        async function silentSettleScenario( capMs ){
+          const opts = { name: 'force', animate: false, seed: 1, iterations: 300, fit: false };
+
+          const framesBefore = cy.renderer().stats().frames;
+          const t0 = performance.now();
+          const l = cy.layout( opts );
+          const cap = stopAtCap( l, t0, capMs );
+
+          await l.run().promise();
+          cap.cancel();
+
+          const gpuMs = performance.now() - t0;
+          const frames = cy.renderer().stats().frames - framesBefore;
+
+          const headless = cytoscape( {
+            headlessWidth: 800, headlessHeight: 600,
+            elements: cy.elements().jsons()
+          } );
+          const t1 = performance.now();
+
+          await headless.layout( opts ).run().promise();
+
+          const cpuMs = performance.now() - t1;
+
+          headless.destroy();
+
+          return { gpuMs, cpuMs, frames, timedOut: cap.timedOut };
+        }
+
         window.bench = {
           loadScene, createInstance, destroyInstance,
           panScenario, pickScenario, compactionScenario, exportPng, forceLayoutScenario,
+          silentSettleScenario,
           hasGpu: () => typeof navigator !== 'undefined' && navigator.gpu != null
         };
       } )();

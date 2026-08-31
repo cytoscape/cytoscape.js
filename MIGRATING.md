@@ -413,6 +413,7 @@ app trips on after everything else works.
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 | The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `closenessCentralityNormalized`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
 | Pointer cursors | none — v3 set no CSS cursor at all, and apps wrote `container.style.cursor` from `mouseover`/`mouseout` | **the canvas writes them** (`grab`/`grabbing`, `pointer`, `crosshair`).  Idle over background stays `''`, so the v3 recipe still shows through where v4 is silent; an app whose own cursor code now fights the defaults passes `pointerCursors: false` |
+| `force` with `animate: false` on a rendered flat graph | synchronous — positions readable on the next line | **async** — the run settles at `layoutstop` / `promise()`; executor choice is availability-driven and `animate` is presentation only (headless runs stay synchronous) |
 | `hierarchicalClustering` `mean` linkage | silently broken — an unset size field made the first mean merge write NaN distances, degenerating the clustering | **works**: sizes are tracked, so `mean` is the weighted-average linkage both libraries always documented |
 
 **The whole-graph tier is async, and `executor` picks where it runs.** The
@@ -493,6 +494,16 @@ components are packed into rows at the end (`componentSpacing`, v3's
 option name).  A fresh run also seeds from a spectral draft
 (`init: 'spectral'`, the default — fCoSE's approach), which is what
 untangles chains and separates clusters at scale.
+
+**`animate` is presentation only on `force`.**  Executor choice is
+availability-driven: a flat rendered graph with a device hands
+integration to the GPU for both animate values, so `animate: false`
+no longer runs synchronously on the main thread — the run settles at
+`layoutstop` / `promise()`, and a caller reading positions on the next
+line must await one of those (as it already had to for every other
+force mode).  `animate: false` still shows nothing until convergence:
+the silent run integrates off-screen and lands the settle in one
+write.  Headless instances remain the synchronous spelling.
 
 **There is no extension registry.** No `cytoscape.use()`, no string
 registration, no global state. An extension layout is an import you pass in:

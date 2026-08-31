@@ -33,6 +33,14 @@ const paramDefs = {
     control: '#seed-input',
     live: true,
   },
+  animate: {
+    // 87.4: the animate toggle is linkable state, forwarded to every
+    // named layout (layout.js reads it on Apply; the ?layout load path
+    // reads it below)
+    default: 'true',
+    control: '#layout-animate-check',
+    live: true,
+  },
   edgeWidthFloor: {
     default: '1',
     control: '#edge-floor-input',
@@ -228,22 +236,34 @@ const paramDefs = {
 
     if (params.layout === 'spiral') {
       cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
-    } else if (params.layout === 'force') {
-      // the force layout (round 18, model rebuilt in 59), live
-      // (add &seed=N to vary)
-      cy.ready.then(() => {
-        console.time('force layout');
-        cy.layout({
-          name: 'force',
-          animate: true,
-          seed: parseInt(params.seed || '1', 10),
-        })
-          .run()
-          .promise()
-          .then(() => console.timeEnd('force layout'));
-      });
     } else if (params.layout !== '') {
-      cy.ready.then(() => cy.layout({ name: params.layout }).run());
+      // 87.4: the animate toggle forwards to every named layout (it
+      // used to be hardcoded true for force and dropped for the rest);
+      // seed stays force-only.  The timing chain guards promise() —
+      // the six built-ins don't have one (the lifecycle-unification
+      // hook), and the old unguarded chain threw uncaught on each.
+      cy.ready.then(() => {
+        const options = {
+          name: params.layout,
+          animate: params.animate === 'true',
+        };
+
+        if (params.layout === 'force') {
+          options.seed = parseInt(params.seed || '1', 10);
+        }
+
+        console.time(params.layout + ' layout');
+
+        const layout = cy.layout(options).run();
+        const done =
+          typeof layout.promise === 'function'
+            ? layout.promise()
+            : Promise.resolve();
+
+        done
+          .then(() => console.timeEnd(params.layout + ' layout'))
+          .catch((err) => console.error(err));
+      });
     }
 
     cy.ready

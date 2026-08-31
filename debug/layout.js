@@ -5,10 +5,12 @@
 // including its layoutstart/layoutstop timing readout, which is the cheapest
 // possible demonstration that those events fire.
 //
-// v3's page passes only `{ name }` and runs everything at defaults.  v4's
-// `force` is worth more than that, so the animate toggle and the seed are
-// wired: a seeded CPU run is bit-reproducible (round 18), while an animated
-// run on a flat rendered graph hands the integrator to the GPU.
+// v3's page passes only `{ name }` and runs everything at defaults.  The
+// animate toggle forwards to every named layout (87.4): the discrete
+// layouts tween through the finisher (87.3), and force streams its run
+// live — the integrator runs on the GPU for both animate values (87.2).
+// The seed stays force-only: a seeded CPU run is bit-reproducible
+// (round 18).
 
 (function () {
   window.onCy((cy) => {
@@ -37,24 +39,36 @@
       return;
     }
 
+    let layout;
+
     if (name === 'spiral') {
       // the round-17 extension contract: a plain class, no registry
-      cy.layout({ impl: window.SpiralLayout }).run();
+      layout = cy.layout({ impl: window.SpiralLayout });
+    } else {
+      const options = { name };
 
-      return;
-    }
-
-    const options = { name };
-
-    if (name === 'force') {
+      // 87.4: animate forwards for every named layout; seed stays
+      // force-only
       options.animate = $('#layout-animate-check').checked;
-      options.seed = parseInt($('#seed-input').value || '1', 10);
+
+      if (name === 'force') {
+        options.seed = parseInt($('#seed-input').value || '1', 10);
+      }
+
+      layout = cy.layout(options);
     }
 
     console.time('layout ' + name);
-    cy.layout(options)
-      .run()
-      .promise()
+    layout.run();
+
+    // the six built-ins have no promise() (the lifecycle-unification
+    // hook) — the old unguarded chain threw uncaught on every Apply
+    const done =
+      typeof layout.promise === 'function'
+        ? layout.promise()
+        : Promise.resolve();
+
+    done
       .then(() => console.timeEnd('layout ' + name))
       .catch((err) => console.error(err));
   });

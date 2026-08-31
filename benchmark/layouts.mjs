@@ -140,6 +140,129 @@ cmpLayout('concentric');
 cmpLayout('breadthfirst');
 cmpLayout('random');
 
+// -- the radial tree layout (85.1) -------------------------------------------
+// No v3 twin exists (v3 has no radial); the comparison partner is v4's
+// own breadthfirst-circle — same rings, no wedges — pricing what the
+// hierarchy-aware allocation costs.  The fixture is an unbalanced
+// 2000-node tree (a 4-ary heavy subtree with 80% of the nodes against
+// a light one with 20%), and the row asserts in-row the property it is
+// named for: distinct radii == depth count, and the heavy subtree's
+// angular span exceeds the light's — a run without the wedge weights
+// fails here rather than mispricing quietly.
+if (OP == null || 'radial'.includes(OP)) {
+  const treeEls = [{ data: { id: 't0' } }];
+  const addSubtree = (prefix, count) => {
+    for (let k = 0; k < count; k++) {
+      const id = prefix + k;
+      const parent = k === 0 ? 't0' : prefix + Math.floor((k - 1) / 4);
+
+      treeEls.push({ data: { id } });
+      treeEls.push({ data: { id: 'e' + id, source: parent, target: id } });
+    }
+  };
+
+  addSubtree('h', Math.floor(N * 0.8));
+  addSubtree('l', Math.max(1, Math.floor(N * 0.2)));
+
+  const radialCy = makeGpu(treeEls);
+  const bfCy = makeGpu(treeEls);
+
+  instances.push(radialCy, bfCy);
+
+  const radialOpts = {
+    name: 'radial',
+    roots: ['t0'],
+    // 0 keeps the heavy wedge from wrapping through the angle origin,
+    // so the measured spans below are true wedge spans
+    startAngle: 0,
+    fit: false,
+    boundingBox: BOX,
+  };
+
+  // the in-row assertion, once, outside the timed loop
+  radialCy.layout(radialOpts).run();
+
+  const center = { x: BOX.x1 + BOX.w / 2, y: BOX.y1 + BOX.h / 2 };
+  const rings = new Set();
+  let depthMax = 0;
+
+  for (const prefix of ['h', 'l']) {
+    // depth of node k in a 4-ary subtree, +1 for the root hop
+    const countOf = prefix === 'h' ? Math.floor(N * 0.8) : Math.floor(N * 0.2);
+
+    for (let k = 0; k < countOf; k++) {
+      let d = 1;
+
+      for (let at = k; at !== 0; at = Math.floor((at - 1) / 4)) {
+        d++;
+      }
+
+      depthMax = Math.max(depthMax, d);
+    }
+  }
+
+  const span = (prefix, count) => {
+    let lo = Infinity;
+    let hi = -Infinity;
+
+    for (let k = 0; k < count; k++) {
+      const p = radialCy.$id(prefix + k).position();
+      const a =
+        (Math.atan2(p.y - center.y, p.x - center.x) + 2 * Math.PI) %
+        (2 * Math.PI);
+
+      lo = Math.min(lo, a);
+      hi = Math.max(hi, a);
+      rings.add(Math.round(Math.hypot(p.x - center.x, p.y - center.y) * 8) / 8);
+    }
+
+    return hi - lo;
+  };
+
+  const heavySpan = span('h', Math.floor(N * 0.8));
+  const lightSpan = span('l', Math.max(1, Math.floor(N * 0.2)));
+
+  // + the root's own ring
+  if (rings.size + 1 !== depthMax + 1) {
+    throw new Error(
+      `radial row: ${rings.size + 1} distinct radii for ${depthMax + 1} depths — ` +
+        `the row would not be measuring the layout it is named for`,
+    );
+  }
+
+  if (heavySpan <= lightSpan) {
+    throw new Error(
+      `radial row: heavy subtree span ${heavySpan.toFixed(2)} rad does not ` +
+        `exceed the light's ${lightSpan.toFixed(2)} — the wedge weights are off`,
+    );
+  }
+
+  console.log(
+    `  radial fixture: ${depthMax + 1} depths == ${rings.size + 1} radii; ` +
+      `heavy span ${heavySpan.toFixed(2)} rad vs light ${lightSpan.toFixed(2)}`,
+  );
+
+  group('layout: radial vs breadthfirst-circle (unbalanced tree)', () => {
+    summary(() => {
+      bench('radial', () => {
+        radialCy.layout(radialOpts).run();
+      });
+      bench('breadthfirst circle', () => {
+        bfCy
+          .layout({
+            name: 'breadthfirst',
+            circle: true,
+            directed: true,
+            roots: ['t0'],
+            fit: false,
+            boundingBox: BOX,
+          })
+          .run();
+      });
+    });
+  });
+}
+
 // -- the force layout --------------------------------------------------------
 // The CPU executor is what the Node specs pin and what headless and
 // compound graphs always run (18.1; model rebuilt in round 59 — the
@@ -147,7 +270,9 @@ cmpLayout('random');
 // capped-iteration run at small N); the GPU integrator is the browser
 // bench's --layout mode.  A fixed iteration cap keeps the row a
 // measurement of the integrator rather than of how fast this particular
-// graph happens to converge.
+// graph happens to converge.  `edgeLength` also takes the 85.3 score
+// mapping ({ data, scale?, range?, invert? }) — same cost shape as the
+// fn form (one resolve at start), so it carries no row of its own.
 if (OP == null || 'force'.includes(OP)) {
   const force = gpuInstance();
 

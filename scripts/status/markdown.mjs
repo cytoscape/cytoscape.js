@@ -176,8 +176,9 @@ export const PLANNED_PATHS = {
   // round 85 — the layouts round
   'src/layout/radial.mts': 'planned by round 85 (the layouts round)',
   'test/layout-radial.mjs': 'planned by round 85 (the layouts round)',
-  // round 87 — layout mechanics
-  'src/layout/pack.mts': 'planned by round 87 (layout mechanics)',
+  // round 87 (layout mechanics) began landing 2026-08-31: its
+  // src/layout/pack.mts entry left this list when the file began
+  // resolving — the documented lifecycle, same as rounds 98/101 below.
   // round 89 — pointer cursors
   // round 98 (the cross-runtime smoke tier) landed 2026-08-28: its
   // test/runtimes/smoke.mjs entry left this list when the file began

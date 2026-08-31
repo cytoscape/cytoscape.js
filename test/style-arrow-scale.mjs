@@ -80,33 +80,51 @@ describe('Style arrow scale', function(){
     expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
   });
 
-  it('accepts an override of 0', function(){
-    makeCy([
-      { selector: 'edge', style: { 'arrow-scale': 3, 'target-arrow-scale': 0 } }
-    ]);
+  it('rejects an override of 0', function(){
+    arrowPrefixes.forEach(function( prefix ){
+      makeCy([
+        { selector: 'edge', style: { 'arrow-scale': 3, [ prefix + '-arrow-scale' ]: 0 } }
+      ]);
 
-    expect( edge.pstyle('target-arrow-scale').value ).to.equal( 0 );
-    expect( getArrowScale( edge, 'target' ) ).to.equal( 0 );
-    expect( getArrowScale( edge, 'source' ) ).to.equal( 3 );
+      expect( edge.pstyle( prefix + '-arrow-scale' ).value ).to.equal( 'inherit' );
+      expect( getArrowScale( edge, prefix ) ).to.equal( 3 );
+    });
   });
 
-  it('accepts an override of 0 set as a bypass', function(){
+  it('rejects an override of 0 set as a bypass', function(){
+    arrowPrefixes.forEach(function( prefix ){
+      makeCy([
+        { selector: 'edge', style: { 'arrow-scale': 3 } }
+      ]);
+
+      edge.style( prefix + '-arrow-scale', 0 );
+
+      expect( getArrowScale( edge, prefix ) ).to.equal( 3 );
+    });
+  });
+
+  it('keeps getMaxArrowScale() away from 0 when every override is 0', function(){
     makeCy([
-      { selector: 'edge', style: { 'arrow-scale': 3 } }
+      { selector: 'edge', style: {
+        'arrow-scale': 3,
+        'source-arrow-scale': 0,
+        'mid-source-arrow-scale': 0,
+        'target-arrow-scale': 0,
+        'mid-target-arrow-scale': 0
+      } }
     ]);
 
-    edge.style('source-arrow-scale', 0);
-
-    expect( getArrowScale( edge, 'source' ) ).to.equal( 0 );
-    expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
+    expect( getMaxArrowScale( edge ) ).to.equal( 3 );
   });
 
   it('rejects a negative override', function(){
-    makeCy([
-      { selector: 'edge', style: { 'arrow-scale': 3, 'target-arrow-scale': -1 } }
-    ]);
+    arrowPrefixes.forEach(function( prefix ){
+      makeCy([
+        { selector: 'edge', style: { 'arrow-scale': 3, [ prefix + '-arrow-scale' ]: -1 } }
+      ]);
 
-    expect( getArrowScale( edge, 'target' ) ).to.equal( 3 );
+      expect( getArrowScale( edge, prefix ) ).to.equal( 3 );
+    });
   });
 
   it('treats an explicit `inherit` as no override', function(){

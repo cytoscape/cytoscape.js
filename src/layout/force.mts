@@ -32,6 +32,11 @@ import {
   resolveScores,
   validateScoreMapping,
 } from './layout-mapping.mjs';
+import { resolveConstraints } from './force-constraints.mjs';
+import type {
+  AlignmentSpec,
+  RelativePlacementSpec,
+} from './force-constraints.mjs';
 import type { LayoutScoreMapping } from '../public-types.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Collection } from '../collection.mjs';
@@ -77,6 +82,21 @@ export interface ForceRunOptions {
   /** the compound centroid pull, as a multiple of `gravity` (59.5;
    * the Bilkent line's gravityCompound — default 1.5) */
   gravityCompound?: number;
+  /** alignment constraints (85.2, fcose's shape): `horizontal` groups
+   * share a y coordinate, `vertical` groups an x; id arrays,
+   * serializable; groups sharing a node merge transitively.  A locked
+   * member pins its group's coordinate.  Constrained runs take the
+   * CPU executor (the compound precedent — see run()).
+   * @throws at start on an unknown id, or two locked members of one
+   *   group at different coordinates */
+  alignment?: AlignmentSpec;
+  /** relative-placement constraints (85.2):
+   * `{ left, right, gap? }` keeps left at least `gap` px left of
+   * right (`{ top, bottom, gap? }` likewise vertically), `gap`
+   * defaulting to the run's mean ideal edge length.
+   * @throws at start on an unknown id, a malformed entry, or a cycle
+   *   in either axis's placement DAG */
+  relativePlacement?: RelativePlacementSpec;
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
@@ -303,6 +323,20 @@ export class ForceLayoutImpl implements LayoutImpl {
         ? lengthSum / lengthsArr.length
         : DEFAULT_EDGE_LENGTH;
 
+    // constraints (85.2): resolved and validated up front — unknown
+    // ids, placement cycles and contradictory locked members all throw
+    // here, before anything moves
+    const constraints = resolveConstraints(
+      cy,
+      options.alignment,
+      options.relativePlacement,
+      simIndex,
+      pinned,
+      ctx.positions(),
+      simSlots,
+      meanL,
+    );
+
     // the component field (59.2): union-find over the sim edges, one
     // packed anchor per component, one anchor coordinate pair per node
     const comps = computeComponents(n, edgesArr);
@@ -386,10 +420,13 @@ export class ForceLayoutImpl implements LayoutImpl {
     // the settle re-pack (59.2): translate whole components into
     // non-overlapping boxes once the sim lands.  Skipped whenever
     // anything is pinned — a re-pack moves whole components, and a
-    // locked node must never move (recorded scope note).
-    const hasPinned = movable.length < n;
+    // locked node must never move (recorded scope note) — and for any
+    // constrained run (85.2): a translation would carry an aligned
+    // group past a locked member's pin and shear cross-component
+    // relative pairs
+    const skipRepack = movable.length < n || constraints != null;
     const repack = (arr: Float32Array): void => {
-      if (!hasPinned) {
+      if (!skipRepack) {
         packComponentsExact(n, comps.compOf, comps.count, arr, spacing);
       }
     };
@@ -435,8 +472,16 @@ export class ForceLayoutImpl implements LayoutImpl {
       pinned,
       anchors: nodeAnchors,
       groups,
+      constraints: constraints ?? undefined,
       ...params,
     });
+
+    // the seed is constraint-blind (spectral or scatter alike), so a
+    // constrained run projects once before the first tick to shorten
+    // the transient (85.2)
+    if (constraints != null) {
+      sim.project();
+    }
 
     const movableSlots = movable.map((i) => simSlots[i]);
     const writeBack = (): void => {
@@ -468,8 +513,14 @@ export class ForceLayoutImpl implements LayoutImpl {
     // the same single readback settles — the run is async either way
     // (the 87.2 semantics change: settle at layoutstop / promise()).
     // Compounds demote to the CPU executor (a lease would starve the
-    // auto-bounds derivation — the 14.11 rule).
-    if (!store.hasCompounds()) {
+    // auto-bounds derivation — the 14.11 rule), and so do constrained
+    // runs (85.2's v1 contract, the same precedent: the projection
+    // runs CPU-side after each step, and a per-tick readback is the
+    // one thing the architecture forbids — the measured demotion price
+    // is in the render bench's --layout mode, and the on-device
+    // `constrain` dispatch design is recorded in the round for the day
+    // the demand justifies it).
+    if (!store.hasCompounds() && constraints == null) {
       const renderer = cy.renderer() as Renderer | null;
 
       if (renderer != null && typeof renderer.startForce === 'function') {

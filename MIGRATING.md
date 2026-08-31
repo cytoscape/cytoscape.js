@@ -495,7 +495,14 @@ ideal lengths (`nestingFactor`, v3's rule and default), and disconnected
 components are packed into rows at the end (`componentSpacing`, v3's
 option name).  A fresh run also seeds from a spectral draft
 (`init: 'spectral'`, the default — fCoSE's approach), which is what
-untangles chains and separates clusters at scale.
+untangles chains and separates clusters at scale.  Since round 85.2 `force`
+also carries fcose's constraint surface: `alignment` (`{ horizontal,
+vertical }` id-array groups; a locked node pins its group) and
+`relativePlacement` (`[{ left, right, gap? } | { top, bottom, gap? }]`),
+with fixed nodes spelled `lock()`.  Constrained runs take the CPU
+executor, so at fcose-typical sizes they behave like fcose; validation
+throws at start on unknown ids, placement cycles, and contradictory
+locked members.
 
 **`animate` is presentation only on `force`.**  Executor choice is
 availability-driven: a flat rendered graph with a device hands

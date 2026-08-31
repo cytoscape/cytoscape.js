@@ -60,6 +60,8 @@ Pinned nodes (locked, or outside a subset scope) take part in every
 force pair but never move.
 */
 
+import type { ForceConstraints } from './force-constraints.mjs';
+
 export interface ForceParams {
   /** the pairwise push, in px per tick, at exactly one cutoff length
    * (the force law is `repulsion · (cutoff/d)²`) */
@@ -118,6 +120,10 @@ export interface ForceSimInputs extends ForceParams {
    * group's live centroid — the Bilkent line's per-compound gravity,
    * with the centroid recomputed every iteration */
   groups?: { of: Int32Array; count: number; pull: number };
+  /** resolved alignment groups + relative pairs (85.2, the CPU
+   * executor only): projected after every integration step — see
+   * `project()` for the load-bearing ordering */
+  constraints?: ForceConstraints;
 }
 
 /** Deterministic seeded scatter (Knuth-hash polar): same (n, seed,
@@ -159,6 +165,10 @@ export class ForceSim {
   private groups: { of: Int32Array; count: number; pull: number } | null;
   /** per-group centroid scratch (x, y, count) */
   private groupSum: Float64Array;
+  /** resolved constraints (85.2), projected after every step */
+  private constraints: ForceConstraints | null;
+  /** Jacobi scratch for the relative pairs (allocated only when any) */
+  private pairCorrections: Float64Array | null;
   private params: ForceParams;
   /** per-node force scratch (gather output; applied in a second pass) */
   private forces: Float32Array;
@@ -207,6 +217,11 @@ export class ForceSim {
     this.anchors = inputs.anchors ?? null;
     this.groups = inputs.groups ?? null;
     this.groupSum = new Float64Array((this.groups?.count ?? 0) * 3);
+    this.constraints = inputs.constraints ?? null;
+    this.pairCorrections =
+      this.constraints != null && this.constraints.pairs.length > 0
+        ? new Float64Array(inputs.n * 2)
+        : null;
     this.params = inputs;
     this.forces = new Float32Array(inputs.n * 2);
 
@@ -653,5 +668,99 @@ export class ForceSim {
     this.settledRuns =
       !sawNonFinite && maxDisp < threshold ? this.settledRuns + 1 : 0;
     this.iteration++;
+
+    // 85.2: constraint projection after the integration step.  The
+    // ordering is load-bearing (the IPSep/CoLa-lineage standard, and
+    // what fcose runs): the projection's own corrections are *not*
+    // folded into maxDisp above — folding them reads as never
+    // settling, since constraints that fight forces correct every
+    // tick — while projecting after the fold keeps convergence a
+    // force-equilibrium test and every tick (the last included) ends
+    // in a projected state, so a converged run also satisfies.
+    this.project();
+  }
+
+  /**
+   * One constraint projection pass (85.2): alignment groups snap the
+   * constrained coordinate to the group mean (a locked member pins
+   * the group to its coordinate instead), then violated relative
+   * pairs split the correction Jacobi-style — both corrections
+   * computed against a consistent snapshot, pinned nodes never
+   * moving.  Alignment is exact per pass; relative pairs converge
+   * geometrically across ticks.  Also called once before the first
+   * tick (the spectral seed is constraint-blind — projecting the seed
+   * shortens the transient).
+   */
+  project(): void {
+    const constraints = this.constraints;
+
+    if (constraints == null) {
+      return;
+    }
+
+    const pos = this.positions;
+    const pinned = this.pinned;
+
+    for (const group of constraints.groups) {
+      const { axis, members, pinnedAt } = group;
+      let target: number;
+
+      if (pinnedAt != null) {
+        target = pinnedAt;
+      } else {
+        let sum = 0;
+
+        for (let k = 0; k < members.length; k++) {
+          sum += pos[members[k] * 2 + axis];
+        }
+
+        target = sum / members.length;
+      }
+
+      for (let k = 0; k < members.length; k++) {
+        const i = members[k];
+
+        if (pinned == null || pinned[i] !== 1) {
+          pos[i * 2 + axis] = target;
+        }
+      }
+    }
+
+    const corrections = this.pairCorrections;
+
+    if (corrections == null) {
+      return;
+    }
+
+    corrections.fill(0);
+
+    for (const { a, b, axis, gap } of constraints.pairs) {
+      const violation = pos[a * 2 + axis] + gap - pos[b * 2 + axis];
+
+      if (violation <= 0) {
+        continue;
+      }
+
+      const aPinned = pinned != null && pinned[a] === 1;
+      const bPinned = pinned != null && pinned[b] === 1;
+
+      if (aPinned && bPinned) {
+        continue;
+      } // both locked: unresolvable, left violated (documented)
+
+      if (aPinned) {
+        corrections[b * 2 + axis] += violation;
+      } else if (bPinned) {
+        corrections[a * 2 + axis] -= violation;
+      } else {
+        corrections[a * 2 + axis] -= violation / 2;
+        corrections[b * 2 + axis] += violation / 2;
+      }
+    }
+
+    for (let i = 0; i < this.n; i++) {
+      pos[i * 2] += corrections[i * 2];
+      pos[i * 2 + 1] += corrections[i * 2 + 1];
+    }
   }
 }

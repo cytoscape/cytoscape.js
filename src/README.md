@@ -1042,6 +1042,34 @@ pricing what the hierarchy-awareness costs.
 
 ## The force layout (rounds 18 + 59)
 
+**Round 85.2 added constraints** (fcose #54/#53 absorbed): **fixed** is
+already spelled `lock()` (deliberately no second spelling);
+**alignment** — `alignment: { horizontal?: string[][], vertical?:
+string[][] }` (fcose's shape; id arrays, serializable; groups sharing a
+node merge transitively; a locked member pins its group's coordinate);
+**relative placement** — `relativePlacement: [{ left, right, gap? } |
+{ top, bottom, gap? }]`, `gap` defaulting to the run's mean ideal edge
+length.  Validation fails loudly at start: unknown ids, a cycle in
+either axis's placement DAG, and two locked members of one group at
+different coordinates all throw.  Method: **constraint projection after
+each integration step** (the IPSep/CoLa-lineage standard, and what
+fcose runs) — alignment snaps to the group mean (or the locked pin),
+violated relative pairs split the correction Jacobi-style, pinned nodes
+never move; the projection's corrections are deliberately *not* folded
+into the convergence displacement (folding reads as never settling),
+and the seed projects once before the first tick.  The settle re-pack
+is skipped for any constrained run (it would translate a group past its
+pin).  **Constrained runs take the CPU executor** — the measure-first
+gate ran (render-bench --layout): at 25k×50k the demoted sync settle is
+~26 s against ~0.4 s silent GPU, but the constraint feature's consumers
+(fcose migrators) run hundreds-to-thousands of nodes where the CPU
+settle is seconds — so v1 accepts the demotion (the compound
+precedent), the losing configuration stays measured in the bench, and
+the on-device `constrain` dispatch design (one dispatch after `apply`;
+groups as a [starts][members] buffer tree-reducing the mean, one
+workgroup per group; pairs as a Jacobi list) is recorded in the round
+for the day demand justifies it.
+
 Round 18 built the layout (2026-08-01); **round 59 rebuilt its model**
 (2026-08-09) after the maintainer reported it drifting apart on large
 networks until a fit left everything invisible.  Scoping measured the

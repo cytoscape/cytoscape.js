@@ -2250,6 +2250,87 @@ test.describe('WebGPU renderer', () => {
     expect(stats.silentBb.w).toBeGreaterThan(100);
   });
 
+  test('a constrained force run demotes to the CPU executor (round 85.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // 85.2's v1 contract (the compound precedent): constraints project
+    // CPU-side per tick, so a constrained run takes the CPU executor
+    // even where the silent GPU path (87.2) would otherwise engage.
+    // The observable: a constrained animate: false run on a rendered
+    // flat graph is synchronous — settled, satisfying positions on the
+    // line after run() — while its unconstrained twin is async.
+    await makeReadyCy(page, {
+      elements: (() => {
+        const els = [];
+
+        for (let i = 0; i < 20; i++) {
+          els.push({ data: { id: 'n' + i }, position: { x: 0, y: 0 } });
+          els.push({
+            data: {
+              id: 'e' + i,
+              source: 'n' + i,
+              target: 'n' + ((i + 1) % 20),
+            },
+          });
+        }
+
+        return els;
+      })(),
+      style: { nodes: { width: 10, height: 10 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    const result = await page.evaluate(async () => {
+      const cy = window.cy;
+      const opts = {
+        name: 'force',
+        seed: 2,
+        animate: false,
+        fit: false,
+        iterations: 300,
+      };
+
+      cy.layout({
+        ...opts,
+        alignment: { horizontal: [['n0', 'n7', 'n13']] },
+      }).run();
+
+      // synchronous: read on the very next line
+      const ys = ['n0', 'n7', 'n13'].map((id) => cy.$id(id).position().y);
+      const constrainedSpread = Math.max(...ys) - Math.min(...ys);
+
+      // the unconstrained twin takes the silent GPU path — async, so
+      // nothing has settled on the next line
+      const before = { ...cy.$id('n3').position() };
+      const twin = cy.layout(opts).run();
+      let twinResolved = false;
+
+      twin.promise().then(() => {
+        twinResolved = true;
+      });
+
+      const stillAtSeed =
+        cy.$id('n3').position().x === before.x &&
+        cy.$id('n3').position().y === before.y;
+      const syncTwin = twinResolved;
+
+      await twin.promise();
+
+      return { constrainedSpread, stillAtSeed, syncTwin };
+    });
+
+    expect(
+      result.constrainedSpread,
+      'constrained run settled synchronously, satisfied',
+    ).toBeLessThan(1e-3);
+    expect(result.syncTwin, 'the unconstrained twin is async').toBe(false);
+    expect(result.stillAtSeed, 'twin unmoved on the next line').toBe(true);
+  });
+
   test('the GPU far field reaches past the grid cutoff (round 59.3)', async ({
     page,
   }) => {

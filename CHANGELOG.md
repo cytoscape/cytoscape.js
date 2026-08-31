@@ -24,6 +24,15 @@ that compile and then behave differently.
 
 ### Added
 
+- **Force-layout constraints** (round 85.2, absorbing fcose's main
+  draw): `alignment: { horizontal, vertical }` id-array groups (a
+  locked member pins its group) and `relativePlacement:
+  [{ left, right, gap? } | { top, bottom, gap? }]`, with fixed nodes
+  spelled `lock()`.  Projection after each integration step; unknown
+  ids, placement cycles, and contradictory locked members throw at
+  start.  Constrained runs take the CPU executor (measured: ~26 s vs
+  ~0.4 s silent GPU at 25k — accepted for v1, since the constraint
+  population runs at fcose sizes where the CPU settle is seconds).
 - **A columnar, CPU-canonical model.** Elements live in typed-array columns
   with stable slots, per-column coalesced dirty spans, a CSR adjacency index
   and a dictionary-encoded `data()` sidecar. Reads stay synchronous.

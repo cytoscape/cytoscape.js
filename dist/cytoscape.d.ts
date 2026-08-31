@@ -1163,6 +1163,30 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
   /** the compound centroid pull, as a multiple of `gravity` (59.5;
    * the Bilkent line's gravityCompound — default 1.5) */
   gravityCompound?: number;
+  /** alignment constraints (85.2, fcose's shape): `horizontal` groups
+   * share a y coordinate, `vertical` groups an x — id arrays,
+   * serializable; groups sharing a node merge.  A locked member pins
+   * its group.  Constrained runs take the CPU executor.
+   * @throws at start on an unknown id, or two locked members of one
+   *   group at different coordinates */
+  alignment?: {
+    horizontal?: string[][];
+    vertical?: string[][];
+  };
+  /** relative-placement constraints (85.2): keep `left` at least
+   * `gap` px left of `right` (`top`/`bottom` likewise vertically);
+   * `gap` defaults to the run's mean ideal edge length.
+   * @throws at start on an unknown id, a malformed entry, or a cycle
+   *   in either axis's placement DAG */
+  relativePlacement?: ({
+    left: string;
+    right: string;
+    gap?: number;
+  } | {
+    top: string;
+    bottom: string;
+    gap?: number;
+  })[];
 }
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off

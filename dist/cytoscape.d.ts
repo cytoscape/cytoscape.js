@@ -7091,17 +7091,28 @@ declare class GridLayout {
    */
   constructor(cy: Core, options: GridLayoutOptions);
   /**
-   * Run the layout: emits `layoutstart`, writes the positions, then
-   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
-   * tween to their targets and a `fit` animates the viewport to the box
-   * at the *final* positions, concurrently.
+   * Run the layout.  The bare call takes the columnar bulk path (one
+   * dirty span, no handles) and emits `layoutstart`/`layoutready`/
+   * `layoutstop` synchronously.  Any handle-demanding option — `sort`,
+   * `position`, a subset scope, `animate`, `animateFilter`,
+   * `transform`, or the `ready`/`stop` callbacks — routes through the
+   * per-element path, which finishes with the shared `layoutPositions`
+   * plumbing: under `animate: true` the nodes tween to their targets
+   * and a `fit` animates the viewport to the box at the *final*
+   * positions, concurrently (87.3 — previously grid ignored `animate`,
+   * `animateFilter` and `transform` and never called `ready`/`stop`).
    *
    * @returns this layout, for chaining
    */
   run(): this;
   /** Columnar path: cell sizes from the size/border columns, one bulk write. */
   private runBySlot;
-  /** Per-element path for the `sort`/`position` callback options and subset scopes. */
+  /** Per-element path for the `sort`/`position` callback options,
+   * subset scopes, and the finisher plumbing (animate/transform/
+   * callbacks — 87.3).  Finishes through the shared
+   * `eles.layoutPositions`; `spacingFactor` is handed to it unset
+   * because `cellPositions` already applied it, identically on both
+   * paths. */
   private runWithHandles;
   /** The ported v3 grid cell-packing math, indexed by node ordinal. */
   private cellPositions;
@@ -7130,14 +7141,28 @@ declare class PresetLayout {
    */
   constructor(cy: Core, options: PresetLayoutOptions);
   /**
-   * Run the layout: emits `layoutstart`, writes the positions, then
-   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
-   * tween to their targets and a `fit` animates the viewport to the box
-   * at the *final* positions, concurrently.
+   * Run the layout.  The bare call writes positions directly — the map
+   * form straight to slots, one dirty span — and emits `layoutstart`/
+   * `layoutready`/`layoutstop` synchronously.  With `animate`,
+   * `animateFilter`, `transform` or the `ready`/`stop` callbacks
+   * present, the run finishes through the shared `layoutPositions`
+   * plumbing instead: under `animate: true` the nodes tween to their
+   * targets and a `fit` animates the viewport to the box at the
+   * *final* positions, concurrently (87.3 — previously preset ignored
+   * all four and never called `ready`/`stop`).  Nodes without a
+   * supplied position keep the one they have on every path.
    *
    * @returns this layout, for chaining
    */
   run(): this;
+  /** The finisher path (87.3): both forms resolve to a position per
+   * node — absent entries resolve to the node's current position, so
+   * an unmentioned node tweens nowhere — and the shared
+   * `layoutPositions` plumbing owns animate/transform/callbacks and
+   * the viewport.  `spacingFactor` is handed to it unset: the discrete
+   * path ignores it (explicit positions are not scaled), and the two
+   * paths must agree. */
+  private runWithFinisher;
 }
 //#endregion
 //#region src/layout/circle.d.mts

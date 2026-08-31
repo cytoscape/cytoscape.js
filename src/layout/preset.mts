@@ -11,8 +11,10 @@ function) and the viewport options, as v3's preset layout does.  The map
 form resolves ids straight to slots and bulk-writes — O(map), no element
 handles; only the function form (which takes handles by contract) walks
 nodes.  With no `positions` at all, node positions are already in the
-model (set at add time), so only the viewport options apply.  Animation
-is out of scope, as everywhere in the prototype.
+model (set at add time), so only the viewport options apply.  With
+`animate`/`animateFilter`/`transform` or the `ready`/`stop` callbacks
+the run finishes through the shared `eles.layoutPositions` instead
+(87.3).
 */
 
 const defaults: Omit<PresetLayoutOptions, 'name'> = {
@@ -49,10 +51,16 @@ export class PresetLayout {
   }
 
   /**
-   * Run the layout: emits `layoutstart`, writes the positions, then
-   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
-   * tween to their targets and a `fit` animates the viewport to the box
-   * at the *final* positions, concurrently.
+   * Run the layout.  The bare call writes positions directly — the map
+   * form straight to slots, one dirty span — and emits `layoutstart`/
+   * `layoutready`/`layoutstop` synchronously.  With `animate`,
+   * `animateFilter`, `transform` or the `ready`/`stop` callbacks
+   * present, the run finishes through the shared `layoutPositions`
+   * plumbing instead: under `animate: true` the nodes tween to their
+   * targets and a `fit` animates the viewport to the box at the
+   * *final* positions, concurrently (87.3 — previously preset ignored
+   * all four and never called `ready`/`stop`).  Nodes without a
+   * supplied position keep the one they have on every path.
    *
    * @returns this layout, for chaining
    */
@@ -60,6 +68,18 @@ export class PresetLayout {
     const cy = this.cy;
     const options = this.options;
     const positions = options.positions;
+
+    if (
+      options.animate ||
+      options.animateFilter != null ||
+      options.transform != null ||
+      options.ready != null ||
+      options.stop != null
+    ) {
+      this.runWithFinisher();
+
+      return this;
+    }
 
     cy.emit({ type: 'layoutstart', layout: this });
 
@@ -123,5 +143,42 @@ export class PresetLayout {
     cy.emit({ type: 'layoutstop', layout: this });
 
     return this;
+  }
+
+  /** The finisher path (87.3): both forms resolve to a position per
+   * node — absent entries resolve to the node's current position, so
+   * an unmentioned node tweens nowhere — and the shared
+   * `layoutPositions` plumbing owns animate/transform/callbacks and
+   * the viewport.  `spacingFactor` is handed to it unset: the discrete
+   * path ignores it (explicit positions are not scaled), and the two
+   * paths must agree. */
+  private runWithFinisher(): void {
+    const cy = this.cy;
+    const options = this.options;
+    const positions = options.positions;
+    const eles = (options.eles as Collection | undefined) ?? cy.elements();
+    const nodes = eles.nodes();
+
+    const getPos = (node: Collection): Position => {
+      let pos: Position | null | undefined;
+
+      if (typeof positions === 'function') {
+        pos = (positions as (node: Collection) => Position | null | undefined)(
+          node,
+        );
+      } else if (positions != null) {
+        pos = positions[node.id() as string];
+      }
+
+      const current = node.position() as Position;
+
+      return pos ?? { x: current.x, y: current.y };
+    };
+
+    nodes.layoutPositions(
+      this,
+      { ...options, eles, spacingFactor: undefined },
+      getPos,
+    );
   }
 }

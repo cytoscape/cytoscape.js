@@ -496,4 +496,192 @@ describe('gpu/layouts', function () {
 
     expect(() => cy.layout({ name: 'cose' })).to.throw(/built-in name/);
   });
+
+  // 87.3: grid and preset used to ignore animate/animateFilter/
+  // transform and never call the ready/stop callbacks, while their doc
+  // comments claimed tween support.  Both now route through the shared
+  // layoutPositions finisher whenever one of those options is present;
+  // the bare call keeps the synchronous bulk path.
+  describe('grid and preset animate (87.3)', function () {
+    var quad = () =>
+      cytoscape({
+        headlessWidth: 400,
+        headlessHeight: 400,
+        elements: [
+          { data: { id: 'n0' } },
+          { data: { id: 'n1' } },
+          { data: { id: 'n2' } },
+          { data: { id: 'n3' } },
+        ],
+      });
+
+    var scatter = (positions) => {
+      cy.layout({ name: 'preset', fit: false, positions }).run();
+    };
+
+    var AT_5 = {
+      n0: { x: 5, y: 5 },
+      n1: { x: 6, y: 5 },
+      n2: { x: 7, y: 5 },
+      n3: { x: 8, y: 5 },
+    };
+
+    beforeEach(function () {
+      cy = quad();
+    });
+
+    it('grid animate tweens to the discrete finals and runs the callbacks', async function () {
+      cy.layout({ name: 'grid', fit: false }).run();
+
+      var want = {};
+
+      cy.nodes().forEach((node) => {
+        want[node.id()] = { ...node.position() };
+      });
+
+      scatter(AT_5);
+
+      var ready = false;
+      var stop = false;
+      var stopped = cy.promiseOn('layoutstop');
+
+      cy.layout({
+        name: 'grid',
+        fit: false,
+        animate: true,
+        animationDuration: 40,
+        ready: () => (ready = true),
+        stop: () => (stop = true),
+      }).run();
+
+      // the run is a tween now, not a synchronous write: nothing has
+      // moved yet (this is what a disabled finisher branch fails)
+      expect(posOf('n0')).to.deep.equal(AT_5.n0);
+      expect(ready).to.equal(true);
+      expect(stop).to.equal(false);
+
+      await stopped;
+
+      expect(stop).to.equal(true);
+      cy.nodes().forEach((node) => {
+        expect(node.position().x).to.be.closeTo(want[node.id()].x, 1e-3);
+        expect(node.position().y).to.be.closeTo(want[node.id()].y, 1e-3);
+      });
+    });
+
+    it('grid animateFilter exempts nodes from tweening', async function () {
+      cy.layout({ name: 'grid', fit: false }).run();
+
+      var wantN1 = { ...posOf('n1') };
+
+      scatter(AT_5);
+
+      var stopped = cy.promiseOn('layoutstop');
+
+      cy.layout({
+        name: 'grid',
+        fit: false,
+        animate: true,
+        animationDuration: 40,
+        animateFilter: (node) => node.id() !== 'n1',
+      }).run();
+
+      // the exempted node is placed synchronously; the rest still tween
+      expect(posOf('n1').x).to.be.closeTo(wantN1.x, 1e-3);
+      expect(posOf('n1').y).to.be.closeTo(wantN1.y, 1e-3);
+      expect(posOf('n0')).to.deep.equal(AT_5.n0);
+
+      await stopped;
+    });
+
+    it('grid honors transform (without animate)', function () {
+      cy.layout({ name: 'grid', fit: false }).run();
+
+      var want = {};
+
+      cy.nodes().forEach((node) => {
+        want[node.id()] = { ...node.position() };
+      });
+
+      cy.layout({
+        name: 'grid',
+        fit: false,
+        transform: (node, pos) => ({ x: pos.x + 1000, y: pos.y }),
+      }).run();
+
+      cy.nodes().forEach((node) => {
+        expect(node.position().x).to.be.closeTo(want[node.id()].x + 1000, 1e-3);
+        expect(node.position().y).to.be.closeTo(want[node.id()].y, 1e-3);
+      });
+    });
+
+    it('preset animate tweens to the map positions, unmentioned nodes stay', async function () {
+      scatter(AT_5);
+
+      var ready = false;
+      var stop = false;
+      var stopped = cy.promiseOn('layoutstop');
+
+      cy.layout({
+        name: 'preset',
+        fit: false,
+        animate: true,
+        animationDuration: 40,
+        positions: { n0: { x: 100, y: 120 }, n1: { x: 200, y: 220 } },
+        ready: () => (ready = true),
+        stop: () => (stop = true),
+      }).run();
+
+      // a tween, not a write — and the callbacks actually run (the old
+      // preset called neither)
+      expect(posOf('n0')).to.deep.equal(AT_5.n0);
+      expect(ready).to.equal(true);
+
+      await stopped;
+
+      expect(stop).to.equal(true);
+      expect(posOf('n0').x).to.be.closeTo(100, 1e-3);
+      expect(posOf('n0').y).to.be.closeTo(120, 1e-3);
+      expect(posOf('n1').x).to.be.closeTo(200, 1e-3);
+      expect(posOf('n1').y).to.be.closeTo(220, 1e-3);
+      // no entry in the map: keeps its position through the tween
+      expect(posOf('n2')).to.deep.equal(AT_5.n2);
+    });
+
+    it('preset honors transform (without animate)', function () {
+      scatter(AT_5);
+
+      cy.layout({
+        name: 'preset',
+        fit: false,
+        positions: { n0: { x: 100, y: 120 } },
+        transform: (node, pos) => ({ x: pos.x, y: pos.y + 50 }),
+      }).run();
+
+      expect(posOf('n0')).to.deep.equal({ x: 100, y: 170 });
+      // transform applies to kept positions too (every node goes
+      // through the finisher on this path)
+      expect(posOf('n2')).to.deep.equal({ x: 7, y: 55 });
+    });
+
+    it('bare grid and preset calls stay synchronous (the bulk path)', function () {
+      scatter(AT_5);
+      cy.layout({ name: 'grid', fit: false }).run();
+
+      // positions land during run() — no tween, no await
+      expect(posOf('n0')).to.not.deep.equal(AT_5.n0);
+
+      var events = [];
+
+      cy.on('layoutstart layoutready layoutstop', (e) => events.push(e.type));
+      cy.layout({ name: 'preset', fit: false, positions: AT_5 }).run();
+
+      expect(posOf('n0')).to.deep.equal(AT_5.n0);
+      expect(events).to.deep.equal([
+        'layoutstart',
+        'layoutready',
+        'layoutstop',
+      ]);
+    });
+  });
 });

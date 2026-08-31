@@ -7,16 +7,17 @@ import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
 
 /*
-Grid layout for the GPU prototype: the cell-packing math is ported verbatim
-from src/extensions/layout/grid.mts (lines 76-277); the plumbing is replaced
-with a bulk position write (one dirty span) plus layoutstart/layoutready/
-layoutstop events.  Animation, label-aware sizing and compound handling are
-dropped.
+Grid layout: the cell-packing math is ported verbatim from v3's grid
+(src/extensions/layout/grid.mts lines 76-277).  Label-aware sizing and
+compound handling are dropped.
 
 The default path never materializes element handles: cells are computed
 from the size/border columns by slot and written back with one
-`setPositions` call.  Only the `sort` and `position` callback options —
-which take handles by contract — fall back to the per-element path.
+`setPositions` call.  The `sort` and `position` callback options —
+which take handles by contract — plus subset scopes and the finisher
+plumbing (`animate`, `animateFilter`, `transform`, `ready`/`stop` —
+87.3) fall back to the per-element path, which finishes through the
+shared `eles.layoutPositions`.
 */
 
 const defaults: Omit<GridLayoutOptions, 'name'> = {
@@ -61,18 +62,22 @@ export class GridLayout {
   }
 
   /**
-   * Run the layout: emits `layoutstart`, writes the positions, then
-   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
-   * tween to their targets and a `fit` animates the viewport to the box
-   * at the *final* positions, concurrently.
+   * Run the layout.  The bare call takes the columnar bulk path (one
+   * dirty span, no handles) and emits `layoutstart`/`layoutready`/
+   * `layoutstop` synchronously.  Any handle-demanding option — `sort`,
+   * `position`, a subset scope, `animate`, `animateFilter`,
+   * `transform`, or the `ready`/`stop` callbacks — routes through the
+   * per-element path, which finishes with the shared `layoutPositions`
+   * plumbing: under `animate: true` the nodes tween to their targets
+   * and a `fit` animates the viewport to the box at the *final*
+   * positions, concurrently (87.3 — previously grid ignored `animate`,
+   * `animateFilter` and `transform` and never called `ready`/`stop`).
    *
    * @returns this layout, for chaining
    */
   run(): this {
     const cy = this.cy;
     const options = this.options;
-
-    cy.emit({ type: 'layoutstart', layout: this });
 
     const bb = math.makeBoundingBox(
       options.boundingBox ?? {
@@ -83,16 +88,26 @@ export class GridLayout {
       },
     ) as BoundingBox;
 
-    // handles when a callback option demands them, or on a subset scope
+    // handles when a callback option demands them, on a subset scope,
+    // or when the finisher's plumbing (animate/transform/callbacks) is
+    // asked for (87.3)
     if (
       options.sort != null ||
       options.position != null ||
-      options.eles != null
+      options.eles != null ||
+      options.animate ||
+      options.animateFilter != null ||
+      options.transform != null ||
+      options.ready != null ||
+      options.stop != null
     ) {
       this.runWithHandles(bb);
-    } else {
-      this.runBySlot(bb);
+
+      return this;
     }
+
+    cy.emit({ type: 'layoutstart', layout: this });
+    this.runBySlot(bb);
 
     if (options.fit !== false) {
       cy.fit(options.eles as Collection | undefined, options.padding ?? 30);
@@ -144,45 +159,43 @@ export class GridLayout {
     }
   }
 
-  /** Per-element path for the `sort`/`position` callback options and subset scopes. */
+  /** Per-element path for the `sort`/`position` callback options,
+   * subset scopes, and the finisher plumbing (animate/transform/
+   * callbacks — 87.3).  Finishes through the shared
+   * `eles.layoutPositions`; `spacingFactor` is handed to it unset
+   * because `cellPositions` already applied it, identically on both
+   * paths. */
   private runWithHandles(bb: BoundingBox): void {
     const cy = this.cy;
     const options = this.options;
-    const scope = (options.eles as Collection | undefined) ?? cy;
+    const eles = (options.eles as Collection | undefined) ?? cy.elements();
 
-    let nodeList = scope
-      .nodes()
-      .toArray()
-      .filter((node) => !node.isParent());
+    let nodes = eles.nodes().filter((node: Collection) => !node.isParent());
 
     if (options.sort != null) {
-      nodeList = nodeList.sort(
+      nodes = nodes.sort(
         options.sort as (a: Collection, b: Collection) => number,
       );
     }
 
     const manRaw =
       options.position != null
-        ? nodeList.map((node) => options.position!(node) ?? undefined)
+        ? nodes.map((node: Collection) => options.position!(node) ?? undefined)
         : null;
 
     const positions = this.cellPositions(
-      nodeList.length,
+      nodes.length,
       bb,
-      (i) => nodeList[i].outerWidth() ?? 0,
-      (i) => nodeList[i].outerHeight() ?? 0,
+      (i) => nodes[i].outerWidth() ?? 0,
+      (i) => nodes[i].outerHeight() ?? 0,
       manRaw,
     );
 
-    const indexOf = new Map<Collection, number>(
-      nodeList.map((node, i) => [node, i]),
+    nodes.layoutPositions(
+      this,
+      { ...options, eles, spacingFactor: undefined },
+      (_node: Collection, i: number) => positions[i],
     );
-
-    cy.nodes().positions((ele: Collection) => {
-      const index = indexOf.get(ele);
-
-      return index == null ? false : positions[index];
-    });
   }
 
   /** The ported v3 grid cell-packing math, indexed by node ordinal. */

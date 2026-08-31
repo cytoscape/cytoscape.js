@@ -634,6 +634,7 @@ replaced `onRender`/`offRender`; delegation via predicate functions), graph
 manipulation, `style()` (the `{ nodes, edges, parents, core }`
 sheet), `layout()`/
 `makeLayout` (grid, preset, circle, concentric, breadthfirst, random,
+the round-85 hierarchy-aware `radial` tree,
 and — round 18 — the GPU-capable `force`; plus the round-17
 **extension contract**: `cy.layout({ impl })` runs a user layout
 class/object with no registry — plus `eles.layout()` for subset
@@ -1016,6 +1017,28 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   round-25 font-size tween on a *wrapped* label, the recorded
   expensive configuration; wrap-none tweens ride the dims fast path);
   the whole-graph bb scan pays ~0.1 µs/label for its label terms.
+
+## The radial tree layout (round 85.1, #2493)
+
+Discrete, breadthfirst's shape, with the one property breadthfirst's
+`circle: true` cannot promise: **hierarchy-aware angular allocation**.
+A BFS tree grows from the roots (`roots`: collection or id array — a
+selector string throws; omitted, inferred per component by max
+degree), then every node takes a *wedge* — a share of its parent's
+wedge proportional to its subtree's weight (`weight: 'leaves'`
+default, or `'subtree'`) — and sits at the wedge bisector at radius
+depth × `levelSpacing` (derived from the bounding box when unset).  A
+subtree is one contiguous sector, so tree edges never cross the
+circle — the #2493 / Vega-radial-tree ask.  Multiple roots partition
+the `sweep` proportionally to their trees, in the caller's roots
+order; a lone root sits exactly at the centre, several move out to
+the first ring; unreached nodes seed their own trees in scope order,
+so a disconnected component always gets a wedge.  Non-tree edges just
+draw (breadthfirst's stance); leaves only, parents derive.  Options:
+`roots`, `startAngle`, `sweep`, `clockwise`, `levelSpacing`,
+`weight`, plus the shared finisher plumbing.  No v3 twin exists; the
+benchmark's comparison partner is v4's own breadthfirst-circle,
+pricing what the hierarchy-awareness costs.
 
 ## The force layout (rounds 18 + 59)
 

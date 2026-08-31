@@ -480,8 +480,10 @@ and the `renderer` block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`,
 ## Layouts and extensions
 
 **Built in**: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
-`random`, and `force` — a GPU-native force-directed layout that animates
-live at 100k nodes.
+`random`, `radial` — a hierarchy-aware radial tree (each subtree takes a
+contiguous angular wedge sized by its weight; new in v4, #2493) — and
+`force` — a GPU-native force-directed layout that animates live at 100k
+nodes.
 
 **`cose` is not ported.** Its option surface and per-iteration structure are
 CPU-shaped; `force` is v4's answer, and it converges in about a second on

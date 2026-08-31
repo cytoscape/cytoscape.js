@@ -40,6 +40,7 @@ import { CircleLayout } from './layout/circle.mjs';
 import { ConcentricLayout } from './layout/concentric.mjs';
 import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
 import { RandomLayout } from './layout/random.mjs';
+import { RadialLayout } from './layout/radial.mjs';
 
 export type Layout =
   | CustomLayout
@@ -48,7 +49,8 @@ export type Layout =
   | CircleLayout
   | ConcentricLayout
   | BreadthFirstLayout
-  | RandomLayout;
+  | RandomLayout
+  | RadialLayout;
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
@@ -717,6 +719,9 @@ export class Core {
     if (options?.name === 'random') {
       return new RandomLayout(this, options);
     }
+    if (options?.name === 'radial') {
+      return new RadialLayout(this, options);
+    }
 
     // the built-in force layout (round 18.2) rides the extension
     // contract — exactly what an external layout would do
@@ -731,7 +736,7 @@ export class Core {
 
     throw new Error(
       `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
-        `'breadthfirst', 'random', 'force') or an impl (the extension contract)` +
+        `'breadthfirst', 'random', 'radial', 'force') or an impl (the extension contract)` +
         (got != null ? `; got name '${got}'` : ''),
     );
   }

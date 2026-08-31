@@ -173,9 +173,9 @@ export const PLANNED_PATHS = {
   'src/algorithms/edge-bundling.mts': 'planned by round 83 (GPU edge bundling)',
   'src/algorithms/algo-gpu-bundling.mts':
     'planned by round 83 (GPU edge bundling)',
-  // round 85 — the layouts round
-  'src/layout/radial.mts': 'planned by round 85 (the layouts round)',
-  'test/layout-radial.mjs': 'planned by round 85 (the layouts round)',
+  // round 85 (the layouts round) began landing 2026-08-31: its
+  // src/layout/radial.mts and test/layout-radial.mjs entries left this
+  // list when the files began resolving — the documented lifecycle.
   // round 87 (layout mechanics) began landing 2026-08-31: its
   // src/layout/pack.mts entry left this list when the file began
   // resolving — the documented lifecycle, same as rounds 98/101 below.

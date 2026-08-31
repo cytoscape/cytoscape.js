@@ -1063,6 +1063,26 @@ interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
 interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
+/** The radial tree layout (round 85.1): concentric rings with
+ * hierarchy-aware angular wedges — each subtree occupies a contiguous
+ * sector sized by its weight, so subtrees never interleave. */
+interface RadialLayoutOptions extends LayoutBaseOptions {
+  name: 'radial';
+  /** the tree roots: a collection or an array of node ids (never a
+   * selector string); omitted, inferred per component by max degree */
+  roots?: unknown;
+  /** where the sweep begins, in radians (default 3π/2 — up) */
+  startAngle?: number;
+  /** the total angle the trees share, in radians (default 2π) */
+  sweep?: number;
+  /** wedge order runs clockwise (default true) */
+  clockwise?: boolean;
+  /** the ring gap in model px; derived from the bounding box unset */
+  levelSpacing?: number;
+  /** what sizes a subtree's wedge: its leaf count (default) or its
+   * whole node count */
+  weight?: 'leaves' | 'subtree';
+}
 /** The built-in force layout (round 18): spring–electric with
  * uniform-grid cutoff repulsion, seeded and deterministic; runs
  * through the extension contract. */
@@ -1114,7 +1134,7 @@ interface CustomLayoutOptions extends LayoutBaseOptions {
   _startEmitted?: boolean;
   [key: string]: unknown;
 }
-type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | ForceLayoutOptions | CustomLayoutOptions;
+type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | ForceLayoutOptions | CustomLayoutOptions;
 /** Renderer tuning knobs (all LOD values in device px). */
 interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -7293,8 +7313,46 @@ declare class RandomLayout {
   run(): this;
 }
 //#endregion
+//#region src/layout/radial.d.mts
+/**
+ * Place a tree in concentric rings with hierarchy-aware angular
+ * wedges: each subtree occupies a contiguous sector sized by its
+ * weight, so children sit inside their parent's wedge and subtrees
+ * never interleave (#2493, the Vega radial-tree behaviour).
+ *
+ * `roots` is a collection or an array of node ids (never a selector
+ * string); omitted, the roots are inferred per component by maximum
+ * degree, as breadthfirst infers them.
+ */
+declare class RadialLayout {
+  /** the resolved options this layout was created with */
+  options: RadialLayoutOptions;
+  private cy;
+  /**
+   * Reached through `cy.layout( { name: 'radial' } )` /
+   * `eles.layout( … )` rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — this layout's options merged over its defaults,
+   *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
+   *   `transform`, `animate`, the lifecycle callbacks)
+   */
+  constructor(cy: Core, options: RadialLayoutOptions);
+  /**
+   * Run the layout: grow the BFS trees, weigh every subtree, allocate
+   * wedges, and finish through the shared `layoutPositions` plumbing
+   * (spacingFactor / transform / animate / fit and the lifecycle).
+   *
+   * @returns this layout, for chaining
+   * @throws when `roots` is a selector string — v4 has no selector
+   *   strings, so the string is a v3 call site rather than a value
+   *   that could mean anything here
+   */
+  run(): this;
+}
+//#endregion
 //#region src/core.d.mts
-type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
+type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout | RadialLayout;
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 interface RendererLike {
@@ -8593,5 +8651,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

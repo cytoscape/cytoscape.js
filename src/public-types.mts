@@ -478,6 +478,27 @@ export interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
 
+/** The radial tree layout (round 85.1): concentric rings with
+ * hierarchy-aware angular wedges — each subtree occupies a contiguous
+ * sector sized by its weight, so subtrees never interleave. */
+export interface RadialLayoutOptions extends LayoutBaseOptions {
+  name: 'radial';
+  /** the tree roots: a collection or an array of node ids (never a
+   * selector string); omitted, inferred per component by max degree */
+  roots?: unknown;
+  /** where the sweep begins, in radians (default 3π/2 — up) */
+  startAngle?: number;
+  /** the total angle the trees share, in radians (default 2π) */
+  sweep?: number;
+  /** wedge order runs clockwise (default true) */
+  clockwise?: boolean;
+  /** the ring gap in model px; derived from the bounding box unset */
+  levelSpacing?: number;
+  /** what sizes a subtree's wedge: its leaf count (default) or its
+   * whole node count */
+  weight?: 'leaves' | 'subtree';
+}
+
 /** The built-in force layout (round 18): spring–electric with
  * uniform-grid cutoff repulsion, seeded and deterministic; runs
  * through the extension contract. */
@@ -538,6 +559,7 @@ export type LayoutOptions =
   | ConcentricLayoutOptions
   | BreadthFirstLayoutOptions
   | RandomLayoutOptions
+  | RadialLayoutOptions
   | ForceLayoutOptions
   | CustomLayoutOptions;
 

@@ -5,8 +5,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-28, after zoomed-in labels stop going soft
-  (round 94) — the last of the seven screen-pass rounds.
+- **Last updated**: 2026-08-31, after the two layout rounds — the
+  mechanics (packing reusable, the GPU handoff decoupled from animate)
+  and the feature surface (radial, constraints, data mappings, per-side
+  padding).
 
 ## How to maintain this file
 
@@ -45,7 +47,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,268 unit · 548 module · 24 soak · 440 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,318 unit · 567 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -547,6 +549,54 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and closes the screen pass: all seven defects the maintainer found
     in one sitting are landed.
 
+- **31 Aug** — layouts: the mechanics, then the breadth
+  - The layout→renderer handoff decoupled from animation: a flat rendered
+    graph hands force integration to the GPU for **both** animate values —
+    `animate` is presentation only — with a silent run publishing off-mirror
+    so the screen holds its frame until the one settle write.  Measured at
+    25k×50k: **0.35 s** silent-GPU settle against **25.3 s** of synchronous
+    main-thread CPU (the old `animate: false` behaviour) — the one named
+    semantics change: that spelling is now async, settled at `layoutstop` /
+    `promise()`.
+  - Component packing extracted from the force layout into a shared module,
+    and the extension contract gained `ctx.packComponents()` — v3's
+    `separateComponents`, the bolt-on both flagship apps ship, in one call.
+  - grid and preset stopped lying about animate: their doc comments claimed
+    tween support the code ignored (and both skipped the `ready`/`stop`
+    callbacks outright); any animate/transform/callback option now routes
+    through the shared finisher while the bare calls keep their benchmarked
+    bulk paths.  The debug harness forwards the animate toggle to every
+    layout and its timing chain stops throwing on every non-force Apply.
+  - A new built-in: the **radial tree layout** (#2493) — hierarchy-aware
+    angular wedges, each subtree a contiguous sector sized by its weight,
+    so tree edges never cross the circle; multi-root sweep partitioning and
+    disconnected components each getting a wedge.  Priced against v4's own
+    breadthfirst-circle: ~3× *faster* at N=2000.
+  - Data-driven layout mappings (#1514): the census found the whole
+    fn-taking layout surface is five params in two shapes, so both got a
+    serializable spelling — `edgeLength`/`concentric` take
+    `{ data, scale?, range?, invert?, default? }` (the "log mapping, large
+    scores → short edges" recipe as one literal) and the three sorts take
+    `{ data, order? }` with deterministic ties; fn forms stay as escape
+    hatches.  A typo'd key or wrong-kind column throws instead of
+    defaulting into a plausibly wrong layout.
+  - Force constraints (fcose's main draw absorbed): `alignment`
+    id-array groups (a locked node pins its group) and `relativePlacement`
+    left/right/top/bottom pairs, projected after each integration step;
+    validation throws at start on unknown ids, placement cycles and
+    contradictory locked members.  The measure-first gate ran: constrained
+    runs take the CPU executor (~26 s vs 0.4 s at 25k, but seconds at the
+    fcose-sized graphs constraints serve; the projection itself costs ~4%),
+    with the on-device kernel design recorded, not built.
+  - Per-side compound padding — `padding-left/right/top/bottom`, px or
+    `'N%'` like `padding` — closing the hook logged when the round-14
+    centered clamp dropped v3's four min-size bias props: the clamp stays
+    centered and each side grows the box about it.
+  - Buys layout breadth an app can feel: a new layout, fcose's constraint
+    surface without leaving core, per-edge lengths from data without
+    functions, an asymmetrically padded compound, and a silent force settle
+    ~73× off the main thread.
+
 ---
 
 ## What changed for users of v3
@@ -576,6 +626,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   have, so a deeply nested v3 parent that used to out-rank a shallower edge now
   loses to it.  Hover styling on a parent body likewise stops firing where an
   edge lies under the cursor, which is v3's behaviour restored.
+- **`force` with `animate: false` on a rendered flat graph is async**
+  (31 Aug): executor choice is availability-driven and `animate` is
+  presentation only — read positions at `layoutstop` / `promise()`.
+  Headless runs stay synchronous.
+- **A `radial` built-in layout, force constraints, data-driven layout
+  mappings and per-side compound padding** (31 Aug) — fcose's alignment /
+  relative-placement surface and per-edge length control without leaving
+  core; the fn forms stay, the object spellings are canonical.
 - **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
   `mutableElements`, `onRender`/`offRender` and the jQuery-era
   `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener
@@ -615,7 +673,6 @@ round, and is regenerated rather than maintained:
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
-| Layouts | Radial layout, force constraints, edge-length control, per-side padding; packing made reusable and the layout→renderer handoff decoupled from animation |
 | Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
 | Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |

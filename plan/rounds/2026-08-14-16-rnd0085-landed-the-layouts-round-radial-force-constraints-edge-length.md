@@ -198,3 +198,63 @@ v1 surface — the alignment-group reduction cap, whether
 cross-component relative placement is in, and whether CPU-executor
 demotion is an acceptable v1 contract for the fcose #54/#53
 consumers; per-side padding percent support vs px-only.
+
+### Landed (2026-08-31, with round 87 in one pass)
+
+All four items shipped; the split call was resolved by the maintainer
+the other way — **85.2 included, landing last** — and its
+measure-first gate resolved to the CPU demotion (below).  The Open
+items, decided:
+
+- **85.1 radial** — as specced (`src/layout/radial.mts`, `weight`
+  default `'leaves'`).  #2493's issue text was fetched and verified:
+  the ask is exactly the subtree-wedge grouping (the Vega radial-tree
+  reference), which the wedge allocation delivers.  Two deviations
+  found by the specs: the slot-native bfs seeds its queue in reverse
+  roots order, so multi-root wedge order is restored to the *caller's*
+  roots order; and with several roots they move out to the first ring
+  (a shared centre would be coincident).  Priced against v4's own
+  breadthfirst-circle: **2.4 vs 7.5 ms at N=2000** (the wedge
+  allocation is ~3x cheaper than breadthfirst's weighted-percent
+  sort), in-row assertions green (8 depths == 8 radii; true wedge
+  spans 5.03 vs 1.25 rad).
+- **85.3, expanded by discussion** — the maintainer reframed the value
+  as *ergonomics* ("how do I make a log mapping with large scores
+  mapped to shorter edge lengths"), not serializability, and chose the
+  full census scope: the score shape
+  `{ data, scale?: 'linear'|'log'|'sqrt', range?, invert?, default? }`
+  on `force.edgeLength` and `concentric.concentric`, and the sort
+  shape `{ data, order? }` on `grid.sort`/`circle.sort`/
+  `breadthfirst.depthSort` — one module
+  (`src/layout/layout-mapping.mts`, one-shot resolution, deliberately
+  not the style-scales IR), fn forms **kept** as escape hatches with
+  the objects canonical.  The kind-mismatch vocabulary
+  ('number'|'string'|'mixed') is the store's own (round 84 never
+  landed, so this sets the precedent); DataStore gained a public
+  `kind()`.
+- **85.4 per-side padding** — px **and** percent (same pfValue /
+  relativeTo convention), centered clamp untouched, `padding()` still
+  answering the uniform prop, core readbacks via per-axis sums.  The
+  25.4 tween trap is pinned; `padding-left` left the 2026-07-29
+  decided-drops triage (it exists again, parents-group).
+- **85.2 constraints** — as specced on the CPU executor
+  (`src/layout/force-constraints.mts` + the projection in
+  `force-sim.mts`); the projection's corrections stay outside the
+  convergence displacement and every tick ends projected, and the
+  paired convergence-plus-satisfaction spec pins both failure
+  directions.  **The gate**: constrained CPU settle **25.98 s vs
+  0.41 s** silent GPU at 25k x 50k (render-bench --layout) — severe
+  there, but the constraint population (fcose migrators) runs at
+  sizes where the CPU settle is seconds and the projection itself
+  costs ~4% (125.2 vs 120.5 ms per 20 CPU iterations at N=2000,
+  layouts.mjs) — so **v1 accepts the CPU demotion** (the compound
+  precedent), the losing configuration stays measured in both
+  benches, and the `constrain` dispatch design above stays recorded
+  for the day demand justifies building it.
+
+Every new spec ran its round-27 control red once (weights-to-1 and
+uniform-angles for radial; neutered score/sort resolution for the
+mappings; sides-ignored flush for the padding; projection-deleted for
+the constraints — no hang).  All `layouts.mjs` edits landed in two
+batched commits (85.1+85.3 together; 85.2's row separately), the
+fingerprint moving once each.

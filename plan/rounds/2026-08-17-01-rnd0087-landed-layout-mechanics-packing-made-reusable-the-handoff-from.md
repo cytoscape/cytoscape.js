@@ -215,3 +215,56 @@ force-private); whether the built-ins gain `promise()`/`stop()` now
 or in the unification round (recommended: the 87.4 guard now, the
 round later).
 
+
+### Landed (2026-08-31, first — the mechanics before round 85's features)
+
+All five items shipped in order 87.5, 87.1, 87.3, 87.2, 87.4.  The
+Open items resolved as recommended: no sync opt-out spelling for the
+silent GPU run (headless is the sync spelling); `packComponents` is a
+contract helper only; the seeding stays force-private; the built-ins
+got the 87.4 promise() guard now, the lifecycle-unification round
+later.
+
+- **87.1** — `src/layout/pack.mts` extracted verbatim (round-42
+  body-diff checked; seeded force suites bit-identical), `shelfPack`/
+  `PackBox` exported and unit-tested for the first time — the first
+  widest-clamp fixture wrapped either way and was replaced with one
+  that discriminates (a control that fails to fail is a finding).
+  `LayoutContext.packComponents( spacing = 40 )` landed with the
+  two-K3 separation spec and the SpiralLayout demo calling it;
+  `src/layout/pack.mts` left PLANNED_PATHS on landing (the documented
+  lifecycle).
+- **87.2** — the gate at force.mts dropped its animate conjunct; a
+  silent run publishes into a runtime-owned slot-capacity scratch
+  buffer (`GpuForceRuntime.silentTarget`) while draws keep reading the
+  untouched mirror column.  The semantics change (rendered flat
+  `animate: false` sync → async) is recorded in MIGRATING.md,
+  CHANGELOG.md and both option JSDoc sites; the stale "six dispatches"
+  line was corrected (seven named passes + per-level reduce).  The
+  18.4 parity spec became a three-way (headless CPU vs silent GPU vs
+  presenting GPU — a rendered animate:false run is no longer the CPU
+  spelling), and the poll-based no-motion spec landed with its
+  present-mode control and compile-stall allowance.  **Priced**:
+  silent-GPU settle **346 ms vs 25.3 s** sync-CPU main-thread at
+  25k x 50k (render-bench --layout; the frames-delta in-row assertion
+  refuses the row on a device-less fallback) — ~73x, the round's buy.
+- **87.3** — grid and preset route through the finisher on any of
+  sort/position/eles/animate/animateFilter/transform/ready/stop
+  (preset: the last five), the bare calls keeping the synchronous bulk
+  paths; both false doc comments corrected in the same commit;
+  `spacingFactor` handed to the finisher unset on both (grid applies
+  its own; preset's discrete path ignores it — the two paths must
+  agree).  Also surfaced: both had skipped the ready/stop *callbacks*
+  entirely, not just the tweens.
+- **87.4** — animate forwards for every named layout on Apply and on
+  the ?layout= load path, `animate` joined the param registry as a
+  live param, the promise chain is guarded in both places, and the
+  label was reworded.  The page was opened once per discrete layout
+  with animate on (scripted): every layout tweens (~530 ms readout vs
+  ~1 ms before 87.3) with zero console or page errors.
+- **87.5** — the four missing options joined `ForceLayoutOptions`
+  with force.mts's own doc lines.
+
+The further directions stand as recorded (per-component discrete
+layouts over 87.1's module; lifecycle unification; the bulk tween for
+discrete animate).

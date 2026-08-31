@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 86, 89–98, 101, 108–109, 111 |
-| planned | 49–51, 71–85, 87–88, 99–100, 102–107, 110 |
+| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110 |
 
 ## The sections
 
@@ -143,9 +143,9 @@ A round can land with an item held open; the round file says which.
 | 114 | 82 | 2026-08-14 | plan | [Cluster hulls and collapse/aggregation proxies](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
 | 115 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |
 | 116 | 84 | 2026-08-14 | plan | [Attribute-table and filter affordances](rounds/2026-08-14-15-rnd0084-plan-attribute-table-and-filter-affordances.md) |
-| 117 | 85 | 2026-08-14 | plan | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-plan-the-layouts-round-radial-force-constraints-edge-length.md) |
+| 117 | 85 | 2026-08-14 | landed | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-landed-the-layouts-round-radial-force-constraints-edge-length.md) |
 | 118 | 86 | 2026-08-14 | landed | [The worker-hosted renderer (OffscreenCanvas)](rounds/2026-08-14-17-rnd0086-landed-the-worker-hosted-renderer-offscreencanvas.md) |
-| 119 | 87 | 2026-08-17 | plan | [Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps](rounds/2026-08-17-01-rnd0087-plan-layout-mechanics-packing-made-reusable-the-handoff-from.md) |
+| 119 | 87 | 2026-08-17 | landed | [Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps](rounds/2026-08-17-01-rnd0087-landed-layout-mechanics-packing-made-reusable-the-handoff-from.md) |
 | 120 | 88 | 2026-08-17 | plan | [Edge layer strokes: the caps, the corners and the arrow reach](rounds/2026-08-17-02-rnd0088-plan-edge-layer-strokes-the-caps-the-corners-and-the-arrow.md) |
 | 121 | 89 | 2026-08-17 | landed | [Pointer cursors: the canvas says what a gesture will do](rounds/2026-08-17-03-rnd0089-landed-pointer-cursors-the-canvas-says-what-a-gesture-will-do.md) |
 | 122 | 90 | 2026-08-17 | landed | [API review and cleanup: the parity pass audited](rounds/2026-08-17-04-rnd0090-landed-api-review-and-cleanup-the-parity-pass-audited.md) |

@@ -190,6 +190,9 @@ const paramDefs = {
         }
 
         ctx.setPositions(slots, xy);
+        // the contract's packing helper (87.1): disconnected
+        // components interleave along one spiral, so separate them
+        ctx.packComponents();
         cy.fit(undefined, 30);
       }
     }

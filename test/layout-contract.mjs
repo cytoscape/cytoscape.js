@@ -363,4 +363,99 @@ describe('gpu/layout: the extension contract (round 17.5)', function () {
       expect(nodesLen).to.equal(cy.nodes().length);
     });
   });
+
+  describe('ctx.packComponents (87.1)', function () {
+    // two disjoint K3s, placed by the impl at identical coordinates —
+    // deliberately overlapping so the pack has real work to do
+    const twoK3s = () => {
+      const elements = [];
+
+      for (const comp of ['a', 'b']) {
+        for (let i = 0; i < 3; i++) {
+          elements.push({ data: { id: comp + i } });
+        }
+
+        elements.push(
+          { data: { id: comp + 'e0', source: comp + '0', target: comp + '1' } },
+          { data: { id: comp + 'e1', source: comp + '1', target: comp + '2' } },
+          { data: { id: comp + 'e2', source: comp + '2', target: comp + '0' } },
+        );
+      }
+
+      return mk(elements, { headlessWidth: 400, headlessHeight: 400 });
+    };
+
+    const TRIANGLE = [
+      [0, 0],
+      [100, 0],
+      [50, 80],
+    ];
+
+    const overlapImpl = (pack) =>
+      class {
+        run(ctx) {
+          const slots = ctx.nodeSlots();
+          const xy = [];
+
+          // both triangles at the same coordinates (slot order is
+          // a0 a1 a2 b0 b1 b2 — insertion order)
+          for (let i = 0; i < slots.length; i++) {
+            xy.push(TRIANGLE[i % 3][0], TRIANGLE[i % 3][1]);
+          }
+
+          ctx.setPositions(slots, xy);
+
+          if (pack) {
+            ctx.packComponents(50);
+          }
+        }
+      };
+
+    const bboxOf = (cy, ids) => {
+      const xs = ids.map((id) => cy.$id(id).position().x);
+      const ys = ids.map((id) => cy.$id(id).position().y);
+
+      return {
+        x1: Math.min(...xs),
+        x2: Math.max(...xs),
+        y1: Math.min(...ys),
+        y2: Math.max(...ys),
+      };
+    };
+
+    const A = ['a0', 'a1', 'a2'];
+    const B = ['b0', 'b1', 'b2'];
+
+    it('separates overlapping components by the given spacing', async function () {
+      const cy = twoK3s();
+      const layout = cy.layout({ impl: overlapImpl(true), fit: false }).run();
+
+      await layout.promise();
+
+      const a = bboxOf(cy, A);
+      const b = bboxOf(cy, B);
+      // translation-only: each triangle keeps its own shape
+      expect(a.x2 - a.x1).to.be.closeTo(100, 1e-3);
+      expect(b.x2 - b.x1).to.be.closeTo(100, 1e-3);
+      // the largest component's centre is the fixed point (equal
+      // areas: the first) — a stays exactly where the impl put it
+      expect(a).to.deep.equal({ x1: 0, x2: 100, y1: 0, y2: 80 });
+      // b lands below (the two 100-wide boxes at spacing 50 wrap the
+      // ~247-wide shelf row): zero overlap, gap exactly the spacing
+      expect(b.y1 - a.y2).to.be.closeTo(50, 1e-3);
+      expect(b.x1).to.be.closeTo(a.x1, 1e-3);
+    });
+
+    it('control: without the call the components stay overlapped', async function () {
+      const cy = twoK3s();
+      const layout = cy.layout({ impl: overlapImpl(false), fit: false }).run();
+
+      await layout.promise();
+
+      const a = bboxOf(cy, A);
+      const b = bboxOf(cy, B);
+
+      expect(a).to.deep.equal(b); // coincident — the pack was the fix
+    });
+  });
 });

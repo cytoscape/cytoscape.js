@@ -28,6 +28,7 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 */
 
 import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { computeComponents, packComponentsExact } from './pack.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
 import type { CustomLayoutOptions, Position } from '../public-types.mjs';
@@ -265,6 +266,71 @@ export class LayoutContext {
    */
   setPositions(slots: number[], xy: number[] | Float32Array): void {
     this.cy._store.setPositions(slots, xy);
+  }
+
+  /**
+   * Separate the scope's disconnected components (round 87.1): v3's
+   * `separateComponents` as a one-call, translation-only post-pass.
+   * Per-component bounding boxes at the current positions are
+   * shelf-packed largest-first with `spacing` between them, every
+   * member translated with its component, and the largest component's
+   * centre held fixed — the dominant structure keeps its place and the
+   * strays come to it.
+   *
+   * Components are computed over the scope's own edges (an edge with an
+   * endpoint outside the scope connects nothing here), and only the
+   * `nodeSlots()` nodes move — a locked node neither moves nor holds
+   * its component in place, so a scope mixing locked and unlocked
+   * members of one component can separate them.  The write lands
+   * through `setPositions` (one dirty span).
+   *
+   * @param spacing — the gap between packed component boxes
+   *   (default 40, the force layout's `componentSpacing` default)
+   */
+  packComponents(spacing: number = 40): void {
+    const slots = this.nodeSlots();
+    const n = slots.length;
+
+    if (n === 0) {
+      return;
+    }
+
+    const simIndex = new Map<number, number>();
+
+    for (let i = 0; i < n; i++) {
+      simIndex.set(slots[i], i);
+    }
+
+    const endpoints = this.endpoints();
+    const simEdges: number[] = [];
+
+    for (const edgeSlot of this.edgeSlots()) {
+      const s = simIndex.get(endpoints[edgeSlot * 2]);
+      const t = simIndex.get(endpoints[edgeSlot * 2 + 1]);
+
+      if (s == null || t == null || s === t) {
+        continue;
+      }
+
+      simEdges.push(s, t);
+    }
+
+    const comps = computeComponents(n, Uint32Array.from(simEdges));
+
+    if (comps.count <= 1) {
+      return;
+    }
+
+    const column = this.positions();
+    const xy = new Float32Array(n * 2);
+
+    for (let i = 0; i < n; i++) {
+      xy[i * 2] = column[slots[i] * 2];
+      xy[i * 2 + 1] = column[slots[i] * 2 + 1];
+    }
+
+    packComponentsExact(n, comps.compOf, comps.count, xy, spacing);
+    this.setPositions(slots, xy);
   }
 
   /**

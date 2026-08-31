@@ -501,6 +501,19 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   animate?: boolean;
   /** iterations per animation frame (animate: true; default 3) */
   stepsPerFrame?: number;
+  /** the gap between disconnected components' packed boxes (59.2;
+   * v3 cose's option of the same name — default 40) */
+  componentSpacing?: number;
+  /** what a fresh placement is (59.4): 'spectral' (the default —
+   * landmark-MDS per component, the global untangling) or 'scatter'
+   * (the plain seeded scatter).  Ignored under `randomize: false`. */
+  init?: 'spectral' | 'scatter';
+  /** ideal-length multiplier per compound boundary an edge spans
+   * (59.5; v3 cose's rule — length × levels × nestingFactor; 1.2) */
+  nestingFactor?: number;
+  /** the compound centroid pull, as a multiple of `gravity` (59.5;
+   * the Bilkent line's gravityCompound — default 1.5) */
+  gravityCompound?: number;
 }
 
 /** The extension contract (round 17.5): a direct impl object/class —

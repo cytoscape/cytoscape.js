@@ -26,15 +26,24 @@ import {
   packComponentsExact,
 } from './pack.mjs';
 import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
+import {
+  checkScoreColumn,
+  isScoreMapping,
+  resolveScores,
+  validateScoreMapping,
+} from './layout-mapping.mjs';
+import type { LayoutScoreMapping } from '../public-types.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
 import type { GpuForceRuntime } from '../render/gpu-force.mjs';
 
 export interface ForceRunOptions {
-  /** ideal edge length: a number, or a plain function of the edge
-   * handle, resolved once at start (the algorithms-round rule) */
-  edgeLength?: number | ((edge: Collection) => number);
+  /** ideal edge length: a number; a `{ data, scale?, range?, invert?,
+   * default? }` score mapping (85.3 — the canonical, serializable
+   * spelling); or a plain function of the edge handle.  Resolved once
+   * at start either way (the algorithms-round rule) */
+  edgeLength?: number | LayoutScoreMapping | ((edge: Collection) => number);
   repulsion?: number;
   stiffness?: number;
   gravity?: number;
@@ -236,7 +245,28 @@ export class ForceLayoutImpl implements LayoutImpl {
       return ia + 1 + (ib + 1);
     };
 
-    for (const edgeSlot of ctx.edgeSlots()) {
+    // the score-mapping form (85.3): the column read once through the
+    // hoisted reader, normalized once — the serializable spelling; the
+    // fn form stays as the escape hatch.  Zero sim changes either way:
+    // both spellings land in the same lengths array.
+    const edgeSlots = ctx.edgeSlots();
+    let mappedLengths: Float64Array | null = null;
+
+    if (isScoreMapping(lengthOf)) {
+      validateScoreMapping(lengthOf, 'edgeLength');
+      checkScoreColumn(cy, 'edges', lengthOf, 'edgeLength');
+
+      const read = store.data.reader('edges', lengthOf.data);
+
+      mappedLengths = resolveScores(
+        edgeSlots.map(read),
+        lengthOf,
+        DEFAULT_EDGE_LENGTH,
+      );
+    }
+
+    for (let ei = 0; ei < edgeSlots.length; ei++) {
+      const edgeSlot = edgeSlots[ei];
       const sSlot = endpoints[edgeSlot * 2];
       const tSlot = endpoints[edgeSlot * 2 + 1];
       const s = simIndex.get(sSlot);
@@ -249,9 +279,11 @@ export class ForceLayoutImpl implements LayoutImpl {
       simEdges.push(s, t);
 
       const base =
-        typeof lengthOf === 'function'
-          ? lengthOf(cy._ele('edges', edgeSlot))
-          : (lengthOf ?? DEFAULT_EDGE_LENGTH);
+        mappedLengths != null
+          ? mappedLengths[ei]
+          : typeof lengthOf === 'function'
+            ? lengthOf(cy._ele('edges', edgeSlot))
+            : ((lengthOf as number | undefined) ?? DEFAULT_EDGE_LENGTH);
       const levels = spannedLevels(sSlot, tSlot);
 
       lengths.push(levels > 0 ? base * levels * nestingFactor : base);

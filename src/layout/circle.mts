@@ -1,4 +1,5 @@
 import * as math from '../math.mjs';
+import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { CircleLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -76,9 +77,13 @@ export class CircleLayout {
     let nodes = eles.nodes().filter((n: Collection) => !n.isParent());
 
     if (options.sort != null) {
-      nodes = nodes.sort(
-        options.sort as (a: Collection, b: Collection) => number,
-      );
+      // the { data, order? } sort mapping is the serializable spelling
+      // (85.3); a comparator fn stays the escape hatch
+      const comparator = isSortMapping(options.sort)
+        ? sortComparator(cy, options.sort, 'sort')
+        : (options.sort as (a: Collection, b: Collection) => number);
+
+      nodes = nodes.sort(comparator);
     }
 
     const bb = math.makeBoundingBox(

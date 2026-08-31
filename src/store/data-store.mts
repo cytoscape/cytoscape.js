@@ -147,6 +147,24 @@ export class DataStore {
   }
 
   /**
+   * The column's kind for one key, or undefined when no such column has
+   * ever been written.  A column starts in the kind of its first value
+   * and promotes to mixed on conflict (see the module header) — callers
+   * that require a numeric column (the layout mapping spellings, round
+   * 85.3) read this to fail loudly instead of defaulting a typo'd key.
+   *
+   * @param group — the element group
+   * @param key — the data key
+   * @returns the kind, or undefined for a never-written column
+   */
+  kind(
+    group: GroupName,
+    key: string,
+  ): 'number' | 'string' | 'mixed' | undefined {
+    return this.cols[group].get(key)?.kind;
+  }
+
+  /**
    * A per-slot value reader for one key, with the column resolution
    * hoisted out of the loop — for columnar scans over data conditions.
    */

@@ -957,6 +957,38 @@ type BoundingBoxInput = {
   w?: number;
   h?: number;
 };
+/** A data-driven score for a layout param (round 85.3, #1514) — the
+ * canonical, serializable alternative to a function.  Bare `{ data }`
+ * passes the column value through (the value *is* the score/length);
+ * with `range`, the column's extent is normalized through `scale` into
+ * `[range[0], range[1]]`, and `invert: true` flips it — e.g.
+ * `edgeLength: { data: 'score', scale: 'log', range: [40, 200],
+ * invert: true }` maps large scores to short edges.  Resolved once at
+ * layout start; a missing value takes `default` (else the option's
+ * own default); an unknown key or a non-number column throws. */
+interface LayoutScoreMapping {
+  /** the numeric data column to read */
+  data: string;
+  /** how the extent is normalized when `range` is given (default 'linear') */
+  scale?: 'linear' | 'log' | 'sqrt';
+  /** the output interval the extent maps onto; omitted, values pass through */
+  range?: [number, number];
+  /** flip the mapping so the largest score lands at `range[0]` */
+  invert?: boolean;
+  /** what a missing value resolves to (else the option's own default) */
+  default?: number;
+}
+/** A data-driven sort for a layout param (round 85.3) — the canonical,
+ * serializable alternative to a comparator function: order by one
+ * column, missing values last, ties broken ascending on the id (so the
+ * order is deterministic by construction).  A number or string column;
+ * mixed throws. */
+interface LayoutSortMapping {
+  /** the data column to order by */
+  data: string;
+  /** the direction (default 'ascending'); missing values sort last either way */
+  order?: 'ascending' | 'descending';
+}
 /** Options shared by the discrete layouts (scope, fit, spacing, animation). */
 interface LayoutBaseOptions {
   /** the elements to lay out (set automatically by `eles.layout()`); defaults to the whole graph */
@@ -999,8 +1031,9 @@ interface GridLayoutOptions extends LayoutBaseOptions {
     row?: number;
     col?: number;
   } | undefined;
-  /** comparator over node handles */
-  sort?: (a: unknown, b: unknown) => number;
+  /** the cell order: a `{ data, order? }` sort mapping (canonical,
+   * serializable — 85.3) or a comparator over node handles */
+  sort?: LayoutSortMapping | ((a: unknown, b: unknown) => number);
 }
 interface PresetLayoutOptions extends LayoutBaseOptions {
   name: 'preset';
@@ -1018,8 +1051,9 @@ interface CircleLayoutOptions extends LayoutBaseOptions {
   sweep?: number;
   clockwise?: boolean;
   counterclockwise?: boolean;
-  /** comparator over node handles ordering the nodes around the circle */
-  sort?: (a: unknown, b: unknown) => number;
+  /** the order around the circle: a `{ data, order? }` sort mapping
+   * (canonical, serializable — 85.3) or a comparator over node handles */
+  sort?: LayoutSortMapping | ((a: unknown, b: unknown) => number);
 }
 interface ConcentricLayoutOptions extends LayoutBaseOptions {
   name: 'concentric';
@@ -1035,8 +1069,10 @@ interface ConcentricLayoutOptions extends LayoutBaseOptions {
   /** height/width of the layout area (override the container) */
   height?: number;
   width?: number;
-  /** numeric value per node handle; higher values sit closer to the center (default: degree) */
-  concentric?: (node: unknown) => number;
+  /** the score deciding ring membership — higher sits closer to the
+   * center (default: degree).  A `{ data, … }` score mapping
+   * (canonical, serializable — 85.3) or a function of the node handle */
+  concentric?: LayoutScoreMapping | ((node: unknown) => number);
   /** the variation of concentric values per level (default: maxDegree / 4) */
   levelWidth?: (nodes: unknown) => number;
 }
@@ -1053,8 +1089,9 @@ interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
   avoidOverlap?: boolean;
   /** the tree roots: a collection, or an array of node ids */
   roots?: unknown;
-  /** comparator ordering nodes within a depth */
-  depthSort?: (a: unknown, b: unknown) => number;
+  /** the order within a depth: a `{ data, order? }` sort mapping
+   * (canonical, serializable — 85.3) or a comparator over node handles */
+  depthSort?: LayoutSortMapping | ((a: unknown, b: unknown) => number);
   /** shift nodes down to their maximal depths (DAGs only) */
   maximal?: boolean;
   /** with maximal: the graph is known acyclic (no cycle bail-out) */
@@ -1088,9 +1125,12 @@ interface RadialLayoutOptions extends LayoutBaseOptions {
  * through the extension contract. */
 interface ForceLayoutOptions extends LayoutBaseOptions {
   name: 'force';
-  /** ideal edge length: number, or a plain fn of the edge handle
-   * (resolved once at start) */
-  edgeLength?: number | ((edge: unknown) => number);
+  /** ideal edge length: a number; a `{ data, scale?, range?, invert?,
+   * default? }` score mapping (canonical, serializable — 85.3, e.g.
+   * `{ data: 'score', scale: 'log', range: [40, 200], invert: true }`
+   * for large scores → short edges); or a plain fn of the edge handle.
+   * Resolved once at start either way */
+  edgeLength?: number | LayoutScoreMapping | ((edge: unknown) => number);
   repulsion?: number;
   stiffness?: number;
   gravity?: number;
@@ -1614,6 +1654,18 @@ declare class DataStore {
    * @param key — the data key
    */
   get(group: GroupName, slot: number, key: string): unknown;
+  /**
+   * The column's kind for one key, or undefined when no such column has
+   * ever been written.  A column starts in the kind of its first value
+   * and promotes to mixed on conflict (see the module header) — callers
+   * that require a numeric column (the layout mapping spellings, round
+   * 85.3) read this to fail loudly instead of defaulting a typo'd key.
+   *
+   * @param group — the element group
+   * @param key — the data key
+   * @returns the kind, or undefined for a never-written column
+   */
+  kind(group: GroupName, key: string): 'number' | 'string' | 'mixed' | undefined;
   /**
    * A per-slot value reader for one key, with the column resolution
    * hoisted out of the loop — for columnar scans over data conditions.
@@ -8651,5 +8703,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

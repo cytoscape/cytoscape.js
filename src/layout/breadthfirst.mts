@@ -1,6 +1,7 @@
 import * as math from '../math.mjs';
 import { rotatePosAndSkewByBox } from '../util/position.mjs';
 import { ascending } from '../util/sort.mjs';
+import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { BreadthFirstLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -312,7 +313,11 @@ export class BreadthFirstLayout {
     };
 
     if (options.depthSort !== undefined) {
-      sortFn = options.depthSort as typeof sortFn;
+      // the { data, order? } sort mapping is the serializable spelling
+      // (85.3); a comparator fn stays the escape hatch
+      sortFn = isSortMapping(options.depthSort)
+        ? sortComparator(cy, options.depthSort, 'depthSort')
+        : (options.depthSort as typeof sortFn);
     }
 
     let depthsLen = depths.length;

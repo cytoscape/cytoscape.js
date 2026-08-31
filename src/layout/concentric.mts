@@ -1,4 +1,10 @@
 import * as math from '../math.mjs';
+import {
+  checkScoreColumn,
+  isScoreMapping,
+  resolveScores,
+  validateScoreMapping,
+} from './layout-mapping.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { ConcentricLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -97,12 +103,35 @@ export class ConcentricLayout {
       y: bb.y1 + bb.h / 2,
     };
 
+    // the score-mapping form (85.3): the column resolved once — the
+    // serializable spelling; the fn form (and the degree default) stay
+    const concentricOpt = options.concentric;
+    let scoreOf: (node: Collection, i: number) => number;
+
+    if (isScoreMapping(concentricOpt)) {
+      validateScoreMapping(concentricOpt, 'concentric');
+      checkScoreColumn(cy, 'nodes', concentricOpt, 'concentric');
+
+      const key = concentricOpt.data;
+      const resolved = resolveScores(
+        nodes.map((node: Collection) => node.data(key)),
+        concentricOpt,
+        0,
+      );
+
+      scoreOf = (_node, i) => resolved[i];
+    } else {
+      const fn = concentricOpt as (node: Collection) => number;
+
+      scoreOf = (node) => fn(node);
+    }
+
     const nodeValues: { value: number; node: Collection }[] = [];
     let maxNodeSize = 0;
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      const value = (options.concentric as (node: Collection) => number)(node);
+      const value = scoreOf(node, i);
 
       nodeValues.push({ value, node });
       node.scratch('concentric', value);

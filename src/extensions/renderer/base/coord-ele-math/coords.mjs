@@ -1,5 +1,6 @@
 import * as math from '../../../../math.mjs';
 import * as util from '../../../../util/index.mjs';
+import { getArrowScale } from '../../../../style/arrow-scale.mjs';
 
 var BRp = {};
 
@@ -159,7 +160,6 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
 
     var rs = _p.rscratch;
     var styleWidth = edge.pstyle( 'width' ).pfValue;
-    var scale = edge.pstyle( 'arrow-scale' ).value;
     var width = styleWidth / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
@@ -200,8 +200,6 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     var src = src || _p.source;
     var tgt = tgt || _p.target;
 
-    var arSize = self.getArrowWidth( styleWidth, scale );
-
     var arrows = [
       { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
       { name: 'target', x: rs.arrowEndX, y: rs.arrowEndY, angle: rs.tgtArrowAngle },
@@ -213,6 +211,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       var ar = arrows[ i ];
       var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
       var edgeWidth = edge.pstyle('width').pfValue;
+      var arSize = self.getArrowWidth( styleWidth, getArrowScale( edge, ar.name ) );
       if(
         shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, edgeThreshold )
          &&

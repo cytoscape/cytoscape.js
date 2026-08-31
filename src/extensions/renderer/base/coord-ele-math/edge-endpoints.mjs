@@ -203,12 +203,12 @@ BRp.findEndpoints = function( edge ){
   let arrowEnd = math.shortenIntersection(
     intersect,
     p1,
-    r.arrowShapes[ tgtArShape ].spacing( edge ) + tgtDist
+    r.arrowShapes[ tgtArShape ].spacing( edge, 'target' ) + tgtDist
   );
   let edgeEnd = math.shortenIntersection(
     intersect,
     p1,
-    r.arrowShapes[ tgtArShape ].gap( edge ) + tgtDist
+    r.arrowShapes[ tgtArShape ].gap( edge, 'target' ) + tgtDist
   );
 
   rs.endX = edgeEnd[0];
@@ -297,12 +297,12 @@ BRp.findEndpoints = function( edge ){
   let arrowStart = math.shortenIntersection(
     intersect,
     p2,
-    r.arrowShapes[ srcArShape ].spacing( edge ) + srcDist
+    r.arrowShapes[ srcArShape ].spacing( edge, 'source' ) + srcDist
   );
   let edgeStart = math.shortenIntersection(
     intersect,
     p2,
-    r.arrowShapes[ srcArShape ].gap( edge ) + srcDist
+    r.arrowShapes[ srcArShape ].gap( edge, 'source' ) + srcDist
   );
 
   rs.startX = edgeStart[0];

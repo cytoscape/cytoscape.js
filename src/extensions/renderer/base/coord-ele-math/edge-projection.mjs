@@ -1,4 +1,5 @@
 import * as math from '../../../../math.mjs';
+import { arrowPrefixes, getArrowScale } from '../../../../style/arrow-scale.mjs';
 
 var BRp = {};
 
@@ -51,8 +52,21 @@ BRp.storeEdgeProjections = function( edge ){
     ];
   }
 
-  _p.rstyle.arrowWidth = this.getArrowWidth( edge.pstyle('width').pfValue, edge.pstyle( 'arrow-scale' ).value )
-    * this.arrowShapeWidth;
+  let edgeWidth = edge.pstyle('width').pfValue;
+  let arrowWidths = _p.rstyle.arrowWidths = _p.rstyle.arrowWidths || {};
+  let maxScale = 0;
+
+  for( let i = 0; i < arrowPrefixes.length; i++ ){
+    let prefix = arrowPrefixes[ i ];
+    let scale = getArrowScale( edge, prefix );
+
+    arrowWidths[ prefix ] = this.getArrowWidth( edgeWidth, scale ) * this.arrowShapeWidth;
+
+    if( scale > maxScale ){ maxScale = scale; }
+  }
+
+  // kept for callers that want one width covering every arrow on the edge
+  _p.rstyle.arrowWidth = this.getArrowWidth( edgeWidth, maxScale ) * this.arrowShapeWidth;
 };
 
 BRp.recalculateEdgeProjections = function( edges ){

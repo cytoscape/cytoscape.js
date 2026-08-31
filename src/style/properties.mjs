@@ -1,5 +1,6 @@
 import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
+import { arrowPrefixes } from './arrow-scale.mjs';
 
 const styfn = {};
 
@@ -35,6 +36,7 @@ const styfn = {};
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
+    arrowScale: { number: true, unitless: true, min: 0, strictMin: true, enums: [ 'inherit' ] },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizeMaybePercent: { number: true, allowPercent: true }, // allows negative
@@ -466,12 +468,13 @@ const styfn = {};
 
   // edge arrows
   let edgeArrow = [];
-  let arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
+  styfn.arrowPrefixes = arrowPrefixes;
   [
     { name: 'arrow-shape', type: t.arrowShape, triggersBounds: diff.any },
     { name: 'arrow-color', type: t.color },
     { name: 'arrow-fill', type: t.arrowFill },
-    { name: 'arrow-width', type: t.arrowWidth }
+    { name: 'arrow-width', type: t.arrowWidth },
+    { name: 'arrow-scale', type: t.arrowScale, triggersBounds: diff.any }
   ].forEach( function( prop ){
     arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;
@@ -832,6 +835,7 @@ styfn.getDefaultProperties = function(){
     { name: 'arrow-color', value: '#999' },
     { name: 'arrow-fill', value: 'filled' },
     { name: 'arrow-width', value: 1 },
+    { name: 'arrow-scale', value: 'inherit' },
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;

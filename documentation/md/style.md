@@ -598,7 +598,8 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * `none`
 * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
 * **`<pos>-arrow-width`** : The width of the edge's source arrow shape; may be `match-line`, a number (pixel), or a string with units (`px` | `%` | `em`). The `%` unit is based on the edge `width`.
-* **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
+* **`<pos>-arrow-scale`** : Scaling for the size of the edge's source arrow; may be any number > 0, or `inherit` (default) to use the edge's `arrow-scale`.
+* **`arrow-scale`** : Scaling for the arrow size; may be any number > 0.  It applies to each arrow whose `<pos>-arrow-scale` is `inherit`.
 
 For each edge arrow property above, replace `<pos>` with one of
 

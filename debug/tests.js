@@ -1179,4 +1179,103 @@
     }
   });
 
+  test({
+    name: "arrowScaleOverrides",
+    displayName: "Per-arrow arrow-scale overrides",
+    description: "Each of an edge's four arrows can carry its own scale.",
+
+    setup: function(){
+      cy.scratch('prevEles', cy.elements().jsons());
+      cy.scratch('prevStyle', cy.style().json());
+      cy.elements().remove();
+
+      cy.style()
+        .resetToDefault()
+        .selector('node')
+          .style({
+            'background-color': '#666',
+            'width': 20,
+            'height': 20,
+            'label': 'data(id)',
+            'font-size': 8,
+            'color': '#999'
+          })
+        .selector('edge')
+          .style({
+            'curve-style': 'bezier',
+            'width': 3,
+            'line-color': '#bbb',
+            'label': 'data(descr)',
+            'font-size': 9,
+            'text-rotation': 'autorotate',
+            'text-margin-y': -14,
+            'color': '#999',
+            'source-arrow-shape': 'triangle',
+            'mid-source-arrow-shape': 'triangle',
+            'target-arrow-shape': 'triangle',
+            'mid-target-arrow-shape': 'triangle',
+            'source-arrow-color': '#e07a5f',
+            'mid-source-arrow-color': '#f2cc8f',
+            'target-arrow-color': '#81b29a',
+            'mid-target-arrow-color': '#3d5a80'
+          })
+        // one scale for the whole edge: all four arrows follow it
+        .selector('edge.global')
+          .style({ 'arrow-scale': 3 })
+        // an override of 1 must win over the edge's scale of 3
+        .selector('edge.override-one')
+          .style({ 'arrow-scale': 3, 'target-arrow-scale': 1 })
+        // a different scale per arrow position
+        .selector('edge.per-arrow')
+          .style({
+            'source-arrow-scale': 1,
+            'mid-source-arrow-scale': 2,
+            'target-arrow-scale': 4,
+            'mid-target-arrow-scale': 0.5
+          });
+
+      var rows = [
+        { cls: 'plain', descr: 'default' },
+        { cls: 'global', descr: 'arrow-scale: 3' },
+        { cls: 'override-one', descr: 'arrow-scale: 3, target-arrow-scale: 1' },
+        { cls: 'per-arrow', descr: 'source 1 / mid-source 2 / target 4 / mid-target 0.5' }
+      ];
+
+      var eles = [];
+
+      rows.forEach(function( row, i ){
+        var y = i * 120;
+        var src = row.cls + '-src';
+        var tgt = row.cls + '-tgt';
+
+        eles.push(
+          { group: 'nodes', data: { id: src }, position: { x: 0, y: y } },
+          { group: 'nodes', data: { id: tgt }, position: { x: 400, y: y } },
+          {
+            group: 'edges',
+            classes: row.cls,
+            data: { id: row.cls, source: src, target: tgt, descr: row.descr }
+          }
+        );
+      });
+
+      cy.add( eles );
+      cy.fit( cy.elements(), 60 );
+    },
+
+    teardown: function(){
+      cy.elements().remove();
+      cy.style().resetToDefault();
+
+      var prevEles = cy.scratch('prevEles');
+      var prevStyle = cy.scratch('prevStyle');
+
+      cy.removeScratch('prevEles');
+      cy.removeScratch('prevStyle');
+
+      cy.add(prevEles);
+      cy.style(prevStyle);
+    }
+  });
+
 })();

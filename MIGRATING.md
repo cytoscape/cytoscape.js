@@ -289,9 +289,9 @@ you can style on, you can query for. `:visible`, `:hidden`, `:transparent`,
 ## Style properties that moved
 
 v3 registers **291** property names (properties plus aliases). v4 accepts
-**157** of them — 7 only in the `core` group — and rejects **134**. Of the
+**161** of them — 7 only in the `core` group — and rejects **130**. Of the
 rejections, 96 are v3's numbered `pie-N-*` / `stripe-N-*` props, which became
-one `chart` family. The remaining 38 are the table below.
+one `chart` family. The remaining 34 are the table below.
 
 *(Measured against both libraries, not transcribed. A rejected property name
 throws at `cy.style()` with "The style property 'x' is unsupported"; v4 never
@@ -303,7 +303,6 @@ ignores one silently.)*
 | `pie-*` (48), `pie-size`, `pie-hole`, `pie-start-angle` | `chart: 'pie'` + `chart-values`, `chart-colors`, `chart-size`, `chart-hole`, `chart-start-angle` |
 | `stripe-*` (48), `stripe-size`, `stripe-direction` | `chart: 'stripes'` + the same family, plus `chart-direction` |
 | `content` | `label` |
-| `padding-left/-right/-top/-bottom` | `padding` (one value; per-side padding is a logged future extension) |
 | `min-width-bias-left/-right`, `min-height-bias-top/-bottom` | **dropped.** `min-width`/`min-height` clamp centred — v3's default-bias behaviour |
 | `display` | `show()` / `hide()` for the structural tier; the `visibility` style prop for paint-only invisibility |
 | `position` | not a style property — use `ele.position()` |
@@ -322,6 +321,11 @@ ignores one silently.)*
 
 Also renamed or re-scoped without being rejected:
 
+- **`padding-left`/`-right`/`-top`/`-bottom` port** (round 85.4) — in the
+  `parents` sheet group only, constants only, each a number of px or `'N%'`
+  resolved per `padding-relative-to`; an unset side takes the uniform
+  `padding`. Naming one in a `nodes` or `edges` block throws the group rule
+  ("belongs to the parents group"), not "unsupported".
 - **`font-family`, `font-style`, `font-weight` are global constants.** The
   glyph atlas holds one face, so these are effectively per-instance; a change
   resets the atlas and re-lays out every label. Per-element fonts are out of
@@ -526,7 +530,10 @@ cy.layout( { impl: Fcose, ...options } ).run();
 The implementation is a class or object with `{ run( ctx ), stop?() }`, where
 `ctx` is a `LayoutContext` — columnar-first (`nodeSlots()`, live `positions()`
 views, O(1) `degreeOf`, bulk `setPositions`) with handles still reachable at
-`ctx.eles`. `LayoutContext`, `LayoutImpl` and `CustomLayout` are exported
+`ctx.eles`.  `ctx.packComponents( spacing? )` (round 87.1) is v3
+layout-utilities' `separateComponents` in one call: it re-packs the laid-out
+disconnected components into non-overlapping rows, for any extension layout
+that positions components independently. `LayoutContext`, `LayoutImpl` and `CustomLayout` are exported
 types. Core, collection and renderer extension points stay out for 4.0.
 
 Layout lifecycle events fire **on the core**, exactly once per run; layout
@@ -541,6 +548,15 @@ instances are not emitters.
   little-endian `ArrayBuffer` that `options.elements` and `cy.add()` accept
   directly. On a 19.6k-node / 465k-edge graph that is 9.2 MB and ~5 ms
   against 28.6 MB and a ~100 ms JSON parse.
+- **Data-driven layout mappings** (round 85.3, #1514). The five layout
+  params that take per-element values accept serializable objects beside
+  v3's function forms: `{ data, scale?, range?, invert?, default? }` on
+  `force.edgeLength` and `concentric.concentric` (the column's extent
+  normalized through `'linear' | 'log' | 'sqrt'` into the range;
+  `invert: true` maps large scores to short edges), and `{ data, order? }`
+  on `grid.sort`, `circle.sort` and `breadthfirst.depthSort` (missing
+  values last, ties on the id). Functions stay as escape hatches; the
+  objects are the canonical spellings, resolved once at layout start.
 - **Mapper domains.** An explicit `domain` keeps a data write O(changed);
   `'auto'` is a live extent and pays O(n) only when a write actually moves it.
   Pin `domain` when a stream grows its own extent.

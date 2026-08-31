@@ -98,10 +98,27 @@ that compile and then behave differently.
   springs, grid-pyramid long-range repulsion, per-compound gravity and
   nesting (`gravityCompound`, `nestingFactor`), and component packing
   (`componentSpacing`).
+- **The `radial` tree layout** (round 85.1, #2493) — hierarchy-aware:
+  each subtree takes a contiguous angular wedge sized by its weight,
+  multiple roots partition the circle in caller order, and orphan
+  components get wedges of their own.  Measured 2.8× faster than the
+  breadthfirst-circle recipe at 2,000 nodes.
+- **Data-driven layout mappings** (round 85.3, #1514):
+  `{ data, scale?, range?, invert?, default? }` on `force.edgeLength`
+  and `concentric.concentric`, `{ data, order? }` on `grid.sort`,
+  `circle.sort` and `breadthfirst.depthSort`.  Function forms stay as
+  escape hatches; the objects are the canonical, serializable
+  spellings, resolved once at layout start, with loud validation
+  (unknown keys, wrong-kind columns, `scale`/`invert` without a
+  `range` all throw naming the option).
 - **A registry-free extension contract**: `cy.layout( { impl } )` runs an
   imported class or object; `LayoutContext` is columnar-first, and it,
   `LayoutImpl` and `CustomLayout` are exported types, so an external layout
   author writes against real types rather than `any`.
+  `ctx.packComponents( spacing? )` (round 87.1) packs laid-out
+  disconnected components into non-overlapping shelves — v3
+  layout-utilities' `separateComponents` in one call, and the same
+  packing the `force` layout's `componentSpacing` uses.
 - **Border and outline stroke styles on every shape** — `border-style`
   (`solid`/`dashed`/`dotted`/`double`, with v3's erase behaviour for
   `double`), `outline-style`, and `border-dash-pattern`/`-offset`. Dash
@@ -111,6 +128,10 @@ that compile and then behave differently.
   family with data-driven values, scheme palettes and donut holes.
 - **`visibility`** as a paint-only style property beside the structural
   `show()`/`hide()`.
+- **Per-side compound padding** (round 85.4):
+  `padding-left`/`-right`/`-top`/`-bottom` in the `parents` sheet
+  group, each a number of px or `'N%'` resolved per
+  `padding-relative-to`; an unset side takes the uniform `padding`.
 - **Slot compaction** — `cy.compact()` (alias `cy.gc()`) plus an automatic
   trigger, shrinking scan widths and buffers to the current graph rather than
   its peak.
@@ -282,7 +303,7 @@ that compile and then behave differently.
   `textureOnViewport` (+ `outside-texture-bg-*`), `motionBlur`,
   `motionBlurOpacity`.
 - **Style properties**: `background-blacken`, `bounds-expansion`, `content`,
-  `padding-{left,right,top,bottom}`, `position`, `display`, `text-metrics`,
+  `position`, `display`, `text-metrics`,
   `box-selection`, `box-select-labels`, `edge-text-rotation`, the
   `min-*-bias-*` quartet, the singular `control-point-distance`/
   `segment-distance`/`segment-weight`/`segment-radius` spellings, the

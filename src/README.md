@@ -1040,6 +1040,32 @@ draw (breadthfirst's stance); leaves only, parents derive.  Options:
 benchmark's comparison partner is v4's own breadthfirst-circle,
 pricing what the hierarchy-awareness costs.
 
+## Data-driven layout mappings (round 85.3, #1514)
+
+The five layout params that take per-element values accept
+serializable objects beside the function forms
+(`layout/layout-mapping.mts`).  The census found exactly two shapes:
+**score** — `{ data, scale?, range?, invert?, default? }` on
+`force.edgeLength` and `concentric.concentric` (bare `{ data }`
+passes the column through; with `range`, the column's extent
+normalizes through `'linear' | 'log' | 'sqrt'` into it, and
+`invert: true` flips it — the "large scores, shorter edges" recipe in
+one literal) — and **sort** — `{ data, order? }` on `grid.sort`,
+`circle.sort` and `breadthfirst.depthSort` (missing values last, ties
+on the id — deterministic where a hand-rolled comparator often is
+not).  The fn forms stay as escape hatches; the objects are the
+canonical spellings.  Everything resolves **once at layout start** —
+no live refresh, which is why it is ~80 lines and not the style
+mapper IR.  Validation fails loudly, naming the option and key:
+unknown keys, wrong-kind columns (the store's own
+'number' | 'string' | 'mixed' vocabulary), and `scale`/`invert`
+without a `range` all throw.
+
+Round 87.3 made **grid and preset honor the finisher options** —
+`animate`, `animateFilter`, `transform`, `ready`, `stop` — which
+their benchmarked bulk write paths had been skipping (callbacks
+included, not just tweens); a bare call still takes the bulk path.
+
 ## The force layout (rounds 18 + 59)
 
 **Round 85.2 added constraints** (fcose #54/#53 absorbed): **fixed** is
@@ -1082,7 +1108,8 @@ round records carry the histories.
   - **degree-normalised springs** (d3-force's rule: per-edge strength
     `stiffness / min(deg)`, each end weighted by the other end's
     degree share) toward per-edge ideal lengths (`edgeLength` as a
-    number or a plain fn resolved once) — a node's aggregate per-tick
+    number, a plain fn resolved once, or an 85.3 `{ data, … }` score
+    mapping) — a node's aggregate per-tick
     spring correction is bounded by `stiffness` whatever its degree,
     which is the stability guarantee;
   - **inverse-square repulsion with a real far field**: one law
@@ -1123,15 +1150,30 @@ round records carry the histories.
 - **Two executors, one spec.**  The CPU reference
   (`layout/force-sim.mts`, with `layout/force-init.mts` holding the
   pure component/seed machinery) always exists — headless instances,
-  compound graphs, `animate: false` — and is what the Node specs pin.
-  Under `animate: true` on a flat rendered graph, the **GPU
-  integrator** (`render/gpu-force.mts`) takes over: per iteration,
+  compound graphs, constrained runs (85.2) — and is what the Node
+  specs pin.  On a flat rendered graph with a device, the **GPU
+  integrator** (`render/gpu-force.mts`) takes over **for both animate
+  values** (87.2 — executor choice is availability-driven; `animate`
+  is presentation only): per iteration,
   grid build by counting sort → pyramid aggregate + per-level reduce
   → force gather → apply-and-publish, encoded ahead of the cull pass
   so 100k-node layouts animate live with edges and labels following
   on-GPU.  The force kernel sits at 7 storage bindings —
   `cellStart`/`cellItems`/pyramid share one grid buffer, and the
   gravity anchors ride the CSR buffer's tail.
+
+  Under `animate: true` the run publishes into the position mirror,
+  streaming to the screen per frame; under `animate: false` it
+  publishes into a runtime-owned slot-capacity **scratch buffer**
+  (`GpuForceRuntime.silentTarget`) while draws keep reading the
+  untouched mirror — the screen holds the pre-run frame, and the
+  settle lands in one write.  The named semantics change: `animate:
+  false` on a flat rendered graph went synchronous → async (positions
+  readable at `layoutstop` / `promise()`), recorded in MIGRATING /
+  CHANGELOG / the option's JSDoc.  Priced at 25k×50k: silent GPU
+  ~346 ms vs the old sync CPU settle ~25.3 s (~73×), with an in-row
+  frames-delta assertion refusing the bench row on a device-less
+  fallback.
 
   `node.position` is GPU-owned for the run (the tween lease — CPU
   reads stale mid-run, the motion-staleness rule), and convergence
@@ -1347,7 +1389,11 @@ calls made deliberately rather than by accretion:
   columnar-first — `nodeSlots()` pre-filtered to unlocked leaves,
   live position/endpoint views, O(1) CSR degrees, bulk
   `setPositions`, the `layoutPositions` finisher with the whole v3
-  plumbing — with handles reachable at `ctx.eles`.  Lifecycle
+  plumbing, and `packComponents( spacing? )` (round 87.1 — v3
+  layout-utilities' `separateComponents` in one call, shelf-packing
+  the laid-out components via `layout/pack.mts`, the same packing
+  `force.componentSpacing` uses; `SpiralLayout` demoes it) — with
+  handles reachable at `ctx.eles`.  Lifecycle
   events fire on the core exactly once per run; layout instances
   stay non-emitters.
 

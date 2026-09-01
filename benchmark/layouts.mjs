@@ -291,7 +291,13 @@ if (OP == null || 'flow'.includes(OP)) {
         data: { id: 'fe' + i, source: 'f' + prev, target: 'f' + i },
       });
 
-      const skew = (stage - 1) * stageW + ((i * 7) % stageW);
+      // the skew column varies with the stage: a fixed column permutation
+      // (`i * 7 % stageW`) splits the DAG into one component per orbit of
+      // the permutation, which flow packs as stacked tiles — 90 rank rows
+      // for 45 stages, and the assertion below failed on every run of the
+      // round-113 sweep.  Adding the stage links different column pairs
+      // at each rank, so the fixture is one component (round 113.1).
+      const skew = (stage - 1) * stageW + ((i * 7 + stage) % stageW);
 
       dagElements.push({
         data: { id: 'fs' + i, source: 'f' + skew, target: 'f' + i },

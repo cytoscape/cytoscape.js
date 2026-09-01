@@ -240,6 +240,18 @@ positions under the recommended taxi polyline):
 | compound (846 / 1,742, 34 parents) | dagre | — | — | — | **hang** |
 | | elk | 21,165 | 2,936 / 0.58 | 192.1 | 1,736 ms |
 | | flow | 27,664 | 3,725 / 1.21 | **81.1** | **100 ms** |
+| reactome (227 / 245, real bio DAG) | dagre | 73 | 407 / 1.72 | 6.8 | 86 ms |
+| | elk | 54 | 497 / 1.64 | 9.4 | 137 ms |
+| | flow | 64 | 460 / 1.38 | 7.3 | **10 ms** |
+| | **flow-taxi** | **3** | 514 / 1.27 | 7.3 | 11 ms |
+
+(The reactome fixture joined after the round's close — Reactome's
+human Immune System pathway hierarchy, R-HSA-168256, CC0, derived by
+`derive-reactome.mjs` — and it inverts the taxi finding: on a real
+tree-like hierarchy the taxi polyline scores **3** crossings against
+dagre's 73 and elk's 54, because shared-parent fans merge into
+orthogonal buses.  The taxi contract loses on dense layered meshes and
+wins outright on hierarchies — both halves now measured.)
 
 **Against the 112.1 bar**: runtime strictly under dagre's everywhere
 (45 ms vs 505 ms at the small end; 116 ms vs 22.2 s at 1k), completes

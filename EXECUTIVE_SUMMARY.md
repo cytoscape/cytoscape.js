@@ -5,10 +5,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-08-31, after the two layout rounds — the
-  mechanics (packing reusable, the GPU handoff decoupled from animate)
-  and the feature surface (radial, constraints, data mappings, per-side
-  padding).
+- **Last updated**: 2026-09-01, after the flow-layout round: a built-in
+  Sugiyama-class layered layout, measured against dagre and elkjs
+  before and after it was built.
 
 ## How to maintain this file
 
@@ -47,7 +46,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,321 unit · 567 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,361 unit · 574 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -596,6 +595,31 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     surface without leaving core, per-edge lengths from data without
     functions, an asymmetrically padded compound, and a silent force settle
     ~73× off the main thread.
+- **1 Sep** — the flow layout: layered/hierarchical, built not ported
+  - The known portfolio hole (nothing Sugiyama-class) closed with a
+    built-in: `flow` — greedy-FAS cycle removal, network-simplex
+    layering, weighted crossing minimization, Brandes–Köpf coordinates
+    built against the 2020 erratum dagre still predates, compound
+    support as one global layering (contiguity, side-consistent
+    sibling boxes, border walls carrying the padding), and no emitted
+    edge geometry by design — style-driven (taxi) edges stay correct
+    when nodes drag.
+  - "Comparable to dagre" was made a measured bar first: a quality
+    harness (crossings / edge length / area / validity / runtime) over
+    real DAG fixtures found dagre crashing on long skip edges, hanging
+    on nested clusters, and never finishing 10k nodes; elkjs completes
+    but needs 53 s there.
+  - Where flow landed against that bar: best engine outright on the 1k
+    workflow (fewer crossings than both, smallest area, 116 ms vs
+    dagre's 22 s); 10k nodes in 7.1 s with fewer crossings than elkjs
+    and 22× less area; within 3% of dagre's crossings on the real
+    dependency graph at 10× its speed.  The residue is recorded, not
+    hidden: elkjs still leads crossings by ~25–30% on three fixtures,
+    and the taxi-geometry pairing measures worse than straight lines —
+    both carried as named follow-up levers with their numbers.
+  - Buys the dagre use case in core: v3 apps that shipped a layout
+    extension for DAGs get a faster, maintained, compound-correct
+    built-in that one option object away replaces it.
 
 ---
 
@@ -634,6 +658,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   mappings and per-side compound padding** (31 Aug) — fcose's alignment /
   relative-placement surface and per-edge length control without leaving
   core; the fn forms stay, the object spellings are canonical.
+- **A `flow` built-in layout** (1 Sep) — the dagre/elk use case in
+  core: Sugiyama-class layered placement with compound support, rank
+  constraints and data-driven `minLength`/`edgeWeight`; node positions
+  only, designed to pair with `curve-style: taxi` so edges keep
+  routing themselves when nodes drag.
 - **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
   `mutableElements`, `onRender`/`offRender` and the jQuery-era
   `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener

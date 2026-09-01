@@ -214,6 +214,82 @@ go red), rank constraints, a taxi spec asserting an aligned chain's
 `segmentPoints()` are collinear, and the finisher plumbing
 (fit/spacingFactor/transform/animate, subset scope, locked nodes).
 
+### What landed (2026-09-01, passes 112.1–112.4)
+
+All four passes shipped the same day; the specs, gates and quality
+harness ran green at each commit.  The final four-engine sweep
+(i9-9900K, 300 s cap, median of 3; `flow-taxi` scores flow's node
+positions under the recommended taxi polyline):
+
+| fixture (n / m) | engine | crossings | len mean / cv | area Mpx² | time |
+| --- | --- | --: | --: | --: | --: |
+| deps (428 / 510) | dagre | 4,279 | 1,934 / 1.08 | 33.3 | 505 ms |
+| | elk | 3,382 | 1,964 / 1.12 | 94.4 | 409 ms |
+| | **flow** | 4,407 | 1,251 / 1.35 | **24.2** | **45 ms** |
+| | flow-taxi | 5,168 | 1,424 / 1.25 | 24.2 | 45 ms |
+| workflow-1k (960 / 1,914) | dagre | 20,570 | 6,224 / 1.35 | 103.4 | 22,208 ms |
+| | elk | 21,825 | 4,945 / 1.55 | 554.9 | 1,688 ms |
+| | **flow** | **19,482** | **3,256** / 1.14 | **94.3** | **116 ms** |
+| | flow-taxi | 26,851 | 3,351 / 1.11 | 94.3 | 117 ms |
+| deep-skips (1,045 / 2,458) | dagre | — | — | — | **crash** |
+| | elk | 19,198 | 4,372 / 1.61 | 547.1 | 2,778 ms |
+| | flow | 23,956 | 3,253 / 1.47 | **393.8** | **173 ms** |
+| workflow-10k (10,363 / 21,621) | dagre | — | — | — | **timeout (300 s)** |
+| | elk | 913,324 | 61,914 / 1.97 | 85,218 | 53,326 ms |
+| | **flow** | **893,089** | 62,379 / 1.50 | **3,917** | **7,104 ms** |
+| compound (846 / 1,742, 34 parents) | dagre | — | — | — | **hang** |
+| | elk | 21,165 | 2,936 / 0.58 | 192.1 | 1,736 ms |
+| | flow | 27,664 | 3,725 / 1.21 | **81.1** | **100 ms** |
+
+**Against the 112.1 bar**: runtime strictly under dagre's everywhere
+(45 ms vs 505 ms at the small end; 116 ms vs 22.2 s at 1k), completes
+every fixture dagre fails, and 7.1 s at 10k meets "single-digit
+seconds" — 7.5× under elkjs with *fewer* crossings and 22× less area.
+flow is the best engine outright on workflow-1k.  The one missed
+clause: crossings within ±15% of the better engine on deps (+30% vs
+elk; +3% vs dagre) and on deep-skips/compound (+25–31% vs elk) — the
+recorded residue, with sifting and the segment container as the named
+levers.
+
+**Deviations from this plan, recorded when taken:**
+
+- **Dummy chains, not Eiglsperger segments, in v1.**  Correctness
+  first; every fixture keeps spans small.  The trigger for segments is
+  now *met with a number*: a dense non-layered input (em-web, 569
+  nodes / 6,899 edges) explodes to 179k layered items and 4.6 s of
+  ordering.  Until segments land, an explosion valve (nTotal >
+  8·n + 1000) drops such graphs to a lean sweep budget (4.6 → 1.8 s);
+  fixture numbers are untouched by the valve.
+- **Block-graph longest-path compaction instead of BK's class/shift
+  machinery** — the erratum documents two defects there; a block-DAG
+  pass has neither, and the four-way balance recovers the rest.
+  Validated by a fuzz spec (separation and order over random DAGs × 4
+  alignments).
+- **`alignLongEdges` was withheld, not shipped.**  112.4 measured the
+  taxi polyline (50% turn) scoring *more* geometric crossings than the
+  straight-line drawing on every fixture (deps 5,168 vs 4,407; 1k
+  26,851 vs 19,482) — corridor/taxi coincidence needs taxi-aware
+  ordering, not a placement flag.  The harness keeps the `flow-taxi`
+  adapter so the gap stays measured; the option returns with the
+  taxi-aware pass (112.5).
+- **`compoundMode` was withheld with it** — global is the only mode
+  until `'separate'` exists (112.5); an enum of one is not a surface.
+- **Ordering gained what the plan did not name**, each step measured:
+  DFS initial order (dot's init_order), transpose equality passes on
+  odd sweeps (dot's reverse alternation), and a dual restart
+  (barycenter-primary + median-primary, better final order kept) at
+  thoroughness ≥ 5.
+- **Component packing packs body boxes**, not position boxes — the
+  harness's overlap column caught `packComponentsExact` overlapping
+  deps' 164 singleton components (130 body overlaps), and flow packs
+  its own extents via `shelfPack`.
+
+**112.5 (later): the named levers.**  Taxi-aware ordering (count the
+taxi polyline's crossings, not the chain's) and the returned
+`alignLongEdges`; the Eiglsperger segment container (trigger met);
+sifting as a quality mode for the elk crossing gap; `compoundMode:
+'separate'`; a worker offload past ~100k.
+
 ### Known risks, recorded up front
 
 The 50%-turn default only guarantees span-1 taxi cleanliness — the px

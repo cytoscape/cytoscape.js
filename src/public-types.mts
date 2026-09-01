@@ -635,9 +635,6 @@ export interface FlowLayoutOptions extends LayoutBaseOptions {
   /** which arcs flip on cycles: 'greedy' (Eades–Lin–Smyth bound,
    * default) or 'dfs' (input order dominates) */
   cycleRemoval?: 'greedy' | 'dfs';
-  /** bias a long edge's reserved corridor toward an endpoint x so its
-   * taxi leg runs straight (default true) */
-  alignLongEdges?: boolean;
   /** rank constraints as id lists (never selector strings): `min`
    * pins to the first rank, `max` to the last, each `same` group to
    * one shared rank

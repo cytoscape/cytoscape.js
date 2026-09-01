@@ -102,6 +102,11 @@ const countCrossings = (fixture, result) => {
   const cw = (maxX - minX) / cols || 1;
   const ch = (maxY - minY) / rows || 1;
   const bins = new Map();
+  // per segment: its min cell (for canonical-cell pair dedup — a pair is
+  // tested only in the componentwise max of the two min cells, so no
+  // seen-set is needed; a global Set overflowed V8's limit at 10k nodes)
+  const minC = new Int32Array(segs.length);
+  const minR = new Int32Array(segs.length);
   segs.forEach((s, si) => {
     const c1 = Math.min(
       cols - 1,
@@ -119,6 +124,8 @@ const countCrossings = (fixture, result) => {
       rows - 1,
       Math.max(0, Math.floor((Math.max(s[1], s[3]) - minY) / ch)),
     );
+    minC[si] = c1;
+    minR[si] = r1;
     for (let c = c1; c <= c2; c++) {
       for (let r = r1; r <= r2; r++) {
         const key = r * cols + c;
@@ -128,20 +135,24 @@ const countCrossings = (fixture, result) => {
       }
     }
   });
-  const seen = new Set();
   let crossings = 0;
-  for (const list of bins.values()) {
+  for (const [key, list] of bins) {
+    const cellC = key % cols;
+    const cellR = Math.floor(key / cols);
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
-        const a = segs[list[i]],
-          b = segs[list[j]];
+        const si = list[i],
+          sj = list[j];
+        const a = segs[si],
+          b = segs[sj];
         if (a[4] === b[4]) continue; // same edge
-        const key =
-          a[4] < b[4]
-            ? list[i] * segs.length + list[j]
-            : list[j] * segs.length + list[i];
-        if (seen.has(key)) continue;
-        seen.add(key);
+        // canonical cell for this pair
+        if (
+          Math.max(minC[si], minC[sj]) !== cellC ||
+          Math.max(minR[si], minR[sj]) !== cellR
+        ) {
+          continue;
+        }
         const [sa, ta] = ends.get(edgeIds[a[4]]);
         const [sb, tb] = ends.get(edgeIds[b[4]]);
         if (sa === sb || sa === tb || ta === sb || ta === tb) continue;
@@ -373,7 +384,40 @@ const flowAdapter = {
   },
 };
 
-const ENGINES = [dagreAdapter, elkAdapter, flowAdapter];
+// flow's documented pairing is style-driven taxi edges; this variant
+// scores the polyline a downward taxi route (default 50% turn) draws,
+// the same footing as dagre's and elk's own routed geometry.  Nodes
+// place identically to `flow` — only the scored geometry differs.
+const flowTaxiAdapter = {
+  name: 'flow-taxi',
+  async layout(fixture) {
+    const { pos } = await flowAdapter.layout(fixture);
+    const sizes = new Map(fixture.nodes.map((n) => [n.id, n]));
+    const poly = new Map();
+
+    for (const e of fixture.edges) {
+      const s = pos.get(e.source);
+      const t = pos.get(e.target);
+      const sh = (sizes.get(e.source).h ?? 30) / 2;
+      const th = (sizes.get(e.target).h ?? 30) / 2;
+      const y0 = s.y + sh; // source bottom
+      const y1 = t.y - th; // target top
+
+      if (y1 <= y0 || s.x === t.x) {
+        // upward/flat (a reversed edge) or already straight
+        poly.set(e.id, [s.x, s.y, t.x, t.y]);
+      } else {
+        const my = (y0 + y1) / 2; // the 50% turn
+
+        poly.set(e.id, [s.x, s.y, s.x, my, t.x, my, t.x, t.y]);
+      }
+    }
+
+    return { pos, poly };
+  },
+};
+
+const ENGINES = [dagreAdapter, elkAdapter, flowAdapter, flowTaxiAdapter];
 
 // ------------------------------------------------------------ self-tests
 

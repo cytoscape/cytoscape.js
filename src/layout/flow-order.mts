@@ -254,6 +254,7 @@ const sortLayer = (
   median: Float64Array,
   chains: number[][] | null = null,
   groupScore: Map<number, number> | null = null,
+  medianPrimary = false,
 ): void => {
   const layer = L.layers[r];
   const off = useUp ? L.upOff : L.downOff;
@@ -286,8 +287,11 @@ const sortLayer = (
     }
   }
 
-  const byNode = (a: number, b: number): number =>
-    bary[a] - bary[b] || median[a] - median[b] || L.pos[a] - L.pos[b];
+  const byNode = medianPrimary
+    ? (a: number, b: number): number =>
+        median[a] - median[b] || bary[a] - bary[b] || L.pos[a] - L.pos[b]
+    : (a: number, b: number): number =>
+        bary[a] - bary[b] || median[a] - median[b] || L.pos[a] - L.pos[b];
 
   if (chains == null) {
     layer.sort(byNode);
@@ -395,9 +399,15 @@ const pairCrossings = (
 };
 
 /** One transpose pass: adjacent swaps that reduce crossings, in place.
- * In compound mode only same-chain neighbours may swap — a cross-group
- * swap would break contiguity the sort just established. */
-const transpose = (L: Layered, chains: number[][] | null = null): boolean => {
+ * With `allowEqual` (dot's `reverse` trick) equal-crossing swaps also
+ * fire, shaking the order off plateaus between sweeps.  In compound
+ * mode only same-chain neighbours may swap — a cross-group swap would
+ * break contiguity the sort just established. */
+const transpose = (
+  L: Layered,
+  chains: number[][] | null = null,
+  allowEqual = false,
+): boolean => {
   let improved = false;
 
   for (let r = 0; r < L.layers.length; r++) {
@@ -415,12 +425,12 @@ const transpose = (L: Layered, chains: number[][] | null = null): boolean => {
       const after =
         pairCrossings(L, w, v, true) + pairCrossings(L, w, v, false);
 
-      if (after < before - 1e-9) {
+      if (after < before - 1e-9 || (allowEqual && after <= before + 1e-9)) {
         layer[i] = w;
         layer[i + 1] = v;
         L.pos[w] = i;
         L.pos[v] = i + 1;
-        improved = true;
+        improved = after < before - 1e-9 || improved;
       }
     }
   }
@@ -428,17 +438,74 @@ const transpose = (L: Layered, chains: number[][] | null = null): boolean => {
   return improved;
 };
 
-/** Initial order: BFS layers from the top, parents' order propagating. */
+/** Initial order: DFS down the unit graph (dot's init_order) — a
+ * depth-first discovery order groups whole subtrees, which starts the
+ * sweep far closer to a good order than a parent-average pass does
+ * (measured in 112.4: deps 4799 → the DFS figure in the round file). */
 const initOrder = (L: Layered, chains: number[][] | null): void => {
-  // model order within rank 0; each later rank ordered by mean parent
-  // position, model order as the tie — one down pass of the sweep's
-  // own comparator, cheap and deterministic
-  const bary = new Float64Array(L.nTotal);
-  const median = new Float64Array(L.nTotal);
-  const score = chains != null ? scoreGroups(L, chains) : null;
+  const visited = new Uint8Array(L.nTotal);
+  const orderOf = new Int32Array(L.nTotal).fill(-1);
+  let counter = 0;
+  const stack: number[] = [];
 
-  for (let r = 1; r < L.layers.length; r++) {
-    sortLayer(L, r, true, bary, median, chains, score);
+  const visit = (start: number): void => {
+    stack.push(start);
+
+    while (stack.length > 0) {
+      const v = stack.pop()!;
+
+      if (visited[v]) {
+        continue;
+      }
+
+      visited[v] = 1;
+      orderOf[v] = counter++;
+
+      // push children in reverse so the leftmost child pops first
+      for (let i = L.downOff[v + 1] - 1; i >= L.downOff[v]; i--) {
+        const w = L.utgt[L.downAdj[i]];
+
+        if (!visited[w]) {
+          stack.push(w);
+        }
+      }
+    }
+  };
+
+  // roots in current (model) order, then any unreached items
+  for (const layer of L.layers) {
+    for (const v of layer) {
+      if (L.upOff[v] === L.upOff[v + 1] && !visited[v]) {
+        visit(v);
+      }
+    }
+  }
+
+  for (const layer of L.layers) {
+    for (const v of layer) {
+      if (!visited[v]) {
+        visit(v);
+      }
+    }
+  }
+
+  for (const layer of L.layers) {
+    layer.sort((a, b) => orderOf[a] - orderOf[b]);
+
+    for (let i = 0; i < layer.length; i++) {
+      L.pos[layer[i]] = i;
+    }
+  }
+
+  if (chains != null) {
+    // restore group contiguity on top of the DFS order
+    const bary = new Float64Array(L.nTotal);
+    const median = new Float64Array(L.nTotal);
+    const score = scoreGroups(L, chains);
+
+    for (let r = 0; r < L.layers.length; r++) {
+      sortLayer(L, r, true, bary, median, chains, score);
+    }
   }
 };
 
@@ -447,27 +514,13 @@ const sweepsFor = (thoroughness: number): number => 4 + 2 * thoroughness;
 
 const IDLE_SWEEPS = 3;
 
-/**
- * Crossing minimization: bidirectional barycenter sweeps with
- * transpose, best order kept by exact weighted count.
- *
- * @param L — the layered form; `layers`/`pos` are reordered in place
- * @param thoroughness — the effort dial (1..10): sweep budget
- *   `4 + 2·thoroughness`, early-out after 3 idle sweeps
- * @param chains — compound mode (112.3): per-node ancestor chains;
- *   ordering then keeps each group contiguous per rank and
- *   side-consistent across ranks
- */
-export const orderLayers = (
+/** One full sweep run from the current order; returns its best. */
+const runSweeps = (
   L: Layered,
   thoroughness: number,
-  chains: number[][] | null = null,
-): void => {
-  if (L.layers.length < 2) {
-    return;
-  }
-
-  initOrder(L, chains);
+  chains: number[][] | null,
+  medianPrimary: boolean,
+): { layers: number[][]; crossings: number } => {
   transpose(L, chains);
 
   let best = countTotalCrossings(L);
@@ -482,16 +535,22 @@ export const orderLayers = (
 
     if (s % 2 === 0) {
       for (let r = 1; r < L.layers.length; r++) {
-        sortLayer(L, r, true, bary, median, chains, score);
+        sortLayer(L, r, true, bary, median, chains, score, medianPrimary);
       }
     } else {
       for (let r = L.layers.length - 2; r >= 0; r--) {
-        sortLayer(L, r, false, bary, median, chains, score);
+        sortLayer(L, r, false, bary, median, chains, score, medianPrimary);
       }
     }
 
-    for (let t = 0; t < 4 && transpose(L, chains); t++) {
+    // strict passes until stable (bounded), then one equality pass on
+    // odd sweeps to shake off a plateau (dot's reverse alternation)
+    for (let t = 0; t < 6 && transpose(L, chains); t++) {
       // greedy local swaps until stable, bounded
+    }
+
+    if (s % 2 === 1) {
+      transpose(L, chains, true);
     }
 
     const count = countTotalCrossings(L);
@@ -505,6 +564,65 @@ export const orderLayers = (
     }
   }
 
-  L.layers = bestLayers;
+  return { layers: bestLayers, crossings: best };
+};
+
+/**
+ * Crossing minimization: bidirectional barycenter sweeps with
+ * transpose, best order kept by exact weighted count, in two restarts
+ * (barycenter-primary and median-primary comparators) at thoroughness
+ * ≥ 5 — the better final order wins.
+ *
+ * @param L — the layered form; `layers`/`pos` are reordered in place
+ * @param thoroughness — the effort dial (1..10): sweep budget
+ *   `4 + 2·thoroughness` per restart, early-out after 3 idle sweeps
+ * @param chains — compound mode (112.3): per-node ancestor chains;
+ *   ordering then keeps each group contiguous per rank and
+ *   side-consistent across ranks
+ */
+export const orderLayers = (
+  L: Layered,
+  thoroughness: number,
+  chains: number[][] | null = null,
+): void => {
+  if (L.layers.length < 2) {
+    return;
+  }
+
+  // the dummy-explosion valve (112.4): a dense non-layered input can
+  // blow hundreds of dummies per real node (em-web: 569 real nodes,
+  // 179k layered items, 4.6 s of ordering), and per-dummy sweeps then
+  // dominate the whole run.  Until the Eiglsperger segment container
+  // lands (the round-112 record's measured follow-up), such graphs
+  // take a lean budget: the effective thoroughness drops and the
+  // second restart is skipped.
+  const explosion = L.nTotal > 8 * L.n + 1000;
+  const effective = explosion ? Math.min(thoroughness, 2) : thoroughness;
+
+  initOrder(L, chains);
+
+  // the second, median-primary restart buys 2–8% fewer crossings on
+  // the harness fixtures at ~2x ordering cost (112.4's measurement) —
+  // thoroughness ≥ 5 pays it, lower settings take the single run
+  const restart = effective >= 5;
+  const initLayers = restart ? L.layers.map((l) => l.slice()) : null;
+
+  const first = runSweeps(L, effective, chains, false);
+
+  if (restart) {
+    L.layers = initLayers!;
+    refreshPos(L);
+
+    const second = runSweeps(L, effective, chains, true);
+
+    if (second.crossings < first.crossings) {
+      L.layers = second.layers;
+      refreshPos(L);
+
+      return;
+    }
+  }
+
+  L.layers = first.layers;
   refreshPos(L);
 };

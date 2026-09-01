@@ -82,7 +82,6 @@ const defaults: Omit<FlowLayoutOptions, 'name'> = {
   edgeWeight: 1, // straightening weight: number, score mapping or fn
   acyclic: false, // the graph is known acyclic: skip cycle removal
   cycleRemoval: 'greedy', // 'greedy' (Eades-Lin-Smyth) or 'dfs' (input order dominates)
-  alignLongEdges: true, // bias long-edge corridors toward an endpoint x (straight taxi legs)
   rankConstraints: undefined, // { min?: string[], max?: string[], same?: string[][] } — id lists
   componentSpacing: 40, // gap between packed disconnected components
 };
@@ -180,7 +179,6 @@ interface RunState {
       | 'thoroughness'
       | 'acyclic'
       | 'cycleRemoval'
-      | 'alignLongEdges'
       | 'componentSpacing'
     >
   >;
@@ -300,7 +298,6 @@ export class FlowLayoutImpl implements LayoutImpl {
         thoroughness: t,
         acyclic: merged.acyclic!,
         cycleRemoval: merged.cycleRemoval!,
-        alignLongEdges: merged.alignLongEdges!,
         componentSpacing: merged.componentSpacing!,
       },
       slots,

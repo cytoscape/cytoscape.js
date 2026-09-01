@@ -1075,13 +1075,18 @@ throw), and `minLength`/`edgeWeight` take the 85.3 mapping spellings.
 routing themselves after any drag.  The taxi contract: rank gaps are
 node-free bands where a `taxi-direction: downward` turn lands; BK's
 aligned chains make `src.x === tgt.x` drops exactly straight.  Long
-edges reserve a dummy corridor; `alignLongEdges` (112.4) biases it
-toward an endpoint so the taxi leg and the corridor coincide.
+edges reserve a dummy corridor, but 112.4 measured the taxi polyline
+(50% turn) scoring *more* geometric crossings than the straight-line
+drawing — making the corridor and the taxi leg coincide needs
+taxi-aware ordering, not a placement flag, so the planned
+`alignLongEdges` option was withheld rather than shipped as a
+placebo; the harness keeps a `flow-taxi` row so the gap stays
+measured.
 
 Leaves place, parents derive (round 14.11); compound-aware global
 layering is pass 112.3.  Options: `direction`, `nodeSep`, `rankSep`,
 `layering`, `thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
-`cycleRemoval`, `alignLongEdges`, `rankConstraints`,
+`cycleRemoval`, `rankConstraints`,
 `componentSpacing`, plus the shared plumbing (finisher path when
 animate / transform / spacingFactor are asked for; bare runs take the
 columnar bulk write).  Quality is measured, not asserted:

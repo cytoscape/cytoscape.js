@@ -151,7 +151,7 @@ var fixtures = (function () {
     // deliberately NOT sized by the shared ?gen knob (whose 10000x30000
     // default smears a verification scene into a razor-wide band) — the
     // `gen` network is the scale knob; this one is for reading
-    var n = 400;
+    var n = 120;
     var seed = 112;
 
     void spec;

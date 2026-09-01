@@ -489,6 +489,32 @@ var styles = (function () {
     };
   }
 
+  // Round 112: the workflow-DAG scenes — the flow layout's recommended
+  // pairing made visible.  The generated sheet's band colouring stays
+  // (stage = colour, so ranks read as rows); edges take the taxi
+  // contract the layout is designed for: round-taxi, downward, a 20px
+  // turn near the source so a long edge's vertical leg runs in the
+  // reserved corridor, and arrowheads so direction is legible.
+  function workflowDag(elements, def) {
+    var sheet = generated(elements, def);
+
+    return Object.assign({}, sheet, {
+      nodes: Object.assign({}, sheet.nodes, { width: 18, height: 18 }),
+      edges: {
+        width: 1.5,
+        'line-color': selectable('#9aa5b1'),
+        opacity: 0.85,
+        'curve-style': 'round-taxi',
+        'taxi-direction': 'downward',
+        'taxi-turn': 20,
+        'taxi-radius': 8,
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': selectable('#9aa5b1'),
+        'arrow-scale': 0.8,
+      },
+    });
+  }
+
   // The v3 debug fixture: ten nodes, deliberately awkward.  Styled so the
   // awkward parts are visible — nesting depth by parent tint, the long label
   // wrapped rather than overflowing.
@@ -941,6 +967,8 @@ var styles = (function () {
     labels: labels,
     gen: generated,
     compound: generated,
+    'workflow-dag': workflowDag,
+    'workflow-dag-clustered': workflowDag,
   };
 
   return {

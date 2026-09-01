@@ -134,17 +134,17 @@ var networks = {
   'workflow-dag': {
     // round 112: the flow layout's manual verification scene
     desc: 'Workflow DAG (flow layout)',
-    nodes: '~400',
-    edges: '~800',
+    nodes: '~120',
+    edges: '~230',
     generated: 'workflow-dag',
     labelKey: 'id',
     layout: { name: 'flow' },
-    note: 'A seeded staged pipeline DAG — the flow layout runs at load. Stage drives colour, so ranks should read as colour rows; ~6% of edges skip 2–4 stages (the dummy-corridor case). Try curve-style taxi in a custom style to see the routing contract.',
+    note: 'A seeded staged pipeline DAG — the flow layout runs at load. Stage drives colour, so ranks should read as colour rows; ~6% of edges skip 2–4 stages (the dummy-corridor case). Edges are round-taxi, downward, 20px turn — the routing contract the layout is designed for; drag a node and the routes follow.',
   },
   'workflow-dag-clustered': {
     desc: 'Workflow DAG, clustered (flow layout)',
-    nodes: '~410',
-    edges: '~800',
+    nodes: '~128',
+    edges: '~230',
     generated: 'workflow-dag-clustered',
     labelKey: 'id',
     layout: { name: 'flow' },

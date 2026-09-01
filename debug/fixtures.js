@@ -859,6 +859,15 @@ var fixtures = (function () {
         data.id = nIds[i];
       }
 
+      // the wire carries compound parents as a first-class column of
+      // payload indices (round 14.8), not as a data key — restore the
+      // data.parent spelling the rest of the harness reads (round 112:
+      // the npm-deps fixture was the first url-loaded compound graph,
+      // and its boxes silently vanished without this)
+      if (n.parent != null && n.parent[i] !== 0xffffffff) {
+        data.parent = nIds[n.parent[i]];
+      }
+
       nodes.push(
         n.positions != null
           ? {

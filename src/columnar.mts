@@ -126,6 +126,7 @@ export const buildColumnar = (
     ids: nodeIds,
     positions: new Float32Array(nodes.length * 2),
   };
+  let sawPosition = false;
 
   for (let i = 0; i < nodes.length; i++) {
     const def = nodes[i];
@@ -141,9 +142,19 @@ export const buildColumnar = (
     const pos = def.position;
 
     if (pos != null) {
+      sawPosition = true;
       nodesOut.positions![i * 2] = pos.x;
       nodesOut.positions![i * 2 + 1] = pos.y;
     }
+  }
+
+  // a payload with no positions at all stays positionless (the spec's
+  // "omitted = all (0,0)") — round 112: fabricating the column made a
+  // positionless definition graph round-trip through the wire as a
+  // positioned one, which flipped the debug harness's
+  // lay-out-at-load rule off for real fixtures
+  if (!sawPosition) {
+    delete nodesOut.positions;
   }
 
   const nodeFlags = applySelectionColumns(nodesOut, nodes, false);

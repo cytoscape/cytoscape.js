@@ -36,6 +36,12 @@ that compile and then behave differently.
   mappings or functions) and `rankConstraints` (`min`/`max`/`same` id
   lists).  Measured against dagre and elkjs by the layout-quality
   harness (`npm run benchmark:layout-quality`).
+- **Faithful positionless round-trips** (round 112):
+  `cytoscape.toColumnarElements` now omits the positions column when no
+  input definition carries a position (previously it fabricated an
+  all-zero column), so a positionless graph serialized through the wire
+  comes back positionless — consumers that lay out at load can tell the
+  difference again.
 - **Force-layout constraints** (round 85.2, absorbing fcose's main
   draw): `alignment: { horizontal, vertical }` id-array groups (a
   locked member pins its group) and `relativePlacement:

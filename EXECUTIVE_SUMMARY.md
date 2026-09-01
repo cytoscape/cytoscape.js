@@ -46,7 +46,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,361 unit · 574 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,361 unit · 586 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
@@ -620,6 +620,17 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys the dagre use case in core: v3 apps that shipped a layout
     extension for DAGs get a faster, maintained, compound-correct
     built-in that one option object away replaces it.
+  - Real data joined the same day: the debug page gained the repo's own
+    npm dependency DAG (scopes as compound parents) and Reactome's
+    human Immune System pathway hierarchy (CC0), both also quality
+    fixtures — and the bio hierarchy inverted the taxi finding: 3
+    crossings under taxi routing against dagre's 73 and elk's 54, so
+    the taxi contract loses on dense meshes and wins on real
+    tree-like hierarchies, both halves measured.  The first
+    positionless compound fixtures also flushed two round-trip bugs:
+    `toColumnarElements` fabricated a positions column (a positionless
+    graph came back from the wire positioned), and the debug page's
+    wire decode dropped compound parents.
 
 ---
 

@@ -1040,6 +1040,55 @@ draw (breadthfirst's stance); leaves only, parents derive.  Options:
 benchmark's comparison partner is v4's own breadthfirst-circle,
 pricing what the hierarchy-awareness costs.
 
+## The flow layout (round 112)
+
+The Sugiyama-class layered built-in — open call 49's "comparable to
+dagre" bar, taken up as **build, not port** (dagre is unmaintained and
+predates the Brandes–Köpf erratum; elkjs is a ~1.5 MB transpilation;
+the round-112 record carries the survey and the measured baselines:
+dagre crashes on the long-skip fixture, hangs on nested clusters and
+DNFs at 10k nodes).  `cy.layout({ name: 'flow' })` rides the
+extension contract like force, so `promise()` comes for free.
+
+The pipeline, per weak component (`flow-graph` / `flow-rank` /
+`flow-order` / `flow-position`, all typed-array): greedy-FAS cycle
+removal (Eades–Lin–Smyth bucket lists, model-order ties; `cycleRemoval:
+'dfs'` keeps input order dominant), GKNV network-simplex layering
+(tight tree, subtree-net-weight cut values, balance; longest-path as
+seed, fast path and `layering: 'auto'` fallback past 50k nodes),
+dummy-chain normalization, bidirectional barycenter/median sweeps with
+transpose scored by exact weighted Barth–Jünger–Mutzel cross counting
+(budgeted by `thoroughness` 1..10), and Brandes–Köpf coordinates —
+four alignments with type-1 marking, **block-graph longest-path
+compaction** in place of the paper's class/shift machinery (the
+BK-2020 erratum documents two defects in it; a block-DAG pass has
+neither, and the four-way balance recovers what it forgoes),
+size-aware separation (`nodeSep` between bodies, half beside a dummy
+corridor).  Components pack by *body* boxes (point-bbox packing
+overlapped deps' 164 singleton components).  Ranking honours
+`rankConstraints` (`same` contracts nodes — welding components if
+needed — `min`/`max` pin via zero-weight anchor edges; contradictions
+throw), and `minLength`/`edgeWeight` take the 85.3 mapping spellings.
+
+**No edge routing, by decided design** (the maintainer's call, round
+112): flow emits node positions only, so style-driven edges keep
+routing themselves after any drag.  The taxi contract: rank gaps are
+node-free bands where a `taxi-direction: downward` turn lands; BK's
+aligned chains make `src.x === tgt.x` drops exactly straight.  Long
+edges reserve a dummy corridor; `alignLongEdges` (112.4) biases it
+toward an endpoint so the taxi leg and the corridor coincide.
+
+Leaves place, parents derive (round 14.11); compound-aware global
+layering is pass 112.3.  Options: `direction`, `nodeSep`, `rankSep`,
+`layering`, `thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
+`cycleRemoval`, `alignLongEdges`, `rankConstraints`,
+`componentSpacing`, plus the shared plumbing (finisher path when
+animate / transform / spacingFactor are asked for; bare runs take the
+columnar bulk write).  Quality is measured, not asserted:
+`npm run benchmark:layout-quality` runs flow beside dagre and elkjs on
+the round-112 fixture set (crossings, edge length, area, validity,
+runtime), and the round file records the numbers.
+
 ## Data-driven layout mappings (round 85.3, #1514)
 
 The five layout params that take per-element values accept

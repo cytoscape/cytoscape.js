@@ -1188,6 +1188,58 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
     gap?: number;
   })[];
 }
+/** The built-in flow layout (round 112): the Sugiyama-class layered
+ * layout — greedy-FAS cycle removal, network-simplex layering,
+ * crossing minimization by weighted layer sweep, Brandes–Köpf
+ * coordinates.  Emits node positions only: pair it with `curve-style:
+ * taxi` (or bezier) and the edges route themselves, staying correct
+ * when nodes are dragged.  Runs through the extension contract, so
+ * `cy.layout({ name: 'flow' })` returns a wrapper with `promise()`. */
+interface FlowLayoutOptions extends LayoutBaseOptions {
+  name: 'flow';
+  /** drawing direction of the flow (default 'downward') */
+  direction?: 'downward' | 'upward' | 'leftward' | 'rightward';
+  /** px gap between adjacent nodes in a rank (default 50) */
+  nodeSep?: number;
+  /** px gap between rank rows (default 60); a taxi edge's turn lands
+   * inside this band, which the layout keeps node-free */
+  rankSep?: number;
+  /** rank assignment: 'network-simplex' (GKNV — fewest long edges,
+   * default), 'longest-path' (O(V+E), the huge-graph fast path), or
+   * 'auto' (simplex up to ~50k nodes, then longest-path) */
+  layering?: 'network-simplex' | 'longest-path' | 'auto';
+  /** crossing-minimization effort, 1..10 (default 7): scales the
+   * sweep and transpose budgets
+   * @throws at start when outside 1..10 */
+  thoroughness?: number;
+  /** minimum ranks an edge must span (default 1): a number, a
+   * `{ data, … }` score mapping (85.3), or a fn of the edge handle */
+  minLength?: number | LayoutScoreMapping | ((edge: unknown) => number);
+  /** edge straightening weight (default 1): heavier edges pull
+   * straighter through crossing minimization and coordinates — a
+   * number, a score mapping, or a fn of the edge handle */
+  edgeWeight?: number | LayoutScoreMapping | ((edge: unknown) => number);
+  /** the graph is known acyclic: skip cycle removal (default false) */
+  acyclic?: boolean;
+  /** which arcs flip on cycles: 'greedy' (Eades–Lin–Smyth bound,
+   * default) or 'dfs' (input order dominates) */
+  cycleRemoval?: 'greedy' | 'dfs';
+  /** bias a long edge's reserved corridor toward an endpoint x so its
+   * taxi leg runs straight (default true) */
+  alignLongEdges?: boolean;
+  /** rank constraints as id lists (never selector strings): `min`
+   * pins to the first rank, `max` to the last, each `same` group to
+   * one shared rank
+   * @throws at start on an unknown id, a selector string, or
+   *   contradictory constraints */
+  rankConstraints?: {
+    min?: string[];
+    max?: string[];
+    same?: string[][];
+  };
+  /** the gap between packed disconnected components (default 40) */
+  componentSpacing?: number;
+}
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off
  * ctx.options. */
@@ -1198,7 +1250,7 @@ interface CustomLayoutOptions extends LayoutBaseOptions {
   _startEmitted?: boolean;
   [key: string]: unknown;
 }
-type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | ForceLayoutOptions | CustomLayoutOptions;
+type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | ForceLayoutOptions | FlowLayoutOptions | CustomLayoutOptions;
 /** Renderer tuning knobs (all LOD values in device px). */
 interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -8746,5 +8798,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

@@ -24,6 +24,18 @@ that compile and then behave differently.
 
 ### Added
 
+- **The flow layout** (round 112): a built-in Sugiyama-class layered
+  layout — `cy.layout({ name: 'flow' })` — with greedy-FAS cycle
+  removal, GKNV network-simplex layering, weighted crossing
+  minimization and Brandes–Köpf coordinates, replacing the dagre
+  extension for most uses.  Emits node positions only: pair it with
+  `curve-style: taxi` and edges route themselves, staying correct when
+  nodes are dragged.  Options include `direction`, `nodeSep`/`rankSep`,
+  `layering` (`network-simplex` | `longest-path` | `auto`),
+  `thoroughness`, per-edge `minLength`/`edgeWeight` (numbers, score
+  mappings or functions) and `rankConstraints` (`min`/`max`/`same` id
+  lists).  Measured against dagre and elkjs by the layout-quality
+  harness (`npm run benchmark:layout-quality`).
 - **Force-layout constraints** (round 85.2, absorbing fcose's main
   draw): `alignment: { horizontal, vertical }` id-array groups (a
   locked member pins its group) and `relativePlacement:

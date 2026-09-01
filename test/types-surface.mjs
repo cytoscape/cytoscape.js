@@ -61,6 +61,7 @@ const EXPECTED_EXPORTS = new Set([
   'ElementsInput',
   'ExportOptions',
   'ForceLayoutOptions',
+  'FlowLayoutOptions',
   'GridLayoutOptions',
   'LayoutBaseOptions',
   'LayoutOptions',

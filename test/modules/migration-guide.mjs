@@ -212,6 +212,7 @@ describe('the migration guide: behavioural claims', () => {
       'random',
       'radial',
       'force',
+      'flow',
     ]) {
       expect(
         () => cy.layout({ name }),

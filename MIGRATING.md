@@ -485,9 +485,13 @@ and the `renderer` block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`,
 
 **Built in**: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
 `random`, `radial` — a hierarchy-aware radial tree (each subtree takes a
-contiguous angular wedge sized by its weight; new in v4, #2493) — and
+contiguous angular wedge sized by its weight; new in v4, #2493) —
 `force` — a GPU-native force-directed layout that animates live at 100k
-nodes.
+nodes — and `flow` — a Sugiyama-class layered layout (dagre's use case:
+network-simplex ranking, weighted crossing minimization, Brandes–Köpf
+coordinates; new in v4).  `flow` replaces the dagre extension for most
+uses: it emits node positions only, designed to pair with `curve-style:
+taxi` so edges route themselves and stay routed when nodes are dragged.
 
 **`cose` is not ported.** Its option surface and per-iteration structure are
 CPU-shaped; `force` is v4's answer, and it converges in about a second on

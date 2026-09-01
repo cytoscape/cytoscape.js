@@ -263,6 +263,149 @@ if (OP == null || 'radial'.includes(OP)) {
   });
 }
 
+// -- the flow layout (112.2) -------------------------------------------------
+// No v3 twin (v3 shipped no layered layout); the in-suite partner is
+// breadthfirst — v4's pre-112 hierarchical answer — on one directed
+// fixture.  The row asserts the property it is named for: flow's
+// straight-line drawing has strictly fewer edge crossings than
+// breadthfirst's on the same DAG (the whole point of the crossing-min
+// phase), and its ranks form rows.  Quality vs dagre/elkjs lives in
+// the layout-quality harness, not here — this row prices the runtime.
+if (OP == null || 'flow'.includes(OP)) {
+  // a layered DAG fixture: the wrap edges of the shared fixture create
+  // cycles, so build a staged DAG of the same size instead
+  const dagElements = [];
+  const stageW = Math.ceil(Math.sqrt(N));
+
+  for (let i = 0; i < N; i++) {
+    dagElements.push({ data: { id: 'f' + i } });
+  }
+
+  for (let i = 0; i < N; i++) {
+    const stage = Math.floor(i / stageW);
+
+    if (stage > 0) {
+      const prev = (stage - 1) * stageW + (i % stageW);
+
+      dagElements.push({
+        data: { id: 'fe' + i, source: 'f' + prev, target: 'f' + i },
+      });
+
+      const skew = (stage - 1) * stageW + ((i * 7) % stageW);
+
+      dagElements.push({
+        data: { id: 'fs' + i, source: 'f' + skew, target: 'f' + i },
+      });
+    }
+  }
+
+  const flowCy = makeGpu(dagElements);
+  const bfCy = makeGpu(dagElements);
+
+  instances.push(flowCy, bfCy);
+
+  const flowOpts = { name: 'flow', fit: false };
+  const bfOpts = {
+    name: 'breadthfirst',
+    directed: true,
+    fit: false,
+    boundingBox: BOX,
+  };
+
+  // -- the assertion, outside the timed loop --
+  const crossingsOf = (cy) => {
+    const segs = [];
+
+    cy.edges().forEach((e) => {
+      const s = e.source().position();
+      const t = e.target().position();
+
+      segs.push([s.x, s.y, t.x, t.y, e.source().id(), e.target().id()]);
+    });
+
+    const crosses = (a, b) => {
+      if (a[4] === b[4] || a[4] === b[5] || a[5] === b[4] || a[5] === b[5]) {
+        return false;
+      }
+
+      const o = (px, py, qx, qy, rx, ry) => {
+        const v = (qx - px) * (ry - py) - (qy - py) * (rx - px);
+
+        return v > 1e-9 ? 1 : v < -1e-9 ? -1 : 0;
+      };
+      const o1 = o(a[0], a[1], a[2], a[3], b[0], b[1]);
+      const o2 = o(a[0], a[1], a[2], a[3], b[2], b[3]);
+      const o3 = o(b[0], b[1], b[2], b[3], a[0], a[1]);
+      const o4 = o(b[0], b[1], b[2], b[3], a[2], a[3]);
+
+      return (
+        o1 !== o2 && o3 !== o4 && o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0
+      );
+    };
+
+    // sweep by x-interval so the count is exact but not O(m^2) pairs
+    const order = segs
+      .map((s, i) => ({
+        lo: Math.min(s[0], s[2]),
+        hi: Math.max(s[0], s[2]),
+        i,
+      }))
+      .sort((p, q) => p.lo - q.lo);
+    let count = 0;
+
+    for (let i = 0; i < order.length; i++) {
+      for (let j = i + 1; j < order.length && order[j].lo <= order[i].hi; j++) {
+        if (crosses(segs[order[i].i], segs[order[j].i])) {
+          count++;
+        }
+      }
+    }
+
+    return count;
+  };
+
+  flowCy.layout(flowOpts).run();
+  bfCy.layout(bfOpts).run();
+
+  const flowCross = crossingsOf(flowCy);
+  const bfCross = crossingsOf(bfCy);
+  const flowYs = new Set();
+
+  flowCy.nodes().forEach((n) => {
+    flowYs.add(Math.round(n.position().y * 8) / 8);
+  });
+
+  if (flowCross >= bfCross) {
+    throw new Error(
+      `flow row: ${flowCross} crossings does not beat breadthfirst's ${bfCross} — ` +
+        `the row would not be measuring the layout it is named for`,
+    );
+  }
+
+  if (flowYs.size > Math.ceil(N / stageW) + 1) {
+    throw new Error(
+      `flow row: ${flowYs.size} distinct rows for ~${Math.ceil(N / stageW)} stages — ` +
+        `ranks are not forming rows`,
+    );
+  }
+
+  console.log(
+    `  flow fixture: ${flowCross} crossings vs breadthfirst's ${bfCross}; ` +
+      `${flowYs.size} rank rows`,
+  );
+
+  group('layout: flow vs breadthfirst (staged DAG)', () => {
+    summary(() => {
+      bench('flow', () => {
+        flowCy.layout(flowOpts).run();
+      });
+      bench('breadthfirst', () => {
+        bfCy.layout(bfOpts).run();
+      });
+    });
+  });
+}
+
 // -- the force layout --------------------------------------------------------
 // The CPU executor is what the Node specs pin and what headless and
 // compound graphs always run (18.1; model rebuilt in round 59 — the

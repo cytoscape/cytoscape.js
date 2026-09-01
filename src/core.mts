@@ -33,6 +33,7 @@ import * as math from './math.mjs';
 import type { BoundsLike } from './viewport.mjs';
 import { CustomLayout } from './layout/contract.mjs';
 import { ForceLayoutImpl } from './layout/force.mjs';
+import { FlowLayoutImpl } from './layout/flow.mjs';
 import type { CustomLayoutOptions } from './public-types.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
@@ -732,11 +733,19 @@ export class Core {
       } as CustomLayoutOptions);
     }
 
+    // the flow layout (round 112) rides the contract the same way
+    if ((options as { name?: string })?.name === 'flow') {
+      return new CustomLayout(this, {
+        ...(options as object),
+        impl: FlowLayoutImpl,
+      } as CustomLayoutOptions);
+    }
+
     const got = (options as { name?: string } | null)?.name;
 
     throw new Error(
       `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
-        `'breadthfirst', 'random', 'radial', 'force') or an impl (the extension contract)` +
+        `'breadthfirst', 'random', 'radial', 'force', 'flow') or an impl (the extension contract)` +
         (got != null ? `; got name '${got}'` : ''),
     );
   }

@@ -314,7 +314,66 @@ const elkAdapter = {
   },
 };
 
-const ENGINES = [dagreAdapter, elkAdapter];
+const flowAdapter = {
+  name: 'flow',
+  async layout(fixture) {
+    // src/ imported through tsx (the harness children run with it);
+    // flow emits node positions only — edges are straight lines, which
+    // is what a default (curve-style: straight) drawing shows
+    const { default: cytoscape } = await import('../src/index.mjs');
+    const elements = {
+      nodes: fixture.nodes.map((n) => ({
+        data: {
+          id: n.id,
+          ...(n.parent != null ? { parent: n.parent } : {}),
+          w: n.w ?? 30,
+          h: n.h ?? 30,
+        },
+      })),
+      edges: fixture.edges.map((e) => ({
+        data: { id: e.id, source: e.source, target: e.target },
+      })),
+    };
+    const cy = cytoscape({
+      headless: true,
+      headlessWidth: 1280,
+      headlessHeight: 800,
+      elements,
+      style: {
+        nodes: {
+          width: { data: 'w', fallback: 30 },
+          height: { data: 'h', fallback: 30 },
+        },
+      },
+    });
+
+    const layout = cy.layout({ name: 'flow', fit: false });
+
+    layout.run();
+    await layout.promise();
+
+    const pos = new Map();
+
+    cy.nodes().forEach((n) => {
+      pos.set(n.id(), { ...n.position() });
+    });
+
+    const poly = new Map();
+
+    for (const e of fixture.edges) {
+      const s = pos.get(e.source);
+      const t = pos.get(e.target);
+
+      poly.set(e.id, [s.x, s.y, t.x, t.y]);
+    }
+
+    cy.destroy();
+
+    return { pos, poly };
+  },
+};
+
+const ENGINES = [dagreAdapter, elkAdapter, flowAdapter];
 
 // ------------------------------------------------------------ self-tests
 
@@ -482,7 +541,15 @@ const run = async () => {
       // and it is part of the recorded baseline conditions
       const res = spawnSync(
         process.execPath,
-        ['--stack-size=8192', self, '--cell', name, engine.name],
+        [
+          '--stack-size=8192',
+          '--import',
+          'tsx',
+          self,
+          '--cell',
+          name,
+          engine.name,
+        ],
         { timeout: timeoutMs, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
       );
       let row;

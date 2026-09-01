@@ -599,6 +599,55 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   )[];
 }
 
+/** The built-in flow layout (round 112): the Sugiyama-class layered
+ * layout — greedy-FAS cycle removal, network-simplex layering,
+ * crossing minimization by weighted layer sweep, Brandes–Köpf
+ * coordinates.  Emits node positions only: pair it with `curve-style:
+ * taxi` (or bezier) and the edges route themselves, staying correct
+ * when nodes are dragged.  Runs through the extension contract, so
+ * `cy.layout({ name: 'flow' })` returns a wrapper with `promise()`. */
+export interface FlowLayoutOptions extends LayoutBaseOptions {
+  name: 'flow';
+  /** drawing direction of the flow (default 'downward') */
+  direction?: 'downward' | 'upward' | 'leftward' | 'rightward';
+  /** px gap between adjacent nodes in a rank (default 50) */
+  nodeSep?: number;
+  /** px gap between rank rows (default 60); a taxi edge's turn lands
+   * inside this band, which the layout keeps node-free */
+  rankSep?: number;
+  /** rank assignment: 'network-simplex' (GKNV — fewest long edges,
+   * default), 'longest-path' (O(V+E), the huge-graph fast path), or
+   * 'auto' (simplex up to ~50k nodes, then longest-path) */
+  layering?: 'network-simplex' | 'longest-path' | 'auto';
+  /** crossing-minimization effort, 1..10 (default 7): scales the
+   * sweep and transpose budgets
+   * @throws at start when outside 1..10 */
+  thoroughness?: number;
+  /** minimum ranks an edge must span (default 1): a number, a
+   * `{ data, … }` score mapping (85.3), or a fn of the edge handle */
+  minLength?: number | LayoutScoreMapping | ((edge: unknown) => number);
+  /** edge straightening weight (default 1): heavier edges pull
+   * straighter through crossing minimization and coordinates — a
+   * number, a score mapping, or a fn of the edge handle */
+  edgeWeight?: number | LayoutScoreMapping | ((edge: unknown) => number);
+  /** the graph is known acyclic: skip cycle removal (default false) */
+  acyclic?: boolean;
+  /** which arcs flip on cycles: 'greedy' (Eades–Lin–Smyth bound,
+   * default) or 'dfs' (input order dominates) */
+  cycleRemoval?: 'greedy' | 'dfs';
+  /** bias a long edge's reserved corridor toward an endpoint x so its
+   * taxi leg runs straight (default true) */
+  alignLongEdges?: boolean;
+  /** rank constraints as id lists (never selector strings): `min`
+   * pins to the first rank, `max` to the last, each `same` group to
+   * one shared rank
+   * @throws at start on an unknown id, a selector string, or
+   *   contradictory constraints */
+  rankConstraints?: { min?: string[]; max?: string[]; same?: string[][] };
+  /** the gap between packed disconnected components (default 40) */
+  componentSpacing?: number;
+}
+
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off
  * ctx.options. */
@@ -619,6 +668,7 @@ export type LayoutOptions =
   | RandomLayoutOptions
   | RadialLayoutOptions
   | ForceLayoutOptions
+  | FlowLayoutOptions
   | CustomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */

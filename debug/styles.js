@@ -969,6 +969,8 @@ var styles = (function () {
     compound: generated,
     'workflow-dag': workflowDag,
     'workflow-dag-clustered': workflowDag,
+    'npm-deps': workflowDag,
+    reactome: workflowDag,
   };
 
   return {

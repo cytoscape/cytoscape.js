@@ -199,7 +199,81 @@ const genCompound = () => {
   return { nodes, edges };
 };
 
-write('deps', deriveDeps());
+const deps = deriveDeps();
+
+write('deps', deps);
+
+// the debug-page twin (round 112): the same real dependency DAG in v3
+// elements shape, with npm scopes materialised as compound parents —
+// real grouping from real data (@esbuild/*, @types/*, ... boxes).  A
+// scope becomes a parent only when it holds two or more packages; band
+// colours by scope so the boxes read at a glance.  The harness
+// deps.json stays flat — its baselines are recorded.
+{
+  const scopeOf = (id) => {
+    const m = /^(@[^/]+)\//.exec(id);
+
+    return m ? m[1] : null;
+  };
+  const members = new Map();
+
+  for (const n of deps.nodes) {
+    const s = scopeOf(n.id);
+
+    if (s != null) {
+      members.set(s, (members.get(s) ?? 0) + 1);
+    }
+  }
+
+  const parents = [...members.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([s]) => s);
+  const parentSet = new Set(parents);
+  const bandOf = (id) => {
+    let h = 0;
+
+    for (let i = 0; i < id.length; i++) {
+      h = (h * 31 + id.charCodeAt(i)) | 0;
+    }
+
+    return ((h % 5) + 5) % 5;
+  };
+
+  const debug = {
+    elements: {
+      nodes: [
+        ...parents.map((s) => ({ data: { id: `scope:${s}`, name: s } })),
+        ...deps.nodes.map((n) => {
+          const s = scopeOf(n.id);
+
+          return {
+            data: {
+              id: n.id,
+              name: n.id,
+              band: bandOf(scopeOf(n.id) ?? n.id),
+              ...(s != null && parentSet.has(s)
+                ? { parent: `scope:${s}` }
+                : {}),
+            },
+          };
+        }),
+      ],
+      edges: deps.edges.map((e) => ({
+        data: { id: e.id, source: e.source, target: e.target },
+      })),
+    },
+  };
+
+  writeFileSync(
+    join(ROOT, 'debug', 'network-npm-deps.json'),
+    JSON.stringify(debug),
+  );
+  console.log(
+    `debug/network-npm-deps.json: ${debug.elements.nodes.length} nodes ` +
+      `(${parents.length} scope parents), ${debug.elements.edges.length} edges`,
+  );
+}
+
 write(
   'workflow-1k',
   (() => {

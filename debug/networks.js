@@ -131,6 +131,30 @@ var networks = {
     labelKey: 'label',
     note: "v3's labels demo: the 3x3 anchor grid (v4 has no -inside variants), wrapping, ellipsis, outlines and boxes, a numeric rotation v3's page has no cell for, and an autorotated edge label.",
   },
+  'npm-deps': {
+    // round 112: a real dependency DAG for the flow layout — this
+    // repo's own package-lock, npm scopes as compound parents
+    // (regenerate: node benchmark/fixtures/dag/derive.mjs)
+    desc: 'npm dependencies (flow layout)',
+    nodes: 439,
+    edges: 510,
+    url: 'network-npm-deps.json',
+    labelKey: 'name',
+    layout: { name: 'flow' },
+    note: "This repo's own package-lock as a dependency DAG — heavy fan-in on the popular utilities, long toolchain chains, and a shelf of tiny components. The 11 npm scopes (@esbuild, @types, ...) are compound parents: real grouping from real data. Taxi edges; also the quality harness's real fixture.",
+  },
+  reactome: {
+    // round 112: a real biological DAG — Reactome's human Immune
+    // System pathway hierarchy (CC0; regenerate:
+    // node benchmark/fixtures/dag/derive-reactome.mjs)
+    desc: 'Reactome Immune System (flow layout)',
+    nodes: 227,
+    edges: 245,
+    url: 'network-reactome.json',
+    labelKey: 'name',
+    layout: { name: 'flow' },
+    note: "Reactome's human Immune System pathway hierarchy (R-HSA-168256, CC0): 227 pathways over 245 hasEvent relations — a true DAG with 10 multi-parent joins. Band colour is hierarchy depth, so colour rows restate what the ranks claim. Taxi edges.",
+  },
   'workflow-dag': {
     // round 112: the flow layout's manual verification scene
     desc: 'Workflow DAG (flow layout)',

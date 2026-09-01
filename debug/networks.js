@@ -131,6 +131,25 @@ var networks = {
     labelKey: 'label',
     note: "v3's labels demo: the 3x3 anchor grid (v4 has no -inside variants), wrapping, ellipsis, outlines and boxes, a numeric rotation v3's page has no cell for, and an autorotated edge label.",
   },
+  'workflow-dag': {
+    // round 112: the flow layout's manual verification scene
+    desc: 'Workflow DAG (flow layout)',
+    nodes: '~400',
+    edges: '~800',
+    generated: 'workflow-dag',
+    labelKey: 'id',
+    layout: { name: 'flow' },
+    note: 'A seeded staged pipeline DAG — the flow layout runs at load. Stage drives colour, so ranks should read as colour rows; ~6% of edges skip 2–4 stages (the dummy-corridor case). Try curve-style taxi in a custom style to see the routing contract.',
+  },
+  'workflow-dag-clustered': {
+    desc: 'Workflow DAG, clustered (flow layout)',
+    nodes: '~410',
+    edges: '~800',
+    generated: 'workflow-dag-clustered',
+    labelKey: 'id',
+    layout: { name: 'flow' },
+    note: "The same DAG with stage runs grouped under compound parents, every third nested — flow's global compound mode: members contiguous per rank, sibling boxes disjoint, outsiders clear of the walls.",
+  },
   gen: {
     desc: 'Random generated (?gen=NxM)',
     nodes: '?',

@@ -140,6 +140,119 @@ var fixtures = (function () {
     return { nodes: nodes, edges: edges, hasPositions: true };
   }
 
+  // round 112: the staged workflow DAG — the flow layout's manual
+  // verification scene.  Deterministic (seeded), stage-to-stage edges
+  // with 1–3 parents each plus ~6% skip edges spanning 2–4 stages (the
+  // dummy-chain / corridor case), `band` = stage % 5 so the stage
+  // structure is visible in colour.  The clustered variant groups runs
+  // of stages under compound parents (every third nested), the 112.3
+  // global-mode scene: contiguity, disjoint sibling boxes, walls.
+  function generateWorkflowDag(spec, clustered) {
+    // deliberately NOT sized by the shared ?gen knob (whose 10000x30000
+    // default smears a verification scene into a razor-wide band) — the
+    // `gen` network is the scale knob; this one is for reading
+    var n = 400;
+    var seed = 112;
+
+    void spec;
+    var rand = function () {
+      seed = (seed + 0x6d2b79f5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    var stages = Math.max(4, Math.round(Math.sqrt(n) * 0.8));
+    var meanWidth = Math.max(2, Math.round(n / stages));
+    var nodes = [];
+    var edges = [];
+    var stageNodes = [];
+    var s, i, width, layer, id, prev, k, srcLayer;
+
+    for (s = 0; s < stages; s++) {
+      width = Math.max(1, Math.round(meanWidth * (0.5 + rand())));
+      layer = [];
+
+      for (i = 0; i < width; i++) {
+        id = 's' + s + 'n' + i;
+        nodes.push({ data: { id: id, band: s % 5 } });
+        layer.push(id);
+      }
+
+      stageNodes.push(layer);
+    }
+
+    for (s = 1; s < stages; s++) {
+      prev = stageNodes[s - 1];
+
+      for (i = 0; i < stageNodes[s].length; i++) {
+        var fanIn = 1 + Math.floor(rand() * 3);
+
+        for (k = 0; k < fanIn; k++) {
+          edges.push({
+            data: {
+              id: 'e' + edges.length,
+              source: prev[Math.floor(rand() * prev.length)],
+              target: stageNodes[s][i],
+            },
+          });
+        }
+      }
+    }
+
+    var skips = Math.round(edges.length * 0.06);
+
+    for (i = 0; i < skips && stages > 4; i++) {
+      s = Math.floor(rand() * (stages - 4));
+      srcLayer = stageNodes[s];
+
+      var toLayer = stageNodes[s + 2 + Math.floor(rand() * 3)];
+
+      edges.push({
+        data: {
+          id: 'e' + edges.length,
+          source: srcLayer[Math.floor(rand() * srcLayer.length)],
+          target: toLayer[Math.floor(rand() * toLayer.length)],
+        },
+      });
+    }
+
+    if (clustered) {
+      var byId = new Map(
+        nodes.map(function (nd) {
+          return [nd.data.id, nd];
+        }),
+      );
+      var parents = [];
+      var parentN = 0;
+
+      for (s = 0; s + 1 < stageNodes.length; s += 3) {
+        var top = 'p' + parentN++;
+
+        parents.push({ data: { id: top } });
+
+        for (var t = s; t < Math.min(s + 3, stageNodes.length); t++) {
+          var target = top;
+
+          if (t === s + 1) {
+            // nest the middle stage's cluster for the 112.3 wall case
+            target = 'p' + parentN++;
+            parents.push({ data: { id: target, parent: top } });
+          }
+
+          for (i = 0; i < stageNodes[t].length; i++) {
+            byId.get(stageNodes[t][i]).data.parent = target;
+          }
+        }
+      }
+
+      nodes = parents.concat(nodes);
+    }
+
+    return { nodes: nodes, edges: edges };
+  }
+
   // round 14: clustered compound generator — N leaves under ~N/20 parents
   // (every 4th parent nested under the previous one), leaves blobbed per
   // cluster, mostly intra-cluster edges plus a sprinkle of child->parent edges
@@ -640,6 +753,12 @@ var fixtures = (function () {
     }
     if (kind === 'labels') {
       return labelsFixture();
+    }
+    if (kind === 'workflow-dag') {
+      return generateWorkflowDag(spec, false);
+    }
+    if (kind === 'workflow-dag-clustered') {
+      return generateWorkflowDag(spec, true);
     }
 
     return generateNetwork(spec);

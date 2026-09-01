@@ -793,6 +793,10 @@ directions".*
     variance, area, runtime at N — run over dagre and elkjs on
     real DAG fixtures, so "comparable to dagre" is a measured
     bar before anything is designed.
+    *The layered/hierarchical half is taken up by round 112 (the
+    `flow` layout — built, not ported); the harness is its pass
+    112.1.  The portfolio audit for the remaining use cases stays
+    open here.*
 50. **The v3 extension ports** (maintainer, 2026-08-19: the most
     important v3 extensions need v4 ports).  Round 71 builds the
     toolchain and one example; this is the campaign that uses it.

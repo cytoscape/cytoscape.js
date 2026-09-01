@@ -64,10 +64,13 @@ const EXPECTED_EXPORTS = new Set([
   'GridLayoutOptions',
   'LayoutBaseOptions',
   'LayoutOptions',
+  'LayoutScoreMapping', // round 85.3
+  'LayoutSortMapping', // round 85.3
   'Mapper',
   'MapperSpec',
   'PackedIds',
   'PresetLayoutOptions',
+  'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',
   'RendererOptions',
   'StylePropValue',

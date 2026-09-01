@@ -1998,6 +1998,12 @@ test.describe('WebGPU renderer', () => {
       style: { nodes: { width: 12, height: 12 } },
       zoom: 1,
       pan: { x: 200, y: 150 },
+      // the samples below compare full screenshots byte-for-byte, so the
+      // adaptive render scale must not move mid-run: on a slow runner the
+      // sim's frame cost steps the scale down after one ~400 ms window and
+      // the upscale pass shifts every antialiased fringe — which reads
+      // here as "the screen changed" without any node having moved
+      renderer: { renderScaleMin: 1, renderScaleMax: 1 },
     });
     await waitFrames(page);
 

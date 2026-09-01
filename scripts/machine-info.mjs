@@ -548,13 +548,20 @@ function safe(fn) {
  * A stable id for "the same box", so a benchmark trend can refuse to compare
  * runs across machines.  Deliberately excludes anything that drifts on the
  * same hardware — kernel version, node version, free memory.
+ *
+ * Total RAM enters **rounded to the GiB** (round 113.1): `os.totalmem()`
+ * reports what the kernel leaves usable, not what is fitted, and a kernel
+ * upgrade moved it by 1.1 MB on the benchmark box (6.19 → 7.1), which split
+ * that machine's whole published history into two "machines" the
+ * comparison page refused to draw a line between.  A memory *upgrade* still
+ * changes the id; a kernel's reservation does not.
  */
 export function fingerprint(machine) {
   const parts = [
     machine.cpu.model,
     machine.cpu.physicalCores,
     machine.cpu.logicalCores,
-    machine.memory.totalBytes,
+    Math.round(machine.memory.totalBytes / 2 ** 30),
     machine.os.platform,
     machine.os.arch,
     machine.gpus.map((g) => `${g.model}:${g.vramBytes ?? '?'}`).join(','),

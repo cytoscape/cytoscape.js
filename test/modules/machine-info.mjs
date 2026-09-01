@@ -505,4 +505,18 @@ describe('machine-info: fingerprint', () => {
 
     expect(fingerprint(b)).to.equal(fingerprint(a));
   });
+
+  it('ignores the RAM a kernel reserves, not the RAM that is fitted', () => {
+    // round 113.1: os.totalmem() moved by 1.1 MB across a kernel upgrade on
+    // the benchmark box and split its published history in two
+    const a = base();
+    const b = base();
+    const c = base();
+
+    b.memory.totalBytes = a.memory.totalBytes - 1187840;
+    c.memory.totalBytes = a.memory.totalBytes + 16 * 2 ** 30;
+
+    expect(fingerprint(b)).to.equal(fingerprint(a));
+    expect(fingerprint(c)).to.not.equal(fingerprint(a));
+  });
 });

@@ -29,10 +29,13 @@ the v4 flow layout joins as a third adapter in round 112.2 without
 touching the metrics.
 
 Each (fixture, engine) cell runs in a child process under a timeout
-(`--timeout <s>`, default 180), because the first full sweep found the
-baseline the hard way: dagre does not finish the 846-node nested-cluster
-fixture in minutes (its cluster machinery has known hang defects).  A
-hung engine is a *recorded* `timeout` row, not a stalled sweep.
+(`--timeout <s>`, default 300 — the maintainer's cap: no interactive
+use case waits five minutes for a layout), because the first full sweep
+found the baseline the hard way: dagre does not finish the 846-node
+nested-cluster fixture at all (its cluster machinery has known hang
+defects) and ran the 10k workflow fixture past 20 CPU-minutes before
+being killed.  A hung engine is a *recorded* `timeout` row, not a
+stalled sweep.
 
 The reference engines are devDependencies; `src/` never imports them
 (`test/modules/import-graph.mjs` guards that boundary).
@@ -460,7 +463,7 @@ const run = async () => {
   const fixtureFilter = opt('fixture');
   const engineFilter = opt('engine');
   const jsonPath = opt('json');
-  const timeoutMs = (Number(opt('timeout')) || 180) * 1000;
+  const timeoutMs = (Number(opt('timeout')) || 300) * 1000;
 
   const fixtures = readdirSync(FIXTURE_DIR)
     .filter((f) => f.endsWith('.json'))

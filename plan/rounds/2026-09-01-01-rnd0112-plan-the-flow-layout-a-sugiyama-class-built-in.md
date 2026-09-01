@@ -140,9 +140,46 @@ pairs), `compoundMode` (`'global' | 'separate'`), `componentSpacing`
   compound fixture; small → 10k nodes), measuring geometric crossings,
   edge-length mean/variance, bounding area and runtime for
   `@dagrejs/dagre` and `elkjs` as devDependencies (outside `src/`, which
-  imports nothing beyond itself).  The baselines land in this file and
-  set the numeric bar: proposed ≤ dagre's runtime at N=10k and ≤ its
-  crossings on ≥ 80% of fixtures.
+  imports nothing beyond itself).  **Landed 2026-09-01** — the baselines
+  are below, and they moved the bar: at 10k neither reference engine is
+  usable, so "comparable to dagre" is a bar dagre itself clears only on
+  small graphs.
+- **112.1's measured baselines** (i9-9900K, Node v22.22.2, dagre 3.1.1,
+  elkjs 0.12.0, `--stack-size=8192` — both engines overflow the default
+  V8 stack near 10k nodes; per-cell cap 300 s, the maintainer's rule
+  that no interactive use waits five minutes for a layout; time is
+  median of 3 after a warmup; crossings count the engines' own emitted
+  polylines, endpoint-sharing pairs excluded; rerun with
+  `npm run benchmark:layout-quality`):
+
+  | fixture (n / m) | engine | crossings | len mean / cv | area Mpx² | time |
+  | --- | --- | --: | --: | --: | --: |
+  | deps (428 / 510) | dagre | 4,279 | 1,934 / 1.08 | 33.3 | 466 ms |
+  | deps | elk | 3,382 | 1,964 / 1.12 | 94.4 | 336 ms |
+  | workflow-1k (960 / 1,914) | dagre | 20,570 | 6,224 / 1.35 | 103.4 | 10,793 ms |
+  | workflow-1k | elk | 21,825 | 4,945 / 1.55 | 554.9 | 1,674 ms |
+  | deep-skips (1,045 / 2,458) | dagre | — | — | — | **crash** |
+  | deep-skips | elk | 19,198 | 4,372 / 1.61 | 547.1 | 2,676 ms |
+  | compound (846 / 1,742, 34 parents) | dagre | — | — | — | **hang** (killed) |
+  | compound | elk | 21,165 | 2,936 / 0.58 | 192.1 | 1,618 ms |
+  | workflow-10k (10,363 / 21,621) | dagre | — | — | — | **DNF, 20+ CPU-min** (killed) |
+  | workflow-10k | elk | — | — | — | **62 s single run** (over the cap) |
+
+  The failures are the finding: dagre crashes on the long-skip stressor
+  (`Error: Not possible to find intersection inside of the rectangle`),
+  never returns from the 846-node nested-cluster fixture, and ran a
+  single 10k-node layout past 20 CPU-minutes before being killed; elkjs
+  survives everything but needs 62 s for one 10k run.  Both reference
+  engines also emit routed polylines whose crossings the table counts —
+  flow's taxi contract will be measured on the geometry cytoscape
+  actually draws.
+- **The bar for 112.2, set from the table**: on the fixtures dagre
+  completes, flow's crossings and area within ±15% of the better
+  engine and runtime strictly under dagre's; on the fixtures dagre
+  fails, flow must simply *complete* well inside the 300 s cap — the
+  working target is single-digit seconds at 10k, i.e. roughly an order
+  under elkjs, which typed-array columns and Eiglsperger segments make
+  a plausible ask rather than a hope.
 - **112.2 — the core pipeline, flat graphs**: the five modules, options
   and validation, dispatch, types, `test/layout-flow.mjs`, the
   migration-guide built-ins array and MIGRATING.md, `src/README.md`

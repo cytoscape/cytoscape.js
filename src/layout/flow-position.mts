@@ -311,7 +311,9 @@ const mirror = (L: Layered): void => {
  * medians.
  *
  * @param L — the ordered layered form
- * @param realHalfW — per real node half width
+ * @param realHalfW — per real node half width; a full `nTotal`-length
+ *   array assigns every dummy too (compound walls carry their group's
+ *   padding as half-width this way — 112.3)
  * @param opts — separation options
  * @returns x per node (real and dummy), centred per balance
  */
@@ -322,7 +324,11 @@ export const assignX = (
 ): Float64Array => {
   const halfW = new Float64Array(L.nTotal).fill(DUMMY_HALF_W);
 
-  halfW.set(realHalfW.subarray(0, L.n));
+  if (realHalfW.length >= L.nTotal) {
+    halfW.set(realHalfW.subarray(0, L.nTotal));
+  } else {
+    halfW.set(realHalfW.subarray(0, L.n));
+  }
 
   const marked = markConflicts(L);
   const candidates: Float64Array[] = [];
@@ -414,12 +420,15 @@ export const assignX = (
  * @param L — the layered form
  * @param realHalfH — per real node half height
  * @param rankSep — the gap between rank rows
+ * @param margins — compound mode (112.3): per-rank extra top/bottom
+ *   space reserving group vertical padding at interval boundaries
  * @returns y per node (all members of a rank share it)
  */
 export const assignY = (
   L: Layered,
   realHalfH: Float64Array,
   rankSep: number,
+  margins: { top: Float64Array; bottom: Float64Array } | null = null,
 ): Float64Array => {
   const y = new Float64Array(L.nTotal);
   let cursor = 0;
@@ -433,6 +442,10 @@ export const assignY = (
       }
     }
 
+    if (margins != null) {
+      cursor += margins.top[r];
+    }
+
     const center = cursor + maxHalf;
 
     for (const v of L.layers[r]) {
@@ -440,6 +453,10 @@ export const assignY = (
     }
 
     cursor = center + maxHalf + rankSep;
+
+    if (margins != null) {
+      cursor += margins.bottom[r];
+    }
   }
 
   return y;

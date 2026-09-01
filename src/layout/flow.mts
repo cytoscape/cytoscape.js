@@ -40,6 +40,13 @@ import {
 } from './flow-rank.mjs';
 import { buildLayers, orderLayers } from './flow-order.mjs';
 import { assignX, assignY, applyDirection } from './flow-position.mjs';
+import {
+  buildGroupModel,
+  buildCompoundView,
+  insertBorders,
+  rankPadMargins,
+} from './flow-compound.mjs';
+import type { GroupModel } from './flow-compound.mjs';
 import { shelfPack } from './pack.mjs';
 import type { PackBox } from './pack.mjs';
 import {
@@ -331,21 +338,70 @@ export class FlowLayoutImpl implements LayoutImpl {
       halfH[i] = (size[slot * 2 + 1] + border[slot]) / 2;
     }
 
-    // scoped edges with both endpoints in scope
+    const groupModel = buildGroupModel(cy, slots);
+
+    // scoped edges with both endpoints in scope; an endpoint on a
+    // parent node expands to the parent's scoped leaves at
+    // weight/leafCount (112.3 — the drawn meaning: the whole box sits
+    // above or below the other endpoint)
     const endpoints = ctx.endpoints();
     const rawPairs: number[] = [];
     const rawSlots: number[] = [];
+    const rawScale: number[] = [];
+
+    let leavesOf: Map<number, number[]> | null = null;
+
+    if (groupModel != null) {
+      leavesOf = new Map();
+
+      for (let i = 0; i < n; i++) {
+        for (const g of groupModel.chains[i]) {
+          let list = leavesOf.get(g);
+
+          if (list == null) {
+            leavesOf.set(g, (list = []));
+          }
+
+          list.push(i);
+        }
+      }
+    }
+
+    const endsFor = (slot: number): number[] | null => {
+      const i = indexOf.get(slot);
+
+      if (i != null) {
+        return [i];
+      }
+
+      if (groupModel != null) {
+        const g = groupModel.groupOfSlot.get(slot);
+
+        if (g != null) {
+          return leavesOf!.get(g) ?? null;
+        }
+      }
+
+      return null;
+    };
 
     for (const edgeSlot of ctx.edgeSlots()) {
-      const s = indexOf.get(endpoints[edgeSlot * 2]);
-      const t = indexOf.get(endpoints[edgeSlot * 2 + 1]);
+      const ss = endsFor(endpoints[edgeSlot * 2]);
+      const ts = endsFor(endpoints[edgeSlot * 2 + 1]);
 
-      if (s == null || t == null) {
+      if (ss == null || ts == null) {
         continue;
       }
 
-      rawPairs.push(s, t);
-      rawSlots.push(edgeSlot);
+      const scale = 1 / (ss.length * ts.length);
+
+      for (const s of ss) {
+        for (const t of ts) {
+          rawPairs.push(s, t);
+          rawSlots.push(edgeSlot);
+          rawScale.push(scale);
+        }
+      }
     }
 
     const rawWeight = resolveEdgeOption(
@@ -366,6 +422,7 @@ export class FlowLayoutImpl implements LayoutImpl {
 
     for (let e = 0; e < rawSlots.length; e++) {
       rawMinLen[e] = Math.max(1, Math.round(rawMinLenF[e]));
+      rawWeight[e] *= rawScale[e];
     }
 
     const scope = buildScope(
@@ -389,10 +446,20 @@ export class FlowLayoutImpl implements LayoutImpl {
       }
     }
 
+    // a compound's members must share a component: a split parent
+    // would derive one box across two packed component tiles
+    if (leavesOf != null) {
+      for (const list of leavesOf.values()) {
+        for (let i = 1; i < list.length; i++) {
+          syntheticPairs.push(list[0], list[i]);
+        }
+      }
+    }
+
     const { comps, compOf } = splitComponents(scope, syntheticPairs);
 
     for (const comp of comps) {
-      this.layoutComponent(comp, opts, constraints, state);
+      this.layoutComponent(comp, opts, constraints, state, groupModel);
     }
 
     if (comps.length > 1) {
@@ -491,6 +558,7 @@ export class FlowLayoutImpl implements LayoutImpl {
     opts: RunState['opts'],
     constraints: { min: number[]; max: number[]; same: number[][] },
     state: RunState,
+    groupModel: GroupModel | null,
   ): void {
     if (!opts.acyclic) {
       if (opts.cycleRemoval === 'dfs') {
@@ -504,10 +572,46 @@ export class FlowLayoutImpl implements LayoutImpl {
     const rankCount = normalizeRanks(rank);
     const L = buildLayers(comp, rank, rankCount);
 
-    orderLayers(L, opts.thoroughness);
+    // compound path (112.3): grouped ordering, border walls, padding
+    let nested = false;
 
-    const x = assignX(L, comp.halfW, { nodeSep: opts.nodeSep });
-    const y = assignY(L, comp.halfH, opts.rankSep);
+    if (groupModel != null) {
+      for (let v = 0; v < comp.n && !nested; v++) {
+        nested = groupModel.chains[comp.scopeOf[v]].length > 0;
+      }
+    }
+
+    let margins: { top: Float64Array; bottom: Float64Array } | null = null;
+    let halfWAll: Float64Array = comp.halfW;
+
+    if (nested) {
+      const view = buildCompoundView(
+        groupModel!,
+        comp.scopeOf,
+        comp.src,
+        comp.tgt,
+        L,
+      );
+
+      orderLayers(L, opts.thoroughness, view.chainOf);
+
+      const wallGroup = insertBorders(L, view);
+
+      margins = rankPadMargins(L, view);
+      halfWAll = new Float64Array(L.nTotal).fill(1);
+      halfWAll.set(comp.halfW.subarray(0, comp.n));
+
+      for (let v = 0; v < L.nTotal; v++) {
+        if (wallGroup[v] >= 0) {
+          halfWAll[v] = Math.max(1, groupModel!.padX[wallGroup[v]]);
+        }
+      }
+    } else {
+      orderLayers(L, opts.thoroughness);
+    }
+
+    const x = assignX(L, halfWAll, { nodeSep: opts.nodeSep });
+    const y = assignY(L, comp.halfH, opts.rankSep, margins);
     const [outX, outY] = applyDirection(x, y, opts.direction);
 
     for (let v = 0; v < comp.n; v++) {

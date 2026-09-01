@@ -416,6 +416,136 @@ describe('gpu/layout: flow (round 112)', function () {
     });
   });
 
+  describe('compound graphs (112.3, global mode)', function () {
+    // controls (run once by hand): with the chain comparator removed
+    // from sortLayer the contiguity spec goes red; with the border
+    // walls skipped the exclusion spec goes red on wider fixtures.
+    var compoundEls = () => ({
+      nodes: [
+        ...nodes('p1', 'p2', 'x', 'y'),
+        { data: { id: 'a', parent: 'p1' } },
+        { data: { id: 'b', parent: 'p1' } },
+        { data: { id: 'c', parent: 'p2' } },
+        { data: { id: 'd', parent: 'p2' } },
+      ],
+      edges: edges(['a', 'b'], ['c', 'd'], ['x', 'a'], ['b', 'y'], ['a', 'c']),
+    });
+
+    it('sibling parent boxes are disjoint', function () {
+      mk(compoundEls());
+      run();
+
+      var bb1 = cy.$id('p1').boundingBox();
+      var bb2 = cy.$id('p2').boundingBox();
+      var disjoint =
+        bb1.x2 <= bb2.x1 ||
+        bb2.x2 <= bb1.x1 ||
+        bb1.y2 <= bb2.y1 ||
+        bb2.y2 <= bb1.y1;
+
+      expect(disjoint, 'sibling boxes overlap').to.equal(true);
+    });
+
+    it('outsiders stay outside the parent box', function () {
+      mk(compoundEls());
+      run();
+
+      for (const outsider of ['x', 'y']) {
+        for (const parent of ['p1', 'p2']) {
+          var bb = cy.$id(parent).boundingBox();
+          var p = posOf(outsider);
+          var inside = p.x > bb.x1 && p.x < bb.x2 && p.y > bb.y1 && p.y < bb.y2;
+
+          expect(inside, `${outsider} inside ${parent}`).to.equal(false);
+        }
+      }
+    });
+
+    it('group members are contiguous within a rank', function () {
+      // p1 holds three same-rank children beside two outsiders
+      mk({
+        nodes: [
+          ...nodes('p1', 'r', 'o1', 'o2'),
+          { data: { id: 'm1', parent: 'p1' } },
+          { data: { id: 'm2', parent: 'p1' } },
+          { data: { id: 'm3', parent: 'p1' } },
+        ],
+        edges: edges(
+          ['r', 'm1'],
+          ['r', 'm2'],
+          ['r', 'm3'],
+          ['r', 'o1'],
+          ['r', 'o2'],
+        ),
+      });
+      run();
+
+      var xs = ['m1', 'm2', 'm3'].map((id) => posOf(id).x);
+      var lo = Math.min(...xs);
+      var hi = Math.max(...xs);
+
+      for (const outsider of ['o1', 'o2']) {
+        var x = posOf(outsider).x;
+
+        expect(x < lo || x > hi, `${outsider} between members`).to.equal(true);
+      }
+    });
+
+    it('an edge on a parent node places the other endpoint past the box', function () {
+      mk(compoundEls());
+      cy.add({ data: { id: 'below' } });
+      cy.add({ data: { id: 'pe', source: 'p1', target: 'below' } });
+      run();
+
+      var bb = cy.$id('p1').boundingBox();
+
+      expect(posOf('below').y).to.be.greaterThan(bb.y2);
+    });
+
+    it('a nested parent box sits inside its outer box', function () {
+      mk({
+        nodes: [
+          ...nodes('outer'),
+          { data: { id: 'inner', parent: 'outer' } },
+          { data: { id: 'a', parent: 'inner' } },
+          { data: { id: 'b', parent: 'inner' } },
+          { data: { id: 'c', parent: 'outer' } },
+        ],
+        edges: edges(['a', 'b'], ['c', 'a']),
+      });
+      run();
+
+      var out = cy.$id('outer').boundingBox();
+      var inn = cy.$id('inner').boundingBox();
+
+      expect(inn.x1).to.be.at.least(out.x1);
+      expect(inn.x2).to.be.at.most(out.x2);
+      expect(inn.y1).to.be.at.least(out.y1);
+      expect(inn.y2).to.be.at.most(out.y2);
+    });
+
+    it('a parent split across otherwise-disconnected members stays one box', function () {
+      mk({
+        nodes: [
+          ...nodes('p'),
+          { data: { id: 'a', parent: 'p' } },
+          { data: { id: 'b', parent: 'p' } },
+          ...nodes('solo'),
+        ],
+        edges: [],
+      });
+      run();
+
+      // a and b were welded into one component: the derived box is a
+      // single tile, and solo is packed clear of it
+      var bb = cy.$id('p').boundingBox();
+      var p = posOf('solo');
+      var inside = p.x > bb.x1 && p.x < bb.x2 && p.y > bb.y1 && p.y < bb.y2;
+
+      expect(inside, 'solo inside the parent box').to.equal(false);
+    });
+  });
+
   it('lifecycle events fire once, in order', async function () {
     mk(diamond());
 

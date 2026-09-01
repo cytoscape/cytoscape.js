@@ -241,13 +241,19 @@ const refreshPos = (L: Layered): void => {
   }
 };
 
-/** Barycenter sort of one layer against fixed neighbour positions. */
+/** Barycenter sort of one layer against fixed neighbour positions.
+ * With `chains` (compound mode), the comparator sorts by ancestor
+ * chain first — sibling groups by their sweep-global `groupScore`,
+ * ties on group id — so group contiguity and side-consistency hold by
+ * construction (round 112.3). */
 const sortLayer = (
   L: Layered,
   r: number,
   useUp: boolean,
   bary: Float64Array,
   median: Float64Array,
+  chains: number[][] | null = null,
+  groupScore: Map<number, number> | null = null,
 ): void => {
   const layer = L.layers[r];
   const off = useUp ? L.upOff : L.downOff;
@@ -280,13 +286,84 @@ const sortLayer = (
     }
   }
 
-  layer.sort(
-    (a, b) => bary[a] - bary[b] || median[a] - median[b] || L.pos[a] - L.pos[b],
-  );
+  const byNode = (a: number, b: number): number =>
+    bary[a] - bary[b] || median[a] - median[b] || L.pos[a] - L.pos[b];
+
+  if (chains == null) {
+    layer.sort(byNode);
+  } else {
+    layer.sort((a, b) => {
+      const ca = chains[a];
+      const cb = chains[b];
+      const depth = Math.max(ca.length, cb.length);
+
+      for (let k = 0; k < depth; k++) {
+        const ga = k < ca.length ? ca[k] : -1;
+        const gb = k < cb.length ? cb[k] : -1;
+
+        if (ga === gb) {
+          continue;
+        }
+
+        const keyA = ga < 0 ? bary[a] : groupScore!.get(ga)!;
+        const keyB = gb < 0 ? bary[b] : groupScore!.get(gb)!;
+
+        if (keyA !== keyB) {
+          return keyA - keyB;
+        }
+
+        return ga - gb; // deterministic, and keeps groups contiguous
+      }
+
+      return byNode(a, b);
+    });
+  }
 
   for (let i = 0; i < layer.length; i++) {
     L.pos[layer[i]] = i;
   }
+};
+
+/** Sweep-global group scores: mean normalized position of members. */
+const scoreGroups = (L: Layered, chains: number[][]): Map<number, number> => {
+  const sum = new Map<number, number>();
+  const count = new Map<number, number>();
+
+  for (const layer of L.layers) {
+    const width = layer.length || 1;
+
+    for (const v of layer) {
+      const t = (L.pos[v] + 0.5) / width;
+
+      for (const g of chains[v]) {
+        sum.set(g, (sum.get(g) ?? 0) + t);
+        count.set(g, (count.get(g) ?? 0) + 1);
+      }
+    }
+  }
+
+  const score = new Map<number, number>();
+
+  for (const [g, s] of sum) {
+    score.set(g, s / count.get(g)!);
+  }
+
+  return score;
+};
+
+/** Are two ancestor chains identical? */
+const sameChain = (a: number[], b: number[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 /** Crossings contributed by the ordered pair (v, w) on one side. */
@@ -317,8 +394,10 @@ const pairCrossings = (
   return count;
 };
 
-/** One transpose pass: adjacent swaps that reduce crossings, in place. */
-const transpose = (L: Layered): boolean => {
+/** One transpose pass: adjacent swaps that reduce crossings, in place.
+ * In compound mode only same-chain neighbours may swap — a cross-group
+ * swap would break contiguity the sort just established. */
+const transpose = (L: Layered, chains: number[][] | null = null): boolean => {
   let improved = false;
 
   for (let r = 0; r < L.layers.length; r++) {
@@ -327,6 +406,10 @@ const transpose = (L: Layered): boolean => {
     for (let i = 0; i + 1 < layer.length; i++) {
       const v = layer[i];
       const w = layer[i + 1];
+
+      if (chains != null && !sameChain(chains[v], chains[w])) {
+        continue;
+      }
       const before =
         pairCrossings(L, v, w, true) + pairCrossings(L, v, w, false);
       const after =
@@ -346,15 +429,16 @@ const transpose = (L: Layered): boolean => {
 };
 
 /** Initial order: BFS layers from the top, parents' order propagating. */
-const initOrder = (L: Layered): void => {
+const initOrder = (L: Layered, chains: number[][] | null): void => {
   // model order within rank 0; each later rank ordered by mean parent
   // position, model order as the tie — one down pass of the sweep's
   // own comparator, cheap and deterministic
   const bary = new Float64Array(L.nTotal);
   const median = new Float64Array(L.nTotal);
+  const score = chains != null ? scoreGroups(L, chains) : null;
 
   for (let r = 1; r < L.layers.length; r++) {
-    sortLayer(L, r, true, bary, median);
+    sortLayer(L, r, true, bary, median, chains, score);
   }
 };
 
@@ -370,14 +454,21 @@ const IDLE_SWEEPS = 3;
  * @param L — the layered form; `layers`/`pos` are reordered in place
  * @param thoroughness — the effort dial (1..10): sweep budget
  *   `4 + 2·thoroughness`, early-out after 3 idle sweeps
+ * @param chains — compound mode (112.3): per-node ancestor chains;
+ *   ordering then keeps each group contiguous per rank and
+ *   side-consistent across ranks
  */
-export const orderLayers = (L: Layered, thoroughness: number): void => {
+export const orderLayers = (
+  L: Layered,
+  thoroughness: number,
+  chains: number[][] | null = null,
+): void => {
   if (L.layers.length < 2) {
     return;
   }
 
-  initOrder(L);
-  transpose(L);
+  initOrder(L, chains);
+  transpose(L, chains);
 
   let best = countTotalCrossings(L);
   let bestLayers = L.layers.map((l) => l.slice());
@@ -387,17 +478,19 @@ export const orderLayers = (L: Layered, thoroughness: number): void => {
   const median = new Float64Array(L.nTotal);
 
   for (let s = 0; s < sweeps && best > 0; s++) {
+    const score = chains != null ? scoreGroups(L, chains) : null;
+
     if (s % 2 === 0) {
       for (let r = 1; r < L.layers.length; r++) {
-        sortLayer(L, r, true, bary, median);
+        sortLayer(L, r, true, bary, median, chains, score);
       }
     } else {
       for (let r = L.layers.length - 2; r >= 0; r--) {
-        sortLayer(L, r, false, bary, median);
+        sortLayer(L, r, false, bary, median, chains, score);
       }
     }
 
-    for (let t = 0; t < 4 && transpose(L); t++) {
+    for (let t = 0; t < 4 && transpose(L, chains); t++) {
       // greedy local swaps until stable, bounded
     }
 

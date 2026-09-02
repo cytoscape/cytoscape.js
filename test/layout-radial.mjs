@@ -263,11 +263,12 @@ describe('gpu/layout: radial (round 85.1)', function () {
     expect(radiusOf('a0')).to.be.closeTo(74, 1e-4);
   });
 
-  it('levelSpacing is a floor under avoidOverlap (114.6)', function () {
-    // 30 px bodies padded by 10 are 40 px boxes, 56.6 px across the
-    // diagonal: two rings cannot sit 37 apart without touching, so the
-    // first ring grows to that diagonal — and the second, holding eight
-    // leaves in A's wedge, grows well past 74 for its neighbours
+  it('levelSpacing is a floor under avoidOverlap (114.6; exact since 115)', function () {
+    // 30 px bodies padded by 10 are 40 px boxes: two rings cannot sit
+    // 37 apart without touching, so the first ring grows past the floor
+    // — to no more than the 40 px band plus what its own neighbours
+    // need, not the 56.6 px diagonal 114.6 charged — and the second,
+    // holding eight leaves in A's wedge, grows well past 74
     mk(unbalanced());
     cy.layout({
       name: 'radial',
@@ -276,7 +277,8 @@ describe('gpu/layout: radial (round 85.1)', function () {
       fit: false,
     }).run();
 
-    expect(radiusOf('a')).to.be.closeTo(40 * Math.SQRT2, 1e-4);
+    expect(radiusOf('a')).to.be.greaterThan(40 - 1e-4);
+    expect(radiusOf('a')).to.be.lessThan(40 * Math.SQRT2);
     expect(radiusOf('a0')).to.be.greaterThan(74);
   });
 
@@ -376,7 +378,7 @@ describe('gpu/layout: radial (round 85.1)', function () {
       }
     });
 
-    it('labels widen the rings by default; nodeDimensionsIncludeLabels: false does not', function () {
+    it('labels widen the rings on request; the default (bodies alone) does not', function () {
       mk(star(12));
       cy.style({
         nodes: {
@@ -385,7 +387,12 @@ describe('gpu/layout: radial (round 85.1)', function () {
           label: 'a label wide enough to matter',
         },
       });
-      cy.layout({ name: 'radial', roots: ['r'], fit: false }).run();
+      cy.layout({
+        name: 'radial',
+        roots: ['r'],
+        fit: false,
+        nodeDimensionsIncludeLabels: true,
+      }).run();
 
       var withLabels = radiusOf('l0');
 

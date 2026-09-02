@@ -1,15 +1,24 @@
 import * as math from '../math.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
+import { nodeDimsOf } from './dims.mjs';
+import { ringTangentialRadius } from './separation.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { CircleLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
 
 /*
-Circle layout: v3's math verbatim over the collection scope.  One
-deliberate correction vs the repo's v3 file: `layoutPositions` is called
-on the *sorted* node collection (as upstream v3 does), so the `sort`
-option actually orders nodes around the circle.
+Circle layout: v3's math over the collection scope.  One deliberate
+correction vs the repo's v3 file: `layoutPositions` is called on the
+*sorted* node collection (as upstream v3 does), so the `sort` option
+actually orders nodes around the circle.
+
+Overlap (round 115): v3 grew a crowded ring by the largest node's
+longer side times 1.75, for every pair alike.  The ring now takes the
+smallest radius at which no two of its nodes overlap — each angular
+pair separated along its own chord, so a wide label at the side of the
+ring (where the chord runs vertically) costs its height, not its width
+— plus `avoidOverlapPadding` around every box.
 */
 
 const defaults: Omit<CircleLayoutOptions, 'name'> = {
@@ -17,6 +26,7 @@ const defaults: Omit<CircleLayoutOptions, 'name'> = {
   padding: 30,
   boundingBox: undefined,
   avoidOverlap: true,
+  avoidOverlapPadding: 10,
   spacingFactor: undefined,
   radius: undefined,
   startAngle: (3 / 2) * Math.PI,
@@ -127,22 +137,28 @@ export class CircleLayout {
       r = Math.min(bb.h, bb.w) / 2 - minDistance;
     }
 
-    // adjust the radius so nodes can't overlap
+    const angleOf = (i: number): number =>
+      (options.startAngle as number) + i * dTheta * (clockwise ? 1 : -1);
+
+    // grow the radius until no two nodes overlap (115: exact per pair)
     if (nodes.length > 1 && options.avoidOverlap) {
-      minDistance *= 1.75; // just to have some nice spacing
+      const dims = nodeDimsOf(cy, nodes, {
+        includeLabels: options.nodeDimensionsIncludeLabels === true,
+        padding: options.avoidOverlapPadding ?? 10,
+      });
+      const members = new Int32Array(nodes.length);
+      const angles = new Float64Array(nodes.length);
 
-      const dcos = Math.cos(dTheta) - Math.cos(0);
-      const dsin = Math.sin(dTheta) - Math.sin(0);
-      const rMin = Math.sqrt(
-        (minDistance * minDistance) / (dcos * dcos + dsin * dsin),
-      );
+      for (let i = 0; i < nodes.length; i++) {
+        members[i] = i;
+        angles[i] = angleOf(i);
+      }
 
-      r = Math.max(rMin, r);
+      r = Math.max(ringTangentialRadius(dims, { members, angles }), r);
     }
 
     const getPos = (_ele: Collection, i: number): Position => {
-      const theta =
-        (options.startAngle as number) + i * dTheta * (clockwise ? 1 : -1);
+      const theta = angleOf(i);
 
       return {
         x: center.x + r * Math.cos(theta),

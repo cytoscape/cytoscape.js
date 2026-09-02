@@ -5,16 +5,26 @@ import {
   resolveScores,
   validateScoreMapping,
 } from './layout-mapping.mjs';
+import { nodeDimsOf } from './dims.mjs';
+import { ringRadius, type Ring } from './separation.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { ConcentricLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
 
 /*
-Concentric layout: v3's level-binning and radius math verbatim over the
-collection scope.  The concentric value is recorded in each node's scratch
-(`concentric` key) as v3 does; v4 has no style functions, so there is no
-updateStyle() pass.
+Concentric layout: v3's level-binning over the collection scope.  The
+concentric value is recorded in each node's scratch (`concentric` key)
+as v3 does; v4 has no style functions, so there is no updateStyle()
+pass.
+
+Overlap (round 115): v3 spaced every level by one number — the largest
+node's longer side plus `minNodeSpacing` — as both the chord between
+angular neighbours and the step between rings.  Each ring now takes
+the smallest radius that clears its own nodes and the ring inside it
+(`separation.mts`), `minNodeSpacing` padding every box; a level's
+angles are untouched.  `avoidOverlap: false` keeps v3's bounded
+uniform steps.
 */
 
 const defaults: Omit<ConcentricLayoutOptions, 'name'> = {
@@ -140,11 +150,7 @@ export class ConcentricLayout {
     for (let i = 0; i < nodes.length; i++) {
       const nbb = nodes[i].layoutDimensions(options);
 
-      // the diagonal, not the longer side (114.8): the chord rule below
-      // spaces centres, and two 30 px squares whose centres are 40
-      // apart still overlap corner-on at 45 degrees — v3 has that
-      // overlap; the circumscribed circle is the guarantee
-      maxNodeSize = Math.max(maxNodeSize, Math.hypot(nbb.w, nbb.h));
+      maxNodeSize = Math.max(maxNodeSize, nbb.w, nbb.h);
     }
 
     // decreasing order
@@ -184,8 +190,24 @@ export class ConcentricLayout {
       minDist = Math.min(minDist, rStep);
     }
 
-    // find each level's metrics
+    // find each level's metrics.  Under avoidOverlap (115) each ring is
+    // solved exactly against its own nodes and the ring inside it; the
+    // boxes carry minNodeSpacing as padding
+    const dims = options.avoidOverlap
+      ? nodeDimsOf(cy, nodes, {
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: options.minNodeSpacing as number,
+        })
+      : null;
+    const indexOf = new Map<Collection, number>();
+
+    for (let i = 0; i < nodes.length; i++) {
+      indexOf.set(nodes[i], i);
+    }
+
     let r = 0;
+    let inner: Ring | null = null;
+    let innerR = 0;
 
     for (const level of levels) {
       const sweep =
@@ -195,18 +217,26 @@ export class ConcentricLayout {
 
       level.dTheta = sweep / Math.max(1, level.length - 1);
 
-      if (level.length > 1 && options.avoidOverlap) {
-        const dcos = Math.cos(level.dTheta) - Math.cos(0);
-        const dsin = Math.sin(level.dTheta) - Math.sin(0);
-        const rMin = Math.sqrt(
-          (minDist * minDist) / (dcos * dcos + dsin * dsin),
-        );
+      if (dims != null) {
+        const members = new Int32Array(level.length);
+        const angles = new Float64Array(level.length);
 
-        r = Math.max(rMin, r);
+        for (let j = 0; j < level.length; j++) {
+          members[j] = indexOf.get(level[j].node) as number;
+          angles[j] =
+            (options.startAngle as number) +
+            (clockwise ? 1 : -1) * level.dTheta * j;
+        }
+
+        const ring = { members, angles };
+
+        level.r = ringRadius(dims, ring, inner, innerR, 0);
+        inner = ring;
+        innerR = level.r;
+      } else {
+        level.r = r;
+        r += minDist;
       }
-
-      level.r = r;
-      r += minDist;
     }
 
     if (options.equidistant) {

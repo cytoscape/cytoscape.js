@@ -2,6 +2,8 @@ import * as math from '../math.mjs';
 import { rotatePosAndSkewByBox } from '../util/position.mjs';
 import { ascending } from '../util/sort.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
+import { nodeDimsOf } from './dims.mjs';
+import { halfExtentAlong, ringTangentialRadius } from './separation.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { BreadthFirstLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -12,6 +14,15 @@ Breadthfirst (tree/hierarchy) layout: v3's pass over the collection scope,
 using the round-10 slot-native bfs for the depth assignment.  No compounds
 in v4, so every node is childless.  `roots` takes a collection or an array
 of node ids (no selector strings).
+
+Overlap (round 115): v3 took one number — the largest node's longer
+side — as the floor under both the spacing along a rank and the step
+between ranks, so a single long label spread every rank and every
+row by its width.  The floors are now per axis and per rank: nodes
+along a rank need the sum of their half widths (any pair a uniform
+spacing could bring together), ranks need the tallest node in each,
+and the rotation-and-skew of a sideways direction is undone so the
+need survives it.  `avoidOverlapPadding` pads every box.
 */
 
 const defaults: Omit<BreadthFirstLayoutOptions, 'name'> = {
@@ -24,6 +35,7 @@ const defaults: Omit<BreadthFirstLayoutOptions, 'name'> = {
   spacingFactor: 1.75,
   boundingBox: undefined,
   avoidOverlap: true,
+  avoidOverlapPadding: 0, // spacingFactor (1.75) supplies the air, as in v3
   roots: undefined,
   depthSort: undefined,
   animate: false,
@@ -253,17 +265,6 @@ export class BreadthFirstLayout {
       }
     }
 
-    // min distance between nodes
-    let minDistance = 0;
-
-    if (options.avoidOverlap) {
-      for (let i = 0; i < nodes.length; i++) {
-        const nbb = nodes[i].layoutDimensions(options);
-
-        minDistance = Math.max(minDistance, nbb.w, nbb.h);
-      }
-    }
-
     // weighted percent per node from connectivity to higher levels
     const cachedWeightedPercent = new Map<Collection, number>();
 
@@ -345,11 +346,140 @@ export class BreadthFirstLayout {
       y: bb.y1 + bb.h / 2,
     };
 
+    // the overlap floors (115): per rank along the rank axis, one step
+    // across ranks, a ring step in circle mode — all in the frame the
+    // tree is drawn in, then divided by the scale the direction's
+    // rotate-and-skew applies on the way out
+    const angle = rotateDegrees[options.direction as string];
+    const swapAxes = angle === 90 || angle === -90;
+    const skewX = angle === 0 ? 1 : bb.w / bb.h;
+    const skewY = angle === 0 ? 1 : bb.h / bb.w;
+    const alongScale = swapAxes ? skewY : skewX;
+    const stepScale = swapAxes ? skewX : skewY;
+    const rankNeed = new Float64Array(depthsLen);
+    let stepNeed = 0;
+    let ringNeed = 0;
+
+    if (options.avoidOverlap) {
+      const dims = nodeDimsOf(cy, nodes, {
+        includeLabels: options.nodeDimensionsIncludeLabels === true,
+        padding: options.avoidOverlapPadding ?? 0,
+      });
+      const indexOf = new Map<Collection, number>();
+
+      for (let i = 0; i < nodes.length; i++) {
+        indexOf.set(nodes[i], i);
+      }
+
+      // half extents in the drawn frame: along the rank, across it
+      const halfX = (i: number): number => Math.max(-dims.x1[i], dims.x2[i]);
+      const halfY = (i: number): number => Math.max(-dims.y1[i], dims.y2[i]);
+      const along = swapAxes ? halfY : halfX;
+      const across = swapAxes ? halfX : halfY;
+      const acrossMax = new Float64Array(depthsLen);
+      let acrossAll = 0;
+
+      for (let d = 0; d < depthsLen; d++) {
+        const rank = depths[d] as Collection[];
+        const idx = rank.map((ele) => indexOf.get(ele) as number);
+        let alongMax = 0;
+
+        for (const i of idx) {
+          alongMax = Math.max(alongMax, along(i));
+          acrossMax[d] = Math.max(acrossMax[d], across(i));
+        }
+
+        acrossAll = Math.max(acrossAll, acrossMax[d]);
+
+        // uniform spacing along the rank: every pair k places apart
+        // needs its half extents over k — checked while a pair could
+        // still meet at the floor so far
+        for (let a = 0; a < idx.length; a++) {
+          for (let k = 1; a + k < idx.length; k++) {
+            if (k > 1 && k * rankNeed[d] >= along(idx[a]) + alongMax) {
+              break;
+            }
+
+            rankNeed[d] = Math.max(
+              rankNeed[d],
+              (along(idx[a]) + along(idx[a + k])) / k,
+            );
+          }
+        }
+
+        rankNeed[d] /= alongScale;
+      }
+
+      for (let d = 0; d < depthsLen; d++) {
+        for (let k = 1; d + k < depthsLen; k++) {
+          if (k > 1 && k * stepNeed >= acrossMax[d] + acrossAll) {
+            break;
+          }
+
+          stepNeed = Math.max(stepNeed, (acrossMax[d] + acrossMax[d + k]) / k);
+        }
+      }
+
+      stepNeed /= stepScale;
+
+      if (options.circle) {
+        // one radius step for every ring: each depth's ring must clear
+        // its own nodes at its uniform angles, and the ring inside it
+        // by both rings' radial extents; a rotated ring is skewed into
+        // an ellipse, so the step is divided by the smaller scale
+        const halfStep = depthsLen > 0 && depths[0].length <= 3 ? 0.5 : 0;
+        const multiplier = (d: number): number =>
+          d === 0 && depths[0].length === 1 ? 0 : d + 1 - halfStep;
+        let innerExt = 0;
+
+        for (let d = 0; d < depthsLen; d++) {
+          const rank = depths[d] as Collection[];
+          const members = new Int32Array(rank.length);
+          const angles = new Float64Array(rank.length);
+          let ext = 0;
+
+          for (let j = 0; j < rank.length; j++) {
+            members[j] = indexOf.get(rank[j]) as number;
+            angles[j] = ((2 * Math.PI) / rank.length) * j;
+            ext = Math.max(ext, halfExtentAlong(dims, members[j], angles[j]));
+          }
+
+          const m = multiplier(d);
+
+          if (m > 0) {
+            ringNeed = Math.max(
+              ringNeed,
+              ringTangentialRadius(dims, { members, angles }) / m,
+            );
+          }
+
+          if (d > 0) {
+            const dm = m - multiplier(d - 1);
+
+            ringNeed = Math.max(
+              ringNeed,
+              (innerExt + ext) / Math.max(dm, 1e-9),
+            );
+          }
+
+          innerExt = ext;
+        }
+
+        ringNeed /= Math.min(alongScale, stepScale);
+      }
+    }
+
+    let rankNeedMax = 0;
+
+    for (let d = 0; d < depthsLen; d++) {
+      rankNeedMax = Math.max(rankNeedMax, rankNeed[d]);
+    }
+
     // average node size
     const aveNodeSize = { w: -1, h: -1 };
 
     for (let i = 0; i < nodes.length; i++) {
-      // the layout reading (114.6): bodies plus labels by default, no
+      // the layout reading (114.6): bodies plus labels on request, no
       // overlay / outline term — the bounding box used to bring those
       const box = nodes[i].layoutDimensions(options);
 
@@ -366,7 +496,7 @@ export class BreadthFirstLayout {
         : hasBoundingBox
           ? (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen - 1)
           : (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen + 1),
-      minDistance,
+      stepNeed,
     );
 
     const maxDepthSize = depths.reduce(
@@ -383,7 +513,7 @@ export class BreadthFirstLayout {
           bb.h / 2 / depthsLen,
         );
 
-        radiusStepSize = Math.max(radiusStepSize, minDistance);
+        radiusStepSize = Math.max(radiusStepSize, ringNeed);
 
         let radius =
           radiusStepSize * depth +
@@ -410,7 +540,7 @@ export class BreadthFirstLayout {
               ((options.grid ? maxDepthSize : depthSize) - 1)
             : (bb.w - padding * 2 - aveNodeSize.w) /
               ((options.grid ? maxDepthSize : depthSize) + 1),
-        minDistance,
+        options.grid ? rankNeedMax : rankNeed[depth],
       );
 
       return {

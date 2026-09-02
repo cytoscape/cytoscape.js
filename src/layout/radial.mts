@@ -1,5 +1,6 @@
 import * as math from '../math.mjs';
 import { nodeDimsOf } from './dims.mjs';
+import { ringRadius, type Ring } from './separation.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { RadialLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -28,11 +29,12 @@ disconnected component always gets a wedge.
 strings).  Leaves only; compound parents derive from their placed
 children (the standing rule).
 
-Overlap (round 114.6): the wedge angles are the structure, so a ring's
-radius is the one degree of freedom — under `avoidOverlap` (default)
-each ring grows until neither the ring inside it nor the neighbours
-along it can touch, node boxes read through the shared dimensions
-(labels included by default).
+Overlap (round 114.6, exact since 115): the wedge angles are the
+structure, so a ring's radius is the one degree of freedom — under
+`avoidOverlap` (default) each ring takes the smallest radius at which
+neither the ring inside it nor the neighbours along it touch, every
+pair separated along its own direction (`separation.mts`), node boxes
+read through the shared dimensions (labels on request).
 */
 
 const defaults: Omit<RadialLayoutOptions, 'name'> = {
@@ -294,76 +296,46 @@ export class RadialLayout {
 
     if (options.avoidOverlap !== false && nodes.length > 1) {
       const dims = nodeDimsOf(cy, nodes, {
-        includeLabels: options.nodeDimensionsIncludeLabels !== false,
+        includeLabels: options.nodeDimensionsIncludeLabels === true,
         padding: options.avoidOverlapPadding ?? 10,
       });
-      // a box's footprint for the chord rule is its diagonal — the
-      // circumscribed circle — so two boxes whose centres are at least
-      // the mean of their diagonals apart cannot overlap in *any*
-      // direction (the longer side alone lets two squares touch
-      // corner-on along a diagonal)
-      const extOf = new Map<Collection, number>();
+      const indexOf = new Map<Collection, number>();
 
       for (let i = 0; i < nodes.length; i++) {
-        extOf.set(
-          nodes[i],
-          Math.hypot(dims.x2[i] - dims.x1[i], dims.y2[i] - dims.y1[i]),
-        );
+        indexOf.set(nodes[i], i);
       }
 
       const rings: Collection[][] = [];
-      const maxExt = new Float64Array(maxRing + 1);
 
       for (let k = 0; k <= maxRing; k++) {
         rings.push([]);
       }
 
       for (const node of order) {
-        const ring = (depthOf.get(node) as number) + rootOffset;
-
-        rings[ring].push(node);
-        maxExt[ring] = Math.max(maxExt[ring], extOf.get(node) ?? 0);
+        rings[(depthOf.get(node) as number) + rootOffset].push(node);
       }
 
-      const fullSweep = sweep >= 2 * Math.PI - 1e-9;
+      const ringOf = (k: number): Ring => {
+        const list = rings[k];
+        const members = new Int32Array(list.length);
+        const angles = new Float64Array(list.length);
+
+        for (let j = 0; j < list.length; j++) {
+          members[j] = indexOf.get(list[j]) as number;
+          angles[j] =
+            (options.startAngle as number) + dir * bisectorOf(list[j]);
+        }
+
+        return { members, angles };
+      };
+
+      let inner = ringOf(0);
 
       for (let k = 1; k <= maxRing; k++) {
-        // radial clearance from the ring inside
-        radii[k] = Math.max(
-          radii[k],
-          radii[k - 1] + (maxExt[k - 1] + maxExt[k]) / 2,
-        );
+        const ring = ringOf(k);
 
-        // tangential clearance between angular neighbours
-        const ring = rings[k];
-
-        if (ring.length < 2) {
-          continue;
-        }
-
-        ring.sort((a, b) => bisectorOf(a) - bisectorOf(b));
-
-        const pairs = fullSweep ? ring.length : ring.length - 1;
-
-        for (let i = 0; i < pairs; i++) {
-          const a = ring[i];
-          const b = ring[(i + 1) % ring.length];
-          let dTheta = Math.abs(bisectorOf(b) - bisectorOf(a));
-
-          if (i === ring.length - 1) {
-            dTheta = 2 * Math.PI - dTheta; // the wrap pair
-          }
-
-          dTheta = Math.min(dTheta, Math.PI);
-
-          if (dTheta < 1e-6) {
-            continue; // coincident bisectors: no radius separates them
-          }
-
-          const need = ((extOf.get(a) ?? 0) + (extOf.get(b) ?? 0)) / 2;
-
-          radii[k] = Math.max(radii[k], need / (2 * Math.sin(dTheta / 2)));
-        }
+        radii[k] = ringRadius(dims, ring, inner, radii[k - 1], radii[k]);
+        inner = ring;
       }
     }
 

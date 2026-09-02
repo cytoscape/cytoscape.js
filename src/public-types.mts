@@ -407,10 +407,11 @@ export interface LayoutBaseOptions {
   fit?: boolean;
   padding?: number;
   boundingBox?: BoundingBoxInput;
-  /** include labels in node dimensions (v4 note: since round 16.4
-   * `boundingBox()`/fit include labels by default; this layout option
-   * remains accepted for v3 compatibility but the discrete layouts
-   * still place by node body size) */
+  /** include labels in the node dimensions a layout spaces by — **default
+   * true** (round 114.1, a v4 deviation from v3's `false`, consistent
+   * with 16.4's labels-in-`boundingBox()` default).  Every built-in's
+   * overlap avoidance reads the same boxes, so `false` spaces by node
+   * bodies alone.  Headless label dimensions are estimates. */
   nodeDimensionsIncludeLabels?: boolean;
   spacingFactor?: number;
   /** transform a computed position (e.g. to flip an axis) */

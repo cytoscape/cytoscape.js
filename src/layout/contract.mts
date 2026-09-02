@@ -29,6 +29,8 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 
 import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { computeComponents, packComponentsExact } from './pack.mjs';
+import { nodeDims } from './dims.mjs';
+import type { DimsOptions, LayoutNodeDims } from './dims.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
 import type { CustomLayoutOptions, Position } from '../public-types.mjs';
@@ -220,6 +222,32 @@ export class LayoutContext {
     const adj = this.cy._store.adj;
 
     return adj.outDegree(slot) + adj.inDegree(slot);
+  }
+
+  /**
+   * The layout boxes of the scope's nodes (round 114.1): slot-parallel
+   * node-local extents read off the size, border and label columns —
+   * the one reading every built-in spaces by.  Labels are included
+   * unless the run's `nodeDimensionsIncludeLabels` is `false`, so the
+   * box is asymmetric when a label hangs below the body; take
+   * `max( -y1, y2 )` for a symmetric half.  Headless label dimensions
+   * are estimates (16.4), exact once a renderer has laid the glyphs.
+   *
+   * @param slots — the node slots to measure (default `nodeSlots()`)
+   * @param options — `includeLabels` (default: the run's option, itself
+   *   defaulting to true) and `padding` (split half per side)
+   * @returns the boxes, parallel to `slots`
+   */
+  nodeDimensions(
+    slots: ArrayLike<number> = this.nodeSlots(),
+    options: DimsOptions = {},
+  ): LayoutNodeDims {
+    return nodeDims(this.cy._store, slots, {
+      includeLabels:
+        options.includeLabels ??
+        this.options.nodeDimensionsIncludeLabels !== false,
+      padding: options.padding,
+    });
   }
 
   // -- bounds --

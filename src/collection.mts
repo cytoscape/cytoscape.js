@@ -113,6 +113,7 @@ import type {
   MotifCensusOptions,
   MotifCensusResult,
 } from './algorithms/index.mjs';
+import { nodeDims } from './layout/dims.mjs';
 import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { Event } from './event.mjs';
@@ -5244,34 +5245,30 @@ export class Collection {
   // -- layouts --
 
   /**
-   * Node dimensions for layout spacing, as v3's layoutDimensions.
+   * Node dimensions for layout spacing, as v3's layoutDimensions — the
+   * body plus, since round 114.1, the label box by default.
    *
-   * @param options — `{ nodeDimensionsIncludeLabels }` to measure the
-   *   label box too rather than the node body alone
+   * @param options — `{ nodeDimensionsIncludeLabels: false }` to measure
+   *   the node body alone
    * @returns the first element's `{ w, h }`
    */
   layoutDimensions(options: { nodeDimensionsIncludeLabels?: boolean } = {}): {
     w: number;
     h: number;
   } {
-    let dims: { w: number; h: number };
+    const ref = this._refs[0];
 
-    if (!this.takesUpSpace()) {
-      dims = { w: 0, h: 0 };
-    } else if (options.nodeDimensionsIncludeLabels) {
-      const bb = this.boundingBox();
-
-      dims = { w: bb.w, h: bb.h };
-    } else {
-      dims = { w: this.outerWidth() ?? 0, h: this.outerHeight() ?? 0 };
+    if (ref == null || ref.group !== 'nodes' || !this._store.isCurrent(ref)) {
+      return { w: 1, h: 1 };
     }
 
-    // sanitise for layouts (avoid division by zero)
-    if (dims.w === 0 || dims.h === 0) {
-      dims.w = dims.h = 1;
-    }
+    // one reading for every layout (114.1): the body plus, by default,
+    // the label box; hidden sanitises to 1 x 1 as v3 did
+    const d = nodeDims(this._store, [ref.slot], {
+      includeLabels: options.nodeDimensionsIncludeLabels !== false,
+    });
 
-    return dims;
+    return { w: d.x2[0] - d.x1[0], h: d.y2[0] - d.y1[0] };
   }
 
   /**

@@ -996,10 +996,11 @@ interface LayoutBaseOptions {
   fit?: boolean;
   padding?: number;
   boundingBox?: BoundingBoxInput;
-  /** include labels in node dimensions (v4 note: since round 16.4
-   * `boundingBox()`/fit include labels by default; this layout option
-   * remains accepted for v3 compatibility but the discrete layouts
-   * still place by node body size) */
+  /** include labels in the node dimensions a layout spaces by — **default
+   * true** (round 114.1, a v4 deviation from v3's `false`, consistent
+   * with 16.4's labels-in-`boundingBox()` default).  Every built-in's
+   * overlap avoidance reads the same boxes, so `false` spaces by node
+   * bodies alone.  Headless label dimensions are estimates. */
   nodeDimensionsIncludeLabels?: boolean;
   spacingFactor?: number;
   /** transform a computed position (e.g. to flip an axis) */
@@ -1224,9 +1225,6 @@ interface FlowLayoutOptions extends LayoutBaseOptions {
   /** which arcs flip on cycles: 'greedy' (Eades–Lin–Smyth bound,
    * default) or 'dfs' (input order dominates) */
   cycleRemoval?: 'greedy' | 'dfs';
-  /** bias a long edge's reserved corridor toward an endpoint x so its
-   * taxi leg runs straight (default true) */
-  alignLongEdges?: boolean;
   /** rank constraints as id lists (never selector strings): `min`
    * pins to the first rank, `max` to the last, each `same` group to
    * one shared rank
@@ -5998,10 +5996,11 @@ declare class Collection {
   component(): Collection;
   private _nodeSlotSet;
   /**
-   * Node dimensions for layout spacing, as v3's layoutDimensions.
+   * Node dimensions for layout spacing, as v3's layoutDimensions — the
+   * body plus, since round 114.1, the label box by default.
    *
-   * @param options — `{ nodeDimensionsIncludeLabels }` to measure the
-   *   label box too rather than the node body alone
+   * @param options — `{ nodeDimensionsIncludeLabels: false }` to measure
+   *   the node body alone
    * @returns the first element's `{ w, h }`
    */
   layoutDimensions(options?: {
@@ -7043,6 +7042,32 @@ declare class StyleEngine {
   private writeLabel;
 }
 //#endregion
+//#region src/layout/dims.d.mts
+/** Slot-parallel node-local boxes, one entry per requested node. */
+interface LayoutNodeDims {
+  /** how many nodes the arrays describe */
+  n: number;
+  /** left edge relative to the node position (negative) */
+  x1: Float32Array;
+  /** top edge relative to the node position (negative) */
+  y1: Float32Array;
+  /** right edge relative to the node position */
+  x2: Float32Array;
+  /** bottom edge relative to the node position */
+  y2: Float32Array;
+  /** the widest box's width */
+  maxW: number;
+  /** the tallest box's height */
+  maxH: number;
+}
+/** What a dimensions read includes. */
+interface DimsOptions {
+  /** union the label box into each node's box (default true) */
+  includeLabels?: boolean;
+  /** extra room around every node, split half per side (default 0) */
+  padding?: number;
+}
+//#endregion
 //#region src/layout/contract.d.mts
 interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
@@ -7136,6 +7161,21 @@ declare class LayoutContext {
    * @returns its whole-graph degree, loops counted as v3 counts them
    */
   degreeOf(slot: number): number;
+  /**
+   * The layout boxes of the scope's nodes (round 114.1): slot-parallel
+   * node-local extents read off the size, border and label columns —
+   * the one reading every built-in spaces by.  Labels are included
+   * unless the run's `nodeDimensionsIncludeLabels` is `false`, so the
+   * box is asymmetric when a label hangs below the body; take
+   * `max( -y1, y2 )` for a symmetric half.  Headless label dimensions
+   * are estimates (16.4), exact once a renderer has laid the glyphs.
+   *
+   * @param slots — the node slots to measure (default `nodeSlots()`)
+   * @param options — `includeLabels` (default: the run's option, itself
+   *   defaulting to true) and `padding` (split half per side)
+   * @returns the boxes, parallel to `slots`
+   */
+  nodeDimensions(slots?: ArrayLike<number>, options?: DimsOptions): LayoutNodeDims;
   /**
    * The scope's current bounding box, labels included.
    *

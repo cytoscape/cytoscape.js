@@ -1252,12 +1252,16 @@ describe('debug harness (round 43)', function () {
         animate: true,
         animateLive: true,
         seed: 5,
+        avoidOverlap: false,
+        nodeDimensionsIncludeLabels: false,
       });
       expect(
         layoutConfig.layoutOptions('radial', { animate: false }),
       ).to.deep.equal({
         name: 'radial',
         animate: false,
+        avoidOverlap: false,
+        nodeDimensionsIncludeLabels: false,
       });
 
       const spiral = layoutConfig.layoutOptions(
@@ -1269,6 +1273,43 @@ describe('debug harness (round 43)', function () {
       expect(spiral.impl).to.equal(SpiralLayout);
       expect(spiral.animate).to.equal(true);
       expect(spiral.name).to.equal(undefined);
+    });
+
+    it('spells the two overlap checkboxes out on every layout that has them (115)', function () {
+      // both boxes off is the page's default — the run says so
+      // explicitly, whatever the library's own defaults are
+      const on = layoutConfig.layoutOptions('circle', {
+        avoidOverlap: true,
+        overlapLabels: true,
+      });
+
+      expect(on.avoidOverlap).to.equal(true);
+      expect(on.nodeDimensionsIncludeLabels).to.equal(true);
+
+      const half = layoutConfig.layoutOptions('flow', { avoidOverlap: true });
+
+      expect(half.avoidOverlap).to.equal(true);
+      expect(half.nodeDimensionsIncludeLabels).to.equal(false);
+
+      // preset and random have no such option, so none is sent
+      for (const name of ['preset', 'random']) {
+        const options = layoutConfig.layoutOptions(name, {
+          avoidOverlap: true,
+          overlapLabels: true,
+        });
+
+        expect(options).to.not.have.property('avoidOverlap');
+        expect(options).to.not.have.property('nodeDimensionsIncludeLabels');
+      }
+
+      const spiral = layoutConfig.layoutOptions(
+        'spiral',
+        { avoidOverlap: true },
+        SpiralLayout,
+      );
+
+      expect(spiral.avoidOverlap).to.equal(true);
+      expect(spiral.impl).to.equal(SpiralLayout);
     });
 
     it('gates the hover panel by element count', function () {

@@ -91,11 +91,26 @@ var layoutConfig = (function () {
     return ui.live ? { animateLive: true } : { animate: !!ui.animate };
   }
 
+  // The layouts with an avoidOverlap option (115).  Preset and random
+  // have none — positions are the user's, and a pushed-apart scatter is
+  // neither random nor uniform — so the page never sends them one.
+  var OVERLAP_LAYOUTS = {
+    grid: true,
+    circle: true,
+    concentric: true,
+    breadthfirst: true,
+    radial: true,
+    force: true,
+    flow: true,
+    spiral: true,
+  };
+
   /**
    * The options object for `cy.layout()` given the panel's state.
    *
    * @param name the layout select's value
-   * @param ui { animate, live, seed, positions }
+   * @param ui { animate, live, seed, positions, avoidOverlap,
+   *   overlapLabels }
    * @param impl the spiral example's class (a page global)
    */
   function layoutOptions(name, ui, impl) {
@@ -108,6 +123,13 @@ var layoutConfig = (function () {
       options = { impl: impl, animate: !!ui.animate };
     } else {
       options = { name: name, animate: !!ui.animate };
+    }
+
+    if (OVERLAP_LAYOUTS[name]) {
+      // both checkboxes are spelled out every run, so the page's
+      // defaults (off) are the run's, whatever the library's are
+      options.avoidOverlap = !!ui.avoidOverlap;
+      options.nodeDimensionsIncludeLabels = !!ui.overlapLabels;
     }
 
     if (name === 'force') {
@@ -133,6 +155,7 @@ var layoutConfig = (function () {
 
   return {
     EDGE_STYLE: EDGE_STYLE,
+    OVERLAP_LAYOUTS: OVERLAP_LAYOUTS,
     edgeOverride: edgeOverride,
     sheetWith: sheetWith,
     snapshotPositions: snapshotPositions,

@@ -92,6 +92,8 @@
           live: liveCheck.checked,
           seed: $('#seed-input').value,
           positions: window.initialPositions,
+          avoidOverlap: $('#layout-avoid-overlap-check').checked,
+          overlapLabels: $('#layout-overlap-labels-check').checked,
         },
         SpiralLayout,
       ),

@@ -115,6 +115,14 @@
           <label for="layout-edge-types-check">Layout-appropriate edge types (taxi for flow, …)</label>
         </div>
         <div>
+          <input type="checkbox" id="layout-avoid-overlap-check" />
+          <label for="layout-avoid-overlap-check">Avoid overlap (space nodes so bodies never touch)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="layout-overlap-labels-check" />
+          <label for="layout-overlap-labels-check">… including labels (nodeDimensionsIncludeLabels)</label>
+        </div>
+        <div>
           <label>Seed: <input id="seed-input" type="number" step="1" min="0" /></label>
           <small>Time taken: <span id="layout-time">—</span></small>
         </div>

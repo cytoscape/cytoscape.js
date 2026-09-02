@@ -61,6 +61,21 @@ const paramDefs = {
     control: '#hover-select',
     live: true,
   },
+  avoidOverlap: {
+    // 115: the layouts' avoidOverlap, forwarded to every named layout
+    // that has one.  Off by default on this page (the maintainer's
+    // call while the overlap rules settle): the library's own default
+    // stays per layout
+    default: 'false',
+    control: '#layout-avoid-overlap-check',
+    live: true,
+  },
+  overlapLabels: {
+    // 115: nodeDimensionsIncludeLabels — space by label boxes too
+    default: 'false',
+    control: '#layout-overlap-labels-check',
+    live: true,
+  },
   edgeWidthFloor: {
     default: '1',
     control: '#edge-floor-input',
@@ -252,6 +267,8 @@ const paramDefs = {
               live: params.live === 'true',
               seed: params.seed,
               positions: window.initialPositions,
+              avoidOverlap: params.avoidOverlap === 'true',
+              overlapLabels: params.overlapLabels === 'true',
             },
             SpiralLayout,
           ),

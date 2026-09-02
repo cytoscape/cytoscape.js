@@ -28,7 +28,8 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 */
 
 import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
-import { computeComponents, packComponentsExact } from './pack.mjs';
+import { computeComponents, packComponentBodies } from './pack.mjs';
+import type { Components } from './pack.mjs';
 import { nodeDims } from './dims.mjs';
 import type { DimsOptions, LayoutNodeDims } from './dims.mjs';
 import type { Core } from '../core.mjs';
@@ -308,32 +309,17 @@ export class LayoutContext {
   }
 
   /**
-   * Separate the scope's disconnected components (round 87.1): v3's
-   * `separateComponents` as a one-call, translation-only post-pass.
-   * Per-component bounding boxes at the current positions are
-   * shelf-packed largest-first with `spacing` between them, every
-   * member translated with its component, and the largest component's
-   * centre held fixed — the dominant structure keeps its place and the
-   * strays come to it.
+   * The scope's connected components over `nodeSlots()` (round 114.4,
+   * factored out of `packComponents` for layouts that pack their own
+   * arrays): union-find over the scope's own edges — an edge with an
+   * endpoint outside the scope connects nothing here — indexed by
+   * position in `nodeSlots()`.
    *
-   * Components are computed over the scope's own edges (an edge with an
-   * endpoint outside the scope connects nothing here), and only the
-   * `nodeSlots()` nodes move — a locked node neither moves nor holds
-   * its component in place, so a scope mixing locked and unlocked
-   * members of one component can separate them.  The write lands
-   * through `setPositions` (one dirty span).
-   *
-   * @param spacing — the gap between packed component boxes
-   *   (default 40, the force layout's `componentSpacing` default)
+   * @returns the component assignment, ids in first-seen node order
    */
-  packComponents(spacing: number = 40): void {
+  components(): Components {
     const slots = this.nodeSlots();
     const n = slots.length;
-
-    if (n === 0) {
-      return;
-    }
-
     const simIndex = new Map<number, number>();
 
     for (let i = 0; i < n; i++) {
@@ -354,7 +340,48 @@ export class LayoutContext {
       simEdges.push(s, t);
     }
 
-    const comps = computeComponents(n, Uint32Array.from(simEdges));
+    return computeComponents(n, Uint32Array.from(simEdges));
+  }
+
+  /**
+   * Separate the scope's disconnected components (round 87.1): v3's
+   * `separateComponents` as a one-call, translation-only post-pass.
+   * Per-component bounding boxes at the current positions are
+   * shelf-packed largest-first with `spacing` between them, every
+   * member translated with its component, and the largest component's
+   * centre held fixed — the dominant structure keeps its place and the
+   * strays come to it.
+   *
+   * The boxes are **body** boxes since round 114.4 (`nodeDimensions()`,
+   * labels included by the run's option), so two singleton components
+   * end up `spacing` apart edge to edge rather than centre to centre;
+   * `bodies: false` restores the 87.1 point boxes.
+   *
+   * Components are computed over the scope's own edges (an edge with an
+   * endpoint outside the scope connects nothing here), and only the
+   * `nodeSlots()` nodes move — a locked node neither moves nor holds
+   * its component in place, so a scope mixing locked and unlocked
+   * members of one component can separate them.  The write lands
+   * through `setPositions` (one dirty span).
+   *
+   * @param spacing — the gap between packed component boxes
+   *   (default 40, the force layout's `componentSpacing` default)
+   * @param options — `bodies` (default true) packs the nodes' boxes
+   *   rather than their positions; `includeLabels` overrides the run's
+   *   `nodeDimensionsIncludeLabels` for those boxes
+   */
+  packComponents(
+    spacing: number = 40,
+    options: { bodies?: boolean; includeLabels?: boolean } = {},
+  ): void {
+    const slots = this.nodeSlots();
+    const n = slots.length;
+
+    if (n === 0) {
+      return;
+    }
+
+    const comps = this.components();
 
     if (comps.count <= 1) {
       return;
@@ -368,7 +395,20 @@ export class LayoutContext {
       xy[i * 2 + 1] = column[slots[i] * 2 + 1];
     }
 
-    packComponentsExact(n, comps.compOf, comps.count, xy, spacing);
+    const extents =
+      options.bodies === false
+        ? null
+        : this.nodeDimensions(slots, { includeLabels: options.includeLabels });
+
+    packComponentBodies(
+      n,
+      comps.compOf,
+      comps.count,
+      xy,
+      extents,
+      spacing,
+      true,
+    );
     this.setPositions(slots, xy);
   }
 

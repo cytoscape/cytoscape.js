@@ -510,7 +510,7 @@ describe('gpu/layout: the extension contract (round 17.5)', function () {
           ctx.setPositions(slots, xy);
 
           if (pack) {
-            ctx.packComponents(50);
+            ctx.packComponents(50, pack === 'points' ? { bodies: false } : {});
           }
         }
       };
@@ -544,10 +544,27 @@ describe('gpu/layout: the extension contract (round 17.5)', function () {
       // the largest component's centre is the fixed point (equal
       // areas: the first) — a stays exactly where the impl put it
       expect(a).to.deep.equal({ x1: 0, x2: 100, y1: 0, y2: 80 });
-      // b lands below (the two 100-wide boxes at spacing 50 wrap the
-      // ~247-wide shelf row): zero overlap, gap exactly the spacing
-      expect(b.y1 - a.y2).to.be.closeTo(50, 1e-3);
+      // b lands below (the two 130-wide body boxes at spacing 50 wrap
+      // the shelf row): zero overlap, and since 114.4 the gap is the
+      // spacing between the *bodies* (30 px nodes: 15 each side), not
+      // between the centres
+      expect(b.y1 - 15 - (a.y2 + 15)).to.be.closeTo(50, 1e-3);
       expect(b.x1).to.be.closeTo(a.x1, 1e-3);
+    });
+
+    it('bodies: false packs the 87.1 point boxes (the gap is centre to centre)', async function () {
+      const cy = twoK3s();
+      const layout = cy
+        .layout({ impl: overlapImpl('points'), fit: false })
+        .run();
+
+      await layout.promise();
+
+      const a = bboxOf(cy, A);
+      const b = bboxOf(cy, B);
+
+      expect(a).to.deep.equal({ x1: 0, x2: 100, y1: 0, y2: 80 });
+      expect(b.y1 - a.y2).to.be.closeTo(50, 1e-3);
     });
 
     it('control: without the call the components stay overlapped', async function () {

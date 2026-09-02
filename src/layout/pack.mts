@@ -202,26 +202,42 @@ export const packAnchors = (
   return anchors;
 };
 
+/** Per-node extents relative to the node position (the `LayoutNodeDims`
+ * shape, or any four parallel arrays). */
+export interface NodeExtents {
+  x1: ArrayLike<number>;
+  y1: ArrayLike<number>;
+  x2: ArrayLike<number>;
+  y2: ArrayLike<number>;
+}
+
 /**
- * The settle re-pack (v3's `separateComponents`, translation-only):
- * per-component bounding boxes of the *settled* positions, shelf-packed
- * largest-first with `spacing` between boxes, every member translated
- * with its component.  The packed field is centred where the largest
- * component sat, so the dominant structure holds its place and the
- * strays come to it.
+ * The exact translation-only re-pack over component *body* boxes
+ * (round 114.4, flow's 112.2 `packBodies` made shared): per-component
+ * boxes are the union of each member's box at its position, shelf-packed
+ * largest-first with `spacing` between them, every member translated
+ * with its component.  With `extents` null the boxes are point boxes —
+ * `packComponentsExact`'s shape, where two singleton components could
+ * overlap by a node width.  `holdLargest` keeps the largest component's
+ * centre where it was (force's fixed point); otherwise the packed field
+ * starts at the origin (flow centres afterwards).
  *
  * @param n — sim node count
  * @param compOf — per-node component id
  * @param count — component count
  * @param positions — 2n interleaved coordinates, translated in place
+ * @param extents — per-node node-local boxes, or null for point boxes
  * @param spacing — the gap between component boxes
+ * @param holdLargest — keep the largest component's centre fixed
  */
-export const packComponentsExact = (
+export const packComponentBodies = (
   n: number,
   compOf: Int32Array,
   count: number,
-  positions: Float32Array,
+  positions: Float32Array | Float64Array,
+  extents: NodeExtents | null,
   spacing: number,
+  holdLargest: boolean,
 ): void => {
   if (count <= 1 || n === 0) {
     return;
@@ -237,10 +253,17 @@ export const packComponentsExact = (
     const x = positions[i * 2];
     const y = positions[i * 2 + 1];
 
-    x1[c] = Math.min(x1[c], x);
-    y1[c] = Math.min(y1[c], y);
-    x2[c] = Math.max(x2[c], x);
-    y2[c] = Math.max(y2[c], y);
+    if (extents == null) {
+      x1[c] = Math.min(x1[c], x);
+      y1[c] = Math.min(y1[c], y);
+      x2[c] = Math.max(x2[c], x);
+      y2[c] = Math.max(y2[c], y);
+    } else {
+      x1[c] = Math.min(x1[c], x + extents.x1[i]);
+      y1[c] = Math.min(y1[c], y + extents.y1[i]);
+      x2[c] = Math.max(x2[c], x + extents.x2[i]);
+      y2[c] = Math.max(y2[c], y + extents.y2[i]);
+    }
   }
 
   const boxes: PackBox[] = [];
@@ -281,9 +304,15 @@ export const packComponentsExact = (
 
   // shift the whole packed field so the largest component's centre
   // stays put
-  const packedLargest = boxes.find((b) => b.id === largest) as PackBox;
-  const shiftX = holdX - (packedLargest.x + packedLargest.w / 2);
-  const shiftY = holdY - (packedLargest.y + packedLargest.h / 2);
+  let shiftX = 0;
+  let shiftY = 0;
+
+  if (holdLargest) {
+    const packedLargest = boxes.find((b) => b.id === largest) as PackBox;
+
+    shiftX = holdX - (packedLargest.x + packedLargest.w / 2);
+    shiftY = holdY - (packedLargest.y + packedLargest.h / 2);
+  }
 
   for (let i = 0; i < n; i++) {
     const c = compOf[i];
@@ -291,4 +320,25 @@ export const packComponentsExact = (
     positions[i * 2] += dx[c] + shiftX;
     positions[i * 2 + 1] += dy[c] + shiftY;
   }
+};
+
+/**
+ * The exact translation-only re-pack over point boxes — the round-59.2
+ * shape, kept as the name force's specs know: `packComponentBodies`
+ * with no extents and the largest component held.
+ *
+ * @param n — sim node count
+ * @param compOf — per-node component id
+ * @param count — component count
+ * @param positions — 2n interleaved coordinates, translated in place
+ * @param spacing — the gap between component boxes
+ */
+export const packComponentsExact = (
+  n: number,
+  compOf: Int32Array,
+  count: number,
+  positions: Float32Array,
+  spacing: number,
+): void => {
+  packComponentBodies(n, compOf, count, positions, null, spacing, true);
 };

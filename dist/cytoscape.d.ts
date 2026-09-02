@@ -5644,9 +5644,13 @@ declare class Collection {
    * hidden children leave their ancestors' auto-bounds. */
   private _setVisibility;
   /**
-   * Whether the first element is locked — immovable, by layouts and
-   * position writes alike.  The force layout treats locked nodes as
-   * fixed obstacles.
+   * Whether the first element is locked — immovable, by layouts,
+   * position writes and position tweens alike (one rule since round
+   * 114.3: every layout holds a locked node where it is, keeps it in
+   * the layout's structure, and treats it as an obstacle when avoiding
+   * overlap).  True for every node while `cy.autolock( true )` is set,
+   * as in v3; the flag column alone is what `{ locked: true }` filters
+   * read.
    *
    * @returns true when locked
    */
@@ -7042,6 +7046,15 @@ declare class StyleEngine {
   private writeLabel;
 }
 //#endregion
+//#region src/layout/pack.d.mts
+interface Components {
+  /** per sim-node component id (first-seen order — deterministic) */
+  compOf: Int32Array;
+  /** per component member count */
+  sizes: Int32Array;
+  count: number;
+}
+//#endregion
 //#region src/layout/dims.d.mts
 /** Slot-parallel node-local boxes, one entry per requested node. */
 interface LayoutNodeDims {
@@ -7207,6 +7220,16 @@ declare class LayoutContext {
    */
   setPositions(slots: number[], xy: number[] | Float32Array): void;
   /**
+   * The scope's connected components over `nodeSlots()` (round 114.4,
+   * factored out of `packComponents` for layouts that pack their own
+   * arrays): union-find over the scope's own edges — an edge with an
+   * endpoint outside the scope connects nothing here — indexed by
+   * position in `nodeSlots()`.
+   *
+   * @returns the component assignment, ids in first-seen node order
+   */
+  components(): Components;
+  /**
    * Separate the scope's disconnected components (round 87.1): v3's
    * `separateComponents` as a one-call, translation-only post-pass.
    * Per-component bounding boxes at the current positions are
@@ -7214,6 +7237,11 @@ declare class LayoutContext {
    * member translated with its component, and the largest component's
    * centre held fixed — the dominant structure keeps its place and the
    * strays come to it.
+   *
+   * The boxes are **body** boxes since round 114.4 (`nodeDimensions()`,
+   * labels included by the run's option), so two singleton components
+   * end up `spacing` apart edge to edge rather than centre to centre;
+   * `bodies: false` restores the 87.1 point boxes.
    *
    * Components are computed over the scope's own edges (an edge with an
    * endpoint outside the scope connects nothing here), and only the
@@ -7224,8 +7252,14 @@ declare class LayoutContext {
    *
    * @param spacing — the gap between packed component boxes
    *   (default 40, the force layout's `componentSpacing` default)
+   * @param options — `bodies` (default true) packs the nodes' boxes
+   *   rather than their positions; `includeLabels` overrides the run's
+   *   `nodeDimensionsIncludeLabels` for those boxes
    */
-  packComponents(spacing?: number): void;
+  packComponents(spacing?: number, options?: {
+    bodies?: boolean;
+    includeLabels?: boolean;
+  }): void;
   /**
    * The discrete finisher: v3's layoutPositions plumbing over the
    * scope — spacingFactor, transform, animate (with the

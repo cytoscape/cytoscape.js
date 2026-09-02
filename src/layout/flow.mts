@@ -47,8 +47,7 @@ import {
   rankPadMargins,
 } from './flow-compound.mjs';
 import type { GroupModel } from './flow-compound.mjs';
-import { shelfPack } from './pack.mjs';
-import type { PackBox } from './pack.mjs';
+import { packComponentBodies } from './pack.mjs';
 import {
   isScoreMapping,
   validateScoreMapping,
@@ -424,14 +423,19 @@ export class FlowLayoutImpl implements LayoutImpl {
       // pack by *body* extents, not point positions — deps-style scopes
       // carry hundreds of singleton components whose point boxes are
       // empty, and packComponentsExact would overlap their bodies
-      this.packBodies(
+      // body boxes, the field left at the origin: applyBoundingBox
+      // centres afterwards (114.4: the packer moved to pack.mts)
+      const negW = halfW.map((v) => -v);
+      const negH = halfH.map((v) => -v);
+
+      packComponentBodies(
         n,
         compOf,
         comps.length,
         state.xy,
-        halfW,
-        halfH,
+        { x1: negW, y1: negH, x2: halfW, y2: halfH },
         opts.componentSpacing,
+        false,
       );
     }
 
@@ -827,52 +831,6 @@ export class FlowLayoutImpl implements LayoutImpl {
     comp.inAdj = inAdj;
 
     return comp;
-  }
-
-  /** Shelf-pack component *body* boxes and translate members. */
-  private packBodies(
-    n: number,
-    compOf: Int32Array,
-    count: number,
-    xy: Float64Array,
-    halfW: Float64Array,
-    halfH: Float64Array,
-    spacing: number,
-  ): void {
-    const x1 = new Float64Array(count).fill(Infinity);
-    const y1 = new Float64Array(count).fill(Infinity);
-    const x2 = new Float64Array(count).fill(-Infinity);
-    const y2 = new Float64Array(count).fill(-Infinity);
-
-    for (let i = 0; i < n; i++) {
-      const c = compOf[i];
-
-      x1[c] = Math.min(x1[c], xy[i * 2] - halfW[i]);
-      x2[c] = Math.max(x2[c], xy[i * 2] + halfW[i]);
-      y1[c] = Math.min(y1[c], xy[i * 2 + 1] - halfH[i]);
-      y2[c] = Math.max(y2[c], xy[i * 2 + 1] + halfH[i]);
-    }
-
-    const boxes: PackBox[] = [];
-
-    for (let c = 0; c < count; c++) {
-      boxes.push({ id: c, w: x2[c] - x1[c], h: y2[c] - y1[c], x: 0, y: 0 });
-    }
-
-    shelfPack(boxes, spacing);
-
-    const dx = new Float64Array(count);
-    const dy = new Float64Array(count);
-
-    for (const box of boxes) {
-      dx[box.id] = box.x - x1[box.id];
-      dy[box.id] = box.y - y1[box.id];
-    }
-
-    for (let i = 0; i < n; i++) {
-      xy[i * 2] += dx[compOf[i]];
-      xy[i * 2 + 1] += dy[compOf[i]];
-    }
   }
 
   private useSimplex(opts: RunState['opts'], state: RunState): boolean {

@@ -1,5 +1,9 @@
 import { expect } from 'chai';
-import { shelfPack } from '../../src/layout/pack.mjs';
+import {
+  shelfPack,
+  packComponentBodies,
+  packComponentsExact,
+} from '../../src/layout/pack.mjs';
 
 // round 87.1: the shelf packer, extracted from the force layout's
 // init and exported — unit-testable against hand-computed fixtures
@@ -80,5 +84,68 @@ describe('layout pack: shelfPack', function () {
     expect(boxes[0]).to.equal(before[0]);
     expect(boxes[1]).to.equal(before[1]);
     expect({ x: boxes[1].x, y: boxes[1].y }).to.deep.equal({ x: 0, y: 0 });
+  });
+});
+
+// round 114.4: the exact re-pack over component *body* boxes, moved out
+// of flow (112.2) so every layout packs the same way.
+describe('layout pack: packComponentBodies', function () {
+  // two singleton components at the same point, 40 px wide bodies
+  const two = () => ({
+    compOf: Int32Array.from([0, 1]),
+    positions: Float64Array.from([0, 0, 0, 0]),
+    extents: {
+      x1: [-20, -20],
+      y1: [-10, -10],
+      x2: [20, 20],
+      y2: [10, 10],
+    },
+  });
+
+  it('keeps bodies `spacing` apart, not centres', function () {
+    const { compOf, positions, extents } = two();
+
+    packComponentBodies(2, compOf, 2, positions, extents, 10, true);
+
+    // both boxes are 40 x 20 at spacing 10: the shelf row is ~68 wide
+    // (sqrt of the padded area x 1.25), so the second wraps below the
+    // first — bottom edge of a to top edge of b is the spacing
+    const gap = positions[3] - 10 - (positions[1] + 10);
+
+    expect(gap).to.be.closeTo(10, 1e-9);
+    expect(positions[2]).to.be.closeTo(positions[0], 1e-9);
+    // and the largest (first, on the tie) held its centre
+    expect([positions[0], positions[1]]).to.deep.equal([0, 0]);
+  });
+
+  it('control: with no extents the boxes are points and the centres are `spacing` apart', function () {
+    const { compOf, positions } = two();
+
+    packComponentBodies(2, compOf, 2, positions, null, 10, true);
+
+    // a point box is 1 px wide (the packer's floor), so the centres end
+    // up spacing + 1 apart — the 87.1 shape, 40 px bodies overlapping
+    expect(positions[2] - positions[0]).to.be.closeTo(11, 1e-9);
+  });
+
+  it('packComponentsExact is the point-box, hold-largest wrapper', function () {
+    const a = two();
+    const b = two();
+    const pa = Float32Array.from(a.positions);
+    const pb = Float32Array.from(b.positions);
+
+    packComponentsExact(2, a.compOf, 2, pa, 10);
+    packComponentBodies(2, b.compOf, 2, pb, null, 10, true);
+
+    expect(Array.from(pa)).to.deep.equal(Array.from(pb));
+  });
+
+  it('holdLargest: false leaves the packed field at the origin', function () {
+    const { compOf, positions, extents } = two();
+
+    packComponentBodies(2, compOf, 2, positions, extents, 10, false);
+
+    // the first box's top-left is the origin: its centre is (20, 10)
+    expect([positions[0], positions[1]]).to.deep.equal([20, 10]);
   });
 });

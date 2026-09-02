@@ -134,6 +134,73 @@ paired with the control testing.md requires, asserted red.
 
 **114.9 — docs, types, gates, close.**
 
+### What landed (2026-09-02, passes 114.1–114.9)
+
+Every pass landed as planned, in order, each its own commit; what the
+work found on the way is the part worth reading.
+
+- **114.1** `src/layout/dims.mts` and `ctx.nodeDimensions()`;
+  `Collection#layoutDimensions` reimplemented over it, its default
+  flipped to labels-on.
+- **114.2** The finisher tests `fit !== false` and animates a lone
+  zoom or pan; `ctx.layoutPositions( fn, overrides )` re-pins the
+  wrapper's `stop`; `ctx.finish()`; flow's `run()` collapses to it.
+  The debug page's "flow fit is broken" was exactly this.
+- **114.3** The lock, everywhere: `_positions`, `_shift`, the
+  animation position channel, the finisher, grid and circle's index
+  placement, preset's bulk form, force's pinned set under autolock,
+  `locked()` reading autolock.  `cy.json()` keeps exporting the
+  node's own flag — the one existing spec the change turned red.
+- **114.4** `packComponentBodies` shared; `ctx.packComponents` packs
+  body boxes by default and takes the impl's own array (`positions`),
+  which the spiral example needs so nothing lands before a tween.
+- **114.5** Force: `animate` tweens, `animateLive` streams,
+  `avoidOverlap` separates.  The first separation — Gauss–Seidel
+  sweeps alone — cleared sparse fields in a sweep but left a 200-clique
+  of wide labels with 164 overlaps after 200 sweeps: a pile expands
+  under pairwise pushes only slowly.  The shape that landed is sweeps
+  → an exact per-component scale about the centroid for what
+  remains (a similarity transform, so the sim's structure is kept;
+  pinned components left to the sweeps) → sweeps, up to four rounds.
+  Measured: ~100 ms on a 20k-node, 18 s CPU run; 4025 overlaps on a
+  2000-node labelled tree cleared for 14 ms; the force spec file green
+  ten runs of ten (open call 52's chain spec included).
+- **114.6** Radial's rings grow; flow's extents and box; grid,
+  circle, concentric and breadthfirst on the shared reading.  Radial's
+  first chord rule used a box's longer side and let two 40 px squares
+  meet corner-on at 45°; the diagonal is the guarantee.
+- **114.7** The page.  Verified in a scripted Chromium (the extension
+  was not connected): npm-deps under `?layout=flow&animate=true` fits;
+  em-web's force tween and live runs both fit; Preset returns every
+  node to its load position exactly; the edge-type box switches
+  em-web's haystack to bezier for circle and back; hover dim and hide
+  touch 7,465 of 7,468 elements and restore to zero; a locked node in
+  a dragged selection stays while the others move.
+- **114.8** `test/layout-quality.mjs`: 170 specs in under three
+  seconds.  The controls found two things the green rows had not:
+  concentric let two 30 px squares meet corner-on (v3's chord rule,
+  fixed to the diagonal as radial's was), and the labelled *ring*
+  never exercised flow's extents — cycle removal makes it a chain with
+  one node per rank — so a labelled fan joined the fixtures.  Run once
+  each with force's separation stubbed, radial's ring growth off, the
+  label term dropped and flow's extents zeroed, the suite goes red
+  every time.
+- **114.9** Docs, types, the benchmark row, this record.  The row
+  (`layout: force settle — avoidOverlap on vs off`, in the seed block
+  of `benchmark/layouts.mjs`, `BENCH_OP=overlap`) reads at the table's
+  N=2000: 131 ms with the separation against 121 ms without, twenty
+  iterations — the post-pass is ~8% of a short run and vanishes into a
+  converged one.
+
+### Verification run (2026-09-02)
+
+`npm run -s verify` green (2,558 unit specs); the module tier green
+(612); `test:throws:quiet` and `test:node:quiet` green; `build:types`
+regenerated and committed; the page driven in Chromium as above.
+Deviations from v3 recorded in `MIGRATING.md`: force's `animate`
+meaning, `nodeDimensionsIncludeLabels` defaulting to true, and the
+lock honoured by writes.
+
 ### Known risks, recorded up front
 
 - Default output changes: force, flow and radial (overlap avoidance on),

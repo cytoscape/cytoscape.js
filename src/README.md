@@ -635,7 +635,11 @@ manipulation, `style()` (the `{ nodes, edges, parents, core }`
 sheet), `layout()`/
 `makeLayout` (grid, preset, circle, concentric, breadthfirst, random,
 the round-85 hierarchy-aware `radial` tree,
-and — round 18 — the GPU-capable `force`; plus the round-17
+round 18's GPU-capable `force` and round 112's layered `flow` — every
+one of them, since round 114, spacing by one reading of node
+dimensions with labels included by default, avoiding overlap in its
+own geometry, holding locked nodes where they are, and tweening to
+its result under `animate: true`; plus the round-17
 **extension contract**: `cy.layout({ impl })` runs a user layout
 class/object with no registry — plus `eles.layout()` for subset
 scopes and the v3 `layoutPositions`
@@ -1473,22 +1477,31 @@ calls made deliberately rather than by accretion:
   object implementing `{ run(ctx), stop?() }`, `run` optionally
   async (the GPU-layout shape).  The **LayoutContext** is
   columnar-first — `nodeSlots()` pre-filtered to unlocked leaves,
-  live position/endpoint views, O(1) CSR degrees, bulk
-  `setPositions`, the `layoutPositions` finisher with the whole v3
-  plumbing, and `packComponents( spacing? )` (round 87.1 — v3
-  layout-utilities' `separateComponents` in one call, shelf-packing
-  the laid-out components via `layout/pack.mts`, the same packing
-  `force.componentSpacing` uses; `SpiralLayout` demoes it) — with
-  handles reachable at `ctx.eles`.  Lifecycle
-  events fire on the core exactly once per run; layout instances
-  stay non-emitters.
+  live position/endpoint views, O(1) CSR degrees,
+  `nodeDimensions()` (round 114.1 — the one reading of node boxes
+  every built-in spaces by, labels included by default),
+  `components()`, bulk `setPositions`, the `layoutPositions( fn,
+  overrides? )` finisher with the whole v3 plumbing and an impl's own
+  defaults merged in, `finish( slots, xy, overrides? )` (114.2 — the
+  one landing rule: the finisher when animate / animateFilter /
+  transform / spacingFactor ask for it, the bulk write plus fit /
+  zoom / pan otherwise — what flow and force land through), and
+  `packComponents( spacing?, { bodies?, includeLabels?, positions? } )`
+  (round 87.1 — v3 layout-utilities' `separateComponents` in one
+  call, shelf-packing the laid-out components via `layout/pack.mts`;
+  body boxes since 114.4, and `positions` packs the impl's own array
+  so nothing lands before a tween starts) — with handles reachable at
+  `ctx.eles`.  Lifecycle events fire on the core exactly once per
+  run; layout instances stay non-emitters.
 
   Core/collection/renderer extension points
   stay out (recorded: mappers + predicates cover the common cases;
-  revisit on demand).  A worked example (`SpiralLayout`) ships in
-  `debug` (`?layout=spiral`), and the contract-conformance
-  specs in `test/layout-contract.mjs` are the template external
-  authors can crib.
+  revisit on demand).  A worked example (`SpiralLayout`,
+  `debug/spiral-layout.js`, rewritten in 114.7 over exactly those
+  members so it animates and avoids overlap) ships in `debug`
+  (`?layout=spiral`), the module suite runs it headless, and the
+  contract-conformance specs in `test/layout-contract.mjs` are the
+  template external authors can crib.
   **The contract's types ship since round 45**: `LayoutContext`,
   `LayoutImpl` and `CustomLayout` are exported from the entry point, so
   `run( ctx )` has a real parameter type.  Until then only
@@ -1666,6 +1679,30 @@ each is deliberate, not a pass-1 deferral:
   ever appears, the logged extension is a single boolean elevated
   tier (one extra batch per group) — never arbitrary integer
   stacking.
+- **A locked node holds its place, everywhere** (round 114.3).  v3's
+  rule, and what `locked()`'s doc always promised: a locked node — or
+  every node under `cy.autolock( true )` — ignores `position()` /
+  `positions()` / `shift()` writes and the position tween channel
+  (style channels still animate), and every layout holds it where it
+  is while keeping it in the structure it computes (grid and circle,
+  which place by index, give it no cell; force pins it as an obstacle
+  its settle separates the others from).  Until 114.3 only force and
+  flow honoured the lock, through the contract's `nodeSlots()`; the
+  store tier (`setPosition*`) stays raw for the renderer's settle, the
+  wire and animation `apply`.  `cy.json()` exports the node's own
+  flag, not autolock's.
+- **Every layout avoids overlap in its own geometry, labels included
+  by default** (round 114).  `nodeDimensionsIncludeLabels` defaults to
+  **true** (v3: false), consistent with 16.4's labels-in-`boundingBox()`;
+  the boxes come from one reading (`layout/dims.mts`), and each
+  layout's `avoidOverlap` (default true) is a constructive rule in its
+  own terms — cell size, ring radius, rank separation, spiral pitch —
+  except force, whose point-based sim gets the portfolio's one
+  post-settle separation.  A generic push-apart remover was considered
+  and declined: structure-blind, iterative, and a second meaning for
+  the option.  Preset and random have no `avoidOverlap` — positions
+  are the caller's, and a pushed-apart scatter is neither random nor
+  uniform.
 - **Style is `{ nodes, edges }`, no selector blocks and no style
   functions.**  Each key is a props object whose values are constants or
   mapper objects; all per-element variation is declarative (scales and

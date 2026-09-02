@@ -797,8 +797,12 @@ directions".*
     bar before anything is designed.
     *The layered/hierarchical half is taken up by round 112 (the
     `flow` layout — built, not ported); the harness is its pass
-    112.1.  The portfolio audit for the remaining use cases stays
-    open here.*
+    112.1.  Round 114 cleaned up the portfolio that exists — one
+    reading of node dimensions, overlap avoidance in every layout,
+    locked nodes held everywhere, force's animate made to mean what
+    it means elsewhere, and a quality suite over every layout — so
+    the audit for the remaining use cases starts from layouts that
+    are correct.  That audit stays open here.*
 50. **The v3 extension ports** (maintainer, 2026-08-19: the most
     important v3 extensions need v4 ports).  Round 71 builds the
     toolchain and one example; this is the campaign that uses it.
@@ -912,3 +916,19 @@ directions".*
     `meta.adapter` would give the next such step a suspect.  Not a
     decision so much as a queue; it leaves this list when a round
     gives those rows bands.
+55. **Round 114's layout follow-ups** (logged 2026-09-02).  Three
+    were declined for the round rather than the library.  (a)
+    Size-aware (disc) repulsion inside the force sim, CPU and WGSL,
+    so a live (`animateLive`) run is overlap-free *during* the run
+    and not only at settle — a shader change with parity tests; the
+    settle's separation (114.5) covers every other presentation.  (b)
+    `boundingBox` on force: the sim has its own frame and ignores the
+    option; whether to scale the settle into a box (flow's rule) or
+    keep declining is a decision.  (c) A locked child still travels
+    with a dragged compound parent through `shiftSubtree`; v3 leaves
+    it behind and re-derives the parent.  And a measurement the round
+    produced for round 102: the debug page's hover panel is the "app
+    spelling today" (a per-element opacity bypass or `hide()` over
+    everything outside the closed neighbourhood), timed in the console
+    per hover change — the numbers on em-web and ndex-large belong in
+    102's first measurement when that round opens.

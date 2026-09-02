@@ -5,10 +5,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-02, after the performance review: the full
-  benchmark suite re-measured against the 13 Aug baseline, the one pair
-  at parity fixed, and the instrument repaired where it had let an hour
-  of measurement compare two Node versions.
+- **Last updated**: 2026-09-02, after the layout cleanup: every layout
+  reads one set of node dimensions and avoids overlap in its own
+  geometry, locked nodes hold their place everywhere, force's `animate`
+  means what it means elsewhere, and a quality suite asserts placement,
+  fit, overlap, locks, animation and component separation for every
+  layout.
 
 ## How to maintain this file
 
@@ -47,8 +49,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,362 unit · 588 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
-| Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Automated tests | 2,558 unit · 612 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
 | Style parity | v4 accepts 161 of v3's 291 style property names (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
@@ -659,6 +661,31 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     performance claim that is measured rather than remembered.  Four
     movers no run could screen (one-shot rows, rows narrower than their
     noise) are logged with the measurement each needs.
+- **2 Sep** — the layouts, cleaned up
+  - A survey of the portfolio found nine defects: flow's animated runs
+    never fitted, radial and the spiral example had no overlap
+    avoidance, force ignored node size and every finisher option,
+    labels counted for three layouts out of nine, and only force and
+    flow honoured a locked node — every other layout, and `position()`
+    itself, moved one.
+  - One reading of node dimensions now serves every layout, labels
+    included by default; each layout avoids overlap in its own
+    geometry (radial's rings grow, flow's box holds the bodies,
+    concentric's chord rule takes the diagonal) and force's point
+    sim gets the one post-settle separation; a locked node holds
+    against writes, tweens and every layout; force's `animate: true`
+    tweens to its result like every other layout, with `animateLive`
+    for the streaming run.
+  - A quality suite runs every layout over six fixtures — 170 specs,
+    each overlap row paired with a control that goes red when the
+    layout's overlap code is stubbed — and the debug page gained what
+    a person judging a layout needs: Preset restores the load
+    positions, a live-vs-tween choice, layout-appropriate edge types,
+    and a hover panel that dims or hides everything outside a
+    neighbourhood.
+  - Buys layouts that are correct about the things a user sees first
+    — nothing overlaps, the viewport fits, a pinned node stays pinned
+    — before the portfolio audit decides what else to build.
 
 ---
 
@@ -690,9 +717,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   loses to it.  Hover styling on a parent body likewise stops firing where an
   edge lies under the cursor, which is v3's behaviour restored.
 - **`force` with `animate: false` on a rendered flat graph is async**
-  (31 Aug): executor choice is availability-driven and `animate` is
-  presentation only — read positions at `layoutstop` / `promise()`.
-  Headless runs stay synchronous.
+  (31 Aug): executor choice is availability-driven — read positions at
+  `layoutstop` / `promise()`.  Headless runs stay synchronous.
+- **`animate: true` tweens on `force` too** (2 Sep) — v3 cose's `'end'`;
+  the streaming run v3 spelled `'during'` is `animateLive: true`.  Every
+  layout avoids overlap by default with **labels included**
+  (`nodeDimensionsIncludeLabels` defaults to true, v3's was false), and
+  a **locked node holds** against `position()`, tweens and every layout,
+  as v3's did.
 - **A `radial` built-in layout, force constraints, data-driven layout
   mappings and per-side compound padding** (31 Aug) — fcose's alignment /
   relative-placement surface and per-edge length control without leaving

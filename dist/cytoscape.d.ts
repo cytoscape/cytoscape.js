@@ -5672,9 +5672,10 @@ declare class Collection {
   /**
    * Whether the first element is locked — immovable, by layouts,
    * position writes and position tweens alike (one rule since round
-   * 114.3: every layout holds a locked node where it is, keeps it in
-   * the layout's structure, and treats it as an obstacle when avoiding
-   * overlap).  True for every node while `cy.autolock( true )` is set,
+   * 114.3: every layout holds a locked node where it is and keeps it in
+   * the layout's structure; force treats it as an obstacle its settle
+   * separates the others from).  True for every node while
+   * `cy.autolock( true )` is set,
    * as in v3; the flag column alone is what `{ locked: true }` filters
    * read.
    *
@@ -7280,11 +7281,15 @@ declare class LayoutContext {
    *   (default 40, the force layout's `componentSpacing` default)
    * @param options — `bodies` (default true) packs the nodes' boxes
    *   rather than their positions; `includeLabels` overrides the run's
-   *   `nodeDimensionsIncludeLabels` for those boxes
+   *   `nodeDimensionsIncludeLabels` for those boxes; `positions` packs
+   *   that array (2n, parallel to `nodeSlots()`) in place instead of
+   *   the store — for a layout that lands through `finish()` and must
+   *   not write positions before the tween starts
    */
   packComponents(spacing?: number, options?: {
     bodies?: boolean;
     includeLabels?: boolean;
+    positions?: Float32Array | Float64Array;
   }): void;
   /**
    * The discrete finisher: v3's layoutPositions plumbing over the

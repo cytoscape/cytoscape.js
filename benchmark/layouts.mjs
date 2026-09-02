@@ -510,7 +510,7 @@ if (OP == null || 'constrained'.includes(OP)) {
 // rather than a measurement (round 33's rule).  Same run either side;
 // the only difference is what a fresh placement is, so the gap between
 // the rows *is* the landmark-MDS seed.
-if (OP == null || 'seed'.includes(OP)) {
+if (OP == null || 'seed'.includes(OP) || 'overlap'.includes(OP)) {
   const a = gpuInstance();
   const b = gpuInstance();
   const opts = {
@@ -529,6 +529,20 @@ if (OP == null || 'seed'.includes(OP)) {
       });
       bench('scatter', () => {
         b.layout({ ...opts, init: 'scatter' }).run();
+      });
+    });
+  });
+
+  // 114.5: the settle's body separation — the one post-pass in the
+  // layout portfolio — priced against the same run with it off, so its
+  // cost is a number rather than a guess
+  group('layout: force settle — avoidOverlap on vs off (20 iterations)', () => {
+    summary(() => {
+      bench('avoidOverlap (the default)', () => {
+        a.layout({ ...opts, avoidOverlap: true }).run();
+      });
+      bench('avoidOverlap: false', () => {
+        b.layout({ ...opts, avoidOverlap: false }).run();
       });
     });
   });

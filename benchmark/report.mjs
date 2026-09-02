@@ -215,6 +215,32 @@ if (jobs.length === 0) {
   process.exit(1);
 }
 
+// Round 113.1: the runner refuses a Node other than the one `.nvmrc` pins.
+// The machine fingerprint ignores the Node version *on purpose* — an
+// upgrade must not split a box's history — which means nothing downstream
+// can tell a V8 change from a library change.  A full `--all --repeat 3`
+// sweep measured under a shell that had not activated mise ran on Node 22
+// against a Node 24 archive and read +8% drift with every frozen v3 control
+// moving too: an hour of measurement that compared the engines.  The
+// version is recorded in `meta.nodeVersion` either way; `--any-node` is the
+// deliberate override, for pricing a runtime rather than the library.
+const pinnedNode = readFileSync(join(DIR, '..', '.nvmrc'), 'utf8').trim();
+const runningMajor = process.versions.node.split('.')[0];
+
+if (pinnedNode.split('.')[0] !== runningMajor && !argv.includes('--any-node')) {
+  console.error(
+    `refusing to run: this is Node ${process.versions.node}, and .nvmrc pins ${pinnedNode}.`,
+  );
+  console.error(
+    'The archive was measured on the pinned major and the comparison cannot',
+  );
+  console.error(
+    'tell an engine change from a library change.  `mise exec -- npm run',
+  );
+  console.error('benchmark:report ...`, or pass --any-node deliberately.');
+  process.exit(1);
+}
+
 const startedAt = Date.now();
 const results = { meta: null, jobs: [] };
 const failures = [];

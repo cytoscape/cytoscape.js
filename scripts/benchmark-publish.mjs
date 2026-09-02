@@ -95,6 +95,10 @@ export function summarize(results, { file, note = null }) {
     // leaving the reader to open the results file
     concurrency: meta.concurrency ?? null,
     totalMs: meta.totalMs ?? null,
+    // round 113.1: the engine the run measured under.  The fingerprint
+    // ignores it by design, so the index carries it where a reader can see
+    // a trend's step coincide with a Node upgrade
+    node: meta.nodeVersion ?? null,
     // the grouping key for a trend: runs from different boxes are not
     // comparable, and a chart that mixes them is worse than no chart
     fingerprint: meta.machine?.fingerprint ?? null,
@@ -258,6 +262,22 @@ function main(argv) {
   const file = basename(source);
   const entry = summarize(results, { file, note });
   const index = readIndex();
+  const previous = sortRuns(index.runs).find(
+    (r) =>
+      r.file !== file &&
+      r.fingerprint === entry.fingerprint &&
+      r.profile === entry.profile,
+  );
+
+  if (previous?.node != null && previous.node !== entry.node) {
+    console.warn(
+      `  warning: this run is Node ${entry.node}; the previous ${entry.profile}` +
+        ` run on this machine was Node ${previous.node}.  The fingerprint` +
+        ' ignores the engine by design, so the comparison page will read any' +
+        ' V8 change as a library change — note it in --note.',
+    );
+  }
+
   const runs = sortRuns([...index.runs.filter((r) => r.file !== file), entry]);
 
   const { keep, drop } =

@@ -83,6 +83,7 @@ const results = (over = {}) => ({
     suiteFilter: null,
     dirty: false,
     totalMs: 426000,
+    nodeVersion: 'v24.18.0',
     machine: machine(),
     adapter: null,
     ...over,
@@ -97,6 +98,12 @@ describe('benchmark archive: summarize', () => {
     expect(summarize(results(), { file: 'r.json' }).fingerprint).to.equal(
       '2d2ea233',
     );
+  });
+
+  it('carries the Node version, which the fingerprint ignores by design', () => {
+    // round 113.1: a Node upgrade must not split a machine's history, so the
+    // index is where a reader sees a step coincide with one
+    expect(summarize(results(), { file: 'r.json' }).node).to.equal('v24.18.0');
   });
 
   it('summarizes the machine in one line', () => {

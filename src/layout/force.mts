@@ -20,8 +20,9 @@ runs, presenting each frame on the GPU executor.  Either way a
 rendered flat-graph run is async — read positions at `layoutstop` /
 `promise()`.
 
-Overlap (114.5): the sim is point-based, so `avoidOverlap` (default
-true) separates node bodies — labels included by default — after the
+Overlap (114.5; the dense case rebuilt in 115): the sim is point-based,
+so `avoidOverlap` (default true) separates node bodies — labels on
+request (`nodeDimensionsIncludeLabels`) — after the
 settle, pinned nodes as obstacles, before the component re-pack.  A
 constructive rule cannot exist for a force field, so this is the one
 post-pass in the layout portfolio; invisible under the tween, an
@@ -42,6 +43,7 @@ import {
   packComponentBodies,
 } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
+import { separationAlong } from './separation.mjs';
 import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
 import {
   checkScoreColumn,
@@ -95,7 +97,7 @@ export interface ForceRunOptions {
   /** iterations advanced per animation frame (animateLive: true) */
   stepsPerFrame?: number;
   /** separate overlapping node bodies after the settle (114.5; default
-   * true) — labels included unless `nodeDimensionsIncludeLabels` is
+   * true) — labels included only when `nodeDimensionsIncludeLabels` is
    * false, pinned (locked) nodes as obstacles */
   avoidOverlap?: boolean;
   /** the gap kept between separated bodies (default 10) */
@@ -135,22 +137,33 @@ export interface ForceRunOptions {
 
 const DEFAULT_EDGE_LENGTH = 60;
 
-/** local sweeps the body separation tries before and after scaling */
+/** local sweeps tried first — the sparse case clears in one or two */
 const SEPARATE_SWEEPS = 8;
 
-/** the most a component is scaled up in one round to clear its pile */
-const SEPARATE_SCALE_CAP = 8;
+/** the most a pair's distance is asked to grow in one stress round */
+const SEPARATE_GROWTH_CAP = 1.5;
 
-/** sweep-then-scale rounds before the separation gives up */
-const SEPARATE_ROUNDS = 4;
+/** a clear pair's weight relative to an overlapping pair's: the holds
+ * keep the structure but must not out-vote the pile's expansion */
+const SEPARATE_HOLD_WEIGHT = 0.25;
 
-/** the closing sweep budget — what a pinned component gets instead of
- * a scale */
+/** stress iterations per proximity graph */
+const SEPARATE_STRESS_ITERATIONS = 20;
+
+/** clear neighbours each node keeps in the proximity graph — the
+ * nearest few stand in for a Delaunay neighbourhood; every overlapping
+ * pair is kept regardless */
+const SEPARATE_NEAREST = 6;
+
+/** proximity-stress rounds before the separation gives up */
+const SEPARATE_ROUNDS = 40;
+
+/** the closing sweep budget for the residue */
 const SEPARATE_SWEEPS_FINAL = 64;
 
 /**
- * Separate overlapping node bodies in place (114.5).  Three phases,
- * all deterministic (fixed order, a fixed tie rule):
+ * Separate overlapping node bodies in place (114.5; the dense case
+ * rebuilt in 115).  Deterministic (fixed order, fixed tie rules):
  *
  * 1. **Local sweeps** — a uniform grid hashed by the largest box, so
  *    any two overlapping boxes share a 3 x 3 neighbourhood; then
@@ -159,15 +172,23 @@ const SEPARATE_SWEEPS_FINAL = 64;
  *    move, all of it onto the free node when one is pinned, nothing
  *    when both are.  Clears the sparse case (a settled field has few
  *    overlaps) in a sweep or two.
- * 2. **Per-component scale** — a dense pile (a clique of wide labels)
- *    expands under pairwise pushes only slowly, so what the sweeps
- *    left is solved exactly instead: for every still-overlapping pair
- *    the factor that separates it along the cheaper axis, the
- *    component scaled about its centroid by the largest (capped).  A
- *    similarity transform, so the structure the sim found is kept;
- *    components holding a pinned node are left to the sweeps.
- * 3. **Local sweeps** again for the residue (unequal label offsets,
- *    the cap).
+ * 2. **Proximity stress** — a dense pile (a clique of wide labels)
+ *    expands under pairwise pushes only slowly, and 114.5's answer,
+ *    scaling the whole component by its *worst* pair's factor, spread
+ *    every settled graph several times over: two nodes the sim left
+ *    a pixel apart asked for the cap.  What lands instead is PRISM's
+ *    proximity stress (Gansner & Hu): over the pairs that share a
+ *    grid neighbourhood, an overlapping pair's target distance is its
+ *    current distance times the factor that separates it along its
+ *    own direction (capped per round), a clear pair's target is its
+ *    current distance, and a few stress-majorization iterations move
+ *    every node to the weighted average its neighbours ask for.  The
+ *    graph is thinned to each node's nearest few clear neighbours
+ *    (PRISM's Delaunay neighbourhood, approximately) — every clear
+ *    pair in a 3 x 3 cell block would hold the pile rigid — so the
+ *    pile opens locally, the clear pairs hold the structure around
+ *    it, and the far field never moves.
+ * 3. **Local sweeps** again for the residue.
  *
  * @param n — sim node count
  * @param pos — 2n interleaved positions, moved in place
@@ -184,7 +205,7 @@ const separateBodies = (
   compOf: Int32Array,
   count: number,
 ): void => {
-  if (n < 2) {
+  if (n < 2 || count < 1) {
     return;
   }
 
@@ -192,10 +213,13 @@ const separateBodies = (
   const cellOf = new Int32Array(n);
   const order = new Int32Array(n);
 
-  // visit every overlapping pair (j > i) once, over a grid built from
-  // the positions as they stand at the call; `visit` may move nodes
-  const forEachOverlap = (
+  // visit every pair (j > i) sharing a 3 x 3 cell neighbourhood once,
+  // over a grid built from the positions as they stand at the call,
+  // with the pair's overlap on each axis (non-positive when clear);
+  // `visit` may move nodes.  Returns whether any pair overlapped.
+  const forEachNear = (
     visit: (i: number, j: number, ox: number, oy: number) => void,
+    overlappingOnly: boolean,
   ): boolean => {
     let minX = Infinity;
     let minY = Infinity;
@@ -271,12 +295,14 @@ const separateBodies = (
             const oy =
               Math.min(ay + dims.y2[i], by + dims.y2[j]) -
               Math.max(ay + dims.y1[i], by + dims.y1[j]);
+            const overlapping = ox > 0 && oy > 0;
 
-            if (ox <= 0 || oy <= 0) {
+            if (overlapping) {
+              found = true;
+            } else if (overlappingOnly) {
               continue;
             }
 
-            found = true;
             visit(i, j, ox, oy);
           }
         }
@@ -307,7 +333,7 @@ const separateBodies = (
 
   const sweeps = (limit: number): boolean => {
     for (let k = 0; k < limit; k++) {
-      if (!forEachOverlap(push)) {
+      if (!forEachNear(push, true)) {
         return false;
       }
     }
@@ -315,85 +341,172 @@ const separateBodies = (
     return true;
   };
 
-  const held = new Uint8Array(count);
+  // phase 2: one proximity-stress round — gather the near pairs with
+  // their target distances, then majorize.  Returns false when no
+  // pair overlapped (nothing to do).
+  const candI: number[] = [];
+  const candJ: number[] = [];
+  const candD: number[] = [];
+  const candOverlap: number[] = [];
+  const pairI: number[] = [];
+  const pairJ: number[] = [];
+  const target: number[] = [];
+  const holdOf: number[] = [];
+  const sumW = new Float64Array(n);
+  const accX = new Float64Array(n);
+  const accY = new Float64Array(n);
+  const nearest = new Float64Array(n * SEPARATE_NEAREST);
 
-  for (let i = 0; i < n; i++) {
-    if (pinned[i] === 1) {
-      held[compOf[i]] = 1;
-    }
-  }
+  const stressRound = (): boolean => {
+    candI.length = 0;
+    candJ.length = 0;
+    candD.length = 0;
+    candOverlap.length = 0;
 
-  // phase 2: the pile that survived — scale each component about its
-  // centroid by the factor its worst pair needs along the cheaper axis;
-  // returns false when nothing could be scaled
-  const scaleComponents = (): boolean => {
-    const scale = new Float64Array(count).fill(1);
-
-    forEachOverlap((i, j) => {
-      const c = compOf[i];
-
-      if (c !== compOf[j] || held[c] === 1) {
+    const found = forEachNear((i, j, ox, oy) => {
+      if (compOf[i] !== compOf[j]) {
         return; // cross-component overlap is the re-pack's job
       }
-
-      const dx = Math.abs(pos[j * 2] - pos[i * 2]);
-      const dy = Math.abs(pos[j * 2 + 1] - pos[i * 2 + 1]);
-      const needX =
-        (dims.x2[i] - dims.x1[i] + dims.x2[j] - dims.x1[j]) / 2 + 0.5;
-      const needY =
-        (dims.y2[i] - dims.y1[i] + dims.y2[j] - dims.y1[j]) / 2 + 0.5;
-      const sx = dx > 1e-6 ? needX / dx : Infinity;
-      const sy = dy > 1e-6 ? needY / dy : Infinity;
-      const s = Math.min(sx, sy);
-
-      if (Number.isFinite(s)) {
-        scale[c] = Math.max(scale[c], Math.min(s, SEPARATE_SCALE_CAP));
+      if (pinned[i] === 1 && pinned[j] === 1) {
+        return;
       }
-    });
 
-    const cxs = new Float64Array(count);
-    const cys = new Float64Array(count);
-    const sizes = new Int32Array(count);
+      candI.push(i);
+      candJ.push(j);
+      candD.push(
+        Math.hypot(pos[j * 2] - pos[i * 2], pos[j * 2 + 1] - pos[i * 2 + 1]),
+      );
+      candOverlap.push(ox > 0 && oy > 0 ? 1 : 0);
+    }, false);
 
-    for (let i = 0; i < n; i++) {
-      const c = compOf[i];
-
-      cxs[c] += pos[i * 2];
-      cys[c] += pos[i * 2 + 1];
-      sizes[c]++;
+    if (!found) {
+      return false;
     }
 
-    let scaled = false;
+    // thin the clear pairs: each node keeps its nearest few (the
+    // distance threshold per node is its k-th nearest candidate)
+    nearest.fill(Infinity);
 
-    for (let i = 0; i < n; i++) {
-      const c = compOf[i];
-      const s = scale[c];
+    for (let p = 0; p < candI.length; p++) {
+      for (const node of [candI[p], candJ[p]]) {
+        const base = node * SEPARATE_NEAREST;
+        const d = candD[p];
 
-      if (s <= 1) {
+        if (d < nearest[base + SEPARATE_NEAREST - 1]) {
+          let k = SEPARATE_NEAREST - 1;
+
+          while (k > 0 && nearest[base + k - 1] > d) {
+            nearest[base + k] = nearest[base + k - 1];
+            k--;
+          }
+
+          nearest[base + k] = d;
+        }
+      }
+    }
+
+    pairI.length = 0;
+    pairJ.length = 0;
+    target.length = 0;
+    holdOf.length = 0;
+
+    for (let p = 0; p < candI.length; p++) {
+      const i = candI[p];
+      const j = candJ[p];
+      const overlapping = candOverlap[p] === 1;
+
+      if (
+        !overlapping &&
+        candD[p] > nearest[i * SEPARATE_NEAREST + SEPARATE_NEAREST - 1] &&
+        candD[p] > nearest[j * SEPARATE_NEAREST + SEPARATE_NEAREST - 1]
+      ) {
         continue;
       }
 
-      scaled = true;
+      let dx = pos[j * 2] - pos[i * 2];
+      let dy = pos[j * 2 + 1] - pos[i * 2 + 1];
+      let d = candD[p];
 
-      const cx = cxs[c] / sizes[c];
-      const cy = cys[c] / sizes[c];
+      if (d < 1e-6) {
+        // coincident: a deterministic pseudo-direction from the indices
+        const a = ((i * 7919 + j * 104729) % 360) * (Math.PI / 180);
 
-      pos[i * 2] = cx + (pos[i * 2] - cx) * s;
-      pos[i * 2 + 1] = cy + (pos[i * 2 + 1] - cy) * s;
+        dx = Math.cos(a);
+        dy = Math.sin(a);
+        d = 1e-6;
+      } else {
+        dx /= d;
+        dy /= d;
+      }
+
+      let t = d;
+
+      if (overlapping) {
+        const need = separationAlong(dims, i, j, dx, dy) + 0.5;
+
+        t = Math.min(need, d * SEPARATE_GROWTH_CAP);
+        t = Math.max(t, d); // never pull an overlapping pair closer
+      }
+
+      pairI.push(i);
+      pairJ.push(j);
+      target.push(t);
+      holdOf.push(overlapping ? 0 : 1);
     }
 
-    return scaled;
+    for (let it = 0; it < SEPARATE_STRESS_ITERATIONS; it++) {
+      sumW.fill(0);
+      accX.fill(0);
+      accY.fill(0);
+
+      for (let p = 0; p < pairI.length; p++) {
+        const i = pairI[p];
+        const j = pairJ[p];
+        const t = target[p];
+        const w = (holdOf[p] === 1 ? SEPARATE_HOLD_WEIGHT : 1) / (t * t);
+        let dx = pos[j * 2] - pos[i * 2];
+        let dy = pos[j * 2 + 1] - pos[i * 2 + 1];
+        const d = Math.hypot(dx, dy);
+
+        if (d < 1e-6) {
+          const a = ((i * 7919 + j * 104729) % 360) * (Math.PI / 180);
+
+          dx = Math.cos(a);
+          dy = Math.sin(a);
+        } else {
+          dx /= d;
+          dy /= d;
+        }
+
+        // each end's wish: the other end, plus the target along the pair
+        accX[i] += w * (pos[j * 2] - t * dx);
+        accY[i] += w * (pos[j * 2 + 1] - t * dy);
+        accX[j] += w * (pos[i * 2] + t * dx);
+        accY[j] += w * (pos[i * 2 + 1] + t * dy);
+        sumW[i] += w;
+        sumW[j] += w;
+      }
+
+      for (let i = 0; i < n; i++) {
+        if (pinned[i] === 1 || sumW[i] === 0) {
+          continue;
+        }
+
+        pos[i * 2] = accX[i] / sumW[i];
+        pos[i * 2 + 1] = accY[i] / sumW[i];
+      }
+    }
+
+    return true;
   };
 
-  // a few rounds of sweep-then-scale: a dense pile can need more than
-  // one capped scale, and the sweeps between keep the residue local
-  for (let round = 0; round < SEPARATE_ROUNDS; round++) {
-    if (!sweeps(SEPARATE_SWEEPS)) {
-      return;
-    }
+  if (!sweeps(SEPARATE_SWEEPS)) {
+    return;
+  }
 
-    if (!scaleComponents()) {
-      break; // nothing scalable (held by a pin): the sweeps' job alone
+  for (let round = 0; round < SEPARATE_ROUNDS; round++) {
+    if (!stressRound()) {
+      break;
     }
   }
 

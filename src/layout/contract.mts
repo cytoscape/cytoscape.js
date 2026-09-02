@@ -131,6 +131,13 @@ export class LayoutContext {
     const scope = this.options.eles as Collection | undefined;
     const out: number[] = [];
 
+    if (this.cy.autolock() === true) {
+      // every node is locked: nothing to place (114.3)
+      this.slots = out;
+
+      return out;
+    }
+
     if (scope == null) {
       // Whole graph: walk the store's insertion-order list directly
       // (34.4).  This is the same walk `scanRefsInto` takes — and so the

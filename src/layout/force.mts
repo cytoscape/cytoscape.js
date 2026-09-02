@@ -213,9 +213,10 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     const pinned = new Uint8Array(n);
     const movable: number[] = [];
+    const lockAll = cy.autolock() === true; // 114.3: autolock pins them all
 
     for (let i = 0; i < n; i++) {
-      if ((flags[simSlots[i]] & FLAG_LOCKED) !== 0) {
+      if (lockAll || (flags[simSlots[i]] & FLAG_LOCKED) !== 0) {
         pinned[i] = 1;
       } else {
         movable.push(i);

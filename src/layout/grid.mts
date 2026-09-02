@@ -1,5 +1,5 @@
 import * as math from '../math.mjs';
-import { FLAG_PARENT } from '../contract.mjs';
+import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
@@ -124,12 +124,18 @@ export class GridLayout {
   private runBySlot(bb: BoundingBox): void {
     const cy = this.cy;
     const store = cy._store;
-    let slots = store.slotsOrdered('nodes');
+    const slots: number[] = [];
 
-    if (store.hasCompounds()) {
-      // parents derive from their placed leaves
-      slots = slots.filter(
-        (slot) => !store.hasFlag('nodes', slot, FLAG_PARENT),
+    // alive, not a parent (parents derive from their placed leaves), not
+    // locked (114.3: a locked node holds its place and takes no cell —
+    // grid places by index) — the contract's nodeSlots() mask
+    if (cy.autolock() !== true) {
+      store.scanSlotsInto(
+        slots,
+        0,
+        'nodes',
+        FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED,
+        FLAG_ALIVE,
       );
     }
 
@@ -171,7 +177,10 @@ export class GridLayout {
     const options = this.options;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
 
-    let nodes = eles.nodes().filter((node: Collection) => !node.isParent());
+    // parents derive; locked nodes hold their place and take no cell
+    let nodes = eles
+      .nodes()
+      .filter((node: Collection) => !node.isParent() && !node.locked());
 
     if (options.sort != null) {
       // the { data, order? } sort mapping is the serializable spelling

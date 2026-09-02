@@ -931,7 +931,7 @@ export class Collection {
       removed: this.removed(),
       selected: this.selected(),
       selectable: this.selectable(),
-      locked: this.locked(),
+      locked: this._hasBit(FLAG_LOCKED), // the node's own flag, not autolock's
       // the raw grabbable field, not the pannable-overridden getter (as in v3 json)
       grabbable: this._hasBit(FLAG_GRABBABLE),
       pannable: this.pannable(),
@@ -1676,16 +1676,17 @@ export class Collection {
     // would be pure allocation here (round 62.4)
     const cy = this._cy;
 
-    cy._animations.start(
-      new Animation(
-        cy._store,
-        null,
-        this._liveRefs(),
-        false,
-        opts,
-        cy._styleEngine,
-      ),
+    const ani = new Animation(
+      cy._store,
+      null,
+      this._liveRefs(),
+      false,
+      opts,
+      cy._styleEngine,
     );
+
+    ani.lockAll = cy.autolock() === true;
+    cy._animations.start(ani);
 
     return this;
   }
@@ -1699,18 +1700,18 @@ export class Collection {
    */
   animation(opts: AnimateOptions): AnimationHandle {
     const cy = this._cy;
-
-    return new AnimationHandleImpl(
-      cy._animations,
-      new Animation(
-        cy._store,
-        null,
-        this._liveRefs(),
-        false,
-        opts,
-        cy._styleEngine,
-      ),
+    const ani = new Animation(
+      cy._store,
+      null,
+      this._liveRefs(),
+      false,
+      opts,
+      cy._styleEngine,
     );
+
+    ani.lockAll = cy.autolock() === true;
+
+    return new AnimationHandleImpl(cy._animations, ani);
   }
 
   /**
@@ -1782,6 +1783,15 @@ export class Collection {
     const store = this._store;
     const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
 
+    // a locked node holds its position against every API-tier write
+    // (114.3 — v3's rule, and what locked() always promised); autolock
+    // locks them all
+    if (this._cy.autolock() === true) {
+      return this;
+    }
+
+    const flags = store.column('node.flags') as Uint32Array;
+
     // constant (possibly partial) object: direct columnar write — no
     // per-element handles, callbacks, or Position allocations
     if (typeof pos !== 'function') {
@@ -1798,7 +1808,11 @@ export class Collection {
       for (let i = 0; i < this.length; i++) {
         const ref = this._refs[i];
 
-        if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        if (
+          ref.group !== 'nodes' ||
+          !store.isCurrent(ref) ||
+          (flags[ref.slot] & FLAG_LOCKED) !== 0
+        ) {
           continue;
         }
 
@@ -1830,7 +1844,11 @@ export class Collection {
     for (let i = 0; i < this.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (
+        ref.group !== 'nodes' ||
+        !store.isCurrent(ref) ||
+        (flags[ref.slot] & FLAG_LOCKED) !== 0
+      ) {
         continue;
       }
 
@@ -1961,11 +1979,17 @@ export class Collection {
       return this;
     }
 
+    // a locked node holds against a shift as against any write (114.3)
+    if (this._cy.autolock() === true) {
+      return this;
+    }
+
     // direct columnar offset — no callbacks or per-element Position objects
     const store = this._store;
     const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
     const slots: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
+    const flags = store.column('node.flags') as Uint32Array;
 
     // v3's shift dedupe: an element whose ancestor is also shifted is
     // skipped — the ancestor's subtree shift moves it exactly once
@@ -1982,7 +2006,11 @@ export class Collection {
     for (let i = 0; i < this.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (
+        ref.group !== 'nodes' ||
+        !store.isCurrent(ref) ||
+        (flags[ref.slot] & FLAG_LOCKED) !== 0
+      ) {
         continue;
       }
 
@@ -3716,14 +3744,18 @@ export class Collection {
   }
 
   /**
-   * Whether the first element is locked — immovable, by layouts and
-   * position writes alike.  The force layout treats locked nodes as
-   * fixed obstacles.
+   * Whether the first element is locked — immovable, by layouts,
+   * position writes and position tweens alike (one rule since round
+   * 114.3: every layout holds a locked node where it is, keeps it in
+   * the layout's structure, and treats it as an obstacle when avoiding
+   * overlap).  True for every node while `cy.autolock( true )` is set,
+   * as in v3; the flag column alone is what `{ locked: true }` filters
+   * read.
    *
    * @returns true when locked
    */
   locked(): boolean {
-    return this._hasBit(FLAG_LOCKED);
+    return this._cy.autolock() === true || this._hasBit(FLAG_LOCKED);
   }
 
   /**
@@ -5294,10 +5326,12 @@ export class Collection {
   ): this {
     const cy = this._cy;
     // v3: parents are excluded from layout positioning (auto-bounds
-    // derive them from their placed leaves, round 14.11)
-    const nodes = cy._store.hasCompounds()
-      ? this.nodes().filter((n: Collection) => !n.isParent())
-      : this.nodes();
+    // derive them from their placed leaves, round 14.11), and so are
+    // locked nodes (114.3) — they hold their place; the layout that
+    // computed positions for them still counted them in its structure
+    const nodes = this.nodes().filter(
+      (n: Collection) => !n.isParent() && !n.locked(),
+    );
     const eles = (options.eles as Collection | undefined) ?? this;
 
     // the extension wrapper emits its own layoutstart before run()
@@ -5409,12 +5443,16 @@ export class Collection {
       }
 
       // the viewport animates alongside the nodes: a fit targets the box at
-      // the final positions (v3 semantics)
+      // the final positions (v3 semantics) — a locked node's final
+      // position is where it already is
+      const framePos = (node: Collection, i: number): Position =>
+        node.locked() ? (node.position() as Position) : getFinalPos(node, i);
+
       if (options.fit !== false) {
         anis.push(
           cy.animation({
             fit: {
-              boundingBox: eles.boundingBoxAt(getFinalPos),
+              boundingBox: eles.boundingBoxAt(framePos),
               padding: options.padding ?? 30,
             },
             duration: options.animationDuration ?? 500,

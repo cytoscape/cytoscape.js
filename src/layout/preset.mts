@@ -1,4 +1,4 @@
-import { FLAG_PARENT } from '../contract.mjs';
+import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { Position } from '../types.mjs';
 import type { PresetLayoutOptions } from '../public-types.mjs';
@@ -114,6 +114,9 @@ export class PresetLayout {
         if (store.hasFlag('nodes', entry.slot, FLAG_PARENT)) {
           continue;
         } // parents derive (14.11)
+        if (store.hasFlag('nodes', entry.slot, FLAG_LOCKED)) {
+          continue;
+        } // locked nodes hold their place (114.3)
 
         slots.push(entry.slot);
         xy.push(pos.x, pos.y);

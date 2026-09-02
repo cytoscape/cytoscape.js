@@ -2,7 +2,12 @@ import { color2tuple } from './util/colors.mjs';
 import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { Easing, EasingProgram } from './easing.mjs';
-import { columnSpec, FLAG_CHILD, FLAG_PARENT } from './contract.mjs';
+import {
+  columnSpec,
+  FLAG_CHILD,
+  FLAG_LOCKED,
+  FLAG_PARENT,
+} from './contract.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
@@ -556,6 +561,13 @@ export class Animation {
    *
    * @internal */
   readonly refs: Ref[];
+
+  /** `cy.autolock()` at creation: the position channel then moves
+   * nothing (114.3 — a locked node holds against tweens as against
+   * writes); style channels still animate
+   *
+   * @internal */
+  lockAll = false;
 
   /** true when this animates the viewport rather than elements
    *
@@ -1362,9 +1374,14 @@ export class Animation {
       }
     }
 
-    if (this.position != null) {
+    if (this.position != null && !this.lockAll) {
+      // locked nodes hold their place (114.3): the filter covers the
+      // CPU write and the GPU tween batches built from it alike
       const refs = this.refs.filter(
-        (r) => r.group === 'nodes' && this.store.isCurrent(r),
+        (r) =>
+          r.group === 'nodes' &&
+          this.store.isCurrent(r) &&
+          !this.store.hasFlag('nodes', r.slot, FLAG_LOCKED),
       );
 
       if (refs.length > 0) {

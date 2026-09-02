@@ -74,7 +74,11 @@ export class CircleLayout {
         ? !options.counterclockwise
         : options.clockwise;
 
-    let nodes = eles.nodes().filter((n: Collection) => !n.isParent());
+    // parents derive; a locked node holds its place and takes no slot on
+    // the ring (114.3 — circle places by index)
+    let nodes = eles
+      .nodes()
+      .filter((n: Collection) => !n.isParent() && !n.locked());
 
     if (options.sort != null) {
       // the { data, order? } sort mapping is the serializable spelling

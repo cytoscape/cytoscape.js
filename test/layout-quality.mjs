@@ -459,14 +459,17 @@ describe('gpu/layout: the quality suite (round 114.8)', function () {
       }
 
       for (const fixture of ['labelled', 'labelledFan']) {
-        it(`${name} on ${fixture}: no two label boxes overlap (labels on by default)`, async function () {
+        it(`${name} on ${fixture}: no two label boxes overlap under nodeDimensionsIncludeLabels`, async function () {
           const cy = mk(FIXTURES[fixture](), LABEL_STYLE);
           const probe = cy.nodes()[1];
 
           // the precondition: the label is what makes the box wide
           expect(labelBox(probe).w).to.be.greaterThan(3 * bodyBox(probe).w);
 
-          await run(cy, opts(name, cy, { fit: false }));
+          await run(
+            cy,
+            opts(name, cy, { fit: false, nodeDimensionsIncludeLabels: true }),
+          );
 
           const pairs = overlapPairs(cy.nodes(), labelBox);
 
@@ -490,18 +493,213 @@ describe('gpu/layout: the quality suite (round 114.8)', function () {
       });
     }
 
-    it('control: nodeDimensionsIncludeLabels: false clears the bodies but not the labels', async function () {
+    it("control: the default (bodies alone, v3's) clears the bodies but not the labels", async function () {
       const cy = mk(FIXTURES.labelled(), LABEL_STYLE);
 
       await run(cy, {
         name: 'grid',
         fit: false,
         avoidOverlapPadding: 0,
-        nodeDimensionsIncludeLabels: false,
       });
 
       expect(overlapPairs(cy.nodes(), bodyBox)).to.deep.equal([]);
       expect(overlapPairs(cy.nodes(), labelBox).length).to.be.greaterThan(0);
+    });
+  });
+
+  describe('not over-separated (round 115)', function () {
+    // Overlap-free is half the property: the maintainer's round-115
+    // finding was every layout clearing overlap by spreading the graph
+    // several times wider than v3.  These rows bound the spread from
+    // above.  A crammed run (a tiny boundingBox, so the overlap rule
+    // alone sets the spacing) must leave at least one pair *tight* —
+    // within the padding plus a hair of touching — because a layout at
+    // its minimum spacing has a binding pair; and force's separation
+    // must not grow the settled field by more than a bounded factor.
+
+    /** the smallest gap between any two label boxes, and the pair */
+    const tightest = (nodes, boxOf) => {
+      const boxes = nodes.map(boxOf);
+      let best = Infinity;
+
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i];
+          const b = boxes[j];
+          const dx = Math.max(a.x1 - b.x2, b.x1 - a.x2, 0);
+          const dy = Math.max(a.y1 - b.y2, b.y1 - a.y2, 0);
+
+          best = Math.min(best, Math.max(dx, dy));
+        }
+      }
+
+      return best;
+    };
+
+    const CRAM = { boundingBox: { x1: 0, y1: 0, w: 10, h: 10 } };
+    const PADDING = 10;
+
+    for (const name of ['grid', 'circle', 'concentric', 'radial']) {
+      for (const [fixture, labels] of [
+        ['fan', false],
+        ['tree', false],
+        ['labelledFan', true],
+      ]) {
+        it(`${name} on ${fixture}: crammed, some pair sits exactly at the padding`, async function () {
+          const cy = mk(FIXTURES[fixture](), labels ? LABEL_STYLE : undefined);
+          const boxOf = labels ? labelBox : bodyBox;
+
+          await run(
+            cy,
+            opts(name, cy, {
+              fit: false,
+              ...CRAM,
+              avoidOverlapPadding: PADDING,
+              minNodeSpacing: PADDING,
+              nodeDimensionsIncludeLabels: labels,
+            }),
+          );
+
+          expect(overlapPairs(cy.nodes(), boxOf)).to.deep.equal([]);
+          expect(tightest(cy.nodes(), boxOf)).to.be.closeTo(PADDING, 1);
+        });
+      }
+    }
+
+    it('breadthfirst on labelledFan: crammed at spacingFactor 1, the rank is packed to the padding', async function () {
+      // breadthfirst's padding defaults to 0 (v3's numbers; spacingFactor
+      // is the air), where boxes touch exactly and Float32 positions make
+      // "touching" a coin toss — so the row asks for 2 px and measures it
+      const cy = mk(FIXTURES.labelledFan(), LABEL_STYLE);
+
+      await run(cy, {
+        name: 'breadthfirst',
+        fit: false,
+        spacingFactor: 1,
+        roots: ['h'],
+        nodeDimensionsIncludeLabels: true,
+        avoidOverlapPadding: 2,
+        ...CRAM,
+      });
+
+      expect(overlapPairs(cy.nodes(), labelBox)).to.deep.equal([]);
+
+      // the leaves form one rank: consecutive label boxes sit 2 px apart,
+      // and the rank's width is their widths plus the gaps alone
+      const leaves = cy.nodes().filter((n) => n.id() !== 'h');
+      const boxes = leaves.map(labelBox).sort((a, b) => a.x1 - b.x1);
+      let total = 0;
+
+      for (let i = 0; i < boxes.length; i++) {
+        total += boxes[i].w;
+
+        if (i > 0) {
+          expect(boxes[i].x1 - boxes[i - 1].x2).to.be.closeTo(2, 0.5);
+          total += 2;
+        }
+      }
+
+      expect(boxes[boxes.length - 1].x2 - boxes[0].x1).to.be.closeTo(total, 1);
+    });
+
+    it('breadthfirst: a rank of tall labels and a rank of wide ones are spaced by their own axes', async function () {
+      // 114 spaced both the rank and the rows by the one largest
+      // footprint (max of width and height over every node); the
+      // rows here need the labels' heights, not the widest label
+      const els = FIXTURES.fan(6);
+
+      for (const el of els) {
+        if (el.data.source == null && el.data.id !== 'h') {
+          el.data.label = 'a label long enough to matter a great deal';
+        }
+      }
+
+      const cy = mk(els, LABEL_STYLE);
+
+      await run(cy, {
+        name: 'breadthfirst',
+        fit: false,
+        spacingFactor: 1,
+        roots: ['h'],
+        nodeDimensionsIncludeLabels: true,
+        avoidOverlapPadding: 2,
+        ...CRAM,
+      });
+
+      const hub = labelBox(cy.$id('h'));
+      const leaf = labelBox(cy.$id('l0'));
+      const rowGap = Math.abs(
+        cy.$id('l0').position().y - cy.$id('h').position().y,
+      );
+
+      expect(overlapPairs(cy.nodes(), labelBox)).to.deep.equal([]);
+      // the row step is set by heights: far under the label's width
+      expect(rowGap).to.be.lessThan(leaf.w / 2);
+      expect(rowGap).to.be.at.least(hub.h / 2 + leaf.h / 2 - 1);
+    });
+
+    /** how much of the field the boxes cover: 1 is a perfect tiling */
+    const fill = (cy, labels) => {
+      const boxes = cy.nodes().map(labels ? labelBox : bodyBox);
+      const bb = cy.nodes().boundingBox({ includeLabels: labels });
+
+      return boxes.reduce((sum, b) => sum + b.w * b.h, 0) / (bb.w * bb.h);
+    };
+
+    for (const [fixture, labels] of [
+      ['fan', false],
+      ['labelledFan', true],
+    ]) {
+      it(`force on ${fixture}: separated, the boxes still cover a fifth of the field`, async function () {
+        // 114.5's per-component scale left a fan at a twentieth (a 5x
+        // linear spread); the proximity-stress pass measures 0.42 on
+        // the fan and 0.31 on the labelled one
+        const sep = mk(FIXTURES[fixture](), labels ? LABEL_STYLE : undefined);
+        const raw = mk(FIXTURES[fixture](), labels ? LABEL_STYLE : undefined);
+        const base = {
+          seed: 7,
+          fit: false,
+          nodeDimensionsIncludeLabels: labels,
+        };
+
+        await run(sep, { name: 'force', ...base });
+        await run(raw, { name: 'force', ...base, avoidOverlap: false });
+
+        const boxOf = labels ? labelBox : bodyBox;
+
+        expect(overlapPairs(sep.nodes(), boxOf)).to.deep.equal([]);
+        // the control: the raw settle overlaps, so the separation did work
+        expect(overlapPairs(raw.nodes(), boxOf).length).to.be.greaterThan(0);
+        expect(fill(sep, labels)).to.be.greaterThan(0.2);
+      });
+    }
+
+    it('force on a 60-clique of labels: overlap-free, and the boxes fill a third of the field', async function () {
+      // a clique is the pile case: every pair was within an edge length
+      // at the settle.  114.5 scaled the component by its worst pair's
+      // factor (capped at 8x); the proximity-stress pass opens the pile
+      // only as far as the boxes need
+      const els = [];
+
+      for (let i = 0; i < 60; i++) {
+        els.push(node('c' + i, { data: { label: 'label number ' + i } }));
+
+        for (let j = 0; j < i; j++) {
+          els.push(edge('c' + i, 'c' + j));
+        }
+      }
+
+      const cy = mk(els, LABEL_STYLE);
+
+      await run(cy, {
+        name: 'force',
+        seed: 7,
+        fit: false,
+        nodeDimensionsIncludeLabels: true,
+      });
+
+      expect(overlapPairs(cy.nodes(), labelBox)).to.deep.equal([]);
+      expect(fill(cy, true)).to.be.greaterThan(1 / 3);
     });
   });
 

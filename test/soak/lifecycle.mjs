@@ -40,16 +40,35 @@ const graph = (n = 100) => {
   return elements;
 };
 
-/** Force collection, giving finalizers a turn between passes. */
-const collect = async () => {
-  for (let i = 0; i < 3; i++) {
-    global.gc();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-};
-
 const aliveOf = (refs) =>
   refs.filter((ref) => ref.deref() !== undefined).length;
+
+/**
+ * Force collection, giving finalizers a turn between passes.  Given the
+ * refs a spec is about to count, it keeps going while a pass still
+ * clears something — on a loaded CI runner a fixed three passes once
+ * left one extra destroyed instance alive (2026-09-01) — capped so a
+ * real leak, whose count never drops, still lands on the assertion.
+ */
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+const collect = async (refs = []) => {
+  let alive = -1;
+
+  for (let i = 0; i < 10; i++) {
+    global.gc();
+    await tick();
+
+    const now = aliveOf(refs);
+
+    // deref() pins its target until the end of the current job, so the
+    // next pass must run in a later one or it collects nothing
+    await tick();
+
+    if (i >= 2 && now === alive) break;
+    alive = now;
+  }
+};
 
 describe('soak: instance lifecycle', () => {
   it('has a working reachability probe (the control for everything below)', async () => {
@@ -68,7 +87,7 @@ describe('soak: instance lifecycle', () => {
       droppedRefs.push(new WeakRef(cytoscape({ elements: graph(20) })));
     }
 
-    await collect();
+    await collect(droppedRefs);
 
     expect(
       aliveOf(heldRefs),
@@ -96,7 +115,7 @@ describe('soak: instance lifecycle', () => {
       cy.destroy();
     }
 
-    await collect();
+    await collect(refs);
 
     // at most the last one, which the loop variable may still pin
     expect(
@@ -121,7 +140,7 @@ describe('soak: instance lifecycle', () => {
       cy.destroy();
     }
 
-    await collect();
+    await collect(refs);
 
     // instance 0 is pinned through the collection the app kept — that is the
     // documented consequence of holding one, not a leak — and the other 39

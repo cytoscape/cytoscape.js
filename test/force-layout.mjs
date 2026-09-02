@@ -477,12 +477,12 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     expect(lengthOf('cross')).to.be.greaterThan((intraSum / intraCount) * 1.5);
   });
 
-  it('streams positions in live mode and settles on stop()', async function () {
+  it('streams positions under animateLive and settles on stop()', async function () {
     const cy = cytoscape({ elements: RING() });
     const layout = cy.layout({
       name: 'force',
       seed: 4,
-      animate: true,
+      animateLive: true,
       fit: false,
     });
     const snapshots = [];
@@ -502,5 +502,225 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     await layout.promise();
 
     expect(cy.$id('n0').position().x).to.be.a('number');
+  });
+
+  // Round 114.5: `animate: true` is the discrete layouts' meaning — the
+  // sim settles silently, then the nodes tween into place through the
+  // shared finisher; `animateLive` is the streaming run.  And the sim is
+  // point-based, so the settle separates node bodies (labels included by
+  // default) before the re-pack.
+  describe('animate tweens to the settle; animateLive streams (114.5)', function () {
+    const settled = async (opts = {}) => {
+      const cy = cytoscape({
+        elements: RING(),
+        headlessWidth: 800,
+        headlessHeight: 600,
+      });
+
+      await cy
+        .layout({ name: 'force', seed: 9, ...opts })
+        .run()
+        .promise();
+
+      return cy;
+    };
+
+    it('animate: true ends where the sync run ends, and fits', async function () {
+      const sync = await settled();
+      const cy = cytoscape({
+        elements: RING(),
+        headlessWidth: 800,
+        headlessHeight: 600,
+      });
+      const log = [];
+
+      for (const type of ['layoutstart', 'layoutready', 'layoutstop']) {
+        cy.on(type, () => log.push(type));
+      }
+
+      // the tween starts from the pre-run positions: no node sits where
+      // the settle will put it
+      const before = cy.nodes().map((n) => ({ ...n.position() }));
+
+      await cy
+        .layout({
+          name: 'force',
+          seed: 9,
+          animate: true,
+          animationDuration: 40,
+        })
+        .run()
+        .promise();
+
+      cy.nodes().forEach((n, i) => {
+        const want = sync.$id(n.id()).position();
+
+        expect(n.position().x, n.id()).to.be.closeTo(want.x, 1e-3);
+        expect(n.position().y, n.id()).to.be.closeTo(want.y, 1e-3);
+        expect(
+          Math.hypot(before[i].x - want.x, before[i].y - want.y),
+        ).to.be.greaterThan(1);
+      });
+      expect(cy.zoom()).to.be.closeTo(sync.zoom(), 1e-6);
+      expect(log).to.deep.equal(['layoutstart', 'layoutready', 'layoutstop']);
+    });
+
+    it('animate: true honours the finisher options force used to ignore', async function () {
+      const sync = await settled({ fit: false });
+      const cy = await settled({
+        fit: false,
+        animate: true,
+        animationDuration: 20,
+        transform: (node, pos) => ({ x: pos.x + 1000, y: pos.y }),
+        animateFilter: (node) => node.id() !== 'n0',
+      });
+
+      cy.nodes().forEach((n) => {
+        expect(n.position().x, n.id()).to.be.closeTo(
+          sync.$id(n.id()).position().x + 1000,
+          1e-3,
+        );
+      });
+      // zoom/pan with fit: false animate too (114.2's lone-zoom fix)
+      const zoomed = await settled({
+        fit: false,
+        animate: true,
+        animationDuration: 20,
+        zoom: 2,
+      });
+
+      expect(zoomed.zoom()).to.be.closeTo(2, 1e-6);
+    });
+
+    it('animateLive lands the settle in one write, no second tween', async function () {
+      const sync = await settled({ fit: false });
+      const cy = cytoscape({
+        elements: RING(),
+        headlessWidth: 800,
+        headlessHeight: 600,
+      });
+      const layout = cy.layout({
+        name: 'force',
+        seed: 9,
+        fit: false,
+        animateLive: true,
+        stepsPerFrame: 200,
+      });
+
+      layout.run();
+
+      const t = Date.now();
+
+      await layout.promise();
+
+      // a settle write, not a 500 ms default tween after the stream
+      expect(Date.now() - t).to.be.lessThan(400);
+      cy.nodes().forEach((n) => {
+        expect(n.position().x, n.id()).to.be.closeTo(
+          sync.$id(n.id()).position().x,
+          1e-3,
+        );
+      });
+    });
+  });
+
+  describe('avoidOverlap separates node bodies at the settle (114.5)', function () {
+    const CLIQUE = (n, size) => {
+      const elements = [];
+
+      for (let i = 0; i < n; i++) {
+        elements.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          elements.push({
+            data: { id: `e${i}_${j}`, source: 'n' + i, target: 'n' + j },
+          });
+        }
+      }
+
+      return cytoscape({
+        elements,
+        style: { nodes: { width: size, height: size } },
+        headlessWidth: 800,
+        headlessHeight: 600,
+      });
+    };
+
+    const overlapping = (cy, includeLabels = false) => {
+      const boxes = cy.nodes().map((n) => n.boundingBox({ includeLabels }));
+      let count = 0;
+
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i];
+          const b = boxes[j];
+
+          if (a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2) {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    };
+
+    it('leaves no two bodies overlapping by default', async function () {
+      const cy = CLIQUE(30, 40);
+
+      await cy.layout({ name: 'force', seed: 7 }).run().promise();
+
+      expect(overlapping(cy)).to.equal(0);
+    });
+
+    it("control: avoidOverlap: false leaves the sim's pile as it landed", async function () {
+      const cy = CLIQUE(30, 40);
+
+      await cy
+        .layout({ name: 'force', seed: 7, avoidOverlap: false })
+        .run()
+        .promise();
+
+      // a 30-clique of 40 px bodies at the default ideal length cannot
+      // help but overlap — the separation is what clears it
+      expect(overlapping(cy)).to.be.greaterThan(10);
+    });
+
+    it('includes labels by default, bodies alone on request', async function () {
+      const withLabels = CLIQUE(12, 20);
+
+      withLabels.style({
+        nodes: { width: 20, height: 20, label: 'a long enough label' },
+      });
+      await withLabels.layout({ name: 'force', seed: 3 }).run().promise();
+      expect(overlapping(withLabels, true)).to.equal(0);
+
+      const bodiesOnly = CLIQUE(12, 20);
+
+      bodiesOnly.style({
+        nodes: { width: 20, height: 20, label: 'a long enough label' },
+      });
+      await bodiesOnly
+        .layout({ name: 'force', seed: 3, nodeDimensionsIncludeLabels: false })
+        .run()
+        .promise();
+      // the control: bodies clear, labels do not
+      expect(overlapping(bodiesOnly, false)).to.equal(0);
+      expect(overlapping(bodiesOnly, true)).to.be.greaterThan(0);
+    });
+
+    it('a locked node is an obstacle: it stays, the overlapping neighbour moves', async function () {
+      const cy = CLIQUE(30, 40);
+
+      // park the pinned node where the pile will land (the centroid of a
+      // clique's settle is its anchor at the origin)
+      cy.$id('n0').position({ x: 0, y: 0 }).lock();
+
+      await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+
+      expect(cy.$id('n0').position()).to.deep.equal({ x: 0, y: 0 });
+      expect(overlapping(cy)).to.equal(0);
+    });
   });
 });

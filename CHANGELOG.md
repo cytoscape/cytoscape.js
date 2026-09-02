@@ -24,6 +24,18 @@ that compile and then behave differently.
 
 ### Added
 
+- **Layout cleanup** (round 114): every layout reads one set of node
+  dimensions, labels included by default (`nodeDimensionsIncludeLabels`
+  now defaults to `true`); locked nodes hold their place against
+  position writes, position tweens and every layout, and are obstacles
+  for overlap avoidance; `force` gains `animateLive` (the streaming
+  run), `avoidOverlap` and `avoidOverlapPadding`, and its `animate:
+  true` tweens to the settle like every other layout, with the shared
+  finisher options (`spacingFactor`, `transform`, `animateFilter`,
+  duration, easing, `zoom`, `pan`) applying; the extension contract
+  gains `ctx.nodeDimensions()`, `ctx.components()`, `ctx.finish()`,
+  overrides on `ctx.layoutPositions()` and body-box `packComponents`;
+  flow's animated runs fit again, and a lone `zoom` or `pan` animates.
 - **The flow layout** (round 112): a built-in Sugiyama-class layered
   layout — `cy.layout({ name: 'flow' })` — with greedy-FAS cycle
   removal, GKNV network-simplex layering, weighted crossing

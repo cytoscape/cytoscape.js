@@ -561,14 +561,24 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   seed?: number;
   /** fresh seeded scatter (default) vs relaxing current positions */
   randomize?: boolean;
-  /** live display: stream positions per frame while the sim runs;
-   * false shows nothing until convergence.  Presentation only (87.2):
-   * a rendered flat-graph run is async for both values — read
-   * positions at `layoutstop` / `promise()`.  Headless runs stay
-   * synchronous. */
+  /** tween the nodes from their current positions to the settled ones
+   * (114.5 — the discrete layouts' meaning), the viewport fitting
+   * alongside; `spacingFactor`, `transform`, `animateFilter`,
+   * `animationDuration`, `animationEasing`, `zoom` and `pan` apply.
+   * A rendered flat-graph run is async for both values — read
+   * positions at `layoutstop` / `promise()`. */
   animate?: boolean;
-  /** iterations per animation frame (animate: true; default 3) */
+  /** stream the run: positions land per frame while the sim runs (the
+   * pre-114 `animate: true`); takes precedence over `animate` */
+  animateLive?: boolean;
+  /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
+  /** separate overlapping node bodies after the settle (114.5; default
+   * true) — labels included unless `nodeDimensionsIncludeLabels` is
+   * false, locked nodes as obstacles */
+  avoidOverlap?: boolean;
+  /** the gap kept between separated bodies (default 10) */
+  avoidOverlapPadding?: number;
   /** the gap between disconnected components' packed boxes (59.2;
    * v3 cose's option of the same name — default 40) */
   componentSpacing?: number;

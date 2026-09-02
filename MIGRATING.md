@@ -417,7 +417,10 @@ app trips on after everything else works.
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 | The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `closenessCentralityNormalized`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
 | Pointer cursors | none — v3 set no CSS cursor at all, and apps wrote `container.style.cursor` from `mouseover`/`mouseout` | **the canvas writes them** (`grab`/`grabbing`, `pointer`, `crosshair`).  Idle over background stays `''`, so the v3 recipe still shows through where v4 is silent; an app whose own cursor code now fights the defaults passes `pointerCursors: false` |
-| `force` with `animate: false` on a rendered flat graph | synchronous — positions readable on the next line | **async** — the run settles at `layoutstop` / `promise()`; executor choice is availability-driven and `animate` is presentation only (headless runs stay synchronous) |
+| `force` with `animate: false` on a rendered flat graph | synchronous — positions readable on the next line | **async** — the run settles at `layoutstop` / `promise()`; executor choice is availability-driven (headless runs stay synchronous) |
+| `cose` / `force` with `animate: true` | v3 cose: `'during'` streams the run, `'end'` tweens to the result | `animate: true` **tweens to the result** like every other layout (round 114.5); `animateLive: true` streams the run |
+| a locked node under `position()` / a layout | v3: held by both | v4 before round 114.3 moved it; since 114.3 held by writes, tweens and every layout, and an obstacle for overlap avoidance |
+| `nodeDimensionsIncludeLabels` | default `false` | default **`true`** (round 114.1) — every layout's overlap avoidance reads bodies plus labels unless told otherwise |
 | `hierarchicalClustering` `mean` linkage | silently broken — an unset size field made the first mean merge write NaN distances, degenerating the clustering | **works**: sizes are tracked, so `mean` is the weighted-average linkage both libraries always documented |
 
 **The whole-graph tier is async, and `executor` picks where it runs.** The
@@ -512,15 +515,19 @@ executor, so at fcose-typical sizes they behave like fcose; validation
 throws at start on unknown ids, placement cycles, and contradictory
 locked members.
 
-**`animate` is presentation only on `force`.**  Executor choice is
-availability-driven: a flat rendered graph with a device hands
-integration to the GPU for both animate values, so `animate: false`
-no longer runs synchronously on the main thread — the run settles at
-`layoutstop` / `promise()`, and a caller reading positions on the next
-line must await one of those (as it already had to for every other
-force mode).  `animate: false` still shows nothing until convergence:
-the silent run integrates off-screen and lands the settle in one
-write.  Headless instances remain the synchronous spelling.
+**`animate` means the same thing on `force` as everywhere else** (round
+114.5): the sim settles silently, then the nodes tween into place with
+the viewport fitting alongside — v3 cose's `animate: 'end'`.  The
+streaming run v3 spelled `'during'` is **`animateLive: true`**.  Executor
+choice is availability-driven either way: a flat rendered graph with a
+device hands integration to the GPU, so `animate: false` no longer runs
+synchronously on the main thread — the run settles at `layoutstop` /
+`promise()`, and a caller reading positions on the next line must await
+one of those.  `animate: false` still shows nothing until convergence:
+the silent run integrates off-screen and lands the settle in one write.
+Headless instances remain the synchronous spelling.  The settle also
+separates overlapping node bodies (`avoidOverlap`, default true, labels
+included), which v3 cose never did.
 
 **There is no extension registry.** No `cytoscape.use()`, no string
 registration, no global state. An extension layout is an import you pass in:

@@ -1206,9 +1206,9 @@ round records carry the histories.
   pure component/seed machinery) always exists — headless instances,
   compound graphs, constrained runs (85.2) — and is what the Node
   specs pin.  On a flat rendered graph with a device, the **GPU
-  integrator** (`render/gpu-force.mts`) takes over **for both animate
-  values** (87.2 — executor choice is availability-driven; `animate`
-  is presentation only): per iteration,
+  integrator** (`render/gpu-force.mts`) takes over **however the run
+  is shown** (87.2 — executor choice is availability-driven, not
+  presentation-driven): per iteration,
   grid build by counting sort → pyramid aggregate + per-level reduce
   → force gather → apply-and-publish, encoded ahead of the cull pass
   so 100k-node layouts animate live with edges and labels following
@@ -1216,18 +1216,33 @@ round records carry the histories.
   `cellStart`/`cellItems`/pyramid share one grid buffer, and the
   gravity anchors ride the CSR buffer's tail.
 
-  Under `animate: true` the run publishes into the position mirror,
-  streaming to the screen per frame; under `animate: false` it
-  publishes into a runtime-owned slot-capacity **scratch buffer**
+  Under `animateLive: true` the run publishes into the position
+  mirror, streaming to the screen per frame; otherwise it publishes
+  into a runtime-owned slot-capacity **scratch buffer**
   (`GpuForceRuntime.silentTarget`) while draws keep reading the
   untouched mirror — the screen holds the pre-run frame, and the
-  settle lands in one write.  The named semantics change: `animate:
-  false` on a flat rendered graph went synchronous → async (positions
-  readable at `layoutstop` / `promise()`), recorded in MIGRATING /
-  CHANGELOG / the option's JSDoc.  Priced at 25k×50k: silent GPU
-  ~346 ms vs the old sync CPU settle ~25.3 s (~73×), with an in-row
-  frames-delta assertion refusing the bench row on a device-less
-  fallback.
+  settle lands in one write, or (round 114.5) as a **tween** under
+  `animate: true`: the discrete layouts' meaning at last, the nodes
+  tweening from where they were to where they landed through the
+  shared finisher with the viewport fitting alongside, so
+  `spacingFactor`, `transform`, `animateFilter`, the duration and
+  easing, `zoom` and `pan` all apply to force.  The named semantics
+  change: `animate: false` on a flat rendered graph went synchronous →
+  async (positions readable at `layoutstop` / `promise()`), recorded
+  in MIGRATING / CHANGELOG / the option's JSDoc.  Priced at 25k×50k:
+  silent GPU ~346 ms vs the old sync CPU settle ~25.3 s (~73×), with
+  an in-row frames-delta assertion refusing the bench row on a
+  device-less fallback.
+
+  **The settle separates node bodies** (114.5, `avoidOverlap`, default
+  true): the sim is point-based, so overlapping boxes — labels
+  included unless `nodeDimensionsIncludeLabels: false`, padded by
+  `avoidOverlapPadding` (10) — are pushed apart along the axis of
+  smaller overlap over a grid hash, pinned nodes as obstacles, before
+  the body-box component re-pack.  The one post-pass in the layout
+  portfolio (the round-114 decision against a generic remover: every
+  other layout spaces constructively); a settled field has few
+  overlaps, so it measures at ~100 ms on a 20k-node, 18 s CPU run.
 
   `node.position` is GPU-owned for the run (the tween lease — CPU
   reads stale mid-run, the motion-staleness rule), and convergence
@@ -1238,8 +1253,10 @@ round records carry the histories.
   bit-reproducibility is the CPU executor's guarantee, and the
   executors agree on invariants, not trajectories; live streaming
   writes through the bulk slot path, which emits no per-node position
-  events; the settle re-pack is a visible end-of-run shift under
-  `animate: true` (v3 has the same shift; the anchors keep it small);
+  events; the settle's body separation and re-pack are a visible
+  end-of-run shift under `animateLive: true` (v3 has the same shift;
+  the anchors keep it small — and under `animate: true` the tween
+  absorbs it);
   compound gravity reaches direct parents only (deeply nested
   coherence rides the nesting-elevated edges); expander graphs settle
   with mean link lengths several times the ideal, which is
@@ -1247,6 +1264,9 @@ round records carry the histories.
   of a random graph has short edges); and multilevel refinement stays
   the logged future direction for tree/mesh quality beyond the
   spectral seed's.
+- Options added by round 114.5: `animateLive` (the streaming run —
+  the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
+  `animate` now tweens, and the shared finisher options apply.
 - Options added by round 59: `componentSpacing`, `init`,
   `nestingFactor`, `gravityCompound`.  Re-read by round 59 (same
   names, new units): `repulsion` (the push at one cutoff length),

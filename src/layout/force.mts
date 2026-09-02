@@ -8,9 +8,25 @@ Executors: the CPU reference simulation always exists (headless
 instances, compound graphs — a GPU lease would leave the CPU columns
 the auto-bounds derivation reads stale, the 14.11 rule) and is the
 correctness spec; the GPU fast path (18.3) takes over per-iteration
-integration for flat rendered graphs regardless of `animate` (87.2 —
-`animate` is presentation only: true presents each frame, false runs
-silently and lands the settle in one write).
+integration for flat rendered graphs regardless of how the run is
+shown (87.2 — presentation is not what picks the executor).
+
+Presentation (114.5): `animate: true` means what it means for every
+other layout — the sim settles silently, then the nodes tween from
+where they are to where they landed through the shared finisher, the
+viewport fitting alongside.  `animateLive: true` is the streaming run
+(the pre-114 `animate: true`): positions land per frame while the sim
+runs, presenting each frame on the GPU executor.  Either way a
+rendered flat-graph run is async — read positions at `layoutstop` /
+`promise()`.
+
+Overlap (114.5): the sim is point-based, so `avoidOverlap` (default
+true) separates node bodies — labels included by default — after the
+settle, pinned nodes as obstacles, before the component re-pack.  A
+constructive rule cannot exist for a force field, so this is the one
+post-pass in the layout portfolio; invisible under the tween, an
+end-of-run adjustment under `animateLive` (the same class as the
+re-pack shift 59.2 recorded).
 
 Scoping: leaves only (parents derive from their placed children);
 locked nodes are *pinned* — they take part in every force pair but
@@ -23,8 +39,9 @@ import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
   computeComponents,
   packAnchors,
-  packComponentsExact,
+  packComponentBodies,
 } from './pack.mjs';
+import type { LayoutNodeDims } from './dims.mjs';
 import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
 import {
   checkScoreColumn,
@@ -58,17 +75,34 @@ export interface ForceRunOptions {
   seed?: number;
   /** fresh seeded scatter (true) vs relaxing the current positions */
   randomize?: boolean;
-  /** live display: positions stream to the store per frame while the
-   * sim runs; false shows nothing until convergence and applies once.
-   * Presentation only (87.2): executor choice is availability-driven,
-   * and a rendered flat-graph run is async for both values — read
-   * positions at `layoutstop` / `promise()`, not on the next line.
-   * Headless runs stay synchronous. */
+  /** tween the nodes from their current positions to the settled ones
+   * through the shared finisher (114.5 — the discrete layouts'
+   * meaning), the viewport fitting alongside; `spacingFactor`,
+   * `transform`, `animateFilter`, `animationDuration`,
+   * `animationEasing`, `zoom` and `pan` apply.  False lands the settle
+   * in one write.  Executor choice is availability-driven either way
+   * (87.2), so a rendered flat-graph run is async for both values —
+   * read positions at `layoutstop` / `promise()`.  Headless runs with
+   * `animate: false` stay synchronous. */
   animate?: boolean;
+  /** stream the run: positions land per frame while the sim runs,
+   * presenting each frame on the GPU executor (the pre-114 `animate:
+   * true`).  Takes precedence over `animate`; the settle's overlap
+   * separation and re-pack land as one end-of-run adjustment. */
+  animateLive?: boolean;
   fit?: boolean;
   padding?: number;
-  /** iterations advanced per animation frame (animate: true) */
+  /** iterations advanced per animation frame (animateLive: true) */
   stepsPerFrame?: number;
+  /** separate overlapping node bodies after the settle (114.5; default
+   * true) — labels included unless `nodeDimensionsIncludeLabels` is
+   * false, pinned (locked) nodes as obstacles */
+  avoidOverlap?: boolean;
+  /** the gap kept between separated bodies (default 10) */
+  avoidOverlapPadding?: number;
+  /** the boxes overlap avoidance reads: bodies and labels (default) or
+   * bodies alone */
+  nodeDimensionsIncludeLabels?: boolean;
   /** the gap between disconnected components' packed boxes (59.2;
    * v3 cose's option of the same name — default 40) */
   componentSpacing?: number;
@@ -101,6 +135,271 @@ export interface ForceRunOptions {
 
 const DEFAULT_EDGE_LENGTH = 60;
 
+/** local sweeps the body separation tries before and after scaling */
+const SEPARATE_SWEEPS = 8;
+
+/** the most a component is scaled up in one round to clear its pile */
+const SEPARATE_SCALE_CAP = 8;
+
+/** sweep-then-scale rounds before the separation gives up */
+const SEPARATE_ROUNDS = 4;
+
+/** the closing sweep budget — what a pinned component gets instead of
+ * a scale */
+const SEPARATE_SWEEPS_FINAL = 64;
+
+/**
+ * Separate overlapping node bodies in place (114.5).  Three phases,
+ * all deterministic (fixed order, a fixed tie rule):
+ *
+ * 1. **Local sweeps** — a uniform grid hashed by the largest box, so
+ *    any two overlapping boxes share a 3 x 3 neighbourhood; then
+ *    Gauss–Seidel sweeps in index order pushing each overlapping pair
+ *    apart along the axis of smaller overlap — half each when both
+ *    move, all of it onto the free node when one is pinned, nothing
+ *    when both are.  Clears the sparse case (a settled field has few
+ *    overlaps) in a sweep or two.
+ * 2. **Per-component scale** — a dense pile (a clique of wide labels)
+ *    expands under pairwise pushes only slowly, so what the sweeps
+ *    left is solved exactly instead: for every still-overlapping pair
+ *    the factor that separates it along the cheaper axis, the
+ *    component scaled about its centroid by the largest (capped).  A
+ *    similarity transform, so the structure the sim found is kept;
+ *    components holding a pinned node are left to the sweeps.
+ * 3. **Local sweeps** again for the residue (unequal label offsets,
+ *    the cap).
+ *
+ * @param n — sim node count
+ * @param pos — 2n interleaved positions, moved in place
+ * @param dims — the padded node-local boxes, sim-indexed
+ * @param pinned — per-node 1 when the node must not move
+ * @param compOf — per-node component id
+ * @param count — component count
+ */
+const separateBodies = (
+  n: number,
+  pos: Float32Array,
+  dims: LayoutNodeDims,
+  pinned: Uint8Array,
+  compOf: Int32Array,
+  count: number,
+): void => {
+  if (n < 2) {
+    return;
+  }
+
+  const cell = Math.max(dims.maxW, dims.maxH, 1);
+  const cellOf = new Int32Array(n);
+  const order = new Int32Array(n);
+
+  // visit every overlapping pair (j > i) once, over a grid built from
+  // the positions as they stand at the call; `visit` may move nodes
+  const forEachOverlap = (
+    visit: (i: number, j: number, ox: number, oy: number) => void,
+  ): boolean => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      minX = Math.min(minX, pos[i * 2]);
+      maxX = Math.max(maxX, pos[i * 2]);
+      minY = Math.min(minY, pos[i * 2 + 1]);
+      maxY = Math.max(maxY, pos[i * 2 + 1]);
+    }
+
+    const cols = Math.max(1, Math.floor((maxX - minX) / cell) + 1);
+    const rows = Math.max(1, Math.floor((maxY - minY) / cell) + 1);
+    const start = new Int32Array(cols * rows + 1);
+
+    for (let i = 0; i < n; i++) {
+      const cx = Math.min(cols - 1, Math.floor((pos[i * 2] - minX) / cell));
+      const cy = Math.min(rows - 1, Math.floor((pos[i * 2 + 1] - minY) / cell));
+
+      cellOf[i] = cy * cols + cx;
+      start[cellOf[i] + 1]++;
+    }
+
+    for (let c = 0; c < cols * rows; c++) {
+      start[c + 1] += start[c];
+    }
+
+    const fill = start.slice(0, cols * rows);
+
+    for (let i = 0; i < n; i++) {
+      order[fill[cellOf[i]]++] = i;
+    }
+
+    let found = false;
+
+    for (let i = 0; i < n; i++) {
+      const ci = cellOf[i];
+      const cx = ci % cols;
+      const cy = (ci - cx) / cols;
+
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = cy + dy;
+
+        if (ny < 0 || ny >= rows) {
+          continue;
+        }
+
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = cx + dx;
+
+          if (nx < 0 || nx >= cols) {
+            continue;
+          }
+
+          const c = ny * cols + nx;
+
+          for (let k = start[c]; k < start[c + 1]; k++) {
+            const j = order[k];
+
+            if (j <= i) {
+              continue;
+            }
+
+            const ax = pos[i * 2];
+            const ay = pos[i * 2 + 1];
+            const bx = pos[j * 2];
+            const by = pos[j * 2 + 1];
+            const ox =
+              Math.min(ax + dims.x2[i], bx + dims.x2[j]) -
+              Math.max(ax + dims.x1[i], bx + dims.x1[j]);
+            const oy =
+              Math.min(ay + dims.y2[i], by + dims.y2[j]) -
+              Math.max(ay + dims.y1[i], by + dims.y1[j]);
+
+            if (ox <= 0 || oy <= 0) {
+              continue;
+            }
+
+            found = true;
+            visit(i, j, ox, oy);
+          }
+        }
+      }
+    }
+
+    return found;
+  };
+
+  const push = (i: number, j: number, ox: number, oy: number): void => {
+    if (pinned[i] === 1 && pinned[j] === 1) {
+      return;
+    }
+
+    // along the axis of smaller overlap, a hair past touching; the
+    // lower index goes to the negative side on a tie
+    const alongX = ox <= oy;
+    const axis = alongX ? 0 : 1;
+    const amount = (alongX ? ox : oy) + 0.5;
+    const ca = pos[i * 2 + axis];
+    const cb = pos[j * 2 + axis];
+    const sign = ca < cb || (ca === cb && i < j) ? -1 : 1;
+    const shareA = pinned[i] === 1 ? 0 : pinned[j] === 1 ? 1 : 0.5;
+
+    pos[i * 2 + axis] += sign * amount * shareA;
+    pos[j * 2 + axis] -= sign * amount * (1 - shareA);
+  };
+
+  const sweeps = (limit: number): boolean => {
+    for (let k = 0; k < limit; k++) {
+      if (!forEachOverlap(push)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const held = new Uint8Array(count);
+
+  for (let i = 0; i < n; i++) {
+    if (pinned[i] === 1) {
+      held[compOf[i]] = 1;
+    }
+  }
+
+  // phase 2: the pile that survived — scale each component about its
+  // centroid by the factor its worst pair needs along the cheaper axis;
+  // returns false when nothing could be scaled
+  const scaleComponents = (): boolean => {
+    const scale = new Float64Array(count).fill(1);
+
+    forEachOverlap((i, j) => {
+      const c = compOf[i];
+
+      if (c !== compOf[j] || held[c] === 1) {
+        return; // cross-component overlap is the re-pack's job
+      }
+
+      const dx = Math.abs(pos[j * 2] - pos[i * 2]);
+      const dy = Math.abs(pos[j * 2 + 1] - pos[i * 2 + 1]);
+      const needX =
+        (dims.x2[i] - dims.x1[i] + dims.x2[j] - dims.x1[j]) / 2 + 0.5;
+      const needY =
+        (dims.y2[i] - dims.y1[i] + dims.y2[j] - dims.y1[j]) / 2 + 0.5;
+      const sx = dx > 1e-6 ? needX / dx : Infinity;
+      const sy = dy > 1e-6 ? needY / dy : Infinity;
+      const s = Math.min(sx, sy);
+
+      if (Number.isFinite(s)) {
+        scale[c] = Math.max(scale[c], Math.min(s, SEPARATE_SCALE_CAP));
+      }
+    });
+
+    const cxs = new Float64Array(count);
+    const cys = new Float64Array(count);
+    const sizes = new Int32Array(count);
+
+    for (let i = 0; i < n; i++) {
+      const c = compOf[i];
+
+      cxs[c] += pos[i * 2];
+      cys[c] += pos[i * 2 + 1];
+      sizes[c]++;
+    }
+
+    let scaled = false;
+
+    for (let i = 0; i < n; i++) {
+      const c = compOf[i];
+      const s = scale[c];
+
+      if (s <= 1) {
+        continue;
+      }
+
+      scaled = true;
+
+      const cx = cxs[c] / sizes[c];
+      const cy = cys[c] / sizes[c];
+
+      pos[i * 2] = cx + (pos[i * 2] - cx) * s;
+      pos[i * 2 + 1] = cy + (pos[i * 2 + 1] - cy) * s;
+    }
+
+    return scaled;
+  };
+
+  // a few rounds of sweep-then-scale: a dense pile can need more than
+  // one capped scale, and the sweeps between keep the residue local
+  for (let round = 0; round < SEPARATE_ROUNDS; round++) {
+    if (!sweeps(SEPARATE_SWEEPS)) {
+      return;
+    }
+
+    if (!scaleComponents()) {
+      break; // nothing scalable (held by a pin): the sweeps' job alone
+    }
+  }
+
+  sweeps(SEPARATE_SWEEPS_FINAL);
+};
+
 /**
  * The built-in force layout (round 18; model rebuilt in round 59):
  * spring–electric with uniform-grid repulsion, degree-normalised
@@ -130,25 +429,26 @@ export class ForceLayoutImpl implements LayoutImpl {
    * Run the simulation.  Two executors, one spec: the CPU reference is
    * always available (headless instances, compound graphs, no device)
    * and is what the specs pin, while on a flat rendered graph the GPU
-   * integrator takes over for **both** animate values (87.2 —
-   * availability-driven, not animate-driven): seven named passes plus a
-   * per-level reduce per iteration, encoded ahead of the cull pass, so
-   * 100k-node layouts settle with edges and labels following on-device.
+   * integrator takes over however the run is shown (87.2 —
+   * availability-driven, not presentation-driven): seven named passes
+   * plus a per-level reduce per iteration, encoded ahead of the cull
+   * pass, so 100k-node layouts settle with edges and labels following
+   * on-device.
    *
-   * `animate` is presentation only.  A presenting run owns
+   * Presentation (114.5): `animateLive` streams — a presenting run owns
    * `node.position` (the tween lease), so CPU position reads are stale
-   * for the duration; a silent run publishes off-mirror and the screen
-   * holds the pre-run frame.  Either way convergence triggers a single
-   * readback that settles the columns — a rendered flat-graph run is
-   * async for both animate values, settling at `layoutstop` /
-   * `promise()` (87.2's named semantics change; headless is the
-   * synchronous spelling).
+   * for the duration.  Otherwise the run publishes off-mirror, the
+   * screen holds the pre-run frame, and convergence triggers a single
+   * readback that settles the columns — then `animate: true` tweens
+   * the nodes into place through the shared finisher.  A rendered
+   * flat-graph run is async either way, settling at `layoutstop` /
+   * `promise()`; headless `animate: false` is the synchronous spelling.
    *
    * @param ctx — the layout context: unlocked leaf slots, live position
    *   views, O(1) CSR degrees and the bulk `setPositions` write
    * @returns a promise that resolves at convergence, or void when the
    *   run completed synchronously (headless / compound / no device
-   *   under `animate: false`)
+   *   with neither `animate` nor `animateLive`)
    */
   run(ctx: LayoutContext): void | Promise<void> {
     const cy = ctx.cy;
@@ -222,6 +522,14 @@ export class ForceLayoutImpl implements LayoutImpl {
         movable.push(i);
       }
     }
+
+    // the boxes the settle separates (114.5): bodies plus labels by
+    // default, padded by half the gap per side
+    const avoidOverlap = options.avoidOverlap !== false;
+    const dims = ctx.nodeDimensions(simSlots, {
+      padding: avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 0,
+    });
+    const live = options.animateLive === true;
 
     // scope edges whose both endpoints simulate
     const endpoints = ctx.endpoints();
@@ -426,11 +734,6 @@ export class ForceLayoutImpl implements LayoutImpl {
     // group past a locked member's pin and shear cross-component
     // relative pairs
     const skipRepack = movable.length < n || constraints != null;
-    const repack = (arr: Float32Array): void => {
-      if (!skipRepack) {
-        packComponentsExact(n, comps.compOf, comps.count, arr, spacing);
-      }
-    };
 
     // compound owner groups (59.5): each leaf pulls toward its direct
     // parent's live centroid on the CPU executor (compound graphs
@@ -485,21 +788,54 @@ export class ForceLayoutImpl implements LayoutImpl {
     }
 
     const movableSlots = movable.map((i) => simSlots[i]);
-    const writeBack = (): void => {
+    const movableXy = (arr: Float32Array): number[] => {
       const xy = new Array<number>(movable.length * 2);
 
       for (let k = 0; k < movable.length; k++) {
-        xy[k * 2] = positions[movable[k] * 2];
-        xy[k * 2 + 1] = positions[movable[k] * 2 + 1];
+        xy[k * 2] = arr[movable[k] * 2];
+        xy[k * 2 + 1] = arr[movable[k] * 2 + 1];
       }
 
-      ctx.setPositions(movableSlots, xy);
+      return xy;
     };
 
-    const applyViewport = (): void => {
-      if (options.fit !== false) {
-        cy.fit(ctx.eles, options.padding ?? 30);
+    // the live loop's per-frame write (animateLive): the bulk slot path
+    const writeBack = (): void => {
+      ctx.setPositions(movableSlots, movableXy(positions));
+    };
+
+    // the settle (114.5), one order for both executors: separate the
+    // bodies first (it can widen a component), project the constraints
+    // (alignment wins over separation — documented), re-pack whole
+    // components by body box (translation only, so it reintroduces no
+    // overlap), then land the positions by the contract's one rule —
+    // the finisher's tween under `animate`, the bulk write otherwise.
+    // A streamed run already showed the motion, so its settle lands
+    // as one write rather than a second tween.
+    const settle = (arr: Float32Array): void => {
+      if (avoidOverlap) {
+        separateBodies(n, arr, dims, pinned, comps.compOf, comps.count);
       }
+
+      if (constraints != null && arr === positions) {
+        sim.project();
+      }
+
+      if (!skipRepack) {
+        packComponentBodies(
+          n,
+          comps.compOf,
+          comps.count,
+          arr,
+          dims,
+          spacing,
+          true,
+        );
+      }
+
+      ctx.finish(movableSlots, movableXy(arr), {
+        animate: live ? false : options.animate === true,
+      });
     };
 
     this.stopped = false;
@@ -562,35 +898,26 @@ export class ForceLayoutImpl implements LayoutImpl {
             },
           },
           options.stepsPerFrame ?? 3,
-          options.animate === true,
+          live,
         );
 
         if (runtime != null) {
-          return this.runGpu(
-            runtime,
-            ctx,
-            renderer,
-            movableSlots,
-            movable,
-            applyViewport,
-            repack,
-          );
+          return this.runGpu(runtime, renderer, settle);
         }
       }
     }
 
-    if (options.animate !== true) {
-      // settle-then-draw on the CPU executor: run to convergence
-      // synchronously, apply once.  Reached only when the GPU
-      // integrator is unavailable (headless, compounds, no device) —
-      // a flat rendered graph took the silent GPU path above (87.2)
+    if (!live) {
+      // settle-then-land on the CPU executor: run to convergence
+      // synchronously, settle once (a tween under `animate`).  Reached
+      // only when the GPU integrator is unavailable (headless,
+      // compounds, no device) — a flat rendered graph took the silent
+      // GPU path above (87.2)
       while (!sim.converged() && !this.stopped) {
         sim.step(50);
       }
 
-      repack(positions);
-      writeBack();
-      applyViewport();
+      settle(positions);
 
       return;
     }
@@ -606,9 +933,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     return new Promise<void>((resolve) => {
       const frame = (): void => {
         if (this.stopped || sim.converged()) {
-          repack(positions);
-          writeBack();
-          applyViewport();
+          settle(positions);
           resolve();
 
           return;
@@ -626,12 +951,8 @@ export class ForceLayoutImpl implements LayoutImpl {
   /** Poll the device sim to convergence, then the one settle readback. */
   private runGpu(
     runtime: GpuForceRuntime,
-    ctx: LayoutContext,
     renderer: Renderer,
-    movableSlots: number[],
-    movable: number[],
-    applyViewport: () => void,
-    repack: (arr: Float32Array) => void,
+    settle: (arr: Float32Array) => void,
   ): Promise<void> {
     return new Promise<void>((resolve) => {
       const poll = (): void => {
@@ -643,20 +964,10 @@ export class ForceLayoutImpl implements LayoutImpl {
 
         runtime.readPositions().then((finalPositions) => {
           // release the lease before the CPU write, so the settle
-          // uploads through the normal dirty-span path
+          // uploads through the normal dirty-span path — and so the
+          // finisher's tween, under `animate`, takes a lease of its own
           renderer.finishForce();
-
-          repack(finalPositions);
-
-          const xy = new Array<number>(movable.length * 2);
-
-          for (let k = 0; k < movable.length; k++) {
-            xy[k * 2] = finalPositions[movable[k] * 2];
-            xy[k * 2 + 1] = finalPositions[movable[k] * 2 + 1];
-          }
-
-          ctx.setPositions(movableSlots, xy);
-          applyViewport();
+          settle(finalPositions);
           resolve();
         });
       };

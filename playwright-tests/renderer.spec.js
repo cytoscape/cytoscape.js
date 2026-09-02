@@ -157,6 +157,16 @@ const clipPixels = async (page, x, y, width) => {
   ).data;
 };
 
+/**
+ * The pick pipeline compiles on first use, and a page's *first* pick under
+ * SwiftShader on a loaded CI runner can outlast expect.poll's default 5 s
+ * (round 89: every cold-first-pick spec failed all three attempts while
+ * the warmed ones passed).  Polls that wait on a first pick share this
+ * timeout; per the suite's rule it is not what keeps a spec honest — each
+ * caller asserts the real outcome after the poll lands.
+ */
+const FIRST_PICK_TIMEOUT_MS = 30_000;
+
 const waitFrames = async (page, n = 3) => {
   await page.evaluate(async (n) => {
     for (let i = 0; i < n; i++) {
@@ -1909,11 +1919,14 @@ test.describe('WebGPU renderer', () => {
       const before = { ...cy.$id('n7').position() };
       // a provably long run: threshold 0 never settles by displacement
       // and the tiny decay keeps alpha hot, so the 300ms sample below
-      // is guaranteed mid-run; stop() then triggers the settle readback
+      // is guaranteed mid-run; stop() then triggers the settle readback.
+      // animateLive is the streaming run that holds the lease (114.5:
+      // animate: true now settles silently and tweens through the
+      // finisher, like every other layout)
       const layout = cy.layout({
         name: 'force',
         seed: 9,
-        animate: true,
+        animateLive: true,
         fit: false,
         iterations: 100000,
         threshold: 0,
@@ -2033,11 +2046,18 @@ test.describe('WebGPU renderer', () => {
 
     // sample while the run is live: every screenshot equals the
     // pre-run frame and CPU reads are unmoved.  Each screenshot forces
-    // a frame, so the sampling also drives the sim's dispatches.
+    // a frame, so the sampling also drives the sim's dispatches.  The
+    // loop is bounded by a sample count as well as a clock: a full-page
+    // screenshot under SwiftShader on a loaded CI runner costs ~300 ms,
+    // so a purely time-boxed 700 ms window managed exactly two samples
+    // and failed all three attempts on hardware that takes ten locally.
+    // The run is provably long (100k iterations, threshold 0), so the
+    // extra samples cost time, never correctness.
+    const MIN_SAMPLES = 4;
     let samples = 0;
     const deadline = Date.now() + 700;
 
-    while (Date.now() < deadline) {
+    while (samples < MIN_SAMPLES || Date.now() < deadline) {
       const shot = (await page.screenshot()).toString('base64');
       const state = await page.evaluate(() => ({
         resolved: window.__silentResolved,
@@ -2052,7 +2072,7 @@ test.describe('WebGPU renderer', () => {
       samples++;
     }
 
-    expect(samples).toBeGreaterThan(2);
+    expect(samples).toBeGreaterThanOrEqual(MIN_SAMPLES);
 
     // stop → the one settle readback lands real coordinates
     await page.evaluate(async () => {
@@ -2069,16 +2089,16 @@ test.describe('WebGPU renderer', () => {
     expect(moved, 'the settle landed').toBeGreaterThan(5);
     expect((await page.screenshot()).toString('base64')).not.toBe(before);
 
-    // control: the same run in present mode must show motion mid-run —
-    // polled generously, since the first animate of a page pays the
-    // pipeline-compile stall
+    // control: the same run streamed (animateLive, the pre-114 animate:
+    // true) must show motion mid-run — polled generously, since the
+    // first animate of a page pays the pipeline-compile stall
     const preControl = (await page.screenshot()).toString('base64');
 
     await page.evaluate(() => {
       window.__present = window.cy.layout({
         name: 'force',
         seed: 5,
-        animate: true,
+        animateLive: true,
         fit: false,
         iterations: 100000,
         threshold: 0,
@@ -2216,9 +2236,10 @@ test.describe('WebGPU renderer', () => {
       const silent = collect();
       const silentBb = cy.elements().boundingBox({ includeLabels: false });
 
-      // the presenting GPU executor (animate: true)
+      // the presenting GPU executor (animateLive: true — the streaming
+      // run; 114.5 made animate: true a silent settle plus a tween)
       await cy
-        .layout({ ...opts, animate: true, stepsPerFrame: 8 })
+        .layout({ ...opts, animateLive: true, stepsPerFrame: 8 })
         .run()
         .promise();
 
@@ -7152,7 +7173,11 @@ test.describe('WebGPU renderer', () => {
             };
       });
 
-    await expect.poll(readCircle).not.toBe(null);
+    // the press pick is not this page's first pick (the box drag above
+    // warmed it), but the poll still outlasts a stalled runner
+    await expect
+      .poll(readCircle, { timeout: FIRST_PICK_TIMEOUT_MS })
+      .not.toBe(null);
 
     const circle = await readCircle();
     expect(circle.background).toContain('0, 0, 255');
@@ -7210,8 +7235,12 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.move(center.x - 80, center.y - 40);
     await page.mouse.down();
 
-    // the circle waits for the press pick to answer "background" (57.8)
-    await expect.poll(circlePos).not.toBe(null);
+    // the circle waits for the press pick to answer "background" (57.8);
+    // the press is this page's first pick, so the poll outlasts the pick
+    // pipeline's first compile (the round-89 diagnosis, same timeout)
+    await expect
+      .poll(circlePos, { timeout: FIRST_PICK_TIMEOUT_MS })
+      .not.toBe(null);
 
     const at0 = await circlePos();
 
@@ -7275,8 +7304,12 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.move(center.x - 80, center.y - 40);
     await page.mouse.down();
 
-    // the circle waits for the press pick to answer "background" (57.8)
-    await expect.poll(circlePos).not.toBe(null);
+    // the circle waits for the press pick to answer "background" (57.8);
+    // the press is this page's first pick, so the poll outlasts the pick
+    // pipeline's first compile (the round-89 diagnosis, same timeout)
+    await expect
+      .poll(circlePos, { timeout: FIRST_PICK_TIMEOUT_MS })
+      .not.toBe(null);
 
     const at0 = await circlePos();
 
@@ -8151,10 +8184,12 @@ test.describe('WebGPU renderer', () => {
       window.cy.on('layoutstop', () => {
         window.__layoutStopped = true;
       });
+      // animateLive: the streaming run is the one that holds the lease
+      // (114.5: animate: true publishes off-mirror, then tweens)
       window.cy
         .layout({
           name: 'force',
-          animate: true,
+          animateLive: true,
           iterations: 100000,
           randomize: true,
         })
@@ -8620,7 +8655,7 @@ test.describe('WebGPU renderer', () => {
      * what makes these specs honest: each caller asserts the cursor (or
      * its absence) *after* the poll lands on the hover state.
      */
-    const HOVER_PICK_TIMEOUT_MS = 30_000;
+    const HOVER_PICK_TIMEOUT_MS = FIRST_PICK_TIMEOUT_MS;
 
     const hoverOnto = async (page, id) => {
       const p = await at(page, id);

@@ -200,9 +200,11 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-08-26), the genuinely open questions are
-**items 18, 23 and 27** — the three the ninth design sitting (2026-08-10)
-left open, none of which a round has taken since.  What the 2026-08-26
+**As last swept** (2026-09-01, round 113), the genuinely open questions
+are still **items 18, 23 and 27** — the three the ninth design sitting
+(2026-08-10) left open, none of which a round has taken since.  The
+2026-09-01 sweep added **item 54**, the benchmark rows the performance
+review could not screen.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -888,3 +890,25 @@ directions".*
     so this stays a call rather than a cleanup: `git branch -d` on
     those four names is the whole action, and the tips are written
     here so it is reversible from this file alone.
+
+54. **The rows the performance review could not screen** (logged
+    2026-09-01, round 113).  The review found no library regression
+    across the 43-commit span since 13 Aug, but four movers carry no
+    evidence either way and were logged rather than acted on; each is
+    a measurement question first.  (a) The renderer's `init: create +
+    ready (labels)` on the wrapped-labels scene, a one-shot row: 190 ms
+    on 13 Aug, 307 ms and then 224 ms on two readings an hour apart —
+    94.1's first-raster atlas work is the candidate, and the row needs
+    repeats before it can say whether it moved.  (b) `data · query:
+    predicate function`, +19% against its own 17% band, traced through
+    the bundle and per commit to noise (45.8–52.5 µs over 43 commits,
+    docs commits at both ends); a ~40 ns-per-element row needs the
+    `(x32)` amplification to carry evidence.  (c) The algorithms-gpu
+    profile's CPU one-shots (affinity propagation n=1024 +27%,
+    neighbourhood similarity +22%) with no commit under
+    `src/algorithms/` — a `--repeat` for the CPU side alone would
+    screen them.  (d) The same profile's GPU side reading 20–52%
+    *faster* with no source change: a driver-version line in
+    `meta.adapter` would give the next such step a suspect.  Not a
+    decision so much as a queue; it leaves this list when a round
+    gives those rows bands.

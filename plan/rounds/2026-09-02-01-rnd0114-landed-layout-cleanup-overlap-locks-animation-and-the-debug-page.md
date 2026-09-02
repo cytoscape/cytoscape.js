@@ -175,7 +175,14 @@ work found on the way is the part worth reading.
   node to its load position exactly; the edge-type box switches
   em-web's haystack to bezier for circle and back; hover dim and hide
   touch 7,465 of 7,468 elements and restore to zero; a locked node in
-  a dragged selection stays while the others move.
+  a dragged selection stays while the others move.  A follow-up from
+  the maintainer's review: the DAG sheets (reactome's pathway names
+  run to 91 characters, npm-deps' package paths to 45 with no
+  whitespace) drew their labels as one line across the neighbours —
+  they now wrap to a column under the node, breaking anywhere, and a
+  harness spec requires wrapping of any fetched network whose labels
+  are long at the 90th percentile (the `anywhere` rule when most of
+  those have no whitespace).
 - **114.8** `test/layout-quality.mjs`: 170 specs in under three
   seconds.  The controls found two things the green rows had not:
   concentric let two 30 px squares meet corner-on (v3's chord rule,

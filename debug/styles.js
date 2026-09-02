@@ -499,7 +499,19 @@ var styles = (function () {
     var sheet = generated(elements, def);
 
     return Object.assign({}, sheet, {
-      nodes: Object.assign({}, sheet.nodes, { width: 18, height: 18 }),
+      nodes: Object.assign({}, sheet.nodes, {
+        width: 18,
+        height: 18,
+        // the labels are pathway names (reactome, up to 91 characters)
+        // and package paths (npm-deps, slashes and no spaces): wrapped
+        // to a column under the node, breaking anywhere so a path
+        // without whitespace still folds, off the taxi edges above
+        'text-wrap': 'wrap',
+        'text-max-width': 110,
+        'text-overflow-wrap': 'anywhere',
+        'text-valign': 'bottom',
+        'text-margin-y': 3,
+      }),
       edges: {
         width: 1.5,
         'line-color': selectable('#9aa5b1'),

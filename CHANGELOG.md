@@ -36,6 +36,11 @@ that compile and then behave differently.
   gains `ctx.nodeDimensions()`, `ctx.components()`, `ctx.finish()`,
   overrides on `ctx.layoutPositions()` and body-box `packComponents`;
   flow's animated runs fit again, and a lone `zoom` or `pan` animates.
+  Radial gains `avoidOverlap` (rings grow to clear it); concentric's
+  chord rule reads a box's diagonal so two squares cannot meet
+  corner-on; flow's `boundingBox` holds the bodies rather than their
+  centres.  `test/layout-quality.mjs` asserts placement, fit, overlap,
+  locks, animation and component separation for every layout.
 - **The flow layout** (round 112): a built-in Sugiyama-class layered
   layout — `cy.layout({ name: 'flow' })` — with greedy-FAS cycle
   removal, GKNV network-simplex layering, weighted crossing

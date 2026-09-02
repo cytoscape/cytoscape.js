@@ -3746,9 +3746,10 @@ export class Collection {
   /**
    * Whether the first element is locked — immovable, by layouts,
    * position writes and position tweens alike (one rule since round
-   * 114.3: every layout holds a locked node where it is, keeps it in
-   * the layout's structure, and treats it as an obstacle when avoiding
-   * overlap).  True for every node while `cy.autolock( true )` is set,
+   * 114.3: every layout holds a locked node where it is and keeps it in
+   * the layout's structure; force treats it as an obstacle its settle
+   * separates the others from).  True for every node while
+   * `cy.autolock( true )` is set,
    * as in v3; the flag column alone is what `{ locked: true }` filters
    * read.
    *

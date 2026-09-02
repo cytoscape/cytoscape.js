@@ -140,7 +140,11 @@ export class ConcentricLayout {
     for (let i = 0; i < nodes.length; i++) {
       const nbb = nodes[i].layoutDimensions(options);
 
-      maxNodeSize = Math.max(maxNodeSize, nbb.w, nbb.h);
+      // the diagonal, not the longer side (114.8): the chord rule below
+      // spaces centres, and two 30 px squares whose centres are 40
+      // apart still overlap corner-on at 45 degrees — v3 has that
+      // overlap; the circumscribed circle is the guarantee
+      maxNodeSize = Math.max(maxNodeSize, Math.hypot(nbb.w, nbb.h));
     }
 
     // decreasing order

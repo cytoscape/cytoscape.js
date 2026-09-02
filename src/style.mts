@@ -4996,6 +4996,38 @@ const packedColor = (packed: number): string =>
     (packed >>> 24) & 0xff,
   );
 
+/**
+ * An edge label's stored alphas carry the edge's element opacity
+ * (115.6: the fold at style-write, since the edge label pipeline has no
+ * buffer slot for the column).  The readers divide it back out so the
+ * declared channel reads back; a fully transparent edge (nothing to
+ * divide by) reads the packed value as stored.  Node labels store the
+ * declared alpha — their column multiplies on the GPU.
+ */
+const unfoldLabelAlpha = (
+  store: GraphStore,
+  slot: number,
+  ref: Ref,
+  packed: number,
+): number => {
+  if (ref.group !== 'edges') {
+    return packed;
+  }
+
+  const elementOp = readScalar(store, slot, 'edge.opacity');
+
+  if (elementOp <= 0 || elementOp >= 1) {
+    return packed;
+  }
+
+  const a = Math.min(255, Math.round(((packed >>> 24) & 0xff) / elementOp));
+
+  return ((packed & 0xffffff) | (a << 24)) >>> 0;
+};
+
+const labelAlphaOf = (packed: number): number =>
+  Math.round((((packed >>> 24) & 0xff) / 255) * 1000) / 1000;
+
 /*
 Round 35.2: the stored-truth readback, as a dispatch table.
 
@@ -5461,7 +5493,7 @@ defineReader(['text-outline-color'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? packedColor(entry.outlineColor)
+    ? packedColor(unfoldLabelAlpha(store, slot, ref, entry.outlineColor))
     : formatRgba(...engine.defFor(ref).computed.textOutlineColor);
 });
 
@@ -5567,7 +5599,7 @@ defineReader(['text-border-color'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? packedColor(entry.bgBorderColor)
+    ? packedColor(unfoldLabelAlpha(store, slot, ref, entry.bgBorderColor))
     : formatRgba(...engine.defFor(ref).computed.textBorderColor);
 });
 
@@ -5575,23 +5607,25 @@ defineReader(['text-border-opacity'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? Math.round((((entry.bgBorderColor >>> 24) & 0xff) / 255) * 1000) / 1000
+    ? labelAlphaOf(unfoldLabelAlpha(store, slot, ref, entry.bgBorderColor))
     : engine.defFor(ref).computed.textBorderOpacity;
 });
 
 defineReader(['text-opacity'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
-  return entry != null
-    ? Math.round((((entry.color >>> 24) & 0xff) / 255) * 1000) / 1000
-    : engine.defFor(ref).computed.textOpacity;
+  if (entry == null) {
+    return engine.defFor(ref).computed.textOpacity;
+  }
+
+  return labelAlphaOf(unfoldLabelAlpha(store, slot, ref, entry.color));
 });
 
 defineReader(['text-outline-opacity'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? Math.round((((entry.outlineColor >>> 24) & 0xff) / 255) * 1000) / 1000
+    ? labelAlphaOf(unfoldLabelAlpha(store, slot, ref, entry.outlineColor))
     : engine.defFor(ref).computed.textOutlineOpacity;
 });
 
@@ -5599,7 +5633,7 @@ defineReader(['text-background-color'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? packedColor(entry.bgColor)
+    ? packedColor(unfoldLabelAlpha(store, slot, ref, entry.bgColor))
     : formatRgba(...engine.defFor(ref).computed.textBgColor);
 });
 
@@ -5607,7 +5641,7 @@ defineReader(['text-background-opacity'], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? Math.round((((entry.bgColor >>> 24) & 0xff) / 255) * 1000) / 1000
+    ? labelAlphaOf(unfoldLabelAlpha(store, slot, ref, entry.bgColor))
     : engine.defFor(ref).computed.textBgOpacity;
 });
 
@@ -8654,7 +8688,7 @@ export class StyleEngine {
     const entry = this.store.labelAt(ref.slot, ref.group);
 
     if (entry != null) {
-      const packed = entry.color;
+      const packed = unfoldLabelAlpha(this.store, ref.slot, ref, entry.color);
 
       return {
         fontSize: entry.fontSize,
@@ -9618,8 +9652,13 @@ export class StyleEngine {
     }
 
     // text-opacity (B1) is v3's parentOpacity for the whole label block:
-    // it folds into the text fill, outline and background alphas alike
-    const textOp = computed.textOpacity;
+    // it folds into the text fill, outline and background alphas alike.
+    // Element opacity joins the fold for edge labels (115.6: v3's
+    // effective alpha is opacity x text-opacity; the edge label pipeline
+    // is at its storage-buffer budget, so it cannot read the column the
+    // way node labels do since 115.6, and folds like edge lines do)
+    const textOp =
+      computed.textOpacity * (group === 'edges' ? computed.opacity : 1);
     const fold = ([r, g, b, a]: RGBA, opacity: number): number =>
       packRgba([
         r,

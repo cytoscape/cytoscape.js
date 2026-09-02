@@ -96,6 +96,40 @@ describe('gpu/opacity-split (round 13 B1)', function () {
     expect(cy.$id('a').style('text-opacity')).to.be.closeTo(0.5, 0.01);
   });
 
+  it('element opacity reaches labels (115.6): folded for edge labels, a column for node labels', function () {
+    cy = makeCy({
+      nodes: { label: 'hi', color: '#000', 'text-opacity': 0.5 },
+      edges: { label: 'e', color: '#000', 'text-opacity': 0.5, opacity: 0.4 },
+    });
+
+    // the edge label pipeline is at its storage-buffer budget, so the
+    // element opacity folds into the stored alpha like edge lines do:
+    // 0.5 x 0.4 = 0.2 — and the reader divides it back out
+    var edgeSlot = cy._store.lookup('e').slot;
+    var entry = cy._store.labelAt(edgeSlot, 'edges');
+
+    expect((entry.color >>> 24) & 0xff).to.equal(Math.round(0.2 * 255));
+    expect(cy.$id('e').style('text-opacity')).to.be.closeTo(0.5, 0.01);
+    expect(cy.$id('e').style('opacity')).to.be.closeTo(0.4, 0.01);
+
+    // a bypass re-folds: the label follows the edge it belongs to
+    cy.$id('e').style({ opacity: 1 });
+    entry = cy._store.labelAt(edgeSlot, 'edges');
+    expect((entry.color >>> 24) & 0xff).to.equal(128);
+
+    // node labels keep the declared text alpha in the entry — the
+    // node.opacity column multiplies on the GPU, as the body shader does
+    cy.$id('a').style({ opacity: 0.25 });
+
+    var nodeEntry = cy._store.labelAt(cy._store.lookup('a').slot);
+
+    expect((nodeEntry.color >>> 24) & 0xff).to.equal(128);
+    expect(cy.$id('a').style('text-opacity')).to.be.closeTo(0.5, 0.01);
+    expect(
+      cy._store.column('node.opacity')[cy._store.lookup('a').slot],
+    ).to.be.closeTo(0.25, 1e-6);
+  });
+
   it('the channel opacities take (CPU) mappers', function () {
     cy = cytoscape({
       elements: [

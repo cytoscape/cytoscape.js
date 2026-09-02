@@ -77,7 +77,9 @@ export class LabelPipeline {
     // anchor on-GPU — 7 storage buffers + the visible list, exactly the
     // vertex-stage budget (node geometry rides the fused outerGeom
     // column since round 58, which is what freed the widths slot)
-    const storageCount = this.edge ? 7 : 2;
+    // node labels add the element opacity column (115.6), so a dimmed
+    // node dims its label on-GPU — 3 storage buffers
+    const storageCount = this.edge ? 7 : 3;
 
     this.bindLayout = device.createBindGroupLayout({
       label: `cy-gpu:${variant}-label-bind-layout`,
@@ -172,7 +174,11 @@ export class LabelPipeline {
           mirror.buffer('node.outerGeom'),
           mirror.blobBuffer(),
         ]
-      : [glyphs.buffer(), mirror.buffer('node.position')];
+      : [
+          glyphs.buffer(),
+          mirror.buffer('node.position'),
+          mirror.buffer('node.opacity'),
+        ];
 
     const group = device.createBindGroup({
       label: 'cy-gpu:label-bind-group',

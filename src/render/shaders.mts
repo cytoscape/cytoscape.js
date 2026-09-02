@@ -4280,7 +4280,7 @@ ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGS
 // rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(6) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, 0] (round 58)\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;'}
+${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(6) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, 0] (round 58)\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var<storage, read> nodeOpacity: array<f32>; // element opacity (115.6: labels dim with their node, as v3)\n@group(0) @binding(4) var atlas: texture_2d<f32>;\n@group(0) @binding(5) var atlasSampler: sampler;'}
 
 // Round 95: the outline goes under the ink.  Glyph quads overlap by
 // construction (each carries the SDF pad halo past its ink), and one
@@ -4319,7 +4319,13 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   // LOD: fade out as the on-screen glyph shrinks (fully-faded glyphs were culled)
   let heightPx = glyphLodHeight(g) * frame.zoomDpr;
-  let fade = labelFade(heightPx, frame.labelFadePx);
+  // element opacity (115.6): v3's effective label alpha is opacity x
+  // text-opacity.  text-opacity is folded into the stored colour at
+  // style-write; the node's own opacity column (ancestor-folded under
+  // compounds) multiplies here, exactly as the body shader does — so a
+  // dimmed node dims its label.  Edge labels are at the storage-buffer
+  // budget and take the fold at style-write, like edge lines do.
+  let fade = labelFade(heightPx, frame.labelFadePx)${edge ? '' : ' * nodeOpacity[g.nodeSlot]'};
 
   // glyphs read live positions: labels follow drags/layouts on-GPU
   ${

@@ -1254,6 +1254,7 @@ describe('debug harness (round 43)', function () {
         seed: 5,
         avoidOverlap: false,
         nodeDimensionsIncludeLabels: false,
+        spacingFactor: 1,
       });
       expect(
         layoutConfig.layoutOptions('radial', { animate: false }),
@@ -1262,6 +1263,7 @@ describe('debug harness (round 43)', function () {
         animate: false,
         avoidOverlap: false,
         nodeDimensionsIncludeLabels: false,
+        spacingFactor: 1,
       });
 
       const spiral = layoutConfig.layoutOptions(
@@ -1310,6 +1312,24 @@ describe('debug harness (round 43)', function () {
 
       expect(spiral.avoidOverlap).to.equal(true);
       expect(spiral.impl).to.equal(SpiralLayout);
+    });
+
+    it("spells the spacing slider as a multiple of the layout's own spacingFactor (115.6)", function () {
+      expect(layoutConfig.spacingFactor('grid', 1)).to.equal(1);
+      expect(layoutConfig.spacingFactor('grid', '2')).to.equal(2);
+      // breadthfirst's own default is 1.75, so 1x keeps it
+      expect(layoutConfig.spacingFactor('breadthfirst', 1)).to.equal(1.75);
+      expect(layoutConfig.spacingFactor('breadthfirst', 2)).to.equal(3.5);
+      // preset scales nothing; a bad value reads as 1x
+      expect(layoutConfig.spacingFactor('preset', 2)).to.equal(null);
+      expect(layoutConfig.spacingFactor('circle', 'x')).to.equal(1);
+
+      const half = layoutConfig.layoutOptions('circle', { spacing: '0.5' });
+
+      expect(half.spacingFactor).to.equal(0.5);
+      expect(
+        layoutConfig.layoutOptions('preset', { spacing: '0.5' }),
+      ).to.not.have.property('spacingFactor');
     });
 
     it('gates the hover panel by element count', function () {

@@ -105,12 +105,40 @@ var layoutConfig = (function () {
     spiral: true,
   };
 
+  // A layout's own spacingFactor default (115.6): the slider is a
+  // multiple over it, so 1x on breadthfirst is breadthfirst's 1.75.
+  // Preset has no spacing to scale — the positions are the user's.
+  var DEFAULT_SPACING = {
+    breadthfirst: 1.75,
+  };
+
+  /**
+   * The spacingFactor a slider value spells for a layout, or null when
+   * the layout takes none.
+   *
+   * @param name the layout select's value
+   * @param slider the slider's value (a string or number; default 1)
+   */
+  function spacingFactor(name, slider) {
+    if (name === 'preset') {
+      return null;
+    }
+
+    var multiple = Number(slider);
+
+    if (!(multiple > 0)) {
+      multiple = 1;
+    }
+
+    return (DEFAULT_SPACING[name] || 1) * multiple;
+  }
+
   /**
    * The options object for `cy.layout()` given the panel's state.
    *
    * @param name the layout select's value
    * @param ui { animate, live, seed, positions, avoidOverlap,
-   *   overlapLabels }
+   *   overlapLabels, spacing }
    * @param impl the spiral example's class (a page global)
    */
   function layoutOptions(name, ui, impl) {
@@ -130,6 +158,12 @@ var layoutConfig = (function () {
       // defaults (off) are the run's, whatever the library's are
       options.avoidOverlap = !!ui.avoidOverlap;
       options.nodeDimensionsIncludeLabels = !!ui.overlapLabels;
+    }
+
+    var factor = spacingFactor(name, ui.spacing == null ? 1 : ui.spacing);
+
+    if (factor != null) {
+      options.spacingFactor = factor;
     }
 
     if (name === 'force') {
@@ -156,6 +190,8 @@ var layoutConfig = (function () {
   return {
     EDGE_STYLE: EDGE_STYLE,
     OVERLAP_LAYOUTS: OVERLAP_LAYOUTS,
+    DEFAULT_SPACING: DEFAULT_SPACING,
+    spacingFactor: spacingFactor,
     edgeOverride: edgeOverride,
     sheetWith: sheetWith,
     snapshotPositions: snapshotPositions,

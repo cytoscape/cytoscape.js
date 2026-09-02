@@ -76,6 +76,13 @@ const paramDefs = {
     control: '#layout-overlap-labels-check',
     live: true,
   },
+  spacing: {
+    // 115.6: the slider's multiple of the layout's own spacingFactor
+    // (v3's spacingFactor, on every layout that scales its result)
+    default: '1',
+    control: '#spacing-input',
+    live: true,
+  },
   edgeWidthFloor: {
     default: '1',
     control: '#edge-floor-input',
@@ -269,6 +276,7 @@ const paramDefs = {
               positions: window.initialPositions,
               avoidOverlap: params.avoidOverlap === 'true',
               overlapLabels: params.overlapLabels === 'true',
+              spacing: params.spacing,
             },
             SpiralLayout,
           ),

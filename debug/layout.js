@@ -30,6 +30,16 @@
 
   const liveCheck = $('#layout-live-check');
   const select = $('#layout-select');
+  const spacing = $('#spacing-input');
+  const spacingValue = $('#spacing-value');
+
+  // the slider's readout follows it (115.6); Apply reads the value
+  const syncSpacing = () => {
+    spacingValue.textContent = Number(spacing.value).toFixed(2);
+  };
+
+  spacing.addEventListener('input', syncSpacing);
+  syncSpacing();
 
   // Live is force's alone: the other layouts have no stream to show
   const syncLive = () => {
@@ -94,6 +104,7 @@
           positions: window.initialPositions,
           avoidOverlap: $('#layout-avoid-overlap-check').checked,
           overlapLabels: $('#layout-overlap-labels-check').checked,
+          spacing: $('#spacing-input').value,
         },
         SpiralLayout,
       ),

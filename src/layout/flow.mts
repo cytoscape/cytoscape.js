@@ -81,7 +81,7 @@ const defaults: Omit<FlowLayoutOptions, 'name'> = {
   cycleRemoval: 'greedy', // 'greedy' (Eades-Lin-Smyth) or 'dfs' (input order dominates)
   rankConstraints: undefined, // { min?: string[], max?: string[], same?: string[][] } — id lists
   componentSpacing: 40, // gap between packed disconnected components
-  avoidOverlap: true, // separate by node extents (labels included by default); false places points
+  avoidOverlap: true, // separate by node extents (labels on request); false places points
   avoidOverlapPadding: 0, // extra room around each body — nodeSep / rankSep own the spacing
 };
 
@@ -286,8 +286,8 @@ export class FlowLayoutImpl implements LayoutImpl {
       indexOf.set(slots[i], i);
     }
 
-    // extents from the shared reading (114.6): bodies plus labels by
-    // default, padded; symmetric halves (the larger side) because the
+    // extents from the shared reading (114.6): bodies plus labels on
+    // request, padded; symmetric halves (the larger side) because the
     // BK separation is symmetric.  avoidOverlap: false places points —
     // nodeSep and rankSep then read centre to centre
     const halfW = new Float64Array(n);
@@ -295,7 +295,7 @@ export class FlowLayoutImpl implements LayoutImpl {
 
     if (merged.avoidOverlap !== false) {
       const dims = ctx.nodeDimensions(slots, {
-        includeLabels: merged.nodeDimensionsIncludeLabels !== false,
+        includeLabels: merged.nodeDimensionsIncludeLabels === true,
         padding: merged.avoidOverlapPadding ?? 0,
       });
 

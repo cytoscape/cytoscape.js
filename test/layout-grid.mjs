@@ -75,7 +75,7 @@ describe('gpu/layout: grid', function () {
     });
   });
 
-  it('cells include labels by default (114.6), bodies alone on request', function () {
+  it('cells include labels on request (114.6), bodies alone by default (115)', function () {
     cy.style({
       nodes: { width: 30, height: 30, label: 'a label wide enough' },
     });
@@ -98,8 +98,8 @@ describe('gpu/layout: grid', function () {
       return xs[1] - xs[0];
     };
 
-    var labelled = spacing({});
-    var bare = spacing({ nodeDimensionsIncludeLabels: false });
+    var labelled = spacing({ nodeDimensionsIncludeLabels: true });
+    var bare = spacing({});
 
     expect(bare).to.equal(30);
     expect(labelled).to.be.greaterThan(30);

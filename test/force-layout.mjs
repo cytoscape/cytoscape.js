@@ -687,13 +687,16 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       expect(overlapping(cy)).to.be.greaterThan(10);
     });
 
-    it('includes labels by default, bodies alone on request', async function () {
+    it('includes labels on request, bodies alone by default (115)', async function () {
       const withLabels = CLIQUE(12, 20);
 
       withLabels.style({
         nodes: { width: 20, height: 20, label: 'a long enough label' },
       });
-      await withLabels.layout({ name: 'force', seed: 3 }).run().promise();
+      await withLabels
+        .layout({ name: 'force', seed: 3, nodeDimensionsIncludeLabels: true })
+        .run()
+        .promise();
       expect(overlapping(withLabels, true)).to.equal(0);
 
       const bodiesOnly = CLIQUE(12, 20);

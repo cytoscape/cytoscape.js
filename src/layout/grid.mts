@@ -140,9 +140,9 @@ export class GridLayout {
       );
     }
 
-    // the shared reading (114.6): bodies plus labels by default
+    // the shared reading (114.6): bodies, plus labels on request
     const dims = nodeDims(store, slots, {
-      includeLabels: this.options.nodeDimensionsIncludeLabels !== false,
+      includeLabels: this.options.nodeDimensionsIncludeLabels === true,
     });
 
     const positions = this.cellPositions(
@@ -201,7 +201,7 @@ export class GridLayout {
         : null;
 
     const dims = nodeDimsOf(cy, nodes, {
-      includeLabels: options.nodeDimensionsIncludeLabels !== false,
+      includeLabels: options.nodeDimensionsIncludeLabels === true,
     });
     const positions = this.cellPositions(
       nodes.length,

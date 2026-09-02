@@ -14,8 +14,9 @@ a label below the node makes `y2 > -y1`.  A consumer that needs
 symmetric halves takes `max(-y1, y2)`.
 
 Included: the body (`size / 2 + borderWidth / 2`, the store's own
-bounding-box term) and, by default, the label box the store keeps per
-node.  Deliberately excluded, as v3's `layoutDimensions` excluded them:
+bounding-box term) and, on request (`nodeDimensionsIncludeLabels`,
+default false since round 115 — v3's default), the label box the store
+keeps per node.  Deliberately excluded, as v3's `layoutDimensions` excluded them:
 outline, overlay / underlay padding and ghost offsets — decoration, not
 the node's footprint.  Headless label dimensions are the store's
 estimates (round 16.4), so overlap avoidance with labels is exact only
@@ -47,7 +48,8 @@ export interface LayoutNodeDims {
 
 /** What a dimensions read includes. */
 export interface DimsOptions {
-  /** union the label box into each node's box (default true) */
+  /** union the label box into each node's box (default true here; the
+   * layouts pass their `nodeDimensionsIncludeLabels`, default false) */
   includeLabels?: boolean;
   /** extra room around every node, split half per side (default 0) */
   padding?: number;

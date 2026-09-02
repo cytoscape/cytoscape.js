@@ -124,20 +124,20 @@ describe('layout/dims: nodeDims (114.1)', () => {
     expect(Array.from(d.x2)).to.deep.equal([5, 25]);
   });
 
-  it('layoutDimensions is the same reading, labels on by default', () => {
+  it('layoutDimensions is the same reading, labels on request (115: bodies alone by default)', () => {
     const cy = mk({
       nodes: { width: 30, height: 30, label: 'a wide label', 'font-size': 16 },
     });
     const a = cy.$id('a');
     const d = nodeDims(cy._store, [slotOf(cy, 'a')]);
 
-    expect(a.layoutDimensions()).to.deep.equal({
+    expect(
+      a.layoutDimensions({ nodeDimensionsIncludeLabels: true }),
+    ).to.deep.equal({
       w: d.x2[0] - d.x1[0],
       h: d.y2[0] - d.y1[0],
     });
-    expect(
-      a.layoutDimensions({ nodeDimensionsIncludeLabels: false }),
-    ).to.deep.equal({ w: 30, h: 30 });
+    expect(a.layoutDimensions()).to.deep.equal({ w: 30, h: 30 });
     a.hide();
     expect(a.layoutDimensions()).to.deep.equal({ w: 1, h: 1 });
   });

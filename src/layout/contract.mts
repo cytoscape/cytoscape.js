@@ -240,14 +240,15 @@ export class LayoutContext {
    * The layout boxes of the scope's nodes (round 114.1): slot-parallel
    * node-local extents read off the size, border and label columns —
    * the one reading every built-in spaces by.  Labels are included
-   * unless the run's `nodeDimensionsIncludeLabels` is `false`, so the
-   * box is asymmetric when a label hangs below the body; take
+   * when the run's `nodeDimensionsIncludeLabels` is `true` (115: v3's
+   * default again), making the box asymmetric when a label hangs
+   * below the body; take
    * `max( -y1, y2 )` for a symmetric half.  Headless label dimensions
    * are estimates (16.4), exact once a renderer has laid the glyphs.
    *
    * @param slots — the node slots to measure (default `nodeSlots()`)
    * @param options — `includeLabels` (default: the run's option, itself
-   *   defaulting to true) and `padding` (split half per side)
+   *   defaulting to false) and `padding` (split half per side)
    * @returns the boxes, parallel to `slots`
    */
   nodeDimensions(
@@ -257,7 +258,7 @@ export class LayoutContext {
     return nodeDims(this.cy._store, slots, {
       includeLabels:
         options.includeLabels ??
-        this.options.nodeDimensionsIncludeLabels !== false,
+        this.options.nodeDimensionsIncludeLabels === true,
       padding: options.padding,
     });
   }

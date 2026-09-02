@@ -257,7 +257,7 @@ describe('gpu/layout: flow (round 112)', function () {
     });
   });
 
-  it('labels widen the rank separation by default (114.6)', function () {
+  it('labels widen the rank separation on request (114.6; bodies alone by default since 115)', function () {
     var withLabels = mk({
       nodes: nodes('a', 'b', 'c'),
       edges: edges(['a', 'b'], ['a', 'c']),
@@ -266,17 +266,11 @@ describe('gpu/layout: flow (round 112)', function () {
     withLabels.style({
       nodes: { width: 20, height: 20, label: 'a long enough label here' },
     });
-    run();
+    run({ nodeDimensionsIncludeLabels: true });
 
     var labelled = Math.abs(posOf('c').x - posOf('b').x);
 
-    withLabels
-      .layout({
-        name: 'flow',
-        fit: false,
-        nodeDimensionsIncludeLabels: false,
-      })
-      .run();
+    withLabels.layout({ name: 'flow', fit: false }).run();
 
     var bare = Math.abs(posOf('c').x - posOf('b').x);
 

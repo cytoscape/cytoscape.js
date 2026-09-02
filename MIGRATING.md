@@ -420,7 +420,7 @@ app trips on after everything else works.
 | `force` with `animate: false` on a rendered flat graph | synchronous — positions readable on the next line | **async** — the run settles at `layoutstop` / `promise()`; executor choice is availability-driven (headless runs stay synchronous) |
 | `cose` / `force` with `animate: true` | v3 cose: `'during'` streams the run, `'end'` tweens to the result | `animate: true` **tweens to the result** like every other layout (round 114.5); `animateLive: true` streams the run |
 | a locked node under `position()` / a layout | v3: held by both | v4 before round 114.3 moved it; since 114.3 held by writes, tweens and every layout, and an obstacle for overlap avoidance |
-| `nodeDimensionsIncludeLabels` | default `false` | default **`true`** (round 114.1) — every layout's overlap avoidance reads bodies plus labels unless told otherwise |
+| `nodeDimensionsIncludeLabels` | default `false` | default `false` again — round 114.1 flipped it to `true`, and round 115 flipped it back once the maintainer saw a graph of long labels spaced by them; `true` keeps labels apart in every built-in, and the spacing is exact per pair (115) rather than v3's largest-footprint-times-1.75 |
 | `hierarchicalClustering` `mean` linkage | silently broken — an unset size field made the first mean merge write NaN distances, degenerating the clustering | **works**: sizes are tracked, so `mean` is the weighted-average linkage both libraries always documented |
 
 **The whole-graph tier is async, and `executor` picks where it runs.** The

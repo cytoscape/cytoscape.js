@@ -5279,10 +5279,11 @@ export class Collection {
 
   /**
    * Node dimensions for layout spacing, as v3's layoutDimensions — the
-   * body plus, since round 114.1, the label box by default.
+   * body, plus the label box under `nodeDimensionsIncludeLabels: true`
+   * (114.1 made labels the default; 115 restored v3's body-only default).
    *
-   * @param options — `{ nodeDimensionsIncludeLabels: false }` to measure
-   *   the node body alone
+   * @param options — `{ nodeDimensionsIncludeLabels: true }` to include
+   *   the label box
    * @returns the first element's `{ w, h }`
    */
   layoutDimensions(options: { nodeDimensionsIncludeLabels?: boolean } = {}): {
@@ -5295,10 +5296,10 @@ export class Collection {
       return { w: 1, h: 1 };
     }
 
-    // one reading for every layout (114.1): the body plus, by default,
+    // one reading for every layout (114.1): the body plus, on request,
     // the label box; hidden sanitises to 1 x 1 as v3 did
     const d = nodeDims(this._store, [ref.slot], {
-      includeLabels: options.nodeDimensionsIncludeLabels !== false,
+      includeLabels: options.nodeDimensionsIncludeLabels === true,
     });
 
     return { w: d.x2[0] - d.x1[0], h: d.y2[0] - d.y1[0] };

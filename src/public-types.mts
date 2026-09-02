@@ -407,11 +407,13 @@ export interface LayoutBaseOptions {
   fit?: boolean;
   padding?: number;
   boundingBox?: BoundingBoxInput;
-  /** include labels in the node dimensions a layout spaces by — **default
-   * true** (round 114.1, a v4 deviation from v3's `false`, consistent
-   * with 16.4's labels-in-`boundingBox()` default).  Every built-in's
-   * overlap avoidance reads the same boxes, so `false` spaces by node
-   * bodies alone.  Headless label dimensions are estimates. */
+  /** include labels in the node dimensions a layout spaces by — default
+   * `false`, v3's (round 114.1 flipped it to true; 115 flipped it back,
+   * since a graph of long labels spaced by them is several times the
+   * size of the same graph spaced by its bodies, and the maintainer
+   * judged v3's default the better one).  Every built-in's overlap
+   * avoidance reads the same boxes, so `true` keeps labels apart too.
+   * Headless label dimensions are estimates. */
   nodeDimensionsIncludeLabels?: boolean;
   spacingFactor?: number;
   /** transform a computed position (e.g. to flip an axis) */
@@ -456,7 +458,11 @@ export interface PresetLayoutOptions extends LayoutBaseOptions {
 
 export interface CircleLayoutOptions extends LayoutBaseOptions {
   name: 'circle';
+  /** grow the ring until no two nodes overlap (default true; 115 —
+   * exact per pair, in place of v3's largest-node-times-1.75 chord) */
   avoidOverlap?: boolean;
+  /** extra room around every node under `avoidOverlap` (default 10) */
+  avoidOverlapPadding?: number;
   /** the circle's radius (computed when omitted) */
   radius?: number;
   /** where nodes start in radians (default 3/2 π) */
@@ -502,7 +508,13 @@ export interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
   circle?: boolean;
   /** place the DAG on an even grid (circle: false only) */
   grid?: boolean;
+  /** space ranks and the nodes within them so no two overlap (default
+   * true; 115 — per rank and per axis, in place of v3's one largest
+   * footprint for both) */
   avoidOverlap?: boolean;
+  /** extra room around every node under `avoidOverlap` (default 0:
+   * v3's numbers, `spacingFactor` supplying the air) */
+  avoidOverlapPadding?: number;
   /** the tree roots: a collection, or an array of node ids */
   roots?: unknown;
   /** the order within a depth: a `{ data, order? }` sort mapping
@@ -536,10 +548,11 @@ export interface RadialLayoutOptions extends LayoutBaseOptions {
    * A floor under `avoidOverlap`: a ring grows past it when its nodes
    * would otherwise touch */
   levelSpacing?: number;
-  /** grow each ring's radius until neither radial neighbours nor
-   * angular neighbours overlap (114.6; default true) — bodies plus
-   * labels unless `nodeDimensionsIncludeLabels` is false; wedge angles
-   * are never changed */
+  /** each ring takes the smallest radius at which neither radial
+   * neighbours nor angular neighbours overlap (114.6; exact per pair
+   * since 115; default true) — bodies, plus labels when
+   * `nodeDimensionsIncludeLabels` is true; wedge angles are never
+   * changed */
   avoidOverlap?: boolean;
   /** the gap kept between neighbouring boxes (default 10) */
   avoidOverlapPadding?: number;
@@ -583,8 +596,10 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
   /** separate overlapping node bodies after the settle (114.5; default
-   * true) — labels included unless `nodeDimensionsIncludeLabels` is
-   * false, locked nodes as obstacles */
+   * true; the dense case rebuilt in 115 as a proximity-stress pass, so
+   * a pile opens locally instead of the whole component scaling) —
+   * labels included when `nodeDimensionsIncludeLabels` is true, locked
+   * nodes as obstacles */
   avoidOverlap?: boolean;
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;

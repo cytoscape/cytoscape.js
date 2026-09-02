@@ -637,8 +637,8 @@ sheet), `layout()`/
 the round-85 hierarchy-aware `radial` tree,
 round 18's GPU-capable `force` and round 112's layered `flow` — every
 one of them, since round 114, spacing by one reading of node
-dimensions with labels included by default, avoiding overlap in its
-own geometry, holding locked nodes where they are, and tweening to
+dimensions (labels on request), avoiding overlap in its own geometry
+— exactly per pair since round 115 — holding locked nodes where they are, and tweening to
 its result under `animate: true`; plus the round-17
 **extension contract**: `cy.layout({ impl })` runs a user layout
 class/object with no registry — plus `eles.layout()` for subset
@@ -1039,13 +1039,15 @@ order; a lone root sits exactly at the centre, several move out to
 the first ring; unreached nodes seed their own trees in scope order,
 so a disconnected component always gets a wedge.  Non-tree edges just
 draw (breadthfirst's stance); leaves only, parents derive.  **Rings
-grow to clear overlap** (round 114.6, `avoidOverlap`, default true):
-the wedge angles are the structure, so radius is the one degree of
-freedom — each ring starts at its share of `levelSpacing` and grows
-until neither the ring inside it nor the neighbours along it (whatever
-wedge they belong to) can touch, node boxes read through the shared
-dimensions (labels included unless `nodeDimensionsIncludeLabels:
-false`, padded by `avoidOverlapPadding`).  Options: `roots`,
+grow to clear overlap** (round 114.6, `avoidOverlap`, default true;
+exact since 115): the wedge angles are the structure, so radius is the
+one degree of freedom — each ring starts at its share of
+`levelSpacing` and takes the smallest radius at which neither the ring
+inside it nor the neighbours along it (whatever wedge they belong to)
+touch, every pair separated along its own direction
+(`layout/separation.mts`), node boxes read through the shared
+dimensions (labels under `nodeDimensionsIncludeLabels: true`, padded by
+`avoidOverlapPadding`).  Options: `roots`,
 `startAngle`, `sweep`, `clockwise`, `levelSpacing` (a floor under
 `avoidOverlap`), `avoidOverlap`, `avoidOverlapPadding`, `weight`, plus
 the shared finisher plumbing.  No v3 twin exists; the
@@ -1100,7 +1102,7 @@ layering is pass 112.3.  Options: `direction`, `nodeSep`, `rankSep`,
 `layering`, `thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
 `cycleRemoval`, `rankConstraints`,
 `componentSpacing`, `avoidOverlap` and `avoidOverlapPadding` (114.6:
-extents come from the shared dimensions, labels included by default,
+extents come from the shared dimensions, labels on request,
 and a `boundingBox` now holds the bodies rather than the centres),
 plus the shared plumbing (finisher path when animate / transform /
 spacingFactor are asked for; bare runs take the columnar bulk write —
@@ -1251,14 +1253,22 @@ round records carry the histories.
   device-less fallback.
 
   **The settle separates node bodies** (114.5, `avoidOverlap`, default
-  true): the sim is point-based, so overlapping boxes — labels
-  included unless `nodeDimensionsIncludeLabels: false`, padded by
-  `avoidOverlapPadding` (10) — are pushed apart along the axis of
-  smaller overlap over a grid hash, pinned nodes as obstacles, before
-  the body-box component re-pack.  The one post-pass in the layout
-  portfolio (the round-114 decision against a generic remover: every
-  other layout spaces constructively); a settled field has few
-  overlaps, so it measures at ~100 ms on a 20k-node, 18 s CPU run.
+  true; the dense case rebuilt in 115): the sim is point-based, so
+  overlapping boxes — labels under `nodeDimensionsIncludeLabels: true`,
+  padded by `avoidOverlapPadding` (10) — are pushed apart along the
+  axis of smaller overlap over a grid hash (the sparse case, a sweep or
+  two), and what a pile leaves is opened by PRISM's proximity stress
+  (Gansner & Hu): near pairs get target distances — an overlapping
+  pair's the factor that clears it along its own direction, capped per
+  round, a clear pair's its current distance at a quarter weight — and
+  stress majorization moves each node to what its neighbours ask, so
+  the pile opens locally and the far field never moves.  114.5's
+  version scaled the whole component by its *worst* pair's factor and
+  spread every settled graph several times over (em-web's 2.4k px
+  field became 11.6k; it is 2.8k now).  Pinned nodes are obstacles
+  throughout, the body-box component re-pack follows.  The one
+  post-pass in the layout portfolio (the round-114 decision against a
+  generic remover: every other layout spaces constructively).
 
   `node.position` is GPU-owned for the run (the tween lease — CPU
   reads stale mid-run, the motion-staleness rule), and convergence
@@ -1479,7 +1489,7 @@ calls made deliberately rather than by accretion:
   columnar-first — `nodeSlots()` pre-filtered to unlocked leaves,
   live position/endpoint views, O(1) CSR degrees,
   `nodeDimensions()` (round 114.1 — the one reading of node boxes
-  every built-in spaces by, labels included by default),
+  every built-in spaces by, labels on request),
   `components()`, bulk `setPositions`, the `layoutPositions( fn,
   overrides? )` finisher with the whole v3 plumbing and an impl's own
   defaults merged in, `finish( slots, xy, overrides? )` (114.2 — the
@@ -1691,10 +1701,17 @@ each is deliberate, not a pass-1 deferral:
   store tier (`setPosition*`) stays raw for the renderer's settle, the
   wire and animation `apply`.  `cy.json()` exports the node's own
   flag, not autolock's.
-- **Every layout avoids overlap in its own geometry, labels included
-  by default** (round 114).  `nodeDimensionsIncludeLabels` defaults to
-  **true** (v3: false), consistent with 16.4's labels-in-`boundingBox()`;
-  the boxes come from one reading (`layout/dims.mts`), and each
+- **Every layout avoids overlap in its own geometry, exactly** (rounds
+  114 and 115).  `nodeDimensionsIncludeLabels` defaults to **false**
+  again — v3's default; 114.1 had flipped it, and 115 flipped it back
+  once a graph of long labels spaced by them turned out several times
+  the size of the same graph spaced by its bodies (the maintainer's
+  call: the fence was there for a reason).  The boxes come from one
+  reading (`layout/dims.mts`); the spacing rule is exact per pair
+  (`layout/separation.mts`: two boxes are clear once separated on
+  either axis, so the distance a pair needs depends on the direction
+  between them — 114's rules took the largest node's diagonal for every
+  pair, which is what over-separated everything); and each
   layout's `avoidOverlap` (default true) is a constructive rule in its
   own terms — cell size, ring radius, rank separation, spiral pitch —
   except force, whose point-based sim gets the portfolio's one

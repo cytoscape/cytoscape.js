@@ -5,12 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-02, after the layout cleanup: every layout
-  reads one set of node dimensions and avoids overlap in its own
-  geometry, locked nodes hold their place everywhere, force's `animate`
-  means what it means elsewhere, and a quality suite asserts placement,
-  fit, overlap, locks, animation and component separation for every
-  layout.
+- **Last updated**: 2026-09-02, after the layout cleanup and its
+  correction: every layout reads one set of node dimensions and avoids
+  overlap in its own geometry — exactly, pair by pair, so nothing is
+  spread wider than its neighbours need — locked nodes hold their place
+  everywhere, force's `animate` means what it means elsewhere, and a
+  quality suite asserts placement, fit, overlap, tightness, locks,
+  animation and component separation for every layout.
 
 ## How to maintain this file
 
@@ -668,11 +669,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     labels counted for three layouts out of nine, and only force and
     flow honoured a locked node — every other layout, and `position()`
     itself, moved one.
-  - One reading of node dimensions now serves every layout, labels
-    included by default; each layout avoids overlap in its own
-    geometry (radial's rings grow, flow's box holds the bodies,
-    concentric's chord rule takes the diagonal) and force's point
-    sim gets the one post-settle separation; a locked node holds
+  - One reading of node dimensions now serves every layout (labels
+    on request — an afternoon with labels on by default showed why v3
+    never did that); each layout avoids overlap in its own geometry
+    (radial's rings grow, flow's box holds the bodies) and force's
+    point sim gets the one post-settle separation; a locked node holds
     against writes, tweens and every layout; force's `animate: true`
     tweens to its result like every other layout, with `animateLive`
     for the streaming run.
@@ -683,9 +684,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     positions, a live-vs-tween choice, layout-appropriate edge types,
     and a hover panel that dims or hides everything outside a
     neighbourhood.
+  - The first version of those overlap rules cleared overlap by
+    spreading everything: every pair was spaced by the largest node in
+    the graph, and force scaled a whole component by its worst pair
+    (a 2.4k px field became 11.6k).  The same day, the spacing became
+    exact per pair — two boxes only need to clear on one axis, and
+    which one depends on the direction between them — and force's pile
+    is opened by proximity stress instead of a scale: the field is back
+    to 2.8k px, rings are v3's size, and the quality suite now asserts
+    tightness as well as clearance (a crammed layout must leave some
+    pair exactly at the padding).  The debug page runs layouts with
+    overlap avoidance off unless its two new checkboxes say otherwise.
   - Buys layouts that are correct about the things a user sees first
-    — nothing overlaps, the viewport fits, a pinned node stays pinned
-    — before the portfolio audit decides what else to build.
+    — nothing overlaps, nothing is farther apart than it must be, the
+    viewport fits, a pinned node stays pinned — before the portfolio
+    audit decides what else to build.
 
 ---
 
@@ -721,10 +734,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `layoutstop` / `promise()`.  Headless runs stay synchronous.
 - **`animate: true` tweens on `force` too** (2 Sep) — v3 cose's `'end'`;
   the streaming run v3 spelled `'during'` is `animateLive: true`.  Every
-  layout avoids overlap by default with **labels included**
-  (`nodeDimensionsIncludeLabels` defaults to true, v3's was false), and
-  a **locked node holds** against `position()`, tweens and every layout,
-  as v3's did.
+  layout avoids overlap by default, exactly per pair (`radial`, `force`
+  and `flow` included; `nodeDimensionsIncludeLabels: true` keeps labels
+  apart too — its default stays v3's `false`), and a **locked node
+  holds** against `position()`, tweens and every layout, as v3's did.
 - **A `radial` built-in layout, force constraints, data-driven layout
   mappings and per-side compound padding** (31 Aug) — fcose's alignment /
   relative-placement surface and per-edge length control without leaving

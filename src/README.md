@@ -1701,6 +1701,12 @@ each is deliberate, not a pass-1 deferral:
   store tier (`setPosition*`) stays raw for the renderer's settle, the
   wire and animation `apply`.  `cy.json()` exports the node's own
   flag, not autolock's.
+- **A label dims with its element** (115.6).  v3's effective label
+  alpha is `opacity × text-opacity`; v4's label pass multiplied only
+  `text-opacity`, so a node at `opacity: 0.15` drew a fully opaque
+  label.  Node labels now read the `node.opacity` column on the GPU as
+  bodies do; edge labels (at the storage-buffer budget) take the fold
+  at style-write like edge lines, and the readers divide it back out.
 - **Every layout avoids overlap in its own geometry, exactly** (rounds
   114 and 115).  `nodeDimensionsIncludeLabels` defaults to **false**
   again — v3's default; 114.1 had flipped it, and 115 flipped it back

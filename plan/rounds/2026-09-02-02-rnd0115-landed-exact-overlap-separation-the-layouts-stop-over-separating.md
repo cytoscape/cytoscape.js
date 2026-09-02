@@ -142,6 +142,45 @@ metric still counts on force — four label pairs by ≤ 3.9 px, two body
 pairs by ≤ 0.3 px — is em-web's 2 px text outline (excluded from the
 layout box, as v3 excluded it) and a Float32 hair.
 
+### 115.6 — the review after the round
+
+Three things the maintainer found on the page, and one ask:
+
+- **The hover dim left labels bright.**  Not the page: the node label
+  shader never multiplied the element's `opacity` — bodies, images and
+  charts bind the `node.opacity` column and multiply it in the fragment
+  stage, and the label pass alone did not (only `text-opacity`, folded
+  into the stored colour at style-write).  Node labels now bind the
+  column as a third storage buffer and fold it into the LOD fade in
+  the vertex stage, exactly the body rule (ancestor-folded under
+  compounds, so a dimmed parent dims its children's labels).  Edge
+  labels are at the eight-buffer vertex budget, so their element
+  opacity folds at style-write like edge lines and arrows do, and
+  every label reader divides it back out (`unfoldLabelAlpha`), so
+  `color`, `text-opacity` and the outline / background / border
+  channels read back declared.  v3's effective label alpha is
+  `opacity × text-opacity`; it now is here too.
+- **White halos on em-web after grid or circle.**  The sheet spells
+  EnrichmentMap's selection ring as a 12 px border at zero opacity,
+  which is invisible under haystack edges (they run to the centre) —
+  but the page's layout-appropriate edge types switch em-web to bezier
+  for the ring layouts, and an edge that ends at the node boundary
+  stops at the invisible border's outer edge, 12 px short of the body.
+  The affordance is what the overlay is for: `overlay-padding: 12`,
+  `overlay-opacity` on selection.  Edges reach the body; layout boxes
+  never included the ring either way.
+- **The spiral example was still spread.**  It walked *every* node
+  along one spiral and packed components afterwards, so each of
+  em-web's hundred-odd components spanned the whole curve and the pack
+  laid out a hundred whole-spiral boxes (10.8k px across).  One spiral
+  per component now (`ctx.components()`), each node advanced along the
+  curve by the exact chord separation from its predecessor and nudged
+  on until it clears every box within reach on the turn before —
+  2.3k px across, no push-apart pass, still the contract template.
+- **A spacing slider** — v3's `spacingFactor`, on the page as a
+  multiple of each layout's own default (so 1× on breadthfirst is its
+  1.75), sent to every layout but preset, linkable as `?spacing=`.
+
 ### Follow-ups logged, not taken
 
 - Size-aware repulsion inside the sim (CPU and WGSL), still the way to

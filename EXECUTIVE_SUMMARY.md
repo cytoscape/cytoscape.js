@@ -694,7 +694,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     to 2.8k px, rings are v3's size, and the quality suite now asserts
     tightness as well as clearance (a crammed layout must leave some
     pair exactly at the padding).  The debug page runs layouts with
-    overlap avoidance off unless its two new checkboxes say otherwise.
+    overlap avoidance off unless its two new checkboxes say otherwise,
+    and a spacing slider scales any layout's result.  The review after
+    it fixed what the page then showed: a dimmed node now dims its
+    label (the label pass never multiplied element opacity), and the
+    spiral example lays each component on its own spiral.
   - Buys layouts that are correct about the things a user sees first
     — nothing overlaps, nothing is farther apart than it must be, the
     viewport fits, a pinned node stays pinned — before the portfolio

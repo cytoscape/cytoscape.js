@@ -165,12 +165,19 @@ var styles = (function () {
           width: 40,
           height: 40,
           'background-color': nesColour,
-          // EnrichmentMap reserves a fat transparent border so a selected node
-          // can fill it without moving anything: 12px at zero opacity, filled
-          // on selection — the web app's own affordance (round 57.11)
-          'border-width': 12,
-          'border-opacity': onSelected(1, 0),
-          'border-color': '#333333',
+          // EnrichmentMap fills a fat ring around a selected node without
+          // moving anything (round 57.11).  The app spells it as a 12px
+          // border at zero opacity, which works with its haystack edges —
+          // but an edge that ends at the node boundary (bezier, taxi: the
+          // page's layout-appropriate edge types) stops at the invisible
+          // border's outer edge, 12px short of the body, and every node
+          // wears a white halo (the 115.6 finding).  The overlay is the
+          // affordance for exactly this: outside the body for drawing, not
+          // for edges or layout boxes
+          'border-width': 0,
+          'overlay-padding': 12,
+          'overlay-opacity': onSelected(1, 0),
+          'overlay-color': '#333333',
           'font-size': 8,
           color: '#fff',
           'text-valign': 'center',

@@ -104,11 +104,32 @@
         <button id="layout-button">Apply</button>
         <div>
           <input type="checkbox" id="layout-animate-check" checked />
-          <label for="layout-animate-check">Animate (discrete layouts tween; force streams its GPU run live)</label>
+          <label for="layout-animate-check">Animate (tween to the finished layout)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="layout-live-check" />
+          <label for="layout-live-check">Live (force streams its run)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="layout-edge-types-check" checked />
+          <label for="layout-edge-types-check">Layout-appropriate edge types (taxi for flow, …)</label>
         </div>
         <div>
           <label>Seed: <input id="seed-input" type="number" step="1" min="0" /></label>
           <small>Time taken: <span id="layout-time">—</span></small>
+        </div>
+        <p class="note">Preset restores the positions the graph loaded with.</p>
+
+        <h2>Hover</h2>
+        <div>
+          <label>Outside the hovered neighbourhood:
+            <select id="hover-select">
+              <option value="none">Leave as is</option>
+              <option value="dim">Dim</option>
+              <option value="hide">Hide</option>
+            </select>
+          </label>
+          <span id="hover-note" class="note"></span>
         </div>
 
         <h2>Selection</h2>
@@ -258,9 +279,12 @@
       <script src="fixtures.js"></script>
       <script src="load-error.js"></script>
       <script src="styles.js"></script>
+      <script src="layout-config.js"></script>
+      <script src="spiral-layout.js"></script>
       <script src="init.js"></script>
       <script src="view.js"></script>
       <script src="layout.js"></script>
+      <script src="hover.js"></script>
       <script src="query.js"></script>
       <script src="toggles.js"></script>
       <script src="add-remove.js"></script>

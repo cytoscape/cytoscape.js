@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, cytoscape, networks, styles, fixtures, loadError */
+/* global $, cytoscape, networks, styles, fixtures, loadError, layoutConfig, SpiralLayout */
 
 var cy;
 
@@ -36,9 +36,29 @@ const paramDefs = {
   animate: {
     // 87.4: the animate toggle is linkable state, forwarded to every
     // named layout (layout.js reads it on Apply; the ?layout load path
-    // reads it below)
+    // reads it below).  Since 114.5 it means the same thing on force as
+    // everywhere else: a tween to the finished positions
     default: 'true',
     control: '#layout-animate-check',
+    live: true,
+  },
+  live: {
+    // 114.7: force's streaming run (animateLive) — the pre-114 animate
+    default: 'false',
+    control: '#layout-live-check',
+    live: true,
+  },
+  edgeTypes: {
+    // 114.7: re-apply the sheet with the curve style the layout reads
+    // best with when a layout runs (layout-config.js has the table)
+    default: 'true',
+    control: '#layout-edge-types-check',
+    live: true,
+  },
+  hover: {
+    // 114.7: dim or hide everything outside the hovered neighbourhood
+    default: 'none',
+    control: '#hover-select',
     live: true,
   },
   edgeWidthFloor: {
@@ -179,32 +199,6 @@ const paramDefs = {
       );
     }
 
-    // the extension-contract worked example (round 17.5/17.6): a spiral
-    // layout as a plain class — no registry, passed straight to
-    // cy.layout({ impl }).  Try it with ?layout=spiral
-    class SpiralLayout {
-      run(ctx) {
-        const slots = ctx.nodeSlots();
-        const xy = [];
-        const step = Number(ctx.options.spiralStep || 14);
-
-        for (let i = 0; i < slots.length; i++) {
-          const t = Math.sqrt(i) * 0.9;
-
-          xy.push(
-            Math.cos(t * 2 * Math.PI) * t * step,
-            Math.sin(t * 2 * Math.PI) * t * step,
-          );
-        }
-
-        ctx.setPositions(slots, xy);
-        // the contract's packing helper (87.1): disconnected
-        // components interleave along one spiral, so separate them
-        ctx.packComponents();
-        cy.fit(undefined, 30);
-      }
-    }
-
     cy = cytoscape({
       container: $('#cytoscape'),
       elements: elements,
@@ -227,34 +221,46 @@ const paramDefs = {
 
     console.timeEnd('cytoscape init');
     window.cy = cy;
-    window.SpiralLayout = SpiralLayout;
     window.currentStyle = style;
+
+    // The positions Preset restores (114.7): a snapshot taken here,
+    // synchronously — the factory runs the load-time layout before it
+    // returns (flow included; only its layoutstop is a microtask), and
+    // the ?layout= run below waits for cy.ready, so this is the graph as
+    // loaded, laid out or authored.  Nodes added later have no entry and
+    // keep their place, which is preset's own rule.
+    window.initialPositions = layoutConfig.snapshotPositions(cy);
 
     for (const fn of pending.splice(0)) {
       fn(cy);
     }
 
-    if (params.layout === 'spiral') {
-      cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
-    } else if (params.layout !== '') {
+    if (params.layout !== '') {
       // 87.4: the animate toggle forwards to every named layout (it
       // used to be hardcoded true for force and dropped for the rest);
-      // seed stays force-only.  The timing chain guards promise() —
-      // the six built-ins don't have one (the lifecycle-unification
-      // hook), and the old unguarded chain threw uncaught on each.
+      // seed stays force-only.  114.7: the same helper Apply uses, so
+      // the URL and the button spell one run — spiral included.  The
+      // timing chain guards promise() — the discrete built-ins don't
+      // have one (the lifecycle-unification hook), and the old
+      // unguarded chain threw uncaught on each.
       cy.ready.then(() => {
-        const options = {
-          name: params.layout,
-          animate: params.animate === 'true',
-        };
+        const layout = cy.layout(
+          layoutConfig.layoutOptions(
+            params.layout,
+            {
+              animate: params.animate === 'true',
+              live: params.live === 'true',
+              seed: params.seed,
+              positions: window.initialPositions,
+            },
+            SpiralLayout,
+          ),
+        );
 
-        if (params.layout === 'force') {
-          options.seed = parseInt(params.seed || '1', 10);
-        }
-
+        window.applyEdgeTypes(cy, params.layout);
         console.time(params.layout + ' layout');
+        layout.run();
 
-        const layout = cy.layout(options).run();
         const done =
           typeof layout.promise === 'function'
             ? layout.promise()

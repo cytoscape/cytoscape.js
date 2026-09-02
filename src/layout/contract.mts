@@ -368,11 +368,18 @@ export class LayoutContext {
    *   (default 40, the force layout's `componentSpacing` default)
    * @param options — `bodies` (default true) packs the nodes' boxes
    *   rather than their positions; `includeLabels` overrides the run's
-   *   `nodeDimensionsIncludeLabels` for those boxes
+   *   `nodeDimensionsIncludeLabels` for those boxes; `positions` packs
+   *   that array (2n, parallel to `nodeSlots()`) in place instead of
+   *   the store — for a layout that lands through `finish()` and must
+   *   not write positions before the tween starts
    */
   packComponents(
     spacing: number = 40,
-    options: { bodies?: boolean; includeLabels?: boolean } = {},
+    options: {
+      bodies?: boolean;
+      includeLabels?: boolean;
+      positions?: Float32Array | Float64Array;
+    } = {},
   ): void {
     const slots = this.nodeSlots();
     const n = slots.length;
@@ -387,12 +394,17 @@ export class LayoutContext {
       return;
     }
 
-    const column = this.positions();
-    const xy = new Float32Array(n * 2);
+    let xy = options.positions;
 
-    for (let i = 0; i < n; i++) {
-      xy[i * 2] = column[slots[i] * 2];
-      xy[i * 2 + 1] = column[slots[i] * 2 + 1];
+    if (xy == null) {
+      const column = this.positions();
+
+      xy = new Float32Array(n * 2);
+
+      for (let i = 0; i < n; i++) {
+        xy[i * 2] = column[slots[i] * 2];
+        xy[i * 2 + 1] = column[slots[i] * 2 + 1];
+      }
     }
 
     const extents =
@@ -409,7 +421,10 @@ export class LayoutContext {
       spacing,
       true,
     );
-    this.setPositions(slots, xy);
+
+    if (options.positions == null) {
+      this.setPositions(slots, xy as Float32Array);
+    }
   }
 
   /**

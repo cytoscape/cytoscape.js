@@ -1020,4 +1020,350 @@ describe('debug harness (round 43)', function () {
       ).to.match(/(^|\s)(-b|--bind)\s+0\.0\.0\.0(\s|$)/);
     });
   });
+
+  describe('the layout section (round 114.7)', function () {
+    /* The panel's pure parts moved to layout-config.js and spiral-layout.js
+       so this spec can run them: the curve-style table Apply re-applies
+       the sheet with, the load snapshot Preset restores, how the two force
+       checkboxes spell a run, the hover gate — and the extension-contract
+       example itself, headless against the real library. */
+    const layoutConfig = loadGlobal('layout-config');
+    const SpiralLayout = loadGlobal('spiral-layout');
+    const html = readFileSync(join(DEBUG, 'index.html'), 'utf8');
+    const initSrc = readFileSync(join(DEBUG, 'init.js'), 'utf8');
+
+    const selectValues = () => {
+      const at = html.indexOf('id="layout-select"');
+      const block = html.slice(at, html.indexOf('</select>', at));
+
+      return [...block.matchAll(/value="([^"]*)"/g)]
+        .map((m) => m[1])
+        .filter((v) => v !== '');
+    };
+
+    it('the edge table names every layout in the select, and only those', function () {
+      const inSelect = selectValues();
+
+      expect(inSelect.length).to.be.at.least(10);
+      expect(Object.keys(layoutConfig.EDGE_STYLE).sort()).to.deep.equal(
+        [...inSelect].sort(),
+      );
+      // the sheet's own is an explicit decision, not an omission
+      expect(layoutConfig.EDGE_STYLE.preset).to.equal(null);
+      expect(layoutConfig.EDGE_STYLE.random).to.equal(null);
+    });
+
+    it('every override compiles as a sheet, and the layered ones take the direction', function () {
+      for (const name of selectValues()) {
+        const override = layoutConfig.edgeOverride(name, {
+          direction: 'rightward',
+        });
+
+        if (override == null) {
+          continue;
+        }
+
+        // a typo'd keyword fails here, not in a browser nobody opened
+        const cy = cytoscape({
+          elements: [
+            { data: { id: 'a' } },
+            { data: { id: 'b' } },
+            { data: { id: 'ab', source: 'a', target: 'b' } },
+          ],
+          style: { edges: override },
+        });
+
+        expect(cy.$id('ab').style('curve-style')).to.equal(
+          override['curve-style'],
+        );
+        cy.destroy();
+      }
+
+      expect(
+        layoutConfig.edgeOverride('flow', { direction: 'rightward' }),
+      ).to.deep.equal({
+        'curve-style': 'round-taxi',
+        'taxi-turn': 20,
+        'taxi-direction': 'rightward',
+      });
+      expect(
+        layoutConfig.edgeOverride('breadthfirst')['taxi-direction'],
+      ).to.equal('downward');
+      // haystack draws no arrows: under ?arrows=true force reads straight
+      expect(layoutConfig.edgeOverride('force')['curve-style']).to.equal(
+        'haystack',
+      );
+      expect(
+        layoutConfig.edgeOverride('force', { arrows: true })['curve-style'],
+      ).to.equal('straight');
+    });
+
+    it('sheetWith lays the override over the edge block and keeps the rest', function () {
+      const sheet = {
+        nodes: { width: 9 },
+        edges: { width: 2, 'curve-style': 'haystack' },
+      };
+      const out = layoutConfig.sheetWith(sheet, { 'curve-style': 'bezier' });
+
+      expect(out.nodes).to.equal(sheet.nodes);
+      expect(out.edges).to.deep.equal({ width: 2, 'curve-style': 'bezier' });
+      expect(sheet.edges['curve-style'], 'the sheet is not mutated').to.equal(
+        'haystack',
+      );
+    });
+
+    it('the load snapshot restores every leaf through preset; later nodes keep their place', function () {
+      const cy = cytoscape({
+        headlessWidth: 400,
+        headlessHeight: 400,
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' } },
+          { data: { id: 'b', parent: 'p' } },
+          { data: { id: 'c' } },
+        ],
+        layout: { name: 'grid' },
+      });
+      const snapshot = layoutConfig.snapshotPositions(cy);
+
+      // leaves only: the parent derives
+      expect(Object.keys(snapshot).sort()).to.deep.equal(['a', 'b', 'c']);
+
+      cy.layout({ name: 'random' }).run();
+      cy.add({ data: { id: 'd' }, position: { x: 7, y: 8 } });
+      cy.layout(
+        layoutConfig.layoutOptions('preset', { positions: snapshot }),
+      ).run();
+
+      for (const id of ['a', 'b', 'c']) {
+        expect(cy.$id(id).position().x, id).to.be.closeTo(snapshot[id].x, 1e-6);
+        expect(cy.$id(id).position().y, id).to.be.closeTo(snapshot[id].y, 1e-6);
+      }
+
+      expect(cy.$id('d').position()).to.deep.equal({ x: 7, y: 8 });
+    });
+
+    it('control: an empty snapshot moves nothing', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'a' }, position: { x: 3, y: 4 } }],
+      });
+
+      cy.layout(layoutConfig.layoutOptions('preset', {})).run();
+      expect(cy.$id('a').position()).to.deep.equal({ x: 3, y: 4 });
+    });
+
+    it('spells the force run from the two checkboxes, and the rest from one', function () {
+      expect(layoutConfig.forceAnimation({ animate: true })).to.deep.equal({
+        animate: true,
+      });
+      expect(layoutConfig.forceAnimation({ animate: false })).to.deep.equal({
+        animate: false,
+      });
+      // Live wins over Animate: a streamed run lands its settle in one write
+      expect(
+        layoutConfig.forceAnimation({ animate: true, live: true }),
+      ).to.deep.equal({ animateLive: true });
+
+      const force = layoutConfig.layoutOptions('force', {
+        animate: true,
+        live: true,
+        seed: '5',
+      });
+
+      expect(force).to.deep.equal({
+        name: 'force',
+        animate: true,
+        animateLive: true,
+        seed: 5,
+      });
+      expect(
+        layoutConfig.layoutOptions('radial', { animate: false }),
+      ).to.deep.equal({
+        name: 'radial',
+        animate: false,
+      });
+
+      const spiral = layoutConfig.layoutOptions(
+        'spiral',
+        { animate: true },
+        SpiralLayout,
+      );
+
+      expect(spiral.impl).to.equal(SpiralLayout);
+      expect(spiral.animate).to.equal(true);
+      expect(spiral.name).to.equal(undefined);
+    });
+
+    it('gates the hover panel by element count', function () {
+      expect(
+        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS),
+      ).to.equal(true);
+      expect(
+        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS + 1),
+      ).to.equal(false);
+    });
+
+    it('no load-time layout animates — the synchronous snapshot stands on it', function () {
+      // the snapshot is taken right after cytoscape() returns, which is
+      // only the laid-out graph because the factory's layout runs to
+      // completion synchronously; an animated one would still be moving
+      for (const [id, def] of Object.entries(networks)) {
+        if (def.layout != null) {
+          expect(
+            def.layout.animate,
+            `${id}'s load layout animates`,
+          ).to.not.equal(true);
+        }
+      }
+    });
+
+    it('wires every control the layout, hover and init files reach for', function () {
+      for (const file of ['layout.js', 'hover.js']) {
+        const src = readFileSync(join(DEBUG, file), 'utf8');
+        const ids = [...src.matchAll(/'#([\w-]+)'/g)].map((m) => m[1]);
+
+        expect(ids.length, `${file} names no control`).to.be.at.least(2);
+
+        for (const id of ids) {
+          expect(
+            html,
+            `#${id} is wired in ${file} but not in index.html`,
+          ).to.include(`id="${id}"`);
+        }
+      }
+
+      // every URL param's control exists too
+      const controls = [...initSrc.matchAll(/control: '#([\w-]+)'/g)].map(
+        (m) => m[1],
+      );
+
+      expect(controls).to.include('layout-live-check');
+      expect(controls).to.include('layout-edge-types-check');
+      expect(controls).to.include('hover-select');
+
+      for (const id of controls) {
+        expect(
+          html,
+          `#${id} is a param control but not in index.html`,
+        ).to.include(`id="${id}"`);
+      }
+    });
+
+    describe('the spiral example, headless against the library', function () {
+      const twoComponents = () => {
+        const elements = [];
+
+        for (const comp of ['a', 'b']) {
+          for (let i = 0; i < 12; i++) {
+            elements.push({ data: { id: comp + i } });
+
+            if (i > 0) {
+              elements.push({
+                data: {
+                  id: comp + 'e' + i,
+                  source: comp + (i - 1),
+                  target: comp + i,
+                },
+              });
+            }
+          }
+        }
+
+        return cytoscape({
+          elements,
+          style: { nodes: { width: 40, height: 40 } },
+          headlessWidth: 800,
+          headlessHeight: 600,
+        });
+      };
+
+      const overlapping = (cy) => {
+        const boxes = cy.nodes().map((n) => n.boundingBox());
+        let count = 0;
+
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i];
+            const b = boxes[j];
+
+            if (a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2) {
+              count++;
+            }
+          }
+        }
+
+        return count;
+      };
+
+      const run = (cy, opts) =>
+        cy
+          .layout({ impl: SpiralLayout, ...opts })
+          .run()
+          .promise();
+
+      it('places without overlap, components apart, and fits', async function () {
+        const cy = twoComponents();
+
+        await run(cy, {});
+
+        expect(overlapping(cy)).to.equal(0);
+
+        const a = cy
+          .nodes()
+          .filter((n) => n.id().startsWith('a'))
+          .boundingBox();
+        const b = cy
+          .nodes()
+          .filter((n) => n.id().startsWith('b'))
+          .boundingBox();
+        const disjoint =
+          a.x2 <= b.x1 || b.x2 <= a.x1 || a.y2 <= b.y1 || b.y2 <= a.y1;
+
+        expect(disjoint, 'component boxes overlap').to.equal(true);
+        expect(cy.zoom()).to.not.equal(1);
+      });
+
+      it('control: spiralStep 1 without avoidOverlap piles the nodes up', async function () {
+        const cy = twoComponents();
+
+        await run(cy, { spiralStep: 1, avoidOverlap: false, fit: false });
+        expect(overlapping(cy)).to.be.greaterThan(0);
+      });
+
+      it('holds a locked node and animates to the same positions', async function () {
+        const sync = twoComponents();
+
+        await run(sync, { fit: false });
+
+        const cy = twoComponents();
+
+        cy.$id('a3').position({ x: 999, y: 999 }).lock();
+
+        await run(cy, { fit: false, animate: true, animationDuration: 20 });
+
+        expect(cy.$id('a3').position()).to.deep.equal({ x: 999, y: 999 });
+        cy.nodes().forEach((n) => {
+          if (n.id() === 'a3') {
+            return;
+          }
+
+          // the locked node took no place on the spiral, so the ones after
+          // it shift one step: compare against the sync run with the same
+          // lock instead
+          expect(Number.isFinite(n.position().x)).to.equal(true);
+        });
+
+        const syncLocked = twoComponents();
+
+        syncLocked.$id('a3').position({ x: 999, y: 999 }).lock();
+        await run(syncLocked, { fit: false });
+        cy.nodes().forEach((n) => {
+          const want = syncLocked.$id(n.id()).position();
+
+          expect(n.position().x, n.id()).to.be.closeTo(want.x, 1e-3);
+          expect(n.position().y, n.id()).to.be.closeTo(want.y, 1e-3);
+        });
+      });
+    });
+  });
 });

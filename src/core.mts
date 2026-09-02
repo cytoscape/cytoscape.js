@@ -1255,7 +1255,13 @@ export class Core {
     restrict: GroupName | null,
   ): Collection {
     if (typeof query === 'function') {
-      return this._query(undefined, restrict).filter(query);
+      // the predicate runs over the whole-graph memo (34.2), not a fresh
+      // scan: `cy.filter( fn )` was compiling an empty query and
+      // re-interning every element per call — 6,000 handles before the
+      // predicate saw one — which is why the whole-graph pair read at v3
+      // parity while `nodes().filter( fn )` on the same graph read 4x
+      // faster.  Round 113.2.
+      return this._allOf(restrict).filter(query);
     }
 
     const plan = compileQuery(query ?? {}, restrict);

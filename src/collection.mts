@@ -1278,23 +1278,31 @@ export class Collection {
    *   silently match everything
    */
   filter(criterion: FilterLike, thisArg?: unknown): Collection {
-    // the result is a subset of this collection's (already unique) refs
+    // the result is a subset of this collection's (already unique) refs,
+    // and the handles the predicate was just called with are exactly what
+    // re-interning each kept ref would return — so pass them through the
+    // slice path (round 62.4's `handles`) instead of paying `_eleFromRef`
+    // per kept element.  Round 113.2: `nodes().filter( fn )` at 2,000
+    // nodes went 127 → 107 µs through the bundle (v3: 249).
     if (typeof criterion === 'function') {
       const refs: Ref[] = [];
+      const handles: Collection[] = [];
       const n = this.length;
 
       for (let i = 0; i < n; i++) {
+        const ele = this[i];
         const include =
           thisArg == null
-            ? criterion(this[i], i, this)
-            : criterion.call(thisArg, this[i], i, this);
+            ? criterion(ele, i, this)
+            : criterion.call(thisArg, ele, i, this);
 
         if (include) {
           refs.push(this._refs[i]);
+          handles.push(ele);
         }
       }
 
-      return this._spawnUnique(refs);
+      return new Collection(this._cy, refs, { handles });
     }
 
     // structured query: test each ref against its group's (mask, want)

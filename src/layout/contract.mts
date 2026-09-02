@@ -33,7 +33,11 @@ import { nodeDims } from './dims.mjs';
 import type { DimsOptions, LayoutNodeDims } from './dims.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
-import type { CustomLayoutOptions, Position } from '../public-types.mjs';
+import type {
+  CustomLayoutOptions,
+  LayoutBaseOptions,
+  Position,
+} from '../public-types.mjs';
 
 export interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
@@ -370,18 +374,87 @@ export class LayoutContext {
    *
    * @param fn — called per scoped node with the node and its index,
    *   returning the model position to place it at
+   * @param overrides — an impl's own defaults, merged over the run's
+   *   options (round 114.2: flow's `fit: true` default never reached
+   *   the finisher before this).  `ready` and `stop` are never
+   *   overridden — the wrapper's `stop` is what resolves `promise()`
    */
-  layoutPositions(fn: (node: Collection, i: number) => Position): void {
+  layoutPositions(
+    fn: (node: Collection, i: number) => Position,
+    overrides: LayoutBaseOptions = {},
+  ): void {
     this._finisherUsed = true;
     this.eles.layoutPositions(
       this.layout,
       {
         ...this.options,
+        ...overrides,
+        ready: this.options.ready,
+        stop: this.options.stop,
         eles: this.eles,
         _startEmitted: true,
       } as CustomLayoutOptions,
       fn,
     );
+  }
+
+  /**
+   * Land computed positions the way a built-in does (round 114.2): the
+   * finisher when the run asks for anything it owns — `animate`,
+   * `animateFilter`, `transform`, `spacingFactor` — and otherwise the
+   * bulk slot write followed by fit / zoom / pan.  One rule for flow,
+   * force and any extension that computes into an array.
+   *
+   * @param slots — the node slots the positions land on
+   * @param xy — the packed positions: `xy[i*2]`, `xy[i*2+1]` for
+   *   `slots[i]`
+   * @param overrides — the impl's defaults, merged as `layoutPositions`
+   *   merges them
+   */
+  finish(
+    slots: number[],
+    xy: ArrayLike<number>,
+    overrides: LayoutBaseOptions = {},
+  ): void {
+    const o = { ...this.options, ...overrides };
+
+    if (
+      o.animate === true ||
+      o.animateFilter != null ||
+      o.transform != null ||
+      (o.spacingFactor != null && o.spacingFactor !== 1)
+    ) {
+      const posOf = new Map<number, Position>();
+
+      for (let i = 0; i < slots.length; i++) {
+        posOf.set(slots[i], { x: xy[i * 2], y: xy[i * 2 + 1] });
+      }
+
+      this.layoutPositions((node: Collection): Position => {
+        const ref = node._eventRef();
+
+        return (
+          (ref != null ? posOf.get(ref.slot) : undefined) ??
+          (node.position() as Position)
+        );
+      }, overrides);
+
+      return;
+    }
+
+    this.setPositions(slots, xy as number[] | Float32Array);
+
+    if (o.fit !== false) {
+      this.cy.fit(this.eles, o.padding ?? 30);
+    } else {
+      if (o.zoom != null) {
+        this.cy.zoom(o.zoom);
+      }
+
+      if (o.pan != null) {
+        this.cy.pan(o.pan as Position);
+      }
+    }
   }
 }
 

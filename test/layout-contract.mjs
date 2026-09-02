@@ -108,6 +108,110 @@ describe('gpu/layout: the extension contract (round 17.5)', function () {
     expect(log).to.deep.equal(['layoutstart', 'layoutready', 'layoutstop']);
   });
 
+  it("merges an impl's defaults into the finisher, keeping the wrapper's stop (114.2)", async function () {
+    const cy = mk();
+    let stopped = 0;
+
+    const layout = cy
+      .layout({
+        impl: {
+          run(ctx) {
+            ctx.layoutPositions((node, i) => ({ x: i * 10, y: 5 }), {
+              fit: false,
+              zoom: 2,
+              stop: () => {
+                throw new Error('an impl default must not replace stop');
+              },
+            });
+          },
+        },
+        stop: () => {
+          stopped++;
+        },
+      })
+      .run();
+
+    // resolves only through the wrapper's stop — the one an override
+    // must never displace
+    await layout.promise();
+
+    expect(stopped).to.equal(1);
+    expect(cy.zoom()).to.equal(2);
+    expect(cy.$id('b').position()).to.deep.equal({ x: 10, y: 5 });
+  });
+
+  it('finish() lands bare runs by the bulk path and asks for the finisher on demand (114.2)', async function () {
+    const cy = mk();
+    const log = eventLog(cy);
+    const impl = {
+      run(ctx) {
+        const slots = ctx.nodeSlots();
+
+        ctx.finish(
+          slots,
+          slots.flatMap((s, i) => [i * 100, 7]),
+          { fit: false },
+        );
+      },
+    };
+
+    // bare: the bulk path, fit: false honoured, no zoom or pan applied
+    await cy.layout({ impl }).run().promise();
+    expect(cy.$id('c').position()).to.deep.equal({ x: 200, y: 7 });
+    expect(cy.zoom()).to.equal(1);
+    expect(log).to.deep.equal(['layoutstart', 'layoutready', 'layoutstop']);
+
+    // transform asks for the finisher: the same finals, transformed
+    await cy
+      .layout({ impl, transform: (n, p) => ({ x: p.x, y: -p.y }) })
+      .run()
+      .promise();
+    expect(cy.$id('c').position()).to.deep.equal({ x: 200, y: -7 });
+
+    // the bulk path with fit left at its default fits (v3's default)
+    const fitted = mk();
+
+    await fitted
+      .layout({
+        impl: {
+          run(ctx) {
+            const slots = ctx.nodeSlots();
+
+            ctx.finish(
+              slots,
+              slots.flatMap((s, i) => [i * 100, 7]),
+            );
+          },
+        },
+      })
+      .run()
+      .promise();
+    expect(fitted.zoom()).to.not.equal(1);
+  });
+
+  it('animates a lone zoom or pan (114.2)', async function () {
+    const cy = mk();
+
+    await cy
+      .layout({
+        impl: {
+          run(ctx) {
+            ctx.layoutPositions((node, i) => ({ x: i * 10, y: 5 }));
+          },
+        },
+        fit: false,
+        animate: true,
+        animationDuration: 20,
+        zoom: 2,
+      })
+      .run()
+      .promise();
+
+    // before 114.2 the animated branch required zoom *and* pan together
+    expect(cy.zoom()).to.be.closeTo(2, 1e-6);
+    expect(cy.pan()).to.deep.equal({ x: 0, y: 0 });
+  });
+
   it('supports async run (the GPU-layout shape)', async function () {
     const cy = mk();
     const log = eventLog(cy);

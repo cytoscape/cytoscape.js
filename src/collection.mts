@@ -5371,8 +5371,10 @@ export class Collection {
       return p;
     };
 
+    // fit defaults on (v3's default, and what every bulk path already
+    // tested — round 114.2 aligned the finisher's truthiness test)
     const applyViewport = (): void => {
-      if (options.fit) {
+      if (options.fit !== false) {
         cy.fit(eles, options.padding ?? 30);
       } else {
         if (options.zoom != null) {
@@ -5408,7 +5410,7 @@ export class Collection {
 
       // the viewport animates alongside the nodes: a fit targets the box at
       // the final positions (v3 semantics)
-      if (options.fit) {
+      if (options.fit !== false) {
         anis.push(
           cy.animation({
             fit: {
@@ -5419,11 +5421,13 @@ export class Collection {
             easing: options.animationEasing,
           }),
         );
-      } else if (options.zoom != null && options.pan != null) {
+      } else if (options.zoom != null || options.pan != null) {
+        // whichever of the two is given animates (114.2: the pair used to
+        // be required together, so a lone zoom applied nothing)
         anis.push(
           cy.animation({
-            zoom: options.zoom,
-            pan: options.pan,
+            ...(options.zoom != null ? { zoom: options.zoom } : {}),
+            ...(options.pan != null ? { pan: options.pan } : {}),
             duration: options.animationDuration ?? 500,
             easing: options.animationEasing,
           }),

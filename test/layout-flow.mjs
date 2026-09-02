@@ -389,6 +389,29 @@ describe('gpu/layout: flow (round 112)', function () {
       });
     });
 
+    it('animate fits by default (114.2: the defaults reach the finisher)', async function () {
+      mk(diamond());
+
+      var layout = cy
+        .layout({ name: 'flow', animate: true, animationDuration: 40 })
+        .run();
+
+      await layout.promise();
+
+      // control: before 114.2 the animated branch forwarded the raw
+      // options, flow's fit: true default never reached the finisher,
+      // and the viewport stayed at zoom 1 / pan 0
+      expect(cy.zoom()).to.not.equal(1);
+
+      var bb = cy.elements().boundingBox();
+      var ext = cy.extent();
+
+      expect(bb.x1).to.be.at.least(ext.x1 - 1e-6);
+      expect(bb.y1).to.be.at.least(ext.y1 - 1e-6);
+      expect(bb.x2).to.be.at.most(ext.x2 + 1e-6);
+      expect(bb.y2).to.be.at.most(ext.y2 + 1e-6);
+    });
+
     it('transform applies after placement', function () {
       mk({ nodes: nodes('a', 'b'), edges: edges(['a', 'b']) });
       run({ transform: (node, pos) => ({ x: pos.x + 1000, y: pos.y }) });

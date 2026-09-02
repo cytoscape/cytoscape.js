@@ -57,11 +57,9 @@ import {
 } from './layout-mapping.mjs';
 import type { FlowComponent } from './flow-graph.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
-import type { Collection } from '../collection.mjs';
 import type {
   FlowLayoutOptions,
   LayoutScoreMapping,
-  Position,
 } from '../public-types.mjs';
 
 const DIRECTIONS = ['downward', 'upward', 'leftward', 'rightward'] as const;
@@ -204,48 +202,11 @@ export class FlowLayoutImpl implements LayoutImpl {
 
     this.compute(ctx, merged, state);
 
-    // finisher plumbing demanded: hand the computed positions to the
-    // shared discrete finisher (grid's rule, 87.3)
-    if (
-      merged.animate ||
-      merged.animateFilter != null ||
-      merged.transform != null ||
-      merged.spacingFactor != null
-    ) {
-      const posOf = new Map<number, Position>();
-
-      for (let i = 0; i < slots.length; i++) {
-        posOf.set(slots[i], { x: state.xy[i * 2], y: state.xy[i * 2 + 1] });
-      }
-
-      ctx.layoutPositions((node: Collection): Position => {
-        const ref = ctx.cy._store.lookup(node.id() as string);
-
-        return (
-          (ref != null ? posOf.get(ref.slot) : undefined) ??
-          (node.position() as Position)
-        );
-      });
-
-      return;
-    }
-
-    ctx.setPositions(slots, Float32Array.from(state.xy));
-
-    if (merged.fit !== false) {
-      ctx.cy.fit(
-        (merged.eles as Collection | undefined) ?? undefined,
-        merged.padding ?? 30,
-      );
-    } else {
-      if (merged.zoom != null) {
-        ctx.cy.zoom(merged.zoom);
-      }
-
-      if (merged.pan != null) {
-        ctx.cy.pan(merged.pan);
-      }
-    }
+    // the contract's one landing rule (114.2): finisher when animate /
+    // animateFilter / transform / spacingFactor ask for it, the bulk
+    // write plus fit / zoom / pan otherwise — with flow's own defaults
+    // merged in, which is what the animated fit was missing
+    ctx.finish(slots, Float32Array.from(state.xy), merged);
   }
 
   /** Validate the merged options loudly; gather the scope. */

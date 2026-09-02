@@ -7235,8 +7235,26 @@ declare class LayoutContext {
    *
    * @param fn — called per scoped node with the node and its index,
    *   returning the model position to place it at
+   * @param overrides — an impl's own defaults, merged over the run's
+   *   options (round 114.2: flow's `fit: true` default never reached
+   *   the finisher before this).  `ready` and `stop` are never
+   *   overridden — the wrapper's `stop` is what resolves `promise()`
    */
-  layoutPositions(fn: (node: Collection, i: number) => Position): void;
+  layoutPositions(fn: (node: Collection, i: number) => Position, overrides?: LayoutBaseOptions): void;
+  /**
+   * Land computed positions the way a built-in does (round 114.2): the
+   * finisher when the run asks for anything it owns — `animate`,
+   * `animateFilter`, `transform`, `spacingFactor` — and otherwise the
+   * bulk slot write followed by fit / zoom / pan.  One rule for flow,
+   * force and any extension that computes into an array.
+   *
+   * @param slots — the node slots the positions land on
+   * @param xy — the packed positions: `xy[i*2]`, `xy[i*2+1]` for
+   *   `slots[i]`
+   * @param overrides — the impl's defaults, merged as `layoutPositions`
+   *   merges them
+   */
+  finish(slots: number[], xy: ArrayLike<number>, overrides?: LayoutBaseOptions): void;
 }
 /** The wrapper cy.layout({ impl }) returns: the builtins' shape plus
  * promise() (resolves at this run's layoutstop). */

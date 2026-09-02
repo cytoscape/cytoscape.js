@@ -5,9 +5,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-01, after the flow-layout round: a built-in
-  Sugiyama-class layered layout, measured against dagre and elkjs
-  before and after it was built.
+- **Last updated**: 2026-09-02, after the performance review: the full
+  benchmark suite re-measured against the 13 Aug baseline, the one pair
+  at parity fixed, and the instrument repaired where it had let an hour
+  of measurement compare two Node versions.
 
 ## How to maintain this file
 
@@ -46,10 +47,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,361 unit · 586 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,362 unit · 588 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 326 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 25 suites, 4 published profiles · **all 366 v3-comparative pairs read v4-faster** (geometric mean 13.7×, minimum 1.03×) · GPU algorithm executors 13× geo-mean over their CPU reference |
+| Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
 | Style parity | v4 accepts 161 of v3's 291 style property names (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
@@ -631,6 +632,33 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     `toColumnarElements` fabricated a positions column (a positionless
     graph came back from the wire positioned), and the debug page's
     wire decode dropped compound parents.
+- **1–2 Sep** — the performance review: the whole suite against 13 Aug
+  - Every profile re-measured (core sweep at medians of three, renderer
+    scenes and the GPU executor sweep on the RX 580) and read the
+    archive's way: screened against each row's own band with frozen v3
+    as the control.  Across the 43 commits since the last published
+    run the library did not regress: zero screened regressions, drift
+    within 1.5%, and the one pair reading v4-slower had been at parity
+    for a year.
+  - That pair — the whole-graph predicate filter — was rebuilt on the
+    existing memo and handle paths: `cy.filter( fn )` 4× faster,
+    `nodes().filter( fn )` 1.2×, nothing observable changed.  The
+    "every comparative pair v4-faster" property, found to have lapsed
+    unmeasured since round 65 (two pairs at parity in the 13 Aug
+    baseline itself), holds again at 373 pairs.
+  - The first hour measured the wrong thing: a shell without mise ran
+    Node 22 against a Node 24 archive and every frozen control moved.
+    The instrument now refuses that (the runner checks `.nvmrc`; the
+    archive records the engine), the machine fingerprint no longer
+    splits a box's history when a kernel changes its reported RAM (the
+    21-run archive re-stamped to one id), and a layout benchmark row
+    that had never passed at its published size was made to measure
+    what it is named for.
+  - Buys a benchmark history that is comparable again — the page had
+    been refusing to draw a line to any new run — and a standing
+    performance claim that is measured rather than remembered.  Four
+    movers no run could screen (one-shot rows, rows narrower than their
+    noise) are logged with the measurement each needs.
 
 ---
 

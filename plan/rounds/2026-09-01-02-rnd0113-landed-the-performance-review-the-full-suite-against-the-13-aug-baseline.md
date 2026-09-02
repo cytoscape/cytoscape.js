@@ -209,7 +209,7 @@ profile's timer resolution.  Logged with the other one-shots.
 Each is a measurement question before it is a code question, and none
 met the round's bar of *straightforward*:
 
-1. **The wrapped-labels init one-shot** (190 → 307 / 224 ms).  Give the
+1. **The wrapped-labels init one-shot** (190 → 307 / 224 / 264 ms).  Give the
    renderer's init rows repeats, or at least the two-reading band the
    `--repeat` runs record, before deciding whether 94.1's first-raster
    work is a cost worth a lazy tier.
@@ -225,10 +225,37 @@ met the round's bar of *straightforward*:
    `npm run gpu` and a driver-version line in `meta.adapter` so the
    next such step has a suspect on the record.
 
-### Verification run
+### Verification run (2026-09-02)
 
-A clean re-measurement at `1cf40818` — the renderer and algorithms-gpu
-profiles again (their first runs ended on a tree carrying the
-uncommitted 113.2 edit and are flagged dirty), then `--all --repeat 3`
-— is what the archive publishes for this round alongside the
-`5107c36e` review run.  Its numbers are recorded below when it lands.
+A clean re-measurement at `9ed49abc` (the record commit; `src/` is
+113.2's) — the renderer and algorithms-gpu profiles again, because
+their first runs ended on a tree carrying the then-uncommitted 113.2
+edit and are flagged dirty, then `--all --repeat 3` — published
+alongside the `5107c36e` review run (four runs, all Node 24.18.0,
+all under the one fingerprint `5cf3f79c`):
+
+| profile | run | against 13 Aug | against the review run |
+|---|---|---|---|
+| `all` | `results-2026-09-02T02-03-57-714Z` | drift −1.4%, **0 regressions**, 3 improvements (`core: filter(fn)` −76%, `sweep: filter(fn)` −69%, `iter: filter(fn)` −14%) | 749 shared rows, drift −0.6%, the same two filter rows as improvements |
+| `renderer` | `results-render-2026-09-02T01-25-18-372Z` | epoch break (by design) | curved device 13.2 / 12.9 ms again; wrapped init (labels) **264 ms** |
+| `algorithms-gpu` | `results-alggpu-2026-09-02T01-47-37-618Z` | drift −4.5%, 0 screened | AP cpu n=1024 back to 1.07 s (13 Aug: 1.10) |
+
+**The pairs, re-measured for the summary**: `all` **269 v3-comparative
+pairs, geometric mean 10.7×, minimum 1.02× (`data: get`), zero
+v4-slower**; renderer **104 pairs, geometric mean 31×, zero v3-faster**;
+algorithms-gpu 57 cpu/gpu pairs, geometric mean 7.7× (13 Aug: 7.2× —
+the summary's "13×" was a different sample, round 65.9's seven
+families; this is the whole executor sweep including the propagation
+tier's CPU-favoured sizes).  So the round-62 property — every
+comparative pair v4-faster — holds again at **373 pairs**, having been
+broken at one pair (and the baseline at two) without anyone measuring.
+
+Two things the verification run added to the log rather than the
+ledger.  One screened mover against the review run, `compaction ·
+control: nodes({ selected }) scan · peak` +13% (22.4 → 25.2 µs, bands
+4–7%) — a v4-vs-v4 *control* row whose source did not change between
+the runs; its compacted twin did not move, and it goes on item 54's
+list as a fifth row whose band is narrower than its behaviour.  And
+the wrapped-labels init one-shot's fourth reading, 264 ms — the row's
+readings are now 190 / 307 / 224 / 264 against its outlined twin's
+188–215, which is the shape of a row that needs repeats, not a fix.

@@ -3696,7 +3696,13 @@ pairs and its published run (`benchmark/published/`, the i9-9900K) had
 zero v3-faster rows; round 65's re-measurement holds the property at
 **270 all-profile pairs (plus 96 renderer pairs), still zero
 v3-faster**, the count having grown with round 63's bypass rows and
-style-bundle's return.  That was a goal, so say what it took: rounds 62.4–62.6
+style-bundle's return.  **Round 113's review (2026-09-01) found the
+property had lapsed unmeasured** — the 13 Aug baseline carried two
+pairs at or under parity and the review run one (`core: filter(fn)`,
+0.96×, a predicate path that re-interned every element) — and restored
+it: the verification run at `9ed49abc` reads **269 all-profile pairs
+(geometric mean 10.7×, minimum 1.02×) plus 104 renderer pairs, zero
+v3-faster**.  That was a goal, so say what it took: rounds 62.4–62.6
 fixed 28 genuinely losing rows (the animation handle lifecycle, the
 whole-object `data()` cache, per-raw-name style read plans, the
 id → index map, the CSR-in-place traversal walk among them) — and then

@@ -532,8 +532,17 @@ export interface RadialLayoutOptions extends LayoutBaseOptions {
   sweep?: number;
   /** wedge order runs clockwise (default true) */
   clockwise?: boolean;
-  /** the ring gap in model px; derived from the bounding box unset */
+  /** the ring gap in model px; derived from the bounding box unset.
+   * A floor under `avoidOverlap`: a ring grows past it when its nodes
+   * would otherwise touch */
   levelSpacing?: number;
+  /** grow each ring's radius until neither radial neighbours nor
+   * angular neighbours overlap (114.6; default true) — bodies plus
+   * labels unless `nodeDimensionsIncludeLabels` is false; wedge angles
+   * are never changed */
+  avoidOverlap?: boolean;
+  /** the gap kept between neighbouring boxes (default 10) */
+  avoidOverlapPadding?: number;
   /** what sizes a subtree's wedge: its leaf count (default) or its
    * whole node count */
   weight?: 'leaves' | 'subtree';
@@ -654,6 +663,13 @@ export interface FlowLayoutOptions extends LayoutBaseOptions {
   rankConstraints?: { min?: string[]; max?: string[]; same?: string[][] };
   /** the gap between packed disconnected components (default 40) */
   componentSpacing?: number;
+  /** separate nodes by their extents — bodies plus labels unless
+   * `nodeDimensionsIncludeLabels` is false (114.6; default true);
+   * false places points, `nodeSep` / `rankSep` then centre to centre */
+  avoidOverlap?: boolean;
+  /** extra room around each body (default 0 — `nodeSep` and `rankSep`
+   * own the spacing) */
+  avoidOverlapPadding?: number;
 }
 
 /** The extension contract (round 17.5): a direct impl object/class —

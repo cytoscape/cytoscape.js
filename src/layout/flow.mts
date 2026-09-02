@@ -81,6 +81,8 @@ const defaults: Omit<FlowLayoutOptions, 'name'> = {
   cycleRemoval: 'greedy', // 'greedy' (Eades-Lin-Smyth) or 'dfs' (input order dominates)
   rankConstraints: undefined, // { min?: string[], max?: string[], same?: string[][] } — id lists
   componentSpacing: 40, // gap between packed disconnected components
+  avoidOverlap: true, // separate by node extents (labels included by default); false places points
+  avoidOverlapPadding: 0, // extra room around each body — nodeSep / rankSep own the spacing
 };
 
 /** Loud validation for a node-id list option (no selector strings). */
@@ -181,6 +183,9 @@ interface RunState {
   >;
   slots: number[];
   xy: Float64Array;
+  /** per-node symmetric half extents (114.6), set by compute() */
+  halfW?: Float64Array;
+  halfH?: Float64Array;
 }
 
 export class FlowLayoutImpl implements LayoutImpl {
@@ -272,7 +277,6 @@ export class FlowLayoutImpl implements LayoutImpl {
     state: RunState,
   ): void {
     const cy = ctx.cy;
-    const store = cy._store;
     const { slots, opts } = state;
     const n = slots.length;
 
@@ -282,18 +286,27 @@ export class FlowLayoutImpl implements LayoutImpl {
       indexOf.set(slots[i], i);
     }
 
-    // sizes off the columns (grid's pattern)
-    const size = store.column('node.size') as Float32Array;
-    const border = store.column('node.borderWidth') as Float32Array;
+    // extents from the shared reading (114.6): bodies plus labels by
+    // default, padded; symmetric halves (the larger side) because the
+    // BK separation is symmetric.  avoidOverlap: false places points —
+    // nodeSep and rankSep then read centre to centre
     const halfW = new Float64Array(n);
     const halfH = new Float64Array(n);
 
-    for (let i = 0; i < n; i++) {
-      const slot = slots[i];
+    if (merged.avoidOverlap !== false) {
+      const dims = ctx.nodeDimensions(slots, {
+        includeLabels: merged.nodeDimensionsIncludeLabels !== false,
+        padding: merged.avoidOverlapPadding ?? 0,
+      });
 
-      halfW[i] = (size[slot * 2] + border[slot]) / 2;
-      halfH[i] = (size[slot * 2 + 1] + border[slot]) / 2;
+      for (let i = 0; i < n; i++) {
+        halfW[i] = Math.max(-dims.x1[i], dims.x2[i]);
+        halfH[i] = Math.max(-dims.y1[i], dims.y2[i]);
+      }
     }
+
+    state.halfW = halfW;
+    state.halfH = halfH;
 
     const groupModel = buildGroupModel(cy, slots);
 
@@ -865,31 +878,76 @@ export class FlowLayoutImpl implements LayoutImpl {
     const bw = bbIn.w ?? bbIn.x2! - bbIn.x1;
     const bh = bbIn.h ?? bbIn.y2! - bbIn.y1;
     const { xy } = state;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    const n = state.slots.length;
+    const halfW = state.halfW ?? new Float64Array(n);
+    const halfH = state.halfH ?? new Float64Array(n);
 
-    for (let i = 0; i < state.slots.length; i++) {
-      minX = Math.min(minX, xy[i * 2]);
-      maxX = Math.max(maxX, xy[i * 2]);
-      minY = Math.min(minY, xy[i * 2 + 1]);
-      maxY = Math.max(maxY, xy[i * 2 + 1]);
+    // the body extents (114.6): scaling moves centres, not sizes, so the
+    // room the box has for the centre span is the box less the widest
+    // halves at either end
+    const extents = (): [number, number, number, number] => {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      for (let i = 0; i < n; i++) {
+        minX = Math.min(minX, xy[i * 2] - halfW[i]);
+        maxX = Math.max(maxX, xy[i * 2] + halfW[i]);
+        minY = Math.min(minY, xy[i * 2 + 1] - halfH[i]);
+        maxY = Math.max(maxY, xy[i * 2 + 1] + halfH[i]);
+      }
+
+      return [minX, minY, maxX, maxY];
+    };
+
+    let [minX, minY, maxX, maxY] = extents();
+    let maxHalfW = 0;
+    let maxHalfH = 0;
+    let cMinX = Infinity;
+    let cMaxX = -Infinity;
+    let cMinY = Infinity;
+    let cMaxY = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      maxHalfW = Math.max(maxHalfW, halfW[i]);
+      maxHalfH = Math.max(maxHalfH, halfH[i]);
+      cMinX = Math.min(cMinX, xy[i * 2]);
+      cMaxX = Math.max(cMaxX, xy[i * 2]);
+      cMinY = Math.min(cMinY, xy[i * 2 + 1]);
+      cMaxY = Math.max(cMaxY, xy[i * 2 + 1]);
     }
 
-    // scale down (never up) to fit, then centre in the box — nodeSep and
-    // rankSep own the density; the box owns placement
-    const w = Math.max(1e-9, maxX - minX);
-    const h = Math.max(1e-9, maxY - minY);
-    const scale = Math.min(1, bw / w, bh / h);
-    const cx = bbIn.x1 + bw / 2;
-    const cy = bbIn.y1 + bh / 2;
-    const mx = (minX + maxX) / 2;
-    const my = (minY + maxY) / 2;
+    // scale down (never up) so the bodies fit, then centre the body
+    // extents in the box — nodeSep and rankSep own the density; the
+    // box owns placement.  A box narrower than the widest body cannot
+    // hold it: the centres collapse toward the box centre (scale 0)
+    if (maxX - minX > bw || maxY - minY > bh) {
+      const scale = Math.max(
+        0,
+        Math.min(
+          1,
+          (bw - 2 * maxHalfW) / Math.max(1e-9, cMaxX - cMinX),
+          (bh - 2 * maxHalfH) / Math.max(1e-9, cMaxY - cMinY),
+        ),
+      );
+      const mx = (cMinX + cMaxX) / 2;
+      const my = (cMinY + cMaxY) / 2;
 
-    for (let i = 0; i < state.slots.length; i++) {
-      xy[i * 2] = cx + (xy[i * 2] - mx) * scale;
-      xy[i * 2 + 1] = cy + (xy[i * 2 + 1] - my) * scale;
+      for (let i = 0; i < n; i++) {
+        xy[i * 2] = mx + (xy[i * 2] - mx) * scale;
+        xy[i * 2 + 1] = my + (xy[i * 2 + 1] - my) * scale;
+      }
+
+      [minX, minY, maxX, maxY] = extents();
+    }
+
+    const dx = bbIn.x1 + bw / 2 - (minX + maxX) / 2;
+    const dy = bbIn.y1 + bh / 2 - (minY + maxY) / 2;
+
+    for (let i = 0; i < n; i++) {
+      xy[i * 2] += dx;
+      xy[i * 2 + 1] += dy;
     }
   }
 }

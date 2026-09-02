@@ -240,6 +240,65 @@ describe('gpu/layout: flow (round 112)', function () {
     expect(posOf('b').y).to.be.greaterThan(posOf('a').y);
   });
 
+  it('boundingBox holds the bodies, not just the centres (114.6)', function () {
+    mk(diamond());
+    cy.style({ nodes: { width: 40, height: 40 } });
+    run({ boundingBox: { x1: 100, y1: 100, w: 120, h: 300 } });
+
+    // 40 px bodies inside a 120 px wide box: the centres must sit 20 px
+    // in from each side (pre-114.6 they touched the box edges)
+    cy.nodes().forEach((n) => {
+      var bb = n.boundingBox({ includeLabels: false });
+
+      expect(bb.x1, n.id()).to.be.at.least(100 - 1e-6);
+      expect(bb.x2, n.id()).to.be.at.most(220 + 1e-6);
+      expect(bb.y1, n.id()).to.be.at.least(100 - 1e-6);
+      expect(bb.y2, n.id()).to.be.at.most(400 + 1e-6);
+    });
+  });
+
+  it('labels widen the rank separation by default (114.6)', function () {
+    var withLabels = mk({
+      nodes: nodes('a', 'b', 'c'),
+      edges: edges(['a', 'b'], ['a', 'c']),
+    });
+
+    withLabels.style({
+      nodes: { width: 20, height: 20, label: 'a long enough label here' },
+    });
+    run();
+
+    var labelled = Math.abs(posOf('c').x - posOf('b').x);
+
+    withLabels
+      .layout({
+        name: 'flow',
+        fit: false,
+        nodeDimensionsIncludeLabels: false,
+      })
+      .run();
+
+    var bare = Math.abs(posOf('c').x - posOf('b').x);
+
+    expect(labelled).to.be.greaterThan(bare);
+    // the control: bodies alone are 20 wide, so b and c sit nodeSep (50)
+    // plus one body apart, and their label boxes overlap
+    expect(bare).to.be.closeTo(70, 1e-3);
+
+    var bb = cy.$id('b').boundingBox();
+    var cb = cy.$id('c').boundingBox();
+
+    expect(bb.x1 < cb.x2 && cb.x1 < bb.x2).to.equal(true);
+  });
+
+  it('avoidOverlap: false places points, nodeSep centre to centre', function () {
+    mk({ nodes: nodes('a', 'b', 'c'), edges: edges(['a', 'b'], ['a', 'c']) });
+    cy.style({ nodes: { width: 40, height: 40 } });
+    run({ avoidOverlap: false });
+
+    expect(Math.abs(posOf('c').x - posOf('b').x)).to.be.closeTo(50, 1e-3);
+  });
+
   it('boundingBox contains the drawing', function () {
     mk(diamond());
     run({ boundingBox: { x1: 100, y1: 100, w: 120, h: 90 } });

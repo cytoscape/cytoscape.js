@@ -2,6 +2,7 @@ import * as math from '../math.mjs';
 import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
+import { nodeDims, nodeDimsOf } from './dims.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { GridLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -139,14 +140,16 @@ export class GridLayout {
       );
     }
 
-    const size = store.column('node.size') as Float32Array;
-    const border = store.column('node.borderWidth') as Float32Array;
+    // the shared reading (114.6): bodies plus labels by default
+    const dims = nodeDims(store, slots, {
+      includeLabels: this.options.nodeDimensionsIncludeLabels !== false,
+    });
 
     const positions = this.cellPositions(
       slots.length,
       bb,
-      (i) => size[slots[i] * 2] + border[slots[i]],
-      (i) => size[slots[i] * 2 + 1] + border[slots[i]],
+      (i) => dims.x2[i] - dims.x1[i],
+      (i) => dims.y2[i] - dims.y1[i],
       null,
     );
 
@@ -197,11 +200,14 @@ export class GridLayout {
         ? nodes.map((node: Collection) => options.position!(node) ?? undefined)
         : null;
 
+    const dims = nodeDimsOf(cy, nodes, {
+      includeLabels: options.nodeDimensionsIncludeLabels !== false,
+    });
     const positions = this.cellPositions(
       nodes.length,
       bb,
-      (i) => nodes[i].outerWidth() ?? 0,
-      (i) => nodes[i].outerHeight() ?? 0,
+      (i) => dims.x2[i] - dims.x1[i],
+      (i) => dims.y2[i] - dims.y1[i],
       manRaw,
     );
 

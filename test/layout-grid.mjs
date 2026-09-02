@@ -75,6 +75,37 @@ describe('gpu/layout: grid', function () {
     });
   });
 
+  it('cells include labels by default (114.6), bodies alone on request', function () {
+    cy.style({
+      nodes: { width: 30, height: 30, label: 'a label wide enough' },
+    });
+
+    var spacing = (opts) => {
+      cy.layout({
+        name: 'grid',
+        fit: false,
+        rows: 1,
+        boundingBox: { x1: 0, y1: 0, w: 10, h: 10 },
+        avoidOverlapPadding: 0,
+        ...opts,
+      }).run();
+
+      var xs = cy
+        .nodes()
+        .map((n) => n.position().x)
+        .sort((a, b) => a - b);
+
+      return xs[1] - xs[0];
+    };
+
+    var labelled = spacing({});
+    var bare = spacing({ nodeDimensionsIncludeLabels: false });
+
+    expect(bare).to.equal(30);
+    expect(labelled).to.be.greaterThan(30);
+    expect(labelled).to.be.closeTo(cy.$id('a').boundingBox().w, 1e-3);
+  });
+
   it('avoids overlap using node dimensions', function () {
     cy.style({ nodes: { width: 100, height: 100 } });
     cy.layout({

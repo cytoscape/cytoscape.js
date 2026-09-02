@@ -349,7 +349,9 @@ export class BreadthFirstLayout {
     const aveNodeSize = { w: -1, h: -1 };
 
     for (let i = 0; i < nodes.length; i++) {
-      const box = nodes[i].boundingBox();
+      // the layout reading (114.6): bodies plus labels by default, no
+      // overlay / outline term — the bounding box used to bring those
+      const box = nodes[i].layoutDimensions(options);
 
       aveNodeSize.w =
         aveNodeSize.w === -1 ? box.w : (aveNodeSize.w + box.w) / 2;

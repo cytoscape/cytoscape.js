@@ -249,7 +249,25 @@ describe('gpu/layout: radial (round 85.1)', function () {
     expect(angleOf('a')).to.be.closeTo(TAU - cw, 1e-6);
   });
 
-  it('levelSpacing sets the ring gap exactly', function () {
+  it('levelSpacing sets the ring gap exactly (avoidOverlap off)', function () {
+    mk(unbalanced());
+    cy.layout({
+      name: 'radial',
+      roots: ['r'],
+      levelSpacing: 37,
+      fit: false,
+      avoidOverlap: false,
+    }).run();
+
+    expect(radiusOf('a')).to.be.closeTo(37, 1e-4);
+    expect(radiusOf('a0')).to.be.closeTo(74, 1e-4);
+  });
+
+  it('levelSpacing is a floor under avoidOverlap (114.6)', function () {
+    // 30 px bodies padded by 10 are 40 px boxes, 56.6 px across the
+    // diagonal: two rings cannot sit 37 apart without touching, so the
+    // first ring grows to that diagonal — and the second, holding eight
+    // leaves in A's wedge, grows well past 74 for its neighbours
     mk(unbalanced());
     cy.layout({
       name: 'radial',
@@ -258,8 +276,8 @@ describe('gpu/layout: radial (round 85.1)', function () {
       fit: false,
     }).run();
 
-    expect(radiusOf('a')).to.be.closeTo(37, 1e-4);
-    expect(radiusOf('a0')).to.be.closeTo(74, 1e-4);
+    expect(radiusOf('a')).to.be.closeTo(40 * Math.SQRT2, 1e-4);
+    expect(radiusOf('a0')).to.be.greaterThan(74);
   });
 
   it('throws on a selector-string roots, and joins the dispatch throw', function () {
@@ -271,5 +289,119 @@ describe('gpu/layout: radial (round 85.1)', function () {
 
     // the unknown-name throw now lists radial among the built-ins
     expect(() => cy.layout({ name: 'cose' })).to.throw(/'radial'/);
+  });
+
+  // Round 114.6: rings grow to clear overlap; the wedge angles never move.
+  describe('avoidOverlap (114.6)', function () {
+    var star = (leaves) => {
+      var els = [{ data: { id: 'r' } }];
+
+      for (var i = 0; i < leaves; i++) {
+        els.push({ data: { id: 'l' + i } });
+        els.push({ data: { id: 'e' + i, source: 'r', target: 'l' + i } });
+      }
+
+      return els;
+    };
+
+    var overlapping = (includeLabels) => {
+      var boxes = cy.nodes().map((n) => n.boundingBox({ includeLabels }));
+      var count = 0;
+
+      for (var i = 0; i < boxes.length; i++) {
+        for (var j = i + 1; j < boxes.length; j++) {
+          var a = boxes[i];
+          var b = boxes[j];
+
+          if (a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2) {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    };
+
+    it('a 24-leaf star of 40 px nodes has no overlapping bodies', function () {
+      mk(star(24));
+      cy.style({ nodes: { width: 40, height: 40 } });
+      cy.layout({ name: 'radial', roots: ['r'], fit: false }).run();
+
+      expect(overlapping(false)).to.equal(0);
+    });
+
+    it('control: avoidOverlap: false keeps the bounding-box ring, and the leaves overlap', function () {
+      mk(star(24));
+      cy.style({ nodes: { width: 40, height: 40 } });
+      cy.layout({
+        name: 'radial',
+        roots: ['r'],
+        fit: false,
+        avoidOverlap: false,
+      }).run();
+
+      // the pre-114 radius: half the 400 box over (maxRing + 1) rings
+      expect(radiusOf('l0')).to.be.closeTo(100, 1e-4);
+      expect(overlapping(false)).to.be.greaterThan(0);
+    });
+
+    it('keeps every wedge angle: only the radius moves', function () {
+      mk(unbalanced());
+      cy.style({ nodes: { width: 40, height: 40 } });
+      cy.layout({
+        name: 'radial',
+        roots: ['r'],
+        startAngle: 0,
+        fit: false,
+      }).run();
+
+      var grown = Object.fromEntries(
+        cy.nodes().map((n) => [n.id(), angleOf(n.id())]),
+      );
+
+      cy.layout({
+        name: 'radial',
+        roots: ['r'],
+        startAngle: 0,
+        fit: false,
+        avoidOverlap: false,
+      }).run();
+
+      for (var id of Object.keys(grown)) {
+        if (id === 'r') {
+          continue;
+        }
+
+        expect(angleOf(id), id).to.be.closeTo(grown[id], 1e-6);
+      }
+    });
+
+    it('labels widen the rings by default; nodeDimensionsIncludeLabels: false does not', function () {
+      mk(star(12));
+      cy.style({
+        nodes: {
+          width: 20,
+          height: 20,
+          label: 'a label wide enough to matter',
+        },
+      });
+      cy.layout({ name: 'radial', roots: ['r'], fit: false }).run();
+
+      var withLabels = radiusOf('l0');
+
+      expect(overlapping(true)).to.equal(0);
+
+      cy.layout({
+        name: 'radial',
+        roots: ['r'],
+        fit: false,
+        nodeDimensionsIncludeLabels: false,
+      }).run();
+
+      expect(radiusOf('l0')).to.be.lessThan(withLabels);
+      // the control: bodies clear, the labels do not
+      expect(overlapping(false)).to.equal(0);
+      expect(overlapping(true)).to.be.greaterThan(0);
+    });
   });
 });

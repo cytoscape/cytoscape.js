@@ -1034,9 +1034,17 @@ the `sweep` proportionally to their trees, in the caller's roots
 order; a lone root sits exactly at the centre, several move out to
 the first ring; unreached nodes seed their own trees in scope order,
 so a disconnected component always gets a wedge.  Non-tree edges just
-draw (breadthfirst's stance); leaves only, parents derive.  Options:
-`roots`, `startAngle`, `sweep`, `clockwise`, `levelSpacing`,
-`weight`, plus the shared finisher plumbing.  No v3 twin exists; the
+draw (breadthfirst's stance); leaves only, parents derive.  **Rings
+grow to clear overlap** (round 114.6, `avoidOverlap`, default true):
+the wedge angles are the structure, so radius is the one degree of
+freedom — each ring starts at its share of `levelSpacing` and grows
+until neither the ring inside it nor the neighbours along it (whatever
+wedge they belong to) can touch, node boxes read through the shared
+dimensions (labels included unless `nodeDimensionsIncludeLabels:
+false`, padded by `avoidOverlapPadding`).  Options: `roots`,
+`startAngle`, `sweep`, `clockwise`, `levelSpacing` (a floor under
+`avoidOverlap`), `avoidOverlap`, `avoidOverlapPadding`, `weight`, plus
+the shared finisher plumbing.  No v3 twin exists; the
 benchmark's comparison partner is v4's own breadthfirst-circle,
 pricing what the hierarchy-awareness costs.
 
@@ -1087,9 +1095,13 @@ Leaves place, parents derive (round 14.11); compound-aware global
 layering is pass 112.3.  Options: `direction`, `nodeSep`, `rankSep`,
 `layering`, `thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
 `cycleRemoval`, `rankConstraints`,
-`componentSpacing`, plus the shared plumbing (finisher path when
-animate / transform / spacingFactor are asked for; bare runs take the
-columnar bulk write).  Quality is measured, not asserted:
+`componentSpacing`, `avoidOverlap` and `avoidOverlapPadding` (114.6:
+extents come from the shared dimensions, labels included by default,
+and a `boundingBox` now holds the bodies rather than the centres),
+plus the shared plumbing (finisher path when animate / transform /
+spacingFactor are asked for; bare runs take the columnar bulk write —
+one rule, `ctx.finish`, since 114.2).  Quality is measured, not
+asserted:
 `npm run benchmark:layout-quality` runs flow beside dagre and elkjs on
 the round-112 fixture set (crossings, edge length, area, validity,
 runtime), and the round file records the numbers.

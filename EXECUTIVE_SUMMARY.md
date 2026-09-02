@@ -49,7 +49,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,558 unit · 612 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,558 unit · 621 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
@@ -553,8 +553,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **31 Aug** — layouts: the mechanics, then the breadth
   - The layout→renderer handoff decoupled from animation: a flat rendered
-    graph hands force integration to the GPU for **both** animate values —
-    `animate` is presentation only — with a silent run publishing off-mirror
+    graph hands force integration to the GPU however the run is shown —
+    presentation does not pick the executor — with a silent run publishing off-mirror
     so the screen holds its frame until the one settle write.  Measured at
     25k×50k: **0.35 s** silent-GPU settle against **25.3 s** of synchronous
     main-thread CPU (the old `animate: false` behaviour) — the one named

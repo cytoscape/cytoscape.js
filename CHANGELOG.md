@@ -245,11 +245,13 @@ that compile and then behave differently.
   (round 87.2): executor choice is availability-driven, so a flat
   rendered graph with a device hands integration to the GPU for both
   animate values, where it used to run the CPU sim synchronously on
-  the main thread.  `animate` is presentation only — true streams
-  positions to the screen per frame, false integrates silently
-  off-mirror and the screen holds the pre-run frame until the settle
-  lands in one write.  The visible consequence: positions are readable
-  at `layoutstop` / `promise()`, not on the line after `run()`.
+  the main thread.  Presentation does not pick the executor: since
+  round 114 `animateLive: true` streams positions to the screen per
+  frame, `animate: true` integrates silently and then tweens to the
+  settle, and `animate: false` integrates silently off-mirror while
+  the screen holds the pre-run frame until the settle lands in one
+  write.  The visible consequence: positions are readable at
+  `layoutstop` / `promise()`, not on the line after `run()`.
   Headless and compound-graph runs keep the synchronous CPU path, so
   specs and servers are unaffected.
 - **Animations run concurrently by channel** and sequence by promise;

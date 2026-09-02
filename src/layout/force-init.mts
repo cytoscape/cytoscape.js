@@ -12,8 +12,9 @@ constant-magnitude toward the node's component anchor (round 59's
 FA2-shaped containment), so disconnected pieces neither interleave at
 a shared centre (AntV's failure mode) nor drift apart (round 18's).
 The estimates that place the anchors are rough by construction —
-`packComponentsExact` re-packs the *real* settled boxes at the end,
-which is exactly v3's `separateComponents`, translation-only.
+`packComponentBodies` (pack.mts) re-packs the *real* settled body
+boxes at the end, which is exactly v3's `separateComponents`,
+translation-only.
 
 Everything here is deterministic: component ids are first-seen order,
 ties in every sort break on the id, and the seeding hash is the same

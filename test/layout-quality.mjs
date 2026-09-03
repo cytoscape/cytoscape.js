@@ -260,7 +260,7 @@ const LAYOUTS = {
     cram: { boundingBox: { x1: 0, y1: 0, w: 100, h: 100 } },
   },
   force: {
-    bbox: false,
+    bbox: true,
     overlap: true,
     separates: true,
     seed: 7,

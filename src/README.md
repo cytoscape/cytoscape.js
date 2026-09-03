@@ -1293,6 +1293,15 @@ round records carry the histories.
 - Options added by round 114.5: `animateLive` (the streaming run —
   the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
   `animate` now tweens, and the shared finisher options apply.
+- **`boundingBox` is honoured** (116.2), by flow's rule made shared
+  (`layout/pack.mts`'s `fitBodiesToBox`): after the settle's separation
+  and re-pack the drawing scales down — never up — until every body
+  lies within the box, then its body extents centre in it.  Uniform,
+  so the sim's structure is kept; `edgeLength` and `repulsion` own the
+  density, the box owns placement.  Held back exactly when the re-pack
+  is (a pinned node, or constraints), and under `animateLive` it lands
+  with the end-of-run adjustment.  v3 cose stretched the centres to
+  fill the box, up or down and size-blind; that is not carried.
 - Options added by round 59: `componentSpacing`, `init`,
   `nestingFactor`, `gravityCompound`.  Re-read by round 59 (same
   names, new units): `repulsion` (the push at one cutoff length),

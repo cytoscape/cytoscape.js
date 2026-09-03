@@ -342,3 +342,116 @@ export const packComponentsExact = (
 ): void => {
   packComponentBodies(n, compOf, count, positions, null, spacing, true);
 };
+
+/** A layout `boundingBox` as the options spell it: `{ x1, y1 }` plus
+ * either `{ x2, y2 }` or `{ w, h }`. */
+export interface BoxInput {
+  x1: number;
+  y1: number;
+  x2?: number;
+  y2?: number;
+  w?: number;
+  h?: number;
+}
+
+/**
+ * Fit a drawing's *bodies* into an explicit box (flow's 114.6 rule,
+ * made shared in 116.2 so force honours `boundingBox` by the same
+ * sentence): scale the centres down — never up — about their centre
+ * until every box lies within the given width and height, then centre
+ * the body extents in the box.  Uniform, so the drawing's structure is
+ * kept; spacing options own the density, the box owns placement.  A
+ * box narrower than the widest body cannot hold it: the centres
+ * collapse toward the box centre (scale 0).  With `extents` null the
+ * boxes are points.
+ *
+ * @param n — node count
+ * @param xy — 2n interleaved positions, moved in place
+ * @param extents — per-node node-local boxes, or null for point boxes
+ * @param box — the target box
+ */
+export const fitBodiesToBox = (
+  n: number,
+  xy: Float32Array | Float64Array | number[],
+  extents: NodeExtents | null,
+  box: BoxInput,
+): void => {
+  if (n === 0) {
+    return;
+  }
+
+  const bw = box.w ?? (box.x2 as number) - box.x1;
+  const bh = box.h ?? (box.y2 as number) - box.y1;
+  const left = (i: number): number => (extents == null ? 0 : -extents.x1[i]);
+  const right = (i: number): number => (extents == null ? 0 : extents.x2[i]);
+  const top = (i: number): number => (extents == null ? 0 : -extents.y1[i]);
+  const bottom = (i: number): number => (extents == null ? 0 : extents.y2[i]);
+
+  // the body extents: scaling moves centres, not sizes, so the room the
+  // box has for the centre span is the box less the widest overhangs at
+  // either end
+  const bodyExtents = (): [number, number, number, number] => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      minX = Math.min(minX, xy[i * 2] - left(i));
+      maxX = Math.max(maxX, xy[i * 2] + right(i));
+      minY = Math.min(minY, xy[i * 2 + 1] - top(i));
+      maxY = Math.max(maxY, xy[i * 2 + 1] + bottom(i));
+    }
+
+    return [minX, minY, maxX, maxY];
+  };
+
+  let [minX, minY, maxX, maxY] = bodyExtents();
+  let maxLeft = 0;
+  let maxRight = 0;
+  let maxTop = 0;
+  let maxBottom = 0;
+  let cMinX = Infinity;
+  let cMaxX = -Infinity;
+  let cMinY = Infinity;
+  let cMaxY = -Infinity;
+
+  for (let i = 0; i < n; i++) {
+    maxLeft = Math.max(maxLeft, left(i));
+    maxRight = Math.max(maxRight, right(i));
+    maxTop = Math.max(maxTop, top(i));
+    maxBottom = Math.max(maxBottom, bottom(i));
+    cMinX = Math.min(cMinX, xy[i * 2]);
+    cMaxX = Math.max(cMaxX, xy[i * 2]);
+    cMinY = Math.min(cMinY, xy[i * 2 + 1]);
+    cMaxY = Math.max(cMaxY, xy[i * 2 + 1]);
+  }
+
+  if (maxX - minX > bw || maxY - minY > bh) {
+    const scale = Math.max(
+      0,
+      Math.min(
+        1,
+        (bw - maxLeft - maxRight) / Math.max(1e-9, cMaxX - cMinX),
+        (bh - maxTop - maxBottom) / Math.max(1e-9, cMaxY - cMinY),
+      ),
+    );
+    const mx = (cMinX + cMaxX) / 2;
+    const my = (cMinY + cMaxY) / 2;
+
+    for (let i = 0; i < n; i++) {
+      xy[i * 2] = mx + (xy[i * 2] - mx) * scale;
+      xy[i * 2 + 1] = my + (xy[i * 2 + 1] - my) * scale;
+    }
+
+    [minX, minY, maxX, maxY] = bodyExtents();
+  }
+
+  const dx = box.x1 + bw / 2 - (minX + maxX) / 2;
+  const dy = box.y1 + bh / 2 - (minY + maxY) / 2;
+
+  for (let i = 0; i < n; i++) {
+    xy[i * 2] += dx;
+    xy[i * 2 + 1] += dy;
+  }
+};

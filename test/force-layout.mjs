@@ -624,6 +624,87 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     });
   });
 
+  describe('boundingBox holds the bodies, scaling down only (116.2)', function () {
+    const bodies = (cy) =>
+      cy.nodes().map((n) => n.boundingBox({ includeLabels: false }));
+    const within = (bb, box, eps = 1e-3) =>
+      bb.x1 >= box.x1 - eps &&
+      bb.y1 >= box.y1 - eps &&
+      bb.x2 <= box.x1 + box.w + eps &&
+      bb.y2 <= box.y1 + box.h + eps;
+    const distances = (cy) => {
+      const ps = cy.nodes().map((n) => n.position());
+      const out = [];
+
+      for (let i = 0; i < ps.length; i++) {
+        for (let j = i + 1; j < ps.length; j++) {
+          out.push(Math.hypot(ps[j].x - ps[i].x, ps[j].y - ps[i].y));
+        }
+      }
+
+      return out;
+    };
+    const run = async (cy, extra) => {
+      await cy
+        .layout({ name: 'force', seed: 3, fit: false, ...extra })
+        .run()
+        .promise();
+    };
+
+    it('a small box holds every body', async function () {
+      const cy = cytoscape({ elements: RING() });
+      const box = { x1: 100, y1: 100, w: 150, h: 120 };
+
+      await run(cy, { boundingBox: box });
+
+      for (const bb of bodies(cy)) {
+        expect(within(bb, box), JSON.stringify(bb)).to.equal(true);
+      }
+    });
+
+    it('control: without the box the ring is wider than that', async function () {
+      const cy = cytoscape({ elements: RING() });
+
+      await run(cy, {});
+
+      const bb = cy.nodes().boundingBox({ includeLabels: false });
+
+      expect(bb.w > 150 || bb.h > 120).to.equal(true);
+    });
+
+    it('a box larger than the drawing centres it and never inflates it', async function () {
+      const free = cytoscape({ elements: RING() });
+      const boxed = cytoscape({ elements: RING() });
+      const box = { x1: 1000, y1: 1000, w: 5000, h: 5000 };
+
+      await run(free, {});
+      await run(boxed, { boundingBox: box });
+
+      const a = distances(free);
+      const b = distances(boxed);
+
+      for (let i = 0; i < a.length; i++) {
+        expect(b[i]).to.be.closeTo(a[i], 1e-3);
+      }
+
+      const bb = boxed.nodes().boundingBox({ includeLabels: false });
+
+      expect((bb.x1 + bb.x2) / 2).to.be.closeTo(3500, 1e-3);
+      expect((bb.y1 + bb.y2) / 2).to.be.closeTo(3500, 1e-3);
+    });
+
+    it('a pinned node holds the box back, as it holds the re-pack', async function () {
+      const cy = cytoscape({ elements: RING() });
+      const box = { x1: 100, y1: 100, w: 150, h: 120 };
+
+      cy.$id('n0').position({ x: -500, y: -500 }).lock();
+      await run(cy, { boundingBox: box, randomize: false });
+
+      expect(cy.$id('n0').position()).to.deep.equal({ x: -500, y: -500 });
+      expect(bodies(cy).some((bb) => !within(bb, box))).to.equal(true);
+    });
+  });
+
   describe('avoidOverlap separates node bodies at the settle (114.5)', function () {
     const CLIQUE = (n, size) => {
       const elements = [];

@@ -39,9 +39,11 @@ import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
   computeComponents,
+  fitBodiesToBox,
   packAnchors,
   packComponentBodies,
 } from './pack.mjs';
+import type { BoxInput } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
 import { separationAlong } from './separation.mjs';
 import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
@@ -94,6 +96,16 @@ export interface ForceRunOptions {
   animateLive?: boolean;
   fit?: boolean;
   padding?: number;
+  /** fit the settle into an explicit box (116.2 — flow's rule): the
+   * drawing scales down, never up, until every body lies within the
+   * box's width and height, then its body extents centre in the box.
+   * Uniform, so the sim's structure is kept — `edgeLength` and
+   * `repulsion` own the density, the box owns placement.  Skipped
+   * exactly when the component re-pack is (a pinned node, or
+   * constraints): a scale would move a locked node or break a relative
+   * gap.  Under `animateLive` the stream shows the sim's own frame and
+   * the box lands with the end-of-run adjustment. */
+  boundingBox?: BoxInput;
   /** iterations advanced per animation frame (animateLive: true) */
   stepsPerFrame?: number;
   /** separate overlapping node bodies after the settle (114.5; default
@@ -944,6 +956,12 @@ export class ForceLayoutImpl implements LayoutImpl {
           spacing,
           true,
         );
+
+        // the box (116.2), after the re-pack so the packed field is
+        // what scales; held back by the same rule as the re-pack
+        if (options.boundingBox != null) {
+          fitBodiesToBox(n, arr, dims, options.boundingBox);
+        }
       }
 
       ctx.finish(movableSlots, movableXy(arr), {

@@ -47,7 +47,8 @@ import {
   rankPadMargins,
 } from './flow-compound.mjs';
 import type { GroupModel } from './flow-compound.mjs';
-import { packComponentBodies } from './pack.mjs';
+import { fitBodiesToBox, packComponentBodies } from './pack.mjs';
+import type { BoxInput, NodeExtents } from './pack.mjs';
 import {
   isScoreMapping,
   validateScoreMapping,
@@ -858,96 +859,27 @@ export class FlowLayoutImpl implements LayoutImpl {
     return true;
   }
 
-  /** Fit the drawing into an explicit boundingBox, if one was given. */
+  /** Fit the drawing into an explicit boundingBox, if one was given —
+   * the shared rule (`fitBodiesToBox`, 116.2): bodies held, scaled
+   * down only, centred. */
   private applyBoundingBox(merged: FlowLayoutOptions, state: RunState): void {
-    const bbIn = merged.boundingBox as
-      | {
-          x1: number;
-          y1: number;
-          x2?: number;
-          y2?: number;
-          w?: number;
-          h?: number;
-        }
-      | undefined;
+    const box = merged.boundingBox as BoxInput | undefined;
 
-    if (bbIn == null || state.slots.length === 0) {
+    if (box == null || state.slots.length === 0) {
       return;
     }
 
-    const bw = bbIn.w ?? bbIn.x2! - bbIn.x1;
-    const bh = bbIn.h ?? bbIn.y2! - bbIn.y1;
-    const { xy } = state;
-    const n = state.slots.length;
-    const halfW = state.halfW ?? new Float64Array(n);
-    const halfH = state.halfH ?? new Float64Array(n);
+    const { halfW, halfH } = state;
+    const extents: NodeExtents | null =
+      halfW != null && halfH != null
+        ? {
+            x1: halfW.map((v) => -v),
+            y1: halfH.map((v) => -v),
+            x2: halfW,
+            y2: halfH,
+          }
+        : null;
 
-    // the body extents (114.6): scaling moves centres, not sizes, so the
-    // room the box has for the centre span is the box less the widest
-    // halves at either end
-    const extents = (): [number, number, number, number] => {
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
-
-      for (let i = 0; i < n; i++) {
-        minX = Math.min(minX, xy[i * 2] - halfW[i]);
-        maxX = Math.max(maxX, xy[i * 2] + halfW[i]);
-        minY = Math.min(minY, xy[i * 2 + 1] - halfH[i]);
-        maxY = Math.max(maxY, xy[i * 2 + 1] + halfH[i]);
-      }
-
-      return [minX, minY, maxX, maxY];
-    };
-
-    let [minX, minY, maxX, maxY] = extents();
-    let maxHalfW = 0;
-    let maxHalfH = 0;
-    let cMinX = Infinity;
-    let cMaxX = -Infinity;
-    let cMinY = Infinity;
-    let cMaxY = -Infinity;
-
-    for (let i = 0; i < n; i++) {
-      maxHalfW = Math.max(maxHalfW, halfW[i]);
-      maxHalfH = Math.max(maxHalfH, halfH[i]);
-      cMinX = Math.min(cMinX, xy[i * 2]);
-      cMaxX = Math.max(cMaxX, xy[i * 2]);
-      cMinY = Math.min(cMinY, xy[i * 2 + 1]);
-      cMaxY = Math.max(cMaxY, xy[i * 2 + 1]);
-    }
-
-    // scale down (never up) so the bodies fit, then centre the body
-    // extents in the box — nodeSep and rankSep own the density; the
-    // box owns placement.  A box narrower than the widest body cannot
-    // hold it: the centres collapse toward the box centre (scale 0)
-    if (maxX - minX > bw || maxY - minY > bh) {
-      const scale = Math.max(
-        0,
-        Math.min(
-          1,
-          (bw - 2 * maxHalfW) / Math.max(1e-9, cMaxX - cMinX),
-          (bh - 2 * maxHalfH) / Math.max(1e-9, cMaxY - cMinY),
-        ),
-      );
-      const mx = (cMinX + cMaxX) / 2;
-      const my = (cMinY + cMaxY) / 2;
-
-      for (let i = 0; i < n; i++) {
-        xy[i * 2] = mx + (xy[i * 2] - mx) * scale;
-        xy[i * 2 + 1] = my + (xy[i * 2 + 1] - my) * scale;
-      }
-
-      [minX, minY, maxX, maxY] = extents();
-    }
-
-    const dx = bbIn.x1 + bw / 2 - (minX + maxX) / 2;
-    const dy = bbIn.y1 + bh / 2 - (minY + maxY) / 2;
-
-    for (let i = 0; i < n; i++) {
-      xy[i * 2] += dx;
-      xy[i * 2 + 1] += dy;
-    }
+    fitBodiesToBox(state.slots.length, state.xy, extents, box);
   }
 }

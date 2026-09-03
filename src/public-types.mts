@@ -595,6 +595,12 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   animateLive?: boolean;
   /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
+  /** fit the settle into an explicit box (116.2 — flow's rule): scaled
+   * down, never up, until every body fits, then centred; uniform, so
+   * the sim's structure is kept.  Skipped when a node is pinned or
+   * constraints are set (as the component re-pack is).  v3 cose
+   * stretched the centres to fill the box, up or down, size-blind. */
+  boundingBox?: BoundingBoxInput;
   /** separate overlapping node bodies after the settle (114.5; default
    * true; the dense case rebuilt in 115 as a proximity-stress pass, so
    * a pile opens locally instead of the whole component scaling) —

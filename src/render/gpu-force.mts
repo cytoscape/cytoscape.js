@@ -55,7 +55,8 @@ the CPU executor's guarantee; GPU correctness pins invariants (18.4).
 
 import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
-import type { ForceParams } from '../layout/force-sim.mjs';
+import { CONTACT_RANGE } from '../layout/force-sim.mjs';
+import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
 
 const WG = 64;
 const ALPHA_WINDOW = 64;
@@ -78,8 +79,8 @@ struct FParams {
   anchorBase: u32,
   levels: u32,
   pyrBase: u32,
-  pad0: u32,
-  pad1: u32,
+  extBase: u32,
+  hasExt: u32,
 }
 `;
 
@@ -229,13 +230,36 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @group(0) @binding(2) var<storage, read_write> forces: array<f32>;
 // [cellStart (cells+1)][cellItems (n)][pyramid f32 triplets] (59.3)
 @group(0) @binding(3) var<storage, read> grid: array<u32>;
-// the incident CSR packed as [n+1 starts][edge indices][anchors]
+// the incident CSR packed as [n+1 starts][edge indices][anchors][extents]
 @group(0) @binding(4) var<storage, read> csr: array<u32>;
 // edges at stride 3: [source, target, bitcast(edgeLength)]
 @group(0) @binding(5) var<storage, read> edgesPacked: array<u32>;
 // slot | pinned << 31
 @group(0) @binding(6) var<storage, read> slotPin: array<u32>;
 @group(0) @binding(7) var<storage, read_write> fmeta: array<atomic<u32>>;
+
+// the smallest centre distance from box i to box j along the unit
+// direction (ux, uy) at which the two stop overlapping (116.1 — the CPU
+// sim's separationAlong, verbatim): exact for axis-aligned boxes, the
+// cheaper axis wins.  The boxes ride the csr tail at params.extBase,
+// four bitcast f32 per node: x1, y1, x2, y2 (node-local)
+fn sepAlong(i: u32, j: u32, ux: f32, uy: f32) -> f32 {
+  let bi = params.extBase + i * 4u;
+  let bj = params.extBase + j * 4u;
+  let ix1 = bitcast<f32>(csr[bi]);
+  let iy1 = bitcast<f32>(csr[bi + 1u]);
+  let ix2 = bitcast<f32>(csr[bi + 2u]);
+  let iy2 = bitcast<f32>(csr[bi + 3u]);
+  let jx1 = bitcast<f32>(csr[bj]);
+  let jy1 = bitcast<f32>(csr[bj + 1u]);
+  let jx2 = bitcast<f32>(csr[bj + 2u]);
+  let jy2 = bitcast<f32>(csr[bj + 3u]);
+  var sx = 1e30;
+  var sy = 1e30;
+  if (ux > 1e-9) { sx = (ix2 - jx1) / ux; } else if (ux < -1e-9) { sx = (ix1 - jx2) / ux; }
+  if (uy > 1e-9) { sy = (iy2 - jy1) / uy; } else if (uy < -1e-9) { sy = (iy1 - jy2) / uy; }
+  return max(0.0, min(sx, sy));
+}
 
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid: vec3u) {
@@ -251,6 +275,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   var fy = 0.0;
   let cutoff = params.cutoff;
   let cutoff2 = cutoff * cutoff;
+  let contact = cutoff * ${CONTACT_RANGE};
+  let invContact2 = 1.0 / (contact * contact);
   let itemsBase = params.cells + 1u;
 
   // near field: exact pairs over the finest 3x3 (the CPU gather,
@@ -275,7 +301,15 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
           d2 = 1e-4;
         }
         let d = sqrt(d2);
-        let f = params.repulsion * cutoff2 / max(1.0, d2) / d;
+        var f = params.repulsion * cutoff2 / max(1.0, d2) / d;
+        // the contact term (116.1): a pair whose gap along its direction
+        // is under the range feels an extra push measured from the gap
+        if (params.hasExt == 1u) {
+          let g = max(1.0, d - sepAlong(i, j, -dx / d, -dy / d));
+          if (g < contact) {
+            f = f + params.repulsion * cutoff2 * (1.0 / (g * g) - invContact2) / d;
+          }
+        }
         fx = fx + dx * f;
         fy = fy + dy * f;
       }
@@ -419,6 +453,9 @@ export interface ForceInputs {
   pinned: Uint8Array;
   /** per-node gravity anchors, 2n interleaved (59.2) */
   anchors: Float32Array;
+  /** per-node boxes the repulsion keeps apart (116.1), or null for
+   * the point sim — the CPU sim's `extents` */
+  extents?: ForceExtents | null;
   /** sim index → node slot (the publish map) */
   slots: number[];
   params: ForceParams;
@@ -484,7 +521,11 @@ export class GpuForceRuntime {
     this.device = device;
     this.inputs = inputs;
 
-    const cellSize = inputs.cutoff;
+    // the cell: the cutoff, grown to the largest box (116.1 — the CPU
+    // sim's rule) so every overlapping pair is gathered exactly
+    const ext = inputs.extents ?? null;
+    const cellSize =
+      ext == null ? inputs.cutoff : Math.max(inputs.cutoff, ext.maxW, ext.maxH);
 
     this.gridCols = Math.max(
       1,
@@ -561,7 +602,9 @@ export class GpuForceRuntime {
     // 59.2 anchor field rides the tail (bitcast f32) so the force
     // kernel needs no ninth binding; params.anchorBase points at it
     const anchorBase = n + 1 + m * 2;
-    const csr = new Uint32Array(anchorBase + n * 2);
+    // the boxes (116.1) ride behind the anchors, four f32 per node
+    const extBase = anchorBase + n * 2;
+    const csr = new Uint32Array(extBase + (ext == null ? 0 : n * 4));
 
     for (let e = 0; e < m; e++) {
       csr[inputs.edges[e * 2] + 1]++;
@@ -583,6 +626,17 @@ export class GpuForceRuntime {
       new Uint32Array(inputs.anchors.buffer, inputs.anchors.byteOffset, n * 2),
       anchorBase,
     );
+
+    if (ext != null) {
+      const extF32 = new Float32Array(csr.buffer, extBase * 4, n * 4);
+
+      for (let i = 0; i < n; i++) {
+        extF32[i * 4] = ext.x1[i];
+        extF32[i * 4 + 1] = ext.y1[i];
+        extF32[i * 4 + 2] = ext.x2[i];
+        extF32[i * 4 + 3] = ext.y2[i];
+      }
+    }
 
     mk('csr', csr.byteLength, SU, csr);
 
@@ -645,6 +699,8 @@ export class GpuForceRuntime {
     u32[11] = anchorBase;
     u32[12] = this.levelDims.length;
     u32[13] = pyrBase;
+    u32[14] = extBase;
+    u32[15] = ext == null ? 0 : 1;
     device.queue.writeBuffer(uniform, 0, u);
 
     // per-kernel pipelines (layout 'auto' — each kernel's bindings are

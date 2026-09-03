@@ -755,6 +755,33 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       expect(overlapping(cy)).to.equal(0);
     });
 
+    it('the sim itself keeps the bodies apart (116.1): every gap exceeds the padding', async function () {
+      // the settle's separation leaves a crammed pair exactly at the
+      // padding (115.5); the size-aware sim lands with a margin beyond
+      // it, so a gap over the padding says the sim did the separating
+      const cy = CLIQUE(30, 40);
+
+      await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+
+      const boxes = cy
+        .nodes()
+        .map((n) => n.boundingBox({ includeLabels: false }));
+      let minGap = Infinity;
+
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i];
+          const b = boxes[j];
+          const gx = Math.max(a.x1 - b.x2, b.x1 - a.x2);
+          const gy = Math.max(a.y1 - b.y2, b.y1 - a.y2);
+
+          minGap = Math.min(minGap, Math.max(gx, gy));
+        }
+      }
+
+      expect(minGap).to.be.greaterThan(10.5);
+    });
+
     it("control: avoidOverlap: false leaves the sim's pile as it landed", async function () {
       const cy = CLIQUE(30, 40);
 

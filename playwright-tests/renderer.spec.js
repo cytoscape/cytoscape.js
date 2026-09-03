@@ -1975,6 +1975,95 @@ test.describe('WebGPU renderer', () => {
     expect(result.linkLen).toBeLessThan(250);
   });
 
+  test('the GPU kernel keeps the bodies apart itself: a live run lands with a margin (116.1)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // a 30-clique of 40 px bodies: the point sim piles it up and the
+    // settle's separation opens it to exactly the padding (115.5); the
+    // size-aware kernel lands every pair with a margin beyond the
+    // padding, which is what the minimum gap discriminates
+    const clique = (() => {
+      const els = [];
+
+      for (let i = 0; i < 30; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < 30; i++) {
+        for (let j = i + 1; j < 30; j++) {
+          els.push({
+            data: { id: `e${i}_${j}`, source: 'n' + i, target: 'n' + j },
+          });
+        }
+      }
+
+      return els;
+    })();
+
+    await makeReadyCy(page, {
+      elements: clique,
+      style: { nodes: { width: 40, height: 40 } },
+    });
+    await waitFrames(page);
+
+    const result = await page.evaluate(async () => {
+      const cy = window.cy;
+      const minGap = () => {
+        const boxes = cy
+          .nodes()
+          .map((n) => n.boundingBox({ includeLabels: false }));
+        let out = Infinity;
+
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i];
+            const b = boxes[j];
+            const gx = Math.max(a.x1 - b.x2, b.x1 - a.x2);
+            const gy = Math.max(a.y1 - b.y2, b.y1 - a.y2);
+
+            out = Math.min(out, Math.max(gx, gy));
+          }
+        }
+
+        return out;
+      };
+
+      const f0 = cy.stats().frames;
+
+      await cy
+        .layout({ name: 'force', seed: 7, animateLive: true, fit: false })
+        .run()
+        .promise();
+
+      const live = minGap();
+      const frames = cy.stats().frames - f0;
+
+      await cy
+        .layout({ name: 'force', seed: 7, fit: false, avoidOverlap: false })
+        .run()
+        .promise();
+
+      const control = minGap();
+
+      return { live, control, frames };
+    });
+
+    // the displacement readback lands (116.1's finding): before it did,
+    // the poll mapped the staging buffer ahead of every frame's copy,
+    // read its initial zero, and any default run stopped at nine
+    // iterations — four frames — with the settle's separation hiding
+    // it.  A 30-clique of padded boxes anneals for over a hundred
+    expect(result.frames, 'the run outlives the readback bug').toBeGreaterThan(
+      15,
+    );
+    expect(result.live, 'the live run lands with a margin').toBeGreaterThan(
+      10.5,
+    );
+    expect(result.control, 'the point sim overlaps').toBeLessThan(0);
+  });
+
   test('a silent force run shows no intermediate motion (round 87.2)', async ({
     page,
   }) => {

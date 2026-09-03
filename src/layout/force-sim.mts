@@ -61,6 +61,29 @@ force pair but never move.
 */
 
 import type { ForceConstraints } from './force-constraints.mjs';
+import type { LayoutNodeDims } from './dims.mjs';
+import { separationAlong } from './separation.mjs';
+
+/** The boxes the sim keeps apart (116.1): node-local, sim-indexed,
+ * already padded — the `LayoutNodeDims` shape less nothing it needs. */
+export type ForceExtents = Pick<
+  LayoutNodeDims,
+  'x1' | 'y1' | 'x2' | 'y2' | 'maxW' | 'maxH'
+>;
+
+/** The contact term's range as a fraction of the cutoff (116.1): two
+ * boxes whose gap along their direction is under `CONTACT_RANGE ·
+ * cutoff` feel an extra inverse-square push measured from the *gap*,
+ * vanishing at the range — so a pair already clear by that much is
+ * exactly the point sim's, and the steady state is overlap-free by a
+ * few px rather than inflated by the boxes' size.  Measured at 1/4,
+ * 1/8 and 1/16 on a 4-clique-in-compounds fixture (intra edges at
+ * ideal length 60 settled at 77, 69 and 62 px against the point sim's
+ * 62) and on 30- and 200-cliques of padded 40 px boxes (overlap-free
+ * at every range; the minimum gap 7, 4 and 2.5 px): 1/16 keeps clear
+ * pairs where they were and still clears every pile.  Shared with the
+ * WGSL kernel verbatim. */
+export const CONTACT_RANGE = 1 / 16;
 
 export interface ForceParams {
   /** the pairwise push, in px per tick, at exactly one cutoff length
@@ -112,6 +135,12 @@ export interface ForceSimInputs extends ForceParams {
   positions: Float32Array;
   /** 1 = the node participates but never moves */
   pinned?: Uint8Array;
+  /** per-node boxes the repulsion keeps apart (116.1): the law is
+   * measured from the *gap* between two boxes along the pair's
+   * direction rather than the centre distance, so the steady state is
+   * overlap-free.  Absent, the sim is the point sim and its arithmetic
+   * is byte-identical to before the field existed */
+  extents?: ForceExtents | null;
   /** per-node gravity anchors, 2n interleaved (59.2 — the component
    * anchor field); absent means everything anchors at the origin */
   anchors?: Float32Array;
@@ -178,6 +207,12 @@ export class ForceSim {
   /** per-node degree over the sim edges (59.1's spring normalisation) */
   private degree: Int32Array;
   private cutoff: number;
+  /** the boxes (116.1), or null for the point sim */
+  private extents: ForceExtents | null;
+  /** the grid cell: the cutoff, grown to the largest box so every
+   * overlapping pair is gathered exactly (two boxes overlap only if
+   * |dx| < maxW and |dy| < maxH) */
+  private cell: number;
   /** grid scratch */
   private cellOf: Int32Array;
   private cellStart: Int32Array;
@@ -239,6 +274,11 @@ export class ForceSim {
       inputs.edgeLength.length > 0 ? sum / inputs.edgeLength.length : 60;
 
     this.cutoff = Math.max(40, meanL);
+    this.extents = inputs.extents ?? null;
+    this.cell =
+      this.extents == null
+        ? this.cutoff
+        : Math.max(this.cutoff, this.extents.maxW, this.extents.maxH);
 
     // CSR-style incident lists from the edge pairs (counting pass)
     const counts = new Int32Array(inputs.n + 1);
@@ -300,7 +340,7 @@ export class ForceSim {
   private buildGrid(): void {
     const n = this.n;
     const pos = this.positions;
-    const cell = this.cutoff;
+    const cell = this.cell;
 
     let minX = Infinity,
       minY = Infinity,
@@ -436,6 +476,9 @@ export class ForceSim {
     const alpha = this.alpha;
     const cutoff = this.cutoff;
     const cutoff2 = cutoff * cutoff;
+    const ext = this.extents;
+    const contact = cutoff * CONTACT_RANGE;
+    const invContact2 = 1 / (contact * contact);
 
     this.buildGrid();
 
@@ -507,9 +550,25 @@ export class ForceSim {
             }
 
             // the unified law: repulsion · cutoff² / d², softened
-            // inside 1 px (the cap bounds it anyway)
+            // inside 1 px (the cap bounds it anyway).  With boxes
+            // (116.1) a pair whose *gap* along its direction — the
+            // centre distance less what the two boxes need to clear —
+            // is under the contact range feels an extra inverse-square
+            // push measured from that gap, so at contact the pair
+            // feels the full 1 px push and the steady state is
+            // overlap-free; a pair clear by the range is the point law
             const d = Math.sqrt(d2);
-            const f = (repulsion * cutoff2) / Math.max(1, d2) / d;
+            let f = (repulsion * cutoff2) / Math.max(1, d2) / d;
+
+            if (ext != null) {
+              // (dx, dy) points from j to i; the rule wants i → j
+              const s = separationAlong(ext, i, j, -dx / d, -dy / d);
+              const g = Math.max(1, d - s);
+
+              if (g < contact) {
+                f += (repulsion * cutoff2 * (1 / (g * g) - invContact2)) / d;
+              }
+            }
 
             fx += dx * f;
             fy += dy * f;

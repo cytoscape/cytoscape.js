@@ -1293,6 +1293,30 @@ round records carry the histories.
 - Options added by round 114.5: `animateLive` (the streaming run —
   the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
   `animate` now tweens, and the shared finisher options apply.
+- **The sim keeps the bodies apart itself** (116.1).  Under
+  `avoidOverlap` the same padded boxes the settle separates go to the
+  sim, on both executors: a pair whose gap along its direction (round
+  115's `separationAlong` — exact for boxes) is under a **contact
+  range** of cutoff/16 feels an extra inverse-square push measured
+  from that gap, vanishing at the range.  So a pair already clear is
+  exactly the point law's (a ring settles at the same link length; the
+  compound-nesting fixture's intra edges stay at 62 px), a pile opens
+  in the sim rather than at the settle (a 30-clique and a 200-clique
+  of padded 40 px boxes converge overlap-free with a 2–3 px margin;
+  the point sim left 94 and 1,712 overlaps), and a live run streams
+  separated bodies once the transient clears — the seed can overlap,
+  and a hard per-tick guarantee is not promised; the settle's exact
+  separation stays.  The grid cell grows to the largest box so every
+  overlapping pair is gathered exactly; the far field stays monopole.
+  On the GPU the boxes ride the CSR buffer's tail behind the anchors
+  (four f32 per node), so the kernel keeps its binding budget.  The
+  price is convergence: a clique that settled by displacement in ~80
+  iterations now anneals to alpha's floor (~460) — the contact term is
+  stiff — while sparse graphs, where it rarely fires, are unchanged.
+  A pure gap law (the distance replaced by the gap everywhere) was
+  measured first and inflated clear pairs by the boxes' size (62 → 86
+  px on the nesting fixture), which is why the term is short-range.
+  `avoidOverlap: false` is the point sim.
 - **The GPU displacement readback never landed** (found by 116.1's
   browser spec, fixed with it).  The renderer polls convergence at
   frame start, before the frame's encode, so the poll mapped the
@@ -1749,8 +1773,10 @@ each is deliberate, not a pass-1 deferral:
   pair, which is what over-separated everything); and each
   layout's `avoidOverlap` (default true) is a constructive rule in its
   own terms — cell size, ring radius, rank separation, spiral pitch —
-  except force, whose point-based sim gets the portfolio's one
-  post-settle separation.  A generic push-apart remover was considered
+  except force, whose sim reads the same boxes (116.1: a contact term
+  measured from the gap between two boxes, so the steady state is
+  overlap-free and the portfolio's one post-settle separation clears
+  residue only).  A generic push-apart remover was considered
   and declined: structure-blind, iterative, and a second meaning for
   the option.  Preset and random have no `avoidOverlap` — positions
   are the caller's, and a pushed-apart scatter is neither random nor

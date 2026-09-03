@@ -893,6 +893,12 @@ export class ForceLayoutImpl implements LayoutImpl {
       }
     }
 
+    // the sim keeps the same boxes apart that the settle separates
+    // (116.1): with avoidOverlap the steady state is overlap-free and
+    // the settle's separation clears residue only; without, the point
+    // sim
+    const extents = avoidOverlap ? dims : null;
+
     const sim = new ForceSim({
       n,
       edges: edgesArr,
@@ -900,6 +906,7 @@ export class ForceLayoutImpl implements LayoutImpl {
       positions,
       pinned,
       anchors: nodeAnchors,
+      extents,
       groups,
       constraints: constraints ?? undefined,
       ...params,
@@ -1018,6 +1025,7 @@ export class ForceLayoutImpl implements LayoutImpl {
             positions,
             pinned,
             anchors: nodeAnchors,
+            extents,
             slots: simSlots,
             params,
             cutoff,

@@ -582,4 +582,144 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
 
     expect(minDist).to.be.greaterThan(15); // nothing collapses
   });
+
+  describe('size-aware repulsion: the boxes keep apart in the sim (116.1)', function () {
+    const clique = (n) => {
+      const list = [];
+
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          list.push(i, j);
+        }
+      }
+
+      return Uint32Array.from(list);
+    };
+    // equal square boxes of `size` px padded by `pad` (half per side),
+    // the shape the layout hands the sim under avoidOverlap
+    const boxes = (n, size, pad = 10) => {
+      const half = size / 2 + pad / 2;
+
+      return {
+        x1: new Float32Array(n).fill(-half),
+        y1: new Float32Array(n).fill(-half),
+        x2: new Float32Array(n).fill(half),
+        y2: new Float32Array(n).fill(half),
+        maxW: 2 * half,
+        maxH: 2 * half,
+      };
+    };
+    const settle = (sim) => {
+      while (!sim.converged()) {
+        sim.step(50);
+      }
+
+      return sim.positions;
+    };
+    // overlapping pairs and the smallest axis gap between two boxes
+    const probe = (pos, n, ext) => {
+      let overlaps = 0;
+      let minGap = Infinity;
+
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const dx = Math.abs(pos[j * 2] - pos[i * 2]);
+          const dy = Math.abs(pos[j * 2 + 1] - pos[i * 2 + 1]);
+          const w = ext.x2[i] - ext.x1[j];
+          const h = ext.y2[i] - ext.y1[j];
+
+          if (dx < w && dy < h) {
+            overlaps++;
+          }
+
+          minGap = Math.min(minGap, Math.max(dx - w, dy - h));
+        }
+      }
+
+      return { overlaps, minGap };
+    };
+
+    it('a 30-clique of padded 40 px boxes settles overlap-free, with a margin', function () {
+      const n = 30;
+      const ext = boxes(n, 40);
+      const pos = settle(mkSim(n, clique(n), { seed: 7, extents: ext }));
+      const { overlaps, minGap } = probe(pos, n, ext);
+
+      expect(overlaps).to.equal(0);
+      expect(minGap).to.be.greaterThan(1);
+    });
+
+    it('control: the point sim piles the same clique up', function () {
+      const n = 30;
+      const ext = boxes(n, 40);
+      const pos = settle(mkSim(n, clique(n), { seed: 7 }));
+
+      expect(probe(pos, n, ext).overlaps).to.be.greaterThan(10);
+    });
+
+    it('a 200-clique too — the dense pile the settle used to open', function () {
+      const n = 200;
+      const ext = boxes(n, 40);
+      const pos = settle(mkSim(n, clique(n), { seed: 7, extents: ext }));
+
+      expect(probe(pos, n, ext).overlaps).to.equal(0);
+    });
+
+    it('a pair clear by the contact range is the point law: a ring settles at the same link length', function () {
+      // 30 px boxes on 60 px links: at the settle every gap is over
+      // the range, so the term is silent there — the two runs share a
+      // transient-dependent trajectory but the same equilibrium
+      const n = 12;
+      const link = (pos) => {
+        let sum = 0;
+
+        for (let i = 0; i < n; i++) {
+          const j = (i + 1) % n;
+
+          sum += Math.hypot(
+            pos[j * 2] - pos[i * 2],
+            pos[j * 2 + 1] - pos[i * 2 + 1],
+          );
+        }
+
+        return sum / n;
+      };
+      const a = link(settle(mkSim(n, ring(n), { seed: 3 })));
+      const b = link(
+        settle(mkSim(n, ring(n), { seed: 3, extents: boxes(n, 30, 0) })),
+      );
+
+      expect(b).to.be.closeTo(a, a * 0.05);
+    });
+
+    it('the extents field absent or null is byte-identical to before it existed', function () {
+      const n = 12;
+      const a = settle(mkSim(n, ring(n), { seed: 3 }));
+      const b = settle(mkSim(n, ring(n), { seed: 3, extents: null }));
+
+      expect(Array.from(b)).to.deep.equal(Array.from(a));
+    });
+
+    it('the cell grows to the largest box, so a wide overlapping pair is gathered exactly', function () {
+      // two 300 px boxes 100 px apart: at the point sim's cell (the 40
+      // px cutoff) they sit two cells apart — the far field's monopole,
+      // too weak to open them before alpha dies; with boxes the cell is
+      // the box, the pair is exact, and the contact term clears it
+      const n = 2;
+      const edges = new Uint32Array(0);
+      const mk = (over) => {
+        const sim = mkSim(n, edges, { gravity: 0, ...over });
+
+        sim.positions.set([0, 0, 100, 0]);
+
+        return sim;
+      };
+      const ext = boxes(n, 300);
+      const point = settle(mk({}));
+      const boxed = settle(mk({ extents: ext }));
+
+      expect(probe(point, n, ext).overlaps).to.equal(1);
+      expect(probe(boxed, n, ext).overlaps).to.equal(0);
+    });
+  });
 });

@@ -97,6 +97,111 @@ describe('gpu: grabbable / locked / selectify + core auto* gating', function () 
     expect(cy2.autounselectify()).to.equal(true);
   });
 
+  describe('a locked child stays when its parent moves (116.3)', function () {
+    // p > a (locked), p > b: a stays, b travels, and p re-derives about
+    // both rather than taking the write
+    var mk = () =>
+      cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, locked: true },
+          { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+        ],
+      });
+    var at = (cy, id) => cy.$id(id).position();
+
+    it('against position(): the child stays, the parent re-derives', function () {
+      const cy = mk();
+
+      expect(at(cy, 'p')).to.deep.equal({ x: 50, y: 0 });
+
+      cy.$id('p').position({ x: 150, y: 0 });
+
+      expect(at(cy, 'a')).to.deep.equal({ x: 0, y: 0 });
+      expect(at(cy, 'b')).to.deep.equal({ x: 200, y: 0 });
+      // the written 150 is not what a parent reads back: its box spans
+      // a (still at 0) and b (now at 200)
+      expect(at(cy, 'p')).to.deep.equal({ x: 100, y: 0 });
+    });
+
+    it('against shift(), and the parent keeps re-deriving per step as a drag does', function () {
+      const cy = mk();
+
+      cy.$id('p').shift({ x: 10, y: 5 });
+      cy.$id('p').shift({ x: 10, y: 5 });
+
+      expect(at(cy, 'a')).to.deep.equal({ x: 0, y: 0 });
+      expect(at(cy, 'b')).to.deep.equal({ x: 120, y: 10 });
+      expect(at(cy, 'p')).to.deep.equal({ x: 60, y: 5 });
+    });
+
+    it("the locked child's own subtree stays with it", function () {
+      const cy = cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, locked: true },
+          { data: { id: 'aa', parent: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+        ],
+      });
+      const p0 = { ...at(cy, 'p') };
+
+      cy.$id('p').shift({ x: 100, y: 0 });
+
+      expect(at(cy, 'a')).to.deep.equal({ x: 0, y: 0 });
+      expect(at(cy, 'aa')).to.deep.equal({ x: 0, y: 0 });
+      expect(at(cy, 'b')).to.deep.equal({ x: 200, y: 0 });
+      // a's box (the wider, being a compound) holds the left edge; b's
+      // right edge moved by 100, so the centre moved by half
+      expect(at(cy, 'p').x).to.be.closeTo(p0.x + 50, 1e-6);
+      expect(at(cy, 'p').y).to.be.closeTo(p0.y, 1e-6);
+    });
+
+    it('a locked grandchild under an unlocked child: the child moves and re-derives', function () {
+      const cy = cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'c', parent: 'p' } },
+          { data: { id: 'cc', parent: 'c' }, locked: true },
+          { data: { id: 'cd', parent: 'c' }, position: { x: 100, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 300, y: 0 } },
+        ],
+      });
+      const p0 = { ...at(cy, 'p') };
+
+      cy.$id('p').shift({ x: 100, y: 0 });
+
+      expect(at(cy, 'cc')).to.deep.equal({ x: 0, y: 0 });
+      expect(at(cy, 'cd')).to.deep.equal({ x: 200, y: 0 });
+      expect(at(cy, 'b')).to.deep.equal({ x: 400, y: 0 });
+      expect(at(cy, 'c')).to.deep.equal({ x: 100, y: 0 });
+      expect(at(cy, 'p').x).to.be.closeTo(p0.x + 50, 1e-6);
+    });
+
+    it('no position event on the stayer; one on the mover', function () {
+      const cy = mk();
+      const seen = [];
+
+      cy.on('position', (e) => seen.push(e.target.id()));
+      cy.$id('p').position({ x: 150, y: 0 });
+
+      expect(seen).to.include('p');
+      expect(seen).to.include('b');
+      expect(seen).to.not.include('a');
+    });
+
+    it('control: unlocked, the whole subtree travels and the parent reads the write', function () {
+      const cy = mk();
+
+      cy.$id('a').unlock();
+      cy.$id('p').position({ x: 150, y: 0 });
+
+      expect(at(cy, 'a')).to.deep.equal({ x: 100, y: 0 });
+      expect(at(cy, 'b')).to.deep.equal({ x: 200, y: 0 });
+      expect(at(cy, 'p')).to.deep.equal({ x: 150, y: 0 });
+    });
+  });
+
   describe('a locked node holds its position (114.3)', function () {
     var moved = () => cy.$id('n1').position();
     var held = () => cy.$id('n2').position();

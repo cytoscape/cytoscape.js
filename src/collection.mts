@@ -1922,6 +1922,12 @@ export class Collection {
       while (stack.length > 0) {
         const s = stack.pop() as number;
 
+        // a locked descendant stayed, and its subtree with it (116.3):
+        // nothing moved there, so nothing to announce
+        if (store.hasFlag('nodes', s, FLAG_LOCKED)) {
+          continue;
+        }
+
         for (const kid of store.childrenOf(s)) {
           stack.push(kid);
         }
@@ -3748,7 +3754,10 @@ export class Collection {
    * position writes and position tweens alike (one rule since round
    * 114.3: every layout holds a locked node where it is and keeps it in
    * the layout's structure; force treats it as an obstacle its settle
-   * separates the others from).  True for every node while
+   * separates the others from).  A locked child stays where it is when
+   * its compound parent is positioned, shifted or dragged — its own
+   * subtree with it — and the parent re-derives about the stayers and
+   * the movers (116.3, v3's rule).  True for every node while
    * `cy.autolock( true )` is set,
    * as in v3; the flag column alone is what `{ locked: true }` filters
    * read.

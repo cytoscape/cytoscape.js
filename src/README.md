@@ -1700,7 +1700,11 @@ each is deliberate, not a pass-1 deferral:
   flow honoured the lock, through the contract's `nodeSlots()`; the
   store tier (`setPosition*`) stays raw for the renderer's settle, the
   wire and animation `apply`.  `cy.json()` exports the node's own
-  flag, not autolock's.
+  flag, not autolock's.  A locked **child** stays when its compound
+  parent is positioned, shifted or dragged — its own subtree with it —
+  and the parent re-derives about the stayers and the movers rather
+  than reading back the written position (116.3, v3's rule; until then
+  `shiftSubtree` moved every descendant raw).
 - **A label dims with its element** (115.6).  v3's effective label
   alpha is `opacity × text-opacity`; v4's label pass multiplied only
   `text-opacity`, so a node at `opacity: 0.15` drew a fully opaque

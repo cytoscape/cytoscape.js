@@ -1712,9 +1712,18 @@ export class GraphStore implements ModelView {
     }
   }
 
-  /** Shift a parent's whole subtree by a delta (raw writes, one span). */
+  /**
+   * Shift a parent's subtree by a delta (raw writes, one span).  A
+   * locked descendant stays, and so does its own subtree (116.3 — v3's
+   * rule: a parent write shifts `children()` through the locked-aware
+   * shift, so a locked child's `shift` is refused and its children are
+   * never reached).  Every ancestor of a node left behind re-derives —
+   * their boxes now span the stayers and the movers, so a uniform
+   * translation of the written position no longer describes them.
+   */
   private shiftSubtree(slot: number, dx: number, dy: number): void {
     const pos = this.nodes.column('node.position') as Float32Array;
+    const flags = this.nodes.column('node.flags') as Uint32Array;
     const stack: number[] = [];
     let min = Infinity;
     let max = -1;
@@ -1725,6 +1734,11 @@ export class GraphStore implements ModelView {
 
     while (stack.length > 0) {
       const s = stack.pop() as number;
+
+      if ((flags[s] & FLAG_LOCKED) !== 0) {
+        this.hierarchy.markAncestors(s);
+        continue;
+      }
 
       pos[s * 2] += dx;
       pos[s * 2 + 1] += dy;
@@ -2133,7 +2147,9 @@ export class GraphStore implements ModelView {
         // v3's beforePositionSet: moving a parent shifts its subtree by
         // the delta; the parent's own derived value then equals the
         // written position exactly (uniform translation), so only its
-        // ancestors re-derive
+        // ancestors re-derive — unless a locked descendant stayed
+        // (116.3), when shiftSubtree marks the chain above it, this
+        // parent included, to re-derive about the stayers and the movers
         const dx = x - pos[slot * 2];
         const dy = y - pos[slot * 2 + 1];
 

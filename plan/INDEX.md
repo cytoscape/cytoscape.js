@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111, 113–115 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 112 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 112, 116 |
 
 ## The sections
 
-154 sections.
+155 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -181,3 +181,4 @@ A round can land with an item held open; the round file says which.
 | 152 | 113 | 2026-09-01 | landed | [The performance review: the full suite against the 13 Aug baseline](rounds/2026-09-01-02-rnd0113-landed-the-performance-review-the-full-suite-against-the-13-aug-baseline.md) |
 | 153 | 114 | 2026-09-02 | landed | [Layout cleanup: overlap, locks, animation and the debug page](rounds/2026-09-02-01-rnd0114-landed-layout-cleanup-overlap-locks-animation-and-the-debug-page.md) |
 | 154 | 115 | 2026-09-02 | landed | [Exact overlap separation: the layouts stop over-separating](rounds/2026-09-02-02-rnd0115-landed-exact-overlap-separation-the-layouts-stop-over-separating.md) |
+| 155 | 116 | 2026-09-03 | plan | [Item 55: size-aware repulsion, the force box and the locked child](rounds/2026-09-03-01-rnd0116-plan-item-55-size-aware-repulsion-the-force-box-and-the-locked-child.md) |

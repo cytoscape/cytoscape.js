@@ -1177,6 +1177,12 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
   animateLive?: boolean;
   /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
+  /** fit the settle into an explicit box (116.2 — flow's rule): scaled
+   * down, never up, until every body fits, then centred; uniform, so
+   * the sim's structure is kept.  Skipped when a node is pinned or
+   * constraints are set (as the component re-pack is).  v3 cose
+   * stretched the centres to fill the box, up or down, size-blind. */
+  boundingBox?: BoundingBoxInput;
   /** separate overlapping node bodies after the settle (114.5; default
    * true; the dense case rebuilt in 115 as a proximity-stress pass, so
    * a pile opens locally instead of the whole component scaling) —
@@ -2841,7 +2847,15 @@ declare class GraphStore implements ModelView {
    * are the engine's own (see writeLabel) — no engine round trip needed.
    */
   private reanchorLabel;
-  /** Shift a parent's whole subtree by a delta (raw writes, one span). */
+  /**
+   * Shift a parent's subtree by a delta (raw writes, one span).  A
+   * locked descendant stays, and so does its own subtree (116.3 — v3's
+   * rule: a parent write shifts `children()` through the locked-aware
+   * shift, so a locked child's `shift` is refused and its children are
+   * never reached).  Every ancestor of a node left behind re-derives —
+   * their boxes now span the stayers and the movers, so a uniform
+   * translation of the written position no longer describes them.
+   */
   private shiftSubtree;
   /** Mark a node's ancestor chain (and its own derived bounds when it is
    * a parent) stale; flushed lazily by flushDerived(). */
@@ -5689,7 +5703,10 @@ declare class Collection {
    * position writes and position tweens alike (one rule since round
    * 114.3: every layout holds a locked node where it is and keeps it in
    * the layout's structure; force treats it as an obstacle its settle
-   * separates the others from).  True for every node while
+   * separates the others from).  A locked child stays where it is when
+   * its compound parent is positioned, shifted or dragged — its own
+   * subtree with it — and the parent re-derives about the stayers and
+   * the movers (116.3, v3's rule).  True for every node while
    * `cy.autolock( true )` is set,
    * as in v3; the flag column alone is what `{ locked: true }` filters
    * read.

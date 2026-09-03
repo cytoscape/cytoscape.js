@@ -103,3 +103,106 @@ changelog, and the summary rewritten at close.
   positioned, shifted or dragged, and the parent re-derives about it; the
   locked child's own subtree stays; no `position` event on the locked
   child, one on its moved sibling; control: an unlocked child travels.
+
+### What landed (2026-09-03)
+
+All three, plus a defect none of them was looking for.
+
+**116.3 — the locked child** (`fix(116.3)`).  `shiftSubtree` skips a
+locked descendant and its whole subtree and marks the chain above it
+stale, so every ancestor re-derives about the stayers and the movers
+rather than trusting the uniform-translation write; the subtree
+position events skip the stayers.  The drag gesture needed no change.
+Six specs in `test/grab-lock.mjs` (position, shift twice — the
+per-step re-derive a drag relies on — the locked child's own subtree, a
+locked grandchild under an unlocked child, the events, the unlocked
+control) and a pointer-drag browser spec over a real compound.
+
+**116.2 — the box** (`feat(116.2)`).  Flow's `applyBoundingBox` became
+`fitBodiesToBox` in `pack.mts` — exact for asymmetric extents; flow
+passes its symmetric halves and its specs guard the lift — and force
+calls it in the settle after the separation, projection and re-pack,
+held back by the re-pack's rule.  The quality suite's force row is
+`bbox: true`, so the far-away-box loop covers it; `MIGRATING.md`
+carries the cose row.
+
+**116.1 — size-aware repulsion** (`feat(116.1)`), and what it found.
+The plan's law — the distance replaced by the gap everywhere — was
+built first and measured: on the compound-nesting fixture (two
+4-cliques in two compounds, one cross edge) the intra edges at ideal
+length 60 settled at 86 px against the point sim's 62, a 38% inflation
+of pairs that were already clear, because a clique's diagonal pairs sit
+inside their boxes' diagonal separation.  What landed instead is a
+**contact term**: the point law stays, and a pair whose gap along its
+direction is under `cutoff / 16` feels an extra inverse-square push
+measured from that gap, vanishing at the range.  The range was swept:
+
+| contact range | nesting intra (point: 62) | 30-clique min gap | 200-clique min gap | 12-clique iterations (point: 120) |
+| --- | --- | --- | --- | --- |
+| cutoff / 4 | 77 | 7.2 | 3.0 | 173 |
+| cutoff / 8 | 69 | 4.4 | 3.7 | 260 |
+| **cutoff / 16** | **62** | **2.4** | **2.5** | 316 |
+
+Every range cleared every pile (the point sim left 94 overlaps on the
+30-clique and 1,712 on the 200-clique); 1/16 is the one that leaves a
+clear pair where the point sim put it.  The price is convergence on
+dense piles: the term is stiff, so a clique that settled by
+displacement in ~80 iterations anneals to alpha's floor (~460).  Sparse
+graphs, where the term rarely fires, are unchanged (a 12-ring settles at
+the same link length within 5%).  The grid cell grows to
+`max(cutoff, maxW, maxH)`; the far field stays monopole; on the GPU the
+boxes ride the CSR tail behind the anchors, so the kernel keeps its
+budget.  Six sim specs, one layout spec (the sim's own margin beyond
+the padding, which the settle's tightness rule can never produce) and
+a browser spec.
+
+**The readback that never landed** (`fix(116.1)`).  The browser spec
+was the first that needed a *converged* GPU run, and it got nine
+iterations.  The renderer polls convergence at frame start, before the
+frame's encode; the poll mapped the staging buffer, the encode skipped
+the copy because the buffer was mapped, and so on every frame — the
+staging buffer kept its initial zero, three zero readbacks counted as
+settled, and every GPU force run with the default threshold had
+stopped at nine iterations since round 18.3.  The spectral seed made
+the result plausible, the settle's separation hid the pile, 18.3's
+lease spec ran with `threshold: 0`, and 18.4's invariants are loose
+enough to pass a nine-iteration run.  Confirmed on the pre-round build
+with the same trace (`lastMaxDisp` 0 at every poll).  The runtime now
+maps only once a copy has been encoded since the last map, so a poll
+reads a batch one frame late, latest-wins: the 30-clique's point run
+takes 44 frames instead of 4, its boxed run 141, and the spec asserts
+the frame count.  Every browser force number recorded before this —
+the render bench's `--layout` rows included — was a nine-iteration
+figure; `docs/agents/rendering.md` carries the lesson.
+
+**The price, measured.**  The render bench's live-layout row on the
+generated 25k × 50k scene, both sides on the readback fix so the
+comparison is between converged runs (the numbers this file's plan
+would have compared against were nine-iteration figures):
+
+| 25k × 50k, amd gcn-4 | point sim | with boxes |
+| --- | --- | --- |
+| GPU live layout to converge | 15.4 s, 7 fps | 25.5 s, 4 fps |
+| GPU silent settle | 14.8 s | 21.9 s |
+| sync CPU settle (headless, compounds, constraints) | 44 s | 130 s |
+
+The whole difference is iterations: on a sparse graph the term rarely
+fires, but one touching pair anywhere keeps the max displacement above
+the threshold, and a stiff term cannot be settled by explicit Euler
+(stability needs `alpha · f'(g*) < 2`, which `1/g²` meets only near
+alpha's floor), so a run with boxes anneals to the end.  Three ways
+out were built and measured before keeping the term as it is: a linear
+ramp to `repulsion · cutoff` at contact (settles no sooner and leaves a
+200-clique with 213–345 overlaps), a per-tick Jacobi overlap
+projection above alpha (pairs sit at −0.1 px under spring pressure and
+jitter to the floor; averaged over neighbours it leaves 618 overlaps),
+and a softened singularity (`1/(g+σ)²`, σ = range/2 at range 1/8:
+piles clear with 0.5–3 px to spare but the 200-clique keeps 41
+overlaps, and iterations are 209–458 either way).  Whether the
+tripled CPU settle is the right default is item 56.
+
+
+**The record.**  Item 55's three calls leave `PLAN.md`; the item keeps
+only its round-102 measurement note.  The README's force and
+locked-nodes paragraphs, `MIGRATING.md` (two rows), the changelog and
+the summary were rewritten from this file.

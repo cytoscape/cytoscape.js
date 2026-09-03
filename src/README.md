@@ -1309,10 +1309,14 @@ round records carry the histories.
   separation stays.  The grid cell grows to the largest box so every
   overlapping pair is gathered exactly; the far field stays monopole.
   On the GPU the boxes ride the CSR buffer's tail behind the anchors
-  (four f32 per node), so the kernel keeps its binding budget.  The
-  price is convergence: a clique that settled by displacement in ~80
-  iterations now anneals to alpha's floor (~460) — the contact term is
-  stiff — while sparse graphs, where it rarely fires, are unchanged.
+  (four f32 per node), so the kernel keeps its binding budget.  **The
+  price is convergence**: a stiff contact under spring pressure cannot
+  be settled by explicit Euler, so a run with boxes anneals to alpha's
+  floor (~460 iterations) instead of stopping by displacement — on the
+  25k render-bench scene the GPU live run went 15.4 s → 25.5 s and the
+  sync CPU settle 44 s → 130 s (open call 56 holds the default-on
+  question; a linear ramp, a per-tick projection and a softened
+  singularity were each measured and each lost the piles).
   A pure gap law (the distance replaced by the gap everywhere) was
   measured first and inflated clear pairs by the boxes' size (62 → 86
   px on the nesting fixture), which is why the term is short-range.

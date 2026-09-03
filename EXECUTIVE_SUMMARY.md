@@ -5,13 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-02, after the layout cleanup and its
-  correction: every layout reads one set of node dimensions and avoids
-  overlap in its own geometry — exactly, pair by pair, so nothing is
-  spread wider than its neighbours need — locked nodes hold their place
-  everywhere, force's `animate` means what it means elsewhere, and a
-  quality suite asserts placement, fit, overlap, tightness, locks,
-  animation and component separation for every layout.
+- **Last updated**: 2026-09-03, after the layout cleanup's three
+  follow-ups: the force sim keeps node bodies apart itself, on both
+  executors, so a live run streams separated bodies; force honours
+  `boundingBox`; a locked child stays put when its compound parent is
+  dragged — and, found on the way, the GPU force convergence readback
+  had never delivered a value, so every GPU force run in a browser had
+  been stopping after nine iterations.
 
 ## How to maintain this file
 
@@ -50,7 +50,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,558 unit · 621 module · 24 soak · 444 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,593 unit · 637 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
@@ -704,6 +704,38 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     viewport fits, a pinned node stays pinned — before the portfolio
     audit decides what else to build.
 
+- **3 Sep** — force keeps bodies apart itself; the GPU readback that never was
+  - The force sim now reads the same padded node boxes the settle
+    separates, on the CPU and the GPU alike: a short-range push measured
+    from the gap between two boxes makes the steady state overlap-free,
+    while a pair already clear is exactly what it was (a ring settles at
+    the same link length; a 30-clique and a 200-clique of padded boxes
+    converge overlap-free with a few px to spare where the point sim
+    left 94 and 1,712 overlaps).  A live run streams separated bodies
+    once the transient clears; the settle's exact separation clears
+    residue only.  The price is convergence: a run with boxes anneals
+    to the end instead of settling early — the 25k benchmark's GPU
+    live run 15 → 25 s, its CPU settle 44 → 130 s — and whether that
+    is the right default is an open decision.
+  - `boundingBox` on force holds the drawing — scaled down, never up,
+    bodies inside, centred — by the same rule flow uses; a pinned node
+    or constraints hold it back.  A locked child stays where it is when
+    its compound parent is positioned, shifted or dragged, its subtree
+    with it, and the parent re-derives about the stayers and the movers
+    — v3's rule.
+  - Found by the first spec that needed a converged GPU run: the force
+    runtime's convergence poll mapped its staging buffer ahead of every
+    frame's copy, so the copy was always skipped and every readback was
+    zero — which counted as settled.  Every GPU force run with the
+    default threshold had stopped after nine iterations since the
+    integrator landed, with the spectral seed making the result
+    plausible and the settle's separation hiding the pile.  Fixed; the
+    spec asserts the frame count; every browser force number measured
+    before it was a nine-iteration figure.
+  - Buys a force layout whose live run is watchable without overlap,
+    whose box option means what it means elsewhere, and whose GPU
+    executor actually converges.
+
 ---
 
 ## What changed for users of v3
@@ -736,6 +768,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 - **`force` with `animate: false` on a rendered flat graph is async**
   (31 Aug): executor choice is availability-driven — read positions at
   `layoutstop` / `promise()`.  Headless runs stay synchronous.
+- **`force` avoids overlap in the sim and honours `boundingBox`** (3 Sep):
+  under `avoidOverlap` the sim keeps node bodies apart itself; a
+  `boundingBox` scales the drawing down (never up) so the bodies fit,
+  then centres it — v3 cose stretched centres to fill the box, up or
+  down, size-blind.  A locked child no longer travels with a dragged
+  compound parent.
 - **`animate: true` tweens on `force` too** (2 Sep) — v3 cose's `'end'`;
   the streaming run v3 spelled `'during'` is `animateLive: true`.  Every
   layout avoids overlap by default, exactly per pair (`radial`, `force`
@@ -764,6 +802,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | `arrow-scale` quantization | Stored at a 1/16 step, so `arrow-scale: 1.4` draws at 1.375. Fixing it spends six spare bits a seventeenth arrowhead shape also wants — one or the other |
 | Edge overlay band width | v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | Hollow *mid* arrows | Still show the line through them: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
+| Size-aware force repulsion by default | Keeps every pile apart in the sim, at ~1.7× the GPU run and ~3× the CPU settle, since a contact under spring pressure never settles by displacement. Keep it, make the sim half opt-in, or change the convergence test when boxes are on |
 
 ## Not yet built
 

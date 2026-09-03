@@ -24,6 +24,20 @@ that compile and then behave differently.
 
 ### Added
 
+- **Force keeps bodies apart in the sim, and honours `boundingBox`**
+  (round 116).  Under `avoidOverlap` the force sim reads the same
+  padded node boxes the settle separates, on the CPU and GPU executors
+  alike: a short-range contact term measured from the gap between two
+  boxes makes the steady state overlap-free, so a live (`animateLive`)
+  run streams separated bodies once the transient clears and the
+  settle's exact separation clears residue only; `avoidOverlap: false`
+  is the point sim.  `boundingBox` on `force` now holds the drawing —
+  scaled down, never up, so every body lies inside, then centred (flow's
+  rule, shared as `fitBodiesToBox`); a pinned node or constraints hold
+  it back, as they hold the component re-pack.  A locked child stays
+  where it is when its compound parent is positioned, shifted or
+  dragged — its own subtree with it — and the parent re-derives about
+  the stayers and the movers (v3's rule).
 - **Layout cleanup** (round 114): every layout reads one set of node
   dimensions, labels included by default (`nodeDimensionsIncludeLabels`
   now defaults to `true`); locked nodes hold their place against

@@ -200,11 +200,13 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-01, round 113), the genuinely open questions
+**As last swept** (2026-09-03, round 116), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
-review could not screen.  What the 2026-08-26
+review could not screen; round 116 took item 55's three calls, left
+only its round-102 measurement note on the item, and added **item 56**,
+the convergence price of size-aware repulsion.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -916,19 +918,43 @@ directions".*
     `meta.adapter` would give the next such step a suspect.  Not a
     decision so much as a queue; it leaves this list when a round
     gives those rows bands.
-55. **Round 114's layout follow-ups** (logged 2026-09-02).  Three
-    were declined for the round rather than the library.  (a)
-    Size-aware (disc) repulsion inside the force sim, CPU and WGSL,
-    so a live (`animateLive`) run is overlap-free *during* the run
-    and not only at settle — a shader change with parity tests; the
-    settle's separation (114.5) covers every other presentation.  (b)
-    `boundingBox` on force: the sim has its own frame and ignores the
-    option; whether to scale the settle into a box (flow's rule) or
-    keep declining is a decision.  (c) A locked child still travels
-    with a dragged compound parent through `shiftSubtree`; v3 leaves
-    it behind and re-derives the parent.  And a measurement the round
-    produced for round 102: the debug page's hover panel is the "app
-    spelling today" (a per-element opacity bypass or `hide()` over
-    everything outside the closed neighbourhood), timed in the console
-    per hover change — the numbers on em-web and ndex-large belong in
-    102's first measurement when that round opens.
+55. **Round 114's layout follow-ups** (logged 2026-09-02; **the three
+    calls taken by round 116, 2026-09-03**).  (a) Size-aware repulsion
+    inside the force sim, CPU and WGSL — landed: under `avoidOverlap`
+    the sim keeps the settle's own boxes apart through a short-range
+    contact term, so a live run streams separated bodies once the
+    transient clears; the settle's exact separation stays.  (b)
+    `boundingBox` on force — **decided: flow's rule** (scale down,
+    never up, bodies held, the drawing centred; held back when a node
+    is pinned or constraints are set, as the re-pack is), not v3
+    cose's size-blind stretch.  (c) A locked child now stays when its
+    compound parent is positioned, shifted or dragged, its subtree with
+    it, and the parent re-derives (v3's rule).  What the round found on
+    the way: **the GPU force displacement readback had never landed**,
+    so every default GPU run stopped at nine iterations — fixed with
+    116.1, and every browser force number measured before it is a
+    nine-iteration figure.  What remains on this item is a measurement
+    the round produced for round 102: the debug page's hover panel is
+    the "app spelling today" (a per-element opacity bypass or `hide()`
+    over everything outside the closed neighbourhood), timed in the
+    console per hover change — the numbers on em-web and ndex-large
+    belong in 102's first measurement when that round opens.
+56. **Size-aware repulsion's convergence price** (logged 2026-09-03,
+    round 116).  The contact term keeps every pile apart in the sim,
+    but a stiff contact under spring pressure cannot be settled by
+    explicit Euler, so a run with boxes anneals to alpha's floor
+    instead of stopping by displacement: on the 25k render-bench scene
+    the GPU live run went 15.4 s → 25.5 s and the sync CPU settle
+    (headless, compounds, constraints) 44 s → 130 s.  Three softer
+    mechanisms were measured and each lost the piles (the round's
+    record has the table).  The maintainer chose on-by-default before
+    the price was known; the calls are to keep it (a live run that is
+    overlap-free is what was asked for), to make `avoidOverlap`'s sim
+    half opt-in while the settle's separation stays, or to change the
+    convergence test when boxes are on (e.g. an alpha floor of 0.02,
+    where the jitter is under the threshold anyway).
+    **First measurement**: the iteration count at which the boxed
+    run's *field* stops changing (positions within 1 px of the final
+    ones), against the alpha at which it stops by displacement — if
+    the field is done by alpha ≈ 0.05, an earlier stop costs nothing
+    visible.

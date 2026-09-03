@@ -411,6 +411,68 @@ test.describe('WebGPU renderer', () => {
     expect(picked.onBackground).toBe(null);
   });
 
+  test('dragging a compound parent leaves a locked child behind and re-derives the parent (116.3)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // p > a (locked, at the origin), p > b (at x 100): a press between
+    // the children lands on the parent's body; a drag of 100 px moves b
+    // and the parent's box, a stays, and p reads back the centre of
+    // both rather than the pointer's translation
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'p' } },
+        {
+          data: { id: 'a', parent: 'p' },
+          position: { x: 0, y: 0 },
+          locked: true,
+        },
+        { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+      ],
+      style: { nodes: { width: 30, height: 30 } },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const before = await page.evaluate(() => ({
+      p: { ...window.cy.$id('p').position() },
+    }));
+
+    await page.mouse.move(center.x + 50, center.y);
+    await page.mouse.down();
+
+    for (let step = 1; step <= 5; step++) {
+      await page.mouse.move(center.x + 50 + step * 20, center.y);
+      await waitFrames(page, 1);
+    }
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    const after = await page.evaluate(() => {
+      const cy = window.cy;
+
+      return {
+        a: { ...cy.$id('a').position() },
+        b: { ...cy.$id('b').position() },
+        p: { ...cy.$id('p').position() },
+        grabbed: cy.$id('p').grabbed(),
+      };
+    });
+
+    expect(before.p).toEqual({ x: 50, y: 0 });
+    expect(after.a).toEqual({ x: 0, y: 0 });
+    expect(after.b.x).toBeCloseTo(200, 3);
+    expect(after.b.y).toBeCloseTo(0, 3);
+    expect(after.p.x).toBeCloseTo(100, 3);
+    expect(after.p.y).toBeCloseTo(0, 3);
+    expect(after.grabbed).toBe(false);
+  });
+
   test('a press inside a compound body selects the edge under it, not the parent', async ({
     page,
   }) => {

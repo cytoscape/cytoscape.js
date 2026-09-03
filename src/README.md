@@ -1293,6 +1293,22 @@ round records carry the histories.
 - Options added by round 114.5: `animateLive` (the streaming run —
   the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
   `animate` now tweens, and the shared finisher options apply.
+- **The GPU displacement readback never landed** (found by 116.1's
+  browser spec, fixed with it).  The renderer polls convergence at
+  frame start, before the frame's encode, so the poll mapped the
+  staging buffer ahead of every copy, the copy was skipped on every
+  frame (the buffer was mapped), and every readback was the buffer's
+  initial zero — which counted as settled, so **any GPU run with the
+  default threshold stopped at nine iterations**, four frames, from
+  the spectral seed, the settle's separation hiding the pile.  Round
+  18.3's lease spec ran with `threshold: 0` and 18.4's invariants are
+  loose enough that a nine-iteration run passed both.  The runtime
+  now maps only once a copy has been encoded since the last map, so a
+  poll reads a batch (one frame late, latest-wins); a 30-clique's
+  point run takes 44 frames and its boxed run 141, and the 116.1 spec
+  asserts the frame count.  Every browser force number measured before
+  this — the render bench's `--layout` rows included — was a
+  nine-iteration run.
 - **`boundingBox` is honoured** (116.2), by flow's rule made shared
   (`layout/pack.mts`'s `fitBodiesToBox`): after the settle's separation
   and re-pack the drawing scales down — never up — until every body

@@ -446,6 +446,14 @@ export class GpuForceRuntime {
   private columnPos: GPUBuffer | null = null;
   private dispStaging: GPUBuffer;
   private dispInFlight = false;
+  /** a batch's displacement max has been copied into the staging buffer
+   * since the last map (116.1): the renderer polls at frame start,
+   * before the frame's encode, so a poll that mapped unconditionally
+   * had the copy skipped on every frame — the staging buffer never
+   * received a batch and every readback was its initial zero, which
+   * counted as settled: three polls in, any GPU run with the default
+   * threshold stopped at nine iterations */
+  private dispCopied = false;
   private cells: number;
   private gridCols: number;
   private gridRows: number;
@@ -888,16 +896,21 @@ export class GpuForceRuntime {
         0,
         8,
       );
+      this.dispCopied = true;
     }
   }
 
-  /** Poll the batch's max displacement (latest-wins; drives the settle). */
+  /** Poll the batch's max displacement (latest-wins; drives the settle).
+   * Maps only once a copy has been encoded since the last map, so a
+   * poll ahead of the frame's encode reads a batch rather than the
+   * staging buffer's initial zero (116.1). */
   pollConvergence(): void {
-    if (this.dispInFlight || this.destroyed) {
+    if (this.dispInFlight || this.destroyed || !this.dispCopied) {
       return;
     }
 
     this.dispInFlight = true;
+    this.dispCopied = false;
     this.dispStaging.mapAsync(MAP_MODE.READ).then(
       () => {
         if (this.destroyed) {

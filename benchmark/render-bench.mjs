@@ -9,12 +9,15 @@
 //
 //   npm run benchmark:renderer                 # all scenes
 //   npm run benchmark:renderer -- --scene gen  # filter by key/label
+//                                                  # (an exact key wins)
 //   npm run benchmark:renderer -- --gpu-only   # skip the v3 side
 //                                                  # (gpu-vs-gpu scenarios
 //                                                  #  like compaction)
 //   npm run benchmark:renderer -- --layout     # live layout mode
 //                                                  # (+ --layout-uncapped
-//                                                  #  for full baseline runs)
+//                                                  #  for full baseline runs;
+//                                                  #  + --layout-sim-boxes
+//                                                  #  for avoidOverlapInSim)
 //   node --import tsx benchmark/render-bench.mjs --json out.json
 //                                                  # jobs bundle only
 //                                                  # (report.mjs --renderer)
@@ -156,6 +159,12 @@ const SCENES = [
 // "> bail".  --layout-uncapped removes both bounds to measure a full run.
 const LAYOUT_MODE = process.argv.includes('--layout');
 const LAYOUT_UNCAPPED = process.argv.includes('--layout-uncapped');
+// round 117: the force rows with the sim's own overlap term
+// (`avoidOverlapInSim: true`, opt-in since item 56) — the row's label
+// says which, so the two never read as one series
+const LAYOUT_SIM_BOXES = process.argv.includes('--layout-sim-boxes');
+const LAYOUT_ROW = (label) =>
+  LAYOUT_SIM_BOXES ? `${label} [avoidOverlapInSim]` : label;
 const LAYOUT_CAP_MS = 30000; // polite stop — reports the measured floor
 const LAYOUT_BAIL_MS = 60000; // hard bail — must exceed the cap + one iteration
 
@@ -274,9 +283,16 @@ const startedAt = Date.now();
 let scenes = SCENES;
 
 if (sceneFilter != null) {
-  scenes = SCENES.filter(
-    (s) => s.key.includes(sceneFilter) || s.label.includes(sceneFilter),
-  );
+  // an exact key wins (round 117: `gen-25k` is a prefix of nine other
+  // keys, and a one-scene layout run should not become a ten-scene one)
+  const exact = SCENES.filter((s) => s.key === sceneFilter);
+
+  scenes =
+    exact.length > 0
+      ? exact
+      : SCENES.filter(
+          (s) => s.key.includes(sceneFilter) || s.label.includes(sceneFilter),
+        );
 }
 
 if (scenes.length === 0) {
@@ -429,6 +445,7 @@ for (const scene of scenes) {
         const run = step(
           'forceLayoutScenario',
           LAYOUT_UNCAPPED ? 0 : LAYOUT_CAP_MS,
+          LAYOUT_SIM_BOXES,
         ).catch((err) => {
           if (!bailed) {
             throw err;
@@ -455,7 +472,7 @@ for (const scene of scenes) {
           );
           pushBench(
             groups,
-            'layout: live run to convergence',
+            LAYOUT_ROW('layout: live run to convergence'),
             benchSide,
             oneShotStats(LAYOUT_BAIL_MS),
           );
@@ -473,7 +490,7 @@ for (const scene of scenes) {
         );
         pushBench(
           groups,
-          'layout: live run to convergence',
+          LAYOUT_ROW('layout: live run to convergence'),
           benchSide,
           oneShotStats(r.wallMs),
         );
@@ -488,6 +505,7 @@ for (const scene of scenes) {
           const s = await step(
             'silentSettleScenario',
             LAYOUT_UNCAPPED ? 0 : LAYOUT_CAP_MS,
+            LAYOUT_SIM_BOXES,
           );
 
           if (s.frames < 2) {
@@ -504,13 +522,13 @@ for (const scene of scenes) {
             );
             pushBench(
               groups,
-              'layout: animate:false settle (87.2)',
+              LAYOUT_ROW('layout: animate:false settle (87.2)'),
               'gpu (silent)',
               oneShotStats(s.gpuMs),
             );
             pushBench(
               groups,
-              'layout: animate:false settle (87.2)',
+              LAYOUT_ROW('layout: animate:false settle (87.2)'),
               'cpu (sync, pre-87.2 path)',
               oneShotStats(s.cpuMs),
             );

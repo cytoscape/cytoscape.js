@@ -2095,7 +2095,13 @@ test.describe('WebGPU renderer', () => {
       const f0 = cy.stats().frames;
 
       await cy
-        .layout({ name: 'force', seed: 7, animateLive: true, fit: false })
+        .layout({
+          name: 'force',
+          seed: 7,
+          animateLive: true,
+          fit: false,
+          avoidOverlapInSim: true,
+        })
         .run()
         .promise();
 
@@ -2109,7 +2115,14 @@ test.describe('WebGPU renderer', () => {
 
       const control = minGap();
 
-      return { live, control, frames };
+      // 117 (item 56): the sim half is opt-in, so the default run is the
+      // point kernel and the settle's separation opens the pile to
+      // exactly the padding
+      await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+
+      const byDefault = minGap();
+
+      return { live, control, frames, byDefault };
     });
 
     // the displacement readback lands (116.1's finding): before it did,
@@ -2124,6 +2137,14 @@ test.describe('WebGPU renderer', () => {
       10.5,
     );
     expect(result.control, 'the point sim overlaps').toBeLessThan(0);
+    expect(
+      result.byDefault,
+      'the default run is settled to the padding',
+    ).toBeGreaterThan(9.5);
+    expect(
+      result.byDefault,
+      'the default run is settled to the padding',
+    ).toBeLessThan(10.5);
   });
 
   test('a silent force run shows no intermediate motion (round 87.2)', async ({

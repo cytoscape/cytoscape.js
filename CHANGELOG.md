@@ -24,14 +24,17 @@ that compile and then behave differently.
 
 ### Added
 
-- **Force keeps bodies apart in the sim, and honours `boundingBox`**
-  (round 116).  Under `avoidOverlap` the force sim reads the same
-  padded node boxes the settle separates, on the CPU and GPU executors
-  alike: a short-range contact term measured from the gap between two
-  boxes makes the steady state overlap-free, so a live (`animateLive`)
-  run streams separated bodies once the transient clears and the
-  settle's exact separation clears residue only; `avoidOverlap: false`
-  is the point sim.  `boundingBox` on `force` now holds the drawing —
+- **Force can keep bodies apart in the sim, and honours `boundingBox`**
+  (rounds 116–117).  Under `avoidOverlap` with `avoidOverlapInSim:
+  true` the force sim reads the same padded node boxes the settle
+  separates, on the CPU and GPU executors alike: a short-range contact
+  term measured from the gap between two boxes makes a pile's steady
+  state overlap-free, so a live (`animateLive`) run streams separated
+  bodies once the transient clears.  It is opt-in (117, open call 56):
+  the stiff term anneals every run to alpha's floor, and on a dense
+  graph the spring pressure beats its bounded push, so the settle's
+  exact separation — always on under `avoidOverlap` — is what clears
+  the overlap either way.  `boundingBox` on `force` now holds the drawing —
   scaled down, never up, so every body lies inside, then centred (flow's
   rule, shared as `fitBodiesToBox`); a pinned node or constraints hold
   it back, as they hold the component re-pack.  A locked child stays

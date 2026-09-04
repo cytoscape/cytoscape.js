@@ -1293,34 +1293,45 @@ round records carry the histories.
 - Options added by round 114.5: `animateLive` (the streaming run —
   the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
   `animate` now tweens, and the shared finisher options apply.
-- **The sim keeps the bodies apart itself** (116.1).  Under
-  `avoidOverlap` the same padded boxes the settle separates go to the
-  sim, on both executors: a pair whose gap along its direction (round
-  115's `separationAlong` — exact for boxes) is under a **contact
-  range** of cutoff/16 feels an extra inverse-square push measured
-  from that gap, vanishing at the range.  So a pair already clear is
-  exactly the point law's (a ring settles at the same link length; the
-  compound-nesting fixture's intra edges stay at 62 px), a pile opens
-  in the sim rather than at the settle (a 30-clique and a 200-clique
-  of padded 40 px boxes converge overlap-free with a 2–3 px margin;
-  the point sim left 94 and 1,712 overlaps), and a live run streams
-  separated bodies once the transient clears — the seed can overlap,
-  and a hard per-tick guarantee is not promised; the settle's exact
-  separation stays.  The grid cell grows to the largest box so every
-  overlapping pair is gathered exactly; the far field stays monopole.
-  On the GPU the boxes ride the CSR buffer's tail behind the anchors
-  (four f32 per node), so the kernel keeps its binding budget.  **The
-  price is convergence**: a stiff contact under spring pressure cannot
-  be settled by explicit Euler, so a run with boxes anneals to alpha's
-  floor (~460 iterations) instead of stopping by displacement — on the
-  25k render-bench scene the GPU live run went 15.4 s → 25.5 s and the
-  sync CPU settle 44 s → 130 s (open call 56 holds the default-on
-  question; a linear ramp, a per-tick projection and a softened
-  singularity were each measured and each lost the piles).
-  A pure gap law (the distance replaced by the gap everywhere) was
-  measured first and inflated clear pairs by the boxes' size (62 → 86
-  px on the nesting fixture), which is why the term is short-range.
-  `avoidOverlap: false` is the point sim.
+- **The sim can keep the bodies apart itself** (116.1; **opt-in since
+  117**, `avoidOverlapInSim`).  Under `avoidOverlap` with
+  `avoidOverlapInSim: true` the same padded boxes the settle separates
+  go to the sim, on both executors: a pair whose gap along its
+  direction (round 115's `separationAlong` — exact for boxes) is under
+  a **contact range** of cutoff/16 feels an extra inverse-square push
+  measured from that gap, vanishing at the range.  So a pair already
+  clear is exactly the point law's (a ring settles at the same link
+  length; the compound-nesting fixture's intra edges stay at 62 px), a
+  pile opens in the sim rather than at the settle (a 30-clique and a
+  200-clique of padded 40 px boxes converge overlap-free with a 2–3 px
+  margin; the point sim left 94 and 1,712 overlaps), and a live run
+  streams separated bodies once the transient clears — the seed can
+  overlap, and a hard per-tick guarantee is not promised; the settle's
+  exact separation stays.  The grid cell grows to the largest box so
+  every overlapping pair is gathered exactly; the far field stays
+  monopole.  On the GPU the boxes ride the CSR buffer's tail behind the
+  anchors (four f32 per node), so the kernel keeps its binding budget.
+  **Why it is opt-in** (117, item 56): the term is stiff, so a run with
+  boxes anneals to alpha's floor (~460 iterations) instead of stopping
+  by displacement — on the 25k render-bench scene the GPU live run went
+  15.4 s → 25.5 s and the sync CPU settle 44 s → 130 s — and the
+  measurement item 56 asked for showed the field is never done early
+  (the max per-tick step sits at the step cap until alpha ≈ 0.005 on
+  every pile, so a raised floor freezes a bounce: 5–11 px overlaps on
+  the cliques at alpha 0.02) **and** that the term does not clear a
+  dense graph at all: its push is bounded by the 1 px gap clamp, the
+  spring pressure of a 2k × 4k or 25k × 50k random graph beats it, and
+  the fully annealed boxed sim still holds 395 and 36,042 overlapping
+  pairs — which the settle's separation then clears exactly as it
+  clears the point sim's.  So on the graphs that pay the price the term
+  buys nothing the settle does not, and on a small or clique-heavy
+  graph it buys a watchable `animateLive` run; that is the caller's
+  call.  A linear ramp, a per-tick projection and a softened
+  singularity were each measured in 116 and each lost the piles; a
+  pure gap law (the distance replaced by the gap everywhere) inflated
+  clear pairs by the boxes' size (62 → 86 px on the nesting fixture),
+  which is why the term is short-range.  `avoidOverlap: false` is the
+  point sim with no separation at all.
 - **The GPU displacement readback never landed** (found by 116.1's
   browser spec, fixed with it).  The renderer polls convergence at
   frame start, before the frame's encode, so the poll mapped the
@@ -1777,10 +1788,11 @@ each is deliberate, not a pass-1 deferral:
   pair, which is what over-separated everything); and each
   layout's `avoidOverlap` (default true) is a constructive rule in its
   own terms — cell size, ring radius, rank separation, spiral pitch —
-  except force, whose sim reads the same boxes (116.1: a contact term
-  measured from the gap between two boxes, so the steady state is
-  overlap-free and the portfolio's one post-settle separation clears
-  residue only).  A generic push-apart remover was considered
+  except force, whose settle separates the point sim's result exactly
+  (115) and whose sim can read the same boxes on request (116.1's
+  contact term, `avoidOverlapInSim` — opt-in since 117 because it
+  anneals every run to the floor and a dense graph's spring pressure
+  beats it anyway).  A generic push-apart remover was considered
   and declined: structure-blind, iterative, and a second meaning for
   the option.  Preset and random have no `avoidOverlap` — positions
   are the caller's, and a pushed-apart scatter is neither random nor

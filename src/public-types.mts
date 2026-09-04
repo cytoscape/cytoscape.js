@@ -609,6 +609,17 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   avoidOverlap?: boolean;
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;
+  /** the sim itself keeps the same padded boxes apart (116.1's contact
+   * term, CPU and GPU executors alike; default false since 117) — so
+   * a live run streams separated bodies once the transient clears.
+   * Opt-in because the stiff contact anneals every run to alpha's
+   * floor (about 460 iterations against a displacement stop at 80–300)
+   * and on a dense graph the spring pressure still beats it, so the
+   * settle's exact separation — always on under `avoidOverlap` — is
+   * what makes the result overlap-free either way.  Worth its price
+   * on a small or clique-heavy graph whose `animateLive` run would
+   * otherwise show piles.  Read only under `avoidOverlap`. */
+  avoidOverlapInSim?: boolean;
   /** the gap between disconnected components' packed boxes (59.2;
    * v3 cose's option of the same name — default 40) */
   componentSpacing?: number;

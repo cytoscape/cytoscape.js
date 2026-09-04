@@ -114,6 +114,14 @@ export interface ForceRunOptions {
   avoidOverlap?: boolean;
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;
+  /** the sim itself keeps the same padded boxes apart (116.1's contact
+   * term, both executors; default false since 117 — item 56).  Opt-in:
+   * the stiff contact anneals every run to alpha's floor, and on a
+   * dense graph the spring pressure still beats it, so the settle's
+   * separation is what clears the overlap either way; on a small or
+   * clique-heavy graph it makes an `animateLive` run stream separated
+   * bodies.  Read only under `avoidOverlap`. */
+  avoidOverlapInSim?: boolean;
   /** the boxes overlap avoidance reads: bodies and labels (default) or
    * bodies alone */
   nodeDimensionsIncludeLabels?: boolean;
@@ -894,10 +902,12 @@ export class ForceLayoutImpl implements LayoutImpl {
     }
 
     // the sim keeps the same boxes apart that the settle separates
-    // (116.1): with avoidOverlap the steady state is overlap-free and
-    // the settle's separation clears residue only; without, the point
-    // sim
-    const extents = avoidOverlap ? dims : null;
+    // (116.1), on request (117 — item 56: the contact term anneals
+    // every run to alpha's floor, and on a dense graph the spring
+    // pressure beats its bounded push, so by default the sim is the
+    // point sim and the settle's separation does the clearing)
+    const extents =
+      avoidOverlap && options.avoidOverlapInSim === true ? dims : null;
 
     const sim = new ForceSim({
       n,

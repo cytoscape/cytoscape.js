@@ -755,18 +755,12 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       expect(overlapping(cy)).to.equal(0);
     });
 
-    it('the sim itself keeps the bodies apart (116.1): every gap exceeds the padding', async function () {
-      // the settle's separation leaves a crammed pair exactly at the
-      // padding (115.5); the size-aware sim lands with a margin beyond
-      // it, so a gap over the padding says the sim did the separating
-      const cy = CLIQUE(30, 40);
-
-      await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
-
+    // the smallest gap between any two bodies
+    const minGap = (cy) => {
       const boxes = cy
         .nodes()
         .map((n) => n.boundingBox({ includeLabels: false }));
-      let minGap = Infinity;
+      let out = Infinity;
 
       for (let i = 0; i < boxes.length; i++) {
         for (let j = i + 1; j < boxes.length; j++) {
@@ -775,11 +769,37 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
           const gx = Math.max(a.x1 - b.x2, b.x1 - a.x2);
           const gy = Math.max(a.y1 - b.y2, b.y1 - a.y2);
 
-          minGap = Math.min(minGap, Math.max(gx, gy));
+          out = Math.min(out, Math.max(gx, gy));
         }
       }
 
-      expect(minGap).to.be.greaterThan(10.5);
+      return out;
+    };
+
+    it('avoidOverlapInSim: the sim itself keeps the bodies apart (116.1): every gap exceeds the padding', async function () {
+      // the settle's separation leaves a crammed pair exactly at the
+      // padding (115.5); the size-aware sim lands with a margin beyond
+      // it, so a gap over the padding says the sim did the separating
+      const cy = CLIQUE(30, 40);
+
+      await cy
+        .layout({ name: 'force', seed: 7, fit: false, avoidOverlapInSim: true })
+        .run()
+        .promise();
+
+      expect(minGap(cy)).to.be.greaterThan(10.5);
+    });
+
+    it('control: by default the sim is the point sim and the settle separates to exactly the padding (117)', async function () {
+      // item 56: the contact term is opt-in, so the default run's pile
+      // is opened by the settle alone, whose tightest pair sits at the
+      // padding — the margin the sim leaves is the discriminator
+      const cy = CLIQUE(30, 40);
+
+      await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
+
+      expect(overlapping(cy)).to.equal(0);
+      expect(minGap(cy)).to.be.closeTo(10, 0.5);
     });
 
     it("control: avoidOverlap: false leaves the sim's pile as it landed", async function () {

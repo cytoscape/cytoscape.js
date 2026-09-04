@@ -50,7 +50,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,593 unit · 637 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,594 unit · 637 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
@@ -716,7 +716,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     residue only.  The price is convergence: a run with boxes anneals
     to the end instead of settling early — the 25k benchmark's GPU
     live run 15 → 25 s, its CPU settle 44 → 130 s — and whether that
-    is the right default is an open decision.
+    is the right default was left open for a day (see 4 Sep).
   - `boundingBox` on force holds the drawing — scaled down, never up,
     bodies inside, centred — by the same rule flow uses; a pinned node
     or constraints hold it back.  A locked child stays where it is when
@@ -735,6 +735,33 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a force layout whose live run is watchable without overlap,
     whose box option means what it means elsewhere, and whose GPU
     executor actually converges.
+
+- **4 Sep** — the sim's overlap term becomes opt-in
+  - The measurement the open decision asked for was taken: a run with
+    boxes is never done early (its largest per-tick step sits at the
+    step cap almost to the end, so stopping sooner would freeze a
+    bounce), and on a dense random graph — the shape the benchmarks
+    are made of — the term does not clear the overlap at all: the
+    spring pressure beats its bounded push, the fully annealed 25k
+    sim still holds 36,042 overlapping pairs, and the settle's exact
+    separation clears them exactly as it clears the point sim's.
+  - So the term now costs nothing unless asked for
+    (`avoidOverlapInSim: true`), which is worth it on a small or
+    clique-heavy graph whose live run would otherwise show piles; the
+    settle's separation stays on by default.  The render bench can
+    price both (`--layout-sim-boxes`), and its live-layout figures from
+    before 3 Sep are marked as the nine-iteration runs they were.
+  - Driving the debug page (scripted, on the real GPU — the extension
+    for a hand-driven session was not connected) confirmed the locked
+    child and the pile, and found that the settle's separation gives
+    out on the 25k scene: it hands back more overlap than the sim gave
+    it (12,352 overlapping pairs in, 13,406 deeper ones out), where at
+    5k it clears 159 to two.  Logged as the next open decision with its
+    first measurement; a force result at that scale is not overlap-free
+    today.
+  - Buys a force layout that converges as fast as it did before the
+    term existed, a decision made on a measurement rather than a hope,
+    and a defect at scale that is now written down instead of drawn.
 
 ---
 
@@ -768,8 +795,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 - **`force` with `animate: false` on a rendered flat graph is async**
   (31 Aug): executor choice is availability-driven — read positions at
   `layoutstop` / `promise()`.  Headless runs stay synchronous.
-- **`force` avoids overlap in the sim and honours `boundingBox`** (3 Sep):
-  under `avoidOverlap` the sim keeps node bodies apart itself; a
+- **`force` can avoid overlap in the sim, and honours `boundingBox`**
+  (3–4 Sep): with `avoidOverlapInSim: true` the sim keeps node bodies
+  apart itself — opt-in since 4 Sep, because it triples the run and a
+  dense graph's settle clears the overlap anyway; a
   `boundingBox` scales the drawing down (never up) so the bodies fit,
   then centres it — v3 cose stretched centres to fill the box, up or
   down, size-blind.  A locked child no longer travels with a dragged
@@ -802,7 +831,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | `arrow-scale` quantization | Stored at a 1/16 step, so `arrow-scale: 1.4` draws at 1.375. Fixing it spends six spare bits a seventeenth arrowhead shape also wants — one or the other |
 | Edge overlay band width | v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | Hollow *mid* arrows | Still show the line through them: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
-| Size-aware force repulsion by default | Keeps every pile apart in the sim, at ~1.7× the GPU run and ~3× the CPU settle, since a contact under spring pressure never settles by displacement. Keep it, make the sim half opt-in, or change the convergence test when boxes are on |
+| Force's overlap separation at scale | Round 115's dense pass clears a 5k-node field but hands the 25k random scene back with more overlap than it found (12,352 pairs in, 13,406 deeper ones out), on both executors. Refuse a field it cannot open, restore a global expansion above some overlap fraction, or scale the budget — the per-stage measurement decides |
 
 ## Not yet built
 

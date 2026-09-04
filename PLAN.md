@@ -200,13 +200,16 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-03, round 116), the genuinely open questions
+**As last swept** (2026-09-04, round 117), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
 review could not screen; round 116 took item 55's three calls, left
 only its round-102 measurement note on the item, and added **item 56**,
-the convergence price of size-aware repulsion.  What the 2026-08-26
+the convergence price of size-aware repulsion — **taken by round 117**
+the next day (the sim half of `avoidOverlap` is opt-in, on the
+measurement the item asked for), which added **item 57**: the settle's
+separation hands back more overlap than it finds on the 25k scene.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -915,7 +918,13 @@ directions".*
     `src/algorithms/` — a `--repeat` for the CPU side alone would
     screen them.  (d) The same profile's GPU side reading 20–52%
     *faster* with no source change: a driver-version line in
-    `meta.adapter` would give the next such step a suspect.  Not a
+    `meta.adapter` would give the next such step a suspect.  (e)
+    Added 2026-09-04 (round 117): every render-bench `--layout` row
+    recorded before round 116 — round 36's 759–952 ms and round 59's
+    1,308 ms on ndex, the 87.2 rows — was a nine-iteration run (116.1's
+    readback defect), so the first converged figures are round 116's
+    and 117's, and the review's "harness break at 87.2" on those rows
+    is a run-length break as well.  Not a
     decision so much as a queue; it leaves this list when a round
     gives those rows bands.
 55. **Round 114's layout follow-ups** (logged 2026-09-02; **the three
@@ -940,21 +949,45 @@ directions".*
     console per hover change — the numbers on em-web and ndex-large
     belong in 102's first measurement when that round opens.
 56. **Size-aware repulsion's convergence price** (logged 2026-09-03,
-    round 116).  The contact term keeps every pile apart in the sim,
-    but a stiff contact under spring pressure cannot be settled by
-    explicit Euler, so a run with boxes anneals to alpha's floor
-    instead of stopping by displacement: on the 25k render-bench scene
-    the GPU live run went 15.4 s → 25.5 s and the sync CPU settle
-    (headless, compounds, constraints) 44 s → 130 s.  Three softer
-    mechanisms were measured and each lost the piles (the round's
-    record has the table).  The maintainer chose on-by-default before
-    the price was known; the calls are to keep it (a live run that is
-    overlap-free is what was asked for), to make `avoidOverlap`'s sim
-    half opt-in while the settle's separation stays, or to change the
-    convergence test when boxes are on (e.g. an alpha floor of 0.02,
-    where the jitter is under the threshold anyway).
-    **First measurement**: the iteration count at which the boxed
-    run's *field* stops changing (positions within 1 px of the final
-    ones), against the alpha at which it stops by displacement — if
-    the field is done by alpha ≈ 0.05, an earlier stop costs nothing
-    visible.
+    round 116; **taken by round 117, 2026-09-04: the sim half is
+    opt-in**, `avoidOverlapInSim`).  The contact term kept every pile
+    apart in the sim at 1.7–3× the iterations (25k render-bench scene:
+    GPU live 15.4 s → 25.5 s, sync CPU settle 44 s → 130 s), and the
+    calls were to keep it on, make the sim half opt-in, or change the
+    convergence test when boxes are on.  The first measurement decided
+    it: the boxed field is never done early (the per-tick max step sits
+    at the step cap until alpha ≈ 0.005, so a raised floor freezes a
+    bounce — 78 overlaps of up to 10 px on the 200-clique at alpha
+    0.02), and on a dense random graph the term does not clear the
+    overlap at all (the 1 px gap clamp bounds its push, the spring
+    pressure beats it, and the fully annealed 25k × 50k sim holds
+    36,042 overlapping pairs that the settle's separation then clears
+    exactly as it clears the point sim's).  So the term buys a
+    watchable `animateLive` run on a small or clique-heavy graph and
+    nothing on the graphs that pay for it; the settle's separation
+    stays on by default.  The tables are on the round.
+57. **The settle's separation gives out on the 25k scene, and makes it
+    worse** (logged 2026-09-04, round 117; found by the page check).
+    Force's `avoidOverlap` separation (114.5, the dense case rebuilt
+    in 115 as PRISM proximity stress with a forty-round budget) is
+    what the portfolio relies on to leave a force result overlap-free,
+    and at 5k × 10k it does: the sim hands it 159 overlapping pairs
+    and it leaves 1–3 at under 1 px.  On the 25k × 50k random scene
+    (12 px bodies, padding 10, default ideal length) it hands back
+    **more overlap than it was given**: 12,352 overlapping pairs at
+    5.6 px deep without the separation, 13,406 at 11.8 px deep with it
+    — headless CPU and the GPU path alike (the browser reads 13,450,
+    and 29,727 after an `avoidOverlapInSim` run), so the debug page's
+    25k force layout at zoom 4 is a field of half-covered bodies.  The
+    calls: whether the dense pass should refuse a field it cannot open
+    (leave the sweeps' result, never hand back a deeper overlap than it
+    found), whether a global expansion belongs above some overlap
+    fraction (114.5's scale, which 115 removed for over-separating
+    *sparse* fields, is exactly what a field this dense needs), and
+    what the budget should scale with.  **First measurement**: the
+    overlap count and depth after each of the three stages (sweeps,
+    stress rounds, final sweeps) on the 25k scene, to see which stage
+    deepens it; and the same on 10k and 15k to find where the 5k
+    behaviour stops.  A quality-suite row at this scale is the gate
+    that was missing — every `separates` row is under a thousand
+    nodes.

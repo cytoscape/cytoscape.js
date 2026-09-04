@@ -173,7 +173,11 @@ structure change between two calls is seen.  `npm run -s verify` and
 
 All 348 rows are harness breaks — the render bench changed in 87.2
 (the `--layout` rows) and 95.1 (the outlined-labels row), and the page
-refuses the line.  Read raw, knowing that, the span's renderer rounds
+refuses the line.  (Round 117, after the fact: every `--layout` row on
+both sides of that break was a nine-iteration run — the GPU
+convergence readback had never delivered a value, found and fixed in
+116.1 — so the first converged live-layout figures are round 116's,
+and item 54 carries the note.)  Read raw, knowing that, the span's renderer rounds
 show as they were priced:
 
 - **Device time down 50–66%** on every scene's far-zoom pan (1.41 →

@@ -377,7 +377,9 @@ unchanged.
   115 ms/2k — the one-time spectral seed (~12 ms warm at 2k)
   dominates the 20-iteration row, per-iteration cost is 1–4 ms — and
   `render-bench --layout` on ndex reads 1308 ms to converge against
-  the round-36.5 era's 759–952 ms, the far field's pyramid dispatches
+  the round-36.5 era's 759–952 ms (both nine-iteration runs — the GPU
+  readback defect round 116.1 found; round 117 has the converged
+  figures), the far field's pyramid dispatches
   plus a model doing real work instead of detonating into a clamped
   frame (both inside the ±25% read that section carries).
   MIGRATING.md's cose paragraph now names the cose-alike options

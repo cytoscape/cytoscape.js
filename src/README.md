@@ -1265,7 +1265,13 @@ round records carry the histories.
   the pile opens locally and the far field never moves.  114.5's
   version scaled the whole component by its *worst* pair's factor and
   spread every settled graph several times over (em-web's 2.4k px
-  field became 11.6k; it is 2.8k now).  Pinned nodes are obstacles
+  field became 11.6k; it is 2.8k now).  **It has a scale it has not
+  been made to reach** (round 117, open call 57): at 5k × 10k it takes
+  159 overlapping pairs to 1–3, but on the 25k × 50k random scene its
+  forty-round budget gives out and it hands back more overlap than it
+  found — 12,352 pairs at 5.6 px deep in, 13,406 at 11.8 px out, on
+  both executors — so a force result at that scale is not
+  overlap-free today.  Pinned nodes are obstacles
   throughout, the body-box component re-pack follows.  The one
   post-pass in the layout portfolio (the round-114 decision against a
   generic remover: every other layout spaces constructively).
@@ -1322,11 +1328,11 @@ round records carry the histories.
   dense graph at all: its push is bounded by the 1 px gap clamp, the
   spring pressure of a 2k × 4k or 25k × 50k random graph beats it, and
   the fully annealed boxed sim still holds 395 and 36,042 overlapping
-  pairs — which the settle's separation then clears exactly as it
-  clears the point sim's.  So on the graphs that pay the price the term
-  buys nothing the settle does not, and on a small or clique-heavy
-  graph it buys a watchable `animateLive` run; that is the caller's
-  call.  A linear ramp, a per-tick projection and a softened
+  pairs — which are the settle's separation's to clear, exactly as the
+  point sim's are (and at 25k it clears neither: open call 57).  So on
+  the graphs that pay the price the term buys nothing the settle does
+  not, and on a small or clique-heavy graph it buys a watchable
+  `animateLive` run; that is the caller's call.  A linear ramp, a per-tick projection and a softened
   singularity were each measured in 116 and each lost the piles; a
   pure gap law (the distance replaced by the gap everywhere) inflated
   clear pairs by the boxes' size (62 → 86 px on the nesting fixture),

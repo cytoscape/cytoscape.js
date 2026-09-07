@@ -55,7 +55,7 @@ the CPU executor's guarantee; GPU correctness pins invariants (18.4).
 
 import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
-import { SWEEPS_PER_TICK } from '../layout/force-sim.mjs';
+import { REHEAT_ALPHA, SWEEPS_PER_TICK } from '../layout/force-sim.mjs';
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
 
 const WG = 64;
@@ -533,6 +533,9 @@ export interface ForceInputs {
   cutoff: number;
   /** the fixed grid frame for the whole run */
   frame: { x: number; y: number; w: number; h: number };
+  /** the run has no end of its own (118.3): `converged()` is never
+   * true, `idle()` says when encoding would move nothing */
+  infinite?: boolean;
 }
 
 export class GpuForceRuntime {
@@ -574,6 +577,9 @@ export class GpuForceRuntime {
   private reduceGroups: GPUBindGroup[] = [];
   private settledRuns = 0;
   private destroyed = false;
+  private readonly infinite: boolean;
+  /** the CPU copy of the slot | pinned words, for `setPinned` */
+  private slotPinWords: Uint32Array;
 
   /**
    * Uploads the whole simulation to the device: the sim-indexed
@@ -594,6 +600,7 @@ export class GpuForceRuntime {
   constructor(device: GPUDevice, inputs: ForceInputs) {
     this.device = device;
     this.inputs = inputs;
+    this.infinite = inputs.infinite === true;
 
     // the cell: the cutoff, grown to the largest box (116.1) so the
     // separation pass (118.2) gathers every overlapping pair exactly
@@ -742,6 +749,7 @@ export class GpuForceRuntime {
     }
 
     mk('slotPin', slotPin.byteLength, SU, slotPin);
+    this.slotPinWords = slotPin;
 
     // meta: [tick, maxDispBits, alpha window]
     mk('meta', (META_ALPHA0 + ALPHA_WINDOW) * 4, SU | BUFFER_USAGE.COPY_SRC);
@@ -882,11 +890,84 @@ export class GpuForceRuntime {
    * run and hand ownership back rather than keep encoding.
    */
   converged(): boolean {
+    if (this.infinite) {
+      return false;
+    }
+
+    return this.iterations >= this.inputs.params.iterations || this.idle();
+  }
+
+  /**
+   * Whether encoding would move anything (118.3): the settle test
+   * without the iteration cap — the CPU sim's `idle()`.  The renderer
+   * skips the encode and lets its clock stop on it; `reheat()` clears
+   * it.
+   *
+   * @returns true when the field is at rest
+   */
+  idle(): boolean {
     return (
-      this.iterations >= this.inputs.params.iterations ||
       (this.alpha < 0.001 &&
         (!this.hasExt || this.lastMaxDisp < this.inputs.params.threshold)) ||
       this.settledRuns >= 3
+    );
+  }
+
+  /**
+   * Heat the run back up (118.3): the CPU sim's `reheat`, for the
+   * mirror alpha the encode precomputes its window from.
+   *
+   * @param alpha — the temperature to restore, `REHEAT_ALPHA` by default
+   */
+  reheat(alpha: number = REHEAT_ALPHA): void {
+    this.alpha = Math.max(this.alpha, alpha);
+    this.settledRuns = 0;
+    this.lastMaxDisp = Infinity;
+  }
+
+  /**
+   * Write one node's sim position (118.3): a dragged or moved node's
+   * store coordinates, handed to the device ahead of the next encode
+   * (queue writes order before the submit that follows them).  The
+   * apply kernel publishes it to the render column on that tick.
+   *
+   * @param i — the sim index
+   * @param x — model x
+   * @param y — model y
+   */
+  setPosition(i: number, x: number, y: number): void {
+    if (this.destroyed) {
+      return;
+    }
+
+    this.device.queue.writeBuffer(
+      this.buffersByName.get('simPos') as GPUBuffer,
+      i * 8,
+      new Float32Array([x, y]).buffer,
+    );
+  }
+
+  /**
+   * Pin or release one node on the device (118.3): the pin bit rides
+   * bit 31 of the slot word, so this rewrites that one word.
+   *
+   * @param i — the sim index
+   * @param pinned — whether it holds still
+   */
+  setPinned(i: number, pinned: boolean): void {
+    if (this.destroyed) {
+      return;
+    }
+
+    const slot = this.slotPinWords[i] & 0x7fffffff;
+
+    this.slotPinWords[i] = (slot | (pinned ? 0x80000000 : 0)) >>> 0;
+    this.device.queue.writeBuffer(
+      this.buffersByName.get('slotPin') as GPUBuffer,
+      i * 4,
+      this.slotPinWords.buffer,
+      i * 4,
+      4,
     );
   }
 

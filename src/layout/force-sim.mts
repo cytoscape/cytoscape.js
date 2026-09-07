@@ -93,6 +93,11 @@ export interface ForceParams {
   iterations: number;
 }
 
+/** The alpha a reheat restores by default (118.3): d3's drag
+ * convention — hot enough that a moved node's neighbourhood reflows,
+ * cool enough that the rest of the field barely stirs. */
+export const REHEAT_ALPHA = 0.3;
+
 /**
  * A fresh set of tuned defaults, one object per call so callers may
  * overwrite fields freely.  These constants are part of the CPU/GPU
@@ -150,6 +155,10 @@ export interface ForceSimInputs extends ForceParams {
    * executor only): projected after every integration step — see
    * `project()` for the load-bearing ordering */
   constraints?: ForceConstraints;
+  /** the run has no end of its own (118.3): `converged()` is never
+   * true (the iteration cap is ignored), and the caller reads `idle()`
+   * to know when ticking is pointless and `reheat()` to start again */
+  infinite?: boolean;
 }
 
 /** Deterministic seeded scatter (Knuth-hash polar): same (n, seed,
@@ -228,6 +237,7 @@ export class ForceSim {
     sy: Float64Array;
   }[] = [];
   private settledRuns = 0;
+  private infinite: boolean;
 
   /**
    * Build a run.  Derives the repulsion cutoff (the mean ideal edge
@@ -254,6 +264,7 @@ export class ForceSim {
         ? new Float64Array(inputs.n * 2)
         : null;
     this.params = inputs;
+    this.infinite = inputs.infinite === true;
     this.forces = new Float32Array(inputs.n * 2);
 
     // the repulsion cutoff is the mean ideal edge length: repulsion
@@ -323,13 +334,60 @@ export class ForceSim {
    * must stop under the same conditions.
    */
   converged(): boolean {
+    if (this.infinite) {
+      return false;
+    }
+
+    return this.iteration >= this.params.iterations || this.idle();
+  }
+
+  /**
+   * Whether ticking would move anything (118.3): the settle test
+   * without the iteration cap — alpha at its floor (with boxes, and a
+   * quiet sweep) or the displacement under `threshold` for
+   * `CONVERGE_RUNS` iterations.  An infinite run's loop sleeps on it
+   * and `reheat()` clears it.
+   *
+   * @returns true when the field is at rest
+   */
+  idle(): boolean {
     return (
-      this.iteration >= this.params.iterations ||
       (this.alpha < 0.001 &&
         (this.overlapGrid == null ||
           this.lastMaxDisp < this.params.threshold)) ||
       this.settledRuns >= CONVERGE_RUNS
     );
+  }
+
+  /**
+   * Heat the run back up (118.3): alpha rises to `alpha` if it is
+   * below it, and the settle counter restarts, so the next ticks move
+   * the field again — what a dragged node, a moved node or an added
+   * edge asks for.
+   *
+   * @param alpha — the temperature to restore, `REHEAT_ALPHA` by default
+   */
+  reheat(alpha: number = REHEAT_ALPHA): void {
+    this.alpha = Math.max(this.alpha, alpha);
+    this.settledRuns = 0;
+    this.lastMaxDisp = Infinity;
+  }
+
+  /**
+   * Pin or release one node (118.3): a pinned node takes part in every
+   * force pair but never moves — the drag gesture pins the grabbed
+   * node for its duration and writes its position straight into
+   * `positions`.
+   *
+   * @param i — the sim index
+   * @param pinned — whether it holds still
+   */
+  setPinned(i: number, pinned: boolean): void {
+    if (this.pinned == null) {
+      this.pinned = new Uint8Array(this.n);
+    }
+
+    this.pinned[i] = pinned ? 1 : 0;
   }
 
   /** Advance k iterations (stops early on convergence). */

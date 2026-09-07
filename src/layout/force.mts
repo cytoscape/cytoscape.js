@@ -60,6 +60,8 @@ import type {
 } from './force-constraints.mjs';
 import type { LayoutScoreMapping } from '../public-types.mjs';
 import type { LayoutContext, LayoutImpl } from './contract.mjs';
+import type { Event } from '../event.mjs';
+import type { Position } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
 import type { GpuForceRuntime } from '../render/gpu-force.mjs';
@@ -108,6 +110,11 @@ export interface ForceRunOptions {
   boundingBox?: BoxInput;
   /** iterations advanced per animation frame (animateLive: true) */
   stepsPerFrame?: number;
+  /** the run has no end of its own (118.3): streams like `animateLive`,
+   * ticks only while the field moves, reheats on a drag / a moved node
+   * / an add or remove, ends on `stop()` with the positions as they
+   * stand (no settle pass, re-pack, fit or tween) */
+  infinite?: boolean;
   /** keep node bodies apart — labels included when
    * `nodeDimensionsIncludeLabels` is true, pinned (locked) nodes as
    * obstacles — and how (118.2): `true` or `'settle'` (the default)
@@ -693,8 +700,116 @@ export const separateBodies = (
  * re-pack translates whole components and a locked node must never
  * move.
  */
+/** What a running sim exposes to the infinite run's event wiring
+ * (118.3): the same four verbs on either executor. */
+interface ActiveRun {
+  /** node slot → sim index */
+  indexOf(slot: number): number | undefined;
+  setPosition(i: number, x: number, y: number): void;
+  setPinned(i: number, pinned: boolean): void;
+  reheat(alpha?: number): void;
+  /** resume ticking after an idle */
+  wake(): void;
+}
+
 export class ForceLayoutImpl implements LayoutImpl {
   private stopped = false;
+  /** the sim under way (118.3), for the drag / position / reheat wiring */
+  private current: ActiveRun | null = null;
+  /** an add or remove asked for the sim to be rebuilt on the live graph */
+  private restartWanted = false;
+  /** a rebuilt run relaxes the positions where they stand */
+  private resumed = false;
+
+  /**
+   * Run the layout (118.3 added the infinite shape).  A one-shot run
+   * is `runOnce`; an `infinite` run wires the graph's grab / free /
+   * position / add / remove events to the sim and re-runs the sim on
+   * the live graph whenever the topology changes, until `stop()`.
+   *
+   * @param ctx — the layout context
+   * @returns a promise that resolves at `stop()` for an infinite run;
+   *   otherwise `runOnce`'s
+   */
+  run(ctx: LayoutContext): void | Promise<void> {
+    const options = ctx.options as ForceRunOptions;
+
+    this.stopped = false;
+    this.resumed = false;
+    this.restartWanted = false;
+
+    if (options.infinite !== true) {
+      return this.runOnce(ctx);
+    }
+
+    const cy = ctx.cy;
+    const subset = (ctx.options as { eles?: unknown }).eles != null;
+    const indexOfTarget = (target: unknown): number | undefined => {
+      const ref = (target as Collection | undefined)?._eventRef?.();
+
+      return ref != null && ref.group === 'nodes'
+        ? this.current?.indexOf(ref.slot)
+        : undefined;
+    };
+    const onGrab = (e: Event): void => {
+      const i = indexOfTarget(e.target);
+
+      if (i != null) {
+        this.current?.setPinned(i, true);
+      }
+    };
+    const onFree = (e: Event): void => {
+      const i = indexOfTarget(e.target);
+
+      if (i != null) {
+        this.current?.setPinned(i, false);
+        this.current?.reheat();
+        this.current?.wake();
+      }
+    };
+    const onPosition = (e: Event): void => {
+      const i = indexOfTarget(e.target);
+
+      if (i != null) {
+        const p = (e.target as Collection).position() as Position;
+
+        this.current?.setPosition(i, p.x, p.y);
+        this.current?.reheat();
+        this.current?.wake();
+      }
+    };
+    const onTopology = (): void => {
+      // a subset scope is the caller's collection and stays what it was
+      if (!subset) {
+        this.restartWanted = true;
+        this.current?.wake();
+      }
+    };
+
+    cy.on('grab', onGrab);
+    cy.on('free', onFree);
+    cy.on('position', onPosition);
+    cy.on('add', onTopology);
+    cy.on('remove', onTopology);
+
+    return (async () => {
+      try {
+        do {
+          this.restartWanted = false;
+          ctx.refreshScope();
+          await this.runOnce(ctx);
+          this.resumed = true;
+        } while (this.restartWanted && !this.stopped);
+      } finally {
+        cy.off('grab', onGrab);
+        cy.off('free', onFree);
+        cy.off('position', onPosition);
+        cy.off('add', onTopology);
+        cy.off('remove', onTopology);
+        this.current = null;
+      }
+    })();
+  }
 
   /**
    * Run the simulation.  Two executors, one spec: the CPU reference is
@@ -721,11 +836,12 @@ export class ForceLayoutImpl implements LayoutImpl {
    *   run completed synchronously (headless / compound / no device
    *   with neither `animate` nor `animateLive`)
    */
-  run(ctx: LayoutContext): void | Promise<void> {
+  private runOnce(ctx: LayoutContext): void | Promise<void> {
     const cy = ctx.cy;
     const store = cy._store;
     const options = ctx.options as ForceRunOptions;
     const params = { ...defaultForceParams() };
+    const infinite = options.infinite === true;
 
     if (options.repulsion != null) {
       params.repulsion = options.repulsion;
@@ -798,12 +914,19 @@ export class ForceLayoutImpl implements LayoutImpl {
     // default, padded by half the gap per side
     // Which mechanism keeps them apart is the option's value (118.2):
     // the settle's exact pass, the sim's per-tick sweep, or both
-    const overlapMode = resolveOverlapMode(options.avoidOverlap);
+    // ... and an infinite run has no settle for a pass to land on
+    // (118.3), so its overlap avoidance is the sweep
+    let overlapMode = resolveOverlapMode(options.avoidOverlap);
+
+    if (infinite && overlapMode !== 'none') {
+      overlapMode = 'sim';
+    }
+
     const avoidOverlap = overlapMode !== 'none';
     const dims = ctx.nodeDimensions(simSlots, {
       padding: avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 0,
     });
-    const live = options.animateLive === true;
+    const live = infinite || options.animateLive === true;
 
     // scope edges whose both endpoints simulate
     const endpoints = ctx.endpoints();
@@ -928,7 +1051,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     const column = ctx.positions();
     const compAnchors = new Float32Array(comps.count * 2);
 
-    if (options.randomize !== false) {
+    if (options.randomize !== false && !this.resumed) {
       // fresh placement: packed anchors, nodes scattered around them
       compAnchors.set(packAnchors(comps.sizes, meanL, spacing));
       seedAroundAnchors(
@@ -1060,6 +1183,7 @@ export class ForceLayoutImpl implements LayoutImpl {
       extents,
       groups,
       constraints: constraints ?? undefined,
+      infinite,
       ...params,
     });
 
@@ -1095,7 +1219,20 @@ export class ForceLayoutImpl implements LayoutImpl {
     // the finisher's tween under `animate`, the bulk write otherwise.
     // A streamed run already showed the motion, so its settle lands
     // as one write rather than a second tween.
+    // an infinite run's end (118.3) is the positions as they stand —
+    // the person is looking at them, and a pass, a re-pack, a fit or a
+    // tween would move what they see for no reason they asked for
+    const land = (arr: Float32Array): void => {
+      ctx.setPositions(movableSlots, movableXy(arr));
+    };
+
     const settle = (arr: Float32Array): void => {
+      if (infinite) {
+        land(arr);
+
+        return;
+      }
+
       if (overlapMode === 'settle' || overlapMode === 'both') {
         separateBodies(n, arr, dims, pinned, comps.compOf, comps.count);
       }
@@ -1186,12 +1323,21 @@ export class ForceLayoutImpl implements LayoutImpl {
               w: spanW,
               h: spanH,
             },
+            infinite,
           },
           options.stepsPerFrame ?? 3,
           live,
         );
 
         if (runtime != null) {
+          this.current = {
+            indexOf: (slot) => simIndex.get(slot),
+            setPosition: (i, x, y) => runtime.setPosition(i, x, y),
+            setPinned: (i, flag) => runtime.setPinned(i, flag),
+            reheat: (alpha) => runtime.reheat(alpha),
+            wake: () => renderer.wakeForce(),
+          };
+
           return this.runGpu(runtime, renderer, settle);
         }
       }
@@ -1213,7 +1359,10 @@ export class ForceLayoutImpl implements LayoutImpl {
     }
 
     // live mode: the sim streams positions to the store per frame — the
-    // watchable-layout path (the 18.3 GPU integrator hooks in here)
+    // watchable-layout path (the 18.3 GPU integrator hooks in here).
+    // An infinite run (118.3) sleeps once the sim is idle — no frame is
+    // scheduled — and a wake (a drag, a moved node, a reheat, a stop)
+    // schedules the next
     const stepsPerFrame = options.stepsPerFrame ?? 3;
     const tick =
       typeof requestAnimationFrame !== 'undefined'
@@ -1221,17 +1370,47 @@ export class ForceLayoutImpl implements LayoutImpl {
         : (cb: () => void) => setTimeout(cb, 16);
 
     return new Promise<void>((resolve) => {
+      let scheduled = false;
+      let done = false;
       const frame = (): void => {
-        if (this.stopped || sim.converged()) {
+        scheduled = false;
+
+        if (done) {
+          return;
+        }
+
+        if (this.stopped || this.restartWanted || sim.converged()) {
+          done = true;
           settle(positions);
           resolve();
 
           return;
         }
 
+        if (infinite && sim.idle()) {
+          return; // asleep until a wake
+        }
+
         sim.step(stepsPerFrame);
         writeBack();
-        tick(frame);
+        schedule();
+      };
+      const schedule = (): void => {
+        if (!scheduled && !done) {
+          scheduled = true;
+          tick(frame);
+        }
+      };
+
+      this.current = {
+        indexOf: (slot) => simIndex.get(slot),
+        setPosition: (i, x, y) => {
+          positions[i * 2] = x;
+          positions[i * 2 + 1] = y;
+        },
+        setPinned: (i, flag) => sim.setPinned(i, flag),
+        reheat: (alpha) => sim.reheat(alpha),
+        wake: schedule,
       };
 
       frame();
@@ -1246,7 +1425,7 @@ export class ForceLayoutImpl implements LayoutImpl {
   ): Promise<void> {
     return new Promise<void>((resolve) => {
       const poll = (): void => {
-        if (!this.stopped && !runtime.converged()) {
+        if (!this.stopped && !this.restartWanted && !runtime.converged()) {
           setTimeout(poll, 60);
 
           return;
@@ -1268,9 +1447,23 @@ export class ForceLayoutImpl implements LayoutImpl {
 
   /**
    * Stop the simulation at the next iteration boundary, leaving nodes
-   * where they have reached.
+   * where they have reached.  An idle infinite run is woken so the
+   * stop lands (118.3).
    */
   stop(): void {
     this.stopped = true;
+    this.current?.wake();
+  }
+
+  /**
+   * Heat a running sim back up (118.3): alpha rises to `alpha` (0.3 by
+   * default) and an idle infinite run resumes ticking.  A one-shot run
+   * that has already converged is unaffected.
+   *
+   * @param alpha — the temperature to restore
+   */
+  reheat(alpha?: number): void {
+    this.current?.reheat(alpha);
+    this.current?.wake();
   }
 }

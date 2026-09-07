@@ -583,6 +583,45 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
     expect(minDist).to.be.greaterThan(15); // nothing collapses
   });
 
+  describe('the infinite run (118.3): never converged, idle at rest, reheated on request', function () {
+    it('converged() is never true, idle() is true once the field rests, and reheat() clears it', function () {
+      const n = 12;
+      const sim = mkSim(n, ring(n), { seed: 3, infinite: true });
+
+      sim.step(2000);
+
+      expect(sim.converged()).to.equal(false);
+      expect(sim.idle()).to.equal(true);
+      expect(sim.iteration).to.equal(2000); // the cap is ignored
+
+      const before = Array.from(sim.positions);
+
+      sim.reheat();
+      expect(sim.idle()).to.equal(false);
+      expect(sim.alpha).to.equal(0.3);
+
+      // a reheated field at equilibrium barely stirs; pin a node
+      // elsewhere and it must reflow
+      sim.positions[0] += 300;
+      sim.setPinned(0, true);
+      sim.step(200);
+
+      expect(sim.positions[0]).to.be.closeTo(before[0] + 300, 1e-3);
+      expect(sim.positions[2]).to.not.equal(before[2]);
+      expect(sim.idle()).to.equal(true);
+    });
+
+    it('control: the one-shot run converges and its cap holds', function () {
+      const n = 12;
+      const sim = mkSim(n, ring(n), { seed: 3 });
+
+      sim.step(2000);
+
+      expect(sim.converged()).to.equal(true);
+      expect(sim.iteration).to.be.lessThan(2000);
+    });
+  });
+
   describe('the boxes keep apart in the sim: one separation sweep per tick (116.1; projection since 118.2)', function () {
     const clique = (n) => {
       const list = [];

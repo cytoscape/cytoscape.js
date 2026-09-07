@@ -2146,6 +2146,144 @@ test.describe('WebGPU renderer', () => {
     ).toBeLessThan(10.5);
   });
 
+  test('an infinite GPU force run rests without frames, wakes on a pointer drag, and lands on stop() (118.3)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const ring = (() => {
+      const els = [];
+
+      for (let i = 0; i < 12; i++) {
+        els.push({ data: { id: 'n' + i } });
+        els.push({
+          data: { id: 'e' + i, source: 'n' + i, target: 'n' + ((i + 1) % 12) },
+        });
+      }
+
+      return els;
+    })();
+
+    await makeReadyCy(page, {
+      elements: ring,
+      style: { nodes: { width: 30, height: 30 } },
+    });
+    await waitFrames(page);
+
+    // CPU position reads are stale under the lease, so the spec is two
+    // runs: the first rests and stops, which lands real positions; the
+    // second relaxes from them (nothing moves), rests, is dragged, and
+    // is stopped while held so the readback carries the held state
+    const startInfinite = (extra) =>
+      page.evaluate((extra) => {
+        const cy = window.cy;
+
+        window.__layout = cy.layout({
+          name: 'force',
+          seed: 4,
+          fit: false,
+          infinite: true,
+          ...extra,
+        });
+        window.__settled = false;
+        window.__layout.run();
+        window.__layout.promise().then(() => {
+          window.__settled = true;
+        });
+      }, extra);
+    const frames = () => page.evaluate(() => window.cy.stats().frames);
+    // the field comes to rest and the frame clock stops with it: the
+    // frame count holds still over a third of a second
+    const restingFrames = () =>
+      expect
+        .poll(
+          async () => {
+            const a = await frames();
+
+            await page.waitForTimeout(300);
+
+            return (await frames()) - a;
+          },
+          { timeout: 15000 },
+        )
+        .toBe(0);
+    const positions = () =>
+      page.evaluate(() => {
+        const cy = window.cy;
+        const at = (id) => ({ ...cy.$id(id).position() });
+
+        return { n0: at('n0'), n1: at('n1'), n11: at('n11') };
+      });
+    const stop = () =>
+      page.evaluate(async () => {
+        const cy = window.cy;
+        const zoomBefore = cy.zoom();
+
+        window.__layout.stop();
+        await window.__layout.promise();
+
+        return {
+          settled: window.__settled,
+          zoomSame: cy.zoom() === zoomBefore,
+        };
+      });
+
+    await startInfinite({});
+    await restingFrames();
+    expect(await page.evaluate(() => window.__settled)).toBe(false);
+
+    const first = await stop();
+
+    expect(first.settled).toBe(true);
+    expect(first.zoomSame).toBe(true);
+
+    const before = await positions();
+
+    await page.evaluate(() => window.cy.fit(window.cy.elements(), 60));
+    await waitFrames(page);
+    await startInfinite({ randomize: false });
+    await restingFrames();
+
+    const rendered = await page.evaluate(() => ({
+      ...window.cy.$id('n0').renderedPosition(),
+      zoom: window.cy.zoom(),
+    }));
+    const f0 = await frames();
+
+    // drag n0 200 rendered px to the right: the run wakes, the grabbed
+    // node follows the pointer and its neighbours follow it
+    await page.mouse.move(rendered.x, rendered.y);
+    await page.mouse.down();
+
+    for (let step = 1; step <= 10; step++) {
+      await page.mouse.move(rendered.x + step * 20, rendered.y);
+      await page.waitForTimeout(30);
+    }
+
+    await page.waitForTimeout(400);
+
+    const f1 = await frames();
+    const held = await stop();
+
+    await page.mouse.up();
+
+    const after = await positions();
+    const moved = 200 / rendered.zoom;
+
+    expect(f1 - f0, 'the drag woke the frame clock').toBeGreaterThan(5);
+    expect(held.settled).toBe(true);
+    expect(held.zoomSame).toBe(true);
+    expect(after.n0.x, 'the grabbed node is at the pointer').toBeGreaterThan(
+      before.n0.x + moved * 0.9,
+    );
+    expect(after.n1.x, 'a neighbour followed').toBeGreaterThan(
+      before.n1.x + 20,
+    );
+    expect(after.n11.x, 'a neighbour followed').toBeGreaterThan(
+      before.n11.x + 20,
+    );
+  });
+
   test('a silent force run shows no intermediate motion (round 87.2)', async ({
     page,
   }) => {

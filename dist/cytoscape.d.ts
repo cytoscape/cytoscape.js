@@ -1175,6 +1175,17 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
   /** stream the run: positions land per frame while the sim runs (the
    * pre-114 `animate: true`); takes precedence over `animate` */
   animateLive?: boolean;
+  /** the run has no end of its own (118.3): it streams like
+   * `animateLive` and then ticks only while the field is moving — at
+   * rest it costs nothing, and a drag, a `position()` write or an
+   * added / removed element (whole-graph scope) heats it back up; the
+   * grabbed node is pinned for the gesture and its neighbourhood
+   * reflows around it.  `layout.stop()` ends it, landing the positions
+   * as they stand — no separation pass, no re-pack, no fit and no
+   * tween.  `avoidOverlap` therefore means the per-tick sweep
+   * (`'sim'`); `iterations` is ignored; `layout.reheat()` is the
+   * handle for a change the run cannot see */
+  infinite?: boolean;
   /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
   /** fit the settle into an explicit box (116.2 — flow's rule): scaled
@@ -7151,6 +7162,10 @@ interface DimsOptions {
 interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
   stop?(): void;
+  /** heat a running layout back up (118.3): a force layout's
+   * `infinite` run ticks only while its field moves, and this asks it
+   * to move again — after a programmatic change the run cannot see */
+  reheat?(alpha?: number): void;
 }
 declare class LayoutContext {
   /** the core being laid out */
@@ -7184,6 +7199,14 @@ declare class LayoutContext {
    *   layout iterating it must apply its own rules
    */
   get nodes(): Collection;
+  /**
+   * Drop the cached scope so the next `eles` / `nodes` read the graph
+   * as it now is (118.3): a whole-graph scope is materialized once per
+   * run, and a force layout's `infinite` run rebuilds its sim on an
+   * add or remove.  A subset scope (`eles.layout()`) is the caller's
+   * collection and stays what it was.
+   */
+  refreshScope(): void;
   /** the discrete finisher ran: its lifecycle covers the run */
   _finisherUsed: boolean;
   private layout;
@@ -7402,6 +7425,19 @@ declare class CustomLayout {
    * @returns this layout, for chaining
    */
   stop(): this;
+  /**
+   * Heat a running layout back up (118.3), by calling the impl's
+   * optional `reheat()`.  A force layout's `infinite` run ticks only
+   * while its field is moving and reheats itself on a drag, a moved
+   * node and an added or removed element; this is for a change it
+   * cannot see — an edge length that changed under a data mapping, a
+   * style that resized the boxes.  An impl without one ignores it.
+   *
+   * @param alpha — the temperature to restore; the force layout's
+   *   default is 0.3, d3's drag convention
+   * @returns this layout, for chaining
+   */
+  reheat(alpha?: number): this;
 }
 //#endregion
 //#region src/layout/grid.d.mts

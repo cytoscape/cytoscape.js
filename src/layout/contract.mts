@@ -43,6 +43,10 @@ import type {
 export interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
   stop?(): void;
+  /** heat a running layout back up (118.3): a force layout's
+   * `infinite` run ticks only while its field moves, and this asks it
+   * to move again — after a programmatic change the run cannot see */
+  reheat?(alpha?: number): void;
 }
 
 export class LayoutContext {
@@ -85,6 +89,20 @@ export class LayoutContext {
    */
   get nodes(): Collection {
     return (this._nodes ??= this.eles.nodes());
+  }
+
+  /**
+   * Drop the cached scope so the next `eles` / `nodes` read the graph
+   * as it now is (118.3): a whole-graph scope is materialized once per
+   * run, and a force layout's `infinite` run rebuilds its sim on an
+   * add or remove.  A subset scope (`eles.layout()`) is the caller's
+   * collection and stays what it was.
+   */
+  refreshScope(): void {
+    if (this.options.eles == null) {
+      this._eles = null;
+      this._nodes = null;
+    }
   }
 
   /** the discrete finisher ran: its lifecycle covers the run */
@@ -623,6 +641,24 @@ export class CustomLayout {
    */
   stop(): this {
     this.impl.stop?.();
+
+    return this;
+  }
+
+  /**
+   * Heat a running layout back up (118.3), by calling the impl's
+   * optional `reheat()`.  A force layout's `infinite` run ticks only
+   * while its field is moving and reheats itself on a drag, a moved
+   * node and an added or removed element; this is for a change it
+   * cannot see — an edge length that changed under a data mapping, a
+   * style that resized the boxes.  An impl without one ignores it.
+   *
+   * @param alpha — the temperature to restore; the force layout's
+   *   default is 0.3, d3's drag convention
+   * @returns this layout, for chaining
+   */
+  reheat(alpha?: number): this {
+    this.impl.reheat?.(alpha);
 
     return this;
   }

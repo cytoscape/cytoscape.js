@@ -1315,6 +1315,32 @@ round records carry the histories.
   of a random graph has short edges); and multilevel refinement stays
   the logged future direction for tree/mesh quality beyond the
   spectral seed's.
+- **The infinite run** (118.3, `infinite: true`) is the live
+  force-directed layout that never ends, done so that it costs nothing
+  at rest.  It streams like `animateLive`, and the sim ticks only while
+  its field is moving: `ForceSim.idle()` / `GpuForceRuntime.idle()` is
+  the settle test without the iteration cap (alpha at its floor with a
+  quiet sweep, or the displacement under `threshold` for three ticks),
+  the CPU loop schedules no frame on it and the renderer neither
+  encodes the run nor keeps its clock running.  A `grab` pins the
+  grabbed node into the sim for the gesture (`setPinned` on either
+  executor — on the device, the pin bit of one slot word), every
+  `position` event on a scoped node writes the store's coordinates into
+  the sim (`setPosition`; on the device an 8-byte queue write ahead of
+  the next encode) and reheats it (`reheat`, alpha to 0.3, d3's drag
+  convention), a `free` releases it and reheats again so the field
+  relaxes, and an `add` or `remove` under a whole-graph scope rebuilds
+  the sim on the live graph from the positions as they stand
+  (`LayoutContext.refreshScope`, then `runOnce` again with the seed
+  skipped) — a subset scope is the caller's collection and ignores
+  them.  `layout.reheat(alpha?)` is the handle for a change the run
+  cannot see (an edge length under a data mapping, a restyle that
+  resized the boxes).  `stop()` ends it, landing the positions as they
+  stand — no separation pass, no re-pack, no fit and no tween: the
+  person is looking at them.  So `avoidOverlap` under `infinite` means
+  the per-tick sweep (`'sim'`), `iterations` is ignored, and the
+  lifecycle's `layoutstop` fires at `stop()`.  Priced: at rest an
+  infinite run is the cost of its listeners.
 - Options added by round 114.5: `animateLive` (the streaming run —
   the pre-114 `animate: true`), `avoidOverlap`, `avoidOverlapPadding`;
   `animate` now tweens, and the shared finisher options apply.

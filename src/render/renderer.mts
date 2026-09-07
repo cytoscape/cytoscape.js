@@ -988,6 +988,19 @@ export class Renderer {
     this.forceRuntime = null;
   }
 
+  /**
+   * Wake an idle force run (118.3): an infinite run's runtime reports
+   * `idle()` once the field is at rest, the frame loop stops encoding
+   * it and the clock stops with it, so a reheat — a drag, a moved
+   * node — has to ask for a frame.
+   */
+  wakeForce(): void {
+    if (this.forceRuntime != null) {
+      this.needsRedraw = true;
+      this.schedule();
+    }
+  }
+
   /** Debounced zoom-promotion check: the svg re-raster meter (15.6)
    * and the label atlas tier meter (round 94) share one settle timer —
    * both run shortly after the viewport settles, never per wheel tick. */
@@ -1544,8 +1557,13 @@ export class Renderer {
     ] as Parameters<ColumnMirror['setTweenOwned']>[0]);
 
     if (this.forceRuntime != null) {
-      this.needsRedraw = true; // the sim advances every frame
       this.forceRuntime.pollConvergence();
+
+      // the sim advances every frame — unless an infinite run is at
+      // rest (118.3), when the frame is the last until a wake
+      if (!this.forceRuntime.idle() || this.forceRuntime.converged()) {
+        this.needsRedraw = true;
+      }
     }
 
     if (this.host.animations.active()) {
@@ -1671,7 +1689,11 @@ export class Renderer {
       // cull pass reads it — edges and labels follow for free.  A
       // silent run (87.2) publishes into the runtime's own scratch
       // buffer instead, so the draw keeps reading the pre-run column
-      if (this.forceRuntime != null && !this.forceRuntime.converged()) {
+      if (
+        this.forceRuntime != null &&
+        !this.forceRuntime.converged() &&
+        !this.forceRuntime.idle()
+      ) {
         this.forceRuntime.encode(
           encoder,
           this.forcePresents
@@ -1799,7 +1821,7 @@ export class Renderer {
       store.hasDirty() ||
       this.needsRedraw ||
       this.host.animations.active() ||
-      this.forceRuntime != null || // a live force run drives the clock (18.3)
+      (this.forceRuntime != null && !this.forceRuntime.idle()) || // a live force run drives the clock (18.3); an idle infinite run does not (118.3)
       (picking?.hasPending() ?? false) ||
       this.pendingExports.length > 0
     ) {

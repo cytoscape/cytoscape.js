@@ -593,6 +593,17 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   /** stream the run: positions land per frame while the sim runs (the
    * pre-114 `animate: true`); takes precedence over `animate` */
   animateLive?: boolean;
+  /** the run has no end of its own (118.3): it streams like
+   * `animateLive` and then ticks only while the field is moving — at
+   * rest it costs nothing, and a drag, a `position()` write or an
+   * added / removed element (whole-graph scope) heats it back up; the
+   * grabbed node is pinned for the gesture and its neighbourhood
+   * reflows around it.  `layout.stop()` ends it, landing the positions
+   * as they stand — no separation pass, no re-pack, no fit and no
+   * tween.  `avoidOverlap` therefore means the per-tick sweep
+   * (`'sim'`); `iterations` is ignored; `layout.reheat()` is the
+   * handle for a change the run cannot see */
+  infinite?: boolean;
   /** iterations per animation frame (animateLive: true; default 3) */
   stepsPerFrame?: number;
   /** fit the settle into an explicit box (116.2 — flow's rule): scaled

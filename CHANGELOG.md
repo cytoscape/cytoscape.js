@@ -24,6 +24,14 @@ that compile and then behave differently.
 
 ### Added
 
+- **The infinite force run** (round 118.3, `infinite: true`): the live
+  force-directed layout that never ends, ticking only while the field
+  moves — at rest it costs nothing — and reheating on a drag (the
+  grabbed node pinned for the gesture, its neighbourhood reflowing), a
+  `position()` write, an added or removed element, or
+  `layout.reheat()`; `stop()` lands the positions as they stand.  On
+  both executors.  v3 had this only as the cola extension's
+  `infinite`.
 - **Force's overlap separation reaches 25k** (round 118.1, open call
   57).  The settle's separation handed the 25k random scene back with
   more overlap than the sim gave it; a component of a thousand nodes or

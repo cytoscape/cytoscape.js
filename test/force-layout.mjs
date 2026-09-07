@@ -902,6 +902,28 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       expect(overlapping(bodiesOnly, true)).to.be.greaterThan(0);
     });
 
+    it('an infinite run keeps a clique of bodies apart by the sweep, at rest', async function () {
+      // 118.3: no settle to land a pass on, so avoidOverlap means the
+      // per-tick sweep — the field rests overlap-free
+      const cy = CLIQUE(12, 40);
+      const layout = cy.layout({
+        name: 'force',
+        seed: 7,
+        fit: false,
+        infinite: true,
+        stepsPerFrame: 12,
+      });
+
+      layout.run();
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      expect(overlapping(cy)).to.equal(0);
+      expect(minGap(cy)).to.be.within(9.5, 15);
+
+      layout.stop();
+      await layout.promise();
+    });
+
     it('a locked node is an obstacle: it stays, the overlapping neighbour moves', async function () {
       const cy = CLIQUE(30, 40);
 
@@ -914,5 +936,232 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       expect(cy.$id('n0').position()).to.deep.equal({ x: 0, y: 0 });
       expect(overlapping(cy)).to.equal(0);
     });
+  });
+});
+
+// Round 118.3: the infinite run — the live force-directed layout that
+// never ends, done so that it costs nothing at rest: the sim ticks only
+// while its field moves, a drag pins the grabbed node and heats the
+// field, a moved node or an added element does the same, and stop()
+// lands the positions as they stand.
+describe('gpu/layout: the infinite force run (118.3)', function () {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const snapshot = (cy) =>
+    Object.fromEntries(cy.nodes().map((n) => [n.id(), { ...n.position() }]));
+  const start = (cy, extra = {}) => {
+    const layout = cy.layout({
+      name: 'force',
+      seed: 4,
+      fit: false,
+      infinite: true,
+      stepsPerFrame: 6,
+      ...extra,
+    });
+    let settled = false;
+
+    layout.run();
+    layout.promise().then(() => {
+      settled = true;
+    });
+
+    return { layout, isSettled: () => settled };
+  };
+
+  it('stays open at rest: the positions stop moving, the promise stays pending, stop() lands them without a fit', async function () {
+    const cy = cytoscape({
+      elements: RING(),
+      headlessWidth: 800,
+      headlessHeight: 600,
+    });
+    const zoom = cy.zoom();
+    const { layout, isSettled } = start(cy);
+
+    await wait(1200);
+
+    const a = snapshot(cy);
+
+    await wait(300);
+
+    expect(snapshot(cy)).to.deep.equal(a);
+    expect(isSettled()).to.equal(false);
+
+    layout.stop();
+    await layout.promise();
+
+    expect(snapshot(cy)).to.deep.equal(a);
+    expect(cy.zoom()).to.equal(zoom);
+  });
+
+  it('a drag reheats the field: the grabbed node holds where it is put and its neighbours follow', async function () {
+    const cy = cytoscape({ elements: RING() });
+    const { layout } = start(cy);
+
+    await wait(1200);
+
+    const before = snapshot(cy);
+    const n0 = cy.$id('n0');
+    const target = { x: before.n0.x + 400, y: before.n0.y };
+
+    n0.emit('grab');
+    n0.position({ x: before.n0.x + 200, y: before.n0.y });
+    n0.position(target);
+
+    await wait(600);
+
+    // held: the grabbed node is pinned where the pointer put it while
+    // the field reflows around it, and its ring neighbours are pulled
+    // after it
+    expect(cy.$id('n0').position().x).to.be.closeTo(target.x, 0.01);
+    for (const id of ['n1', 'n11']) {
+      expect(cy.$id(id).position().x, id).to.be.greaterThan(before[id].x + 50);
+    }
+
+    n0.emit('free');
+    await wait(600);
+
+    // released: the node joins the sim again and the ring relaxes —
+    // the springs pull it back toward its neighbours, and the field
+    // comes to rest somewhere between
+    const after = cy.$id('n0').position().x;
+
+    expect(after).to.be.lessThan(target.x - 20);
+    expect(after).to.be.greaterThan(before.n0.x + 20);
+
+    layout.stop();
+    await layout.promise();
+  });
+
+  it('control: after a finished animateLive run the same gesture moves nothing else', async function () {
+    const cy = cytoscape({ elements: RING() });
+
+    await cy
+      .layout({ name: 'force', seed: 4, fit: false, animateLive: true })
+      .run()
+      .promise();
+
+    const before = snapshot(cy);
+    const n0 = cy.$id('n0');
+
+    n0.emit('grab');
+    n0.position({ x: before.n0.x + 400, y: before.n0.y });
+    n0.emit('free');
+
+    await wait(300);
+
+    for (const id of ['n1', 'n11']) {
+      expect(cy.$id(id).position()).to.deep.equal(before[id]);
+    }
+  });
+
+  it('an added node and edge are absorbed: the sim is rebuilt on the live graph', async function () {
+    const cy = cytoscape({ elements: RING() });
+    const { layout, isSettled } = start(cy);
+
+    await wait(1200);
+
+    const n0 = cy.$id('n0').position();
+
+    cy.add([
+      { data: { id: 'extra' }, position: { x: n0.x + 2000, y: n0.y + 2000 } },
+      { data: { id: 'e-extra', source: 'extra', target: 'n0' } },
+    ]);
+
+    await wait(1500);
+
+    const p = cy.$id('extra').position();
+
+    expect(
+      Math.hypot(
+        p.x - cy.$id('n0').position().x,
+        p.y - cy.$id('n0').position().y,
+      ),
+    ).to.be.lessThan(250);
+    expect(isSettled()).to.equal(false);
+
+    layout.stop();
+    await layout.promise();
+  });
+
+  it('control: a finished run leaves an added node where it was added', async function () {
+    const cy = cytoscape({ elements: RING() });
+
+    await cy
+      .layout({ name: 'force', seed: 4, fit: false, animateLive: true })
+      .run()
+      .promise();
+
+    const n0 = cy.$id('n0').position();
+
+    cy.add([
+      { data: { id: 'extra' }, position: { x: n0.x + 2000, y: n0.y + 2000 } },
+      { data: { id: 'e-extra', source: 'extra', target: 'n0' } },
+    ]);
+
+    await wait(300);
+
+    expect(cy.$id('extra').position().x).to.be.closeTo(n0.x + 2000, 0.01);
+    expect(cy.$id('extra').position().y).to.be.closeTo(n0.y + 2000, 0.01);
+  });
+
+  it("a subset scope ignores an add: the caller's collection is the scope", async function () {
+    const cy = cytoscape({ elements: RING() });
+    const layout = cy.nodes().slice(0, 6).layout({
+      name: 'force',
+      seed: 4,
+      fit: false,
+      infinite: true,
+      stepsPerFrame: 6,
+    });
+
+    layout.run();
+    await wait(800);
+
+    cy.add([
+      { data: { id: 'extra' }, position: { x: 5000, y: 5000 } },
+      { data: { id: 'e-extra', source: 'extra', target: 'n0' } },
+    ]);
+
+    await wait(600);
+
+    expect(cy.$id('extra').position()).to.deep.equal({ x: 5000, y: 5000 });
+
+    layout.stop();
+    await layout.promise();
+  });
+
+  it('reheat() returns the layout and wakes an infinite run', async function () {
+    const cy = cytoscape({ elements: RING() });
+    const { layout } = start(cy);
+
+    await wait(1000);
+
+    expect(layout.reheat()).to.equal(layout);
+
+    layout.stop();
+    await layout.promise();
+  });
+
+  it('a locked node stays through a drag of its neighbour', async function () {
+    const cy = cytoscape({ elements: RING() });
+
+    cy.$id('n6').position({ x: 300, y: 300 }).lock();
+
+    const { layout } = start(cy);
+
+    await wait(1000);
+
+    const n5 = cy.$id('n5');
+    const p = n5.position();
+
+    n5.emit('grab');
+    n5.position({ x: p.x + 300, y: p.y });
+    n5.emit('free');
+
+    await wait(500);
+
+    expect(cy.$id('n6').position()).to.deep.equal({ x: 300, y: 300 });
+
+    layout.stop();
+    await layout.promise();
   });
 });

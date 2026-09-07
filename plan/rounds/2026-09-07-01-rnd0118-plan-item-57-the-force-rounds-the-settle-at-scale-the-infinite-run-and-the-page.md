@@ -33,7 +33,7 @@ What the round takes, in order:
   replaced by a separation sweep per tick on both executors, and
   the overlap approach becomes selectable — `avoidOverlap: 'settle' |
   'sim' | 'both'` (true is `'settle'`).
-- [ ] **118.3 — the infinite run**: `infinite: true` holds the run
+- [x] **118.3 — the infinite run**: `infinite: true` holds the run
   open, ticks only while the field is moving, reheats on a drag and
   on request, and pins the dragged node into the sim on both
   executors.
@@ -261,3 +261,80 @@ ends at exactly the padding; the default is still the settle alone
 (117's control); an unknown value throws.  All of them red with
 `SWEEPS_PER_TICK = 0`.  The browser spec (116.1's) now runs the live
 GPU run under `avoidOverlap: 'sim'` and asserts it lands clear.
+
+### 118.3 — the infinite run
+
+The maintainer's framing: the live / infinite force-directed layout
+"lots of people like to do" is rarely good UX, and might be done
+better by only running iterations while the network's energy is past
+a generous epsilon.  That is what landed, with the epsilon the sim
+already had.
+
+**The shape.**  `infinite: true` on force streams like `animateLive`
+and never converges on its own: `converged()` is false on both
+executors (the iteration cap is ignored) and a new `idle()` — the
+settle test without the cap: alpha at its floor with a quiet sweep,
+or the displacement under `threshold` for three ticks — says when
+ticking would move nothing.  The CPU loop schedules no frame while
+idle; the renderer skips the encode and lets its clock stop (an idle
+infinite run no longer drives `schedule()`).  So at rest the run is
+the cost of five listeners.
+
+**What wakes it.**  The impl wires the core's `grab`, `free`,
+`position`, `add` and `remove` for the run's life:
+
+- `grab` on a scoped node pins it into the sim (`ForceSim.setPinned`;
+  on the device `GpuForceRuntime.setPinned` rewrites the one slot word
+  whose bit 31 is the pin).
+- every `position` event on a scoped node — the pointer's drag writes
+  through `node.position()`, and so does a program — copies the
+  store's coordinates into the sim (`setPosition`; on the device an
+  8-byte `queue.writeBuffer` into `simPos`, ordered before the next
+  submit's encode, which the apply kernel then publishes) and reheats:
+  alpha rises to 0.3 (`REHEAT_ALPHA`, d3's drag convention), the
+  settle counter restarts, and the loop is woken (`renderer.wakeForce`
+  on the device).
+- `free` releases the pin and reheats, so the field relaxes around
+  where the node was left.
+- `add` / `remove` under a whole-graph scope ask for a rebuild: the
+  current `runOnce` ends (the GPU poll and the CPU loop both watch the
+  flag), lands the positions, the context drops its cached scope
+  (`LayoutContext.refreshScope` — the scope was materialized once per
+  run, and a rebuilt run must see the graph as it now is), and
+  `runOnce` goes again with the seed skipped, relaxing every node
+  where it stands and the new one where it was added.  A subset scope
+  is the caller's collection and stays what it was.
+
+`layout.reheat(alpha?)` is the public handle for a change the run
+cannot see — an edge length under a data mapping, a restyle that
+resized the boxes — added to the contract (`LayoutImpl.reheat?`,
+`CustomLayout.reheat`) as an optional verb, so an impl without one
+ignores it.
+
+**The end.**  `stop()` wakes an idle run so the stop lands, and the
+landing is the positions as they stand: no separation pass, no
+re-pack, no fit and no tween — the person is looking at them.  Hence
+`avoidOverlap` under `infinite` is the per-tick sweep (`'settle'` and
+`'both'` read as `'sim'`, since there is no settle), which is the
+reason 118.2 exists in the order it does.
+
+**The gates.**  `test/force-sim.mjs`: an infinite sim is never
+converged after 2,000 steps and is idle; `reheat()` clears idle and
+sets alpha 0.3; a node pinned elsewhere reflows the field (the
+one-shot sim as the control, converging under its cap).
+`test/force-layout.mjs`: at rest the positions stop moving and the
+promise stays pending, and `stop()` lands them with the zoom
+untouched; a drag holds the grabbed node exactly where it was put
+while both ring neighbours are pulled after it, and a release lets
+the ring relax to somewhere between (the finished `animateLive` run
+as the control: the same gesture moves nothing else); an added node
+and edge are absorbed to within 250 px of their neighbour (the
+control: a finished run leaves it where it was added); a subset scope
+ignores the add; `reheat()` returns the layout; a locked node stays
+through a drag of its neighbour; a clique of bodies rests
+overlap-free by the sweep.  All red with the `position` wiring and
+the never-converged rule stubbed.  The browser spec runs the same on
+the GPU: the frame count holds still for a third of a second once the
+field rests, a pointer drag of 200 rendered px wakes it with the
+grabbed node at the pointer and both neighbours following, and
+`stop()` resolves the promise with the zoom untouched.

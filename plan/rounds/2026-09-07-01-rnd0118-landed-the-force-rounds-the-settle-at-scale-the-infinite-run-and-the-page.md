@@ -390,7 +390,8 @@ scene, on the page:
 | --- | ---: | ---: | ---: | --- |
 | Avoid overlap off | 11.8 s | 21,324 | −6.9 px | 5686 × 4552 |
 | settle | 15.1 s | **0** | 7.7 px | 10862 × 8425 |
-| sim (before the budget) | 76.2 s | **2,565** | −8.2 px | 5951 × 4845 |
+| sim, before the floor budget | 76.2 s | **2,565** | −8.2 px | 5951 × 4845 |
+| sim, with it | 50.3 s | **5,962** | −11.6 px | 5716 × 4326 |
 | both | 80.2 s | **0** | 9.5 px | 8418 × 6625 |
 
 The settle row is item 57 fixed where it was found: the field 117
@@ -409,4 +410,17 @@ after which the field is as open as a sweep can make it and the run
 is idle — `test/force-sim.mjs` pins it on a crammed 3k random field
 (idle between 600 and 700 ticks with overlap left; red with the
 budget removed), and the JSDoc and README say which graphs want
-`'both'`.
+`'both'`.  Re-driven with the budget: the `sim` run ends at 50 s
+instead of 76 (the cap no longer does the stopping) with more pairs
+left, 5,962, since a field a sweep cannot open is left sooner; and the
+infinite run **rests at 50 s** with the frame counter still, its
+hover-aimed drag lands the grabbed node under the pointer to within
+2.4 px at about five frames a second on 25k nodes, Reheat draws, and
+Stop lands it — with the 18,261 overlapping pairs a per-tick sweep
+leaves on this scene, which is the documented limit rather than a
+defect of the run.
+
+One flake was seen while closing: `test/algorithms-clustering.mjs`'s
+fuzzy c-means random-init row failed once in the full `verify` and
+passed four reruns, on this tree and on the tree before the round —
+item 52's residual, not this round's.

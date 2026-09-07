@@ -5,13 +5,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-03, after the layout cleanup's three
-  follow-ups: the force sim keeps node bodies apart itself, on both
-  executors, so a live run streams separated bodies; force honours
-  `boundingBox`; a locked child stays put when its compound parent is
-  dragged — and, found on the way, the GPU force convergence readback
-  had never delivered a value, so every GPU force run in a browser had
-  been stopping after nine iterations.
+- **Last updated**: 2026-09-07, after the force rounds: the settle's
+  overlap separation reaches 25k (an expansion stage for a crammed
+  field, and a guard that never hands back a deeper field than it was
+  given); in-sim overlap is a separation sweep per tick rather than a
+  force, and `avoidOverlap` says which mechanism; the infinite force
+  run that ticks only while its field moves and reflows around a
+  dragged node, on both executors; and the debug page's controls for
+  all of it, driven on the real GPU.
 
 ## How to maintain this file
 
@@ -745,12 +746,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     spring pressure beats its bounded push, the fully annealed 25k
     sim still holds 36,042 overlapping pairs, and the settle's exact
     separation clears them exactly as it clears the point sim's.
-  - So the term now costs nothing unless asked for
-    (`avoidOverlapInSim: true`), which is worth it on a small or
-    clique-heavy graph whose live run would otherwise show piles; the
-    settle's separation stays on by default.  The render bench can
-    price both (`--layout-sim-boxes`), and its live-layout figures from
-    before 3 Sep are marked as the nine-iteration runs they were.
+  - So the term became opt-in (a flag 7 Sep replaced with the
+    mechanism's name — see below), worth it on a small or clique-heavy
+    graph whose live run would otherwise show piles; the settle's
+    separation stays on by default.  The render bench can price both
+    (`--layout-sim-boxes`), and its live-layout figures from before
+    3 Sep are marked as the nine-iteration runs they were.
   - Driving the debug page (scripted, on the real GPU — the extension
     for a hand-driven session was not connected) confirmed the locked
     child and the pile, and found that the settle's separation gives
@@ -762,6 +763,57 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a force layout that converges as fast as it did before the
     term existed, a decision made on a measurement rather than a hope,
     and a defect at scale that is now written down instead of drawn.
+
+- **7 Sep** — the force rounds: the settle at scale, projection, the infinite run, the page
+  - The settle's overlap separation reaches 25k.  The per-stage
+    measurement said why it had been handing back a deeper field than
+    it was given: on a field where nine nodes in ten sit inside a
+    neighbour's padded box, the sweeps push pairs the full box depth
+    into the next node and forty stress rounds add pairs without ever
+    moving the bounding box — a stress round is a local step, and a
+    uniformly dense field's neighbours ask for nothing net.  A
+    component of a thousand nodes or more with most of them touching
+    is now expanded about its centroid by what its median overlapping
+    pair asks for before the local passes run (piles stay with the
+    stress rounds, which open them tighter), and a guard restores the
+    shallowest state any stage reached.  5k, 10k and 25k random scenes
+    come out with no overlapping bodies, in under 3 s at 25k against
+    7 s, grown 1.4–1.8× — what the boxes need.  The quality suite
+    gained the crammed 3k row it never had.
+  - In-sim overlap is a projection, not a force: the settle's own
+    separation sweep runs after every tick (twice — the second takes
+    the first's residue), on the CPU and the GPU alike, and cannot be
+    out-pushed by the springs or bounce.  `avoidOverlap` on force now
+    says which mechanism — `true` / `'settle'` (the default, cheapest
+    for a one-shot run), `'sim'` (the sweep; a streamed run holds its
+    piles open as it streams and ends clear with no settle pass),
+    `'both'` — and the 4 Sep flag is gone with the contact force.  A
+    sweep is a local pass: the 25k scene under `'sim'` alone ends its
+    cap with 2,565 overlapping pairs, where `'both'` ends clear, and
+    the docs say which graphs want it.
+  - The infinite run: `infinite: true` is the live force-directed
+    layout that never ends, done so that it costs nothing at rest —
+    the sim ticks only while its field moves (the renderer's clock
+    stops with it), a drag pins the grabbed node and heats the field
+    around it, a moved node or an added / removed element does the
+    same, `stop()` lands the positions as they stand, and
+    `layout.reheat()` is the handle for a change the run cannot see.
+    On both executors; the browser spec drags a node on the GPU run.
+    A boxed run at alpha's floor sweeps for at most 200 more ticks,
+    because a field denser than its boxes allow never quiets and an
+    infinite run on one drew frames for a whole minute on the page.
+  - The debug page's layout section has an Infinite box with Stop and
+    Reheat, and a select for the overlap mechanism (pinned to `sim`
+    under Infinite).  Driven on the real GPU: every mechanism ends
+    clear at the padding on 300 nodes, the infinite run rests with the
+    frame counter still, wakes for a pointer drag with the node under
+    the pointer, and Stop lands it; on the 25k scene the settle
+    mechanism is item 57 fixed where it was found.  A person has still
+    not sat in front of it.
+  - Buys an overlap-free force result at every scale the benchmarks
+    reach, a live run whose piles stay open as it streams, the
+    interactive force layout people build with d3 — at no cost while
+    nothing moves — and a page a maintainer can judge all three on.
 
 ---
 
@@ -796,13 +848,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   (31 Aug): executor choice is availability-driven — read positions at
   `layoutstop` / `promise()`.  Headless runs stay synchronous.
 - **`force` can avoid overlap in the sim, and honours `boundingBox`**
-  (3–4 Sep): with `avoidOverlapInSim: true` the sim keeps node bodies
-  apart itself — opt-in since 4 Sep, because it triples the run and a
-  dense graph's settle clears the overlap anyway; a
-  `boundingBox` scales the drawing down (never up) so the bodies fit,
-  then centres it — v3 cose stretched centres to fill the box, up or
-  down, size-blind.  A locked child no longer travels with a dragged
-  compound parent.
+  (3–7 Sep): `avoidOverlap` on force takes the mechanism — `true` /
+  `'settle'` (the default) separates after the settle, `'sim'` runs a
+  separation sweep after every tick so the run is held open as it
+  streams, `'both'` does both; the sweep is opt-in because the settle's
+  pass is cheaper for a one-shot run.  A `boundingBox` scales the
+  drawing down (never up) so the bodies fit, then centres it — v3 cose
+  stretched centres to fill the box, up or down, size-blind.  A locked
+  child no longer travels with a dragged compound parent.
+- **`force` has an infinite mode** (7 Sep): `infinite: true` keeps the
+  run open at no cost while nothing moves, and reflows around a
+  dragged node, a moved node and an added or removed element; v3 had
+  this only as the cola extension's `infinite`.
 - **`animate: true` tweens on `force` too** (2 Sep) — v3 cose's `'end'`;
   the streaming run v3 spelled `'during'` is `animateLive: true`.  Every
   layout avoids overlap by default, exactly per pair (`radial`, `force`
@@ -831,7 +888,6 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | `arrow-scale` quantization | Stored at a 1/16 step, so `arrow-scale: 1.4` draws at 1.375. Fixing it spends six spare bits a seventeenth arrowhead shape also wants — one or the other |
 | Edge overlay band width | v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
 | Hollow *mid* arrows | Still show the line through them: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
-| Force's overlap separation at scale | Round 115's dense pass clears a 5k-node field but hands the 25k random scene back with more overlap than it found (12,352 pairs in, 13,406 deeper ones out), on both executors. Refuse a field it cannot open, restore a global expansion above some overlap fraction, or scale the budget — the per-stage measurement decides |
 
 ## Not yet built
 

@@ -76,6 +76,17 @@ export type ForceExtents = Boxes;
  * clear frame. */
 export const SWEEPS_PER_TICK = 2;
 
+/** How many ticks past alpha's floor a boxed run keeps sweeping
+ * (118.4): at the floor each tick is a sweep, a pile opens within a
+ * hundred (the 200-clique needed 92 under one sweep per tick), and a
+ * field denser than its boxes allow never does — a sweep is a local
+ * pass, and the 25k random scene under `'sim'` alone held 2,565
+ * overlapping pairs on the page after the whole iteration cap, and an
+ * infinite run there never rested.  So the floor has a budget, after
+ * which the field is as open as a sweep can make it and the run is
+ * idle; the settle's expansion (`'both'`) is what opens such a field. */
+export const FLOOR_SWEEP_BUDGET = 200;
+
 export interface ForceParams {
   /** the pairwise push, in px per tick, at exactly one cutoff length
    * (the force law is `repulsion · (cutoff/d)²`) */
@@ -238,6 +249,8 @@ export class ForceSim {
   }[] = [];
   private settledRuns = 0;
   private infinite: boolean;
+  /** ticks spent at alpha's floor, against `FLOOR_SWEEP_BUDGET` */
+  private floorTicks = 0;
 
   /**
    * Build a run.  Derives the repulsion cutoff (the mean ideal edge
@@ -328,7 +341,10 @@ export class ForceSim {
    * gone and each tick is a sweep, and a pile opens under pairwise
    * pushes only slowly — a 200-clique of padded boxes needed 92 more
    * past the floor under one sweep per tick — so the run keeps
-   * sweeping until the largest push is under `threshold` or the cap.
+   * sweeping until the largest push is under `threshold`, or
+   * `FLOOR_SWEEP_BUDGET` ticks at the floor have passed (a field
+   * denser than its boxes allow never quiets: a sweep cannot open
+   * it), or the cap.
    * This is one of the invariants the GPU integrator must agree on —
    * the two executors need not follow the same trajectory, but they
    * must stop under the same conditions.
@@ -354,7 +370,8 @@ export class ForceSim {
     return (
       (this.alpha < 0.001 &&
         (this.overlapGrid == null ||
-          this.lastMaxDisp < this.params.threshold)) ||
+          this.lastMaxDisp < this.params.threshold ||
+          this.floorTicks >= FLOOR_SWEEP_BUDGET)) ||
       this.settledRuns >= CONVERGE_RUNS
     );
   }
@@ -370,6 +387,7 @@ export class ForceSim {
   reheat(alpha: number = REHEAT_ALPHA): void {
     this.alpha = Math.max(this.alpha, alpha);
     this.settledRuns = 0;
+    this.floorTicks = 0;
     this.lastMaxDisp = Infinity;
   }
 
@@ -791,6 +809,10 @@ export class ForceSim {
     this.settledRuns =
       !sawNonFinite && maxDisp < threshold ? this.settledRuns + 1 : 0;
     this.iteration++;
+
+    if (this.alpha < 0.001) {
+      this.floorTicks++;
+    }
 
     // 85.2: constraint projection after the integration step.  The
     // ordering is load-bearing (the IPSep/CoLa-lineage standard, and

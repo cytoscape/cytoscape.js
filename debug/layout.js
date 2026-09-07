@@ -13,6 +13,11 @@
 // box streams the sim instead; the Edge types box re-applies the sheet
 // with the curve style the layout reads best with (taxi for the layered
 // ones); and the spiral example forwards the same options as a built-in.
+// Round 118.4 added the force-only Infinite box (`infinite` — the run
+// keeps going at no cost at rest, and a dragged node reflows its
+// neighbourhood; Stop ends it, Reheat wakes it) and the force overlap
+// mechanism select (`avoidOverlap: 'settle' | 'sim' | 'both'`, pinned to
+// `sim` under Infinite, where there is no settle).
 
 (function () {
   window.onCy((cy) => {
@@ -29,7 +34,16 @@
   });
 
   const liveCheck = $('#layout-live-check');
+  const infiniteCheck = $('#layout-infinite-check');
+  const stopButton = $('#layout-stop-button');
+  const reheatButton = $('#layout-reheat-button');
+  const overlapMode = $('#layout-overlap-mode');
+  const avoidOverlapCheck = $('#layout-avoid-overlap-check');
   const select = $('#layout-select');
+
+  // the infinite run under way (118.4), for Stop and Reheat — and for
+  // Apply, which ends it before starting anything else
+  let running = null;
   const spacing = $('#spacing-input');
   const spacingValue = $('#spacing-value');
 
@@ -41,13 +55,43 @@
   spacing.addEventListener('input', syncSpacing);
   syncSpacing();
 
-  // Live is force's alone: the other layouts have no stream to show
-  const syncLive = () => {
-    liveCheck.disabled = select.value !== 'force';
+  // Live and Infinite are force's alone: the other layouts have no
+  // stream to show; the overlap mechanism select is force's too, read
+  // only under Avoid overlap, and pinned to `sim` under Infinite
+  const syncForce = () => {
+    const force = select.value === 'force';
+
+    liveCheck.disabled = !force;
+    infiniteCheck.disabled = !force;
+    overlapMode.disabled =
+      !force || !avoidOverlapCheck.checked || infiniteCheck.checked;
+
+    if (force && infiniteCheck.checked) {
+      overlapMode.value = 'sim';
+    }
   };
 
-  select.addEventListener('change', syncLive);
-  syncLive();
+  select.addEventListener('change', syncForce);
+  infiniteCheck.addEventListener('change', syncForce);
+  avoidOverlapCheck.addEventListener('change', syncForce);
+  syncForce();
+
+  const syncRunning = () => {
+    stopButton.disabled = running == null;
+    reheatButton.disabled = running == null;
+  };
+
+  stopButton.addEventListener('click', () => {
+    if (running != null) {
+      running.stop();
+    }
+  });
+  reheatButton.addEventListener('click', () => {
+    if (running != null) {
+      running.reheat();
+    }
+  });
+  syncRunning();
 
   // One bulk sheet apply rather than a per-edge bypass loop, and the
   // restore is exact by construction: the page keeps the sheet it built.
@@ -94,15 +138,26 @@
       return;
     }
 
+    // an infinite run under way ends first: two sims over one graph
+    // would fight for the positions
+    if (running != null) {
+      running.stop();
+      running = null;
+      syncRunning();
+    }
+
+    const infinite = name === 'force' && infiniteCheck.checked;
     const layout = cy.layout(
       layoutConfig.layoutOptions(
         name,
         {
           animate: $('#layout-animate-check').checked,
           live: liveCheck.checked,
+          infinite,
           seed: $('#seed-input').value,
           positions: window.initialPositions,
-          avoidOverlap: $('#layout-avoid-overlap-check').checked,
+          avoidOverlap: avoidOverlapCheck.checked,
+          overlapMode: overlapMode.value,
           overlapLabels: $('#layout-overlap-labels-check').checked,
           spacing: $('#spacing-input').value,
         },
@@ -114,6 +169,11 @@
     console.time('layout ' + name);
     layout.run();
 
+    if (infinite) {
+      running = layout;
+      syncRunning();
+    }
+
     // the discrete built-ins have no promise() (the lifecycle-unification
     // hook) — the old unguarded chain threw uncaught on every Apply
     const done =
@@ -122,7 +182,14 @@
         : Promise.resolve();
 
     done
-      .then(() => console.timeEnd('layout ' + name))
+      .then(() => {
+        console.timeEnd('layout ' + name);
+
+        if (running === layout) {
+          running = null;
+          syncRunning();
+        }
+      })
       .catch((err) => console.error(err));
   });
 })();

@@ -1199,11 +1199,13 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
    * and how (118.2): `true` or `'settle'` (the default) separates
    * them exactly after the settle (114.5; the dense case rebuilt in
    * 115, the crammed case in 118.1 — the cheapest for a one-shot run);
-   * `'sim'` runs one separation sweep after every tick instead, on
-   * both executors, so a streamed run is overlap-free as it streams
-   * and an `infinite` run stays so, at about a grid pass per tick;
-   * `'both'` runs the sweep and the pass; `false` neither.  Any other
-   * value throws at start. */
+   * `'sim'` runs a separation sweep after every tick instead, on both
+   * executors, so a streamed run holds its piles open as it streams
+   * and an `infinite` run stays clear at rest, at about a grid pass
+   * per tick — but a sweep is a local pass, and a field denser than
+   * its boxes allow (a 25k random graph in padded 12 px bodies) is
+   * only opened by the settle's expansion, so such a graph wants
+   * `'both'`; `false` neither.  Any other value throws at start. */
   avoidOverlap?: boolean | 'settle' | 'sim' | 'both';
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;

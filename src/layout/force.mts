@@ -119,10 +119,11 @@ export interface ForceRunOptions {
    * `nodeDimensionsIncludeLabels` is true, pinned (locked) nodes as
    * obstacles — and how (118.2): `true` or `'settle'` (the default)
    * separates them exactly after the settle (114.5; the dense case
-   * rebuilt in 115, the crammed case in 118.1); `'sim'` runs one
+   * rebuilt in 115, the crammed case in 118.1); `'sim'` runs a
    * separation sweep after every tick instead, on both executors, so
-   * the run is overlap-free as it streams; `'both'` runs the sweep and
-   * the pass; `false` neither.  Any other value throws at start */
+   * the run holds its piles open as it streams — a field denser than
+   * its boxes allow needs the settle's expansion, so `'both'`; `false`
+   * neither.  Any other value throws at start */
   avoidOverlap?: boolean | 'settle' | 'sim' | 'both';
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;

@@ -1229,7 +1229,7 @@ describe('debug harness (round 43)', function () {
       expect(cy.$id('a').position()).to.deep.equal({ x: 3, y: 4 });
     });
 
-    it('spells the force run from the two checkboxes, and the rest from one', function () {
+    it('spells the force run from the three checkboxes, and the rest from one', function () {
       expect(layoutConfig.forceAnimation({ animate: true })).to.deep.equal({
         animate: true,
       });
@@ -1240,6 +1240,14 @@ describe('debug harness (round 43)', function () {
       expect(
         layoutConfig.forceAnimation({ animate: true, live: true }),
       ).to.deep.equal({ animateLive: true });
+      // Infinite wins over both (118.4): it streams and never ends
+      expect(
+        layoutConfig.forceAnimation({
+          animate: true,
+          live: true,
+          infinite: true,
+        }),
+      ).to.deep.equal({ infinite: true });
 
       const force = layoutConfig.layoutOptions('force', {
         animate: true,
@@ -1275,6 +1283,38 @@ describe('debug harness (round 43)', function () {
       expect(spiral.impl).to.equal(SpiralLayout);
       expect(spiral.animate).to.equal(true);
       expect(spiral.name).to.equal(undefined);
+    });
+
+    it("spells force's overlap mechanism from the select, and pins it to sim under Infinite (118.4)", function () {
+      const f = layoutConfig.forceOverlap;
+
+      expect(f({ avoidOverlap: false, overlapMode: 'both' })).to.equal(false);
+      expect(f({ avoidOverlap: true })).to.equal('settle');
+      expect(f({ avoidOverlap: true, overlapMode: 'sim' })).to.equal('sim');
+      expect(f({ avoidOverlap: true, overlapMode: 'both' })).to.equal('both');
+      expect(f({ avoidOverlap: true, overlapMode: 'nonsense' })).to.equal(
+        'settle',
+      );
+      expect(
+        f({ avoidOverlap: true, overlapMode: 'both', infinite: true }),
+      ).to.equal('sim');
+
+      const run = layoutConfig.layoutOptions('force', {
+        infinite: true,
+        avoidOverlap: true,
+        overlapMode: 'settle',
+      });
+
+      expect(run.infinite).to.equal(true);
+      expect(run.animateLive).to.equal(undefined);
+      expect(run.avoidOverlap).to.equal('sim');
+      // the other layouts keep the boolean: they have one mechanism
+      expect(
+        layoutConfig.layoutOptions('circle', {
+          avoidOverlap: true,
+          overlapMode: 'sim',
+        }).avoidOverlap,
+      ).to.equal(true);
     });
 
     it('spells the two overlap checkboxes out on every layout that has them (115)', function () {

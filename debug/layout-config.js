@@ -84,11 +84,44 @@ var layoutConfig = (function () {
   }
 
   /**
-   * How the two checkboxes spell a force run: Live streams the sim
-   * (`animateLive`, which wins), otherwise Animate tweens to the settle.
+   * How the three checkboxes spell a force run: Infinite keeps the run
+   * open (`infinite`, which streams and wins over both), Live streams
+   * the sim (`animateLive`, which wins over Animate), otherwise Animate
+   * tweens to the settle.
    */
   function forceAnimation(ui) {
+    if (ui.infinite) {
+      return { infinite: true };
+    }
+
     return ui.live ? { animateLive: true } : { animate: !!ui.animate };
+  }
+
+  // The force overlap mechanisms the select offers (118.4): the value
+  // `avoidOverlap` takes on force since 118.2.
+  var OVERLAP_MODES = ['settle', 'sim', 'both'];
+
+  /**
+   * The `avoidOverlap` value a force run takes from the panel: off is
+   * false; on is the select's mechanism — and always `sim` under
+   * Infinite, since an infinite run has no settle for a pass to land on
+   * (the library reads `settle` as `sim` there anyway; the page spells
+   * it so the options read true).
+   *
+   * @param ui { avoidOverlap, overlapMode, infinite }
+   */
+  function forceOverlap(ui) {
+    if (!ui.avoidOverlap) {
+      return false;
+    }
+
+    if (ui.infinite) {
+      return 'sim';
+    }
+
+    return OVERLAP_MODES.indexOf(ui.overlapMode) >= 0
+      ? ui.overlapMode
+      : 'settle';
   }
 
   // The layouts with an avoidOverlap option (115).  Preset and random
@@ -137,8 +170,8 @@ var layoutConfig = (function () {
    * The options object for `cy.layout()` given the panel's state.
    *
    * @param name the layout select's value
-   * @param ui { animate, live, seed, positions, avoidOverlap,
-   *   overlapLabels, spacing }
+   * @param ui { animate, live, infinite, seed, positions, avoidOverlap,
+   *   overlapMode, overlapLabels, spacing }
    * @param impl the spiral example's class (a page global)
    */
   function layoutOptions(name, ui, impl) {
@@ -169,6 +202,7 @@ var layoutConfig = (function () {
     if (name === 'force') {
       Object.assign(options, forceAnimation(ui));
       options.seed = parseInt(ui.seed || '1', 10);
+      options.avoidOverlap = forceOverlap(ui);
     }
 
     if (name === 'preset') {
@@ -196,6 +230,8 @@ var layoutConfig = (function () {
     sheetWith: sheetWith,
     snapshotPositions: snapshotPositions,
     forceAnimation: forceAnimation,
+    OVERLAP_MODES: OVERLAP_MODES,
+    forceOverlap: forceOverlap,
     layoutOptions: layoutOptions,
     HOVER_MAX_ELEMENTS: HOVER_MAX_ELEMENTS,
     hoverAllowed: hoverAllowed,

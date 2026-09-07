@@ -111,6 +111,12 @@
           <label for="layout-live-check">Live (force streams its run)</label>
         </div>
         <div>
+          <input type="checkbox" id="layout-infinite-check" />
+          <label for="layout-infinite-check">Infinite (force keeps running at rest for free; drag a node to reflow)</label>
+          <button id="layout-stop-button" disabled>Stop</button>
+          <button id="layout-reheat-button" disabled>Reheat</button>
+        </div>
+        <div>
           <input type="checkbox" id="layout-edge-types-check" checked />
           <label for="layout-edge-types-check">Layout-appropriate edge types (taxi for flow, …)</label>
         </div>
@@ -121,6 +127,16 @@
         <div>
           <input type="checkbox" id="layout-overlap-labels-check" />
           <label for="layout-overlap-labels-check">… including labels (nodeDimensionsIncludeLabels)</label>
+        </div>
+        <div>
+          <label>Force overlap by:
+            <select id="layout-overlap-mode">
+              <option value="settle">settle (exact pass after the sim)</option>
+              <option value="sim">sim (a sweep every tick)</option>
+              <option value="both">both</option>
+            </select>
+          </label>
+          <small>(an infinite run is always <code>sim</code>)</small>
         </div>
         <div>
           <label>Seed: <input id="seed-input" type="number" step="1" min="0" /></label>

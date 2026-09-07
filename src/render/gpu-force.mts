@@ -55,7 +55,11 @@ the CPU executor's guarantee; GPU correctness pins invariants (18.4).
 
 import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
-import { REHEAT_ALPHA, SWEEPS_PER_TICK } from '../layout/force-sim.mjs';
+import {
+  FLOOR_SWEEP_BUDGET,
+  REHEAT_ALPHA,
+  SWEEPS_PER_TICK,
+} from '../layout/force-sim.mjs';
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
 
 const WG = 64;
@@ -578,6 +582,8 @@ export class GpuForceRuntime {
   private settledRuns = 0;
   private destroyed = false;
   private readonly infinite: boolean;
+  /** iterations encoded at alpha's floor, against `FLOOR_SWEEP_BUDGET` */
+  private floorTicks = 0;
   /** the CPU copy of the slot | pinned words, for `setPinned` */
   private slotPinWords: Uint32Array;
 
@@ -908,7 +914,9 @@ export class GpuForceRuntime {
   idle(): boolean {
     return (
       (this.alpha < 0.001 &&
-        (!this.hasExt || this.lastMaxDisp < this.inputs.params.threshold)) ||
+        (!this.hasExt ||
+          this.lastMaxDisp < this.inputs.params.threshold ||
+          this.floorTicks >= FLOOR_SWEEP_BUDGET)) ||
       this.settledRuns >= 3
     );
   }
@@ -922,6 +930,7 @@ export class GpuForceRuntime {
   reheat(alpha: number = REHEAT_ALPHA): void {
     this.alpha = Math.max(this.alpha, alpha);
     this.settledRuns = 0;
+    this.floorTicks = 0;
     this.lastMaxDisp = Infinity;
   }
 
@@ -1137,6 +1146,10 @@ export class GpuForceRuntime {
     for (let i = 0; i < k; i++) {
       this.alpha += (0 - this.alpha) * this.inputs.params.decay;
       this.iterations++;
+
+      if (this.alpha < 0.001) {
+        this.floorTicks++;
+      }
     }
 
     // skip the copy while the staging buffer is mapped (latest-wins)

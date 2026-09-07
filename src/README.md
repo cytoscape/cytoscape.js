@@ -1368,7 +1368,17 @@ round records carry the histories.
   of 458.  So `'sim'` is the mechanism for a run with no end for a
   settle to land on (118.3's `infinite`) and for a streamed run that
   should look separated as it streams; `'settle'` is cheaper for a
-  one-shot run, which is why it is the default (117, item 56).  On
+  one-shot run, which is why it is the default (117, item 56).  **A
+  sweep is a local pass, and a field denser than its boxes allow is
+  not its to open** (118.4, found on the page): the 25k random scene
+  in padded 12 px bodies under `'sim'` alone ended its iteration cap
+  with 2,565 overlapping pairs and its bounding box where the point
+  sim left it, where `'both'` and `'settle'` end clear — the settle's
+  expansion (118.1) is what such a field needs.  And at alpha's floor
+  a boxed run keeps sweeping only for `FLOOR_SWEEP_BUDGET` (200)
+  ticks: a pile opens within a hundred, a crammed field never does,
+  and without the bound an `infinite` run on such a field never
+  rested (a minute of frames on the page, and counting).  On
   the GPU the sweep is a Jacobi gather — every node sums its
   overlapping neighbours' pushes over a grid rebuilt after `apply`,
   clamped to the largest single pair's, then `applySep` moves and

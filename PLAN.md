@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-04, round 117), the genuinely open questions
+**As last swept** (2026-09-07, round 118), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -209,7 +209,10 @@ only its round-102 measurement note on the item, and added **item 56**,
 the convergence price of size-aware repulsion — **taken by round 117**
 the next day (the sim half of `avoidOverlap` is opt-in, on the
 measurement the item asked for), which added **item 57**: the settle's
-separation hands back more overlap than it finds on the 25k scene.  What the 2026-08-26
+separation hands back more overlap than it finds on the 25k scene —
+**taken by round 118.1** on the per-stage measurement the item asked
+for (an expansion stage for the crammed case, and a best-state guard;
+the measurement is on the round).  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -967,27 +970,28 @@ directions".*
     nothing on the graphs that pay for it; the settle's separation
     stays on by default.  The tables are on the round.
 57. **The settle's separation gives out on the 25k scene, and makes it
-    worse** (logged 2026-09-04, round 117; found by the page check).
-    Force's `avoidOverlap` separation (114.5, the dense case rebuilt
-    in 115 as PRISM proximity stress with a forty-round budget) is
-    what the portfolio relies on to leave a force result overlap-free,
-    and at 5k × 10k it does: the sim hands it 159 overlapping pairs
-    and it leaves 1–3 at under 1 px.  On the 25k × 50k random scene
-    (12 px bodies, padding 10, default ideal length) it hands back
-    **more overlap than it was given**: 12,352 overlapping pairs at
-    5.6 px deep without the separation, 13,406 at 11.8 px deep with it
-    — headless CPU and the GPU path alike (the browser reads 13,450,
-    and 29,727 after an `avoidOverlapInSim` run), so the debug page's
-    25k force layout at zoom 4 is a field of half-covered bodies.  The
-    calls: whether the dense pass should refuse a field it cannot open
-    (leave the sweeps' result, never hand back a deeper overlap than it
-    found), whether a global expansion belongs above some overlap
-    fraction (114.5's scale, which 115 removed for over-separating
-    *sparse* fields, is exactly what a field this dense needs), and
-    what the budget should scale with.  **First measurement**: the
-    overlap count and depth after each of the three stages (sweeps,
-    stress rounds, final sweeps) on the 25k scene, to see which stage
-    deepens it; and the same on 10k and 15k to find where the 5k
-    behaviour stops.  A quality-suite row at this scale is the gate
-    that was missing — every `separates` row is under a thousand
-    nodes.
+    worse** (logged 2026-09-04, round 117; **taken by round 118.1,
+    2026-09-07: an expansion stage for the crammed case, and a
+    best-state guard**).  The calls were whether the dense pass should
+    refuse a field it cannot open, whether a global expansion belongs
+    above some overlap fraction, and what the budget should scale
+    with; the first measurement — the count after each stage — decided
+    the first two and made the third moot.  On the sim's 25k random
+    field (12 px bodies in 22 px padded boxes, 93% of nodes inside a
+    neighbour's box) the sweeps deepened the worst pair from 15.8 px
+    to the full box, forty stress rounds took 75,668 pairs to 100,952
+    while the bounding box never moved — a stress round is a local
+    Jacobi step, and a uniformly dense field's neighbours ask for
+    nothing net — and the closing sweeps handed back 69,127 pairs at
+    5.68 px mean against 79,373 at 5.82 in.  The local passes alone
+    clear crammed random fields of 2k nodes and give out at 3k.  So a
+    component of ≥ 1,000 nodes with ≥ 60% touching is scaled about its
+    centroid by its median overlapping pair's requirement (≤ 1.25 per
+    round) while it stays crammed, the local passes take the residue,
+    and the summed overlap depth is measured after every stage with
+    the shallowest state restored at the end.  5k, 10k and 25k come
+    out with zero overlapping bodies, in 0.2–3 s at 25k, grown
+    1.4–1.8× linearly; the 60-clique of labels keeps its 0.45 fill.
+    The tables are on the round; the quality suite's crammed 3k row
+    and `test/modules/force-separation.mjs` are the gates that were
+    missing.

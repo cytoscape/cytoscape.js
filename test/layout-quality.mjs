@@ -701,6 +701,102 @@ describe('gpu/layout: the quality suite (round 114.8)', function () {
       expect(overlapPairs(cy.nodes(), labelBox)).to.deep.equal([]);
       expect(fill(cy, true)).to.be.greaterThan(1 / 3);
     });
+
+    it('force on a crammed 3k random field (118.1, item 57): clear to the padding, grown under 2x', async function () {
+      // the scale the suite never reached: every `separates` row was
+      // under a thousand nodes while the 25k random scene came out of
+      // the settle with more overlap than it went in with.  A 3k
+      // random graph at the default ideal length settles with most of
+      // its 12 px bodies inside each other's padded boxes — the local
+      // passes alone leave 1,347 pairs there — so this is the
+      // expansion stage's row.  The contract is the padding, not
+      // mere non-overlap: the deepest residue the old pass left here
+      // (4.3 px into a 10 px padding) kept the bodies apart
+      const rand = (() => {
+        let a = 42;
+
+        return () => {
+          a = (a + 0x6d2b79f5) >>> 0;
+
+          let t = a;
+
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      })();
+      const els = [];
+      const n = 3000;
+
+      for (let i = 0; i < n; i++) {
+        els.push(node('r' + i));
+      }
+
+      for (let j = 0; j < n * 2; j++) {
+        const s = 'r' + Math.floor(rand() * n);
+        const t = 'r' + Math.floor(rand() * n);
+
+        els.push({ data: { id: 'e' + j, source: s, target: t } });
+      }
+
+      const style = { nodes: { width: 12, height: 12 } };
+      const sep = mk(structuredClone(els), style);
+      const raw = mk(structuredClone(els), style);
+      const base = { name: 'force', seed: 3, fit: false, iterations: 300 };
+
+      await run(sep, base);
+      await run(raw, { ...base, avoidOverlap: false });
+
+      // the smallest gap between any two bodies, over a grid
+      const minGap = (cy) => {
+        const boxes = cy.nodes().map(bodyBox);
+        const cell = 40;
+        const grid = new Map();
+        const key = (b) =>
+          `${Math.floor(b.x1 / cell)},${Math.floor(b.y1 / cell)}`;
+
+        boxes.forEach((b, i) => {
+          const k = key(b);
+
+          (grid.get(k) ?? grid.set(k, []).get(k)).push(i);
+        });
+
+        let out = Infinity;
+
+        boxes.forEach((a, i) => {
+          const cx = Math.floor(a.x1 / cell);
+          const cy = Math.floor(a.y1 / cell);
+
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              for (const j of grid.get(`${cx + dx},${cy + dy}`) ?? []) {
+                if (j > i) {
+                  const b = boxes[j];
+                  const gx = Math.max(a.x1 - b.x2, b.x1 - a.x2);
+                  const gy = Math.max(a.y1 - b.y2, b.y1 - a.y2);
+
+                  out = Math.min(out, Math.max(gx, gy));
+                }
+              }
+            }
+          }
+        });
+
+        return out;
+      };
+
+      // the control: the raw settle is crammed — many pairs well
+      // inside the padding, some bodies overlapping
+      expect(minGap(raw)).to.be.lessThan(0);
+
+      const sepBox = sep.nodes().boundingBox();
+      const rawBox = raw.nodes().boundingBox();
+
+      expect(minGap(sep)).to.be.at.least(9.5);
+      expect(sepBox.w / rawBox.w).to.be.lessThan(2);
+      expect(sepBox.h / rawBox.h).to.be.lessThan(2);
+    });
   });
 
   describe('locked nodes', function () {

@@ -24,6 +24,15 @@ that compile and then behave differently.
 
 ### Added
 
+- **Force's overlap separation reaches 25k** (round 118.1, open call
+  57).  The settle's separation handed the 25k random scene back with
+  more overlap than the sim gave it; a component of a thousand nodes or
+  more with most of its nodes touching is now expanded about its
+  centroid by what its median overlapping pair asks for before the
+  local passes run, and a best-state guard restores the shallowest
+  field any stage reached.  5k, 10k and 25k random scenes come out
+  with no overlapping bodies, the pass runs in under 3 s at 25k, and
+  the settled field grows under 2x.
 - **Force can keep bodies apart in the sim, and honours `boundingBox`**
   (rounds 116–117).  Under `avoidOverlap` with `avoidOverlapInSim:
   true` the force sim reads the same padded node boxes the settle

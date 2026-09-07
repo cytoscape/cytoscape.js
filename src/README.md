@@ -1265,13 +1265,32 @@ round records carry the histories.
   the pile opens locally and the far field never moves.  114.5's
   version scaled the whole component by its *worst* pair's factor and
   spread every settled graph several times over (em-web's 2.4k px
-  field became 11.6k; it is 2.8k now).  **It has a scale it has not
-  been made to reach** (round 117, open call 57): at 5k × 10k it takes
-  159 overlapping pairs to 1–3, but on the 25k × 50k random scene its
-  forty-round budget gives out and it hands back more overlap than it
-  found — 12,352 pairs at 5.6 px deep in, 13,406 at 11.8 px out, on
-  both executors — so a force result at that scale is not
-  overlap-free today.  Pinned nodes are obstacles
+  field became 11.6k; it is 2.8k now).  **The crammed case is an
+  expansion** (118.1, item 57): round 117 found the pass handing the
+  25k × 50k random scene back with more overlap than it was given
+  (12,352 pairs at 5.6 px in, 13,406 at 11.8 px out), and the
+  per-stage measurement said why — on a field where nine nodes in ten
+  sit inside a neighbour's padded box, the sweeps push pairs the full
+  box depth into the next node and forty stress rounds add pairs
+  without moving the bounding box, because a stress round is a local
+  Jacobi step and a uniformly dense field's neighbours ask for nothing
+  net.  So a component of a thousand nodes or more with over 60% of
+  them touching is scaled about its centroid by what its median
+  overlapping pair asks for, capped at 1.25 per round, while it stays
+  crammed; then the local passes clear the residue.  Piles stay with
+  the stress rounds (the 60-clique of labels fills 0.45 of its field
+  under them and 0.33 under a scale), and a pinned node holds its
+  component back from the scale.  Measured on the sim's own fields: 5k,
+  10k and 25k all come out with zero overlapping bodies where before
+  the 25k scene held 13,498 and the 10k scene 1,015 at full depth, the
+  pass runs in 0.2–3 s at 25k against 7 s, and the settled field grows
+  1.4–1.8× linearly — what the padded boxes need.  A **best-state
+  guard** measures the summed overlap depth after every stage and
+  restores the shallowest, so the pass can never return a deeper field
+  than it was given (on the real 25k field with the expansion withheld
+  it restores the fortieth stress round over the closing sweeps).  The
+  quality suite's crammed 3k row and `test/modules/force-separation.mjs`
+  gate it.  Pinned nodes are obstacles
   throughout, the body-box component re-pack follows.  The one
   post-pass in the layout portfolio (the round-114 decision against a
   generic remover: every other layout spaces constructively).

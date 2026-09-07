@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111, 113–117 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 112 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 112, 118 |
 
 ## The sections
 
-156 sections.
+157 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -183,3 +183,4 @@ A round can land with an item held open; the round file says which.
 | 154 | 115 | 2026-09-02 | landed | [Exact overlap separation: the layouts stop over-separating](rounds/2026-09-02-02-rnd0115-landed-exact-overlap-separation-the-layouts-stop-over-separating.md) |
 | 155 | 116 | 2026-09-03 | landed | [Item 55: size-aware repulsion, the force box and the locked child](rounds/2026-09-03-01-rnd0116-landed-item-55-size-aware-repulsion-the-force-box-and-the-locked-child.md) |
 | 156 | 117 | 2026-09-04 | landed | [Item 56: the sim half of `avoidOverlap` becomes opt-in](rounds/2026-09-04-01-rnd0117-landed-item-56-the-sim-half-of-avoidoverlap-is-opt-in.md) |
+| 157 | 118 | 2026-09-07 | plan | [The force rounds: the settle at scale, the infinite run, and the page](rounds/2026-09-07-01-rnd0118-plan-item-57-the-force-rounds-the-settle-at-scale-the-infinite-run-and-the-page.md) |

@@ -29,8 +29,8 @@ What the round takes, in order:
 
 - [x] **118.1 — item 57**: the settle's separation at 25k, on the
   per-stage measurement the item asked for.
-- [ ] **118.2 — in-sim overlap as projection**: the contact force is
-  replaced by one separation sweep per tick on both executors, and
+- [x] **118.2 — in-sim overlap as projection**: the contact force is
+  replaced by a separation sweep per tick on both executors, and
   the overlap approach becomes selectable — `avoidOverlap: 'settle' |
   'sim' | 'both'` (true is `'settle'`).
 - [ ] **118.3 — the infinite run**: `infinite: true` holds the run
@@ -155,3 +155,109 @@ bodies apart — and grown under 2× against the raw run, with the raw
 run as the control.  Both went red with the expansion stubbed
 (`CRAMMED_FRACTION = 2`): the row at 7.4 px against the 9.5 it asks,
 the 20k lattice at 52,816 pairs.  The row costs 3.9 s (two 3k sims).
+
+### 118.2 — in-sim overlap as projection, and the approach as the option's value
+
+**What changed.**  `avoidOverlap` on force takes the mechanism:
+`true` / `'settle'` (the default) is the settle's exact pass, `'sim'`
+is a separation sweep after every tick and no settle pass, `'both'`
+is both, `false` neither, and any other value throws at start (the
+throw gate covers it).  `avoidOverlapInSim` (117) is gone — a boolean
+beside a boolean could not spell "the sim alone", which is the one
+the page needs for a live run and the one an infinite run needs by
+construction — and so is 116.1's contact force, on the measurement
+117 took: a force bounded by its gap clamp loses to a dense graph's
+spring pressure, and its stiffness anneals every run to the floor.
+The bench's `--layout-sim-boxes` now spells `avoidOverlap: 'both'`
+and labels its rows so.
+
+**The primitive is shared.**  The settle's near-pair grid and push
+moved out of `separateBodies` into `layout/separation.mts` as
+`OverlapGrid` (scratch allocated once, the grid rebuilt from the
+positions on every pass, hashed by the largest box so any two
+overlapping boxes share a 3 × 3 neighbourhood; a non-finite field
+builds no grid) and `pushApart` (along the axis of smaller overlap, a
+hair past touching, half each or all onto the free node, the lower
+index negative on a tie, returning the distance opened).  The settle
+runs its sweeps through it unchanged — the 118.1 specs and the
+quality suite are the control that nothing moved — and the sim runs
+`OverlapGrid.sweep` after each step.  The sim's own repulsion grid is
+back at the cutoff (116.1 had grown it to the largest box for the
+contact gather); the sweep has its own.
+
+**What the measurement decided, in order.**
+
+1. *The sweep's push counts toward convergence.*  The first version
+   kept it out, as the constraint projection is kept out, and the
+   30-clique ended with 4 pairs overlapping and the 200-clique with
+   155: the run stopped by displacement while the sweep still had
+   work.  The constraint precedent does not carry — a constraint
+   fighting a force corrects by a constant every tick, while the
+   springs' pull into overlap shrinks with alpha, so the sweep's
+   corrections do too.
+2. *The alpha floor waits for a quiet sweep.*  With the fold, the
+   200-clique still ended with 128 pairs at the floor (alpha 0.001,
+   iteration 458): the forces are gone there and each tick is one
+   sweep, and a pile opens under pairwise pushes only slowly — 92 more
+   sweeps cleared it.  So with boxes the floor test also requires the
+   largest push under `threshold`, on both executors (the GPU's
+   `applySep` folds its pushes into the same atomic max the poll
+   reads).
+3. *Sweeps per tick.*  Measured on the two cliques of padded 40 px
+   boxes (overlapping pairs at ticks 50 … 450 and the iteration the
+   run ends at):
+
+   | sweeps / tick | 30-clique: pairs at tick 50 / 200 / 350 | ends | 200-clique: pairs at 50 / 200 / 350 / 450 | ends |
+   | ---: | --- | ---: | --- | ---: |
+   | 1 | 47 / 31 / 8 | 473 | 859 / 451 / 312 / 146 | 643 |
+   | 2 | 46 / 24 / 4 | 458 | 652 / 413 / 204 / 48 | 636 |
+   | 3 | 39 / 13 / 1 | 454 | 548 / 360 / 167 / 27 | 599 |
+   | 4 | 35 / 8 / 0 | 431 | 484 / 329 / 111 / 24 | 555 |
+
+   Every count ends clear.  What the table says about the transient:
+   at alpha 0.47 the step cap lets the springs move a node 28 px —
+   more than half a box — into its neighbours every tick, and no
+   number of sweeps clears a pile that is refilled that fast; they
+   hold it open (45 of the 30-clique's 435 pairs against the whole
+   pile without them) until the anneal lets them win, from about tick
+   400 of 458.  Two per tick is the balance taken: the second sweep
+   takes the residue the first's own pushes made (a pair pushed onto
+   a third node) for one more grid pass, and the third and fourth buy
+   a shorter tail at a price every tick.  The count is one constant,
+   `SWEEPS_PER_TICK`, shared with the GPU encode.
+4. *A clear pair is untouched, exactly.*  116.1's ring spec compared
+   equilibria from the scatter seed within 5%, and the sweep fails it
+   at 74 px against 67: it opens the transient pile, and a ring's
+   equilibrium moves with its trajectory.  The property is now stated
+   exactly — a ring seeded clear at 100 px spacing runs
+   byte-identically with boxes and without — with the scatter-seeded
+   ring as the control that the sweep is not silent there.
+
+**On the GPU.**  Two kernels, `separate` and `applySep`, after
+`apply`: the grid is rebuilt from the stepped positions (clear, bin,
+scan, scatter — the pyramid is not needed), `separate` gathers per
+node the pushes of its overlapping neighbours over the 3 × 3
+Jacobi-style, clamped to the largest single pair's so a node hemmed
+in on every side moves by what one pair asks, and `applySep` moves,
+republishes to the render column and folds the push into the
+displacement max.  Repeated `SWEEPS_PER_TICK` times per iteration,
+each on a fresh grid.  The boxes still ride the CSR tail; `separate`
+binds six buffers, `applySep` six (the column and the meta among
+them).  The executors agree on the invariants — clear at the end,
+the padding kept — and not the trajectory, as everywhere.
+
+**The gates.**  `test/modules/layout-separation.mjs`: the grid visits
+an overlapping pair once with its overlaps and a clear pair on
+request, finds a wide pair across a cell boundary, `pushApart`'s
+halves, the pinned rules and the tie, `sweep`'s largest push and its
+0 on a clear field, a NaN field.  `test/force-sim.mjs`: the 30-clique
+and the 200-clique settle overlap-free at the padding (the control
+piles), the seeded-clear ring is byte-identical, the scatter ring is
+wider, `extents: null` is byte-identical to before the field existed,
+the wide pair is found.  `test/force-layout.mjs`: `'sim'` streams a
+held-open pile (under a third of the point sim's overlaps mid-run)
+and ends clear with the padding kept and no settle pass; `'both'`
+ends at exactly the padding; the default is still the settle alone
+(117's control); an unknown value throws.  All of them red with
+`SWEEPS_PER_TICK = 0`.  The browser spec (116.1's) now runs the live
+GPU run under `avoidOverlap: 'sim'` and asserts it lands clear.

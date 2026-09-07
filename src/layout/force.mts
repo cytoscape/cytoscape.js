@@ -45,7 +45,7 @@ import {
 } from './pack.mjs';
 import type { BoxInput } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
-import { separationAlong } from './separation.mjs';
+import { OverlapGrid, separationAlong } from './separation.mjs';
 import { seedAroundAnchors, spectralSeed } from './force-init.mjs';
 import {
   checkScoreColumn,
@@ -108,20 +108,17 @@ export interface ForceRunOptions {
   boundingBox?: BoxInput;
   /** iterations advanced per animation frame (animateLive: true) */
   stepsPerFrame?: number;
-  /** separate overlapping node bodies after the settle (114.5; default
-   * true) — labels included only when `nodeDimensionsIncludeLabels` is
-   * false, pinned (locked) nodes as obstacles */
-  avoidOverlap?: boolean;
+  /** keep node bodies apart — labels included when
+   * `nodeDimensionsIncludeLabels` is true, pinned (locked) nodes as
+   * obstacles — and how (118.2): `true` or `'settle'` (the default)
+   * separates them exactly after the settle (114.5; the dense case
+   * rebuilt in 115, the crammed case in 118.1); `'sim'` runs one
+   * separation sweep after every tick instead, on both executors, so
+   * the run is overlap-free as it streams; `'both'` runs the sweep and
+   * the pass; `false` neither.  Any other value throws at start */
+  avoidOverlap?: boolean | 'settle' | 'sim' | 'both';
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;
-  /** the sim itself keeps the same padded boxes apart (116.1's contact
-   * term, both executors; default false since 117 — item 56).  Opt-in:
-   * the stiff contact anneals every run to alpha's floor, and on a
-   * dense graph the spring pressure still beats it, so the settle's
-   * separation is what clears the overlap either way; on a small or
-   * clique-heavy graph it makes an `animateLive` run stream separated
-   * bodies.  Read only under `avoidOverlap`. */
-  avoidOverlapInSim?: boolean;
   /** the boxes overlap avoidance reads: bodies and labels (default) or
    * bodies alone */
   nodeDimensionsIncludeLabels?: boolean;
@@ -156,6 +153,38 @@ export interface ForceRunOptions {
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
+
+/** How `avoidOverlap` keeps the boxes apart (118.2). */
+export type OverlapMode = 'none' | 'settle' | 'sim' | 'both';
+
+/**
+ * The overlap mechanism an `avoidOverlap` value spells: `true` (the
+ * default) and `'settle'` are the settle's exact pass, `'sim'` is the
+ * sim's per-tick sweep alone, `'both'` runs the sweep and the pass,
+ * `false` is neither.
+ *
+ * @param value — the option as given
+ * @returns the mode
+ * @throws TypeError on any other value — a typo must not silently
+ *   mean the default
+ */
+export const resolveOverlapMode = (value: unknown): OverlapMode => {
+  if (value == null || value === true || value === 'settle') {
+    return 'settle';
+  }
+
+  if (value === false) {
+    return 'none';
+  }
+
+  if (value === 'sim' || value === 'both') {
+    return value;
+  }
+
+  throw new TypeError(
+    `force: avoidOverlap must be true, false, 'settle', 'sim' or 'both', got ${JSON.stringify(value)}`,
+  );
+};
 
 /** local sweeps tried first — the sparse case clears in one or two */
 const SEPARATE_SWEEPS = 8;
@@ -277,131 +306,15 @@ export const separateBodies = (
     return;
   }
 
-  const cell = Math.max(dims.maxW, dims.maxH, 1);
-  const cellOf = new Int32Array(n);
-  const order = new Int32Array(n);
-
-  // visit every pair (j > i) sharing a 3 x 3 cell neighbourhood once,
-  // over a grid built from the positions as they stand at the call,
-  // with the pair's overlap on each axis (non-positive when clear);
-  // `visit` may move nodes.  Returns whether any pair overlapped.
+  const grid = new OverlapGrid(n, dims);
   const forEachNear = (
     visit: (i: number, j: number, ox: number, oy: number) => void,
     overlappingOnly: boolean,
-  ): boolean => {
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    for (let i = 0; i < n; i++) {
-      minX = Math.min(minX, pos[i * 2]);
-      maxX = Math.max(maxX, pos[i * 2]);
-      minY = Math.min(minY, pos[i * 2 + 1]);
-      maxY = Math.max(maxY, pos[i * 2 + 1]);
-    }
-
-    const cols = Math.max(1, Math.floor((maxX - minX) / cell) + 1);
-    const rows = Math.max(1, Math.floor((maxY - minY) / cell) + 1);
-    const start = new Int32Array(cols * rows + 1);
-
-    for (let i = 0; i < n; i++) {
-      const cx = Math.min(cols - 1, Math.floor((pos[i * 2] - minX) / cell));
-      const cy = Math.min(rows - 1, Math.floor((pos[i * 2 + 1] - minY) / cell));
-
-      cellOf[i] = cy * cols + cx;
-      start[cellOf[i] + 1]++;
-    }
-
-    for (let c = 0; c < cols * rows; c++) {
-      start[c + 1] += start[c];
-    }
-
-    const fill = start.slice(0, cols * rows);
-
-    for (let i = 0; i < n; i++) {
-      order[fill[cellOf[i]]++] = i;
-    }
-
-    let found = false;
-
-    for (let i = 0; i < n; i++) {
-      const ci = cellOf[i];
-      const cx = ci % cols;
-      const cy = (ci - cx) / cols;
-
-      for (let dy = -1; dy <= 1; dy++) {
-        const ny = cy + dy;
-
-        if (ny < 0 || ny >= rows) {
-          continue;
-        }
-
-        for (let dx = -1; dx <= 1; dx++) {
-          const nx = cx + dx;
-
-          if (nx < 0 || nx >= cols) {
-            continue;
-          }
-
-          const c = ny * cols + nx;
-
-          for (let k = start[c]; k < start[c + 1]; k++) {
-            const j = order[k];
-
-            if (j <= i) {
-              continue;
-            }
-
-            const ax = pos[i * 2];
-            const ay = pos[i * 2 + 1];
-            const bx = pos[j * 2];
-            const by = pos[j * 2 + 1];
-            const ox =
-              Math.min(ax + dims.x2[i], bx + dims.x2[j]) -
-              Math.max(ax + dims.x1[i], bx + dims.x1[j]);
-            const oy =
-              Math.min(ay + dims.y2[i], by + dims.y2[j]) -
-              Math.max(ay + dims.y1[i], by + dims.y1[j]);
-            const overlapping = ox > 0 && oy > 0;
-
-            if (overlapping) {
-              found = true;
-            } else if (overlappingOnly) {
-              continue;
-            }
-
-            visit(i, j, ox, oy);
-          }
-        }
-      }
-    }
-
-    return found;
-  };
-
-  const push = (i: number, j: number, ox: number, oy: number): void => {
-    if (pinned[i] === 1 && pinned[j] === 1) {
-      return;
-    }
-
-    // along the axis of smaller overlap, a hair past touching; the
-    // lower index goes to the negative side on a tie
-    const alongX = ox <= oy;
-    const axis = alongX ? 0 : 1;
-    const amount = (alongX ? ox : oy) + 0.5;
-    const ca = pos[i * 2 + axis];
-    const cb = pos[j * 2 + axis];
-    const sign = ca < cb || (ca === cb && i < j) ? -1 : 1;
-    const shareA = pinned[i] === 1 ? 0 : pinned[j] === 1 ? 1 : 0.5;
-
-    pos[i * 2 + axis] += sign * amount * shareA;
-    pos[j * 2 + axis] -= sign * amount * (1 - shareA);
-  };
+  ): boolean => grid.forEach(pos, visit, overlappingOnly);
 
   const sweeps = (limit: number): boolean => {
     for (let k = 0; k < limit; k++) {
-      if (!forEachNear(push, true)) {
+      if (grid.sweep(pos, pinned) === 0) {
         return false;
       }
     }
@@ -883,7 +796,10 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     // the boxes the settle separates (114.5): bodies plus labels by
     // default, padded by half the gap per side
-    const avoidOverlap = options.avoidOverlap !== false;
+    // Which mechanism keeps them apart is the option's value (118.2):
+    // the settle's exact pass, the sim's per-tick sweep, or both
+    const overlapMode = resolveOverlapMode(options.avoidOverlap);
+    const avoidOverlap = overlapMode !== 'none';
     const dims = ctx.nodeDimensions(simSlots, {
       padding: avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 0,
     });
@@ -1126,13 +1042,13 @@ export class ForceLayoutImpl implements LayoutImpl {
       }
     }
 
-    // the sim keeps the same boxes apart that the settle separates
-    // (116.1), on request (117 — item 56: the contact term anneals
-    // every run to alpha's floor, and on a dense graph the spring
-    // pressure beats its bounded push, so by default the sim is the
-    // point sim and the settle's separation does the clearing)
+    // the sim keeps the same boxes apart that the settle separates —
+    // one separation sweep after every tick (118.2; 116.1's contact
+    // force before it) — under 'sim' and 'both'.  Not by default: the
+    // settle's exact pass clears a one-shot run more cheaply than a
+    // sweep per tick, and item 56's measurement is why (117)
     const extents =
-      avoidOverlap && options.avoidOverlapInSim === true ? dims : null;
+      overlapMode === 'sim' || overlapMode === 'both' ? dims : null;
 
     const sim = new ForceSim({
       n,
@@ -1180,7 +1096,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     // A streamed run already showed the motion, so its settle lands
     // as one write rather than a second tween.
     const settle = (arr: Float32Array): void => {
-      if (avoidOverlap) {
+      if (overlapMode === 'settle' || overlapMode === 'both') {
         separateBodies(n, arr, dims, pinned, comps.compOf, comps.count);
       }
 

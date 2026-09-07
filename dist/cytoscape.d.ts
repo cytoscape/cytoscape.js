@@ -1183,25 +1183,19 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
    * constraints are set (as the component re-pack is).  v3 cose
    * stretched the centres to fill the box, up or down, size-blind. */
   boundingBox?: BoundingBoxInput;
-  /** separate overlapping node bodies after the settle (114.5; default
-   * true; the dense case rebuilt in 115 as a proximity-stress pass, so
-   * a pile opens locally instead of the whole component scaling) —
-   * labels included when `nodeDimensionsIncludeLabels` is true, locked
-   * nodes as obstacles */
-  avoidOverlap?: boolean;
+  /** keep node bodies apart — labels included when
+   * `nodeDimensionsIncludeLabels` is true, locked nodes as obstacles —
+   * and how (118.2): `true` or `'settle'` (the default) separates
+   * them exactly after the settle (114.5; the dense case rebuilt in
+   * 115, the crammed case in 118.1 — the cheapest for a one-shot run);
+   * `'sim'` runs one separation sweep after every tick instead, on
+   * both executors, so a streamed run is overlap-free as it streams
+   * and an `infinite` run stays so, at about a grid pass per tick;
+   * `'both'` runs the sweep and the pass; `false` neither.  Any other
+   * value throws at start. */
+  avoidOverlap?: boolean | 'settle' | 'sim' | 'both';
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;
-  /** the sim itself keeps the same padded boxes apart (116.1's contact
-   * term, CPU and GPU executors alike; default false since 117) — so
-   * a live run streams separated bodies once the transient clears.
-   * Opt-in because the stiff contact anneals every run to alpha's
-   * floor (about 460 iterations against a displacement stop at 80–300)
-   * and on a dense graph the spring pressure still beats it, so the
-   * settle's exact separation — always on under `avoidOverlap` — is
-   * what makes the result overlap-free either way.  Worth its price
-   * on a small or clique-heavy graph whose `animateLive` run would
-   * otherwise show piles.  Read only under `avoidOverlap`. */
-  avoidOverlapInSim?: boolean;
   /** the gap between disconnected components' packed boxes (59.2;
    * v3 cose's option of the same name — default 40) */
   componentSpacing?: number;

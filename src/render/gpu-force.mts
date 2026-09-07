@@ -55,7 +55,7 @@ the CPU executor's guarantee; GPU correctness pins invariants (18.4).
 
 import { wgsl } from './wgsl.mjs';
 import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
-import { CONTACT_RANGE } from '../layout/force-sim.mjs';
+import { SWEEPS_PER_TICK } from '../layout/force-sim.mjs';
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
 
 const WG = 64;
@@ -238,29 +238,6 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @group(0) @binding(6) var<storage, read> slotPin: array<u32>;
 @group(0) @binding(7) var<storage, read_write> fmeta: array<atomic<u32>>;
 
-// the smallest centre distance from box i to box j along the unit
-// direction (ux, uy) at which the two stop overlapping (116.1 — the CPU
-// sim's separationAlong, verbatim): exact for axis-aligned boxes, the
-// cheaper axis wins.  The boxes ride the csr tail at params.extBase,
-// four bitcast f32 per node: x1, y1, x2, y2 (node-local)
-fn sepAlong(i: u32, j: u32, ux: f32, uy: f32) -> f32 {
-  let bi = params.extBase + i * 4u;
-  let bj = params.extBase + j * 4u;
-  let ix1 = bitcast<f32>(csr[bi]);
-  let iy1 = bitcast<f32>(csr[bi + 1u]);
-  let ix2 = bitcast<f32>(csr[bi + 2u]);
-  let iy2 = bitcast<f32>(csr[bi + 3u]);
-  let jx1 = bitcast<f32>(csr[bj]);
-  let jy1 = bitcast<f32>(csr[bj + 1u]);
-  let jx2 = bitcast<f32>(csr[bj + 2u]);
-  let jy2 = bitcast<f32>(csr[bj + 3u]);
-  var sx = 1e30;
-  var sy = 1e30;
-  if (ux > 1e-9) { sx = (ix2 - jx1) / ux; } else if (ux < -1e-9) { sx = (ix1 - jx2) / ux; }
-  if (uy > 1e-9) { sy = (iy2 - jy1) / uy; } else if (uy < -1e-9) { sy = (iy1 - jy2) / uy; }
-  return max(0.0, min(sx, sy));
-}
-
 @compute @workgroup_size(${WG})
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   let i = gid.x;
@@ -275,8 +252,6 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   var fy = 0.0;
   let cutoff = params.cutoff;
   let cutoff2 = cutoff * cutoff;
-  let contact = cutoff * ${CONTACT_RANGE};
-  let invContact2 = 1.0 / (contact * contact);
   let itemsBase = params.cells + 1u;
 
   // near field: exact pairs over the finest 3x3 (the CPU gather,
@@ -301,15 +276,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
           d2 = 1e-4;
         }
         let d = sqrt(d2);
-        var f = params.repulsion * cutoff2 / max(1.0, d2) / d;
-        // the contact term (116.1): a pair whose gap along its direction
-        // is under the range feels an extra push measured from the gap
-        if (params.hasExt == 1u) {
-          let g = max(1.0, d - sepAlong(i, j, -dx / d, -dy / d));
-          if (g < contact) {
-            f = f + params.repulsion * cutoff2 * (1.0 / (g * g) - invContact2) / d;
-          }
-        }
+        let f = params.repulsion * cutoff2 / max(1.0, d2) / d;
         fx = fx + dx * f;
         fy = fy + dy * f;
       }
@@ -443,6 +410,110 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   // — the device-side twin of the CPU sim's non-finite guard (59.1)
   atomicMax(&fmeta[1], bitcast<u32>(abs(dx) + abs(dy)));
 }`,
+
+  // the per-tick separation (118.2): the settle's push — every
+  // overlapping pair apart along the axis of smaller overlap, a hair
+  // past touching, half each or all onto the free node — gathered
+  // Jacobi-style per node over a grid rebuilt after apply (the CPU sim
+  // sweeps Gauss–Seidel in index order; the executors agree on
+  // invariants, not trajectories).  A node's summed push is clamped to
+  // the largest single pair's, so a node hemmed in on every side moves
+  // by what one pair asks and the rest converges over the ticks that
+  // follow.  The boxes ride the csr tail at params.extBase, four
+  // bitcast f32 per node: x1, y1, x2, y2 (node-local)
+  separate: wgsl`${PRELUDE}
+@group(0) @binding(0) var<uniform> params: FParams;
+@group(0) @binding(1) var<storage, read> simPos: array<f32>;
+@group(0) @binding(2) var<storage, read_write> pushes: array<f32>;
+@group(0) @binding(3) var<storage, read> grid: array<u32>;
+@group(0) @binding(4) var<storage, read> csr: array<u32>;
+@group(0) @binding(5) var<storage, read> slotPin: array<u32>;
+
+fn box(i: u32) -> vec4f {
+  let b = params.extBase + i * 4u;
+  return vec4f(bitcast<f32>(csr[b]), bitcast<f32>(csr[b + 1u]), bitcast<f32>(csr[b + 2u]), bitcast<f32>(csr[b + 3u]));
+}
+
+@compute @workgroup_size(${WG})
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let i = gid.x;
+  if (i >= params.n) { return; }
+  if ((slotPin[i] >> 31u) == 1u) { pushes[i * 2u] = 0.0; pushes[i * 2u + 1u] = 0.0; return; }
+
+  let x = simPos[i * 2u];
+  let y = simPos[i * 2u + 1u];
+  let bi = box(i);
+  var px = 0.0;
+  var py = 0.0;
+  var maxAmt = 0.0;
+  let itemsBase = params.cells + 1u;
+  let cx = i32(clamp((x - params.gridX) / params.cellSize, 0.0, f32(params.gridCols - 1u)));
+  let cy = i32(clamp((y - params.gridY) / params.cellSize, 0.0, f32(params.gridRows - 1u)));
+
+  for (var gy = max(0, cy - 1); gy <= min(i32(params.gridRows) - 1, cy + 1); gy = gy + 1) {
+    for (var gx = max(0, cx - 1); gx <= min(i32(params.gridCols) - 1, cx + 1); gx = gx + 1) {
+      let c = u32(gy) * params.gridCols + u32(gx);
+      for (var at = grid[c]; at < grid[c + 1u]; at = at + 1u) {
+        let j = grid[itemsBase + at];
+        if (j == i) { continue; }
+        let xj = simPos[j * 2u];
+        let yj = simPos[j * 2u + 1u];
+        let bj = box(j);
+        let ox = min(x + bi.z, xj + bj.z) - max(x + bi.x, xj + bj.x);
+        let oy = min(y + bi.w, yj + bj.w) - max(y + bi.y, yj + bj.y);
+        if (ox <= 0.0 || oy <= 0.0) { continue; }
+        let alongX = ox <= oy;
+        let amount = select(oy, ox, alongX) + 0.5;
+        let ca = select(y, x, alongX);
+        let cb = select(yj, xj, alongX);
+        // the lower index goes to the negative side on a tie (the
+        // CPU rule, so a coincident pair still separates)
+        let negative = ca < cb || (ca == cb && i < j);
+        let sign = select(1.0, -1.0, negative);
+        let share = select(0.5, 1.0, (slotPin[j] >> 31u) == 1u);
+        let push = sign * amount * share;
+        if (alongX) { px = px + push; } else { py = py + push; }
+        maxAmt = max(maxAmt, amount * share);
+      }
+    }
+  }
+
+  let len = sqrt(px * px + py * py);
+  if (len > maxAmt && len > 0.0) {
+    px = px / len * maxAmt;
+    py = py / len * maxAmt;
+  }
+  pushes[i * 2u] = px;
+  pushes[i * 2u + 1u] = py;
+}`,
+
+  // apply the separation pushes and republish (118.2) — no tick bump,
+  // but the push does fold into the batch's displacement max, as the
+  // CPU sim folds its sweep: a run must not stop while the sweep
+  // still has work
+  applySep: wgsl`${PRELUDE}
+@group(0) @binding(0) var<uniform> params: FParams;
+@group(0) @binding(1) var<storage, read_write> simPos: array<f32>;
+@group(0) @binding(2) var<storage, read> pushes: array<f32>;
+@group(0) @binding(3) var<storage, read> slotPin: array<u32>;
+@group(0) @binding(4) var<storage, read_write> columnPos: array<f32>;
+@group(0) @binding(5) var<storage, read_write> fmeta: array<atomic<u32>>;
+
+@compute @workgroup_size(${WG})
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let i = gid.x;
+  if (i >= params.n) { return; }
+  let sp = slotPin[i];
+  if ((sp >> 31u) == 1u) { return; }
+  let dx = pushes[i * 2u];
+  let dy = pushes[i * 2u + 1u];
+  simPos[i * 2u] = simPos[i * 2u] + dx;
+  simPos[i * 2u + 1u] = simPos[i * 2u + 1u] + dy;
+  let slot = sp & 0x7fffffffu;
+  columnPos[slot * 2u] = simPos[i * 2u];
+  columnPos[slot * 2u + 1u] = simPos[i * 2u + 1u];
+  atomicMax(&fmeta[1], bitcast<u32>(abs(dx) + abs(dy)));
+}`,
 };
 
 export interface ForceInputs {
@@ -480,6 +551,9 @@ export class GpuForceRuntime {
   private groups: Record<string, GPUBindGroup> = {};
   private buffersByName = new Map<string, GPUBuffer>();
   private applyGroup: GPUBindGroup | null = null;
+  private applySepGroup: GPUBindGroup | null = null;
+  /** the per-tick separation is on (118.2): boxes were handed in */
+  private readonly hasExt: boolean;
   private columnPos: GPUBuffer | null = null;
   private dispStaging: GPUBuffer;
   private dispInFlight = false;
@@ -521,9 +595,12 @@ export class GpuForceRuntime {
     this.device = device;
     this.inputs = inputs;
 
-    // the cell: the cutoff, grown to the largest box (116.1 — the CPU
-    // sim's rule) so every overlapping pair is gathered exactly
+    // the cell: the cutoff, grown to the largest box (116.1) so the
+    // separation pass (118.2) gathers every overlapping pair exactly
+    // over the one grid the force kernel reads
     const ext = inputs.extents ?? null;
+
+    this.hasExt = ext != null;
     const cellSize =
       ext == null ? inputs.cutoff : Math.max(inputs.cutoff, ext.maxW, ext.maxH);
 
@@ -745,6 +822,7 @@ export class GpuForceRuntime {
       'slotPin',
       'meta',
     ]);
+    bind('separate', ['params', 'simPos', 'forces', 'grid', 'csr', 'slotPin']);
 
     // one uniform + bind group per pyramid level above the finest —
     // the frame (and so every level's dims and offset) is fixed for
@@ -796,14 +874,18 @@ export class GpuForceRuntime {
 
   /**
    * Whether the run is finished — iteration budget spent, alpha annealed
-   * out, or three consecutive polls under the displacement threshold.
+   * out (with boxes, 118.2: and the last polled batch quiet, since at
+   * the floor each tick is a separation sweep and a pile opens slowly —
+   * the CPU sim's rule), or three consecutive polls under the
+   * displacement threshold.
    * encode() is a no-op once this is true, so the caller must stop the
    * run and hand ownership back rather than keep encoding.
    */
   converged(): boolean {
     return (
       this.iterations >= this.inputs.params.iterations ||
-      this.alpha < 0.001 ||
+      (this.alpha < 0.001 &&
+        (!this.hasExt || this.lastMaxDisp < this.inputs.params.threshold)) ||
       this.settledRuns >= 3
     );
   }
@@ -867,6 +949,22 @@ export class GpuForceRuntime {
 
     if (this.columnPos !== columnPos || this.applyGroup == null) {
       this.columnPos = columnPos;
+      this.applySepGroup = this.device.createBindGroup({
+        label: 'cy-gpu:force-apply-sep-group',
+        layout: this.pipelines.applySep.getBindGroupLayout(0),
+        entries: ['params', 'simPos', 'forces', 'slotPin']
+          .map((buf, i) => ({
+            binding: i,
+            resource: { buffer: this.buffersByName.get(buf) as GPUBuffer },
+          }))
+          .concat([
+            { binding: 4, resource: { buffer: columnPos } },
+            {
+              binding: 5,
+              resource: { buffer: this.buffersByName.get('meta') as GPUBuffer },
+            },
+          ]),
+      });
       this.applyGroup = this.device.createBindGroup({
         label: 'cy-gpu:force-apply-group',
         layout: this.pipelines.apply.getBindGroupLayout(0),
@@ -914,7 +1012,9 @@ export class GpuForceRuntime {
         0,
         name === 'apply'
           ? (this.applyGroup as GPUBindGroup)
-          : this.groups[name],
+          : name === 'applySep'
+            ? (this.applySepGroup as GPUBindGroup)
+            : this.groups[name],
       );
       pass.dispatchWorkgroups(groups);
     };
@@ -934,6 +1034,21 @@ export class GpuForceRuntime {
 
       run('force', Math.ceil(n / WG));
       run('apply', Math.ceil(n / WG));
+
+      // the per-tick separation (118.2) reads the stepped positions,
+      // so the grid is rebuilt (the pyramid is not needed) before the
+      // pushes are gathered and applied — the CPU sim's sweep count,
+      // each on a fresh grid
+      if (this.hasExt) {
+        for (let s = 0; s < SWEEPS_PER_TICK; s++) {
+          run('clearGrid', Math.ceil(this.cells / WG));
+          run('binCount', Math.ceil(n / WG));
+          run('scanCells', 1);
+          run('scatter', Math.ceil(n / WG));
+          run('separate', Math.ceil(n / WG));
+          run('applySep', Math.ceil(n / WG));
+        }
+      }
     }
 
     pass.end();

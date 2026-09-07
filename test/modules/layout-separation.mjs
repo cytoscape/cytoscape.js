@@ -1,5 +1,7 @@
 import { expect } from 'chai';
 import {
+  OverlapGrid,
+  pushApart,
   separationAlong,
   halfExtentAlong,
   ringTangentialRadius,
@@ -293,5 +295,110 @@ describe('layout/separation: ringClearanceRadius and ringBandRadius', () => {
 
     // the floor holds when it is the largest term
     expect(ringRadius(d, ring2, ring1, r1, 10000)).to.equal(10000);
+  });
+});
+
+// Round 118.2: the near-pair grid and the push, lifted out of the
+// settle so the sim's per-tick sweep and the settle run one primitive.
+describe('OverlapGrid and pushApart (118.2)', function () {
+  const square = (n, side) => ({
+    x1: new Float32Array(n).fill(-side / 2),
+    y1: new Float32Array(n).fill(-side / 2),
+    x2: new Float32Array(n).fill(side / 2),
+    y2: new Float32Array(n).fill(side / 2),
+    maxW: side,
+    maxH: side,
+  });
+
+  it('visits an overlapping pair once with its overlap on each axis, and a clear pair only on request', function () {
+    const dims = square(3, 20);
+    // a and b overlap by 5 x 12; c is clear of both but in the 3 x 3
+    const pos = new Float32Array([0, 0, 15, 8, 0, 30]);
+    const grid = new OverlapGrid(3, dims);
+    const seen = [];
+    const found = grid.forEach(
+      pos,
+      (i, j, ox, oy) => seen.push([i, j, ox, oy]),
+      true,
+    );
+
+    expect(found).to.equal(true);
+    expect(seen).to.deep.equal([[0, 1, 5, 12]]);
+
+    const all = [];
+
+    grid.forEach(pos, (i, j) => all.push([i, j]), false);
+    expect(all).to.deep.equal([
+      [0, 1],
+      [0, 2],
+      [1, 2],
+    ]);
+  });
+
+  it('finds a pair across a cell boundary: the grid is hashed by the largest box', function () {
+    // a 20 px box and a 100 px box: the cell is 100, so the wide pair
+    // at 55 px apart shares a neighbourhood although 55 > 20
+    const dims = {
+      x1: new Float32Array([-10, -50]),
+      y1: new Float32Array([-10, -50]),
+      x2: new Float32Array([10, 50]),
+      y2: new Float32Array([10, 50]),
+      maxW: 100,
+      maxH: 100,
+    };
+    const pos = new Float32Array([0, 0, 55, 0]);
+    const seen = [];
+
+    new OverlapGrid(2, dims).forEach(
+      pos,
+      (i, j, ox) => seen.push([i, j, ox]),
+      true,
+    );
+    expect(seen).to.deep.equal([[0, 1, 5]]);
+  });
+
+  it('pushApart opens a pair along the axis of smaller overlap, half each, a hair past touching', function () {
+    const pos = new Float32Array([0, 0, 15, 8]);
+    const moved = pushApart(pos, null, 0, 1, 5, 12);
+
+    expect(moved).to.equal(5.5);
+    expect(Array.from(pos)).to.deep.equal([-2.75, 0, 17.75, 8]);
+  });
+
+  it('a pinned node takes none of the push; two pinned nodes take nothing and report 0', function () {
+    const pos = new Float32Array([0, 0, 15, 8]);
+    const pinned = new Uint8Array([1, 0]);
+
+    expect(pushApart(pos, pinned, 0, 1, 5, 12)).to.equal(5.5);
+    expect(Array.from(pos)).to.deep.equal([0, 0, 20.5, 8]);
+
+    const both = new Float32Array([0, 0, 15, 8]);
+
+    expect(pushApart(both, new Uint8Array([1, 1]), 0, 1, 5, 12)).to.equal(0);
+    expect(Array.from(both)).to.deep.equal([0, 0, 15, 8]);
+  });
+
+  it('a coincident pair still separates: the lower index goes negative', function () {
+    const pos = new Float32Array([5, 5, 5, 5]);
+
+    pushApart(pos, null, 0, 1, 20, 20);
+    expect(pos[0]).to.be.lessThan(pos[2]);
+    expect(pos[2] - pos[0]).to.equal(20.5);
+  });
+
+  it('sweep returns the largest push and 0 once the field is clear', function () {
+    const dims = square(4, 20);
+    const pos = new Float32Array([0, 0, 15, 0, 100, 0, 100, 5]);
+    const grid = new OverlapGrid(4, dims);
+
+    expect(grid.sweep(pos, null)).to.equal(15.5);
+    expect(grid.sweep(pos, null)).to.equal(0);
+  });
+
+  it('a non-finite field builds no grid and reports nothing', function () {
+    const grid = new OverlapGrid(2, square(2, 20));
+    const pos = new Float32Array([NaN, 0, 1, 0]);
+
+    expect(grid.sweep(pos, null)).to.equal(0);
   });
 });

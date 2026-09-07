@@ -34,16 +34,20 @@ that compile and then behave differently.
   with no overlapping bodies, the pass runs in under 3 s at 25k, and
   the settled field grows under 2x.
 - **Force can keep bodies apart in the sim, and honours `boundingBox`**
-  (rounds 116–117).  Under `avoidOverlap` with `avoidOverlapInSim:
-  true` the force sim reads the same padded node boxes the settle
-  separates, on the CPU and GPU executors alike: a short-range contact
-  term measured from the gap between two boxes makes a pile's steady
-  state overlap-free, so a live (`animateLive`) run streams separated
-  bodies once the transient clears.  It is opt-in (117, open call 56):
-  the stiff term anneals every run to alpha's floor, and on a dense
-  graph the spring pressure beats its bounded push, so the settle's
-  exact separation — always on under `avoidOverlap` — is what clears
-  the overlap either way.  `boundingBox` on `force` now holds the drawing —
+  (rounds 116–118).  `avoidOverlap` on `force` now says *how*:
+  `true` / `'settle'` (the default) separates the padded node boxes
+  exactly after the settle; `'sim'` runs a separation sweep — the
+  settle's own primitive — after every tick on the CPU and GPU
+  executors alike, so a streamed run is held open as it streams and
+  ends clear with no settle pass; `'both'` does both; `false` neither.
+  The per-tick sweep is opt-in (117, open call 56): the settle's pass
+  is cheaper for a one-shot run.  (116.1 built the in-sim half as a
+  short-range contact force and 117 made it opt-in as
+  `avoidOverlapInSim`; 118.2 replaced the force with the projection —
+  a force bounded by its gap clamp lost to a dense graph's spring
+  pressure and annealed every run to the floor — and the flag with the
+  mode.)
+  `boundingBox` on `force` now holds the drawing —
   scaled down, never up, so every body lies inside, then centred (flow's
   rule, shared as `fitBodiesToBox`); a pinned node or constraints hold
   it back, as they hold the component re-pack.  A locked child stays

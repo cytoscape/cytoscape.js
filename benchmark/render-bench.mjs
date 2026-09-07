@@ -17,7 +17,7 @@
 //                                                  # (+ --layout-uncapped
 //                                                  #  for full baseline runs;
 //                                                  #  + --layout-sim-boxes
-//                                                  #  for avoidOverlapInSim)
+//                                                  #  for avoidOverlap: 'both')
 //   node --import tsx benchmark/render-bench.mjs --json out.json
 //                                                  # jobs bundle only
 //                                                  # (report.mjs --renderer)
@@ -159,12 +159,13 @@ const SCENES = [
 // "> bail".  --layout-uncapped removes both bounds to measure a full run.
 const LAYOUT_MODE = process.argv.includes('--layout');
 const LAYOUT_UNCAPPED = process.argv.includes('--layout-uncapped');
-// round 117: the force rows with the sim's own overlap term
-// (`avoidOverlapInSim: true`, opt-in since item 56) — the row's label
-// says which, so the two never read as one series
+// round 117: the force rows with the sim's own overlap mechanism as
+// well as the settle's (`avoidOverlap: 'both'` — 118.2's per-tick
+// sweep; opt-in since item 56) — the row's label says which, so the
+// two never read as one series
 const LAYOUT_SIM_BOXES = process.argv.includes('--layout-sim-boxes');
 const LAYOUT_ROW = (label) =>
-  LAYOUT_SIM_BOXES ? `${label} [avoidOverlapInSim]` : label;
+  LAYOUT_SIM_BOXES ? `${label} [avoidOverlap: both]` : label;
 const LAYOUT_CAP_MS = 30000; // polite stop — reports the measured floor
 const LAYOUT_BAIL_MS = 60000; // hard bail — must exceed the cap + one iteration
 

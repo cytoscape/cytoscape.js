@@ -25,6 +25,260 @@ import type { LayoutNodeDims } from './dims.mjs';
 /** Boxes can be any four parallel node-local extents. */
 export type Extents = Pick<LayoutNodeDims, 'x1' | 'y1' | 'x2' | 'y2'>;
 
+/** Boxes with their largest width and height — what a grid over them
+ * is hashed by (118.2: the force sim's `extents` and the settle's dims
+ * are both this shape). */
+export type Boxes = Extents & Pick<LayoutNodeDims, 'maxW' | 'maxH'>;
+
+/** the sim's own grid bound, so a destroyed field cannot allocate one */
+const MAX_GRID_SIDE = 4096;
+
+/**
+ * Push two overlapping boxes apart in place along the axis of smaller
+ * overlap, a hair past touching — half each when both move, all of it
+ * onto the free node when one is pinned, nothing when both are.  The
+ * lower index goes to the negative side on a tie.  The settle's push
+ * since 114.5, shared with the sim's per-tick sweep since 118.2.
+ *
+ * @param pos — 2n interleaved positions, moved in place
+ * @param pinned — per-node 1 when the node must not move
+ * @param i — the lower index of the pair
+ * @param j — the higher
+ * @param ox — the pair's overlap along x (positive)
+ * @param oy — the pair's overlap along y (positive)
+ * @returns the distance the pair was opened by (0 when both pinned)
+ */
+export const pushApart = (
+  pos: Float32Array,
+  pinned: Uint8Array | null,
+  i: number,
+  j: number,
+  ox: number,
+  oy: number,
+): number => {
+  const pi = pinned != null && pinned[i] === 1;
+  const pj = pinned != null && pinned[j] === 1;
+
+  if (pi && pj) {
+    return 0;
+  }
+
+  const alongX = ox <= oy;
+  const axis = alongX ? 0 : 1;
+  const amount = (alongX ? ox : oy) + 0.5;
+  const ca = pos[i * 2 + axis];
+  const cb = pos[j * 2 + axis];
+  const sign = ca < cb || (ca === cb && i < j) ? -1 : 1;
+  const shareA = pi ? 0 : pj ? 1 : 0.5;
+
+  pos[i * 2 + axis] += sign * amount * shareA;
+  pos[j * 2 + axis] -= sign * amount * (1 - shareA);
+
+  return amount;
+};
+
+/**
+ * A uniform grid over node boxes, hashed by the largest box so any
+ * two overlapping boxes share a 3 × 3 cell neighbourhood (118.2 —
+ * lifted out of the settle's separation so the sim's per-tick sweep
+ * and the settle run one primitive).  The scratch is allocated once
+ * per instance and the grid is rebuilt from the positions on every
+ * pass, so a caller that moves nodes between passes is always read
+ * fresh.
+ */
+export class OverlapGrid {
+  private readonly n: number;
+  private readonly dims: Extents;
+  private readonly cell: number;
+  private readonly cellOf: Int32Array;
+  private readonly order: Int32Array;
+  private start = new Int32Array(0);
+  private fill = new Int32Array(0);
+
+  /**
+   * @param n — how many boxes
+   * @param dims — the node-local boxes with their largest width and
+   *   height
+   */
+  constructor(n: number, dims: Boxes) {
+    this.n = n;
+    this.dims = dims;
+    this.cell = Math.max(dims.maxW, dims.maxH, 1);
+    this.cellOf = new Int32Array(n);
+    this.order = new Int32Array(n);
+  }
+
+  /**
+   * Visit every pair (j > i) sharing a 3 × 3 cell neighbourhood once,
+   * over a grid built from the positions as they stand at the call,
+   * with the pair's overlap on each axis (non-positive when clear).
+   * `visit` may move nodes.
+   *
+   * @param pos — 2n interleaved positions
+   * @param visit — called per pair with the indices and the overlaps
+   * @param overlappingOnly — skip the clear pairs
+   * @returns whether any pair overlapped
+   */
+  forEach(
+    pos: Float32Array,
+    visit: (i: number, j: number, ox: number, oy: number) => void,
+    overlappingOnly: boolean,
+  ): boolean {
+    const n = this.n;
+    const dims = this.dims;
+    const cell = this.cell;
+    const cellOf = this.cellOf;
+    const order = this.order;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      const x = pos[i * 2];
+      const y = pos[i * 2 + 1];
+
+      if (x < minX) {
+        minX = x;
+      }
+      if (x > maxX) {
+        maxX = x;
+      }
+      if (y < minY) {
+        minY = y;
+      }
+      if (y > maxY) {
+        maxY = y;
+      }
+    }
+
+    if (!Number.isFinite(minX + maxX + minY + maxY)) {
+      return false; // a destroyed field has no pairs worth a grid
+    }
+
+    const cols = Math.max(
+      1,
+      Math.min(MAX_GRID_SIDE, Math.floor((maxX - minX) / cell) + 1),
+    );
+    const rows = Math.max(
+      1,
+      Math.min(MAX_GRID_SIDE, Math.floor((maxY - minY) / cell) + 1),
+    );
+    const cells = cols * rows;
+
+    if (this.start.length < cells + 1) {
+      this.start = new Int32Array(cells + 1);
+      this.fill = new Int32Array(cells);
+    } else {
+      this.start.fill(0, 0, cells + 1);
+    }
+
+    const start = this.start;
+    const fill = this.fill;
+
+    for (let i = 0; i < n; i++) {
+      const cx = Math.min(cols - 1, Math.floor((pos[i * 2] - minX) / cell));
+      const cy = Math.min(rows - 1, Math.floor((pos[i * 2 + 1] - minY) / cell));
+
+      cellOf[i] = cy * cols + cx;
+      start[cellOf[i] + 1]++;
+    }
+
+    for (let c = 0; c < cells; c++) {
+      start[c + 1] += start[c];
+      fill[c] = start[c];
+    }
+
+    for (let i = 0; i < n; i++) {
+      order[fill[cellOf[i]]++] = i;
+    }
+
+    let found = false;
+
+    for (let i = 0; i < n; i++) {
+      const ci = cellOf[i];
+      const cx = ci % cols;
+      const cy = (ci - cx) / cols;
+
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = cy + dy;
+
+        if (ny < 0 || ny >= rows) {
+          continue;
+        }
+
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = cx + dx;
+
+          if (nx < 0 || nx >= cols) {
+            continue;
+          }
+
+          const c = ny * cols + nx;
+
+          for (let k = start[c]; k < start[c + 1]; k++) {
+            const j = order[k];
+
+            if (j <= i) {
+              continue;
+            }
+
+            const ax = pos[i * 2];
+            const ay = pos[i * 2 + 1];
+            const bx = pos[j * 2];
+            const by = pos[j * 2 + 1];
+            const ox =
+              Math.min(ax + dims.x2[i], bx + dims.x2[j]) -
+              Math.max(ax + dims.x1[i], bx + dims.x1[j]);
+            const oy =
+              Math.min(ay + dims.y2[i], by + dims.y2[j]) -
+              Math.max(ay + dims.y1[i], by + dims.y1[j]);
+            const overlapping = ox > 0 && oy > 0;
+
+            if (overlapping) {
+              found = true;
+            } else if (overlappingOnly) {
+              continue;
+            }
+
+            visit(i, j, ox, oy);
+          }
+        }
+      }
+    }
+
+    return found;
+  }
+
+  /**
+   * One Gauss–Seidel sweep: every overlapping pair, in index order, is
+   * pushed apart (`pushApart`) as the sweep finds it — so a pair the
+   * sweep has already moved is read at its new position by the next.
+   * The settle's sparse case clears in one or two; the sim runs one
+   * after every tick (118.2).
+   *
+   * @param pos — 2n interleaved positions, moved in place
+   * @param pinned — per-node 1 when the node must not move, or null
+   * @returns the largest distance any pair was opened by — 0 when no
+   *   pair overlapped (or every overlapping pair was pinned at both
+   *   ends), so a caller folding it into a settle test reads a quiet
+   *   sweep as quiet
+   */
+  sweep(pos: Float32Array, pinned: Uint8Array | null): number {
+    let largest = 0;
+
+    this.forEach(
+      pos,
+      (i, j, ox, oy) => {
+        largest = Math.max(largest, pushApart(pos, pinned, i, j, ox, oy));
+      },
+      true,
+    );
+
+    return largest;
+  }
+}
+
 /**
  * The smallest centre distance from box `i` to box `j` along the unit
  * direction `(ux, uy)` at which the two stop overlapping.  Exact for

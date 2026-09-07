@@ -583,7 +583,7 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
     expect(minDist).to.be.greaterThan(15); // nothing collapses
   });
 
-  describe('size-aware repulsion: the boxes keep apart in the sim (116.1)', function () {
+  describe('the boxes keep apart in the sim: one separation sweep per tick (116.1; projection since 118.2)', function () {
     const clique = (n) => {
       const list = [];
 
@@ -639,14 +639,18 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
       return { overlaps, minGap };
     };
 
-    it('a 30-clique of padded 40 px boxes settles overlap-free, with a margin', function () {
+    it('a 30-clique of padded 40 px boxes settles overlap-free, at the padding', function () {
+      // 116.1's contact force landed with a margin beyond the padding;
+      // the sweep (118.2) lands pairs a hair past touching, like the
+      // settle's — the springs press the pile together each tick and
+      // the sweep opens it by exactly what the boxes need
       const n = 30;
       const ext = boxes(n, 40);
       const pos = settle(mkSim(n, clique(n), { seed: 7, extents: ext }));
       const { overlaps, minGap } = probe(pos, n, ext);
 
       expect(overlaps).to.equal(0);
-      expect(minGap).to.be.greaterThan(1);
+      expect(minGap).to.be.within(0, 5);
     });
 
     it('control: the point sim piles the same clique up', function () {
@@ -665,10 +669,40 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
       expect(probe(pos, n, ext).overlaps).to.equal(0);
     });
 
-    it('a pair clear by the contact range is the point law: a ring settles at the same link length', function () {
-      // 30 px boxes on 60 px links: at the settle every gap is over
-      // the range, so the term is silent there — the two runs share a
-      // transient-dependent trajectory but the same equilibrium
+    it('a clear pair is untouched: a ring seeded clear runs byte-identically with boxes and without', function () {
+      // 30 px boxes on a ring seeded at 100 px spacing: no pair
+      // overlaps at any tick, so the sweep visits nothing and the two
+      // trajectories are the same floats.  (116.1's version compared
+      // equilibria from the scatter seed, where the contact term was
+      // silent past its range; a sweep that pushes a transient pile
+      // apart changes the trajectory, and a ring's equilibrium with
+      // it — 74 px against 67 — so the property is stated exactly)
+      const n = 12;
+      const seeded = (over) => {
+        const sim = mkSim(n, ring(n), { seed: 3, ...over });
+        const r = (100 * n) / (2 * Math.PI);
+
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2;
+
+          sim.positions[i * 2] = Math.cos(a) * r;
+          sim.positions[i * 2 + 1] = Math.sin(a) * r;
+        }
+
+        return sim;
+      };
+      const a = Array.from(settle(seeded({})));
+      const b = Array.from(settle(seeded({ extents: boxes(n, 30, 0) })));
+
+      expect(b).to.deep.equal(a);
+      expect(a.some((v) => v !== 0)).to.equal(true);
+    });
+
+    it('control: from the scatter seed the sweep is not silent, and the ring lands wider', function () {
+      // the same ring from the scatter: the transient piles it, the
+      // sweep opens the pile, and the equilibrium is not the point
+      // sim's — which is what makes the seeded-clear spec above the
+      // exact statement rather than a tolerance
       const n = 12;
       const link = (pos) => {
         let sum = 0;
@@ -689,7 +723,7 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
         settle(mkSim(n, ring(n), { seed: 3, extents: boxes(n, 30, 0) })),
       );
 
-      expect(b).to.be.closeTo(a, a * 0.05);
+      expect(b).to.be.greaterThan(a * 1.03);
     });
 
     it('the extents field absent or null is byte-identical to before it existed', function () {
@@ -703,8 +737,8 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
     it('the cell grows to the largest box, so a wide overlapping pair is gathered exactly', function () {
       // two 300 px boxes 100 px apart: at the point sim's cell (the 40
       // px cutoff) they sit two cells apart — the far field's monopole,
-      // too weak to open them before alpha dies; with boxes the cell is
-      // the box, the pair is exact, and the contact term clears it
+      // too weak to open them before alpha dies; the sweep's grid is
+      // hashed by the box, so the pair is found and pushed apart
       const n = 2;
       const edges = new Uint32Array(0);
       const mk = (over) => {

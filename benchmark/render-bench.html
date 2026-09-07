@@ -718,7 +718,7 @@
             const t0 = performance.now();
             const l = cy.layout( {
               name: 'force', animate: true, seed: 1, iterations: 300, fit: false,
-              avoidOverlapInSim: simBoxes // round 117: opt-in since item 56
+              avoidOverlap: simBoxes ? 'both' : true // 118.2: the per-tick sweep as well; opt-in since item 56
             } );
             const cap = stopAtCap( l, t0, capMs );
 
@@ -761,7 +761,7 @@
         async function silentSettleScenario( capMs, simBoxes = false ){
           const opts = {
             name: 'force', animate: false, seed: 1, iterations: 300, fit: false,
-            avoidOverlapInSim: simBoxes
+            avoidOverlap: simBoxes ? 'both' : true
           };
 
           const framesBefore = cy.renderer().stats().frames;

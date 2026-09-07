@@ -2037,15 +2037,15 @@ test.describe('WebGPU renderer', () => {
     expect(result.linkLen).toBeLessThan(250);
   });
 
-  test('the GPU kernel keeps the bodies apart itself: a live run lands with a margin (116.1)', async ({
+  test('the GPU kernel keeps the bodies apart itself: a live run under avoidOverlap: "sim" lands clear (116.1; projection since 118.2)', async ({
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
     // a 30-clique of 40 px bodies: the point sim piles it up and the
     // settle's separation opens it to exactly the padding (115.5); the
-    // size-aware kernel lands every pair with a margin beyond the
-    // padding, which is what the minimum gap discriminates
+    // per-tick separation kernel (118.2) lands every pair clear with no
+    // settle pass at all — the run's own frames are what separate it
     const clique = (() => {
       const els = [];
 
@@ -2100,7 +2100,7 @@ test.describe('WebGPU renderer', () => {
           seed: 7,
           animateLive: true,
           fit: false,
-          avoidOverlapInSim: true,
+          avoidOverlap: 'sim',
         })
         .run()
         .promise();
@@ -2133,9 +2133,8 @@ test.describe('WebGPU renderer', () => {
     expect(result.frames, 'the run outlives the readback bug').toBeGreaterThan(
       15,
     );
-    expect(result.live, 'the live run lands with a margin').toBeGreaterThan(
-      10.5,
-    );
+    expect(result.live, 'the live run lands clear').toBeGreaterThan(-0.5);
+    expect(result.live, 'the live run lands near the padding').toBeLessThan(20);
     expect(result.control, 'the point sim overlaps').toBeLessThan(0);
     expect(
       result.byDefault,

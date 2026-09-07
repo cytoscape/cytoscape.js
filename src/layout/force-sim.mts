@@ -61,29 +61,20 @@ force pair but never move.
 */
 
 import type { ForceConstraints } from './force-constraints.mjs';
-import type { LayoutNodeDims } from './dims.mjs';
-import { separationAlong } from './separation.mjs';
+import { OverlapGrid } from './separation.mjs';
+import type { Boxes } from './separation.mjs';
 
-/** The boxes the sim keeps apart (116.1): node-local, sim-indexed,
- * already padded — the `LayoutNodeDims` shape less nothing it needs. */
-export type ForceExtents = Pick<
-  LayoutNodeDims,
-  'x1' | 'y1' | 'x2' | 'y2' | 'maxW' | 'maxH'
->;
+/** The boxes the sim keeps apart (116.1; by projection since 118.2):
+ * node-local, sim-indexed, already padded. */
+export type ForceExtents = Boxes;
 
-/** The contact term's range as a fraction of the cutoff (116.1): two
- * boxes whose gap along their direction is under `CONTACT_RANGE ·
- * cutoff` feel an extra inverse-square push measured from the *gap*,
- * vanishing at the range — so a pair already clear by that much is
- * exactly the point sim's, and the steady state is overlap-free by a
- * few px rather than inflated by the boxes' size.  Measured at 1/4,
- * 1/8 and 1/16 on a 4-clique-in-compounds fixture (intra edges at
- * ideal length 60 settled at 77, 69 and 62 px against the point sim's
- * 62) and on 30- and 200-cliques of padded 40 px boxes (overlap-free
- * at every range; the minimum gap 7, 4 and 2.5 px): 1/16 keeps clear
- * pairs where they were and still clears every pile.  Shared with the
- * WGSL kernel verbatim. */
-export const CONTACT_RANGE = 1 / 16;
+/** Separation sweeps per tick with boxes (118.2): the springs press a
+ * pile together every tick and one Gauss–Seidel sweep opens most of
+ * it, a second the residue the first's own pushes made — measured on
+ * the 30- and 200-cliques of padded boxes (the tables are on round
+ * 118); each sweep is a grid pass, so the count is the price of a
+ * clear frame. */
+export const SWEEPS_PER_TICK = 2;
 
 export interface ForceParams {
   /** the pairwise push, in px per tick, at exactly one cutoff length
@@ -135,11 +126,17 @@ export interface ForceSimInputs extends ForceParams {
   positions: Float32Array;
   /** 1 = the node participates but never moves */
   pinned?: Uint8Array;
-  /** per-node boxes the repulsion keeps apart (116.1): the law is
-   * measured from the *gap* between two boxes along the pair's
-   * direction rather than the centre distance, so the steady state is
-   * overlap-free.  Absent, the sim is the point sim and its arithmetic
-   * is byte-identical to before the field existed */
+  /** per-node boxes the sim keeps apart (116.1; 118.2): after every
+   * integration step a separation sweep or two — the settle's own
+   * primitive — pushes each overlapping pair apart along the axis of
+   * smaller overlap, so a tick ends overlap-free wherever the sweep
+   * reached, and a pile the springs press together is held open tick
+   * by tick rather than by a force the springs can beat (116.1's
+   * contact term, and why 117 made it opt-in).  The sweep's largest
+   * push counts toward the convergence displacement, so a run does
+   * not stop while the sweep still has work.  Absent, the sim is the
+   * point sim and its arithmetic is byte-identical to before the field
+   * existed */
   extents?: ForceExtents | null;
   /** per-node gravity anchors, 2n interleaved (59.2 — the component
    * anchor field); absent means everything anchors at the origin */
@@ -207,11 +204,10 @@ export class ForceSim {
   /** per-node degree over the sim edges (59.1's spring normalisation) */
   private degree: Int32Array;
   private cutoff: number;
-  /** the boxes (116.1), or null for the point sim */
-  private extents: ForceExtents | null;
-  /** the grid cell: the cutoff, grown to the largest box so every
-   * overlapping pair is gathered exactly (two boxes overlap only if
-   * |dx| < maxW and |dy| < maxH) */
+  /** the per-tick separation sweep's grid (118.2), or null for the
+   * point sim; hashed by the largest box, so it has its own cell */
+  private overlapGrid: OverlapGrid | null;
+  /** the repulsion grid's cell: the cutoff */
   private cell: number;
   /** grid scratch */
   private cellOf: Int32Array;
@@ -274,11 +270,9 @@ export class ForceSim {
       inputs.edgeLength.length > 0 ? sum / inputs.edgeLength.length : 60;
 
     this.cutoff = Math.max(40, meanL);
-    this.extents = inputs.extents ?? null;
-    this.cell =
-      this.extents == null
-        ? this.cutoff
-        : Math.max(this.cutoff, this.extents.maxW, this.extents.maxH);
+    this.overlapGrid =
+      inputs.extents == null ? null : new OverlapGrid(inputs.n, inputs.extents);
+    this.cell = this.cutoff;
 
     // CSR-style incident lists from the edge pairs (counting pass)
     const counts = new Int32Array(inputs.n + 1);
@@ -318,14 +312,22 @@ export class ForceSim {
    * Whether the run is finished.  True once any of three holds: the
    * iteration cap is reached, `alpha` has annealed below 0.001, or the max
    * per-node displacement has stayed under `threshold` for
-   * `CONVERGE_RUNS` consecutive iterations.  This is one of the invariants
-   * the GPU integrator must agree on — the two executors need not follow
-   * the same trajectory, but they must stop under the same conditions.
+   * `CONVERGE_RUNS` consecutive iterations.  With boxes (118.2) the
+   * alpha floor waits for a quiet sweep: at the floor the forces are
+   * gone and each tick is a sweep, and a pile opens under pairwise
+   * pushes only slowly — a 200-clique of padded boxes needed 92 more
+   * past the floor under one sweep per tick — so the run keeps
+   * sweeping until the largest push is under `threshold` or the cap.
+   * This is one of the invariants the GPU integrator must agree on —
+   * the two executors need not follow the same trajectory, but they
+   * must stop under the same conditions.
    */
   converged(): boolean {
     return (
       this.iteration >= this.params.iterations ||
-      this.alpha < 0.001 ||
+      (this.alpha < 0.001 &&
+        (this.overlapGrid == null ||
+          this.lastMaxDisp < this.params.threshold)) ||
       this.settledRuns >= CONVERGE_RUNS
     );
   }
@@ -476,9 +478,6 @@ export class ForceSim {
     const alpha = this.alpha;
     const cutoff = this.cutoff;
     const cutoff2 = cutoff * cutoff;
-    const ext = this.extents;
-    const contact = cutoff * CONTACT_RANGE;
-    const invContact2 = 1 / (contact * contact);
 
     this.buildGrid();
 
@@ -550,25 +549,9 @@ export class ForceSim {
             }
 
             // the unified law: repulsion · cutoff² / d², softened
-            // inside 1 px (the cap bounds it anyway).  With boxes
-            // (116.1) a pair whose *gap* along its direction — the
-            // centre distance less what the two boxes need to clear —
-            // is under the contact range feels an extra inverse-square
-            // push measured from that gap, so at contact the pair
-            // feels the full 1 px push and the steady state is
-            // overlap-free; a pair clear by the range is the point law
+            // inside 1 px (the cap bounds it anyway)
             const d = Math.sqrt(d2);
-            let f = (repulsion * cutoff2) / Math.max(1, d2) / d;
-
-            if (ext != null) {
-              // (dx, dy) points from j to i; the rule wants i → j
-              const s = separationAlong(ext, i, j, -dx / d, -dy / d);
-              const g = Math.max(1, d - s);
-
-              if (g < contact) {
-                f += (repulsion * cutoff2 * (1 / (g * g) - invContact2)) / d;
-              }
-            }
+            const f = (repulsion * cutoff2) / Math.max(1, d2) / d;
 
             fx += dx * f;
             fy += dy * f;
@@ -719,6 +702,29 @@ export class ForceSim {
         sawNonFinite = true;
       } else if (disp > maxDisp) {
         maxDisp = disp;
+      }
+    }
+
+    // 118.2: the separation sweeps after the step — the settle's
+    // primitive, run per tick — and the first sweep's largest push *is*
+    // folded into the displacement, unlike the constraint projection's:
+    // the springs' pull shrinks with alpha, so the sweep's corrections
+    // do too, and a run that stopped while the sweep still had work
+    // left its pile a few pairs short (measured: 4 on a 30-clique, 155
+    // on a 200-clique, the run stopping by displacement with the
+    // sweep's moves uncounted).  A second sweep takes the residue the
+    // first's own pushes made; a quiet sweep ends the tick's sweeping
+    if (this.overlapGrid != null && !sawNonFinite) {
+      for (let k = 0; k < SWEEPS_PER_TICK; k++) {
+        const pushed = this.overlapGrid.sweep(pos, this.pinned);
+
+        if (k === 0) {
+          maxDisp = Math.max(maxDisp, pushed);
+        }
+
+        if (pushed === 0) {
+          break;
+        }
       }
     }
 

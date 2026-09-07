@@ -776,30 +776,91 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
       return out;
     };
 
-    it('avoidOverlapInSim: the sim itself keeps the bodies apart (116.1): every gap exceeds the padding', async function () {
-      // the settle's separation leaves a crammed pair exactly at the
-      // padding (115.5); the size-aware sim lands with a margin beyond
-      // it, so a gap over the padding says the sim did the separating
+    // 118.2: which mechanism keeps the boxes apart is the option's
+    // value — the settle's exact pass ('settle', the default), a
+    // separation sweep after every tick ('sim'), or both.  The sweep
+    // is what a streamed run shows: sample the live column mid-run.
+    // Mid-transient the springs press a pile a box deep every tick and
+    // the sweeps hold it open rather than clear it (measured on the
+    // sim: a 30-clique holds ~45 of its 435 pairs overlapping at tick
+    // 50 under the sweeps against the whole pile without them, and is
+    // clear from tick ~400 of 458), so the mid-run assertion is the
+    // ratio, and the end state is what is exact
+    const streamed = async (avoidOverlap, frames = 12) => {
       const cy = CLIQUE(30, 40);
+      const layout = cy.layout({
+        name: 'force',
+        seed: 7,
+        fit: false,
+        animateLive: true,
+        stepsPerFrame: 3,
+        avoidOverlap,
+      });
+      let seen = 0;
+      let midRun = null;
 
-      await cy
-        .layout({ name: 'force', seed: 7, fit: false, avoidOverlapInSim: true })
-        .run()
-        .promise();
+      layout.run();
 
-      expect(minGap(cy)).to.be.greaterThan(10.5);
+      // the stream lands through the bulk slot path, which emits no
+      // per-node events — poll the column until enough frames passed
+      while (seen < frames) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        seen++;
+      }
+
+      midRun = overlapping(cy);
+
+      await layout.promise();
+
+      return { midRun, final: overlapping(cy), gap: minGap(cy) };
+    };
+
+    it("avoidOverlap: 'sim' streams a held-open pile and ends clear with no settle pass", async function () {
+      const sim = await streamed('sim');
+      const settle = await streamed('settle');
+
+      // the control: the point sim's pile mid-run, cleared by the
+      // settle's pass at the end to exactly the padding
+      expect(settle.midRun).to.be.greaterThan(30);
+      expect(settle.final).to.equal(0);
+      expect(settle.gap).to.be.closeTo(10, 0.5);
+
+      expect(
+        sim.midRun,
+        `sim ${sim.midRun} vs settle ${settle.midRun}`,
+      ).to.be.lessThan(settle.midRun / 3);
+      expect(sim.final).to.equal(0);
+      // the sweep lands pairs a hair past touching, the settle's own
+      // rule, so the tightest gap is the padding
+      expect(sim.gap).to.be.within(9.5, 15);
+    });
+
+    it("'both' sweeps per tick and separates at the settle: held open mid-run, exactly the padding at the end", async function () {
+      const { midRun, final, gap } = await streamed('both');
+
+      expect(midRun).to.be.lessThan(100);
+      expect(final).to.equal(0);
+      expect(gap).to.be.closeTo(10, 0.5);
     });
 
     it('control: by default the sim is the point sim and the settle separates to exactly the padding (117)', async function () {
-      // item 56: the contact term is opt-in, so the default run's pile
-      // is opened by the settle alone, whose tightest pair sits at the
-      // padding — the margin the sim leaves is the discriminator
+      // item 56: the per-tick sweep is opt-in, so the default run's
+      // pile is opened by the settle alone, whose tightest pair sits at
+      // the padding
       const cy = CLIQUE(30, 40);
 
       await cy.layout({ name: 'force', seed: 7, fit: false }).run().promise();
 
       expect(overlapping(cy)).to.equal(0);
       expect(minGap(cy)).to.be.closeTo(10, 0.5);
+    });
+
+    it('any other avoidOverlap value throws at start', function () {
+      const cy = CLIQUE(4, 20);
+
+      expect(() =>
+        cy.layout({ name: 'force', avoidOverlap: 'sometimes' }).run(),
+      ).to.throw(TypeError, /avoidOverlap/);
     });
 
     it("control: avoidOverlap: false leaves the sim's pile as it landed", async function () {

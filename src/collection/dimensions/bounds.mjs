@@ -230,7 +230,10 @@ let updateBoundsFromArrow = function( bounds, ele, prefix ){
 
   let _p = ele._private;
   let rstyle = _p.rstyle;
-  let halfArW = rstyle.arrowWidth / 2;
+  let arW = rstyle.arrowWidths != null && rstyle.arrowWidths[ prefix ] != null
+    ? rstyle.arrowWidths[ prefix ]
+    : rstyle.arrowWidth;
+  let halfArW = arW / 2;
   let arrowType = ele.pstyle( prefix + '-arrow-shape' ).value;
   let x;
   let y;

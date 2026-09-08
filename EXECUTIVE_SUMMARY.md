@@ -5,14 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-07, after the force rounds: the settle's
-  overlap separation reaches 25k (an expansion stage for a crammed
-  field, and a guard that never hands back a deeper field than it was
-  given); in-sim overlap is a separation sweep per tick rather than a
-  force, and `avoidOverlap` says which mechanism; the infinite force
-  run that ticks only while its field moves and reflows around a
-  dragged node, on both executors; and the debug page's controls for
-  all of it, driven on the real GPU.
+- **Last updated**: 2026-09-08, after the maintainer's first sitting
+  in front of the force page found force on em-web at two seconds:
+  the GPU executor's cell scan was one thread walking every grid cell
+  (3 ms an iteration on 569 nodes, 19 ms at 10k), and a run nobody
+  watches was paced at three iterations per vsync.  A parallel scan
+  and a per-frame batch: em-web 1.5 s → 0.3 s, the 25k scene 11.8 s →
+  3.3 s.
 
 ## How to maintain this file
 
@@ -808,12 +807,38 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     clear at the padding on 300 nodes, the infinite run rests with the
     frame counter still, wakes for a pointer drag with the node under
     the pointer, and Stop lands it; on the 25k scene the settle
-    mechanism is item 57 fixed where it was found.  A person has still
-    not sat in front of it.
+    mechanism is item 57 fixed where it was found.  The maintainer sat
+    in front of it the next day — see 8 Sep.
   - Buys an overlap-free force result at every scale the benchmarks
     reach, a live run whose piles stay open as it streams, the
     interactive force layout people build with d3 — at no cost while
     nothing moves — and a page a maintainer can judge all three on.
+- **8 Sep** — the GPU force executor's iteration cost
+  - The maintainer's first sitting in front of the force page: quality
+    good with avoid overlap on and off, the sweep slow as expected, and
+    force on em-web at two seconds where it had been "near instant".
+    Measured: the instant run was 116.1's nine-iteration defect (90 ms,
+    a field four times too wide), and the two seconds were the
+    converged run at three iterations per rendered frame — vsync-paced
+    — plus the page's tween.  The CPU sim on the same graph, every
+    commit since before round 114: 0.4 s, unchanged.
+  - Two costs, both found by measuring.  The GPU run was bound at
+    3.2 ms an iteration on 569 nodes, scaling with the grid's cells,
+    not the nodes: the counting sort's cell scan was one thread walking
+    every cell through a dependent chain (19 ms an iteration at the
+    65k-cell cap).  It is now a 256-thread workgroup scan, and the
+    separation sweep rebuilds the grid through the same kernel.  And a
+    run nobody watches mid-run — silent, or tweened to the settle — now
+    batches up to 64 iterations per frame by the renderer's own
+    frames-in-flight backpressure, while the live stream keeps its
+    watchable rate.  Two other signals were tried and dropped on
+    measurement.
+  - em-web silent 1.5 s → 0.3 s; the 25k scene 11.8 s → 3.3 s, and
+    under the per-tick sweep 50 s → 18 s.  The batch rule and the
+    silent-versus-live frame count are pinned, each red with the rule
+    stubbed; the parallel scan is gated by the executor-invariant
+    specs that already read the grid.  Round 112's record, filed as a
+    plan while the flow layout had shipped, is re-filed as landed.
 
 ---
 

@@ -358,8 +358,12 @@ Infinite forces `sim`, and the other layouts keep their boolean.
 **Driven** — scripted Chromium on the real adapter (amd), the
 Playwright harness flags, `debug/index.html?network=gen&gen=…`, the
 page's own controls clicked and its `layoutstop` awaited.  The
-Chrome extension for a hand-driven session was not connected, so a
-person has still not sat in front of it.
+Chrome extension for a hand-driven session was not connected, so at
+the round's close a person had still not sat in front of it.  The
+maintainer did the next day (2026-09-08): the layout quality on force
+read as good with avoid overlap on and off, the sweep as slow as
+expected, and force itself as slower than it used to be with avoid
+overlap off — which round 119 measured.
 
 | `gen=300x600`, 12 px bodies | time | overlapping bodies | tightest gap | field |
 | --- | ---: | ---: | ---: | --- |

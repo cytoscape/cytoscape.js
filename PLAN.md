@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-07, round 118), the genuinely open questions
+**As last swept** (2026-09-08, round 119), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -212,7 +212,10 @@ measurement the item asked for), which added **item 57**: the settle's
 separation hands back more overlap than it finds on the 25k scene —
 **taken by round 118.1** on the per-stage measurement the item asked
 for (an expansion stage for the crammed case, and a best-state guard;
-the measurement is on the round).  What the 2026-08-26
+the measurement is on the round).  Round 119 (2026-09-08) took no
+call and raised none: the maintainer's first sitting in front of 118's
+page found the GPU force executor's iteration cost, and the round
+measured and fixed it (item 54(e)'s rows are re-dated below).  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -927,7 +930,11 @@ directions".*
     1,308 ms on ndex, the 87.2 rows — was a nine-iteration run (116.1's
     readback defect), so the first converged figures are round 116's
     and 117's, and the review's "harness break at 87.2" on those rows
-    is a run-length break as well.  Not a
+    is a run-length break as well.  Re-dated 2026-09-08 (round 119):
+    the GPU executor's per-iteration cost fell 3–7× with the parallel
+    cell scan, so rounds 116–118's converged rows are the pre-scan
+    figures and the next `--layout` run is the first on the new
+    kernel.  Not a
     decision so much as a queue; it leaves this list when a round
     gives those rows bands.
 55. **Round 114's layout follow-ups** (logged 2026-09-02; **the three

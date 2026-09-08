@@ -1247,10 +1247,12 @@ round records carry the histories.
   easing, `zoom` and `pan` all apply to force.  The named semantics
   change: `animate: false` on a flat rendered graph went synchronous →
   async (positions readable at `layoutstop` / `promise()`), recorded
-  in MIGRATING / CHANGELOG / the option's JSDoc.  Priced at 25k×50k:
-  silent GPU ~346 ms vs the old sync CPU settle ~25.3 s (~73×), with
-  an in-row frames-delta assertion refusing the bench row on a
-  device-less fallback.
+  in MIGRATING / CHANGELOG / the option's JSDoc.  Priced at 25k×50k
+  at the time: silent GPU ~346 ms vs the old sync CPU settle ~25.3 s,
+  with an in-row frames-delta assertion refusing the bench row on a
+  device-less fallback — **a nine-iteration figure** (116.1's
+  readback defect stopped every GPU run there); the converged run on
+  that scene is 3.3 s on the page since round 119, 11.8 s before it.
 
   **The settle separates node bodies** (114.5, `avoidOverlap`, default
   true; the dense case rebuilt in 115): the sim is point-based, so
@@ -1429,6 +1431,27 @@ round records carry the histories.
   test-style timeouts — a 30 s in-page stop reporting a measured
   floor and a 60 s runner-side bail reporting "> 60 s";
   `--layout-uncapped` measures full runs).
+
+  **Round 119: the GPU executor's iteration cost.**  The maintainer's
+  first sitting in front of 118's page found force on em-web at two
+  seconds where it had been "near instant" — the instant run was
+  116.1's nine-iteration defect (a 90 ms run with a field four times
+  too wide), and the two seconds were the converged run at three
+  iterations per rendered frame, vsync-paced, plus the page's tween.
+  Two changes: a **non-presenting run batches** — `animate: false`
+  and `animate: true`'s tween are not watched mid-run, so the renderer
+  asks `nextBatch` (`render/gpu-force.mts`) each frame and the batch
+  doubles while the device keeps up, halves the frame after a scene
+  pass was skipped under the frames-in-flight backpressure, within
+  `[stepsPerFrame, 64]`; `animateLive` and `infinite` keep their
+  watchable rate — and the **cell scan is parallel**: `scanCells` was
+  one thread walking every grid cell through a dependent atomic chain
+  (~0.3 µs a cell, 65k cells at the cap — 3.2 ms an iteration on 569
+  nodes, 19 ms at 10k, and what the executor's cost scaled with), now
+  one 256-thread workgroup scanning chunk totals in shared memory.
+  em-web silent 1,470 → 270 ms, 25k silent 11.8 → 3.3 s, 25k under
+  `'sim'` 50 → 18 s (the sweep rebuilds the grid through the same
+  kernel).  The tables are on the round.
 
   Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
   (19.6k nodes, **465k edges, mean degree 47 — the shape the

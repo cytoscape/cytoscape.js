@@ -261,6 +261,15 @@ that compile and then behave differently.
 
 ### Changed
 
+- **The GPU force executor's iteration cost** (round 119): the grid's
+  cell scan is a 256-thread workgroup scan rather than one thread
+  walking every cell (3.2 ms an iteration on 569 nodes before, 19 ms
+  at 10k), and a run nobody watches mid-run — `animate: false`, or
+  `animate: true`'s tween — batches up to 64 iterations per frame by
+  what the device keeps up with instead of the live stream's three.
+  em-web's silent run 1.5 s → 0.3 s; the 25k scene 11.8 s → 3.3 s.
+  `stepsPerFrame` now paces only `animateLive` and `infinite`.
+
 - **The stylesheet is `{ nodes, edges, parents, core }`** — an object of
   property objects, not a list of selector blocks. State-dependent styling
   is a `case` condition rather than a `:selected`-style block.

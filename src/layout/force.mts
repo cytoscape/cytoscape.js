@@ -42,6 +42,7 @@ import {
   fitBodiesToBox,
   packAnchors,
   packComponentBodies,
+  tidySmallComponents,
 } from './pack.mjs';
 import type { BoxInput } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
@@ -142,6 +143,16 @@ export interface ForceRunOptions {
   avoidOverlap?: boolean | 'settle' | 'sim' | 'both';
   /** the gap kept between separated bodies (default 10) */
   avoidOverlapPadding?: number;
+  /** the smallest components take canonical shapes at the settle
+   * (round 120, default true): two nodes stand as a vertical barbell,
+   * three as a point-up triangle, four as a diamond, sized to the
+   * component's edge length and its bodies' clearance — so every
+   * component of a size is the same box and the largest-first re-pack
+   * lays them out in orderly rows, and two centre labels on a pair
+   * never sit side by side.  A component holding a locked node keeps
+   * its sim shape, as does one whose edges ask for different lengths;
+   * constrained and infinite runs skip it with the re-pack. */
+  tidyComponents?: boolean;
   /** the boxes overlap avoidance reads: bodies and labels (default) or
    * bodies alone */
   nodeDimensionsIncludeLabels?: boolean;
@@ -1259,6 +1270,23 @@ export class ForceLayoutImpl implements LayoutImpl {
         land(arr);
 
         return;
+      }
+
+      // the small components' shapes (120), before the separation so
+      // the pass finds them clear and before the re-pack so their
+      // boxes are what it packs; a constrained run keeps the sim's
+      // shapes, as it keeps its field
+      if (options.tidyComponents !== false && constraints == null) {
+        tidySmallComponents(
+          n,
+          edgesArr,
+          lengthsArr,
+          comps,
+          arr,
+          dims,
+          avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 10,
+          pinned,
+        );
       }
 
       if (overlapMode === 'settle' || overlapMode === 'both') {

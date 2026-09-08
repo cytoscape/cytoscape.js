@@ -1168,3 +1168,95 @@ describe('gpu/layout: the infinite force run (118.3)', function () {
     await layout.promise();
   });
 });
+
+// Round 120: the smallest components take canonical shapes at the
+// settle — a pair stands vertically, three make a point-up triangle,
+// four a diamond — so the packed rows of small components read as
+// order, and two centre labels on a pair never sit side by side.
+describe('the smallest components take canonical shapes (120)', function () {
+  const SMALL = () => [
+    // a 6-ring, so the largest component is a real sim shape
+    ...RING(6),
+    // a pair, a 3-path, a 4-cycle
+    { data: { id: 'p0' } },
+    { data: { id: 'p1' } },
+    { data: { id: 'pe', source: 'p0', target: 'p1' } },
+    { data: { id: 't0' } },
+    { data: { id: 't1' } },
+    { data: { id: 't2' } },
+    { data: { id: 'te0', source: 't0', target: 't1' } },
+    { data: { id: 'te1', source: 't1', target: 't2' } },
+    { data: { id: 'd0' } },
+    { data: { id: 'd1' } },
+    { data: { id: 'd2' } },
+    { data: { id: 'd3' } },
+    { data: { id: 'de0', source: 'd0', target: 'd1' } },
+    { data: { id: 'de1', source: 'd1', target: 'd2' } },
+    { data: { id: 'de2', source: 'd2', target: 'd3' } },
+    { data: { id: 'de3', source: 'd3', target: 'd0' } },
+  ];
+  const run = async (opts = {}) => {
+    const cy = cytoscape({ elements: SMALL() });
+
+    await cy
+      .layout({ name: 'force', seed: 4, fit: false, ...opts })
+      .run()
+      .promise();
+
+    return cy;
+  };
+  const pos = (cy, id) => cy.$id(id).position();
+  const d = (cy, a, b) =>
+    Math.hypot(pos(cy, a).x - pos(cy, b).x, pos(cy, a).y - pos(cy, b).y);
+
+  it('a pair stands vertically, three make a triangle, four a diamond', async function () {
+    const cy = await run();
+
+    // the pair: one x, a full edge length apart vertically
+    expect(pos(cy, 'p0').x).to.be.closeTo(pos(cy, 'p1').x, 1e-3);
+    expect(Math.abs(pos(cy, 'p0').y - pos(cy, 'p1').y)).to.be.closeTo(60, 1e-3);
+
+    // the triangle: three equal sides, the apex above a level base
+    expect(d(cy, 't0', 't1')).to.be.closeTo(60, 1e-3);
+    expect(d(cy, 't1', 't2')).to.be.closeTo(60, 1e-3);
+    expect(d(cy, 't2', 't0')).to.be.closeTo(60, 1e-3);
+
+    const ys = ['t0', 't1', 't2']
+      .map((id) => pos(cy, id).y)
+      .sort((a, b) => a - b);
+
+    expect(ys[1]).to.be.closeTo(ys[2], 1e-3);
+    expect(ys[0]).to.be.lessThan(ys[1] - 30);
+
+    // the diamond: four equal sides along the cycle, axis-aligned diagonals
+    for (const [a, b] of [
+      ['d0', 'd1'],
+      ['d1', 'd2'],
+      ['d2', 'd3'],
+      ['d3', 'd0'],
+    ]) {
+      expect(d(cy, a, b), a + '-' + b).to.be.closeTo(60, 1e-3);
+    }
+
+    expect(pos(cy, 'd0').x).to.be.closeTo(pos(cy, 'd2').x, 1e-3);
+    expect(pos(cy, 'd1').y).to.be.closeTo(pos(cy, 'd3').y, 1e-3);
+  });
+
+  it('tidyComponents: false keeps the sim’s shapes (the control), and a locked node holds its component', async function () {
+    const raw = await run({ tidyComponents: false });
+
+    // the sim leaves the pair at its seed's angle, not upright
+    expect(Math.abs(pos(raw, 'p0').x - pos(raw, 'p1').x)).to.be.greaterThan(1);
+
+    const cy = cytoscape({ elements: SMALL() });
+
+    cy.$id('p0').position({ x: 900, y: 900 }).lock();
+    cy.$id('p1').position({ x: 950, y: 920 });
+    await cy.layout({ name: 'force', seed: 4, fit: false }).run().promise();
+
+    // the locked pair is exactly where it was left; the free shapes still took theirs
+    expect(pos(cy, 'p0')).to.deep.equal({ x: 900, y: 900 });
+    expect(Math.abs(pos(cy, 'p0').x - pos(cy, 'p1').x)).to.be.greaterThan(1);
+    expect(d(cy, 't0', 't1')).to.be.closeTo(60, 1e-3);
+  });
+});

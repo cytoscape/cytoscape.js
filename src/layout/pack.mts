@@ -455,3 +455,191 @@ export const fitBodiesToBox = (
     xy[i * 2 + 1] += dy;
   }
 };
+
+/**
+ * Canonical shapes for the smallest components (round 120): two nodes
+ * stand as a vertical barbell, three as a point-up triangle, four as a
+ * diamond.  A sim leaves a two-node component at whatever angle its
+ * seed gave it and a triangle skewed by its transient, so the packed
+ * rows of small components read as noise; canonical shapes make every
+ * component of a size the same box, which the largest-first shelf pack
+ * then lays out in orderly rows — and the barbell's vertical stance
+ * keeps two centre-aligned labels, which read left to right, off each
+ * other.  Singletons have no shape to take.
+ *
+ * Each shape's radius is the largest of what its edges ask (the
+ * component's mean ideal length along every side) and what its bodies
+ * need (horizontal neighbours a body width plus `gap` apart, vertical
+ * ones a body height plus `gap`), so the separation pass finds them
+ * clear.  Nodes are placed around the perimeter in walk order from the
+ * highest-degree member — a path or a cycle runs round the shape, a
+ * star's hub takes the top — and the shape is centred where the
+ * component's centroid was.  A component holding a pinned node is left
+ * as it is, and so is one whose edges ask for different lengths.
+ *
+ * @param n — sim node count
+ * @param edges — endpoint pairs in sim-index space
+ * @param edgeLength — per-edge ideal length
+ * @param comps — the component assignment
+ * @param positions — 2n interleaved coordinates, rewritten in place
+ * @param dims — per-node body boxes (node-local), or null for points
+ * @param gap — the clearance between neighbouring bodies
+ * @param pinned — per-node non-zero for a node that must not move
+ * @returns how many components took a shape
+ */
+export const tidySmallComponents = (
+  n: number,
+  edges: Uint32Array,
+  edgeLength: ArrayLike<number>,
+  comps: Components,
+  positions: Float32Array | Float64Array,
+  dims: NodeExtents | null,
+  gap: number,
+  pinned: ArrayLike<number> | null,
+): number => {
+  const { compOf, sizes, count } = comps;
+  const members: number[][] = [];
+  const adjacency: number[][] = Array.from({ length: n }, () => []);
+  const lengthSum = new Float64Array(count);
+  const lengthCount = new Int32Array(count);
+  const lengthMin = new Float64Array(count).fill(Infinity);
+  const lengthMax = new Float64Array(count).fill(-Infinity);
+  const hold = new Uint8Array(count);
+
+  for (let c = 0; c < count; c++) {
+    members.push([]);
+  }
+
+  for (let i = 0; i < n; i++) {
+    members[compOf[i]].push(i);
+
+    if (pinned != null && pinned[i] !== 0) {
+      hold[compOf[i]] = 1;
+    }
+  }
+
+  const m = edges.length / 2;
+
+  for (let e = 0; e < m; e++) {
+    const a = edges[e * 2];
+    const b = edges[e * 2 + 1];
+
+    adjacency[a].push(b);
+    adjacency[b].push(a);
+    lengthSum[compOf[a]] += edgeLength[e];
+    lengthCount[compOf[a]]++;
+    lengthMin[compOf[a]] = Math.min(lengthMin[compOf[a]], edgeLength[e]);
+    lengthMax[compOf[a]] = Math.max(lengthMax[compOf[a]], edgeLength[e]);
+  }
+
+  let shaped = 0;
+
+  for (let c = 0; c < count; c++) {
+    const size = sizes[c];
+
+    // a component whose edges ask for different lengths (a data-driven
+    // `edgeLength`) keeps the sim's shape: a canonical shape has one
+    // side, and the lengths were the caller's point
+    if (
+      size < 2 ||
+      size > 4 ||
+      hold[c] === 1 ||
+      lengthMax[c] - lengthMin[c] > 1e-6 * Math.max(1, lengthMax[c])
+    ) {
+      continue;
+    }
+
+    const nodes = members[c];
+    const meanL = lengthCount[c] > 0 ? lengthSum[c] / lengthCount[c] : 0;
+
+    // the widest and tallest body in the component, for the clearance
+    let bodyW = 0;
+    let bodyH = 0;
+    let cx = 0;
+    let cy = 0;
+
+    for (const i of nodes) {
+      if (dims != null) {
+        bodyW = Math.max(bodyW, dims.x2[i] - dims.x1[i]);
+        bodyH = Math.max(bodyH, dims.y2[i] - dims.y1[i]);
+      }
+
+      cx += positions[i * 2];
+      cy += positions[i * 2 + 1];
+    }
+
+    cx /= size;
+    cy /= size;
+
+    // walk order round the perimeter: a path starts at an end and a
+    // cycle anywhere, so their edges run along the shape's sides; a
+    // star starts at its hub, which takes the top.  Depth-first, so
+    // the walk follows the edges rather than fanning out
+    const degree = (i: number): number => adjacency[i].length;
+    const ends = nodes.filter((i) => degree(i) === 1);
+    const isPath = ends.length === 2 && nodes.every((i) => degree(i) <= 2);
+    const start = isPath
+      ? Math.min(...ends)
+      : [...nodes].sort((a, b) => degree(b) - degree(a) || a - b)[0];
+    const seen = new Set<number>([start]);
+    const order: number[] = [];
+    const stack = [start];
+
+    while (stack.length > 0) {
+      const u = stack.pop() as number;
+
+      order.push(u);
+
+      const next = [...adjacency[u]].sort((a, b) => b - a);
+
+      for (const v of next) {
+        if (!seen.has(v)) {
+          seen.add(v);
+          stack.push(v);
+        }
+      }
+    }
+
+    // the shape's radius: the edge length along every side, or the
+    // bodies' clearance, whichever is larger
+    let r: number;
+    let points: [number, number][];
+
+    if (size === 2) {
+      r = Math.max(meanL / 2, (bodyH + gap) / 2);
+      points = [
+        [0, -r],
+        [0, r],
+      ];
+    } else if (size === 3) {
+      // circumradius of an equilateral triangle of side meanL, point up;
+      // the base pair sits side by side, a body width apart
+      r = Math.max(meanL / Math.sqrt(3), (bodyW + gap) / Math.sqrt(3));
+      points = [
+        [0, -r],
+        [r * Math.cos(Math.PI / 6), r * Math.sin(Math.PI / 6)],
+        [-r * Math.cos(Math.PI / 6), r * Math.sin(Math.PI / 6)],
+      ];
+    } else {
+      // a diamond of side meanL: top, right, bottom, left
+      r = Math.max(meanL / Math.SQRT2, (bodyW + gap) / 2, (bodyH + gap) / 2);
+      points = [
+        [0, -r],
+        [r, 0],
+        [0, r],
+        [-r, 0],
+      ];
+    }
+
+    for (let k = 0; k < order.length; k++) {
+      const i = order[k];
+
+      positions[i * 2] = cx + points[k][0];
+      positions[i * 2 + 1] = cy + points[k][1];
+    }
+
+    shaped++;
+  }
+
+  return shaped;
+};

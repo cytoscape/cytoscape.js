@@ -13,7 +13,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   and a per-frame batch: em-web 1.5 s → 0.3 s, the 25k scene 11.8 s →
   3.3 s.  Then the settle test, measured against seven fixtures'
   quality: the default threshold is relative to the edge length for a
-  run nobody watches, and em-web is 0.15–0.24 s.
+  run nobody watches, and em-web is 0.15–0.24 s.  And the packing:
+  force's smallest components take canonical shapes (a standing pair,
+  a triangle, a diamond) so the re-pack lays them out in rows by size,
+  and the debug page gained the EnrichmentMap combo — force once per
+  sign, blue left and red right.
 
 ## How to maintain this file
 
@@ -854,6 +858,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     with every iteration it covers instead of waiting three polls.
     em-web silent on the page 0.27 → 0.15–0.24 s; what remains is
     frames of latency, not iterations.
+- **8 Sep** — the smallest components take shapes, and the page's EM combo
+  - The maintainer, on the packing: components of one to four nodes
+    should take canonical shapes, which also orders the rows by size
+    and keeps centre labels apart.  At the settle a pair now stands as
+    a vertical barbell, three make a point-up triangle, four a diamond
+    (`tidyComponents`, default true), sized to the edge length and the
+    bodies' clearance, walked round the perimeter from a path's end or
+    a star's hub.  Every component of a size is the same box, so the
+    largest-first re-pack makes rows of quads, triples, pairs and
+    singletons — the EnrichmentMap preset's shape.  A locked node's
+    component and one with mixed per-edge lengths keep the sim's.
+  - The EM preset, measured: shelf rows by size, largest first, split
+    by the sign of NES with the positives to the right.  The debug
+    page's dropdown gained that as a combo: force once per sign, each
+    side's components packed as force packs, the positive side shifted
+    right of the negative, fitted.  Driven on em-web and em-desktop.
 
 ---
 

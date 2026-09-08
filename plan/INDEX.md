@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–119 |
+| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–120 |
 | planned | 49–51, 71–84, 88, 99–100, 102–107, 110 |
 
 ## The sections
 
-158 sections.
+159 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -185,3 +185,4 @@ A round can land with an item held open; the round file says which.
 | 156 | 117 | 2026-09-04 | landed | [Item 56: the sim half of `avoidOverlap` becomes opt-in](rounds/2026-09-04-01-rnd0117-landed-item-56-the-sim-half-of-avoidoverlap-is-opt-in.md) |
 | 157 | 118 | 2026-09-07 | landed | [The force rounds: the settle at scale, the infinite run, and the page](rounds/2026-09-07-01-rnd0118-landed-the-force-rounds-the-settle-at-scale-the-infinite-run-and-the-page.md) |
 | 158 | 119 | 2026-09-08 | landed | [The GPU force executor's iteration cost: the serial cell scan, and the silent run's batch](rounds/2026-09-08-01-rnd0119-landed-the-gpu-force-executor-s-iteration-cost-the-serial-cell-scan-and-the-silent-run-s-batch.md) |
+| 159 | 120 | 2026-09-08 | landed | [The smallest components take shapes, and the page's EM combo](rounds/2026-09-08-02-rnd0120-landed-the-smallest-components-take-shapes-and-the-page-s-em-combo.md) |

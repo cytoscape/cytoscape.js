@@ -1478,6 +1478,26 @@ round records carry the histories.
   ms, and the debug page's readout now splits the layout from the
   tween it shows under Animate.
 
+  **Round 120: the smallest components take shapes.**  At the settle,
+  before the separation pass and the re-pack, a component of two
+  nodes stands as a vertical barbell, three make a point-up
+  equilateral triangle and four a diamond (`tidySmallComponents`,
+  `layout/pack.mts`; the option is `tidyComponents`, default true).
+  The radius is the larger of the component's edge length along every
+  side and its bodies' clearance; the perimeter is walked depth-first
+  from a path's end or a star's hub.  Every component of a size is
+  then the same box, so the largest-first re-pack lays the quads,
+  triples, pairs and singletons out in rows — the EnrichmentMap
+  preset's shape — and two centre labels on a pair never sit side by
+  side.  Left alone: singletons, five nodes and up, a component with
+  a locked node, one whose edges ask for different lengths, and
+  constrained or infinite runs.  The debug page has the box, and a
+  dropdown entry **Force, then pack by sign** that runs force once
+  per sign of the network's `signKey` (NES on the EM fixtures) and
+  sets the positive side to the right of the negative — the EM
+  preset's red-right / blue-left packing from two scoped force calls
+  and a shift.
+
   Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
   (19.6k nodes, **465k edges, mean degree 47 — the shape the
   round-18 model exploded on**) converges live on the GPU in

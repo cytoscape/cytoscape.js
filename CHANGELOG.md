@@ -24,6 +24,14 @@ that compile and then behave differently.
 
 ### Added
 
+- **Force's smallest components take canonical shapes** (round 120,
+  `tidyComponents`, default true): a pair stands as a vertical
+  barbell, three make a point-up triangle, four a diamond, sized to
+  the edge length and the bodies' clearance — so the re-pack lays
+  small components out in rows by size, and two centre-aligned labels
+  on a pair never sit side by side.  A component with a locked node,
+  or with mixed per-edge lengths, keeps the sim's shape.
+
 - **The infinite force run** (round 118.3, `infinite: true`): the live
   force-directed layout that never ends, ticking only while the field
   moves — at rest it costs nothing — and reheating on a drag (the

@@ -1,5 +1,6 @@
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
+import { satPolygonIntersection } from '../math.mjs';
 
 let elesfn = ({
   nodes: function( selector ){
@@ -378,7 +379,64 @@ let elesfn = ({
       value: min,
       ele: minEle
     };
-  }
+  },
+
+  withinBox: function(box) {
+    const cy = this.cy();
+    const r = cy.renderer();
+    if( cy.styleEnabled() ){ this.recalculateRenderedStyle(); }
+    const x1 = box.x1 != null ? box.x1 : box.x;
+    const y1 = box.y1 != null ? box.y1 : box.y;
+    const x2 = box.x2 != null ? box.x2 : x1 + box.w;
+    const y2 = box.y2 != null ? box.y2 : y1 + box.h;
+    const allInBox = r.getAllInBox(x1, y1, x2, y2);
+    const col = this;
+    return this.spawn( allInBox.filter(ele => col.has(ele)) );
+  },
+
+  hit: function(pos, options) {
+    const cy = this.cy();
+    const r = cy.renderer();
+    if( cy.styleEnabled() ){ this.recalculateRenderedStyle(); }
+    return this.spawn( r.hitTestAt(pos.x, pos.y, this, options) );
+  },
+
+  polygonIntersection: function(polygon) {
+    const eles = this;
+    const cy = eles.cy();
+
+    if( cy.styleEnabled() ){
+      this.recalculateRenderedStyle();
+    }
+
+    const matches = [];
+
+    for (let i = 0; i < eles.length; i++) {
+      const ele = eles[i];
+      const bb = ele._private.bodyBounds;
+
+      if (bb) {
+        const bodyPoly = [
+          { x: bb.x1, y: bb.y1 },
+          { x: bb.x2, y: bb.y1 },
+          { x: bb.x2, y: bb.y2 },
+          { x: bb.x1, y: bb.y2 }
+        ];
+
+        if (satPolygonIntersection(bodyPoly, polygon)) {
+          matches.push(ele);
+          continue;
+        }
+      }
+
+      const labelPoly = ele.actualLabelBoundingBox();
+      if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
+        matches.push(ele);
+      }
+    }
+
+    return this.spawn(matches);
+  },
 });
 
 // aliases

@@ -2198,6 +2198,13 @@ declare namespace cytoscape {
          */
         renderedBoundingBox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
         renderedBoundingbox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
+        /**
+         * Get the bounding polygon of a label in model coordinates.
+         * For edges, use `label: 'source'` or `label: 'target'` to select a specific label slot.
+         * Defaults to the main label.
+         */
+        actualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
+        actualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
     }
 
     /**
@@ -3002,6 +3009,29 @@ declare namespace cytoscape {
              */
             ele: SingularElementReturnValue;
         };
+        /**
+         * Returns subset of collection within the given box, using the
+         * renderer's box-selection rules
+         *
+         * @param box BoundingBox12 & BoundingBoxWH
+         */
+        withinBox(box: BoundingBox12 & BoundingBoxWH): Collection<TIn>;
+        /**
+         * Returns a new collection containing nodes whose polygonal bounds
+         * intersect the specified polygon in model coordinates.
+         * This is a spatial filter based on polygon-polygon intersection using SAT.
+         *
+         * @param polygon Array of points {x, y} defining a polygon
+         */
+        polygonIntersection(polygon: PolygonBoundingBox): Collection<TIn>;
+        /**
+         * Returns elements from collection that are hit by the given position,
+         * sorted topmost first (by z-order); also works with rotated labels.
+         *
+         * @param pos        The point in model coordinates {x, y}
+         * @param options    What to include in the hit test
+         */
+        hit(pos: Position, options?: HitTestOptions): Collection<TIn>;
     }
 
     /**
@@ -6262,6 +6292,14 @@ declare namespace cytoscape {
         y1: number;
         w: number;
         h: number;
+    }
+    type PolygonBoundingBox = Position[];
+    interface HitTestOptions {
+        includeBody?: boolean;
+        includeMainLabels?: boolean;
+        includeSourceLabels?: boolean;
+        includeTargetLabels?: boolean;
+        isTouch?: boolean;
     }
     interface AnimatedLayoutOptions {
         // whether to transition the node positions

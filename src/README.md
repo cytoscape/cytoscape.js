@@ -1453,6 +1453,31 @@ round records carry the histories.
   `'sim'` 50 → 18 s (the sweep rebuilds the grid through the same
   kernel).  The tables are on the round.
 
+  **119.3: the settle threshold is relative, for a run nobody
+  watches.**  The maintainer's eye said the nine-iteration field had
+  looked fine, and the fixture sweep agreed: on em-web, em-desktop,
+  npm-deps, reactome, a 1k random graph, a 500-node tree and a grid,
+  the edge-length spread, a sampled stress and the overlap count
+  plateau by 60–100 iterations and do not move between 100 and the
+  0.1 px settle at ~300 — the spectral seed places the graph, and the
+  anneal's last two hundred ticks moved nodes by less than anything
+  measured.  `threshold` now defaults to **2% of the mean ideal edge
+  length** (1.2 px at the default 60) for `animate: false` and the
+  tween — measured to reproduce the 0.1 px settle's metrics within
+  noise at 2–3× the speed headless — while a *presented* run
+  (`animateLive`, `infinite`) keeps 0.1 px, since its stop is motion
+  the eye sees and a field still creeping a pixel a tick would stop
+  visibly short.  Two things had to come apart from the threshold for
+  that: the separation sweep's quiet test (`SWEEP_QUIET`, 0.1 px, its
+  own atomic max on the device — a pixel-scale settle would have left
+  pairs a pixel deep), and the GPU's settle count, which now credits a
+  quiet batch with every iteration it covers (the batch's max is over
+  all of them) instead of counting polls two frames apart — the run
+  had been going to 460 iterations on em-web waiting for three polls.
+  em-web silent 270 → 145–240 ms in 7–9 frames, ndex-large 585 → 380
+  ms, and the debug page's readout now splits the layout from the
+  tween it shows under Animate.
+
   Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
   (19.6k nodes, **465k edges, mean degree 47 — the shape the
   round-18 model exploded on**) converges live on the GPU in

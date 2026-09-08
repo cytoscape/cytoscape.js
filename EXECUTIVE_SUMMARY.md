@@ -11,7 +11,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   (3 ms an iteration on 569 nodes, 19 ms at 10k), and a run nobody
   watches was paced at three iterations per vsync.  A parallel scan
   and a per-frame batch: em-web 1.5 s → 0.3 s, the 25k scene 11.8 s →
-  3.3 s.
+  3.3 s.  Then the settle test, measured against seven fixtures'
+  quality: the default threshold is relative to the edge length for a
+  run nobody watches, and em-web is 0.15–0.24 s.
 
 ## How to maintain this file
 
@@ -839,6 +841,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     stubbed; the parallel scan is gated by the executor-invariant
     specs that already read the grid.  Round 112's record, filed as a
     plan while the flow layout had shipped, is re-filed as landed.
+  - The maintainer's eye, measured: the nine-iteration field had
+    looked fine, and on seven fixtures the edge-length spread, a
+    sampled stress and the overlap count plateau by 100 iterations —
+    the spectral seed places the graph, and the 0.1 px settle spent
+    two hundred more ticks moving nothing any metric sees.  The
+    default `threshold` is now 2% of the mean ideal edge length for a
+    run nobody watches (1 px reproduces the 0.1 px metrics within 2%
+    on every fixture at 2–3× the speed); a presented run keeps 0.1 px
+    because a stream's stop is visible motion.  The separation sweep
+    got its own quiet test, and the GPU settle credits a quiet batch
+    with every iteration it covers instead of waiting three polls.
+    em-web silent on the page 0.27 → 0.15–0.24 s; what remains is
+    frames of latency, not iterations.
 
 ---
 

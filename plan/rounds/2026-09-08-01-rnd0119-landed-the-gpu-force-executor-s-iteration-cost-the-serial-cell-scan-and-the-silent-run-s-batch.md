@@ -115,9 +115,95 @@ The tween the page's Animate box adds is now most of what the page
 shows on em-web (782 against 296), and that is the finisher's
 duration, not the layout's.
 
+### 119.3 — the settle threshold, relative and for the unwatched run
+
+The maintainer, on the numbers above: still too slow, and the layout
+the nine-iteration defect had produced "seemed like sufficient
+quality" for most networks (the 1.5 s reported turned out to be a
+cached page, and the instruction was to keep investigating).  The
+observation was right and measurable.  Headless CPU, seven fixtures,
+`iterations` capped, three metrics — the edge-length coefficient of
+variation, a sampled stress (BFS distance from 40 sources against
+geometric distance scaled by the mean edge length) and the count of
+40 px bodies overlapping:
+
+| fixture | at 9 iterations | at 100 | at the 0.1 px settle (~300) |
+| --- | --- | --- | --- |
+| em-web (569 × 6,899) | CV 0.50 · stress 0.193 · 750 | 0.49 · 0.198 · 723 | 0.49 · 0.203 · 709 |
+| em-desktop | 0.53 · 0.211 · 3,697 | 0.52 · 0.135 · 2,058 | 0.52 · 0.154 · 1,966 |
+| npm-deps | 0.45 · 0.159 · 470 | 0.37 · 0.096 · 301 | 0.37 · 0.096 · 285 |
+| reactome | 0.37 · 0.126 · 282 | 0.35 · 0.104 · 120 | 0.35 · 0.106 · 117 |
+| gen 1k × 2k | 0.49 · 0.416 · 5,173 | 0.44 · 0.314 · 3,226 | 0.43 · 0.308 · 3,195 |
+| tree 500 | 0.42 · 0.238 · 930 | 0.36 · 0.145 · 282 | 0.36 · 0.145 · 242 |
+| grid 20 × 20 | 0.14 · 0.043 · 0 | 0.13 · 0.041 · 0 | 0.13 · 0.041 · 0 |
+
+Nine is too few on the sparse graphs (the tree and npm-deps are
+still opening), but every fixture has plateaued by 100, and the
+anneal's remaining two hundred ticks move nothing any metric sees:
+the spectral seed places the graph.  The knob is the settle test —
+0.1 px per node per tick is a tenth of a percent of the mean edge
+length.  Swept to convergence:
+
+| fixture | 0.1 px (default) | 0.5 px | 1 px | 2 px | 4 px |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| em-web | 425 ms | 228 | 180 | 117 | 105 |
+| em-desktop | 1,033 | 724 | 591 | 434 | 283 |
+| npm-deps | 130 | 91 | 72 | 49 | 31 |
+| gen 1k × 2k | 472 | 308 | 252 | 175 | 136 |
+| tree 500 | 160 | 106 | 80 | 57 | 35 |
+
+At 1 px every metric is within 1–2% of the 0.1 px result on every
+fixture; at 2 px the overlap count on the sparse graphs rises 3–10%;
+a faster anneal (`decay` 0.03) buys the same time at a small stress
+cost on the random graph.  **The default is now 2% of the mean ideal
+edge length** — 1.2 px at the default 60 — for a run nobody watches
+(`animate` either way).  A presented run (`animateLive`, `infinite`)
+keeps 0.1 px: the first version applied the relative default to
+every run and the infinite drag spec went red — the ring rested
+before its neighbours had visibly followed — because a stream's stop
+is motion the eye sees, and a field creeping a pixel a tick is
+visible motion.
+
+Two things had to come apart from the threshold.  The **separation
+sweep's quiet test**: the 'sim' spec went red with pairs left a
+pixel deep, since the sweep pushes a hair past touching and its push
+had been read against the settle threshold — it now has its own
+`SWEEP_QUIET` (0.1 px) on both executors, a second atomic max in the
+GPU's meta buffer.  And the **GPU's settle count**: traced per frame,
+the em-web run was going to 460 iterations at the new threshold
+where the CPU stops near 150, because the settle counted three
+quiet *polls* and each poll's readback lands two to three frames
+after its batch — three polls of 64-iteration batches.  A quiet poll
+now credits the batch's every iteration (its max is over all of
+them), which is the CPU sim's three-consecutive-ticks rule read from
+one readback; a three-per-frame stream reads the same as before.
+
+| the page, scripted Chromium, amd | 119.2 | 119.3 | frames |
+| --- | ---: | ---: | ---: |
+| em-web, off, silent | 268–296 ms | **145–240 ms** | 7–9 |
+| em-web, off, `animate: true` | 782 | 745 (216 + the 500 ms tween) | 41 |
+| em-web, `'settle'` | 331 | 297 | 9 |
+| em-web, `'sim'` | 449 | 451 | 18 |
+| em-web, `animateLive` (unchanged by design) | 1,523 | 1,523 | 89 |
+| ndex-large (3,238 nodes), off | 585 | 379 | 11 |
+| gen 3k × 6k, off | 336 | 279 | 11 |
+| gen 25k × 50k, off | 3.3 s | 3.0 s | 67 |
+| gen 25k × 50k, `'sim'` | 17.7 s | 16.0 s | 214 |
+
+What is left on em-web is latency, not iterations: a frame to start,
+five frames of ramp to a 64-iteration batch, two to three for the
+quiet poll to land, one or two for the position readback.  The CPU
+executor does the same graph in 180 ms headless — and blocks the
+thread for it.  The page's readout now shows the layout and the tween
+separately, so what Animate adds reads as what it is.
+
 ### The gates
 
-`test/modules/gpu-force-batch.mjs` pins the batch rule: it doubles
+119.3's gates are the ones that went red on the way: `'sim'` ends
+clear at the padding (the sweep's own quiet test), the infinite drag
+on the GPU pulls both neighbours after the grabbed node (the watched
+run's threshold), and the 114.5 stream-versus-settle control now
+settles at the stream's threshold explicitly.  `test/modules/gpu-force-batch.mjs` pins the batch rule: it doubles
 from `stepsPerFrame` to the cap, halves when behind and never under
 the floor, clamps a floor past the window — red with the rule
 returning its input.  The browser spec (`renderer.spec.js`, 119) runs

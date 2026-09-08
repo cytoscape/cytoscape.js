@@ -269,6 +269,13 @@ that compile and then behave differently.
   what the device keeps up with instead of the live stream's three.
   em-web's silent run 1.5 s → 0.3 s; the 25k scene 11.8 s → 3.3 s.
   `stepsPerFrame` now paces only `animateLive` and `infinite`.
+- **Force's `threshold` defaults to 2% of the mean ideal edge length**
+  (round 119.3; 1.2 px at the default length) for `animate: false` and
+  the tween, measured to reproduce the 0.1 px settle's edge lengths,
+  stress and overlaps within noise on seven fixtures at 2–3× the
+  speed; `animateLive` and `infinite` keep 0.1 px, since a stream's
+  stop is visible.  Pass `threshold` to pin either.  em-web's silent
+  run on the page: 0.3 → 0.15–0.24 s.
 
 - **The stylesheet is `{ nodes, edges, parents, core }`** — an object of
   property objects, not a list of selector blocks. State-dependent styling

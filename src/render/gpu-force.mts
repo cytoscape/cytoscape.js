@@ -63,6 +63,9 @@ import {
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
 
 const WG = 64;
+/** the cell scan's one workgroup (119): 256 threads over at most
+ * MAX_GRID² cells, so a thread's chunk is at most 256 cells */
+const SCAN_WG = 256;
 const ALPHA_WINDOW = 64;
 /** grid capped at 256×256 cells (the serial scan's budget) */
 const MAX_GRID = 256;
@@ -137,19 +140,45 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @group(0) @binding(1) var<storage, read_write> cellCount: array<atomic<u32>>;
 @group(0) @binding(2) var<storage, read_write> grid: array<u32>;
 
-// serial exclusive scan over the (bounded) cell array; also rewinds
-// the counters so scatter can reuse them as cursors.  cellStart lives
-// at the head of the shared grid buffer (59.3's fold).
-@compute @workgroup_size(1)
-fn main() {
-  var sum = 0u;
-  for (var c = 0u; c < params.cells; c = c + 1u) {
+var<workgroup> chunkSums: array<u32, ${SCAN_WG}>;
+
+// exclusive scan over the (bounded) cell array in one workgroup (119):
+// each thread totals a contiguous chunk of cells, the chunk totals are
+// scanned in shared memory (Hillis-Steele, uniform control flow), and
+// each thread writes its chunk's prefixes and rewinds the counters so
+// scatter can reuse them as cursors.  The serial single-thread scan
+// this replaces walked every cell through one dependent chain — 3 ms
+// per iteration at 10k cells, 19 ms at the 65k cap — and was what the
+// GPU executor's iteration cost scaled with.  cellStart lives at the
+// head of the shared grid buffer (59.3's fold).
+@compute @workgroup_size(${SCAN_WG})
+fn main(@builtin(local_invocation_id) lid3: vec3u) {
+  let lid = lid3.x;
+  let cells = params.cells;
+  let chunk = (cells + ${SCAN_WG}u - 1u) / ${SCAN_WG}u;
+  let begin = min(lid * chunk, cells);
+  let end = min(begin + chunk, cells);
+  var total = 0u;
+  for (var c = begin; c < end; c = c + 1u) {
+    total = total + atomicLoad(&cellCount[c]);
+  }
+  chunkSums[lid] = total;
+  workgroupBarrier();
+  for (var offset = 1u; offset < ${SCAN_WG}u; offset = offset << 1u) {
+    var v = 0u;
+    if (lid >= offset) { v = chunkSums[lid - offset]; }
+    workgroupBarrier();
+    chunkSums[lid] = chunkSums[lid] + v;
+    workgroupBarrier();
+  }
+  var run = chunkSums[lid] - total;
+  for (var c = begin; c < end; c = c + 1u) {
     let count = atomicLoad(&cellCount[c]);
-    grid[c] = sum;
-    sum = sum + count;
+    grid[c] = run;
+    run = run + count;
     atomicStore(&cellCount[c], 0u);
   }
-  grid[params.cells] = sum;
+  if (lid == ${SCAN_WG}u - 1u) { grid[cells] = chunkSums[lid]; }
 }`,
 
   scatter: wgsl`${PRELUDE}

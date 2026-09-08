@@ -67,6 +67,43 @@ const WG = 64;
  * MAX_GRID² cells, so a thread's chunk is at most 256 cells */
 const SCAN_WG = 256;
 const ALPHA_WINDOW = 64;
+/** the most iterations one encode may carry: the alpha window the
+ * CPU precomputes for the device tick (119) */
+export const MAX_BATCH = ALPHA_WINDOW;
+
+/**
+ * The iterations the next frame of a *non-presenting* run should encode
+ * (119).  A run nobody watches has no reason to be paced by vsync at the
+ * live stream's `stepsPerFrame`: em-web's 300-iteration settle was 100
+ * frames — 1.5 s — under that pacing, where the CPU sim takes 0.4 s.
+ * So the batch doubles every frame the device keeps up and halves when
+ * it falls behind — the renderer skipped a scene pass under its
+ * frames-in-flight backpressure, which is the device's own signal (a
+ * readback's latency is not: mapAsync resolves 4–100 ms after a trivial
+ * batch here, erratically, and a batch that dropped on it ran em-web
+ * at half the fixed-batch speed).  The settle test counts three quiet
+ * polls whatever the batch, so a large batch past the field's rest
+ * costs iterations the device had idle time for, not frames.  Pure, so
+ * the module suite pins it.
+ *
+ * @param current — the batch encoded last frame
+ * @param base — the run's `stepsPerFrame` (the floor)
+ * @param behind — the last frame was skipped under backpressure
+ * @returns the batch for this frame, within [base, MAX_BATCH]
+ */
+export function nextBatch(
+  current: number,
+  base: number,
+  behind: boolean,
+): number {
+  const floor = Math.max(1, Math.min(base, MAX_BATCH));
+
+  if (behind) {
+    return Math.min(MAX_BATCH, Math.max(floor, Math.floor(current / 2)));
+  }
+
+  return Math.min(MAX_BATCH, Math.max(floor, current * 2));
+}
 /** grid capped at 256×256 cells (the serial scan's budget) */
 const MAX_GRID = 256;
 
@@ -1063,6 +1100,21 @@ export class GpuForceRuntime {
    */
   encode(encoder: GPUCommandEncoder, columnPos: GPUBuffer, k: number): void {
     if (this.destroyed || this.converged()) {
+      return;
+    }
+
+    // the meta carries one alpha per iteration of the window, and the
+    // iteration cap is the run's contract (119: a batch is no longer
+    // the live stream's three)
+    k = Math.min(
+      k,
+      ALPHA_WINDOW,
+      this.infinite
+        ? ALPHA_WINDOW
+        : this.inputs.params.iterations - this.iterations,
+    );
+
+    if (k <= 0) {
       return;
     }
 

@@ -20,7 +20,7 @@ import { ImageArrays } from './image-arrays.mjs';
 import { ImagePipeline } from './image-pipeline.mjs';
 import { ChartPipeline } from './chart-pipeline.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
-import { GpuForceRuntime } from './gpu-force.mjs';
+import { GpuForceRuntime, nextBatch } from './gpu-force.mjs';
 import type { ForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
@@ -945,6 +945,14 @@ export class Renderer {
   private forceRuntime: GpuForceRuntime | null = null;
   private forceStepsPerFrame = 3;
   private forcePresents = true;
+  /** the iterations this frame encodes (119): `forceStepsPerFrame` for
+   * a presenting run — the watchable rate — and an adaptive batch for
+   * a silent or tweened one, which nobody watches mid-run */
+  private forceBatch = 3;
+  /** the last frame skipped its scene pass under backpressure while a
+   * force run was encoding (119): the device is behind, and a
+   * non-presenting run's batch should shrink */
+  private forceFrameSkipped = false;
 
   /**
    * Start the GPU force integrator (18.3): returns null when the device
@@ -975,6 +983,8 @@ export class Renderer {
 
     this.forceRuntime = new GpuForceRuntime(this.device, inputs);
     this.forceStepsPerFrame = stepsPerFrame;
+    this.forceBatch = stepsPerFrame;
+    this.forceFrameSkipped = false;
     this.forcePresents = present;
     this.needsRedraw = true;
     this.schedule();
@@ -1557,6 +1567,18 @@ export class Renderer {
     ] as Parameters<ColumnMirror['setTweenOwned']>[0]);
 
     if (this.forceRuntime != null) {
+      // a non-presenting run batches by what the device kept up with
+      // (119): read before the poll, which is what clears the pending
+      // readback this frame's batch is judged by
+      if (!this.forcePresents) {
+        this.forceBatch = nextBatch(
+          this.forceBatch,
+          this.forceStepsPerFrame,
+          this.forceFrameSkipped,
+        );
+        this.forceFrameSkipped = false;
+      }
+
       this.forceRuntime.pollConvergence();
 
       // the sim advances every frame — unless an infinite run is at
@@ -1663,6 +1685,14 @@ export class Renderer {
     // deeper (state coalesces; latency stays bounded).
     if (
       this.needsRedraw &&
+      this.inFlightFrames >= MAX_IN_FLIGHT_FRAMES &&
+      this.forceRuntime != null
+    ) {
+      this.forceFrameSkipped = true;
+    }
+
+    if (
+      this.needsRedraw &&
       this.inFlightFrames < MAX_IN_FLIGHT_FRAMES &&
       this.sceneCull != null
     ) {
@@ -1699,7 +1729,7 @@ export class Renderer {
           this.forcePresents
             ? mirror.buffer('node.position')
             : this.forceRuntime.silentTarget(),
-          this.forceStepsPerFrame,
+          this.forcePresents ? this.forceStepsPerFrame : this.forceBatch,
         );
       }
 

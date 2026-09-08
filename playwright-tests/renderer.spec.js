@@ -2430,6 +2430,72 @@ test.describe('WebGPU renderer', () => {
     });
   });
 
+  test('a silent force run batches iterations per frame; the live stream keeps stepsPerFrame (119)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // 119: the GPU run advanced three iterations per rendered frame
+    // however it was shown, so a silent run — nobody watching — was
+    // paced by vsync: em-web's 300-iteration settle was 100 frames.
+    // Now the renderer batches a non-presenting run by what the device
+    // keeps up with (doubling to 64 per frame), while the presenting
+    // stream keeps its watchable rate.  A small graph so that even
+    // SwiftShader keeps up; `threshold: 0` so both runs go to the cap
+    // and the frame counts compare iteration for iteration.  Control:
+    // red with `nextBatch` returning `current` (the silent run takes
+    // the live run's frames).
+    const els = [];
+
+    for (let i = 0; i < 60; i++) {
+      els.push({ data: { id: 'n' + i } });
+    }
+
+    for (let i = 0; i < 60; i++) {
+      els.push({
+        data: {
+          id: 'e' + i,
+          source: 'n' + i,
+          target: 'n' + ((i * 7 + 3) % 60),
+        },
+      });
+    }
+
+    await makeReadyCy(page, { elements: els, style: [] });
+
+    const result = await page.evaluate(async () => {
+      const cy = window.cy;
+      const run = async (opts) => {
+        const f0 = cy.stats().frames;
+
+        await cy
+          .layout({
+            name: 'force',
+            seed: 3,
+            fit: false,
+            avoidOverlap: false,
+            iterations: 240,
+            threshold: 0,
+            ...opts,
+          })
+          .run()
+          .promise();
+
+        return cy.stats().frames - f0;
+      };
+
+      return {
+        silent: await run({ animate: false }),
+        live: await run({ animateLive: true }),
+      };
+    });
+
+    // 240 iterations at three per frame is 80 frames; the batched run
+    // reaches 64 per frame by its sixth and needs about ten
+    expect(result.live, 'the stream keeps stepsPerFrame').toBeGreaterThan(60);
+    expect(result.silent, 'the silent run batches').toBeLessThan(40);
+  });
+
   test('CPU, silent-GPU and presenting-GPU force executors agree on invariants (18.4 + 87.2)', async ({
     page,
   }) => {

@@ -108,7 +108,12 @@ export interface ForceRunOptions {
    * gap.  Under `animateLive` the stream shows the sim's own frame and
    * the box lands with the end-of-run adjustment. */
   boundingBox?: BoxInput;
-  /** iterations advanced per animation frame (animateLive: true) */
+  /** iterations advanced per animation frame under `animateLive` /
+   * `infinite` (default 3).  A run nobody watches mid-run — `animate:
+   * false`, or `animate: true`'s tween to the settle — is not paced by
+   * it: the GPU executor batches as many iterations per frame as the
+   * device keeps up with (119), and the CPU executor runs to
+   * convergence synchronously. */
   stepsPerFrame?: number;
   /** the run has no end of its own (118.3): streams like `animateLive`,
    * ticks only while the field moves, reheats on a drag / a moved node

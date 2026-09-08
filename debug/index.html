@@ -98,6 +98,7 @@
           <option value="random">Random</option>
           <option value="radial">Radial</option>
           <option value="force">Force (GPU)</option>
+          <option value="force-by-sign">Force, then pack by sign (EM combo: two runs)</option>
           <option value="flow">Flow (layered)</option>
           <option value="spiral">Spiral (extension contract)</option>
         </select>
@@ -119,6 +120,10 @@
         <div>
           <input type="checkbox" id="layout-edge-types-check" checked />
           <label for="layout-edge-types-check">Layout-appropriate edge types (taxi for flow, …)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="layout-tidy-check" checked />
+          <label for="layout-tidy-check">Tidy small components (force: a pair stands, three make a triangle, four a diamond)</label>
         </div>
         <div>
           <input type="checkbox" id="layout-avoid-overlap-check" />

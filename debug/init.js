@@ -244,6 +244,9 @@ const paramDefs = {
     console.timeEnd('cytoscape init');
     window.cy = cy;
     window.currentStyle = style;
+    // the fixture's definition (120): the combo layout reads its
+    // signed field off it
+    window.currentNetwork = network;
 
     // The positions Preset restores (114.7): a snapshot taken here,
     // synchronously — the factory runs the load-time layout before it

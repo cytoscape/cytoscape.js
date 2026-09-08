@@ -139,6 +139,84 @@
     }
   });
 
+  /**
+   * The combo entry (120): the EnrichmentMap preset's shape from two
+   * force runs.  The graph's components split by the sign of the
+   * network's signed field (`signKey` on its definition — NES on the
+   * EM fixtures), whole; each side runs force on its own — its
+   * components packed largest first, as force always packs — and the
+   * positive side is then shifted to the right of the negative one, so
+   * the blue components sit left and the red right, each side ordered
+   * by size.  A network with no signed field is one plain run.
+   */
+  const runCombo = async (cy, ui) => {
+    const def = window.currentNetwork || {};
+    const key = def.signKey;
+    const base = layoutConfig.layoutOptions('force', {
+      ...ui,
+      animate: false,
+      live: false,
+      infinite: false,
+    });
+
+    base.fit = false;
+
+    const t0 = performance.now();
+    let runs = 0;
+
+    if (key == null) {
+      await cy.layout(base).run().promise();
+      runs = 1;
+    } else {
+      const split = layoutConfig.splitBySign(
+        cy
+          .elements()
+          .components()
+          .map((c) => ({
+            ids: c.nodes().map((n) => n.id()),
+            values: c.nodes().map((n) => n.data(key)),
+          })),
+      );
+      const side = (ids) => {
+        const set = new Set(ids);
+
+        return cy.nodes().filter((n) => set.has(n.id()));
+      };
+      const negative = side(split.negative);
+      const positive = side(split.positive);
+
+      for (const nodes of [negative, positive]) {
+        if (nodes.length > 0) {
+          await nodes
+            .union(nodes.connectedEdges())
+            .layout(base)
+            .run()
+            .promise();
+          runs++;
+        }
+      }
+
+      if (negative.length > 0 && positive.length > 0) {
+        const a = negative.boundingBox();
+        const b = positive.boundingBox();
+        const gap = 3 * (base.componentSpacing || 40);
+
+        positive.shift({ x: a.x2 + gap - b.x1, y: a.y1 - b.y1 });
+      }
+    }
+
+    const layoutMs = performance.now() - t0;
+
+    if (ui.animate) {
+      cy.animate({ fit: { eles: cy.elements(), padding: 30 }, duration: 400 });
+    } else {
+      cy.fit(cy.elements(), 30);
+    }
+
+    $('#layout-time').textContent =
+      layoutMs.toFixed(0) + ' ms (' + runs + ' force runs)';
+  };
+
   $('#layout-button').addEventListener('click', () => {
     const cy = window.cy;
 
@@ -149,6 +227,27 @@
     const name = select.value;
 
     if (name === '') {
+      return;
+    }
+
+    if (layoutConfig.isCombo(name)) {
+      if (running != null) {
+        running.stop();
+        running = null;
+        syncRunning();
+      }
+
+      applyEdgeTypes(cy, name);
+      runCombo(cy, {
+        animate: $('#layout-animate-check').checked,
+        seed: $('#seed-input').value,
+        avoidOverlap: avoidOverlapCheck.checked,
+        overlapMode: overlapMode.value,
+        overlapLabels: $('#layout-overlap-labels-check').checked,
+        spacing: $('#spacing-input').value,
+        tidy: $('#layout-tidy-check').checked,
+      }).catch((err) => console.error(err));
+
       return;
     }
 
@@ -174,6 +273,7 @@
           overlapMode: overlapMode.value,
           overlapLabels: $('#layout-overlap-labels-check').checked,
           spacing: $('#spacing-input').value,
+          tidy: $('#layout-tidy-check').checked,
         },
         SpiralLayout,
       ),

@@ -1263,6 +1263,7 @@ describe('debug harness (round 43)', function () {
         avoidOverlap: false,
         nodeDimensionsIncludeLabels: false,
         spacingFactor: 1,
+        tidyComponents: true,
       });
       expect(
         layoutConfig.layoutOptions('radial', { animate: false }),
@@ -1315,6 +1316,39 @@ describe('debug harness (round 43)', function () {
           overlapMode: 'sim',
         }).avoidOverlap,
       ).to.equal(true);
+    });
+
+    it('spells the tidy box on force alone, and splits a signed graph by component for the combo (120)', function () {
+      expect(
+        layoutConfig.layoutOptions('force', { tidy: true }).tidyComponents,
+      ).to.equal(true);
+      expect(
+        layoutConfig.layoutOptions('force', { tidy: false }).tidyComponents,
+      ).to.equal(false);
+      // the box unset reads as on — the library's default
+      expect(layoutConfig.layoutOptions('force', {}).tidyComponents).to.equal(
+        true,
+      );
+      expect(
+        layoutConfig.layoutOptions('circle', { tidy: true }).tidyComponents,
+      ).to.equal(undefined);
+
+      expect(layoutConfig.isCombo('force-by-sign')).to.equal(true);
+      expect(layoutConfig.isCombo('force')).to.equal(false);
+
+      const split = layoutConfig.splitBySign([
+        { ids: ['a', 'b'], values: [2, -1] }, // mean positive: whole to the right
+        { ids: ['c'], values: [-0.5] },
+        { ids: ['d', 'e'], values: [null, undefined] }, // unsigned: left
+        { ids: ['f'], values: ['1.5'] }, // a string number counts
+      ]);
+
+      expect(split.positive).to.deep.equal(['a', 'b', 'f']);
+      expect(split.negative).to.deep.equal(['c', 'd', 'e']);
+      expect(layoutConfig.splitBySign([])).to.deep.equal({
+        negative: [],
+        positive: [],
+      });
     });
 
     it('spells the two overlap checkboxes out on every layout that has them (115)', function () {

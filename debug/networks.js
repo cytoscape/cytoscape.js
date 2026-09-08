@@ -26,6 +26,9 @@ var networks = {
     edges: 6899,
     url: '../v3/debug/webgl/network-em-web.json',
     labelKey: 'label',
+    // the signed field the EM combo layout packs by (120): red one side,
+    // blue the other, each side's components largest first
+    signKey: 'NES',
     note: 'The enrichmentmap.org style ported to v4: a diverging NES colour mapper, wrapped labels in a matching text outline, haystack edges.',
   },
   'em-web-clustered': {
@@ -35,6 +38,7 @@ var networks = {
     url: '../v3/debug/webgl/network-em-web.json',
     derive: 'mcode-parents',
     labelKey: 'label',
+    signKey: 'NES',
     note: 'The same network with its 41 MCODE clusters materialised as compound parents — a real compound graph from real data.',
   },
   'em-desktop': {
@@ -43,6 +47,7 @@ var networks = {
     edges: 16030,
     url: '../v3/debug/webgl/network-em-desktop.json',
     labelKey: 'EM1_GS_DESCR',
+    signKey: 'EM1_NES_Data_Set_1_',
     note: 'The Cytoscape desktop export: gene-set size drives node size, the two-tailed enrichment colouring drives fill.',
   },
   'white-matter': {

@@ -24,6 +24,8 @@ var layoutConfig = (function () {
     random: null,
     radial: { 'curve-style': 'bezier' },
     force: { 'curve-style': 'haystack' },
+    // the combo is force twice (120): the same sheet
+    'force-by-sign': { 'curve-style': 'haystack' },
     flow: { 'curve-style': 'round-taxi', 'taxi-turn': 20 },
     spiral: { 'curve-style': 'bezier' },
   };
@@ -203,6 +205,8 @@ var layoutConfig = (function () {
       Object.assign(options, forceAnimation(ui));
       options.seed = parseInt(ui.seed || '1', 10);
       options.avoidOverlap = forceOverlap(ui);
+      // spelled out every run (120): the page's box is the run's
+      options.tidyComponents = ui.tidy !== false;
     }
 
     if (name === 'preset') {
@@ -210,6 +214,52 @@ var layoutConfig = (function () {
     }
 
     return options;
+  }
+
+  // The combo entry (120): two force runs, one per sign of a network's
+  // signed field, packed side by side — the EnrichmentMap preset's
+  // shape, where the blue components sit left and the red right, each
+  // side's components largest first.  The page runs it; these are the
+  // pure parts.
+  var COMBO_BY_SIGN = 'force-by-sign';
+
+  function isCombo(name) {
+    return name === COMBO_BY_SIGN;
+  }
+
+  /**
+   * Which side each component goes to: whole, by the sign of the mean
+   * of its members' finite values; a component with no value at all
+   * follows the negative side, so an unsigned graph is one run.
+   *
+   * @param components [{ ids: string[], values: (number|null)[] }]
+   * @returns { negative: string[], positive: string[] }
+   */
+  function splitBySign(components) {
+    var negative = [];
+    var positive = [];
+
+    (components || []).forEach(function (c) {
+      var sum = 0;
+      var count = 0;
+
+      (c.values || []).forEach(function (v) {
+        var x = Number(v);
+
+        if (Number.isFinite(x)) {
+          sum += x;
+          count++;
+        }
+      });
+
+      var side = count > 0 && sum / count > 0 ? positive : negative;
+
+      c.ids.forEach(function (id) {
+        side.push(id);
+      });
+    });
+
+    return { negative: negative, positive: positive };
   }
 
   // Past this many elements the hover panel stays off: a neighbourhood
@@ -232,6 +282,9 @@ var layoutConfig = (function () {
     forceAnimation: forceAnimation,
     OVERLAP_MODES: OVERLAP_MODES,
     forceOverlap: forceOverlap,
+    COMBO_BY_SIGN: COMBO_BY_SIGN,
+    isCombo: isCombo,
+    splitBySign: splitBySign,
     layoutOptions: layoutOptions,
     HOVER_MAX_ELEMENTS: HOVER_MAX_ELEMENTS,
     hoverAllowed: hoverAllowed,

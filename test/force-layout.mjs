@@ -593,7 +593,10 @@ describe('gpu/layout: the force layout (round 18.2)', function () {
     });
 
     it('animateLive lands the settle in one write, no second tween', async function () {
-      const sync = await settled({ fit: false });
+      // the control settles at the stream's own threshold (119.3: a
+      // watched run keeps the sim's 0.1 px, a silent one defaults to
+      // 2% of the edge length), so the two runs share a trajectory
+      const sync = await settled({ fit: false, threshold: 0.1 });
       const cy = cytoscape({
         elements: RING(),
         headlessWidth: 800,

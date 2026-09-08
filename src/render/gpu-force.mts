@@ -58,6 +58,7 @@ import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
 import {
   FLOOR_SWEEP_BUDGET,
   REHEAT_ALPHA,
+  SWEEP_QUIET,
   SWEEPS_PER_TICK,
 } from '../layout/force-sim.mjs';
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
@@ -143,7 +144,10 @@ struct LParams {
 `;
 
 /** meta layout: [0] tick, [1] maxDispBits, [2..] the alpha window */
-const META_ALPHA0 = 2;
+/** the separation sweep's largest push, its own atomic max (119.3):
+ * the settle reads it against SWEEP_QUIET, not `threshold` */
+const META_PUSH = 2;
+const META_ALPHA0 = 3;
 
 const KERNELS: Record<string, string> = {
   clearGrid: wgsl`${PRELUDE}
@@ -583,6 +587,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   columnPos[slot * 2u] = simPos[i * 2u];
   columnPos[slot * 2u + 1u] = simPos[i * 2u + 1u];
   atomicMax(&fmeta[1], bitcast<u32>(abs(dx) + abs(dy)));
+  atomicMax(&fmeta[${META_PUSH}], bitcast<u32>(abs(dx) + abs(dy)));
 }`,
 };
 
@@ -617,6 +622,8 @@ export class GpuForceRuntime {
   /** the last polled batch maximum displacement, in model px; Infinity
    * until the first pollConvergence() readback lands */
   lastMaxDisp = Infinity;
+  /** the last polled batch's largest separation push (119.3) */
+  lastMaxPush = Infinity;
 
   private device: GPUDevice;
   private inputs: ForceInputs;
@@ -638,6 +645,11 @@ export class GpuForceRuntime {
    * counted as settled: three polls in, any GPU run with the default
    * threshold stopped at nine iterations */
   private dispCopied = false;
+  /** the iterations the batch in the staging buffer covers (119.3): a
+   * quiet poll settles them all, since the batch's max is over every
+   * one of them — the CPU sim's three consecutive quiet ticks, read
+   * from one readback instead of three polls two frames apart */
+  private copiedBatch = 0;
   private cells: number;
   private gridCols: number;
   private gridRows: number;
@@ -828,7 +840,7 @@ export class GpuForceRuntime {
 
     this.dispStaging = device.createBuffer({
       label: 'cy-gpu:force-disp-staging',
-      size: 8,
+      size: 12,
       usage: BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ,
     });
 
@@ -981,7 +993,7 @@ export class GpuForceRuntime {
     return (
       (this.alpha < 0.001 &&
         (!this.hasExt ||
-          this.lastMaxDisp < this.inputs.params.threshold ||
+          this.lastMaxPush < SWEEP_QUIET ||
           this.floorTicks >= FLOOR_SWEEP_BUDGET)) ||
       this.settledRuns >= 3
     );
@@ -998,6 +1010,7 @@ export class GpuForceRuntime {
     this.settledRuns = 0;
     this.floorTicks = 0;
     this.lastMaxDisp = Infinity;
+    this.lastMaxPush = Infinity;
   }
 
   /**
@@ -1161,6 +1174,7 @@ export class GpuForceRuntime {
 
     meta[0] = this.iterations;
     meta[1] = 0;
+    meta[META_PUSH] = 0;
 
     let a = this.alpha;
 
@@ -1240,9 +1254,10 @@ export class GpuForceRuntime {
         0,
         this.dispStaging,
         0,
-        8,
+        12,
       );
       this.dispCopied = true;
+      this.copiedBatch = k;
     }
   }
 
@@ -1268,12 +1283,17 @@ export class GpuForceRuntime {
 
         new Uint32Array(buffer)[0] = words[1];
         this.lastMaxDisp = new Float32Array(buffer)[0];
+        new Uint32Array(buffer)[0] = words[META_PUSH];
+        this.lastMaxPush = new Float32Array(buffer)[0];
         this.dispStaging.unmap();
         this.dispInFlight = false;
 
+        // the CPU sim's rule (119.3): a boxed batch settles only under
+        // its own quiet sweep
         this.settledRuns =
-          this.lastMaxDisp < this.inputs.params.threshold
-            ? this.settledRuns + 1
+          this.lastMaxDisp < this.inputs.params.threshold &&
+          (!this.hasExt || this.lastMaxPush < SWEEP_QUIET)
+            ? this.settledRuns + this.copiedBatch
             : 0;
       },
       () => {

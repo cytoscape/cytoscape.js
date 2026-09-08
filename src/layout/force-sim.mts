@@ -86,6 +86,12 @@ export const SWEEPS_PER_TICK = 2;
  * which the field is as open as a sweep can make it and the run is
  * idle; the settle's expansion (`'both'`) is what opens such a field. */
 export const FLOOR_SWEEP_BUDGET = 200;
+/** the separation sweep's own quiet test, in model px (119.3): a
+ * boxed run is settled only once the largest push is under this,
+ * whatever `threshold` the displacement settles at — a sweep pushes
+ * a hair past touching, so a settle threshold of a pixel would leave
+ * pairs a pixel deep */
+export const SWEEP_QUIET = 0.1;
 
 export interface ForceParams {
   /** the pairwise push, in px per tick, at exactly one cutoff length
@@ -198,6 +204,9 @@ export class ForceSim {
   readonly positions: Float32Array;
   /** the last step's max per-node displacement */
   lastMaxDisp = Infinity;
+  /** the largest push of the last tick's first separation sweep;
+   * Infinity until a boxed tick has run (119.3) */
+  lastMaxPush = Infinity;
   /** the annealing temperature, 1 at construction, decaying toward 0 */
   alpha = 1;
   /** iterations completed so far */
@@ -370,7 +379,7 @@ export class ForceSim {
     return (
       (this.alpha < 0.001 &&
         (this.overlapGrid == null ||
-          this.lastMaxDisp < this.params.threshold ||
+          this.lastMaxPush < SWEEP_QUIET ||
           this.floorTicks >= FLOOR_SWEEP_BUDGET)) ||
       this.settledRuns >= CONVERGE_RUNS
     );
@@ -389,6 +398,7 @@ export class ForceSim {
     this.settledRuns = 0;
     this.floorTicks = 0;
     this.lastMaxDisp = Infinity;
+    this.lastMaxPush = Infinity;
   }
 
   /**
@@ -790,12 +800,15 @@ export class ForceSim {
     // on a 200-clique, the run stopping by displacement with the
     // sweep's moves uncounted).  A second sweep takes the residue the
     // first's own pushes made; a quiet sweep ends the tick's sweeping
+    let maxPush = 0;
+
     if (this.overlapGrid != null && !sawNonFinite) {
       for (let k = 0; k < SWEEPS_PER_TICK; k++) {
         const pushed = this.overlapGrid.sweep(pos, this.pinned);
 
         if (k === 0) {
           maxDisp = Math.max(maxDisp, pushed);
+          maxPush = pushed;
         }
 
         if (pushed === 0) {
@@ -806,8 +819,15 @@ export class ForceSim {
 
     this.alpha += (0 - this.alpha) * decay;
     this.lastMaxDisp = sawNonFinite ? Infinity : maxDisp;
+    this.lastMaxPush = sawNonFinite ? Infinity : maxPush;
+    // a boxed tick settles only under its own quiet sweep (119.3): the
+    // settle threshold is a layout-scale number, the push is a pixel one
     this.settledRuns =
-      !sawNonFinite && maxDisp < threshold ? this.settledRuns + 1 : 0;
+      !sawNonFinite &&
+      maxDisp < threshold &&
+      (this.overlapGrid == null || maxPush < SWEEP_QUIET)
+        ? this.settledRuns + 1
+        : 0;
     this.iteration++;
 
     if (this.alpha < 0.001) {

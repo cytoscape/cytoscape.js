@@ -77,6 +77,16 @@ export interface ForceRunOptions {
   gravity?: number;
   decay?: number;
   iterations?: number;
+  /** the settle test, in model px: the run ends once every node's
+   * per-tick displacement has stayed under it for a few ticks.
+   * Default (119.3) for a run nobody watches (`animate` either way):
+   * 2% of the mean ideal edge length — 1.2 px at the default length —
+   * measured to reproduce the 0.1 px settle's edge lengths, stress and
+   * overlaps within noise on every fixture at 2–3× the speed.  A
+   * presented run (`animateLive`, `infinite`) keeps 0.1 px: its stop is
+   * motion the eye sees, and a field still creeping a pixel a tick
+   * would stop visibly short.  Under boxes the separation sweep has
+   * its own quiet test (`SWEEP_QUIET`), whatever this is. */
   threshold?: number;
   seed?: number;
   /** fresh seeded scatter (true) vs relaxing the current positions */
@@ -166,6 +176,9 @@ export interface ForceRunOptions {
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
+/** the default settle threshold as a fraction of the mean ideal edge
+ * length (119.3) */
+const THRESHOLD_FRACTION = 0.02;
 
 /** How `avoidOverlap` keeps the boxes apart (118.2). */
 export type OverlapMode = 'none' | 'settle' | 'sim' | 'both';
@@ -1034,6 +1047,15 @@ export class ForceLayoutImpl implements LayoutImpl {
       lengthsArr.length > 0
         ? lengthSum / lengthsArr.length
         : DEFAULT_EDGE_LENGTH;
+
+    // the settle test's default is relative to the field's scale
+    // (119.3): the sim's 0.1 px is a tenth of a percent of the mean
+    // edge length, and the anneal spent its last two hundred ticks
+    // moving nodes by less than anything measured — the fixture sweep
+    // is on the round
+    if (options.threshold == null && !live) {
+      params.threshold = THRESHOLD_FRACTION * meanL;
+    }
 
     // constraints (85.2): resolved and validated up front — unknown
     // ids, placement cycles and contradictory locked members all throw

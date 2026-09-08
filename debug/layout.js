@@ -22,14 +22,28 @@
 (function () {
   window.onCy((cy) => {
     let start = 0;
+    let ready = 0;
 
+    // the readout splits the layout from its presentation (119): the
+    // positions are computed at layoutready, and what follows to
+    // layoutstop is the finisher's tween under Animate — most of what
+    // the page shows on em-web once the sim itself is fast
     cy.on('layoutstart', () => {
       start = performance.now();
+      ready = 0;
+    });
+    cy.on('layoutready', () => {
+      ready = performance.now();
     });
     cy.on('layoutstop', () => {
-      const ms = performance.now() - start;
+      const end = performance.now();
+      const layoutMs = (ready > 0 ? ready : end) - start;
+      const tweenMs = ready > 0 ? end - ready : 0;
 
-      $('#layout-time').textContent = ms.toFixed(0) + ' ms';
+      $('#layout-time').textContent =
+        tweenMs > 50
+          ? layoutMs.toFixed(0) + ' ms + ' + tweenMs.toFixed(0) + ' ms tween'
+          : (end - start).toFixed(0) + ' ms';
     });
   });
 

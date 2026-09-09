@@ -4,6 +4,7 @@ import { ascending } from '../util/sort.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { halfExtentAlong, ringTangentialRadius } from './separation.mjs';
+import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { BreadthFirstLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -23,6 +24,24 @@ along a rank need the sum of their half widths (any pair a uniform
 spacing could bring together), ranks need the tallest node in each,
 and the rotation-and-skew of a sideways direction is undone so the
 need survives it.  `avoidOverlapPadding` pads every box.
+
+Trees as blocks (round 123.4): with several components in one
+drawing, v3 spread every rank across the box and sorted it by the
+parents' positions alone, so the trees interleaved and a root sat at
+the middle of a row that ran the whole width.  Now each rank is
+ordered component-first — the largest tree leftmost, the parent
+heuristic (or `depthSort`) within it — and each component takes a
+column band as wide as its widest rank needs, the bands side by side
+`componentSpacing` apart, each rank centred in its own band: a root
+stands above its own subtree.  The depth rows stay shared, so levels
+align across trees and no height is spent.  One component is v3's
+picture exactly; `circle: true` rings are untouched.
+
+`packComponents: true` (123.4) goes further: each component is its own
+tree, laid out alone and shelf-packed largest first under the shared
+`componentSpacing` / `componentGroup` / `componentOrder`
+(`per-component.mts`) — for a deep tree beside many shallow ones,
+which the shared rows would stretch.
 */
 
 const defaults: Omit<BreadthFirstLayoutOptions, 'name'> = {
@@ -38,6 +57,11 @@ const defaults: Omit<BreadthFirstLayoutOptions, 'name'> = {
   avoidOverlapPadding: 0, // spacingFactor (1.75) supplies the air, as in v3
   roots: undefined,
   depthSort: undefined,
+  packComponents: false,
+  componentSpacing: 40,
+  componentGroup: undefined,
+  componentOrder: undefined,
+  groupSpacing: undefined,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -106,7 +130,6 @@ export class BreadthFirstLayout {
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
     const nodes = eles.nodes().filter((n: Collection) => !n.isParent());
     const directed = options.directed === true;
-    const maximal = options.acyclic === true || options.maximal === true;
 
     if (rotateDegrees[options.direction as string] === undefined) {
       throw new Error(
@@ -150,6 +173,82 @@ export class BreadthFirstLayout {
         roots = roots.union(compRoots);
       }
     }
+
+    // one tree per component, packed (123.4) — or one drawing, the
+    // trees as blocks in shared rows
+    let getPos: (node: Collection) => Position;
+
+    if (options.packComponents === true) {
+      validatePackOptions(options, 'breadthfirst');
+
+      const free = nodes.filter((n: Collection) => !n.locked());
+      const perComponent = layoutPerComponent(
+        cy,
+        {
+          eles,
+          nodes: free,
+          bb,
+          boundingBox: options.boundingBox ?? null,
+          options,
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: options.avoidOverlapPadding ?? 0,
+          held: nodes.filter((n: Collection) => n.locked()),
+        },
+        (compNodes, box) =>
+          this.place(
+            eles,
+            compNodes,
+            roots.filter((r: Collection) => compNodes.has(r)),
+            box,
+            'compact',
+          ),
+      );
+
+      getPos = (node) => perComponent(node);
+    } else {
+      getPos = this.place(
+        eles,
+        nodes,
+        roots,
+        bb,
+        hasBoundingBox ? 'box' : 'margin',
+      );
+    }
+
+    eles.nodes().layoutPositions(this, { ...options, eles }, getPos);
+
+    return this;
+  }
+
+  /**
+   * One drawing: the BFS depths from `roots` over `nodes`, the ranks
+   * sorted, the overlap floors, the rows (or rings) about the centre
+   * of `bb`, rotated for `direction`.
+   *
+   * @param eles — the scope the BFS walks
+   * @param nodes — the nodes to place
+   * @param roots — the roots among them
+   * @param bb — the box the drawing is centred in and sized by
+   * @param sizing — how the rows are spaced: `'box'` fills an explicit
+   *   `boundingBox` to its edges, `'margin'` leaves v3's margin inside
+   *   the viewport, and `'compact'` (a packed component, 123.4) spaces
+   *   by the overlap need alone — bodies apart, `spacingFactor` the air
+   *   — so a packed tree is as small as it can be drawn
+   * @returns the position of a node by handle
+   */
+  private place(
+    eles: Collection,
+    nodes: Collection,
+    roots: Collection,
+    bb: BoundingBox,
+    sizing: 'box' | 'margin' | 'compact',
+  ): (node: Collection) => Position {
+    const cy = this.cy;
+    const options = this.options;
+    const directed = options.directed === true;
+    const maximal = options.acyclic === true || options.maximal === true;
+    const hasBoundingBox = sizing === 'box';
+    const compact = sizing === 'compact';
 
     const depths: (Collection | null)[][] = [];
     const foundByBfs = new Set<Collection>();
@@ -321,19 +420,58 @@ export class BreadthFirstLayout {
         : (options.depthSort as typeof sortFn);
     }
 
+    // trees as blocks (123.4): with several components in a row layout
+    // each rank is ordered component-first, the largest tree leftmost,
+    // and each component takes a column band (below)
+    const compRankOf = new Map<Collection, number>();
+    let compCount = 0;
+
+    if (!options.circle) {
+      const comps = eles
+        .components()
+        .map((comp: Collection) =>
+          comp.nodes().filter((n: Collection) => nodes.has(n)),
+        )
+        .filter((comp: Collection) => comp.length > 0)
+        .sort((a: Collection, b: Collection) => b.length - a.length);
+
+      compCount = comps.length;
+
+      if (compCount > 1) {
+        for (let c = 0; c < comps.length; c++) {
+          for (let j = 0; j < comps[c].length; j++) {
+            compRankOf.set(comps[c][j], c);
+          }
+        }
+      }
+    }
+
+    const compRank = (ele: Collection): number => compRankOf.get(ele) ?? 0;
+    const rankSort =
+      compCount > 1
+        ? (a: Collection, b: Collection): number =>
+            compRank(a) - compRank(b) || sortFn(a, b)
+        : sortFn;
+
     let depthsLen = depths.length;
 
     for (let i = 0; i < depthsLen; i++) {
       // compact the nulls left by maximal shifts before sorting (v3 passes
       // them into its comparator, which cannot handle them)
       depths[i] = depths[i].filter((ele) => ele != null);
-      (depths[i] as Collection[]).sort(sortFn);
+      (depths[i] as Collection[]).sort(rankSort);
       assignDepthsAt(i);
     }
 
     // orphans get a new top-level depth
     if (orphanNodes.length > 0) {
-      depths.unshift(orphanNodes.slice());
+      const orphans = orphanNodes.slice();
+
+      if (compCount > 1) {
+        orphans.sort((a, b) => compRank(a) - compRank(b));
+      }
+
+      depths.unshift(orphans);
       depthsLen = depths.length;
 
       for (let i = 0; i < depthsLen; i++) {
@@ -359,6 +497,10 @@ export class BreadthFirstLayout {
     const rankNeed = new Float64Array(depthsLen);
     let stepNeed = 0;
     let ringNeed = 0;
+    // a node's half extent along the rank axis, in the drawn frame —
+    // the overlap floors' and the bands' reading; zero without
+    // avoidOverlap, when the bands read the average node instead
+    let alongOf: ((ele: Collection) => number) | null = null;
 
     if (options.avoidOverlap) {
       const dims = nodeDimsOf(cy, nodes, {
@@ -376,6 +518,8 @@ export class BreadthFirstLayout {
       const halfY = (i: number): number => Math.max(-dims.y1[i], dims.y2[i]);
       const along = swapAxes ? halfY : halfX;
       const across = swapAxes ? halfX : halfY;
+
+      alongOf = (ele) => along(indexOf.get(ele) as number) / alongScale;
       const acrossMax = new Float64Array(depthsLen);
       let acrossAll = 0;
 
@@ -490,28 +634,111 @@ export class BreadthFirstLayout {
     }
 
     const padding = options.padding as number;
-    const distanceY = Math.max(
-      depthsLen === 1
-        ? 0
-        : hasBoundingBox
-          ? (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen - 1)
-          : (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen + 1),
-      stepNeed,
-    );
+    const distanceY = compact
+      ? Math.max(stepNeed, aveNodeSize.h)
+      : Math.max(
+          depthsLen === 1
+            ? 0
+            : hasBoundingBox
+              ? (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen - 1)
+              : (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen + 1),
+          stepNeed,
+        );
 
     const maxDepthSize = depths.reduce(
       (max, level) => Math.max(max, level.length),
       0,
     );
 
+    // the spacing along each rank: v3's spread of the rank over the
+    // box, floored by the rank's overlap need (or every rank's under
+    // `grid`)
+    const distanceX = new Float64Array(depthsLen);
+
+    for (let d = 0; d < depthsLen; d++) {
+      const depthSize = depths[d].length;
+
+      distanceX[d] = compact
+        ? Math.max(options.grid ? rankNeedMax : rankNeed[d], aveNodeSize.w)
+        : Math.max(
+            depthSize === 1
+              ? 0
+              : hasBoundingBox
+                ? (bb.w - padding * 2 - aveNodeSize.w) /
+                  ((options.grid ? maxDepthSize : depthSize) - 1)
+                : (bb.w - padding * 2 - aveNodeSize.w) /
+                  ((options.grid ? maxDepthSize : depthSize) + 1),
+            options.grid ? rankNeedMax : rankNeed[d],
+          );
+    }
+
+    // the bands (123.4): each component's index within its rank and
+    // its count there; a band as wide as the component's widest rank
+    // needs, bodies included; the bands in a row, componentSpacing
+    // apart, centred on the box as a whole
+    const indexInComp = new Map<Collection, number>();
+    const countInComp: Int32Array[] = [];
+    const bandCentre = new Float64Array(compCount);
+
+    if (compCount > 1) {
+      const halfNode = aveNodeSize.w / 2;
+      const width = new Float64Array(compCount);
+
+      for (let d = 0; d < depthsLen; d++) {
+        const rank = depths[d] as Collection[];
+        const counts = new Int32Array(compCount);
+
+        for (const ele of rank) {
+          const c = compRank(ele);
+
+          indexInComp.set(ele, counts[c]);
+          counts[c]++;
+        }
+
+        countInComp.push(counts);
+
+        let first = 0;
+
+        for (let c = 0; c < compCount; c++) {
+          const count = counts[c];
+
+          if (count === 0) {
+            continue;
+          }
+
+          const last = first + count - 1;
+          const w =
+            (count - 1) * distanceX[d] +
+            (alongOf == null ? halfNode : alongOf(rank[first])) +
+            (alongOf == null ? halfNode : alongOf(rank[last]));
+
+          width[c] = Math.max(width[c], w);
+          first = last + 1;
+        }
+      }
+
+      const gap = options.componentSpacing ?? 40;
+      let total = -gap;
+
+      for (let c = 0; c < compCount; c++) {
+        total += width[c] + gap;
+      }
+
+      let left = center.x - total / 2;
+
+      for (let c = 0; c < compCount; c++) {
+        bandCentre[c] = left + width[c] / 2;
+        left += width[c] + gap;
+      }
+    }
+
     const getPositionTopBottom = (ele: Collection): Position => {
       const { depth, index } = getInfo(ele);
 
       if (options.circle) {
-        let radiusStepSize = Math.min(
-          bb.w / 2 / depthsLen,
-          bb.h / 2 / depthsLen,
-        );
+        let radiusStepSize = compact
+          ? Math.max(aveNodeSize.w, aveNodeSize.h)
+          : Math.min(bb.w / 2 / depthsLen, bb.h / 2 / depthsLen);
 
         radiusStepSize = Math.max(radiusStepSize, ringNeed);
 
@@ -531,21 +758,24 @@ export class BreadthFirstLayout {
         };
       }
 
+      const y = center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY;
+
+      if (compCount > 1) {
+        const c = compRank(ele);
+        const count = countInComp[depth][c];
+        const j = indexInComp.get(ele) as number;
+
+        return {
+          x: bandCentre[c] + (j - (count - 1) / 2) * distanceX[depth],
+          y,
+        };
+      }
+
       const depthSize = depths[depth].length;
-      const distanceX = Math.max(
-        depthSize === 1
-          ? 0
-          : hasBoundingBox
-            ? (bb.w - padding * 2 - aveNodeSize.w) /
-              ((options.grid ? maxDepthSize : depthSize) - 1)
-            : (bb.w - padding * 2 - aveNodeSize.w) /
-              ((options.grid ? maxDepthSize : depthSize) + 1),
-        options.grid ? rankNeedMax : rankNeed[depth],
-      );
 
       return {
-        x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
-        y: center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY,
+        x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX[depth],
+        y,
       };
     };
 
@@ -556,8 +786,6 @@ export class BreadthFirstLayout {
         rotateDegrees[options.direction as string],
       );
 
-    eles.nodes().layoutPositions(this, { ...options, eles }, getPos);
-
-    return this;
+    return getPos;
   }
 }

@@ -48,6 +48,8 @@ import {
   tidySmallComponents,
 } from './pack.mjs';
 import type { PackGrouping } from './pack.mjs';
+import { groupingOf, validatePackOptions } from './per-component.mjs';
+import type { LayoutComponent } from './per-component.mjs';
 import type { BoxInput } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
 import { OverlapGrid, separationAlong } from './separation.mjs';
@@ -220,12 +222,7 @@ export interface ForceRunOptions {
  * The store's positions are the pre-run ones at that point, so a
  * caller reads data from the nodes and geometry from here.
  */
-export interface LayoutComponent {
-  nodes: Collection;
-  size: number;
-  width: number;
-  height: number;
-}
+export type { LayoutComponent };
 
 const DEFAULT_EDGE_LENGTH = 60;
 /** the default settle threshold as a fraction of the mean ideal edge
@@ -945,16 +942,7 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     // the grouping and the order (121.1) are functions or nothing —
     // a data key here would fail silently at the settle
-    for (const name of ['componentGroup', 'componentOrder'] as const) {
-      const fn = options[name];
-
-      if (fn != null && typeof fn !== 'function') {
-        throw new Error(
-          `force layout: ${name} must be a function of a component, ` +
-            `got ${typeof fn}`,
-        );
-      }
-    }
+    validatePackOptions(options, 'force');
 
     // the sim set: every leaf in scope — unlocked ones move, locked
     // ones pin in place as obstacles
@@ -1345,43 +1333,7 @@ export class ForceLayoutImpl implements LayoutImpl {
         width: Math.max(1, boxes.x2[c] - boxes.x1[c]),
         height: Math.max(1, boxes.y2[c] - boxes.y1[c]),
       }));
-      const grouping: PackGrouping = {
-        groupSpacing: options.groupSpacing ?? spacing * 3,
-      };
-
-      if (groupOf != null) {
-        const keys = described.map((d) => groupOf(d) ?? null);
-        const distinct = [...new Set(keys.filter((k) => k != null))];
-
-        distinct.sort((a, b) => {
-          const na = typeof a === 'number';
-          const nb = typeof b === 'number';
-
-          if (na && nb) {
-            return (a as number) - (b as number);
-          }
-          if (na !== nb) {
-            return na ? -1 : 1;
-          }
-
-          return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
-        });
-
-        const index = new Map(distinct.map((k, i) => [k, i]));
-        const unkeyed = keys.some((k) => k == null) ? 1 : 0;
-
-        grouping.groupOf = Int32Array.from(
-          keys,
-          (k) => (k == null ? distinct.length : index.get(k)) as number,
-        );
-        grouping.groupCount = distinct.length + unkeyed;
-      }
-
-      if (orderOf != null) {
-        grouping.compare = (a, b) => orderOf(described[a], described[b]);
-      }
-
-      return grouping;
+      return groupingOf(described, options, spacing);
     };
 
     const settle = (arr: Float32Array): void => {

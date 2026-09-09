@@ -112,12 +112,25 @@ export interface PackBox {
  * Shelf-pack boxes (area-descending, id ties) into rows; mutates each
  * box's (x, y) to its placed top-left.  The v3 `separateComponents`
  * shape: rows wrap at ~sqrt(total area) so the packing tends square.
+ * A caller's `compare` (121.1) orders the boxes first — by id — and
+ * the area order breaks its ties, so a comparator that says nothing
+ * is the default order.
  *
  * @param boxes — the boxes to place; each `(x, y)` is written in place
  * @param spacing — the gap between boxes, and between rows
+ * @param compare — an order over box ids that comes before the area's
  */
-export const shelfPack = (boxes: PackBox[], spacing: number): void => {
-  const order = [...boxes].sort((a, b) => b.w * b.h - a.w * a.h || a.id - b.id);
+export const shelfPack = (
+  boxes: PackBox[],
+  spacing: number,
+  compare: ((a: number, b: number) => number) | null = null,
+): void => {
+  const order = [...boxes].sort(
+    (a, b) =>
+      (compare != null ? compare(a.id, b.id) : 0) ||
+      b.w * b.h - a.w * a.h ||
+      a.id - b.id,
+  );
 
   let total = 0;
   let widest = 0;
@@ -211,38 +224,35 @@ export interface NodeExtents {
   y2: ArrayLike<number>;
 }
 
+/** Per-component body boxes: the union of each member's box at its
+ * position (`componentBoxes`). */
+export interface ComponentBoxes {
+  x1: Float64Array;
+  y1: Float64Array;
+  x2: Float64Array;
+  y2: Float64Array;
+}
+
 /**
- * The exact translation-only re-pack over component *body* boxes
- * (round 114.4, flow's 112.2 `packBodies` made shared): per-component
- * boxes are the union of each member's box at its position, shelf-packed
- * largest-first with `spacing` between them, every member translated
- * with its component.  With `extents` null the boxes are point boxes —
- * `packComponentsExact`'s shape, where two singleton components could
- * overlap by a node width.  `holdLargest` keeps the largest component's
- * centre where it was (force's fixed point); otherwise the packed field
- * starts at the origin (flow centres afterwards).
+ * The bounding box of every component's bodies — each member's box at
+ * its position, or the point itself with `extents` null (121.1: what
+ * the re-pack packs, exported so force can describe the components to
+ * a caller's `componentGroup` / `componentOrder` before it packs).
  *
  * @param n — sim node count
  * @param compOf — per-node component id
  * @param count — component count
- * @param positions — 2n interleaved coordinates, translated in place
+ * @param positions — 2n interleaved coordinates
  * @param extents — per-node node-local boxes, or null for point boxes
- * @param spacing — the gap between component boxes
- * @param holdLargest — keep the largest component's centre fixed
+ * @returns the four parallel arrays, indexed by component
  */
-export const packComponentBodies = (
+export const componentBoxes = (
   n: number,
   compOf: Int32Array,
   count: number,
-  positions: Float32Array | Float64Array,
+  positions: ArrayLike<number>,
   extents: NodeExtents | null,
-  spacing: number,
-  holdLargest: boolean,
-): void => {
-  if (count <= 1 || n === 0) {
-    return;
-  }
-
+): ComponentBoxes => {
   const x1 = new Float64Array(count).fill(Infinity);
   const y1 = new Float64Array(count).fill(Infinity);
   const x2 = new Float64Array(count).fill(-Infinity);
@@ -266,10 +276,80 @@ export const packComponentBodies = (
     }
   }
 
-  const boxes: PackBox[] = [];
+  return { x1, y1, x2, y2 };
+};
+
+/** How the re-pack is grouped and ordered (121.1). */
+export interface PackGrouping {
+  /** per-component group index in [0, groupCount), or null for one
+   * group; groups are laid out left to right by index */
+  groupOf?: Int32Array | null;
+  groupCount?: number;
+  /** the gap between group boxes (default three spacings) */
+  groupSpacing?: number;
+  /** an order over component ids that comes before the area order */
+  compare?: ((a: number, b: number) => number) | null;
+}
+
+/**
+ * The exact translation-only re-pack over component *body* boxes
+ * (round 114.4, flow's 112.2 `packBodies` made shared): per-component
+ * boxes are the union of each member's box at its position, shelf-packed
+ * largest-first with `spacing` between them, every member translated
+ * with its component.  With `extents` null the boxes are point boxes —
+ * `packComponentsExact`'s shape, where two singleton components could
+ * overlap by a node width.  `holdLargest` keeps the largest component's
+ * centre where it was (force's fixed point); otherwise the packed field
+ * starts at the origin (flow centres afterwards).
+ *
+ * **Grouped and ordered** (121.1): with `grouping.groupOf` each group's
+ * components are shelf-packed on their own and the group boxes stand in
+ * a row, left to right by group index, top-aligned, `groupSpacing`
+ * apart; `grouping.compare` orders the components within a packing
+ * ahead of the area order.
+ *
+ * @param n — sim node count
+ * @param compOf — per-node component id
+ * @param count — component count
+ * @param positions — 2n interleaved coordinates, translated in place
+ * @param extents — per-node node-local boxes, or null for point boxes
+ * @param spacing — the gap between component boxes
+ * @param holdLargest — keep the largest component's centre fixed
+ * @param grouping — the groups and the order (121.1), or nothing
+ */
+export const packComponentBodies = (
+  n: number,
+  compOf: Int32Array,
+  count: number,
+  positions: Float32Array | Float64Array,
+  extents: NodeExtents | null,
+  spacing: number,
+  holdLargest: boolean,
+  grouping: PackGrouping = {},
+): void => {
+  if (count <= 1 || n === 0) {
+    return;
+  }
+
+  const { x1, y1, x2, y2 } = componentBoxes(
+    n,
+    compOf,
+    count,
+    positions,
+    extents,
+  );
+  const compare = grouping.compare ?? null;
+  const groupOf = grouping.groupOf ?? null;
+  const groupCount =
+    groupOf == null ? 1 : Math.max(1, grouping.groupCount ?? 1);
+  const groupSpacing = grouping.groupSpacing ?? spacing * 3;
+  const byGroup: PackBox[][] = Array.from({ length: groupCount }, () => []);
 
   for (let c = 0; c < count; c++) {
-    boxes.push({
+    const g =
+      groupOf == null ? 0 : Math.min(groupCount - 1, Math.max(0, groupOf[c]));
+
+    byGroup[g].push({
       id: c,
       w: Math.max(1, x2[c] - x1[c]),
       h: Math.max(1, y2[c] - y1[c]),
@@ -282,7 +362,10 @@ export const packComponentBodies = (
   let largest = 0;
 
   for (let c = 1; c < count; c++) {
-    if (boxes[c].w * boxes[c].h > boxes[largest].w * boxes[largest].h) {
+    if (
+      (x2[c] - x1[c]) * (y2[c] - y1[c]) >
+      (x2[largest] - x1[largest]) * (y2[largest] - y1[largest])
+    ) {
       largest = c;
     }
   }
@@ -290,16 +373,41 @@ export const packComponentBodies = (
   const holdX = (x1[largest] + x2[largest]) / 2;
   const holdY = (y1[largest] + y2[largest]) / 2;
 
-  shelfPack(boxes, spacing);
+  // each group packs on its own; the groups then stand in a row
+  let groupX = 0;
+
+  for (const boxes of byGroup) {
+    if (boxes.length === 0) {
+      continue;
+    }
+
+    shelfPack(boxes, spacing, compare);
+
+    let w = 0;
+
+    for (const box of boxes) {
+      box.x += groupX;
+      w = Math.max(w, box.x + box.w);
+    }
+
+    groupX = w + groupSpacing;
+  }
 
   // translate members: component c's box moves from (x1, y1) to the
   // packed top-left
   const dx = new Float64Array(count);
   const dy = new Float64Array(count);
+  let packedLargest: PackBox | null = null;
 
-  for (const box of boxes) {
-    dx[box.id] = box.x - x1[box.id];
-    dy[box.id] = box.y - y1[box.id];
+  for (const boxes of byGroup) {
+    for (const box of boxes) {
+      dx[box.id] = box.x - x1[box.id];
+      dy[box.id] = box.y - y1[box.id];
+
+      if (box.id === largest) {
+        packedLargest = box;
+      }
+    }
   }
 
   // shift the whole packed field so the largest component's centre
@@ -307,9 +415,7 @@ export const packComponentBodies = (
   let shiftX = 0;
   let shiftY = 0;
 
-  if (holdLargest) {
-    const packedLargest = boxes.find((b) => b.id === largest) as PackBox;
-
+  if (holdLargest && packedLargest != null) {
     shiftX = holdX - (packedLargest.x + packedLargest.w / 2);
     shiftY = holdY - (packedLargest.y + packedLargest.h / 2);
   }
@@ -643,3 +749,4 @@ export const tidySmallComponents = (
 
   return shaped;
 };
+

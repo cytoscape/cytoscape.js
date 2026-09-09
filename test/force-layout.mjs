@@ -1260,3 +1260,154 @@ describe('the smallest components take canonical shapes (120)', function () {
     expect(d(cy, 't0', 't1')).to.be.closeTo(60, 1e-3);
   });
 });
+
+// Round 121.1: the settle's re-pack takes the caller's grouping and
+// order — `componentGroup` a function of each component's description
+// (its nodes, its size, its packed box), the groups standing in a row
+// by key; `componentOrder` a comparator ahead of the largest-first
+// order — so the EnrichmentMap shape (negatives left, positives right,
+// each side's rows by score) is one force call.  121.2: the larger
+// components turn to a canonical angle.
+describe('the re-pack takes a grouping and an order (121)', function () {
+  // six singletons with a score, and a signed pair each side
+  const SCORED = () => [
+    ...['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) => ({
+      data: { id, score: [2, -1, 1, -2, 3, -3][i] },
+    })),
+    { data: { id: 'n0', score: -1 } },
+    { data: { id: 'n1', score: -1 } },
+    { data: { id: 'ne', source: 'n0', target: 'n1' } },
+    { data: { id: 'p0', score: 1 } },
+    { data: { id: 'p1', score: 1 } },
+    { data: { id: 'pe', source: 'p0', target: 'p1' } },
+  ];
+  const mean = (c) => {
+    let s = 0;
+
+    c.nodes.forEach((n) => {
+      s += n.data('score');
+    });
+
+    return s / c.size;
+  };
+  const run = async (opts = {}, elements = SCORED()) => {
+    const cy = cytoscape({ elements });
+
+    await cy
+      .layout({ name: 'force', seed: 2, fit: false, ...opts })
+      .run()
+      .promise();
+
+    return cy;
+  };
+  // ids in one group's reading order: by shelf, then left to right —
+  // a shelf aligns its boxes' tops
+  const reading = (cy, ids) =>
+    ids
+      .map((id) => {
+        const bb = cy.$id(id).boundingBox();
+
+        return { id, x: bb.x1, y: Math.round(bb.y1) };
+      })
+      .sort((a, b) => a.y - b.y || a.x - b.x)
+      .map((b) => b.id);
+
+  it('componentGroup packs the groups in a row, keyed ascending, a groupSpacing apart', async function () {
+    const calls = [];
+    const cy = await run({
+      componentGroup: (c) => {
+        calls.push(c);
+
+        return Math.sign(mean(c));
+      },
+      groupSpacing: 200,
+    });
+
+    // one description per component: eight, with the pair's nodes as a
+    // collection and its box as the re-pack sees it
+    expect(calls.length).to.equal(8);
+
+    const pair = calls.find(
+      (c) => c.size === 2 && c.nodes.map((n) => n.id()).includes('n0'),
+    );
+
+    expect(pair.nodes.map((n) => n.id()).sort()).to.deep.equal(['n0', 'n1']);
+    expect(pair.width).to.be.greaterThan(0);
+    expect(pair.height).to.be.greaterThan(pair.width);
+
+    // every negative is left of every positive, by at least the gap
+    const neg = cy.nodes((n) => n.data('score') < 0);
+    const pos = cy.nodes((n) => n.data('score') > 0);
+
+    expect(pos.boundingBox().x1 - neg.boundingBox().x2).to.be.at.least(
+      200 - 1e-6,
+    );
+  });
+
+  it('componentOrder orders the rows: by size, then by score, with the largest-first default as the tie-break', async function () {
+    const cy = await run({
+      componentGroup: (c) => Math.sign(mean(c)),
+      componentOrder: (a, b) => b.size - a.size || mean(b) - mean(a),
+    });
+
+    // reading order — by shelf (the box tops, which a shelf aligns),
+    // then left to right: on the positive side the pair first, then
+    // the singletons by score descending; on the negative side the
+    // pair (-1), then -1, -2, -3
+    expect(reading(cy, ['c', 'a', 'e', 'p0'])).to.deep.equal([
+      'p0',
+      'e',
+      'a',
+      'c',
+    ]);
+    expect(reading(cy, ['f', 'd', 'b', 'n0'])).to.deep.equal([
+      'n0',
+      'b',
+      'd',
+      'f',
+    ]);
+  });
+
+  it('an unkeyed component packs last, a non-function throws at start, and a locked node holds the run to one field', async function () {
+    const cy = await run({
+      componentGroup: (c) => (c.size === 1 ? null : 'pairs'),
+    });
+
+    // the pairs are the keyed group, the singletons the unkeyed one
+    // after it
+    const pairs = cy.nodes((n) => ['n0', 'n1', 'p0', 'p1'].includes(n.id()));
+    const singles = cy.nodes().difference(pairs);
+
+    expect(singles.boundingBox().x1).to.be.greaterThan(pairs.boundingBox().x2);
+
+    expect(() =>
+      cytoscape({ elements: SCORED() })
+        .layout({
+          name: 'force',
+          componentGroup: 'score',
+        })
+        .run(),
+    ).to.throw(/componentGroup must be a function/);
+    expect(() =>
+      cytoscape({ elements: SCORED() })
+        .layout({
+          name: 'force',
+          componentOrder: 'score',
+        })
+        .run(),
+    ).to.throw(/componentOrder must be a function/);
+
+    // a locked node skips the re-pack, so the grouping with it: the
+    // call is never made
+    const els = SCORED();
+
+    els[0].locked = true;
+    els[0].position = { x: 0, y: 0 };
+
+    let called = 0;
+
+    await run({ componentGroup: () => called++ }, els);
+
+    expect(called).to.equal(0);
+  });
+});

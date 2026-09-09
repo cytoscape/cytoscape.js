@@ -36,14 +36,17 @@ non-members ignored entirely (recorded).
 */
 
 import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import type { Ref } from '../contract.mjs';
 import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
+  componentBoxes,
   computeComponents,
   fitBodiesToBox,
   packAnchors,
   packComponentBodies,
   tidySmallComponents,
 } from './pack.mjs';
+import type { PackGrouping } from './pack.mjs';
 import type { BoxInput } from './pack.mjs';
 import type { LayoutNodeDims } from './dims.mjs';
 import { OverlapGrid, separationAlong } from './separation.mjs';
@@ -153,6 +156,28 @@ export interface ForceRunOptions {
    * its sim shape, as does one whose edges ask for different lengths;
    * constrained and infinite runs skip it with the re-pack. */
   tidyComponents?: boolean;
+  /** group the components at the settle's re-pack (121.1): called once
+   * per disconnected component with its description, and the
+   * components sharing a key pack on their own, the groups standing in
+   * a row left to right by key — numbers ascending, then strings, then
+   * the components the function gave no key.  The EnrichmentMap shape
+   * is `({ nodes }) => Math.sign(mean NES)`: negatives left, positives
+   * right.  Ignored when the re-pack is (a locked node in scope, or
+   * constraints).
+   * @throws at start when it is not a function */
+  componentGroup?: (
+    component: LayoutComponent,
+  ) => string | number | null | undefined;
+  /** the order the re-pack lays components out in (121.1), a comparator
+   * over two descriptions; largest box first is the default and breaks
+   * the comparator's ties, so `(a, b) => b.size - a.size || score(b) -
+   * score(a)` gives rows by node count with each row by score.  Within
+   * each group under `componentGroup`.
+   * @throws at start when it is not a function */
+  componentOrder?: (a: LayoutComponent, b: LayoutComponent) => number;
+  /** the gap between the groups' packed boxes (121.1; default three
+   * `componentSpacing`s) */
+  groupSpacing?: number;
   /** the boxes overlap avoidance reads: bodies and labels (default) or
    * bodies alone */
   nodeDimensionsIncludeLabels?: boolean;
@@ -184,6 +209,21 @@ export interface ForceRunOptions {
    * @throws at start on an unknown id, a malformed entry, or a cycle
    *   in either axis's placement DAG */
   relativePlacement?: RelativePlacementSpec;
+}
+
+/**
+ * A disconnected component as the settle describes it to
+ * `componentGroup` and `componentOrder` (121.1): its nodes, how many,
+ * and the width and height of its packed body box — labels included
+ * under `nodeDimensionsIncludeLabels` — as the re-pack will see them.
+ * The store's positions are the pre-run ones at that point, so a
+ * caller reads data from the nodes and geometry from here.
+ */
+export interface LayoutComponent {
+  nodes: Collection;
+  size: number;
+  width: number;
+  height: number;
 }
 
 const DEFAULT_EDGE_LENGTH = 60;
@@ -902,10 +942,24 @@ export class ForceLayoutImpl implements LayoutImpl {
       );
     }
 
+    // the grouping and the order (121.1) are functions or nothing —
+    // a data key here would fail silently at the settle
+    for (const name of ['componentGroup', 'componentOrder'] as const) {
+      const fn = options[name];
+
+      if (fn != null && typeof fn !== 'function') {
+        throw new Error(
+          `force layout: ${name} must be a function of a component, ` +
+            `got ${typeof fn}`,
+        );
+      }
+    }
+
     // the sim set: every leaf in scope — unlocked ones move, locked
     // ones pin in place as obstacles
     const flags = store.column('node.flags') as Uint32Array;
     const simSlots: number[] = [];
+    const simRefs: Ref[] = [];
     const simIndex = new Map<number, number>();
 
     for (let i = 0; i < ctx.nodes.length; i++) {
@@ -920,6 +974,7 @@ export class ForceLayoutImpl implements LayoutImpl {
 
       simIndex.set(ref.slot, simSlots.length);
       simSlots.push(ref.slot);
+      simRefs.push(ref);
     }
 
     const n = simSlots.length;
@@ -1265,6 +1320,69 @@ export class ForceLayoutImpl implements LayoutImpl {
       ctx.setPositions(movableSlots, movableXy(arr));
     };
 
+    // the caller's grouping and order (121.1): each component described
+    // once — its nodes as a collection, its count, its body box as the
+    // re-pack will see it — the keys sorted into group indices, the
+    // comparator wrapped over component ids
+    const groupOf = options.componentGroup;
+    const orderOf = options.componentOrder;
+    const describeComponents = (arr: Float32Array): PackGrouping => {
+      if (groupOf == null && orderOf == null) {
+        return {};
+      }
+
+      const boxes = componentBoxes(n, comps.compOf, comps.count, arr, dims);
+      const refsOf: Ref[][] = Array.from({ length: comps.count }, () => []);
+
+      for (let i = 0; i < n; i++) {
+        refsOf[comps.compOf[i]].push(simRefs[i]);
+      }
+
+      const described: LayoutComponent[] = refsOf.map((refs, c) => ({
+        nodes: ctx.nodes._spawnUnique(refs),
+        size: refs.length,
+        width: Math.max(1, boxes.x2[c] - boxes.x1[c]),
+        height: Math.max(1, boxes.y2[c] - boxes.y1[c]),
+      }));
+      const grouping: PackGrouping = {
+        groupSpacing: options.groupSpacing ?? spacing * 3,
+      };
+
+      if (groupOf != null) {
+        const keys = described.map((d) => groupOf(d) ?? null);
+        const distinct = [...new Set(keys.filter((k) => k != null))];
+
+        distinct.sort((a, b) => {
+          const na = typeof a === 'number';
+          const nb = typeof b === 'number';
+
+          if (na && nb) {
+            return (a as number) - (b as number);
+          }
+          if (na !== nb) {
+            return na ? -1 : 1;
+          }
+
+          return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
+        });
+
+        const index = new Map(distinct.map((k, i) => [k, i]));
+        const unkeyed = keys.some((k) => k == null) ? 1 : 0;
+
+        grouping.groupOf = Int32Array.from(
+          keys,
+          (k) => (k == null ? distinct.length : index.get(k)) as number,
+        );
+        grouping.groupCount = distinct.length + unkeyed;
+      }
+
+      if (orderOf != null) {
+        grouping.compare = (a, b) => orderOf(described[a], described[b]);
+      }
+
+      return grouping;
+    };
+
     const settle = (arr: Float32Array): void => {
       if (infinite) {
         land(arr);
@@ -1306,6 +1424,7 @@ export class ForceLayoutImpl implements LayoutImpl {
           dims,
           spacing,
           true,
+          describeComponents(arr),
         );
 
         // the box (116.2), after the re-pack so the packed field is

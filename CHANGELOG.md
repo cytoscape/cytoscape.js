@@ -24,6 +24,16 @@ that compile and then behave differently.
 
 ### Added
 
+- **Force's re-pack takes a grouping and an order** (round 121,
+  `componentGroup`, `componentOrder`, `groupSpacing`): a function of
+  each disconnected component's description (`{ nodes, size, width,
+  height }`) keys the groups, which pack on their own and stand in a
+  row by key; a comparator orders the components ahead of the
+  largest-first order — so the EnrichmentMap shape (negatives left,
+  positives right, rows by size with each row by score) is one force
+  call.  And components of five nodes and up turn to a canonical
+  angle at the settle — the principal axis flat, or a ring's farthest
+  node up — under `tidyComponents`.
 - **Force's smallest components take canonical shapes** (round 120,
   `tidyComponents`, default true): a pair stands as a vertical
   barbell, three make a point-up triangle, four a diamond, sized to
@@ -269,6 +279,11 @@ that compile and then behave differently.
 
 ### Changed
 
+- **The non-presenting GPU force batch is priced before doubling**
+  (round 121.5): the device's time on the last completed batch bounds
+  the next to what a 100 ms budget buys, so the ramp no longer
+  overshoots on a heavy scene (the 25k scene's batch rides 3–16, and
+  no run frame passes 50 ms).
 - **The GPU force executor's iteration cost** (round 119): the grid's
   cell scan is a 256-thread workgroup scan rather than one thread
   walking every cell (3.2 ms an iteration on 569 nodes before, 19 ms

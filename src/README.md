@@ -1498,6 +1498,33 @@ round records carry the histories.
   preset's red-right / blue-left packing from two scoped force calls
   and a shift.
 
+  **Round 121: the re-pack takes a grouping and an order, and the
+  larger components turn.**  `componentGroup` is a function of each
+  component's description — `{ nodes, size, width, height }`, the box
+  as the re-pack will see it — returning a key; the components sharing
+  a key pack on their own and the groups stand in a row, numbers
+  ascending, then strings, then the unkeyed, `groupSpacing` apart
+  (three component spacings).  `componentOrder` is a comparator over
+  two descriptions, ahead of the largest-box-first order that breaks
+  its ties, so `(a, b) => b.size - a.size || score(b) - score(a)` is
+  rows by node count with each row by score — the EnrichmentMap
+  preset's, measured: within a size the singletons read NES
+  descending on each side.  Both skip with the re-pack (a locked node,
+  constraints) and throw at start when not functions.  Components of
+  five nodes and up turn to a canonical angle at the settle
+  (`orientComponents`): the principal axis flat by the smaller turn,
+  or an isotropic ring's farthest member to the top; under
+  `tidyComponents`, and only where the settle pass follows, since a
+  turn re-overlaps axis-aligned boxes (a `'sim'` run keeps the sim's
+  angles).  The debug page's EM entry is now one force run through
+  these — a mixed component (its minority sign a quarter or more)
+  packs between the sides.  And the non-presenting GPU batch is priced
+  before doubling (`BATCH_FRAME_BUDGET_MS`, 100): the device's time on
+  the last completed batch, timed from the previous frame's completion
+  to its own, over its iterations, bounds the next batch to what the
+  budget buys — on the 25k scene the batch rides 3–16 and no run frame
+  passes 50 ms.
+
   Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
   (19.6k nodes, **465k edges, mean degree 47 — the shape the
   round-18 model exploded on**) converges live on the GPU in

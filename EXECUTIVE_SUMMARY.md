@@ -16,8 +16,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   run nobody watches, and em-web is 0.15–0.24 s.  And the packing:
   force's smallest components take canonical shapes (a standing pair,
   a triangle, a diamond) so the re-pack lays them out in rows by size,
-  and the debug page gained the EnrichmentMap combo — force once per
-  sign, blue left and red right.
+  the larger ones turn to a canonical angle, and the re-pack takes a
+  caller's grouping and order — so the EnrichmentMap shape, blue left
+  and red right with each row by score, is one force call.
 
 ## How to maintain this file
 
@@ -874,6 +875,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     page's dropdown gained that as a combo: force once per sign, each
     side's components packed as force packs, the positive side shifted
     right of the negative, fitted.  Driven on em-web and em-desktop.
+- **9 Sep** — the re-pack takes a grouping and an order, and the larger
+  components turn
+  - The five follow-ups 120 left, and the maintainer's note that EM
+    also sorts by score.  Force's settle re-pack now takes
+    `componentGroup` (a key per component, the groups in a row by key)
+    and `componentOrder` (a comparator ahead of largest-first), each a
+    function of the component's description — its nodes, its size, its
+    packed box — so the EnrichmentMap shape is one call: the preset's
+    singleton rows read NES descending on each side, measured.
+    Components of five nodes and up turn to a canonical angle (the
+    principal axis flat, or a ring's farthest node up).  The page's EM
+    entry is that one run, with a mixed component between the sides.
+  - The non-presenting GPU batch is priced by the device's time on the
+    last completed batch before it doubles: the 25k scene's batch
+    rides 3–16, no run frame over 50 ms; the one long frame in the
+    recording is the run's synchronous start.
 
 ---
 

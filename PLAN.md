@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-08, round 120), the genuinely open questions
+**As last swept** (2026-09-09, round 121), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -217,7 +217,10 @@ call and raised none: the maintainer's first sitting in front of 118's
 page found the GPU force executor's iteration cost, and the round
 measured and fixed it (item 54(e)'s rows are re-dated below); round
 120 (the same day) gave the smallest components canonical shapes and
-the page its EM combo, and raised none either.  What the 2026-08-26
+the page its EM combo, and raised none either; round 121 (2026-09-09)
+took the five follow-ups 120 left — the grouping and the order on the
+library, the orientation, the mixed component, the labelled row, the
+priced batch — and raised none.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had

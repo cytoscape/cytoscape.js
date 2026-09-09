@@ -71,6 +71,11 @@ const ALPHA_WINDOW = 64;
 /** the most iterations one encode may carry: the alpha window the
  * CPU precomputes for the device tick (119) */
 export const MAX_BATCH = ALPHA_WINDOW;
+/** the device time a non-presenting run's batch may cost (121.5): the
+ * 25k scene's batch had ramped to 24 once — a 200 ms frame — before
+ * the two-frame-late backpressure answered; priced, it stops at what
+ * the budget buys */
+export const BATCH_FRAME_BUDGET_MS = 100;
 
 /**
  * The iterations the next frame of a *non-presenting* run should encode
@@ -90,12 +95,19 @@ export const MAX_BATCH = ALPHA_WINDOW;
  * @param current — the batch encoded last frame
  * @param base — the run's `stepsPerFrame` (the floor)
  * @param behind — the last frame was skipped under backpressure
+ * @param pricedMs — the device's time on the last completed batch
+ *   (121.5), or 0 for none yet: the batch grows no further than
+ *   `BATCH_FRAME_BUDGET_MS` buys at that cost per iteration
+ * @param pricedBatch — the iterations that batch carried (default: the
+ *   current batch)
  * @returns the batch for this frame, within [base, MAX_BATCH]
  */
 export function nextBatch(
   current: number,
   base: number,
   behind: boolean,
+  pricedMs = 0,
+  pricedBatch = current,
 ): number {
   const floor = Math.max(1, Math.min(base, MAX_BATCH));
 
@@ -103,7 +115,22 @@ export function nextBatch(
     return Math.min(MAX_BATCH, Math.max(floor, Math.floor(current / 2)));
   }
 
-  return Math.min(MAX_BATCH, Math.max(floor, current * 2));
+  // priced before doubling (121.5): the device's time on the last
+  // completed batch, over the iterations it carried, is what an
+  // iteration costs here, and the batch grows no further than the
+  // budget buys of it — the price only holds the doubling back, since
+  // shrinking is the backpressure's call
+  let next = current * 2;
+
+  if (pricedMs > 0 && pricedBatch > 0) {
+    const affordable = Math.floor(
+      BATCH_FRAME_BUDGET_MS / (pricedMs / pricedBatch),
+    );
+
+    next = Math.min(next, Math.max(current, affordable));
+  }
+
+  return Math.min(MAX_BATCH, Math.max(floor, next));
 }
 /** grid capped at 256×256 cells (the serial scan's budget) */
 const MAX_GRID = 256;

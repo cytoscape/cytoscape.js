@@ -953,6 +953,15 @@ export class Renderer {
    * force run was encoding (119): the device is behind, and a
    * non-presenting run's batch should shrink */
   private forceFrameSkipped = false;
+  /** the device's own price of the last non-presenting batch (121.5):
+   * the GPU time its frame took — from the later of its submit and the
+   * previous frame's completion to its own — and the iterations it
+   * carried.  The frame's wall clock cannot see this: a vsync-paced
+   * frame submits and returns while the queue absorbs the work, until
+   * the frames in flight fill and the stall lands all at once */
+  private forcePriceMs = 0;
+  private forcePriceBatch = 0;
+  private forceDoneAt = 0;
 
   /**
    * Start the GPU force integrator (18.3): returns null when the device
@@ -985,6 +994,9 @@ export class Renderer {
     this.forceStepsPerFrame = stepsPerFrame;
     this.forceBatch = stepsPerFrame;
     this.forceFrameSkipped = false;
+    this.forcePriceMs = 0;
+    this.forcePriceBatch = 0;
+    this.forceDoneAt = 0;
     this.forcePresents = present;
     this.needsRedraw = true;
     this.schedule();
@@ -1575,6 +1587,8 @@ export class Renderer {
           this.forceBatch,
           this.forceStepsPerFrame,
           this.forceFrameSkipped,
+          this.forcePriceMs,
+          this.forcePriceBatch,
         );
         this.forceFrameSkipped = false;
       }
@@ -1700,6 +1714,9 @@ export class Renderer {
       this.writeFrameUniform();
 
       const encoder = device.createCommandEncoder({ label: 'cy-gpu:frame' });
+      // the non-presenting force batch this frame carries, for its
+      // price (121.5)
+      let encodedBatch = 0;
 
       // GPU position tweens: their own compute pass, before cull — the
       // pass boundary is the barrier so cull (and the edge shaders) read
@@ -1731,6 +1748,7 @@ export class Renderer {
             : this.forceRuntime.silentTarget(),
           this.forcePresents ? this.forceStepsPerFrame : this.forceBatch,
         );
+        encodedBatch = this.forcePresents ? 0 : this.forceBatch;
       }
 
       // compact each group's visible slots + indirect args before drawing
@@ -1803,9 +1821,23 @@ export class Renderer {
       finishTiming?.();
 
       this.inFlightFrames++;
+
+      const submittedAt = performance.now();
+
       device.queue.onSubmittedWorkDone().then(
         () => {
           this.inFlightFrames--;
+
+          // the batch's price (121.5): the device's time on this frame
+          // is from the later of its submit and the previous frame's
+          // completion — the queue runs frames back to back — to now
+          if (encodedBatch > 0) {
+            const now = performance.now();
+
+            this.forcePriceMs = now - Math.max(submittedAt, this.forceDoneAt);
+            this.forcePriceBatch = encodedBatch;
+            this.forceDoneAt = now;
+          }
         },
         () => {
           this.inFlightFrames--;

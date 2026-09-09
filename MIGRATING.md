@@ -491,6 +491,8 @@ and the `renderer` block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`,
 **Built in**: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
 `random`, `radial` — a hierarchy-aware radial tree (each subtree takes a
 contiguous angular wedge sized by its weight; new in v4, #2493) —
+`pack` — a re-pack of the disconnected components where they stand,
+grouped and ordered (new in v4, round 123) —
 `force` — a GPU-native force-directed layout that animates live at 100k
 nodes — and `flow` — a Sugiyama-class layered layout (dagre's use case:
 network-simplex ranking, weighted crossing minimization, Brandes–Köpf
@@ -505,7 +507,7 @@ Which built-in answers which v3 layout extension (round 122's audit):
 | fcose, cose-bilkent, cola, euler, spread, d3-force, G6 gForce, Cosmos | `force` — fcose's `alignment` / `relativePlacement` / `fixed` constraints, `edgeLength` mapping, cola's `infinite`, and the GPU at every size (no "too big, use grid" threshold: 25k × 50k settles in 3 s) |
 | dagre, elk (layered), klay, biological-flow | `flow` — `direction: 'rightward'` for a left-to-right flow |
 | G6 radial | `radial` |
-| layout-utilities `separateComponents` | `force`'s settle re-pack (`componentSpacing`, `componentGroup`, `componentOrder`), or `ctx.packComponents` in an extension layout |
+| layout-utilities `separateComponents` | the `pack` layout (the components re-packed where they stand, grouped and ordered), `packComponents: true` on `circle` / `concentric` / `grid` / `breadthfirst` / `radial` (one drawing per component, packed), `force`'s settle re-pack, or `ctx.packComponents` in an extension layout |
 
 **`cose` is not ported.** Its option surface and per-iteration structure are
 CPU-shaped; `force` is v4's answer, and it converges in about a second on
@@ -533,6 +535,13 @@ streaming run v3 spelled `'during'` is **`animateLive: true`**.  Executor
 choice is availability-driven either way: a flat rendered graph with a
 device hands integration to the GPU, so `animate: false` no longer runs
 synchronously on the main thread — the run settles at `layoutstop` /
+`breadthfirst` on a graph of several components draws its trees as
+blocks — each rank ordered tree-first, each tree a column band, the
+singletons a block of rows, the bands wrapped into shelves — where v3
+interleaved the trees across the whole width; one component is v3's
+picture exactly.  `packComponents: true` on the five discrete layouts
+lays each component out on its own and packs the drawings.
+
 `promise()`, and a caller reading positions on the next line must await
 one of those.  `animate: false` still shows nothing until convergence:
 the silent run integrates off-screen and lands the settle in one write.

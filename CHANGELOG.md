@@ -24,6 +24,23 @@ that compile and then behave differently.
 
 ### Added
 
+- **Component packing on the discrete layouts, and the `pack` layout**
+  (round 123, item 58): `packComponents: true` on `circle`,
+  `concentric`, `grid`, `breadthfirst` and `radial` lays each
+  disconnected component out on its own — one ring, one set of rings,
+  one grid, one tree per component — and shelf-packs the drawings
+  largest first under `componentSpacing`, `componentGroup`,
+  `componentOrder` and `groupSpacing`, force's spellings; off (the
+  default) every layout is v3's one figure.  Locked nodes are left out
+  and the packed field is moved off them; an explicit `boundingBox`
+  holds the field.  `cy.layout({ name: 'pack' })` re-packs the
+  components where they stand under the same options, the largest
+  held — layout-utilities' `separateComponents` with grouping and
+  order, translation only.  **Breadthfirst draws its trees as blocks
+  by default**: each rank ordered tree-first, each tree a column band
+  with its root over the middle of its subtree, the singletons a
+  block of rows, the bands wrapped into shelves; one component is
+  v3's picture exactly.
 - **Force's re-pack takes a grouping and an order** (round 121,
   `componentGroup`, `componentOrder`, `groupSpacing`): a function of
   each disconnected component's description (`{ nodes, size, width,

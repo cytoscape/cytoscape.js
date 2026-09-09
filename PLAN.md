@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-09, round 122), the genuinely open questions
+**As last swept** (2026-09-09, round 123), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -224,7 +224,8 @@ priced batch — and raised none.  Round 122 (2026-09-09) took **item
 49**, the layout portfolio audit: the demand read from the two apps'
 repositories, the matrix, the flagships named, the item closed — and
 logged **item 58**, component packing on the discrete layouts, the one
-gap the audit found.  What the 2026-08-26
+gap the audit found — **taken by round 123** the same day, on four
+calls the maintainer made at planning.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -1035,4 +1036,12 @@ directions".*
     **First measurement**: the quality suite's component fixture
     under each discrete layout with the option on — boxes disjoint,
     the largest component's centre held — and em-web's singleton rows
-    from `pack` alone against 121's force-run rows.
+    from `pack` alone against 121's force-run rows.  **Taken by round
+    123 (2026-09-09)**, on the maintainer's four calls: the option is
+    `packComponents`, on all five discrete layouts, with the four
+    shared spellings; the `pack` layout; breadthfirst's trees as
+    blocks on by default (bands, shelves, the singleton block);
+    concentric binned per component; locked nodes left out and the
+    field kept off them.  The quality suite's packed rows and
+    `test/layout-pack.mjs` are the gates; the em-web pictures are on
+    the round.  Closed.

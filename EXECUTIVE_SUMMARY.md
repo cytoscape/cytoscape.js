@@ -57,7 +57,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,594 unit · 637 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,650 unit · 671 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
@@ -909,6 +909,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     not a use case (`force` runs em-web in 0.3 s and 25k × 50k in
     3 s).  The migration guide now maps each v3 layout extension to
     its built-in.
+- **9 Sep** — component packing on the discrete layouts, the pack
+  layout, and breadthfirst's trees as blocks
+  - Item 58, the same day, on four calls the maintainer made at
+    planning.  `packComponents: true` on circle, concentric, grid,
+    breadthfirst and radial lays each component out on its own and
+    shelf-packs the drawings under force's four spellings — one ring,
+    one grid, one tree per component; grid's singletons become
+    EnrichmentMap's rows.  `cy.layout({ name: 'pack' })` re-packs the
+    components where they stand, grouped and ordered.  Breadthfirst
+    now draws its trees as blocks by default: ranks ordered
+    tree-first, each tree a column band with its root over its own
+    subtree, the singletons a block of rows, the bands wrapped into
+    shelves — em-web's 144 components read as the big tree, shelves
+    of the smaller trees, rows of pairs and rows of singletons, where
+    the first version was one row 144 bands wide.  One component is
+    v3's picture exactly.
 
 ---
 
@@ -965,6 +981,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   mappings and per-side compound padding** (31 Aug) — fcose's alignment /
   relative-placement surface and per-edge length control without leaving
   core; the fn forms stay, the object spellings are canonical.
+- **Component packing on every layout, and a `pack` layout** (9 Sep):
+  `packComponents: true` on circle, concentric, grid, breadthfirst and
+  radial lays each disconnected component out alone and packs the
+  drawings under force's `componentSpacing` / `componentGroup` /
+  `componentOrder`; `cy.layout({ name: 'pack' })` re-packs the
+  components where they stand (layout-utilities' `separateComponents`,
+  with grouping and order).  Breadthfirst draws several trees as
+  blocks by default — tree-first ranks, column bands, shelves, the
+  singletons in rows — where v3 interleaved them across the width.
 - **A `flow` built-in layout** (1 Sep) — the dagre/elk use case in
   core: Sugiyama-class layered placement with compound support, rank
   constraints and data-driven `minLength`/`edgeWeight`; node positions

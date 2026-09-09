@@ -1051,8 +1051,8 @@ picture from `flow`'s and the cheapest tree there is; `circle` and
 `concentric` are one use case spelled by order and by level.  What
 the audit found missing, by demand: **component packing on the
 discrete layouts and a standalone re-pack** (EM's case; the packing
-machinery of rounds 120–121 is reachable only through `force` and
-`flow`) — logged as item 58, the next layout round.  Declined until an
+machinery of rounds 120–121 was reachable only through `force` and
+`flow`) — item 58, taken by round 123 below.  Declined until an
 app asks: a tidy tree (tidytree's case), a crossing-minimised or
 clustered circle (avsdf, cise), and any second force layout — eleven
 of the nineteen v3 layout extensions are force-directed, and `force`
@@ -1062,6 +1062,66 @@ not a use case: Cytoscape Web's `grid` fallback at 1,000 elements and
 its Cosmos engine are v3-cose limitations, and `force` runs em-web
 (7.5k elements) in 0.3 s and 25k × 50k in 3.0 s on the GPU from a
 seed.
+
+## Component packing on the discrete layouts, and the `pack` layout (round 123, item 58)
+
+**`packComponents: true`** on `circle`, `concentric`, `grid`,
+`breadthfirst` and `radial` lays each disconnected component out on
+its own — one ring, one set of rings, one grid, one tree per
+component — and shelf-packs the drawings largest first under
+`componentSpacing`, `componentGroup`, `componentOrder` and
+`groupSpacing`, the spellings and the component description
+(`{ nodes, size, width, height }`) a force run's settle re-pack takes
+(121.1).  Off, the default, every layout is v3's one figure about one
+centre.  The mechanism (`layout/per-component.mts`): the layout's own
+placement, called once per component in a box sized to the
+component's share of the scope's area; the body boxes packed
+(`packComponentBodies`); the field centred on the viewport, or scaled
+down — never up — into an explicit `boundingBox` (flow's rule); and
+moved off any locked node it would cover, locked nodes being left out
+of the placement as they hold under every layout since 114.3.  Per
+layout: circle's `sort` orders each ring and a singleton is a point;
+concentric resolves its scores once over the scope and bins the
+levels per component (`levelWidth` sees that component's nodes);
+radial without the switch keeps 85.1's one radial of wedges, with it
+each component is its own tree, root at its own centre; a grid's
+singletons become one-cell grids that pack into rows —
+EnrichmentMap's picture — and `sort` / `position` apply within each
+grid; a packed breadthfirst tree is spaced by its overlap need alone
+(bodies apart, `spacingFactor` the air), so it is as small as it can
+be drawn.  Grouping and order functions throw at start when they are
+not functions, as on force.
+
+**`cy.layout({ name: 'pack' })`** is the re-pack on its own: the
+components at their current positions, shelf-packed by their body
+boxes under the same four options, the largest component's centre
+held, an explicit `boundingBox` honoured after the pack.  Translation
+only — no shapes and no orientation, which need edge lengths and
+belong to `force`.  For a drawing whose structure is done (a sim, a
+preset, an arrangement by hand) and only wants its components
+grouped and ordered: EnrichmentMap's keep-the-layout, regroup-by-sign
+case in one call.
+
+**Breadthfirst draws its trees as blocks by default** (123.4).  With
+several components in a row drawing, v3 spread every rank across the
+box and sorted it by the parents' positions alone, so the trees
+interleaved and a root sat at the middle of a row that ran the whole
+width.  Now each rank is ordered component-first — the largest tree
+leftmost, the parent heuristic (or `depthSort`) within it — and each
+component takes a column band as wide as its widest rank needs,
+bodies included, each rank centred in its band, so a root stands
+above the middle of its own subtree; the singletons share one band, a
+block of rows as wide as a shelf; and the bands wrap into shelves up
+to the box's width (or the one band wider than it), `componentSpacing`
+apart, the next shelf's rows under the deepest band of the one
+before, the rows spread over every shelf's rows.  Depth rows stay
+shared within a shelf, so levels align across its trees and no height
+is spent.  One component is v3's picture exactly (the spec pins the
+positions); `circle: true` rings are untouched.  On em-web (144
+components) the page reads as the big tree, shelves of the medium and
+the small trees, rows of pairs and rows of singletons, in 142 ms;
+`packComponents: true` there is 109 ms.  The debug page has a **Pack
+components** box and a **Pack** entry.
 
 ## The radial tree layout (round 85.1, #2493)
 

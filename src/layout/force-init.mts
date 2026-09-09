@@ -110,8 +110,11 @@ export const spectralSeed = (
   // fCoSE separates pivots by ~1.5x the ideal edge length
   const SEP = meanL * 1.5;
 
-  // incidence lists (the sim's own CSR shape, rebuilt here so the
-  // module stays pure and callable before any sim exists)
+  // neighbour lists in CSR (rebuilt here so the module stays pure and
+  // callable before any sim exists); typed throughout, since this is
+  // the run's synchronous start and a 25k graph walks it 25 times
+  // per component (121.6: a Map per visited neighbour and array queues
+  // were 190 ms of a 280 ms start)
   const m = edges.length / 2;
   const starts = new Int32Array(n + 1);
 
@@ -124,16 +127,21 @@ export const spectralSeed = (
     starts[i + 1] += starts[i];
   }
 
-  const incident = new Int32Array(m * 2);
+  const neighbours = new Int32Array(m * 2);
   const cursor = starts.slice(0, n);
 
   for (let e = 0; e < m; e++) {
-    incident[cursor[edges[e * 2]]++] = e;
-    incident[cursor[edges[e * 2 + 1]]++] = e;
+    const s = edges[e * 2];
+    const t = edges[e * 2 + 1];
+
+    neighbours[cursor[s]++] = t;
+    neighbours[cursor[t]++] = s;
   }
 
-  // members per component, in ascending node order (deterministic)
+  // members per component, in ascending node order (deterministic),
+  // and each node's index within its component
   const byComp = new Map<number, number[]>();
+  const localOf = new Int32Array(n);
 
   for (let i = 0; i < n; i++) {
     let list = byComp.get(compOf[i]);
@@ -142,8 +150,11 @@ export const spectralSeed = (
       byComp.set(compOf[i], (list = []));
     }
 
+    localOf[i] = list.length;
     list.push(i);
   }
+
+  const queue = new Int32Array(n);
 
   for (const [comp, members] of byComp) {
     const nn = members.length;
@@ -152,43 +163,33 @@ export const spectralSeed = (
       continue;
     }
 
-    const local = new Map<number, number>();
-
-    for (let idx = 0; idx < nn; idx++) {
-      local.set(members[idx], idx);
-    }
-
     const k = Math.min(25, nn);
 
-    // BFS hop distances from one member, over the incident lists
+    // BFS hop distances from one member, over the neighbour lists —
+    // a neighbour outside the component is never reached, since the
+    // edges are the component's own
     const bfs = (startLocal: number, out: Int32Array): void => {
       out.fill(-1);
 
-      let queue = [members[startLocal]];
+      let head = 0;
+      let tail = 0;
 
+      queue[tail++] = members[startLocal];
       out[startLocal] = 0;
 
-      while (queue.length > 0) {
-        const next: number[] = [];
+      while (head < tail) {
+        const g = queue[head++];
+        const dg = out[localOf[g]] + 1;
 
-        for (const g of queue) {
-          const dg = out[local.get(g) as number];
+        for (let at = starts[g]; at < starts[g + 1]; at++) {
+          const other = neighbours[at];
+          const lo = localOf[other];
 
-          for (let at = starts[g]; at < starts[g + 1]; at++) {
-            const e = incident[at];
-            const s = edges[e * 2];
-            const t = edges[e * 2 + 1];
-            const other = s === g ? t : s;
-            const lo = local.get(other);
-
-            if (lo != null && out[lo] === -1) {
-              out[lo] = dg + 1;
-              next.push(other);
-            }
+          if (out[lo] === -1) {
+            out[lo] = dg;
+            queue[tail++] = other;
           }
         }
-
-        queue = next;
       }
     };
 
@@ -269,10 +270,9 @@ export const spectralSeed = (
       }
 
       let lambda = 0;
+      const w = new Float64Array(k);
 
       for (let it = 0; it < 300; it++) {
-        const w = new Float64Array(k);
-
         for (let a = 0; a < k; a++) {
           let s = 0;
 

@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–121 |
+| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–122 |
 | planned | 49–51, 71–84, 88, 99–100, 102–107, 110 |
 
 ## The sections
 
-160 sections.
+161 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -187,3 +187,4 @@ A round can land with an item held open; the round file says which.
 | 158 | 119 | 2026-09-08 | landed | [The GPU force executor's iteration cost: the serial cell scan, and the silent run's batch](rounds/2026-09-08-01-rnd0119-landed-the-gpu-force-executor-s-iteration-cost-the-serial-cell-scan-and-the-silent-run-s-batch.md) |
 | 159 | 120 | 2026-09-08 | landed | [The smallest components take shapes, and the page's EM combo](rounds/2026-09-08-02-rnd0120-landed-the-smallest-components-take-shapes-and-the-page-s-em-combo.md) |
 | 160 | 121 | 2026-09-09 | landed | [The re-pack takes a grouping and an order, and the larger components turn](rounds/2026-09-09-01-rnd0121-landed-the-re-pack-takes-a-grouping-and-an-order-and-the-larger-components-turn.md) |
+| 161 | 122 | 2026-09-09 | landed | [The layout portfolio audit: the use cases, the flagships and what is missing](rounds/2026-09-09-02-rnd0122-landed-the-layout-portfolio-audit-the-use-cases-the-flagships-and-what-is-missing.md) |

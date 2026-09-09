@@ -498,6 +498,15 @@ coordinates; new in v4).  `flow` replaces the dagre extension for most
 uses: it emits node positions only, designed to pair with `curve-style:
 taxi` so edges route themselves and stay routed when nodes are dragged.
 
+Which built-in answers which v3 layout extension (round 122's audit):
+
+| v3 extension or app engine | v4 built-in |
+| --- | --- |
+| fcose, cose-bilkent, cola, euler, spread, d3-force, G6 gForce, Cosmos | `force` — fcose's `alignment` / `relativePlacement` / `fixed` constraints, `edgeLength` mapping, cola's `infinite`, and the GPU at every size (no "too big, use grid" threshold: 25k × 50k settles in 3 s) |
+| dagre, elk (layered), klay, biological-flow | `flow` — `direction: 'rightward'` for a left-to-right flow |
+| G6 radial | `radial` |
+| layout-utilities `separateComponents` | `force`'s settle re-pack (`componentSpacing`, `componentGroup`, `componentOrder`), or `ctx.packComponents` in an extension layout |
+
 **`cose` is not ported.** Its option surface and per-iteration structure are
 CPU-shaped; `force` is v4's answer, and it converges in about a second on
 graphs where cose exceeds a 60-second bail. `cy.layout({ name: 'cose' })`

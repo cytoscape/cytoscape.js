@@ -893,6 +893,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     recording was the run's synchronous start, which the spectral
     seed's BFS owned — typed now, bit-identical, 200 → 70 ms at 25k,
     the library's run() call there 95–120 ms.
+- **9 Sep** — the layout portfolio audit closes item 49
+  - The demand, read from the flagship apps' repositories at pinned
+    commits: Cytoscape Web carries three layout engines (G6's dagre,
+    gForce and radial; v3's grid, circle, cose and concentric plus a
+    third-party left-to-right layered layout; Cosmos for GPU force)
+    and falls back to `grid` at 1,000 elements; EnrichmentMap runs
+    fcose, a vendored component packer and a sorted `grid` for its
+    singletons.  Against that, one flagship per use case is named —
+    `force`, `flow`, `radial`, `circle` / `concentric`, `grid`,
+    `preset` — and every use case the apps ship has one.  The one gap
+    is component packing on the discrete layouts (logged, the next
+    layout round); a tidy tree, a crossing-minimised circle and any
+    second force layout are declined until an app asks, and scale is
+    not a use case (`force` runs em-web in 0.3 s and 25k × 50k in
+    3 s).  The migration guide now maps each v3 layout extension to
+    its built-in.
 
 ---
 

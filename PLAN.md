@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-09, round 121), the genuinely open questions
+**As last swept** (2026-09-09, round 122), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -220,7 +220,11 @@ measured and fixed it (item 54(e)'s rows are re-dated below); round
 the page its EM combo, and raised none either; round 121 (2026-09-09)
 took the five follow-ups 120 left — the grouping and the order on the
 library, the orientation, the mixed component, the labelled row, the
-priced batch — and raised none.  What the 2026-08-26
+priced batch — and raised none.  Round 122 (2026-09-09) took **item
+49**, the layout portfolio audit: the demand read from the two apps'
+repositories, the matrix, the flagships named, the item closed — and
+logged **item 58**, component packing on the discrete layouts, the one
+gap the audit found.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -818,7 +822,15 @@ directions".*
     locked nodes held everywhere, force's animate made to mean what
     it means elsewhere, and a quality suite over every layout — so
     the audit for the remaining use cases starts from layouts that
-    are correct.  That audit stays open here.*
+    are correct.  **Taken by round 122 (2026-09-09)**: the demand read
+    from Cytoscape Web's and EnrichmentMap's repositories at pinned
+    commits, the use-case by coverage matrix, and the flagships named
+    — `force`, `flow`, `radial`, `circle` / `concentric`, `grid`,
+    `preset`, one per use case.  Every use case the apps ship has one;
+    the single gap is component packing on the discrete layouts,
+    logged as item 58.  A tidy tree, a crossing-minimised or clustered
+    circle and any second force layout are declined until an app
+    asks; scale is not a use case.  Closed.*
 50. **The v3 extension ports** (maintainer, 2026-08-19: the most
     important v3 extensions need v4 ports).  Round 71 builds the
     toolchain and one example; this is the campaign that uses it.
@@ -1007,3 +1019,20 @@ directions".*
     The tables are on the round; the quality suite's crammed 3k row
     and `test/modules/force-separation.mjs` are the gates that were
     missing.
+58. **Component packing on the discrete layouts, and a standalone
+    re-pack** (logged 2026-09-09, round 122's audit; round 87 had
+    logged the same as a "suggested further direction").  The packing
+    machinery of rounds 120–121 — shelf pack, the small-component
+    shapes, the orientation pass, `componentGroup`, `componentOrder` —
+    is reachable only through `force`'s settle and `flow`'s own pass;
+    `breadthfirst`, `radial`, `circle`, `concentric` and `grid` place a
+    disconnected graph as one body, and the quality suite's component
+    rows exclude them by design.  EnrichmentMap vendored a packer and
+    lays the singletons out with `grid` for want of this.  The shape:
+    `packComponents: true` on the five discrete layouts (run per
+    component, shelf-pack the boxes, group and order as force does),
+    and a `pack` layout that regroups existing positions with no sim.
+    **First measurement**: the quality suite's component fixture
+    under each discrete layout with the option on — boxes disjoint,
+    the largest component's centre held — and em-web's singleton rows
+    from `pack` alone against 121's force-run rows.

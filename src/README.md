@@ -1022,6 +1022,47 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   expensive configuration; wrap-none tweens ride the dims fast path);
   the whole-graph bb scan pays ~0.1 µs/label for its label terms.
 
+## The layout portfolio (round 122, item 49)
+
+One flagship per use case, audited on 2026-09-09 against what the two
+flagship apps ship (the round record has the demand, read from their
+repositories at pinned commits): Cytoscape Web carries three engines
+— G6's dagre / gForce / radial, v3's grid / circle / cose / concentric
+plus a third-party left-to-right layered layout, and Cosmos for GPU
+force — and routes to gForce under 1,000 elements, dagre for a
+hierarchy, and v3's `grid` at 1,000 and above; EnrichmentMap runs
+fcose with data-driven edge lengths, a vendored layout-utilities
+packer, and a NES-sorted `grid` for the singletons.
+
+| Use case | v4 flagship | Also | The apps ship |
+| --- | --- | --- | --- |
+| Force / organic | `force` | — | fcose; gForce, cose, Cosmos |
+| Layered / DAG | `flow` (four `direction`s) | `breadthfirst` (directed) | dagre; biological-flow |
+| Tree | `radial` | `breadthfirst`, `flow` | G6 radial |
+| Circular | `circle` (`sort` mapping), `concentric` (`concentric` mapping) | — | circle, concentric |
+| Grid / tabular | `grid` | — | grid |
+| Component packing | force's settle re-pack; flow's own; `ctx.packComponents` | — | EM's vendored packer |
+| Positions from data | `preset` | — | both (CX2) |
+| Scatter | `random` | — | — |
+
+Every use case the apps ship has a v4 flagship, and none is a
+second-best of another: `breadthfirst` is v3's depth rows, a different
+picture from `flow`'s and the cheapest tree there is; `circle` and
+`concentric` are one use case spelled by order and by level.  What
+the audit found missing, by demand: **component packing on the
+discrete layouts and a standalone re-pack** (EM's case; the packing
+machinery of rounds 120–121 is reachable only through `force` and
+`flow`) — logged as item 58, the next layout round.  Declined until an
+app asks: a tidy tree (tidytree's case), a crossing-minimised or
+clustered circle (avsdf, cise), and any second force layout — eleven
+of the nineteen v3 layout extensions are force-directed, and `force`
+absorbed fcose's constraints, its spectral seed, cola's `infinite` and
+cose's compound gravity rather than shipping beside them.  Scale is
+not a use case: Cytoscape Web's `grid` fallback at 1,000 elements and
+its Cosmos engine are v3-cose limitations, and `force` runs em-web
+(7.5k elements) in 0.3 s and 25k × 50k in 3.0 s on the GPU from a
+seed.
+
 ## The radial tree layout (round 85.1, #2493)
 
 Discrete, breadthfirst's shape, with the one property breadthfirst's

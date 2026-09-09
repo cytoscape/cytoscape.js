@@ -890,7 +890,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - The non-presenting GPU batch is priced by the device's time on the
     last completed batch before it doubles: the 25k scene's batch
     rides 3–16, no run frame over 50 ms; the one long frame in the
-    recording is the run's synchronous start.
+    recording was the run's synchronous start, which the spectral
+    seed's BFS owned — typed now, bit-identical, 200 → 70 ms at 25k,
+    the library's run() call there 95–120 ms.
 
 ---
 

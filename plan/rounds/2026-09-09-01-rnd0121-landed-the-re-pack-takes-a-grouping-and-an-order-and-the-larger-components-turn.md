@@ -99,6 +99,32 @@ click — is the run's synchronous start on the CPU (components, the
 spectral seed, the buffers) and is not the batch's.  em-web unchanged:
 0.23 s in 16 frames.
 
+### 121.6 — the run's synchronous start, the seed's BFS typed
+
+The one long frame left on the 25k run was the click's synchronous
+start, and the maintainer said go ahead.  Timed piece by piece on a
+25k × 50k graph headless: components 5 ms, anchors 1, the scatter 5,
+the spectral seed **190–204 ms**.  Inside the seed, the BFS from each
+of 25 pivots per component walked incidence lists of *edge* ids,
+resolved each neighbour's local index through a `Map`, and queued
+levels in fresh arrays — 2.5 million map lookups a run.  The
+neighbour lists are now a CSR of node ids, the local index a typed
+array filled once, the queue one `Int32Array` — bit-identical output
+on the 25k reference (50,000 coordinates, zero differ), and the seed
+is **70–75 ms**: BFS 30, the embedding 10, the eigenpairs 8, the
+pivot scan 7, the CSR 5.  A convergence exit on the power iteration
+was tried and reverted: the 25 × 25 matrices do not reach 1e-9 in
+fewer than the 300 iterations on em-web, so it bought nothing and
+moved the embedding by 1e-4 px; the per-iteration buffer is hoisted,
+which is bit-identical.
+
+On the page, the library's `run()` call at 25k × 50k is now 95–120 ms
+synchronous (the seed and its prep 60–73 of it, the edge scan 17–20,
+the device start 11) and the run's first frame 83–117 ms; em-web's is
+19–29 ms.  The 280 ms the earlier recording showed after the click
+was that start plus the harness's own edge-style override, which
+restyles 50k edges before the run and is the page's, not the layout's.
+
 ### The page
 
 The dropdown entry is **Force, grouped by sign and ordered by score
@@ -129,5 +155,7 @@ the settle with its end-to-end length kept against the tidy-off
 control.  `test/modules/gpu-force-batch.mjs`: the price holds the
 doubling at what the budget buys, a cheap batch is never held back, a
 missing price is the plain doubling, and backpressure still halves.
+The seed's specs (`test/modules/force-init.mjs`) hold unchanged, as
+the 25k reference says they must.
 The harness spec pins the page's group, score and options.  All 2,616
 Node specs green; the force browser specs green on the real adapter.

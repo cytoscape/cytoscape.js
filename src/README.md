@@ -1523,7 +1523,10 @@ round records carry the histories.
   the last completed batch, timed from the previous frame's completion
   to its own, over its iterations, bounds the next batch to what the
   budget buys — on the 25k scene the batch rides 3–16 and no run frame
-  passes 50 ms.
+  passes 50 ms.  The run's synchronous start is the spectral seed's,
+  and its BFS is typed now (121.6: neighbour CSR, a typed local index,
+  one queue — bit-identical): 190–204 → 70–75 ms at 25k × 50k, the
+  library's `run()` call there 95–120 ms.
 
   Measured at the round-59 close (RX 580, dpr 2): ndex-x-large
   (19.6k nodes, **465k edges, mean degree 47 — the shape the

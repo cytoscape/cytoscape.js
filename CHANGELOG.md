@@ -283,7 +283,9 @@ that compile and then behave differently.
   (round 121.5): the device's time on the last completed batch bounds
   the next to what a 100 ms budget buys, so the ramp no longer
   overshoots on a heavy scene (the 25k scene's batch rides 3–16, and
-  no run frame passes 50 ms).
+  no run frame passes 50 ms).  And the run's synchronous start is
+  shorter (121.6): the spectral seed's BFS is typed, 190–204 → 70–75
+  ms at 25k × 50k, bit-identical.
 - **The GPU force executor's iteration cost** (round 119): the grid's
   cell scan is a 256-thread workgroup scan rather than one thread
   walking every cell (3.2 ms an iteration on 569 nodes before, 19 ms

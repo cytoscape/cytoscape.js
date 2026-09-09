@@ -459,6 +459,62 @@ describe('gpu/layout: component packing (round 123, item 58)', function () {
       ]);
     });
 
+    it('the bands wrap into shelves, and the singletons are rows in one block', async function () {
+      // thirty singletons, eight pairs and one tree: in one rank v3 drew
+      // a row fifty-four bands wide
+      const els = [];
+
+      for (let i = 0; i < 30; i++) {
+        els.push(node(`s${i}`));
+      }
+      for (let i = 0; i < 8; i++) {
+        els.push(node(`p${i}a`), node(`p${i}b`), edge(`p${i}a`, `p${i}b`));
+      }
+      els.push(
+        node('t'),
+        node('t1'),
+        node('t2'),
+        node('t11'),
+        edge('t', 't1'),
+        edge('t', 't2'),
+        edge('t1', 't11'),
+      );
+
+      const cy = mk(els);
+
+      await run(cy, {
+        name: 'breadthfirst',
+        fit: false,
+        spacingFactor: 1,
+        avoidOverlapPadding: 2,
+      });
+
+      // nothing overlaps
+      const ns = cy.nodes();
+
+      for (let i = 0; i < ns.length; i++) {
+        for (let j = i + 1; j < ns.length; j++) {
+          expect(
+            overlaps(ns[i].boundingBox(), ns[j].boundingBox()),
+            `${ns[i].id()} / ${ns[j].id()}`,
+          ).to.equal(false);
+        }
+      }
+
+      // the singletons are a block of rows, not one rank
+      const rows = new Set(
+        group(cy, 's').map((n) => Math.round(n.position('y'))),
+      );
+
+      expect(rows.size).to.be.greaterThan(1);
+
+      // and the drawing wraps to about the viewport's width
+      const bb = cy.nodes().boundingBox();
+
+      expect(bb.w).to.be.lessThan(2 * 800);
+      expect(bb.h).to.be.greaterThan(2 * 30);
+    });
+
     it('packComponents: each tree alone and compact, the trees packed', async function () {
       const cy = mk(trees());
 

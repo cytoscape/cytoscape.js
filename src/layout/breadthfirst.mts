@@ -422,11 +422,16 @@ export class BreadthFirstLayout {
 
     // trees as blocks (123.4): with several components in a row layout
     // each rank is ordered component-first, the largest tree leftmost,
-    // and each component takes a column band (below)
+    // and each component takes a column band (below).  The singletons
+    // — every component of one node — share one band, the last, as a
+    // block of rows: a hundred of them in one rank made the drawing a
+    // hundred bands wide.  A packed component (compact) is one tree.
     const compRankOf = new Map<Collection, number>();
     let compCount = 0;
+    let singletons = 0;
+    let singletonBand = -1;
 
-    if (!options.circle) {
+    if (!options.circle && !compact) {
       const comps = eles
         .components()
         .map((comp: Collection) =>
@@ -434,24 +439,32 @@ export class BreadthFirstLayout {
         )
         .filter((comp: Collection) => comp.length > 0)
         .sort((a: Collection, b: Collection) => b.length - a.length);
+      const trees = comps.filter((comp: Collection) => comp.length > 1);
 
-      compCount = comps.length;
+      singletons = comps.length - trees.length;
+      compCount = trees.length + (singletons > 0 ? 1 : 0);
 
-      if (compCount > 1) {
+      if (compCount > 1 || singletons > 1) {
         for (let c = 0; c < comps.length; c++) {
+          const band = c < trees.length ? c : trees.length;
+
           for (let j = 0; j < comps[c].length; j++) {
-            compRankOf.set(comps[c][j], c);
+            compRankOf.set(comps[c][j], band);
           }
         }
+
+        singletonBand = singletons > 0 ? trees.length : -1;
+      } else {
+        compCount = 0;
       }
     }
 
+    const banded = compCount > 0;
     const compRank = (ele: Collection): number => compRankOf.get(ele) ?? 0;
-    const rankSort =
-      compCount > 1
-        ? (a: Collection, b: Collection): number =>
-            compRank(a) - compRank(b) || sortFn(a, b)
-        : sortFn;
+    const rankSort = banded
+      ? (a: Collection, b: Collection): number =>
+          compRank(a) - compRank(b) || sortFn(a, b)
+      : sortFn;
 
     let depthsLen = depths.length;
 
@@ -467,7 +480,7 @@ export class BreadthFirstLayout {
     if (orphanNodes.length > 0) {
       const orphans = orphanNodes.slice();
 
-      if (compCount > 1) {
+      if (banded) {
         orphans.sort((a, b) => compRank(a) - compRank(b));
       }
 
@@ -634,16 +647,6 @@ export class BreadthFirstLayout {
     }
 
     const padding = options.padding as number;
-    const distanceY = compact
-      ? Math.max(stepNeed, aveNodeSize.h)
-      : Math.max(
-          depthsLen === 1
-            ? 0
-            : hasBoundingBox
-              ? (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen - 1)
-              : (bb.h - padding * 2 - aveNodeSize.h) / (depthsLen + 1),
-          stepNeed,
-        );
 
     const maxDepthSize = depths.reduce(
       (max, level) => Math.max(max, level.length),
@@ -679,10 +682,18 @@ export class BreadthFirstLayout {
     const indexInComp = new Map<Collection, number>();
     const countInComp: Int32Array[] = [];
     const bandCentre = new Float64Array(compCount);
+    const bandWidth = new Float64Array(compCount);
+    const bandRows = new Int32Array(compCount);
+    const bandRowOffset = new Int32Array(compCount);
+    let totalRows = 0;
+    // the singleton block: rows of singletons as wide as a shelf, the
+    // cells the first rank's spacing apart — EnrichmentMap's rows
+    let singletonCols = 1;
+    let singletonHalf = aveNodeSize.w / 2;
 
-    if (compCount > 1) {
+    if (banded) {
       const halfNode = aveNodeSize.w / 2;
-      const width = new Float64Array(compCount);
+      const width = bandWidth;
 
       for (let d = 0; d < depthsLen; d++) {
         const rank = depths[d] as Collection[];
@@ -707,30 +718,121 @@ export class BreadthFirstLayout {
           }
 
           const last = first + count - 1;
-          const w =
-            (count - 1) * distanceX[d] +
-            (alongOf == null ? halfNode : alongOf(rank[first])) +
-            (alongOf == null ? halfNode : alongOf(rank[last]));
 
-          width[c] = Math.max(width[c], w);
+          if (c === singletonBand) {
+            // the block's width follows the shelves (below)
+            for (let k = first; k <= last; k++) {
+              singletonHalf = Math.max(
+                singletonHalf,
+                alongOf == null ? halfNode : alongOf(rank[k]),
+              );
+            }
+          } else {
+            const w =
+              (count - 1) * distanceX[d] +
+              (alongOf == null ? halfNode : alongOf(rank[first])) +
+              (alongOf == null ? halfNode : alongOf(rank[last]));
+
+            width[c] = Math.max(width[c], w);
+          }
+
           first = last + 1;
         }
       }
 
+      // a shelf holds bands up to the box's width, or the one band
+      // wider than it; the singleton block takes a shelf's width in
+      // columns, so it is rows of singletons and not a square hanging
+      // under a row of pairs
       const gap = options.componentSpacing ?? 40;
-      let total = -gap;
+      const limit = Math.max(
+        bb.w - padding * 2,
+        ...Array.from(width).filter((_w, c) => c !== singletonBand),
+      );
 
-      for (let c = 0; c < compCount; c++) {
-        total += width[c] + gap;
+      if (singletonBand >= 0) {
+        const step = Math.max(1e-9, distanceX[0]);
+
+        singletonCols = Math.max(
+          1,
+          Math.min(
+            singletons,
+            Math.floor((limit - 2 * singletonHalf) / step) + 1,
+          ),
+        );
+        width[singletonBand] = (singletonCols - 1) * step + 2 * singletonHalf;
       }
 
-      let left = center.x - total / 2;
+      // the rows each band spans: its deepest rank, or the singleton
+      // block's rows
+      for (let c = 0; c < compCount; c++) {
+        if (c === singletonBand) {
+          bandRows[c] = Math.ceil(singletons / singletonCols);
+          continue;
+        }
+
+        for (let d = 0; d < depthsLen; d++) {
+          if (countInComp[d][c] > 0) {
+            bandRows[c] = d + 1;
+          }
+        }
+      }
+
+      // the bands wrap into shelves (123.4), each shelf centred, the
+      // next shelf's rows starting under the deepest band of the one
+      // before, so a hundred pairs are rows of pairs and not a hundred
+      // bands wide
+      const shelves: number[][] = [[]];
+      let used = 0;
 
       for (let c = 0; c < compCount; c++) {
-        bandCentre[c] = left + width[c] / 2;
-        left += width[c] + gap;
+        const shelf = shelves[shelves.length - 1];
+        const next = shelf.length === 0 ? width[c] : used + gap + width[c];
+
+        if (shelf.length > 0 && next > limit) {
+          shelves.push([c]);
+          used = width[c];
+        } else {
+          shelf.push(c);
+          used = next;
+        }
+      }
+
+      for (const shelf of shelves) {
+        let total = -gap;
+        let rows = 0;
+
+        for (const c of shelf) {
+          total += width[c] + gap;
+          rows = Math.max(rows, bandRows[c]);
+        }
+
+        let left = center.x - total / 2;
+
+        for (const c of shelf) {
+          bandCentre[c] = left + width[c] / 2;
+          bandRowOffset[c] = totalRows;
+          left += width[c] + gap;
+        }
+
+        totalRows += rows;
       }
     }
+
+    // the step between rows: v3's spread of the rows over the box —
+    // over every shelf's rows when banded — floored by the overlap
+    // need; a packed tree takes the need alone
+    const rowsToSpread = banded ? totalRows : depthsLen;
+    const distanceY = compact
+      ? Math.max(stepNeed, aveNodeSize.h)
+      : Math.max(
+          rowsToSpread === 1
+            ? 0
+            : hasBoundingBox
+              ? (bb.h - padding * 2 - aveNodeSize.h) / (rowsToSpread - 1)
+              : (bb.h - padding * 2 - aveNodeSize.h) / (rowsToSpread + 1),
+          stepNeed,
+        );
 
     const getPositionTopBottom = (ele: Collection): Position => {
       const { depth, index } = getInfo(ele);
@@ -758,18 +860,35 @@ export class BreadthFirstLayout {
         };
       }
 
-      const y = center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY;
-
-      if (compCount > 1) {
+      if (banded) {
         const c = compRank(ele);
         const count = countInComp[depth][c];
         const j = indexInComp.get(ele) as number;
+        const rowOf = (row: number): number =>
+          center.y +
+          (row + bandRowOffset[c] + 1 - (totalRows + 1) / 2) * distanceY;
+
+        if (c === singletonBand) {
+          const col = j % singletonCols;
+          const row = Math.floor(j / singletonCols);
+
+          return {
+            x:
+              bandCentre[c] -
+              bandWidth[c] / 2 +
+              singletonHalf +
+              col * distanceX[depth],
+            y: rowOf(depth + row),
+          };
+        }
 
         return {
           x: bandCentre[c] + (j - (count - 1) / 2) * distanceX[depth],
-          y,
+          y: rowOf(depth),
         };
       }
+
+      const y = center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY;
 
       const depthSize = depths[depth].length;
 

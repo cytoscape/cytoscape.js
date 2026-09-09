@@ -1022,7 +1022,45 @@ interface LayoutBaseOptions {
   /** pan to set when fit is false */
   pan?: Position;
 }
-interface GridLayoutOptions extends LayoutBaseOptions {
+/** What `componentGroup` and `componentOrder` see: one description per
+ * disconnected component (121.1; shared by force, the discrete layouts
+ * under `packComponents` and the `pack` layout since 123). */
+interface LayoutComponentInfo {
+  /** the component's nodes */
+  nodes: unknown;
+  /** how many nodes it has */
+  size: number;
+  /** its packed box's width, bodies included */
+  width: number;
+  /** its packed box's height, bodies included */
+  height: number;
+}
+/** The component-packing options the discrete layouts take under
+ * `packComponents: true` (round 123, item 58), the same spellings a
+ * force run's settle re-pack takes. */
+interface ComponentPackingOptions {
+  /** lay each disconnected component out on its own — one ring, one
+   * grid, one tree per component — and shelf-pack the results largest
+   * first (default false: v3's one drawing about one centre).  Locked
+   * nodes are left out and the packed field is moved off their boxes. */
+  packComponents?: boolean;
+  /** the gap between packed component boxes (default 40) */
+  componentSpacing?: number;
+  /** group the packed components (121.1): called once per component
+   * with its description, and the components sharing a key pack on
+   * their own, the groups standing in a row left to right by key —
+   * numbers ascending, then strings, then the unkeyed.
+   * @throws at start when it is not a function */
+  componentGroup?: (component: LayoutComponentInfo) => string | number | null | undefined;
+  /** the order the pack lays components out in, a comparator over two
+   * descriptions ahead of largest-first (121.1).
+   * @throws at start when it is not a function */
+  componentOrder?: (a: LayoutComponentInfo, b: LayoutComponentInfo) => number;
+  /** the gap between the groups' packed boxes (default three
+   * `componentSpacing`s) */
+  groupSpacing?: number;
+}
+interface GridLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'grid';
   avoidOverlap?: boolean;
   avoidOverlapPadding?: number;
@@ -1043,7 +1081,7 @@ interface PresetLayoutOptions extends LayoutBaseOptions {
   /** node id → position map, or a function of a node handle; absent nodes keep their position */
   positions?: Record<string, Position> | ((node: unknown) => Position | null | undefined);
 }
-interface CircleLayoutOptions extends LayoutBaseOptions {
+interface CircleLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'circle';
   /** grow the ring until no two nodes overlap (default true; 115 —
    * exact per pair, in place of v3's largest-node-times-1.75 chord) */
@@ -1062,7 +1100,7 @@ interface CircleLayoutOptions extends LayoutBaseOptions {
    * (canonical, serializable — 85.3) or a comparator over node handles */
   sort?: LayoutSortMapping | ((a: unknown, b: unknown) => number);
 }
-interface ConcentricLayoutOptions extends LayoutBaseOptions {
+interface ConcentricLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'concentric';
   startAngle?: number;
   sweep?: number;
@@ -1083,7 +1121,7 @@ interface ConcentricLayoutOptions extends LayoutBaseOptions {
   /** the variation of concentric values per level (default: maxDegree / 4) */
   levelWidth?: (nodes: unknown) => number;
 }
-interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
+interface BreadthFirstLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'breadthfirst';
   /** whether the tree is directed downwards (default false) */
   directed?: boolean;
@@ -1113,10 +1151,20 @@ interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
 interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
+/** The `pack` layout (round 123, item 58): a translation-only re-pack
+ * of the components at their current positions — force's settle
+ * re-pack on its own, for a drawing whose structure is done (a sim,
+ * a preset, a hand arrangement) and only wants its components
+ * grouped, ordered and packed.  The largest component holds its
+ * centre.  No shapes or orientation: those need edge lengths and
+ * belong to `force`. */
+interface PackLayoutOptions extends LayoutBaseOptions, Omit<ComponentPackingOptions, 'packComponents'> {
+  name: 'pack';
+}
 /** The radial tree layout (round 85.1): concentric rings with
  * hierarchy-aware angular wedges — each subtree occupies a contiguous
  * sector sized by its weight, so subtrees never interleave. */
-interface RadialLayoutOptions extends LayoutBaseOptions {
+interface RadialLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'radial';
   /** the tree roots: a collection or an array of node ids (never a
    * selector string); omitted, inferred per component by max degree */
@@ -1313,7 +1361,7 @@ interface CustomLayoutOptions extends LayoutBaseOptions {
   _startEmitted?: boolean;
   [key: string]: unknown;
 }
-type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | ForceLayoutOptions | FlowLayoutOptions | CustomLayoutOptions;
+type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | PackLayoutOptions | ForceLayoutOptions | FlowLayoutOptions | CustomLayoutOptions;
 /** Renderer tuning knobs (all LOD values in device px). */
 interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -7566,6 +7614,16 @@ declare class CircleLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * One ring: `nodes` evenly around the centre of `bb`, at the given
+   * radius, or the box's, grown under `avoidOverlap` until no two
+   * overlap.
+   *
+   * @param nodes — the nodes, in ring order
+   * @param bb — the box the ring is centred in and sized by
+   * @returns the position of a node by its index in `nodes`
+   */
+  private ring;
 }
 //#endregion
 //#region src/layout/concentric.d.mts
@@ -7597,6 +7655,17 @@ declare class ConcentricLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * One set of rings: `nodes` binned into levels by score and
+   * `levelWidth`, each ring at the radius that clears its own nodes
+   * and the ring inside it, about the centre of `bb`.
+   *
+   * @param nodes — the nodes to place
+   * @param bb — the box the rings are centred in
+   * @param valueOf — each node's score
+   * @returns the position of a node by handle
+   */
+  private rings;
 }
 //#endregion
 //#region src/layout/breadthfirst.d.mts
@@ -7628,6 +7697,23 @@ declare class BreadthFirstLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * One drawing: the BFS depths from `roots` over `nodes`, the ranks
+   * sorted, the overlap floors, the rows (or rings) about the centre
+   * of `bb`, rotated for `direction`.
+   *
+   * @param eles — the scope the BFS walks
+   * @param nodes — the nodes to place
+   * @param roots — the roots among them
+   * @param bb — the box the drawing is centred in and sized by
+   * @param sizing — how the rows are spaced: `'box'` fills an explicit
+   *   `boundingBox` to its edges, `'margin'` leaves v3's margin inside
+   *   the viewport, and `'compact'` (a packed component, 123.4) spaces
+   *   by the overlap need alone — bodies apart, `spacingFactor` the air
+   *   — so a packed tree is as small as it can be drawn
+   * @returns the position of a node by handle
+   */
+  private place;
 }
 //#endregion
 //#region src/layout/random.d.mts
@@ -7697,10 +7783,56 @@ declare class RadialLayout {
    *   that could mean anything here
    */
   run(): this;
+  /**
+   * One radial: the BFS trees grown from `roots` over `nodes` (unreached
+   * nodes seed their own, in order), every subtree a wedge, every ring
+   * at the radius that clears it, about the centre of `bb`.
+   *
+   * @param eles — the scope the BFS walks
+   * @param nodes — the nodes to place
+   * @param roots — the roots among them
+   * @param bb — the box the drawing is centred in and sized by
+   * @returns the position of a node by handle
+   */
+  private tree;
+}
+//#endregion
+//#region src/layout/pack-layout.d.mts
+/**
+ * Pack the disconnected components at their current positions: each
+ * component translated as one body, the boxes shelf-packed largest
+ * first with `componentSpacing` between, grouped and ordered by
+ * `componentGroup` and `componentOrder`, the largest component's centre
+ * held.  A re-pack for a drawing that is otherwise done.
+ */
+declare class PackLayout {
+  /** the resolved options this layout was created with */
+  options: PackLayoutOptions;
+  private cy;
+  /**
+   * Reached through `cy.layout( { name: 'pack' } )` / `eles.layout( … )`
+   * rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — this layout's options merged over its defaults,
+   *   plus the shared plumbing (`fit`, `padding`, `transform`, `animate`,
+   *   the lifecycle callbacks)
+   */
+  constructor(cy: Core, options: PackLayoutOptions);
+  /**
+   * Run the layout: emits `layoutstart`, writes the packed positions,
+   * then emits `layoutready`/`layoutstop`.  Under `animate: true` every
+   * component tweens to its packed place.
+   *
+   * @returns this layout, for chaining
+   * @throws at start when `componentGroup` or `componentOrder` is set
+   *   and is not a function
+   */
+  run(): this;
 }
 //#endregion
 //#region src/core.d.mts
-type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout | RadialLayout;
+type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout | RadialLayout | PackLayout;
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 interface RendererLike {
@@ -8999,5 +9131,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

@@ -2,6 +2,7 @@ import * as math from '../math.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { ringTangentialRadius } from './separation.mjs';
+import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { CircleLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -19,6 +20,14 @@ smallest radius at which no two of its nodes overlap — each angular
 pair separated along its own chord, so a wide label at the side of the
 ring (where the chord runs vertically) costs its height, not its width
 — plus `avoidOverlapPadding` around every box.
+
+Components (round 123.2): `packComponents: true` draws one ring per
+disconnected component — a singleton a point, a pair two points, a
+triple a triangle — each at the smallest radius that separates its
+members, `sort` ordering each ring, and shelf-packs the rings largest
+first under the shared `componentSpacing` / `componentGroup` /
+`componentOrder` (`per-component.mts`).  Off (the default), one ring
+about one centre, as v3.
 */
 
 const defaults: Omit<CircleLayoutOptions, 'name'> = {
@@ -33,6 +42,11 @@ const defaults: Omit<CircleLayoutOptions, 'name'> = {
   sweep: undefined,
   clockwise: true,
   sort: undefined,
+  packComponents: false,
+  componentSpacing: 40,
+  componentGroup: undefined,
+  componentOrder: undefined,
+  groupSpacing: undefined,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -79,10 +93,6 @@ export class CircleLayout {
     const cy = this.cy;
     const options = this.options;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
-    const clockwise =
-      options.counterclockwise !== undefined
-        ? !options.counterclockwise
-        : options.clockwise;
 
     // parents derive; a locked node holds its place and takes no slot on
     // the ring (114.3 — circle places by index)
@@ -109,6 +119,56 @@ export class CircleLayout {
       },
     ) as BoundingBox;
 
+    // one ring per component, packed (123.2) — or v3's one ring
+    let getPos: (node: Collection, i: number) => Position;
+
+    if (options.packComponents === true) {
+      validatePackOptions(options, 'circle');
+
+      const perComponent = layoutPerComponent(
+        cy,
+        {
+          eles,
+          nodes,
+          bb,
+          boundingBox: options.boundingBox ?? null,
+          options,
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: options.avoidOverlapPadding ?? 10,
+          held: eles.nodes().filter((n: Collection) => n.locked()),
+        },
+        (compNodes, box) => this.ring(compNodes, box),
+      );
+
+      getPos = (node) => perComponent(node);
+    } else {
+      getPos = this.ring(nodes, bb);
+    }
+
+    nodes.layoutPositions(this, { ...options, eles }, getPos);
+
+    return this;
+  }
+
+  /**
+   * One ring: `nodes` evenly around the centre of `bb`, at the given
+   * radius, or the box's, grown under `avoidOverlap` until no two
+   * overlap.
+   *
+   * @param nodes — the nodes, in ring order
+   * @param bb — the box the ring is centred in and sized by
+   * @returns the position of a node by its index in `nodes`
+   */
+  private ring(
+    nodes: Collection,
+    bb: BoundingBox,
+  ): (node: Collection, i: number) => Position {
+    const cy = this.cy;
+    const options = this.options;
+    const clockwise =
+      options.counterclockwise !== undefined
+        ? !options.counterclockwise
+        : options.clockwise;
     const center = {
       x: bb.x1 + bb.w / 2,
       y: bb.y1 + bb.h / 2,
@@ -134,7 +194,7 @@ export class CircleLayout {
     } else if (nodes.length <= 1) {
       r = 0;
     } else {
-      r = Math.min(bb.h, bb.w) / 2 - minDistance;
+      r = Math.max(0, Math.min(bb.h, bb.w) / 2 - minDistance);
     }
 
     const angleOf = (i: number): number =>
@@ -157,7 +217,7 @@ export class CircleLayout {
       r = Math.max(ringTangentialRadius(dims, { members, angles }), r);
     }
 
-    const getPos = (_ele: Collection, i: number): Position => {
+    return (_ele: Collection, i: number): Position => {
       const theta = angleOf(i);
 
       return {
@@ -165,9 +225,5 @@ export class CircleLayout {
         y: center.y + r * Math.sin(theta),
       };
     };
-
-    nodes.layoutPositions(this, { ...options, eles }, getPos);
-
-    return this;
   }
 }

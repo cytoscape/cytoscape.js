@@ -1,6 +1,7 @@
 import * as math from '../math.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { ringRadius, type Ring } from './separation.mjs';
+import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { RadialLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -35,6 +36,13 @@ structure, so a ring's radius is the one degree of freedom — under
 neither the ring inside it nor the neighbours along it touch, every
 pair separated along its own direction (`separation.mts`), node boxes
 read through the shared dimensions (labels on request).
+
+Components (round 123.2): without `packComponents` several components
+share one radial as wedges, their roots on the first ring (above);
+with it each component is its own radial tree, root at its own
+centre, and the trees shelf-pack largest first under the shared
+`componentSpacing` / `componentGroup` / `componentOrder`
+(`per-component.mts`).
 */
 
 const defaults: Omit<RadialLayoutOptions, 'name'> = {
@@ -50,6 +58,11 @@ const defaults: Omit<RadialLayoutOptions, 'name'> = {
   avoidOverlapPadding: 10,
   weight: 'leaves',
   spacingFactor: undefined,
+  packComponents: false,
+  componentSpacing: 40,
+  componentGroup: undefined,
+  componentOrder: undefined,
+  groupSpacing: undefined,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -143,6 +156,62 @@ export class RadialLayout {
         roots = roots.union(compRoots);
       }
     }
+
+    // one tree per component, packed (123.2) — or one radial of wedges
+    let getPos: (node: Collection) => Position;
+
+    if (options.packComponents === true) {
+      validatePackOptions(options, 'radial');
+
+      const perComponent = layoutPerComponent(
+        cy,
+        {
+          eles,
+          nodes,
+          bb,
+          boundingBox: options.boundingBox ?? null,
+          options,
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: options.avoidOverlapPadding ?? 10,
+          held: eles.nodes().filter((n: Collection) => n.locked()),
+        },
+        (compNodes, box) =>
+          this.tree(
+            eles,
+            compNodes,
+            roots.filter((r: Collection) => compNodes.has(r)),
+            box,
+          ),
+      );
+
+      getPos = (node) => perComponent(node);
+    } else {
+      getPos = this.tree(eles, nodes, roots, bb);
+    }
+
+    nodes.layoutPositions(this, { ...options, eles }, getPos);
+
+    return this;
+  }
+
+  /**
+   * One radial: the BFS trees grown from `roots` over `nodes` (unreached
+   * nodes seed their own, in order), every subtree a wedge, every ring
+   * at the radius that clears it, about the centre of `bb`.
+   *
+   * @param eles — the scope the BFS walks
+   * @param nodes — the nodes to place
+   * @param roots — the roots among them
+   * @param bb — the box the drawing is centred in and sized by
+   * @returns the position of a node by handle
+   */
+  private tree(
+    eles: Collection,
+    nodes: Collection,
+    roots: Collection,
+    bb: BoundingBox,
+  ): (node: Collection) => Position {
+    const options = this.options;
 
     // grow the BFS trees: parent links and depths.  Handles are
     // interned singletons, so Maps keyed by handle are sound (the
@@ -295,7 +364,7 @@ export class RadialLayout {
     }
 
     if (options.avoidOverlap !== false && nodes.length > 1) {
-      const dims = nodeDimsOf(cy, nodes, {
+      const dims = nodeDimsOf(this.cy, nodes, {
         includeLabels: options.nodeDimensionsIncludeLabels === true,
         padding: options.avoidOverlapPadding ?? 10,
       });
@@ -360,8 +429,6 @@ export class RadialLayout {
       };
     };
 
-    nodes.layoutPositions(this, { ...options, eles }, getPos);
-
-    return this;
+    return getPos;
   }
 }

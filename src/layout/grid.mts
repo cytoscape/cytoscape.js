@@ -3,6 +3,7 @@ import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDims, nodeDimsOf } from './dims.mjs';
+import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { GridLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -20,6 +21,13 @@ which take handles by contract — plus subset scopes and the finisher
 plumbing (`animate`, `animateFilter`, `transform`, `ready`/`stop` —
 87.3) fall back to the per-element path, which finishes through the
 shared `eles.layoutPositions`.
+
+Components (round 123.3): `packComponents: true` lays one grid per
+disconnected component — a singleton one cell — and shelf-packs the
+grids largest first under the shared `componentSpacing` /
+`componentGroup` / `componentOrder` (`per-component.mts`); the
+singletons of a graph become rows, EnrichmentMap's picture.  Off (the
+default), one grid over the scope, as v3.
 */
 
 const defaults: Omit<GridLayoutOptions, 'name'> = {
@@ -34,6 +42,11 @@ const defaults: Omit<GridLayoutOptions, 'name'> = {
   cols: undefined, // force num of columns in the grid
   position: undefined, // returns { row, col } for element
   sort: undefined, // a sorting function to order the nodes
+  packComponents: false,
+  componentSpacing: 40,
+  componentGroup: undefined,
+  componentOrder: undefined,
+  groupSpacing: undefined,
 };
 
 type RowCol = { row?: number; col?: number };
@@ -94,6 +107,7 @@ export class GridLayout {
     // or when the finisher's plumbing (animate/transform/callbacks) is
     // asked for (87.3)
     if (
+      options.packComponents === true ||
       options.sort != null ||
       options.position != null ||
       options.eles != null ||
@@ -199,6 +213,57 @@ export class GridLayout {
       options.position != null
         ? nodes.map((node: Collection) => options.position!(node) ?? undefined)
         : null;
+
+    // one grid per component, packed (123.3)
+    if (options.packComponents === true) {
+      validatePackOptions(options, 'grid');
+
+      const manOf = new Map<Collection, RowCol | undefined>();
+
+      if (manRaw != null) {
+        for (let i = 0; i < nodes.length; i++) {
+          manOf.set(nodes[i], manRaw[i]);
+        }
+      }
+
+      const perComponent = layoutPerComponent(
+        cy,
+        {
+          eles,
+          nodes,
+          bb,
+          boundingBox: options.boundingBox ?? null,
+          options,
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: 0,
+          held: eles.nodes().filter((n: Collection) => n.locked()),
+        },
+        (compNodes, box) => {
+          const compDims = nodeDimsOf(cy, compNodes, {
+            includeLabels: options.nodeDimensionsIncludeLabels === true,
+          });
+          const cells = this.cellPositions(
+            compNodes.length,
+            box,
+            (i) => compDims.x2[i] - compDims.x1[i],
+            (i) => compDims.y2[i] - compDims.y1[i],
+            manRaw == null
+              ? null
+              : compNodes.map((node: Collection) => manOf.get(node)),
+          );
+
+          return (_node: Collection, i: number) => cells[i];
+        },
+      );
+
+      nodes.layoutPositions(
+        this,
+        { ...options, eles, spacingFactor: undefined },
+        (node: Collection) => perComponent(node),
+      );
+
+      return;
+    }
 
     const dims = nodeDimsOf(cy, nodes, {
       includeLabels: options.nodeDimensionsIncludeLabels === true,

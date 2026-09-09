@@ -7,6 +7,7 @@ import {
 } from './layout-mapping.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { ringRadius, type Ring } from './separation.mjs';
+import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { ConcentricLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -25,6 +26,15 @@ the smallest radius that clears its own nodes and the ring inside it
 (`separation.mts`), `minNodeSpacing` padding every box; a level's
 angles are untouched.  `avoidOverlap: false` keeps v3's bounded
 uniform steps.
+
+Components (round 123.2): `packComponents: true` draws one set of
+rings per disconnected component, the scores resolved once over the
+scope (a `range` mapping normalizes across the whole graph) but the
+levels binned per component — `levelWidth` sees that component's
+nodes — and shelf-packs the drawings largest first under the shared
+`componentSpacing` / `componentGroup` / `componentOrder`
+(`per-component.mts`).  Off (the default), one set of rings about one
+centre, as v3.
 */
 
 const defaults: Omit<ConcentricLayoutOptions, 'name'> = {
@@ -42,6 +52,11 @@ const defaults: Omit<ConcentricLayoutOptions, 'name'> = {
   spacingFactor: undefined,
   concentric: (node) => (node as Collection).degree() ?? 0,
   levelWidth: (nodes) => ((nodes as Collection).maxDegree() ?? 0) / 4,
+  packComponents: false,
+  componentSpacing: 40,
+  componentGroup: undefined,
+  componentOrder: undefined,
+  groupSpacing: undefined,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -93,10 +108,6 @@ export class ConcentricLayout {
     const cy = this.cy;
     const options = this.options;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
-    const clockwise =
-      options.counterclockwise !== undefined
-        ? !options.counterclockwise
-        : options.clockwise;
     const nodes = eles.nodes().filter((n: Collection) => !n.isParent());
 
     const bb = math.makeBoundingBox(
@@ -107,11 +118,6 @@ export class ConcentricLayout {
         h: cy.height(),
       },
     ) as BoundingBox;
-
-    const center = {
-      x: bb.x1 + bb.w / 2,
-      y: bb.y1 + bb.h / 2,
-    };
 
     // the score-mapping form (85.3): the column resolved once — the
     // serializable spelling; the fn form (and the degree default) stay
@@ -136,15 +142,79 @@ export class ConcentricLayout {
       scoreOf = (node) => fn(node);
     }
 
-    const nodeValues: { value: number; node: Collection }[] = [];
-    let maxNodeSize = 0;
+    // every node's score, once over the scope, in its scratch as v3
+    const valueOf = new Map<Collection, number>();
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       const value = scoreOf(node, i);
 
-      nodeValues.push({ value, node });
+      valueOf.set(node, value);
       node.scratch('concentric', value);
+    }
+
+    // one set of rings per component, packed (123.2) — or v3's one
+    let getPos: (node: Collection) => Position;
+
+    if (options.packComponents === true) {
+      validatePackOptions(options, 'concentric');
+
+      const perComponent = layoutPerComponent(
+        cy,
+        {
+          eles,
+          nodes,
+          bb,
+          boundingBox: options.boundingBox ?? null,
+          options,
+          includeLabels: options.nodeDimensionsIncludeLabels === true,
+          padding: options.minNodeSpacing as number,
+          held: eles.nodes().filter((n: Collection) => n.locked()),
+        },
+        (compNodes, box) => this.rings(compNodes, box, valueOf),
+      );
+
+      getPos = (node) => perComponent(node);
+    } else {
+      getPos = this.rings(nodes, bb, valueOf);
+    }
+
+    nodes.layoutPositions(this, { ...options, eles }, (ele) => getPos(ele));
+
+    return this;
+  }
+
+  /**
+   * One set of rings: `nodes` binned into levels by score and
+   * `levelWidth`, each ring at the radius that clears its own nodes
+   * and the ring inside it, about the centre of `bb`.
+   *
+   * @param nodes — the nodes to place
+   * @param bb — the box the rings are centred in
+   * @param valueOf — each node's score
+   * @returns the position of a node by handle
+   */
+  private rings(
+    nodes: Collection,
+    bb: BoundingBox,
+    valueOf: Map<Collection, number>,
+  ): (node: Collection) => Position {
+    const options = this.options;
+    const clockwise =
+      options.counterclockwise !== undefined
+        ? !options.counterclockwise
+        : options.clockwise;
+    const center = {
+      x: bb.x1 + bb.w / 2,
+      y: bb.y1 + bb.h / 2,
+    };
+    const nodeValues: { value: number; node: Collection }[] = [];
+    let maxNodeSize = 0;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+
+      nodeValues.push({ value: valueOf.get(node) as number, node });
     }
 
     for (let i = 0; i < nodes.length; i++) {
@@ -194,7 +264,7 @@ export class ConcentricLayout {
     // solved exactly against its own nodes and the ring inside it; the
     // boxes carry minNodeSpacing as padding
     const dims = options.avoidOverlap
-      ? nodeDimsOf(cy, nodes, {
+      ? nodeDimsOf(this.cy, nodes, {
           includeLabels: options.nodeDimensionsIncludeLabels === true,
           padding: options.minNodeSpacing as number,
         })
@@ -280,12 +350,6 @@ export class ConcentricLayout {
       }
     }
 
-    nodes.layoutPositions(
-      this,
-      { ...options, eles },
-      (ele) => pos.get(ele) as Position,
-    );
-
-    return this;
+    return (ele: Collection): Position => pos.get(ele) as Position;
   }
 }

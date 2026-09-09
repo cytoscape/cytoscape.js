@@ -24,7 +24,8 @@ var layoutConfig = (function () {
     random: null,
     radial: { 'curve-style': 'bezier' },
     force: { 'curve-style': 'haystack' },
-    // the combo is force twice (120): the same sheet
+    // the EM entry is force with a grouping and an order (120; one run
+    // since 121): the same sheet
     'force-by-sign': { 'curve-style': 'haystack' },
     flow: { 'curve-style': 'round-taxi', 'taxi-turn': 20 },
     spiral: { 'curve-style': 'bezier' },
@@ -201,12 +202,19 @@ var layoutConfig = (function () {
       options.spacingFactor = factor;
     }
 
-    if (name === 'force') {
+    if (isForce(name)) {
+      options.name = 'force';
       Object.assign(options, forceAnimation(ui));
       options.seed = parseInt(ui.seed || '1', 10);
       options.avoidOverlap = forceOverlap(ui);
       // spelled out every run (120): the page's box is the run's
       options.tidyComponents = ui.tidy !== false;
+    }
+
+    // the EM entry (121.1): the grouping and the order, for a network
+    // with a signed field; without one it is a plain force run
+    if (isCombo(name) && ui.signKey != null) {
+      Object.assign(options, signedPacking(ui.signKey));
     }
 
     if (name === 'preset') {
@@ -216,50 +224,129 @@ var layoutConfig = (function () {
     return options;
   }
 
-  // The combo entry (120): two force runs, one per sign of a network's
-  // signed field, packed side by side — the EnrichmentMap preset's
-  // shape, where the blue components sit left and the red right, each
-  // side's components largest first.  The page runs it; these are the
-  // pure parts.
-  var COMBO_BY_SIGN = 'force-by-sign';
+  // The EM entry (120; one run since 121.1): force with the library's
+  // `componentGroup` and `componentOrder` — the components grouped by
+  // the sign of a network's signed field, negatives left, a mixed
+  // component in the middle, positives right, and each group's rows by
+  // node count and then by score, the EnrichmentMap preset's shape.
+  // The page runs it; these are the pure parts.
+  var FORCE_BY_SIGN = 'force-by-sign';
+  /** a component is mixed when its minority sign holds this share of
+   * its signed members: em-web's 187-node component is 59 positive
+   * against 128, and sits between the sides rather than with either */
+  var MIXED_SHARE = 0.25;
 
   function isCombo(name) {
-    return name === COMBO_BY_SIGN;
+    return name === FORCE_BY_SIGN;
+  }
+
+  /** the layouts that are force runs: the select's force, and the EM
+   * entry that is force with a grouping */
+  function isForce(name) {
+    return name === 'force' || name === FORCE_BY_SIGN;
+  }
+
+  function finite(values) {
+    var out = [];
+
+    (values || []).forEach(function (v) {
+      if (v == null || v === '') {
+        return;
+      }
+
+      var x = Number(v);
+
+      if (Number.isFinite(x)) {
+        out.push(x);
+      }
+    });
+
+    return out;
   }
 
   /**
-   * Which side each component goes to: whole, by the sign of the mean
-   * of its members' finite values; a component with no value at all
-   * follows the negative side, so an unsigned graph is one run.
+   * A component's group by sign: -1 for negative, 1 for positive, 0
+   * for a mixed one (its minority sign holding at least MIXED_SHARE of
+   * its signed members), and null for one with no signed member at all
+   * — the library packs the unkeyed last, and a graph with no signed
+   * field is one group.
    *
-   * @param components [{ ids: string[], values: (number|null)[] }]
-   * @returns { negative: string[], positive: string[] }
+   * @param values the members' values (strings count, blanks skip)
    */
-  function splitBySign(components) {
-    var negative = [];
-    var positive = [];
+  function signGroup(values) {
+    var v = finite(values);
 
-    (components || []).forEach(function (c) {
-      var sum = 0;
-      var count = 0;
+    if (v.length === 0) {
+      return null;
+    }
 
-      (c.values || []).forEach(function (v) {
-        var x = Number(v);
+    var pos = 0;
+    var neg = 0;
 
-        if (Number.isFinite(x)) {
-          sum += x;
-          count++;
-        }
-      });
-
-      var side = count > 0 && sum / count > 0 ? positive : negative;
-
-      c.ids.forEach(function (id) {
-        side.push(id);
-      });
+    v.forEach(function (x) {
+      if (x > 0) {
+        pos++;
+      } else if (x < 0) {
+        neg++;
+      }
     });
 
-    return { negative: negative, positive: positive };
+    if (pos === 0 && neg === 0) {
+      return null;
+    }
+
+    var minority = Math.min(pos, neg);
+
+    if (minority / (pos + neg) >= MIXED_SHARE) {
+      return 0;
+    }
+
+    return pos > neg ? 1 : -1;
+  }
+
+  /** a component's score: the mean of its members' finite values, or
+   * 0 with none */
+  function scoreOf(values) {
+    var v = finite(values);
+
+    if (v.length === 0) {
+      return 0;
+    }
+
+    return (
+      v.reduce(function (a, b) {
+        return a + b;
+      }, 0) / v.length
+    );
+  }
+
+  /**
+   * The grouping and the order the EM entry hands force, for a signed
+   * field: `componentGroup` by `signGroup` over the component's nodes,
+   * `componentOrder` by node count and then by score descending — the
+   * preset's rows, each read from the strongest score down.
+   *
+   * @param key the network's signed data field
+   */
+  function signedPacking(key) {
+    var valuesOf = function (c) {
+      var out = [];
+
+      c.nodes.forEach(function (n) {
+        out.push(n.data(key));
+      });
+
+      return out;
+    };
+
+    return {
+      componentGroup: function (c) {
+        return signGroup(valuesOf(c));
+      },
+      componentOrder: function (a, b) {
+        return b.size - a.size || scoreOf(valuesOf(b)) - scoreOf(valuesOf(a));
+      },
+    };
   }
 
   // Past this many elements the hover panel stays off: a neighbourhood
@@ -282,9 +369,13 @@ var layoutConfig = (function () {
     forceAnimation: forceAnimation,
     OVERLAP_MODES: OVERLAP_MODES,
     forceOverlap: forceOverlap,
-    COMBO_BY_SIGN: COMBO_BY_SIGN,
+    FORCE_BY_SIGN: FORCE_BY_SIGN,
+    MIXED_SHARE: MIXED_SHARE,
     isCombo: isCombo,
-    splitBySign: splitBySign,
+    isForce: isForce,
+    signGroup: signGroup,
+    scoreOf: scoreOf,
+    signedPacking: signedPacking,
     layoutOptions: layoutOptions,
     HOVER_MAX_ELEMENTS: HOVER_MAX_ELEMENTS,
     hoverAllowed: hoverAllowed,

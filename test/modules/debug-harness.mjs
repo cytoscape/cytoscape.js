@@ -1318,7 +1318,7 @@ describe('debug harness (round 43)', function () {
       ).to.equal(true);
     });
 
-    it('spells the tidy box on force alone, and splits a signed graph by component for the combo (120)', function () {
+    it('spells the tidy box on force alone, and knows the EM entry (120)', function () {
       expect(
         layoutConfig.layoutOptions('force', { tidy: true }).tidyComponents,
       ).to.equal(true);
@@ -1335,20 +1335,65 @@ describe('debug harness (round 43)', function () {
 
       expect(layoutConfig.isCombo('force-by-sign')).to.equal(true);
       expect(layoutConfig.isCombo('force')).to.equal(false);
+      expect(layoutConfig.isForce('force-by-sign')).to.equal(true);
+      expect(layoutConfig.isForce('circle')).to.equal(false);
+    });
 
-      const split = layoutConfig.splitBySign([
-        { ids: ['a', 'b'], values: [2, -1] }, // mean positive: whole to the right
-        { ids: ['c'], values: [-0.5] },
-        { ids: ['d', 'e'], values: [null, undefined] }, // unsigned: left
-        { ids: ['f'], values: ['1.5'] }, // a string number counts
-      ]);
+    // 121.1: the EM entry is one force run with the library's grouping
+    // and order — by the sign of the network's field, negatives left, a
+    // mixed component between, positives right; each group by node
+    // count and then by score descending
+    it('spells the EM entry as force with a grouping by sign and an order by size then score (121)', function () {
+      expect(layoutConfig.signGroup([2, 1.5])).to.equal(1);
+      expect(layoutConfig.signGroup([-0.5])).to.equal(-1);
+      expect(layoutConfig.signGroup([null, undefined])).to.equal(null);
+      expect(layoutConfig.signGroup([])).to.equal(null);
+      expect(layoutConfig.signGroup(['1.5', ''])).to.equal(1); // a string number counts
+      // a mixed component: the minority holding a quarter or more of
+      // the signed members sits between the sides; under that it goes
+      // with the majority
+      expect(layoutConfig.signGroup([1, -1, -1, -1])).to.equal(0);
+      expect(layoutConfig.signGroup([1, -1, -1, -1, -1])).to.equal(-1);
+      expect(layoutConfig.MIXED_SHARE).to.equal(0.25);
 
-      expect(split.positive).to.deep.equal(['a', 'b', 'f']);
-      expect(split.negative).to.deep.equal(['c', 'd', 'e']);
-      expect(layoutConfig.splitBySign([])).to.deep.equal({
-        negative: [],
-        positive: [],
+      expect(layoutConfig.scoreOf([1, 2, '3', null])).to.equal(2);
+      expect(layoutConfig.scoreOf([])).to.equal(0);
+
+      // a fake component: what force hands the functions
+      const comp = (size, values) => ({
+        size,
+        nodes: {
+          forEach: (fn) => values.forEach((v) => fn({ data: () => v })),
+        },
       });
+      const options = layoutConfig.layoutOptions('force-by-sign', {
+        signKey: 'NES',
+      });
+
+      expect(options.name).to.equal('force');
+      expect(options.componentGroup(comp(2, [-1, -2]))).to.equal(-1);
+      expect(options.componentGroup(comp(1, [2]))).to.equal(1);
+      // larger first, then the stronger score
+      expect(
+        options.componentOrder(comp(1, [3]), comp(2, [1])),
+      ).to.be.greaterThan(0);
+      expect(options.componentOrder(comp(1, [3]), comp(1, [1]))).to.be.lessThan(
+        0,
+      );
+      expect(
+        options.componentOrder(comp(1, [-1]), comp(1, [-2])),
+      ).to.be.lessThan(0);
+
+      // no signed field: a plain force run
+      const plain = layoutConfig.layoutOptions('force-by-sign', {});
+
+      expect(plain.name).to.equal('force');
+      expect(plain.componentGroup).to.equal(undefined);
+      expect(plain.componentOrder).to.equal(undefined);
+      // and force itself never carries them
+      expect(
+        layoutConfig.layoutOptions('force', { signKey: 'NES' }).componentGroup,
+      ).to.equal(undefined);
     });
 
     it('spells the two overlap checkboxes out on every layout that has them (115)', function () {

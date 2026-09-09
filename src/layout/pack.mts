@@ -750,3 +750,149 @@ export const tidySmallComponents = (
   return shaped;
 };
 
+/** the anisotropy past which a component has a principal axis to lay
+ * flat (121.2): the ratio of its position covariance's eigenvalues */
+const ORIENT_ANISOTROPY = 1.15;
+
+/**
+ * The larger components take a canonical orientation at the settle
+ * (121.2) — the shape the sim found, rotated about its centroid, so a
+ * component packs at a chosen angle rather than the angle it landed at.
+ * A component with a principal axis (its position covariance's
+ * eigenvalues `ORIENT_ANISOTROPY` apart) lies flat, the axis
+ * horizontal, by the smaller of the two rotations that get it there —
+ * the wide box the shelf pack's rows want; an isotropic one (a ring, a
+ * star) turns its farthest member to the top, which is what the small
+ * shapes do with a hub or a point.  Components of fewer than `minSize`
+ * nodes are left to the shapes, and one holding a pinned node is left
+ * as it is.
+ *
+ * @param n — sim node count
+ * @param comps — the component assignment
+ * @param positions — 2n interleaved coordinates, rewritten in place
+ * @param pinned — per-node non-zero for a node that must not move
+ * @param minSize — the smallest component to orient (default 5)
+ * @returns how many components turned
+ */
+export const orientComponents = (
+  n: number,
+  comps: Components,
+  positions: Float32Array | Float64Array,
+  pinned: ArrayLike<number> | null,
+  minSize = 5,
+): number => {
+  const { compOf, sizes, count } = comps;
+  const hold = new Uint8Array(count);
+  const cx = new Float64Array(count);
+  const cy = new Float64Array(count);
+
+  for (let i = 0; i < n; i++) {
+    const c = compOf[i];
+
+    cx[c] += positions[i * 2];
+    cy[c] += positions[i * 2 + 1];
+
+    if (pinned != null && pinned[i] !== 0) {
+      hold[c] = 1;
+    }
+  }
+
+  for (let c = 0; c < count; c++) {
+    cx[c] /= sizes[c];
+    cy[c] /= sizes[c];
+  }
+
+  // the position covariance per component, and the farthest member
+  const sxx = new Float64Array(count);
+  const sxy = new Float64Array(count);
+  const syy = new Float64Array(count);
+  const farD = new Float64Array(count);
+  const farAt = new Int32Array(count).fill(-1);
+
+  for (let i = 0; i < n; i++) {
+    const c = compOf[i];
+    const x = positions[i * 2] - cx[c];
+    const y = positions[i * 2 + 1] - cy[c];
+
+    sxx[c] += x * x;
+    sxy[c] += x * y;
+    syy[c] += y * y;
+
+    const d = x * x + y * y;
+
+    if (d > farD[c] || (d === farD[c] && farAt[c] > i)) {
+      farD[c] = d;
+      farAt[c] = i;
+    }
+  }
+
+  const angle = new Float64Array(count);
+  const turn = new Uint8Array(count);
+
+  for (let c = 0; c < count; c++) {
+    if (hold[c] === 1 || sizes[c] < minSize || farD[c] === 0) {
+      continue;
+    }
+
+    const tr = sxx[c] + syy[c];
+    const det = sxx[c] * syy[c] - sxy[c] * sxy[c];
+    const disc = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+    const l1 = tr / 2 + disc;
+    const l2 = tr / 2 - disc;
+
+    if (l2 <= 0 || l1 / l2 >= ORIENT_ANISOTROPY) {
+      // the principal axis: half the covariance's double angle; the
+      // rotation that lays it flat is its negative, folded into
+      // (-90°, 90°] so the turn is the smaller one
+      let theta = 0.5 * Math.atan2(2 * sxy[c], sxx[c] - syy[c]);
+
+      if (theta > Math.PI / 2) {
+        theta -= Math.PI;
+      } else if (theta <= -Math.PI / 2) {
+        theta += Math.PI;
+      }
+
+      angle[c] = -theta;
+    } else {
+      // isotropic: the farthest member to the top (y grows downward,
+      // so the top is -90°)
+      const i = farAt[c];
+      const a = Math.atan2(
+        positions[i * 2 + 1] - cy[c],
+        positions[i * 2] - cx[c],
+      );
+
+      angle[c] = -Math.PI / 2 - a;
+    }
+
+    turn[c] = 1;
+  }
+
+  const cos = new Float64Array(count);
+  const sin = new Float64Array(count);
+  let turned = 0;
+
+  for (let c = 0; c < count; c++) {
+    if (turn[c] === 1) {
+      cos[c] = Math.cos(angle[c]);
+      sin[c] = Math.sin(angle[c]);
+      turned++;
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    const c = compOf[i];
+
+    if (turn[c] !== 1) {
+      continue;
+    }
+
+    const x = positions[i * 2] - cx[c];
+    const y = positions[i * 2 + 1] - cy[c];
+
+    positions[i * 2] = cx[c] + x * cos[c] - y * sin[c];
+    positions[i * 2 + 1] = cy[c] + x * sin[c] + y * cos[c];
+  }
+
+  return turned;
+};

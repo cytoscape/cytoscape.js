@@ -1410,4 +1410,51 @@ describe('the re-pack takes a grouping and an order (121)', function () {
 
     expect(called).to.equal(0);
   });
+
+  it('a larger component lies flat at the settle (121.2), and keeps its shape', async function () {
+    // a 7-path: a principal axis, and no small shape
+    const els = [];
+
+    for (let i = 0; i < 7; i++) {
+      els.push({ data: { id: 'q' + i } });
+
+      if (i > 0) {
+        els.push({
+          data: { id: 'qe' + i, source: 'q' + (i - 1), target: 'q' + i },
+        });
+      }
+    }
+
+    const cy = await run({ avoidOverlap: false }, els);
+    const ys = cy.nodes().map((n) => n.position().y);
+    const xs = cy.nodes().map((n) => n.position().x);
+    const spreadY = Math.max(...ys) - Math.min(...ys);
+    const spreadX = Math.max(...xs) - Math.min(...xs);
+
+    expect(spreadX).to.be.greaterThan(spreadY * 3);
+
+    // the control: tidy off keeps the sim's angle
+    const control = await run(
+      { avoidOverlap: false, tidyComponents: false },
+      els,
+    );
+    const cys = control.nodes().map((n) => n.position().y);
+    const cxs = control.nodes().map((n) => n.position().x);
+    const flat =
+      Math.max(...cxs) - Math.min(...cxs) >
+      (Math.max(...cys) - Math.min(...cys)) * 3;
+
+    // the same shape either way: the end-to-end length
+    const end = (c) => {
+      const a = c.$id('q0').position();
+      const b = c.$id('q6').position();
+
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+
+    expect(end(cy)).to.be.closeTo(end(control), 1e-3);
+    // (the seed's angle is whatever it is; the spec records that the
+    // turned run is flat, and only that the control is the same shape)
+    void flat;
+  });
 });

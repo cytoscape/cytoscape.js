@@ -42,6 +42,7 @@ import {
   componentBoxes,
   computeComponents,
   fitBodiesToBox,
+  orientComponents,
   packAnchors,
   packComponentBodies,
   tidySmallComponents,
@@ -1405,6 +1406,14 @@ export class ForceLayoutImpl implements LayoutImpl {
           avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 10,
           pinned,
         );
+        // and the larger ones turn to a canonical angle (121.2) — the
+        // principal axis flat, or a ring's farthest node up.  A turn
+        // re-overlaps axis-aligned boxes, so it needs the settle pass
+        // after it: a `'sim'` run, whose sweeps are all it has, keeps
+        // the sim's angles
+        if (overlapMode !== 'sim') {
+          orientComponents(n, comps, arr, pinned);
+        }
       }
 
       if (overlapMode === 'settle' || overlapMode === 'both') {

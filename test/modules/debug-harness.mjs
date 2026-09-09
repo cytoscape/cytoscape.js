@@ -1272,6 +1272,7 @@ describe('debug harness (round 43)', function () {
         animate: false,
         avoidOverlap: false,
         nodeDimensionsIncludeLabels: false,
+        packComponents: false,
         spacingFactor: 1,
       });
 
@@ -1337,6 +1338,39 @@ describe('debug harness (round 43)', function () {
       expect(layoutConfig.isCombo('force')).to.equal(false);
       expect(layoutConfig.isForce('force-by-sign')).to.equal(true);
       expect(layoutConfig.isForce('circle')).to.equal(false);
+    });
+
+    it('spells the pack box on the discrete layouts alone, every run (123)', function () {
+      for (const name of [
+        'grid',
+        'circle',
+        'concentric',
+        'breadthfirst',
+        'radial',
+      ]) {
+        expect(
+          layoutConfig.layoutOptions(name, { pack: true }).packComponents,
+          name,
+        ).to.equal(true);
+        expect(
+          layoutConfig.layoutOptions(name, { pack: false }).packComponents,
+          name,
+        ).to.equal(false);
+        // the box unset reads as off — the library's default
+        expect(
+          layoutConfig.layoutOptions(name, {}).packComponents,
+          name,
+        ).to.equal(false);
+      }
+
+      for (const name of ['force', 'flow', 'pack', 'preset', 'random']) {
+        expect(
+          layoutConfig.layoutOptions(name, { pack: true }).packComponents,
+          name,
+        ).to.equal(undefined);
+      }
+
+      expect(layoutConfig.layoutOptions('pack', {}).name).to.equal('pack');
     });
 
     // 121.1: the EM entry is one force run with the library's grouping

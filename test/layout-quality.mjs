@@ -985,11 +985,21 @@ describe('gpu/layout: the quality suite (round 114.8)', function () {
     // spiral example (87.1's packComponents).  The ring and grid layouts
     // place by index or by wedge about one centre, so their component
     // boxes interleave by design and are not asserted here.
-    for (const name of NAMES.filter((n) => LAYOUTS[n].separates)) {
-      it(`${name}: component boxes are pairwise disjoint`, async function () {
+    // and, since 123, every discrete layout under packComponents: true
+    const PACKED = ['circle', 'concentric', 'grid', 'breadthfirst', 'radial'];
+    const rows = [
+      ...NAMES.filter((n) => LAYOUTS[n].separates).map((n) => [n, {}]),
+      ...PACKED.map((n) => [n, { packComponents: true }]),
+    ];
+
+    for (const [name, extra] of rows) {
+      const label =
+        extra.packComponents === true ? `${name} (packComponents)` : name;
+
+      it(`${label}: component boxes are pairwise disjoint`, async function () {
         const cy = mk(FIXTURES.components());
 
-        await run(cy, opts(name, cy, { fit: false }));
+        await run(cy, opts(name, cy, { fit: false, ...extra }));
 
         const groups = ['k', 'p', 's0', 's1'].map((prefix) =>
           cy.nodes().filter((n) => n.id().startsWith(prefix)),

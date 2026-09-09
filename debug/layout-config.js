@@ -23,6 +23,8 @@ var layoutConfig = (function () {
     breadthfirst: { 'curve-style': 'round-taxi', 'taxi-turn': 20 },
     random: null,
     radial: { 'curve-style': 'bezier' },
+    // the pack layout moves components whole: the sheet's own edges
+    pack: null,
     force: { 'curve-style': 'haystack' },
     // the EM entry is force with a grouping and an order (120; one run
     // since 121): the same sheet
@@ -141,6 +143,17 @@ var layoutConfig = (function () {
     spiral: true,
   };
 
+  // The discrete layouts with a packComponents option (123): one
+  // drawing per component, packed.  Force and flow always pack; the
+  // pack layout is the packing itself.
+  var PACK_LAYOUTS = {
+    grid: true,
+    circle: true,
+    concentric: true,
+    breadthfirst: true,
+    radial: true,
+  };
+
   // A layout's own spacingFactor default (115.6): the slider is a
   // multiple over it, so 1x on breadthfirst is breadthfirst's 1.75.
   // Preset has no spacing to scale — the positions are the user's.
@@ -194,6 +207,11 @@ var layoutConfig = (function () {
       // defaults (off) are the run's, whatever the library's are
       options.avoidOverlap = !!ui.avoidOverlap;
       options.nodeDimensionsIncludeLabels = !!ui.overlapLabels;
+    }
+
+    if (PACK_LAYOUTS[name]) {
+      // spelled out every run (123): the page's box is the run's
+      options.packComponents = !!ui.pack;
     }
 
     var factor = spacingFactor(name, ui.spacing == null ? 1 : ui.spacing);

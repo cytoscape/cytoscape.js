@@ -175,6 +175,7 @@
           overlapLabels: $('#layout-overlap-labels-check').checked,
           spacing: $('#spacing-input').value,
           tidy: $('#layout-tidy-check').checked,
+          pack: $('#layout-pack-check').checked,
           // the EM entry (121.1) groups by the network's signed field
           signKey: (window.currentNetwork || {}).signKey,
         },

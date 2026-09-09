@@ -97,6 +97,7 @@
           <option value="breadthfirst">Breadthfirst</option>
           <option value="random">Random</option>
           <option value="radial">Radial</option>
+          <option value="pack">Pack (re-pack the components where they stand)</option>
           <option value="force">Force (GPU)</option>
           <option value="force-by-sign">Force, grouped by sign and ordered by score (EM)</option>
           <option value="flow">Flow (layered)</option>
@@ -120,6 +121,10 @@
         <div>
           <input type="checkbox" id="layout-edge-types-check" checked />
           <label for="layout-edge-types-check">Layout-appropriate edge types (taxi for flow, …)</label>
+        </div>
+        <div>
+          <input type="checkbox" id="layout-pack-check" />
+          <label for="layout-pack-check">Pack components (grid, circle, concentric, breadthfirst, radial: one drawing per component, packed)</label>
         </div>
         <div>
           <input type="checkbox" id="layout-tidy-check" checked />

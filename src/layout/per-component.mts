@@ -11,6 +11,7 @@ import {
 import type { BoundingBox, Position } from '../types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
+import type { Ref } from '../contract.mjs';
 
 /*
 Per-component discrete layouts (round 123, item 58): `packComponents:
@@ -173,17 +174,32 @@ export const splitByComponent = (
     indexOf.set(nodes[i], i);
   }
 
-  const members: Collection[] = [];
+  // which component each placed node is in, then the components'
+  // members in the *caller's* node order — a sorted ring stays sorted
+  const compIdOf = new Map<Collection, number>();
+  const comps = eles.components();
 
-  for (const comp of eles.components()) {
-    const placed = comp
-      .nodes()
-      .filter((n: Collection) => indexOf.has(n)) as Collection;
+  for (let c = 0; c < comps.length; c++) {
+    const compNodes = comps[c].nodes();
 
-    if (placed.length > 0) {
-      members.push(placed);
+    for (let j = 0; j < compNodes.length; j++) {
+      compIdOf.set(compNodes[j], c);
     }
   }
+
+  const refsOf: Ref[][] = Array.from({ length: comps.length }, () => []);
+
+  for (let i = 0; i < nodes.length; i++) {
+    const c = compIdOf.get(nodes[i]);
+
+    if (c != null) {
+      refsOf[c].push(nodes._refs[i]);
+    }
+  }
+
+  const members: Collection[] = refsOf
+    .filter((refs) => refs.length > 0)
+    .map((refs) => nodes._spawnUnique(refs));
 
   // largest first; a stable sort keeps the scope order among equals
   members.sort((a, b) => b.length - a.length);

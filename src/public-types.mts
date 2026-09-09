@@ -434,7 +434,50 @@ export interface LayoutBaseOptions {
   pan?: Position;
 }
 
-export interface GridLayoutOptions extends LayoutBaseOptions {
+/** What `componentGroup` and `componentOrder` see: one description per
+ * disconnected component (121.1; shared by force, the discrete layouts
+ * under `packComponents` and the `pack` layout since 123). */
+export interface LayoutComponentInfo {
+  /** the component's nodes */
+  nodes: unknown;
+  /** how many nodes it has */
+  size: number;
+  /** its packed box's width, bodies included */
+  width: number;
+  /** its packed box's height, bodies included */
+  height: number;
+}
+
+/** The component-packing options the discrete layouts take under
+ * `packComponents: true` (round 123, item 58), the same spellings a
+ * force run's settle re-pack takes. */
+export interface ComponentPackingOptions {
+  /** lay each disconnected component out on its own — one ring, one
+   * grid, one tree per component — and shelf-pack the results largest
+   * first (default false: v3's one drawing about one centre).  Locked
+   * nodes are left out and the packed field is moved off their boxes. */
+  packComponents?: boolean;
+  /** the gap between packed component boxes (default 40) */
+  componentSpacing?: number;
+  /** group the packed components (121.1): called once per component
+   * with its description, and the components sharing a key pack on
+   * their own, the groups standing in a row left to right by key —
+   * numbers ascending, then strings, then the unkeyed.
+   * @throws at start when it is not a function */
+  componentGroup?: (
+    component: LayoutComponentInfo,
+  ) => string | number | null | undefined;
+  /** the order the pack lays components out in, a comparator over two
+   * descriptions ahead of largest-first (121.1).
+   * @throws at start when it is not a function */
+  componentOrder?: (a: LayoutComponentInfo, b: LayoutComponentInfo) => number;
+  /** the gap between the groups' packed boxes (default three
+   * `componentSpacing`s) */
+  groupSpacing?: number;
+}
+
+export interface GridLayoutOptions
+  extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'grid';
   avoidOverlap?: boolean;
   avoidOverlapPadding?: number;
@@ -456,7 +499,8 @@ export interface PresetLayoutOptions extends LayoutBaseOptions {
     | ((node: unknown) => Position | null | undefined);
 }
 
-export interface CircleLayoutOptions extends LayoutBaseOptions {
+export interface CircleLayoutOptions
+  extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'circle';
   /** grow the ring until no two nodes overlap (default true; 115 —
    * exact per pair, in place of v3's largest-node-times-1.75 chord) */
@@ -476,7 +520,8 @@ export interface CircleLayoutOptions extends LayoutBaseOptions {
   sort?: LayoutSortMapping | ((a: unknown, b: unknown) => number);
 }
 
-export interface ConcentricLayoutOptions extends LayoutBaseOptions {
+export interface ConcentricLayoutOptions
+  extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'concentric';
   startAngle?: number;
   sweep?: number;
@@ -498,7 +543,8 @@ export interface ConcentricLayoutOptions extends LayoutBaseOptions {
   levelWidth?: (nodes: unknown) => number;
 }
 
-export interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
+export interface BreadthFirstLayoutOptions
+  extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'breadthfirst';
   /** whether the tree is directed downwards (default false) */
   directed?: boolean;
@@ -530,10 +576,23 @@ export interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
 
+/** The `pack` layout (round 123, item 58): a translation-only re-pack
+ * of the components at their current positions — force's settle
+ * re-pack on its own, for a drawing whose structure is done (a sim,
+ * a preset, a hand arrangement) and only wants its components
+ * grouped, ordered and packed.  The largest component holds its
+ * centre.  No shapes or orientation: those need edge lengths and
+ * belong to `force`. */
+export interface PackLayoutOptions
+  extends LayoutBaseOptions, Omit<ComponentPackingOptions, 'packComponents'> {
+  name: 'pack';
+}
+
 /** The radial tree layout (round 85.1): concentric rings with
  * hierarchy-aware angular wedges — each subtree occupies a contiguous
  * sector sized by its weight, so subtrees never interleave. */
-export interface RadialLayoutOptions extends LayoutBaseOptions {
+export interface RadialLayoutOptions
+  extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'radial';
   /** the tree roots: a collection or an array of node ids (never a
    * selector string); omitted, inferred per component by max degree */
@@ -730,6 +789,7 @@ export type LayoutOptions =
   | BreadthFirstLayoutOptions
   | RandomLayoutOptions
   | RadialLayoutOptions
+  | PackLayoutOptions
   | ForceLayoutOptions
   | FlowLayoutOptions
   | CustomLayoutOptions;

@@ -5,20 +5,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-08, after the maintainer's first sitting
-  in front of the force page found force on em-web at two seconds:
-  the GPU executor's cell scan was one thread walking every grid cell
-  (3 ms an iteration on 569 nodes, 19 ms at 10k), and a run nobody
-  watches was paced at three iterations per vsync.  A parallel scan
-  and a per-frame batch: em-web 1.5 s → 0.3 s, the 25k scene 11.8 s →
-  3.3 s.  Then the settle test, measured against seven fixtures'
-  quality: the default threshold is relative to the edge length for a
-  run nobody watches, and em-web is 0.15–0.24 s.  And the packing:
-  force's smallest components take canonical shapes (a standing pair,
-  a triangle, a diamond) so the re-pack lays them out in rows by size,
-  the larger ones turn to a canonical angle, and the re-pack takes a
-  caller's grouping and order — so the EnrichmentMap shape, blue left
-  and red right with each row by score, is one force call.
+- **Last updated**: 2026-09-10, after taxi tracks landed: `taxi-turn:
+  auto` gives each fan-out its own line in the gap under `curve-style:
+  taxi`, assigned from live positions so edges keep routing themselves
+  after a drag, the casing draws per edge in v3's order so a crossing
+  is gapped, and flow merges the long edges into a target into one
+  chain and grows a rank gap for the tracks it holds.  The sweep's
+  first cost was 1.1 s on an 8.7k-edge DAG against a planned "well
+  under a millisecond"; measured and cut to 8 ms on workflow-1k and
+  160 ms on that pathological one.  The two days before: component
+  packing on the discrete layouts and the `pack` layout, and the force
+  rounds — the GPU cell scan, the silent run's batch, the settle
+  threshold, the small components' shapes and the re-pack's grouping
+  and order, so the EnrichmentMap shape is one force call.
 
 ## How to maintain this file
 
@@ -941,8 +940,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     ELK's hyperedge), target or family, and conflicting bundles take
     distinct lines in the gap, ordered by ELK's pairwise crossing
     rule because it beat the staircase on all four fixtures.  The
-    new run-overlap column reads 0 on every fixture where the 50 %
-    turn read 43 / 1141 / 37 / 10.
+    new run-overlap column reads 0 / 1 / 0 / 0 on deps, workflow-1k,
+    reactome and the Greek gods where the 50 % turn read 43 / 1141 /
+    37 / 10.
   - The line casing draws per edge in v3's order now, so a later
     edge's casing gaps an earlier edge's line at a crossing (the
     parity scene 72 → 10 px), and flow merges the long edges into a
@@ -955,6 +955,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     crossings under taxi" was 37 collinear overlaps, which a crossing
     counter cannot see — the taxi contract's number is comparable
     only once the lines are apart.
+  - The sweep's cost, measured after the plan's estimate ("well under
+    a millisecond at 7k edges") met an 8.7k-edge layered DAG at 1.1 s:
+    the crossing rule's per-pair cycle search became a bitset closure
+    per conflict component, capped at 128 bundles (past which that
+    component keeps the staircase), the obstacle scan an index, the
+    keys numbers — 8 ms on workflow-1k, 160 ms on the pathological
+    one; the sweep stays whole, not incremental, until a real graph
+    asks.
   - Buys the picture: the Greek-gods scene on the debug page is the
     reference figure — one trunk per parent pair, the families in
     dark2, the crossings gapped.

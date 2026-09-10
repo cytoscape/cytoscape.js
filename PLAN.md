@@ -1076,6 +1076,11 @@ directions".*
     stage) and refreshed once per geo epoch from `flushDerived`; the
     casing per edge in v3's order (the parity scene 72 → 10 px); flow's
     merged, target-anchored chains (a corridor probe over 400 seeded
-    DAGs: 187 violations → 7) and `edgeSep`; the run-overlap count 0 on
-    every fixture.  The Greek-gods scene on the page reproduces the
-    reference picture.  Closed.
+    DAGs: 187 violations → 7) and `edgeSep`; the run-overlap count
+    0 / 1 / 0 / 0 on deps, workflow-1k, reactome and the gods.  The
+    Greek-gods scene on the page reproduces the reference picture.
+    124.7 measured the sweep the plan had estimated at "well under a
+    millisecond" — 1.1 s on an 8.7k-edge layered DAG — and cut it to
+    8 ms on workflow-1k and 160 ms there (a bitset closure per
+    conflict component, capped at 128 bundles; an obstacle index;
+    numeric keys).  Closed.

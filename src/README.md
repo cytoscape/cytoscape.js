@@ -1297,7 +1297,9 @@ workflow-1k, reactome and the Greek-gods genealogy the count falls
 from 43 / 1141 / 37 / 10 under the 50 % turn to 0 / 3 / 0 / 0 under
 tracks, and the crossing rule beats the staircase on crossings on all
 four (4259 vs 4515, 23176 vs 29266, 59 vs 62, 134 vs 144), so it is
-the default.  The 50 %-turn crossing counts are not comparable:
+the default; after 124.5's corridors the tracked rows read 4142 / 0,
+22929 / 1, 59 / 0, 134 / 0.  The 50 %-turn crossing counts are not
+comparable:
 collinear runs are not proper intersections, and separating them
 exposes the leg crossings they hid (reactome's 3 becomes 59).
 

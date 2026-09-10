@@ -34,7 +34,10 @@ that compile and then behave differently.
   every layout.  Flow gains `edgeSep` (default 10): the gap below a
   rank grows to `max(rankSep, tracks × edgeSep + 20)`, and the long
   edges into one target share one chain anchored at the target so the
-  taxi leg meets no node body on the way down.
+  taxi leg meets no node body on the way down.  The track sweep runs
+  whole once per geometry epoch (8 ms on a 1.9k-edge DAG, 160 ms on a
+  pathological 8.7k-edge one); a conflict component past 128 bundles
+  keeps the staircase order rather than the crossing rule (124.7).
 - **Component packing on the discrete layouts, and the `pack` layout**
   (round 123, item 58): `packComponents: true` on `circle`,
   `concentric`, `grid`, `breadthfirst` and `radial` lays each

@@ -39,7 +39,12 @@ import {
   normalizeRanks,
 } from './flow-rank.mjs';
 import { buildLayers, orderLayers } from './flow-order.mjs';
-import { assignX, assignY, applyDirection } from './flow-position.mjs';
+import {
+  assignX,
+  assignY,
+  applyDirection,
+  gapSeparations,
+} from './flow-position.mjs';
 import {
   buildGroupModel,
   buildCompoundView,
@@ -74,6 +79,7 @@ const defaults: Omit<FlowLayoutOptions, 'name'> = {
   direction: 'downward', // drawing direction of the flow
   nodeSep: 50, // px gap between adjacent nodes in a rank
   rankSep: 60, // px gap between rank rows
+  edgeSep: 10, // px per taxi track a rank gap grows to hold (124.5); 0 leaves rankSep alone
   layering: 'network-simplex', // 'longest-path' is the huge-graph fast path; 'auto' switches past ~50k nodes
   thoroughness: 7, // crossing-minimization effort, 1..10
   minLength: 1, // ranks an edge must span: number, score mapping or fn
@@ -175,6 +181,7 @@ interface RunState {
       | 'direction'
       | 'nodeSep'
       | 'rankSep'
+      | 'edgeSep'
       | 'layering'
       | 'thoroughness'
       | 'acyclic'
@@ -245,6 +252,12 @@ export class FlowLayoutImpl implements LayoutImpl {
       );
     }
 
+    if (!(merged.edgeSep! >= 0)) {
+      throw new Error(
+        `The flow layout's edgeSep must be a non-negative number`,
+      );
+    }
+
     const t = merged.thoroughness!;
 
     if (!Number.isFinite(t) || t < 1 || t > 10) {
@@ -260,6 +273,7 @@ export class FlowLayoutImpl implements LayoutImpl {
         direction: merged.direction!,
         nodeSep: merged.nodeSep!,
         rankSep: merged.rankSep!,
+        edgeSep: merged.edgeSep!,
         layering: merged.layering!,
         thoroughness: t,
         acyclic: merged.acyclic!,
@@ -546,7 +560,6 @@ export class FlowLayoutImpl implements LayoutImpl {
 
     const rank = this.rankComponent(comp, opts, constraints, state);
     const rankCount = normalizeRanks(rank);
-    const L = buildLayers(comp, rank, rankCount);
 
     // compound path (112.3): grouped ordering, border walls, padding
     let nested = false;
@@ -556,6 +569,10 @@ export class FlowLayoutImpl implements LayoutImpl {
         nested = groupModel.chains[comp.scopeOf[v]].length > 0;
       }
     }
+
+    // 124.5: the long edges into one target share a chain, anchored at
+    // the target — the taxi leg's corridor; plain chains under nesting
+    const L = buildLayers(comp, rank, rankCount, !nested);
 
     let margins: { top: Float64Array; bottom: Float64Array } | null = null;
     let halfWAll: Float64Array = comp.halfW;
@@ -587,7 +604,10 @@ export class FlowLayoutImpl implements LayoutImpl {
     }
 
     const x = assignX(L, halfWAll, { nodeSep: opts.nodeSep });
-    const y = assignY(L, comp.halfH, opts.rankSep, margins);
+    // 124.5: a gap grows to hold its taxi tracks (edgeSep per track,
+    // the style's 10 px min-turn clearance at both ends)
+    const gaps = gapSeparations(L, x, comp, opts.rankSep, opts.edgeSep, 10);
+    const y = assignY(L, comp.halfH, gaps, margins);
     const [outX, outY] = applyDirection(x, y, opts.direction);
 
     for (let v = 0; v < comp.n; v++) {

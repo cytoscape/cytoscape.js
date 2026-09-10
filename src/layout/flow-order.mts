@@ -40,7 +40,9 @@ export interface Layered {
   utgt: Uint32Array;
   /** unit-span edge weights */
   uweight: Float64Array;
-  /** 1 where a unit edge joins two dummies (an inner segment) */
+  /** 1 where a unit edge is protected — joins two dummies (an inner
+   * segment), or, since 124.5, a chain's last segment into its real
+   * target, so BK anchors the chain at the target's x */
   inner: Uint8Array;
   /** per simple edge: its dummy chain, upper to lower (empty if span 1) */
   chains: Uint32Array[];
@@ -56,15 +58,28 @@ export interface Layered {
  * Normalize the component: break long edges into unit-span chains and
  * bucket every node (real and dummy) into layers.
  *
+ * Round 124.5: the chains of the long edges into one target **merge**
+ * into one dummy per shared rank — they are the same physical leg
+ * under a taxi route that turns near the source and drops at the
+ * target's x — and a chain's last segment (dummy → target) is
+ * protected like an inner segment, so BK anchors the chain at the
+ * target and the taxi leg meets no node body on the way down.  The
+ * merged unit edges carry the summed weight, so the crossing count
+ * stays taxi-aware for the legs.  Compound mode keeps plain chains
+ * (a shared dummy could belong to two LCA chains).
+ *
  * @param comp — the ranked component
  * @param rank — normalized ranks (0-based)
  * @param rankCount — number of ranks
+ * @param mergeChains — merge the long edges into one target (default
+ *   true; the compound path passes false)
  * @returns the layered form, with layers in model order (pre-sweep)
  */
 export const buildLayers = (
   comp: FlowComponent,
   rank: Int32Array,
   rankCount: number,
+  mergeChains: boolean = true,
 ): Layered => {
   const { n, m, src, tgt, weight } = comp;
 
@@ -75,35 +90,70 @@ export const buildLayers = (
   const inner: number[] = [];
   const chains: Uint32Array[] = [];
   const fullRank: number[] = Array.from(rank);
+  // merged chains: (target, rank) → the shared dummy, and each shared
+  // dummy's one outgoing unit edge (to add a joining edge's weight to)
+  const shared = mergeChains ? new Map<number, number>() : null;
+  const outEdgeOf = new Map<number, number>();
 
   for (let e = 0; e < m; e++) {
     const span = rank[tgt[e]] - rank[src[e]];
     const chain: number[] = [];
     let prev = src[e];
-
-    for (let r = rank[src[e]] + 1; r < rank[tgt[e]]; r++) {
-      const d = nTotal++;
-
-      fullRank.push(r);
-      chain.push(d);
-      usrc.push(prev);
-      utgt.push(d);
-      uweight.push(weight[e]);
-      inner.push(prev >= n ? 1 : 0);
-      prev = d;
-    }
-
-    usrc.push(prev);
-    utgt.push(tgt[e]);
-    uweight.push(weight[e]);
-    inner.push(0);
-    chains.push(Uint32Array.from(chain));
+    let joined = false; // walking an existing (shared) tail
 
     if (span <= 0) {
       // ranking guarantees positive span; a zero-span edge here is a
       // defect upstream, not an input condition
       throw new Error(`The flow layout found a non-positive edge span`);
     }
+
+    for (let r = rank[src[e]] + 1; r < rank[tgt[e]]; r++) {
+      const key = tgt[e] * rankCount + r;
+      let d = shared?.get(key);
+      const existed = d != null;
+
+      if (d == null) {
+        d = nTotal++;
+        fullRank.push(r);
+        shared?.set(key, d);
+      }
+
+      chain.push(d);
+
+      if (joined) {
+        // riding the shared tail: prev's one out edge already reaches d
+        uweight[outEdgeOf.get(prev) as number] += weight[e];
+      } else {
+        if (prev >= n) {
+          outEdgeOf.set(prev, usrc.length);
+        }
+
+        usrc.push(prev);
+        utgt.push(d);
+        uweight.push(weight[e]);
+        inner.push(prev >= n ? 1 : 0);
+        joined = existed; // from a shared dummy on, the tail exists
+      }
+
+      prev = d;
+    }
+
+    if (joined) {
+      uweight[outEdgeOf.get(prev) as number] += weight[e];
+    } else {
+      if (prev >= n) {
+        outEdgeOf.set(prev, usrc.length);
+      }
+
+      usrc.push(prev);
+      utgt.push(tgt[e]);
+      uweight.push(weight[e]);
+      // a chain's last segment is protected (124.5): the target anchors
+      // the chain
+      inner.push(prev >= n ? 1 : 0);
+    }
+
+    chains.push(Uint32Array.from(chain));
   }
 
   const rankArr = Int32Array.from(fullRank);

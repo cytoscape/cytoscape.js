@@ -30,7 +30,9 @@ minimum width (left-biased ones by min x, right-biased by max x), then
 take the average of the two medians per node.
 */
 
+import { runDepth } from '../taxi-tracks.mjs';
 import type { Layered } from './flow-order.mjs';
+import type { FlowComponent } from './flow-graph.mjs';
 
 /** Per-node half width including dummies (dummy corridor half width). */
 const DUMMY_HALF_W = 1;
@@ -76,14 +78,14 @@ const markConflicts = (L: Layered): Uint8Array => {
       const v = lower[l1];
       let innerUpper = -1;
 
-      if (v >= L.n) {
-        for (let i = L.upOff[v]; i < L.upOff[v + 1]; i++) {
-          const e = L.upAdj[i];
+      // a dummy's inner up-edge, or (124.5) a real target's protected
+      // last chain segment
+      for (let i = L.upOff[v]; i < L.upOff[v + 1]; i++) {
+        const e = L.upAdj[i];
 
-          if (L.inner[e] === 1) {
-            innerUpper = L.pos[L.usrc[e]];
-            break;
-          }
+        if (L.inner[e] === 1) {
+          innerUpper = L.pos[L.usrc[e]];
+          break;
         }
       }
 
@@ -142,24 +144,92 @@ const verticalAlignment = (
   const rStep = dir.up ? -1 : 1;
 
   const neigh: { p: number; e: number }[] = [];
+  const innerP = new Map<number, number>();
+  const bound: number[] = [];
 
   for (let r = rStart; r !== rEnd; r += rStep) {
     const layer = L.layers[r];
-    let guard = dir.right ? Infinity : -Infinity;
-
     const iStart = dir.right ? layer.length - 1 : 0;
     const iEnd = dir.right ? -1 : layer.length;
     const iStep = dir.right ? -1 : 1;
+    const ahead = (p: number, g: number): boolean =>
+      dir.right ? p < g : p > g;
+
+    // 124.5, the pre-pass: protected (inner) edges align first — a
+    // chain and its target form one block in every direction, and a
+    // real parent competing for the target never wins it away from the
+    // chain.  Among themselves they keep the usual monotonic guard.
+    innerP.clear();
+
+    let guard = dir.right ? Infinity : -Infinity;
 
     for (let i = iStart; i !== iEnd; i += iStep) {
       const v = layer[i];
+
+      for (let k = off[v]; k < off[v + 1]; k++) {
+        const e = adj[k];
+
+        if (L.inner[e] !== 1) {
+          continue;
+        }
+
+        const p = L.pos[otherEnd[e]];
+
+        if (ahead(p, guard)) {
+          const u = otherEnd[e];
+
+          align[u] = v;
+          root[v] = root[u];
+          align[v] = root[v];
+          guard = p;
+          innerP.set(i, p);
+        }
+
+        break;
+      }
+    }
+
+    // the bound the main pass must stay short of: the next inner
+    // alignment ahead in iteration order (so an ordinary alignment
+    // never crosses a protected one)
+    bound.length = layer.length;
+
+    let next = dir.right ? -Infinity : Infinity;
+
+    for (let i = iEnd - iStep; i !== iStart - iStep; i -= iStep) {
+      bound[i] = next;
+
+      if (innerP.has(i)) {
+        next = innerP.get(i) as number;
+      }
+    }
+
+    guard = dir.right ? Infinity : -Infinity;
+
+    for (let i = iStart; i !== iEnd; i += iStep) {
+      const v = layer[i];
+
+      if (innerP.has(i)) {
+        guard = innerP.get(i) as number;
+        continue;
+      }
+
+      // a dummy aligns only along its inner edge: the topmost dummy of a
+      // merged chain, whose up-edges are the sources' joining first
+      // segments, aligns to none of them, so the block anchors at the
+      // target
+      if (v >= L.n) {
+        continue;
+      }
 
       neigh.length = 0;
 
       for (let k = off[v]; k < off[v + 1]; k++) {
         const e = adj[k];
 
-        neigh.push({ p: L.pos[otherEnd[e]], e });
+        if (L.inner[e] !== 1) {
+          neigh.push({ p: L.pos[otherEnd[e]], e });
+        }
       }
 
       if (neigh.length === 0) {
@@ -186,7 +256,7 @@ const verticalAlignment = (
           continue;
         }
 
-        if (dir.right ? p < guard : p > guard) {
+        if (ahead(p, guard) && ahead(bound[i], p)) {
           const u = otherEnd[e];
 
           // align v under u's block
@@ -415,11 +485,13 @@ export const assignX = (
 
 /**
  * Rank rows from cumulative half-heights: each rank's row is as tall
- * as its tallest node and `rankSep` from its neighbours.
+ * as its tallest node and `rankSep` from its neighbours — or, per gap,
+ * the entry of a `rankSep` array (124.5: a gap grows for the taxi
+ * tracks it has to hold).
  *
  * @param L — the layered form
  * @param realHalfH — per real node half height
- * @param rankSep — the gap between rank rows
+ * @param rankSep — the gap between rank rows, one number or one per gap
  * @param margins — compound mode (112.3): per-rank extra top/bottom
  *   space reserving group vertical padding at interval boundaries
  * @returns y per node (all members of a rank share it)
@@ -427,7 +499,7 @@ export const assignX = (
 export const assignY = (
   L: Layered,
   realHalfH: Float64Array,
-  rankSep: number,
+  rankSep: number | ArrayLike<number>,
   margins: { top: Float64Array; bottom: Float64Array } | null = null,
 ): Float64Array => {
   const y = new Float64Array(L.nTotal);
@@ -452,7 +524,8 @@ export const assignY = (
       y[v] = center;
     }
 
-    cursor = center + maxHalf + rankSep;
+    cursor =
+      center + maxHalf + (typeof rankSep === 'number' ? rankSep : rankSep[r]);
 
     if (margins != null) {
       cursor += margins.bottom[r];
@@ -460,6 +533,67 @@ export const assignY = (
   }
 
   return y;
+};
+
+/**
+ * Per-gap separations for the taxi tracks (124.5): in the gap below
+ * rank r, the runs of rank r's real sources — each from its x to its
+ * farthest target's x, long edges included, since the track pass puts
+ * a long edge's run in the first gap — need `runDepth` slots on
+ * distinct lines, so the gap is `max(rankSep, slots × edgeSep + 2 ×
+ * minTurn)`.  Positions only: the style's track pass draws the lines.
+ *
+ * @param L — the layered form
+ * @param x — x per node (real and dummy)
+ * @param comp — the component (its simple edges)
+ * @param rankSep — the configured gap
+ * @param edgeSep — px per track
+ * @param minTurn — the turn clearance at both ends (the style default)
+ * @returns the gap below each rank
+ */
+export const gapSeparations = (
+  L: Layered,
+  x: Float64Array,
+  comp: FlowComponent,
+  rankSep: number,
+  edgeSep: number,
+  minTurn: number,
+): Float64Array => {
+  const gaps = new Float64Array(L.layers.length).fill(rankSep);
+
+  if (!(edgeSep > 0)) {
+    return gaps;
+  }
+
+  // per real source: its run on the cross axis
+  const lo = new Float64Array(L.n).fill(Infinity);
+  const hi = new Float64Array(L.n).fill(-Infinity);
+
+  for (let e = 0; e < comp.m; e++) {
+    const s = comp.src[e];
+    const t = comp.tgt[e];
+
+    lo[s] = Math.min(lo[s], x[s], x[t]);
+    hi[s] = Math.max(hi[s], x[s], x[t]);
+  }
+
+  for (let r = 0; r < L.layers.length - 1; r++) {
+    const runLo: number[] = [];
+    const runHi: number[] = [];
+
+    for (const v of L.layers[r]) {
+      if (v < L.n && lo[v] !== Infinity) {
+        runLo.push(lo[v]);
+        runHi.push(hi[v]);
+      }
+    }
+
+    const slots = runDepth(runLo, runHi);
+
+    gaps[r] = Math.max(rankSep, slots * edgeSep + 2 * minTurn);
+  }
+
+  return gaps;
 };
 
 /**

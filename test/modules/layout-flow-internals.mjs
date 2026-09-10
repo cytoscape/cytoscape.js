@@ -325,4 +325,55 @@ describe('modules/layout-flow-internals (round 112.2)', () => {
       /non-positive edge span/,
     );
   });
+
+  describe('merged, target-anchored chains (124.5)', function () {
+    // 0 -> 1 -> 2 -> 3 is a rank-4 spine; 4 (rank 0) and 5 (rank 1) both
+    // reach 3 by long edges: their chains share the rank-2 dummy
+    const spine = () =>
+      makeComp(6, [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [4, 3],
+        [5, 3],
+        [0, 5],
+      ]);
+
+    it('the long edges into one target share one dummy per rank', function () {
+      const { comps } = spine();
+      const comp = comps[0];
+      const rank = rankLongestPath(comp);
+      const rankCount = normalizeRanks(rank);
+      const L = buildLayers(comp, rank, rankCount);
+      const e43 = 3; // edge order: [0,1],[1,2],[2,3],[4,3],[5,3],[0,5]
+      const e53 = 4;
+
+      expect(L.chains[e43]).to.have.length(2); // ranks 1 and 2
+      expect(L.chains[e53]).to.have.length(1); // rank 2
+      expect(L.chains[e43][1]).to.equal(L.chains[e53][0]);
+      expect(L.nTotal).to.equal(6 + 2);
+
+      // the shared tail carries both weights, and its last segment is
+      // protected like an inner segment
+      const tail = L.usrc.findIndex(
+        (s, i) => s === L.chains[e53][0] && L.utgt[i] === 3,
+      );
+
+      expect(tail).to.be.at.least(0);
+      expect(L.uweight[tail]).to.equal(2);
+      expect(L.inner[tail]).to.equal(1);
+    });
+
+    it('the control: plain chains give each long edge its own dummies', function () {
+      const { comps } = spine();
+      const comp = comps[0];
+      const rank = rankLongestPath(comp);
+      const rankCount = normalizeRanks(rank);
+      const L = buildLayers(comp, rank, rankCount, false);
+
+      expect(L.chains[3][1]).to.not.equal(L.chains[4][0]);
+      expect(L.nTotal).to.equal(6 + 3);
+      expect(L.uweight.every((w) => w === 1)).to.equal(true);
+    });
+  });
 });

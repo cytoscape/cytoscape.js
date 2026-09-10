@@ -66,6 +66,119 @@ describe('gpu/layout: flow (round 112)', function () {
     expect(posOf('d').y - posOf('b').y).to.be.closeTo(110, 1e-6);
   });
 
+  describe('taxi corridors and tracks (124.5)', function () {
+    // A seeded random DAG (the corridor probe's seed 1): n2 -> n8 and
+    // n3 -> n8 span two ranks past n4, which under the pre-124.5 flow
+    // took n8's x (a straight drop n4 -> ... below it), so the taxi leg
+    // at n8's x ran through n4's body.  With the chains merged and
+    // anchored at their target, n8 takes the chain's x and n4 steps
+    // aside.  The control: this spec fails on the pre-124.5
+    // flow-order / flow-position ("n2->n8 through n4"), and over 400
+    // such seeds the violation count fell from 187 to 7 — the residue
+    // being chains the ordering left crossing (a type-2 conflict), where
+    // the guard can anchor only one of them.
+    var corridor = () => ({
+      nodes: nodes('n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8'),
+      edges: edges(
+        ['n0', 'n1'],
+        ['n0', 'n5'],
+        ['n1', 'n5'],
+        ['n1', 'n7'],
+        ['n1', 'n8'],
+        ['n2', 'n4'],
+        ['n2', 'n7'],
+        ['n2', 'n8'],
+        ['n3', 'n4'],
+        ['n3', 'n8'],
+        ['n4', 'n5'],
+        ['n5', 'n6'],
+        ['n7', 'n8'],
+      ),
+    });
+
+    it("a long edge's leg at the target's x meets no node body on the intermediate ranks", function () {
+      mk(corridor());
+      run({ layering: 'longest-path' });
+
+      var longEdges = cy
+        .edges()
+        .filter((e) => e.target().position().y - e.source().position().y > 100);
+
+      expect(longEdges.length).to.be.at.least(2);
+
+      longEdges.forEach((e) => {
+        var ys = e.source().position().y;
+        var t = e.target().position();
+
+        cy.nodes().forEach((n) => {
+          var p = n.position();
+
+          if (p.y > ys + 1 && p.y < t.y - 1) {
+            // the leg is the vertical line x = t.x: no body may straddle it
+            expect(
+              Math.abs(p.x - t.x),
+              `${e.id()} through ${n.id()}`,
+            ).to.be.at.least(15 + 1e-6);
+          }
+        });
+      });
+    });
+
+    it('the gap below a rank grows with the tracks it holds: k × edgeSep + 2 × minTurn', function () {
+      // eight sources across rank 0, each fanning to both ends of rank 1:
+      // eight overlapping runs, so the gap needs eight lines
+      var fan = () => {
+        var ids = [];
+        var pairs = [];
+
+        for (var i = 0; i < 8; i++) {
+          ids.push(`s${i}`);
+          pairs.push([`s${i}`, 'l'], [`s${i}`, 'r']);
+        }
+
+        return { nodes: nodes(...ids, 'l', 'r'), edges: edges(...pairs) };
+      };
+
+      mk(fan());
+      run();
+
+      // 30 px nodes: centres sit 30 + gap apart; 8 × 10 + 20 = 100 > 60
+      expect(posOf('l').y - posOf('s0').y).to.be.closeTo(130, 1e-6);
+
+      mk(fan());
+      run({ edgeSep: 0 }); // the control: rankSep alone
+      expect(posOf('l').y - posOf('s0').y).to.be.closeTo(90, 1e-6);
+
+      mk(fan());
+      run({ rankSep: 200 }); // a wider rankSep wins
+      expect(posOf('l').y - posOf('s0').y).to.be.closeTo(230, 1e-6);
+
+      mk(fan());
+      run({ edgeSep: 25 });
+      expect(posOf('l').y - posOf('s0').y).to.be.closeTo(
+        30 + 8 * 25 + 20,
+        1e-6,
+      );
+    });
+
+    it('a rank whose fan-outs never overlap keeps rankSep', function () {
+      mk(diamond());
+      run();
+
+      expect(posOf('b').y - posOf('a').y).to.be.closeTo(90, 1e-6);
+    });
+
+    it('edgeSep must be a non-negative number', function () {
+      mk(diamond());
+      expect(() => run({ edgeSep: -1 })).to.throw(
+        /edgeSep must be a non-negative/,
+      );
+      expect(() => run({ edgeSep: 'wide' })).to.throw(
+        /edgeSep must be a non-negative/,
+      );
+    });
+  });
+
   it('network simplex pulls a leaf chain tight (one rank above its target)', function () {
     mk(pulledChain());
     run();

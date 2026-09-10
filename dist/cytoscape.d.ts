@@ -1311,6 +1311,13 @@ interface FlowLayoutOptions extends LayoutBaseOptions {
   /** px gap between rank rows (default 60); a taxi edge's turn lands
    * inside this band, which the layout keeps node-free */
   rankSep?: number;
+  /** px per taxi track a rank gap grows to hold (default 10, round
+   * 124.5): the gap below a rank becomes `max(rankSep, tracks ×
+   * edgeSep + 20)`, where `tracks` is how many of that rank's fan-outs
+   * overlap on one line — the lines `taxi-turn: auto` draws; 0 leaves
+   * every gap at `rankSep`
+   * @throws at start when negative */
+  edgeSep?: number;
   /** rank assignment: 'network-simplex' (GKNV — fewest long edges,
    * default), 'longest-path' (O(V+E), the huge-graph fast path), or
    * 'auto' (simplex up to ~50k nodes, then longest-path) */

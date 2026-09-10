@@ -1160,7 +1160,7 @@ describe('debug harness (round 43)', function () {
         layoutConfig.edgeOverride('flow', { direction: 'rightward' }),
       ).to.deep.equal({
         'curve-style': 'round-taxi',
-        'taxi-turn': 20,
+        'taxi-turn': 'auto', // 124: each fan-out on its own line
         'taxi-direction': 'rightward',
       });
       expect(

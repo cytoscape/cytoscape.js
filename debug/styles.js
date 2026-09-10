@@ -525,13 +525,85 @@ var styles = (function () {
         opacity: 0.85,
         'curve-style': 'round-taxi',
         'taxi-direction': 'downward',
-        'taxi-turn': 20,
+        // 124: each fan-out on its own line in the gap, and a
+        // background-coloured casing so a crossing reads as a gap
+        'taxi-turn': 'auto',
         'taxi-radius': 8,
+        'line-outline-width': 2,
+        'line-outline-color': '#ffffff',
         'target-arrow-shape': 'triangle',
         'target-arrow-color': selectable('#9aa5b1'),
         'arrow-scale': 0.8,
       },
     });
+  }
+
+  // Round 124.6: the Greek-gods scene — the reference picture: levels
+  // as columns (flow rightward), one trunk per family in the gap
+  // (`taxi-track: family`), the dark2 scheme per family over the edge's
+  // `family` key, and a casing in the background colour so a later
+  // family's trunk gaps an earlier line where they cross.
+  function greekGods(elements, def) {
+    // the families in load order: an ordinal scale wants its domain
+    // explicit (dictionary order is load-order-dependent); 25 families
+    // over dark2's 8 colours, cycled the way the notebook's d3 ordinal
+    // scale cycles them
+    var families = [];
+    var dark2 = [
+      '#1b9e77',
+      '#d95f02',
+      '#7570b3',
+      '#e7298a',
+      '#66a61e',
+      '#e6ab02',
+      '#a6761d',
+      '#666666',
+    ];
+
+    elements.edges.forEach(function (e) {
+      if (families.indexOf(e.data.family) < 0) {
+        families.push(e.data.family);
+      }
+    });
+
+    var range = families.map(function (_, i) {
+      return dark2[i % dark2.length];
+    });
+
+    return {
+      nodes: {
+        width: 12,
+        height: 12,
+        'background-color': selectable('#4a5568'),
+        label: { data: 'id' },
+        'font-size': 10,
+        'text-valign': 'center',
+        'text-halign': 'right',
+        'text-margin-x': 4,
+        'text-outline-width': 2,
+        'text-outline-color': '#fff',
+      },
+      edges: {
+        // the colour is family-mapped, so selection takes the width
+        width: onSelected(4, 2),
+        'curve-style': 'round-taxi',
+        'taxi-direction': 'rightward',
+        'taxi-turn': 'auto',
+        'taxi-track': 'family',
+        'taxi-track-spacing': 14,
+        'taxi-radius': 6,
+        'line-color': {
+          data: 'family',
+          scale: 'ordinal',
+          domain: families,
+          range: range,
+          fallback: '#999',
+        },
+        'line-outline-width': 3,
+        'line-outline-color': '#ffffff',
+        'target-arrow-shape': 'none',
+      },
+    };
   }
 
   // The v3 debug fixture: ten nodes, deliberately awkward.  Styled so the
@@ -988,6 +1060,7 @@ var styles = (function () {
     compound: generated,
     'workflow-dag': workflowDag,
     'workflow-dag-clustered': workflowDag,
+    'greek-gods': greekGods,
     'npm-deps': workflowDag,
     reactome: workflowDag,
   };

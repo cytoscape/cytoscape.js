@@ -588,6 +588,13 @@ instances are not emitters.
   on `grid.sort`, `circle.sort` and `breadthfirst.depthSort` (missing
   values last, ties on the id). Functions stay as escape hatches; the
   objects are the canonical spellings, resolved once at layout start.
+- **`taxi-turn: auto`** (round 124). Under `curve-style: taxi` every
+  fan-out takes its own line in the rank gap, assigned from live
+  positions, so a reader can follow an edge through the gap; `taxi-track`
+  chooses the grouping (`source`, `target`, or `family` for a genealogy)
+  and `taxi-track-spacing` the distance between lines.  Pair it with a
+  background-coloured `line-outline-*` casing: v4 draws the casing per
+  edge in v3's order, so a crossing reads as a gap.
 - **Mapper domains.** An explicit `domain` keeps a data write O(changed);
   `'auto'` is a live extent and pays O(n) only when a write actually moves it.
   Pin `domain` when a stream grows its own extent.

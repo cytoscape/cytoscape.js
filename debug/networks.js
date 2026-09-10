@@ -170,6 +170,17 @@ var networks = {
     layout: { name: 'flow' },
     note: 'A seeded staged pipeline DAG — the flow layout runs at load. Stage drives colour, so ranks should read as colour rows; ~6% of edges skip 2–4 stages (the dummy-corridor case). Edges are round-taxi, downward, 20px turn — the routing contract the layout is designed for; drag a node and the routes follow.',
   },
+  'greek-gods': {
+    // round 124.6: the taxi-track reference picture — Abrate's
+    // tangled-tree genealogy, drawn rightward with one trunk per family
+    desc: 'Greek gods genealogy (flow, taxi tracks)',
+    nodes: 67,
+    edges: 92,
+    generated: 'greek-gods',
+    labelKey: 'id',
+    layout: { name: 'flow', direction: 'rightward' },
+    note: "Abrate's tangled-tree data (GeneaQuilts with curved links): 67 gods over 7 generations, 20 with two parents.  `taxi-turn: auto` with `taxi-track: family` gives each parent pair one trunk in the gap, the dark2 scheme colours the families, and a background-coloured casing gaps the crossings — the reference picture, reproduced.  Drag a parent and the trunks re-assign.",
+  },
   'workflow-dag-clustered': {
     desc: 'Workflow DAG, clustered (flow layout)',
     nodes: '~128',

@@ -57,7 +57,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,650 unit · 671 module · 24 soak · 448 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,683 unit · 675 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
@@ -626,18 +626,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and 22× less area; within 3% of dagre's crossings on the real
     dependency graph at 10× its speed.  The residue is recorded, not
     hidden: elkjs still leads crossings by ~25–30% on three fixtures,
-    and the taxi-geometry pairing measures worse than straight lines —
-    both carried as named follow-up levers with their numbers.
+    and the taxi-geometry pairing measured worse than straight lines —
+    both carried as named follow-up levers with their numbers (10 Sep
+    resolved the second: the taxi counts were never comparable, since
+    collinear runs are ambiguity, not crossings).
   - Buys the dagre use case in core: v3 apps that shipped a layout
     extension for DAGs get a faster, maintained, compound-correct
     built-in that one option object away replaces it.
   - Real data joined the same day: the debug page gained the repo's own
     npm dependency DAG (scopes as compound parents) and Reactome's
     human Immune System pathway hierarchy (CC0), both also quality
-    fixtures — and the bio hierarchy inverted the taxi finding: 3
-    crossings under taxi routing against dagre's 73 and elk's 54, so
-    the taxi contract loses on dense meshes and wins on real
-    tree-like hierarchies, both halves measured.  The first
+    fixtures — and the bio hierarchy seemed to invert the taxi
+    finding: 3 crossings under taxi routing against dagre's 73 and
+    elk's 54 (10 Sep showed the 3 was 37 collinear overlapping runs
+    that a crossing counter cannot see; separated, they are 59).  The
+    first
     positionless compound fixtures also flushed two round-trip bugs:
     `toColumnarElements` fabricated a positions column (a positionless
     graph came back from the wire positioned), and the debug page's
@@ -925,6 +928,36 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     of the smaller trees, rows of pairs and rows of singletons, where
     the first version was one row 144 bands wide.  One component is
     v3's picture exactly.
+- **10 Sep** — taxi tracks: which edge goes to which node
+  - Item 59, planned and landed the same day on four calls the
+    maintainer made.  Flow's one open legibility problem was that
+    every taxi edge out of a rank turned at the same distance, so
+    different sources' runs lay on one line — the reference picture
+    (Abrate's tangled-tree genealogy, GeneaQuilts with curved links)
+    gives each family its own trunk.  `taxi-turn: auto` now takes an
+    edge's turn from a track the store assigns from live positions
+    (style-side: edges keep routing themselves after a drag, under
+    every layout), `taxi-track` groups by source (the default —
+    ELK's hyperedge), target or family, and conflicting bundles take
+    distinct lines in the gap, ordered by ELK's pairwise crossing
+    rule because it beat the staircase on all four fixtures.  The
+    new run-overlap column reads 0 on every fixture where the 50 %
+    turn read 43 / 1141 / 37 / 10.
+  - The line casing draws per edge in v3's order now, so a later
+    edge's casing gaps an earlier edge's line at a crossing (the
+    parity scene 72 → 10 px), and flow merges the long edges into a
+    target into one chain anchored at the target — a corridor probe
+    over 400 seeded DAGs went from 187 violations to 7 — and grows a
+    rank gap for the tracks it holds (`edgeSep`).
+  - Two things the code corrected in the plan: the turn is delivered
+    through the params header's unused lane, because a new column had
+    no binding left in the curved vertex stage; and 31 Aug's "3
+    crossings under taxi" was 37 collinear overlaps, which a crossing
+    counter cannot see — the taxi contract's number is comparable
+    only once the lines are apart.
+  - Buys the picture: the Greek-gods scene on the debug page is the
+    reference figure — one trunk per parent pair, the families in
+    dark2, the crossings gapped.
 
 ---
 

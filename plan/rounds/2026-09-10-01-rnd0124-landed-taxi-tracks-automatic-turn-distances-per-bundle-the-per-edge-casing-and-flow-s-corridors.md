@@ -302,3 +302,189 @@ in a rank and what the reactome win was measured on; `family` is
 the genealogy recipe; (4) the per-edge casing lands as parity
 without a switch — the global halo was never v3's, and the edge
 underlay already gives it to anyone who wants it.
+
+---
+
+## What landed (2026-09-10)
+
+Item 59, the day it was planned, on the four calls above.  What
+follows is the round pass by pass, and where the work departed from
+the plan and why.
+
+### 124.2 — the pass, as a pure function
+
+`src/taxi-tracks.mts`: edges (source/target slots, direction, min
+distance, body mode, grouping, spacing) plus node centres and outer
+halves in, one px turn per edge out.  Per edge the axis, sign and
+ideal band are derived exactly as `evalTaxi` derives them
+(body-subtracted deltas, the auto-axis choice, the min distance at
+both ends); an edge whose band is empty keeps the 50 % turn.  Bundles
+key on the grouping per axis and direction, with an interval-clique
+split when members' bands do not intersect (a family whose parents
+sit at different heights).  **Added over the plan:** the band is cut
+by the node bodies the run would cross and keeps the stretch nearest
+the source (nearest the target for `target` bundles) — without it a
+lone long edge's run landed in an intermediate rank row, and with it
+a long edge's run takes the first gap and its leg the target's x,
+which is exactly the corridor 124.5 keeps free.  Conflicts are pairs
+whose runs and bands both overlap, found by a sweep along the axis
+with an active band list; components by union-find; slot s of k at
+`mid + sgn × (s − (k−1)/2) × min(spacing, band/(k+1))`.  `runDepth`
+(the interval colouring) is what flow sizes a gap with.  Twelve
+specs, including the lone-bundle = 50 % identity, the crowded gap
+compressing to 150/21 px with every turn ideal, and determinism
+under edge permutation.
+
+### 124.1 — the measurement, and the order it decided
+
+The harness grew a `runOverlap` column — pairs of bundles (the edges
+out of one source) whose horizontal runs are collinear and overlap,
+the figure this round exists to lower — with self-tests, four taxi
+rows (`flow-taxi` at 50 %, `flow-taxi-20`, `flow-taxi-tracks` in the
+staircase order, `flow-taxi-tracks-x` in ELK's pairwise crossing
+order) and the Greek-gods genealogy as a fixture (Abrate's data, 67
+nodes over 7 generations, 92 edges, 20 two-parent nodes; the
+derivation script is beside it).
+
+| fixture | flow-taxi | flow-taxi-20 | tracks (staircase) | tracks (crossings) |
+| --- | --- | --- | --- | --- |
+| deps | 5168 / 43 | 4344 / 24 | 4515 / 0 | 4259 / 0 |
+| workflow-1k | 26851 / 1141 | 26273 / 492 | 29266 / 3 | 23176 / 3 |
+| reactome | 3 / 37 | 3 / 37 | 62 / 0 | 59 / 0 |
+| greek-gods | 16 / 10 | 16 / 10 | 144 / 0 | 134 / 0 |
+
+(crossings / run overlaps, before 124.5's positions.)  The run-overlap
+count falls to 0 (3 on workflow-1k) under either order.  The 50 %
+rows' crossing counts are not comparable: collinear overlapping runs
+are not proper intersections, so reactome's 37 overlaps hid the leg
+crossings that separating the lines exposes.  Between the two orders
+**the crossing rule wins on all four fixtures and is the default**,
+the staircase kept as the control.  Its cost counts per edge run with
+the shared-endpoint exclusion — the way the harness counts — after a
+first bundle-level version chose the dearer order in 5 of 7 pairs on
+the gods; a per-bundle count is the perceptual truth (a bus is one
+line), but the instrument is per edge, and the rule optimises what is
+measured.
+
+### 124.3 — the props, the lane, the store
+
+`taxi-turn` takes `auto` (stored as the 50 % default with an auto
+flag, reads back `'auto'`; a mapper's `fallback: 'auto'` compiles to
+a sentinel the setter reads back as the flag), `taxi-track: source |
+target | family` and `taxi-track-spacing` (px, default 10), all
+mapper-capable edge props with readers, 155 readable edge props now.
+**Departure from the plan:** delivery is not a new `edge.taxiTrack`
+column.  The taxi blob record's third float became a turn *mode* (0
+px, 1 percent, 2 auto) and an auto edge's px turn is the params
+header's n lane, which taxi never used — both `evalTaxi` (now taking
+the lane) and the WGSL `evalRouteW` (`header.z`) read it.  The reason
+is the binding budget: the curved vertex stage binds 7 storage
+buffers plus the visible list, WebGPU's base limit, so a new column
+had nowhere to bind; the lane rides a column the stage already reads,
+the blob stays position-independent, and the plan's intent holds.  An
+auto turn routes toward the target like a percent turn (the
+forced-direction rule never applies).  `CurveIndex` keeps the exact
+set of auto slots (set on style, cleared on release, moved on
+compaction), and `GraphStore.refreshTaxiTracks` runs from
+`flushDerived` once per geo epoch — at frame start (`takeDelta`) and
+on the CPU readers — building the track edges from the extras, the
+shown leaf bodies as obstacles, writing the changed lanes as one
+dirty span and never bumping the epoch it is keyed on; a single size
+check when nothing is auto.  Two limits, recorded: under a GPU tween
+or force lease the CPU positions are stale, so tracks refresh when
+they land; and the sweep is whole, not incremental (well under a
+millisecond at 7k edges; the render bench's drag row is the detector
+if that ever changes).  `test/taxi-auto.mjs` (13 specs) covers the
+props, the pass through `segmentPoints()` — two overlapping fan-outs
+10 px apart with the '50%' control on one line, the identity, family
+vs source, a drag off and back onto the other run — the bounding box
+and the lane written with the blob untouched; a renderer spec reads
+each colour on its own row in the browser.
+
+### 124.4 — the casing, per edge
+
+With any casing on, each stream's scene draw spends two instances per
+visible edge off a third indirect args block (the scan kernel doubles
+the count): the even instance the casing at the layer record's
+width, the odd the line, so within one draw each edge's casing lands
+over every earlier edge's line — v3's `drawEdge` order, verified
+(outline, underlay, line, arrows, overlay, per edge in z order).  The
+straight shader factors `vsEdge`'s body into `edgeVertexAt`, shared
+with `vsEdgeCased`; `fsEdge` shades a casing instance solid.  The
+curved shader factors the layer stage's fused-geometry body into
+`curvedVertexFused` (with the dash/gradient length walk the line
+instance needs); the cased pipeline takes a third bind layout — the
+fused vertex set plus the paint set, the casing record visible to
+both stages — and `fsCurvedCased` shades the casing branch before the
+shared `shadeCurved`.  The separate casing layer pass is gone; the
+pair lands after the global underlay pass, the deviation the README
+already records for the layers.  Measured: `parity-casing` 72 px
+(0.060 %) → 10 px (0.008 %) against v3; `parity-closeup-layers` stays
+at 0.  A renderer spec draws an X and reads the later edge's casing
+colour on the earlier edge's line 5 px from the crossing, with the
+z-order swapped as the control.  The changelog and MIGRATING say
+what a `line-outline-*` user sees now, and name the underlay as the
+global-halo recipe.
+
+### 124.5 — flow's corridors and gaps
+
+The chains of the long edges into one target merge into one dummy per
+shared rank, the merged unit edges carry the summed weight, and a
+chain's last segment is protected like an inner segment; BK's marking
+reads a protected up-edge on real targets too.  **Found on the way:**
+the first version left the up-sweeps anchoring the chain elsewhere
+(a real parent competing for the target won it in sweep order) and
+the four-way median split the block, so vertical alignment gained a
+pre-pass — protected edges align first under their own monotonic
+guard, and the ordinary pass stays between the protected alignments
+ahead of and behind it.  A dummy aligns only along its protected
+edge, so the topmost dummy of a merged chain, joined only by sources'
+first segments, anchors the block at the target.  Compound mode keeps
+plain chains.  A corridor probe over 400 seeded random DAGs (does the
+vertical line at a long edge's target x meet a node body on the
+intermediate ranks?) read **187 violations before, 7 after**, the
+residue being chains the ordering left crossing (a type-2 conflict),
+where the guard can anchor only one; the public spec is the probe's
+seed-1 fixture, which fails on the pre-124.5 flow, and the module
+spec pins the shared dummy, the summed weight and the protected tail
+with plain chains as the control.  `edgeSep` (px, default 10;
+negative throws): after `assignX` the gap below each rank becomes
+`max(rankSep, tracks × edgeSep + 2 × 10)`, `tracks` the overlap
+depth of that rank's fan-out runs (long edges included, since the
+pass puts their runs in the first gap); `assignY` takes the per-gap
+array.  The straight `flow` row moved within noise (deps 4407 →
+4189, workflow-1k 19482 → 19589, reactome 64 → 67, gods 117 → 117),
+so the merge stays unconditional; the tracked rows after 124.5: deps
+4142 / 0, workflow-1k 22929 / 1, reactome 59 / 0, gods 134 / 0.
+
+### 124.6 — the page and the record
+
+The debug page's flow and breadthfirst sheets take `taxi-turn: auto`
+with a 2 px background-coloured casing, and `?network=greek-gods`
+reproduces the reference picture: flow rightward, `taxi-track:
+family`, dark2 cycled over the 25 families, a 3 px white casing —
+opened and looked at: one trunk per parent pair, Zeus's families on
+parallel lines, the crossings gapped.  The README carries the taxi
+props, the flow contract rewritten around tracks, the per-edge casing
+and the two recipes (colour per family as an ordinal mapper, the
+long-edge radius as a `taxi-radius` mapper); the shipped declaration
+carries `edgeSep` and the extras' fields; the changelog and MIGRATING
+carry the user-visible changes.  Gates: the Node tier, the throw gate
+(two exemptions re-keyed for moved lines), the harness spec (105),
+the two new renderer specs and the casing parity scenes.
+
+### What the plan said that the code corrected
+
+- A separate f32 column could not bind in the curved vertex stage;
+  the params header's unused n lane carries the track instead.
+- The staircase was the plan's first order; the measurement chose the
+  crossing rule.
+- The plan had no obstacle cut; without it a lone long edge's run sat
+  in a rank row, so the pass cuts the band by node bodies.
+- The plan's alignment change ("the chain's last segment joins the
+  protected inner segments") was not enough on its own; the pre-pass
+  with a look-ahead bound is what anchors the block in all four
+  alignments.
+- The harness's crossing counts under the 50 % turn were never
+  comparable to separated lines, which is the sentence 112.4's
+  withholding was missing.

@@ -1068,3 +1068,14 @@ directions".*
     genealogy.  The four calls — style-side with a lazy epoch-keyed
     refresh, the `taxi-track` spelling, `source` as the default, the
     casing as parity without a switch — are decided on the round file.
+    **Taken by round 124 (2026-09-10)**: the pass as a pure function
+    (obstacle-cut bands, ELK's pairwise crossing order — the
+    measurement chose it over the staircase on all four fixtures);
+    the props with the auto turn delivered through the params
+    header's n lane (a new column had no binding in the curved vertex
+    stage) and refreshed once per geo epoch from `flushDerived`; the
+    casing per edge in v3's order (the parity scene 72 → 10 px); flow's
+    merged, target-anchored chains (a corridor probe over 400 seeded
+    DAGs: 187 violations → 7) and `edgeSep`; the run-overlap count 0 on
+    every fixture.  The Greek-gods scene on the page reproduces the
+    reference picture.  Closed.

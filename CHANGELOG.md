@@ -24,6 +24,17 @@ that compile and then behave differently.
 
 ### Added
 
+- **Taxi tracks — automatic turn distances per bundle** (round 124,
+  item 59): `taxi-turn: auto` takes an edge's px turn from a track the
+  store assigns from live positions, so the runs of different fan-outs
+  sit on distinct lines in the gap instead of one; `taxi-track:
+  source | target | family` (default `source`) says which edges share
+  a track and `taxi-track-spacing` (default 10) how far apart tracks
+  sit.  Style-side: edges keep routing themselves after a drag, under
+  every layout.  Flow gains `edgeSep` (default 10): the gap below a
+  rank grows to `max(rankSep, tracks × edgeSep + 20)`, and the long
+  edges into one target share one chain anchored at the target so the
+  taxi leg meets no node body on the way down.
 - **Component packing on the discrete layouts, and the `pack` layout**
   (round 123, item 58): `packComponents: true` on `circle`,
   `concentric`, `grid`, `breadthfirst` and `radial` lays each
@@ -296,6 +307,13 @@ that compile and then behave differently.
 
 ### Changed
 
+- **The line casing draws per edge, in v3's order** (round 124.4):
+  `line-outline-*` used to be a global pass under all lines — a halo
+  against nodes only; now each edge draws its casing then its line in
+  z order, so a later edge's casing gaps an earlier edge's line where
+  they cross, as v3 draws it (the parity scene's difference fell from
+  72 px to 10).  Anyone using a casing sees gapped crossings now; the
+  old global-halo look is the edge underlay.
 - **The non-presenting GPU force batch is priced before doubling**
   (round 121.5): the device's time on the last completed batch bounds
   the next to what a 100 ms budget buys, so the ramp no longer

@@ -20,7 +20,7 @@ var layoutConfig = (function () {
     preset: null,
     circle: { 'curve-style': 'bezier' },
     concentric: { 'curve-style': 'bezier' },
-    breadthfirst: { 'curve-style': 'round-taxi', 'taxi-turn': 20 },
+    breadthfirst: { 'curve-style': 'round-taxi', 'taxi-turn': 'auto' },
     random: null,
     radial: { 'curve-style': 'bezier' },
     // the pack layout moves components whole: the sheet's own edges
@@ -29,7 +29,8 @@ var layoutConfig = (function () {
     // the EM entry is force with a grouping and an order (120; one run
     // since 121): the same sheet
     'force-by-sign': { 'curve-style': 'haystack' },
-    flow: { 'curve-style': 'round-taxi', 'taxi-turn': 20 },
+    // 124: `auto` — each fan-out on its own line in the gap
+    flow: { 'curve-style': 'round-taxi', 'taxi-turn': 'auto' },
     spiral: { 'curve-style': 'bezier' },
   };
 

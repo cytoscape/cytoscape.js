@@ -99,7 +99,7 @@ export const UNREACHABLE = {
     'all-or-nothing eligibility rule (round 25.1), which keeps a lane/' +
     'padding/fontSize write off the device by refusing the whole ' +
     'animation; the guard exists so a future eligibility bug is loud',
-  'src/layout/flow-order.mts:105':
+  'src/layout/flow-order.mts:107':
     'non-positive edge span invariant — ranking always leaves every ' +
     'edge a span of at least its minLen (longest-path enforces it, the ' +
     'simplex preserves feasibility), so no public input reaches a ' +

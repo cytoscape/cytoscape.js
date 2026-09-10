@@ -861,10 +861,16 @@ mapper-capable; layer opacity folds into the stored color (folded
 readback); padding grows the bb scans; zero-cost when unused.
 
 `line-outline-width`/`-color` (round 13 B4) stroke a casing under
-the edge line at width + outline width via the same layer machinery,
-alpha folded by v3's effective line opacity; an enabled casing
-demotes the element-opacity mapper to the CPU path (the fold must
-track writes).  Edge layers stroke the edge geometry at width + 2 × padding (every
+the edge line at width + outline width, alpha folded by v3's
+effective line opacity; an enabled casing demotes the
+element-opacity mapper to the CPU path (the fold must track writes).
+**Since round 124.4 the casing draws per edge, in v3's order** —
+casing then line for each edge in z order, as one paired draw (two
+instances per visible edge off a third indirect args block) — so a
+later edge's casing gaps an earlier edge's line where they cross;
+before 124 it was a global pass under all lines, a halo against nodes
+only.  The global-halo look is the edge *underlay*, which is still a
+global pass.  Edge layers stroke the edge geometry at width + 2 × padding (every
 family — haystack offsets and the triangle taper included), the
 underlay under the edges and the overlay over edges + arrows, both
 under the nodes; strokes are solid with butt caps (v3 rounds stroke
@@ -1187,20 +1193,28 @@ throw), and `minLength`/`edgeWeight` take the 85.3 mapping spellings.
 
 **No edge routing, by decided design** (the maintainer's call, round
 112): flow emits node positions only, so style-driven edges keep
-routing themselves after any drag.  The taxi contract: rank gaps are
-node-free bands where a `taxi-direction: downward` turn lands; BK's
-aligned chains make `src.x === tgt.x` drops exactly straight.  Long
-edges reserve a dummy corridor, but 112.4 measured the taxi polyline
-(50% turn) scoring *more* geometric crossings than the straight-line
-drawing — making the corridor and the taxi leg coincide needs
-taxi-aware ordering, not a placement flag, so the planned
-`alignLongEdges` option was withheld rather than shipped as a
-placebo; the harness keeps a `flow-taxi` row so the gap stays
-measured.
+routing themselves after any drag.  The taxi contract, as round 124
+left it: rank gaps are node-free bands where a `taxi-direction:
+downward` turn lands, and under `taxi-turn: auto` each fan-out's run
+takes its own line in the gap (the track pass, below); BK's aligned
+chains make `src.x === tgt.x` drops exactly straight; **the long
+edges into one target share one merged chain, anchored at the target
+(124.5)**, so the taxi leg at the target's x meets no node body on
+the intermediate ranks (a corridor probe over 400 seeded DAGs: 187
+violations before, 7 after — the residue being chains the ordering
+left crossing); and **the gap below a rank grows to hold its tracks**
+— `max(rankSep, tracks × edgeSep + 20)`, `edgeSep` a new option
+defaulting to 10, `tracks` the overlap depth of that rank's fan-out
+runs.  112.4 had measured the 50 %-turn polyline scoring *more*
+crossings than the straight drawing and withheld `alignLongEdges` as
+a placebo; 124.1's run-overlap column showed why — collinear runs are
+not crossings, they are ambiguity — and the corridor landed in the
+form the measurement asked for.
 
 Leaves place, parents derive (round 14.11); compound-aware global
 layering is pass 112.3.  Options: `direction`, `nodeSep`, `rankSep`,
-`layering`, `thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
+`edgeSep` (124.5), `layering`, `thoroughness`, `minLength`,
+`edgeWeight`, `acyclic`,
 `cycleRemoval`, `rankConstraints`,
 `componentSpacing`, `avoidOverlap` and `avoidOverlapPadding` (114.6:
 extents come from the shared dimensions, labels on request,
@@ -1212,6 +1226,87 @@ asserted:
 `npm run benchmark:layout-quality` runs flow beside dagre and elkjs on
 the round-112 fixture set (crossings, edge length, area, validity,
 runtime), and the round file records the numbers.
+
+## Taxi tracks: automatic turn distances per bundle (round 124, item 59)
+
+Flow's one open legibility problem was *which edge goes to which
+node*: with `curve-style: taxi` every edge out of a rank turned at
+the same distance, so the horizontal runs of different sources lay on
+one line.  The reference picture is Abrate's tangled-tree genealogy
+(GeneaQuilts with curved links), whose universal device is a
+different turn distance per family; its general form is Sander's
+hyperedge routing slots, which ELK's orthogonal router assigns per
+layer gap.
+
+**`taxi-turn: auto`** takes the edge's px turn from a *track* the
+store assigns from live positions — style-side, by the maintainer's
+call, so edges keep routing themselves after any drag and every
+layout benefits (`flow`, `breadthfirst`, `preset`, hand placement).
+**`taxi-track: source | target | family`** (default `source`) says
+which edges share a track: the edges out of one node (ELK's
+hyperedge — a fan-out reads as one orthogonal bus on its own line),
+into one node (the mirror, for fan-in drawings), or into the targets
+that share a parent set (the GeneaQuilts key: k parents and m
+children on one trunk; it multiplies the track count on a general
+DAG, so it is opt-in).  **`taxi-track-spacing`** (default 10) is the
+ideal distance between neighbouring tracks.  All three are
+mapper-capable edge props; `auto` on a mapped `taxi-turn` is a
+`fallback` keyword; `taxi-turn` reads back `'auto'`.
+
+The pass (`src/taxi-tracks.mts`, pure): per edge the axis, sign and
+ideal band are derived exactly as `evalTaxi` derives them; bundles
+key on the grouping per axis and direction, and a bundle's band is
+the intersection of its members' bands (members whose bands do not
+intersect split); the band is cut by the node bodies the run would
+cross and keeps the stretch nearest the source (nearest the target
+for `target` bundles), which is what puts a long edge's run in the
+first gap and its leg at the target's x; two bundles conflict when
+both their runs and their bands overlap; conflicting bundles are
+ordered by ELK's pairwise crossing rule — for each pair, count the
+legs each order makes cross the other's runs, orient the pair the
+cheaper way, keep orientations by decreasing margin unless one closes
+a cycle, colour greedily in the topological order — with the
+staircase (by source position) as the control; slot s of k lands at
+`mid + sgn × (s − (k − 1)/2) × min(spacing, band/(k + 1))`, so a
+crowded gap compresses rather than falling to the Z-shape, and a lone
+bundle draws exactly what `'50%'` draws.  **Delivery is a lane, not a
+column and not the blob**: the taxi record's third float is a turn
+*mode* (px / percent / auto) and an auto edge's px turn is the params
+header's n lane, which taxi never used — both `evalTaxi` and the WGSL
+twin read it, the blob stays position-independent, and no new binding
+was needed (the curved vertex stage sits at the 8-storage-buffer
+budget, which is why the plan's separate column became this lane).
+`GraphStore.refreshTaxiTracks` runs from `flushDerived` **once per
+geo epoch** — at frame start and on the CPU readers — over the exact
+set of auto slots the curve index keeps, with the shown leaf bodies
+as obstacles, writing the changed lanes as one dirty span and never
+bumping the epoch it is keyed on; a single size check when nothing is
+auto.  Two limits, recorded: under a GPU position tween or a GPU
+force lease the CPU column is stale, so tracks refresh when the
+positions land; and the sweep is whole, not incremental (a 7k-edge
+DAG is well under a millisecond).
+
+Measured (124.1; the harness's new `runOverlap` column counts pairs
+of bundles whose runs are collinear and overlap): on deps,
+workflow-1k, reactome and the Greek-gods genealogy the count falls
+from 43 / 1141 / 37 / 10 under the 50 % turn to 0 / 3 / 0 / 0 under
+tracks, and the crossing rule beats the staircase on crossings on all
+four (4259 vs 4515, 23176 vs 29266, 59 vs 62, 134 vs 144), so it is
+the default.  The 50 %-turn crossing counts are not comparable:
+collinear runs are not proper intersections, and separating them
+exposes the leg crossings they hid (reactome's 3 becomes 59).
+
+Round 124 also drew **the casing per edge** (124.4, the casing
+paragraph under round 13 above) and gave **flow** its corridors and
+`edgeSep` (124.5, the flow section).  Declined, as recipes: colour per
+family is a `line-color` ordinal mapper over an edge data key
+(`range: 'dark2'`, cycled past eight); the long-edge radius is a
+`taxi-radius` mapper over a span key; stretching a node to stagger its
+attachment points is not done (the merge at a shared target reads as
+a metro junction).  The debug page's flow sheets use `auto` with a
+background-coloured casing, and `?network=greek-gods` reproduces the
+reference picture (rightward, `taxi-track: family`, dark2 per
+family).
 
 ## Data-driven layout mappings (round 85.3, #1514)
 
@@ -2937,9 +3032,11 @@ each is deliberate, not a pass-1 deferral:
     `arc-radius`/`influence-radius` lists, last entry repeating —
     v3's rule), `edge-distances` (`intersection` | `node-position`;
     `'endpoints'` throws until 12c's manual endpoints exist),
-    `taxi-direction`, `taxi-turn` (px, negative = from the target, or
-    a percent string storing v3's fraction), `taxi-turn-min-distance`
-    and `taxi-radius`.
+    `taxi-direction`, `taxi-turn` (px, negative = from the target, a
+    percent string storing v3's fraction, or **`auto`** — round 124's
+    track pass assigns it), `taxi-turn-min-distance`, `taxi-radius`,
+    and (124) `taxi-track` (`source` | `target` | `family`) and
+    `taxi-track-spacing`.
 
     All edge-only; scalars/enums are
     mapper-capable like the 12a props, **list props take constants

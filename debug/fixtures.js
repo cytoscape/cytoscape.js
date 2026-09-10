@@ -253,6 +253,113 @@ var fixtures = (function () {
     return { nodes: nodes, edges: edges };
   }
 
+  // Round 124.6: the Greek-gods genealogy — Abrate's tangled-tree data
+  // (GeneaQuilts with curved links), the round's reference picture: 67
+  // nodes over 7 generations, 92 parent -> child edges, 20 two-parent
+  // children.  Each entry is [id, ...parents]; an edge carries its
+  // child's parent set as `family`, the key `taxi-track: family` bundles
+  // on and the colour mapper reads.  The same data is the quality
+  // harness's greek-gods fixture (benchmark/fixtures/dag).
+  function greekGodsFixture() {
+    var levels = [
+      [['Chaos']],
+      [['Gaea', 'Chaos'], ['Uranus']],
+      [
+        ['Oceanus', 'Gaea', 'Uranus'],
+        ['Thethys', 'Gaea', 'Uranus'],
+        ['Pontus'],
+        ['Rhea', 'Gaea', 'Uranus'],
+        ['Cronus', 'Gaea', 'Uranus'],
+        ['Coeus', 'Gaea', 'Uranus'],
+        ['Phoebe', 'Gaea', 'Uranus'],
+        ['Crius', 'Gaea', 'Uranus'],
+        ['Hyperion', 'Gaea', 'Uranus'],
+        ['Iapetus', 'Gaea', 'Uranus'],
+        ['Thea', 'Gaea', 'Uranus'],
+        ['Themis', 'Gaea', 'Uranus'],
+        ['Mnemosyne', 'Gaea', 'Uranus'],
+      ],
+      [
+        ['Doris', 'Oceanus', 'Thethys'],
+        ['Neures', 'Pontus', 'Gaea'],
+        ['Dionne'],
+        ['Demeter', 'Rhea', 'Cronus'],
+        ['Hades', 'Rhea', 'Cronus'],
+        ['Hera', 'Rhea', 'Cronus'],
+        ['Alcmene'],
+        ['Zeus', 'Rhea', 'Cronus'],
+        ['Eris'],
+        ['Leto', 'Coeus', 'Phoebe'],
+        ['Amphitrite'],
+        ['Medusa'],
+        ['Poseidon', 'Rhea', 'Cronus'],
+        ['Hestia', 'Rhea', 'Cronus'],
+      ],
+      [
+        ['Thetis', 'Doris', 'Neures'],
+        ['Peleus'],
+        ['Anchises'],
+        ['Adonis'],
+        ['Aphrodite', 'Zeus', 'Dionne'],
+        ['Persephone', 'Zeus', 'Demeter'],
+        ['Ares', 'Zeus', 'Hera'],
+        ['Hephaestus', 'Zeus', 'Hera'],
+        ['Hebe', 'Zeus', 'Hera'],
+        ['Hercules', 'Zeus', 'Alcmene'],
+        ['Megara'],
+        ['Deianira'],
+        ['Eileithya', 'Zeus', 'Hera'],
+        ['Ate', 'Zeus', 'Eris'],
+        ['Leda'],
+        ['Athena', 'Zeus'],
+        ['Apollo', 'Zeus', 'Leto'],
+        ['Artemis', 'Zeus', 'Leto'],
+        ['Triton', 'Poseidon', 'Amphitrite'],
+        ['Pegasus', 'Poseidon', 'Medusa'],
+        ['Orion', 'Poseidon'],
+        ['Polyphemus', 'Poseidon'],
+      ],
+      [
+        ['Deidamia'],
+        ['Achilles', 'Peleus', 'Thetis'],
+        ['Creusa'],
+        ['Aeneas', 'Anchises', 'Aphrodite'],
+        ['Lavinia'],
+        ['Eros', 'Hephaestus', 'Aphrodite'],
+        ['Helen', 'Leda', 'Zeus'],
+        ['Menelaus'],
+        ['Polydueces', 'Leda', 'Zeus'],
+      ],
+      [
+        ['Andromache'],
+        ['Neoptolemus', 'Deidamia', 'Achilles'],
+        ['Aeneas(2)', 'Creusa', 'Aeneas'],
+        ['Pompilius', 'Creusa', 'Aeneas'],
+        ['Iulus', 'Lavinia', 'Aeneas'],
+        ['Hermione', 'Helen', 'Menelaus'],
+      ],
+    ];
+    var nodes = [];
+    var edges = [];
+
+    levels.forEach(function (level, generation) {
+      level.forEach(function (entry) {
+        var id = entry[0];
+        var parents = entry.slice(1);
+        var family = parents.slice().sort().join(' + ');
+
+        nodes.push({ data: { id: id, generation: generation } });
+        parents.forEach(function (p) {
+          edges.push({
+            data: { id: p + '->' + id, source: p, target: id, family: family },
+          });
+        });
+      });
+    });
+
+    return { nodes: nodes, edges: edges };
+  }
+
   // round 14: clustered compound generator — N leaves under ~N/20 parents
   // (every 4th parent nested under the previous one), leaves blobbed per
   // cluster, mostly intra-cluster edges plus a sprinkle of child->parent edges
@@ -759,6 +866,9 @@ var fixtures = (function () {
     }
     if (kind === 'workflow-dag-clustered') {
       return generateWorkflowDag(spec, true);
+    }
+    if (kind === 'greek-gods') {
+      return greekGodsFixture();
     }
 
     return generateNetwork(spec);

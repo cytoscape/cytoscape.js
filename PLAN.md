@@ -1045,3 +1045,25 @@ directions".*
     field kept off them.  The quality suite's packed rows and
     `test/layout-pack.mjs` are the gates; the em-web pictures are on
     the round.  Closed.
+59. **Taxi tracks — automatic turn distances per bundle** (raised
+    by the maintainer 2026-09-10; **planned as round 124**).  Flow's
+    open legibility problem is which edge goes to which node: with
+    `curve-style: taxi` every edge out of a rank turns at the same
+    distance, so different sources' runs lie on one line.  The
+    reference is Abrate's tangled-tree picture (GeneaQuilts with
+    curved links), whose universal device is a different turn
+    distance per group — in general form, Sander's hyperedge routing
+    slots that ELK's orthogonal router assigns per layer gap.  The
+    plan: `taxi-turn: auto` takes its turn from a track the curve
+    subsystem assigns from live positions (style-side, so edges keep
+    routing themselves after a drag and every layout benefits),
+    bundles keyed on the source by default (`taxi-bundle: source |
+    target | family`), the casing drawn per edge in v3's order so a
+    crossing is gapped, and flow contributing target-anchored merged
+    corridors (112.5's first lever) plus gap growth by track count
+    (`edgeSep`).  **First measurement**: a run-overlap column on the
+    quality harness and a tracked `flow-taxi` row against the 50 %
+    and 20 px rows, on deps, workflow-1k, reactome and the Greek-gods
+    genealogy.  The calls — style-side against layout-written, the
+    spellings, the default grouping, the casing order as parity or
+    behind a switch — are on the round file.

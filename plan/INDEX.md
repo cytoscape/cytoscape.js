@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–123 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 124 |
 
 ## The sections
 
-162 sections.
+163 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -189,3 +189,4 @@ A round can land with an item held open; the round file says which.
 | 160 | 121 | 2026-09-09 | landed | [The re-pack takes a grouping and an order, and the larger components turn](rounds/2026-09-09-01-rnd0121-landed-the-re-pack-takes-a-grouping-and-an-order-and-the-larger-components-turn.md) |
 | 161 | 122 | 2026-09-09 | landed | [The layout portfolio audit: the use cases, the flagships and what is missing](rounds/2026-09-09-02-rnd0122-landed-the-layout-portfolio-audit-the-use-cases-the-flagships-and-what-is-missing.md) |
 | 162 | 123 | 2026-09-09 | landed | [Component packing on the discrete layouts, the pack layout, and breadthfirst's trees as blocks](rounds/2026-09-09-03-rnd0123-landed-component-packing-on-the-discrete-layouts-the-pack-layout-and-breadthfirst-s-trees-as-blocks.md) |
+| 163 | 124 | 2026-09-10 | plan | [Taxi tracks: automatic turn distances per bundle, the per-edge casing, and flow's corridors](rounds/2026-09-10-01-rnd0124-plan-taxi-tracks-automatic-turn-distances-per-bundle-the-per-edge-casing-and-flow-s-corridors.md) |

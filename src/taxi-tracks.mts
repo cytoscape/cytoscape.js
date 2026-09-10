@@ -43,8 +43,15 @@ The rules, in order:
    bundle's runs — per edge run, never against an edge sharing an
    endpoint, the way a crossing counter sees them — orient the pair
    the cheaper way, ties to the staircase, keep orientations by
-   decreasing margin unless one closes a cycle, and colour greedily in
-   the topological order with every bundle above its predecessors.
+   decreasing margin unless one closes a cycle (a bitset closure per
+   component), and colour greedily in the topological order with
+   every bundle above its predecessors.  A component past 128 bundles
+   keeps the staircase: the pair costs are quadratic, and that many
+   lines in one gap are past legibility.  Measured (124.7): the whole
+   pass is 8 ms on workflow-1k (1.9k edges, 6.6k conflicting pairs),
+   26 ms on a dense 2.7k-edge bench where every source fans across its
+   row, 160 ms on a pathological 8.7k-edge one (29 gaps, each a
+   100-clique of bundles); a graph with no auto edge pays a size check.
    `order: 'staircase'` colours by the source's cross position alone,
    near to far, the ordering a metro map draws.  124.1 measured both
    on deps, workflow-1k, reactome and the Greek-gods genealogy: the
@@ -262,7 +269,21 @@ const buildBundles = (
     }
   }
 
-  const byKey = new Map<string, number[]>();
+  // family keys interned to small integers, so every bundle key is one
+  // number: (head, group) × axis × sign
+  let familyIds: Map<string, number> | null = null;
+
+  if (parentsOf != null) {
+    familyIds = new Map();
+
+    for (const key of parentsOf.values()) {
+      if (!familyIds.has(key)) {
+        familyIds.set(key, familyIds.size);
+      }
+    }
+  }
+
+  const byKey = new Map<number, number[]>();
 
   for (let i = 0; i < edges.length; i++) {
     const g = geom[i];
@@ -274,11 +295,12 @@ const buildBundles = (
     const e = edges[i];
     const head =
       e.group === TRACK_TARGET
-        ? `t${e.tgt}`
+        ? e.tgt
         : e.group === TRACK_FAMILY
-          ? `f${parentsOf!.get(e.tgt)}`
-          : `s${e.src}`;
-    const key = `${head}|${g.vert ? 'v' : 'h'}${g.sgn > 0 ? '+' : '-'}`;
+          ? (familyIds!.get(parentsOf!.get(e.tgt) as string) as number)
+          : e.src;
+    const key =
+      ((head * 3 + e.group) * 2 + (g.vert ? 1 : 0)) * 2 + (g.sgn > 0 ? 1 : 0);
     let list = byKey.get(key);
 
     if (list == null) {
@@ -336,6 +358,53 @@ const buildBundles = (
   return protos;
 };
 
+/** The obstacles sorted along one axis: `order` holds node slots by
+ * their box's lower edge on that axis, `maxExtent` the largest box
+ * extent, so the boxes that can touch a band are one binary search
+ * and a bounded walk. */
+interface ObstacleIndex {
+  order: Int32Array;
+  lo: Float64Array;
+  maxExtent: number;
+}
+
+const indexObstacles = (
+  obstacles: ArrayLike<number>,
+  pos: ArrayLike<number>,
+  half: ArrayLike<number>,
+  axis: number,
+): ObstacleIndex => {
+  const n = obstacles.length;
+  const order = new Int32Array(n);
+  const lo = new Float64Array(n);
+  let maxExtent = 0;
+
+  for (let i = 0; i < n; i++) {
+    order[i] = i;
+
+    const slot = obstacles[i];
+    const ha = half[slot * 2 + axis];
+
+    lo[i] = pos[slot * 2 + axis] - ha;
+
+    if (2 * ha > maxExtent) {
+      maxExtent = 2 * ha;
+    }
+  }
+
+  order.sort((a, b) => lo[a] - lo[b]);
+
+  const sortedLo = new Float64Array(n);
+  const sortedSlots = new Int32Array(n);
+
+  for (let i = 0; i < n; i++) {
+    sortedLo[i] = lo[order[i]];
+    sortedSlots[i] = obstacles[order[i]];
+  }
+
+  return { order: sortedSlots, lo: sortedLo, maxExtent };
+};
+
 /**
  * Cut the band by the obstacle bodies the run would cross and keep the
  * free stretch nearest the source (nearest the target for `target`
@@ -343,7 +412,7 @@ const buildBundles = (
  */
 const cutByObstacles = (
   p: Proto,
-  obstacles: ArrayLike<number>,
+  index: ObstacleIndex,
   pos: ArrayLike<number>,
   half: ArrayLike<number>,
   ownNodes: Set<number>,
@@ -352,8 +421,23 @@ const cutByObstacles = (
   const cross = p.vert ? 0 : 1;
   const blocks: number[] = []; // [lo, hi, lo, hi, ...] along the axis
 
-  for (let i = 0; i < obstacles.length; i++) {
-    const n = obstacles[i];
+  // the boxes whose lower edge lies in [band lo − max extent, band hi]
+  let from = 0;
+  let to = index.lo.length;
+  const start = p.lo - index.maxExtent;
+
+  while (from < to) {
+    const mid = (from + to) >> 1;
+
+    if (index.lo[mid] < start) {
+      from = mid + 1;
+    } else {
+      to = mid;
+    }
+  }
+
+  for (let i = from; i < index.lo.length && index.lo[i] < p.hi; i++) {
+    const n = index.order[i];
 
     if (ownNodes.has(n)) {
       continue;
@@ -442,6 +526,8 @@ export const assignTaxiTracks = (input: TrackInput): TrackResult => {
 
   if (input.obstacles != null && input.obstacles.length > 0) {
     const own = new Set<number>();
+    let byY: ObstacleIndex | null = null;
+    let byX: ObstacleIndex | null = null;
 
     for (const p of protos) {
       own.clear();
@@ -451,7 +537,17 @@ export const assignTaxiTracks = (input: TrackInput): TrackResult => {
         own.add(edges[i].tgt);
       }
 
-      cutByObstacles(p, input.obstacles, pos, half, own);
+      let index: ObstacleIndex;
+
+      if (p.vert) {
+        byY ??= indexObstacles(input.obstacles, pos, half, 1);
+        index = byY;
+      } else {
+        byX ??= indexObstacles(input.obstacles, pos, half, 0);
+        index = byX;
+      }
+
+      cutByObstacles(p, index, pos, half, own);
     }
   }
 
@@ -548,7 +644,7 @@ export const assignTaxiTracks = (input: TrackInput): TrackResult => {
   }
 
   if (input.order !== 'staircase') {
-    order = crossingOrder(protos, edges, geom, adj, staircase, pred);
+    order = crossingOrder(protos, edges, geom, adj, comp, staircase, pred);
   }
 
   const used = new Set<number>();
@@ -620,51 +716,93 @@ export const assignTaxiTracks = (input: TrackInput): TrackResult => {
   return { turn, bundles };
 };
 
+/** Past this many bundles in one conflict component the crossing rule
+ * gives way to the staircase for that component: the pair costs are
+ * quadratic in the component, and a gap holding this many lines is
+ * past legibility anyway.  64 lost crossings on deps and workflow-1k
+ * (components between 64 and 128); 128 keeps them and bounds the
+ * pathological bench at 160 ms. */
+const CROSSING_RULE_CAP = 128;
+
 /**
  * ELK's pairwise rule over the conflict graph: for each conflicting
  * pair, the crossings each order costs (the nearer bundle's target
- * legs through the farther run, the farther bundle's source legs
- * through the nearer run); orient the pair the cheaper way, ties to
- * the staircase; add orientations by decreasing margin, skipping any
- * that would close a cycle; the topological order (ties to the
- * staircase) is the colouring order, and `pred` carries the kept
- * orientations so a bundle's slot stays above its predecessors'.
+ * legs through the farther bundle's runs, the farther bundle's source
+ * legs through the nearer one's — per edge run, never against an edge
+ * sharing an endpoint, the way a crossing counter sees them); orient
+ * the pair the cheaper way, ties to the staircase; keep orientations
+ * by decreasing margin unless one closes a cycle — per component,
+ * with a bitset transitive closure, since a component is capped at
+ * CROSSING_RULE_CAP bundles (a per-pair DFS over the whole graph was
+ * 1.3 s at 8.7k edges; this is milliseconds); the topological order,
+ * ties to the staircase, is the colouring order, and `pred` carries
+ * the kept orientations so a bundle's slot stays above its
+ * predecessors'.  A component past the cap keeps the staircase.
  */
 const crossingOrder = (
   protos: Proto[],
   edges: readonly TrackEdge[],
   geom: EdgeGeom[],
   adj: number[][],
+  comp: Int32Array,
   staircase: (a: number, b: number) => number,
   pred: number[][],
 ): number[] => {
   const B = protos.length;
-  const legsIn = (p: Proto, q: Proto, fromSource: boolean): number => {
-    // p's legs (source or target ends) against q's members' own runs —
-    // per edge, the way a crossing counter sees them, and never against
-    // a member sharing an endpoint node (those pairs meet, not cross)
+  const E = edges.length;
+  // per edge, the run's cross interval and the two leg positions
+  const runLo = new Float64Array(E);
+  const runHi = new Float64Array(E);
+  const cS = new Float64Array(E);
+  const cT = new Float64Array(E);
+  const src = new Int32Array(E);
+  const tgt = new Int32Array(E);
+
+  for (let i = 0; i < E; i++) {
+    const g = geom[i];
+
+    runLo[i] = Math.min(g.cS, g.cT);
+    runHi[i] = Math.max(g.cS, g.cT);
+    cS[i] = g.cS;
+    cT[i] = g.cT;
+    src[i] = edges[i].src;
+    tgt[i] = edges[i].tgt;
+  }
+
+  // p nearer the source than q: q's source legs through p's runs plus
+  // p's target legs through q's runs
+  const cost = (p: Proto, q: Proto): number => {
     let n = 0;
 
+    for (const i of q.members) {
+      const c = cS[i];
+
+      for (const j of p.members) {
+        if (
+          c > runLo[j] &&
+          c < runHi[j] &&
+          src[i] !== src[j] &&
+          tgt[i] !== tgt[j] &&
+          src[i] !== tgt[j] &&
+          tgt[i] !== src[j]
+        ) {
+          n++;
+        }
+      }
+    }
+
     for (const i of p.members) {
-      const c = fromSource ? geom[i].cS : geom[i].cT;
-      const ei = edges[i];
+      const c = cT[i];
 
       for (const j of q.members) {
-        const ej = edges[j];
-
         if (
-          ei.src === ej.src ||
-          ei.tgt === ej.tgt ||
-          ei.src === ej.tgt ||
-          ei.tgt === ej.src
+          c > runLo[j] &&
+          c < runHi[j] &&
+          src[i] !== src[j] &&
+          tgt[i] !== tgt[j] &&
+          src[i] !== tgt[j] &&
+          tgt[i] !== src[j]
         ) {
-          continue;
-        }
-
-        const lo = Math.min(geom[j].cS, geom[j].cT);
-        const hi = Math.max(geom[j].cS, geom[j].cT);
-
-        if (c > lo && c < hi) {
           n++;
         }
       }
@@ -672,95 +810,165 @@ const crossingOrder = (
 
     return n;
   };
-  const pairs: { a: number; b: number; margin: number }[] = [];
 
-  for (let a = 0; a < B; a++) {
-    for (const b of adj[a]) {
-      if (b <= a) {
-        continue;
-      }
-
-      const p = protos[a];
-      const q = protos[b];
-      // a nearer the source than b
-      const costAB = legsIn(q, p, true) + legsIn(p, q, false);
-      const costBA = legsIn(p, q, true) + legsIn(q, p, false);
-
-      if (costAB < costBA || (costAB === costBA && staircase(a, b) < 0)) {
-        pairs.push({ a, b, margin: costBA - costAB });
-      } else {
-        pairs.push({ a: b, b: a, margin: costAB - costBA });
-      }
-    }
-  }
-
-  pairs.sort(
-    (x, y) => y.margin - x.margin || staircase(x.a, y.a) || staircase(x.b, y.b),
-  );
-
-  const succ: number[][] = new Array(B);
+  // the bundles of each component, in staircase order
+  const members = new Map<number, number[]>();
 
   for (let b = 0; b < B; b++) {
-    succ[b] = [];
+    const c = comp[b];
+    let list = members.get(c);
+
+    if (list == null) {
+      list = [];
+      members.set(c, list);
+    }
+
+    list.push(b);
   }
 
-  const reaches = (from: number, to: number): boolean => {
-    const stack = [from];
-    const seen = new Set<number>([from]);
+  const rank = new Int32Array(B);
+  const out: number[] = [];
+  const words = (CROSSING_RULE_CAP + 31) >> 5;
 
-    while (stack.length > 0) {
-      const v = stack.pop() as number;
+  for (const list of members.values()) {
+    list.sort(staircase);
 
-      if (v === to) {
-        return true;
+    if (list.length > CROSSING_RULE_CAP) {
+      // past the cap the component keeps the staircase
+      for (let i = 0; i < list.length; i++) {
+        rank[list[i]] = i;
       }
 
-      for (const w of succ[v]) {
-        if (!seen.has(w)) {
-          seen.add(w);
-          stack.push(w);
+      for (const b of list) {
+        out.push(b);
+      }
+
+      for (const b of list) {
+        for (const a of adj[b]) {
+          if (rank[a] < rank[b]) {
+            pred[b].push(a);
+          }
+        }
+      }
+
+      continue;
+    }
+
+    // local indices, pair costs both ways, pairs by decreasing margin
+    const n = list.length;
+    const local = new Map<number, number>();
+
+    for (let i = 0; i < n; i++) {
+      local.set(list[i], i);
+    }
+
+    const pairs: { a: number; b: number; margin: number }[] = [];
+
+    for (let i = 0; i < n; i++) {
+      const x = list[i];
+
+      for (const y of adj[x]) {
+        if (y <= x) {
+          continue;
+        }
+
+        const j = local.get(y) as number;
+        const costXY = cost(protos[x], protos[y]); // x nearer
+        const costYX = cost(protos[y], protos[x]);
+
+        if (costXY < costYX || (costXY === costYX && i < j)) {
+          pairs.push({ a: i, b: j, margin: costYX - costXY });
+        } else {
+          pairs.push({ a: j, b: i, margin: costXY - costYX });
         }
       }
     }
 
-    return false;
-  };
+    pairs.sort((x, y) => y.margin - x.margin || x.a - y.a || x.b - y.b);
 
-  for (const { a, b } of pairs) {
-    if (!reaches(b, a)) {
-      succ[a].push(b);
-      pred[b].push(a);
-    }
-  }
+    // keep orientations by decreasing margin unless one closes a cycle:
+    // reach[i] is the bitset of what i reaches and back[i] of what
+    // reaches it, so a cycle is one test, and an insertion a → b adds
+    // b's closure to everything behind a (and a's to everything past
+    // b) — walking set bits only, not every bundle
+    const reach = new Uint32Array(n * words);
+    const back = new Uint32Array(n * words);
+    const succ: number[][] = Array.from({ length: n }, () => []);
+    const indeg = new Int32Array(n);
+    const has = (set: Uint32Array, i: number, j: number): boolean =>
+      (set[i * words + (j >> 5)] & (1 << (j & 31))) !== 0;
+    const set = (bits: Uint32Array, i: number, j: number): void => {
+      bits[i * words + (j >> 5)] |= 1 << (j & 31);
+    };
+    const behind: number[] = [];
+    const past: number[] = [];
+    const collect = (bits: Uint32Array, i: number, into: number[]): void => {
+      into.length = 0;
+      into.push(i);
 
-  // Kahn's order, ties to the staircase
-  const indeg = new Int32Array(B);
+      for (let w = 0; w < words; w++) {
+        let word = bits[i * words + w];
 
-  for (let b = 0; b < B; b++) {
-    indeg[b] = pred[b].length;
-  }
+        while (word !== 0) {
+          const t = word & -word;
+          const bit = 31 - Math.clz32(t);
 
-  const ready: number[] = [];
-
-  for (let b = 0; b < B; b++) {
-    if (indeg[b] === 0) {
-      ready.push(b);
-    }
-  }
-
-  const out: number[] = [];
-
-  while (ready.length > 0) {
-    ready.sort(staircase);
-
-    const v = ready.shift() as number;
-
-    out.push(v);
-
-    for (const w of succ[v]) {
-      if (--indeg[w] === 0) {
-        ready.push(w);
+          into.push((w << 5) | bit);
+          word ^= t;
+        }
       }
+    };
+
+    for (const { a, b } of pairs) {
+      if (has(reach, b, a)) {
+        continue; // would close a cycle
+      }
+
+      if (!has(reach, a, b)) {
+        collect(back, a, behind); // a and everything reaching it
+        collect(reach, b, past); // b and everything it reaches
+
+        for (const x of behind) {
+          for (const y of past) {
+            set(reach, x, y);
+            set(back, y, x);
+          }
+        }
+      }
+
+      succ[a].push(b);
+      indeg[b]++;
+      pred[list[b]].push(list[a]);
+    }
+
+    // Kahn's order, ties to the staircase (the list is in it already)
+    const ready: number[] = [];
+
+    for (let i = 0; i < n; i++) {
+      if (indeg[i] === 0) {
+        ready.push(i);
+      }
+    }
+
+    const ordered: number[] = [];
+
+    while (ready.length > 0) {
+      ready.sort((x, y) => x - y);
+
+      const v = ready.shift() as number;
+
+      ordered.push(list[v]);
+
+      for (const w of succ[v]) {
+        if (--indeg[w] === 0) {
+          ready.push(w);
+        }
+      }
+    }
+
+    for (let i = 0; i < ordered.length; i++) {
+      rank[ordered[i]] = i;
+      out.push(ordered[i]);
     }
   }
 

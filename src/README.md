@@ -1283,8 +1283,13 @@ as obstacles, writing the changed lanes as one dirty span and never
 bumping the epoch it is keyed on; a single size check when nothing is
 auto.  Two limits, recorded: under a GPU position tween or a GPU
 force lease the CPU column is stale, so tracks refresh when the
-positions land; and the sweep is whole, not incremental (a 7k-edge
-DAG is well under a millisecond).
+positions land; and the sweep is whole, not incremental — measured
+(124.7) at 8 ms on workflow-1k (1.9k edges), 26 ms on a dense
+2.7k-edge bench where every source fans across its row and 160 ms on
+a pathological 8.7k-edge one, the crossing rule's pair costs being
+the cost (bounded per conflict component at 128 bundles, past which
+that component keeps the staircase; the first version's per-pair
+cycle search was 1.3 s there).
 
 Measured (124.1; the harness's new `runOverlap` column counts pairs
 of bundles whose runs are collinear and overlap): on deps,

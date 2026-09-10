@@ -392,9 +392,8 @@ shown leaf bodies as obstacles, writing the changed lanes as one
 dirty span and never bumping the epoch it is keyed on; a single size
 check when nothing is auto.  Two limits, recorded: under a GPU tween
 or force lease the CPU positions are stale, so tracks refresh when
-they land; and the sweep is whole, not incremental (well under a
-millisecond at 7k edges; the render bench's drag row is the detector
-if that ever changes).  `test/taxi-auto.mjs` (13 specs) covers the
+they land; and the sweep is whole, not incremental — see 124.7 for
+what it costs.  `test/taxi-auto.mjs` (13 specs) covers the
 props, the pass through `segmentPoints()` — two overlapping fan-outs
 10 px apart with the '50%' control on one line, the identity, family
 vs source, a drag off and back onto the other run — the bounding box
@@ -472,6 +471,33 @@ carries `edgeSep` and the extras' fields; the changelog and MIGRATING
 carry the user-visible changes.  Gates: the Node tier, the throw gate
 (two exemptions re-keyed for moved lines), the harness spec (105),
 the two new renderer specs and the casing parity scenes.
+
+### 124.7 — the sweep's cost, measured and cut
+
+The plan's risk note named the position-write path as the hot path
+and the plan's own estimate ("well under a millisecond at 7k edges")
+was wrong: the first sweep on a 3k-node, 8.7k-edge layered DAG took
+1.1 s.  Three causes, three fixes.  The crossing rule's cycle check
+was a DFS over the whole preference DAG per pair (1.3 s alone at 139k
+conflicting pairs): it is now a bitset transitive closure per conflict
+component, walking set bits only, with the component capped at 128
+bundles (past which that component keeps the staircase; 64 cost
+crossings on deps and workflow-1k, whose components sit between).
+The obstacle cut scanned every node body per bundle: the bodies are
+sorted along each axis once and a bundle walks the ones whose lower
+edge lies in its band.  Bundle keys were strings: they are numbers.
+Two alternatives were measured and declined — Pearce–Kelly
+incremental cycle detection (196 ms: the bounded searches still walk
+dense successor lists) and a Copeland-seeded adjacent-swap
+refinement (5 % more crossings on workflow-1k than the margin-greedy,
+which the bitset closure reproduces exactly).  Measured after: 8 ms
+on workflow-1k (1.9k edges, 6.6k pairs), 26 ms on a dense 2.7k-edge
+bench where every source fans across its row, 160 ms on the
+pathological 8.7k-edge one (29 gaps, each a 100-clique of bundles);
+a graph with no auto edge pays a size check (5 µs).  The realistic
+figure is the workflow one: a drag on a 2k-edge auto graph spends 8
+ms a frame in the sweep.  Incremental sweeps stay the follow-up if a
+real graph ever needs them.
 
 ### What the plan said that the code corrected
 

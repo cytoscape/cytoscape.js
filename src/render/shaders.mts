@@ -2829,6 +2829,9 @@ struct EdgeVSOut {
   // straight-triangle kind — and a whole storage binding for one number
   // is what a stage at its 8-buffer budget cannot afford.
   @location(6) @interpolate(flat) kind: f32,
+  // 1 on the casing instance of the paired draw (round 124.4): the FS
+  // shades it solid in the casing colour instead of the line
+  @location(7) @interpolate(flat) casing: u32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -2886,18 +2889,10 @@ fn drawnSpanW(slot: u32, pa: vec2f, pb: vec2f) -> vec4f {
   return vec4f(shortenTowardW(bs, bt, ts), shortenTowardW(bt, bs, tt));
 }
 
-@vertex
-fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+// The straight-edge vertex at one slot, extruded to widthPx (device
+// px).  Shared by the scene draw and the paired casing draw (124.4).
+fn edgeVertexAt(slot: u32, vi: u32, widthPx: f32, alphaComp: f32) -> EdgeVSOut {
   var out: EdgeVSOut;
-
-  // the cull pass compacted the shown, on-screen, non-decimated,
-  // non-degenerate edges (slot order preserved): no collapse branches here
-  let slot = visible[ii];
-
-  // LOD: floor hairline edges; edgeLod's alpha compensation must match the
-  // cull predicate's decimation decision (shared WGSL)
-  let lod = edgeLod(slot, widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
-  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
 
   let ends = endpoints[slot];
   let params = curveParams[slot];
@@ -2946,8 +2941,9 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
-  out.alphaComp = lod.y;
+  out.alphaComp = alphaComp;
   out.instance = slot;
+  out.casing = 0u;
   // Model px along the *drawn* line, which since round 56 is what this
   // quad spans: the branches above resolve pa/pb to the trimmed boundary
   // points, and haystack's offset points are its own line ends.  v3
@@ -2962,8 +2958,62 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   return out;
 }
 
+@vertex
+fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+  // the cull pass compacted the shown, on-screen, non-decimated,
+  // non-degenerate edges (slot order preserved): no collapse branches here
+  let slot = visible[ii];
+
+  // LOD: floor hairline edges; edgeLod's alpha compensation must match the
+  // cull predicate's decimation decision (shared WGSL)
+  let lod = edgeLod(slot, widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+
+  return edgeVertexAt(slot, vi, widthPx, lod.y);
+}
+
+// The paired draw (round 124.4): two instances per visible edge, the
+// even one its casing (edge.casing bound as the layer record), the odd
+// one its line, so within one draw each edge's casing lands over every
+// earlier edge's line — v3's per-edge outline-then-line order, which is
+// what gaps the crossing.  An edge without a casing collapses its even
+// instance.
+@vertex
+fn vsEdgeCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+  let slot = visible[ii >> 1u];
+  let isCasing = (ii & 1u) == 0u;
+
+  if (isCasing) {
+    let rec = edgeLayer[slot];
+
+    if ((rec.x >> 24u) == 0u) {
+      var out: EdgeVSOut;
+
+      out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+      return out;
+    }
+
+    var out = edgeVertexAt(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0);
+
+    out.casing = 1u;
+    return out;
+  }
+
+  let lod = edgeLod(slot, widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+
+  return edgeVertexAt(slot, vi, widthPx, lod.y);
+}
+
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
+  if (in.casing == 1u) { // the paired draw's casing instance (124.4)
+    let cc = unpack4x8unorm(edgeLayer[in.instance].x);
+    let ca = cc.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+    return vec4f(cc.rgb * ca, ca);
+  }
+
   var c = unpack4x8unorm(lineColors[in.instance]);
 
   // line-fill gradient (C2): linear along the edge, radial from the mid
@@ -3078,6 +3128,7 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
   out.instance = slot;
   out.kind = params.w;
   out.u = 0.0;
+  out.casing = 0u;
   return out;
 }
 
@@ -3181,6 +3232,8 @@ struct CurvedVSOut {
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance along the polyline, model px
   @location(5) @interpolate(flat) totalLen: f32, // full polyline length (C2)
+  // 1 on the casing instance of the paired draw (round 124.4)
+  @location(6) @interpolate(flat) casing: u32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -3306,11 +3359,14 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   out.instance = slot;
   out.u = uLen;
   out.totalLen = max(totLen, 1e-4);
+  out.casing = 0u;
   return out;
 }
 
-@fragment
-fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
+// The line's shading, shared by the scene draw and the paired casing
+// draw (124.4) — the latter binds a different layout, so it has its
+// own entry point.
+fn shadeCurved(in: CurvedVSOut) -> vec4f {
   var c = unpack4x8unorm(lineColors[in.instance]);
 
   // line-fill gradient (C2): linear along the arc length, radial from
@@ -3344,6 +3400,23 @@ fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
 }
 
 @fragment
+fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
+  return shadeCurved(in);
+}
+
+@fragment
+fn fsCurvedCased(in: CurvedVSOut) -> @location(0) vec4f {
+  if (in.casing == 1u) {
+    let cc = unpack4x8unorm(edgeLayer[in.instance].x);
+    let ca = cc.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+    return vec4f(cc.rgb * ca, ca);
+  }
+
+  return shadeCurved(in);
+}
+
+@fragment
 fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
   // v3's edgeThreshold (57.9): a hit counts within pickPadPx of the stroke
   if (abs(in.v) > in.halfWidth + frame.pickPadPx) {
@@ -3356,27 +3429,24 @@ fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
 // Curved overlay/underlay strokes (round 13 A2): the curved strip
 // re-extruded at the layer's pre-derived stroke width, riding the
 // curved visible list; disabled instances collapse in the VS.
-@vertex
-fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
+// The curved vertex at one slot over the *fused* node geometry
+// (nodeOuterGeom in place of outerHalf + shape), extruded to widthPx:
+// the layer strokes and the paired casing draw (124.4) share it.
+// withLen walks the polyline for the dash distance and the full
+// length, which only the line instance needs.
+fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool) -> CurvedVSOut {
   var out: CurvedVSOut;
-  let slot = visible[ii];
-  let rec = edgeLayer[slot];
-
-  if ((rec.x >> 24u) == 0u) {
-    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
-    return out;
-  }
-
   let seg = vi >> 2u;
   let corner = quadCorner(vi & 3u);
   let ends = endpoints[slot];
   let params = curveParams[slot];
-  let widthPx = f32(rec.y) / 256.0 * frame.zoomDpr;
 
   let tIdx = seg + u32((corner.x + 1.0) * 0.5);
   var p: vec2f;
   var n: vec2f;
   var miterScale = 1.0;
+  var uLen = 0.0;
+  var totLen = 0.0;
 
   // Round 58: the layer stroke hugs the drawn line — the same draw trim
   // the strip itself spans — where it used to ride the untrimmed path.
@@ -3406,6 +3476,19 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
     if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
 
     n = vec2f(-tangent.y, tangent.x);
+
+    if (withLen) {
+      var prev = g.s;
+
+      for (var i = 1u; i <= CURVE_SEGS_U; i = i + 1u) {
+        let q = curvePoint(g, f32(i) / CURVE_SEGS_F);
+
+        if (i <= tIdx) { uLen = uLen + length(q - prev); }
+
+        totLen = totLen + length(q - prev);
+        prev = q;
+      }
+    }
   } else {
     var route = evalRouteW(
       params,
@@ -3436,18 +3519,78 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
 
     n = m / max(length(m), 1e-6);
     miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
+
+    if (withLen) {
+      var prev = route.q[0u];
+
+      for (var i = 1u; i <= CURVE_SEGS_U; i = i + 1u) {
+        let q = routeVertexW(&route, i);
+
+        if (i <= tIdx) { uLen = uLen + length(q - prev); }
+
+        totLen = totLen + length(q - prev);
+        prev = q;
+      }
+    }
   }
 
   let halfW = widthPx * 0.5;
-  let s = corner.y * (halfW + 1.0);
+  let s = corner.y * (halfW + pad + 1.0);
 
   out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
-  out.alphaComp = 1.0;
+  out.alphaComp = alphaComp;
   out.instance = slot;
-  out.u = 0.0;
+  out.u = uLen;
+  out.totalLen = max(totLen, 1e-4);
+  out.casing = 0u;
   return out;
+}
+
+@vertex
+fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
+  let slot = visible[ii];
+  let rec = edgeLayer[slot];
+
+  if ((rec.x >> 24u) == 0u) {
+    var out: CurvedVSOut;
+
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  return curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
+}
+
+// The paired draw on the curved stream (124.4): even instances the
+// casing, odd the line, off the fused layout (the casing record needs
+// the binding the fused node geometry frees).
+@vertex
+fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
+  let slot = visible[ii >> 1u];
+  let isCasing = (ii & 1u) == 0u;
+
+  if (isCasing) {
+    let rec = edgeLayer[slot];
+
+    if ((rec.x >> 24u) == 0u) {
+      var out: CurvedVSOut;
+
+      out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+      return out;
+    }
+
+    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
+
+    out.casing = 1u;
+    return out;
+  }
+
+  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(widths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+
+  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true);
 }
 
 @fragment

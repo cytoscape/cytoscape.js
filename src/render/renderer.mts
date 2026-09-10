@@ -2143,45 +2143,52 @@ export class Renderer {
       );
     }
 
-    if (store.casingCount() > 0) {
-      this.edgePipeline?.drawLayer(
+    // Round 124.4: with any casing on, each stream draws casing-then-
+    // line *per edge* (two instances per edge), so a later edge's
+    // casing gaps an earlier edge's line where they cross — v3's order;
+    // the pre-124 global casing pass haloed against nodes only.
+    const cased = store.casingCount() > 0;
+
+    if (cased) {
+      this.edgePipeline?.drawCased(
         pass,
         device,
         uniform,
         mirror,
         store.highWater('edges'),
         cull.edge,
-        'edge.casing',
       );
-      curvedEdges?.drawLayer(
+    } else {
+      this.edgePipeline?.draw(
+        pass,
+        device,
+        uniform,
+        mirror,
+        store.highWater('edges'),
+        cull.edge,
+      );
+    }
+    // curved edges draw after straight ones (two streams; within each,
+    // slot order — a recorded z-order deviation)
+    if (cased) {
+      curvedEdges?.drawCased(
         pass,
         device,
         uniform,
         mirror,
         store.highWater('edges'),
         cull.curved,
-        'edge.casing',
+      );
+    } else {
+      curvedEdges?.draw(
+        pass,
+        device,
+        uniform,
+        mirror,
+        store.highWater('edges'),
+        cull.curved,
       );
     }
-
-    this.edgePipeline?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater('edges'),
-      cull.edge,
-    );
-    // curved edges draw after straight ones (two streams; within each,
-    // slot order — a recorded z-order deviation)
-    curvedEdges?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater('edges'),
-      cull.curved,
-    );
     this.arrowPipeline?.draw(
       pass,
       device,

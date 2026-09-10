@@ -427,7 +427,7 @@ struct CullInfo { count: u32, indexCount: u32 }
 @group(0) @binding(0) var<uniform> info: CullInfo;
 @group(0) @binding(1) var<storage, read> wgCounts: array<u32>;
 @group(0) @binding(2) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(3) var<storage, read_write> drawArgs: array<u32, 10>;
+@group(0) @binding(3) var<storage, read_write> drawArgs: array<u32, 15>;
 
 // serial exclusive scan over the per-workgroup counts; numWg is a few
 // thousand at most (capacity / WG_SIZE), microseconds on any GPU
@@ -454,11 +454,24 @@ fn csScan() {
   drawArgs[7] = 0u;
   drawArgs[8] = 0u;
   drawArgs[9] = 0u;
+
+  // a third block at PAIRED_ARGS_OFFSET with the instance count doubled:
+  // the per-edge casing draw (round 124.4) spends two instances per
+  // visible edge — casing, then line — so a later edge's casing gaps an
+  // earlier edge's line where they cross, v3's per-edge order
+  drawArgs[10] = info.indexCount;
+  drawArgs[11] = sum * 2u;
+  drawArgs[12] = 0u;
+  drawArgs[13] = 0u;
+  drawArgs[14] = 0u;
 }
 `;
 
 /** byte offset of the single-quad args block in CulledGroup.indirect */
 export const QUAD_ARGS_OFFSET = 20;
+/** byte offset of the paired (2 instances per visible edge) args block
+ * in CulledGroup.indirect — the per-edge casing draw (round 124.4) */
+export const PAIRED_ARGS_OFFSET = 40;
 
 const EDGE_GLYPH_CULL = wgsl`
 ${COMMON}
@@ -826,7 +839,9 @@ export class CulledGroup {
    * @param label — debug-label prefix for this group's buffers
    * @param indexCount — indices per drawn instance written into the
    * primary args block: 6 for a quad, 6 × CURVE_SEGS for a curved strip.
-   * The single-quad block at QUAD_ARGS_OFFSET is always 6.
+   * The single-quad block at QUAD_ARGS_OFFSET is always 6; the paired
+   * block at PAIRED_ARGS_OFFSET repeats the primary with twice the
+   * instances.
    */
   constructor(
     kernels: CullKernels,
@@ -858,7 +873,7 @@ export class CulledGroup {
     });
     this.indirect = device.createBuffer({
       label: `cy-gpu:${label}-indirect`,
-      size: 40, // strip args + the single-quad args block
+      size: 60, // strip args + the single-quad block + the paired block
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT,
     });
   }

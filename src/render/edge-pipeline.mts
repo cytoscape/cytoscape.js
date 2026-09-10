@@ -3,6 +3,7 @@ import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
+import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
@@ -44,6 +45,8 @@ export class EdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private layerPipeline: GPURenderPipeline;
+  /** the paired casing-then-line draw (round 124.4) */
+  private casedPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
@@ -158,6 +161,25 @@ export class EdgePipeline {
       },
     });
 
+    // the per-edge casing draw (round 124.4): the scene shader over two
+    // instances per edge, edge.casing bound as the layer record
+    this.casedPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:edge-cased-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsEdgeCased' },
+      fragment: {
+        module,
+        entryPoint: 'fsEdge',
+        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+      },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: {
+        format: DEPTH_FORMAT,
+        depthWriteEnabled: false,
+        depthCompare: 'less',
+      },
+    });
+
     this.bindGroups = new Map();
   }
 
@@ -243,6 +265,42 @@ export class EdgePipeline {
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
     pass.drawIndexedIndirect(cull.indirect, 0);
+  }
+
+  /**
+   * The scene draw with per-edge casings (round 124.4): two instances
+   * per visible edge off the paired args block — the casing, then the
+   * line — so a later edge's casing gaps an earlier edge's line where
+   * they cross, v3's per-edge order.  Replaces `draw` plus the casing
+   * layer pass whenever any edge carries a casing.
+   *
+   * @param pass — the render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform
+   * @param mirror — the column mirror
+   * @param instances — the culled edge count (skip when 0)
+   * @param cull — the culled edge group
+   */
+  drawCased(
+    pass: GPURenderPassEncoder,
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+    instances: number,
+    cull: CulledGroup,
+  ): void {
+    if (instances === 0) {
+      return;
+    }
+
+    pass.setPipeline(this.casedPipeline);
+    pass.setBindGroup(
+      0,
+      this.ensureBindGroup(device, uniform, mirror, 'edge.casing'),
+    );
+    pass.setBindGroup(1, cull.visibleBindGroup());
+    pass.setIndexBuffer(this.quadIndex, 'uint16');
+    pass.drawIndexedIndirect(cull.indirect, PAIRED_ARGS_OFFSET);
   }
 
   /** The overlay/underlay stroke draw (round 13 A2), off the same

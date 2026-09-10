@@ -4,6 +4,7 @@ import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import { CURVE_SEGS } from '../curve-geometry.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
+import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
@@ -43,7 +44,11 @@ export class CurvedEdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private layerPipeline: GPURenderPipeline;
+  /** the paired casing-then-line draw (round 124.4) */
+  private casedPipeline: GPURenderPipeline;
   private layerBindLayout: GPUBindGroupLayout;
+  /** the cased draw's layout: the fused vertex set plus the paint set */
+  private casedBindLayout: GPUBindGroupLayout;
   private bindLayout: GPUBindGroupLayout;
   private stripIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
@@ -162,6 +167,60 @@ export class CurvedEdgePipeline {
       bindGroupLayouts: [this.layerBindLayout, visibleLayout],
     });
 
+    // the cased draw's layout (124.4): the layer layout's vertex set —
+    // fused node geometry, so edge.width and the casing record both fit
+    // the 8-buffer budget — plus the scene draw's fragment set; the
+    // casing record is visible to both stages
+    this.casedBindLayout = device.createBindGroupLayout({
+      label: 'cy-gpu:curved-edge-cased-bind-layout',
+      entries: [
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'uniform' },
+        },
+        ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
+          .filter(
+            (entry) =>
+              entry.id !== 'node.outerHalf' && entry.id !== 'node.shape',
+          )
+          .map((entry) => ({
+            binding: entry.binding,
+            visibility: SHADER_STAGE.VERTEX,
+            buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+          })),
+        {
+          binding: VERTEX_COLUMNS.length + 1, // the curve param blob
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        ...FRAGMENT_COLUMNS.map((id, i) => ({
+          binding: VERTEX_COLUMNS.length + 2 + i,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        })),
+        {
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2, // the casing record
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3, // the gradient record
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4, // node.outerGeom
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+      ],
+    });
+
+    const casedLayout = device.createPipelineLayout({
+      bindGroupLayouts: [this.casedBindLayout, visibleLayout],
+    });
+
     this.pipeline = device.createRenderPipeline({
       label: 'cy-gpu:curved-edge-pipeline',
       layout,
@@ -209,6 +268,23 @@ export class CurvedEdgePipeline {
       },
     });
 
+    this.casedPipeline = device.createRenderPipeline({
+      label: 'cy-gpu:curved-edge-cased-pipeline',
+      layout: casedLayout,
+      vertex: { module, entryPoint: 'vsCurvedCased' },
+      fragment: {
+        module,
+        entryPoint: 'fsCurvedCased',
+        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+      },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: {
+        format: DEPTH_FORMAT,
+        depthWriteEnabled: false,
+        depthCompare: 'less',
+      },
+    });
+
     this.bindGroups = new Map();
   }
 
@@ -216,7 +292,12 @@ export class CurvedEdgePipeline {
     device: GPUDevice,
     uniform: GPUBuffer,
     mirror: ColumnMirror,
-    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing' | 'main' = 'main',
+    layer:
+      | 'edge.overlay'
+      | 'edge.underlay'
+      | 'edge.casing'
+      | 'main'
+      | 'cased' = 'main',
   ): GPUBindGroup {
     let perUniform = this.bindGroups.get(uniform);
 
@@ -231,16 +312,22 @@ export class CurvedEdgePipeline {
       return cached.group;
     }
 
-    const forLayer = layer !== 'main';
+    const cased = layer === 'cased';
+    const forLayer = layer !== 'main' && !cased;
+    const fused = forLayer || cased; // node.outerGeom in place of outerHalf + shape
     const group = device.createBindGroup({
       label: 'cy-gpu:curved-edge-bind-group',
-      layout: forLayer ? this.layerBindLayout : this.bindLayout,
+      layout: cased
+        ? this.casedBindLayout
+        : forLayer
+          ? this.layerBindLayout
+          : this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
           .filter(
             (entry) =>
-              !forLayer ||
+              !fused ||
               (entry.id !== 'node.outerHalf' && entry.id !== 'node.shape'),
           )
           .map((entry) => ({
@@ -257,17 +344,22 @@ export class CurvedEdgePipeline {
               binding: VERTEX_COLUMNS.length + 2 + i,
               resource: { buffer: mirror.buffer(id) },
             }))),
-        ...(forLayer
+        ...(fused
           ? [
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
-                resource: { buffer: mirror.buffer(layer) },
+                resource: {
+                  buffer: mirror.buffer(cased ? 'edge.casing' : layer),
+                },
               },
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
                 resource: { buffer: mirror.buffer('node.outerGeom') },
               },
             ]
+          : []),
+        ...(forLayer
+          ? []
           : [
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
@@ -319,6 +411,41 @@ export class CurvedEdgePipeline {
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.stripIndex, 'uint16');
     pass.drawIndexedIndirect(cull.indirect, 0);
+  }
+
+  /**
+   * The curved scene draw with per-edge casings (round 124.4): two
+   * instances per visible curved edge off the paired args block — the
+   * casing, then the line — v3's per-edge order.  Replaces `draw` plus
+   * the casing layer pass whenever any edge carries a casing.
+   *
+   * @param pass — the render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform
+   * @param mirror — the column mirror
+   * @param instances — the culled curved-edge count (skip when 0)
+   * @param cull — the curved-edge culled group
+   */
+  drawCased(
+    pass: GPURenderPassEncoder,
+    device: GPUDevice,
+    uniform: GPUBuffer,
+    mirror: ColumnMirror,
+    instances: number,
+    cull: CulledGroup,
+  ): void {
+    if (instances === 0) {
+      return;
+    }
+
+    pass.setPipeline(this.casedPipeline);
+    pass.setBindGroup(
+      0,
+      this.ensureBindGroup(device, uniform, mirror, 'cased'),
+    );
+    pass.setBindGroup(1, cull.visibleBindGroup());
+    pass.setIndexBuffer(this.stripIndex, 'uint16');
+    pass.drawIndexedIndirect(cull.indirect, PAIRED_ARGS_OFFSET);
   }
 
   /** The overlay/underlay stroke draw (round 13 A2), off the curved

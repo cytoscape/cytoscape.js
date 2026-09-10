@@ -853,6 +853,176 @@ test.describe('WebGPU renderer', () => {
     expect(controlPixel[0]).toBeLessThan(80);
   });
 
+  test("a later edge's casing gaps an earlier edge's line at a crossing (round 124.4)", async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // an X: a blue horizontal line, then a red vertical one carrying a
+    // white 8 px casing (12 px stroke).  On the horizontal line 5 px
+    // from the crossing, the vertical's line (half-width 2) does not
+    // reach but its casing (half-width 6) does: v3's per-edge order
+    // shows the casing there, the pre-124 global casing pass showed
+    // blue (all casings under all lines).  The control swaps the
+    // z-order — the vertical first — and the blue line is on top again.
+    const graph = (verticalFirst) => {
+      const h = [
+        { data: { id: 'l' }, position: { x: -150, y: 0 } },
+        { data: { id: 'r' }, position: { x: 150, y: 0 } },
+        { data: { id: 'lr', source: 'l', target: 'r', vertical: false } },
+      ];
+      const v = [
+        { data: { id: 't' }, position: { x: 0, y: -150 } },
+        { data: { id: 'b' }, position: { x: 0, y: 150 } },
+        { data: { id: 'tb', source: 't', target: 'b', vertical: true } },
+      ];
+
+      return {
+        elements: verticalFirst ? [...v, ...h] : [...h, ...v],
+        style: {
+          nodes: { width: 20, height: 20, 'background-color': '#00ff00' },
+          edges: {
+            width: 4,
+            'line-color': {
+              case: [{ when: { data: 'vertical', eq: true }, then: '#ff0000' }],
+              else: '#0000ff',
+            },
+            'line-outline-width': {
+              case: [{ when: { data: 'vertical', eq: true }, then: 8 }],
+              else: 0,
+            },
+            'line-outline-color': '#ffffff',
+          },
+        },
+        zoom: 1,
+      };
+    };
+
+    await makeReadyCy(page, graph(false));
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const gapPixel = await pixelAt(page, center.x + 5, center.y);
+    const linePixel = await pixelAt(page, center.x + 40, center.y);
+
+    expect(gapPixel[0]).toBeGreaterThan(200); // the white casing
+    expect(gapPixel[1]).toBeGreaterThan(200);
+    expect(gapPixel[2]).toBeGreaterThan(200);
+    expect(linePixel[2]).toBeGreaterThan(180); // the blue line beyond it
+    expect(linePixel[0]).toBeLessThan(80);
+
+    // control: the vertical edge first, so the blue line lands over its casing
+    await page.evaluate(() => window.cy.destroy());
+    await makeReadyCy(page, graph(true));
+    await centerPan(page);
+    await waitFrames(page);
+
+    const controlPixel = await pixelAt(page, center.x + 5, center.y);
+
+    expect(controlPixel[2]).toBeGreaterThan(180);
+    expect(controlPixel[0]).toBeLessThan(80);
+  });
+
+  test('taxi-turn: auto puts two overlapping fan-outs on distinct lines (round 124.3)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // A at x=-100 fans to 0 and 100; B at x=0 fans to -100 and 200 (rank
+    // 1 at y=200): the runs overlap, so the pass separates them 10 px
+    // apart around the 50 % line (y = 100).  The GPU route reads the
+    // same lane the CPU accessor does, so the pixel rows match
+    // segmentPoints(): red on A's line, blue on B's, and neither colour
+    // on the other's line at an x only one run covers.
+    const graph = (turn) => ({
+      elements: [
+        { data: { id: 'A', src: true }, position: { x: -100, y: 0 } },
+        { data: { id: 'B', src: true }, position: { x: 0, y: 0 } },
+        { data: { id: 'a1' }, position: { x: 0, y: 200 } },
+        { data: { id: 'a2' }, position: { x: 100, y: 200 } },
+        { data: { id: 'b1' }, position: { x: -100, y: 200 } },
+        { data: { id: 'b2' }, position: { x: 200, y: 200 } },
+        { data: { id: 'Aa1', source: 'A', target: 'a1', a: true } },
+        { data: { id: 'Aa2', source: 'A', target: 'a2', a: true } },
+        { data: { id: 'Bb1', source: 'B', target: 'b1', a: false } },
+        { data: { id: 'Bb2', source: 'B', target: 'b2', a: false } },
+      ],
+      style: {
+        nodes: { width: 30, height: 30, 'background-color': '#00ff00' },
+        edges: {
+          width: 4,
+          'curve-style': 'taxi',
+          'taxi-direction': 'downward',
+          'taxi-turn': turn,
+          'line-color': {
+            case: [{ when: { data: 'a', eq: true }, then: '#ff0000' }],
+            else: '#0000ff',
+          },
+        },
+      },
+      zoom: 1,
+    });
+
+    await makeReadyCy(page, graph('auto'));
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const lines = await page.evaluate(() => ({
+      a: window.cy.$id('Aa2').segmentPoints()[0].y,
+      b: window.cy.$id('Bb2').segmentPoints()[0].y,
+    }));
+
+    expect(Math.abs(lines.a - lines.b)).toBe(10);
+
+    // x = 150: only B's run to b2 (x 0..200) passes; A's run ends at 100
+    const onB = await pixelAt(page, center.x + 150, center.y + lines.b);
+    const onA = await pixelAt(page, center.x + 150, center.y + lines.a);
+
+    expect(onB[2]).toBeGreaterThan(180); // blue on B's line
+    expect(onB[0]).toBeLessThan(80);
+    expect(onA[0]).toBeGreaterThan(200); // background on A's line: no run there
+    expect(onA[1]).toBeGreaterThan(200);
+    expect(onA[2]).toBeGreaterThan(200);
+
+    // x = -50: both runs pass (A's to 0..100, B's to b1 at -100), each
+    // on its own line — red on A's, blue on B's
+    const redRow = await pixelAt(page, center.x - 50, center.y + lines.a);
+    const blueRow = await pixelAt(page, center.x - 50, center.y + lines.b);
+
+    expect(redRow[0]).toBeGreaterThan(180);
+    expect(redRow[2]).toBeLessThan(80);
+    expect(blueRow[2]).toBeGreaterThan(180);
+    expect(blueRow[0]).toBeLessThan(80);
+
+    // control: the 50 % turn draws both runs on y = 100
+    await page.evaluate(() => window.cy.destroy());
+    await makeReadyCy(page, graph('50%'));
+    await centerPan(page);
+    await waitFrames(page);
+
+    const both = await page.evaluate(() => ({
+      a: window.cy.$id('Aa2').segmentPoints()[0].y,
+      b: window.cy.$id('Bb2').segmentPoints()[0].y,
+    }));
+
+    expect(both).toEqual({ a: 100, b: 100 });
+
+    // one row carries both colours' runs (B's blue lands on top: slot
+    // order), and nothing 10 px above it
+    const shared = await pixelAt(page, center.x - 50, center.y + 100);
+    const above = await pixelAt(page, center.x - 50, center.y + 90);
+
+    expect(shared[2]).toBeGreaterThan(180);
+    expect(shared[1]).toBeLessThan(80);
+    expect(above[0]).toBeGreaterThan(200);
+    expect(above[1]).toBeGreaterThan(200);
+    expect(above[2]).toBeGreaterThan(200);
+  });
+
   test('mouse drag moves the node in the model and on screen', async ({
     page,
   }) => {

@@ -115,7 +115,7 @@ source.
    is what only the layout can give: node-free corridors and a gap
    wide enough for the tracks.
 2. **A bundle is the edges out of one source** (ELK's hyperedge;
-   `taxi-bundle: source`, the default), so a fan-out reads as one
+   `taxi-track: source`, the default), so a fan-out reads as one
    orthogonal bus — the reactome win 112.4 recorded (3 crossings
    against dagre's 73) kept, now on its own line.  `family` groups
    the edges into the targets that share a parent set (the
@@ -138,29 +138,42 @@ source.
    pass, taken only if the first measurement says the staircase
    loses crossings on the fixtures.  Slot s of k in a band lands at
    `bandMid + (s − (k−1)/2) × spacing`, spacing =
-   `min(taxi-bundle-spacing, band/(k+1))`, so a crowded gap
+   `min(taxi-track-spacing, band/(k+1))`, so a crowded gap
    compresses rather than falling into the Z-/L-fallback.  A lone
    bundle sits at the band's middle — an `auto` edge with nothing to
    disambiguate draws exactly what `'50%'` draws today.
 4. **Delivery is one f32 column, not the blob.**  `edge.taxiTrack`
    (px, signed as `taxi-turn` is) is written by a CPU pass over the
-   `auto` edges whenever positions land (bulk layout write, drag,
-   animation frame, `position()`); the blob record carries a flag
-   and both `evalTaxi` and `evalRouteW` read the column when the flag
-   is set.  The blob stays position-independent; what a drag now
-   costs is one sweep over the taxi-auto edges whose bands moved,
-   O(E log E) with E the auto edges — a 7k-edge DAG is well under a
-   millisecond, and the pass is skipped entirely when no `auto` edge
-   exists.  `segmentPoints()`, `boundingBox()`, picking and the
+   `auto` edges, **refreshed lazily off the geo epoch**, not eagerly
+   in the position write: the store's `setPositions` only writes the
+   column and bumps `geoEpoch`, a drag fires many pointermoves per
+   frame and a layout writes positions in several passes, so the
+   sweep runs once at frame start (the renderer's pre-draw) and on
+   the CPU readers (`segmentPoints()`, `boundingBox()`, picking),
+   each keyed on the epoch it last saw.  The blob record carries a
+   flag and both `evalTaxi` and `evalRouteW` read the column when the
+   flag is set.  The blob stays position-independent; what a drag now
+   costs is one sweep per frame over the taxi-auto edges whose bands
+   moved, O(E log E) with E the auto edges — a 7k-edge DAG is well
+   under a millisecond, and the pass is a single count check when no
+   `auto` edge exists.  `segmentPoints()`, `boundingBox()`, picking and the
    parity ledger follow because they read the same route.
 5. **The casing becomes per-edge — v3's order.**  Instead of the
    global casing pass, an edge with casing draws as a pair of
    instances in the line pass, casing then line (instance parity in
    the shader; both streams), so a later edge's casing gaps an
    earlier edge's line where they cross — the picture's device 5 —
-   and the separate casing pass goes away.  This is a parity fix
-   with a visible change for anyone using `line-outline-*` today;
-   the round says so in the changelog and the ledger scene re-baselines.
+   and the separate casing pass goes away.  Verified in v3's
+   `drawEdge`: outline, underlay, line, arrows, overlay, one edge at
+   a time in z order.  The pair lands after v4's global underlay
+   pass — the same z-ordering deviation the README already records
+   for underlay and overlay — and only cased edges pair (the store
+   already counts them), so the instance count grows only where
+   casing is on.  This is a parity fix with a visible change for
+   anyone using `line-outline-*` today; the round says so in the
+   changelog and the ledger scene re-baselines, and MIGRATING names
+   the recipe for the old global-halo look: the edge underlay, which
+   is still a global pass under all edges.
 6. **Flow keeps the corridor and sizes the gap.**  (a) *Target-
    anchored corridors*: a span-≥2 edge's chain aligns to its
    target's x (the chain's last segment joins BK's protected inner
@@ -186,12 +199,19 @@ source.
 | prop | values | default | note |
 | --- | --- | --- | --- |
 | `taxi-turn` | px, `'N%'`, **`auto`** | `'50%'` | `auto`: the track's turn; reads back as `'auto'` |
-| `taxi-bundle` | `source` \| `target` \| `family` | `source` | which edges share a track |
-| `taxi-bundle-spacing` | px | `10` | the ideal distance between neighbouring tracks |
+| `taxi-track` | `source` \| `target` \| `family` | `source` | which edges share a track |
+| `taxi-track-spacing` | px | `10` | the ideal distance between neighbouring tracks |
 
-`taxi-bundle` and `taxi-bundle-spacing` are mapper-capable scalars
+`taxi-track` and `taxi-track-spacing` are mapper-capable scalars
 like the other taxi props; `auto` on a mapped `taxi-turn` is a
-`fallback`-able keyword.  Flow's option: `edgeSep` (px, default 10).
+`fallback`-able keyword, with the corner-radius parser's sentinel-
+and-readback pattern as the precedent.  There is no `none` value:
+the off state is a non-`auto` turn, so a constant turn with a
+grouping set is a plain no-op rather than two competing switches.
+The grouping is spelled *track*, not *bundle*, because *bundle*
+already names the bezier parallel-edge pair throughout
+`curve-index.mts` and the README.  Flow's option: `edgeSep` (px,
+default 10).
 
 ### The passes
 
@@ -214,7 +234,8 @@ like the other taxi props; `auto` on a mapped `taxi-turn` is a
   crowded gap, determinism, and the lone-bundle = 50 % identity.
 - **124.3 — the style props and the column.**  Parse, computed
   record, `EDGE_DEFAULTS`, `MAPPABLE`, readback, the blob flag, the
-  `edge.taxiTrack` column and its refresh on the position-write path,
+  `edge.taxiTrack` column and its epoch-keyed refresh at frame start
+  and on the CPU readers,
   `evalTaxi` and `evalRouteW` reading it.  Gates: `test/curve-
   derivation.mjs`, `test/curve-routes.mjs`, `test/style-readback-
   all.mjs` and `test/style-camel-case.mjs` (a new edge prop fails
@@ -235,7 +256,7 @@ like the other taxi props; `auto` on a mapped `taxi-turn` is a
   colour and radius recipes), JSDoc and the shipped d.ts, MIGRATING
   (casing order) and the changelog; the debug page's flow sheet
   switches to `taxi-turn: auto` with a background-coloured casing,
-  and a Greek-gods scene with `taxi-bundle: family`, `dark2` per
+  and a Greek-gods scene with `taxi-track: family`, `dark2` per
   family and `direction: 'rightward'` reproduces the reference
   picture.
 
@@ -272,12 +293,12 @@ between two ranks with k conflicting bundles is at least
   by more than noise, or the merge becomes conditional on a flow
   option.
 
-**Open (the maintainer's calls):** (1) style-side tracks against a
-layout-written turn — the plan's reason is the drag rule and
-layout-agnosticism; (2) the spellings — `taxi-turn: auto` plus
-`taxi-bundle` / `taxi-bundle-spacing`, or one `taxi-track` prop
-carrying the grouping with `none` as its off state; (3) the default
-grouping (`source`) — the genealogy picture wants `family`, the
-general DAG does not; (4) whether the per-edge casing lands as parity
-without a switch, or behind a `line-outline-order` style for the
-global halo look some drawings may want.
+**Decided (the maintainer, 2026-09-10):** (1) style-side tracks, for
+the drag rule and layout-agnosticism, with the column refreshed
+lazily off the geo epoch; (2) `taxi-turn: auto` is the switch and
+the grouping is `taxi-track` / `taxi-track-spacing`, no `none`
+value; (3) the default grouping is `source` — bounded by the nodes
+in a rank and what the reactome win was measured on; `family` is
+the genealogy recipe; (4) the per-edge casing lands as parity
+without a switch — the global halo was never v3's, and the edge
+underlay already gives it to anyone who wants it.

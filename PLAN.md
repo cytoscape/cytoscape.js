@@ -1057,13 +1057,14 @@ directions".*
     plan: `taxi-turn: auto` takes its turn from a track the curve
     subsystem assigns from live positions (style-side, so edges keep
     routing themselves after a drag and every layout benefits),
-    bundles keyed on the source by default (`taxi-bundle: source |
-    target | family`), the casing drawn per edge in v3's order so a
-    crossing is gapped, and flow contributing target-anchored merged
-    corridors (112.5's first lever) plus gap growth by track count
+    tracks keyed on the source by default (`taxi-track: source |
+    target | family`, spelled *track* because *bundle* is the bezier
+    pair), the casing drawn per edge in v3's order so a crossing is
+    gapped, and flow contributing target-anchored merged corridors
+    (112.5's first lever) plus gap growth by track count
     (`edgeSep`).  **First measurement**: a run-overlap column on the
     quality harness and a tracked `flow-taxi` row against the 50 %
     and 20 px rows, on deps, workflow-1k, reactome and the Greek-gods
-    genealogy.  The calls — style-side against layout-written, the
-    spellings, the default grouping, the casing order as parity or
-    behind a switch — are on the round file.
+    genealogy.  The four calls — style-side with a lazy epoch-keyed
+    refresh, the `taxi-track` spelling, `source` as the default, the
+    casing as parity without a switch — are decided on the round file.

@@ -82,7 +82,8 @@ describe('gpu/taxi-tracks (round 124.2)', function () {
       [0, 200],
       [300, 200],
     ];
-    const r = run(nodes, [edge(0, 2), edge(0, 3), edge(1, 4), edge(1, 5)]);
+    const edges = [edge(0, 2), edge(0, 3), edge(1, 4), edge(1, 5)];
+    const r = run(nodes, edges, { order: 'staircase' });
 
     expect(r.turn[0]).to.equal(r.turn[1]); // A's bus
     expect(r.turn[2]).to.equal(r.turn[3]); // B's bus
@@ -91,6 +92,14 @@ describe('gpu/taxi-tracks (round 124.2)', function () {
     expect(r.turn[0]).to.equal(80); // x = 100 + (0 - 0.5) * 10
     expect(r.turn[2]).to.equal(90);
     expect(r.bundles.every((b) => b.k === 2)).to.equal(true);
+
+    // the default (crossings) order puts B nearer here: A's run to 200
+    // spans B's source leg at 100 and B's run to 300 spans A's target
+    // leg at 200 (2 crossings), where B nearer costs none
+    const c = run(nodes, edges);
+
+    expect(c.turn[2]).to.equal(80);
+    expect(c.turn[0]).to.equal(90);
   });
 
   it("'family' puts two sources on one trunk; per-source draws two", function () {
@@ -243,8 +252,8 @@ describe('gpu/taxi-tracks (round 124.2)', function () {
       [250, 200],
     ];
     const edges = [edge(0, 2), edge(1, 3), edge(1, 4)];
-    const stair = run(nodes, edges);
-    const cross = run(nodes, edges, { order: 'crossings' });
+    const stair = run(nodes, edges, { order: 'staircase' });
+    const cross = run(nodes, edges); // the default
     const slotOf = (r, i) => r.bundles.find((b) => b.members.includes(i)).slot;
 
     expect(slotOf(stair, 1)).to.equal(0);
@@ -253,7 +262,7 @@ describe('gpu/taxi-tracks (round 124.2)', function () {
     expect(slotOf(cross, 1)).to.equal(1);
   });
 
-  it('is deterministic and independent of edge order', function () {
+  it('is deterministic and independent of edge order, under both orders', function () {
     const nodes = [
       [0, 0],
       [100, 0],
@@ -263,12 +272,15 @@ describe('gpu/taxi-tracks (round 124.2)', function () {
       [300, 200],
     ];
     const edges = [edge(0, 2), edge(0, 3), edge(1, 4), edge(1, 5)];
-    const a = run(nodes, edges);
-    const b = run(nodes, edges);
-    const c = run(nodes, [...edges].reverse());
 
-    expect(Array.from(a.turn)).to.deep.equal(Array.from(b.turn));
-    expect(Array.from(c.turn)).to.deep.equal(Array.from(a.turn).reverse());
+    for (const order of ['crossings', 'staircase']) {
+      const a = run(nodes, edges, { order });
+      const b = run(nodes, edges, { order });
+      const c = run(nodes, [...edges].reverse(), { order });
+
+      expect(Array.from(a.turn)).to.deep.equal(Array.from(b.turn));
+      expect(Array.from(c.turn)).to.deep.equal(Array.from(a.turn).reverse());
+    }
   });
 
   it('runDepth counts the maximum overlap depth', function () {

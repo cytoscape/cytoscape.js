@@ -17,6 +17,12 @@ For each engine x fixture it reports:
 - area        bounding box over node boxes, Mpx^2
 - overlaps    node-body pairwise overlaps (a placement *validity*
               check: a layered engine should read 0 on flat fixtures)
+- runOverlap  (round 124.1) pairs of *bundles* — the edges out of one
+              source — whose horizontal runs are collinear and overlap,
+              the figure a reader cannot follow an edge through: with
+              every taxi edge turning at the same distance, the runs of
+              different sources lie on one line.  Straight-line rows
+              read 0 trivially; it discriminates the taxi rows.
 - time        median of 3 timed runs after 1 warmup, ms
 
 How the rows avoid measuring nothing: the crossing counter self-tests
@@ -222,6 +228,63 @@ const countOverlaps = (fixture, result) => {
   return overlaps;
 };
 
+/**
+ * Round 124.1: collinear overlapping runs, counted per bundle.  Each
+ * edge's horizontal polyline segments are keyed on their y (to 1/100
+ * px); on one line, runs are merged per source into one interval and
+ * the pairs of *different* sources whose intervals overlap with
+ * positive length are counted.  A source's own fan shares a line by
+ * design (the orthogonal bus), so it never counts against itself.
+ */
+const countRunOverlaps = (fixture, result) => {
+  const lines = new Map(); // y key -> Map(source -> [x0, x1])
+
+  for (const e of fixture.edges) {
+    const pts = result.poly.get(e.id);
+
+    for (let i = 0; i + 3 < pts.length; i += 2) {
+      const [x1, y1, x2, y2] = [pts[i], pts[i + 1], pts[i + 2], pts[i + 3]];
+
+      if (Math.abs(y1 - y2) > 1e-6 || Math.abs(x1 - x2) < 1e-6) {
+        continue; // not a horizontal run
+      }
+
+      const key = Math.round(y1 * 100);
+      let bySource = lines.get(key);
+
+      if (bySource == null) {
+        bySource = new Map();
+        lines.set(key, bySource);
+      }
+
+      const lo = Math.min(x1, x2);
+      const hi = Math.max(x1, x2);
+      const run = bySource.get(e.source);
+
+      if (run == null) {
+        bySource.set(e.source, [lo, hi]);
+      } else {
+        run[0] = Math.min(run[0], lo);
+        run[1] = Math.max(run[1], hi);
+      }
+    }
+  }
+
+  let pairs = 0;
+
+  for (const bySource of lines.values()) {
+    const runs = [...bySource.values()].sort((a, b) => a[0] - b[0]);
+
+    for (let i = 0; i < runs.length; i++) {
+      for (let j = i + 1; j < runs.length && runs[j][0] < runs[i][1]; j++) {
+        pairs++;
+      }
+    }
+  }
+
+  return pairs;
+};
+
 // --------------------------------------------------------------- adapters
 
 const dagreAdapter = {
@@ -384,40 +447,104 @@ const flowAdapter = {
   },
 };
 
-// flow's documented pairing is style-driven taxi edges; this variant
-// scores the polyline a downward taxi route (default 50% turn) draws,
-// the same footing as dagre's and elk's own routed geometry.  Nodes
-// place identically to `flow` — only the scored geometry differs.
-const flowTaxiAdapter = {
-  name: 'flow-taxi',
-  async layout(fixture) {
-    const { pos } = await flowAdapter.layout(fixture);
-    const sizes = new Map(fixture.nodes.map((n) => [n.id, n]));
-    const poly = new Map();
+// flow's documented pairing is style-driven taxi edges; these variants
+// score the polyline a downward taxi route draws, the same footing as
+// dagre's and elk's own routed geometry.  Nodes place identically to
+// `flow` — only the scored geometry differs.  `turn` is the px turn from
+// the source's bottom, or a function of the fixture and positions
+// returning one per edge id (the round-124 track pass); null is v3's
+// default 50 % turn.
+const taxiPoly = (fixture, pos, turnOf) => {
+  const sizes = new Map(fixture.nodes.map((n) => [n.id, n]));
+  const poly = new Map();
 
-    for (const e of fixture.edges) {
-      const s = pos.get(e.source);
-      const t = pos.get(e.target);
-      const sh = (sizes.get(e.source).h ?? 30) / 2;
-      const th = (sizes.get(e.target).h ?? 30) / 2;
-      const y0 = s.y + sh; // source bottom
-      const y1 = t.y - th; // target top
+  for (const e of fixture.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    const sh = (sizes.get(e.source).h ?? 30) / 2;
+    const th = (sizes.get(e.target).h ?? 30) / 2;
+    const y0 = s.y + sh; // source bottom
+    const y1 = t.y - th; // target top
 
-      if (y1 <= y0 || s.x === t.x) {
-        // upward/flat (a reversed edge) or already straight
-        poly.set(e.id, [s.x, s.y, t.x, t.y]);
-      } else {
-        const my = (y0 + y1) / 2; // the 50% turn
+    if (y1 <= y0 || s.x === t.x) {
+      // upward/flat (a reversed edge) or already straight
+      poly.set(e.id, [s.x, s.y, t.x, t.y]);
+    } else {
+      const turn = turnOf(e.id);
+      const my = turn == null ? (y0 + y1) / 2 : y0 + turn;
 
-        poly.set(e.id, [s.x, s.y, s.x, my, t.x, my, t.x, t.y]);
-      }
+      poly.set(e.id, [s.x, s.y, s.x, my, t.x, my, t.x, t.y]);
     }
+  }
 
-    return { pos, poly };
-  },
+  return poly;
 };
 
-const ENGINES = [dagreAdapter, elkAdapter, flowAdapter, flowTaxiAdapter];
+const flowTaxiAdapter = (name, turn) => ({
+  name,
+  async layout(fixture) {
+    const { pos } = await flowAdapter.layout(fixture);
+    const turnOf =
+      typeof turn === 'function' ? await turn(fixture, pos) : () => turn;
+
+    return { pos, poly: taxiPoly(fixture, pos, turnOf) };
+  },
+});
+
+// round 124.1: the track pass over flow's positions — every edge
+// `taxi-turn: auto`, downward, bundled on the source, 10 px spacing,
+// leaves as obstacles; the two colouring orders side by side
+const trackTurns = (order) => async (fixture, pos) => {
+  const { assignTaxiTracks, TRACK_SOURCE } =
+    await import('../src/taxi-tracks.mjs');
+  const { TAXI_DOWNWARD } = await import('../src/curve-geometry.mjs');
+  const leaves = fixture.nodes.filter((n) => n.w != null);
+  const slotOf = new Map(leaves.map((n, i) => [n.id, i]));
+  const p = new Float64Array(leaves.length * 2);
+  const h = new Float64Array(leaves.length * 2);
+
+  leaves.forEach((n, i) => {
+    const q = pos.get(n.id);
+
+    p[i * 2] = q.x;
+    p[i * 2 + 1] = q.y;
+    h[i * 2] = (n.w ?? 30) / 2;
+    h[i * 2 + 1] = (n.h ?? 30) / 2;
+  });
+
+  const edges = fixture.edges
+    .filter((e) => slotOf.has(e.source) && slotOf.has(e.target))
+    .map((e) => ({
+      id: e.id,
+      src: slotOf.get(e.source),
+      tgt: slotOf.get(e.target),
+      dir: TAXI_DOWNWARD,
+      minDist: 10,
+      body: true,
+      group: TRACK_SOURCE,
+      spacing: 10,
+    }));
+  const { turn } = assignTaxiTracks({
+    edges,
+    pos: p,
+    half: h,
+    obstacles: leaves.map((_, i) => i),
+    order,
+  });
+  const byId = new Map(edges.map((e, i) => [e.id, turn[i]]));
+
+  return (id) => byId.get(id) ?? null;
+};
+
+const ENGINES = [
+  dagreAdapter,
+  elkAdapter,
+  flowAdapter,
+  flowTaxiAdapter('flow-taxi', null),
+  flowTaxiAdapter('flow-taxi-20', 20),
+  flowTaxiAdapter('flow-taxi-tracks', trackTurns('staircase')),
+  flowTaxiAdapter('flow-taxi-tracks-x', trackTurns('crossings')),
+];
 
 // ------------------------------------------------------------ self-tests
 
@@ -478,6 +605,37 @@ const selfTest = () => {
     res({ e1: [0, 0, 20, 0, 20, 10, 0, 10], e2: [10, -10, 10, 30] }),
   );
   if (n !== 2) throw new Error(`self-test: S-route should count 2, got ${n}`);
+
+  // run-overlap (124.1): two sources' runs on one line overlapping count
+  // 1 (a's own fan shares its line and never counts); on separate lines 0
+  const runFx = fx(
+    ['a', 'b', 'c', 'd'],
+    [
+      { id: 'e1', source: 'a', target: 'c' },
+      { id: 'e2', source: 'b', target: 'd' },
+      { id: 'e3', source: 'a', target: 'd' },
+    ],
+  );
+  n = countRunOverlaps(
+    runFx,
+    res({
+      e1: [0, 0, 0, 50, 100, 50, 100, 100],
+      e2: [50, 0, 50, 50, 150, 50, 150, 100],
+      e3: [0, 0, 0, 50, 150, 50, 150, 100],
+    }),
+  );
+  if (n !== 1)
+    throw new Error(`self-test: run overlap should count 1, got ${n}`);
+  n = countRunOverlaps(
+    runFx,
+    res({
+      e1: [0, 0, 0, 40, 100, 40, 100, 100],
+      e2: [50, 0, 50, 60, 150, 60, 150, 100],
+      e3: [0, 0, 0, 40, 150, 40, 150, 100],
+    }),
+  );
+  if (n !== 0)
+    throw new Error(`self-test: separated runs should count 0, got ${n}`);
 };
 
 // ---------------------------------------------------------------- runner
@@ -527,6 +685,7 @@ const runCell = async (name, engine) => {
     lenCv: +cv.toFixed(3),
     areaMpx2: +(areaOf(fixture, result) / 1e6).toFixed(2),
     overlaps: countOverlaps(fixture, result),
+    runOverlap: countRunOverlaps(fixture, result),
     timeMs: +times[1].toFixed(1),
   };
 };
@@ -534,16 +693,17 @@ const runCell = async (name, engine) => {
 const printRow = (row) => {
   if (row.status !== 'ok') {
     console.log(
-      `${row.fixture.padEnd(14)} ${row.engine.padEnd(6)} ${row.status.toUpperCase()}`,
+      `${row.fixture.padEnd(14)} ${row.engine.padEnd(19)} ${row.status.toUpperCase()}`,
     );
     return;
   }
   console.log(
-    `${row.fixture.padEnd(14)} ${row.engine.padEnd(6)}` +
+    `${row.fixture.padEnd(14)} ${row.engine.padEnd(19)}` +
       ` n=${String(row.nodes).padEnd(6)} m=${String(row.edges).padEnd(6)}` +
       ` cross=${String(row.crossings).padEnd(7)} len=${String(row.lenMean).padEnd(5)}` +
       ` cv=${String(row.lenCv).padEnd(6)} area=${String(row.areaMpx2).padEnd(9)}` +
-      ` overlap=${String(row.overlaps).padEnd(4)} t=${row.timeMs}ms`,
+      ` overlap=${String(row.overlaps).padEnd(4)}` +
+      ` runs=${String(row.runOverlap).padEnd(5)} t=${row.timeMs}ms`,
   );
 };
 

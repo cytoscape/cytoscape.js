@@ -37,13 +37,21 @@ The rules, in order:
    layered drawing this is what puts a long edge's run in the first
    gap and its leg at the target's x — flow's corridor (124.5).
 4. Two bundles conflict when both their runs (cross axis) and their
-   bands (taxi axis) overlap.  Conflicting bundles are coloured
-   greedily in the *staircase* order — by the source's cross position,
-   near to far, the ordering every metro map draws — or, under
-   `order: 'crossings'`, in the order ELK's pairwise rule prefers:
-   for a conflicting pair, count the legs each order makes cross the
-   other's run, orient the pair the cheaper way, break cycles
-   greedily.  124.1 measures which order wins on the fixtures.
+   bands (taxi axis) overlap.  Conflicting bundles are ordered by
+   ELK's pairwise rule (`order: 'crossings'`, the default): for a
+   conflicting pair, count the legs each order makes cross the other
+   bundle's runs — per edge run, never against an edge sharing an
+   endpoint, the way a crossing counter sees them — orient the pair
+   the cheaper way, ties to the staircase, keep orientations by
+   decreasing margin unless one closes a cycle, and colour greedily in
+   the topological order with every bundle above its predecessors.
+   `order: 'staircase'` colours by the source's cross position alone,
+   near to far, the ordering a metro map draws.  124.1 measured both
+   on deps, workflow-1k, reactome and the Greek-gods genealogy: the
+   run-overlap count falls to 0 (3 on workflow-1k) under either, and
+   the crossing rule beats the staircase on crossings on all four
+   (4259 vs 4515, 23176 vs 29266, 59 vs 62, 134 vs 144), so it is the
+   default and the staircase stays as the control.
 5. Slot s of k in a band of length b lands at `mid + sgn × (s − (k −
    1) / 2) × spacing`, `spacing = min(taxi-track-spacing, b / (k +
    1))`, so a crowded gap compresses rather than falling into the
@@ -94,7 +102,7 @@ export interface TrackInput {
   half: ArrayLike<number>;
   /** node slots whose bodies a run must not cross (visible leaves) */
   obstacles?: ArrayLike<number>;
-  /** the slot order among conflicting bundles (default 'staircase') */
+  /** the slot order among conflicting bundles (default 'crossings') */
   order?: 'staircase' | 'crossings';
 }
 
@@ -539,7 +547,7 @@ export const assignTaxiTracks = (input: TrackInput): TrackResult => {
     pred[b] = [];
   }
 
-  if (input.order === 'crossings') {
+  if (input.order !== 'staircase') {
     order = crossingOrder(protos, edges, geom, adj, staircase, pred);
   }
 
@@ -632,15 +640,33 @@ const crossingOrder = (
 ): number[] => {
   const B = protos.length;
   const legsIn = (p: Proto, q: Proto, fromSource: boolean): number => {
-    // p's legs (source or target ends) whose cross coordinate lies in
-    // q's run
+    // p's legs (source or target ends) against q's members' own runs —
+    // per edge, the way a crossing counter sees them, and never against
+    // a member sharing an endpoint node (those pairs meet, not cross)
     let n = 0;
 
     for (const i of p.members) {
       const c = fromSource ? geom[i].cS : geom[i].cT;
+      const ei = edges[i];
 
-      if (c > q.c0 && c < q.c1) {
-        n++;
+      for (const j of q.members) {
+        const ej = edges[j];
+
+        if (
+          ei.src === ej.src ||
+          ei.tgt === ej.tgt ||
+          ei.src === ej.tgt ||
+          ei.tgt === ej.src
+        ) {
+          continue;
+        }
+
+        const lo = Math.min(geom[j].cS, geom[j].cT);
+        const hi = Math.max(geom[j].cS, geom[j].cT);
+
+        if (c > lo && c < hi) {
+          n++;
+        }
       }
     }
 

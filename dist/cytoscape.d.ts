@@ -2039,8 +2039,15 @@ interface CurveStyleExtras {
   /** percent turns store the fraction (v3's pfValue); px turns the px */
   taxiTurn: number;
   taxiTurnPercent: boolean;
+  /** `taxi-turn: auto` (round 124): the turn comes from the track pass,
+   * delivered through the params header's n lane */
+  taxiTurnAuto: boolean;
   taxiTurnMinDist: number;
   taxiRadius: number;
+  /** `taxi-track`: TRACK_SOURCE | TRACK_TARGET | TRACK_FAMILY (124) */
+  taxiTrack: number;
+  /** `taxi-track-spacing`: px between neighbouring tracks (124) */
+  taxiTrackSpacing: number;
 }
 /** What the index needs from the store (kept narrow for testability). */
 interface CurveHost {
@@ -2077,6 +2084,10 @@ declare class CurveIndex {
   private loopSweep;
   /** the 12b family record per slot (null for straight/bezier styles) */
   private extra;
+  /** the slots whose taxi turn is `auto` (round 124): the track pass's
+   * membership, kept exact so a sweep never scans the whole table and
+   * costs nothing when the set is empty */
+  private taxiAuto;
   /** 12c styled records: haystack-radius and the manual-endpoint spec */
   private hayRadius;
   private endpt;
@@ -2144,6 +2155,8 @@ declare class CurveIndex {
     haystackRadius: number;
     endpoints: EndpointSpec | null;
   };
+  /** The slots whose taxi turn is `auto` (round 124) — read-only. */
+  taxiAutoSlots(): ReadonlySet<number>;
   /**
    * Register a new edge in the structural indexes.  A loop joins its
    * node's loop list and re-staggers immediately; a non-loop edge joins
@@ -2528,6 +2541,8 @@ declare class GraphStore implements ModelView {
   /** the unique-image registry (round 15.1); style writes acquire/release */
   readonly images: ImageRegistry;
   private geoEpoch;
+  /** the geo epoch the taxi-track pass last ran at (round 124) */
+  private taxiTrackEpoch;
   private edgeBBEpoch;
   private edgeBB;
   private curveScratch;
@@ -2868,6 +2883,18 @@ declare class GraphStore implements ModelView {
    * geometry accessors.
    */
   flushDerived(): void;
+  /**
+   * The taxi-track pass (round 124): assign every `taxi-turn: auto`
+   * edge its px turn from live positions, into the params header's n
+   * lane, which both `evalTaxi` and the WGSL twin read for a taxi
+   * record whose turn mode is 2.  Lazy off the geo epoch — a drag fires
+   * many pointermoves per frame and a layout writes positions in
+   * several passes, so the sweep runs once per epoch, at frame start
+   * (`takeDelta`) and on the CPU readers (`flushDerived`), and is a
+   * single size check when no edge is `auto`.  It writes a column,
+   * never the blob, and never bumps the epoch it is keyed on.
+   */
+  private refreshTaxiTracks;
   /**
    * Open a bulk-load window on the derived indexes (round 67): the curve
    * index stops accumulating one pair mark per edge and takes their

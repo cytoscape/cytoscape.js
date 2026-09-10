@@ -22,7 +22,10 @@ import {
   routeVertex,
   segmentHitsBox,
   shortenToward,
+  EDGE_DIST_NODE_POSITION,
 } from '../curve-geometry.mjs';
+import { assignTaxiTracks } from '../taxi-tracks.mjs';
+import type { TrackEdge } from '../taxi-tracks.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
@@ -300,6 +303,8 @@ export class GraphStore implements ModelView {
   // Label writes deliberately do not bump it (25.5): the memo has no
   // label terms, and a font-size tween would otherwise nuke it per tick.
   private geoEpoch = 1;
+  /** the geo epoch the taxi-track pass last ran at (round 124) */
+  private taxiTrackEpoch = 0;
   private edgeBBEpoch = new Uint32Array(0);
   private edgeBB = new Float64Array(0);
   private curveScratch = emptyCurveEval();
@@ -1556,6 +1561,87 @@ export class GraphStore implements ModelView {
   flushDerived(): void {
     this.hierarchy.flush();
     this.curves.flush();
+    this.refreshTaxiTracks();
+  }
+
+  /**
+   * The taxi-track pass (round 124): assign every `taxi-turn: auto`
+   * edge its px turn from live positions, into the params header's n
+   * lane, which both `evalTaxi` and the WGSL twin read for a taxi
+   * record whose turn mode is 2.  Lazy off the geo epoch — a drag fires
+   * many pointermoves per frame and a layout writes positions in
+   * several passes, so the sweep runs once per epoch, at frame start
+   * (`takeDelta`) and on the CPU readers (`flushDerived`), and is a
+   * single size check when no edge is `auto`.  It writes a column,
+   * never the blob, and never bumps the epoch it is keyed on.
+   */
+  private refreshTaxiTracks(): void {
+    const slots = this.curves.taxiAutoSlots();
+
+    if (slots.size === 0 || this.taxiTrackEpoch === this.geoEpoch) {
+      return;
+    }
+
+    this.taxiTrackEpoch = this.geoEpoch;
+
+    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const pos = this.nodes.column('node.position') as Float32Array;
+    const half = this.nodes.column('node.outerHalf') as Float32Array;
+    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
+    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const edges: TrackEdge[] = [];
+    const edgeSlots: number[] = [];
+
+    for (const slot of slots) {
+      const ex = this.curves.styleAt(slot).extras;
+
+      if (ex == null) {
+        continue;
+      }
+
+      edges.push({
+        src: endpoints[slot * 2],
+        tgt: endpoints[slot * 2 + 1],
+        dir: ex.taxiDir,
+        minDist: ex.taxiTurnMinDist,
+        body: ex.edgeDistances !== EDGE_DIST_NODE_POSITION,
+        group: ex.taxiTrack,
+        spacing: ex.taxiTrackSpacing,
+      });
+      edgeSlots.push(slot);
+    }
+
+    // a run avoids the shown leaf bodies; parents are boxes around
+    // their children, not obstacles
+    const obstacles: number[] = [];
+    const shownLeaf = FLAG_ALIVE | FLAG_VISIBLE;
+
+    for (let n = 0; n < this.nodes.highWater; n++) {
+      const f = nodeFlags[n];
+
+      if ((f & shownLeaf) === shownLeaf && (f & FLAG_PARENT) === 0) {
+        obstacles.push(n);
+      }
+    }
+
+    const { turn } = assignTaxiTracks({ edges, pos, half, obstacles });
+    let min = Infinity;
+    let max = -1;
+
+    for (let i = 0; i < edgeSlots.length; i++) {
+      const slot = edgeSlots[i];
+      const at = slot * 4 + 2;
+
+      if (params[at] !== turn[i]) {
+        params[at] = turn[i];
+        min = Math.min(min, slot);
+        max = Math.max(max, slot);
+      }
+    }
+
+    if (max >= 0) {
+      this.dirty.mark('edge.curveParams', min, max + 1);
+    }
   }
 
   /**

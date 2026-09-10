@@ -925,8 +925,9 @@ const subDWH = (dxy: number, dwh: number): number => {
 /**
  * Evaluate a route-family edge from live inputs.  `blob` is the curve
  * param blob, `off`/`n` the edge's record offset and interior count from
- * the params-column header (n is unused for taxi — the routing derives
- * its own points).  Node halves are the *outer* halves (the
+ * the params-column header (for taxi, whose routing derives its own
+ * points, the n lane carries the px turn of a `taxi-turn: auto` edge —
+ * round 124's track).  Node halves are the *outer* halves (the
  * node.outerHalf column), matching v3's outerWidth/outerHeight frame.
  */
 export const evalRoute = (
@@ -1057,6 +1058,7 @@ export const evalRoute = (
       out,
       blob,
       body,
+      n, // the track lane (124): the px turn of a `taxi-turn: auto` edge
       sxC,
       syC,
       sHalfW,
@@ -1384,12 +1386,16 @@ const setRouteBoundary = (
   return boundaryScratch;
 };
 
-/** v3's findTaxiPoints, verbatim (blob record: dir, turn, turnIsPercent,
- * minD, bodyMode, round, radius, arcMode). */
+/** v3's findTaxiPoints, verbatim (blob record: dir, turn, turnMode,
+ * minD, bodyMode, round, radius, arcMode).  `turnMode` is 0 for a px
+ * turn, 1 for a percent turn and 2 for `taxi-turn: auto` (round 124),
+ * where the px turn is `track` — the params header's n lane, written by
+ * the store's track pass from live positions. */
 const evalTaxi = (
   out: CurveRoute,
   blob: ArrayLike<number>,
   off: number,
+  track: number,
   sxC: number,
   syC: number,
   sHalfW: number,
@@ -1400,8 +1406,10 @@ const evalTaxi = (
   tHalfH: number,
 ): void => {
   const rawDir = blob[off];
-  const turnVal = blob[off + 1];
-  const turnIsPercent = blob[off + 2] !== 0;
+  const turnMode = blob[off + 2];
+  const turnIsAuto = turnMode === 2;
+  const turnIsPercent = turnMode === 1;
+  const turnVal = turnIsAuto ? track : blob[off + 1];
   const minD = blob[off + 3];
   const dIncludesNodeBody = blob[off + 4] !== EDGE_DIST_NODE_POSITION;
   const round = blob[off + 5] !== 0;
@@ -1442,8 +1450,10 @@ const evalTaxi = (
 
   let forcedDir = false;
 
+  // an auto turn routes toward the target like a percent turn: the
+  // forced-direction rule never applies to it
   if (
-    !(isExplicitDir && (turnIsPercent || turnIsNegative)) &&
+    !(isExplicitDir && (turnIsPercent || turnIsNegative || turnIsAuto)) &&
     ((rawDir === TAXI_DOWNWARD && pl < 0) ||
       (rawDir === TAXI_UPWARD && pl > 0) ||
       (rawDir === TAXI_LEFTWARD && pl > 0) ||

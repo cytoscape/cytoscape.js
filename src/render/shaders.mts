@@ -681,8 +681,12 @@ fn evalRouteW(
     r.n = n;
   } else { // TAXI — v3's findTaxiPoints, verbatim (see curve-geometry.mts)
     let rawDir = curveBlob[off];
-    let turnVal = curveBlob[off + 1u];
-    let turnIsPercent = curveBlob[off + 2u] != 0.0;
+    // turn mode: 0 px, 1 percent, 2 auto — the px turn of an auto edge is
+    // the header's n lane, written by the store's track pass (round 124)
+    let turnMode = curveBlob[off + 2u];
+    let turnIsAuto = turnMode == 2.0;
+    let turnIsPercent = turnMode == 1.0;
+    let turnVal = select(curveBlob[off + 1u], header.z, turnIsAuto);
     let minD = curveBlob[off + 3u];
     let dIncludesNodeBody = curveBlob[off + 4u] != 1.0;
     let taxiRound = curveBlob[off + 5u] != 0.0;
@@ -719,7 +723,7 @@ fn evalRouteW(
     var forcedDir = false;
 
     if (
-      !(isExplicitDir && (turnIsPercent || turnIsNegative)) &&
+      !(isExplicitDir && (turnIsPercent || turnIsNegative || turnIsAuto)) &&
       ((rawDir == 4.0 && pl < 0.0) || (rawDir == 3.0 && pl > 0.0) ||
        (rawDir == 5.0 && pl > 0.0) || (rawDir == 6.0 && pl < 0.0))
     ) {

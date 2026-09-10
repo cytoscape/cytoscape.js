@@ -901,6 +901,18 @@ describe('gpu/curve-routes: 12b route geometry', function () {
       expect(route.qy[1]).to.equal(35); // 0 + 20 + 15
     });
 
+    it('an auto turn (mode 2) takes the px turn from the header n lane (round 124)', function () {
+      const route = evalWith(
+        CURVE_TAXI,
+        taxiBlob({ pct: 2, turn: 0.5 }),
+        40, // the track lane
+        nodes(0, 0, 10, 200),
+      );
+
+      expect(route.qy[1]).to.equal(55); // 0 + 40 + 15
+      expect(route.qy[2]).to.equal(55);
+    });
+
     it('negative pixel turns measure from the target side', function () {
       const route = evalWith(
         CURVE_TAXI,

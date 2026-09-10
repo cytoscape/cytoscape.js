@@ -145,6 +145,8 @@ const EDGE_STYLE = {
   'taxi-turn': '40%',
   'taxi-turn-min-distance': 12,
   'taxi-radius': 7,
+  'taxi-track': 'family',
+  'taxi-track-spacing': 14,
   'control-point-step-size': 41,
   'control-point-weight': 0.4,
   'loop-direction': 0.2,
@@ -316,6 +318,8 @@ const EXPECTED = [
   ['target-text-rotation', undefined, 'none'],
   ['taxi-direction', undefined, 'downward'],
   ['taxi-radius', undefined, 7],
+  ['taxi-track', undefined, 'family'],
+  ['taxi-track-spacing', undefined, 14],
   ['taxi-turn', undefined, '40%'],
   ['taxi-turn-min-distance', undefined, 12],
   ['text-background-color', 'rgba(255,255,0,0.322)', 'rgba(0,0,0,0)'],
@@ -369,7 +373,7 @@ describe('gpu/style: stored-truth readback, every property (round 35.1)', functi
   });
 
   it('covers every case label in readProp', function () {
-    expect(EXPECTED.length).to.equal(153);
+    expect(EXPECTED.length).to.equal(155); // 124: + taxi-track, taxi-track-spacing
   });
 
   for (const [prop, onNode, onEdge] of EXPECTED) {

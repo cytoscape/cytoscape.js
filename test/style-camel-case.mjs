@@ -145,6 +145,8 @@ const EDGE_STYLE = {
   'taxi-turn': '40%',
   'taxi-turn-min-distance': 12,
   'taxi-radius': 7,
+  'taxi-track': 'family',
+  'taxi-track-spacing': 14,
   'control-point-step-size': 41,
   'control-point-weight': 0.4,
   'loop-direction': 0.2,

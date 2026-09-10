@@ -444,8 +444,14 @@ interface EdgeComputed {
   /** percent turns store the fraction (v3 pfValue); px turns the px */
   taxiTurn: number;
   taxiTurnPercent: boolean;
+  /** `taxi-turn: auto` (round 124): the turn comes from the track pass */
+  taxiTurnAuto: boolean;
   taxiTurnMinDistance: number;
   taxiRadius: number;
+  /** `taxi-track` (124): TRACK_SOURCE | TRACK_TARGET | TRACK_FAMILY */
+  taxiTrack: number;
+  /** `taxi-track-spacing` (124): px between neighbouring tracks */
+  taxiTrackSpacing: number;
 }
 
 type Computed = NodeComputed & EdgeComputed;
@@ -649,8 +655,11 @@ const EDGE_DEFAULTS: EdgeComputed = {
   targetDistanceFromNode: 0,
   taxiTurn: CURVE_EXTRA_DEFAULTS.taxiTurn,
   taxiTurnPercent: CURVE_EXTRA_DEFAULTS.taxiTurnPercent,
+  taxiTurnAuto: CURVE_EXTRA_DEFAULTS.taxiTurnAuto,
   taxiTurnMinDistance: CURVE_EXTRA_DEFAULTS.taxiTurnMinDist,
   taxiRadius: CURVE_EXTRA_DEFAULTS.taxiRadius,
+  taxiTrack: CURVE_EXTRA_DEFAULTS.taxiTrack,
+  taxiTrackSpacing: CURVE_EXTRA_DEFAULTS.taxiTrackSpacing,
 };
 
 const NO_ARROW: RGBA = [0, 0, 0, 0]; // a=0 collapses the arrow in the shader
@@ -968,6 +977,8 @@ const EDGE_READ: ReadonlySet<string> = new Set([
   'taxi-turn',
   'taxi-turn-min-distance',
   'taxi-radius',
+  'taxi-track',
+  'taxi-track-spacing',
   'haystack-radius',
   'source-endpoint',
   'target-endpoint',
@@ -1003,6 +1014,8 @@ const CURVE_PROPS: ReadonlySet<string> = new Set([
   'taxi-turn',
   'taxi-turn-min-distance',
   'taxi-radius',
+  'taxi-track',
+  'taxi-track-spacing',
   'haystack-radius',
   'source-endpoint',
   'target-endpoint',
@@ -2179,20 +2192,71 @@ const parseTaxiDirection = (value: unknown): number => {
 
 const TAXI_TURN_PERCENT = /^(-?(?:\d+\.?\d*|\.\d+))%$/;
 
-/** taxi-turn: a px number (may be negative = from the target side) or a
- * percent string ('50%' stores the fraction, v3's pfValue). */
-const parseTaxiTurn = (value: unknown): { value: number; percent: boolean } => {
+/**
+ * The number a `taxi-turn` mapper's `fallback: 'auto'` compiles to
+ * (round 124): mapper outputs are numbers, so the keyword rides a
+ * sentinel no px turn could mean, and the channel's setter reads it
+ * back as the auto flag.
+ */
+const TAXI_TURN_AUTO_SENTINEL = -1073741824; // -2^30
+
+/** taxi-turn: a px number (may be negative = from the target side), a
+ * percent string ('50%' stores the fraction, v3's pfValue), or `auto`
+ * (round 124: the track pass assigns the turn; stored as the 50 %
+ * default with the auto flag, so the readback and the fallback agree). */
+const parseTaxiTurn = (
+  value: unknown,
+): { value: number; percent: boolean; auto: boolean } => {
   if (typeof value === 'number') {
-    return { value: parseNumber('taxi-turn', value), percent: false };
+    return {
+      value: parseNumber('taxi-turn', value),
+      percent: false,
+      auto: false,
+    };
   }
 
-  const match = TAXI_TURN_PERCENT.exec(String(value).trim());
+  const text = String(value).trim();
+
+  if (text === 'auto') {
+    return { value: 0.5, percent: true, auto: true };
+  }
+
+  const match = TAXI_TURN_PERCENT.exec(text);
 
   if (match != null) {
-    return { value: parseFloat(match[1]) / 100, percent: true };
+    return { value: parseFloat(match[1]) / 100, percent: true, auto: false };
   }
 
-  return { value: parseNumber('taxi-turn', value), percent: false };
+  return {
+    value: parseNumber('taxi-turn', value),
+    percent: false,
+    auto: false,
+  };
+};
+
+const TAXI_TRACKS: Record<string, number> = {
+  source: 0,
+  target: 1,
+  family: 2,
+};
+
+const TAXI_TRACK_NAMES: Record<number, string> = {
+  0: 'source',
+  1: 'target',
+  2: 'family',
+};
+
+const parseTaxiTrack = (value: unknown): number => {
+  const id = TAXI_TRACKS[String(value)];
+
+  if (id == null) {
+    throw new Error(
+      `The taxi-track '${String(value)}' is invalid; use one of: ` +
+        Object.keys(TAXI_TRACKS).join(', '),
+    );
+  }
+
+  return id;
 };
 
 const ANGLE_VALUE = /^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(deg|rad)?$/;
@@ -2775,6 +2839,7 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
 
       computed.taxiTurn = turn.value;
       computed.taxiTurnPercent = turn.percent;
+      computed.taxiTurnAuto = turn.auto;
       break;
     }
     case 'taxi-turn-min-distance':
@@ -2782,6 +2847,12 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       break;
     case 'taxi-radius':
       computed.taxiRadius = parseNumber(prop, value);
+      break;
+    case 'taxi-track':
+      computed.taxiTrack = parseTaxiTrack(value);
+      break;
+    case 'taxi-track-spacing':
+      computed.taxiTrackSpacing = parseNonNegative(prop, value);
       break;
     case 'haystack-radius': {
       const radius = parseNumber(prop, value);
@@ -3512,12 +3583,20 @@ const MAPPABLE: Record<string, MappableChannel> = {
   'taxi-turn': {
     // mapped turns are px (a percent turn is constant-only); a missing
     // value falls back to the default fraction as px — set an explicit
-    // mapper fallback to control this
+    // mapper fallback to control this.  `fallback: 'auto'` (124) rides
+    // the sentinel and lands as the auto flag.
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
-      c.taxiTurn = v as number;
-      c.taxiTurnPercent = false;
+      if (v === TAXI_TURN_AUTO_SENTINEL) {
+        c.taxiTurn = 0.5;
+        c.taxiTurnPercent = true;
+        c.taxiTurnAuto = true;
+      } else {
+        c.taxiTurn = v as number;
+        c.taxiTurnPercent = false;
+        c.taxiTurnAuto = false;
+      }
     },
     default: () => EDGE_DEFAULTS.taxiTurn,
   },
@@ -3536,6 +3615,24 @@ const MAPPABLE: Record<string, MappableChannel> = {
       c.taxiRadius = v as number;
     },
     default: () => EDGE_DEFAULTS.taxiRadius,
+  },
+  // round 124: which edges share a track, and how far apart tracks sit
+  'taxi-track': {
+    kind: 'enum',
+    groups: ['edges'],
+    parseEnum: (v) => TAXI_TRACKS[String(v)] ?? null,
+    set: (c, v) => {
+      c.taxiTrack = v as number;
+    },
+    default: () => EDGE_DEFAULTS.taxiTrack,
+  },
+  'taxi-track-spacing': {
+    kind: 'number',
+    groups: ['edges'],
+    set: (c, v) => {
+      c.taxiTrackSpacing = Math.max(0, v as number);
+    },
+    default: () => EDGE_DEFAULTS.taxiTrackSpacing,
   },
   // B5 node outline (solid ring outside the border)
   'outline-color': {
@@ -4288,8 +4385,19 @@ const compileChannel = (
     };
   }
 
+  // `taxi-turn`'s `fallback: 'auto'` (124): the keyword is not a number,
+  // so it compiles as the sentinel the channel's setter reads back
+  const mapperSpec =
+    prop === 'taxi-turn' &&
+    !Array.isArray(spec) &&
+    typeof spec === 'object' &&
+    spec != null &&
+    String((spec as { fallback?: unknown }).fallback).trim() === 'auto'
+      ? { ...spec, fallback: TAXI_TURN_AUTO_SENTINEL }
+      : spec;
+
   return {
-    m: compileMapper(spec, {
+    m: compileMapper(mapperSpec, {
       kind: channel.kind,
       prop,
       parseEnum: channel.parseEnum,
@@ -6029,8 +6137,22 @@ defineReader(
 defineReader(['taxi-turn'], (store, slot) => {
   const ex = curveExtrasFor(store, slot);
 
+  if (ex.taxiTurnAuto) {
+    return 'auto';
+  }
+
   return ex.taxiTurnPercent ? `${ex.taxiTurn * 100}%` : ex.taxiTurn;
 });
+
+defineReader(
+  ['taxi-track'],
+  (store, slot) => TAXI_TRACK_NAMES[curveExtrasFor(store, slot).taxiTrack],
+);
+
+defineReader(
+  ['taxi-track-spacing'],
+  (store, slot) => curveExtrasFor(store, slot).taxiTrackSpacing,
+);
 
 defineReader(
   ['taxi-turn-min-distance'],
@@ -9408,8 +9530,11 @@ export class StyleEngine {
           taxiDir: computed.taxiDirection,
           taxiTurn: computed.taxiTurn,
           taxiTurnPercent: computed.taxiTurnPercent,
+          taxiTurnAuto: computed.taxiTurnAuto,
           taxiTurnMinDist: computed.taxiTurnMinDistance,
           taxiRadius: computed.taxiRadius,
+          taxiTrack: computed.taxiTrack,
+          taxiTrackSpacing: computed.taxiTrackSpacing,
         }
       : null;
 

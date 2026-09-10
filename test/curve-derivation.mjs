@@ -203,6 +203,17 @@ describe('gpu/curve-derivation (12b families)', function () {
       expect(blobSlice('e', 3)).to.deep.equal([0, -32, 0]);
     });
 
+    it("'taxi-turn: auto' stores turn mode 2 with the 50 % default (round 124)", function () {
+      cy = pairWith({ 'curve-style': 'taxi', 'taxi-turn': 'auto' });
+
+      expect(blobSlice('e', 3)).to.deep.equal([0, 0.5, 2]);
+      expect(cy._store.curves.taxiAutoSlots().size).to.equal(1);
+
+      cy = pairWith({ 'curve-style': 'taxi', 'taxi-turn': '50%' });
+
+      expect(cy._store.curves.taxiAutoSlots().size).to.equal(0);
+    });
+
     it('round-taxi stores the round flag and radius', function () {
       cy = pairWith({
         'curve-style': 'round-taxi',

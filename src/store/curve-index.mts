@@ -244,8 +244,15 @@ export interface CurveStyleExtras {
   /** percent turns store the fraction (v3's pfValue); px turns the px */
   taxiTurn: number;
   taxiTurnPercent: boolean;
+  /** `taxi-turn: auto` (round 124): the turn comes from the track pass,
+   * delivered through the params header's n lane */
+  taxiTurnAuto: boolean;
   taxiTurnMinDist: number;
   taxiRadius: number;
+  /** `taxi-track`: TRACK_SOURCE | TRACK_TARGET | TRACK_FAMILY (124) */
+  taxiTrack: number;
+  /** `taxi-track-spacing`: px between neighbouring tracks (124) */
+  taxiTrackSpacing: number;
 }
 
 export const CURVE_EXTRA_DEFAULTS: CurveStyleExtras = {
@@ -259,8 +266,11 @@ export const CURVE_EXTRA_DEFAULTS: CurveStyleExtras = {
   taxiDir: TAXI_AUTO,
   taxiTurn: 0.5,
   taxiTurnPercent: true,
+  taxiTurnAuto: false,
   taxiTurnMinDist: 10,
   taxiRadius: 15,
+  taxiTrack: 0,
+  taxiTrackSpacing: 10,
 };
 
 const listEq = (a: number[] | null, b: number[] | null): boolean => {
@@ -302,10 +312,19 @@ const extrasEq = (
     a.taxiDir === b.taxiDir &&
     a.taxiTurn === b.taxiTurn &&
     a.taxiTurnPercent === b.taxiTurnPercent &&
+    a.taxiTurnAuto === b.taxiTurnAuto &&
     a.taxiTurnMinDist === b.taxiTurnMinDist &&
-    a.taxiRadius === b.taxiRadius
+    a.taxiRadius === b.taxiRadius &&
+    a.taxiTrack === b.taxiTrack &&
+    a.taxiTrackSpacing === b.taxiTrackSpacing
   );
 };
+
+/** A taxi-family style whose turn is `auto` — a member of the track pass. */
+const isTaxiAuto = (style: number, ex: CurveStyleExtras | null): boolean =>
+  (style === CURVE_STYLE_TAXI || style === CURVE_STYLE_ROUND_TAXI) &&
+  ex != null &&
+  ex.taxiTurnAuto;
 
 /** What the index needs from the store (kept narrow for testability). */
 export interface CurveHost {
@@ -364,6 +383,10 @@ export class CurveIndex {
 
   /** the 12b family record per slot (null for straight/bezier styles) */
   private extra: (CurveStyleExtras | null)[];
+  /** the slots whose taxi turn is `auto` (round 124): the track pass's
+   * membership, kept exact so a sweep never scans the whole table and
+   * costs nothing when the set is empty */
+  private taxiAuto: Set<number> = new Set();
 
   /** 12c styled records: haystack-radius and the manual-endpoint spec */
   private hayRadius: Float32Array;
@@ -512,6 +535,12 @@ export class CurveIndex {
     this.hayRadius[slot] = haystackRadius;
     this.endpt[slot] = nextEndpt;
 
+    if (isTaxiAuto(style, nextExtra)) {
+      this.taxiAuto.add(slot);
+    } else {
+      this.taxiAuto.delete(slot);
+    }
+
     if (style === CURVE_STYLE_BEZIER && this.pairs == null) {
       this.buildPairIndex();
     }
@@ -573,6 +602,11 @@ export class CurveIndex {
       haystackRadius: this.hayRadius[slot],
       endpoints: this.endpt[slot] ?? null,
     };
+  }
+
+  /** The slots whose taxi turn is `auto` (round 124) — read-only. */
+  taxiAutoSlots(): ReadonlySet<number> {
+    return this.taxiAuto;
   }
 
   // -- topology maintenance (the store's mutation hooks) --
@@ -732,6 +766,8 @@ export class CurveIndex {
       this.hayRadius[slot] = 0;
       this.endpt[slot] = null;
     }
+
+    this.taxiAuto.delete(slot);
 
     this.pendingSlots.delete(slot);
 
@@ -946,6 +982,10 @@ export class CurveIndex {
         this.hayRadius[d] = this.hayRadius[s];
         this.extra[d] = this.extra[s];
         this.endpt[d] = this.endpt[s];
+
+        if (this.taxiAuto.delete(s)) {
+          this.taxiAuto.add(d);
+        }
 
         this.style[s] = CURVE_STYLE_STRAIGHT;
         this.step[s] = 0;
@@ -1318,7 +1358,8 @@ export class CurveIndex {
       [
         ex.taxiDir,
         ex.taxiTurn,
-        ex.taxiTurnPercent ? 1 : 0,
+        // 0 px, 1 percent, 2 auto (124: the turn is the header's n lane)
+        ex.taxiTurnAuto ? 2 : ex.taxiTurnPercent ? 1 : 0,
         ex.taxiTurnMinDist,
         ex.edgeDistances,
         round ? 1 : 0,

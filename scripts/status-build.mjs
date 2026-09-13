@@ -46,6 +46,8 @@ import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
 import { planBenchmarks, BENCH_CSS } from './status/bench-pages.mjs';
 import { indexPage, INDEX_CSS } from './status/index-page.mjs';
+import { readInventory, checkCoverage } from './status/feature-inventory.mjs';
+import { featuresPage, FEATURES_CSS } from './status/features-page.mjs';
 import { assemble as assemblePlan } from './plan-record.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -193,6 +195,35 @@ export function buildPlan({
     sha,
     pageFor: (href) => DOC_PAGE_BY_FILE.get(href) ?? null,
   };
+
+  // A malformed inventory must stop publication, not become an unavailable
+  // card beside a seemingly healthy site. The CSV is the reviewed source.
+  const featureCsv = readFileSync(join(root, 'docs/features.csv'), 'utf8');
+  const features = readInventory(root, featureCsv);
+  checkCoverage(features, generate(), root);
+  ops.push(write('features.csv', featureCsv));
+  ops.push(
+    write(
+      'features.html',
+      page({
+        title: 'Feature status — cytoscape.js v4',
+        body: featuresPage(features, mdCtx),
+        active: 'features',
+        state,
+        wide: true,
+      }).replace('</style>', `${FEATURES_CSS}</style>`),
+    ),
+  );
+  parts.push({
+    id: 'features',
+    title: 'Feature status',
+    href: '/features.html',
+    blurb:
+      'Every public API and style property, with v3 gaps, replacements and a CSV download.',
+    available: true,
+    reason: null,
+    badges: [`${features.length} features`],
+  });
 
   // -- the documents --
   if (!skip.has('docs')) {

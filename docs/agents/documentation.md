@@ -6,6 +6,20 @@ comment that is *present and wrong*.
 
 ## Where v4's documentation lives
 
+- **The feature inventory is `docs/features.csv`.** Edit it in the same
+  commit as an API, style property, capability or scope decision changes.
+  `npm run status` validates it and publishes the Features page and an
+  identical CSV download. Keep comments concise, name replacements and
+  limitations, and cite a repository source in `Reference` (optionally
+  `:line`). The seven status definitions live on that page. Implemented
+  means prototype support, not release readiness. API rows use `eles.`
+  for all collection/element/node/edge prefixes, one row per member or
+  alias, with overloads together. Coverage is checked against the generated
+  v4 API, style read registries and frozen v3 API/property definitions;
+  capabilities and recorded plans still require a manual review. Source
+  presence checks do not establish behavioural parity. Do not regenerate
+  statuses from names or overwrite reviewed comments automatically.
+
 - v4 has no documentation site yet (round 46 builds it); **v4 documents itself in JSDoc on the source** — see the rest of this file.  v3's site is still readable at `v3/documentation/`: grep `v3/documentation/docmaker.json` for the v3 API in JSON form (search e.g. "cy.on"), and `v3/documentation/md/**/*.md` for its prose.  Useful for parity questions — *what did v3 do here?* — but remember it describes v3, and v4 deviates deliberately in many places.
 
 - **`EXECUTIVE_SUMMARY.md` is derived from the record and is rewritten when a round closes** (round 46.5).  The round files under `plan/rounds/` stay the source of truth, and since round 108.8 the summary is the record's *only* cross-round narrative — `PLAN.md` carried a second one that silently stopped at round 64, and it was removed rather than revived, so this rewrite is what keeps the history current.  The summary is the five-minute version for a reader who will never open it, organised by **calendar week** and written in outcomes and decisions rather than rounds and file names.  Three rules keep it honest: **restate rather than append** (later rounds routinely change what an earlier decision meant, so earlier weeks need correcting too — appending a week is not a rewrite); **re-measure every figure** rather than copying it forward, since test tallies, member counts and benchmark numbers go stale first; and **an item leaves its open-questions table when the decision is made, not when the work is scheduled**.  Its own "Maintaining this file" section carries the full rule, and `PLAN.md`'s process list carries the trigger.
@@ -18,5 +32,4 @@ comment that is *present and wrong*.
 - **A plan's statements about the code are claims to re-measure, not facts to build on.** This repo's records are unusually good, which is exactly why their stale parts are dangerous: a sentence written when it was true reads identically to one that still is. Three rounds in a row tripped on this. Round 37.3 was told `@param` was at 229/229 and found the package entry point outside every audit; round 37.4 was told namespaced listeners "never fire" and found v4 running v3's namespace semantics in full; round 41 was told v4's "one remaining shared-module dependency" was the emitter and found five more after severing it. The cost of checking is a grep; the cost of not checking is a round built on a premise that was never true. Prefer a spec that *measures* the claim (`test/modules/import-graph.mjs` is one) over a sentence asserting it. **"Ported verbatim" is one of these claims**, and the cheapest to check: round 43.4 said `debug/`'s compound fixture was v3's graph verbatim, and it had a sorted node list, four different edges and no `cols: 3` — a `diff` of the two files answered it in seconds, and the difference was the whole reason the fixture was unreadable.
 - **An audit's scope is part of its claim; check what it enumerates before quoting its 100%.** Round 32 reported `@param` at 221/221 and gated it, but `auditParamTags` descended class bodies only, while the script's own header defines a public member as a class member *plus every top-level exported function* — so `wire.mts` and `columnar.mts`, whose entire public surface is exported functions, sat outside a gate that read as complete, and two of them had no `@param` at all. Round 36 widened it to 229/229 — and round 37.3 found the *same failure a third time*: the widened pattern matched `export function` and `export const f =` but not `export default function`, so `src/index.mts` — listed in `PUBLIC_API` since round 26, and whose entire surface is the package entry point `export default function cytoscape` — contributed **zero** members to every audit while reading as audited and complete, with all three of its tags in fact missing (231/231 now). The same question applies to the remaining audits: a green gate answers "nothing regressed among the things I look at", so read the enumerator, not the percentage.
 - The package ships declarations built by `npm run build:types` (`rolldown.dts.config.mjs` → `scripts/build-dts.mjs` → `dist/cytoscape.d.ts`), which carry those JSDoc comments to consumers. Regenerate and commit that file when the v4 public surface changes; `npm run test:types:surface` audits its shape.
-
 

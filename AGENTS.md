@@ -144,7 +144,8 @@ builds itself.
 5. For renderer, gesture or grab-state changes, verify behaviour in
    `debug/` — see the flow above.
 6. Keep docs in sync with API or behaviour changes: for v4 that means the
-   JSDoc on the source and `src/README.md`.  v3's markdown under
+   JSDoc on the source, `src/README.md` and `docs/features.csv` (feature
+   status, limitations and replacements).  v3's markdown under
    `v3/documentation/md/` is only for v3 changes.
 7. Avoid introducing new build tools, frameworks or repo-wide conventions
    unless the task explicitly requires it.

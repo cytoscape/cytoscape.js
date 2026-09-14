@@ -150,13 +150,22 @@ requirement to finish every feature in the inventory.
   bundling contracts. Decide spatial-query/lasso scope and resolve picking and
   gesture ownership where it affects public events. Validate that these
   features compose with semantic zoom and aggregation at application scale.
+- **Rendering output and compatibility:** working rendering in environments
+  without WebGPU and SVG vector export are minimum requirements for the first
+  alpha. WebGL is the likely fallback; settle the backend and supported
+  environment matrix, automatic capability selection, shared rendering
+  semantics and any explicit limits. Validate representative graph, style and
+  label fixtures through both rendering paths and SVG export. These require
+  working output before alpha, not only a feasibility decision; current
+  WebGPU-only rendering and raster export do not meet this minimum.
 - **Annotations, draw layers and export:** define annotation identity, storage,
   styling, picking and draw order, plus the rendering information shared by
   raster, SVG and headless export. Decide PDF and additional-layer scope so
   exporters or overlays do not later force a renderer or scene-model redesign.
 - **Platform, text and accessibility foundations:** decide supported browser
-  and headless capabilities, the WebGL2 fallback go/no-go, and worker image/font
-  limitations. Settle font/shaping dependencies and international-text scope,
+  and headless capabilities beyond the rendering minimum above, and worker
+  image/font limitations. Settle font/shaping dependencies and international-text
+  scope,
   along with keyboard focus, accessible graph navigation and reduced-motion
   hooks that affect rendering and interaction architecture.
 - **Core versus extension integration:** resolve which outstanding extension

@@ -42,6 +42,14 @@ tidy trees, specialized circular optimization and another force solver still
 need demonstrated demand. A task-oriented guide is a better next proposal than
 adding algorithms merely to lengthen the list.
 
+Layout quality audit and iteration remain **Partial / WIP**, as clarified by
+the maintainer. Existing quality tests and targeted improvements provide a
+starting point; completing the portfolio audit does not complete this work.
+Review representative application graphs for overlaps, crossings, spacing,
+hierarchy readability, component packing and stability. Iterate on algorithms
+and defaults using visual review and repeatable fixtures, measuring runtime
+alongside quality so improvements respect the performance priority.
+
 Measure simplification by porting real tasks: dependencies removed, custom glue
 eliminated, setup and diagnostics improved, and migration effort incurred.
 Declarative styles and queries can simplify a running app while still requiring

@@ -35,6 +35,7 @@ const EXPECTED_EXPORTS = new Set([
   'CaseMapper',
   'CircleLayoutOptions',
   'Collection',
+  'ComponentPackingOptions', // round 123.1
   'ColumnarEdges',
   'ColumnarElements',
   'ColumnarNodes',
@@ -64,12 +65,14 @@ const EXPECTED_EXPORTS = new Set([
   'FlowLayoutOptions',
   'GridLayoutOptions',
   'LayoutBaseOptions',
+  'LayoutComponentInfo', // round 123.1
   'LayoutOptions',
   'LayoutScoreMapping', // round 85.3
   'LayoutSortMapping', // round 85.3
   'Mapper',
   'MapperSpec',
   'PackedIds',
+  'PackLayoutOptions', // round 123.1
   'PresetLayoutOptions',
   'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',

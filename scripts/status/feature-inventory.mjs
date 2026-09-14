@@ -14,6 +14,8 @@ export const STATUSES = {
   Partial: 'Available with the limitations described in Comments.',
   Planned:
     'Explicitly scheduled or scoped in the development record; not implemented.',
+  Proposed:
+    'Suggested by the feature-direction review; not an approved scope or commitment.',
   'Not implemented':
     'Absent from the public v4 surface; no implementation commitment recorded.',
   Replaced: 'Use the v4 alternative named in Comments.',

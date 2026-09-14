@@ -73,6 +73,7 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   };
   return `<h1>V4 feature status</h1>
   <p class="lede">Public APIs, style properties, layouts and capabilities, including v3 gaps and replacements. <strong>V4 is unreleased.</strong> Implemented means available in this prototype, not release-ready.</p>
+  <p>Priority areas appear first: performance, developer experience, Cytoscape Web v2, application workflows and core capabilities. <a href="direction.html">Read the feature-direction review</a> for the reasoning. Proposed rows are suggestions, not roadmap commitments.</p>
   <p>API rows use <code>eles.</code> for collections, single elements, nodes and edges. Aliases have separate rows; overloads share a row. Comments describe v4 behaviour, not a promise of complete v3 compatibility.</p>
   <p><a href="features.csv" download="cytoscape-v4-features.csv">Download CSV</a> — the complete inventory, including comments and source references. Maintained with feature changes; the build stamp identifies this snapshot.</p>
   <details class="feature-legend"><summary>Status definitions</summary><dl>${Object.entries(

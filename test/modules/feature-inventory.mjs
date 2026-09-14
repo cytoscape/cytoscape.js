@@ -119,6 +119,7 @@ describe('feature inventory', () => {
   it('does not let a removed API stay implemented or a new implementation stay planned', () => {
     for (const [name, status] of [
       ['cy.add', 'Planned'],
+      ['cy.add', 'Proposed'],
       ['eles.clone', 'Implemented'],
     ]) {
       const changed = rows.map((r) =>

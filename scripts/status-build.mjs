@@ -65,6 +65,13 @@ export const DOCUMENTS = [
       'Where v4 stands — the five-minute version of the development record.',
   },
   {
+    file: 'docs/feature-direction.md',
+    to: 'direction.html',
+    nav: 'features',
+    title: 'Feature direction',
+    blurb: 'Priorities, evidence and proposals beyond the v3 baseline.',
+  },
+  {
     file: 'PLAN.md',
     to: 'plan.html',
     nav: 'plan',

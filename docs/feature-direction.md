@@ -95,6 +95,82 @@ does not unexpectedly rearrange it. Existing compound support and minimum label
 size do not establish this capability; both rows remain Proposed pending scope
 and implementation design.
 
+## Unmet features for alpha
+
+The first alpha should be a best effort to settle foreseen public API and
+architectural decisions. The following high-level gaps need defined contracts
+and scope decisions before that release, with working implementations or
+representative prototypes wherever feasibility could materially change the
+design. A deliberate exclusion or deferral must explain how later work can fit
+without an expected breaking redesign. Alpha may still uncover unforeseen
+changes; this is a readiness gate, not a guarantee of API immutability or a
+requirement to finish every feature in the inventory.
+
+- **Performance architecture and execution model:** settle CPU/GPU/worker
+  ownership, synchronization, asynchronous completion, cancellation and error
+  semantics across algorithms, layouts and worker-hosted rendering. Use the
+  copy census and representative application workloads to validate transfer
+  costs, memory limits and graceful failure before these contracts become
+  consumer dependencies.
+- **Graph updates, table access and state ownership:** define progressive
+  ingestion, ID-keyed reconciliation, column views and filters, including
+  batching, event ordering and visibility of partial results. Settle how viewer
+  cloning isolates or shares graph and view state, and whether undo requires
+  transaction hooks in the core before those boundaries solidify.
+- **Public API, types and data contracts:** resolve remaining compatibility and
+  replacement decisions; define application-data typing and element, style and
+  layout schemas. Bring declarations, reference documentation and migration
+  guidance into agreement, including errors and asynchronous return values.
+  Existing generated declarations alone do not settle the outstanding design.
+- **Persistence and exchange boundaries:** define serialization versioning,
+  ownership on load, round-trip guarantees and transient-state omissions for
+  graphs, styles, positions and future collapse/view state. Preserve the
+  recorded CX2 extension boundary while specifying what adapters can rely on.
+- **Style portability and node charts:** settle the desktop/web portable style
+  contract, chart data and colour-scale model, signed bars and heat-chart
+  semantics, and slice/storage limits. Validate representative charts and
+  unsupported-style diagnostics before fixing the public style schema.
+- **Cluster regions and compound collapse:** define membership, convex versus
+  organic-region scope, compound proxies, aggregate-edge identity and data,
+  selection, events and persistence. Decide overlapping-membership scope and
+  prove the chosen geometry/data model at useful scale; avoid committing an
+  API that requires a new graph model to support the intended app workflows.
+- **Semantic zoom, including compounds:** decide the core detail-rule contract
+  and how zoom reveals nested children or returns to parent summaries. Specify
+  its relationship to explicit collapse, edge aggregation, picking, selection,
+  layout and export, with stable thresholds and preserved positions. Resolve
+  the architecture before treating it as later visual polish.
+- **Layout quality audit and iteration:** complete enough representative app
+  review to settle layout choice, constraints, options, defaults, packing and
+  lifecycle contracts. Exercise quality and runtime together; correct findings
+  that require API or architectural changes before alpha. Further quality
+  tuning can continue once those foundations are credible.
+- **Dense-network rendering and interaction:** settle label priority and
+  decluttering, transient emphasis, parallel evidence-edge handling and edge
+  bundling contracts. Decide spatial-query/lasso scope and resolve picking and
+  gesture ownership where it affects public events. Validate that these
+  features compose with semantic zoom and aggregation at application scale.
+- **Annotations, draw layers and export:** define annotation identity, storage,
+  styling, picking and draw order, plus the rendering information shared by
+  raster, SVG and headless export. Decide PDF and additional-layer scope so
+  exporters or overlays do not later force a renderer or scene-model redesign.
+- **Platform, text and accessibility foundations:** decide supported browser
+  and headless capabilities, the WebGL2 fallback go/no-go, and worker image/font
+  limitations. Settle font/shaping dependencies and international-text scope,
+  along with keyboard focus, accessible graph navigation and reduced-motion
+  hooks that affect rendering and interaction architecture.
+- **Core versus extension integration:** resolve which outstanding extension
+  points are public and which remain excluded; only layouts currently have a
+  public extension contract. Validate the chosen boundary with representative
+  app adapters and lifecycle integrations, including cleanup and batching.
+  Extension tooling and framework wrappers should exercise a defined contract.
+
+These gates concern the remaining design work, not a claim that each foundation
+is absent. The inventory retains its current Implemented, Partial, Planned,
+Proposed and Undecided distinctions. Visual polish, further optimization,
+codemods, additional examples and tooling can continue during alpha when they
+do not conceal a foreseeable API or architectural change.
+
 ## Maintaining the review
 
 Each inventory row cites its implementation, scoped plan or this proposal

@@ -70,6 +70,23 @@ the performance budget holds. The inventory also preserves accessibility,
 international labels and lifecycle reliability as cross-cutting gaps: the five
 priorities do not make these disappear.
 
+## Semantic zoom
+
+Proposed semantic zoom changes the information shown as the viewer zooms:
+summaries at overview scale, individual nodes and edges at intermediate scales,
+and labels, charts and evidence details up close. Declarative detail thresholds
+should reduce application-owned zoom handlers while keeping transition cost and
+interaction latency within measured budgets.
+
+Compound semantic zoom is an explicit sub-feature: zoom in to reveal children,
+progressively through nested compounds, and zoom out to return to parent
+summaries. Coordinate it with the planned collapse proxies, specifying edge
+aggregation and selection preservation. Use stable reveal/hide thresholds to
+avoid flicker near a boundary, and preserve positions so exploring a hierarchy
+does not unexpectedly rearrange it. Existing compound support and minimum label
+size do not establish this capability; both rows remain Proposed pending scope
+and implementation design.
+
 ## Maintaining the review
 
 Each inventory row cites its implementation, scoped plan or this proposal

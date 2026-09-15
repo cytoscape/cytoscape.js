@@ -16,6 +16,10 @@ import cytoscape from '../src/index.mjs';
 const SpiralLayout = createRequire(import.meta.url)(
   '../debug/spiral-layout.js',
 );
+// Round 125: the airiness probe the page's readout uses — the nearest-
+// box gap per node in node sizes — so "too airy" is a column here as
+// overlap is, and the same number on the page and in the record.
+const airiness = createRequire(import.meta.url)('../debug/airiness.js');
 
 // -- probes --
 
@@ -1016,5 +1020,59 @@ describe('gpu/layout: the quality suite (round 114.8)', function () {
         }
       });
     }
+  });
+  describe('not too airy (round 125)', function () {
+    // The opposite failure to overlap, which the first sitting of the
+    // layout quality audit found on every layout it opened: a picture
+    // whose nodes sit several node-sizes from their nearest neighbour.
+    // The probe is debug/airiness.js's nearest-box gap, read in node
+    // sizes; these rows pin each layout's default picture on the small
+    // fixtures at a ceiling, so a default that drifts airier fails
+    // here rather than in a sitting.  The ceilings are the measured
+    // values at the round's start rounded up — a bound, not a target;
+    // the sittings decide what the defaults should be.
+
+    const ratioOf = (cy, labels = false) =>
+      airiness.airiness(cy, { labels }).ratio;
+
+    const CEILING = {
+      grid: 2.5,
+      circle: 3.0,
+      concentric: 3.0,
+      breadthfirst: 3.5,
+      radial: 3.0,
+      force: 3.0,
+      flow: 3.0,
+      spiral: 3.0,
+    };
+
+    for (const name of Object.keys(CEILING)) {
+      for (const fixture of ['fan', 'tree']) {
+        it(`${name} on ${fixture}: the median nearest gap is under ${CEILING[name]} node sizes`, async function () {
+          const cy = mk(FIXTURES[fixture]());
+
+          await run(cy, opts(name, cy, { fit: false }));
+
+          const ratio = ratioOf(cy);
+
+          expect(Number.isFinite(ratio), 'the probe read nothing').to.equal(
+            true,
+          );
+          expect(ratio).to.be.at.most(CEILING[name]);
+        });
+      }
+    }
+
+    it('control: spacingFactor 3 reads at least 2x the ratio at 1', async function () {
+      for (const name of Object.keys(CEILING)) {
+        const one = mk(FIXTURES.fan());
+        const three = mk(FIXTURES.fan());
+
+        await run(one, opts(name, one, { fit: false, spacingFactor: 1 }));
+        await run(three, opts(name, three, { fit: false, spacingFactor: 3 }));
+
+        expect(ratioOf(three), name).to.be.greaterThan(2 * ratioOf(one));
+      }
+    });
   });
 });

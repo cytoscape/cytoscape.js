@@ -155,6 +155,7 @@
     "benchmark:renderer": "node --import tsx benchmark/render-bench.mjs",
     "benchmark:algorithms-gpu": "node --import tsx benchmark/algorithms-gpu-bench.mjs",
     "benchmark:layout-quality": "node benchmark/layout-quality.mjs",
+    "benchmark:layout-audit": "node --import tsx benchmark/layout-audit.mjs",
     "benchmark:publish": "node scripts/benchmark-publish.mjs",
     "machine": "node scripts/machine-info.mjs",
     "gpu": "node scripts/gpu-info.mjs",

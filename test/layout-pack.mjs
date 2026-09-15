@@ -575,6 +575,91 @@ describe('gpu/layout: component packing (round 123, item 58)', function () {
       });
     });
 
+    // Round 125.9: the shelf's rows waste the room under a short
+    // component beside a tall one — the maintainer's finding on em-web,
+    // where the 78-node component's column under the 187-node disc's
+    // row was two thirds empty.  A tall chain, a wide pair and two
+    // singletons: the pair stands beside the chain, and the singletons
+    // stack under the pair rather than opening columns or a row.
+    const mixedSizes = () => {
+      const els = [
+        node('t0'),
+        node('t1'),
+        node('t2'),
+        node('t3'),
+        edge('t0', 't1'),
+        edge('t1', 't2'),
+        edge('t2', 't3'),
+        node('w0'),
+        node('w1'),
+        edge('w0', 'w1'),
+        node('s0'),
+        node('s1'),
+      ];
+      const cy = mk(els);
+
+      cy.$id('t0').position({ x: 0, y: 0 });
+      cy.$id('t1').position({ x: 0, y: 100 });
+      cy.$id('t2').position({ x: 0, y: 200 });
+      cy.$id('t3').position({ x: 0, y: 300 });
+      cy.$id('w0').position({ x: 500, y: 0 });
+      cy.$id('w1').position({ x: 560, y: 0 });
+      cy.$id('s0').position({ x: 900, y: 0 });
+      cy.$id('s1').position({ x: 900, y: 900 });
+
+      return cy;
+    };
+
+    it('fills the room under a short component beside a tall one (125.9)', async function () {
+      const cy = mixedSizes();
+      const tallBefore = boxOf(cy, 't');
+
+      await run(cy, { name: 'pack', fit: false });
+
+      boxesDisjoint(cy, ['t', 'w', 's0', 's1']);
+
+      const tall = boxOf(cy, 't');
+      const wide = boxOf(cy, 'w');
+      const s0 = boxOf(cy, 's0');
+      const s1 = boxOf(cy, 's1');
+      const all = cy.nodes().boundingBox();
+
+      // the pair beside the chain, on the row's top
+      expect(wide.y1).to.be.closeTo(tall.y1, 0.01);
+      // the singletons in the pair's column, one under the other
+      expect(s0.x1).to.be.closeTo(wide.x1, 0.01);
+      expect(s1.x1).to.be.closeTo(wide.x1, 0.01);
+      expect(s0.y1).to.be.greaterThan(wide.y2);
+      expect(s1.y1).to.be.greaterThan(s0.y2);
+      // so the field is exactly as tall as the chain
+      expect(all.h).to.be.closeTo(tall.h, 0.01);
+      expect(tall.h).to.be.closeTo(tallBefore.h, 0.01);
+    });
+
+    it('control: under a componentOrder the rows are the old rows — no stacking, a taller field', async function () {
+      const cy = mixedSizes();
+
+      await run(cy, {
+        name: 'pack',
+        fit: false,
+        componentOrder: (a, b) => b.size - a.size,
+      });
+
+      boxesDisjoint(cy, ['t', 'w', 's0', 's1']);
+
+      const tall = boxOf(cy, 't');
+      const wide = boxOf(cy, 'w');
+      const s0 = boxOf(cy, 's0');
+      const all = cy.nodes().boundingBox();
+
+      // the first singleton continues the row past the pair; the row
+      // has no room for the second, which wraps — the field is taller
+      // than the chain
+      expect(s0.y1).to.be.closeTo(wide.y1, 0.01);
+      expect(s0.x1).to.be.greaterThan(wide.x2);
+      expect(all.h).to.be.greaterThan(tall.h + 1);
+    });
+
     it('takes the shared grouping and order', async function () {
       const cy = scattered();
 

@@ -108,6 +108,14 @@ export interface PackBox {
   y: number;
 }
 
+/** An open column of a shelf row (125.9): where it starts, how wide
+ * its first box was, and how far down it is filled. */
+interface ShelfColumn {
+  x: number;
+  w: number;
+  filled: number;
+}
+
 /**
  * Shelf-pack boxes (area-descending, id ties) into rows; mutates each
  * box's (x, y) to its placed top-left.  The v3 `separateComponents`
@@ -116,14 +124,37 @@ export interface PackBox {
  * the area order breaks its ties, so a comparator that says nothing
  * is the default order.
  *
+ * **A row's slack is filled by stacking** (125.9).  A row is as tall
+ * as its tallest box, and every shorter box in it left a column of
+ * empty space beneath — on em-web the 78-node component's column
+ * under the 187-node disc's row was two thirds empty, the waste the
+ * maintainer sees in EnrichmentMap's own packer.  So a box that is
+ * shorter than the room left under an earlier box of the same row
+ * goes there, under the leftmost such column, rather than opening a
+ * new column; a column is as wide as the box that opened it.  Boxes
+ * of like size never stack (the room is never a box plus a spacing),
+ * so the rows of singletons and small shapes read as they did.
+ *
+ * Stacking is off when a comparator is given (`stack` defaults to
+ * "no comparator"): a caller's order is read along rows, left to
+ * right — EnrichmentMap's singleton rows by score (121.4) — and a
+ * stacked box would read down a column instead.  With `stack` forced
+ * on under a comparator the order still holds, read as rows top to
+ * bottom, columns left to right within a row, top to bottom within a
+ * column: a box placed later is never above or left of an earlier
+ * one in its column, and never in a row above.
+ *
  * @param boxes — the boxes to place; each `(x, y)` is written in place
- * @param spacing — the gap between boxes, and between rows
+ * @param spacing — the gap between boxes, between columns and rows
  * @param compare — an order over box ids that comes before the area's
+ * @param stack — fill a row's slack by stacking (default: only when
+ *   there is no comparator)
  */
 export const shelfPack = (
   boxes: PackBox[],
   spacing: number,
   compare: ((a: number, b: number) => number) | null = null,
+  stack: boolean = compare == null,
 ): void => {
   const order = [...boxes].sort(
     (a, b) =>
@@ -145,18 +176,38 @@ export const shelfPack = (
   let x = 0;
   let y = 0;
   let rowH = 0;
+  let columns: ShelfColumn[] = [];
 
   for (const box of order) {
+    // the leftmost column of this row with the room under it
+    let stacked = false;
+
+    for (const column of stack ? columns : []) {
+      if (box.w <= column.w && column.filled + spacing + box.h <= rowH) {
+        box.x = column.x;
+        box.y = y + column.filled + spacing;
+        column.filled += spacing + box.h;
+        stacked = true;
+        break;
+      }
+    }
+
+    if (stacked) {
+      continue;
+    }
+
     if (x > 0 && x + box.w > rowW) {
       y += rowH + spacing;
       x = 0;
       rowH = 0;
+      columns = [];
     }
 
     box.x = x;
     box.y = y;
     x += box.w + spacing;
     rowH = Math.max(rowH, box.h);
+    columns.push({ x: box.x, w: box.w, filled: box.h });
   }
 };
 
@@ -306,7 +357,10 @@ export interface PackGrouping {
  * components are shelf-packed on their own and the group boxes stand in
  * a row, left to right by group index, top-aligned, `groupSpacing`
  * apart; `grouping.compare` orders the components within a packing
- * ahead of the area order.
+ * ahead of the area order.  Without a comparator the shelf fills a
+ * row's slack by stacking shorter components under earlier ones
+ * (125.9, `shelfPack`); with one the rows are read left to right and
+ * nothing stacks.
  *
  * @param n — sim node count
  * @param compOf — per-node component id

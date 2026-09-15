@@ -1145,6 +1145,37 @@ grid; a packed breadthfirst tree is spaced by its overlap need alone
 be drawn.  Grouping and order functions throw at start when they are
 not functions, as on force.
 
+**The shelf fills a row's slack by stacking** (round 125.9).  The
+shelf packer places boxes largest first into rows that wrap at about
+the square root of the total area, and a row is as tall as its
+tallest box — so every shorter box in it left a column of empty space
+beneath, and the waste compounded when component sizes were far
+apart: on em-web under `radial` with `packComponents`, the 78-node
+component's column beside the 187-node disc was two thirds empty
+(the packed field held 66 % component boxes by area), which is the
+limitation EnrichmentMap's own packer has.  Now a box that fits the
+room left under an earlier box of the same row goes there, under the
+leftmost such column, rather than opening a new one; a column is as
+wide as the box that opened it, and boxes of like size never stack
+(the room under one is never a box plus a spacing), so the rows of
+singletons and small shapes read as they did.  Measured on em-web:
+`radial` + `packComponents` 66 % → 83 %, `pack` 58 % → 67 %, `grid`
++ `packComponents` 48 % → 51 %; npm-deps under `radial` 71 % → 85 %;
+em-desktop's force settle 62 % → 75 %; force on em-web and flow on
+npm-deps unchanged (the rows there had no column with the room).  A
+skyline packer measured higher on two rows (em-web `radial` 87 %,
+force 67 %) and lower on two (em-desktop 75 %, npm-deps 76 %), and
+dissolves the rows that the singleton block, the group rows and the
+comparator's reading order are built on, so the shelf stayed.
+Stacking is **off under a `componentOrder`**: a caller's order is
+read along rows, left to right (EnrichmentMap's singleton rows by
+score, 121.4), and a stacked box would read down a column instead;
+the reading order with stacking is rows top to bottom, columns left
+to right within a row, top to bottom within a column.  The re-pack
+costs the same (em-web `pack` 37 ms against 30 ms with rows alone,
+em-desktop 44 ms either way), and a one-node edit to a small
+component moves nothing else.
+
 **`cy.layout({ name: 'pack' })`** is the re-pack on its own: the
 components at their current positions, shelf-packed by their body
 boxes under the same four options, the largest component's centre

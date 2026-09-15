@@ -388,6 +388,12 @@ floor).  No default changed.
    band is worth a sub-round.
 3. `condense` as the default is the third call; the app graphs are
    unaffected either way.
+4. Raised by 125.9 while packing em-web: radial draws the 187-node
+   component as one 3,883 × 4,020 px ring — the rim finding (2) at
+   its worst, since a dense component has one root and every other
+   node on ring 1 or 2.  A component that is not a tree is not
+   radial's picture; whether the layout should say so (fall back to
+   `concentric`, or warn) is the same call as 2.
 
 **Maintainer review: pending.**  Open the page on reactome, Radial,
 Avoid overlap on; then set `roots` in the console

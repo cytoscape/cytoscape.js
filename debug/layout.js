@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, layoutConfig, airiness, SpiralLayout */
+/* global $, layoutConfig, layoutOptionsPanel, airiness, SpiralLayout */
 
 // The layout section (round 43.5), carried over from v3/debug/layout.js —
 // including its layoutstart/layoutstop timing readout, which is the cheapest
@@ -26,6 +26,11 @@
 // spacing by eye and reads the factor off; and an airiness readout —
 // the nearest-box and edge gaps of debug/airiness.js for the positions
 // as they stand, refreshed at every layoutstop and every slider move.
+// Round 125.11 added the options panel: every option the selected
+// layout takes that the boxes do not already spell, generated from
+// debug/layout-options.js, merged over the boxes' options on Apply
+// (only the fields that differ from the library's default are sent),
+// and the `cy.layout({...})` call the panel spells, as a readout.
 
 (function () {
   // -- the live spacing slider and the airiness readout (125.10) --
@@ -140,6 +145,64 @@
   spacing.addEventListener('input', syncSpacing);
   syncSpacing();
 
+  // -- the options panel (125.11) --
+
+  const optionsContainer = $('#layout-options');
+  const callReadout = $('#layout-call');
+  let panel = null;
+
+  /** the options object Apply will run: the boxes' spelling, the
+   * panel's fields over it */
+  const currentOptions = () => {
+    const name = select.value;
+
+    if (name === '') {
+      return null;
+    }
+
+    const base = layoutConfig.layoutOptions(
+      name,
+      {
+        animate: $('#layout-animate-check').checked,
+        live: liveCheck.checked,
+        infinite: layoutConfig.isForce(name) && infiniteCheck.checked,
+        seed: $('#seed-input').value,
+        positions: window.initialPositions,
+        avoidOverlap: avoidOverlapCheck.checked,
+        overlapMode: overlapMode.value,
+        overlapLabels: $('#layout-overlap-labels-check').checked,
+        spacing: $('#spacing-input').value,
+        tidy: $('#layout-tidy-check').checked,
+        pack: $('#layout-pack-check').checked,
+        signKey: (window.currentNetwork || {}).signKey,
+      },
+      SpiralLayout,
+    );
+
+    try {
+      return Object.assign(base, panel != null ? panel.read() : {});
+    } catch (err) {
+      callReadout.textContent = String(err.message || err);
+
+      return null;
+    }
+  };
+
+  const syncCall = () => {
+    const options = currentOptions();
+
+    if (options != null) {
+      callReadout.textContent = layoutOptionsPanel.describe(options);
+    }
+  };
+
+  const renderPanel = () => {
+    panel = layoutOptionsPanel.render(optionsContainer, select.value, syncCall);
+    syncCall();
+  };
+
+  window.syncLayoutCall = syncCall;
+
   // Live and Infinite are force's alone: the other layouts have no
   // stream to show; the overlap mechanism select is force's too, read
   // only under Avoid overlap, and pinned to `sim` under Infinite
@@ -160,6 +223,26 @@
   infiniteCheck.addEventListener('change', syncForce);
   avoidOverlapCheck.addEventListener('change', syncForce);
   syncForce();
+
+  select.addEventListener('change', renderPanel);
+  renderPanel();
+
+  // every box the call reads refreshes the readout
+  for (const id of [
+    '#layout-animate-check',
+    '#layout-live-check',
+    '#layout-infinite-check',
+    '#layout-avoid-overlap-check',
+    '#layout-overlap-labels-check',
+    '#layout-pack-check',
+    '#layout-tidy-check',
+    '#layout-overlap-mode',
+    '#seed-input',
+    '#spacing-input',
+  ]) {
+    $(id).addEventListener('change', syncCall);
+    $(id).addEventListener('input', syncCall);
+  }
 
   const syncRunning = () => {
     stopButton.disabled = running == null;
@@ -232,27 +315,15 @@
     }
 
     const infinite = layoutConfig.isForce(name) && infiniteCheck.checked;
-    const layout = cy.layout(
-      layoutConfig.layoutOptions(
-        name,
-        {
-          animate: $('#layout-animate-check').checked,
-          live: liveCheck.checked,
-          infinite,
-          seed: $('#seed-input').value,
-          positions: window.initialPositions,
-          avoidOverlap: avoidOverlapCheck.checked,
-          overlapMode: overlapMode.value,
-          overlapLabels: $('#layout-overlap-labels-check').checked,
-          spacing: $('#spacing-input').value,
-          tidy: $('#layout-tidy-check').checked,
-          pack: $('#layout-pack-check').checked,
-          // the EM entry (121.1) groups by the network's signed field
-          signKey: (window.currentNetwork || {}).signKey,
-        },
-        SpiralLayout,
-      ),
-    );
+    // the boxes' spelling with the panel's fields over it (125.11); a
+    // field that does not parse leaves its message in the readout
+    const options = currentOptions();
+
+    if (options == null) {
+      return;
+    }
+
+    const layout = cy.layout(options);
 
     applyEdgeTypes(cy, name);
     console.time('layout ' + name);

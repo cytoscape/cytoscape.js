@@ -291,6 +291,11 @@ var layoutConfig = (function () {
       options.positions = ui.positions || {};
     }
 
+    // 125.8's sitting: the seed box drives random as it drives force
+    if (name === 'random' && ui.seed != null && ui.seed !== '') {
+      options.seed = parseInt(ui.seed, 10);
+    }
+
     return options;
   }
 

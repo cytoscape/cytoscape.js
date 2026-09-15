@@ -1368,6 +1368,55 @@ source-coloured edges.
 
 **Maintainer sitting, 2026-09-15 (first pass, from the desk).**  Findings, not an accept: the page should expose more — perhaps all — of each layout's options, flow's direction first, with an option shown only when a compatible layout is selected; in general the debug UI should show more of the option surface.  Taken as **sub-round 125.11** below.
 
+### 125.11 — every layout option on the page
+
+Raised by the first sitting pass; done the same day, since the page
+sittings for 125.2 and 125.9 wait on it.
+
+**What the page has now.**  An **Options** panel under the layout
+boxes, generated for the selected layout from a table in
+`debug/layout-options.js`: the layout's own options first (flow's
+`direction`, `nodeSep`, `rankSep`, `edgeSep`, `layering`,
+`thoroughness`, `minLength`, `edgeWeight`, `acyclic`,
+`cycleRemoval`, `rankConstraints`; the ring layouts' angles, sweeps
+and radii; grid's rows and columns; radial's roots, weight and
+`levelSpacing`; force's forces, iterations, threshold, init and
+constraints; the packing options on the five discrete layouts), then
+the plumbing every layout takes (`fit`, `padding`, `boundingBox`,
+`animationDuration`, `animationEasing`, `zoom`, `pan`).  A field's
+type is the option's — a number input, a checkbox, a select, or a JSON
+field for mappings and id lists (`{"data":"cluster"}`,
+`["R-HSA-168256"]`, `{"min":["a"]}`) — and an empty field sends
+nothing, so the run takes the library's default and a run at defaults
+is the library's defaults.  The boxes that already spell an option
+(Animate, Live, Infinite, Seed, Avoid overlap and its mode, labels,
+Pack, Tidy, Spacing, Preset's snapshot, the EM combo's grouping) keep
+it; the panel leaves those keys out (`OWNED`).  Options no field can
+spell — callbacks, `transform`, `animateFilter`, grid's `position`
+function, concentric's `levelWidth`, the `counterclockwise` alias —
+are `EXCLUDED` with the reason.  Below the panel, a readout of the
+exact **`cy.layout({...}).run()`** call Apply will make, refreshed on
+every change, so a sitting's finding can be pasted into an issue or
+the console.  The seed box now drives `random` as it drives `force`
+(125.8's sitting).
+
+**The gate.**  `test/modules/layout-options-panel.mjs` reads every
+layout option interface in `src/public-types.mts` as text and holds
+the table to it: every member is in the table, owned or excluded, and
+nothing in the table is unknown to the interface (the control strikes
+`nodeSep` and watches it reported); the table's defaults are checked
+against the library's resolved defaults where a layout exposes them;
+`read()` sends only what differs from the default, parsed by type,
+and names the option when a field does not parse.
+
+**What changed on disk.**  `debug/layout-options.js` (new),
+`debug/index.html`, `debug/layout.js`, `debug/layout-config.js`
+(random's seed), the module spec, the rendering note, the changelog.
+
+**Maintainer review: pending.**  Open any network, pick Flow, set
+`direction` to rightward and read the call; pick Radial and set
+`roots`.  The page sittings for 125.2 and 125.9 can now run.
+
 ### The first sitting pass (2026-09-15)
 
 The maintainer took the ten sub-rounds' questions one at a time, from

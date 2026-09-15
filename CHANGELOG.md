@@ -24,8 +24,10 @@ that compile and then behave differently.
 
 ### Added
 
-- **The layout audit's instrument** (round 125.10): the debug page's
-  live spacing slider and airiness readout, `debug/airiness.js`'s
+- **The layout audit's instrument** (round 125.10 / 125.11): the debug
+  page's live spacing slider and airiness readout, an options panel
+  with every option the selected layout takes and the `cy.layout()`
+  call it spells, `debug/airiness.js`'s
   nearest-box probe shared with the suites, and
   `npm run benchmark:layout-audit` — one layout on one of the page's
   networks, headless, with the page's own sheet, printing the columns

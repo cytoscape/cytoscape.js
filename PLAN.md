@@ -1158,8 +1158,10 @@ directions".*
     on spacing, compacting and the bounding box gathered into **item
     61**, AVSDF reconsidered as **item 62**.  Round-level: sittings
     are recorded on the round file under each sub-round, and an
-    accepted default ships as accepted.  **Open on the page sittings
-    and 125.11.**
+    accepted default ships as accepted.  125.11 done the same day:
+    every layout option on the page, generated from a table the module
+    suite holds to the declaration, with the `cy.layout()` call as a
+    readout.  **Open on the page sittings.**
 61. **One consistent option surface across the layouts: spacing,
     compacting and the bounding box** (raised by the maintainer at
     round 125's first sitting pass, 2026-09-15).  The audit found the

@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-09, round 123), the genuinely open questions
+**As last swept** (2026-09-15, round 125 planned), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -225,7 +225,12 @@ priced batch — and raised none.  Round 122 (2026-09-09) took **item
 repositories, the matrix, the flagships named, the item closed — and
 logged **item 58**, component packing on the discrete layouts, the one
 gap the audit found — **taken by round 123** the same day, on four
-calls the maintainer made at planning.  What the 2026-08-26
+calls the maintainer made at planning.  Round 124 (2026-09-10) took
+**item 59**, taxi tracks, on the four calls decided at planning.  The
+2026-09-15 sweep added **item 60**, the layout quality audit the
+maintainer marked Partial in the feature inventory on 2026-09-14 —
+**planned as round 125**, nine sub-rounds each gated on a maintainer
+review sitting.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -1084,3 +1089,28 @@ directions".*
     8 ms on workflow-1k and 160 ms there (a bitset closure per
     conflict component, capped at 128 bundles; an obstacle index;
     numeric keys).  Closed.
+60. **The layout quality audit and iteration — one sub-round per
+    layout, each signed off by the maintainer** (raised by the
+    maintainer 2026-09-14 as the Partial row in `docs/features.csv`;
+    **planned as round 125**, 2026-09-15).  Round 122 audited the
+    portfolio and round 123 filled its gap; neither looked at the
+    pictures.  The maintainer's clarification: built-in coverage does
+    not establish finished quality, and the review is of
+    representative app graphs for overlaps, crossings, spacing,
+    hierarchy readability, component packing and stability, iterated
+    on algorithms and defaults with runtime measured alongside.  The
+    plan: nine sub-rounds — 125.1 `force`, 125.2 `flow`, 125.3
+    `radial`, 125.4 `breadthfirst`, 125.5 `circle`, 125.6
+    `concentric`, 125.7 `grid`, 125.8 `preset` and `random`, 125.9
+    packing — each with a pinned fixture set from the app graphs, a
+    measured baseline from the quality suite's probes, the pictures
+    from the debug page, the fixes the pictures justify, and **a
+    maintainer review sitting recorded on the round file before the
+    sub-round counts as landed**.  No new layout; no default changed
+    without the sitting; every algorithmic change carries its runtime
+    row.  **First measurement**: the baseline — overlap pairs,
+    crossings, edge-length variance, area, run time — on each
+    sub-round's fixtures before anything changes.  Open on the round
+    file: where the sittings are recorded, whether 125.8 folds into
+    125.7, and whether an accepted default change ships before the
+    round lands whole.

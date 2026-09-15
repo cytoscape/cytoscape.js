@@ -80,8 +80,9 @@ const defaults: Omit<RadialLayoutOptions, 'name'> = {
  * never interleave (#2493, the Vega radial-tree behaviour).
  *
  * `roots` is a collection or an array of node ids (never a selector
- * string); omitted, the roots are inferred per component by maximum
- * degree, as breadthfirst infers them.
+ * string); omitted, a component's roots are its true roots — the
+ * nodes with no incoming edge (125.3) — or, for a component with
+ * none, its nodes of maximum degree, as breadthfirst infers them.
  */
 export class RadialLayout {
   /** the resolved options this layout was created with */
@@ -128,8 +129,13 @@ export class RadialLayout {
       },
     ) as BoundingBox;
 
-    // resolve the roots: collection, id array, or inferred (the
-    // breadthfirst undirected arm — max degree per component)
+    // resolve the roots: collection, id array, or inferred.  125.3
+    // (the maintainer's sitting): radial is a layout for hierarchies,
+    // so a component's roots are its *true* roots — the nodes with no
+    // incoming edge — and only a component with none (a cycle) falls
+    // back to breadthfirst's undirected rule, maximum degree.
+    // reactome's centre was *Innate Immune System* (degree 17) with
+    // the one true root on ring 1.
     let roots: Collection;
     const optRoots = options.roots;
 
@@ -149,10 +155,16 @@ export class RadialLayout {
       roots = cy.collection();
 
       for (const comp of components) {
-        const maxDegree = comp.maxDegree(false) as number;
-        const compRoots = comp.filter(
-          (ele: Collection) => ele.isNode() && ele.degree(false) === maxDegree,
-        );
+        let compRoots = comp.nodes().roots();
+
+        if (compRoots.length === 0) {
+          const maxDegree = comp.maxDegree(false) as number;
+
+          compRoots = comp.filter(
+            (ele: Collection) =>
+              ele.isNode() && ele.degree(false) === maxDegree,
+          );
+        }
 
         roots = roots.union(compRoots);
       }

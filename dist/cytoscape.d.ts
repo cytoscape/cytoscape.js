@@ -1188,7 +1188,10 @@ interface PackLayoutOptions extends LayoutBaseOptions, Omit<ComponentPackingOpti
 interface RadialLayoutOptions extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'radial';
   /** the tree roots: a collection or an array of node ids (never a
-   * selector string); omitted, inferred per component by max degree */
+   * selector string); omitted, a component's roots are the nodes with
+   * no incoming edge (125.3 — radial is a hierarchy's picture), or its
+   * maximum-degree nodes when it has none (a cycle) — maximum degree
+   * alone before 125.3 */
   roots?: unknown;
   /** where the sweep begins, in radians (default 3π/2 — up) */
   startAngle?: number;
@@ -7824,8 +7827,9 @@ declare class RandomLayout {
  * never interleave (#2493, the Vega radial-tree behaviour).
  *
  * `roots` is a collection or an array of node ids (never a selector
- * string); omitted, the roots are inferred per component by maximum
- * degree, as breadthfirst infers them.
+ * string); omitted, a component's roots are its true roots — the
+ * nodes with no incoming edge (125.3) — or, for a component with
+ * none, its nodes of maximum degree, as breadthfirst infers them.
  */
 declare class RadialLayout {
   /** the resolved options this layout was created with */

@@ -1219,8 +1219,11 @@ components** box and a **Pack** entry.
 Discrete, breadthfirst's shape, with the one property breadthfirst's
 `circle: true` cannot promise: **hierarchy-aware angular allocation**.
 A BFS tree grows from the roots (`roots`: collection or id array — a
-selector string throws; omitted, inferred per component by max
-degree), then every node takes a *wedge* — a share of its parent's
+selector string throws; omitted, a component's *true* roots, the nodes
+with no incoming edge, or its max-degree nodes when it has none —
+125.3's sitting: radial is a hierarchy's picture, and reactome's centre
+had gone to the degree-17 node with the one root on ring 1), then
+every node takes a *wedge* — a share of its parent's
 wedge proportional to its subtree's weight (`weight: 'leaves'`
 default, or `'subtree'`) — and sits at the wedge bisector at radius
 depth × `levelSpacing` (derived from the bounding box when unset).  A

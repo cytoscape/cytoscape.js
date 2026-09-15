@@ -346,6 +346,11 @@ that compile and then behave differently.
   slack instead of the leftmost feasible x — the "IRAK1 far from its
   only parent" case, 1,632 px to 68.  Reactome with labels: 21.7 to
   17.0 Mpx²; the Greek gods rightward with labels: 3.42 to 1.62.
+- **Radial infers a component's true roots** (125.3, the maintainer's
+  sitting): the nodes with no incoming edge, falling back to the
+  maximum-degree rule only for a component that has none (a cycle).
+  Reactome's centre was *Innate Immune System* (degree 17) with the one
+  true root on ring 1; the hierarchy now reads outward from its root.
 - **Breadthfirst is sized by the pixel viewport** (125.4), as grid,
   circle, concentric and radial are; it read `cy.extent()` in model
   coordinates, so its drawing scaled with the zoom at the moment it

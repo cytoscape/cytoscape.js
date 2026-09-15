@@ -616,7 +616,10 @@ export interface RadialLayoutOptions
   extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'radial';
   /** the tree roots: a collection or an array of node ids (never a
-   * selector string); omitted, inferred per component by max degree */
+   * selector string); omitted, a component's roots are the nodes with
+   * no incoming edge (125.3 — radial is a hierarchy's picture), or its
+   * maximum-degree nodes when it has none (a cycle) — maximum degree
+   * alone before 125.3 */
   roots?: unknown;
   /** where the sweep begins, in radians (default 3π/2 — up) */
   startAngle?: number;

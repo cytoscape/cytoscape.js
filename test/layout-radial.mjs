@@ -329,6 +329,66 @@ describe('gpu/layout: radial (round 85.1)', function () {
     }
   });
 
+  // 125.3 (the maintainer's sitting): radial is a hierarchy's picture,
+  // so the inferred roots are the true roots — the nodes with no
+  // incoming edge — not the max-degree node breadthfirst's undirected
+  // rule picks; a component with no such node keeps that rule
+  it('infers the true root of a directed tree, not its max-degree node', function () {
+    // r -> h; h -> ten leaves: h has degree 11, r degree 1
+    const els = [
+      { data: { id: 'r' } },
+      { data: { id: 'h' } },
+      { data: { id: 'rh', source: 'r', target: 'h' } },
+    ];
+
+    for (let i = 0; i < 10; i++) {
+      els.push(
+        { data: { id: 'l' + i } },
+        { data: { id: 'e' + i, source: 'h', target: 'l' + i } },
+      );
+    }
+
+    mk(els);
+    cy.layout({ name: 'radial', fit: false }).run();
+
+    // the lone root sits at the centre; the hub on ring 1
+    expect(radiusOf('r')).to.be.closeTo(0, 1e-6);
+    expect(radiusOf('h')).to.be.greaterThan(0);
+    expect(radiusOf('l0')).to.be.greaterThan(radiusOf('h'));
+
+    // the control: the same graph with h forced as root centres h
+    mk(els);
+    cy.layout({ name: 'radial', fit: false, roots: ['h'] }).run();
+    expect(radiusOf('h')).to.be.closeTo(0, 1e-6);
+  });
+
+  it('a component with no true root (a cycle) falls back to max degree', function () {
+    // a triangle a -> b -> c -> a plus three leaves on b: no node has
+    // indegree 0; b has the max degree and takes the centre
+    const els = [];
+
+    for (const id of ['a', 'b', 'c']) {
+      els.push({ data: { id } });
+    }
+
+    els.push(
+      { data: { id: 'ab', source: 'a', target: 'b' } },
+      { data: { id: 'bc', source: 'b', target: 'c' } },
+      { data: { id: 'ca', source: 'c', target: 'a' } },
+    );
+
+    for (let i = 0; i < 3; i++) {
+      els.push(
+        { data: { id: 'x' + i } },
+        { data: { id: 'bx' + i, source: 'b', target: 'x' + i } },
+      );
+    }
+
+    mk(els);
+    cy.layout({ name: 'radial', fit: false }).run();
+    expect(radiusOf('b')).to.be.closeTo(0, 1e-6);
+  });
+
   it('condense keeps levelSpacing as the floor', function () {
     mk(unbalanced());
     cy.layout({

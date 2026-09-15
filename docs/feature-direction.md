@@ -48,7 +48,9 @@ starting point; completing the portfolio audit does not complete this work.
 Review representative application graphs for overlaps, crossings, spacing,
 hierarchy readability, component packing and stability. Iterate on algorithms
 and defaults using visual review and repeatable fixtures, measuring runtime
-alongside quality so improvements respect the performance priority.
+alongside quality so improvements respect the performance priority. Round 125
+plans this as one sub-round per layout plus one for packing, each landed only
+once a maintainer review sitting is recorded on the round file.
 
 Measure simplification by porting real tasks: dependencies removed, custom glue
 eliminated, setup and diagnostics improved, and migration effort incurred.

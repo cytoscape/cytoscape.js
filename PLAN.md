@@ -1102,15 +1102,26 @@ directions".*
     plan: nine sub-rounds — 125.1 `force`, 125.2 `flow`, 125.3
     `radial`, 125.4 `breadthfirst`, 125.5 `circle`, 125.6
     `concentric`, 125.7 `grid`, 125.8 `preset` and `random`, 125.9
-    packing — each with a pinned fixture set from the app graphs, a
+    packing, 125.10 the debug page as the instrument (a live spacing
+    slider, source-coloured edges, an airiness readout) — each with a
+    pinned fixture set from the app graphs, a
     measured baseline from the quality suite's probes, the pictures
     from the debug page, the fixes the pictures justify, and **a
     maintainer review sitting recorded on the round file before the
     sub-round counts as landed**.  No new layout; no default changed
     without the sitting; every algorithmic change carries its runtime
-    row.  **First measurement**: the baseline — overlap pairs,
-    crossings, edge-length variance, area, run time — on each
-    sub-round's fixtures before anything changes.  Open on the round
-    file: where the sittings are recorded, whether 125.8 folds into
-    125.7, and whether an accepted default change ships before the
-    round lands whole.
+    row.  The maintainer's first sitting (2026-09-14/15) opened the
+    round with findings on the file: label-inclusive `avoidOverlap`
+    broken on force and fighting the N = 4 tidy diamond; the shelf
+    packer's row-height waste (EM web's limitation, reproduced); flow
+    too spread on reactome and worse with labels, plus a degenerate
+    placement; breadthfirst too airy on reactome.  Two levers fall
+    out: a measured "too airy" (nearest-box distance over a test-side
+    quadtree; distance-to-DAG-parent for flow) and an explicit node
+    separation option on the geometric layouts.  **First
+    measurement**: the baseline — overlap pairs, crossings,
+    edge-length variance, area, the airiness columns, run time — on
+    each sub-round's fixtures before anything changes.  Open on the
+    round file: where the sittings are recorded, whether 125.8 folds
+    into 125.7, whether an accepted default change ships before the
+    round lands whole, and the node-separation spelling.

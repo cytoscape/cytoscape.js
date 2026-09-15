@@ -19,7 +19,8 @@ alongside.
 
 ### The shape of the round
 
-One sub-round per layout, and one for packing, in the order below.
+One sub-round per layout, one for packing, and one for the page the
+sittings run on, in the order below.
 Each sub-round has the same four parts, and **each ends with a
 maintainer review sitting** — the sub-round is not landed until the
 sitting is recorded on this file with the maintainer's verdict and the
@@ -67,6 +68,83 @@ starts from a stronger floor.  A property that only a person can
 judge — readability — stays with the sitting and is not faked as a
 spec.
 
+### The maintainer's first sitting (2026-09-14 and 15), before any sub-round
+
+The maintainer sat in front of the debug page ahead of the round and
+reported what follows.  These are the round's opening findings — each
+is assigned to its sub-round below, and each sub-round's sitting
+starts by checking that it is gone.
+
+- **`avoidOverlap` with labels is broken, at least on `force`.**  The
+  label-inclusive overlap path does not hold the labels apart.
+  → 125.1.
+- **`avoidOverlap` fights the tidy small components** on `force`: the
+  N = 4 diamond (120) and the overlap pass pull the four nodes in
+  different directions.  → 125.1.
+- **The shelf packer wastes the space EnrichmentMap's packer wastes.**
+  `shelfPack` (`src/layout/pack.mts`) places boxes in rows, one
+  component per column, and every row is as tall as its tallest
+  member — so a row holding one tall component and several short ones
+  leaves the short ones' columns mostly empty, and the effect
+  compounds when component sizes are far apart.  This is the same
+  limitation the maintainer sees in EM web's vendored packer.
+  Reproduction: the EM sample network on the page, `radial`,
+  `avoidOverlap` on, `packComponents` on, tidy on.  → 125.9.
+- **`flow` is too spread out on reactome, even with `avoidOverlap`
+  off**; with it on, and especially with labels, the picture becomes
+  far too spaced.  The Greek-gods network shows the same, but only in
+  the label-inclusive `avoidOverlap` case.  With `avoidOverlap` off,
+  reactome under `flow` is mostly fine.  → 125.2.
+- **`flow` has degenerate cases on reactome**: "IRAK1 recruits IKK
+  complex …" sits far from its only neighbour with no crossing to
+  justify it (at least with taxi edges), which reads as wrong.
+  → 125.2.
+- **`breadthfirst` on reactome is too airy even without
+  `avoidOverlap`.**  → 125.4.
+- **The rendered reference picture is now on disk**:
+  `benchmark/fixtures/dag/greek-gods-reference.svg`, Abrate's tangled
+  tree as the notebook draws it, the bar for the flow and taxi
+  pictures.  → 125.2.
+- **Edges coloured as their source node** would make the reactome and
+  workflow scenes more legible.  A style-side change on the page's
+  scenes, not a layout change; it is also what the reference picture
+  does.  → 125.10.
+- **The page needs a second spacing slider that acts live.**  The
+  existing one sets `spacingFactor` for the next run.  The new one
+  should rescale the *current* positions about their centre as it is
+  dragged — a `preset` with the scaled positions, or the equivalent —
+  so a sitting can find the right spacing by eye and read the factor
+  off.  → 125.10, and it goes first, since every later sitting uses
+  it.
+
+Two general levers fall out of the findings, and both are shared
+across the sub-rounds:
+
+- **A measured "too airy".**  The quality suite has an overlap probe
+  and no probe for the opposite failure, and the findings above are
+  mostly the opposite failure.  The probe: the distance from each
+  node's bounding box to its nearest neighbour's, and for each edge
+  the gap between its endpoints' boxes, summarised as a distribution
+  per fixture (median, p90, max against the median node size).  A
+  quadtree over the boxes, used only in the tests, keeps it linear-ish
+  at the app graphs' sizes.  For `flow` the DAG form of the same
+  probe: each node's distance from its parent in the DAG, against the
+  rank gap — the IRAK1 case is a large outlier on that column with
+  nothing on the crossing column to explain it.  Every sub-round's
+  baseline carries these columns from 125.1 on, with the control the
+  testing note requires (a deliberately spread fixture must read
+  airy).
+- **Explicit node separation on the geometric layouts.**  `circle`,
+  `radial`, `grid` and `concentric` compute their spacing from a
+  factor over their own default; the maintainer's suggestion is an
+  option that names the margin between nodes directly (a
+  `nodeSeparation` / margin in model pixels), so a picture can be
+  fixed by saying what is wanted rather than by guessing a factor.
+  Whether one spelling fits all four, and how it composes with
+  `spacingFactor` and `avoidOverlap`, is a call for the sittings of
+  125.3, 125.5, 125.6 and 125.7; the option is designed once, in
+  whichever of those runs first.
+
 ### The sub-rounds
 
 **125.1 — `force`.**  The flagship for organic graphs and the layout
@@ -79,7 +157,11 @@ in focus: edge-length variance and the crammed-settle overlap that
 at fit; the `avoidOverlap` sim half now that it is opt-in (117) — is
 the default picture the right default?  Runtime: the CPU and GPU
 executors at each N against 119's rows.  **Maintainer review
-required.**
+required.**  Opening findings: the label-inclusive
+`avoidOverlap` does not hold labels apart, and `avoidOverlap` fights
+the N = 4 tidy diamond; both are reproduced on the page first, and
+the label case gets a quality-suite row with its control before the
+fix.
 
 **125.2 — `flow`.**  The Sugiyama-class built-in (112) with 124's
 tracks.  Fixtures: the seven DAG fixtures, all four `direction`s on
@@ -89,7 +171,15 @@ bar — rank compactness, the long-edge and skip-edge cases
 (deep-skips), compound ranking (compound.json), and the taxi
 corridors' run-overlap count (124: 0 / 1 / 0 / 0).  The one on
 workflow-1k is the case to look at.  Runtime: workflow-10k end to
-end, and 124.7's sweep row.  **Maintainer review required.**
+end, and 124.7's sweep row.  **Maintainer review required.**  Opening findings: the picture is too spread on reactome with
+`avoidOverlap` off and far worse with it on and labels included; the
+Greek-gods picture shows the label case only; IRAK1's degenerate
+placement.  The airiness columns above are this sub-round's first
+measurement — rank gap and within-rank spacing as they are computed
+against what the picture wants, and the label-inclusive dimension
+read (114's one reading) checked for double-counting the label into
+the spacing.  The picture is judged against
+`greek-gods-reference.svg`.
 
 **125.3 — `radial`.**  The tree flagship (85.1).  Fixtures: reactome
 as a tree from its roots, a deep unbalanced synthetic tree, a wide
@@ -105,7 +195,8 @@ reactome directed, and the forest.  Criteria in focus: whether the
 `concentric`, the block bands' spacing, the `spacingFactor` default,
 and the picture against `flow` on the same DAG — if breadthfirst's
 directed picture is a worse flow, the record should say so and the
-documentation should point at flow.  **Maintainer review required.**
+documentation should point at flow.  **Maintainer review required.**  Opening finding: too airy on reactome without `avoidOverlap`,
+so the spacing defaults are the first thing measured.
 
 **125.5 — `circle`.**  Fixtures: a 40-node clustered graph with a
 `sort` mapping by cluster, em-web's largest component, and a ring of
@@ -147,7 +238,25 @@ Criteria in focus: packed area against the sum of component areas,
 the largest component's centre held, the shelf's aspect against the
 viewport, the orientation pass's turns, stability of the arrangement
 under a one-node edit, and the cost of the re-pack at 121's batch
-sizes.  **Maintainer review required.**
+sizes.  **Maintainer review required.**  Opening finding: the
+shelf's rows waste space when component sizes are far apart, one
+component per column and the row as tall as its tallest — the EM web
+limitation reproduced on the EM sample network under `radial` with
+`avoidOverlap`, `packComponents` and tidy on.  The candidates are a
+guillotine or skyline packer, or a shelf that fills a tall column's
+slack with short components; the area column decides, with the
+re-pack cost row beside it.
+
+**125.10 — the page, as the audit's instrument.**  Not a layout, but
+the sittings run on it, so it comes first.  Two changes from the
+first sitting: a live spacing slider that rescales the current
+positions about their centre as it is dragged (a `preset` with the
+scaled positions, or the equivalent), beside the existing
+`spacingFactor` slider that only applies on the next run; and edges
+coloured as their source node on the reactome and workflow scenes.
+The airiness probe gets a readout on the page too — the median and
+p90 nearest-box distance for the current positions — so a sitting
+reads the number it is judging.  **Maintainer review required.**
 
 ### What the round does not do
 
@@ -165,9 +274,12 @@ sizes.  **Maintainer review required.**
 
 ### Sequencing
 
-125.1 and 125.2 first — the flagships the apps actually run — then
-125.9, since packing is what the pictures of every other layout are
-seen through.  125.3 to 125.8 in any order after.  The sub-rounds are
+125.10 first — the page is the instrument, and the live spacing
+slider is what every sitting uses.  Then 125.1 and 125.2 — the
+flagships the apps actually run, and where the first sitting found
+the most — then 125.9, since packing is what the pictures of every
+other layout are seen through.  125.3 to 125.8 in any order after,
+125.4 early because it already has a finding.  The sub-rounds are
 independent enough to run in parallel worktrees, but the review
 sittings are serial on the maintainer's time, so the plan is one
 sitting per sub-round rather than one for the round; the round lands
@@ -185,4 +297,6 @@ pictures themselves have no control — that is what the sitting is.
 **Open (maintainer):** whether the sittings are recorded here or one
 file per sub-round; whether 125.8 is worth a sitting at all or folds
 into 125.7's; and whether a default change accepted in a sitting
-ships in 4.0 or waits for the round to land whole.
+ships in 4.0 or waits for the round to land whole; the spelling of
+the explicit node-separation option on the geometric layouts, and
+whether it is one option across the four.

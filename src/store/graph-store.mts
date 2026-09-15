@@ -99,6 +99,7 @@ import {
   IMAGE_KIND_SDF,
 } from '../image-registry.mjs';
 import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
+import { measureBlock } from '../label-measure.mjs';
 
 /** floats per image record in the image pool (round 15.2) */
 export const IMG_STRIDE = 12;
@@ -4268,18 +4269,28 @@ export class GraphStore implements ModelView {
           exact: prevDims.exact,
         });
       } else {
-        const est = estimateBlock(entry.text, entry.fontSize, {
+        const wrapOpts = {
           wrap: entry.wrap,
           maxWidth: entry.maxWidth,
           overflowWrap: entry.overflowWrap,
           justification: entry.justification,
           lineHeight: entry.lineHeight,
+        };
+        // 125.1: measured where a canvas exists — the laid block's own
+        // numbers, so a layout that runs before the first frame reads
+        // the boxes the frame will draw; the flat estimate otherwise
+        const measured = measureBlock(entry.text, entry.fontSize, wrapOpts, {
+          family: this.labelFont,
+          style: this.labelFontStyle,
+          weight: this.labelFontWeight,
         });
+        const est =
+          measured ?? estimateBlock(entry.text, entry.fontSize, wrapOpts);
 
         this.labelDims[group].set(slot, {
           w: est.width,
           h: est.height,
-          exact: false,
+          exact: measured != null,
         });
       }
     }

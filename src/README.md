@@ -1001,9 +1001,12 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   real atlas advances behind a **shaping memo** (labels are
   model-space, so breaking is zoom-invariant and identical
   (text, wrap-params) pairs share one laid block; hits/misses ride
-  `renderer().stats()`), while the store estimates dims with flat
-  advances so bounds work headless.  Exact laid dims feed back into
-  the store per glyph build.
+  `renderer().stats()`), while the store measures dims through the
+  same breaker where a 2D canvas exists (`label-measure.mts`, round
+  125.1: `measureText` advances at the atlas's 32 px scaled to the em,
+  so the number is the laid block's) and estimates them with flat
+  advances where none does, so bounds work headless.  Exact laid dims
+  feed back into the store per glyph build either way.
 - **Labels join `boundingBox()`/`fit()` by default**:
   `boundingBox({ includeLabels })` (default true; unknown keys
   throw) on collections, `renderedBoundingBox`, the whole-graph
@@ -1017,8 +1020,12 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
 - **`boxSelectionIncludesLabels`** (core option + ctor, default
   false — v3's box-select-labels default): when on, box selection
   requires the node's label box to be contained too.
-- Recorded deviations: headless label dims are flat-advance
-  *estimates* (rendered instances upgrade them to exact); the
+- Recorded deviations: label dims under headless Node are
+  flat-advance *estimates* (a canvas-bearing host measures them at
+  style time since 125.1 — before, an app's load-time layout under
+  `nodeDimensionsIncludeLabels` separated estimates the first frame
+  then outgrew: on em-web 154 of 569 labels lay wider, one by 36 px,
+  and a force run at load left 14 label pairs overlapping); the
   edge-label bb term is conservative (fit may slightly over-fit,
   never under); alignment shifts and text boxes use block metrics
   (advance width × line-stacked height), not ink extents.

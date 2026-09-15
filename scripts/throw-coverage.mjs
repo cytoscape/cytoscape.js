@@ -77,7 +77,7 @@ export const BROWSER_ONLY = [
 export const UNREACHABLE = {
   'src/wire.mts:88':
     'big-endian platform guard — every supported platform is little-endian',
-  'src/store/graph-store.mts:3203':
+  'src/store/graph-store.mts:3215':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
 
   // Round 36.4 classified the browser-only tier the same way 30.4
@@ -138,7 +138,7 @@ export const UNREACHABLE = {
  * here suppresses a *covered* reading, which is the direction that hides work.
  */
 export const MISATTRIBUTED = {
-  'src/render/renderer.mts:150':
+  'src/render/renderer.mts:152':
     'inside the module-level exportScale const; its body reads as module-eval count',
 };
 

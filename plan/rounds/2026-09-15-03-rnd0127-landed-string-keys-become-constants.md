@@ -149,10 +149,38 @@ control was run by hand: one literal planted per rule, three red rows
 naming `src/layout/dims.mts:76`, `src/columnar.mts` and
 `src/collection.mts`, then restored.
 
+### 127.5 — what the tree's other scanners said (2026-09-15)
+
+`npm run -s test:node` went red in 17 module specs on the first full
+run, all from two tools that read `src/` as text and had assumed the
+literal form:
+
+- **`scripts/status/feature-inventory.mjs`** derives v4's style surface
+  by regex over `NODE_READ`/`EDGE_READ` and the core switch — and
+  found nothing once every member read `PROP.X`, so every feature row
+  disagreed with an empty surface and the status-site plan failed
+  behind it (15 of the 17).  It now resolves `PROP.X` against the
+  table's own text, still without importing the library; the literal
+  form is still accepted.  171 names, as before (the two
+  `-relative-to` names are throw-only and were never in a read set).
+- **`scripts/throw-coverage.mjs`** keys its allowlists by `file:line`,
+  by design (round 37.1: an insertion above a site re-points the entry,
+  and the gate is what notices).  Two entries had moved — the
+  `SHAPE_MASK` invariant in `graph-store.mts` by twelve lines, the
+  export-scale guard in `renderer.mts` by two — and were re-pointed.
+
+Neither is a defect the round introduced; both are the tools doing
+what their headers say they do.  Recorded because the second full run
+is the one that counts, and because round 57.2's lesson holds again:
+a purely mechanical change to the sources is a free control on every
+source-scanning tool, and this one found the inventory reader's
+unstated assumption.
+
 ### Verification (carried out)
 
 - `npm run -s verify` after each sub-round: green, 2,719 specs; the
-  gate adds 16.
+  gate adds 16.  `npm run -s test:node`, second run: green — 2,719
+  unit, 745 module, 24 soak, the throws gate and lint.
 - The style micro-measure the plan asked for (headless, 2,000 nodes /
   1,999 edges, a 22-prop sheet; medians of 7, three runs per tree,
   pre-127.3 in a worktree beside the tree):

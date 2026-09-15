@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–124 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 125–127 |
+| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–124, 127 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 125–126 |
 
 ## The sections
 
@@ -192,4 +192,4 @@ A round can land with an item held open; the round file says which.
 | 163 | 124 | 2026-09-10 | landed | [Taxi tracks: automatic turn distances per bundle, the per-edge casing, and flow's corridors](rounds/2026-09-10-01-rnd0124-landed-taxi-tracks-automatic-turn-distances-per-bundle-the-per-edge-casing-and-flow-s-corridors.md) |
 | 164 | 125 | 2026-09-15 | plan | [The layout quality audit: one sub-round per layout, each signed off by the maintainer](rounds/2026-09-15-01-rnd0125-plan-the-layout-quality-audit-one-sub-round-per-layout-each-signed-off-by-the-maintainer.md) |
 | 165 | 126 | 2026-09-15 | plan | [Shader minification](rounds/2026-09-15-02-rnd0126-plan-shader-minification.md) |
-| 166 | 127 | 2026-09-15 | plan | [String keys become constants](rounds/2026-09-15-03-rnd0127-plan-string-keys-become-constants.md) |
+| 166 | 127 | 2026-09-15 | landed | [String keys become constants](rounds/2026-09-15-03-rnd0127-landed-string-keys-become-constants.md) |

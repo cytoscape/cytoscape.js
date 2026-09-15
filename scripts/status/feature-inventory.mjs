@@ -139,19 +139,40 @@ export function apiEntries(model) {
 /** Read the explicit v4 read registries and core compiler without importing the library. */
 export function v4StyleNames(root) {
   const source = readFileSync(join(root, 'src/style.mts'), 'utf8');
+  // round 127: the registries name properties through the PROP table
+  // (`PROP.BACKGROUND_COLOR`), so resolve each member against the table's
+  // own text rather than importing it — the reader stays import-free
+  const props = readFileSync(join(root, 'src/style-props.mts'), 'utf8');
+  const table = new Map();
+  for (const m of props.matchAll(/^\s+([A-Z_]+): '([^']+)',/gm)) {
+    table.set(m[1], m[2]);
+  }
+  if (table.size === 0) throw new Error('Missing style property table PROP');
+  const collect = (block, names) => {
+    for (const m of block.matchAll(/PROP\.([A-Z_]+)/g)) {
+      const name = table.get(m[1]);
+      if (name == null) throw new Error(`Unknown style property PROP.${m[1]}`);
+      names.add(name);
+    }
+    for (const m of block.matchAll(/'([^']+)'/g)) names.add(m[1]);
+  };
   const names = new Set();
   for (const registry of ['NODE_READ', 'EDGE_READ']) {
     const block = source.match(
       new RegExp(`const ${registry}[^=]*= new Set\\(\\[([\\s\\S]*?)\\]\\)`),
     );
     if (!block) throw new Error(`Missing style registry ${registry}`);
-    for (const m of block[1].matchAll(/'([^']+)'/g)) names.add(m[1]);
+    collect(block[1], names);
   }
   const core = source.slice(
     source.indexOf('const resolveCoreProps ='),
     source.indexOf('const GLOBAL_FONT_PROPS'),
   );
-  for (const m of core.matchAll(/case '([^']+)'/g)) names.add(m[1]);
+  const coreNames = new Set();
+  for (const m of core.matchAll(/case (PROP\.[A-Z_]+|'[^']+')/g)) {
+    collect(m[1], coreNames);
+  }
+  for (const name of coreNames) names.add(name);
   return names;
 }
 

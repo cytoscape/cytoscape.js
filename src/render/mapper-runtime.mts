@@ -15,6 +15,7 @@ import type {
   Transform,
   RGBA,
 } from '../style-scales.mjs';
+import { COL } from '../contract.mjs';
 
 /*
 CPU-side packing for the GPU mapper eval pass: lowers compiled paint-
@@ -88,15 +89,15 @@ export const TARGETS: Record<
   Record<string, { target: number; column: ColumnId }>
 > = {
   nodes: {
-    'background-color': { target: 0, column: 'node.fillColor' },
-    'border-color': { target: 1, column: 'node.borderColor' },
-    opacity: { target: 2, column: 'node.opacity' },
+    'background-color': { target: 0, column: COL.NODE_FILL_COLOR },
+    'border-color': { target: 1, column: COL.NODE_BORDER_COLOR },
+    opacity: { target: 2, column: COL.NODE_OPACITY },
   },
   edges: {
-    'line-color': { target: 0, column: 'edge.lineColor' },
-    opacity: { target: 1, column: 'edge.opacity' },
-    'source-arrow-color': { target: 2, column: 'edge.sourceArrow' },
-    'target-arrow-color': { target: 3, column: 'edge.targetArrow' },
+    'line-color': { target: 0, column: COL.EDGE_LINE_COLOR },
+    opacity: { target: 1, column: COL.EDGE_OPACITY },
+    'source-arrow-color': { target: 2, column: COL.EDGE_SOURCE_ARROW },
+    'target-arrow-color': { target: 3, column: COL.EDGE_TARGET_ARROW },
   },
 };
 

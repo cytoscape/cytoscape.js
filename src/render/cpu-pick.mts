@@ -1,4 +1,5 @@
 import {
+  COL,
   FLAG_ALIVE,
   FLAG_DRAWN,
   FLAG_NO_EVENTS,
@@ -114,11 +115,11 @@ export function pickNodeTierAt(
   xPx: number,
   yPx: number,
 ): NodePickTier | null {
-  const flags = view.column('node.flags') as Uint32Array;
-  const pos = view.column('node.position') as Float32Array;
-  const size = view.column('node.size') as Uint32Array | Float32Array;
-  const shapes = view.column('node.shape') as Uint32Array;
-  const borderGeom = view.column('node.borderGeom') as Uint32Array;
+  const flags = view.column(COL.NODE_FLAGS) as Uint32Array;
+  const pos = view.column(COL.NODE_POSITION) as Float32Array;
+  const size = view.column(COL.NODE_SIZE) as Uint32Array | Float32Array;
+  const shapes = view.column(COL.NODE_SHAPE) as Uint32Array;
+  const borderGeom = view.column(COL.NODE_BORDER_GEOM) as Uint32Array;
   const pad = frame.padPx ?? 0;
 
   const hits = (slot: number): boolean => {

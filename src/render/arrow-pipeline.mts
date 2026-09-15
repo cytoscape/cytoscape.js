@@ -5,6 +5,7 @@ import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Edge arrowheads: one quad per visible edge per enabled end, reusing
@@ -21,11 +22,11 @@ import type { ColumnId } from '../contract.mjs';
 // WebGPU's base limit of 8 storage buffers (node size and border ride
 // the derived node.outerHalf column)
 const ARROW_COLUMNS: ColumnId[] = [
-  'edge.endpoints',
-  'edge.width',
-  'node.position',
-  'node.outerHalf',
-  'node.shape',
+  COL.EDGE_ENDPOINTS,
+  COL.EDGE_WIDTH,
+  COL.NODE_POSITION,
+  COL.NODE_OUTER_HALF,
+  COL.NODE_SHAPE,
 ];
 
 export class ArrowPipeline {
@@ -211,10 +212,10 @@ export class ArrowPipeline {
     }
 
     const arrowColumn: [ColumnId, ColumnId, ColumnId, ColumnId] = [
-      'edge.targetArrow',
-      'edge.sourceArrow',
-      'edge.midTargetArrow',
-      'edge.midSourceArrow',
+      COL.EDGE_TARGET_ARROW,
+      COL.EDGE_SOURCE_ARROW,
+      COL.EDGE_MID_TARGET_ARROW,
+      COL.EDGE_MID_SOURCE_ARROW,
     ];
     const groups = this.endUniforms.map((endUniform, end) =>
       device.createBindGroup({
@@ -236,15 +237,15 @@ export class ArrowPipeline {
           },
           {
             binding: ARROW_COLUMNS.length + 3,
-            resource: { buffer: mirror.buffer('edge.arrowShapes') },
+            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_SHAPES) },
           },
           {
             binding: ARROW_COLUMNS.length + 4,
-            resource: { buffer: mirror.buffer('edge.arrowWidths') },
+            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_WIDTHS) },
           },
           {
             binding: ARROW_COLUMNS.length + 5,
-            resource: { buffer: mirror.buffer('edge.curveParams') },
+            resource: { buffer: mirror.buffer(COL.EDGE_CURVE_PARAMS) },
           },
         ],
       }),

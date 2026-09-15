@@ -27,7 +27,7 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 (spacingFactor / transform / animate / fit and the lifecycle).
 */
 
-import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { COL, FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { computeComponents, packComponentBodies } from './pack.mjs';
 import type { Components } from './pack.mjs';
 import { nodeDims } from './dims.mjs';
@@ -229,7 +229,7 @@ export class LayoutContext {
    *   directly bypasses the dirty tracking the renderer depends on
    */
   positions(): Float32Array {
-    return this.cy._store.column('node.position') as Float32Array;
+    return this.cy._store.column(COL.NODE_POSITION) as Float32Array;
   }
 
   /**
@@ -239,7 +239,7 @@ export class LayoutContext {
    *   not ids, so it pairs directly with `positions()` without a lookup
    */
   endpoints(): Uint32Array {
-    return this.cy._store.column('edge.endpoints') as Uint32Array;
+    return this.cy._store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
   }
 
   /**

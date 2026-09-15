@@ -6,6 +6,7 @@ import { QUAD_ARGS_OFFSET } from './cull.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Arrowheads for curved edges (round 12a): one quad per visible curved
@@ -16,12 +17,12 @@ import type { ColumnId } from '../contract.mjs';
  * ArrowPipeline.
  */
 const VERTEX_COLUMNS: ColumnId[] = [
-  'edge.endpoints',
-  'edge.width',
-  'node.position',
-  'node.outerHalf', // border-inclusive halves (the 12a size-only deviation is gone)
-  'node.shape',
-  'edge.curveParams',
+  COL.EDGE_ENDPOINTS,
+  COL.EDGE_WIDTH,
+  COL.NODE_POSITION,
+  COL.NODE_OUTER_HALF, // border-inclusive halves (the 12a size-only deviation is gone)
+  COL.NODE_SHAPE,
+  COL.EDGE_CURVE_PARAMS,
   // + the curve param blob at the next binding; this end's arrow colors
   // moved to the fragment stage (12b — the blob took their vertex slot)
 ];
@@ -208,10 +209,10 @@ export class CurvedArrowPipeline {
     }
 
     const arrowColumn: [ColumnId, ColumnId, ColumnId, ColumnId] = [
-      'edge.targetArrow',
-      'edge.sourceArrow',
-      'edge.midTargetArrow',
-      'edge.midSourceArrow',
+      COL.EDGE_TARGET_ARROW,
+      COL.EDGE_SOURCE_ARROW,
+      COL.EDGE_MID_TARGET_ARROW,
+      COL.EDGE_MID_SOURCE_ARROW,
     ];
     const groups = this.endUniforms.map((endUniform, end) =>
       device.createBindGroup({
@@ -237,11 +238,11 @@ export class CurvedArrowPipeline {
           },
           {
             binding: VERTEX_COLUMNS.length + 4,
-            resource: { buffer: mirror.buffer('edge.arrowShapes') },
+            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_SHAPES) },
           },
           {
             binding: VERTEX_COLUMNS.length + 5,
-            resource: { buffer: mirror.buffer('edge.arrowWidths') },
+            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_WIDTHS) },
           },
         ],
       }),

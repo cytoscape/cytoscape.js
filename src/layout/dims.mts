@@ -23,7 +23,7 @@ estimates (round 16.4), so overlap avoidance with labels is exact only
 once a renderer has laid the glyphs.
 */
 
-import { FLAG_VISIBLE } from '../contract.mjs';
+import { COL, FLAG_VISIBLE } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
@@ -73,9 +73,9 @@ export const nodeDims = (
   const y1 = new Float32Array(n);
   const x2 = new Float32Array(n);
   const y2 = new Float32Array(n);
-  const size = store.column('node.size') as Float32Array;
-  const border = store.column('node.borderWidth') as Float32Array;
-  const flags = store.column('node.flags') as Uint32Array;
+  const size = store.column(COL.NODE_SIZE) as Float32Array;
+  const border = store.column(COL.NODE_BORDER_WIDTH) as Float32Array;
+  const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
   const withLabels = options.includeLabels !== false && store.hasNodeLabels();
   const half = (options.padding ?? 0) / 2;
   let maxW = 0;

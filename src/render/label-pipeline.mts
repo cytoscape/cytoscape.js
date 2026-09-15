@@ -6,6 +6,7 @@ import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
 import type { GlyphAtlas } from './glyph-atlas.mjs';
+import { COL } from '../contract.mjs';
 
 /** Which of the round-95 label phases a draw encodes. */
 export type LabelPhase = 'fill' | 'outline';
@@ -167,17 +168,17 @@ export class LabelPipeline {
     const storages: GPUBuffer[] = this.edge
       ? [
           glyphs.buffer(),
-          mirror.buffer('edge.endpoints'),
-          mirror.buffer('edge.width'),
-          mirror.buffer('node.position'),
-          mirror.buffer('edge.curveParams'),
-          mirror.buffer('node.outerGeom'),
+          mirror.buffer(COL.EDGE_ENDPOINTS),
+          mirror.buffer(COL.EDGE_WIDTH),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.EDGE_CURVE_PARAMS),
+          mirror.buffer(COL.NODE_OUTER_GEOM),
           mirror.blobBuffer(),
         ]
       : [
           glyphs.buffer(),
-          mirror.buffer('node.position'),
-          mirror.buffer('node.opacity'),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.NODE_OPACITY),
         ];
 
     const group = device.createBindGroup({

@@ -4,6 +4,7 @@ import { SHADER_STAGE } from './webgpu-constants.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Storage-buffer bindings 1..12, in binding order (0 is the Frame
@@ -31,21 +32,21 @@ const NODE_COLUMNS: {
   ghostOnly?: boolean;
   mainOnly?: boolean;
 }[] = [
-  { id: 'node.position', visibility: V },
-  { id: 'node.size', visibility: V },
-  { id: 'node.fillColor', visibility: F },
-  { id: 'node.borderColor', visibility: F },
-  { id: 'node.borderWidth', visibility: V | F },
-  { id: 'node.opacity', visibility: F },
-  { id: 'node.gradient', visibility: F },
-  { id: 'node.flags', visibility: F, mainOnly: true },
-  { id: 'node.ghost', visibility: V | F, ghostOnly: true },
-  { id: 'node.borderGeom', visibility: V | F },
+  { id: COL.NODE_POSITION, visibility: V },
+  { id: COL.NODE_SIZE, visibility: V },
+  { id: COL.NODE_FILL_COLOR, visibility: F },
+  { id: COL.NODE_BORDER_COLOR, visibility: F },
+  { id: COL.NODE_BORDER_WIDTH, visibility: V | F },
+  { id: COL.NODE_OPACITY, visibility: F },
+  { id: COL.NODE_GRADIENT, visibility: F },
+  { id: COL.NODE_FLAGS, visibility: F, mainOnly: true },
+  { id: COL.NODE_GHOST, visibility: V | F, ghostOnly: true },
+  { id: COL.NODE_BORDER_GEOM, visibility: V | F },
   // round 38: the dashed border's pattern/offset bind VERTEX-only and
   // reach the FS as flat varyings — the fragment stage sits at exactly
   // 8 storage buffers in both layouts and has no slot to give
-  { id: 'node.borderDash', visibility: V },
-  { id: 'node.borderDashMeta', visibility: V },
+  { id: COL.NODE_BORDER_DASH, visibility: V },
+  { id: COL.NODE_BORDER_DASH_META, visibility: V },
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {

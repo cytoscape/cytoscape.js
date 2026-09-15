@@ -7,6 +7,7 @@ import type { ColumnMirror } from './column-mirror.mjs';
 import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Curved-edge render + picking pipelines (round 12a): one instance per
@@ -22,22 +23,22 @@ import type { ColumnId } from '../contract.mjs';
 /** vertex-stage columns, bindings 1..6 (0 is the Frame uniform; the
  * curve param blob binds at 7) */
 const VERTEX_COLUMNS: ColumnId[] = [
-  'edge.endpoints',
-  'edge.width',
-  'node.position',
-  'node.outerHalf',
-  'node.shape',
-  'edge.curveParams',
+  COL.EDGE_ENDPOINTS,
+  COL.EDGE_WIDTH,
+  COL.NODE_POSITION,
+  COL.NODE_OUTER_HALF,
+  COL.NODE_SHAPE,
+  COL.EDGE_CURVE_PARAMS,
 ];
 
 /** fragment-stage columns, bindings 8..10 */
 const FRAGMENT_COLUMNS: ColumnId[] = [
-  'edge.lineColor',
-  'edge.opacity',
-  'edge.lineStyle',
+  COL.EDGE_LINE_COLOR,
+  COL.EDGE_OPACITY,
+  COL.EDGE_LINE_STYLE,
   // per-edge dash pattern/offset/cap (round 13 B3)
-  'edge.dashPattern',
-  'edge.dashMeta',
+  COL.EDGE_DASH_PATTERN,
+  COL.EDGE_DASH_META,
 ];
 
 export class CurvedEdgePipeline {
@@ -138,7 +139,7 @@ export class CurvedEdgePipeline {
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
           .filter(
             (entry) =>
-              entry.id !== 'node.outerHalf' && entry.id !== 'node.shape',
+              entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE,
           )
           .map((entry) => ({
             binding: entry.binding,
@@ -182,7 +183,7 @@ export class CurvedEdgePipeline {
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
           .filter(
             (entry) =>
-              entry.id !== 'node.outerHalf' && entry.id !== 'node.shape',
+              entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE,
           )
           .map((entry) => ({
             binding: entry.binding,
@@ -293,9 +294,9 @@ export class CurvedEdgePipeline {
     uniform: GPUBuffer,
     mirror: ColumnMirror,
     layer:
-      | 'edge.overlay'
-      | 'edge.underlay'
-      | 'edge.casing'
+      | typeof COL.EDGE_OVERLAY
+      | typeof COL.EDGE_UNDERLAY
+      | typeof COL.EDGE_CASING
       | 'main'
       | 'cased' = 'main',
   ): GPUBindGroup {
@@ -328,7 +329,7 @@ export class CurvedEdgePipeline {
           .filter(
             (entry) =>
               !fused ||
-              (entry.id !== 'node.outerHalf' && entry.id !== 'node.shape'),
+              (entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE),
           )
           .map((entry) => ({
             binding: entry.binding,
@@ -349,12 +350,12 @@ export class CurvedEdgePipeline {
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
                 resource: {
-                  buffer: mirror.buffer(cased ? 'edge.casing' : layer),
+                  buffer: mirror.buffer(cased ? COL.EDGE_CASING : layer),
                 },
               },
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
-                resource: { buffer: mirror.buffer('node.outerGeom') },
+                resource: { buffer: mirror.buffer(COL.NODE_OUTER_GEOM) },
               },
             ]
           : []),
@@ -363,7 +364,7 @@ export class CurvedEdgePipeline {
           : [
               {
                 binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
-                resource: { buffer: mirror.buffer('edge.gradient') },
+                resource: { buffer: mirror.buffer(COL.EDGE_GRADIENT) },
               },
             ]),
       ],
@@ -457,7 +458,10 @@ export class CurvedEdgePipeline {
     mirror: ColumnMirror,
     instances: number,
     cull: CulledGroup,
-    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing',
+    layer:
+      | typeof COL.EDGE_OVERLAY
+      | typeof COL.EDGE_UNDERLAY
+      | typeof COL.EDGE_CASING,
   ): void {
     if (instances === 0) {
       return;

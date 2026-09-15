@@ -29,6 +29,7 @@ import type { TrackEdge } from '../taxi-tracks.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
+  COL,
   columnSpec,
   columnSpecsForGroup,
   EDGE_STYLE_COLUMNS,
@@ -419,7 +420,7 @@ export class GraphStore implements ModelView {
     };
 
     this.curves = new CurveIndex({
-      endpoints: () => this.edges.column('edge.endpoints') as Uint32Array,
+      endpoints: () => this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
       aliveEdgeSlots: () => this.slotsOrdered('edges'),
       writeParams: (slot, p0, p1, p2, kind) =>
         this.setCurveParams(slot, p0, p1, p2, kind),
@@ -429,7 +430,7 @@ export class GraphStore implements ModelView {
       schedule: () => this.dirty.touch(),
       // display tier (round 22.3): hidden members leave their bundles
       edgeShown: (slot) =>
-        ((this.edges.column('edge.flags') as Uint32Array)[slot] &
+        ((this.edges.column(COL.EDGE_FLAGS) as Uint32Array)[slot] &
           FLAG_VISIBLE) !==
         0,
       // compound relation (14.10): ancestor/descendant endpoints, or a
@@ -440,16 +441,16 @@ export class GraphStore implements ModelView {
           : this.hierarchy.isAncestorOf(a, b) ||
             this.hierarchy.isAncestorOf(b, a),
       outerHalfW: (slot) =>
-        (this.nodes.column('node.outerHalf') as Float32Array)[slot * 2],
+        (this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array)[slot * 2],
     });
 
     this.hierarchy = new HierarchyIndex({
-      flags: () => this.nodes.column('node.flags') as Uint32Array,
+      flags: () => this.nodes.column(COL.NODE_FLAGS) as Uint32Array,
       gen: () => this.nodes.gen,
-      markFlag: (slot) => this.dirty.mark('node.flags', slot),
+      markFlag: (slot) => this.dirty.mark(COL.NODE_FLAGS, slot),
       schedule: () => this.dirty.touch(),
-      positions: () => this.nodes.column('node.position') as Float32Array,
-      outerHalf: () => this.nodes.column('node.outerHalf') as Float32Array,
+      positions: () => this.nodes.column(COL.NODE_POSITION) as Float32Array,
+      outerHalf: () => this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array,
       readSize: (slot) => {
         const stashed = this.parentFallback.get(slot);
 
@@ -457,7 +458,7 @@ export class GraphStore implements ModelView {
           return stashed;
         }
 
-        const size = this.nodes.column('node.size') as Float32Array;
+        const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
 
         return [size[slot * 2], size[slot * 2 + 1]];
       },
@@ -466,7 +467,7 @@ export class GraphStore implements ModelView {
           // stash the style size: auto-bounds owns the column from here,
           // and the stash is both the degenerate fallback and what a
           // leaf-again node returns to
-          const size = this.nodes.column('node.size') as Float32Array;
+          const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
 
           this.parentFallback.set(slot, [size[slot * 2], size[slot * 2 + 1]]);
         } else {
@@ -475,7 +476,7 @@ export class GraphStore implements ModelView {
           this.parentFallback.delete(slot);
 
           if (stashed != null) {
-            this.setPair('node.size', slot, stashed[0], stashed[1]);
+            this.setPair(COL.NODE_SIZE, slot, stashed[0], stashed[1]);
           }
         }
 
@@ -493,7 +494,7 @@ export class GraphStore implements ModelView {
         this.onParentFlip?.(slot);
 
         // its self-loops flip between plain and compound routing (14.10)
-        const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+        const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
         for (const edgeSlot of this.adj.connectedEdges(slot)) {
           if (endpoints[edgeSlot * 2] === endpoints[edgeSlot * 2 + 1]) {
@@ -509,38 +510,38 @@ export class GraphStore implements ModelView {
     // normal column write, so the renderer re-uploads it as a span).
     // Geometry is unchanged, so the bb memo epoch is left alone.
     this.blob = new CurveBlob((slot, offset) => {
-      const params = this.edges.column('edge.curveParams') as Float32Array;
+      const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
 
       params[slot * 4] = offset;
-      this.dirty.mark('edge.curveParams', slot);
+      this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
     });
 
     // C3: the custom-polygon point pool (same slot-stable policy); a
     // relocation rewrites the borderGeom[0] ref in place
     this.polyPool = new CurveBlob((slot, offset) => {
-      const geom = this.nodes.column('node.borderGeom') as Uint32Array;
+      const geom = this.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
       const count = geom[slot * 4] >>> 24;
 
       geom[slot * 4] = (offset | (count << 24)) >>> 0;
-      this.dirty.mark('node.borderGeom', slot);
+      this.dirty.mark(COL.NODE_BORDER_GEOM, slot);
     });
 
     // 15.2: the image-record pool; a relocation rewrites node.imageRef
     this.imagePool = new CurveBlob((slot, offset) => {
-      const refs = this.nodes.column('node.imageRef') as Uint32Array;
+      const refs = this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array;
       const count = refs[slot] >>> 24;
 
       refs[slot] = (offset | (count << 24)) >>> 0;
-      this.dirty.mark('node.imageRef', slot);
+      this.dirty.mark(COL.NODE_IMAGE_REF, slot);
     });
 
     // round 23: the chart-record pool; a relocation rewrites node.chartRef
     this.chartPool = new CurveBlob((slot, offset) => {
-      const refs = this.nodes.column('node.chartRef') as Uint32Array;
+      const refs = this.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
       const n = refs[slot] >>> 24;
 
       refs[slot] = (offset | (n << 24)) >>> 0;
-      this.dirty.mark('node.chartRef', slot);
+      this.dirty.mark(COL.NODE_CHART_REF, slot);
     });
 
     // an image decode landing (or an entry freeing) redraws the scene;
@@ -749,7 +750,7 @@ export class GraphStore implements ModelView {
    * clear (clearing an already-imageless node is a no-op fast path)
    */
   setNodeImages(slot: number, specs: NodeImageSpec[] | null): void {
-    const refs = this.nodes.column('node.imageRef') as Uint32Array;
+    const refs = this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array;
     const oldRef = refs[slot];
     const clearing = specs == null || specs.length === 0;
 
@@ -778,7 +779,7 @@ export class GraphStore implements ModelView {
     if (clearing) {
       this.imagePool.free(slot);
       refs[slot] = 0;
-      this.dirty.mark('node.imageRef', slot);
+      this.dirty.mark(COL.NODE_IMAGE_REF, slot);
     } else {
       const values = new Array<number>(specs.length * IMG_STRIDE);
 
@@ -822,7 +823,7 @@ export class GraphStore implements ModelView {
 
       if (refs[slot] !== ref) {
         refs[slot] = ref;
-        this.dirty.mark('node.imageRef', slot);
+        this.dirty.mark(COL.NODE_IMAGE_REF, slot);
       }
     }
 
@@ -854,7 +855,7 @@ export class GraphStore implements ModelView {
       colors: [number, number, number, number][];
     } | null,
   ): void {
-    const refs = this.nodes.column('node.chartRef') as Uint32Array;
+    const refs = this.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
     const oldRef = refs[slot];
     const clearing = rec == null || rec.values.length === 0;
 
@@ -866,7 +867,7 @@ export class GraphStore implements ModelView {
       this.chartedNodes--;
       this.chartPool.free(slot);
       refs[slot] = 0;
-      this.dirty.mark('node.chartRef', slot);
+      this.dirty.mark(COL.NODE_CHART_REF, slot);
       this.dirty.touch();
 
       return;
@@ -901,7 +902,7 @@ export class GraphStore implements ModelView {
 
     if (refs[slot] !== ref) {
       refs[slot] = ref;
-      this.dirty.mark('node.chartRef', slot);
+      this.dirty.mark(COL.NODE_CHART_REF, slot);
     }
 
     this.dirty.touch();
@@ -918,7 +919,7 @@ export class GraphStore implements ModelView {
     values: number[];
     colors: [number, number, number, number][];
   } | null {
-    const ref = (this.nodes.column('node.chartRef') as Uint32Array)[slot];
+    const ref = (this.nodes.column(COL.NODE_CHART_REF) as Uint32Array)[slot];
 
     if (ref === 0) {
       return null;
@@ -960,7 +961,7 @@ export class GraphStore implements ModelView {
 
   /** A node's decoded background-image records, or null when imageless. */
   nodeImagesAt(slot: number): NodeImageRecord[] | null {
-    const ref = (this.nodes.column('node.imageRef') as Uint32Array)[slot];
+    const ref = (this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot];
 
     if (ref === 0) {
       return null;
@@ -1004,7 +1005,7 @@ export class GraphStore implements ModelView {
 
   /** A node's custom polygon points (unit pairs), or null. */
   polygonPointsAt(slot: number): Float64Array | null {
-    const geom = this.nodes.column('node.borderGeom') as Uint32Array;
+    const geom = this.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
     const shape = (geom[slot * 4 + 1] >>> 16) & 0xf;
 
     if (shape !== 14) {
@@ -1260,21 +1261,21 @@ export class GraphStore implements ModelView {
   addNode(id: string, x: number, y: number, opts: AddElementOpts = {}): number {
     const { slot, resized } = this.allocSlot('nodes', id);
 
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
     pos[slot * 2] = x;
     pos[slot * 2 + 1] = y;
     this.geoEpoch++;
 
-    (this.nodes.column('node.flags') as Uint32Array)[slot] = initialFlags(
+    (this.nodes.column(COL.NODE_FLAGS) as Uint32Array)[slot] = initialFlags(
       opts,
       false,
     );
 
     if (!resized) {
       // resized already implies a full re-upload
-      this.dirty.mark('node.position', slot);
-      this.dirty.mark('node.flags', slot);
+      this.dirty.mark(COL.NODE_POSITION, slot);
+      this.dirty.mark(COL.NODE_FLAGS, slot);
     }
 
     return slot;
@@ -1315,12 +1316,12 @@ export class GraphStore implements ModelView {
 
     const { slot, resized } = this.allocSlot('edges', id);
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
     endpoints[slot * 2] = source.slot;
     endpoints[slot * 2 + 1] = target.slot;
 
-    (this.edges.column('edge.flags') as Uint32Array)[slot] = initialFlags(
+    (this.edges.column(COL.EDGE_FLAGS) as Uint32Array)[slot] = initialFlags(
       opts,
       true,
     );
@@ -1330,8 +1331,8 @@ export class GraphStore implements ModelView {
     this.curves.onAddEdge(slot, source.slot, target.slot);
 
     if (!resized) {
-      this.dirty.mark('edge.endpoints', slot);
-      this.dirty.mark('edge.flags', slot);
+      this.dirty.mark(COL.EDGE_ENDPOINTS, slot);
+      this.dirty.mark(COL.EDGE_FLAGS, slot);
     }
 
     return slot;
@@ -1354,7 +1355,7 @@ export class GraphStore implements ModelView {
 
     this.registerBulk('nodes', slots, cols.ids, newId);
 
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
     if (cols.positions != null) {
       if (cols.positions.length < count * 2) {
@@ -1411,8 +1412,8 @@ export class GraphStore implements ModelView {
     this.ingestDataColumns('nodes', slots, cols.data);
 
     if (!resized) {
-      this.markBulk('node.position', slots);
-      this.markBulk('node.flags', slots);
+      this.markBulk(COL.NODE_POSITION, slots);
+      this.markBulk(COL.NODE_FLAGS, slots);
     }
 
     return slots;
@@ -1461,7 +1462,7 @@ export class GraphStore implements ModelView {
 
     this.registerBulk('edges', slots, cols.ids, newId);
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
     for (let i = 0; i < count; i++) {
       const slot = slots[i];
@@ -1483,8 +1484,8 @@ export class GraphStore implements ModelView {
     this.ingestDataColumns('edges', slots, cols.data);
 
     if (!resized) {
-      this.markBulk('edge.endpoints', slots);
-      this.markBulk('edge.flags', slots);
+      this.markBulk(COL.EDGE_ENDPOINTS, slots);
+      this.markBulk(COL.EDGE_FLAGS, slots);
     }
 
     return slots;
@@ -1497,7 +1498,7 @@ export class GraphStore implements ModelView {
    * — and stays stale, since ref repair never resurrects a removal.
    */
   removeEdge(slot: number): void {
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
     this.adj.removeEdge(slot, endpoints[slot * 2], endpoints[slot * 2 + 1]);
     this.curves.onRemoveEdge(
@@ -1511,7 +1512,7 @@ export class GraphStore implements ModelView {
 
   /** Re-point an existing edge at new endpoint node slots (updates adjacency in place). */
   moveEdge(slot: number, source: number, target: number): void {
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const oldSource = endpoints[slot * 2];
     const oldTarget = endpoints[slot * 2 + 1];
 
@@ -1528,7 +1529,7 @@ export class GraphStore implements ModelView {
     this.maybeRebuildAdjacency();
     this.curves.onMoveEdge(slot, oldSource, oldTarget, source, target);
     this.geoEpoch++;
-    this.dirty.mark('edge.endpoints', slot);
+    this.dirty.mark(COL.EDGE_ENDPOINTS, slot);
   }
 
   /** The node must have no incident edges or children left; the caller cascades removal of them first. */
@@ -1585,11 +1586,11 @@ export class GraphStore implements ModelView {
 
     this.taxiTrackEpoch = this.geoEpoch;
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const half = this.nodes.column('node.outerHalf') as Float32Array;
-    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const half = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const edges: TrackEdge[] = [];
     const edgeSlots: number[] = [];
 
@@ -1641,7 +1642,7 @@ export class GraphStore implements ModelView {
     }
 
     if (max >= 0) {
-      this.dirty.mark('edge.curveParams', min, max + 1);
+      this.dirty.mark(COL.EDGE_CURVE_PARAMS, min, max + 1);
     }
   }
 
@@ -1720,8 +1721,8 @@ export class GraphStore implements ModelView {
     w: number,
     h: number,
   ): void {
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const size = this.nodes.column('node.size') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
     const posChanged = pos[slot * 2] !== x || pos[slot * 2 + 1] !== y;
     const sizeChanged = size[slot * 2] !== w || size[slot * 2 + 1] !== h;
 
@@ -1732,13 +1733,13 @@ export class GraphStore implements ModelView {
     if (posChanged) {
       pos[slot * 2] = x;
       pos[slot * 2 + 1] = y;
-      this.dirty.mark('node.position', slot);
+      this.dirty.mark(COL.NODE_POSITION, slot);
     }
 
     if (sizeChanged) {
       size[slot * 2] = w;
       size[slot * 2 + 1] = h;
-      this.dirty.mark('node.size', slot);
+      this.dirty.mark(COL.NODE_SIZE, slot);
 
       const half = Math.max(w, h) / 2;
 
@@ -1752,14 +1753,14 @@ export class GraphStore implements ModelView {
       // compound-loop excursion bounds are derivation-time (14.10):
       // refresh them for the resized parent's incident edges (the
       // geometry itself always evaluates from live sizes)
-      const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+      const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
       for (const edgeSlot of this.adj.connectedEdges(slot)) {
         const a = endpoints[edgeSlot * 2];
         const b = endpoints[edgeSlot * 2 + 1];
 
         if (
-          (this.edges.column('edge.curveParams') as Float32Array)[
+          (this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array)[
             edgeSlot * 4 + 3
           ] === CURVE_CMPD
         ) {
@@ -1809,8 +1810,8 @@ export class GraphStore implements ModelView {
    * translation of the written position no longer describes them.
    */
   private shiftSubtree(slot: number, dx: number, dy: number): void {
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const flags = this.nodes.column('node.flags') as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const flags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
     const stack: number[] = [];
     let min = Infinity;
     let max = -1;
@@ -1844,7 +1845,7 @@ export class GraphStore implements ModelView {
 
     if (max >= 0) {
       this.geoEpoch++;
-      this.dirty.mark('node.position', min, max + 1);
+      this.dirty.mark(COL.NODE_POSITION, min, max + 1);
     }
   }
 
@@ -1917,7 +1918,7 @@ export class GraphStore implements ModelView {
 
   /** Re-derive curve routing for every edge incident to a subtree (14.10). */
   private invalidateSubtreeEdgeRelations(root: number): void {
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const stack: number[] = [root];
 
     while (stack.length > 0) {
@@ -1979,7 +1980,7 @@ export class GraphStore implements ModelView {
    * so an invisible element keeps its space and its bundle rank.
    */
   setInvisibility(group: GroupName, slot: number, invisible: boolean): void {
-    const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const id: ColumnId = group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = this.table(group).column(id) as Uint32Array;
     const cur = (flags[slot] & FLAG_SELF_INVISIBLE) !== 0;
 
@@ -2000,7 +2001,7 @@ export class GraphStore implements ModelView {
    * (Endpoint invisibility is folded by the consumers — the kernels'
    * endpoint tests and the edge `visible()` read — not stored here.) */
   private refreshEdgeDrawn(slot: number): void {
-    const flags = this.edges.column('edge.flags') as Uint32Array;
+    const flags = this.edges.column(COL.EDGE_FLAGS) as Uint32Array;
     const drawn =
       (flags[slot] & FLAG_VISIBLE) !== 0 &&
       (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
@@ -2019,8 +2020,8 @@ export class GraphStore implements ModelView {
       return false;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
     const drawnMask = FLAG_ALIVE | FLAG_DRAWN;
 
     return (
@@ -2039,7 +2040,7 @@ export class GraphStore implements ModelView {
    * (invisible elements keep their space).
    */
   private refreshEffectiveVisibility(root: number): void {
-    const flags = this.nodes.column('node.flags') as Uint32Array;
+    const flags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
     const stack: number[] = [root];
 
     while (stack.length > 0) {
@@ -2066,7 +2067,7 @@ export class GraphStore implements ModelView {
       flags[slot] = drawn
         ? flags[slot] | FLAG_DRAWN
         : flags[slot] & ~FLAG_DRAWN;
-      this.dirty.mark('node.flags', slot);
+      this.dirty.mark(COL.NODE_FLAGS, slot);
 
       if (eff !== cur) {
         // the space tier moved: bounds re-derive
@@ -2090,7 +2091,7 @@ export class GraphStore implements ModelView {
   baseOpacityOf(slot: number): number {
     return (
       this.opacityBase.get(slot) ??
-      (this.nodes.column('node.opacity') as Float32Array)[slot]
+      (this.nodes.column(COL.NODE_OPACITY) as Float32Array)[slot]
     );
   }
 
@@ -2115,7 +2116,7 @@ export class GraphStore implements ModelView {
    * effectiveOpacity), and a parent's write refolds its subtree.
    */
   private writeBaseOpacity(slot: number, base: number): void {
-    const col = this.nodes.column('node.opacity') as Float32Array;
+    const col = this.nodes.column(COL.NODE_OPACITY) as Float32Array;
     const product = this.ancestorOpacityProduct(slot);
     const folded = base * product;
 
@@ -2127,7 +2128,7 @@ export class GraphStore implements ModelView {
 
     if (col[slot] !== folded) {
       col[slot] = folded;
-      this.dirty.mark('node.opacity', slot);
+      this.dirty.mark(COL.NODE_OPACITY, slot);
     }
 
     if (this.hierarchy.childrenOf(slot).length > 0) {
@@ -2142,7 +2143,7 @@ export class GraphStore implements ModelView {
 
   /** Recursive half of the fold: children of a node whose folded value is `parentFolded`. */
   private refoldChildren(slot: number, parentFolded: number): void {
-    const col = this.nodes.column('node.opacity') as Float32Array;
+    const col = this.nodes.column(COL.NODE_OPACITY) as Float32Array;
 
     for (const kid of this.hierarchy.childrenOf(slot)) {
       const base = this.baseOpacityOf(kid);
@@ -2156,7 +2157,7 @@ export class GraphStore implements ModelView {
 
       if (col[kid] !== folded) {
         col[kid] = folded;
-        this.dirty.mark('node.opacity', kid);
+        this.dirty.mark(COL.NODE_OPACITY, kid);
       }
 
       this.refoldChildren(kid, folded);
@@ -2203,12 +2204,12 @@ export class GraphStore implements ModelView {
   /** A node's model x.  Raw column read: a parent's derived position may
    * be stale, so call flushDerived() first when that matters. */
   getX(slot: number): number {
-    return (this.nodes.column('node.position') as Float32Array)[slot * 2];
+    return (this.nodes.column(COL.NODE_POSITION) as Float32Array)[slot * 2];
   }
 
   /** A node's model y (raw column read; see getX on staleness). */
   getY(slot: number): number {
-    return (this.nodes.column('node.position') as Float32Array)[slot * 2 + 1];
+    return (this.nodes.column(COL.NODE_POSITION) as Float32Array)[slot * 2 + 1];
   }
 
   /**
@@ -2220,10 +2221,10 @@ export class GraphStore implements ModelView {
    * curve-bb memo.
    */
   setPosition(slot: number, x: number, y: number): void {
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
     if (this.hierarchy.hasCompounds()) {
-      const flags = (this.nodes.column('node.flags') as Uint32Array)[slot];
+      const flags = (this.nodes.column(COL.NODE_FLAGS) as Uint32Array)[slot];
 
       if ((flags & FLAG_PARENT) !== 0) {
         // the delta is against the parent's *derived* position, so any
@@ -2254,7 +2255,7 @@ export class GraphStore implements ModelView {
     pos[slot * 2 + 1] = y;
     this.geoEpoch++;
 
-    this.dirty.mark('node.position', slot);
+    this.dirty.mark(COL.NODE_POSITION, slot);
   }
 
   /** Bulk position write (e.g. from a layout): one coalesced dirty span.
@@ -2273,7 +2274,7 @@ export class GraphStore implements ModelView {
       return;
     }
 
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
     let min = Infinity;
     let max = -Infinity;
 
@@ -2288,7 +2289,7 @@ export class GraphStore implements ModelView {
     }
 
     this.geoEpoch++;
-    this.dirty.mark('node.position', min, max + 1);
+    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
   }
 
   /**
@@ -2304,7 +2305,7 @@ export class GraphStore implements ModelView {
       return;
     }
 
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
     if (this.hierarchy.hasCompounds()) {
       this.hierarchy.flush(); // the kept axis reads derived parent positions
@@ -2339,7 +2340,7 @@ export class GraphStore implements ModelView {
     }
 
     this.geoEpoch++;
-    this.dirty.mark('node.position', min, max + 1);
+    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
   }
 
   /** Bulk position offset over node slots: one coalesced dirty span.
@@ -2359,7 +2360,7 @@ export class GraphStore implements ModelView {
         inSet.add(slots[i]);
       }
 
-      const pos = this.nodes.column('node.position') as Float32Array;
+      const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
       for (let i = 0; i < slots.length; i++) {
         const slot = slots[i];
@@ -2386,7 +2387,7 @@ export class GraphStore implements ModelView {
       return;
     }
 
-    const pos = this.nodes.column('node.position') as Float32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
     let min = Infinity;
     let max = -1;
 
@@ -2405,7 +2406,7 @@ export class GraphStore implements ModelView {
     }
 
     this.geoEpoch++;
-    this.dirty.mark('node.position', min, max + 1);
+    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
   }
 
   // -- flags --
@@ -2438,8 +2439,8 @@ export class GraphStore implements ModelView {
   hotNodeFlags(): Uint32Array {
     if (this.hotNodeV !== this.nodes.arraysVersion) {
       this.hotNodeV = this.nodes.arraysVersion;
-      this.hotNFlags = this.nodes.column('node.flags') as Uint32Array;
-      this.hotNPos = this.nodes.column('node.position') as Float32Array;
+      this.hotNFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
+      this.hotNPos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
     }
 
     return this.hotNFlags;
@@ -2449,8 +2450,8 @@ export class GraphStore implements ModelView {
   hotEdgeFlags(): Uint32Array {
     if (this.hotEdgeV !== this.edges.arraysVersion) {
       this.hotEdgeV = this.edges.arraysVersion;
-      this.hotEFlags = this.edges.column('edge.flags') as Uint32Array;
-      this.hotEEnds = this.edges.column('edge.endpoints') as Uint32Array;
+      this.hotEFlags = this.edges.column(COL.EDGE_FLAGS) as Uint32Array;
+      this.hotEEnds = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     }
 
     return this.hotEFlags;
@@ -2470,7 +2471,7 @@ export class GraphStore implements ModelView {
    * the curve writers rather than here.
    */
   setFlag(group: GroupName, slot: number, bit: number, on: boolean): void {
-    const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const id: ColumnId = group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const arr = this.table(group).column(id) as Uint32Array;
     const prev = arr[slot];
     const next = on ? prev | bit : prev & ~bit;
@@ -2532,8 +2533,8 @@ export class GraphStore implements ModelView {
     requireBit = 0,
     changedIdx: number[] | null = null,
   ): number {
-    const nodeFlags = this.nodes.column('node.flags') as Uint32Array;
-    const edgeFlags = this.edges.column('edge.flags') as Uint32Array;
+    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
+    const edgeFlags = this.edges.column(COL.EDGE_FLAGS) as Uint32Array;
     const nodeGen = this.nodes.gen;
     const edgeGen = this.edges.gen;
     // collecting the changed slots is only worth it when some `case`
@@ -2608,10 +2609,10 @@ export class GraphStore implements ModelView {
     }
 
     if (nMax >= 0) {
-      this.dirty.mark('node.flags', nMin, nMax + 1);
+      this.dirty.mark(COL.NODE_FLAGS, nMin, nMax + 1);
     }
     if (eMax >= 0) {
-      this.dirty.mark('edge.flags', eMin, eMax + 1);
+      this.dirty.mark(COL.EDGE_FLAGS, eMin, eMax + 1);
     }
 
     if (nodeStateSlots.length > 0) {
@@ -2639,7 +2640,7 @@ export class GraphStore implements ModelView {
   setScalar(id: ColumnId, slot: number, value: number): void {
     // round 14.4: under compounds a node opacity write is a *base* —
     // the column stores the ancestor-folded product
-    if (id === 'node.opacity' && this.hierarchy.hasCompounds()) {
+    if (id === COL.NODE_OPACITY && this.hierarchy.hasCompounds()) {
       this.writeBaseOpacity(slot, value);
 
       return;
@@ -2652,7 +2653,7 @@ export class GraphStore implements ModelView {
     // (round 56), and a scalar write must not clobber them
     const at = slot * spec.components;
 
-    if (id === 'node.borderWidth' && value > this.borderMax) {
+    if (id === COL.NODE_BORDER_WIDTH && value > this.borderMax) {
       this.borderMax = value;
     }
 
@@ -2666,14 +2667,14 @@ export class GraphStore implements ModelView {
 
     // the shape id's lane of the round-58 fused column (outerHalf +
     // shape); the outerHalf lanes follow their own writes above
-    if (id === 'node.shape') {
-      const geom = this.nodes.column('node.outerGeom') as Float32Array;
+    if (id === COL.NODE_SHAPE) {
+      const geom = this.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
 
       geom[slot * 4 + 2] = value;
-      this.dirty.mark('node.outerGeom', slot);
+      this.dirty.mark(COL.NODE_OUTER_GEOM, slot);
     }
 
-    if (id === 'node.borderWidth') {
+    if (id === COL.NODE_BORDER_WIDTH) {
       this.updateOuterHalf(slot);
 
       // a border write changes the node's outer extent: stale ancestors
@@ -2696,7 +2697,7 @@ export class GraphStore implements ModelView {
     const spec = columnSpec(id);
     const arr = this.table(spec.group).column(id) as Float32Array | Uint32Array;
 
-    if (id === 'node.size') {
+    if (id === COL.NODE_SIZE) {
       const half = Math.max(a, b) / 2;
 
       if (half > this.nodeHalfMax) {
@@ -2720,7 +2721,7 @@ export class GraphStore implements ModelView {
     this.geoEpoch++;
     this.dirty.mark(id, slot);
 
-    if (id === 'node.size') {
+    if (id === COL.NODE_SIZE) {
       this.updateOuterHalf(slot);
 
       // round 25.1: label anchors bake the node extents (the sidecar
@@ -2745,11 +2746,11 @@ export class GraphStore implements ModelView {
    * raw with a dirty mark.
    */
   setLane(id: ColumnId, slot: number, lane: number, value: number): void {
-    if (id === 'node.size') {
-      const size = this.nodes.column('node.size') as Float32Array;
+    if (id === COL.NODE_SIZE) {
+      const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
 
       this.setPair(
-        'node.size',
+        COL.NODE_SIZE,
         slot,
         lane === 0 ? value : size[slot * 2],
         lane === 1 ? value : size[slot * 2 + 1],
@@ -2761,9 +2762,9 @@ export class GraphStore implements ModelView {
     // the edge layer records store their stroke in lane 1 as ×256
     // fixed-point (see the contract) — encode on the way in
     if (
-      id === 'edge.casing' ||
-      id === 'edge.overlay' ||
-      id === 'edge.underlay'
+      id === COL.EDGE_CASING ||
+      id === COL.EDGE_OVERLAY ||
+      id === COL.EDGE_UNDERLAY
     ) {
       const arr = this.edges.column(id) as Uint32Array;
       const enc = Math.max(0, Math.round(value * 256));
@@ -2813,13 +2814,13 @@ export class GraphStore implements ModelView {
    * @param word — the packed word (see `edge.arrowShapes` in the contract)
    */
   setArrowShapes(slot: number, word: number): void {
-    const shapes = this.edges.column('edge.arrowShapes') as Uint32Array;
+    const shapes = this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array;
 
     if (shapes[slot] !== word) {
       shapes[slot] = word;
       // the gap shortens the drawn line, so this moves geometry
       this.geoEpoch++;
-      this.dirty.mark('edge.arrowShapes', slot);
+      this.dirty.mark(COL.EDGE_ARROW_SHAPES, slot);
     }
 
     this.updateArrowBits(slot);
@@ -2846,10 +2847,12 @@ export class GraphStore implements ModelView {
    * CPU consumer reads too.
    */
   private updateArrowBits(slot: number): void {
-    const width = this.edges.column('edge.width') as Float32Array;
-    const word = (this.edges.column('edge.arrowShapes') as Uint32Array)[slot];
-    const src = this.edges.column('edge.sourceArrow') as Uint8Array;
-    const tgt = this.edges.column('edge.targetArrow') as Uint8Array;
+    const width = this.edges.column(COL.EDGE_WIDTH) as Float32Array;
+    const word = (this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[
+      slot
+    ];
+    const src = this.edges.column(COL.EDGE_SOURCE_ARROW) as Uint8Array;
+    const tgt = this.edges.column(COL.EDGE_TARGET_ARROW) as Uint8Array;
 
     if (
       this.widthBitsView == null ||
@@ -2876,7 +2879,7 @@ export class GraphStore implements ModelView {
 
     this.widthBitsView[slot * 2 + 1] = bits;
     this.geoEpoch++;
-    this.dirty.mark('edge.width', slot);
+    this.dirty.mark(COL.EDGE_WIDTH, slot);
   }
 
   /**
@@ -2887,23 +2890,23 @@ export class GraphStore implements ModelView {
    * exact f32 half-extents by construction.
    */
   private updateOuterHalf(slot: number): void {
-    const size = this.nodes.column('node.size') as Float32Array;
-    const border = this.nodes.column('node.borderWidth') as Float32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const geom = this.nodes.column('node.outerGeom') as Float32Array;
+    const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
+    const border = this.nodes.column(COL.NODE_BORDER_WIDTH) as Float32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const geom = this.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
     const halfBorder = border[slot] / 2;
     const hx = size[slot * 2] / 2 + halfBorder;
     const hy = size[slot * 2 + 1] / 2 + halfBorder;
 
     outer[slot * 2] = hx;
     outer[slot * 2 + 1] = hy;
-    this.dirty.mark('node.outerHalf', slot);
+    this.dirty.mark(COL.NODE_OUTER_HALF, slot);
     // the round-58 fused twin (outerHalf + shape in one column, for the
     // vertex stages at the storage-buffer budget) follows in the same
     // write, so the two can never disagree; lane 2 is the shape write's
     geom[slot * 4] = hx;
     geom[slot * 4 + 1] = hy;
-    this.dirty.mark('node.outerGeom', slot);
+    this.dirty.mark(COL.NODE_OUTER_GEOM, slot);
   }
 
   // -- ghosts (round 13 A1) --
@@ -2930,7 +2933,7 @@ export class GraphStore implements ModelView {
     opacity: number,
     enabled: boolean,
   ): void {
-    const arr = this.nodes.column('node.ghost') as Float32Array;
+    const arr = this.nodes.column(COL.NODE_GHOST) as Float32Array;
     const at = slot * 4;
     const en = enabled ? 1 : 0;
 
@@ -2952,7 +2955,7 @@ export class GraphStore implements ModelView {
     arr[at + 2] = opacity;
     arr[at + 3] = en;
     this.geoEpoch++;
-    this.dirty.mark('node.ghost', slot);
+    this.dirty.mark(COL.NODE_GHOST, slot);
   }
 
   // -- overlay / underlay (round 13 A2) --
@@ -2977,7 +2980,7 @@ export class GraphStore implements ModelView {
    * so writes bump the geometry epoch.
    */
   setNodeLayer(
-    id: 'node.overlay' | 'node.underlay',
+    id: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY,
     slot: number,
     rgba: number,
     padding: number,
@@ -3004,7 +3007,7 @@ export class GraphStore implements ModelView {
     if (wasOn !== isOn) {
       const d = isOn ? 1 : -1;
 
-      if (id === 'node.overlay') {
+      if (id === COL.NODE_OVERLAY) {
         this.overlays += d;
       } else {
         this.underlays += d;
@@ -3043,7 +3046,10 @@ export class GraphStore implements ModelView {
    * edge width + 2 × padding, derived at style-write time.
    */
   setEdgeLayer(
-    id: 'edge.overlay' | 'edge.underlay' | 'edge.casing',
+    id:
+      | typeof COL.EDGE_OVERLAY
+      | typeof COL.EDGE_UNDERLAY
+      | typeof COL.EDGE_CASING,
     slot: number,
     rgba: number,
     strokeWidth: number,
@@ -3062,9 +3068,9 @@ export class GraphStore implements ModelView {
     if (wasOn !== isOn) {
       const d = isOn ? 1 : -1;
 
-      if (id === 'edge.overlay') {
+      if (id === COL.EDGE_OVERLAY) {
         this.edgeOverlays += d;
-      } else if (id === 'edge.underlay') {
+      } else if (id === COL.EDGE_UNDERLAY) {
         this.edgeUnderlays += d;
       } else {
         this.casings += d;
@@ -3088,13 +3094,15 @@ export class GraphStore implements ModelView {
 
   /** setColor wrapper for the mid-arrow columns that keeps the count. */
   setMidArrow(
-    id: 'edge.midSourceArrow' | 'edge.midTargetArrow',
+    id: typeof COL.EDGE_MID_SOURCE_ARROW | typeof COL.EDGE_MID_TARGET_ARROW,
     slot: number,
     r: number,
     g: number,
     b: number,
     a: number,
-    otherId: 'edge.midSourceArrow' | 'edge.midTargetArrow',
+    otherId:
+      | typeof COL.EDGE_MID_SOURCE_ARROW
+      | typeof COL.EDGE_MID_TARGET_ARROW,
   ): void {
     const arr = this.edges.column(id) as Uint8Array;
     const other = this.edges.column(otherId) as Uint8Array;
@@ -3187,7 +3195,7 @@ export class GraphStore implements ModelView {
     borderStyle: number = 0,
     outlineStyle: number = 0,
   ): void {
-    const arr = this.nodes.column('node.borderGeom') as Uint32Array;
+    const arr = this.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
     const at = slot * 4;
     // C3: custom polygons carry their point-record ref (from
     // setPolygonPoints) in the radius word — the corner radius is
@@ -3244,7 +3252,7 @@ export class GraphStore implements ModelView {
     arr[at + 2] = outlineRgba;
     arr[at + 3] = packedWO;
     this.geoEpoch++;
-    this.dirty.mark('node.borderGeom', slot);
+    this.dirty.mark(COL.NODE_BORDER_GEOM, slot);
   }
 
   /** live count of elements carrying a gradient record (13 C2) */
@@ -3260,7 +3268,7 @@ export class GraphStore implements ModelView {
    * [rgba, pos-fraction] pairs, capped at 5 by the style layer.
    */
   setGradient(
-    id: 'node.gradient' | 'edge.gradient',
+    id: typeof COL.NODE_GRADIENT | typeof COL.EDGE_GRADIENT,
     slot: number,
     kind: number,
     dir: number,
@@ -3374,7 +3382,7 @@ export class GraphStore implements ModelView {
 
     // round 56: an end arrow's alpha decides whether the head hides the
     // line under it, which decides how far the line is shortened
-    if (id === 'edge.sourceArrow' || id === 'edge.targetArrow') {
+    if (id === COL.EDGE_SOURCE_ARROW || id === COL.EDGE_TARGET_ARROW) {
       this.updateArrowBits(slot);
     }
   }
@@ -3423,7 +3431,7 @@ export class GraphStore implements ModelView {
   curveParamsAt(slot: number): [number, number, number, number] {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
 
     return [params[at], params[at + 1], params[at + 2], params[at + 3]];
@@ -3455,7 +3463,7 @@ export class GraphStore implements ModelView {
    */
   arrowTrimAt(slot: number): ArrowTrim {
     const out = this.trimScratch;
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
 
     if (params[slot * 4 + 3] === CURVE_HAYSTACK) {
       out.srcGap = out.tgtGap = out.srcSpacing = out.tgtSpacing = 0;
@@ -3463,8 +3471,10 @@ export class GraphStore implements ModelView {
       return out;
     }
 
-    const word = (this.edges.column('edge.arrowShapes') as Uint32Array)[slot];
-    const width = (this.edges.column('edge.width') as Float32Array)[slot * 2];
+    const word = (this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[
+      slot
+    ];
+    const width = (this.edges.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
     const src = (word >>> ARROW_SHIFT_SOURCE) & ARROW_SHAPE_MASK;
     const tgt = (word >>> ARROW_SHIFT_TARGET) & ARROW_SHAPE_MASK;
     const q = word >>> ARROW_SHIFT_SCALE;
@@ -3493,7 +3503,7 @@ export class GraphStore implements ModelView {
   ): CurveEval | null {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
     const kind = params[at + 3];
 
@@ -3502,10 +3512,10 @@ export class GraphStore implements ModelView {
       return null;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
     const s = endpoints[at / 2];
     const t = endpoints[at / 2 + 1];
 
@@ -3544,7 +3554,7 @@ export class GraphStore implements ModelView {
   ): CurveRoute | null {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
     const kind = params[at + 3];
     const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind; // 12c endpoint blocks
@@ -3557,10 +3567,10 @@ export class GraphStore implements ModelView {
       return null;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
     const s = endpoints[at / 2];
     const t = endpoints[at / 2 + 1];
 
@@ -3608,7 +3618,7 @@ export class GraphStore implements ModelView {
   ): CurveRoute | null {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
     const kind = params[at + 3];
     const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
@@ -3621,9 +3631,9 @@ export class GraphStore implements ModelView {
       return null;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
     const s = endpoints[at / 2];
     const t = endpoints[at / 2 + 1];
 
@@ -3672,7 +3682,7 @@ export class GraphStore implements ModelView {
   ): CurveEval | null {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
     const kind = params[at + 3];
 
@@ -3680,9 +3690,9 @@ export class GraphStore implements ModelView {
       return null;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
     const s = endpoints[at / 2];
     const t = endpoints[at / 2 + 1];
 
@@ -3718,16 +3728,16 @@ export class GraphStore implements ModelView {
   ): { sx: number; sy: number; tx: number; ty: number } | null {
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
 
     if (params[at + 3] !== CURVE_HAYSTACK) {
       return null;
     }
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
     const sN = endpoints[slot * 2];
     const tN = endpoints[slot * 2 + 1];
     const radius = params[at + 2];
@@ -3783,10 +3793,10 @@ export class GraphStore implements ModelView {
   ): { x: number; y: number } {
     this.flushDerived();
 
-    const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
-    const pos = this.nodes.column('node.position') as Float32Array;
-    const outer = this.nodes.column('node.outerHalf') as Float32Array;
-    const shape = this.nodes.column('node.shape') as Uint32Array;
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
+    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
 
     const self = endpoints[slot * 2 + which];
     const other = endpoints[slot * 2 + (which === 0 ? 1 : 0)];
@@ -3871,7 +3881,7 @@ export class GraphStore implements ModelView {
     // auto-bounds materialization bumps the epoch this memo checks
     this.flushDerived();
 
-    const params = this.edges.column('edge.curveParams') as Float32Array;
+    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const kind = params[slot * 4 + 3];
     const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
 
@@ -4035,7 +4045,7 @@ export class GraphStore implements ModelView {
     p2: number,
     kind: number,
   ): void {
-    const arr = this.edges.column('edge.curveParams') as Float32Array;
+    const arr = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
 
     const dev = curveDeviation(kind, p0, p2);
@@ -4064,7 +4074,7 @@ export class GraphStore implements ModelView {
     arr[at + 3] = kind;
     this.geoEpoch++;
 
-    this.dirty.mark('edge.curveParams', slot);
+    this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
     // haystack/triangle are straight-stream kinds (12c): they draw in
     // the straight pipeline, so FLAG_CURVED stays clear
     const curvedStream =
@@ -4097,7 +4107,7 @@ export class GraphStore implements ModelView {
     box: boolean,
     endptPct: number = 0,
   ): void {
-    const arr = this.edges.column('edge.curveParams') as Float32Array;
+    const arr = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const at = slot * 4;
     const offset = this.blob.write(slot, values);
 
@@ -4117,7 +4127,7 @@ export class GraphStore implements ModelView {
     arr[at + 3] = kind;
     this.geoEpoch++;
 
-    this.dirty.mark('edge.curveParams', slot);
+    this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
     this.curvedEver = true; // every blob-backed kind is curved-stream
     this.setFlag('edges', slot, FLAG_CURVED, true);
     this.setFlag('edges', slot, FLAG_CURVED_BOX, box);
@@ -4430,7 +4440,7 @@ export class GraphStore implements ModelView {
     const gens = order.gens;
     const gen = this.table(group).gen;
     const flags = this.column(
-      group === 'nodes' ? 'node.flags' : 'edge.flags',
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     let n = at;
 
@@ -4469,7 +4479,7 @@ export class GraphStore implements ModelView {
     const gens = order.gens;
     const gen = this.table(group).gen;
     const flags = this.column(
-      group === 'nodes' ? 'node.flags' : 'edge.flags',
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     let n = at;
 
@@ -4550,10 +4560,10 @@ export class GraphStore implements ModelView {
     const shown = FLAG_ALIVE | FLAG_VISIBLE;
     const out: Ref[] = [];
 
-    const pos = this.column('node.position') as Float32Array;
-    const size = this.column('node.size') as Float32Array;
-    const border = this.column('node.borderWidth') as Float32Array;
-    const nodeFlags = this.column('node.flags') as Uint32Array;
+    const pos = this.column(COL.NODE_POSITION) as Float32Array;
+    const size = this.column(COL.NODE_SIZE) as Float32Array;
+    const border = this.column(COL.NODE_BORDER_WIDTH) as Float32Array;
+    const nodeFlags = this.column(COL.NODE_FLAGS) as Uint32Array;
     const nodeOrder = this.order.nodes;
     const nodeGen = this.nodes.gen;
 
@@ -4617,8 +4627,8 @@ export class GraphStore implements ModelView {
       }
     }
 
-    const endpoints = this.column('edge.endpoints') as Uint32Array;
-    const edgeFlags = this.column('edge.flags') as Uint32Array;
+    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
     const edgeOrder = this.order.edges;
     const edgeGen = this.edges.gen;
     const centerIn = (node: number): boolean => {
@@ -4719,8 +4729,8 @@ export class GraphStore implements ModelView {
     hx: number,
     hy: number,
   ): boolean {
-    const endpoints = this.column('edge.endpoints') as Uint32Array;
-    const edgeFlags = this.column('edge.flags') as Uint32Array;
+    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
 
     if ((edgeFlags[slot] & FLAG_CURVED) !== 0) {
       const bb = this.curveBBAt(slot);
@@ -4772,7 +4782,7 @@ export class GraphStore implements ModelView {
     // longer than the ink.  Kept deliberately (ledger item 22): a stub
     // of an edge beside a node is not a distinction box selection is
     // making, and the cheap answer is the right one on UX grounds
-    const pos = this.column('node.position') as Float32Array;
+    const pos = this.column(COL.NODE_POSITION) as Float32Array;
     const s = endpoints[slot * 2];
     const t = endpoints[slot * 2 + 1];
 
@@ -4910,23 +4920,23 @@ export class GraphStore implements ModelView {
       x2 = -Infinity,
       y2 = -Infinity;
 
-    const pos = this.column('node.position') as Float32Array;
-    const size = this.column('node.size') as Float32Array;
-    const border = this.column('node.borderWidth') as Float32Array;
+    const pos = this.column(COL.NODE_POSITION) as Float32Array;
+    const size = this.column(COL.NODE_SIZE) as Float32Array;
+    const border = this.column(COL.NODE_BORDER_WIDTH) as Float32Array;
 
-    const ghost = this.column('node.ghost') as Float32Array;
+    const ghost = this.column(COL.NODE_GHOST) as Float32Array;
     const anyGhosts = this.ghosts > 0;
     const anyNodeLabels = includeLabels && this.hasNodeLabels();
     const anyEdgeLabels = includeLabels && this.hasEdgeLabels();
-    const over = this.column('node.overlay') as Uint32Array;
-    const under = this.column('node.underlay') as Uint32Array;
+    const over = this.column(COL.NODE_OVERLAY) as Uint32Array;
+    const under = this.column(COL.NODE_UNDERLAY) as Uint32Array;
     const anyLayers = this.overlays > 0 || this.underlays > 0;
-    const bGeom = this.column('node.borderGeom') as Uint32Array;
+    const bGeom = this.column(COL.NODE_BORDER_GEOM) as Uint32Array;
     const anyOutlines = this.outlineSlackMax > 0;
     // the space tier (round 22): display-hidden elements take no space
     // (v3's rule — previously the fit scan included them, a gap this
     // closed); `visibility: 'hidden'` ones keep theirs (VISIBLE, not DRAWN)
-    const nodeFlags = this.column('node.flags') as Uint32Array;
+    const nodeFlags = this.column(COL.NODE_FLAGS) as Uint32Array;
 
     this.forEachAlive('nodes', (slot) => {
       if ((nodeFlags[slot] & FLAG_VISIBLE) === 0) {
@@ -5019,9 +5029,9 @@ export class GraphStore implements ModelView {
       }
     });
 
-    const endpoints = this.column('edge.endpoints') as Uint32Array;
-    const curveParams = this.column('edge.curveParams') as Float32Array;
-    const edgeFlags = this.column('edge.flags') as Uint32Array;
+    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const curveParams = this.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
+    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
 
     this.forEachAlive('edges', (slot) => {
       // the space tier (round 22): hidden edges — or edges with a hidden
@@ -5206,7 +5216,8 @@ export class GraphStore implements ModelView {
     contiguousFrom: number,
     cols: { selected?: Uint8Array; selectable?: Uint8Array },
   ): void {
-    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flagsId: ColumnId =
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = this.table(group).column(flagsId) as Uint32Array;
     const defaults =
       FLAG_ALIVE |
@@ -5320,7 +5331,8 @@ export class GraphStore implements ModelView {
     }
 
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad
-    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flagsId: ColumnId =
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
 
     (this.table(group).column(flagsId) as Uint32Array)[slot] = 0;
     this.dirty.mark(flagsId, slot);
@@ -5356,7 +5368,7 @@ export class GraphStore implements ModelView {
 
     this.adj.rebuild(
       this.slotsOrdered('edges'),
-      this.edges.column('edge.endpoints') as Uint32Array,
+      this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
       this.nodes.cap,
     );
   }
@@ -5384,7 +5396,7 @@ export class GraphStore implements ModelView {
 
     if (nodesRes != null) {
       // endpoints hold node slots — the one column with cross-group slots
-      const endpoints = this.edges.column('edge.endpoints') as Uint32Array;
+      const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
       const remap = nodesRes.remap;
       const hw = this.edges.highWater;
 
@@ -5393,14 +5405,14 @@ export class GraphStore implements ModelView {
       }
 
       if (hw > 0) {
-        this.dirty.mark('edge.endpoints', 0, hw);
+        this.dirty.mark(COL.EDGE_ENDPOINTS, 0, hw);
       }
     }
 
     if (nodesRes != null || edgesRes != null) {
       this.adj.rebuild(
         this.slotsOrdered('edges'),
-        this.edges.column('edge.endpoints') as Uint32Array,
+        this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
         this.nodes.cap,
       );
       this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
@@ -5498,7 +5510,8 @@ export class GraphStore implements ModelView {
   private compactGroup(group: GroupName): GroupCompaction | null {
     const table = this.table(group);
     const hw = table.highWater;
-    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flagsId: ColumnId =
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = table.column(flagsId) as Uint32Array;
     const remap = new Uint32Array(hw);
     let next = 0;

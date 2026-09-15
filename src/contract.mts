@@ -487,14 +487,25 @@ export const unpackArrowShape = (packed: number, shift: number): number =>
 
 // -- columns --
 
-export type ColumnId =
-  | 'node.position' // Float32Array(2·cap), interleaved x,y
-  | 'node.size' // Float32Array(2·cap), w,h
-  | 'node.fillColor' // Uint8Array(4·cap), RGBA bytes; WGSL binds array<u32> + unpack4x8unorm
-  | 'node.borderColor' // Uint8Array(4·cap)
-  | 'node.borderWidth' // Float32Array(cap)
-  | 'node.opacity' // Float32Array(cap)
-  | 'node.shape' // Uint32Array(cap)
+/**
+ * Every column id, spelled once (round 127).  The store, the renderer,
+ * the mirror, the tween paths and the worker protocol all name a column
+ * through this table; the string values are still what crosses the
+ * wire and what `COLUMN_SPECS` is keyed by, and `ColumnId` is derived
+ * from the table so the two cannot drift.  `test/modules/string-keys.mjs`
+ * rejects a column-id literal anywhere else under `src/`.
+ *
+ * The comment on each member is the column's backing format and its
+ * meaning — the co-signed part.
+ */
+export const COL = {
+  NODE_POSITION: 'node.position', // Float32Array(2·cap), interleaved x,y
+  NODE_SIZE: 'node.size', // Float32Array(2·cap), w,h
+  NODE_FILL_COLOR: 'node.fillColor', // Uint8Array(4·cap), RGBA bytes; WGSL binds array<u32> + unpack4x8unorm
+  NODE_BORDER_COLOR: 'node.borderColor', // Uint8Array(4·cap)
+  NODE_BORDER_WIDTH: 'node.borderWidth', // Float32Array(cap)
+  NODE_OPACITY: 'node.opacity', // Float32Array(cap)
+  NODE_SHAPE: 'node.shape', // Uint32Array(cap)
   /**
    * Float32Array(2·cap) — *derived*: size/2 + borderWidth/2 per axis, the
    * outer half-extent (v3's outerWidth/outerHeight frame).  Maintained by
@@ -504,7 +515,7 @@ export type ColumnId =
    * WebGPU's base 8-storage-buffer budget (and leaves room for the 12b
    * curve param blob).
    */
-  | 'node.outerHalf'
+  NODE_OUTER_HALF: 'node.outerHalf',
   /**
    * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
    * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
@@ -520,7 +531,7 @@ export type ColumnId =
    * precedent).  Nothing reads it on the CPU; `test/modules/`
    * pins it in lockstep with its two source columns.
    */
-  | 'node.outerGeom'
+  NODE_OUTER_GEOM: 'node.outerGeom',
   /**
    * Float32Array(4·cap) — ghost props (round 13 A1): [offsetX, offsetY,
    * ghostOpacity, enabled].  The decided simplified form: a ghost
@@ -529,7 +540,7 @@ export type ColumnId =
    * after edges/arrows and under the nodes, never a full node redraw
    * (labels and decorations excluded).
    */
-  | 'node.ghost'
+  NODE_GHOST: 'node.ghost',
   /**
    * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
    * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
@@ -546,7 +557,7 @@ export type ColumnId =
    * and outlines grow the quad), and the CPU pick (the
    * round-rectangle inside test).
    */
-  | 'node.borderGeom'
+  NODE_BORDER_GEOM: 'node.borderGeom',
   /**
    * Float32Array(4·cap) — the dashed border's pattern (round 38),
    * normalized to two on/off pairs exactly like `edge.dashPattern`
@@ -556,13 +567,13 @@ export type ColumnId =
    * pipeline — the FS is at its 8-storage-buffer budget — and reaches
    * the fragment stage as flat varyings.
    */
-  | 'node.borderDash'
+  NODE_BORDER_DASH: 'node.borderDash',
   /**
    * Float32Array(2·cap) — [border-dash-offset (model px), reserved],
    * the `edge.dashMeta` twin for borders (round 38).  Same vertex-only
    * binding rule as 'node.borderDash'.
    */
-  | 'node.borderDashMeta'
+  NODE_BORDER_DASH_META: 'node.borderDashMeta',
   /**
    * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
    * stops (v3's canvas gradients), constants-only, capped at 5 (a
@@ -572,7 +583,7 @@ export type ColumnId =
    * for edges as 'edge.gradient' (line-fill; no direction — linear
    * runs along the edge, radial from the midpoint).
    */
-  | 'node.gradient'
+  NODE_GRADIENT: 'node.gradient',
   /**
    * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
    * column per layer: [rgba (layer opacity folded into alpha; a=0 =
@@ -582,9 +593,9 @@ export type ColumnId =
    * extents)].  The underlay draws under the node body (after ghosts),
    * the overlay above the nodes (before labels).
    */
-  | 'node.overlay'
-  | 'node.underlay'
-  | 'node.flags' // Uint32Array(cap)
+  NODE_OVERLAY: 'node.overlay',
+  NODE_UNDERLAY: 'node.underlay',
+  NODE_FLAGS: 'node.flags', // Uint32Array(cap)
   /**
    * Uint32Array(cap) — background-image list ref (round 15.2): record
    * offset into the image param blob | image count << 24 (0 = no
@@ -594,7 +605,7 @@ export type ColumnId =
    * position/offset/size values with unit bits, and the sdf tint.
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
    */
-  | 'node.imageRef'
+  NODE_IMAGE_REF: 'node.imageRef',
   /**
    * Uint32Array(cap) — chart record ref (round 23): offset into the
    * chart blob | slice count << 24 (0 = no chart).  The record is
@@ -602,9 +613,9 @@ export type ColumnId =
    * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
    * paint, like images: nothing in bb, cull-extent or CPU-pick.
    */
-  | 'node.chartRef'
-  | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
-  | 'edge.lineColor' // Uint8Array(4·cap)
+  NODE_CHART_REF: 'node.chartRef',
+  EDGE_ENDPOINTS: 'edge.endpoints', // Uint32Array(2·cap), source,target node *slots*
+  EDGE_LINE_COLOR: 'edge.lineColor', // Uint8Array(4·cap)
   /**
    * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
    *
@@ -632,12 +643,12 @@ export type ColumnId =
    * drawn at is deliberate: the line then meets the head exactly, where
    * a gap computed from the unquantized scale would not.
    */
-  | 'edge.width' // Float32Array(2·cap)
-  | 'edge.opacity' // Float32Array(cap)
-  | 'edge.flags' // Uint32Array(cap)
-  | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
-  | 'edge.targetArrow' // Uint8Array(4·cap)
-  | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
+  EDGE_WIDTH: 'edge.width', // Float32Array(2·cap)
+  EDGE_OPACITY: 'edge.opacity', // Float32Array(cap)
+  EDGE_FLAGS: 'edge.flags', // Uint32Array(cap)
+  EDGE_SOURCE_ARROW: 'edge.sourceArrow', // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
+  EDGE_TARGET_ARROW: 'edge.targetArrow', // Uint8Array(4·cap)
+  EDGE_LINE_STYLE: 'edge.lineStyle', // Uint32Array(cap), LINE_* ids
   /**
    * Uint32Array(cap) — the four arrowhead ids, the two hollow-fill flags
    * and the quantized arrow-scale in one word.  **The layout is written
@@ -651,18 +662,18 @@ export type ColumnId =
    * lines above it.  Round 56 found it by writing a spec against the
    * prose, and deleted the restatement rather than fixing it twice.)
    */
-  | 'edge.arrowShapes'
+  EDGE_ARROW_SHAPES: 'edge.arrowShapes',
   /** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
    * folded like the end arrows (opacity × line-opacity; a=0 = none).
    * Mid arrows anchor at the curve/route midpoint with the midpoint
    * tangent (mid-source pointing backward), and are always filled at
    * the standard width (mid fill/width props are unsupported — a
    * recorded scope note). */
-  | 'edge.midSourceArrow'
-  | 'edge.midTargetArrow'
+  EDGE_MID_SOURCE_ARROW: 'edge.midSourceArrow',
+  EDGE_MID_TARGET_ARROW: 'edge.midTargetArrow',
   /** Float32Array(2·cap) — hollow-arrow stroke widths per end, model px
    * (round 13 B7; 'match-line' and % forms resolve at style-write). */
-  | 'edge.arrowWidths'
+  EDGE_ARROW_WIDTHS: 'edge.arrowWidths',
   /**
    * Uint32Array(2·cap) — edge overlay/underlay records (round 13 A2),
    * one column per layer: [rgba (layer opacity folded; a=0 = disabled),
@@ -672,8 +683,8 @@ export type ColumnId =
    * over edges + arrows; both ride the existing edge cull streams with
    * a VS collapse for disabled instances.
    */
-  | 'edge.overlay'
-  | 'edge.underlay'
+  EDGE_OVERLAY: 'edge.overlay',
+  EDGE_UNDERLAY: 'edge.underlay',
   /**
    * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
    * record layout: [rgba (folded by opacity × line-opacity; a=0 =
@@ -681,8 +692,8 @@ export type ColumnId =
    * v3's context.lineWidth)].  Strokes under the edge line, over the
    * edge underlay, via the shared layer entry points.
    */
-  | 'edge.gradient'
-  | 'edge.casing'
+  EDGE_GRADIENT: 'edge.gradient',
+  EDGE_CASING: 'edge.casing',
   /**
    * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
    * to two on/off pairs in model px (a 2-entry pattern repeats; odd
@@ -690,10 +701,10 @@ export type ColumnId =
    * recorded cap).  Applies when line-style is dashed; dotted keeps
    * [1, 1].
    */
-  | 'edge.dashPattern'
+  EDGE_DASH_PATTERN: 'edge.dashPattern',
   /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
    * (0 butt, 1 round, 2 square)] (round 13 B3). */
-  | 'edge.dashMeta'
+  EDGE_DASH_META: 'edge.dashMeta',
   /**
    * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
    * all position-independent so drags/layouts/position tweens follow
@@ -719,7 +730,11 @@ export type ColumnId =
    *   FLAG_CURVED)
    * - CURVE_TRIANGLE (12c): straight-stream kind, no params
    */
-  | 'edge.curveParams';
+  EDGE_CURVE_PARAMS: 'edge.curveParams',
+} as const;
+
+/** A column id: one of the `COL` values. */
+export type ColumnId = (typeof COL)[keyof typeof COL];
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
@@ -752,44 +767,44 @@ const spec = (
 });
 
 export const COLUMN_SPECS: ColumnSpec[] = [
-  spec('node.position', 'nodes', Float32Array, 2),
-  spec('node.size', 'nodes', Float32Array, 2),
-  spec('node.fillColor', 'nodes', Uint8Array, 4),
-  spec('node.borderColor', 'nodes', Uint8Array, 4),
-  spec('node.borderWidth', 'nodes', Float32Array, 1),
-  spec('node.opacity', 'nodes', Float32Array, 1),
-  spec('node.shape', 'nodes', Uint32Array, 1),
-  spec('node.outerHalf', 'nodes', Float32Array, 2),
-  spec('node.outerGeom', 'nodes', Float32Array, 4),
-  spec('node.ghost', 'nodes', Float32Array, 4),
-  spec('node.borderGeom', 'nodes', Uint32Array, 4),
-  spec('node.borderDash', 'nodes', Float32Array, 4),
-  spec('node.borderDashMeta', 'nodes', Float32Array, 2),
-  spec('node.gradient', 'nodes', Uint32Array, 8),
-  spec('node.overlay', 'nodes', Uint32Array, 4),
-  spec('node.underlay', 'nodes', Uint32Array, 4),
-  spec('node.imageRef', 'nodes', Uint32Array, 1),
-  spec('node.chartRef', 'nodes', Uint32Array, 1),
-  spec('node.flags', 'nodes', Uint32Array, 1),
-  spec('edge.endpoints', 'edges', Uint32Array, 2),
-  spec('edge.lineColor', 'edges', Uint8Array, 4),
-  spec('edge.width', 'edges', Float32Array, 2),
-  spec('edge.opacity', 'edges', Float32Array, 1),
-  spec('edge.flags', 'edges', Uint32Array, 1),
-  spec('edge.sourceArrow', 'edges', Uint8Array, 4),
-  spec('edge.targetArrow', 'edges', Uint8Array, 4),
-  spec('edge.lineStyle', 'edges', Uint32Array, 1),
-  spec('edge.arrowShapes', 'edges', Uint32Array, 1),
-  spec('edge.arrowWidths', 'edges', Float32Array, 2),
-  spec('edge.midSourceArrow', 'edges', Uint8Array, 4),
-  spec('edge.midTargetArrow', 'edges', Uint8Array, 4),
-  spec('edge.overlay', 'edges', Uint32Array, 2),
-  spec('edge.gradient', 'edges', Uint32Array, 8),
-  spec('edge.casing', 'edges', Uint32Array, 2),
-  spec('edge.dashPattern', 'edges', Float32Array, 4),
-  spec('edge.dashMeta', 'edges', Float32Array, 2),
-  spec('edge.underlay', 'edges', Uint32Array, 2),
-  spec('edge.curveParams', 'edges', Float32Array, 4),
+  spec(COL.NODE_POSITION, 'nodes', Float32Array, 2),
+  spec(COL.NODE_SIZE, 'nodes', Float32Array, 2),
+  spec(COL.NODE_FILL_COLOR, 'nodes', Uint8Array, 4),
+  spec(COL.NODE_BORDER_COLOR, 'nodes', Uint8Array, 4),
+  spec(COL.NODE_BORDER_WIDTH, 'nodes', Float32Array, 1),
+  spec(COL.NODE_OPACITY, 'nodes', Float32Array, 1),
+  spec(COL.NODE_SHAPE, 'nodes', Uint32Array, 1),
+  spec(COL.NODE_OUTER_HALF, 'nodes', Float32Array, 2),
+  spec(COL.NODE_OUTER_GEOM, 'nodes', Float32Array, 4),
+  spec(COL.NODE_GHOST, 'nodes', Float32Array, 4),
+  spec(COL.NODE_BORDER_GEOM, 'nodes', Uint32Array, 4),
+  spec(COL.NODE_BORDER_DASH, 'nodes', Float32Array, 4),
+  spec(COL.NODE_BORDER_DASH_META, 'nodes', Float32Array, 2),
+  spec(COL.NODE_GRADIENT, 'nodes', Uint32Array, 8),
+  spec(COL.NODE_OVERLAY, 'nodes', Uint32Array, 4),
+  spec(COL.NODE_UNDERLAY, 'nodes', Uint32Array, 4),
+  spec(COL.NODE_IMAGE_REF, 'nodes', Uint32Array, 1),
+  spec(COL.NODE_CHART_REF, 'nodes', Uint32Array, 1),
+  spec(COL.NODE_FLAGS, 'nodes', Uint32Array, 1),
+  spec(COL.EDGE_ENDPOINTS, 'edges', Uint32Array, 2),
+  spec(COL.EDGE_LINE_COLOR, 'edges', Uint8Array, 4),
+  spec(COL.EDGE_WIDTH, 'edges', Float32Array, 2),
+  spec(COL.EDGE_OPACITY, 'edges', Float32Array, 1),
+  spec(COL.EDGE_FLAGS, 'edges', Uint32Array, 1),
+  spec(COL.EDGE_SOURCE_ARROW, 'edges', Uint8Array, 4),
+  spec(COL.EDGE_TARGET_ARROW, 'edges', Uint8Array, 4),
+  spec(COL.EDGE_LINE_STYLE, 'edges', Uint32Array, 1),
+  spec(COL.EDGE_ARROW_SHAPES, 'edges', Uint32Array, 1),
+  spec(COL.EDGE_ARROW_WIDTHS, 'edges', Float32Array, 2),
+  spec(COL.EDGE_MID_SOURCE_ARROW, 'edges', Uint8Array, 4),
+  spec(COL.EDGE_MID_TARGET_ARROW, 'edges', Uint8Array, 4),
+  spec(COL.EDGE_OVERLAY, 'edges', Uint32Array, 2),
+  spec(COL.EDGE_GRADIENT, 'edges', Uint32Array, 8),
+  spec(COL.EDGE_CASING, 'edges', Uint32Array, 2),
+  spec(COL.EDGE_DASH_PATTERN, 'edges', Float32Array, 4),
+  spec(COL.EDGE_DASH_META, 'edges', Float32Array, 2),
+  spec(COL.EDGE_UNDERLAY, 'edges', Uint32Array, 2),
+  spec(COL.EDGE_CURVE_PARAMS, 'edges', Float32Array, 4),
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>(
@@ -849,9 +864,9 @@ export const columnSpecsForGroup = (group: GroupName): ColumnSpec[] => {
  * one list or the other.
  */
 export const EDGE_PER_ELEMENT_COLUMNS: readonly ColumnId[] = [
-  'edge.endpoints',
-  'edge.flags',
-  'edge.curveParams',
+  COL.EDGE_ENDPOINTS,
+  COL.EDGE_FLAGS,
+  COL.EDGE_CURVE_PARAMS,
 ];
 
 /** The complement of {@link EDGE_PER_ELEMENT_COLUMNS}: edge columns a

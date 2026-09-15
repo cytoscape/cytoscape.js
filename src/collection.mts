@@ -1,4 +1,5 @@
 import {
+  COL,
   CURVE_MULTI,
   CURVE_STRAIGHT,
   FLAG_ACTIVE,
@@ -1008,7 +1009,7 @@ export class Collection {
       return false;
     }
 
-    const endpoints = this._store.column('edge.endpoints') as Uint32Array;
+    const endpoints = this._store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const isLoop = endpoints[ref.slot * 2] === endpoints[ref.slot * 2 + 1];
 
     return wantLoop ? isLoop : !isLoop;
@@ -1314,8 +1315,8 @@ export class Collection {
     const edgeTest = plan.edges;
     const nodeGen = store.nodes.gen;
     const edgeGen = store.edges.gen;
-    const nodeFlags = store.column('node.flags') as Uint32Array;
-    const edgeFlags = store.column('edge.flags') as Uint32Array;
+    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
+    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
     const dataConds = plan.data;
     const refs: Ref[] = [];
 
@@ -1790,7 +1791,7 @@ export class Collection {
       return this;
     }
 
-    const flags = store.column('node.flags') as Uint32Array;
+    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
 
     // constant (possibly partial) object: direct columnar write — no
     // per-element handles, callbacks, or Position allocations
@@ -1836,7 +1837,7 @@ export class Collection {
       return this;
     }
 
-    const posCol = store.column('node.position') as Float32Array;
+    const posCol = store.column(COL.NODE_POSITION) as Float32Array;
     const slots: number[] = [];
     const xy: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
@@ -1995,7 +1996,7 @@ export class Collection {
     const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
     const slots: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
-    const flags = store.column('node.flags') as Uint32Array;
+    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
 
     // v3's shift dedupe: an element whose ancestor is also shifted is
     // skipped — the ancestor's subtree shift moves it exactly once
@@ -2125,7 +2126,7 @@ export class Collection {
       return { x: 0, y: 0 };
     }
 
-    const xy = store.column('node.position') as Float32Array;
+    const xy = store.column(COL.NODE_POSITION) as Float32Array;
 
     return { x: xy[p * 2], y: xy[p * 2 + 1] };
   }
@@ -2207,7 +2208,7 @@ export class Collection {
 
     return ref.group === 'nodes'
       ? this._nodeDim(ref, 0)
-      : (this._store.column('edge.width') as Float32Array)[ref.slot * 2];
+      : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
   }
 
   /**
@@ -2232,7 +2233,7 @@ export class Collection {
 
     return ref.group === 'nodes'
       ? this._nodeDim(ref, 1)
-      : (this._store.column('edge.width') as Float32Array)[ref.slot * 2];
+      : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
   }
 
   /** A node's core width/height: for parents the column stores the
@@ -2244,14 +2245,14 @@ export class Collection {
     if (store.hasCompounds() && store.hasFlag('nodes', ref.slot, FLAG_PARENT)) {
       store.flushDerived();
 
-      const size = store.column('node.size') as Float32Array;
+      const size = store.column(COL.NODE_SIZE) as Float32Array;
 
       // the per-axis sums, so asymmetric per-side padding (85.4)
       // still reads back the true core size
       return size[ref.slot * 2 + axis] - store.paddingSumsOf(ref.slot)[axis];
     }
 
-    return (store.column('node.size') as Float32Array)[ref.slot * 2 + axis];
+    return (store.column(COL.NODE_SIZE) as Float32Array)[ref.slot * 2 + axis];
   }
 
   /**
@@ -2730,7 +2731,7 @@ export class Collection {
     }
 
     if (ref.group === 'nodes' && store.hasCompounds()) {
-      return (store.column('node.opacity') as Float32Array)[ref.slot];
+      return (store.column(COL.NODE_OPACITY) as Float32Array)[ref.slot];
     }
 
     // stored truth is the effective value on the flat path; the one case
@@ -2738,8 +2739,8 @@ export class Collection {
     // stored bytes go stale (round 62.6 — the same gate readProp keeps)
     if (!this._cy._styleEngine.ownsProp(ref.group, 'opacity')) {
       return ref.group === 'nodes'
-        ? (store.nodes.column('node.opacity') as Float32Array)[ref.slot]
-        : (store.edges.column('edge.opacity') as Float32Array)[ref.slot];
+        ? (store.nodes.column(COL.NODE_OPACITY) as Float32Array)[ref.slot]
+        : (store.edges.column(COL.EDGE_OPACITY) as Float32Array)[ref.slot];
     }
 
     return this.numericStyle('opacity');
@@ -2866,7 +2867,7 @@ export class Collection {
       this._store.flushDerived();
 
       // the size column stores the padded/drawn box for parents
-      return (this._store.column('node.size') as Float32Array)[
+      return (this._store.column(COL.NODE_SIZE) as Float32Array)[
         ref.slot * 2 + axis
       ];
     }
@@ -2904,7 +2905,9 @@ export class Collection {
       return 0;
     }
 
-    return (this._store.column('node.borderWidth') as Float32Array)[ref.slot];
+    return (this._store.column(COL.NODE_BORDER_WIDTH) as Float32Array)[
+      ref.slot
+    ];
   }
 
   /**
@@ -2962,11 +2965,11 @@ export class Collection {
       y2 = Math.max(y2, y + halfH);
     };
 
-    const size = store.column('node.size') as Float32Array;
-    const border = store.column('node.borderWidth') as Float32Array;
-    const ghost = store.column('node.ghost') as Float32Array;
-    const bGeom = store.column('node.borderGeom') as Uint32Array;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const size = store.column(COL.NODE_SIZE) as Float32Array;
+    const border = store.column(COL.NODE_BORDER_WIDTH) as Float32Array;
+    const ghost = store.column(COL.NODE_GHOST) as Float32Array;
+    const bGeom = store.column(COL.NODE_BORDER_GEOM) as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
     store.flushDerived(); // parent auto-bounds + curved-edge params derive below
 
@@ -2974,8 +2977,8 @@ export class Collection {
     // (v3's rule; the whole-graph fit scan already excluded them), while
     // `visibility: 'hidden'` elements keep theirs — the mask is VISIBLE,
     // not DRAWN.  An edge needs both endpoints shown (the drawn-edge rule).
-    const nodeFlags = store.column('node.flags') as Uint32Array;
-    const edgeFlags = store.column('edge.flags') as Uint32Array;
+    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
+    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
     const shownMask = FLAG_ALIVE | FLAG_VISIBLE;
     const shown = (flags: Uint32Array, slot: number): boolean =>
       (flags[slot] & shownMask) === shownMask;
@@ -3164,7 +3167,7 @@ export class Collection {
       );
 
       if (r > 0) {
-        const endpoints = store.column('edge.endpoints') as Uint32Array;
+        const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
         for (let end = 0; end < 2; end++) {
           const node = endpoints[ref.slot * 2 + end];
@@ -4095,7 +4098,7 @@ export class Collection {
         continue;
       }
 
-      const endpoints = store.column('edge.endpoints') as Uint32Array;
+      const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
       store.moveEdge(
         ref.slot,
@@ -4175,7 +4178,7 @@ export class Collection {
 
   private _endpoints(which: 0 | 1): Collection {
     const store = this._store;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const refs: Ref[] = [];
     const seen = new Set<number>();
 
@@ -4247,7 +4250,7 @@ export class Collection {
    */
   connectedNodes(criterion?: FilterLike): Collection {
     const store = this._store;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const list = this._refs; // hoisted: the getter syncs per call (62.6)
     const refs: Ref[] = [];
     const seen = new Set<number>();
@@ -4307,7 +4310,7 @@ export class Collection {
   private _goers(direction: 'out' | 'in', criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const refs: Ref[] = [];
     // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1
     const seen = new Set<number>();
@@ -4359,7 +4362,7 @@ export class Collection {
   neighborhood(criterion?: FilterLike): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const refs: Ref[] = [];
     // packed (group, slot) keys; the collection's own live elements are
     // pre-seeded so the open neighborhood excludes them during the walk
@@ -4781,7 +4784,7 @@ export class Collection {
   ): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const refs: Ref[] = [];
 
     for (let i = 0; i < this._refs.length; i++) {
@@ -4846,7 +4849,7 @@ export class Collection {
   ): Collection {
     const store = this._store;
     const adj = store.adj;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const acc: Ref[] = [];
     // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1;
     // a raw slot BFS — no per-hop collection spawns or handle interning
@@ -4928,7 +4931,7 @@ export class Collection {
 
   private _edgesWith(others: Collection, thisIsSrc: boolean): Collection {
     const store = this._store;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const otherColl = others;
 
     const thisNodes = this._nodeSlotSet();
@@ -4990,7 +4993,7 @@ export class Collection {
     criterion?: FilterLike,
   ): Collection {
     const store = this._store;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const refs: Ref[] = [];
 
     for (const ref of this._liveRefs()) {
@@ -5034,7 +5037,7 @@ export class Collection {
    */
   components(root?: Collection | null): Collection[] {
     const store = this._store;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
     const nodeSlots = this._nodeSlotSet();
     const edgeSlots: number[] = [];
     const edgeSlotSet = new Set<number>();
@@ -5215,8 +5218,10 @@ export class Collection {
       }
     }
 
-    const curveParams = this._store.column('edge.curveParams') as Float32Array;
-    const edgeFlags = this._store.column('edge.flags') as Uint32Array;
+    const curveParams = this._store.column(
+      COL.EDGE_CURVE_PARAMS,
+    ) as Float32Array;
+    const edgeFlags = this._store.column(COL.EDGE_FLAGS) as Uint32Array;
 
     this._store.flushDerived();
 
@@ -6258,7 +6263,7 @@ export class Collection {
     let total = count(store, ref.slot);
 
     if (!includeLoops) {
-      const endpoints = store.column('edge.endpoints') as Uint32Array;
+      const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
       // a loop contributes 1 to outdegree, 1 to indegree, 2 to degree
       for (const edgeSlot of store.adj.outEdges(ref.slot)) {

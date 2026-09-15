@@ -35,7 +35,7 @@ never move; subset scopes (`eles.layout`) simulate the subset only,
 non-members ignored entirely (recorded).
 */
 
-import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { COL, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
 import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
@@ -964,7 +964,7 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     // the sim set: every leaf in scope — unlocked ones move, locked
     // ones pin in place as obstacles
-    const flags = store.column('node.flags') as Uint32Array;
+    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
     const simSlots: number[] = [];
     const simRefs: Ref[] = [];
     const simIndex = new Map<number, number>();

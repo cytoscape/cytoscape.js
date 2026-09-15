@@ -5,6 +5,7 @@ import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Overlay/underlay draws (round 13 A2): one pipeline, instantiated per
@@ -40,7 +41,7 @@ export class NodeLayerPipeline {
     device: GPUDevice,
     format: GPUTextureFormat,
     visibleLayout: GPUBindGroupLayout,
-    column: 'node.overlay' | 'node.underlay',
+    column: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY,
   ) {
     const module = device.createShaderModule({
       label: 'cy-gpu:node-layer-shader',
@@ -116,8 +117,8 @@ export class NodeLayerPipeline {
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        { binding: 1, resource: { buffer: mirror.buffer('node.position') } },
-        { binding: 2, resource: { buffer: mirror.buffer('node.size') } },
+        { binding: 1, resource: { buffer: mirror.buffer(COL.NODE_POSITION) } },
+        { binding: 2, resource: { buffer: mirror.buffer(COL.NODE_SIZE) } },
         { binding: 3, resource: { buffer: mirror.buffer(this.column) } },
       ],
     });

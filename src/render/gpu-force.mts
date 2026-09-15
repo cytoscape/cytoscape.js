@@ -62,6 +62,7 @@ import {
   SWEEPS_PER_TICK,
 } from '../layout/force-sim.mjs';
 import type { ForceExtents, ForceParams } from '../layout/force-sim.mjs';
+import { COL } from '../contract.mjs';
 
 const WG = 64;
 /** the cell scan's one workgroup (119): 256 threads over at most
@@ -1098,7 +1099,7 @@ export class GpuForceRuntime {
    * simply not involved.
    */
   ownedColumns(): string[] {
-    return ['node.position'];
+    return [COL.NODE_POSITION];
   }
 
   /**

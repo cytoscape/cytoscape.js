@@ -1,4 +1,4 @@
-import { CONDITION_FLAGS } from './contract.mjs';
+import { COL, CONDITION_FLAGS } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import {
@@ -278,7 +278,7 @@ export const planMatchesRef = (
 
   const flags = (
     store.column(
-      ref.group === 'nodes' ? 'node.flags' : 'edge.flags',
+      ref.group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array
   )[ref.slot];
 

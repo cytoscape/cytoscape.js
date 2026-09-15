@@ -20,17 +20,18 @@ import { PREMULTIPLIED_BLEND, DEPTH_FORMAT } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 const V = SHADER_STAGE.VERTEX;
 const F = SHADER_STAGE.FRAGMENT;
 
 const CHART_COLUMNS: { id: ColumnId; visibility: number }[] = [
-  { id: 'node.position', visibility: V },
-  { id: 'node.size', visibility: V | F },
-  { id: 'node.opacity', visibility: F },
-  { id: 'node.borderGeom', visibility: F },
-  { id: 'node.borderWidth', visibility: F },
-  { id: 'node.chartRef', visibility: V | F },
+  { id: COL.NODE_POSITION, visibility: V },
+  { id: COL.NODE_SIZE, visibility: V | F },
+  { id: COL.NODE_OPACITY, visibility: F },
+  { id: COL.NODE_BORDER_GEOM, visibility: F },
+  { id: COL.NODE_BORDER_WIDTH, visibility: F },
+  { id: COL.NODE_CHART_REF, visibility: V | F },
 ];
 
 export class ChartPipeline {

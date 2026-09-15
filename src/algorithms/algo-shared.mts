@@ -2,6 +2,7 @@ import type { Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
+import { COL } from '../contract.mjs';
 
 /** Edge weighting function: receives the edge handle, returns its weight. */
 export type WeightFn = (edge: Collection) => number;
@@ -56,7 +57,7 @@ export const subgraph = (coll: Collection): SubgraphView => {
     return memo.view as SubgraphView;
   }
 
-  const endpoints = store.column('edge.endpoints') as Uint32Array;
+  const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
   const nodeSlots: number[] = [];
   const index = new Map<number, number>();
   const edgeSlots: number[] = [];

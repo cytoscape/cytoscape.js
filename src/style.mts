@@ -1,5 +1,6 @@
 import { color2tuple } from './util/colors.mjs';
 import {
+  COL,
   ARROW_CHEVRON,
   ARROW_CIRCLE,
   ARROW_DIAMOND,
@@ -137,7 +138,7 @@ const ENDPT_END_DEFAULT: EndpointEnd = {
 };
 
 import { compileEasing } from './easing.mjs';
-import { buildChannelWrite } from './animation.mjs';
+import { TWEEN_COL, buildChannelWrite } from './animation.mjs';
 import type { ChannelWrite, TweenColumn } from './animation.mjs';
 import type {
   CompiledMapper,
@@ -4456,28 +4457,28 @@ const TRANSITION_CHANNELS: Record<
 > = {
   nodes: {
     opacity: {
-      column: 'node.opacity',
+      column: COL.NODE_OPACITY,
       kind: 'scalar',
       paint: true,
       min: 0,
       max: 1,
     },
     'background-color': {
-      column: 'node.fillColor',
+      column: COL.NODE_FILL_COLOR,
       kind: 'color',
       paint: true,
       min: -Infinity,
       max: Infinity,
     },
     'border-color': {
-      column: 'node.borderColor',
+      column: COL.NODE_BORDER_COLOR,
       kind: 'color',
       paint: true,
       min: -Infinity,
       max: Infinity,
     },
     'border-width': {
-      column: 'node.borderWidth',
+      column: COL.NODE_BORDER_WIDTH,
       kind: 'scalar',
       paint: false,
       min: 0,
@@ -4487,7 +4488,7 @@ const TRANSITION_CHANNELS: Record<
     // size is auto-bounds-derived); the lane restore/tick runs the
     // full size cascade (outerHalf, label re-anchor, auto-bounds).
     width: {
-      column: 'node.size',
+      column: COL.NODE_SIZE,
       kind: 'lane',
       lane: 0,
       paint: false,
@@ -4495,7 +4496,7 @@ const TRANSITION_CHANNELS: Record<
       max: Infinity,
     },
     height: {
-      column: 'node.size',
+      column: COL.NODE_SIZE,
       kind: 'lane',
       lane: 1,
       paint: false,
@@ -4505,7 +4506,7 @@ const TRANSITION_CHANNELS: Record<
     // round 25.5: the label sidecar's font-size (a fontSize diff with
     // no sidecar entry on either side never records — the -1 sentinel)
     'font-size': {
-      column: 'node.fontSize',
+      column: TWEEN_COL.NODE_FONT_SIZE,
       kind: 'fontSize',
       paint: false,
       min: 0,
@@ -4514,21 +4515,21 @@ const TRANSITION_CHANNELS: Record<
   },
   edges: {
     opacity: {
-      column: 'edge.opacity',
+      column: COL.EDGE_OPACITY,
       kind: 'scalar',
       paint: true,
       min: 0,
       max: 1,
       rides: [
         {
-          column: 'edge.sourceArrow',
+          column: COL.EDGE_SOURCE_ARROW,
           kind: 'color',
           paint: true,
           min: -Infinity,
           max: Infinity,
         },
         {
-          column: 'edge.targetArrow',
+          column: COL.EDGE_TARGET_ARROW,
           kind: 'color',
           paint: true,
           min: -Infinity,
@@ -4537,7 +4538,7 @@ const TRANSITION_CHANNELS: Record<
       ],
     },
     'line-color': {
-      column: 'edge.lineColor',
+      column: COL.EDGE_LINE_COLOR,
       kind: 'color',
       paint: true,
       min: -Infinity,
@@ -4548,14 +4549,14 @@ const TRANSITION_CHANNELS: Record<
     // diffing catches each as a lane ride (moving only when the width
     // itself moved)
     width: {
-      column: 'edge.width',
+      column: COL.EDGE_WIDTH,
       kind: 'scalar',
       paint: false,
       min: 0,
       max: Infinity,
       rides: [
         {
-          column: 'edge.casing',
+          column: COL.EDGE_CASING,
           kind: 'lane',
           lane: 1,
           paint: false,
@@ -4563,7 +4564,7 @@ const TRANSITION_CHANNELS: Record<
           max: Infinity,
         },
         {
-          column: 'edge.overlay',
+          column: COL.EDGE_OVERLAY,
           kind: 'lane',
           lane: 1,
           paint: false,
@@ -4571,7 +4572,7 @@ const TRANSITION_CHANNELS: Record<
           max: Infinity,
         },
         {
-          column: 'edge.underlay',
+          column: COL.EDGE_UNDERLAY,
           kind: 'lane',
           lane: 1,
           paint: false,
@@ -4579,7 +4580,7 @@ const TRANSITION_CHANNELS: Record<
           max: Infinity,
         },
         {
-          column: 'edge.arrowWidths',
+          column: COL.EDGE_ARROW_WIDTHS,
           kind: 'lane',
           lane: 0,
           paint: false,
@@ -4587,7 +4588,7 @@ const TRANSITION_CHANNELS: Record<
           max: Infinity,
         },
         {
-          column: 'edge.arrowWidths',
+          column: COL.EDGE_ARROW_WIDTHS,
           kind: 'lane',
           lane: 1,
           paint: false,
@@ -4597,7 +4598,7 @@ const TRANSITION_CHANNELS: Record<
       ],
     },
     'font-size': {
-      column: 'edge.fontSize',
+      column: TWEEN_COL.EDGE_FONT_SIZE,
       kind: 'fontSize',
       paint: false,
       min: 0,
@@ -5122,7 +5123,7 @@ const unfoldLabelAlpha = (
     return packed;
   }
 
-  const elementOp = readScalar(store, slot, 'edge.opacity');
+  const elementOp = readScalar(store, slot, COL.EDGE_OPACITY);
 
   if (elementOp <= 0 || elementOp >= 1) {
     return packed;
@@ -5185,19 +5186,19 @@ const defineReader = (names: string[], read: PropReader): void => {
 };
 
 defineReader(['background-color'], (store, slot) =>
-  readColor(store, slot, 'node.fillColor'),
+  readColor(store, slot, COL.NODE_FILL_COLOR),
 );
 
 defineReader(['border-color'], (store, slot) =>
-  readColor(store, slot, 'node.borderColor'),
+  readColor(store, slot, COL.NODE_BORDER_COLOR),
 );
 
 defineReader(['border-width'], (store, slot) =>
-  readScalar(store, slot, 'node.borderWidth'),
+  readScalar(store, slot, COL.NODE_BORDER_WIDTH),
 );
 
 defineReader(['corner-radius'], (store, slot) => {
-  const r = (store.column('node.borderGeom') as Uint32Array)[slot * 4];
+  const r = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4];
 
   return r === 0xffffffff ? 'auto' : r / 256;
 });
@@ -5205,7 +5206,7 @@ defineReader(['corner-radius'], (store, slot) => {
 defineReader(['border-position'], (store, slot) => {
   return (
     BORDER_POSITION_NAMES[
-      (store.column('node.borderGeom') as Uint32Array)[slot * 4 + 1] & 0xff
+      (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] & 0xff
     ] ?? 'center'
   );
 });
@@ -5214,7 +5215,7 @@ defineReader(
   ['border-style'],
   (store, slot) =>
     STROKE_STYLE_NAMES[
-      ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 1] >>>
+      ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] >>>
         BORDER_STYLE_SHIFT) &
         STROKE_STYLE_MASK
     ] ?? 'solid',
@@ -5224,14 +5225,14 @@ defineReader(
   ['outline-style'],
   (store, slot) =>
     STROKE_STYLE_NAMES[
-      ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 1] >>>
+      ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] >>>
         OUTLINE_STYLE_SHIFT) &
         STROKE_STYLE_MASK
     ] ?? 'solid',
 );
 
 defineReader(['border-dash-pattern'], (store, slot) => {
-  const arr = (store.column('node.borderDash') as Float32Array).subarray(
+  const arr = (store.column(COL.NODE_BORDER_DASH) as Float32Array).subarray(
     slot * 4,
     slot * 4 + 4,
   );
@@ -5245,13 +5246,14 @@ defineReader(['border-dash-pattern'], (store, slot) => {
 defineReader(
   ['border-dash-offset'],
   (store, slot) =>
-    (store.column('node.borderDashMeta') as Float32Array)[slot * 2],
+    (store.column(COL.NODE_BORDER_DASH_META) as Float32Array)[slot * 2],
 );
 
 defineReader(
   ['background-fill', 'line-fill'],
   (store, slot, ref, engine, prop) => {
-    const gid = prop === 'background-fill' ? 'node.gradient' : 'edge.gradient';
+    const gid =
+      prop === 'background-fill' ? COL.NODE_GRADIENT : COL.EDGE_GRADIENT;
     const meta = (store.column(gid) as Uint32Array)[slot * 8];
 
     return FILL_KIND_NAMES[meta & 3] ?? 'solid';
@@ -5259,7 +5261,7 @@ defineReader(
 );
 
 defineReader(['background-gradient-direction'], (store, slot) => {
-  const meta = (store.column('node.gradient') as Uint32Array)[slot * 8];
+  const meta = (store.column(COL.NODE_GRADIENT) as Uint32Array)[slot * 8];
 
   return GRADIENT_DIRECTION_NAMES[(meta >>> 2) & 7] ?? 'to-bottom';
 });
@@ -5268,8 +5270,8 @@ defineReader(
   ['background-gradient-stop-colors', 'line-gradient-stop-colors'],
   (store, slot, ref, engine, prop) => {
     const gid = prop.startsWith('background')
-      ? 'node.gradient'
-      : 'edge.gradient';
+      ? COL.NODE_GRADIENT
+      : COL.EDGE_GRADIENT;
     const rec = (store.column(gid) as Uint32Array).subarray(
       slot * 8,
       slot * 8 + 8,
@@ -5298,8 +5300,8 @@ defineReader(
   ['background-gradient-stop-positions', 'line-gradient-stop-positions'],
   (store, slot, ref, engine, prop) => {
     const gid = prop.startsWith('background')
-      ? 'node.gradient'
-      : 'edge.gradient';
+      ? COL.NODE_GRADIENT
+      : COL.EDGE_GRADIENT;
     const rec = (store.column(gid) as Uint32Array).subarray(
       slot * 8,
       slot * 8 + 8,
@@ -5318,7 +5320,9 @@ defineReader(
 );
 
 defineReader(['outline-color'], (store, slot) => {
-  const rgba = (store.column('node.borderGeom') as Uint32Array)[slot * 4 + 2];
+  const rgba = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[
+    slot * 4 + 2
+  ];
 
   return formatRgba(
     rgba & 0xff,
@@ -5331,7 +5335,8 @@ defineReader(['outline-color'], (store, slot) => {
 defineReader(['outline-opacity'], (store, slot) => {
   return (
     Math.round(
-      (((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 2] >>> 24) /
+      (((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 2] >>>
+        24) /
         255) *
         1000,
     ) / 1000
@@ -5341,14 +5346,15 @@ defineReader(['outline-opacity'], (store, slot) => {
 defineReader(
   ['outline-width'],
   (store, slot) =>
-    ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 3] & 0xffff) /
+    ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] &
+      0xffff) /
     256,
 );
 
 defineReader(
   ['outline-offset'],
   (store, slot) =>
-    ((store.column('node.borderGeom') as Uint32Array)[slot * 4 + 3] >>> 16) /
+    ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] >>> 16) /
     256,
 );
 
@@ -5359,7 +5365,7 @@ defineReader(
   ['background-opacity'],
   (store, slot) =>
     Math.round(
-      ((store.column('node.fillColor') as Uint8Array)[slot * 4 + 3] / 255) *
+      ((store.column(COL.NODE_FILL_COLOR) as Uint8Array)[slot * 4 + 3] / 255) *
         1000,
     ) / 1000,
 );
@@ -5368,7 +5374,8 @@ defineReader(
   ['border-opacity'],
   (store, slot) =>
     Math.round(
-      ((store.column('node.borderColor') as Uint8Array)[slot * 4 + 3] / 255) *
+      ((store.column(COL.NODE_BORDER_COLOR) as Uint8Array)[slot * 4 + 3] /
+        255) *
         1000,
     ) / 1000,
 );
@@ -5454,24 +5461,24 @@ defineReader(
 );
 
 defineReader(['ghost'], (store, slot) =>
-  (store.column('node.ghost') as Float32Array)[slot * 4 + 3] !== 0
+  (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 3] !== 0
     ? 'yes'
     : 'no',
 );
 
 defineReader(
   ['ghost-offset-x'],
-  (store, slot) => (store.column('node.ghost') as Float32Array)[slot * 4],
+  (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4],
 );
 
 defineReader(
   ['ghost-offset-y'],
-  (store, slot) => (store.column('node.ghost') as Float32Array)[slot * 4 + 1],
+  (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 1],
 );
 
 defineReader(
   ['ghost-opacity'],
-  (store, slot) => (store.column('node.ghost') as Float32Array)[slot * 4 + 2],
+  (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 2],
 );
 
 defineReader(
@@ -5491,7 +5498,9 @@ defineReader(
     if (ref.group === 'edges') {
       // edge layers: [rgba folded, strokeWidth×256]; padding reads
       // back as (stroke − width) / 2
-      const eid = prop.startsWith('overlay') ? 'edge.overlay' : 'edge.underlay';
+      const eid = prop.startsWith('overlay')
+        ? COL.EDGE_OVERLAY
+        : COL.EDGE_UNDERLAY;
       const erec = (store.column(eid) as Uint32Array).subarray(
         slot * 2,
         slot * 2 + 2,
@@ -5512,12 +5521,14 @@ defineReader(
         return (erec[0] >>> 24) / 255;
       }
 
-      const width = (store.column('edge.width') as Float32Array)[slot * 2];
+      const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
 
       return Math.max(0, erec[1] / 256 - width) / 2;
     }
 
-    const id = prop.startsWith('overlay') ? 'node.overlay' : 'node.underlay';
+    const id = prop.startsWith('overlay')
+      ? COL.NODE_OVERLAY
+      : COL.NODE_UNDERLAY;
     const rec = (store.column(id) as Uint32Array).subarray(
       slot * 4,
       slot * 4 + 4,
@@ -5550,12 +5561,12 @@ defineReader(
 );
 
 defineReader(['height'], (store, slot) =>
-  readPair(store, slot, 'node.size', 1),
+  readPair(store, slot, COL.NODE_SIZE, 1),
 );
 
 defineReader(
   ['shape'],
-  (store, slot) => SHAPE_NAMES[readScalar(store, slot, 'node.shape')],
+  (store, slot) => SHAPE_NAMES[readScalar(store, slot, COL.NODE_SHAPE)],
 );
 
 defineReader(['shape-polygon-points'], (store, slot, ref, engine) => {
@@ -5843,8 +5854,8 @@ defineReader(
 // shared names, resolved per group
 defineReader(['width'], (store, slot, ref) =>
   ref.group === 'nodes'
-    ? readPair(store, slot, 'node.size', 0)
-    : readScalar(store, slot, 'edge.width'),
+    ? readPair(store, slot, COL.NODE_SIZE, 0)
+    : readScalar(store, slot, COL.EDGE_WIDTH),
 );
 
 defineReader(['opacity'], (store, slot, ref, engine) => {
@@ -5857,7 +5868,7 @@ defineReader(['opacity'], (store, slot, ref, engine) => {
   return readScalar(
     store,
     slot,
-    ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity',
+    ref.group === 'nodes' ? COL.NODE_OPACITY : COL.EDGE_OPACITY,
   );
 });
 
@@ -5910,19 +5921,20 @@ defineReader(['compound-sizing-wrt-labels'], () => 'exclude');
 
 // edge channels
 defineReader(['line-color'], (store, slot) =>
-  readColor(store, slot, 'edge.lineColor'),
+  readColor(store, slot, COL.EDGE_LINE_COLOR),
 );
 
 defineReader(
   ['line-style'],
-  (store, slot) => LINE_STYLE_NAMES[readScalar(store, slot, 'edge.lineStyle')],
+  (store, slot) =>
+    LINE_STYLE_NAMES[readScalar(store, slot, COL.EDGE_LINE_STYLE)],
 );
 
 defineReader(['source-arrow-shape'], (store, slot) => {
-  return readAlpha(store, slot, 'edge.sourceArrow') > 0
+  return readAlpha(store, slot, COL.EDGE_SOURCE_ARROW) > 0
     ? ARROW_NAMES[
         unpackArrowShape(
-          readScalar(store, slot, 'edge.arrowShapes'),
+          readScalar(store, slot, COL.EDGE_ARROW_SHAPES),
           ARROW_SHIFT_SOURCE,
         )
       ]
@@ -5930,10 +5942,10 @@ defineReader(['source-arrow-shape'], (store, slot) => {
 });
 
 defineReader(['target-arrow-shape'], (store, slot) => {
-  return readAlpha(store, slot, 'edge.targetArrow') > 0
+  return readAlpha(store, slot, COL.EDGE_TARGET_ARROW) > 0
     ? ARROW_NAMES[
         unpackArrowShape(
-          readScalar(store, slot, 'edge.arrowShapes'),
+          readScalar(store, slot, COL.EDGE_ARROW_SHAPES),
           ARROW_SHIFT_TARGET,
         )
       ]
@@ -5944,7 +5956,7 @@ defineReader(
   ['line-opacity'],
   (store, slot) =>
     Math.round(
-      ((store.column('edge.lineColor') as Uint8Array)[slot * 4 + 3] / 255) *
+      ((store.column(COL.EDGE_LINE_COLOR) as Uint8Array)[slot * 4 + 3] / 255) *
         1000,
     ) / 1000,
 );
@@ -5953,20 +5965,20 @@ defineReader(
   ['line-cap'],
   (store, slot) =>
     LINE_CAP_NAMES[
-      (store.column('edge.dashMeta') as Float32Array)[slot * 2 + 1]
+      (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2 + 1]
     ] ?? 'butt',
 );
 
 defineReader(['line-outline-width'], (store, slot) => {
   // stored stroke = width + outline width (B4)
-  const rec = (store.column('edge.casing') as Uint32Array)[slot * 2 + 1];
-  const width = (store.column('edge.width') as Float32Array)[slot * 2];
+  const rec = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2 + 1];
+  const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
 
   return rec === 0 ? 0 : Math.max(0, rec / 256 - width);
 });
 
 defineReader(['line-outline-color'], (store, slot) => {
-  const rgba = (store.column('edge.casing') as Uint32Array)[slot * 2];
+  const rgba = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2];
 
   return formatRgba(
     rgba & 0xff,
@@ -5978,11 +5990,11 @@ defineReader(['line-outline-color'], (store, slot) => {
 
 defineReader(
   ['line-dash-offset'],
-  (store, slot) => (store.column('edge.dashMeta') as Float32Array)[slot * 2],
+  (store, slot) => (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2],
 );
 
 defineReader(['line-dash-pattern'], (store, slot) => {
-  const arr = (store.column('edge.dashPattern') as Float32Array).subarray(
+  const arr = (store.column(COL.EDGE_DASH_PATTERN) as Float32Array).subarray(
     slot * 4,
     slot * 4 + 4,
   );
@@ -5995,7 +6007,7 @@ defineReader(['line-dash-pattern'], (store, slot) => {
 
 defineReader(['arrow-scale'], (store, slot) => {
   const q =
-    (store.column('edge.arrowShapes') as Uint32Array)[slot] >>>
+    (store.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[slot] >>>
     ARROW_SHIFT_SCALE;
 
   return q === 0 ? 1 : q / 16; // quantized ×16 (recorded)
@@ -6009,20 +6021,21 @@ defineReader(
       : ARROW_SHIFT_HOLLOW_TARGET;
 
     return ARROW_FILL_NAMES[
-      ((store.column('edge.arrowShapes') as Uint32Array)[slot] >>> bit) & 1
+      ((store.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[slot] >>> bit) & 1
     ];
   },
 );
 
 defineReader(
   ['source-arrow-width'],
-  (store, slot) => (store.column('edge.arrowWidths') as Float32Array)[slot * 2],
+  (store, slot) =>
+    (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2],
 );
 
 defineReader(
   ['target-arrow-width'],
   (store, slot) =>
-    (store.column('edge.arrowWidths') as Float32Array)[slot * 2 + 1],
+    (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2 + 1],
 );
 
 defineReader(
@@ -6032,8 +6045,8 @@ defineReader(
       ? ARROW_SHIFT_MID_SOURCE
       : ARROW_SHIFT_MID_TARGET;
     const colId = prop.startsWith('mid-source')
-      ? 'edge.midSourceArrow'
-      : 'edge.midTargetArrow';
+      ? COL.EDGE_MID_SOURCE_ARROW
+      : COL.EDGE_MID_TARGET_ARROW;
     const a = (store.column(colId) as Uint8Array)[slot * 4 + 3];
 
     // stored truth: a transparent mid arrow reads 'none' (the
@@ -6042,7 +6055,7 @@ defineReader(
       ? 'none'
       : ARROW_NAMES[
           unpackArrowShape(
-            (store.column('edge.arrowShapes') as Uint32Array)[slot],
+            (store.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[slot],
             shift,
           )
         ];
@@ -6050,19 +6063,19 @@ defineReader(
 );
 
 defineReader(['mid-source-arrow-color'], (store, slot) =>
-  readColor(store, slot, 'edge.midSourceArrow'),
+  readColor(store, slot, COL.EDGE_MID_SOURCE_ARROW),
 );
 
 defineReader(['mid-target-arrow-color'], (store, slot) =>
-  readColor(store, slot, 'edge.midTargetArrow'),
+  readColor(store, slot, COL.EDGE_MID_TARGET_ARROW),
 );
 
 defineReader(['source-arrow-color'], (store, slot) =>
-  readColor(store, slot, 'edge.sourceArrow'),
+  readColor(store, slot, COL.EDGE_SOURCE_ARROW),
 );
 
 defineReader(['target-arrow-color'], (store, slot) =>
-  readColor(store, slot, 'edge.targetArrow'),
+  readColor(store, slot, COL.EDGE_TARGET_ARROW),
 );
 
 // curve props read the styled record (stored truth: a lone
@@ -7285,7 +7298,7 @@ export class StyleEngine {
 
     if (group === 'nodes' && this.store.hasCompounds()) {
       // parents resolve through the overlay def (round 14.6)
-      const flags = this.store.column('node.flags') as Uint32Array;
+      const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
       const parents: number[] = [];
 
@@ -7367,11 +7380,11 @@ export class StyleEngine {
       return;
     }
 
-    let entry = txn.entries.get('node.padding');
+    let entry = txn.entries.get(TWEEN_COL.NODE_PADDING);
 
     if (entry == null) {
       entry = {
-        column: 'node.padding',
+        column: TWEEN_COL.NODE_PADDING,
         kind: 'padding',
         paint: false,
         min: 0,
@@ -7380,7 +7393,7 @@ export class StyleEngine {
         from: [],
         to: [],
       };
-      txn.entries.set('node.padding', entry);
+      txn.entries.set(TWEEN_COL.NODE_PADDING, entry);
     }
 
     entry.refs.push(store.ref('nodes', slot));
@@ -7517,7 +7530,7 @@ export class StyleEngine {
     if (ch.kind === 'fontSize') {
       // -1 = no sidecar entry (unlabelled); a diff with a sentinel on
       // either side snaps rather than tweening from/to nothing
-      const stream = ch.column === 'node.fontSize' ? 'nodes' : 'edges';
+      const stream = ch.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges';
 
       return this.store.labelAt(slot, stream)?.fontSize ?? -1;
     }
@@ -7526,9 +7539,9 @@ export class StyleEngine {
       // the edge layer records hold their stroke in lane 1, ×256
       // fixed-point (matching setLane's encode)
       if (
-        ch.column === 'edge.casing' ||
-        ch.column === 'edge.overlay' ||
-        ch.column === 'edge.underlay'
+        ch.column === COL.EDGE_CASING ||
+        ch.column === COL.EDGE_OVERLAY ||
+        ch.column === COL.EDGE_UNDERLAY
       ) {
         return (
           (this.store.column(ch.column) as Uint32Array)[slot * 2 + 1] / 256
@@ -7623,7 +7636,7 @@ export class StyleEngine {
       } else if (ch.kind === 'fontSize') {
         this.store.setLabelFontSize(
           slot,
-          ch.column === 'node.fontSize' ? 'nodes' : 'edges',
+          ch.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges',
           from as number,
         );
       } else {
@@ -7653,7 +7666,7 @@ export class StyleEngine {
       const from = pre[i++];
       const to = this.readTxnValue(main, slot);
       const skip =
-        (isParentSlot && main.column === 'node.size') ||
+        (isParentSlot && main.column === COL.NODE_SIZE) ||
         // a fontSize sentinel on either side means no sidecar entry to
         // tween from/to — the label change snaps (25.5)
         (main.kind === 'fontSize' &&
@@ -7744,7 +7757,7 @@ export class StyleEngine {
     }
 
     const wantParents = def === this.defs.parents;
-    const flags = this.store.column('node.flags') as Uint32Array;
+    const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
 
     return all.filter(
       (slot) => ((flags[slot] & FLAG_PARENT) !== 0) === wantParents,
@@ -7826,7 +7839,7 @@ export class StyleEngine {
     const flagsCol =
       stateEvals.length > 0
         ? (store.column(
-            group === 'nodes' ? 'node.flags' : 'edge.flags',
+            group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
           ) as Uint32Array)
         : null;
     let lastWord = -1;
@@ -8090,7 +8103,7 @@ export class StyleEngine {
   ): void {
     const part = def.partition as NonNullable<GroupDef['partition']>;
     const flags = this.store.column(
-      group === 'nodes' ? 'node.flags' : 'edge.flags',
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
 
     // round 67.2: at rest every slot carries the same masked word — a
@@ -8236,7 +8249,7 @@ export class StyleEngine {
     keys: string[],
   ): void {
     if (group === 'nodes' && this.store.hasCompounds()) {
-      const flags = this.store.column('node.flags') as Uint32Array;
+      const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
       const parents: number[] = [];
 
@@ -8293,7 +8306,7 @@ export class StyleEngine {
     }
 
     if (group === 'nodes' && this.store.hasCompounds()) {
-      const flags = this.store.column('node.flags') as Uint32Array;
+      const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
       const parents: number[] = [];
 
@@ -8346,7 +8359,7 @@ export class StyleEngine {
     }
 
     const flags = this.store.column(
-      group === 'nodes' ? 'node.flags' : 'edge.flags',
+      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     // a bulk flip's slots almost always share one masked word (nothing
     // else is usually pressed or hovered mid-select), so the record and
@@ -9066,7 +9079,7 @@ export class StyleEngine {
   /** Write `node.fillColor` (the B1 background-opacity fold). */
   private writeNodeFillColor(slot: number, computed: Computed): void {
     this.store.setColor(
-      'node.fillColor',
+      COL.NODE_FILL_COLOR,
       slot,
       ...foldRgba(computed.fillColor, computed.backgroundOpacity),
     );
@@ -9075,7 +9088,7 @@ export class StyleEngine {
   /** Write `node.borderColor` (the B1 border-opacity fold). */
   private writeNodeBorderColor(slot: number, computed: Computed): void {
     this.store.setColor(
-      'node.borderColor',
+      COL.NODE_BORDER_COLOR,
       slot,
       ...foldRgba(computed.borderColor, computed.borderOpacity),
     );
@@ -9084,13 +9097,13 @@ export class StyleEngine {
   /** Write `node.opacity` — under compounds the store folds the
    * ancestor product itself (round 14.4), so one call is complete. */
   private writeNodeOpacity(slot: number, computed: Computed): void {
-    this.store.setScalar('node.opacity', slot, computed.opacity);
+    this.store.setScalar(COL.NODE_OPACITY, slot, computed.opacity);
   }
 
   /** Write the `node.overlay` layer record (the A2 opacity fold). */
   private writeNodeOverlay(slot: number, computed: Computed): void {
     this.store.setNodeLayer(
-      'node.overlay',
+      COL.NODE_OVERLAY,
       slot,
       foldLayerRgba(computed.overlayColor, computed.overlayOpacity),
       computed.overlayPadding,
@@ -9102,7 +9115,7 @@ export class StyleEngine {
   /** Write the `node.underlay` layer record (the A2 opacity fold). */
   private writeNodeUnderlay(slot: number, computed: Computed): void {
     this.store.setNodeLayer(
-      'node.underlay',
+      COL.NODE_UNDERLAY,
       slot,
       foldLayerRgba(computed.underlayColor, computed.underlayOpacity),
       computed.underlayPadding,
@@ -9114,7 +9127,7 @@ export class StyleEngine {
   /** Write `edge.lineColor` (the B1 line-opacity fold). */
   private writeEdgeLineColor(slot: number, computed: Computed): void {
     this.store.setColor(
-      'edge.lineColor',
+      COL.EDGE_LINE_COLOR,
       slot,
       ...foldRgba(computed.lineColor, computed.lineOpacity),
     );
@@ -9146,7 +9159,7 @@ export class StyleEngine {
    * shows-line bits itself, so one call is complete. */
   private writeEdgeSourceArrowColor(slot: number, computed: Computed): void {
     this.store.setColor(
-      'edge.sourceArrow',
+      COL.EDGE_SOURCE_ARROW,
       slot,
       ...this.edgeArrowRgba(
         computed,
@@ -9159,7 +9172,7 @@ export class StyleEngine {
   /** Write `edge.targetArrow` (see the source twin). */
   private writeEdgeTargetArrowColor(slot: number, computed: Computed): void {
     this.store.setColor(
-      'edge.targetArrow',
+      COL.EDGE_TARGET_ARROW,
       slot,
       ...this.edgeArrowRgba(
         computed,
@@ -9173,28 +9186,28 @@ export class StyleEngine {
    * mid-arrow count, so one call is complete. */
   private writeEdgeMidSourceArrowColor(slot: number, computed: Computed): void {
     this.store.setMidArrow(
-      'edge.midSourceArrow',
+      COL.EDGE_MID_SOURCE_ARROW,
       slot,
       ...this.edgeArrowRgba(
         computed,
         computed.midSourceArrowShape,
         computed.midSourceArrowColor,
       ),
-      'edge.midTargetArrow',
+      COL.EDGE_MID_TARGET_ARROW,
     );
   }
 
   /** Write `edge.midTargetArrow` (see the source twin). */
   private writeEdgeMidTargetArrowColor(slot: number, computed: Computed): void {
     this.store.setMidArrow(
-      'edge.midTargetArrow',
+      COL.EDGE_MID_TARGET_ARROW,
       slot,
       ...this.edgeArrowRgba(
         computed,
         computed.midTargetArrowShape,
         computed.midTargetArrowColor,
       ),
-      'edge.midSourceArrow',
+      COL.EDGE_MID_SOURCE_ARROW,
     );
   }
 
@@ -9203,7 +9216,7 @@ export class StyleEngine {
    * binding). */
   private writeEdgeOverlay(slot: number, computed: Computed): void {
     this.store.setEdgeLayer(
-      'edge.overlay',
+      COL.EDGE_OVERLAY,
       slot,
       foldLayerRgba(computed.overlayColor, computed.overlayOpacity),
       computed.width + 2 * computed.overlayPadding,
@@ -9213,7 +9226,7 @@ export class StyleEngine {
   /** Write the `edge.underlay` stroke record (see the overlay twin). */
   private writeEdgeUnderlay(slot: number, computed: Computed): void {
     this.store.setEdgeLayer(
-      'edge.underlay',
+      COL.EDGE_UNDERLAY,
       slot,
       foldLayerRgba(computed.underlayColor, computed.underlayOpacity),
       computed.width + 2 * computed.underlayPadding,
@@ -9323,15 +9336,15 @@ export class StyleEngine {
           ? SHAPE_CIRCLE
           : computed.shape;
 
-      store.setPair('node.size', slot, computed.width, computed.height);
+      store.setPair(COL.NODE_SIZE, slot, computed.width, computed.height);
       store.setFlag('nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
       store.setFlag('nodes', slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
       store.setInvisibility('nodes', slot, computed.invisible); // 22
       this.writeNodeFillColor(slot, computed);
       this.writeNodeBorderColor(slot, computed);
-      store.setScalar('node.borderWidth', slot, computed.borderWidth);
+      store.setScalar(COL.NODE_BORDER_WIDTH, slot, computed.borderWidth);
       this.writeNodeOpacity(slot, computed);
-      store.setScalar('node.shape', slot, shape);
+      store.setScalar(COL.NODE_SHAPE, slot, shape);
       store.setGhost(
         slot,
         computed.ghostOffsetX,
@@ -9365,13 +9378,18 @@ export class StyleEngine {
       // columns; the FS gets them as flat varyings)
       const bdp = computed.borderDashPattern;
 
-      store.setVec4('node.borderDash', slot, bdp[0], bdp[1], bdp[2], bdp[3]);
-      store.setPair('node.borderDashMeta', slot, computed.borderDashOffset, 0);
+      store.setVec4(COL.NODE_BORDER_DASH, slot, bdp[0], bdp[1], bdp[2], bdp[3]);
+      store.setPair(
+        COL.NODE_BORDER_DASH_META,
+        slot,
+        computed.borderDashOffset,
+        0,
+      );
 
       // background gradient (C2): stops fold the background-opacity like
       // the flat fill; unset positions spread evenly (v3/canvas rule)
       store.setGradient(
-        'node.gradient',
+        COL.NODE_GRADIENT,
         slot,
         computed.backgroundGradientStopColors.length > 0
           ? computed.backgroundFill
@@ -9410,7 +9428,7 @@ export class StyleEngine {
     this.writeEdgeLineColor(slot, computed);
     // line-fill gradient (C2), stops folded by line-opacity
     store.setGradient(
-      'edge.gradient',
+      COL.EDGE_GRADIENT,
       slot,
       computed.lineGradientStopColors.length > 0 ? computed.lineFill : 0,
       0,
@@ -9423,16 +9441,16 @@ export class StyleEngine {
 
     const dp = computed.lineDashPattern;
 
-    store.setVec4('edge.dashPattern', slot, dp[0], dp[1], dp[2], dp[3]);
+    store.setVec4(COL.EDGE_DASH_PATTERN, slot, dp[0], dp[1], dp[2], dp[3]);
     store.setPair(
-      'edge.dashMeta',
+      COL.EDGE_DASH_META,
       slot,
       computed.lineDashOffset,
       computed.lineCap,
     );
-    store.setScalar('edge.width', slot, computed.width);
-    store.setScalar('edge.opacity', slot, computed.opacity);
-    store.setScalar('edge.lineStyle', slot, computed.lineStyle);
+    store.setScalar(COL.EDGE_WIDTH, slot, computed.width);
+    store.setScalar(COL.EDGE_OPACITY, slot, computed.opacity);
+    store.setScalar(COL.EDGE_LINE_STYLE, slot, computed.lineStyle);
     this.writeEdgeSourceArrowColor(slot, computed);
     this.writeEdgeTargetArrowColor(slot, computed);
     // B7: hollow flags at bits 16/17 and arrow-scale ×16 in the top
@@ -9479,7 +9497,7 @@ export class StyleEngine {
     const srcAw = resolveAw(computed.sourceArrowWidth);
     const tgtAw = resolveAw(computed.targetArrowWidth);
 
-    store.setPair('edge.arrowWidths', slot, srcAw, tgtAw);
+    store.setPair(COL.EDGE_ARROW_WIDTHS, slot, srcAw, tgtAw);
     // 56: a hollow head's stroke straddles its outline, so the ink
     // reaches half a stroke width outside the polygon.  The arrow
     // vertex stage cannot bind this column, so the quad grows by a
@@ -9488,7 +9506,7 @@ export class StyleEngine {
     // line-outline casing (B4): stroke = width + outline width (v3's
     // lineWidth), alpha folded by v3's effectiveLineOpacity
     store.setEdgeLayer(
-      'edge.casing',
+      COL.EDGE_CASING,
       slot,
       computed.lineOutlineWidth > 0
         ? foldLayerRgba(

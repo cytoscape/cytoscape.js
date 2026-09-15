@@ -2194,6 +2194,16 @@ each is deliberate, not a pass-1 deferral:
   columns, structural terms) extend the IR with more test kinds; any
   future frontend (chained builder, serialized JSON query) compiles to
   it rather than growing its own matching.
+- **Each string vocabulary is spelled once** (round 127).  A column
+  id is `COL.NODE_POSITION`, never `'node.position'`, anywhere under
+  `src/` but the contract: `COL` in `src/contract.mts` is the one
+  declaration, `ColumnId` is derived from it, and `COLUMN_SPECS` is
+  written against it.  The three tween pseudo-columns (compound
+  padding, the two label font-sizes) are `TWEEN_COL` beside
+  `TweenColumn` in `animation.mts`.  The string values are unchanged —
+  they are what crosses the worker wire and what the specs under
+  `test/` spell out, deliberately, so a test still pins the value a
+  constant resolves to.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

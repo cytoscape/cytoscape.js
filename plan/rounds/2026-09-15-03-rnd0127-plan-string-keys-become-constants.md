@@ -85,6 +85,22 @@ Logged as a call, not decided here.
   `COL` value and vice versa; `PROP` has no duplicate values; every
   `PROP` value normalises to itself.
 
+### 127.1 — carried out (2026-09-15)
+
+`COL` holds the 38 ids with the union's member docs moved onto the
+members; `ColumnId` is `(typeof COL)[keyof typeof COL]`.  A scripted
+pass replaced 622 literals in 25 files — the walker is comment-,
+string- and regex-aware, and the first version was not regex-aware:
+`src/style.mts` came back with zero replacements because a
+`/^url\s*\(\s*['"]?…/` on line 1579 read as an unterminated string and
+swallowed the remaining 8,300 lines.  The count of files touched is
+the control on such a tool: 24 of 25 was the tell.  Thirteen sites
+were type positions (`id: 'node.overlay' | 'node.underlay'`) and
+became `typeof COL.…`; one `new Set([...])` that had inferred
+`Set<string>` now inferred a narrower union and needed `Set<ColumnId>`.
+The three tween pseudo-columns became `TWEEN_COL` in `animation.mts`.
+`npm run -s verify`: green, 2,719 specs.
+
 ### Verification
 
 `npm run -s verify` per commit; `npm run -s test:node:quiet` and

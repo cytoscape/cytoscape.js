@@ -6,6 +6,7 @@ import type { ColumnMirror } from './column-mirror.mjs';
 import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 
 /**
  * Storage-buffer bindings 1..9 (0 is the Frame uniform).  The edge vertex
@@ -22,22 +23,22 @@ const V = SHADER_STAGE.VERTEX;
 const F = SHADER_STAGE.FRAGMENT;
 
 const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
-  { id: 'edge.endpoints', stages: V },
-  { id: 'edge.width', stages: V },
-  { id: 'node.position', stages: V },
+  { id: COL.EDGE_ENDPOINTS, stages: V },
+  { id: COL.EDGE_WIDTH, stages: V },
+  { id: COL.NODE_POSITION, stages: V },
   // vertex-only since round 57.1: the fragment stage wanted exactly one
   // number out of it — the straight-triangle kind, for the dash branch —
   // and takes that as a flat varying instead.  A whole storage binding
   // for one number is what a stage at its 8-buffer budget cannot afford
-  { id: 'edge.curveParams', stages: V },
-  { id: 'node.outerHalf', stages: V },
-  { id: 'node.shape', stages: V },
-  { id: 'edge.lineColor', stages: F },
-  { id: 'edge.opacity', stages: F },
-  { id: 'edge.lineStyle', stages: F },
+  { id: COL.EDGE_CURVE_PARAMS, stages: V },
+  { id: COL.NODE_OUTER_HALF, stages: V },
+  { id: COL.NODE_SHAPE, stages: V },
+  { id: COL.EDGE_LINE_COLOR, stages: F },
+  { id: COL.EDGE_OPACITY, stages: F },
+  { id: COL.EDGE_LINE_STYLE, stages: F },
   // per-edge dash pattern/offset/cap (round 13 B3)
-  { id: 'edge.dashPattern', stages: F },
-  { id: 'edge.dashMeta', stages: F },
+  { id: COL.EDGE_DASH_PATTERN, stages: F },
+  { id: COL.EDGE_DASH_META, stages: F },
 ];
 
 /** Edge render + picking pipelines (screen-space extruded quads). */
@@ -187,7 +188,10 @@ export class EdgePipeline {
     device: GPUDevice,
     uniform: GPUBuffer,
     mirror: ColumnMirror,
-    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing' = 'edge.overlay',
+    layer:
+      | typeof COL.EDGE_OVERLAY
+      | typeof COL.EDGE_UNDERLAY
+      | typeof COL.EDGE_CASING = COL.EDGE_OVERLAY,
   ): GPUBindGroup {
     const key = `${layer}`;
     let perUniform = this.bindGroups.get(uniform);
@@ -218,7 +222,7 @@ export class EdgePipeline {
         },
         {
           binding: EDGE_COLUMNS.length + 2,
-          resource: { buffer: mirror.buffer('edge.gradient') },
+          resource: { buffer: mirror.buffer(COL.EDGE_GRADIENT) },
         },
       ],
     });
@@ -296,7 +300,7 @@ export class EdgePipeline {
     pass.setPipeline(this.casedPipeline);
     pass.setBindGroup(
       0,
-      this.ensureBindGroup(device, uniform, mirror, 'edge.casing'),
+      this.ensureBindGroup(device, uniform, mirror, COL.EDGE_CASING),
     );
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
@@ -312,7 +316,10 @@ export class EdgePipeline {
     mirror: ColumnMirror,
     instances: number,
     cull: CulledGroup,
-    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing',
+    layer:
+      | typeof COL.EDGE_OVERLAY
+      | typeof COL.EDGE_UNDERLAY
+      | typeof COL.EDGE_CASING,
   ): void {
     if (instances === 0) {
       return;

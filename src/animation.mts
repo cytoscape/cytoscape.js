@@ -3,6 +3,7 @@ import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { Easing, EasingProgram } from './easing.mjs';
 import {
+  COL,
   columnSpec,
   FLAG_CHILD,
   FLAG_LOCKED,
@@ -12,6 +13,17 @@ import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
 import type { Viewport } from './viewport.mjs';
+
+/**
+ * The tween pseudo-columns (round 127): write targets that are not
+ * store columns — compound padding and label font-size, see
+ * `TweenColumn` — spelled once, beside `COL` for the real ones.
+ */
+export const TWEEN_COL = {
+  NODE_PADDING: 'node.padding',
+  NODE_FONT_SIZE: 'node.fontSize',
+  EDGE_FONT_SIZE: 'edge.fontSize',
+} as const;
 
 /*
 Animation — the CPU-canonical tween layer.
@@ -101,29 +113,29 @@ interface StyleChannel {
 
 const STYLE_CHANNELS: Record<string, StyleChannel> = {
   opacity: {
-    columns: { nodes: 'node.opacity', edges: 'edge.opacity' },
+    columns: { nodes: COL.NODE_OPACITY, edges: COL.EDGE_OPACITY },
     kind: 'scalar',
     tier: 'paint',
     min: 0,
     max: 1,
   },
   'background-color': {
-    columns: { nodes: 'node.fillColor' },
+    columns: { nodes: COL.NODE_FILL_COLOR },
     kind: 'color',
     tier: 'paint',
   },
   'border-color': {
-    columns: { nodes: 'node.borderColor' },
+    columns: { nodes: COL.NODE_BORDER_COLOR },
     kind: 'color',
     tier: 'paint',
   },
   'line-color': {
-    columns: { edges: 'edge.lineColor' },
+    columns: { edges: COL.EDGE_LINE_COLOR },
     kind: 'color',
     tier: 'paint',
   },
   'border-width': {
-    columns: { nodes: 'node.borderWidth' },
+    columns: { nodes: COL.NODE_BORDER_WIDTH },
     kind: 'scalar',
     tier: 'geometry',
     min: 0,
@@ -139,14 +151,14 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // It costs nothing: lane writes never offload, and the geometry tier
   // never did.
   width: {
-    columns: { nodes: 'node.size', edges: 'edge.width' },
+    columns: { nodes: COL.NODE_SIZE, edges: COL.EDGE_WIDTH },
     lanes: { nodes: 0, edges: 0 },
     kind: 'scalar',
     tier: 'geometry',
     min: 0,
   },
   height: {
-    columns: { nodes: 'node.size' },
+    columns: { nodes: COL.NODE_SIZE },
     lanes: { nodes: 1 },
     kind: 'scalar',
     tier: 'geometry',
@@ -156,7 +168,7 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // unit (px, or a fraction under '%'); parents only, resolved by the
   // auto-bounds flush per tick
   padding: {
-    columns: { nodes: 'node.padding' },
+    columns: { nodes: TWEEN_COL.NODE_PADDING },
     kind: 'scalar',
     tier: 'geometry',
     min: 0,
@@ -164,7 +176,10 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // round 25.5: label font-size — the sidecar, patched per tick;
   // unlabelled elements are filtered at capture
   'font-size': {
-    columns: { nodes: 'node.fontSize', edges: 'edge.fontSize' },
+    columns: {
+      nodes: TWEEN_COL.NODE_FONT_SIZE,
+      edges: TWEEN_COL.EDGE_FONT_SIZE,
+    },
     kind: 'scalar',
     tier: 'geometry',
     min: 0,
@@ -384,11 +399,7 @@ export type WriteKind =
  * write drives its end-label streams and fontSize-derived anchorY
  * along).
  */
-export type TweenColumn =
-  | ColumnId
-  | 'node.padding'
-  | 'node.fontSize'
-  | 'edge.fontSize';
+export type TweenColumn = ColumnId | (typeof TWEEN_COL)[keyof typeof TWEEN_COL];
 
 /**
  * One column's worth of resolved tween data, captured once at start.
@@ -769,7 +780,7 @@ export class Animation {
       const cols = new Set<string>();
 
       if (this.position != null) {
-        cols.add('node.position');
+        cols.add(COL.NODE_POSITION);
       }
 
       for (const s of this.style) {
@@ -1297,15 +1308,18 @@ export class Animation {
         // knob; recorded); 25.4: padding conversely is parents-only
         const lane = s.channel.lanes?.[group];
 
-        if (column === 'node.size') {
+        if (column === COL.NODE_SIZE) {
           refs = refs.filter(
             (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) === 0,
           );
-        } else if (column === 'node.padding') {
+        } else if (column === TWEEN_COL.NODE_PADDING) {
           refs = refs.filter(
             (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) !== 0,
           );
-        } else if (column === 'node.fontSize' || column === 'edge.fontSize') {
+        } else if (
+          column === TWEEN_COL.NODE_FONT_SIZE ||
+          column === TWEEN_COL.EDGE_FONT_SIZE
+        ) {
           // 25.5: only labelled elements have a fontSize to tween
           refs = refs.filter(
             (r) =>
@@ -1330,9 +1344,10 @@ export class Animation {
                 paint,
                 () => s.toColor as RGBA,
               )
-            : column === 'node.padding'
+            : column === TWEEN_COL.NODE_PADDING
               ? this.paddingWrite(refs, s.toScalar as number, s.channel)
-              : column === 'node.fontSize' || column === 'edge.fontSize'
+              : column === TWEEN_COL.NODE_FONT_SIZE ||
+                  column === TWEEN_COL.EDGE_FONT_SIZE
                 ? this.fontSizeWrite(
                     column,
                     group,
@@ -1362,13 +1377,13 @@ export class Animation {
         // so tweening it has to carry the arrows along.  The fold is linear
         // in opacity, so each arrow rides as a plain colour tween from its
         // stored bytes to base × the target opacity.
-        if (column === 'edge.opacity') {
+        if (column === COL.EDGE_OPACITY) {
           this.captureArrowFold(refs, s.toScalar as number);
         }
 
         // 25.2: three derived channels bake the edge width at style-write
         // (all linear in width), so a width tween carries them along
-        if (column === 'edge.width') {
+        if (column === COL.EDGE_WIDTH) {
           this.captureEdgeWidthRides(refs, s.toScalar as number);
         }
       }
@@ -1400,8 +1415,8 @@ export class Animation {
   }
 
   private positionWrite(refs: Ref[]): ChannelWrite {
-    const pos = this.store.column('node.position') as Float32Array;
-    const write = blankWrite('node.position', 'position', true, refs);
+    const pos = this.store.column(COL.NODE_POSITION) as Float32Array;
+    const write = blankWrite(COL.NODE_POSITION, 'position', true, refs);
 
     for (let i = 0; i < refs.length; i++) {
       const x = pos[refs[i].slot * 2];
@@ -1449,7 +1464,7 @@ export class Animation {
     channel: StyleChannel,
   ): ChannelWrite {
     const write = blankWrite(
-      'node.padding',
+      TWEEN_COL.NODE_PADDING,
       'padding',
       false,
       refs,
@@ -1552,12 +1567,12 @@ export class Animation {
    */
   private captureEdgeWidthRides(refs: Ref[], toWidth: number): void {
     const store = this.store;
-    const width = store.column('edge.width') as Float32Array;
+    const width = store.column(COL.EDGE_WIDTH) as Float32Array;
 
     for (const column of [
-      'edge.casing',
-      'edge.overlay',
-      'edge.underlay',
+      COL.EDGE_CASING,
+      COL.EDGE_OVERLAY,
+      COL.EDGE_UNDERLAY,
     ] as const) {
       const rec = store.column(column) as Uint32Array;
       const enabled = refs.filter((r) => rec[r.slot * 2] !== 0);
@@ -1587,7 +1602,7 @@ export class Animation {
       return;
     }
 
-    const aw = store.column('edge.arrowWidths') as Float32Array;
+    const aw = store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array;
 
     for (const [mode, lane] of [
       [modes.source, 0],
@@ -1599,7 +1614,7 @@ export class Animation {
 
       const to = mode === 'match-line' ? toWidth : mode.percent * toWidth;
       const write = blankWrite(
-        'edge.arrowWidths',
+        COL.EDGE_ARROW_WIDTHS,
         'lane',
         false,
         refs,
@@ -1628,8 +1643,8 @@ export class Animation {
     }
 
     for (const [enabled, column, colorProp] of [
-      [ends.source, 'edge.sourceArrow', 'source-arrow-color'],
-      [ends.target, 'edge.targetArrow', 'target-arrow-color'],
+      [ends.source, COL.EDGE_SOURCE_ARROW, 'source-arrow-color'],
+      [ends.target, COL.EDGE_TARGET_ARROW, 'target-arrow-color'],
     ] as const) {
       if (!enabled) {
         continue;
@@ -1683,7 +1698,7 @@ export class Animation {
             // a mid-tween leaf→parent flip hands the slot to auto-bounds
             // rather than fighting the derivation (round 25.1)
             if (
-              w.column === 'node.size' &&
+              w.column === COL.NODE_SIZE &&
               (store.flags('nodes', slot) & FLAG_PARENT) !== 0
             ) {
               break;
@@ -1713,7 +1728,7 @@ export class Animation {
           case 'fontSize':
             store.setLabelFontSize(
               slot,
-              w.column === 'node.fontSize' ? 'nodes' : 'edges',
+              w.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges',
               clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
             );
             break;

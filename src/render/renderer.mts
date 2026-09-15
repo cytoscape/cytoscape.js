@@ -32,6 +32,8 @@ import type {
   RendererOptions,
   RendererStats,
 } from '../public-types.mjs';
+import { COL } from '../contract.mjs';
+import type { ColumnId } from '../contract.mjs';
 
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -112,16 +114,16 @@ const EMPTY_DELTA = {
 };
 
 /** columns whose changes never affect pick coverage (keep the pick cache) */
-const PICK_NEUTRAL_COLUMNS = new Set([
-  'node.fillColor',
-  'node.borderColor',
-  'node.borderWidth',
-  'node.opacity',
-  'edge.lineColor',
-  'edge.opacity',
+const PICK_NEUTRAL_COLUMNS = new Set<ColumnId>([
+  COL.NODE_FILL_COLOR,
+  COL.NODE_BORDER_COLOR,
+  COL.NODE_BORDER_WIDTH,
+  COL.NODE_OPACITY,
+  COL.EDGE_LINE_COLOR,
+  COL.EDGE_OPACITY,
   // arrows are never pickable, and the pick pass draws edges only
-  'edge.sourceArrow',
-  'edge.targetArrow',
+  COL.EDGE_SOURCE_ARROW,
+  COL.EDGE_TARGET_ARROW,
 ]);
 
 /**
@@ -1081,10 +1083,10 @@ export class Renderer {
 
     const registry = store.images;
     const zoomDpr = zoomDprOverride ?? (this.frameData[4] || 1);
-    const refs = store.column('node.imageRef') as Uint32Array;
-    const sizes = store.column('node.size') as Float32Array;
-    const positions = store.column('node.position') as Float32Array;
-    const flags = store.column('node.flags') as Uint32Array;
+    const refs = store.column(COL.NODE_IMAGE_REF) as Uint32Array;
+    const sizes = store.column(COL.NODE_SIZE) as Float32Array;
+    const positions = store.column(COL.NODE_POSITION) as Float32Array;
+    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
     const high = store.highWater('nodes');
     const panX = this.frameData[2],
       panY = this.frameData[3];
@@ -1744,7 +1746,7 @@ export class Renderer {
         this.forceRuntime.encode(
           encoder,
           this.forcePresents
-            ? mirror.buffer('node.position')
+            ? mirror.buffer(COL.NODE_POSITION)
             : this.forceRuntime.silentTarget(),
           this.forcePresents ? this.forceStepsPerFrame : this.forceBatch,
         );
@@ -1970,7 +1972,7 @@ export class Renderer {
         return null;
       }
 
-      this.overlayPipeline = new NodeLayerPipeline(...inputs, 'node.overlay');
+      this.overlayPipeline = new NodeLayerPipeline(...inputs, COL.NODE_OVERLAY);
     }
 
     return this.overlayPipeline;
@@ -1985,7 +1987,10 @@ export class Renderer {
         return null;
       }
 
-      this.underlayPipeline = new NodeLayerPipeline(...inputs, 'node.underlay');
+      this.underlayPipeline = new NodeLayerPipeline(
+        ...inputs,
+        COL.NODE_UNDERLAY,
+      );
     }
 
     return this.underlayPipeline;
@@ -2130,7 +2135,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.edge,
-        'edge.underlay',
+        COL.EDGE_UNDERLAY,
       );
       curvedEdges?.drawLayer(
         pass,
@@ -2139,7 +2144,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.curved,
-        'edge.underlay',
+        COL.EDGE_UNDERLAY,
       );
     }
 
@@ -2237,7 +2242,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.edge,
-        'edge.overlay',
+        COL.EDGE_OVERLAY,
       );
       curvedEdges?.drawLayer(
         pass,
@@ -2246,7 +2251,7 @@ export class Renderer {
         mirror,
         store.highWater('edges'),
         cull.curved,
-        'edge.overlay',
+        COL.EDGE_OVERLAY,
       );
     }
 
@@ -2446,11 +2451,11 @@ export class Renderer {
       uniform,
       Math.max(1, store.capacity('nodes')),
       [
-        mirror.buffer('node.position'),
-        mirror.buffer('node.size'),
-        mirror.buffer('node.flags'),
-        mirror.buffer('node.borderWidth'),
-        mirror.buffer('node.borderGeom'),
+        mirror.buffer(COL.NODE_POSITION),
+        mirror.buffer(COL.NODE_SIZE),
+        mirror.buffer(COL.NODE_FLAGS),
+        mirror.buffer(COL.NODE_BORDER_WIDTH),
+        mirror.buffer(COL.NODE_BORDER_GEOM),
       ],
       mv,
     );
@@ -2495,10 +2500,10 @@ export class Renderer {
         uniform,
         Math.max(1, parentOrderLen),
         [
-          mirror.buffer('node.position'),
-          mirror.buffer('node.size'),
-          mirror.buffer('node.flags'),
-          mirror.buffer('node.borderWidth'),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.NODE_SIZE),
+          mirror.buffer(COL.NODE_FLAGS),
+          mirror.buffer(COL.NODE_BORDER_WIDTH),
           this.parentOrderBuf as GPUBuffer,
         ],
         `${mv}:po${this.parentOrderVersion}`,
@@ -2513,11 +2518,11 @@ export class Renderer {
         uniform,
         Math.max(1, store.capacity('nodes')),
         [
-          mirror.buffer('node.position'),
-          mirror.buffer('node.size'),
-          mirror.buffer('node.flags'),
-          mirror.buffer('node.ghost'),
-          mirror.buffer('node.borderWidth'),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.NODE_SIZE),
+          mirror.buffer(COL.NODE_FLAGS),
+          mirror.buffer(COL.NODE_GHOST),
+          mirror.buffer(COL.NODE_BORDER_WIDTH),
         ],
         mv,
       );
@@ -2528,10 +2533,12 @@ export class Renderer {
     // an overlay, so a pressed element with no *styled* overlay still
     // needs the pass — otherwise the affordance would appear only in
     // graphs that happened to style one.
-    const layerInputs = (id: 'node.overlay' | 'node.underlay'): GPUBuffer[] => [
-      mirror.buffer('node.position'),
-      mirror.buffer('node.size'),
-      mirror.buffer('node.flags'),
+    const layerInputs = (
+      id: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY,
+    ): GPUBuffer[] => [
+      mirror.buffer(COL.NODE_POSITION),
+      mirror.buffer(COL.NODE_SIZE),
+      mirror.buffer(COL.NODE_FLAGS),
       mirror.buffer(id),
     ];
 
@@ -2539,7 +2546,7 @@ export class Renderer {
       groups.overlay.ensure(
         uniform,
         Math.max(1, store.capacity('nodes')),
-        layerInputs('node.overlay'),
+        layerInputs(COL.NODE_OVERLAY),
         mv,
       );
     }
@@ -2548,16 +2555,16 @@ export class Renderer {
       groups.underlay.ensure(
         uniform,
         Math.max(1, store.capacity('nodes')),
-        layerInputs('node.underlay'),
+        layerInputs(COL.NODE_UNDERLAY),
         mv,
       );
     }
     const edgeCullInputs = [
-      mirror.buffer('edge.endpoints'),
-      mirror.buffer('edge.width'),
-      mirror.buffer('edge.flags'),
-      mirror.buffer('node.position'),
-      mirror.buffer('node.flags'),
+      mirror.buffer(COL.EDGE_ENDPOINTS),
+      mirror.buffer(COL.EDGE_WIDTH),
+      mirror.buffer(COL.EDGE_FLAGS),
+      mirror.buffer(COL.NODE_POSITION),
+      mirror.buffer(COL.NODE_FLAGS),
     ];
 
     groups.edge.ensure(
@@ -2582,8 +2589,8 @@ export class Renderer {
         Math.max(1, glyphs.buffer().size / GLYPH_BYTES),
         [
           glyphs.buffer(),
-          mirror.buffer('node.position'),
-          mirror.buffer('node.flags'),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.NODE_FLAGS),
         ],
         `${mv}:${glyphs.version}`,
       );
@@ -2608,10 +2615,10 @@ export class Renderer {
         Math.max(1, glyphs.buffer().size / GLYPH_BYTES),
         [
           glyphs.buffer(),
-          mirror.buffer('edge.endpoints'),
-          mirror.buffer('node.position'),
-          mirror.buffer('edge.flags'),
-          mirror.buffer('node.flags'),
+          mirror.buffer(COL.EDGE_ENDPOINTS),
+          mirror.buffer(COL.NODE_POSITION),
+          mirror.buffer(COL.EDGE_FLAGS),
+          mirror.buffer(COL.NODE_FLAGS),
         ],
         `${mv}:${glyphs.version}`,
       );

@@ -58,6 +58,7 @@ import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
 import {
+  COL,
   FLAG_ALIVE,
   FLAG_GRABBABLE,
   FLAG_LOCKED,
@@ -2802,10 +2803,10 @@ export class Core {
 
     const nodeSlots = store.slotsOrdered('nodes');
     const edgeSlots = store.slotsOrdered('edges');
-    const pos = store.column('node.position') as Float32Array;
-    const nodeFlags = store.column('node.flags') as Uint32Array;
-    const edgeFlags = store.column('edge.flags') as Uint32Array;
-    const endpoints = store.column('edge.endpoints') as Uint32Array;
+    const pos = store.column(COL.NODE_POSITION) as Float32Array;
+    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
+    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
+    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
     const nodeIds: string[] = new Array(nodeSlots.length);
     const positions = new Float32Array(nodeSlots.length * 2);

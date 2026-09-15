@@ -311,6 +311,176 @@ recommended but not changed, and **every sub-round pending its
 sitting**.  The record is one section per sub-round; the sittings
 are recorded under each as they happen.
 
+### 125.1 — force
+
+The two opening findings, both reproduced, both defects, both fixed.
+Pictures and tables in `plan/pictures/rnd0125/125.1/`; the numbers
+below are `npm run benchmark:layout-audit` rows, headless (the CPU
+executor — what headless runs; the page's GPU executor was checked
+separately for the label finding and reads the same), seed 1, the
+page's production sheet.
+
+**(a) Label-inclusive `avoidOverlap` — reproduced only at load, and
+that is the app's case.**  Through the page's Apply button, after a
+frame had been drawn, every mode the panel offers — `settle` with
+animate off, on, and live, `sim`, `both`, and an infinite run stopped
+after four seconds — left **0** label-box overlaps on em-web, on the
+GPU executor (AMD gcn-4) and on the CPU one, flat and compound
+(em-web-clustered, parents excluded), and on reactome, greek-gods and
+workflow-dag.  The label boxes the layout separates are the label
+boxes `boundingBox({ includeLabels: true })` reports, and they were
+held apart.  What reproduced was the run **before the first frame**:
+`?layout=force&avoidOverlap=true&overlapLabels=true` at load — the
+`layout` option of `cytoscape()`, what an app does — left **14**
+overlapping label pairs.  Cause: the store estimated every label's
+block with a flat 0.54 em advance and let the renderer's glyph build
+overwrite it with the laid block in the first frame *after* the
+labels were set; a layout that ran before that frame separated
+estimates.  On em-web 154 of 569 labels lay wider than their estimate
+once laid, the widest by 36 px, so the boxes the frame drew overlapped
+where the boxes the layout saw did not — and a page that had drawn a
+frame before Apply never showed it.  Fix: `src/label-measure.mts` —
+where a 2D canvas exists (a document, or an `OffscreenCanvas` in a
+worker) the store measures the block with the same `breakLines` over
+`measureText` advances at the atlas's 32 px scaled to the em, and
+marks the dims exact; headless Node keeps the estimate (a recorded
+deviation, as before).  After: at-create boxes against after-frame
+boxes on em-web, **0 of 569 differ** (from 154), and the load-time run
+reads **0** overlaps.  Spec: `test/modules/label-measure.mjs` — the
+measurer, the store's exact box, a force run holding measured boxes
+apart, and the control in the defect's own shape (laid out on
+estimates, then the frame's own `setLabelDims` with the real widths:
+overlaps).  The fix is store-side, so every layout under
+`nodeDimensionsIncludeLabels`, every `fit()` and every
+`boundingBox()` before the first frame reads the laid box now — the
+flow and breadthfirst sub-rounds' label-inclusive rows inherit it.
+
+**(b) `avoidOverlap` broke the tidy shapes — every diamond, and with
+labels every triangle.**  Probed on em-web (20 pairs, 9 triangles, 4
+diamonds among its components), shapes intact after a run:
+
+| avoidOverlap | bodies: pairs / triangles / diamonds | labels: pairs / triangles / diamonds |
+| --- | --- | --- |
+| `false` | 20/20, 9/9, 4/4 | 20/20, 9/9, 4/4 |
+| `'settle'` (default), before | 20/20, 9/9, **0/4** | **18/20, 0/9, 1/4** |
+| `'sim'`, before | 20/20, 9/9, 4/4 | 20/20, 9/9, 4/4 |
+| `'both'`, before | 20/20, 9/9, **0/4** | **19/20, 0/9, 1/4** |
+| every mode, after | 20/20, 9/9, 4/4 | 20/20, 9/9, 4/4 |
+
+Two causes.  Round 120 sized each shape so its *neighbours* along the
+shape's sides stood a body apart; the separation pass that follows
+clears axis-aligned boxes on either axis, which a diamond's top and
+right — a body width apart along the diagonal — are not, so the pass
+pushed them and the diamond became the plus and the kite the first
+sitting saw.  And the pass's sweeps ran across components: at the
+settle, before the re-pack, a shape's new footprint could intrude on a
+foreign node, and the sweep pushed the shape's node rather than leave
+the pair to the re-pack that places components apart anyway (the
+stress rounds and the expansion already skipped foreign pairs; the
+sweeps did not).  Fixes, `src/layout/pack.mts` and
+`src/layout/force.mts`: the radius is now the largest over every pair
+of the shape's points of `separationAlong` — the pass's own rule — plus
+the gap and its half-pixel, so the pass finds the shape clear (the
+settle's dims already carry the padding, so force passes 0 gap there;
+the old radius double-counted it); and `separateBodies` takes
+`withinComponents`, true when the re-pack follows, under which the
+sweeps and the best-state guard's depth leave foreign pairs alone.
+Round 120's own specs hold (the 30 px-body diamond on 60 px edges is
+unchanged; the star spec's 80 px bodies read the half-pixel).  New
+specs: `test/modules/pack-tidy.mjs` — the diamond stands after
+`separateBodies`, with the control (sized for its edges alone, the
+pass breaks it); the within-components rule with its control — and
+the public case in `test/force-layout.mjs`, 40 px bodies on 20 px
+edges, the diamond and the triangle stand and nothing overlaps.
+
+**The baseline** (before → after; `overlaps` are body or label boxes
+as marked, `gap` the median nearest-box gap in px and in node sizes,
+`area` Mpx², `fill` the boxes' share of it):
+
+| scene | run | ms | overlaps | area | fill | gap | edge gap median / p90 / max |
+| --- | --- | --: | --: | --: | --: | --- | --- |
+| em-web (569 / 6,899) | defaults | 266 → 264 | 0 | 4.84 → 4.81 | 0.19 | 10 px, 0.26× | 171 / 363 / 609 |
+| em-web | `avoidOverlap: false` | 192 | 713 | 3.62 | 0.25 | 0 | 58 / 138 / 305 |
+| em-web, labels | `settle` + labels | 358 → 339 | 0 | 7.24 → 6.67 | 0.22 → 0.24 | 10 px, 0.14× | 230 / 496 / 818 → 219 / 486 / 791 |
+| em-web, labels | `sim` + labels | 1,182 | 0 | 7.37 | 0.22 | 10 px | 227 / 635 / 1,167 |
+| white-matter (1,499 / 18,288) | defaults | 881 | 0 | **5.80** | **0.09** | 12 px, 0.64× | 219 / 495 / 1,597 |
+| white-matter | `avoidOverlap: false` | 802 | 742 | 2.26 | 0.24 | 0 | 121 / 284 / 933 |
+| ndex-large (3,238 / 68,641) | defaults | 2,676 | 0 | **20.83** | **0.08** | 10 px, 0.46× | 243 / 464 / 1,788 |
+| ndex-large | `avoidOverlap: false` | 2,315 | 2,970 | 8.58 | 0.20 | 0 | 127 / 253 / 1,147 |
+| compound, generated 200 × 400 | defaults | 54 | 0 | 1.55 | 0.02 | 30 px, 2.5× | 76 / 199 / 325 |
+
+The em-web rows barely move (the shapes are a handful of nodes); the
+label row's area drops 8 % because the tidy shapes no longer get
+pushed about.  The `compound` generator is unseeded, so its `stable`
+column is meaningless (noted, not fixed).  Seeds 1 / 2 / 3 on em-web:
+area 4.81 / 4.61 / 4.78, gap median 10 px throughout, the same fill
+to 1 % — stable in the sense the criteria ask.
+
+**What the numbers say about the defaults** (measured, not changed —
+the sitting's calls):
+
+1. **The crammed expansion grows the large scenes 2.4–2.6×.**
+   white-matter's area goes 2.26 → 5.80 Mpx² under the default
+   `settle` (fill 0.24 → 0.09), ndex-large 8.58 → 20.83 (0.20 →
+   0.08): 118.1's expansion stage (a component of ≥ 1,000 nodes with
+   ≥ 60 % of its nodes overlapping is scaled about its centroid,
+   capped 1.25× per round, up to 12 rounds) is doing what it was
+   built to do, and the result reads airy — the median nearest gap is
+   only 10–12 px but the *edge* gaps are 220–240 px on 19–23 px
+   nodes.  `'sim'` on the same scenes lands at 3.11 Mpx² (fill 0.17)
+   and 12.05 (0.14) — half the area — at 4× and 2.7× the time (3.7 s
+   and 7.2 s headless).  Candidate: the expansion's per-round cap or
+   its percentile (`EXPAND_CAP` 1.25, `EXPAND_PERCENTILE` 0.5) is
+   where the growth comes from; a run of the settle with the
+   expansion stage traced per round would show how much of the 2.5×
+   is the expansion and how much the stress rounds after it.
+   Recommendation: measure that trace in the sitting's presence
+   before touching the constant; do not switch the default to `'sim'`
+   for its picture — the time is the performance priority's.
+2. **`avoidOverlapPadding` 10 → 4** on em-web: area 4.81 → 4.19
+   (−13 %), fill 0.19 → 0.22, gap median 4 px; with labels 6.67 →
+   5.86.  On white-matter 5.80 → 3.21 (−45 %, fill 0.17) — because
+   the padding feeds the crammed test too.  Recommendation: keep 10
+   for the small graphs (the picture at 4 px reads crowded on 40 px
+   discs) and let item 1's measurement decide the large-scene growth
+   rather than shrinking the padding to work around it.
+3. **`edgeLength` 60** with 40 px em-web nodes gives an edge gap
+   median of 168 px in the big cliques — three node widths of open
+   edge between neighbours, which is the cliques' density more than
+   the constant; the same constant on 19 px white-matter nodes reads
+   airier (edge gap 219).  No recommendation from this sub-round; the
+   live spacing slider on the page is the instrument for it.
+
+**What changed on disk.**  `src/label-measure.mts` (new),
+`src/store/graph-store.mts` (measure before estimate),
+`src/layout/pack.mts` (the radius by `separationAlong`, imported from
+`separation.mts`), `src/layout/separation.mts` (`sweep` takes
+`compOf`; `ExtentsLike`), `src/layout/force.mts` (`withinComponents`;
+the gap force passes tidy), `scripts/throw-coverage.mjs` (one site
+re-keyed), `benchmark/layout-audit.mjs` (the crossing counter without
+its pair set — it threw on white-matter), `src/README.md` (the label
+dims deviation; the tidy paragraph), the three spec files, and the
+pictures.  Gates: `verify`, `test/layout-quality.mjs`,
+`test/force-layout.mjs`, `test:node:quiet` green.
+
+**Not reproduced as stated, and worth saying so:** on a page that has
+drawn a frame, label-inclusive `avoidOverlap` on force was never
+broken in any mode; if the maintainer saw it there rather than at
+load, the sitting needs the exact network, sheet and checkboxes.
+
+**Maintainer review: pending.**  The sitting should open em-web with
+labels on, and look at: (1) the small components' rows — every
+four-node component a diamond, every three a triangle
+(`em-web-force-after-fit.png` against `em-web-force-before-fit.png`,
+where the diamonds are pluses and kites); (2) the same with Avoid
+overlap + labels on (`em-web-force-labels-after-fit.png` /
+`-close.png`); (3) `?network=em-web&layout=force&avoidOverlap=true&overlapLabels=true&labels=true`
+— the load-time run, which is where the label finding lived — and
+count nothing overlapping at zoom 2; (4) reactome under force with
+labels (`reactome-force-labels-before-close.png` — unchanged by the
+fixes, the picture to judge the label spacing itself on); and decide
+the three default questions above, item 1 first.
+
 ### 125.2 — flow
 
 The first sitting's three findings on `flow` — too spread on reactome

@@ -494,7 +494,14 @@ const paramDefs = {
   }
 
   if (network.generated) {
-    start(fixtures.generate(network.generated, params.gen));
+    // the generated scenes take a derivation as the fetched ones do
+    // (125.10: the workflow DAGs' source-band edge colour)
+    start(
+      fixtures.derive(
+        network.derive,
+        fixtures.generate(network.generated, params.gen),
+      ),
+    );
   } else {
     // a missing fixture used to reject silently and render nothing at all
     fetchFixture().then(start, (failure) => {

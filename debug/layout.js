@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, layoutConfig, SpiralLayout */
+/* global $, layoutConfig, airiness, SpiralLayout */
 
 // The layout section (round 43.5), carried over from v3/debug/layout.js —
 // including its layoutstart/layoutstop timing readout, which is the cheapest
@@ -18,8 +18,74 @@
 // neighbourhood; Stop ends it, Reheat wakes it) and the force overlap
 // mechanism select (`avoidOverlap: 'settle' | 'sim' | 'both'`, pinned to
 // `sim` under Infinite, where there is no settle).
+//
+// Round 125.10 made the page the layout audit's instrument: a *live*
+// spacing slider that rescales the current positions about their
+// centre as it is dragged (the existing Spacing slider is a
+// spacingFactor for the next run), so a sitting finds the right
+// spacing by eye and reads the factor off; and an airiness readout —
+// the nearest-box and edge gaps of debug/airiness.js for the positions
+// as they stand, refreshed at every layoutstop and every slider move.
 
 (function () {
+  // -- the live spacing slider and the airiness readout (125.10) --
+
+  const liveSpacing = $('#live-spacing-input');
+  const liveSpacingValue = $('#live-spacing-value');
+  const readout = $('#airiness-readout');
+  // the positions the slider scales: a snapshot at each layoutstop
+  let base = {};
+
+  const measure = (cy) => {
+    const labels = $('#layout-overlap-labels-check').checked;
+
+    readout.textContent = airiness.format(airiness.airiness(cy, { labels }));
+  };
+
+  window.measureAiriness = measure;
+
+  const rebase = (cy) => {
+    base = layoutConfig.snapshotPositions(cy);
+    liveSpacing.value = '1';
+    liveSpacingValue.textContent = '1.00';
+    measure(cy);
+  };
+
+  // a drag at 60 Hz over the 19.6k-node scene: one apply per frame
+  let queued = false;
+
+  liveSpacing.addEventListener('input', () => {
+    liveSpacingValue.textContent = Number(liveSpacing.value).toFixed(2);
+
+    if (queued) {
+      return;
+    }
+
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+
+      const cy = window.cy;
+
+      if (cy == null) {
+        return;
+      }
+
+      const scaled = layoutConfig.scaledPositions(base, liveSpacing.value);
+
+      // positions(), not a preset run: a layout's stop would re-base the
+      // slider to its own output and the factor would read 1 again
+      cy.nodes().positions((n) => scaled[n.id()] || n.position());
+      measure(cy);
+    });
+  });
+
+  $('#layout-overlap-labels-check').addEventListener('change', () => {
+    if (window.cy != null) {
+      measure(window.cy);
+    }
+  });
+
   window.onCy((cy) => {
     let start = 0;
     let ready = 0;
@@ -44,7 +110,12 @@
         tweenMs > 50
           ? layoutMs.toFixed(0) + ' ms + ' + tweenMs.toFixed(0) + ' ms tween'
           : (end - start).toFixed(0) + ' ms';
+
+      // the layout's output is the new base for the live slider (125.10)
+      rebase(cy);
     });
+
+    rebase(cy);
   });
 
   const liveCheck = $('#layout-live-check');

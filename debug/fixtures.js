@@ -104,7 +104,36 @@ var fixtures = (function () {
     });
   }
 
-  var derivations = { 'mcode-parents': mcodeParents };
+  /**
+   * Round 125.10: every edge takes its source node's `band`, so a sheet
+   * can colour an edge as the node it leaves — the maintainer's first
+   * sitting asked for it on the reactome and workflow scenes, where a
+   * rank's fan-out then reads as one colour through the gap.  A mapper
+   * cannot reach across an edge to its endpoint's data, so the copy is
+   * made here, once, at load.
+   */
+  function sourceBand(gpuElements) {
+    var bands = {};
+
+    gpuElements.nodes.forEach(function (n) {
+      bands[n.data.id] = n.data.band;
+    });
+
+    gpuElements.edges.forEach(function (e) {
+      var band = bands[e.data.source];
+
+      if (band != null) {
+        e.data.band = band;
+      }
+    });
+
+    return gpuElements;
+  }
+
+  var derivations = {
+    'mcode-parents': mcodeParents,
+    'source-band': sourceBand,
+  };
 
   // a small ordinal band so the generated scenes have something to map a
   // colour from (an unlabelled monochrome scatter demos only fill rate)

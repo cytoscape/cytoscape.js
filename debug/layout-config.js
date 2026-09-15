@@ -90,6 +90,57 @@ var layoutConfig = (function () {
   }
 
   /**
+   * The positions a live spacing factor spells (125.10): every entry of
+   * `base` scaled about the centre of base's bounding box, so the graph
+   * grows or shrinks in place and the factor reads as "this much
+   * airier than the layout left it".  The base is a snapshot taken
+   * when the layout stopped, not the current positions, so dragging
+   * the slider back to 1 restores the layout's own output exactly.
+   *
+   * @param base id -> { x, y }, the positions at the layout's stop
+   * @param factor the multiple (1 is the base; > 0)
+   */
+  function scaledPositions(base, factor) {
+    var ids = Object.keys(base);
+    var out = {};
+
+    if (ids.length === 0) {
+      return out;
+    }
+
+    var f = Number(factor);
+
+    if (!(f > 0)) {
+      f = 1;
+    }
+
+    var x1 = Infinity;
+    var y1 = Infinity;
+    var x2 = -Infinity;
+    var y2 = -Infinity;
+
+    ids.forEach(function (id) {
+      var p = base[id];
+
+      x1 = Math.min(x1, p.x);
+      y1 = Math.min(y1, p.y);
+      x2 = Math.max(x2, p.x);
+      y2 = Math.max(y2, p.y);
+    });
+
+    var cx = (x1 + x2) / 2;
+    var cy = (y1 + y2) / 2;
+
+    ids.forEach(function (id) {
+      var p = base[id];
+
+      out[id] = { x: cx + (p.x - cx) * f, y: cy + (p.y - cy) * f };
+    });
+
+    return out;
+  }
+
+  /**
    * How the three checkboxes spell a force run: Infinite keeps the run
    * open (`infinite`, which streams and wins over both), Live streams
    * the sim (`animateLive`, which wins over Animate), otherwise Animate
@@ -385,6 +436,7 @@ var layoutConfig = (function () {
     edgeOverride: edgeOverride,
     sheetWith: sheetWith,
     snapshotPositions: snapshotPositions,
+    scaledPositions: scaledPositions,
     forceAnimation: forceAnimation,
     OVERLAP_MODES: OVERLAP_MODES,
     forceOverlap: forceOverlap,

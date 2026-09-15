@@ -504,6 +504,17 @@ var styles = (function () {
   // reserved corridor, and arrowheads so direction is legible.
   function workflowDag(elements, def) {
     var sheet = generated(elements, def);
+    // 125.10: the edge's `band` is its source node's (the source-band
+    // derivation), so an edge is the colour of the node it leaves and
+    // a fan-out reads as one colour through the gap; the node scale,
+    // so the two agree.  Selection takes the width, as on greek-gods.
+    var sourceColour = {
+      data: 'band',
+      scale: 'ordinal',
+      domain: [0, 1, 2, 3, 4],
+      range: 'category10',
+      fallback: '#9aa5b1',
+    };
 
     return Object.assign({}, sheet, {
       nodes: Object.assign({}, sheet.nodes, {
@@ -520,8 +531,8 @@ var styles = (function () {
         'text-margin-y': 3,
       }),
       edges: {
-        width: 1.5,
-        'line-color': selectable('#9aa5b1'),
+        width: onSelected(3, 1.5),
+        'line-color': sourceColour,
         opacity: 0.85,
         'curve-style': 'round-taxi',
         'taxi-direction': 'downward',
@@ -532,7 +543,7 @@ var styles = (function () {
         'line-outline-width': 2,
         'line-outline-color': '#ffffff',
         'target-arrow-shape': 'triangle',
-        'target-arrow-color': selectable('#9aa5b1'),
+        'target-arrow-color': sourceColour,
         'arrow-scale': 0.8,
       },
     });

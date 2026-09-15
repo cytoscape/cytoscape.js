@@ -3,7 +3,9 @@
 Round 124.1: the Greek-gods genealogy fixture — the data behind Matteo
 Abrate's tangled-tree visualisation (Observable, @nitaku/tangled-tree-
 visualization-ii; GeneaQuilts with curved links), the reference picture
-for the taxi-track round.  67 nodes over 7 generations, 92 parent →
+for the taxi-track round; `greek-gods-reference.svg` beside this file
+is that picture as rendered by the notebook, kept as the bar the flow
+and taxi audits (round 125.2) draw against.  67 nodes over 7 generations, 92 parent →
 child edges; 20 nodes have two parents, so `taxi-track: family`
 (the notebook's bundle key) draws one trunk per parent pair.
 

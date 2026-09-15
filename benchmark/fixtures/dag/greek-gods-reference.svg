@@ -1,0 +1,1600 @@
+<svg width="864" height="941" style="background-color: white">
+  <style>
+    text {
+      font-family: sans-serif;
+      font-size: 10px;
+    }
+    .node {
+      stroke-linecap: round;
+    }
+    .link {
+      fill: none;
+    }
+  </style>
+
+
+      <path class="link" d="
+      M8 46
+      L62 46
+      A16 16 90 0 1 78 62
+      L78 100
+      A16 16 90 0 0 94 116
+      L92 116" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M8 46
+      L62 46
+      A16 16 90 0 1 78 62
+      L78 100
+      A16 16 90 0 0 94 116
+      L92 116" stroke="#1b9e77" stroke-width="2"></path>
+
+      <path class="link" d="
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 194
+      A16 16 90 0 0 178 210
+      L176 210
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 194
+      A16 16 90 0 0 178 210
+      L176 210
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 216
+      A16 16 90 0 0 178 232
+      L176 232
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 216
+      A16 16 90 0 0 178 232
+      L176 232
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 260
+      A16 16 90 0 0 178 276
+      L176 276
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 260
+      A16 16 90 0 0 178 276
+      L176 276
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 282
+      A16 16 90 0 0 178 298
+      L176 298
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 282
+      A16 16 90 0 0 178 298
+      L176 298
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 304
+      A16 16 90 0 0 178 320
+      L176 320
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 304
+      A16 16 90 0 0 178 320
+      L176 320
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 326
+      A16 16 90 0 0 178 342
+      L176 342
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 326
+      A16 16 90 0 0 178 342
+      L176 342
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 348
+      A16 16 90 0 0 178 364
+      L176 364
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 348
+      A16 16 90 0 0 178 364
+      L176 364
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 370
+      A16 16 90 0 0 178 386
+      L176 386
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 370
+      A16 16 90 0 0 178 386
+      L176 386
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 392
+      A16 16 90 0 0 178 408
+      L176 408
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 392
+      A16 16 90 0 0 178 408
+      L176 408
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 414
+      A16 16 90 0 0 178 430
+      L176 430
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 414
+      A16 16 90 0 0 178 430
+      L176 430
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 436
+      A16 16 90 0 0 178 452
+      L176 452
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 436
+      A16 16 90 0 0 178 452
+      L176 452
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 458
+      A16 16 90 0 0 178 474
+      L176 474
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 458
+      A16 16 90 0 0 178 474
+      L176 474" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 194
+      A16 16 90 0 0 178 210
+      L176 210
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 194
+      A16 16 90 0 0 178 210
+      L176 210
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 216
+      A16 16 90 0 0 178 232
+      L176 232
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 216
+      A16 16 90 0 0 178 232
+      L176 232
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 260
+      A16 16 90 0 0 178 276
+      L176 276
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 260
+      A16 16 90 0 0 178 276
+      L176 276
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 282
+      A16 16 90 0 0 178 298
+      L176 298
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 282
+      A16 16 90 0 0 178 298
+      L176 298
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 304
+      A16 16 90 0 0 178 320
+      L176 320
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 304
+      A16 16 90 0 0 178 320
+      L176 320
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 326
+      A16 16 90 0 0 178 342
+      L176 342
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 326
+      A16 16 90 0 0 178 342
+      L176 342
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 348
+      A16 16 90 0 0 178 364
+      L176 364
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 348
+      A16 16 90 0 0 178 364
+      L176 364
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 370
+      A16 16 90 0 0 178 386
+      L176 386
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 370
+      A16 16 90 0 0 178 386
+      L176 386
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 392
+      A16 16 90 0 0 178 408
+      L176 408
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 392
+      A16 16 90 0 0 178 408
+      L176 408
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 414
+      A16 16 90 0 0 178 430
+      L176 430
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 414
+      A16 16 90 0 0 178 430
+      L176 430
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 436
+      A16 16 90 0 0 178 452
+      L176 452
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 436
+      A16 16 90 0 0 178 452
+      L176 452
+      M92 118
+      L146 118
+      A16 16 90 0 1 162 134
+      L162 458
+      A16 16 90 0 0 178 474
+      L176 474
+      M92 140
+      L146 140
+      A16 16 90 0 1 162 156
+      L162 458
+      A16 16 90 0 0 178 474
+      L176 474" stroke="#d95f02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M176 210
+      L272 210
+      A16 16 90 0 1 288 226
+      L288 286
+      A16 16 90 0 0 304 302
+      L302 302
+      M176 232
+      L272 232
+      A16 16 90 0 1 288 248
+      L288 286
+      A16 16 90 0 0 304 302
+      L302 302" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M176 210
+      L272 210
+      A16 16 90 0 1 288 226
+      L288 286
+      A16 16 90 0 0 304 302
+      L302 302
+      M176 232
+      L272 232
+      A16 16 90 0 1 288 248
+      L288 286
+      A16 16 90 0 0 304 302
+      L302 302" stroke="#7570b3" stroke-width="2"></path>
+
+      <path class="link" d="
+      M176 254
+      L258 254
+      A16 16 90 0 1 274 270
+      L274 308
+      A16 16 90 0 0 290 324
+      L302 324
+      M92 114
+      L204 114
+      A70 70 90 0 1 274 184
+      L274 308
+      A16 16 90 0 0 290 324
+      L302 324" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M176 254
+      L258 254
+      A16 16 90 0 1 274 270
+      L274 308
+      A16 16 90 0 0 290 324
+      L302 324
+      M92 114
+      L204 114
+      A70 70 90 0 1 274 184
+      L274 308
+      A16 16 90 0 0 290 324
+      L302 324" stroke="#e7298a" stroke-width="2"></path>
+
+      <path class="link" d="
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 352
+      A16 16 90 0 0 276 368
+      L302 368
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 352
+      A16 16 90 0 0 276 368
+      L302 368
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 374
+      A16 16 90 0 0 276 390
+      L302 390
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 374
+      A16 16 90 0 0 276 390
+      L302 390
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 396
+      A16 16 90 0 0 276 412
+      L302 412
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 396
+      A16 16 90 0 0 276 412
+      L302 412
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 454
+      A16 16 90 0 0 276 470
+      L302 470
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 454
+      A16 16 90 0 0 276 470
+      L302 470
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 582
+      A16 16 90 0 0 276 598
+      L302 598
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 582
+      A16 16 90 0 0 276 598
+      L302 598
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 608
+      A16 16 90 0 0 276 624
+      L302 624
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 608
+      A16 16 90 0 0 276 624
+      L302 624" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 352
+      A16 16 90 0 0 276 368
+      L302 368
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 352
+      A16 16 90 0 0 276 368
+      L302 368
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 374
+      A16 16 90 0 0 276 390
+      L302 390
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 374
+      A16 16 90 0 0 276 390
+      L302 390
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 396
+      A16 16 90 0 0 276 412
+      L302 412
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 396
+      A16 16 90 0 0 276 412
+      L302 412
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 454
+      A16 16 90 0 0 276 470
+      L302 470
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 454
+      A16 16 90 0 0 276 470
+      L302 470
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 582
+      A16 16 90 0 0 276 598
+      L302 598
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 582
+      A16 16 90 0 0 276 598
+      L302 598
+      M176 276
+      L244 276
+      A16 16 90 0 1 260 292
+      L260 608
+      A16 16 90 0 0 276 624
+      L302 624
+      M176 298
+      L244 298
+      A16 16 90 0 1 260 314
+      L260 608
+      A16 16 90 0 0 276 624
+      L302 624" stroke="#66a61e" stroke-width="2"></path>
+
+      <path class="link" d="
+      M176 320
+      L230 320
+      A16 16 90 0 1 246 336
+      L246 512
+      A16 16 90 0 0 262 528
+      L302 528
+      M176 342
+      L230 342
+      A16 16 90 0 1 246 358
+      L246 512
+      A16 16 90 0 0 262 528
+      L302 528" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M176 320
+      L230 320
+      A16 16 90 0 1 246 336
+      L246 512
+      A16 16 90 0 0 262 528
+      L302 528
+      M176 342
+      L230 342
+      A16 16 90 0 1 246 358
+      L246 512
+      A16 16 90 0 0 262 528
+      L302 528" stroke="#e6ab02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 302
+      L496 302
+      A16 16 90 0 1 512 318
+      L512 424
+      A16 16 90 0 0 528 440
+      L526 440
+      M302 324
+      L496 324
+      A16 16 90 0 1 512 340
+      L512 424
+      A16 16 90 0 0 528 440
+      L526 440" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 302
+      L496 302
+      A16 16 90 0 1 512 318
+      L512 424
+      A16 16 90 0 0 528 440
+      L526 440
+      M302 324
+      L496 324
+      A16 16 90 0 1 512 340
+      L512 424
+      A16 16 90 0 0 528 440
+      L526 440" stroke="#a6761d" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 460
+      L482 460
+      A16 16 90 0 1 498 476
+      L498 514
+      A16 16 90 0 0 514 530
+      L526 530
+      M302 346
+      L482 346
+      A16 16 90 0 1 498 362
+      L498 514
+      A16 16 90 0 0 514 530
+      L526 530" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 460
+      L482 460
+      A16 16 90 0 1 498 476
+      L498 514
+      A16 16 90 0 0 514 530
+      L526 530
+      M302 346
+      L482 346
+      A16 16 90 0 1 498 362
+      L498 514
+      A16 16 90 0 0 514 530
+      L526 530" stroke="#666666" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 464
+      L468 464
+      A16 16 90 0 1 484 480
+      L484 538
+      A16 16 90 0 0 500 554
+      L526 554
+      M302 368
+      L468 368
+      A16 16 90 0 1 484 384
+      L484 538
+      A16 16 90 0 0 500 554
+      L526 554" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 464
+      L468 464
+      A16 16 90 0 1 484 480
+      L484 538
+      A16 16 90 0 0 500 554
+      L526 554
+      M302 368
+      L468 368
+      A16 16 90 0 1 484 384
+      L484 538
+      A16 16 90 0 0 500 554
+      L526 554" stroke="#1b9e77" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 560
+      A16 16 90 0 0 486 576
+      L526 576
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 560
+      A16 16 90 0 0 486 576
+      L526 576
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 582
+      A16 16 90 0 0 486 598
+      L526 598
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 582
+      A16 16 90 0 0 486 598
+      L526 598
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 604
+      A16 16 90 0 0 486 620
+      L526 620
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 604
+      A16 16 90 0 0 486 620
+      L526 620
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 692
+      A16 16 90 0 0 486 708
+      L526 708
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 692
+      A16 16 90 0 0 486 708
+      L526 708" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 560
+      A16 16 90 0 0 486 576
+      L526 576
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 560
+      A16 16 90 0 0 486 576
+      L526 576
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 582
+      A16 16 90 0 0 486 598
+      L526 598
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 582
+      A16 16 90 0 0 486 598
+      L526 598
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 604
+      A16 16 90 0 0 486 620
+      L526 620
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 604
+      A16 16 90 0 0 486 620
+      L526 620
+      M302 468
+      L454 468
+      A16 16 90 0 1 470 484
+      L470 692
+      A16 16 90 0 0 486 708
+      L526 708
+      M302 412
+      L454 412
+      A16 16 90 0 1 470 428
+      L470 692
+      A16 16 90 0 0 486 708
+      L526 708" stroke="#d95f02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 472
+      L440 472
+      A16 16 90 0 1 456 488
+      L456 626
+      A16 16 90 0 0 472 642
+      L526 642
+      M302 434
+      L440 434
+      A16 16 90 0 1 456 450
+      L456 626
+      A16 16 90 0 0 472 642
+      L526 642" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 472
+      L440 472
+      A16 16 90 0 1 456 488
+      L456 626
+      A16 16 90 0 0 472 642
+      L526 642
+      M302 434
+      L440 434
+      A16 16 90 0 1 456 450
+      L456 626
+      A16 16 90 0 0 472 642
+      L526 642" stroke="#7570b3" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 476
+      L426 476
+      A16 16 90 0 1 442 492
+      L442 714
+      A16 16 90 0 0 458 730
+      L526 730
+      M302 506
+      L426 506
+      A16 16 90 0 1 442 522
+      L442 714
+      A16 16 90 0 0 458 730
+      L526 730" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 476
+      L426 476
+      A16 16 90 0 1 442 492
+      L442 714
+      A16 16 90 0 0 458 730
+      L526 730
+      M302 506
+      L426 506
+      A16 16 90 0 1 442 522
+      L442 714
+      A16 16 90 0 0 458 730
+      L526 730" stroke="#e7298a" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 480
+      L412 480
+      A16 16 90 0 1 428 496
+      L428 758
+      A16 16 90 0 0 444 774
+      L526 774" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 480
+      L412 480
+      A16 16 90 0 1 428 496
+      L428 758
+      A16 16 90 0 0 444 774
+      L526 774" stroke="#66a61e" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 484
+      L398 484
+      A16 16 90 0 1 414 500
+      L414 780
+      A16 16 90 0 0 430 796
+      L526 796
+      M302 528
+      L398 528
+      A16 16 90 0 1 414 544
+      L414 780
+      A16 16 90 0 0 430 796
+      L526 796
+      M302 484
+      L398 484
+      A16 16 90 0 1 414 500
+      L414 802
+      A16 16 90 0 0 430 818
+      L526 818
+      M302 528
+      L398 528
+      A16 16 90 0 1 414 544
+      L414 802
+      A16 16 90 0 0 430 818
+      L526 818" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 484
+      L398 484
+      A16 16 90 0 1 414 500
+      L414 780
+      A16 16 90 0 0 430 796
+      L526 796
+      M302 528
+      L398 528
+      A16 16 90 0 1 414 544
+      L414 780
+      A16 16 90 0 0 430 796
+      L526 796
+      M302 484
+      L398 484
+      A16 16 90 0 1 414 500
+      L414 802
+      A16 16 90 0 0 430 818
+      L526 818
+      M302 528
+      L398 528
+      A16 16 90 0 1 414 544
+      L414 802
+      A16 16 90 0 0 430 818
+      L526 818" stroke="#e6ab02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 594
+      L384 594
+      A16 16 90 0 1 400 610
+      L400 824
+      A16 16 90 0 0 416 840
+      L526 840
+      M302 550
+      L384 550
+      A16 16 90 0 1 400 566
+      L400 824
+      A16 16 90 0 0 416 840
+      L526 840" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 594
+      L384 594
+      A16 16 90 0 1 400 610
+      L400 824
+      A16 16 90 0 0 416 840
+      L526 840
+      M302 550
+      L384 550
+      A16 16 90 0 1 400 566
+      L400 824
+      A16 16 90 0 0 416 840
+      L526 840" stroke="#a6761d" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 598
+      L370 598
+      A16 16 90 0 1 386 614
+      L386 846
+      A16 16 90 0 0 402 862
+      L526 862
+      M302 572
+      L370 572
+      A16 16 90 0 1 386 588
+      L386 846
+      A16 16 90 0 0 402 862
+      L526 862" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 598
+      L370 598
+      A16 16 90 0 1 386 614
+      L386 846
+      A16 16 90 0 0 402 862
+      L526 862
+      M302 572
+      L370 572
+      A16 16 90 0 1 386 588
+      L386 846
+      A16 16 90 0 0 402 862
+      L526 862" stroke="#666666" stroke-width="2"></path>
+
+      <path class="link" d="
+      M302 602
+      L356 602
+      A16 16 90 0 1 372 618
+      L372 868
+      A16 16 90 0 0 388 884
+      L526 884
+      M302 602
+      L356 602
+      A16 16 90 0 1 372 618
+      L372 890
+      A16 16 90 0 0 388 906
+      L526 906" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M302 602
+      L356 602
+      A16 16 90 0 1 372 618
+      L372 868
+      A16 16 90 0 0 388 884
+      L526 884
+      M302 602
+      L356 602
+      A16 16 90 0 1 372 618
+      L372 890
+      A16 16 90 0 0 388 906
+      L526 906" stroke="#1b9e77" stroke-width="2"></path>
+
+      <path class="link" d="
+      M526 462
+      L622 462
+      A16 16 90 0 1 638 478
+      L638 692
+      A16 16 90 0 0 654 708
+      L652 708
+      M526 440
+      L622 440
+      A16 16 90 0 1 638 456
+      L638 692
+      A16 16 90 0 0 654 708
+      L652 708" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M526 462
+      L622 462
+      A16 16 90 0 1 638 478
+      L638 692
+      A16 16 90 0 0 654 708
+      L652 708
+      M526 440
+      L622 440
+      A16 16 90 0 1 638 456
+      L638 692
+      A16 16 90 0 0 654 708
+      L652 708" stroke="#d95f02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M526 484
+      L608 484
+      A16 16 90 0 1 624 500
+      L624 738
+      A16 16 90 0 0 640 754
+      L652 754
+      M526 528
+      L608 528
+      A16 16 90 0 1 624 544
+      L624 738
+      A16 16 90 0 0 640 754
+      L652 754" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M526 484
+      L608 484
+      A16 16 90 0 1 624 500
+      L624 738
+      A16 16 90 0 0 640 754
+      L652 754
+      M526 528
+      L608 528
+      A16 16 90 0 1 624 544
+      L624 738
+      A16 16 90 0 0 640 754
+      L652 754" stroke="#7570b3" stroke-width="2"></path>
+
+      <path class="link" d="
+      M526 598
+      L594 598
+      A16 16 90 0 1 610 614
+      L610 784
+      A16 16 90 0 0 626 800
+      L652 800
+      M526 532
+      L594 532
+      A16 16 90 0 1 610 548
+      L610 784
+      A16 16 90 0 0 626 800
+      L652 800" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M526 598
+      L594 598
+      A16 16 90 0 1 610 614
+      L610 784
+      A16 16 90 0 0 626 800
+      L652 800
+      M526 532
+      L594 532
+      A16 16 90 0 1 610 548
+      L610 784
+      A16 16 90 0 0 626 800
+      L652 800" stroke="#e7298a" stroke-width="2"></path>
+
+      <path class="link" d="
+      M526 752
+      L580 752
+      A16 16 90 0 1 596 768
+      L596 806
+      A16 16 90 0 0 612 822
+      L652 822
+      M302 456
+      L526 456
+      A70 70 90 0 1 596 526
+      L596 806
+      A16 16 90 0 0 612 822
+      L652 822
+      M526 752
+      L580 752
+      A16 16 90 0 1 596 768
+      L596 850
+      A16 16 90 0 0 612 866
+      L652 866
+      M302 456
+      L526 456
+      A70 70 90 0 1 596 526
+      L596 850
+      A16 16 90 0 0 612 866
+      L652 866" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M526 752
+      L580 752
+      A16 16 90 0 1 596 768
+      L596 806
+      A16 16 90 0 0 612 822
+      L652 822
+      M302 456
+      L526 456
+      A70 70 90 0 1 596 526
+      L596 806
+      A16 16 90 0 0 612 822
+      L652 822
+      M526 752
+      L580 752
+      A16 16 90 0 1 596 768
+      L596 850
+      A16 16 90 0 0 612 866
+      L652 866
+      M302 456
+      L526 456
+      A70 70 90 0 1 596 526
+      L596 850
+      A16 16 90 0 0 612 866
+      L652 866" stroke="#66a61e" stroke-width="2"></path>
+
+      <path class="link" d="
+      M652 686
+      L748 686
+      A16 16 90 0 1 764 702
+      L764 810
+      A16 16 90 0 0 780 826
+      L778 826
+      M652 708
+      L748 708
+      A16 16 90 0 1 764 724
+      L764 810
+      A16 16 90 0 0 780 826
+      L778 826" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M652 686
+      L748 686
+      A16 16 90 0 1 764 702
+      L764 810
+      A16 16 90 0 0 780 826
+      L778 826
+      M652 708
+      L748 708
+      A16 16 90 0 1 764 724
+      L764 810
+      A16 16 90 0 0 780 826
+      L778 826" stroke="#e6ab02" stroke-width="2"></path>
+
+      <path class="link" d="
+      M652 730
+      L734 730
+      A16 16 90 0 1 750 746
+      L750 832
+      A16 16 90 0 0 766 848
+      L778 848
+      M652 752
+      L734 752
+      A16 16 90 0 1 750 768
+      L750 832
+      A16 16 90 0 0 766 848
+      L778 848
+      M652 730
+      L734 730
+      A16 16 90 0 1 750 746
+      L750 854
+      A16 16 90 0 0 766 870
+      L778 870
+      M652 752
+      L734 752
+      A16 16 90 0 1 750 768
+      L750 854
+      A16 16 90 0 0 766 870
+      L778 870" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M652 730
+      L734 730
+      A16 16 90 0 1 750 746
+      L750 832
+      A16 16 90 0 0 766 848
+      L778 848
+      M652 752
+      L734 752
+      A16 16 90 0 1 750 768
+      L750 832
+      A16 16 90 0 0 766 848
+      L778 848
+      M652 730
+      L734 730
+      A16 16 90 0 1 750 746
+      L750 854
+      A16 16 90 0 0 766 870
+      L778 870
+      M652 752
+      L734 752
+      A16 16 90 0 1 750 768
+      L750 854
+      A16 16 90 0 0 766 870
+      L778 870" stroke="#a6761d" stroke-width="2"></path>
+
+      <path class="link" d="
+      M652 778
+      L720 778
+      A16 16 90 0 1 736 794
+      L736 876
+      A16 16 90 0 0 752 892
+      L778 892
+      M652 756
+      L720 756
+      A16 16 90 0 1 736 772
+      L736 876
+      A16 16 90 0 0 752 892
+      L778 892" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M652 778
+      L720 778
+      A16 16 90 0 1 736 794
+      L736 876
+      A16 16 90 0 0 752 892
+      L778 892
+      M652 756
+      L720 756
+      A16 16 90 0 1 736 772
+      L736 876
+      A16 16 90 0 0 752 892
+      L778 892" stroke="#666666" stroke-width="2"></path>
+
+      <path class="link" d="
+      M652 822
+      L706 822
+      A16 16 90 0 1 722 838
+      L722 898
+      A16 16 90 0 0 738 914
+      L778 914
+      M652 844
+      L706 844
+      A16 16 90 0 1 722 860
+      L722 898
+      A16 16 90 0 0 738 914
+      L778 914" stroke="white" stroke-width="5"></path>
+      <path class="link" d="
+      M652 822
+      L706 822
+      A16 16 90 0 1 722 838
+      L722 898
+      A16 16 90 0 0 738 914
+      L778 914
+      M652 844
+      L706 844
+      A16 16 90 0 1 722 860
+      L722 898
+      A16 16 90 0 0 738 914
+      L778 914" stroke="#1b9e77" stroke-width="2"></path>
+
+
+
+    <path class="selectable node" data-id="Chaos" stroke="black" stroke-width="8" d="M8 46 L8 46"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M8 46 L8 46"></path>
+
+    <text class="selectable" data-id="Chaos" x="12" y="42" stroke="white" stroke-width="2">Chaos</text>
+    <text x="12" y="42" style="pointer-events: none;">Chaos</text>
+
+    <path class="selectable node" data-id="Gaea" stroke="black" stroke-width="8" d="M92 114 L92 118"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M92 114 L92 118"></path>
+
+    <text class="selectable" data-id="Gaea" x="96" y="110" stroke="white" stroke-width="2">Gaea</text>
+    <text x="96" y="110" style="pointer-events: none;">Gaea</text>
+
+    <path class="selectable node" data-id="Uranus" stroke="black" stroke-width="8" d="M92 140 L92 140"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M92 140 L92 140"></path>
+
+    <text class="selectable" data-id="Uranus" x="96" y="136" stroke="white" stroke-width="2">Uranus</text>
+    <text x="96" y="136" style="pointer-events: none;">Uranus</text>
+
+    <path class="selectable node" data-id="Oceanus" stroke="black" stroke-width="8" d="M176 210 L176 210"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 210 L176 210"></path>
+
+    <text class="selectable" data-id="Oceanus" x="180" y="206" stroke="white" stroke-width="2">Oceanus</text>
+    <text x="180" y="206" style="pointer-events: none;">Oceanus</text>
+
+    <path class="selectable node" data-id="Thethys" stroke="black" stroke-width="8" d="M176 232 L176 232"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 232 L176 232"></path>
+
+    <text class="selectable" data-id="Thethys" x="180" y="228" stroke="white" stroke-width="2">Thethys</text>
+    <text x="180" y="228" style="pointer-events: none;">Thethys</text>
+
+    <path class="selectable node" data-id="Pontus" stroke="black" stroke-width="8" d="M176 254 L176 254"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 254 L176 254"></path>
+
+    <text class="selectable" data-id="Pontus" x="180" y="250" stroke="white" stroke-width="2">Pontus</text>
+    <text x="180" y="250" style="pointer-events: none;">Pontus</text>
+
+    <path class="selectable node" data-id="Rhea" stroke="black" stroke-width="8" d="M176 276 L176 276"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 276 L176 276"></path>
+
+    <text class="selectable" data-id="Rhea" x="180" y="272" stroke="white" stroke-width="2">Rhea</text>
+    <text x="180" y="272" style="pointer-events: none;">Rhea</text>
+
+    <path class="selectable node" data-id="Cronus" stroke="black" stroke-width="8" d="M176 298 L176 298"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 298 L176 298"></path>
+
+    <text class="selectable" data-id="Cronus" x="180" y="294" stroke="white" stroke-width="2">Cronus</text>
+    <text x="180" y="294" style="pointer-events: none;">Cronus</text>
+
+    <path class="selectable node" data-id="Coeus" stroke="black" stroke-width="8" d="M176 320 L176 320"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 320 L176 320"></path>
+
+    <text class="selectable" data-id="Coeus" x="180" y="316" stroke="white" stroke-width="2">Coeus</text>
+    <text x="180" y="316" style="pointer-events: none;">Coeus</text>
+
+    <path class="selectable node" data-id="Phoebe" stroke="black" stroke-width="8" d="M176 342 L176 342"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 342 L176 342"></path>
+
+    <text class="selectable" data-id="Phoebe" x="180" y="338" stroke="white" stroke-width="2">Phoebe</text>
+    <text x="180" y="338" style="pointer-events: none;">Phoebe</text>
+
+    <path class="selectable node" data-id="Crius" stroke="black" stroke-width="8" d="M176 364 L176 364"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 364 L176 364"></path>
+
+    <text class="selectable" data-id="Crius" x="180" y="360" stroke="white" stroke-width="2">Crius</text>
+    <text x="180" y="360" style="pointer-events: none;">Crius</text>
+
+    <path class="selectable node" data-id="Hyperion" stroke="black" stroke-width="8" d="M176 386 L176 386"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 386 L176 386"></path>
+
+    <text class="selectable" data-id="Hyperion" x="180" y="382" stroke="white" stroke-width="2">Hyperion</text>
+    <text x="180" y="382" style="pointer-events: none;">Hyperion</text>
+
+    <path class="selectable node" data-id="Iapetus" stroke="black" stroke-width="8" d="M176 408 L176 408"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 408 L176 408"></path>
+
+    <text class="selectable" data-id="Iapetus" x="180" y="404" stroke="white" stroke-width="2">Iapetus</text>
+    <text x="180" y="404" style="pointer-events: none;">Iapetus</text>
+
+    <path class="selectable node" data-id="Thea" stroke="black" stroke-width="8" d="M176 430 L176 430"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 430 L176 430"></path>
+
+    <text class="selectable" data-id="Thea" x="180" y="426" stroke="white" stroke-width="2">Thea</text>
+    <text x="180" y="426" style="pointer-events: none;">Thea</text>
+
+    <path class="selectable node" data-id="Themis" stroke="black" stroke-width="8" d="M176 452 L176 452"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 452 L176 452"></path>
+
+    <text class="selectable" data-id="Themis" x="180" y="448" stroke="white" stroke-width="2">Themis</text>
+    <text x="180" y="448" style="pointer-events: none;">Themis</text>
+
+    <path class="selectable node" data-id="Mnemosyne" stroke="black" stroke-width="8" d="M176 474 L176 474"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M176 474 L176 474"></path>
+
+    <text class="selectable" data-id="Mnemosyne" x="180" y="470" stroke="white" stroke-width="2">Mnemosyne</text>
+    <text x="180" y="470" style="pointer-events: none;">Mnemosyne</text>
+
+    <path class="selectable node" data-id="Doris" stroke="black" stroke-width="8" d="M302 302 L302 302"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 302 L302 302"></path>
+
+    <text class="selectable" data-id="Doris" x="306" y="298" stroke="white" stroke-width="2">Doris</text>
+    <text x="306" y="298" style="pointer-events: none;">Doris</text>
+
+    <path class="selectable node" data-id="Neures" stroke="black" stroke-width="8" d="M302 324 L302 324"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 324 L302 324"></path>
+
+    <text class="selectable" data-id="Neures" x="306" y="320" stroke="white" stroke-width="2">Neures</text>
+    <text x="306" y="320" style="pointer-events: none;">Neures</text>
+
+    <path class="selectable node" data-id="Dionne" stroke="black" stroke-width="8" d="M302 346 L302 346"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 346 L302 346"></path>
+
+    <text class="selectable" data-id="Dionne" x="306" y="342" stroke="white" stroke-width="2">Dionne</text>
+    <text x="306" y="342" style="pointer-events: none;">Dionne</text>
+
+    <path class="selectable node" data-id="Demeter" stroke="black" stroke-width="8" d="M302 368 L302 368"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 368 L302 368"></path>
+
+    <text class="selectable" data-id="Demeter" x="306" y="364" stroke="white" stroke-width="2">Demeter</text>
+    <text x="306" y="364" style="pointer-events: none;">Demeter</text>
+
+    <path class="selectable node" data-id="Hades" stroke="black" stroke-width="8" d="M302 390 L302 390"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 390 L302 390"></path>
+
+    <text class="selectable" data-id="Hades" x="306" y="386" stroke="white" stroke-width="2">Hades</text>
+    <text x="306" y="386" style="pointer-events: none;">Hades</text>
+
+    <path class="selectable node" data-id="Hera" stroke="black" stroke-width="8" d="M302 412 L302 412"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 412 L302 412"></path>
+
+    <text class="selectable" data-id="Hera" x="306" y="408" stroke="white" stroke-width="2">Hera</text>
+    <text x="306" y="408" style="pointer-events: none;">Hera</text>
+
+    <path class="selectable node" data-id="Alcmene" stroke="black" stroke-width="8" d="M302 434 L302 434"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 434 L302 434"></path>
+
+    <text class="selectable" data-id="Alcmene" x="306" y="430" stroke="white" stroke-width="2">Alcmene</text>
+    <text x="306" y="430" style="pointer-events: none;">Alcmene</text>
+
+    <path class="selectable node" data-id="Zeus" stroke="black" stroke-width="8" d="M302 456 L302 484"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 456 L302 484"></path>
+
+    <text class="selectable" data-id="Zeus" x="306" y="452" stroke="white" stroke-width="2">Zeus</text>
+    <text x="306" y="452" style="pointer-events: none;">Zeus</text>
+
+    <path class="selectable node" data-id="Eris" stroke="black" stroke-width="8" d="M302 506 L302 506"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 506 L302 506"></path>
+
+    <text class="selectable" data-id="Eris" x="306" y="502" stroke="white" stroke-width="2">Eris</text>
+    <text x="306" y="502" style="pointer-events: none;">Eris</text>
+
+    <path class="selectable node" data-id="Leto" stroke="black" stroke-width="8" d="M302 528 L302 528"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 528 L302 528"></path>
+
+    <text class="selectable" data-id="Leto" x="306" y="524" stroke="white" stroke-width="2">Leto</text>
+    <text x="306" y="524" style="pointer-events: none;">Leto</text>
+
+    <path class="selectable node" data-id="Amphitrite" stroke="black" stroke-width="8" d="M302 550 L302 550"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 550 L302 550"></path>
+
+    <text class="selectable" data-id="Amphitrite" x="306" y="546" stroke="white" stroke-width="2">Amphitrite</text>
+    <text x="306" y="546" style="pointer-events: none;">Amphitrite</text>
+
+    <path class="selectable node" data-id="Medusa" stroke="black" stroke-width="8" d="M302 572 L302 572"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 572 L302 572"></path>
+
+    <text class="selectable" data-id="Medusa" x="306" y="568" stroke="white" stroke-width="2">Medusa</text>
+    <text x="306" y="568" style="pointer-events: none;">Medusa</text>
+
+    <path class="selectable node" data-id="Poseidon" stroke="black" stroke-width="8" d="M302 594 L302 602"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 594 L302 602"></path>
+
+    <text class="selectable" data-id="Poseidon" x="306" y="590" stroke="white" stroke-width="2">Poseidon</text>
+    <text x="306" y="590" style="pointer-events: none;">Poseidon</text>
+
+    <path class="selectable node" data-id="Hestia" stroke="black" stroke-width="8" d="M302 624 L302 624"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M302 624 L302 624"></path>
+
+    <text class="selectable" data-id="Hestia" x="306" y="620" stroke="white" stroke-width="2">Hestia</text>
+    <text x="306" y="620" style="pointer-events: none;">Hestia</text>
+
+    <path class="selectable node" data-id="Thetis" stroke="black" stroke-width="8" d="M526 440 L526 440"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 440 L526 440"></path>
+
+    <text class="selectable" data-id="Thetis" x="530" y="436" stroke="white" stroke-width="2">Thetis</text>
+    <text x="530" y="436" style="pointer-events: none;">Thetis</text>
+
+    <path class="selectable node" data-id="Peleus" stroke="black" stroke-width="8" d="M526 462 L526 462"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 462 L526 462"></path>
+
+    <text class="selectable" data-id="Peleus" x="530" y="458" stroke="white" stroke-width="2">Peleus</text>
+    <text x="530" y="458" style="pointer-events: none;">Peleus</text>
+
+    <path class="selectable node" data-id="Anchises" stroke="black" stroke-width="8" d="M526 484 L526 484"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 484 L526 484"></path>
+
+    <text class="selectable" data-id="Anchises" x="530" y="480" stroke="white" stroke-width="2">Anchises</text>
+    <text x="530" y="480" style="pointer-events: none;">Anchises</text>
+
+    <path class="selectable node" data-id="Adonis" stroke="black" stroke-width="8" d="M526 506 L526 506"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 506 L526 506"></path>
+
+    <text class="selectable" data-id="Adonis" x="530" y="502" stroke="white" stroke-width="2">Adonis</text>
+    <text x="530" y="502" style="pointer-events: none;">Adonis</text>
+
+    <path class="selectable node" data-id="Aphrodite" stroke="black" stroke-width="8" d="M526 528 L526 532"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 528 L526 532"></path>
+
+    <text class="selectable" data-id="Aphrodite" x="530" y="524" stroke="white" stroke-width="2">Aphrodite</text>
+    <text x="530" y="524" style="pointer-events: none;">Aphrodite</text>
+
+    <path class="selectable node" data-id="Persephone" stroke="black" stroke-width="8" d="M526 554 L526 554"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 554 L526 554"></path>
+
+    <text class="selectable" data-id="Persephone" x="530" y="550" stroke="white" stroke-width="2">Persephone</text>
+    <text x="530" y="550" style="pointer-events: none;">Persephone</text>
+
+    <path class="selectable node" data-id="Ares" stroke="black" stroke-width="8" d="M526 576 L526 576"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 576 L526 576"></path>
+
+    <text class="selectable" data-id="Ares" x="530" y="572" stroke="white" stroke-width="2">Ares</text>
+    <text x="530" y="572" style="pointer-events: none;">Ares</text>
+
+    <path class="selectable node" data-id="Hephaestus" stroke="black" stroke-width="8" d="M526 598 L526 598"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 598 L526 598"></path>
+
+    <text class="selectable" data-id="Hephaestus" x="530" y="594" stroke="white" stroke-width="2">Hephaestus</text>
+    <text x="530" y="594" style="pointer-events: none;">Hephaestus</text>
+
+    <path class="selectable node" data-id="Hebe" stroke="black" stroke-width="8" d="M526 620 L526 620"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 620 L526 620"></path>
+
+    <text class="selectable" data-id="Hebe" x="530" y="616" stroke="white" stroke-width="2">Hebe</text>
+    <text x="530" y="616" style="pointer-events: none;">Hebe</text>
+
+    <path class="selectable node" data-id="Hercules" stroke="black" stroke-width="8" d="M526 642 L526 642"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 642 L526 642"></path>
+
+    <text class="selectable" data-id="Hercules" x="530" y="638" stroke="white" stroke-width="2">Hercules</text>
+    <text x="530" y="638" style="pointer-events: none;">Hercules</text>
+
+    <path class="selectable node" data-id="Megara" stroke="black" stroke-width="8" d="M526 664 L526 664"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 664 L526 664"></path>
+
+    <text class="selectable" data-id="Megara" x="530" y="660" stroke="white" stroke-width="2">Megara</text>
+    <text x="530" y="660" style="pointer-events: none;">Megara</text>
+
+    <path class="selectable node" data-id="Deianira" stroke="black" stroke-width="8" d="M526 686 L526 686"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 686 L526 686"></path>
+
+    <text class="selectable" data-id="Deianira" x="530" y="682" stroke="white" stroke-width="2">Deianira</text>
+    <text x="530" y="682" style="pointer-events: none;">Deianira</text>
+
+    <path class="selectable node" data-id="Eileithya" stroke="black" stroke-width="8" d="M526 708 L526 708"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 708 L526 708"></path>
+
+    <text class="selectable" data-id="Eileithya" x="530" y="704" stroke="white" stroke-width="2">Eileithya</text>
+    <text x="530" y="704" style="pointer-events: none;">Eileithya</text>
+
+    <path class="selectable node" data-id="Ate" stroke="black" stroke-width="8" d="M526 730 L526 730"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 730 L526 730"></path>
+
+    <text class="selectable" data-id="Ate" x="530" y="726" stroke="white" stroke-width="2">Ate</text>
+    <text x="530" y="726" style="pointer-events: none;">Ate</text>
+
+    <path class="selectable node" data-id="Leda" stroke="black" stroke-width="8" d="M526 752 L526 752"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 752 L526 752"></path>
+
+    <text class="selectable" data-id="Leda" x="530" y="748" stroke="white" stroke-width="2">Leda</text>
+    <text x="530" y="748" style="pointer-events: none;">Leda</text>
+
+    <path class="selectable node" data-id="Athena" stroke="black" stroke-width="8" d="M526 774 L526 774"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 774 L526 774"></path>
+
+    <text class="selectable" data-id="Athena" x="530" y="770" stroke="white" stroke-width="2">Athena</text>
+    <text x="530" y="770" style="pointer-events: none;">Athena</text>
+
+    <path class="selectable node" data-id="Apollo" stroke="black" stroke-width="8" d="M526 796 L526 796"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 796 L526 796"></path>
+
+    <text class="selectable" data-id="Apollo" x="530" y="792" stroke="white" stroke-width="2">Apollo</text>
+    <text x="530" y="792" style="pointer-events: none;">Apollo</text>
+
+    <path class="selectable node" data-id="Artemis" stroke="black" stroke-width="8" d="M526 818 L526 818"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 818 L526 818"></path>
+
+    <text class="selectable" data-id="Artemis" x="530" y="814" stroke="white" stroke-width="2">Artemis</text>
+    <text x="530" y="814" style="pointer-events: none;">Artemis</text>
+
+    <path class="selectable node" data-id="Triton" stroke="black" stroke-width="8" d="M526 840 L526 840"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 840 L526 840"></path>
+
+    <text class="selectable" data-id="Triton" x="530" y="836" stroke="white" stroke-width="2">Triton</text>
+    <text x="530" y="836" style="pointer-events: none;">Triton</text>
+
+    <path class="selectable node" data-id="Pegasus" stroke="black" stroke-width="8" d="M526 862 L526 862"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 862 L526 862"></path>
+
+    <text class="selectable" data-id="Pegasus" x="530" y="858" stroke="white" stroke-width="2">Pegasus</text>
+    <text x="530" y="858" style="pointer-events: none;">Pegasus</text>
+
+    <path class="selectable node" data-id="Orion" stroke="black" stroke-width="8" d="M526 884 L526 884"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 884 L526 884"></path>
+
+    <text class="selectable" data-id="Orion" x="530" y="880" stroke="white" stroke-width="2">Orion</text>
+    <text x="530" y="880" style="pointer-events: none;">Orion</text>
+
+    <path class="selectable node" data-id="Polyphemus" stroke="black" stroke-width="8" d="M526 906 L526 906"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M526 906 L526 906"></path>
+
+    <text class="selectable" data-id="Polyphemus" x="530" y="902" stroke="white" stroke-width="2">Polyphemus</text>
+    <text x="530" y="902" style="pointer-events: none;">Polyphemus</text>
+
+    <path class="selectable node" data-id="Deidamia" stroke="black" stroke-width="8" d="M652 686 L652 686"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 686 L652 686"></path>
+
+    <text class="selectable" data-id="Deidamia" x="656" y="682" stroke="white" stroke-width="2">Deidamia</text>
+    <text x="656" y="682" style="pointer-events: none;">Deidamia</text>
+
+    <path class="selectable node" data-id="Achilles" stroke="black" stroke-width="8" d="M652 708 L652 708"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 708 L652 708"></path>
+
+    <text class="selectable" data-id="Achilles" x="656" y="704" stroke="white" stroke-width="2">Achilles</text>
+    <text x="656" y="704" style="pointer-events: none;">Achilles</text>
+
+    <path class="selectable node" data-id="Creusa" stroke="black" stroke-width="8" d="M652 730 L652 730"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 730 L652 730"></path>
+
+    <text class="selectable" data-id="Creusa" x="656" y="726" stroke="white" stroke-width="2">Creusa</text>
+    <text x="656" y="726" style="pointer-events: none;">Creusa</text>
+
+    <path class="selectable node" data-id="Aeneas" stroke="black" stroke-width="8" d="M652 752 L652 756"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 752 L652 756"></path>
+
+    <text class="selectable" data-id="Aeneas" x="656" y="748" stroke="white" stroke-width="2">Aeneas</text>
+    <text x="656" y="748" style="pointer-events: none;">Aeneas</text>
+
+    <path class="selectable node" data-id="Lavinia" stroke="black" stroke-width="8" d="M652 778 L652 778"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 778 L652 778"></path>
+
+    <text class="selectable" data-id="Lavinia" x="656" y="774" stroke="white" stroke-width="2">Lavinia</text>
+    <text x="656" y="774" style="pointer-events: none;">Lavinia</text>
+
+    <path class="selectable node" data-id="Eros" stroke="black" stroke-width="8" d="M652 800 L652 800"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 800 L652 800"></path>
+
+    <text class="selectable" data-id="Eros" x="656" y="796" stroke="white" stroke-width="2">Eros</text>
+    <text x="656" y="796" style="pointer-events: none;">Eros</text>
+
+    <path class="selectable node" data-id="Helen" stroke="black" stroke-width="8" d="M652 822 L652 822"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 822 L652 822"></path>
+
+    <text class="selectable" data-id="Helen" x="656" y="818" stroke="white" stroke-width="2">Helen</text>
+    <text x="656" y="818" style="pointer-events: none;">Helen</text>
+
+    <path class="selectable node" data-id="Menelaus" stroke="black" stroke-width="8" d="M652 844 L652 844"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 844 L652 844"></path>
+
+    <text class="selectable" data-id="Menelaus" x="656" y="840" stroke="white" stroke-width="2">Menelaus</text>
+    <text x="656" y="840" style="pointer-events: none;">Menelaus</text>
+
+    <path class="selectable node" data-id="Polydueces" stroke="black" stroke-width="8" d="M652 866 L652 866"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M652 866 L652 866"></path>
+
+    <text class="selectable" data-id="Polydueces" x="656" y="862" stroke="white" stroke-width="2">Polydueces</text>
+    <text x="656" y="862" style="pointer-events: none;">Polydueces</text>
+
+    <path class="selectable node" data-id="Andromache" stroke="black" stroke-width="8" d="M778 804 L778 804"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 804 L778 804"></path>
+
+    <text class="selectable" data-id="Andromache" x="782" y="800" stroke="white" stroke-width="2">Andromache</text>
+    <text x="782" y="800" style="pointer-events: none;">Andromache</text>
+
+    <path class="selectable node" data-id="Neoptolemus" stroke="black" stroke-width="8" d="M778 826 L778 826"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 826 L778 826"></path>
+
+    <text class="selectable" data-id="Neoptolemus" x="782" y="822" stroke="white" stroke-width="2">Neoptolemus</text>
+    <text x="782" y="822" style="pointer-events: none;">Neoptolemus</text>
+
+    <path class="selectable node" data-id="Aeneas(2)" stroke="black" stroke-width="8" d="M778 848 L778 848"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 848 L778 848"></path>
+
+    <text class="selectable" data-id="Aeneas(2)" x="782" y="844" stroke="white" stroke-width="2">Aeneas(2)</text>
+    <text x="782" y="844" style="pointer-events: none;">Aeneas(2)</text>
+
+    <path class="selectable node" data-id="Pompilius" stroke="black" stroke-width="8" d="M778 870 L778 870"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 870 L778 870"></path>
+
+    <text class="selectable" data-id="Pompilius" x="782" y="866" stroke="white" stroke-width="2">Pompilius</text>
+    <text x="782" y="866" style="pointer-events: none;">Pompilius</text>
+
+    <path class="selectable node" data-id="Iulus" stroke="black" stroke-width="8" d="M778 892 L778 892"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 892 L778 892"></path>
+
+    <text class="selectable" data-id="Iulus" x="782" y="888" stroke="white" stroke-width="2">Iulus</text>
+    <text x="782" y="888" style="pointer-events: none;">Iulus</text>
+
+    <path class="selectable node" data-id="Hermione" stroke="black" stroke-width="8" d="M778 914 L778 914"></path>
+    <path class="node" stroke="white" stroke-width="4" d="M778 914 L778 914"></path>
+
+    <text class="selectable" data-id="Hermione" x="782" y="910" stroke="white" stroke-width="2">Hermione</text>
+    <text x="782" y="910" style="pointer-events: none;">Hermione</text>
+
+
+  </svg>

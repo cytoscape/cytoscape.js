@@ -23,8 +23,8 @@ routes, these files explain.
   - `src/render/`: the WebGPU frame graph, pipelines, shaders, culling, picking.
   - `src/interact/`: pointer, wheel and touch gestures.
   - `src/layout/`, `src/algorithms/`: built-in layouts (incl. the GPU force) and the graph algorithms.
-  - `src/style.mts`, `src/style-scales.mts`, `src/style-schemes.mts`: the sheet compiler and the mapper DSL.
-  - `src/contract.mts`: the co-signed model↔renderer column/flag layout — change it first when the layout changes.
+  - `src/style.mts`, `src/style-scales.mts`, `src/style-schemes.mts`: the sheet compiler and the mapper DSL.  `src/style-props.mts` is the property vocabulary — `PROP.BACKGROUND_COLOR` — the one place a property name is spelled (round 127).
+  - `src/contract.mts`: the co-signed model↔renderer column/flag layout — change it first when the layout changes.  Column ids are `COL.NODE_POSITION`, never the literal, and the reserved data keys are `DATA_ID`/`DATA_PARENT`/`DATA_SOURCE`/`DATA_TARGET`; `test/modules/string-keys.mjs` rejects a literal anywhere else under `src/` (round 127).
   - `src/math.mts`, `src/types.mts`, `src/util/`: v4's own copies of the generic helpers it used to import from v3 (round 42).  `src/math.mts` is deliberately *lean* — the functions v4 calls, not v3's 1500-line geometry module.
   - The `gpu-` prefix survives only where it names the *device* half against a CPU counterpart: `gpu-context.mts`, `src/render/gpu-force.mts`, `src/render/gpu-tween.mts`, `src/render/gpu-timer.mts`.  (`gpu-types.mts` was **not** such a case — it holds the public option surface — and became `public-types.mts` in round 42.6.)
 

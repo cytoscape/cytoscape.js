@@ -133,7 +133,41 @@ What stayed literal, on purpose: the overlay/underlay reader's
 channel kind, and `dep(key, 'label')` is a dependency class.
 `npm run -s verify`: green, 2,719 specs.
 
-### Verification
+### 127.4 — carried out (2026-09-15)
+
+`test/modules/string-keys.mjs`: three tree rules (a column id outside
+a `COL`/`TWEEN_COL` member line; a reserved data key in an `===`/`!==`
+comparison or a `['source', 'target']` pair; a hyphenated property
+name outside `style-props.mts`), five table rules (`COL` ≡
+`COLUMN_SPECS`; every key spelled from its value; the pseudo-columns
+disjoint from the real ones; `PROP` duplicate-free and already in
+`normalizeProp`'s spelling), and the scanner's own controls — a
+planted literal in code, one in a comment / template / double-quoted
+string, one *after* a regex holding a quote (127.1's tool bug, kept as
+a spec), a division that must still read as code.  The tree rules'
+control was run by hand: one literal planted per rule, three red rows
+naming `src/layout/dims.mts:76`, `src/columnar.mts` and
+`src/collection.mts`, then restored.
+
+### Verification (carried out)
+
+- `npm run -s verify` after each sub-round: green, 2,719 specs; the
+  gate adds 16.
+- The style micro-measure the plan asked for (headless, 2,000 nodes /
+  1,999 edges, a 22-prop sheet; medians of 7, three runs per tree,
+  pre-127.3 in a worktree beside the tree):
+
+  | | sheet compile + apply | `numericStyle()` × 6k | `style()` × 5k |
+  |---|--:|--:|--:|
+  | before | 6.94 / 7.02 / 6.86 ms | 0.57 / 0.62 / 0.59 ms | 0.60 / 0.61 / 0.61 ms |
+  | after | 9.50 / 7.23 / 6.98 ms | 0.94 / 0.61 / 0.58 ms | 0.79 / 0.62 / 0.58 ms |
+
+  The first "after" run is the cold `tsx` import (it was the first
+  process to compile the tree); runs two and three sit inside the
+  before band.  As expected: the sheet compiles once per group, and
+  the read path plans per raw name and never touches the switch.
+- The worktree was removed (`git worktree list` shows one tree).
+
 
 `npm run -s verify` per commit; `npm run -s test:node:quiet` and
 `npm run build` before the round closes.  A style-compile benchmark

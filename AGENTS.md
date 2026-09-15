@@ -68,6 +68,10 @@ deleting a word of them.
 - **The bundles ship minified WGSL**, so a shader literal carries the
   `wgsl` tag and never holds an interpolation inside a comment —
   [`docs/agents/rendering.md`](docs/agents/rendering.md).
+- **Column ids, style property names and the reserved data keys are
+  constants** — `COL.NODE_POSITION`, `PROP.BACKGROUND_COLOR`,
+  `DATA_SOURCE` — never the literal under `src/`;
+  `test/modules/string-keys.mjs` rejects it (round 127).
 - **Library source of truth is `src/`.**  `build/` and `dist/` are updated
   only via the project scripts.
 - Use Node via `.nvmrc` when possible (`nvm use` or `mise en`), and `npm` —

@@ -2214,7 +2214,10 @@ each is deliberate, not a pass-1 deferral:
   *values* (`'round-rectangle'`, `'match-line'`) are not in the table:
   the shape and arrow vocabularies already map through their id
   tables, and a value is what a user writes, not what the engine
-  spells.
+  spells.  `test/modules/string-keys.mjs` holds the line: it scans
+  `src/` for a column-id literal, a data-key comparison or a
+  hyphenated property literal outside its declaration, with a control
+  per rule and the walk's size pinned.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

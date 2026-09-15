@@ -207,7 +207,11 @@ const segCross = (ax, ay, bx, by, cx, cy, dx, dy) => {
   return o1 !== o2 && o3 !== o4 && o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0;
 };
 
-/** straight-line crossings, grid-binned; pairs sharing a node excluded */
+/** straight-line crossings, grid-binned; pairs sharing a node excluded.
+ * A pair is counted in one cell only — the first cell (lowest x, then
+ * y) the two segments' cell ranges share — so no set of seen pairs is
+ * kept: on the 18k-edge white-matter scene that set passed V8's size
+ * limit and threw (125.1). */
 const countCrossings = (segs) => {
   if (segs.length === 0) {
     return 0;
@@ -221,15 +225,16 @@ const countCrossings = (segs) => {
 
   const cell = Math.max(1, sum / segs.length);
   const grid = new Map();
+  const range = segs.map((s) => ({
+    x0: Math.floor(Math.min(s.x1, s.x2) / cell),
+    x1: Math.floor(Math.max(s.x1, s.x2) / cell),
+    y0: Math.floor(Math.min(s.y1, s.y2) / cell),
+    y1: Math.floor(Math.max(s.y1, s.y2) / cell),
+  }));
 
-  segs.forEach((s, i) => {
-    const x0 = Math.floor(Math.min(s.x1, s.x2) / cell);
-    const x1 = Math.floor(Math.max(s.x1, s.x2) / cell);
-    const y0 = Math.floor(Math.min(s.y1, s.y2) / cell);
-    const y1 = Math.floor(Math.max(s.y1, s.y2) / cell);
-
-    for (let x = x0; x <= x1; x++) {
-      for (let y = y0; y <= y1; y++) {
+  range.forEach((r, i) => {
+    for (let x = r.x0; x <= r.x1; x++) {
+      for (let y = r.y0; y <= r.y1; y++) {
         const k = `${x},${y}`;
 
         if (!grid.has(k)) {
@@ -241,21 +246,22 @@ const countCrossings = (segs) => {
     }
   });
 
-  const seen = new Set();
   let n = 0;
 
-  for (const members of grid.values()) {
+  for (const [key, members] of grid) {
+    const [cx, cy] = key.split(',').map(Number);
+
     for (let a = 0; a < members.length; a++) {
       for (let b = a + 1; b < members.length; b++) {
-        const i = Math.min(members[a], members[b]);
-        const j = Math.max(members[a], members[b]);
-        const k = i * segs.length + j;
+        const i = members[a];
+        const j = members[b];
+        const ri = range[i];
+        const rj = range[j];
 
-        if (seen.has(k)) {
+        // count only in the shared range's first cell
+        if (cx !== Math.max(ri.x0, rj.x0) || cy !== Math.max(ri.y0, rj.y0)) {
           continue;
         }
-
-        seen.add(k);
 
         const p = segs[i];
         const q = segs[j];

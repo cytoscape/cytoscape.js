@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–124 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 125 |
+| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 125–126 |
 
 ## The sections
 
-164 sections.
+165 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -191,3 +191,4 @@ A round can land with an item held open; the round file says which.
 | 162 | 123 | 2026-09-09 | landed | [Component packing on the discrete layouts, the pack layout, and breadthfirst's trees as blocks](rounds/2026-09-09-03-rnd0123-landed-component-packing-on-the-discrete-layouts-the-pack-layout-and-breadthfirst-s-trees-as-blocks.md) |
 | 163 | 124 | 2026-09-10 | landed | [Taxi tracks: automatic turn distances per bundle, the per-edge casing, and flow's corridors](rounds/2026-09-10-01-rnd0124-landed-taxi-tracks-automatic-turn-distances-per-bundle-the-per-edge-casing-and-flow-s-corridors.md) |
 | 164 | 125 | 2026-09-15 | plan | [The layout quality audit: one sub-round per layout, each signed off by the maintainer](rounds/2026-09-15-01-rnd0125-plan-the-layout-quality-audit-one-sub-round-per-layout-each-signed-off-by-the-maintainer.md) |
+| 165 | 126 | 2026-09-15 | plan | [Shader minification](rounds/2026-09-15-02-rnd0126-plan-shader-minification.md) |

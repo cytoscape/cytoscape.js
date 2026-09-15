@@ -113,6 +113,26 @@ What stayed literal, on purpose: `prop.startsWith('source')` is a
 property-name prefix test, and `TAXI_TRACK_NAMES` holds the values of
 `taxi-track`, which happen to share the spelling.
 
+### 127.3 — carried out (2026-09-15)
+
+`src/style-props.mts` holds `PROP`, 173 names generated from the
+engine's own tables (the `applyProp` and `resolveCoreProps` switches,
+the twelve read/config sets, `MAPPABLE`), alphabetical within family.
+The 162 multi-word names went through the scripted walker (802 sites
+in four files), which learned one more rule on the way: a literal in
+object-key position — followed by `:` and preceded by `{`, `,` or
+indentation — becomes a computed key `[PROP.X]:`, while `case 'x':`
+keeps the bare member.  The eleven single-word names (`width`,
+`opacity`, `color`, …) collide with `ChannelKind`, `WriteKind` and the
+layer-field switch, so they were replaced by syntactic rule in the
+style engine only — list members, `case` labels, `defineReader`
+arrays, `.has()`/`.add()`/`.includes()` calls, the `norm ===` and
+`m.prop ===` tests — and by hand in the other three files (69 sites).
+What stayed literal, on purpose: the overlay/underlay reader's
+`switch (field)` compares a *stripped* suffix, `kind: 'color'` is a
+channel kind, and `dep(key, 'label')` is a dependency class.
+`npm run -s verify`: green, 2,719 specs.
+
 ### Verification
 
 `npm run -s verify` per commit; `npm run -s test:node:quiet` and

@@ -122,6 +122,7 @@ import { nodeDims } from './layout/dims.mjs';
 import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { Event } from './event.mjs';
+import { PROP } from './style-props.mjs';
 
 export type EleFilterFn = (
   ele: Collection,
@@ -146,10 +147,10 @@ const packRef = (r: Ref): number =>
 
 /** Model-px style props that renderedStyle() scales by the zoom. */
 const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set([
-  'width',
-  'height',
-  'border-width',
-  'font-size',
+  PROP.WIDTH,
+  PROP.HEIGHT,
+  PROP.BORDER_WIDTH,
+  PROP.FONT_SIZE,
 ]);
 
 /**
@@ -2744,13 +2745,13 @@ export class Collection {
     // stored truth is the effective value on the flat path; the one case
     // the column cannot answer is a kernel-owned opacity mapper, whose
     // stored bytes go stale (round 62.6 — the same gate readProp keeps)
-    if (!this._cy._styleEngine.ownsProp(ref.group, 'opacity')) {
+    if (!this._cy._styleEngine.ownsProp(ref.group, PROP.OPACITY)) {
       return ref.group === 'nodes'
         ? (store.nodes.column(COL.NODE_OPACITY) as Float32Array)[ref.slot]
         : (store.edges.column(COL.EDGE_OPACITY) as Float32Array)[ref.slot];
     }
 
-    return this.numericStyle('opacity');
+    return this.numericStyle(PROP.OPACITY);
   }
 
   /**

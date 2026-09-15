@@ -157,6 +157,7 @@ import type {
   Mapper,
   MapperSpec,
 } from './public-types.mjs';
+import { PROP } from './style-props.mjs';
 
 /*
 StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors, no
@@ -793,238 +794,238 @@ const SHAPE_NAMES: Record<number, string> = {
 
 /** Readable props per group ('width' and 'opacity' exist for both). */
 const NODE_READ: ReadonlySet<string> = new Set([
-  'background-color',
-  'border-color',
-  'border-width',
-  'width',
-  'height',
-  'shape',
-  'shape-polygon-points',
-  'opacity',
-  'background-opacity',
-  'border-opacity',
-  'text-opacity',
-  'events',
-  'text-events',
-  'visibility',
-  'chart',
-  'chart-values',
-  'chart-colors',
-  'chart-size',
-  'chart-hole',
-  'chart-start-angle',
-  'chart-direction',
-  'chart-opacity',
-  'corner-radius',
-  'border-position',
-  'border-style',
-  'border-dash-pattern',
-  'border-dash-offset',
-  'outline-style',
-  'background-fill',
-  'background-gradient-stop-colors',
-  'background-gradient-stop-positions',
-  'background-gradient-direction',
-  'outline-color',
-  'outline-opacity',
-  'outline-width',
-  'outline-offset',
-  'label',
-  'font-size',
-  'font-family',
-  'font-style',
-  'font-weight',
-  'color',
-  'ghost',
-  'ghost-offset-x',
-  'ghost-offset-y',
-  'ghost-opacity',
-  'background-image',
-  'background-fit',
-  'background-image-opacity',
-  'background-position-x',
-  'background-position-y',
-  'background-offset-x',
-  'background-offset-y',
-  'background-width',
-  'background-height',
-  'background-repeat',
-  'background-clip',
-  'background-image-containment',
-  'background-image-smoothing',
-  'background-image-crossorigin',
-  'background-image-type',
-  'background-image-color',
-  'overlay-color',
-  'overlay-opacity',
-  'overlay-padding',
-  'overlay-shape',
-  'overlay-corner-radius',
-  'underlay-color',
-  'underlay-opacity',
-  'underlay-padding',
-  'underlay-shape',
-  'underlay-corner-radius',
-  'text-outline-width',
-  'text-outline-color',
-  'text-outline-opacity',
-  'text-background-color',
-  'text-background-opacity',
-  'text-background-padding',
-  'text-margin-x',
-  'text-margin-y',
-  'min-zoomed-font-size',
-  'text-rotation',
-  'text-halign',
-  'text-valign',
-  'text-transform',
-  'text-background-shape',
-  'text-wrap',
-  'text-max-width',
-  'line-height',
-  'text-overflow-wrap',
-  'text-justification',
-  'text-border-width',
-  'text-border-color',
-  'text-border-opacity',
-  'padding',
-  'padding-left',
-  'padding-right',
-  'padding-top',
-  'padding-bottom',
-  'padding-relative-to',
-  'min-width',
-  'min-height',
-  'compound-sizing-wrt-labels',
-  'transition-property',
-  'transition-duration',
-  'transition-delay',
-  'transition-timing-function',
+  PROP.BACKGROUND_COLOR,
+  PROP.BORDER_COLOR,
+  PROP.BORDER_WIDTH,
+  PROP.WIDTH,
+  PROP.HEIGHT,
+  PROP.SHAPE,
+  PROP.SHAPE_POLYGON_POINTS,
+  PROP.OPACITY,
+  PROP.BACKGROUND_OPACITY,
+  PROP.BORDER_OPACITY,
+  PROP.TEXT_OPACITY,
+  PROP.EVENTS,
+  PROP.TEXT_EVENTS,
+  PROP.VISIBILITY,
+  PROP.CHART,
+  PROP.CHART_VALUES,
+  PROP.CHART_COLORS,
+  PROP.CHART_SIZE,
+  PROP.CHART_HOLE,
+  PROP.CHART_START_ANGLE,
+  PROP.CHART_DIRECTION,
+  PROP.CHART_OPACITY,
+  PROP.CORNER_RADIUS,
+  PROP.BORDER_POSITION,
+  PROP.BORDER_STYLE,
+  PROP.BORDER_DASH_PATTERN,
+  PROP.BORDER_DASH_OFFSET,
+  PROP.OUTLINE_STYLE,
+  PROP.BACKGROUND_FILL,
+  PROP.BACKGROUND_GRADIENT_STOP_COLORS,
+  PROP.BACKGROUND_GRADIENT_STOP_POSITIONS,
+  PROP.BACKGROUND_GRADIENT_DIRECTION,
+  PROP.OUTLINE_COLOR,
+  PROP.OUTLINE_OPACITY,
+  PROP.OUTLINE_WIDTH,
+  PROP.OUTLINE_OFFSET,
+  PROP.LABEL,
+  PROP.FONT_SIZE,
+  PROP.FONT_FAMILY,
+  PROP.FONT_STYLE,
+  PROP.FONT_WEIGHT,
+  PROP.COLOR,
+  PROP.GHOST,
+  PROP.GHOST_OFFSET_X,
+  PROP.GHOST_OFFSET_Y,
+  PROP.GHOST_OPACITY,
+  PROP.BACKGROUND_IMAGE,
+  PROP.BACKGROUND_FIT,
+  PROP.BACKGROUND_IMAGE_OPACITY,
+  PROP.BACKGROUND_POSITION_X,
+  PROP.BACKGROUND_POSITION_Y,
+  PROP.BACKGROUND_OFFSET_X,
+  PROP.BACKGROUND_OFFSET_Y,
+  PROP.BACKGROUND_WIDTH,
+  PROP.BACKGROUND_HEIGHT,
+  PROP.BACKGROUND_REPEAT,
+  PROP.BACKGROUND_CLIP,
+  PROP.BACKGROUND_IMAGE_CONTAINMENT,
+  PROP.BACKGROUND_IMAGE_SMOOTHING,
+  PROP.BACKGROUND_IMAGE_CROSSORIGIN,
+  PROP.BACKGROUND_IMAGE_TYPE,
+  PROP.BACKGROUND_IMAGE_COLOR,
+  PROP.OVERLAY_COLOR,
+  PROP.OVERLAY_OPACITY,
+  PROP.OVERLAY_PADDING,
+  PROP.OVERLAY_SHAPE,
+  PROP.OVERLAY_CORNER_RADIUS,
+  PROP.UNDERLAY_COLOR,
+  PROP.UNDERLAY_OPACITY,
+  PROP.UNDERLAY_PADDING,
+  PROP.UNDERLAY_SHAPE,
+  PROP.UNDERLAY_CORNER_RADIUS,
+  PROP.TEXT_OUTLINE_WIDTH,
+  PROP.TEXT_OUTLINE_COLOR,
+  PROP.TEXT_OUTLINE_OPACITY,
+  PROP.TEXT_BACKGROUND_COLOR,
+  PROP.TEXT_BACKGROUND_OPACITY,
+  PROP.TEXT_BACKGROUND_PADDING,
+  PROP.TEXT_MARGIN_X,
+  PROP.TEXT_MARGIN_Y,
+  PROP.MIN_ZOOMED_FONT_SIZE,
+  PROP.TEXT_ROTATION,
+  PROP.TEXT_HALIGN,
+  PROP.TEXT_VALIGN,
+  PROP.TEXT_TRANSFORM,
+  PROP.TEXT_BACKGROUND_SHAPE,
+  PROP.TEXT_WRAP,
+  PROP.TEXT_MAX_WIDTH,
+  PROP.LINE_HEIGHT,
+  PROP.TEXT_OVERFLOW_WRAP,
+  PROP.TEXT_JUSTIFICATION,
+  PROP.TEXT_BORDER_WIDTH,
+  PROP.TEXT_BORDER_COLOR,
+  PROP.TEXT_BORDER_OPACITY,
+  PROP.PADDING,
+  PROP.PADDING_LEFT,
+  PROP.PADDING_RIGHT,
+  PROP.PADDING_TOP,
+  PROP.PADDING_BOTTOM,
+  PROP.PADDING_RELATIVE_TO,
+  PROP.MIN_WIDTH,
+  PROP.MIN_HEIGHT,
+  PROP.COMPOUND_SIZING_WRT_LABELS,
+  PROP.TRANSITION_PROPERTY,
+  PROP.TRANSITION_DURATION,
+  PROP.TRANSITION_DELAY,
+  PROP.TRANSITION_TIMING_FUNCTION,
 ]);
 
 const EDGE_READ: ReadonlySet<string> = new Set([
-  'line-color',
-  'line-style',
-  'width',
-  'opacity',
-  'line-opacity',
-  'text-opacity',
-  'events',
-  'visibility',
-  'line-cap',
-  'line-dash-pattern',
-  'line-dash-offset',
-  'line-outline-width',
-  'line-outline-color',
-  'line-fill',
-  'line-gradient-stop-colors',
-  'line-gradient-stop-positions',
-  'arrow-scale',
-  'source-arrow-fill',
-  'target-arrow-fill',
-  'source-arrow-width',
-  'target-arrow-width',
-  'mid-source-arrow-shape',
-  'mid-source-arrow-color',
-  'mid-target-arrow-shape',
-  'mid-target-arrow-color',
-  'source-arrow-shape',
-  'source-arrow-color',
-  'target-arrow-shape',
-  'target-arrow-color',
-  'label',
-  'font-size',
-  'color',
-  'text-outline-width',
-  'text-outline-color',
-  'text-outline-opacity',
-  'text-background-color',
-  'text-background-opacity',
-  'text-background-padding',
-  'text-margin-x',
-  'text-margin-y',
-  'min-zoomed-font-size',
-  'text-rotation',
-  'source-label',
-  'source-text-offset',
-  'source-text-margin-x',
-  'source-text-margin-y',
-  'source-text-rotation',
-  'target-label',
-  'target-text-offset',
-  'target-text-margin-x',
-  'target-text-margin-y',
-  'target-text-rotation',
-  'text-transform',
-  'text-background-shape',
-  'text-wrap',
-  'text-max-width',
-  'line-height',
-  'text-overflow-wrap',
-  'text-justification',
-  'text-border-width',
-  'text-border-color',
-  'text-border-opacity',
-  'curve-style',
-  'control-point-step-size',
-  'control-point-weight',
-  'loop-direction',
-  'loop-sweep',
-  'control-point-distances',
-  'control-point-weights',
-  'segment-distances',
-  'segment-weights',
-  'segment-radii',
-  'radius-type',
-  'edge-distances',
-  'taxi-direction',
-  'taxi-turn',
-  'taxi-turn-min-distance',
-  'taxi-radius',
-  'taxi-track',
-  'taxi-track-spacing',
-  'haystack-radius',
-  'source-endpoint',
-  'target-endpoint',
-  'source-distance-from-node',
-  'target-distance-from-node',
-  'overlay-color',
-  'overlay-opacity',
-  'overlay-padding',
-  'underlay-color',
-  'underlay-opacity',
-  'underlay-padding',
-  'transition-property',
-  'transition-duration',
-  'transition-delay',
-  'transition-timing-function',
+  PROP.LINE_COLOR,
+  PROP.LINE_STYLE,
+  PROP.WIDTH,
+  PROP.OPACITY,
+  PROP.LINE_OPACITY,
+  PROP.TEXT_OPACITY,
+  PROP.EVENTS,
+  PROP.VISIBILITY,
+  PROP.LINE_CAP,
+  PROP.LINE_DASH_PATTERN,
+  PROP.LINE_DASH_OFFSET,
+  PROP.LINE_OUTLINE_WIDTH,
+  PROP.LINE_OUTLINE_COLOR,
+  PROP.LINE_FILL,
+  PROP.LINE_GRADIENT_STOP_COLORS,
+  PROP.LINE_GRADIENT_STOP_POSITIONS,
+  PROP.ARROW_SCALE,
+  PROP.SOURCE_ARROW_FILL,
+  PROP.TARGET_ARROW_FILL,
+  PROP.SOURCE_ARROW_WIDTH,
+  PROP.TARGET_ARROW_WIDTH,
+  PROP.MID_SOURCE_ARROW_SHAPE,
+  PROP.MID_SOURCE_ARROW_COLOR,
+  PROP.MID_TARGET_ARROW_SHAPE,
+  PROP.MID_TARGET_ARROW_COLOR,
+  PROP.SOURCE_ARROW_SHAPE,
+  PROP.SOURCE_ARROW_COLOR,
+  PROP.TARGET_ARROW_SHAPE,
+  PROP.TARGET_ARROW_COLOR,
+  PROP.LABEL,
+  PROP.FONT_SIZE,
+  PROP.COLOR,
+  PROP.TEXT_OUTLINE_WIDTH,
+  PROP.TEXT_OUTLINE_COLOR,
+  PROP.TEXT_OUTLINE_OPACITY,
+  PROP.TEXT_BACKGROUND_COLOR,
+  PROP.TEXT_BACKGROUND_OPACITY,
+  PROP.TEXT_BACKGROUND_PADDING,
+  PROP.TEXT_MARGIN_X,
+  PROP.TEXT_MARGIN_Y,
+  PROP.MIN_ZOOMED_FONT_SIZE,
+  PROP.TEXT_ROTATION,
+  PROP.SOURCE_LABEL,
+  PROP.SOURCE_TEXT_OFFSET,
+  PROP.SOURCE_TEXT_MARGIN_X,
+  PROP.SOURCE_TEXT_MARGIN_Y,
+  PROP.SOURCE_TEXT_ROTATION,
+  PROP.TARGET_LABEL,
+  PROP.TARGET_TEXT_OFFSET,
+  PROP.TARGET_TEXT_MARGIN_X,
+  PROP.TARGET_TEXT_MARGIN_Y,
+  PROP.TARGET_TEXT_ROTATION,
+  PROP.TEXT_TRANSFORM,
+  PROP.TEXT_BACKGROUND_SHAPE,
+  PROP.TEXT_WRAP,
+  PROP.TEXT_MAX_WIDTH,
+  PROP.LINE_HEIGHT,
+  PROP.TEXT_OVERFLOW_WRAP,
+  PROP.TEXT_JUSTIFICATION,
+  PROP.TEXT_BORDER_WIDTH,
+  PROP.TEXT_BORDER_COLOR,
+  PROP.TEXT_BORDER_OPACITY,
+  PROP.CURVE_STYLE,
+  PROP.CONTROL_POINT_STEP_SIZE,
+  PROP.CONTROL_POINT_WEIGHT,
+  PROP.LOOP_DIRECTION,
+  PROP.LOOP_SWEEP,
+  PROP.CONTROL_POINT_DISTANCES,
+  PROP.CONTROL_POINT_WEIGHTS,
+  PROP.SEGMENT_DISTANCES,
+  PROP.SEGMENT_WEIGHTS,
+  PROP.SEGMENT_RADII,
+  PROP.RADIUS_TYPE,
+  PROP.EDGE_DISTANCES,
+  PROP.TAXI_DIRECTION,
+  PROP.TAXI_TURN,
+  PROP.TAXI_TURN_MIN_DISTANCE,
+  PROP.TAXI_RADIUS,
+  PROP.TAXI_TRACK,
+  PROP.TAXI_TRACK_SPACING,
+  PROP.HAYSTACK_RADIUS,
+  PROP.SOURCE_ENDPOINT,
+  PROP.TARGET_ENDPOINT,
+  PROP.SOURCE_DISTANCE_FROM_NODE,
+  PROP.TARGET_DISTANCE_FROM_NODE,
+  PROP.OVERLAY_COLOR,
+  PROP.OVERLAY_OPACITY,
+  PROP.OVERLAY_PADDING,
+  PROP.UNDERLAY_COLOR,
+  PROP.UNDERLAY_OPACITY,
+  PROP.UNDERLAY_PADDING,
+  PROP.TRANSITION_PROPERTY,
+  PROP.TRANSITION_DURATION,
+  PROP.TRANSITION_DELAY,
+  PROP.TRANSITION_TIMING_FUNCTION,
 ]);
 
 /** curve props are edge-only (constants and mappers alike). */
 const CURVE_PROPS: ReadonlySet<string> = new Set([
-  'curve-style',
-  'control-point-step-size',
-  'control-point-weight',
-  'loop-direction',
-  'loop-sweep',
-  'control-point-distances',
-  'control-point-weights',
-  'segment-distances',
-  'segment-weights',
-  'segment-radii',
-  'radius-type',
-  'edge-distances',
-  'taxi-direction',
-  'taxi-turn',
-  'taxi-turn-min-distance',
-  'taxi-radius',
-  'taxi-track',
-  'taxi-track-spacing',
-  'haystack-radius',
-  'source-endpoint',
-  'target-endpoint',
-  'source-distance-from-node',
-  'target-distance-from-node',
+  PROP.CURVE_STYLE,
+  PROP.CONTROL_POINT_STEP_SIZE,
+  PROP.CONTROL_POINT_WEIGHT,
+  PROP.LOOP_DIRECTION,
+  PROP.LOOP_SWEEP,
+  PROP.CONTROL_POINT_DISTANCES,
+  PROP.CONTROL_POINT_WEIGHTS,
+  PROP.SEGMENT_DISTANCES,
+  PROP.SEGMENT_WEIGHTS,
+  PROP.SEGMENT_RADII,
+  PROP.RADIUS_TYPE,
+  PROP.EDGE_DISTANCES,
+  PROP.TAXI_DIRECTION,
+  PROP.TAXI_TURN,
+  PROP.TAXI_TURN_MIN_DISTANCE,
+  PROP.TAXI_RADIUS,
+  PROP.TAXI_TRACK,
+  PROP.TAXI_TRACK_SPACING,
+  PROP.HAYSTACK_RADIUS,
+  PROP.SOURCE_ENDPOINT,
+  PROP.TARGET_ENDPOINT,
+  PROP.SOURCE_DISTANCE_FROM_NODE,
+  PROP.TARGET_DISTANCE_FROM_NODE,
 ]);
 
 /** Core (viewport-level) theming (round 13 A2): v3's core-selector
@@ -1068,25 +1069,25 @@ const resolveCoreProps = (props: StyleProps | undefined): CoreStyle => {
     }
 
     switch (prop) {
-      case 'selection-box-color':
+      case PROP.SELECTION_BOX_COLOR:
         out.selectionBoxColor = parseColor(prop, value);
         break;
-      case 'selection-box-opacity':
+      case PROP.SELECTION_BOX_OPACITY:
         out.selectionBoxOpacity = parseZeroOne(prop, value);
         break;
-      case 'selection-box-border-color':
+      case PROP.SELECTION_BOX_BORDER_COLOR:
         out.selectionBoxBorderColor = parseColor(prop, value);
         break;
-      case 'selection-box-border-width':
+      case PROP.SELECTION_BOX_BORDER_WIDTH:
         out.selectionBoxBorderWidth = parseNonNegative(prop, value);
         break;
-      case 'active-bg-color':
+      case PROP.ACTIVE_BG_COLOR:
         out.activeBgColor = parseColor(prop, value);
         break;
-      case 'active-bg-opacity':
+      case PROP.ACTIVE_BG_OPACITY:
         out.activeBgOpacity = parseZeroOne(prop, value);
         break;
-      case 'active-bg-size':
+      case PROP.ACTIVE_BG_SIZE:
         out.activeBgSize = parseNonNegative(prop, value);
         break;
       default:
@@ -1101,40 +1102,40 @@ const resolveCoreProps = (props: StyleProps | undefined): CoreStyle => {
 
 /** global-constant font props (round 13 D1): one face per glyph atlas */
 const GLOBAL_FONT_PROPS: ReadonlySet<string> = new Set([
-  'font-family',
-  'font-style',
-  'font-weight',
+  PROP.FONT_FAMILY,
+  PROP.FONT_STYLE,
+  PROP.FONT_WEIGHT,
 ]);
 
 /** the end-label family (round 13 D4): edge-only */
 const END_LABEL_PROPS: ReadonlySet<string> = new Set([
-  'source-label',
-  'source-text-offset',
-  'source-text-margin-x',
-  'source-text-margin-y',
-  'source-text-rotation',
-  'target-label',
-  'target-text-offset',
-  'target-text-margin-x',
-  'target-text-margin-y',
-  'target-text-rotation',
+  PROP.SOURCE_LABEL,
+  PROP.SOURCE_TEXT_OFFSET,
+  PROP.SOURCE_TEXT_MARGIN_X,
+  PROP.SOURCE_TEXT_MARGIN_Y,
+  PROP.SOURCE_TEXT_ROTATION,
+  PROP.TARGET_LABEL,
+  PROP.TARGET_TEXT_OFFSET,
+  PROP.TARGET_TEXT_MARGIN_X,
+  PROP.TARGET_TEXT_MARGIN_Y,
+  PROP.TARGET_TEXT_ROTATION,
 ]);
 
 /** further node-only props (C3/D3; text-events since 20.3 — edge
  * labels are never pickable in v4): rejected on the edges group */
 const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set([
-  'shape-polygon-points',
-  'text-halign',
-  'text-valign',
-  'text-events',
+  PROP.SHAPE_POLYGON_POINTS,
+  PROP.TEXT_HALIGN,
+  PROP.TEXT_VALIGN,
+  PROP.TEXT_EVENTS,
 ]);
 
 /** ghost props are node-only (round 13 A1). */
 const GHOST_PROPS: ReadonlySet<string> = new Set([
-  'ghost',
-  'ghost-offset-x',
-  'ghost-offset-y',
-  'ghost-opacity',
+  PROP.GHOST,
+  PROP.GHOST_OFFSET_X,
+  PROP.GHOST_OFFSET_Y,
+  PROP.GHOST_OPACITY,
 ]);
 
 /** the default chart palette: the mapper DSL's category10 scheme */
@@ -1144,24 +1145,24 @@ const DEFAULT_CHART_COLORS: RGBA[] = resolveScheme('category10').stops.map(
 
 /** chart props are node-only (round 23). */
 const CHART_PROPS: ReadonlySet<string> = new Set([
-  'chart',
-  'chart-values',
-  'chart-colors',
-  'chart-size',
-  'chart-hole',
-  'chart-start-angle',
-  'chart-direction',
-  'chart-opacity',
+  PROP.CHART,
+  PROP.CHART_VALUES,
+  PROP.CHART_COLORS,
+  PROP.CHART_SIZE,
+  PROP.CHART_HOLE,
+  PROP.CHART_START_ANGLE,
+  PROP.CHART_DIRECTION,
+  PROP.CHART_OPACITY,
 ]);
 
 /** overlay/underlay *shape* props are node-only (edge layers stroke
  * the edge geometry, so shape/radius don't apply — v3 ignores them on
  * edges; v4 rejects them). */
 const LAYER_SHAPE_PROPS: ReadonlySet<string> = new Set([
-  'overlay-shape',
-  'overlay-corner-radius',
-  'underlay-shape',
-  'underlay-corner-radius',
+  PROP.OVERLAY_SHAPE,
+  PROP.OVERLAY_CORNER_RADIUS,
+  PROP.UNDERLAY_SHAPE,
+  PROP.UNDERLAY_CORNER_RADIUS,
 ]);
 
 const parseColor = (prop: string, value: unknown): RGBA => {
@@ -2213,7 +2214,7 @@ const parseTaxiTurn = (
 ): { value: number; percent: boolean; auto: boolean } => {
   if (typeof value === 'number') {
     return {
-      value: parseNumber('taxi-turn', value),
+      value: parseNumber(PROP.TAXI_TURN, value),
       percent: false,
       auto: false,
     };
@@ -2232,7 +2233,7 @@ const parseTaxiTurn = (
   }
 
   return {
-    value: parseNumber('taxi-turn', value),
+    value: parseNumber(PROP.TAXI_TURN, value),
     percent: false,
     auto: false,
   };
@@ -2342,180 +2343,180 @@ export const normalizeProp = (prop: string): string => {
 const applyProp = (computed: Computed, prop: string, value: unknown): void => {
   switch (prop) {
     // node properties
-    case 'background-color':
+    case PROP.BACKGROUND_COLOR:
       computed.fillColor = parseColor(prop, value);
       break;
-    case 'border-color':
+    case PROP.BORDER_COLOR:
       computed.borderColor = parseColor(prop, value);
       break;
-    case 'width': // node width or edge line width, resolved per group at apply time
+    case PROP.WIDTH: // node width or edge line width, resolved per group at apply time
       computed.width = parseNumber(prop, value);
       break;
-    case 'height':
+    case PROP.HEIGHT:
       computed.height = parseNumber(prop, value);
       break;
-    case 'shape':
+    case PROP.SHAPE:
       computed.shape = parseShape(value);
       break;
-    case 'shape-polygon-points':
+    case PROP.SHAPE_POLYGON_POINTS:
       computed.shapePolygonPoints = parsePolygonPoints(prop, value);
       break;
-    case 'text-outline-width':
+    case PROP.TEXT_OUTLINE_WIDTH:
       computed.textOutlineWidth = parseNumber(prop, value);
       break;
-    case 'text-outline-color':
+    case PROP.TEXT_OUTLINE_COLOR:
       computed.textOutlineColor = parseColor(prop, value);
       break;
-    case 'text-outline-opacity':
+    case PROP.TEXT_OUTLINE_OPACITY:
       computed.textOutlineOpacity = parseNumber(prop, value);
       break;
-    case 'text-background-color':
+    case PROP.TEXT_BACKGROUND_COLOR:
       computed.textBgColor = parseColor(prop, value);
       break;
-    case 'text-background-opacity':
+    case PROP.TEXT_BACKGROUND_OPACITY:
       computed.textBgOpacity = parseNumber(prop, value);
       break;
-    case 'text-background-padding':
+    case PROP.TEXT_BACKGROUND_PADDING:
       computed.textBgPadding = parseNumber(prop, value);
       break;
-    case 'text-margin-x':
+    case PROP.TEXT_MARGIN_X:
       computed.textMarginX = parseNumber(prop, value);
       break;
-    case 'text-margin-y':
+    case PROP.TEXT_MARGIN_Y:
       computed.textMarginY = parseNumber(prop, value);
       break;
-    case 'min-zoomed-font-size':
+    case PROP.MIN_ZOOMED_FONT_SIZE:
       computed.minZoomedFontSize = parseNonNegative(prop, value);
       break;
-    case 'text-halign':
+    case PROP.TEXT_HALIGN:
       computed.textHalign = parseAlign(prop, value, HALIGNS);
       break;
-    case 'text-valign':
+    case PROP.TEXT_VALIGN:
       computed.textValign = parseAlign(prop, value, VALIGNS);
       break;
-    case 'text-rotation':
+    case PROP.TEXT_ROTATION:
       computed.textRotation = parseTextRotation(value);
       break;
-    case 'text-transform':
+    case PROP.TEXT_TRANSFORM:
       computed.textTransform = parseTextTransform(value);
       break;
-    case 'text-wrap':
+    case PROP.TEXT_WRAP:
       computed.textWrap = parseKeyword(prop, TEXT_WRAPS)(value);
       break;
-    case 'text-max-width':
+    case PROP.TEXT_MAX_WIDTH:
       computed.textMaxWidth = parseNonNegative(prop, value);
       break;
-    case 'line-height':
+    case PROP.LINE_HEIGHT:
       computed.lineHeight = parseNonNegative(prop, value);
       break;
-    case 'text-overflow-wrap':
+    case PROP.TEXT_OVERFLOW_WRAP:
       computed.textOverflowWrap = parseKeyword(prop, OFLOW_WRAPS)(value);
       break;
-    case 'text-justification':
+    case PROP.TEXT_JUSTIFICATION:
       computed.textJustification = parseKeyword(prop, JUSTIFICATIONS)(value);
       break;
-    case 'text-background-shape':
+    case PROP.TEXT_BACKGROUND_SHAPE:
       computed.textBgShape = parseTextBgShape(value);
       break;
-    case 'text-border-width':
+    case PROP.TEXT_BORDER_WIDTH:
       computed.textBorderWidth = parseNonNegative(prop, value);
       break;
-    case 'text-border-color':
+    case PROP.TEXT_BORDER_COLOR:
       computed.textBorderColor = parseColor(prop, value);
       break;
-    case 'text-border-opacity':
+    case PROP.TEXT_BORDER_OPACITY:
       computed.textBorderOpacity = parseZeroOne(prop, value);
       break;
-    case 'border-width':
+    case PROP.BORDER_WIDTH:
       computed.borderWidth = parseNumber(prop, value);
       break;
-    case 'corner-radius':
+    case PROP.CORNER_RADIUS:
       computed.cornerRadius = parseLayerRadius(prop, value);
       break;
-    case 'border-position':
+    case PROP.BORDER_POSITION:
       computed.borderPosition = parseBorderPosition(value);
       break;
-    case 'border-style':
+    case PROP.BORDER_STYLE:
       computed.borderStyle = parseStrokeStyle(prop, value);
       break;
-    case 'border-dash-pattern':
+    case PROP.BORDER_DASH_PATTERN:
       computed.borderDashPattern = normalizeDashPattern(
         parseNumberList(prop, value),
         NODE_DEFAULTS.borderDashPattern,
       );
       break;
-    case 'border-dash-offset':
+    case PROP.BORDER_DASH_OFFSET:
       computed.borderDashOffset = parseNumber(prop, value);
       break;
-    case 'outline-style':
+    case PROP.OUTLINE_STYLE:
       computed.outlineStyle = parseStrokeStyle(prop, value);
       break;
-    case 'outline-color':
+    case PROP.OUTLINE_COLOR:
       computed.outlineColor = parseColor(prop, value);
       break;
-    case 'outline-opacity':
+    case PROP.OUTLINE_OPACITY:
       computed.outlineOpacity = parseZeroOne(prop, value);
       break;
-    case 'outline-width':
+    case PROP.OUTLINE_WIDTH:
       computed.outlineWidth = parseNonNegative(prop, value);
       break;
-    case 'outline-offset':
+    case PROP.OUTLINE_OFFSET:
       computed.outlineOffset = parseNonNegative(prop, value);
       break;
-    case 'background-opacity':
+    case PROP.BACKGROUND_OPACITY:
       computed.backgroundOpacity = parseZeroOne(prop, value);
       break;
-    case 'background-fill':
+    case PROP.BACKGROUND_FILL:
       computed.backgroundFill = parseFill(prop, value);
       break;
-    case 'background-gradient-stop-colors':
+    case PROP.BACKGROUND_GRADIENT_STOP_COLORS:
       computed.backgroundGradientStopColors = parseColorList(prop, value);
       break;
-    case 'background-gradient-stop-positions':
+    case PROP.BACKGROUND_GRADIENT_STOP_POSITIONS:
       computed.backgroundGradientStopPositions = parsePercentList(prop, value);
       break;
-    case 'background-gradient-direction':
+    case PROP.BACKGROUND_GRADIENT_DIRECTION:
       computed.backgroundGradientDirection = parseGradientDirection(value);
       break;
-    case 'line-fill':
+    case PROP.LINE_FILL:
       computed.lineFill = parseFill(prop, value);
       break;
-    case 'line-gradient-stop-colors':
+    case PROP.LINE_GRADIENT_STOP_COLORS:
       computed.lineGradientStopColors = parseColorList(prop, value);
       break;
-    case 'line-gradient-stop-positions':
+    case PROP.LINE_GRADIENT_STOP_POSITIONS:
       computed.lineGradientStopPositions = parsePercentList(prop, value);
       break;
-    case 'border-opacity':
+    case PROP.BORDER_OPACITY:
       computed.borderOpacity = parseZeroOne(prop, value);
       break;
-    case 'line-opacity':
+    case PROP.LINE_OPACITY:
       computed.lineOpacity = parseZeroOne(prop, value);
       break;
-    case 'line-cap':
+    case PROP.LINE_CAP:
       computed.lineCap = parseLineCap(value);
       break;
-    case 'line-outline-width':
+    case PROP.LINE_OUTLINE_WIDTH:
       computed.lineOutlineWidth = parseNonNegative(prop, value);
       break;
-    case 'line-outline-color':
+    case PROP.LINE_OUTLINE_COLOR:
       computed.lineOutlineColor = parseColor(prop, value);
       break;
-    case 'line-dash-pattern':
+    case PROP.LINE_DASH_PATTERN:
       computed.lineDashPattern = normalizeDashPattern(
         parseNumberList(prop, value),
       );
       break;
-    case 'line-dash-offset':
+    case PROP.LINE_DASH_OFFSET:
       computed.lineDashOffset = parseNumber(prop, value);
       break;
-    case 'text-opacity':
+    case PROP.TEXT_OPACITY:
       computed.textOpacity = parseZeroOne(prop, value);
       break;
-    case 'events':
+    case PROP.EVENTS:
       computed.eventsEnabled = parseYesNo(prop, value);
       break;
-    case 'visibility':
+    case PROP.VISIBILITY:
       if (value !== 'visible' && value !== 'hidden') {
         throw new Error(
           `The visibility '${String(value)}' must be 'visible' or 'hidden'`,
@@ -2524,26 +2525,26 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
 
       computed.invisible = value === 'hidden';
       break;
-    case 'chart':
+    case PROP.CHART:
       computed.chartKind = parseChartKind(prop, value);
       break;
-    case 'chart-values':
+    case PROP.CHART_VALUES:
       computed.chartValues = parseChartValues(prop, value);
       computed.chartValuesKey = null;
       break;
-    case 'chart-colors':
+    case PROP.CHART_COLORS:
       computed.chartColors = parseChartColors(prop, value);
       break;
-    case 'chart-size':
+    case PROP.CHART_SIZE:
       computed.chartSize = parseChartFraction(prop, value);
       break;
-    case 'chart-hole':
+    case PROP.CHART_HOLE:
       computed.chartHole = parseChartFraction(prop, value);
       break;
-    case 'chart-start-angle':
+    case PROP.CHART_START_ANGLE:
       computed.chartStartAngle = parseAngle(prop, value);
       break;
-    case 'chart-direction':
+    case PROP.CHART_DIRECTION:
       if (value !== 'vertical' && value !== 'horizontal') {
         throw new Error(
           `The chart-direction '${String(value)}' must be 'vertical' or 'horizontal'`,
@@ -2552,52 +2553,52 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
 
       computed.chartDirection = value === 'horizontal' ? 1 : 0;
       break;
-    case 'chart-opacity':
+    case PROP.CHART_OPACITY:
       computed.chartOpacity = parseZeroOne(prop, value);
       break;
-    case 'text-events':
+    case PROP.TEXT_EVENTS:
       computed.textEvents = parseYesNo(prop, value);
       break;
-    case 'ghost':
+    case PROP.GHOST:
       computed.ghost = parseYesNo(prop, value);
       break;
-    case 'ghost-offset-x':
+    case PROP.GHOST_OFFSET_X:
       computed.ghostOffsetX = parseNumber(prop, value);
       break;
-    case 'ghost-offset-y':
+    case PROP.GHOST_OFFSET_Y:
       computed.ghostOffsetY = parseNumber(prop, value);
       break;
-    case 'overlay-color':
+    case PROP.OVERLAY_COLOR:
       computed.overlayColor = parseColor(prop, value);
       break;
-    case 'overlay-opacity':
+    case PROP.OVERLAY_OPACITY:
       computed.overlayOpacity = parseZeroOne(prop, value);
       break;
-    case 'overlay-padding':
+    case PROP.OVERLAY_PADDING:
       computed.overlayPadding = parseNonNegative(prop, value);
       break;
-    case 'overlay-shape':
+    case PROP.OVERLAY_SHAPE:
       computed.overlayShape = parseLayerShape(prop, value);
       break;
-    case 'overlay-corner-radius':
+    case PROP.OVERLAY_CORNER_RADIUS:
       computed.overlayRadius = parseLayerRadius(prop, value);
       break;
-    case 'underlay-color':
+    case PROP.UNDERLAY_COLOR:
       computed.underlayColor = parseColor(prop, value);
       break;
-    case 'underlay-opacity':
+    case PROP.UNDERLAY_OPACITY:
       computed.underlayOpacity = parseZeroOne(prop, value);
       break;
-    case 'underlay-padding':
+    case PROP.UNDERLAY_PADDING:
       computed.underlayPadding = parseNonNegative(prop, value);
       break;
-    case 'underlay-shape':
+    case PROP.UNDERLAY_SHAPE:
       computed.underlayShape = parseLayerShape(prop, value);
       break;
-    case 'underlay-corner-radius':
+    case PROP.UNDERLAY_CORNER_RADIUS:
       computed.underlayRadius = parseLayerRadius(prop, value);
       break;
-    case 'ghost-opacity': {
+    case PROP.GHOST_OPACITY: {
       const op = parseNumber(prop, value);
 
       if (op < 0 || op > 1) {
@@ -2609,10 +2610,10 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.ghostOpacity = op;
       break;
     }
-    case 'opacity':
+    case PROP.OPACITY:
       computed.opacity = parseNumber(prop, value);
       break;
-    case 'label': {
+    case PROP.LABEL: {
       // constant strings, or the data(key) mapper reading the sidecar
       // ('id' reads the first-class id); mapData stays unsupported
       const text = String(value);
@@ -2635,12 +2636,12 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.labelKey = null;
       break;
     }
-    case 'source-label':
-    case 'target-label': {
+    case PROP.SOURCE_LABEL:
+    case PROP.TARGET_LABEL: {
       // same rules as 'label': constants or the data(key) passthrough
       const text = String(value);
       const mapped = DATA_MAPPER.exec(text);
-      const src = prop === 'source-label';
+      const src = prop === PROP.SOURCE_LABEL;
 
       if (mapped != null) {
         if (src) {
@@ -2669,34 +2670,34 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       }
       break;
     }
-    case 'source-text-offset':
+    case PROP.SOURCE_TEXT_OFFSET:
       computed.sourceTextOffset = parseNonNegative(prop, value);
       break;
-    case 'target-text-offset':
+    case PROP.TARGET_TEXT_OFFSET:
       computed.targetTextOffset = parseNonNegative(prop, value);
       break;
-    case 'source-text-margin-x':
+    case PROP.SOURCE_TEXT_MARGIN_X:
       computed.sourceTextMarginX = parseNumber(prop, value);
       break;
-    case 'source-text-margin-y':
+    case PROP.SOURCE_TEXT_MARGIN_Y:
       computed.sourceTextMarginY = parseNumber(prop, value);
       break;
-    case 'target-text-margin-x':
+    case PROP.TARGET_TEXT_MARGIN_X:
       computed.targetTextMarginX = parseNumber(prop, value);
       break;
-    case 'target-text-margin-y':
+    case PROP.TARGET_TEXT_MARGIN_Y:
       computed.targetTextMarginY = parseNumber(prop, value);
       break;
-    case 'source-text-rotation':
+    case PROP.SOURCE_TEXT_ROTATION:
       computed.sourceTextRotation = parseTextRotation(value);
       break;
-    case 'target-text-rotation':
+    case PROP.TARGET_TEXT_ROTATION:
       computed.targetTextRotation = parseTextRotation(value);
       break;
-    case 'font-size':
+    case PROP.FONT_SIZE:
       computed.fontSize = parseNumber(prop, value);
       break;
-    case 'font-family': {
+    case PROP.FONT_FAMILY: {
       const family = String(value).trim();
 
       if (family === '') {
@@ -2708,7 +2709,7 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.fontFamily = family;
       break;
     }
-    case 'font-style': {
+    case PROP.FONT_STYLE: {
       const style = String(value);
 
       if (style !== 'normal' && style !== 'italic' && style !== 'oblique') {
@@ -2720,7 +2721,7 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.fontStyle = style;
       break;
     }
-    case 'font-weight': {
+    case PROP.FONT_WEIGHT: {
       // v3's set: the CSS keywords plus the numeric hundreds
       const weight = String(value);
       const num = Number(weight);
@@ -2742,27 +2743,27 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.fontWeight = weight;
       break;
     }
-    case 'color':
+    case PROP.COLOR:
       computed.textColor = parseColor(prop, value);
       break;
 
     // edge properties
-    case 'line-color':
+    case PROP.LINE_COLOR:
       computed.lineColor = parseColor(prop, value);
       break;
-    case 'line-style':
+    case PROP.LINE_STYLE:
       computed.lineStyle = parseLineStyle(value);
       break;
-    case 'source-arrow-shape':
+    case PROP.SOURCE_ARROW_SHAPE:
       computed.sourceArrowShape = parseArrowShape(prop, value);
       break;
-    case 'target-arrow-shape':
+    case PROP.TARGET_ARROW_SHAPE:
       computed.targetArrowShape = parseArrowShape(prop, value);
       break;
-    case 'source-arrow-color':
+    case PROP.SOURCE_ARROW_COLOR:
       computed.sourceArrowColor = parseColor(prop, value);
       break;
-    case 'arrow-scale': {
+    case PROP.ARROW_SCALE: {
       const scale = parseNumber(prop, value);
 
       if (scale <= 0) {
@@ -2772,73 +2773,73 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.arrowScale = scale;
       break;
     }
-    case 'source-arrow-fill':
+    case PROP.SOURCE_ARROW_FILL:
       computed.sourceArrowFill = parseArrowFill(value);
       break;
-    case 'target-arrow-fill':
+    case PROP.TARGET_ARROW_FILL:
       computed.targetArrowFill = parseArrowFill(value);
       break;
-    case 'source-arrow-width':
+    case PROP.SOURCE_ARROW_WIDTH:
       computed.sourceArrowWidth = parseArrowWidth(prop, value);
       break;
-    case 'target-arrow-width':
+    case PROP.TARGET_ARROW_WIDTH:
       computed.targetArrowWidth = parseArrowWidth(prop, value);
       break;
-    case 'target-arrow-color':
+    case PROP.TARGET_ARROW_COLOR:
       computed.targetArrowColor = parseColor(prop, value);
       break;
-    case 'mid-source-arrow-shape':
+    case PROP.MID_SOURCE_ARROW_SHAPE:
       computed.midSourceArrowShape = parseArrowShape(prop, value);
       break;
-    case 'mid-target-arrow-shape':
+    case PROP.MID_TARGET_ARROW_SHAPE:
       computed.midTargetArrowShape = parseArrowShape(prop, value);
       break;
-    case 'mid-source-arrow-color':
+    case PROP.MID_SOURCE_ARROW_COLOR:
       computed.midSourceArrowColor = parseColor(prop, value);
       break;
-    case 'mid-target-arrow-color':
+    case PROP.MID_TARGET_ARROW_COLOR:
       computed.midTargetArrowColor = parseColor(prop, value);
       break;
-    case 'curve-style':
+    case PROP.CURVE_STYLE:
       computed.curveStyle = parseCurveStyle(value);
       break;
-    case 'control-point-step-size':
+    case PROP.CONTROL_POINT_STEP_SIZE:
       computed.controlPointStepSize = parseNumber(prop, value);
       break;
-    case 'control-point-weight':
+    case PROP.CONTROL_POINT_WEIGHT:
       computed.controlPointWeight = parseNumber(prop, value);
       break;
-    case 'loop-direction':
+    case PROP.LOOP_DIRECTION:
       computed.loopDirection = parseAngle(prop, value);
       break;
-    case 'loop-sweep':
+    case PROP.LOOP_SWEEP:
       computed.loopSweep = parseAngle(prop, value);
       break;
-    case 'control-point-distances':
+    case PROP.CONTROL_POINT_DISTANCES:
       computed.controlPointDistances = parseNumberList(prop, value);
       break;
-    case 'control-point-weights':
+    case PROP.CONTROL_POINT_WEIGHTS:
       computed.controlPointWeights = parseNumberList(prop, value);
       break;
-    case 'segment-distances':
+    case PROP.SEGMENT_DISTANCES:
       computed.segmentDistances = parseNumberList(prop, value);
       break;
-    case 'segment-weights':
+    case PROP.SEGMENT_WEIGHTS:
       computed.segmentWeights = parseNumberList(prop, value);
       break;
-    case 'segment-radii':
+    case PROP.SEGMENT_RADII:
       computed.segmentRadii = parseNumberList(prop, value);
       break;
-    case 'radius-type':
+    case PROP.RADIUS_TYPE:
       computed.radiusTypes = parseRadiusTypes(prop, value);
       break;
-    case 'edge-distances':
+    case PROP.EDGE_DISTANCES:
       computed.edgeDistances = parseEdgeDistances(value);
       break;
-    case 'taxi-direction':
+    case PROP.TAXI_DIRECTION:
       computed.taxiDirection = parseTaxiDirection(value);
       break;
-    case 'taxi-turn': {
+    case PROP.TAXI_TURN: {
       const turn = parseTaxiTurn(value);
 
       computed.taxiTurn = turn.value;
@@ -2846,19 +2847,19 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.taxiTurnAuto = turn.auto;
       break;
     }
-    case 'taxi-turn-min-distance':
+    case PROP.TAXI_TURN_MIN_DISTANCE:
       computed.taxiTurnMinDistance = parseNumber(prop, value);
       break;
-    case 'taxi-radius':
+    case PROP.TAXI_RADIUS:
       computed.taxiRadius = parseNumber(prop, value);
       break;
-    case 'taxi-track':
+    case PROP.TAXI_TRACK:
       computed.taxiTrack = parseTaxiTrack(value);
       break;
-    case 'taxi-track-spacing':
+    case PROP.TAXI_TRACK_SPACING:
       computed.taxiTrackSpacing = parseNonNegative(prop, value);
       break;
-    case 'haystack-radius': {
+    case PROP.HAYSTACK_RADIUS: {
       const radius = parseNumber(prop, value);
 
       if (radius < 0 || radius > 1) {
@@ -2870,32 +2871,32 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.haystackRadius = radius;
       break;
     }
-    case 'source-endpoint':
+    case PROP.SOURCE_ENDPOINT:
       computed.sourceEndpoint = parseEndpoint(prop, value);
       break;
-    case 'target-endpoint':
+    case PROP.TARGET_ENDPOINT:
       computed.targetEndpoint = parseEndpoint(prop, value);
       break;
-    case 'source-distance-from-node':
+    case PROP.SOURCE_DISTANCE_FROM_NODE:
       computed.sourceDistanceFromNode = parseNonNegative(prop, value);
       break;
-    case 'target-distance-from-node':
+    case PROP.TARGET_DISTANCE_FROM_NODE:
       computed.targetDistanceFromNode = parseNonNegative(prop, value);
       break;
 
     // background images (round 15.2); per-image props accept scalars or
     // arrays (v3's multiple: true), distributing last-value-repeats
-    case 'background-image':
+    case PROP.BACKGROUND_IMAGE:
       computed.backgroundImage = parseUrls(prop, value);
       break;
-    case 'background-fit':
+    case PROP.BACKGROUND_FIT:
       computed.backgroundFit = parseImageList(
         prop,
         value,
         parseImageEnum(prop, BG_FITS),
       );
       break;
-    case 'background-image-opacity':
+    case PROP.BACKGROUND_IMAGE_OPACITY:
       computed.backgroundImageOpacity = parseImageList(prop, value, (v) => {
         const op = parseNumber(prop, v);
 
@@ -2906,81 +2907,81 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
         return op;
       });
       break;
-    case 'background-position-x':
+    case PROP.BACKGROUND_POSITION_X:
       computed.backgroundPositionX = parseImageList(
         prop,
         value,
         parseBgLen(prop),
       );
       break;
-    case 'background-position-y':
+    case PROP.BACKGROUND_POSITION_Y:
       computed.backgroundPositionY = parseImageList(
         prop,
         value,
         parseBgLen(prop),
       );
       break;
-    case 'background-offset-x':
+    case PROP.BACKGROUND_OFFSET_X:
       computed.backgroundOffsetX = parseImageList(
         prop,
         value,
         parseBgLen(prop),
       );
       break;
-    case 'background-offset-y':
+    case PROP.BACKGROUND_OFFSET_Y:
       computed.backgroundOffsetY = parseImageList(
         prop,
         value,
         parseBgLen(prop),
       );
       break;
-    case 'background-width':
+    case PROP.BACKGROUND_WIDTH:
       computed.backgroundWidth = parseImageList(prop, value, parseBgSize(prop));
       break;
-    case 'background-height':
+    case PROP.BACKGROUND_HEIGHT:
       computed.backgroundHeight = parseImageList(
         prop,
         value,
         parseBgSize(prop),
       );
       break;
-    case 'background-repeat':
+    case PROP.BACKGROUND_REPEAT:
       computed.backgroundRepeat = parseImageList(
         prop,
         value,
         parseImageEnum(prop, BG_REPEATS),
       );
       break;
-    case 'background-clip':
+    case PROP.BACKGROUND_CLIP:
       computed.backgroundClip = parseImageList(
         prop,
         value,
         parseImageEnum(prop, BG_CLIPS),
       );
       break;
-    case 'background-image-containment':
+    case PROP.BACKGROUND_IMAGE_CONTAINMENT:
       computed.backgroundImageContainment = parseImageList(
         prop,
         value,
         parseImageEnum(prop, BG_CONTAINMENTS),
       );
       break;
-    case 'background-image-smoothing':
+    case PROP.BACKGROUND_IMAGE_SMOOTHING:
       computed.backgroundImageSmoothing = parseImageList(prop, value, (v) =>
         parseYesNo(prop, v),
       );
       break;
-    case 'background-image-type':
+    case PROP.BACKGROUND_IMAGE_TYPE:
       computed.backgroundImageType = parseImageList(
         prop,
         value,
         parseImageEnum(prop, IMAGE_TYPES),
       );
       break;
-    case 'background-image-color':
+    case PROP.BACKGROUND_IMAGE_COLOR:
       computed.backgroundImageColor = parseColor(prop, value);
       break;
-    case 'background-image-crossorigin': {
+    case PROP.BACKGROUND_IMAGE_CROSSORIGIN: {
       const co = String(value);
 
       if (!BG_CROSSORIGINS.has(co)) {
@@ -2992,8 +2993,8 @@ const applyProp = (computed: Computed, prop: string, value: unknown): void => {
       computed.backgroundImageCrossorigin = co;
       break;
     }
-    case 'background-width-relative-to':
-    case 'background-height-relative-to':
+    case PROP.BACKGROUND_WIDTH_RELATIVE_TO:
+    case PROP.BACKGROUND_HEIGHT_RELATIVE_TO:
       throw new Error(
         `'${prop}' is not supported in the GPU prototype: a compound parent's stored ` +
           `size is already the padded box (v3's include-padding default), and leaves have no padding`,
@@ -3038,7 +3039,11 @@ const assertGroupProp = (
 
   // the raw sheet value may be a mapper object here, so test the
   // keyword directly rather than parsing
-  if (norm === 'text-rotation' && group === 'nodes' && value === 'autorotate') {
+  if (
+    norm === PROP.TEXT_ROTATION &&
+    group === 'nodes' &&
+    value === 'autorotate'
+  ) {
     // 27.7: numeric rotations now work on node labels; `autorotate`
     // is still an edge concept — it resolves from the edge's slope,
     // and a node has none
@@ -3141,22 +3146,22 @@ const captureBypassPatch = (
 
 /** background-image props are node-only (round 15.2). */
 const IMAGE_PROPS: ReadonlySet<string> = new Set([
-  'background-image',
-  'background-fit',
-  'background-image-opacity',
-  'background-position-x',
-  'background-position-y',
-  'background-offset-x',
-  'background-offset-y',
-  'background-width',
-  'background-height',
-  'background-repeat',
-  'background-clip',
-  'background-image-containment',
-  'background-image-smoothing',
-  'background-image-crossorigin',
-  'background-image-type',
-  'background-image-color',
+  PROP.BACKGROUND_IMAGE,
+  PROP.BACKGROUND_FIT,
+  PROP.BACKGROUND_IMAGE_OPACITY,
+  PROP.BACKGROUND_POSITION_X,
+  PROP.BACKGROUND_POSITION_Y,
+  PROP.BACKGROUND_OFFSET_X,
+  PROP.BACKGROUND_OFFSET_Y,
+  PROP.BACKGROUND_WIDTH,
+  PROP.BACKGROUND_HEIGHT,
+  PROP.BACKGROUND_REPEAT,
+  PROP.BACKGROUND_CLIP,
+  PROP.BACKGROUND_IMAGE_CONTAINMENT,
+  PROP.BACKGROUND_IMAGE_SMOOTHING,
+  PROP.BACKGROUND_IMAGE_CROSSORIGIN,
+  PROP.BACKGROUND_IMAGE_TYPE,
+  PROP.BACKGROUND_IMAGE_COLOR,
 ]);
 
 /** the recorded multi-image cap (a fixed FS compositing loop) */
@@ -3226,7 +3231,7 @@ interface MappableChannel {
 
 /** Mapper-capable props ('label' rides the labelKey channel instead). */
 const MAPPABLE: Record<string, MappableChannel> = {
-  'background-color': {
+  [PROP.BACKGROUND_COLOR]: {
     kind: 'color',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3234,7 +3239,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.fillColor,
   },
-  'border-color': {
+  [PROP.BORDER_COLOR]: {
     kind: 'color',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3259,7 +3264,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.height,
   },
-  'border-width': {
+  [PROP.BORDER_WIDTH]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3284,7 +3289,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.shape,
   },
-  'font-size': {
+  [PROP.FONT_SIZE]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3292,7 +3297,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.fontSize,
   },
-  'min-zoomed-font-size': {
+  [PROP.MIN_ZOOMED_FONT_SIZE]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3300,7 +3305,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.minZoomedFontSize,
   },
-  'text-halign': {
+  [PROP.TEXT_HALIGN]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => HALIGNS[String(v)] ?? null,
@@ -3309,7 +3314,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textHalign,
   },
-  'text-valign': {
+  [PROP.TEXT_VALIGN]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => VALIGNS[String(v)] ?? null,
@@ -3326,7 +3331,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textColor,
   },
-  'text-outline-width': {
+  [PROP.TEXT_OUTLINE_WIDTH]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3334,7 +3339,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textOutlineWidth,
   },
-  'text-outline-color': {
+  [PROP.TEXT_OUTLINE_COLOR]: {
     kind: 'color',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3342,7 +3347,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textOutlineColor,
   },
-  'text-outline-opacity': {
+  [PROP.TEXT_OUTLINE_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3350,7 +3355,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textOutlineOpacity,
   },
-  'text-background-color': {
+  [PROP.TEXT_BACKGROUND_COLOR]: {
     kind: 'color',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3358,7 +3363,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBgColor,
   },
-  'text-background-opacity': {
+  [PROP.TEXT_BACKGROUND_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3366,7 +3371,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBgOpacity,
   },
-  'text-background-padding': {
+  [PROP.TEXT_BACKGROUND_PADDING]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3374,7 +3379,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBgPadding,
   },
-  'text-margin-x': {
+  [PROP.TEXT_MARGIN_X]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3382,7 +3387,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textMarginX,
   },
-  'text-margin-y': {
+  [PROP.TEXT_MARGIN_Y]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3390,7 +3395,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textMarginY,
   },
-  'text-rotation': {
+  [PROP.TEXT_ROTATION]: {
     // 27.7: nodes joined edges here — v3 allows a numeric rotation on any
     // label, while `autorotate` stays edge-only (it needs a slope)
     kind: 'enum',
@@ -3410,7 +3415,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
         ? NODE_DEFAULTS.textRotation
         : EDGE_DEFAULTS.textRotation,
   },
-  'source-text-offset': {
+  [PROP.SOURCE_TEXT_OFFSET]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3418,7 +3423,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceTextOffset,
   },
-  'target-text-offset': {
+  [PROP.TARGET_TEXT_OFFSET]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3426,7 +3431,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetTextOffset,
   },
-  'source-text-margin-x': {
+  [PROP.SOURCE_TEXT_MARGIN_X]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3434,7 +3439,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceTextMarginX,
   },
-  'source-text-margin-y': {
+  [PROP.SOURCE_TEXT_MARGIN_Y]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3442,7 +3447,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceTextMarginY,
   },
-  'target-text-margin-x': {
+  [PROP.TARGET_TEXT_MARGIN_X]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3450,7 +3455,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetTextMarginX,
   },
-  'target-text-margin-y': {
+  [PROP.TARGET_TEXT_MARGIN_Y]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3458,7 +3463,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetTextMarginY,
   },
-  'source-text-rotation': {
+  [PROP.SOURCE_TEXT_ROTATION]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => {
@@ -3473,7 +3478,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceTextRotation,
   },
-  'target-text-rotation': {
+  [PROP.TARGET_TEXT_ROTATION]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => {
@@ -3488,7 +3493,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetTextRotation,
   },
-  'line-color': {
+  [PROP.LINE_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3496,7 +3501,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.lineColor,
   },
-  'line-style': {
+  [PROP.LINE_STYLE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => LINE_STYLES[String(v)] ?? null,
@@ -3505,7 +3510,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.lineStyle,
   },
-  'source-arrow-color': {
+  [PROP.SOURCE_ARROW_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3513,7 +3518,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceArrowColor,
   },
-  'target-arrow-color': {
+  [PROP.TARGET_ARROW_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3521,7 +3526,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetArrowColor,
   },
-  'curve-style': {
+  [PROP.CURVE_STYLE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => CURVE_STYLES[String(v)] ?? null,
@@ -3530,7 +3535,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.curveStyle,
   },
-  'control-point-step-size': {
+  [PROP.CONTROL_POINT_STEP_SIZE]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3538,7 +3543,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.controlPointStepSize,
   },
-  'control-point-weight': {
+  [PROP.CONTROL_POINT_WEIGHT]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3546,7 +3551,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.controlPointWeight,
   },
-  'loop-direction': {
+  [PROP.LOOP_DIRECTION]: {
     kind: 'number',
     groups: ['edges'], // mapped values are radians
     set: (c, v) => {
@@ -3554,7 +3559,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.loopDirection,
   },
-  'loop-sweep': {
+  [PROP.LOOP_SWEEP]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3566,7 +3571,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // props (control-point-distances/-weights, segment-*, radius-type)
   // take constants only — a mapper value is one number/keyword, not a
   // list (a recorded 12b scope note)
-  'edge-distances': {
+  [PROP.EDGE_DISTANCES]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => EDGE_DISTANCES[String(v)] ?? null,
@@ -3575,7 +3580,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.edgeDistances,
   },
-  'taxi-direction': {
+  [PROP.TAXI_DIRECTION]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => TAXI_DIRECTIONS[String(v)] ?? null,
@@ -3584,7 +3589,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.taxiDirection,
   },
-  'taxi-turn': {
+  [PROP.TAXI_TURN]: {
     // mapped turns are px (a percent turn is constant-only); a missing
     // value falls back to the default fraction as px — set an explicit
     // mapper fallback to control this.  `fallback: 'auto'` (124) rides
@@ -3604,7 +3609,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.taxiTurn,
   },
-  'taxi-turn-min-distance': {
+  [PROP.TAXI_TURN_MIN_DISTANCE]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3612,7 +3617,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.taxiTurnMinDistance,
   },
-  'taxi-radius': {
+  [PROP.TAXI_RADIUS]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3621,7 +3626,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.taxiRadius,
   },
   // round 124: which edges share a track, and how far apart tracks sit
-  'taxi-track': {
+  [PROP.TAXI_TRACK]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => TAXI_TRACKS[String(v)] ?? null,
@@ -3630,7 +3635,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.taxiTrack,
   },
-  'taxi-track-spacing': {
+  [PROP.TAXI_TRACK_SPACING]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3639,7 +3644,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.taxiTrackSpacing,
   },
   // B5 node outline (solid ring outside the border)
-  'outline-color': {
+  [PROP.OUTLINE_COLOR]: {
     kind: 'color',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3647,7 +3652,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.outlineColor,
   },
-  'outline-opacity': {
+  [PROP.OUTLINE_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3655,7 +3660,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.outlineOpacity,
   },
-  'outline-width': {
+  [PROP.OUTLINE_WIDTH]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3663,7 +3668,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.outlineWidth,
   },
-  'outline-offset': {
+  [PROP.OUTLINE_OFFSET]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3672,7 +3677,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.outlineOffset,
   },
   // B2 border/corner geometry (CPU-evaluated; the pick replica reads it)
-  'corner-radius': {
+  [PROP.CORNER_RADIUS]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3680,7 +3685,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.cornerRadius,
   },
-  'border-position': {
+  [PROP.BORDER_POSITION]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => BORDER_POSITIONS[String(v)] ?? null,
@@ -3689,7 +3694,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.borderPosition,
   },
-  'border-style': {
+  [PROP.BORDER_STYLE]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
@@ -3698,7 +3703,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.borderStyle,
   },
-  'outline-style': {
+  [PROP.OUTLINE_STYLE]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
@@ -3707,7 +3712,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.outlineStyle,
   },
-  'border-dash-offset': {
+  [PROP.BORDER_DASH_OFFSET]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3716,7 +3721,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.borderDashOffset,
   },
   // B6 label box props
-  'text-transform': {
+  [PROP.TEXT_TRANSFORM]: {
     kind: 'enum',
     groups: ['nodes', 'edges'],
     parseEnum: (v) => TEXT_TRANSFORMS[String(v)] ?? null,
@@ -3725,7 +3730,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textTransform,
   },
-  'text-background-shape': {
+  [PROP.TEXT_BACKGROUND_SHAPE]: {
     kind: 'enum',
     groups: ['nodes', 'edges'],
     parseEnum: (v) => TEXT_BG_SHAPES[String(v)] ?? null,
@@ -3736,7 +3741,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   // the wrap family (16.2): scalar/enum forms are mapper-capable like
   // every other label channel (CPU-evaluated, the sidecar tier)
-  'text-wrap': {
+  [PROP.TEXT_WRAP]: {
     kind: 'enum',
     groups: ['nodes', 'edges'],
     parseEnum: (v) => TEXT_WRAPS[String(v)] ?? null,
@@ -3745,7 +3750,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textWrap,
   },
-  'text-max-width': {
+  [PROP.TEXT_MAX_WIDTH]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3753,7 +3758,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textMaxWidth,
   },
-  'line-height': {
+  [PROP.LINE_HEIGHT]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3761,7 +3766,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.lineHeight,
   },
-  'text-overflow-wrap': {
+  [PROP.TEXT_OVERFLOW_WRAP]: {
     kind: 'enum',
     groups: ['nodes', 'edges'],
     parseEnum: (v) => OFLOW_WRAPS[String(v)] ?? null,
@@ -3770,7 +3775,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textOverflowWrap,
   },
-  'text-justification': {
+  [PROP.TEXT_JUSTIFICATION]: {
     kind: 'enum',
     groups: ['nodes', 'edges'],
     parseEnum: (v) => JUSTIFICATIONS[String(v)] ?? null,
@@ -3779,7 +3784,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textJustification,
   },
-  'text-border-width': {
+  [PROP.TEXT_BORDER_WIDTH]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3787,7 +3792,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBorderWidth,
   },
-  'text-border-color': {
+  [PROP.TEXT_BORDER_COLOR]: {
     kind: 'color',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3795,7 +3800,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBorderColor,
   },
-  'text-border-opacity': {
+  [PROP.TEXT_BORDER_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -3804,7 +3809,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.textBorderOpacity,
   },
   // C2 gradient enums (stop lists stay constants-only)
-  'background-fill': {
+  [PROP.BACKGROUND_FILL]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => FILL_KINDS[String(v)] ?? null,
@@ -3813,7 +3818,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.backgroundFill,
   },
-  'background-gradient-direction': {
+  [PROP.BACKGROUND_GRADIENT_DIRECTION]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => GRADIENT_DIRECTIONS[String(v)] ?? null,
@@ -3822,7 +3827,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.backgroundGradientDirection,
   },
-  'line-fill': {
+  [PROP.LINE_FILL]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => FILL_KINDS[String(v)] ?? null,
@@ -3832,7 +3837,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.lineFill,
   },
   // C1 mid arrows
-  'mid-source-arrow-shape': {
+  [PROP.MID_SOURCE_ARROW_SHAPE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
@@ -3841,7 +3846,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0,
   },
-  'mid-target-arrow-shape': {
+  [PROP.MID_TARGET_ARROW_SHAPE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
@@ -3850,7 +3855,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0,
   },
-  'mid-source-arrow-color': {
+  [PROP.MID_SOURCE_ARROW_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3858,7 +3863,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.midSourceArrowColor,
   },
-  'mid-target-arrow-color': {
+  [PROP.MID_TARGET_ARROW_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3867,7 +3872,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.midTargetArrowColor,
   },
   // B7 arrow scalars (arrow widths are constants: keyword/% forms)
-  'arrow-scale': {
+  [PROP.ARROW_SCALE]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3875,7 +3880,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.arrowScale,
   },
-  'source-arrow-fill': {
+  [PROP.SOURCE_ARROW_FILL]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_FILLS[String(v)] ?? null,
@@ -3884,7 +3889,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceArrowFill,
   },
-  'target-arrow-fill': {
+  [PROP.TARGET_ARROW_FILL]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_FILLS[String(v)] ?? null,
@@ -3894,7 +3899,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.targetArrowFill,
   },
   // B4 line-outline casing
-  'line-outline-width': {
+  [PROP.LINE_OUTLINE_WIDTH]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3902,7 +3907,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.lineOutlineWidth,
   },
-  'line-outline-color': {
+  [PROP.LINE_OUTLINE_COLOR]: {
     kind: 'color',
     groups: ['edges'],
     set: (c, v) => {
@@ -3911,7 +3916,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.lineOutlineColor,
   },
   // B3 dash props (pattern is a constants-only list)
-  'line-cap': {
+  [PROP.LINE_CAP]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => LINE_CAPS[String(v)] ?? null,
@@ -3920,7 +3925,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.lineCap,
   },
-  'line-dash-offset': {
+  [PROP.LINE_DASH_OFFSET]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3929,7 +3934,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => EDGE_DEFAULTS.lineDashOffset,
   },
   // the B1 opacity split (CPU-evaluated; folds at write time)
-  'background-opacity': {
+  [PROP.BACKGROUND_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3937,7 +3942,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.backgroundOpacity,
   },
-  'border-opacity': {
+  [PROP.BORDER_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -3945,7 +3950,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.borderOpacity,
   },
-  'line-opacity': {
+  [PROP.LINE_OPACITY]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -3953,7 +3958,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.lineOpacity,
   },
-  'text-opacity': {
+  [PROP.TEXT_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4000,7 +4005,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => CHART_NONE,
   },
-  'chart-opacity': {
+  [PROP.CHART_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4008,7 +4013,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 1,
   },
-  'chart-size': {
+  [PROP.CHART_SIZE]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4016,7 +4021,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 1,
   },
-  'chart-hole': {
+  [PROP.CHART_HOLE]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4024,7 +4029,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0,
   },
-  'chart-start-angle': {
+  [PROP.CHART_START_ANGLE]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4032,7 +4037,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0,
   },
-  'chart-direction': {
+  [PROP.CHART_DIRECTION]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) => (v === 'vertical' ? 0 : v === 'horizontal' ? 1 : null),
@@ -4042,7 +4047,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => 0,
   },
   // text-events (round 20.3): the label box picks the node; node-only
-  'text-events': {
+  [PROP.TEXT_EVENTS]: {
     kind: 'enum',
     groups: ['nodes'],
     parseEnum: (v) =>
@@ -4063,7 +4068,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => (NODE_DEFAULTS.ghost ? 1 : 0),
   },
-  'ghost-offset-x': {
+  [PROP.GHOST_OFFSET_X]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4071,7 +4076,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.ghostOffsetX,
   },
-  'ghost-offset-y': {
+  [PROP.GHOST_OFFSET_Y]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4079,7 +4084,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.ghostOffsetY,
   },
-  'ghost-opacity': {
+  [PROP.GHOST_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4088,7 +4093,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.ghostOpacity,
   },
   // overlay/underlay props (round 13 A2; node-only)
-  'overlay-color': {
+  [PROP.OVERLAY_COLOR]: {
     kind: 'color',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4096,7 +4101,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.overlayColor,
   },
-  'overlay-opacity': {
+  [PROP.OVERLAY_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4104,7 +4109,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.overlayOpacity,
   },
-  'overlay-padding': {
+  [PROP.OVERLAY_PADDING]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4112,7 +4117,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.overlayPadding,
   },
-  'underlay-color': {
+  [PROP.UNDERLAY_COLOR]: {
     kind: 'color',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4120,7 +4125,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.underlayColor,
   },
-  'underlay-opacity': {
+  [PROP.UNDERLAY_OPACITY]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4128,7 +4133,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.underlayOpacity,
   },
-  'underlay-padding': {
+  [PROP.UNDERLAY_PADDING]: {
     kind: 'number',
     groups: ['nodes', 'edges'],
     set: (c, v) => {
@@ -4138,7 +4143,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   // 12c scalar curve props (source/target-endpoint stays constants-only:
   // its point form is a list, per the 12b list-prop scope rule)
-  'haystack-radius': {
+  [PROP.HAYSTACK_RADIUS]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -4146,7 +4151,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.haystackRadius,
   },
-  'source-distance-from-node': {
+  [PROP.SOURCE_DISTANCE_FROM_NODE]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -4154,7 +4159,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.sourceDistanceFromNode,
   },
-  'target-distance-from-node': {
+  [PROP.TARGET_DISTANCE_FROM_NODE]: {
     kind: 'number',
     groups: ['edges'],
     set: (c, v) => {
@@ -4162,7 +4167,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => EDGE_DEFAULTS.targetDistanceFromNode,
   },
-  'source-arrow-shape': {
+  [PROP.SOURCE_ARROW_SHAPE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
@@ -4171,7 +4176,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0,
   },
-  'target-arrow-shape': {
+  [PROP.TARGET_ARROW_SHAPE]: {
     kind: 'enum',
     groups: ['edges'],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
@@ -4184,7 +4189,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // forms; every other image prop is a constants-only list (the 12b
   // scope rule).  The url channel interns strings per compile —
   // set() is wrapped in compileChannel with the intern table.
-  'background-image': {
+  [PROP.BACKGROUND_IMAGE]: {
     kind: 'enum',
     groups: ['nodes'],
     intern: true,
@@ -4193,7 +4198,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 0, // 0 = none in the intern index space
   },
-  'background-image-opacity': {
+  [PROP.BACKGROUND_IMAGE_OPACITY]: {
     kind: 'number',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4201,7 +4206,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => 1,
   },
-  'background-image-color': {
+  [PROP.BACKGROUND_IMAGE_COLOR]: {
     kind: 'color',
     groups: ['nodes'],
     set: (c, v) => {
@@ -4294,14 +4299,14 @@ const evaluatedEq = (a: Evaluated, b: Evaluated): boolean =>
  * culling, CPU picking and columnar scans, so they stay CPU-evaluated.)
  */
 const PAINT_PROPS: Record<GroupName, ReadonlySet<string>> = {
-  nodes: new Set(['background-color', 'border-color', 'opacity']),
+  nodes: new Set([PROP.BACKGROUND_COLOR, PROP.BORDER_COLOR, PROP.OPACITY]),
   edges: new Set([
-    'line-color',
-    'opacity',
-    'source-arrow-color',
-    'target-arrow-color',
-    'source-arrow-shape',
-    'target-arrow-shape',
+    PROP.LINE_COLOR,
+    PROP.OPACITY,
+    PROP.SOURCE_ARROW_COLOR,
+    PROP.TARGET_ARROW_COLOR,
+    PROP.SOURCE_ARROW_SHAPE,
+    PROP.TARGET_ARROW_SHAPE,
   ]),
 };
 
@@ -4325,14 +4330,14 @@ const constOpacityFor = (
   computed: Computed,
 ): number => {
   if (group === 'nodes') {
-    return prop === 'background-color'
+    return prop === PROP.BACKGROUND_COLOR
       ? computed.backgroundOpacity
-      : prop === 'border-color'
+      : prop === PROP.BORDER_COLOR
         ? computed.borderOpacity
         : 1;
   }
 
-  return prop === 'line-color' ? computed.lineOpacity : 1;
+  return prop === PROP.LINE_COLOR ? computed.lineOpacity : 1;
 };
 
 const compileChannel = (
@@ -4392,7 +4397,7 @@ const compileChannel = (
   // `taxi-turn`'s `fallback: 'auto'` (124): the keyword is not a number,
   // so it compiles as the sentinel the channel's setter reads back
   const mapperSpec =
-    prop === 'taxi-turn' &&
+    prop === PROP.TAXI_TURN &&
     !Array.isArray(spec) &&
     typeof spec === 'object' &&
     spec != null &&
@@ -4416,10 +4421,10 @@ const compileChannel = (
 /** The four transition config props — engine config per sheet group,
  * constants-only, never element channels. */
 const TRANSITION_CONFIG_PROPS: ReadonlySet<string> = new Set([
-  'transition-property',
-  'transition-duration',
-  'transition-delay',
-  'transition-timing-function',
+  PROP.TRANSITION_PROPERTY,
+  PROP.TRANSITION_DURATION,
+  PROP.TRANSITION_DELAY,
+  PROP.TRANSITION_TIMING_FUNCTION,
 ]);
 
 interface TransitionSpec {
@@ -4466,21 +4471,21 @@ const TRANSITION_CHANNELS: Record<
       min: 0,
       max: 1,
     },
-    'background-color': {
+    [PROP.BACKGROUND_COLOR]: {
       column: COL.NODE_FILL_COLOR,
       kind: 'color',
       paint: true,
       min: -Infinity,
       max: Infinity,
     },
-    'border-color': {
+    [PROP.BORDER_COLOR]: {
       column: COL.NODE_BORDER_COLOR,
       kind: 'color',
       paint: true,
       min: -Infinity,
       max: Infinity,
     },
-    'border-width': {
+    [PROP.BORDER_WIDTH]: {
       column: COL.NODE_BORDER_WIDTH,
       kind: 'scalar',
       paint: false,
@@ -4508,7 +4513,7 @@ const TRANSITION_CHANNELS: Record<
     },
     // round 25.5: the label sidecar's font-size (a fontSize diff with
     // no sidecar entry on either side never records — the -1 sentinel)
-    'font-size': {
+    [PROP.FONT_SIZE]: {
       column: TWEEN_COL.NODE_FONT_SIZE,
       kind: 'fontSize',
       paint: false,
@@ -4540,7 +4545,7 @@ const TRANSITION_CHANNELS: Record<
         },
       ],
     },
-    'line-color': {
+    [PROP.LINE_COLOR]: {
       column: COL.EDGE_LINE_COLOR,
       kind: 'color',
       paint: true,
@@ -4600,7 +4605,7 @@ const TRANSITION_CHANNELS: Record<
         },
       ],
     },
-    'font-size': {
+    [PROP.FONT_SIZE]: {
       column: TWEEN_COL.EDGE_FONT_SIZE,
       kind: 'fontSize',
       paint: false,
@@ -4659,9 +4664,9 @@ const parseTransitionSpec = (
   };
 
   let props: string[] = [];
-  const rawProps = config['transition-property'];
+  const rawProps = config[PROP.TRANSITION_PROPERTY];
 
-  constOnly('transition-property', rawProps);
+  constOnly(PROP.TRANSITION_PROPERTY, rawProps);
 
   if (rawProps != null && rawProps !== 'none') {
     const list = Array.isArray(rawProps)
@@ -4703,9 +4708,9 @@ const parseTransitionSpec = (
     return v;
   };
 
-  const rawEasing = config['transition-timing-function'];
+  const rawEasing = config[PROP.TRANSITION_TIMING_FUNCTION];
 
-  constOnly('transition-timing-function', rawEasing);
+  constOnly(PROP.TRANSITION_TIMING_FUNCTION, rawEasing);
 
   const easing = rawEasing == null ? 'linear' : String(rawEasing);
 
@@ -4713,8 +4718,8 @@ const parseTransitionSpec = (
 
   return {
     props,
-    duration: num('transition-duration'),
-    delay: num('transition-delay'),
+    duration: num(PROP.TRANSITION_DURATION),
+    delay: num(PROP.TRANSITION_DELAY),
     easing,
   };
 };
@@ -4862,20 +4867,20 @@ const onSelected = (then: string, otherwise: string): StyleProps[string] =>
  * FLAG_ACTIVE inside the layer shader, which meant it could be neither.
  */
 const ACTIVE_OVERLAY: StyleProps = {
-  'overlay-opacity': onState('active', 0.25, 0),
+  [PROP.OVERLAY_OPACITY]: onState('active', 0.25, 0),
 };
 
 const NODE_DEFAULT_BLOCK: StyleProps = {
-  'background-color': onSelected('#0169D9', '#999'),
+  [PROP.BACKGROUND_COLOR]: onSelected('#0169D9', '#999'),
   ...ACTIVE_OVERLAY,
 };
 
 const EDGE_DEFAULT_BLOCK: StyleProps = {
-  'line-color': onSelected('#0169D9', '#999'),
-  'source-arrow-color': onSelected('#0169D9', '#999'),
-  'target-arrow-color': onSelected('#0169D9', '#999'),
-  'mid-source-arrow-color': onSelected('#0169D9', '#999'),
-  'mid-target-arrow-color': onSelected('#0169D9', '#999'),
+  [PROP.LINE_COLOR]: onSelected('#0169D9', '#999'),
+  [PROP.SOURCE_ARROW_COLOR]: onSelected('#0169D9', '#999'),
+  [PROP.TARGET_ARROW_COLOR]: onSelected('#0169D9', '#999'),
+  [PROP.MID_SOURCE_ARROW_COLOR]: onSelected('#0169D9', '#999'),
+  [PROP.MID_TARGET_ARROW_COLOR]: onSelected('#0169D9', '#999'),
   // v3's default sheet carries `edge { width: 3 }` — its only element rule
   width: 3,
   ...ACTIVE_OVERLAY,
@@ -4887,27 +4892,27 @@ const EDGE_DEFAULT_BLOCK: StyleProps = {
  * `:parent:selected` tint the same way the nodes block above does. */
 const PARENT_CHANNEL_OVERLAY: StyleProps = {
   shape: 'rectangle',
-  'background-color': onSelected('#CCE1F9', '#eee'),
-  'border-width': 1,
-  'border-color': onSelected('#aec8e5', '#ccc'),
+  [PROP.BACKGROUND_COLOR]: onSelected('#CCE1F9', '#eee'),
+  [PROP.BORDER_WIDTH]: 1,
+  [PROP.BORDER_COLOR]: onSelected('#aec8e5', '#ccc'),
 };
 
 /** The parents-group compound props (constants only; not channels). */
 const COMPOUND_PROPS: ReadonlySet<string> = new Set([
-  'padding',
-  'padding-left',
-  'padding-right',
-  'padding-top',
-  'padding-bottom',
-  'padding-relative-to',
-  'min-width',
-  'min-height',
-  'compound-sizing-wrt-labels',
+  PROP.PADDING,
+  PROP.PADDING_LEFT,
+  PROP.PADDING_RIGHT,
+  PROP.PADDING_TOP,
+  PROP.PADDING_BOTTOM,
+  PROP.PADDING_RELATIVE_TO,
+  PROP.MIN_WIDTH,
+  PROP.MIN_HEIGHT,
+  PROP.COMPOUND_SIZING_WRT_LABELS,
 ]);
 
 const PADDING_RELATIVE_TO = new Set([
-  'width',
-  'height',
+  PROP.WIDTH,
+  PROP.HEIGHT,
   'average',
   'min',
   'max',
@@ -4940,7 +4945,7 @@ const splitCompoundProps = (
     }
 
     switch (norm) {
-      case 'padding': {
+      case PROP.PADDING: {
         if (typeof value === 'string') {
           const m = /^\s*([\d.]+)\s*%\s*$/.exec(value);
 
@@ -4968,10 +4973,10 @@ const splitCompoundProps = (
         break;
       }
 
-      case 'padding-left':
-      case 'padding-right':
-      case 'padding-top':
-      case 'padding-bottom': {
+      case PROP.PADDING_LEFT:
+      case PROP.PADDING_RIGHT:
+      case PROP.PADDING_TOP:
+      case PROP.PADDING_BOTTOM: {
         // 85.4: same spelling as `padding` (px number, or 'N%' resolved
         // per `padding-relative-to`); unset sides take the uniform value
         let side: { value: number; unit: 'px' | '%' };
@@ -4998,11 +5003,11 @@ const splitCompoundProps = (
           );
         }
 
-        if (norm === 'padding-left') {
+        if (norm === PROP.PADDING_LEFT) {
           compound.paddingLeft = side;
-        } else if (norm === 'padding-right') {
+        } else if (norm === PROP.PADDING_RIGHT) {
           compound.paddingRight = side;
-        } else if (norm === 'padding-top') {
+        } else if (norm === PROP.PADDING_TOP) {
           compound.paddingTop = side;
         } else {
           compound.paddingBottom = side;
@@ -5011,7 +5016,7 @@ const splitCompoundProps = (
         break;
       }
 
-      case 'padding-relative-to':
+      case PROP.PADDING_RELATIVE_TO:
         if (typeof value !== 'string' || !PADDING_RELATIVE_TO.has(value)) {
           throw new Error(
             `Invalid padding-relative-to '${String(value)}' (width | height | average | min | max)`,
@@ -5021,15 +5026,15 @@ const splitCompoundProps = (
         compound.relativeTo = value as CompoundStyle['relativeTo'];
         break;
 
-      case 'min-width':
-      case 'min-height':
+      case PROP.MIN_WIDTH:
+      case PROP.MIN_HEIGHT:
         if (typeof value !== 'number' || !(value >= 0)) {
           throw new Error(
             `Invalid ${norm} '${String(value)}' (a non-negative number of px)`,
           );
         }
 
-        if (norm === 'min-width') {
+        if (norm === PROP.MIN_WIDTH) {
           compound.minWidth = value;
         } else {
           compound.minHeight = value;
@@ -5037,7 +5042,7 @@ const splitCompoundProps = (
 
         break;
 
-      case 'compound-sizing-wrt-labels':
+      case PROP.COMPOUND_SIZING_WRT_LABELS:
         if (value === 'include') {
           throw new Error(
             `compound-sizing-wrt-labels: 'include' is unsupported ` +
@@ -5188,25 +5193,25 @@ const defineReader = (names: string[], read: PropReader): void => {
   }
 };
 
-defineReader(['background-color'], (store, slot) =>
+defineReader([PROP.BACKGROUND_COLOR], (store, slot) =>
   readColor(store, slot, COL.NODE_FILL_COLOR),
 );
 
-defineReader(['border-color'], (store, slot) =>
+defineReader([PROP.BORDER_COLOR], (store, slot) =>
   readColor(store, slot, COL.NODE_BORDER_COLOR),
 );
 
-defineReader(['border-width'], (store, slot) =>
+defineReader([PROP.BORDER_WIDTH], (store, slot) =>
   readScalar(store, slot, COL.NODE_BORDER_WIDTH),
 );
 
-defineReader(['corner-radius'], (store, slot) => {
+defineReader([PROP.CORNER_RADIUS], (store, slot) => {
   const r = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4];
 
   return r === 0xffffffff ? 'auto' : r / 256;
 });
 
-defineReader(['border-position'], (store, slot) => {
+defineReader([PROP.BORDER_POSITION], (store, slot) => {
   return (
     BORDER_POSITION_NAMES[
       (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] & 0xff
@@ -5215,7 +5220,7 @@ defineReader(['border-position'], (store, slot) => {
 });
 
 defineReader(
-  ['border-style'],
+  [PROP.BORDER_STYLE],
   (store, slot) =>
     STROKE_STYLE_NAMES[
       ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] >>>
@@ -5225,7 +5230,7 @@ defineReader(
 );
 
 defineReader(
-  ['outline-style'],
+  [PROP.OUTLINE_STYLE],
   (store, slot) =>
     STROKE_STYLE_NAMES[
       ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 1] >>>
@@ -5234,7 +5239,7 @@ defineReader(
     ] ?? 'solid',
 );
 
-defineReader(['border-dash-pattern'], (store, slot) => {
+defineReader([PROP.BORDER_DASH_PATTERN], (store, slot) => {
   const arr = (store.column(COL.NODE_BORDER_DASH) as Float32Array).subarray(
     slot * 4,
     slot * 4 + 4,
@@ -5247,30 +5252,30 @@ defineReader(['border-dash-pattern'], (store, slot) => {
 });
 
 defineReader(
-  ['border-dash-offset'],
+  [PROP.BORDER_DASH_OFFSET],
   (store, slot) =>
     (store.column(COL.NODE_BORDER_DASH_META) as Float32Array)[slot * 2],
 );
 
 defineReader(
-  ['background-fill', 'line-fill'],
+  [PROP.BACKGROUND_FILL, PROP.LINE_FILL],
   (store, slot, ref, engine, prop) => {
     const gid =
-      prop === 'background-fill' ? COL.NODE_GRADIENT : COL.EDGE_GRADIENT;
+      prop === PROP.BACKGROUND_FILL ? COL.NODE_GRADIENT : COL.EDGE_GRADIENT;
     const meta = (store.column(gid) as Uint32Array)[slot * 8];
 
     return FILL_KIND_NAMES[meta & 3] ?? 'solid';
   },
 );
 
-defineReader(['background-gradient-direction'], (store, slot) => {
+defineReader([PROP.BACKGROUND_GRADIENT_DIRECTION], (store, slot) => {
   const meta = (store.column(COL.NODE_GRADIENT) as Uint32Array)[slot * 8];
 
   return GRADIENT_DIRECTION_NAMES[(meta >>> 2) & 7] ?? 'to-bottom';
 });
 
 defineReader(
-  ['background-gradient-stop-colors', 'line-gradient-stop-colors'],
+  [PROP.BACKGROUND_GRADIENT_STOP_COLORS, PROP.LINE_GRADIENT_STOP_COLORS],
   (store, slot, ref, engine, prop) => {
     const gid = prop.startsWith('background')
       ? COL.NODE_GRADIENT
@@ -5300,7 +5305,7 @@ defineReader(
 );
 
 defineReader(
-  ['background-gradient-stop-positions', 'line-gradient-stop-positions'],
+  [PROP.BACKGROUND_GRADIENT_STOP_POSITIONS, PROP.LINE_GRADIENT_STOP_POSITIONS],
   (store, slot, ref, engine, prop) => {
     const gid = prop.startsWith('background')
       ? COL.NODE_GRADIENT
@@ -5322,7 +5327,7 @@ defineReader(
   },
 );
 
-defineReader(['outline-color'], (store, slot) => {
+defineReader([PROP.OUTLINE_COLOR], (store, slot) => {
   const rgba = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[
     slot * 4 + 2
   ];
@@ -5335,7 +5340,7 @@ defineReader(['outline-color'], (store, slot) => {
   );
 });
 
-defineReader(['outline-opacity'], (store, slot) => {
+defineReader([PROP.OUTLINE_OPACITY], (store, slot) => {
   return (
     Math.round(
       (((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 2] >>>
@@ -5347,7 +5352,7 @@ defineReader(['outline-opacity'], (store, slot) => {
 });
 
 defineReader(
-  ['outline-width'],
+  [PROP.OUTLINE_WIDTH],
   (store, slot) =>
     ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] &
       0xffff) /
@@ -5355,7 +5360,7 @@ defineReader(
 );
 
 defineReader(
-  ['outline-offset'],
+  [PROP.OUTLINE_OFFSET],
   (store, slot) =>
     ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] >>> 16) /
     256,
@@ -5365,7 +5370,7 @@ defineReader(
 // 255 — the declared color alpha times the opacity; the
 // outline/arrow precedent)
 defineReader(
-  ['background-opacity'],
+  [PROP.BACKGROUND_OPACITY],
   (store, slot) =>
     Math.round(
       ((store.column(COL.NODE_FILL_COLOR) as Uint8Array)[slot * 4 + 3] / 255) *
@@ -5374,7 +5379,7 @@ defineReader(
 );
 
 defineReader(
-  ['border-opacity'],
+  [PROP.BORDER_OPACITY],
   (store, slot) =>
     Math.round(
       ((store.column(COL.NODE_BORDER_COLOR) as Uint8Array)[slot * 4 + 3] /
@@ -5388,56 +5393,56 @@ defineReader(
 // convention), single images as scalars
 defineReader(
   [
-    'background-image',
-    'background-fit',
-    'background-image-opacity',
-    'background-position-x',
-    'background-position-y',
-    'background-offset-x',
-    'background-offset-y',
-    'background-width',
-    'background-height',
-    'background-repeat',
-    'background-clip',
-    'background-image-containment',
-    'background-image-smoothing',
-    'background-image-crossorigin',
-    'background-image-type',
-    'background-image-color',
+    PROP.BACKGROUND_IMAGE,
+    PROP.BACKGROUND_FIT,
+    PROP.BACKGROUND_IMAGE_OPACITY,
+    PROP.BACKGROUND_POSITION_X,
+    PROP.BACKGROUND_POSITION_Y,
+    PROP.BACKGROUND_OFFSET_X,
+    PROP.BACKGROUND_OFFSET_Y,
+    PROP.BACKGROUND_WIDTH,
+    PROP.BACKGROUND_HEIGHT,
+    PROP.BACKGROUND_REPEAT,
+    PROP.BACKGROUND_CLIP,
+    PROP.BACKGROUND_IMAGE_CONTAINMENT,
+    PROP.BACKGROUND_IMAGE_SMOOTHING,
+    PROP.BACKGROUND_IMAGE_CROSSORIGIN,
+    PROP.BACKGROUND_IMAGE_TYPE,
+    PROP.BACKGROUND_IMAGE_COLOR,
   ],
   (store, slot, ref, engine, prop) => engine.readImageProp(slot, prop),
 );
 
-defineReader(['events'], (store, slot, ref) => {
+defineReader([PROP.EVENTS], (store, slot, ref) => {
   // 20.2: stored truth is the flag bit
   return store.hasFlag(ref.group, slot, FLAG_NO_EVENTS) ? 'no' : 'yes';
 });
 
-defineReader(['text-events'], (store, slot) => {
+defineReader([PROP.TEXT_EVENTS], (store, slot) => {
   // 20.3
   return store.hasFlag('nodes', slot, FLAG_TEXT_EVENTS) ? 'yes' : 'no';
 });
 
-defineReader(['visibility'], (store, slot, ref) => {
+defineReader([PROP.VISIBILITY], (store, slot, ref) => {
   // 22: stored truth is the element's own state
   return store.hasFlag(ref.group, slot, FLAG_SELF_INVISIBLE)
     ? 'hidden'
     : 'visible';
 });
 
-defineReader(['chart'], (store, slot) => {
+defineReader([PROP.CHART], (store, slot) => {
   const rec = store.chartAt(slot);
 
   return rec == null ? 'none' : rec.kind === CHART_PIE ? 'pie' : 'stripes';
 });
 
 defineReader(
-  ['chart-values'],
+  [PROP.CHART_VALUES],
   (store, slot) => store.chartAt(slot)?.values.join(' ') ?? '',
 );
 
 defineReader(
-  ['chart-colors'],
+  [PROP.CHART_COLORS],
   (store, slot) =>
     store
       .chartAt(slot)
@@ -5445,57 +5450,63 @@ defineReader(
       .join(' ') ?? '',
 );
 
-defineReader(['chart-size'], (store, slot) => store.chartAt(slot)?.size ?? 1);
-
-defineReader(['chart-hole'], (store, slot) => store.chartAt(slot)?.hole ?? 0);
+defineReader(
+  [PROP.CHART_SIZE],
+  (store, slot) => store.chartAt(slot)?.size ?? 1,
+);
 
 defineReader(
-  ['chart-start-angle'],
+  [PROP.CHART_HOLE],
+  (store, slot) => store.chartAt(slot)?.hole ?? 0,
+);
+
+defineReader(
+  [PROP.CHART_START_ANGLE],
   (store, slot) => store.chartAt(slot)?.startAngle ?? 0,
 );
 
-defineReader(['chart-direction'], (store, slot) =>
+defineReader([PROP.CHART_DIRECTION], (store, slot) =>
   (store.chartAt(slot)?.direction ?? 0) === 1 ? 'horizontal' : 'vertical',
 );
 
 defineReader(
-  ['chart-opacity'],
+  [PROP.CHART_OPACITY],
   (store, slot) => store.chartAt(slot)?.opacity ?? 1,
 );
 
-defineReader(['ghost'], (store, slot) =>
+defineReader([PROP.GHOST], (store, slot) =>
   (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 3] !== 0
     ? 'yes'
     : 'no',
 );
 
 defineReader(
-  ['ghost-offset-x'],
+  [PROP.GHOST_OFFSET_X],
   (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4],
 );
 
 defineReader(
-  ['ghost-offset-y'],
+  [PROP.GHOST_OFFSET_Y],
   (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 1],
 );
 
 defineReader(
-  ['ghost-opacity'],
+  [PROP.GHOST_OPACITY],
   (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 2],
 );
 
 defineReader(
   [
-    'overlay-color',
-    'overlay-opacity',
-    'overlay-padding',
-    'overlay-shape',
-    'overlay-corner-radius',
-    'underlay-color',
-    'underlay-opacity',
-    'underlay-padding',
-    'underlay-shape',
-    'underlay-corner-radius',
+    PROP.OVERLAY_COLOR,
+    PROP.OVERLAY_OPACITY,
+    PROP.OVERLAY_PADDING,
+    PROP.OVERLAY_SHAPE,
+    PROP.OVERLAY_CORNER_RADIUS,
+    PROP.UNDERLAY_COLOR,
+    PROP.UNDERLAY_OPACITY,
+    PROP.UNDERLAY_PADDING,
+    PROP.UNDERLAY_SHAPE,
+    PROP.UNDERLAY_CORNER_RADIUS,
   ],
   (store, slot, ref, engine, prop) => {
     if (ref.group === 'edges') {
@@ -5563,16 +5574,16 @@ defineReader(
   },
 );
 
-defineReader(['height'], (store, slot) =>
+defineReader([PROP.HEIGHT], (store, slot) =>
   readPair(store, slot, COL.NODE_SIZE, 1),
 );
 
 defineReader(
-  ['shape'],
+  [PROP.SHAPE],
   (store, slot) => SHAPE_NAMES[readScalar(store, slot, COL.NODE_SHAPE)],
 );
 
-defineReader(['shape-polygon-points'], (store, slot, ref, engine) => {
+defineReader([PROP.SHAPE_POLYGON_POINTS], (store, slot, ref, engine) => {
   const points = store.polygonPointsAt(slot);
 
   return points != null
@@ -5581,23 +5592,23 @@ defineReader(['shape-polygon-points'], (store, slot, ref, engine) => {
 });
 
 defineReader(
-  ['label'],
+  [PROP.LABEL],
   (store, slot, ref) => store.labelAt(slot, ref.group)?.text ?? '',
 );
 
 defineReader(
-  ['font-size'],
+  [PROP.FONT_SIZE],
   (store, slot, ref, engine) => engine.labelChannels(ref).fontSize,
 );
 
-defineReader(['font-family'], (store) => store.labelFont);
+defineReader([PROP.FONT_FAMILY], (store) => store.labelFont);
 
-defineReader(['font-style'], (store) => store.labelFontStyle);
+defineReader([PROP.FONT_STYLE], (store) => store.labelFontStyle);
 
-defineReader(['font-weight'], (store) => store.labelFontWeight);
+defineReader([PROP.FONT_WEIGHT], (store) => store.labelFontWeight);
 
 defineReader(
-  ['color'],
+  [PROP.COLOR],
   (store, slot, ref, engine) => engine.labelChannels(ref).color,
 );
 
@@ -5605,13 +5616,13 @@ defineReader(
 // constants — opacities read back folded into the stored alpha, like
 // arrow colors)
 defineReader(
-  ['text-outline-width'],
+  [PROP.TEXT_OUTLINE_WIDTH],
   (store, slot, ref, engine) =>
     store.labelAt(slot, ref.group)?.outlineWidth ??
     engine.defFor(ref).computed.textOutlineWidth,
 );
 
-defineReader(['text-outline-color'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_OUTLINE_COLOR], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5620,12 +5631,12 @@ defineReader(['text-outline-color'], (store, slot, ref, engine) => {
 });
 
 defineReader(
-  ['text-transform'],
+  [PROP.TEXT_TRANSFORM],
   (store, slot, ref, engine) =>
     TEXT_TRANSFORM_NAMES[engine.defFor(ref).computed.textTransform] ?? 'none',
 );
 
-defineReader(['text-wrap'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_WRAP], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return (
@@ -5635,7 +5646,7 @@ defineReader(['text-wrap'], (store, slot, ref, engine) => {
   );
 });
 
-defineReader(['text-max-width'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_MAX_WIDTH], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5643,7 +5654,7 @@ defineReader(['text-max-width'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.textMaxWidth;
 });
 
-defineReader(['line-height'], (store, slot, ref, engine) => {
+defineReader([PROP.LINE_HEIGHT], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5651,7 +5662,7 @@ defineReader(['line-height'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.lineHeight;
 });
 
-defineReader(['text-overflow-wrap'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_OVERFLOW_WRAP], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return (
@@ -5663,7 +5674,7 @@ defineReader(['text-overflow-wrap'], (store, slot, ref, engine) => {
   );
 });
 
-defineReader(['text-justification'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_JUSTIFICATION], (store, slot, ref, engine) => {
   // the sidecar stores the *resolved* justification; the sheet's
   // declared value (incl. 'auto') is what reads back, as v3
   return (
@@ -5671,7 +5682,7 @@ defineReader(['text-justification'], (store, slot, ref, engine) => {
   );
 });
 
-defineReader(['text-background-shape'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BACKGROUND_SHAPE], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return (
@@ -5681,7 +5692,7 @@ defineReader(['text-background-shape'], (store, slot, ref, engine) => {
   );
 });
 
-defineReader(['text-border-width'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BORDER_WIDTH], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5689,7 +5700,7 @@ defineReader(['text-border-width'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.textBorderWidth;
 });
 
-defineReader(['min-zoomed-font-size'], (store, slot, ref, engine) => {
+defineReader([PROP.MIN_ZOOMED_FONT_SIZE], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5697,7 +5708,7 @@ defineReader(['min-zoomed-font-size'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.minZoomedFontSize;
 });
 
-defineReader(['text-halign'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_HALIGN], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, 'nodes');
 
   return HALIGN_NAMES[
@@ -5707,7 +5718,7 @@ defineReader(['text-halign'], (store, slot, ref, engine) => {
   ];
 });
 
-defineReader(['text-valign'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_VALIGN], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, 'nodes');
 
   return VALIGN_NAMES[
@@ -5717,7 +5728,7 @@ defineReader(['text-valign'], (store, slot, ref, engine) => {
   ];
 });
 
-defineReader(['text-border-color'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BORDER_COLOR], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5725,7 +5736,7 @@ defineReader(['text-border-color'], (store, slot, ref, engine) => {
     : formatRgba(...engine.defFor(ref).computed.textBorderColor);
 });
 
-defineReader(['text-border-opacity'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BORDER_OPACITY], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5733,7 +5744,7 @@ defineReader(['text-border-opacity'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.textBorderOpacity;
 });
 
-defineReader(['text-opacity'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_OPACITY], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   if (entry == null) {
@@ -5743,7 +5754,7 @@ defineReader(['text-opacity'], (store, slot, ref, engine) => {
   return labelAlphaOf(unfoldLabelAlpha(store, slot, ref, entry.color));
 });
 
-defineReader(['text-outline-opacity'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_OUTLINE_OPACITY], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5751,7 +5762,7 @@ defineReader(['text-outline-opacity'], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.textOutlineOpacity;
 });
 
-defineReader(['text-background-color'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BACKGROUND_COLOR], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5759,7 +5770,7 @@ defineReader(['text-background-color'], (store, slot, ref, engine) => {
     : formatRgba(...engine.defFor(ref).computed.textBgColor);
 });
 
-defineReader(['text-background-opacity'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_BACKGROUND_OPACITY], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
@@ -5768,27 +5779,27 @@ defineReader(['text-background-opacity'], (store, slot, ref, engine) => {
 });
 
 defineReader(
-  ['text-background-padding'],
+  [PROP.TEXT_BACKGROUND_PADDING],
   (store, slot, ref, engine) =>
     store.labelAt(slot, ref.group)?.bgPadding ??
     engine.defFor(ref).computed.textBgPadding,
 );
 
 defineReader(
-  ['text-margin-x'],
+  [PROP.TEXT_MARGIN_X],
   (store, slot, ref, engine) =>
     store.labelAt(slot, ref.group)?.marginX ??
     engine.defFor(ref).computed.textMarginX,
 );
 
 defineReader(
-  ['text-margin-y'],
+  [PROP.TEXT_MARGIN_Y],
   (store, slot, ref, engine) =>
     store.labelAt(slot, ref.group)?.marginY ??
     engine.defFor(ref).computed.textMarginY,
 );
 
-defineReader(['text-rotation'], (store, slot, ref, engine) => {
+defineReader([PROP.TEXT_ROTATION], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   // stored truth: the sidecar keeps the flag and the angle apart
@@ -5801,16 +5812,16 @@ defineReader(['text-rotation'], (store, slot, ref, engine) => {
 
 defineReader(
   [
-    'source-label',
-    'source-text-offset',
-    'source-text-margin-x',
-    'source-text-margin-y',
-    'source-text-rotation',
-    'target-label',
-    'target-text-offset',
-    'target-text-margin-x',
-    'target-text-margin-y',
-    'target-text-rotation',
+    PROP.SOURCE_LABEL,
+    PROP.SOURCE_TEXT_OFFSET,
+    PROP.SOURCE_TEXT_MARGIN_X,
+    PROP.SOURCE_TEXT_MARGIN_Y,
+    PROP.SOURCE_TEXT_ROTATION,
+    PROP.TARGET_LABEL,
+    PROP.TARGET_TEXT_OFFSET,
+    PROP.TARGET_TEXT_MARGIN_X,
+    PROP.TARGET_TEXT_MARGIN_Y,
+    PROP.TARGET_TEXT_ROTATION,
   ],
   (store, slot, ref, engine, prop) => {
     // end labels (D4): the stored stream entry, else the sheet value
@@ -5855,13 +5866,13 @@ defineReader(
 );
 
 // shared names, resolved per group
-defineReader(['width'], (store, slot, ref) =>
+defineReader([PROP.WIDTH], (store, slot, ref) =>
   ref.group === 'nodes'
     ? readPair(store, slot, COL.NODE_SIZE, 0)
     : readScalar(store, slot, COL.EDGE_WIDTH),
 );
 
-defineReader(['opacity'], (store, slot, ref, engine) => {
+defineReader([PROP.OPACITY], (store, slot, ref, engine) => {
   // under compounds the node column stores the ancestor-folded
   // value; the declared style reads the base (round 14.4)
   if (ref.group === 'nodes' && engine.store.hasCompounds()) {
@@ -5877,7 +5888,7 @@ defineReader(['opacity'], (store, slot, ref, engine) => {
 
 // compound props (round 14.6): stored truth is the per-parent
 // record; leaves read the zero defaults (v3 leaves' padding is 0)
-defineReader(['padding'], (store, slot, ref, engine) => {
+defineReader([PROP.PADDING], (store, slot, ref, engine) => {
   const cs = engine.store.compoundStyleOf(ref.slot);
 
   return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
@@ -5886,10 +5897,10 @@ defineReader(['padding'], (store, slot, ref, engine) => {
 // per-side padding (85.4): a set side reads back its own spelling;
 // unset reads back the uniform padding's, which is what applies
 for (const [prop, field] of [
-  ['padding-left', 'paddingLeft'],
-  ['padding-right', 'paddingRight'],
-  ['padding-top', 'paddingTop'],
-  ['padding-bottom', 'paddingBottom'],
+  [PROP.PADDING_LEFT, 'paddingLeft'],
+  [PROP.PADDING_RIGHT, 'paddingRight'],
+  [PROP.PADDING_TOP, 'paddingTop'],
+  [PROP.PADDING_BOTTOM, 'paddingBottom'],
 ]) {
   defineReader([prop], (store, slot, ref, engine) => {
     const cs = engine.store.compoundStyleOf(ref.slot);
@@ -5904,36 +5915,36 @@ for (const [prop, field] of [
 }
 
 defineReader(
-  ['padding-relative-to'],
+  [PROP.PADDING_RELATIVE_TO],
   (store, slot, ref, engine) =>
     engine.store.compoundStyleOf(ref.slot).relativeTo,
 );
 
 defineReader(
-  ['min-width'],
+  [PROP.MIN_WIDTH],
   (store, slot, ref, engine) => engine.store.compoundStyleOf(ref.slot).minWidth,
 );
 
 defineReader(
-  ['min-height'],
+  [PROP.MIN_HEIGHT],
   (store, slot, ref, engine) =>
     engine.store.compoundStyleOf(ref.slot).minHeight,
 );
 
-defineReader(['compound-sizing-wrt-labels'], () => 'exclude');
+defineReader([PROP.COMPOUND_SIZING_WRT_LABELS], () => 'exclude');
 
 // edge channels
-defineReader(['line-color'], (store, slot) =>
+defineReader([PROP.LINE_COLOR], (store, slot) =>
   readColor(store, slot, COL.EDGE_LINE_COLOR),
 );
 
 defineReader(
-  ['line-style'],
+  [PROP.LINE_STYLE],
   (store, slot) =>
     LINE_STYLE_NAMES[readScalar(store, slot, COL.EDGE_LINE_STYLE)],
 );
 
-defineReader(['source-arrow-shape'], (store, slot) => {
+defineReader([PROP.SOURCE_ARROW_SHAPE], (store, slot) => {
   return readAlpha(store, slot, COL.EDGE_SOURCE_ARROW) > 0
     ? ARROW_NAMES[
         unpackArrowShape(
@@ -5944,7 +5955,7 @@ defineReader(['source-arrow-shape'], (store, slot) => {
     : 'none';
 });
 
-defineReader(['target-arrow-shape'], (store, slot) => {
+defineReader([PROP.TARGET_ARROW_SHAPE], (store, slot) => {
   return readAlpha(store, slot, COL.EDGE_TARGET_ARROW) > 0
     ? ARROW_NAMES[
         unpackArrowShape(
@@ -5956,7 +5967,7 @@ defineReader(['target-arrow-shape'], (store, slot) => {
 });
 
 defineReader(
-  ['line-opacity'],
+  [PROP.LINE_OPACITY],
   (store, slot) =>
     Math.round(
       ((store.column(COL.EDGE_LINE_COLOR) as Uint8Array)[slot * 4 + 3] / 255) *
@@ -5965,14 +5976,14 @@ defineReader(
 );
 
 defineReader(
-  ['line-cap'],
+  [PROP.LINE_CAP],
   (store, slot) =>
     LINE_CAP_NAMES[
       (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2 + 1]
     ] ?? 'butt',
 );
 
-defineReader(['line-outline-width'], (store, slot) => {
+defineReader([PROP.LINE_OUTLINE_WIDTH], (store, slot) => {
   // stored stroke = width + outline width (B4)
   const rec = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2 + 1];
   const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
@@ -5980,7 +5991,7 @@ defineReader(['line-outline-width'], (store, slot) => {
   return rec === 0 ? 0 : Math.max(0, rec / 256 - width);
 });
 
-defineReader(['line-outline-color'], (store, slot) => {
+defineReader([PROP.LINE_OUTLINE_COLOR], (store, slot) => {
   const rgba = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2];
 
   return formatRgba(
@@ -5992,11 +6003,11 @@ defineReader(['line-outline-color'], (store, slot) => {
 });
 
 defineReader(
-  ['line-dash-offset'],
+  [PROP.LINE_DASH_OFFSET],
   (store, slot) => (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2],
 );
 
-defineReader(['line-dash-pattern'], (store, slot) => {
+defineReader([PROP.LINE_DASH_PATTERN], (store, slot) => {
   const arr = (store.column(COL.EDGE_DASH_PATTERN) as Float32Array).subarray(
     slot * 4,
     slot * 4 + 4,
@@ -6008,7 +6019,7 @@ defineReader(['line-dash-pattern'], (store, slot) => {
     : `${arr[0]} ${arr[1]} ${arr[2]} ${arr[3]}`;
 });
 
-defineReader(['arrow-scale'], (store, slot) => {
+defineReader([PROP.ARROW_SCALE], (store, slot) => {
   const q =
     (store.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[slot] >>>
     ARROW_SHIFT_SCALE;
@@ -6017,7 +6028,7 @@ defineReader(['arrow-scale'], (store, slot) => {
 });
 
 defineReader(
-  ['source-arrow-fill', 'target-arrow-fill'],
+  [PROP.SOURCE_ARROW_FILL, PROP.TARGET_ARROW_FILL],
   (store, slot, ref, engine, prop) => {
     const bit = prop.startsWith('source')
       ? ARROW_SHIFT_HOLLOW_SOURCE
@@ -6030,19 +6041,19 @@ defineReader(
 );
 
 defineReader(
-  ['source-arrow-width'],
+  [PROP.SOURCE_ARROW_WIDTH],
   (store, slot) =>
     (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2],
 );
 
 defineReader(
-  ['target-arrow-width'],
+  [PROP.TARGET_ARROW_WIDTH],
   (store, slot) =>
     (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2 + 1],
 );
 
 defineReader(
-  ['mid-source-arrow-shape', 'mid-target-arrow-shape'],
+  [PROP.MID_SOURCE_ARROW_SHAPE, PROP.MID_TARGET_ARROW_SHAPE],
   (store, slot, ref, engine, prop) => {
     const shift = prop.startsWith('mid-source')
       ? ARROW_SHIFT_MID_SOURCE
@@ -6065,19 +6076,19 @@ defineReader(
   },
 );
 
-defineReader(['mid-source-arrow-color'], (store, slot) =>
+defineReader([PROP.MID_SOURCE_ARROW_COLOR], (store, slot) =>
   readColor(store, slot, COL.EDGE_MID_SOURCE_ARROW),
 );
 
-defineReader(['mid-target-arrow-color'], (store, slot) =>
+defineReader([PROP.MID_TARGET_ARROW_COLOR], (store, slot) =>
   readColor(store, slot, COL.EDGE_MID_TARGET_ARROW),
 );
 
-defineReader(['source-arrow-color'], (store, slot) =>
+defineReader([PROP.SOURCE_ARROW_COLOR], (store, slot) =>
   readColor(store, slot, COL.EDGE_SOURCE_ARROW),
 );
 
-defineReader(['target-arrow-color'], (store, slot) =>
+defineReader([PROP.TARGET_ARROW_COLOR], (store, slot) =>
   readColor(store, slot, COL.EDGE_TARGET_ARROW),
 );
 
@@ -6087,70 +6098,70 @@ defineReader(['target-arrow-color'], (store, slot) =>
 // read back as space-separated strings (v3's strValue form);
 // percent taxi turns read back as the percent string.
 defineReader(
-  ['curve-style'],
+  [PROP.CURVE_STYLE],
   (store, slot) => CURVE_STYLE_NAMES[store.curveStyleAt(slot).style],
 );
 
 defineReader(
-  ['control-point-step-size'],
+  [PROP.CONTROL_POINT_STEP_SIZE],
   (store, slot) => store.curveStyleAt(slot).stepSize,
 );
 
 defineReader(
-  ['control-point-weight'],
+  [PROP.CONTROL_POINT_WEIGHT],
   (store, slot) => store.curveStyleAt(slot).weight,
 );
 
 defineReader(
-  ['loop-direction'],
+  [PROP.LOOP_DIRECTION],
   (store, slot) => store.curveStyleAt(slot).loopDirection,
 );
 
 defineReader(
-  ['loop-sweep'],
+  [PROP.LOOP_SWEEP],
   (store, slot) => store.curveStyleAt(slot).loopSweep,
 );
 
-defineReader(['control-point-distances'], (store, slot) => {
+defineReader([PROP.CONTROL_POINT_DISTANCES], (store, slot) => {
   const dists = curveExtrasFor(store, slot).ctrlDists;
 
   return dists == null ? undefined : dists.join(' ');
 });
 
-defineReader(['control-point-weights'], (store, slot) =>
+defineReader([PROP.CONTROL_POINT_WEIGHTS], (store, slot) =>
   curveExtrasFor(store, slot).ctrlWeights.join(' '),
 );
 
-defineReader(['segment-distances'], (store, slot) =>
+defineReader([PROP.SEGMENT_DISTANCES], (store, slot) =>
   curveExtrasFor(store, slot).segDists.join(' '),
 );
 
-defineReader(['segment-weights'], (store, slot) =>
+defineReader([PROP.SEGMENT_WEIGHTS], (store, slot) =>
   curveExtrasFor(store, slot).segWeights.join(' '),
 );
 
-defineReader(['segment-radii'], (store, slot) =>
+defineReader([PROP.SEGMENT_RADII], (store, slot) =>
   curveExtrasFor(store, slot).segRadii.join(' '),
 );
 
-defineReader(['radius-type'], (store, slot) => {
+defineReader([PROP.RADIUS_TYPE], (store, slot) => {
   return curveExtrasFor(store, slot)
     .radiusTypes.map((id) => RADIUS_TYPE_NAMES[id])
     .join(' ');
 });
 
 defineReader(
-  ['edge-distances'],
+  [PROP.EDGE_DISTANCES],
   (store, slot) =>
     EDGE_DISTANCE_NAMES[curveExtrasFor(store, slot).edgeDistances],
 );
 
 defineReader(
-  ['taxi-direction'],
+  [PROP.TAXI_DIRECTION],
   (store, slot) => TAXI_DIRECTION_NAMES[curveExtrasFor(store, slot).taxiDir],
 );
 
-defineReader(['taxi-turn'], (store, slot) => {
+defineReader([PROP.TAXI_TURN], (store, slot) => {
   const ex = curveExtrasFor(store, slot);
 
   if (ex.taxiTurnAuto) {
@@ -6161,35 +6172,35 @@ defineReader(['taxi-turn'], (store, slot) => {
 });
 
 defineReader(
-  ['taxi-track'],
+  [PROP.TAXI_TRACK],
   (store, slot) => TAXI_TRACK_NAMES[curveExtrasFor(store, slot).taxiTrack],
 );
 
 defineReader(
-  ['taxi-track-spacing'],
+  [PROP.TAXI_TRACK_SPACING],
   (store, slot) => curveExtrasFor(store, slot).taxiTrackSpacing,
 );
 
 defineReader(
-  ['taxi-turn-min-distance'],
+  [PROP.TAXI_TURN_MIN_DISTANCE],
   (store, slot) => curveExtrasFor(store, slot).taxiTurnMinDist,
 );
 
 defineReader(
-  ['taxi-radius'],
+  [PROP.TAXI_RADIUS],
   (store, slot) => curveExtrasFor(store, slot).taxiRadius,
 );
 
 defineReader(
-  ['haystack-radius'],
+  [PROP.HAYSTACK_RADIUS],
   (store, slot) => store.curveStyleAt(slot).haystackRadius,
 );
 
 defineReader(
-  ['source-endpoint', 'target-endpoint'],
+  [PROP.SOURCE_ENDPOINT, PROP.TARGET_ENDPOINT],
   (store, slot, ref, engine, prop) => {
     const e = store.curveStyleAt(slot).endpoints;
-    const src = prop === 'source-endpoint';
+    const src = prop === PROP.SOURCE_ENDPOINT;
 
     if (e == null) {
       return 'outside-to-node';
@@ -6204,12 +6215,12 @@ defineReader(
 );
 
 defineReader(
-  ['source-distance-from-node'],
+  [PROP.SOURCE_DISTANCE_FROM_NODE],
   (store, slot) => store.curveStyleAt(slot).endpoints?.srcDist ?? 0,
 );
 
 defineReader(
-  ['target-distance-from-node'],
+  [PROP.TARGET_DISTANCE_FROM_NODE],
   (store, slot) => store.curveStyleAt(slot).endpoints?.tgtDist ?? 0,
 );
 
@@ -6907,18 +6918,18 @@ export class StyleEngine {
     this.arrows = {
       source:
         defs.edges.computed.sourceArrowShape !== 'none' ||
-        mapsProp(defs.edges, 'source-arrow-shape'),
+        mapsProp(defs.edges, PROP.SOURCE_ARROW_SHAPE),
       target:
         defs.edges.computed.targetArrowShape !== 'none' ||
-        mapsProp(defs.edges, 'target-arrow-shape'),
+        mapsProp(defs.edges, PROP.TARGET_ARROW_SHAPE),
     };
     this.midArrows = {
       source:
         defs.edges.computed.midSourceArrowShape !== 'none' ||
-        mapsProp(defs.edges, 'mid-source-arrow-shape'),
+        mapsProp(defs.edges, PROP.MID_SOURCE_ARROW_SHAPE),
       target:
         defs.edges.computed.midTargetArrowShape !== 'none' ||
-        mapsProp(defs.edges, 'mid-target-arrow-shape'),
+        mapsProp(defs.edges, PROP.MID_TARGET_ARROW_SHAPE),
     };
 
     this.sheet = sheet;
@@ -7016,12 +7027,12 @@ export class StyleEngine {
     const demoted = new Set<string>();
 
     if (group === 'nodes') {
-      if (mapped('background-opacity')) {
-        demoted.add('background-color');
+      if (mapped(PROP.BACKGROUND_OPACITY)) {
+        demoted.add(PROP.BACKGROUND_COLOR);
       }
 
-      if (mapped('border-opacity')) {
-        demoted.add('border-color');
+      if (mapped(PROP.BORDER_OPACITY)) {
+        demoted.add(PROP.BORDER_COLOR);
       }
 
       // round 14.4: under compounds the stored node opacity is the
@@ -7031,23 +7042,23 @@ export class StyleEngine {
       // repainted with the nodes value by the kernel (it evaluates
       // every slot), so they demote too.
       if (this.store.hasCompounds()) {
-        demoted.add('opacity');
+        demoted.add(PROP.OPACITY);
 
         for (const p of this.parentsOverride) {
           demoted.add(p);
         }
       }
     } else {
-      if (mapped('line-opacity')) {
-        demoted.add('line-color');
-        demoted.add('source-arrow-color');
-        demoted.add('target-arrow-color');
+      if (mapped(PROP.LINE_OPACITY)) {
+        demoted.add(PROP.LINE_COLOR);
+        demoted.add(PROP.SOURCE_ARROW_COLOR);
+        demoted.add(PROP.TARGET_ARROW_COLOR);
       }
 
       // B4: the casing alpha folds the element opacity at write time,
       // so a kernel-owned opacity would leave stale casing bytes
-      if (computed.lineOutlineWidth > 0 || mapped('line-outline-width')) {
-        demoted.add('opacity');
+      if (computed.lineOutlineWidth > 0 || mapped(PROP.LINE_OUTLINE_WIDTH)) {
+        demoted.add(PROP.OPACITY);
       }
     }
 
@@ -7123,16 +7134,16 @@ export class StyleEngine {
     // paintInputs, so it never reaches the kernel)
 
     return {
-      opacityMapped: mapped('opacity'),
+      opacityMapped: mapped(PROP.OPACITY),
       constOpacity: computed.opacity * computed.lineOpacity,
       source: {
         enabled: computed.sourceArrowShape === 'triangle',
-        colorMapped: mapped('source-arrow-color'),
+        colorMapped: mapped(PROP.SOURCE_ARROW_COLOR),
         constColor: computed.sourceArrowColor,
       },
       target: {
         enabled: computed.targetArrowShape === 'triangle',
-        colorMapped: mapped('target-arrow-color'),
+        colorMapped: mapped(PROP.TARGET_ARROW_COLOR),
         constColor: computed.targetArrowColor,
       },
     };
@@ -7466,7 +7477,7 @@ export class StyleEngine {
 
     // compound padding (25.4) diffs in the parents' compound-style
     // write, not the channel funnel — flag it as listed
-    const padding = group === 'nodes' && spec.props.includes('padding');
+    const padding = group === 'nodes' && spec.props.includes(PROP.PADDING);
 
     if (channels.length === 0 && !padding) {
       return null;
@@ -8632,11 +8643,11 @@ export class StyleEngine {
       const spec = this.defFor(ref).transition;
 
       switch (prop) {
-        case 'transition-property':
+        case PROP.TRANSITION_PROPERTY:
           return spec.props.length === 0 ? 'none' : spec.props.join(' ');
-        case 'transition-duration':
+        case PROP.TRANSITION_DURATION:
           return spec.duration;
-        case 'transition-delay':
+        case PROP.TRANSITION_DELAY:
           return spec.delay;
         default:
           return spec.easing;
@@ -8652,7 +8663,7 @@ export class StyleEngine {
     if (ref.group === 'edges' && plan.arrowColorProp != null) {
       const colorProp = plan.arrowColorProp;
 
-      if (owned.has(colorProp) || owned.has('opacity')) {
+      if (owned.has(colorProp) || owned.has(PROP.OPACITY)) {
         const [r, g, b, a] = this.foldedArrow(ref, colorProp);
 
         return prop.endsWith('-shape')
@@ -8793,7 +8804,7 @@ export class StyleEngine {
     const computed = this.defs.edges.computed as Computed;
     const opacity = this.evalEdgeProp(
       ref,
-      'opacity',
+      PROP.OPACITY,
       computed.opacity,
     ) as number;
 
@@ -8905,7 +8916,7 @@ export class StyleEngine {
       if (isMapperSpec(value)) {
         // chart-values (round 23): the data passthrough reads a
         // per-element *array* — only { data: key } is supported
-        if (norm === 'chart-values') {
+        if (norm === PROP.CHART_VALUES) {
           const asScale = value as Mapper;
           const passthrough =
             !('case' in value) &&
@@ -8926,9 +8937,9 @@ export class StyleEngine {
         }
 
         if (
-          norm === 'label' ||
-          norm === 'source-label' ||
-          norm === 'target-label'
+          norm === PROP.LABEL ||
+          norm === PROP.SOURCE_LABEL ||
+          norm === PROP.TARGET_LABEL
         ) {
           // the label passthrough rides the per-stream key channel
           const asScale = value as Mapper;
@@ -8945,10 +8956,10 @@ export class StyleEngine {
             );
           }
 
-          if (norm === 'label') {
+          if (norm === PROP.LABEL) {
             computed.label = '';
             computed.labelKey = asScale.data;
-          } else if (norm === 'source-label') {
+          } else if (norm === PROP.SOURCE_LABEL) {
             computed.sourceLabel = '';
             computed.sourceLabelKey = asScale.data;
           } else {
@@ -8983,32 +8994,32 @@ export class StyleEngine {
     if (recs == null) {
       // imageless nodes read the v3 defaults
       switch (prop) {
-        case 'background-image':
+        case PROP.BACKGROUND_IMAGE:
           return 'none';
-        case 'background-fit':
+        case PROP.BACKGROUND_FIT:
           return 'none';
-        case 'background-image-opacity':
+        case PROP.BACKGROUND_IMAGE_OPACITY:
           return 1;
-        case 'background-position-x':
-        case 'background-position-y':
+        case PROP.BACKGROUND_POSITION_X:
+        case PROP.BACKGROUND_POSITION_Y:
           return '50%';
-        case 'background-offset-x':
-        case 'background-offset-y':
+        case PROP.BACKGROUND_OFFSET_X:
+        case PROP.BACKGROUND_OFFSET_Y:
           return 0;
-        case 'background-width':
-        case 'background-height':
+        case PROP.BACKGROUND_WIDTH:
+        case PROP.BACKGROUND_HEIGHT:
           return 'auto';
-        case 'background-repeat':
+        case PROP.BACKGROUND_REPEAT:
           return 'no-repeat';
-        case 'background-clip':
+        case PROP.BACKGROUND_CLIP:
           return 'node';
-        case 'background-image-containment':
+        case PROP.BACKGROUND_IMAGE_CONTAINMENT:
           return 'inside';
-        case 'background-image-smoothing':
+        case PROP.BACKGROUND_IMAGE_SMOOTHING:
           return 'yes';
-        case 'background-image-crossorigin':
+        case PROP.BACKGROUND_IMAGE_CROSSORIGIN:
           return 'anonymous';
-        case 'background-image-type':
+        case PROP.BACKGROUND_IMAGE_TYPE:
           return 'auto';
         default:
           return formatRgba(...NODE_DEFAULTS.backgroundImageColor);
@@ -9028,37 +9039,37 @@ export class StyleEngine {
     };
 
     switch (prop) {
-      case 'background-image':
+      case PROP.BACKGROUND_IMAGE:
         return per((r) => r.url);
-      case 'background-fit':
+      case PROP.BACKGROUND_FIT:
         return per((r) => BG_FIT_NAMES[r.fit]);
-      case 'background-image-opacity':
+      case PROP.BACKGROUND_IMAGE_OPACITY:
         return per((r) => r.opacity);
-      case 'background-position-x':
+      case PROP.BACKGROUND_POSITION_X:
         return per((r) => lenOf(r.posX));
-      case 'background-position-y':
+      case PROP.BACKGROUND_POSITION_Y:
         return per((r) => lenOf(r.posY));
-      case 'background-offset-x':
+      case PROP.BACKGROUND_OFFSET_X:
         return per((r) => lenOf(r.offX));
-      case 'background-offset-y':
+      case PROP.BACKGROUND_OFFSET_Y:
         return per((r) => lenOf(r.offY));
-      case 'background-width':
+      case PROP.BACKGROUND_WIDTH:
         return per((r) => sizeOf(r.w));
-      case 'background-height':
+      case PROP.BACKGROUND_HEIGHT:
         return per((r) => sizeOf(r.h));
-      case 'background-repeat':
+      case PROP.BACKGROUND_REPEAT:
         return per((r) => BG_REPEAT_NAMES[r.repeat]);
-      case 'background-clip':
+      case PROP.BACKGROUND_CLIP:
         return per((r) => BG_CLIP_NAMES[r.clip]);
-      case 'background-image-containment':
+      case PROP.BACKGROUND_IMAGE_CONTAINMENT:
         return per((r) => BG_CONTAINMENT_NAMES[r.containment]);
-      case 'background-image-smoothing':
+      case PROP.BACKGROUND_IMAGE_SMOOTHING:
         return per((r) => (r.smoothing ? 'yes' : 'no'));
-      case 'background-image-crossorigin':
+      case PROP.BACKGROUND_IMAGE_CROSSORIGIN:
         return (
           this.store.images.get(recs[0].entryId)?.crossOrigin ?? 'anonymous'
         );
-      case 'background-image-type':
+      case PROP.BACKGROUND_IMAGE_TYPE:
         return per((r) => IMAGE_TYPE_NAMES[r.sdf ? 1 : 0]);
       default: {
         const [r, g, b, a] = recs[0].tint;
@@ -9248,19 +9259,19 @@ export class StyleEngine {
   private fastStateWriter(group: GroupName, prop: string): StateWriter | null {
     if (group === 'nodes') {
       switch (prop) {
-        case 'background-color':
+        case PROP.BACKGROUND_COLOR:
           return (slot, c) => this.writeNodeFillColor(slot, c);
-        case 'border-color':
+        case PROP.BORDER_COLOR:
           return (slot, c) => this.writeNodeBorderColor(slot, c);
-        case 'opacity':
+        case PROP.OPACITY:
           return (slot, c) => this.writeNodeOpacity(slot, c);
-        case 'overlay-color':
-        case 'overlay-opacity':
-        case 'overlay-padding':
+        case PROP.OVERLAY_COLOR:
+        case PROP.OVERLAY_OPACITY:
+        case PROP.OVERLAY_PADDING:
           return (slot, c) => this.writeNodeOverlay(slot, c);
-        case 'underlay-color':
-        case 'underlay-opacity':
-        case 'underlay-padding':
+        case PROP.UNDERLAY_COLOR:
+        case PROP.UNDERLAY_OPACITY:
+        case PROP.UNDERLAY_PADDING:
           return (slot, c) => this.writeNodeUnderlay(slot, c);
         default:
           return null;
@@ -9268,23 +9279,23 @@ export class StyleEngine {
     }
 
     switch (prop) {
-      case 'line-color':
+      case PROP.LINE_COLOR:
         return (slot, c) => this.writeEdgeLineColor(slot, c);
-      case 'source-arrow-color':
+      case PROP.SOURCE_ARROW_COLOR:
         return (slot, c) => this.writeEdgeSourceArrowColor(slot, c);
-      case 'target-arrow-color':
+      case PROP.TARGET_ARROW_COLOR:
         return (slot, c) => this.writeEdgeTargetArrowColor(slot, c);
-      case 'mid-source-arrow-color':
+      case PROP.MID_SOURCE_ARROW_COLOR:
         return (slot, c) => this.writeEdgeMidSourceArrowColor(slot, c);
-      case 'mid-target-arrow-color':
+      case PROP.MID_TARGET_ARROW_COLOR:
         return (slot, c) => this.writeEdgeMidTargetArrowColor(slot, c);
-      case 'overlay-color':
-      case 'overlay-opacity':
-      case 'overlay-padding':
+      case PROP.OVERLAY_COLOR:
+      case PROP.OVERLAY_OPACITY:
+      case PROP.OVERLAY_PADDING:
         return (slot, c) => this.writeEdgeOverlay(slot, c);
-      case 'underlay-color':
-      case 'underlay-opacity':
-      case 'underlay-padding':
+      case PROP.UNDERLAY_COLOR:
+      case PROP.UNDERLAY_OPACITY:
+      case PROP.UNDERLAY_PADDING:
         return (slot, c) => this.writeEdgeUnderlay(slot, c);
       default:
         return null;

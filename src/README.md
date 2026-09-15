@@ -2206,7 +2206,15 @@ each is deliberate, not a pass-1 deferral:
   constant resolves to.  The four reserved data keys are `DATA_ID`,
   `DATA_PARENT`, `DATA_SOURCE` and `DATA_TARGET` in the same file, and
   `EndKey` names the source/target pair; every `key === 'id'`-style
-  test in the data, ingest, style and label paths reads them.
+  test in the data, ingest, style and label paths reads them.  The
+  style property names — all 173 the engine accepts — are `PROP` in
+  `src/style-props.mts` (`PROP.BACKGROUND_COLOR`), keying the engine's
+  switches, read sets, mapper channels, readers and defaults, the
+  tween channel table and the collection's bulk-write list.  Property
+  *values* (`'round-rectangle'`, `'match-line'`) are not in the table:
+  the shape and arrow vocabularies already map through their id
+  tables, and a value is what a user writes, not what the engine
+  spells.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

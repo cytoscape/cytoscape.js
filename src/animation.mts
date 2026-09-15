@@ -13,6 +13,7 @@ import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
 import type { Viewport } from './viewport.mjs';
+import { PROP } from './style-props.mjs';
 
 /**
  * The tween pseudo-columns (round 127): write targets that are not
@@ -112,29 +113,29 @@ interface StyleChannel {
 }
 
 const STYLE_CHANNELS: Record<string, StyleChannel> = {
-  opacity: {
+  [PROP.OPACITY]: {
     columns: { nodes: COL.NODE_OPACITY, edges: COL.EDGE_OPACITY },
     kind: 'scalar',
     tier: 'paint',
     min: 0,
     max: 1,
   },
-  'background-color': {
+  [PROP.BACKGROUND_COLOR]: {
     columns: { nodes: COL.NODE_FILL_COLOR },
     kind: 'color',
     tier: 'paint',
   },
-  'border-color': {
+  [PROP.BORDER_COLOR]: {
     columns: { nodes: COL.NODE_BORDER_COLOR },
     kind: 'color',
     tier: 'paint',
   },
-  'line-color': {
+  [PROP.LINE_COLOR]: {
     columns: { edges: COL.EDGE_LINE_COLOR },
     kind: 'color',
     tier: 'paint',
   },
-  'border-width': {
+  [PROP.BORDER_WIDTH]: {
     columns: { nodes: COL.NODE_BORDER_WIDTH },
     kind: 'scalar',
     tier: 'geometry',
@@ -150,14 +151,14 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // the arrow-bits mirror), so this is a lane write on both groups now.
   // It costs nothing: lane writes never offload, and the geometry tier
   // never did.
-  width: {
+  [PROP.WIDTH]: {
     columns: { nodes: COL.NODE_SIZE, edges: COL.EDGE_WIDTH },
     lanes: { nodes: 0, edges: 0 },
     kind: 'scalar',
     tier: 'geometry',
     min: 0,
   },
-  height: {
+  [PROP.HEIGHT]: {
     columns: { nodes: COL.NODE_SIZE },
     lanes: { nodes: 1 },
     kind: 'scalar',
@@ -167,7 +168,7 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // round 25.4: compound padding — the declared value in its declared
   // unit (px, or a fraction under '%'); parents only, resolved by the
   // auto-bounds flush per tick
-  padding: {
+  [PROP.PADDING]: {
     columns: { nodes: TWEEN_COL.NODE_PADDING },
     kind: 'scalar',
     tier: 'geometry',
@@ -175,7 +176,7 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   },
   // round 25.5: label font-size — the sidecar, patched per tick;
   // unlabelled elements are filtered at capture
-  'font-size': {
+  [PROP.FONT_SIZE]: {
     columns: {
       nodes: TWEEN_COL.NODE_FONT_SIZE,
       edges: TWEEN_COL.EDGE_FONT_SIZE,
@@ -1643,8 +1644,8 @@ export class Animation {
     }
 
     for (const [enabled, column, colorProp] of [
-      [ends.source, COL.EDGE_SOURCE_ARROW, 'source-arrow-color'],
-      [ends.target, COL.EDGE_TARGET_ARROW, 'target-arrow-color'],
+      [ends.source, COL.EDGE_SOURCE_ARROW, PROP.SOURCE_ARROW_COLOR],
+      [ends.target, COL.EDGE_TARGET_ARROW, PROP.TARGET_ARROW_COLOR],
     ] as const) {
       if (!enabled) {
         continue;

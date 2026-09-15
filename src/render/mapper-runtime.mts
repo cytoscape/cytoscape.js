@@ -16,6 +16,7 @@ import type {
   RGBA,
 } from '../style-scales.mjs';
 import { DATA_TARGET, DATA_SOURCE, COL } from '../contract.mjs';
+import { PROP } from '../style-props.mjs';
 
 /*
 CPU-side packing for the GPU mapper eval pass: lowers compiled paint-
@@ -89,15 +90,15 @@ export const TARGETS: Record<
   Record<string, { target: number; column: ColumnId }>
 > = {
   nodes: {
-    'background-color': { target: 0, column: COL.NODE_FILL_COLOR },
-    'border-color': { target: 1, column: COL.NODE_BORDER_COLOR },
-    opacity: { target: 2, column: COL.NODE_OPACITY },
+    [PROP.BACKGROUND_COLOR]: { target: 0, column: COL.NODE_FILL_COLOR },
+    [PROP.BORDER_COLOR]: { target: 1, column: COL.NODE_BORDER_COLOR },
+    [PROP.OPACITY]: { target: 2, column: COL.NODE_OPACITY },
   },
   edges: {
-    'line-color': { target: 0, column: COL.EDGE_LINE_COLOR },
-    opacity: { target: 1, column: COL.EDGE_OPACITY },
-    'source-arrow-color': { target: 2, column: COL.EDGE_SOURCE_ARROW },
-    'target-arrow-color': { target: 3, column: COL.EDGE_TARGET_ARROW },
+    [PROP.LINE_COLOR]: { target: 0, column: COL.EDGE_LINE_COLOR },
+    [PROP.OPACITY]: { target: 1, column: COL.EDGE_OPACITY },
+    [PROP.SOURCE_ARROW_COLOR]: { target: 2, column: COL.EDGE_SOURCE_ARROW },
+    [PROP.TARGET_ARROW_COLOR]: { target: 3, column: COL.EDGE_TARGET_ARROW },
   },
 };
 
@@ -288,7 +289,7 @@ export const packPrograms = (
   // opacity first: arrow programs multiply by its result in-kernel
   eligible.sort(
     (a, b) =>
-      (a.m.prop === 'opacity' ? 0 : 1) - (b.m.prop === 'opacity' ? 0 : 1),
+      (a.m.prop === PROP.OPACITY ? 0 : 1) - (b.m.prop === PROP.OPACITY ? 0 : 1),
   );
 
   // a mapped edge opacity with constant arrow colors: synthesize one

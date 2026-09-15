@@ -231,8 +231,11 @@ calls the maintainer made at planning.  Round 124 (2026-09-10) took
 maintainer marked Partial in the feature inventory on 2026-09-14 —
 **planned as round 125**, nine sub-rounds each gated on a maintainer
 review sitting — **carried out the same day**, every fix on the record
-and every sitting still pending, so the item stays open on the
-sittings alone.  What the 2026-08-26
+then the first sitting pass the same day: one sub-round signed off,
+radial's roots decided and shipped, the rest deferred to the page —
+which raised **item 61** (one consistent option surface: spacing,
+compacting, the bounding box as hint or constraint) and **item 62**
+(AVSDF, reconsidered).  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -1146,5 +1149,47 @@ directions".*
     changed: flow's nodeSep 30 / rankSep 40 and a smaller label gap;
     breadthfirst's need-plus-gap spacing; radial's roots by indegree
     on a directed component, and the rim; condense as a default;
-    force's crammed expansion traced per round.  **The sittings are
-    the open item.**
+    force's crammed expansion traced per round.  **The first sitting
+    pass (2026-09-15, from the desk)**: 125.8 signed off; 125.3's
+    roots decided and shipped (a component's true roots, the
+    maximum-degree rule as the fallback for a component with none);
+    everything else deferred to the page sittings, which wait on the
+    page exposing each layout's options (sub-round 125.11); the calls
+    on spacing, compacting and the bounding box gathered into **item
+    61**, AVSDF reconsidered as **item 62**.  Round-level: sittings
+    are recorded on the round file under each sub-round, and an
+    accepted default ships as accepted.  **Open on the page sittings
+    and 125.11.**
+61. **One consistent option surface across the layouts: spacing,
+    compacting and the bounding box** (raised by the maintainer at
+    round 125's first sitting pass, 2026-09-15).  The audit found the
+    geometric layouts sizing themselves three ways (grid's `condense`,
+    concentric's `minNodeSpacing` rings, circle's and radial's
+    box-filling rings grown by `avoidOverlap`), breadthfirst stretching
+    every rank to the box, flow spacing by `nodeSep` / `rankSep`, and
+    the gap spelled `avoidOverlapPadding`, `minNodeSpacing`,
+    `nodeSep` and `componentSpacing` by turns.  The maintainer's
+    framing: in v3 the bounding box was a constraint — the result must
+    lie inside it unless another option conflicts; in v4 the default
+    might read it as a *hint* of the available space that helps a
+    layout work better, with an explicit `constrainWithinBounds`-style
+    option saying when and how it binds; and options, spacing options
+    included, should be generally consistent between the layouts —
+    one spelling for the gap, one meaning for compacting, one default.
+    Absorbs 125.4's, 125.5's, 125.6's and 125.7's deferred calls and
+    round 125's open node-separation spelling.  **First measurement**:
+    the option matrix — every layout's spacing, compacting and box
+    options with their current semantics in one table — then the
+    proposed surface applied to the audit's fixtures through
+    `benchmark:layout-audit`, area and gap columns before and after,
+    so the sitting decides on pictures and numbers.
+62. **AVSDF, reconsidered** (raised at round 125's first sitting pass,
+    2026-09-15; declined by round 122 "until an app asks").  The
+    crossing-minimised ring order.  125.5 measured the clustered
+    fixture: the `sort` mapping by cluster cuts crossings 4.3×
+    (1,375 → 318) on a 40-node four-cluster graph; AVSDF's adjacent-
+    vertex-smallest-degree-first order is the next step on the same
+    fixture.  **First measurement**: crossings on that fixture and on
+    em-web's giant component under the id order, the `sort` order and
+    an AVSDF order computed offline, before any spelling is designed
+    (the natural one is a value of `sort`).

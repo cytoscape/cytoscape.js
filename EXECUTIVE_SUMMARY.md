@@ -19,7 +19,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   the room under a short component; preset rejects a half position;
   random takes a seed; circle and radial take `condense`.  The default
   changes the pictures argue for are measured and recommended, not
-  made — those are the sittings' calls.
+  made — those are the sittings' calls.  The first sitting pass, the
+  same day from the desk: preset and random signed off; radial now
+  centres a hierarchy's true root (its maximum-degree node before);
+  the rest waits for the page, which first has to expose each
+  layout's options.  Two questions came out of it for the whole
+  layout surface: one consistent spelling for spacing and compacting,
+  and whether the bounding box is a constraint (v3) or a hint with an
+  explicit constraint option (proposed for v4); and AVSDF's ring order
+  is reconsidered.
 
 ## How to maintain this file
 
@@ -991,7 +999,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     random is seedable; circle and radial can size by their nodes.
   - Not changed: every default the pictures argue against, measured
     and recommended for the sittings — flow's gaps, breadthfirst's
-    box-fill, radial's root choice, condense by default.
+    box-fill, condense by default.
+  - The first sitting pass: radial centres a hierarchy's true root
+    (buys reactome reading outward from *Immune System*); preset and
+    random signed off; the rest deferred to the page.  Raised for the
+    whole layout surface: one consistent option spelling for spacing
+    and compacting, the bounding box as hint or constraint, and AVSDF
+    reconsidered.
 
 ## What changed for users of v3
 

@@ -481,6 +481,8 @@ labels (`reactome-force-labels-before-close.png` — unchanged by the
 fixes, the picture to judge the label spacing itself on); and decide
 the three default questions above, item 1 first.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Deferred.**  Requires more maintainer review before a decision; the two fixes stay as landed code, the expansion recommendation is undecided, and the sub-round is not signed off.
+
 ### 125.2 — flow
 
 The first sitting's three findings on `flow` — too spread on reactome
@@ -669,6 +671,8 @@ siblings; then the two calls — `nodeSep` 30 / `rankSep` 40 as the
 defaults, and whether label boxes get a smaller gap than bodies —
 with the sweep's table above.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Deferred** until the page sitting, which needs 125.11's option controls first.  Direction given: the gaps might become automatic defaults derived from node size (a 1× separation by default), or simply smaller values for `nodeSep` / `rankSep`.  The three fixes stay as landed code.
+
 **Raised by the other sub-rounds, for this one's sitting.**  125.4
 measured npm-deps under flow at 3–6× breadthfirst's straight-line
 crossings and 13× its area — the compound mode (11 scope parents)
@@ -769,6 +773,8 @@ Avoid overlap on; then set `roots` in the console
 (`cy.layout({name:'radial', roots:['R-HSA-168256']}).run()`); then
 labels on.  Pictures: the three under `plan/pictures/rnd0125/125.3/`.
 Decide 1–3 above.
+
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Decided on the roots**: radial is designed for hierarchies, so a component's default roots are its true roots — the nodes with no incoming edge — with a fallback where a component has none (a cycle): the maximum-degree rule stays as that fallback.  Shipped in this round (the sitting also ruled that an accepted default ships as accepted): reactome's centre is its root, 274 crossings against 140 as measured above, area 4.26 Mpx²; em-web's packed radial goes from 31.19 to 23.98 Mpx² and 3.81 M to 3.80 M crossings (many of its components have indegree-0 nodes, which now seed the trees).  `reactome-radial-true-root-default-after.png` is the default picture now.  The rim (2), `condense` as the default (3) and the non-tree component (4): not ruled on, deferred to the page.
 
 ### 125.4 — breadthfirst
 
@@ -936,6 +942,8 @@ whether the page's DAG scenes should default breadthfirst to
 drawing, parent gap max 7670) is the same 84-labels-in-a-rank problem
 as flow's and belongs with 125.2's label-gap call.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Deferred**, with the root issue named: the dilemma between compacting (`condense: true`) and the bounding box.  In v3 the box was a constraint — the result must lie inside it unless another option conflicts.  For v4 the default might instead read the box as a *hint* of the available space, which helps a layout work better by default, with a new explicit option (`constrainWithinBounds: true`, or a spelling like it) saying when and how the box binds.  A cross-layout design call, not breadthfirst's alone — taken into **item 61**.  The two fixes stay as landed code.
+
 ### 125.5 — circle
 
 **Fixtures.**  A 40-node clustered graph (four clusters of ten, half
@@ -996,6 +1004,8 @@ worth a sub-round now that the clustered fixture measures it.
 **Maintainer review: pending.**  Open the page on em-web, Circle,
 Pack components on; the picture above.  Decide the two calls.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  `condense` as a default: **deferred** — the geometric layouts need one consistent rule (item 61).  AVSDF, the crossing-minimised ring order round 122 declined: **reconsider it** — logged as **item 62**.
+
 ### 125.6 — concentric
 
 **Fixtures.**  em-web with `concentric` mapped to degree (the default)
@@ -1044,6 +1054,8 @@ geometric-layouts entry records the sizing model.
 Pack components on, labels on; the picture above.  Decide the
 spelling question (with 125.3 / 125.5) and whether `equidistant`
 wants a doc note.
+
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  Specifics **deferred**; the rule given is that options should be generally consistent between the layouts, spacing options included — one spelling for the gap, the box's handling and the compacting (item 61).  The `equidistant` note was not ruled on.
 
 ### 125.7 — grid
 
@@ -1097,6 +1109,8 @@ grid).
 components on, labels on; the two pictures.  Decide whether
 `condense` defaults on for a standalone grid.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Deferred** into the consistent rule (item 61).
+
 ### 125.8 — preset and random
 
 Audited for their contract, not their picture, on the quality
@@ -1134,6 +1148,8 @@ specs, the README's contract note, the changelog, the throw gate
 sitting is the two calls: whether the throw on a half position is the
 right severity (the alternative is to keep the missing axis), and
 whether `random` should take `seed` from the page's seed box.
+
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Accepted** — the throw and random's `seed` stand.  Caveat recorded as a design note: seeds should generally be per-operation, and how an app supplies them depends on its architecture — a constant seed passed on every layout run, or a global seed on the `cy` instance; this needs more consideration before a wider seed surface is designed.
 
 ### 125.9 — packing: the shelf's rows waste the room under a short component, and now fill it
 
@@ -1286,6 +1302,8 @@ the EM combo entry (force by sign) to confirm its rows read as
 before, since a comparator turns stacking off; then call (3) above
 and the aspect question.
 
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  **Deferred** — review on the page, with the option controls, before a decision; the stacking shelf stays as landed code.
+
 ### 125.10 — the page, as the audit's instrument
 
 Done first, as sequenced: everything after it was measured through it.
@@ -1347,3 +1365,46 @@ least twice the ratio at 1.
 **Maintainer review: pending.**  Open any network, run a layout, drag
 Live spacing and read Airiness; open reactome under flow for the
 source-coloured edges.
+
+**Maintainer sitting, 2026-09-15 (first pass, from the desk).**  Findings, not an accept: the page should expose more — perhaps all — of each layout's options, flow's direction first, with an option shown only when a compatible layout is selected; in general the debug UI should show more of the option surface.  Taken as **sub-round 125.11** below.
+
+### The first sitting pass (2026-09-15)
+
+The maintainer took the ten sub-rounds' questions one at a time, from
+the desk — by experience and logic, on the questions that were clear
+at once, without opening the page; the page sittings, with the fuller
+option controls the pass asked for, are still to come, and every
+"deferred" above means exactly that.  What the pass decided:
+
+- **Round-level.**  Sittings are recorded here, under each sub-round
+  (not one file per sub-round).  A default change accepted in a
+  sitting ships as accepted, with its changelog entry, rather than
+  waiting for the round to land whole.  The 125.8 question (fold into
+  125.7) was moot — it ran on its own and is the one sub-round signed
+  off.
+- **Signed off:** 125.8.  **Decided in part:** 125.3 (the roots;
+  shipped).  **Deferred to the page:** 125.1, 125.2, 125.4, 125.5,
+  125.6, 125.7, 125.9, and 125.10 with findings.
+- **Three pieces of work raised**, in the order the sittings need
+  them:
+  1. **Sub-round 125.11 — the page's option surface.**  Expose more,
+     perhaps all, of each layout's options on the debug page, flow's
+     `direction` first, each option shown only when a compatible
+     layout is selected.  The page sittings for 125.2 and 125.9 wait
+     on it.
+  2. **Item 61 — one consistent option surface across the layouts:
+     spacing, compacting and the bounding box.**  The maintainer's
+     framing: v3's box was a constraint; v4's default might read it as
+     a hint of the available space, with an explicit
+     `constrainWithinBounds`-style option saying when it binds; the
+     gap's spelling and `condense`'s default are decided once, for
+     every layout that has them.  Absorbs the deferred calls of
+     125.4, 125.5, 125.6 and 125.7 and the round file's open
+     node-separation spelling.
+  3. **Item 62 — AVSDF, reconsidered.**  The crossing-minimised ring
+     order round 122 declined, now that the clustered fixture measures
+     it (the `sort` mapping alone cuts crossings 4.3×).
+- **A design note for later:** seeds should be per-operation, and how
+  an app supplies them — a constant per layout run, or a global seed
+  on the instance — depends on the app's architecture; more
+  consideration before a wider seed surface is designed.

@@ -2217,7 +2217,9 @@ each is deliberate, not a pass-1 deferral:
   spells.  `test/modules/string-keys.mjs` holds the line: it scans
   `src/` for a column-id literal, a data-key comparison or a
   hyphenated property literal outside its declaration, with a control
-  per rule and the walk's size pinned.
+  per rule and the walk's size pinned.  The price: the minified bundle
+  grew 1.0% (1.2% gzipped), since the minifier mangles `PROP` but not
+  `.BACKGROUND_COLOR`; the round record has the numbers.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

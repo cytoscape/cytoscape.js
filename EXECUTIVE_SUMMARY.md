@@ -5,19 +5,28 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-15, after the layout quality audit was
-  carried out: one sub-round per layout, one for packing and one for
-  the debug page as the instrument, each with its fixtures, its
-  measured baseline, its pictures and its fixes on the record, and
-  each waiting on the maintainer's review sitting before it counts as
-  landed.  What the audit fixed: labels are measured with a canvas at
-  style time so a layout run at load separates the boxes the frame
-  draws; force's small-component shapes survive its separation pass;
-  flow reads extents per side and per direction and no longer strands
-  a leaf far from its only parent; breadthfirst is sized in pixels
-  rather than scaling with the zoom it ran at; the shelf packer fills
-  the room under a short component; preset rejects a half position;
-  random takes a seed; circle and radial take `condense`.  The default
+- **Last updated**: 2026-09-15, after round 127 gave every string
+  vocabulary one declaration: column ids are `COL.NODE_POSITION`,
+  style property names `PROP.BACKGROUND_COLOR` and the reserved data
+  keys `DATA_SOURCE`, never the literal, anywhere under `src/`, with a
+  scanning spec holding the line.  Some 1,500 sites moved; nothing a
+  user sees changed, the bundle grew 1%, and the scanners that read
+  the sources as text — the feature inventory, the throw gate — were
+  the round's finding, since a mechanical edit falsified the
+  assumptions each had made about the literal form.  Earlier the same
+  day, the layout quality audit was carried out: one sub-round per
+  layout, one for packing and one for the debug page as the
+  instrument, each with its fixtures, its measured baseline, its
+  pictures and its fixes on the record, and each waiting on the
+  maintainer's review sitting before it counts as landed.  What the
+  audit fixed: labels are measured with a canvas at style time so a
+  layout run at load separates the boxes the frame draws; force's
+  small-component shapes survive its separation pass; flow reads
+  extents per side and per direction and no longer strands a leaf far
+  from its only parent; breadthfirst is sized in pixels rather than
+  scaling with the zoom it ran at; the shelf packer fills the room
+  under a short component; preset rejects a half position; random
+  takes a seed; circle and radial take `condense`.  The default
   changes the pictures argue for are measured and recommended, not
   made — those are the sittings' calls.  The first sitting pass, the
   same day from the desk: preset and random signed off; radial now
@@ -66,12 +75,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,683 unit · 675 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,719 unit · 745 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
-| Style parity | v4 accepts 161 of v3's 291 style property names (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | 691 KiB minified / 185 KiB gzipped — ~1.5× v3 (410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time |
+| Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
+| Bundle | 841 KiB minified / 231 KiB gzipped as of 15 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 1% of it |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
@@ -1006,6 +1015,30 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     whole layout surface: one consistent option spelling for spacing
     and compacting, the bounding box as hint or constraint, and AVSDF
     reconsidered.
+- **15 Sep** — every string vocabulary spelled once
+  - Column ids, style property names and the reserved data keys had
+    one typed declaration each and were still written as literals at
+    ~1,500 sites.  Now `COL.NODE_POSITION`, `PROP.BACKGROUND_COLOR`
+    and `DATA_SOURCE` are the spelling under `src/`, a scanning spec
+    rejects the literal, and the tables are pinned to the engine
+    (`COL` ≡ the column specs, `PROP` in the engine's own normalized
+    form).  The specs under `test/` keep the literals on purpose, as
+    the pin on what each constant resolves to.
+  - Buys a rename that touches one line, a "who reads this column"
+    search that needs no spelling, and a property table the docs and
+    tools can read instead of regex-mining the engine.
+  - The price: 1% of the bundle (2.7 KB gzipped), because the minifier
+    mangles the table's name but not its member names.  Recorded, not
+    hidden; the maintainer's call.
+  - The finding: two source-scanning tools failed on the second full
+    run — the feature inventory had regex-mined the read registries'
+    literals and found an empty surface; two `file:line` allowlist
+    entries in the throw gate had moved.  A mechanical edit is a free
+    control on every tool that reads the tree as text (round 57.2's
+    lesson, again), and the round's own replacement tool had the same
+    class of bug: not regex-aware, it read one `['"]` on one line of
+    the style engine as an unterminated string and skipped 8,300 lines
+    silently.  That line is now a control in the gate.
 
 ## What changed for users of v3
 

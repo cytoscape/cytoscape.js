@@ -194,7 +194,31 @@ unstated assumption.
   process to compile the tree); runs two and three sit inside the
   before band.  As expected: the sheet compiles once per group, and
   the read path plans per raw name and never touches the switch.
-- The worktree was removed (`git worktree list` shows one tree).
+- **The bundle grew by 1%**, measured against the pre-round commit
+  built in a throwaway worktree with the same rolldown config:
+
+  | `build/cytoscape.min.js` | minified | gzipped |
+  |---|--:|--:|
+  | before (`988cca81`) | 852,759 B | 233,456 B |
+  | after | 861,544 B | 236,179 B |
+  | delta | +8,785 B (+1.0%) | +2,723 B (+1.2%) |
+
+  The cost is the table itself (173 property strings the sources
+  used to carry inline, now carried once *and* referenced) plus
+  `COL.X` / `PROP.X` member accesses, which the minifier mangles the
+  object name of but not the property name — `PROP.BACKGROUND_COLOR`
+  ships longer than `'background-color'`.  Recorded as the round's
+  price; whether to spend 2.7 KB gzipped on a spelled-once
+  vocabulary is the maintainer's call, and the alternative (a build
+  step that inlines `as const` members) is a build-tool change this
+  round does not make.  The summary's bundle row had been stale since
+  well before this round (it read 691 / 185 KiB); it is re-measured
+  now.
+- Style parity, re-measured by the inventory reader's own method
+  (v4 read registries ∩ v3's declared names): 159 of 291.  The
+  summary carried 161 from round 85.4 with no method on the record;
+  the reader's number is the one the status site publishes.
+- The worktrees were removed (`git worktree list` shows one tree).
 
 
 `npm run -s verify` per commit; `npm run -s test:node:quiet` and

@@ -1195,3 +1195,24 @@ directions".*
     em-web's giant component under the id order, the `sort` order and
     an AVSDF order computed offline, before any spelling is designed
     (the natural one is a value of `sort`).
+63. **Round 127's bundle price, and whether to inline the tables**
+    (logged 2026-09-15, round 127).  Spelling every column id, style
+    property name and reserved data key once cost 1.0% of the minified
+    bundle and 1.2% gzipped (+8.8 KB / +2.7 KB): the minifier mangles
+    `PROP` and `COL` but not `.BACKGROUND_COLOR`, so each reference
+    ships longer than the literal it replaced, and the 173-entry table
+    ships once besides.  Two ways to take the cost back, both build
+    changes the round did not make: a build-time inline of `as const`
+    members (a rolldown/oxc transform, if one exists that is not a
+    regex), or keeping the tables and accepting the 2.7 KB.  **The
+    call**: accept, or schedule the inline as part of round 126's
+    minification work, where a shader-string inliner is already on the
+    table.
+64. **Group names as constants?** (logged 2026-09-15, round 127.)
+    `'nodes'` / `'edges'` is the same shape as the three vocabularies
+    round 127 made constants, at 744 sites — and it was left alone: a
+    two-member typed discriminant reads best as the literal, the
+    values are public API (`group: 'nodes'`), and the directive's
+    examples did not name them.  Logged so the omission is a decision
+    on the record rather than an oversight; the gate can take a fourth
+    rule in an afternoon if the call goes the other way.

@@ -76,6 +76,9 @@ const flag = (name, def = null) => {
 const has = (name) => args.includes(`--${name}`);
 
 const networkId = flag('network', 'reactome');
+// --elements <file>: a plain elements JSON ({ nodes, edges } or an
+// array) with a 30 px sheet, for the synthetic fixtures the suites use
+const elementsFile = flag('elements');
 const layoutName = flag('layout', 'grid');
 const opts = JSON.parse(flag('opts', '{}'));
 const labels = has('labels');
@@ -85,7 +88,7 @@ const gen = flag('gen', '400x800');
 const width = Number(flag('width', 1400));
 const height = Number(flag('height', 1000));
 
-const def = networks[networkId];
+const def = elementsFile != null ? { desc: elementsFile } : networks[networkId];
 
 if (def == null) {
   console.error(
@@ -109,6 +112,18 @@ const elementsFor = () => {
 const { default: cytoscape } = await import('../src/index.mjs');
 
 const mk = () => {
+  if (elementsFile != null) {
+    const raw = JSON.parse(readFileSync(elementsFile, 'utf8'));
+
+    return cytoscape({
+      headless: true,
+      headlessWidth: width,
+      headlessHeight: height,
+      elements: raw,
+      style: { nodes: { width: 30, height: 30, label: { data: 'label' } } },
+    });
+  }
+
   const gpuElements = elementsFor();
   const sheet = styles.sheet('production', networkId, gpuElements, def);
 
@@ -382,7 +397,7 @@ for (let i = 0; i < Math.max(1, repeat) + 1; i++) {
 times.sort((a, b) => a - b);
 
 const row = {
-  network: networkId,
+  network: elementsFile ?? networkId,
   layout: layoutName,
   opts,
   labels,
@@ -393,7 +408,7 @@ const row = {
 
 const px = (v) => (Number.isFinite(v) ? v.toFixed(0) : '—');
 const line =
-  `${networkId} ${layoutName} ${JSON.stringify(opts)}${labels ? ' [labels]' : ''}\n` +
+  `${row.network} ${layoutName} ${JSON.stringify(opts)}${labels ? ' [labels]' : ''}\n` +
   `  n ${row.nodes} e ${row.edges}  ${row.ms.toFixed(0)} ms  stable ${stable}\n` +
   `  overlaps ${row.overlaps}  crossings ${row.crossings}  area ${row.area.toFixed(2)} Mpx² (aspect ${row.aspect.toFixed(1)})  fill ${row.fill.toFixed(3)}\n` +
   `  gap median ${px(row.gap.median)} p90 ${px(row.gap.p90)} (${row.ratio.toFixed(2)}× size ${px(row.size)})\n` +

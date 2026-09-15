@@ -311,6 +311,205 @@ recommended but not changed, and **every sub-round pending its
 sitting**.  The record is one section per sub-round; the sittings
 are recorded under each as they happen.
 
+### 125.2 — flow
+
+The first sitting's three findings on `flow` — too spread on reactome
+even with `avoidOverlap` off and far worse with labels, the Greek-gods
+scene wrong only with labels, and a leaf far from its only neighbour —
+came apart into three wrong readings, one placement the block-graph
+compaction had given up, and one question of defaults that stays with
+the sitting.
+
+#### What was found
+
+- **The page's "avoid overlap off" is `avoidOverlap: false`, which
+  places points.**  Flow then reads `nodeSep` centre to centre: a 50 px
+  pitch for 18 px bodies, a 32 px gap — 1.78 node sizes.  The
+  library's own default (bodies separated) is a 50 px *gap*, 2.78
+  sizes.  Neither is a defect; both are the default question below.
+- **Symmetric halves.**  `assignX` separated a rank by `halfW =
+  max(-x1, x2)` and `assignY` stacked rows by `halfH` likewise, so a
+  label hung to one side was read as twice its larger side.  The
+  Greek-gods labels (hung right, 76 px box) read as 140 px; reactome's
+  bottom-hung wrapped labels doubled the rows: 148 px apart where 116
+  fit.
+- **The model axes whatever the direction.**  The within-rank axis
+  always took the model *width* and the rank axis the model *height*.
+  Under `direction: 'rightward'` a rank is a column, so its members
+  were separated by their widths — invisible on 12 px discs, and the
+  whole of the "only with labels" finding: with labels the scene went
+  to aspect 0.3, a column 3.4 Mpx² tall.  The compound walls and rank
+  margins had the same swap (`padX` along a rightward rank).
+- **The free singleton.**  Compaction is a longest-path pass over the
+  block graph; a block nothing aligned — a leaf in the two sweeps that
+  align to lower neighbours, or a node whose median parent was taken
+  by a sibling or marked by a type-1 conflict — sat at its leftmost
+  feasible x (rightmost, mirrored).  The balance of four such
+  candidates put reactome's "IRAK1 recruits IKK complex upon TLR7/8
+  or 9 stimulation" (R-HSA-975144, one parent, no children) at
+  candidates [5238, 7346, 4694, 7346] → 6292, **1,632 px** from its
+  parent at 4660.  The header of `flow-position.mts` had recorded
+  giving this up ("what is given up is only the original's placement
+  of totally unconstrained classes, which the four-way balance step
+  reintroduces") — the balance does not reintroduce it; it averages
+  two packings.
+- **The two-parent IRAK1** (R-HSA-937039, parents at 3775 and 4014,
+  placed at 2891) is order-bound, not a placement defect: the rank
+  order puts it left of two six-parent nodes whose parents' median is
+  further left, so no candidate can carry it under its parents without
+  a crossing the ordering did not choose.  Unchanged, and recorded as
+  such.
+
+#### What changed on disk
+
+- `src/layout/flow-graph.mts`: the scope and component carry
+  `left / right / top / bottom` on the canonical axes
+  (`CanonicalExtents`) in place of `halfW / halfH`.
+- `src/layout/flow.mts`: `canonicalExtents(ext, direction)` maps the
+  four model sides by direction (rightward: canonical x = model y);
+  the walls take the padding of the axis they are on
+  (`padAcross` / `padAlong`); the packer and the boundingBox fit read
+  the real model extents (`state.ext`) rather than symmetric halves.
+- `src/layout/flow-position.mts`: `assignX(L, left, opts, right)`
+  separates by `right(u) + left(v) + gap` (mirrored runs swap the
+  sides) and reads the min-width balance from the same sides;
+  `assignY(L, top, rankSep, margins, bottom)` builds a row from its
+  tallest top and deepest bottom; `compact` ends with `placeFree` —
+  each real singleton block moves, within the slack its rank
+  neighbours leave, to the median x of its neighbours on the sweep's
+  side (the other side when it has none), right to left within a rank
+  so every bound is a placed position.  `flow-compound.mts`'s
+  `rankPadMargins` takes the pad array.
+- `test/layout-flow.mjs`, "extents and placement (125.2)": a
+  right-hung label's boxes sit `nodeSep` apart; an under-hung label's
+  rows sit `rankSep` apart; a rightward rank of 60 × 10 nodes is
+  separated by heights (with the downward control); the leaf on a
+  12-node DAG a seeded search found (n5 under n0: 220 px before, one
+  pitch after), with the separation control.  Against the pre-fix
+  code the first three read 371, 47 and 100 px where 50, 24 and 50 are
+  asserted; the first hand-built leaf fixture did *not* go red — the
+  drift needs a sibling that takes the parent in one sweep and a
+  crossing that blocks the other — which is why the fixture is a
+  found one.  `test/modules/layout-flow-internals.mjs`'s fixtures
+  carry the four extents.
+- `src/public-types.mts` (`nodeSep`, `rankSep`, `avoidOverlap` docs),
+  `src/README.md`'s flow section.
+
+#### Before and after (headless, the page's sheets; `benchmark:layout-audit`)
+
+| network | run | area Mpx² | aspect | gap med px (× size) | edge gap med / p90 / max | parent gap med / p90 / max |
+| --- | --- | --: | --: | --: | --: | --: |
+| reactome | defaults, before | 5.72 | 9.7 | 50 (2.78) | 110 / 1169 / 3281 | 106 / 909 / 3281 |
+| reactome | defaults, after | 5.72 | 9.7 | 50 (2.78) | 84 / 1047 / 3281 | 60 / 798 / 3281 |
+| reactome | avoidOverlap false, before | 3.33 | 9.0 | 32 (1.78) | 82 / 855 / 2408 | 76 / 664 / 2408 |
+| reactome | avoidOverlap false, after | 3.33 | 9.0 | 32 (1.78) | 57 / 765 / 2408 | 42 / 582 / 2408 |
+| reactome | labels, before | 21.68 | 11.2 | 50 (0.53) | 173 / 2444 / 6902 | 164 / 1896 / 6902 |
+| reactome | labels, after | 16.95 | 14.3 | 50 (0.53) | 118 / 2160 / 6902 | 84 / 1643 / 6902 |
+| greek-gods rightward | defaults, before | 0.90 | 0.5 | 50 (4.17) | 112 / 546 / 1042 | 60 / 419 / 918 |
+| greek-gods rightward | defaults, after | 0.90 | 0.5 | 50 (4.17) | 112 / 546 / 825 | 60 / 354 / 670 |
+| greek-gods rightward | labels, before | 3.42 | 0.3 | 24 (0.49) | 282 / 1284 / 2458 | 53 / 1001 / 2142 |
+| greek-gods rightward | labels, after | 1.62 | 0.9 | 50 (1.03) | 112 / 546 / 825 | 87 / 354 / 670 |
+| npm-deps | defaults, before | 42.11 | 9.1 | 50 (2.78) | 1992 / 6398 / 14863 | 1616 / 6667 / 10038 |
+| npm-deps | defaults, after | 42.11 | 9.1 | 50 (2.78) | 1771 / 5613 / 10656 | 1324 / 5953 / 10038 |
+| npm-deps | labels, before | 83.72 | 9.8 | 50 (0.61) | 3143 / 10038 / 22260 | 2588 / 10359 / 14520 |
+| npm-deps | labels, after | 73.51 | 11.1 | 50 (0.61) | 2883 / 9016 / 15252 | 2108 / 9433 / 14520 |
+| workflow-dag | defaults, before | 2.56 | 3.2 | 50 (2.78) | 256 / 905 / 2724 | 113 / 375 / 2045 |
+| workflow-dag | defaults, after | 2.59 | 3.2 | 50 (2.78) | 256 / 900 / 2724 | 118 / 375 / 2045 |
+| workflow-dag | labels, before | 3.44 | 2.5 | 51 (1.54) | 271 / 923 / 2769 | 125 / 380 / 2088 |
+| workflow-dag | labels, after | 3.07 | 2.8 | 50 (1.52) | 271 / 916 / 2769 | 118 / 381 / 2089 |
+
+Crossings and overlaps are unchanged on every row (reactome 67,
+greek-gods 117, npm-deps 6090 ± 3, workflow-dag 759–762; overlaps 0).
+Runtime: reactome 14–18 ms, npm-deps ~57 ms, workflow-dag ~18 ms on
+the headless CPU path, unchanged within noise.  The parent-gap
+*maxima* that remain (reactome 3281, "Innate Immune System" under
+"Immune System") are a parent centred over sixteen children — the
+shape of the data, not a placement.
+
+The DAG harness (`benchmark:layout-quality`, straight-line geometry):
+
+| fixture | flow before | flow after | dagre | elk |
+| --- | --- | --- | --- | --- |
+| deps | 4189 cross, len 1067, 21.0 Mpx², 26 ms | 4192, 1063, 21.0, 26 ms | 4279, 1934, 33.3, 384 ms | 3382, 1964, 94.4, 336 ms |
+| workflow-1k | 19589, 4557, 174.3, 118 ms | 19550, 4449, 173.9, 107 ms | 20570, 6224, 103.4, 11.2 s | 21825, 4945, 554.9, 1.7 s |
+| reactome | 67, 464, 7.79, 10 ms | 67, 425, 7.79, 12 ms | 73, 407, 6.75, 78 ms | 54, 497, 9.44, 106 ms |
+| greek-gods | 117, 382, 1.33, 6 ms | 117, 348, 1.33, 5 ms | 126, 396, 1.35, 21 ms | 120, 470, 1.66, 51 ms |
+
+The placement pass leaves the rank order alone, so crossings hold
+and the mean edge length falls on every fixture; workflow-1k's one
+tracked run overlap (124) is 0 after.
+
+#### The pictures (`plan/pictures/rnd0125/125.2/`)
+
+`reactome-flow-labels-close-{before,after}.png` (zoom 1, the labels
+readable): rows 148 → 116 px apart, the within-rank pitch 146 px in
+both.  `reactome-flow-labels-fit-*`: the whole picture, 21.7 → 17.0
+Mpx².  `reactome-flow-defaults-close-*`: the placement pass at
+defaults (edge gap median 82 → 57 on the page's `avoidOverlap: false`
+run).  `greek-gods-rightward-labels-fit-{before,after}.png`: the
+column of 0.3 aspect against the picture the reference SVG draws —
+after, the columns are label-width apart and the rows one label
+height, which is the reference's shape (`greek-gods-reference.svg`
+draws 10 px text on rows ~16 px apart with columns set by the longest
+name; the after picture's rows are 12 px discs at a 50 px gap, the
+default question again).  `greek-gods-rightward-defaults-fit-after.png`
+for the sitting's comparison without labels.
+
+#### Defaults: measured, not changed
+
+`nodeSep` 50 / `rankSep` 60 against 18 px bodies is the spread the
+sitting saw with `avoidOverlap` on.  A sweep over nodeSep ∈ {20, 30,
+40, 50} × rankSep ∈ {30, 40, 60}, with and without labels, on
+reactome, npm-deps, workflow-dag and greek-gods (rightward):
+
+- **`nodeSep` sets the area almost linearly**: reactome without
+  labels 2.33 / 2.94 / 3.55 / 4.16 Mpx² at rankSep 30 for 20 / 30 /
+  40 / 50; the median gap is exactly nodeSep in every row.
+- **`rankSep` below the track floor does nothing**: the gap below a
+  rank is `max(rankSep, tracks × 10 + 20)`, so 30 and 40 read the
+  same on workflow-dag (every gap has tracks) and differ on reactome
+  only where a gap has one fan-out.  60 costs 15–20 % of area over 40.
+- **With labels the label boxes sit `nodeSep` apart** — 50 px between
+  95 px label columns on reactome — and the area at nodeSep 20 is
+  13.4 vs 17.0 Mpx² (−21 %); a smaller gap between *label* boxes than
+  between bodies is the lever if the sitting wants the label case
+  tighter without touching the body case.
+
+Recommendation for the sitting: **`nodeSep` 30, `rankSep` 40** —
+reactome 3.20 Mpx² (−44 % against today's 5.72), gap 1.67 node sizes,
+crossings unchanged by construction; dagre's own defaults are 50/50
+for 30–60 px boxes, i.e. roughly one body's width of gap, which 30
+is for 18 px bodies and a label-column is not.  A label-aware gap
+(`nodeSep` for bodies, a smaller `labelSep` or a fraction for label
+boxes) is a second, independent call.  Neither is changed in code.
+
+#### Noted, out of scope
+
+The page's Apply runs `flow` downward whatever the network's load
+layout says (`greek-gods` loads rightward): `layoutOptions` does not
+read `def.layout`.  The rightward-with-labels pictures here were taken
+through `cy.layout()` directly.  `elkjs` is `--engine elk` on the DAG
+harness.
+
+**Maintainer review: pending.**  What the sitting should look at: the
+four `reactome-flow-labels-*` pictures side by side (the rows), the
+two `greek-gods-rightward-labels-*` against `greek-gods-reference.svg`
+(the shape), the `defaults-close` pair for the leaves now beside their
+siblings; then the two calls — `nodeSep` 30 / `rankSep` 40 as the
+defaults, and whether label boxes get a smaller gap than bodies —
+with the sweep's table above.
+
+**Raised by the other sub-rounds, for this one's sitting.**  125.4
+measured npm-deps under flow at 3–6× breadthfirst's straight-line
+crossings and 13× its area — the compound mode (11 scope parents)
+holding each scope's members contiguous per rank at the price of the
+crossings between scopes; whether that trade is right for a
+dependency DAG is a call on the compound mode's picture.  And the
+page's Apply runs flow downward whatever the network's load-layout
+direction (`layoutOptions` ignores `def.layout`), so the Greek-gods
+scene re-applied from the panel is not the reference picture; the
+page should carry the direction — a 125.10 follow-up.
+
 ### 125.3 — radial
 
 **Fixtures.**  Reactome as a tree (227 nodes, 245 edges, one true

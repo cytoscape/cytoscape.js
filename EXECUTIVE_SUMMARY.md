@@ -5,19 +5,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-10, after taxi tracks landed: `taxi-turn:
-  auto` gives each fan-out its own line in the gap under `curve-style:
-  taxi`, assigned from live positions so edges keep routing themselves
-  after a drag, the casing draws per edge in v3's order so a crossing
-  is gapped, and flow merges the long edges into a target into one
-  chain and grows a rank gap for the tracks it holds.  The sweep's
-  first cost was 1.1 s on an 8.7k-edge DAG against a planned "well
-  under a millisecond"; measured and cut to 8 ms on workflow-1k and
-  160 ms on that pathological one.  The two days before: component
-  packing on the discrete layouts and the `pack` layout, and the force
-  rounds — the GPU cell scan, the silent run's batch, the settle
-  threshold, the small components' shapes and the re-pack's grouping
-  and order, so the EnrichmentMap shape is one force call.
+- **Last updated**: 2026-09-15, after the layout quality audit was
+  carried out: one sub-round per layout, one for packing and one for
+  the debug page as the instrument, each with its fixtures, its
+  measured baseline, its pictures and its fixes on the record, and
+  each waiting on the maintainer's review sitting before it counts as
+  landed.  What the audit fixed: labels are measured with a canvas at
+  style time so a layout run at load separates the boxes the frame
+  draws; force's small-component shapes survive its separation pass;
+  flow reads extents per side and per direction and no longer strands
+  a leaf far from its only parent; breadthfirst is sized in pixels
+  rather than scaling with the zoom it ran at; the shelf packer fills
+  the room under a short component; preset rejects a half position;
+  random takes a seed; circle and radial take `condense`.  The default
+  changes the pictures argue for are measured and recommended, not
+  made — those are the sittings' calls.
 
 ## How to maintain this file
 
@@ -968,6 +970,28 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     dark2, the crossings gapped.
 
 ---
+
+- **15 Sep** — the layout quality audit, carried out and awaiting its
+  sittings
+  - The maintainer's first sitting found every layout it opened wrong
+    the way overlap is not: too airy, labels not held apart, a leaf
+    stranded, a packer wasting rows.  The debug page became the
+    instrument first — a live spacing slider, an airiness readout, a
+    baseline script — so every finding is a number before it is a
+    picture.
+  - Fixed on the record: label boxes measured with a canvas before the
+    first frame, so an app's load-time layout keeps labels apart
+    (buys the EnrichmentMap load); force's pair / triangle / diamond
+    survive separation; flow's one-sided labels no longer count twice
+    and a rightward flow is separated on the right axes (the Greek
+    gods with labels: half the area); flow's free singletons sit by
+    their parents; breadthfirst no longer scales with the zoom it ran
+    at; the shelf packer stacks short components under tall ones
+    (em-web packs 25 % tighter); preset refuses a half position;
+    random is seedable; circle and radial can size by their nodes.
+  - Not changed: every default the pictures argue against, measured
+    and recommended for the sittings — flow's gaps, breadthfirst's
+    box-fill, radial's root choice, condense by default.
 
 ## What changed for users of v3
 

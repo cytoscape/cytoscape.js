@@ -24,6 +24,12 @@ that compile and then behave differently.
 
 ### Added
 
+- **The layout audit's instrument** (round 125.10): the debug page's
+  live spacing slider and airiness readout, `debug/airiness.js`'s
+  nearest-box probe shared with the suites, and
+  `npm run benchmark:layout-audit` — one layout on one of the page's
+  networks, headless, with the page's own sheet, printing the columns
+  a sitting reads.
 - **`condense` on `circle` and `radial`** (round 125.3 / 125.5, grid's
   spelling): size the ring(s) by the nodes and `avoidOverlapPadding`
   rather than by the viewport box, so the gap between neighbours is the
@@ -317,6 +323,46 @@ that compile and then behave differently.
   reading back n floats instead of the n² matrix.
 
 ### Changed
+
+- **Label boxes are measured where a canvas exists** (round 125.1): the
+  store measures label blocks with `measureText` at style time in a
+  document or with an `OffscreenCanvas`, so a layout run before the
+  first frame — the `layout:` option, an app's load — separates the
+  boxes the frame will draw.  Before, an estimate stood in until the
+  first frame and 154 of em-web's 569 labels lay wider than it, so
+  label-inclusive `avoidOverlap` left 14 overlapping pairs at load.
+  Headless keeps the estimate.  `boundingBox()` and `fit()` before the
+  first frame see the same boxes.
+- **Force's small-component shapes survive the settle's separation
+  pass** (125.1): the tidy pair, triangle and diamond are sized by the
+  exact per-pair separation and the separation sweeps stay within a
+  component when a re-pack follows, so `avoidOverlap` no longer pulls
+  a diamond apart.
+- **Flow reads extents per side and per direction** (125.2): a label
+  hung to one side of its body no longer counts on both sides, a
+  rightward flow separates its ranks by heights and its rows by widths
+  rather than the reverse, and a node nothing aligned (a free
+  singleton) moves to the median of its neighbours within its rank's
+  slack instead of the leftmost feasible x — the "IRAK1 far from its
+  only parent" case, 1,632 px to 68.  Reactome with labels: 21.7 to
+  17.0 Mpx²; the Greek gods rightward with labels: 3.42 to 1.62.
+- **Breadthfirst is sized by the pixel viewport** (125.4), as grid,
+  circle, concentric and radial are; it read `cy.extent()` in model
+  coordinates, so its drawing scaled with the zoom at the moment it
+  ran (nine times airier on a page fitted at zoom 0.11).  At zoom 1
+  nothing changes.  A compound parent is never a root (an edgeless
+  scope parent made every npm-deps position `NaN` under the undirected
+  default).
+- **The shelf packer stacks short components under earlier columns**
+  (125.9): a row holding one tall component and several short ones
+  used to leave the short columns empty below; now a box goes under the
+  leftmost earlier column of its row with the room (first fit, spacing
+  kept, like-sized boxes never stacked, off under a `componentOrder`).
+  em-web under radial + `packComponents`: packing efficiency 0.66 to
+  0.83; the pack layout 0.58 to 0.67.
+- **Preset rejects a half position** (125.8): a map entry of
+  `{ x: 100 }` wrote `y: NaN` into the store and a `null` axis became
+  0; both now throw a `TypeError` naming the node.
 
 - **The line casing draws per edge, in v3's order** (round 124.4):
   `line-outline-*` used to be a global pass under all lines — a halo

@@ -410,6 +410,7 @@ app trips on after everything else works.
 | `spring()` easing | `spring( tension, friction )` | **`spring( bounce )`** — one number; 0 is critically damped |
 | Custom easing functions | accepted | **throw.** A closure cannot cross to the GPU; `cubic-bezier()` and `linear()` cover any drawable curve |
 | Label bounding boxes | opt-in | **`boundingBox()` includes labels by default**; opt out with `{ includeLabels: false }` |
+| `breadthfirst` without a `boundingBox` | spread over `cy.extent()` in model coordinates, so the drawing scaled with the zoom at the moment it ran | **spread over the viewport in pixels** (round 125.4), as grid, circle, concentric and radial are; identical at zoom 1 |
 | Arrow sizing | `max( (13.37w)^0.9, 29 )` | the same formula, ported in round 27.3 — earlier v4 builds differed |
 | `outerWidth()` with a border | includes the miter overshoot | plain border-inclusive `outerHalf`, so parent boxes can sit sub-pixel smaller |
 | Compound auto-sizing | can include labels | reads child **body** extents only (`compound-sizing-wrt-labels: 'include'` throws) |

@@ -230,7 +230,9 @@ calls the maintainer made at planning.  Round 124 (2026-09-10) took
 2026-09-15 sweep added **item 60**, the layout quality audit the
 maintainer marked Partial in the feature inventory on 2026-09-14 —
 **planned as round 125**, nine sub-rounds each gated on a maintainer
-review sitting.  What the 2026-08-26
+review sitting — **carried out the same day**, every fix on the record
+and every sitting still pending, so the item stays open on the
+sittings alone.  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -1125,3 +1127,24 @@ directions".*
     round file: where the sittings are recorded, whether 125.8 folds
     into 125.7, whether an accepted default change ships before the
     round lands whole, and the node-separation spelling.
+    **Carried out 2026-09-15** (every sub-round on the round file,
+    every sitting pending): 125.10 first (the live spacing slider, the
+    airiness readout, source-coloured edges, `benchmark:layout-audit`,
+    the quality suite's airiness rows), then 125.1 / 125.2 / 125.9 /
+    125.4 in parallel worktrees and the rest.  Defects fixed: labels
+    measured with a canvas at style time so a layout before the first
+    frame separates the boxes the frame draws (the "labels broken"
+    finding was the load path); force's tidy shapes sized by the exact
+    separation and the sweeps kept within a component; flow's extents
+    per side and per direction and a placement pass for free
+    singletons (IRAK1 1,632 → 68 px); breadthfirst sized by the pixel
+    viewport (nine times airier at zoom 0.11 was the "too airy"
+    finding) and a compound parent never a root; the shelf stacks short
+    components under earlier columns (em-web 0.66 → 0.83 efficiency);
+    preset throws on a half position; random takes a seed; `condense`
+    on circle and radial.  Defaults measured and recommended, none
+    changed: flow's nodeSep 30 / rankSep 40 and a smaller label gap;
+    breadthfirst's need-plus-gap spacing; radial's roots by indegree
+    on a directed component, and the rim; condense as a default;
+    force's crammed expansion traced per round.  **The sittings are
+    the open item.**

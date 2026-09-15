@@ -311,6 +311,606 @@ recommended but not changed, and **every sub-round pending its
 sitting**.  The record is one section per sub-round; the sittings
 are recorded under each as they happen.
 
+### 125.3 — radial
+
+**Fixtures.**  Reactome as a tree (227 nodes, 245 edges, one true
+root, ten multi-parent joins); the quality suite's unbalanced tree
+(a 2-leaf and an 8-leaf branch); em-web's components under
+`packComponents` (569 nodes, a 187-node giant and a shelf of small
+ones).  The page's production sheet, so the label boxes are the
+page's (reactome's wrapped 110 px labels: a 95 px box).
+
+**Baseline** (`benchmark:layout-audit`, headless 1400 × 1000, commit
+9339dfbc):
+
+| run | ms | crossings | area Mpx² | gap median / p90 | ratio | edge gap median / p90 / max | parent gap max (node) |
+| --- | --: | --: | --: | --- | --: | --- | --- |
+| reactome, defaults | 9 | 140 | 4.74 | 20 / 29 | 1.10 | 73 / 589 / 1561 | 1561 (R-HSA-448424) |
+| reactome, labels | 10 | 139 | 44.14 | 54 / 107 | 0.56 | 195 / 1886 / 4637 | 4637 (R-HSA-448424) |
+| reactome, `roots: [Immune System]` | 7 | 274 | 4.26 | 20 / 39 | 1.09 | 87 / 708 / 1800 | 1743 (R-HSA-975138) |
+| reactome, `condense: true` | 8 | 140 | 4.74 | 20 / 29 | 1.10 | 73 / 589 / 1561 | 1561 |
+| em-web, packed | 112 | 3.81 M | 31.19 | 25 / 50 | 0.61 | 1439 / 3311 / 3746 | 3076 |
+| em-web, packed, labels | 106 | 3.81 M | 58.29 | 34 / 54 | 0.46 | 1975 / 4514 / 5110 | 4227 |
+
+Stable across re-runs on every row.
+
+**What the pictures show** (`plan/pictures/rnd0125/125.3/`).
+`reactome-radial-9339dfbc.png`: the centre is not the root.  Radial
+infers its roots by maximum degree — breadthfirst's undirected rule,
+copied in 85.1 — so on a directed hierarchy the centre goes to
+*Innate Immune System* (degree 17) and *Immune System*, the one true
+root, sits on ring 1 to its left, its blue edges the only ones that
+run inward.  The tree is then a different tree: BFS from the wrong
+node makes the root a child, and the depth-2 nodes under it fan out
+from the far side.  `reactome-radial-true-root-9339dfbc.png` is the
+same graph with `roots` given: the root at the centre, the hierarchy
+reading outward — at the price of 274 crossings against 140, because
+the true tree is deeper (six rings against four) and the outer rings
+are set by the most crowded one's circumference.  Both pictures share
+the second thing to see: **a rim around an empty middle.**  Every ring
+layout's outer ring takes the radius its most crowded ring needs, and
+reactome's leaves (150 of 227 nodes) all sit on the last ring, so the
+ring is 1,500 px across and the inner rings — a handful of nodes each
+— float in the middle with their edges running the whole radius
+(edge gap p90 589 px, the parent gap max the same node).  The
+label-inclusive picture (`reactome-radial-labels-close-9339dfbc.png`)
+is the same shape at three times the radius: the 95 px label boxes
+set the chord.
+
+**`condense`** (125.3 / 125.5, one option designed once): grid's
+spelling adopted on radial — `condense: true` sizes every ring by its
+nodes and `avoidOverlapPadding`, the box only centres, `levelSpacing`
+stays the floor.  Off by default.  Measured on reactome it changes
+nothing (the table's row: the clearance rule already set the rings
+past the box's share); on the unbalanced tree in a 600 px box the
+first ring goes from 100 px to 40 px.  The spec pins both.
+
+**What changed on disk.**  `condense` on `radial` (and `circle`),
+its JSDoc, the README's geometric-layouts entry, the changelog; two
+specs in `test/layout-radial.mjs` (the condensed rings against the
+boxed control, every pair at the padding; `levelSpacing` as the
+floor).  No default changed.
+
+**For the sitting — recommendations, not changes.**
+1. **Root inference on a directed component.**  Infer `roots` as the
+   nodes with no incoming edge when a component has any (v3's
+   breadthfirst rule under `directed: true`), falling back to maximum
+   degree; the picture reads as a hierarchy, at 274 crossings against
+   140 on reactome.  A `directed` option (breadthfirst's) is the
+   alternative spelling that keeps today's default.
+2. **The rim.**  The outer ring's radius is set by the most crowded
+   ring; a shallow wide tree draws as a rim around an empty middle.
+   Nothing in the option surface reaches it: the fix is either to let
+   the outer ring's leaves stagger onto two radii (a leaf ring drawn
+   as a band, the way the reference tidy trees do), or to accept that
+   a wide shallow tree is `breadthfirst`'s or `flow`'s picture, not
+   radial's, and say so in the docs.  The sitting decides whether the
+   band is worth a sub-round.
+3. `condense` as the default is the third call; the app graphs are
+   unaffected either way.
+
+**Maintainer review: pending.**  Open the page on reactome, Radial,
+Avoid overlap on; then set `roots` in the console
+(`cy.layout({name:'radial', roots:['R-HSA-168256']}).run()`); then
+labels on.  Pictures: the three under `plan/pictures/rnd0125/125.3/`.
+Decide 1–3 above.
+
+### 125.4 — breadthfirst
+
+The first sitting's finding: too airy on reactome even without
+`avoidOverlap`.  Measured on the page and headless at the same
+options, it was two pictures, not one:
+
+| reactome, `avoidOverlap: false`, spacingFactor 1.75 | gap median | in node sizes | area |
+| --- | --: | --: | --: |
+| the page (after the fitted `flow` load, zoom 0.11) | 269 px | 14.96 | — |
+| headless (zoom 1) | 30 px | 1.68 | 2.86 Mpx² |
+
+**Cause 1 — the drawing scaled with 1 / zoom.**  v3's breadthfirst
+spreads its rows and ranks over `cy.extent()`, the viewport in *model*
+coordinates, and v4 kept that line (round 42's port); grid, circle,
+concentric and radial read the viewport in pixels.  So the box
+breadthfirst fills is the viewport divided by the zoom at the moment
+Apply is clicked — after a fitted `flow` run the page sits at zoom
+0.11, and the same tree came out nine times airier than headless, the
+nodes reduced to dots (`reactome-breadthfirst-page-off-fit.png`).
+Fixed: the pixel viewport, as the other four.  At zoom 1 nothing
+changes, which is why the headless suites never saw it.  The spec lays
+the tree out at zoom 0.1 and at zoom 1 with `fit: false` and asserts
+the same positions; the control (the extent read back in) is a tenfold
+span.  After: page gap median 17 px (0.97 node sizes),
+`reactome-breadthfirst-page-off-fit-after.png`.
+
+**Cause 2 — a compound parent as a root: NaN for the whole drawing.**
+The audit script's npm-deps row read `stable false` and every column
+NaN under the undirected default (directed and `packComponents` were
+fine).  v3's undirected root inference takes the maximal-degree node of
+every component; an edgeless compound parent (npm-deps' eleven scope
+parents) is its own component of degree 0, so it became a root, the
+walk placed it in a depth, and every node's dimensions were then read
+through an index the parent was never in — NaN everywhere.  Bisected
+to one parent with two children plus a singleton (a, b and s1 NaN).
+Fixed: roots are inferred over the placed (childless) nodes and the
+walk skips a parent it reaches; the spec is that four-node graph.
+After: npm-deps 1055 crossings, gap 1.04 node sizes, stable.
+
+**What is v3's design, not a defect, and the sitting's call.**  With
+one component the drawing is the box-fill: every rank is spread over
+the full width whatever its count (reactome's four-node rank at a
+463 px pitch, its 53-node rank at 43), the rows over the full height
+(179 px for 18 px nodes), floored by the overlap need, then
+`spacingFactor` 1.75 over all of it.  The `packComponents` path
+(`'compact'` sizing) spaces by the need alone — 32 px pitch and row
+step at 1.75, bodies touching at 1 — which is the other extreme.
+Neither is the flow rule (need plus a gap).  Measured candidates on
+reactome, headless:
+
+| reactome | crossings | area Mpx² | aspect | fill | gap (sizes) | edge gap median | parent gap max |
+| --- | --: | --: | --: | --: | --: | --: | --: |
+| default (box-fill, sf 1.75) | 71 | 2.86 | 1.8 | 0.026 | 1.68 | 341 | 1739 |
+| sf 1 | 71 | 0.95 | 1.8 | 0.077 | 0.53 | 187 | 986 |
+| directed | 97 | 3.35 | 2.1 | 0.022 | 0.84 | 220 | 599 |
+| compact (packComponents), sf 1.75 | 71 | 0.39 | 6.9 | 0.186 | 0.75 | 234 | 1274 |
+| compact, sf 1, padding 8 | 71 | 0.27 | 6.8 | 0.268 | 0.44 | 190 | 1048 |
+| compact, sf 1, padding 12 | 71 | 0.36 | 6.9 | 0.204 | 0.67 | 222 | 1212 |
+| compact, sf 1, padding 12, directed | 97 | 0.57 | 11.0 | 0.129 | 0.67 | 267 | 777 |
+| labels, default | 71 | 13.23 | 7.5 | 0.065 | 0.95 | 1447 | 7670 |
+| labels, compact, sf 1, padding 12 | 71 | 5.51 | 7.3 | 0.156 | 0.23 | 893 | 4836 |
+
+Recommendation for the sitting: for a single component, space by the
+need plus an explicit gap (the flow rule; the round file's
+node-separation option, designed in whichever of 125.3/5/6/7 runs
+first) rather than the box-fill, and keep the box-fill only under an
+explicit `boundingBox`, since "fill the viewport" is what `fit` does
+anyway.  The default `spacingFactor` 1.75 is v3's and was kept in 115.6;
+under a need-plus-gap rule it would multiply a gap, not a box, and 1
+with a 12 px gap reads as the tightest legible row above.  Not changed
+in code.
+
+**The undirected root inference is v3's, and reads oddly on a tree.**
+The maximal-degree node of a component is the root; on a 1 + 4 + 16
+tree the four middle nodes have degree 5 against the root's 4, so all
+four are roots and the tree draws in two rows from the middle.  v3
+parity; the sitting may want `directed: true` to be the page's default
+for a DAG scene, or a root inference by in-degree when the edges are
+directed.  Not changed.
+
+**Breadthfirst directed against flow, the same DAG.**
+
+| fixture | layout | crossings (straight) | area Mpx² | gap (sizes) | parent gap max | ms |
+| --- | --- | --: | --: | --: | --: | --: |
+| reactome | breadthfirst, directed | 97 | 3.35 | 0.84 | 599 | 10 |
+| reactome | breadthfirst, undirected | 71 | 2.86 | 1.68 | 1739 | 11 |
+| reactome | flow | 67 | 5.72 | 2.78 | 3281 | 15 |
+| reactome | dagre (112.1 harness) | 73 | 6.75 | — | — | 73 |
+| npm-deps | breadthfirst, directed | 2166 | 3.31 | 0.76 | 1754 | 21 |
+| npm-deps | breadthfirst, undirected (after the fix) | 1055 | 3.37 | 1.04 | 1833 | 30 |
+| npm-deps | flow | 6090 | 42.11 | 2.78 | 10038 | 59 |
+| deps (harness, 30 px boxes) | flow | 4189 | 21.04 | — | — | 24 |
+| deps (harness) | dagre | 4279 | 33.32 | — | — | 376 |
+
+On reactome the two are close on crossings (67 against 71–97) and
+breadthfirst's picture is half the area; on npm-deps flow's straight
+lines cross three to six times as often as breadthfirst's rows do and
+the drawing is thirteen times the area — the compound scope parents put
+flow in its compound mode (npm-deps in the audit script is the page's
+fixture with parents; the harness's `deps` has none and reads 4189,
+level with dagre's 4279).  Breadthfirst's directed picture is not a
+worse flow: it is the cheaper, squarer drawing with more long edges
+(parent gap max) and no crossing minimisation.  The documentation
+should keep pointing at `flow` for a DAG whose edges must be followed
+(the corridors, the tracks, the rank compaction), and at `breadthfirst`
+for a tree or a DAG read as levels — which is what the portfolio table
+already says.  The npm-deps flow row belongs to 125.2's sitting.
+
+**`circle: true` beside radial and concentric**, on the quality suite's
+balanced tree (1 + 3 + 9 + 27, 30 px nodes) and on reactome:
+
+| fixture | layout | crossings | area Mpx² | fill | gap (sizes) | edge gap median |
+| --- | --- | --: | --: | --: | --: | --: |
+| tree | breadthfirst `circle: true` | 18 | 3.17 | 0.011 | 4.53 | 444 |
+| tree | radial | 3 | 0.48 | 0.075 | 1.12 | 129 |
+| tree | concentric | 35 | 0.25 | 0.143 | 0.55 | 118 |
+| tree | breadthfirst rows | 6 | 1.21 | 0.030 | 1.64 | 501 |
+| reactome | breadthfirst `circle: true` | 2557 | 3.95 | 0.019 | 2.34 | 290 |
+| reactome | radial | 140 | 4.74 | 0.016 | 1.10 | 73 |
+| reactome | concentric | 5076 | 4.58 | 0.016 | 0.97 | 802 |
+
+Verdict: `circle: true` is the worst of the three on every column
+that matters — six times radial's crossings on the tree, eighteen
+times on reactome, and the airiest drawing (4.53 node sizes) because
+each ring is the box's radius step, not the ring's need.  It earns its
+place only as v3 parity; the documentation should point at `radial`
+for a tree drawn in rings and at `concentric` for rings by a score.
+Whether to keep the flag or deprecate it is the sitting's call; not
+changed.
+
+**The forest and 123's blocks**, on a three-tree forest (21 + 7 + 7)
+with three pairs and twenty singletons, headless: bands A / B / C side
+by side, the pairs and the singleton block on a second shelf below
+(rows 3), singleton cell pitch 68 px at 1.75 and 39 at 1, the block 20
+wide in one row; under `packComponents` the singletons wrap into four
+rows of five at a 105 px pitch.  Nothing wrong found.  Note for 125.9:
+the singleton cells take the *root row's* box spread as their pitch
+(`distanceX[0]`), so a forest with few roots gives the block wide
+cells; under the need-plus-gap rule above that goes away.
+
+**What changed on disk.**  `src/layout/breadthfirst.mts`: the pixel
+viewport as the default box; roots inferred over placed nodes; the
+walk skips parents.  `src/public-types.mts`: the interface's doc.
+`src/README.md`: a deviations entry.  `test/layouts.mjs`: the two
+specs.  `benchmark/layout-audit.mjs`: `--elements <file>` for the
+suites' synthetic fixtures.  Pictures under
+`plan/pictures/rnd0125/125.4/`: reactome before (fit, close-up) and
+after (fit, close-up), the compact candidate, npm-deps after, flow on
+the same graph.  Gates: `verify`, `test/layout-quality.mjs` (210
+green, the "not too airy" rows included), `test/layouts.mjs` (36),
+`test:node:quiet` green.
+
+**Maintainer review: pending.**  The sitting should open reactome on
+the page, run `flow` first (so the zoom is where it was in the first
+sitting), then `breadthfirst` with avoidOverlap off, and compare with
+`reactome-breadthfirst-page-off-fit.png` (before) and
+`-after.png`; then npm-deps under breadthfirst (finite now; the
+scope parents are not roots).  Three calls to make: (1) whether a
+single component keeps v3's box-fill or takes need-plus-gap spacing
+(the compact rows in the first table are the candidates, at padding 8
+and 12); (2) whether `circle: true` stays, given the ring table; (3)
+whether the page's DAG scenes should default breadthfirst to
+`directed: true`.  The label case (`labels, default` row: a 7.5:1
+drawing, parent gap max 7670) is the same 84-labels-in-a-rank problem
+as flow's and belongs with 125.2's label-gap call.
+
+### 125.5 — circle
+
+**Fixtures.**  A 40-node clustered graph (four clusters of ten, half
+the pairs inside a cluster joined, twelve cross-cluster edges,
+insertion order shuffled) with and without a `sort` mapping by
+cluster; a ring of twelve labelled nodes at three label widths (10,
+40 and 80 characters, 30 px bodies); em-web's components under
+`packComponents` (the giant component as one ring).
+
+**Baseline** (commit 9339dfbc):
+
+| run | crossings | gap median | ratio | note |
+| --- | --: | --: | --: | --- |
+| clustered, no sort | 1,375 | 36 | 1.18 | insertion order |
+| clustered, `sort: { data: 'cluster' }` | 318 | 36 | 1.18 | the attribute-grouped ring |
+| 12 labels × 10 chars, default | — | 101 | — | radius 414 px (the box's) |
+| 12 labels × 10 chars, `condense` | — | 15 | — | radius 193 px |
+| 12 labels × 40 chars, either | — | 62 | — | radius 448: the 346 px label boxes set the chord |
+| 12 labels × 80 chars, either | — | 125 | — | radius 701 |
+| em-web packed | 6.06 M | 21 | 0.53 | 63 ms; area 32.1 Mpx² |
+| em-web packed, labels | 6.06 M | 34 | 0.46 | 64 ms; area 81.7 Mpx² |
+
+**What the pictures show** (`plan/pictures/rnd0125/125.5/em-web-circle-pack-9339dfbc.png`).
+The giant component is a 187-node ring of 6,899 chords — a disc of
+grey, which is what a circle of a dense component is and not a
+defect; the ring itself is even and its `sort`-by-NES order would put
+the reds together (not run here).  The second row is the shelf
+packer's row-height waste the first sitting named (125.9): a 60-node
+ring beside 5-node rings, the row as tall as the big one.  The
+singleton rows at the bottom are right.
+
+**Findings.**
+- **The ring fills the box by default** — a six-node ring on a 600 px
+  viewport is a 270 px ring — and only `radius` or `avoidOverlap`'s
+  growth changed that.  `condense: true` (designed with 125.3) makes
+  the ring the tangential radius at `avoidOverlapPadding`: 193 px for
+  twelve short labels against 414.  Where the labels are wide the
+  chord rule already sets the radius and condense is the same picture.
+- **The attribute-grouped order works**: the `sort` mapping cuts
+  crossings 4.3× on the clustered graph.  A crossing-minimised order
+  (AVSDF, declined by 122) would cut further; the sitting decides
+  whether the picture asks.
+- `startAngle` (3π/2, the top), `sweep` (a full circle less one gap)
+  and `clockwise` read as v3's; nothing to change.
+
+**What changed on disk.**  `condense` on `circle` (with 125.3), a
+spec in `test/layouts.mjs` (the condensed radius under 100 px against
+the boxed control's 270, every pair at the padding, a smaller padding
+a smaller ring); README and changelog entries shared with 125.3.  No
+default changed.
+
+**For the sitting.**  Whether `condense` should be circle's default
+(the ring by its nodes, the viewport by `fit`) — the v3 picture fills
+the box, and every ring the apps draw is a packed component whose box
+is its own, so the apps would not change.  Whether an AVSDF order is
+worth a sub-round now that the clustered fixture measures it.
+
+**Maintainer review: pending.**  Open the page on em-web, Circle,
+Pack components on; the picture above.  Decide the two calls.
+
+### 125.6 — concentric
+
+**Fixtures.**  em-web with `concentric` mapped to degree (the default)
+under `packComponents`, with and without labels; a synthetic graph
+with one heavy level (a hub, six mid nodes, sixty leaves — the leaf
+ring holds 60 of 67 nodes).
+
+**Baseline** (commit 9339dfbc):
+
+| run | ms | gap median / p90 | ratio | area Mpx² | note |
+| --- | --: | --- | --: | --: | --- |
+| em-web packed | 68 | 22 / 50 | 0.55 | 13.61 | crossings 5.5 M; fill 0.067 |
+| em-web packed, labels | 73 | 35 / 60 | 0.48 | 26.39 | fill 0.061 |
+| heavy leaf level | — | 20 / 26 | 0.68 | — | r(mid) 46, r(leaf) 540; no overlap |
+| heavy leaf level, `equidistant` | — | 75 / 87 | 2.50 | — | r(leaf) 1,127 |
+
+**What the pictures show** (`plan/pictures/rnd0125/125.6/em-web-concentric-pack-labels-9339dfbc.png`).
+The giant component's rings by degree, the hubs at the centre, the
+labels held apart at the outer rings; the same shelf waste in the
+second row as every packed layout shows (125.9).
+
+**Findings.**
+- **Concentric is already the condensed ring layout**: each ring at
+  the smallest radius that clears its own nodes and the ring inside
+  it, the gap `minNodeSpacing` (10) — the box is read only with
+  `avoidOverlap` off.  It is the model the 125.3 / 125.5 `condense`
+  option copies, and its spelling (`minNodeSpacing`) is v3's; the
+  sitting's call on one spelling across the four is whether
+  `minNodeSpacing` should also exist on circle and radial as the gap,
+  or `avoidOverlapPadding` on concentric.
+- **`equidistant` spreads every ring by the largest ring step** (v3's
+  rule): with one crowded outer ring the inner rings, which needed
+  46 px, are pushed to that ring's 587 px step, and the picture is
+  2.5 node sizes airy where the default is 0.68.  Not a defect —
+  equidistant means equidistant — but the default is the better
+  picture on a heavy level, and the doc should say why.
+- The per-component binning of 123 holds: each component's levels
+  are its own, the singletons one ring each.
+- Label overlap on the outer rings: none, on em-web with the wrapped
+  labels (the row above).
+
+**What changed on disk.**  Nothing in `src/`; the README's
+geometric-layouts entry records the sizing model.
+
+**Maintainer review: pending.**  Open the page on em-web, Concentric,
+Pack components on, labels on; the picture above.  Decide the
+spelling question (with 125.3 / 125.5) and whether `equidistant`
+wants a doc note.
+
+### 125.7 — grid
+
+**Fixtures.**  em-web's singletons under `packComponents` —
+EnrichmentMap's actual use of grid, the singleton rows — with labels;
+thirty labelled singletons on three viewport aspects (1400 × 1000,
+1000 × 1400, 800 × 200), with and without `condense`.
+
+**Baseline** (commit 9339dfbc):
+
+| run | ms | gap median / p90 | ratio | area Mpx² | fill | note |
+| --- | --: | --- | --: | --: | --: | --- |
+| em-web packed | 62 | 10 / 40 | 0.25 | 2.71 | 0.336 | crossings 4.1 M |
+| em-web packed, labels | 76 | 26 / 42 | 0.35 | 6.42 | 0.253 | |
+| 30 singletons 1400 × 1000 | — | 77 | 0.50 | 1323 × 850 | | 6 cols |
+| … `condense` | — | 10 | 0.06 | 985 × 290 | | 6 cols |
+| 30 singletons 1000 × 1400 | — | 44 | 0.28 | 956 × 1217 | | 5 cols |
+| … `condense` | — | 10 | 0.06 | 819 × 350 | | 5 cols |
+| 30 singletons 800 × 200 | — | 10 | 0.06 | 1648 × 183 | | 10 cols — overflows the box either way |
+
+**What the pictures show** (`plan/pictures/rnd0125/125.7/`).
+`em-web-grid-pack-labels-9339dfbc.png` and its close-up: each
+component its own grid, the singletons as rows (123's block), labels
+clear; the shelf's row-height waste between the rows of 7-node
+components and the rows of pairs (125.9's finding, seen through
+grid).
+
+**Findings.**
+- **`rows` / `cols` inference follows the box's aspect** (v3's
+  `sqrt(cells × h / w)`): 6 columns on a landscape box, 5 on a
+  portrait one, 10 on a strip — and on the strip the cells overflow
+  the box since a 30-node grid cannot fit 800 × 200 at label size; the
+  overflow is the documented `avoidOverlap` behaviour.
+- **`condense` is what the singleton case wants**: the box-filling
+  default spreads thirty singletons over 1323 × 850 px at half a
+  node-size apart; condensed they are a 985 × 290 block at the padding.
+  Under `packComponents` the singleton block is *already* condensed
+  (123's block is sized by its members), which is why em-web's row
+  reads 0.25 — so the apps' picture is right and the call is the
+  standalone one: whether `condense` should default on when grid is
+  the whole layout.  v3's default is off.
+- `avoidOverlapPadding` (10) is the gap in the condensed picture and
+  reads right at label size; the label-aware cell (114) sizes rows by
+  heights and columns by widths.
+- The `sort` and `position` mappings (85.3) were not re-audited; the
+  quality suite covers them.
+
+**What changed on disk.**  Nothing in `src/`; the README entry.
+
+**Maintainer review: pending.**  Open the page on em-web, Grid, Pack
+components on, labels on; the two pictures.  Decide whether
+`condense` defaults on for a standalone grid.
+
+### 125.8 — preset and random
+
+Audited for their contract, not their picture, on the quality
+suite's fixtures and a three-node probe.
+
+**Preset, as found.**  The map form and the function form; a node
+without an entry keeps its position, a node never positioned sits at
+the model's (0, 0); parents derive and locked nodes hold (114.3);
+`fit` wins over `zoom` / `pan` when both are given, v3's rule, so
+`fit: false` is what enables them; `spacingFactor` is ignored on both
+paths.  The apps' CX2 round trip is `elements[].position` at load,
+which preset with no `positions` honours (only the viewport options
+apply).  **Two silent failures**, both the half-positions a data
+import produces: a map entry of `{ x: 100 }` wrote `y: NaN` into the
+store, and `{ x: 1, y: null }` became `y: 0` through the Float32
+column.  Fixed: a supplied position must carry a finite x and y or
+the run throws a `TypeError` naming the node, on the direct path and
+the finisher path alike; the spec runs four bad shapes through both
+and checks nothing was written.
+
+**Random, as found.**  Uniform over the viewport box or the given
+`boundingBox`, rounded to whole pixels; no seed, so two runs never
+agree — the one built-in that failed the audit's stability criterion
+by construction.  Fixed: a `seed` (mulberry32) makes the scatter a
+function of the graph; omitted, `Math.random` as before.  The spec
+pins same-seed equality, different-seed difference, the unseeded
+control and the box; a non-finite seed throws.
+
+**What changed on disk.**  `src/layout/preset.mts` (the check),
+`src/layout/random.mts` (`mulberry32`, `seed`), the option type, the
+specs, the README's contract note, the changelog, the throw gate
+(both guards covered).  Types rebuilt.
+
+**Maintainer review: pending.**  Nothing to look at on the page; the
+sitting is the two calls: whether the throw on a half position is the
+right severity (the alternative is to keep the missing axis), and
+whether `random` should take `seed` from the page's seed box.
+
+### 125.9 — packing: the shelf's rows waste the room under a short component, and now fill it
+
+**The finding, reproduced.**  The maintainer's steps — the EM sample
+network (`em-web`, 144 components: 187, 78, 32, 15, 14, 14, 11, 10 …
+and 99 singletons) under `radial` with `avoidOverlap`,
+`packComponents` and tidy on — give the picture in
+`plan/pictures/rnd0125/125.9/em-web-radial-pack-before.png`: the
+187-node disc (3883 × 4020) opens the first row, the 78-node
+component (about 1500 tall) stands beside it, and the two thirds of
+the column under the 78 is empty; the mid-sized components then open
+a second row, the singletons a third.  `shelfPack`
+(`src/layout/pack.mts`) is a shelf: rows wrap at about
+`sqrt(total area) × 1.25`, a row is as tall as its tallest box, and
+every shorter box in it leaves a column of slack beneath — the
+limitation EnrichmentMap's vendored packer has.  The measure for it
+is the **packing efficiency**: the component body boxes' summed area
+over the packed bounding box (1 is a tiling of the boxes).  A scratch
+probe over the page's own sheet and elements (headless 1400 × 1000)
+read, before:
+
+| network, layout (options) | components | efficiency | field | aspect |
+| --- | --: | --: | --- | --: |
+| em-web `radial` + `packComponents` + `avoidOverlap` | 144 | 0.656 | 5858 × 5324 | 1.10 |
+| em-web `radial` … with labels | 144 | 0.661 | 5949 × 5324 | 1.12 |
+| em-web `force` (the settle's re-pack, seed 1) | 144 | 0.503 | 2438 × 1984 | 1.23 |
+| em-web `pack` | 144 | 0.584 | 3054 × 2652 | 1.15 |
+| em-web `grid` + `packComponents` | 144 | 0.483 | 1880 × 1440 | 1.31 |
+| npm-deps `radial` + `packComponents` | 164 | 0.712 | 3267 × 2663 | 1.23 |
+| em-desktop `force` (seed 1) | 147 | 0.621 | 2833 × 2406 | 1.18 |
+
+reactome and ndex-large are one component each (the plan called
+reactome a forest; it is not), so they measure nothing here and were
+dropped.
+
+**The candidates, measured on the same boxes.**  A scratch harness
+took each layout's component boxes and re-packed them four ways:
+the shelf as shipped; the shelf with **column stacking** — a box that
+fits the room under an earlier box of the same row goes there — into
+the last column only, or first-fit into any column; and a **skyline
+bottom-left** packer (each box at the lowest point of the skyline
+where it fits, leftmost on ties), the guillotine's usual stand-in.
+
+| boxes from | shelf | stack, last column | stack, any column | skyline |
+| --- | --: | --: | --: | --: |
+| em-web `radial` | 0.664 | 0.830 | 0.830 | 0.871 |
+| em-web `force` | 0.543 | 0.543 | 0.543 | 0.671 |
+| em-web `grid` | 0.483 | 0.513 | 0.513 | 0.563 |
+| em-web `pack` | 0.584 | 0.650 | 0.671 | 0.779 |
+| em-desktop `force` | 0.621 | 0.770 | 0.788 | 0.751 |
+| npm-deps `radial` | 0.712 | 0.887 | 0.887 | 0.760 |
+| npm-deps `flow` (flow's own pass) | 0.836 | 0.836 | 0.836 | 0.836 |
+
+Skyline wins on em-web's four rows and loses on em-desktop and
+npm-deps; column stacking wins or ties everywhere but em-web `force`
+and `pack`, where the force blobs' bounding boxes are all of a height
+and the slack is inside each blob's box, not under it.  What decided
+it: skyline dissolves the rows — the singleton block, the group rows
+(121.1), breadthfirst's shelves (123.4) and the comparator's reading
+order are all built on rows — and its gain on force is on bounding
+boxes of irregular blobs, which a tighter packing of boxes does not
+make a tighter picture.  **Column stacking, first fit, went in.**
+
+**What changed on disk.**  `shelfPack` keeps a list of the current
+row's open columns (where it starts, how wide the box that opened it
+was, how far down it is filled); a box shorter than the room under
+the leftmost column whose width holds it stacks there, `spacing`
+below, and otherwise the shelf runs as before.  Boxes of like size
+never stack — the room under one is never a box plus a spacing — so
+the rows of singletons and of the small shapes read as they did.
+**Stacking is off under a comparator** (a fourth parameter, `stack`,
+defaulting to "no comparator"): a caller's `componentOrder` is read
+along rows, left to right — EnrichmentMap's singleton rows by score
+(121.4) — and a stacked box would read down a column; with `stack`
+forced on under a comparator the order still holds, read as rows top
+to bottom, columns left to right within a row, top to bottom within a
+column.  `packComponentBodies`, `packAnchors`, the discrete layouts'
+`packComponents`, the `pack` layout, force's settle re-pack and
+flow's own pass all go through it unchanged.  Specs:
+`test/modules/layout-pack.mjs` pins the stacking on hand-computed
+boxes (the stacked positions, the spacing respected, a box wider than
+its column or taller than the room opening a new column, like sizes
+never stacking, the comparator turning it off, `stack: true` under a
+comparator column-major), with the control that the packed height is
+the tallest box where rows alone would have wrapped;
+`test/layout-pack.mjs` runs the `pack` layout over a tall chain, a
+wide pair and two singletons — the singletons stack in the pair's
+column and the field is exactly the chain's height — with the control
+that under a `componentOrder` the first singleton continues the row,
+the second wraps, and the field is taller.  `src/README.md`'s packing
+section carries the mechanism and the numbers.
+
+**After.**
+
+| network, layout (options) | before | after | field after | aspect after |
+| --- | --: | --: | --- | --: |
+| em-web `radial` + `packComponents` + `avoidOverlap` | 0.656 | **0.826** | 5636 × 4390 | 1.28 |
+| em-web `pack` | 0.584 | **0.671** | 3056 × 2305 | 1.33 |
+| em-web `grid` + `packComponents` | 0.483 | **0.513** | 1880 × 1355 | 1.39 |
+| npm-deps `radial` + `packComponents` | 0.712 | **0.854** | 2913 × 2489 | 1.17 |
+| em-desktop `force` (seed 1) | 0.621 | **0.745** | 2775 × 2031 | 1.37 |
+| em-web `force` (seed 1) | 0.503 | 0.488 | 2303 × 1970 | 1.17 |
+| npm-deps `flow` | 0.836 | 0.836 | — | — |
+
+em-web `force` moves by noise for a second reason: `packAnchors`
+seeds the sim through the same shelf, so the seed field changed and
+the settle with it (its own boxes shrank, 2.43 → 2.21 Mpx²); the
+settle's re-pack had no column with the room either way.  Pictures:
+`em-web-radial-pack-{before,after}.png`, `em-web-force-{before,after}.png`,
+`em-web-pack-{before,after}.png` under `plan/pictures/rnd0125/125.9/`
+— in the radial picture the 32-, 15- and 14-node components now sit
+under the 78 beside the disc, and the small components' row takes
+the singletons in columns of three; in the force picture the
+7-node rings stack two deep and the barbells' row continues in
+singleton pairs.
+
+**The system, audited.**  The largest component's centre is held
+through the re-pack as before (`holdLargest`, spec'd).  The field's
+aspect on the landscape page (1.4) reads 1.17–1.39 after against
+1.10–1.31 before — stacking makes rows shorter, so the square-tending
+width leaves a wider field.  The row-width factor's candidates on
+em-web (stacking on): 1.0 gives 0.905 at aspect 0.67 under `radial`
+and 0.570 at 0.72 under `pack`; 1.25 gives 0.830 at 1.28 and 0.671
+at 1.33; 1.5 gives 0.780 at 1.62 and 0.671 at 1.88.  The orientation
+pass (121.2) is unchanged and its specs green.  **Stability**: a
+one-node edit to a 2-node component of em-web and of em-desktop
+followed by a re-pack moved **0** other nodes (the grown box kept its
+slot).  **Cost**: the `pack` layout on em-web 36.8 ms with stacking
+against 30.4 ms with rows alone (the column scan is per box per open
+column), em-desktop 43.5 against 44.9 — noise at 121's batch sizes.
+
+**Default recommendations (not changed in code).**  (1) Keep the
+row-width factor at 1.25 for a landscape viewport, or better, make
+the target aspect the viewport's (the packer knows neither today; the
+`pack` layout and `packComponents` could pass `cy.width() /
+cy.height()` in), since 1.0 packs tighter but portrait and 1.5
+wider than the page.  (2) `componentSpacing` 40 is not what makes
+the picture airy; leave it.  (3) The sitting should decide whether
+the singleton block stacking into columns of two or three under a
+taller row (the radial picture's bottom row) reads well enough, or
+whether like-sized singletons should be kept to their own rows even
+without a comparator — a one-line rule (`stack` only boxes shorter
+than half the row) if not.
+
+**Maintainer review: pending.**  Look at
+`em-web-radial-pack-before.png` against `-after.png` (the column
+under the 78, and the singleton block's columns), `em-web-pack-*`
+(the EM keep-the-sim case), and `em-web-force-*` (the settle); run
+the EM combo entry (force by sign) to confirm its rows read as
+before, since a comparator turns stacking off; then call (3) above
+and the aspect question.
+
 ### 125.10 — the page, as the audit's instrument
 
 Done first, as sequenced: everything after it was measured through it.

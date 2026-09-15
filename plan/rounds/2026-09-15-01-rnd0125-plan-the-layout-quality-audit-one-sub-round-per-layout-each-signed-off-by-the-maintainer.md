@@ -300,3 +300,75 @@ into 125.7's; and whether a default change accepted in a sitting
 ships in 4.0 or waits for the round to land whole; the spelling of
 the explicit node-separation option on the geometric layouts, and
 whether it is one option across the four.
+
+### The round, as carried out (from 2026-09-15)
+
+The sub-rounds below were carried out in the planned order — 125.10
+first, then the four with findings in parallel worktrees (125.1,
+125.2, 125.9, 125.4), then the geometric quartet and 125.8 — each
+against the maintainer's rule: defects fixed, defaults measured and
+recommended but not changed, and **every sub-round pending its
+sitting**.  The record is one section per sub-round; the sittings
+are recorded under each as they happen.
+
+### 125.10 — the page, as the audit's instrument
+
+Done first, as sequenced: everything after it was measured through it.
+
+**The live spacing slider.**  A second slider beside Spacing —
+which stays what it was, a `spacingFactor` for the next run — that
+rescales the *current* positions about their bounding-box centre as
+it is dragged: `layoutConfig.scaledPositions(base, factor)` over a
+snapshot taken at each `layoutstop` (and at load), applied through
+`positions()` rather than a `preset` run, because a layout's stop
+would re-base the slider to its own output and the factor would read
+1 again.  Dragging back to 1 restores the layout's output exactly.
+One apply per animation frame, so the 19.6k-node scene follows the
+drag.
+
+**The airiness readout.**  `debug/airiness.js`, one implementation
+loaded by the page and required by the suites: for every leaf node
+the gap to its nearest neighbour's box (the larger axis separation, 0
+when touching or overlapping), found through a quadtree keyed by box
+centres with the extent of the boxes under each quad as the pruning
+bound; for every edge the gap between its endpoint boxes; each
+summarised as median / p90 / max, and the headline *ratio* — the
+median nearest gap in median node sizes, 1 meaning the typical node's
+nearest neighbour is a node-size away.  The readout refreshes at
+every `layoutstop`, every slider move and the labels box.
+`test/modules/airiness.mjs` pins the quadtree against a brute-force
+twin on random fields of 3 to 2,000 boxes (gaps equal everywhere; the
+neighbour equal where the gap is unique), the summaries against
+hand-placed boxes, and the control: a field scaled 3× about its
+centre reads more than twice the gap.  The same probe is the audit
+script's gap columns and the quality suite's "not too airy" rows.
+
+**Edges coloured as their source node** on the reactome, npm-deps and
+workflow scenes: a `source-band` derivation in `debug/fixtures.js`
+copies each edge's source `band` onto the edge at load (a mapper
+cannot reach across an edge), and the workflow sheet maps
+`line-color` and the arrow colour from it with the nodes' ordinal
+scale; the generated networks now run through `derive` as the
+fetched ones do.  A rank's fan-out reads as one colour through the
+gap, which is also what the reference tangled tree does.
+
+**The baseline script.**  `benchmark/layout-audit.mjs`
+(`npm run benchmark:layout-audit -- --network <id> --layout <name>
+[--opts json] [--labels] [--json file]`): one layout on one of the
+page's networks, headless at the page's size with the page's own
+sheet and elements, printing overlaps, straight-line crossings, area
+and fill, the gap columns, the edge gap, the per-node gap to its
+nearest DAG parent with the worst node named (the IRAK1 column),
+stability across a re-run and the time.  Every table in this round
+is its output.
+
+**The quality suite.**  A "not too airy" describe: every layout's
+default picture on the fan and tree fixtures pinned under a
+per-layout ceiling on the ratio (grid 2.5, breadthfirst 3.5, the rest
+3.0 — the measured values at the round's start rounded up, a bound
+and not a target), with the control that `spacingFactor: 3` reads at
+least twice the ratio at 1.
+
+**Maintainer review: pending.**  Open any network, run a layout, drag
+Live spacing and read Airiness; open reactome under flow for the
+source-coloured edges.

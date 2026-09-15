@@ -47,8 +47,12 @@ const makeComp = (n, pairs) => {
     Array.from({ length: m }, (_, i) => i),
     new Float64Array(m).fill(1),
     new Int32Array(m).fill(1),
-    new Float64Array(n).fill(15),
-    new Float64Array(n).fill(15),
+    {
+      left: new Float64Array(n).fill(15),
+      right: new Float64Array(n).fill(15),
+      top: new Float64Array(n).fill(15),
+      bottom: new Float64Array(n).fill(15),
+    },
   );
 
   return splitComponents(scope);
@@ -220,14 +224,14 @@ describe('modules/layout-flow-internals (round 112.2)', () => {
 
         orderLayers(L, 5);
 
-        const x = assignX(L, comp.halfW, { nodeSep: 20 });
+        const x = assignX(L, comp.left, { nodeSep: 20 }, comp.right);
 
         for (const layer of L.layers) {
           for (let i = 0; i + 1 < layer.length; i++) {
             const v = layer[i];
             const w = layer[i + 1];
-            const halfV = v < comp.n ? comp.halfW[v] : 1;
-            const halfW_ = w < comp.n ? comp.halfW[w] : 1;
+            const halfV = v < comp.n ? comp.right[v] : 1;
+            const halfW_ = w < comp.n ? comp.left[w] : 1;
             const minGap =
               halfV + halfW_ + (v < comp.n && w < comp.n ? 20 : 10);
 
@@ -295,8 +299,10 @@ describe('modules/layout-flow-internals (round 112.2)', () => {
       inOff: Uint32Array.from([0, 1, 2]),
       inAdj: Uint32Array.from([1, 0]),
       scopeOf: Uint32Array.from([0, 1]),
-      halfW: new Float64Array(2),
-      halfH: new Float64Array(2),
+      left: new Float64Array(2),
+      right: new Float64Array(2),
+      top: new Float64Array(2),
+      bottom: new Float64Array(2),
     };
 
     expect(() => rankLongestPath(cyclic)).to.throw(/residual cycle/);
@@ -316,8 +322,10 @@ describe('modules/layout-flow-internals (round 112.2)', () => {
       inOff: Uint32Array.from([0, 0, 1]),
       inAdj: Uint32Array.from([0]),
       scopeOf: Uint32Array.from([0, 1]),
-      halfW: new Float64Array(2),
-      halfH: new Float64Array(2),
+      left: new Float64Array(2),
+      right: new Float64Array(2),
+      top: new Float64Array(2),
+      bottom: new Float64Array(2),
     };
 
     // a hand-made zero-span ranking (the pipeline can never produce one)

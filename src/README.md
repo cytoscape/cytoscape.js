@@ -1263,7 +1263,27 @@ compaction** in place of the paper's class/shift machinery (the
 BK-2020 erratum documents two defects in it; a block-DAG pass has
 neither, and the four-way balance recovers what it forgoes),
 size-aware separation (`nodeSep` between bodies, half beside a dummy
-corridor).  Components pack by *body* boxes (point-bbox packing
+corridor).  **The extents are per side and per direction (125.2)**:
+a node's left, right, top and bottom are read as it has them and
+mapped onto the canonical axes by the direction, so a label hung to
+one side extends that side alone and a rightward rank is separated by
+heights — the first version used the larger side twice, and the model
+width along a rank whatever the direction, which is what made the
+label-inclusive pictures several times too wide (reactome 21.7 →
+17.0 Mpx²; the Greek-gods scene rightward with labels 3.4 → 1.6) and
+the rows 27 % too tall under bottom-hung labels.  **Compaction ends
+with a placement pass for free singletons (125.2)**: a real node no
+alignment took — a leaf in the sweeps that align to lower neighbours,
+or a node whose median parent was taken or marked — was left at the
+leftmost feasible x (rightmost, mirrored), and the balance of four
+such candidates put a leaf with one parent in the middle of whatever
+empty interval its rank had (reactome's "IRAK1 recruits IKK complex
+upon TLR7/8 or 9 stimulation": 1,632 px from its only neighbour, now
+68).  Each such block now moves, within the slack its rank neighbours
+leave, to the median x of its neighbours on the sweep's side; the
+rank order is untouched, so crossings are unchanged (deps 4189 →
+4192, workflow-1k 19589 → 19550) and mean edge length falls on every
+DAG fixture.  Components pack by *body* boxes (point-bbox packing
 overlapped deps' 164 singleton components).  Ranking honours
 `rankConstraints` (`same` contracts nodes — welding components if
 needed — `min`/`max` pin via zero-weight anchor edges; contradictions

@@ -757,10 +757,16 @@ export interface FlowLayoutOptions extends LayoutBaseOptions {
   name: 'flow';
   /** drawing direction of the flow (default 'downward') */
   direction?: 'downward' | 'upward' | 'leftward' | 'rightward';
-  /** px gap between adjacent nodes in a rank (default 50) */
+  /** px gap between adjacent nodes in a rank (default 50): between
+   * their boxes' facing sides, each node's own extent on that side
+   * (125.2 — a label hung to one side of its body extends that side
+   * alone), and along the rank's axis for the direction (a rightward
+   * rank is separated by heights) */
   nodeSep?: number;
-  /** px gap between rank rows (default 60); a taxi edge's turn lands
-   * inside this band, which the layout keeps node-free */
+  /** px gap between rank rows (default 60): a row reaches as far
+   * from its centre line as its nodes' extents on each side, and a
+   * taxi edge's turn lands inside this band, which the layout keeps
+   * node-free */
   rankSep?: number;
   /** px per taxi track a rank gap grows to hold (default 10, round
    * 124.5): the gap below a rank becomes `max(rankSep, tracks ×
@@ -797,8 +803,8 @@ export interface FlowLayoutOptions extends LayoutBaseOptions {
   rankConstraints?: { min?: string[]; max?: string[]; same?: string[][] };
   /** the gap between packed disconnected components (default 40) */
   componentSpacing?: number;
-  /** separate nodes by their extents — bodies plus labels unless
-   * `nodeDimensionsIncludeLabels` is false (114.6; default true);
+  /** separate nodes by their extents (default true) — bodies, plus
+   * labels when `nodeDimensionsIncludeLabels` is true (114.6);
    * false places points, `nodeSep` / `rankSep` then centre to centre */
   avoidOverlap?: boolean;
   /** extra room around each body (default 0 — `nodeSep` and `rankSep`

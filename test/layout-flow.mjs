@@ -418,6 +418,157 @@ describe('gpu/layout: flow (round 112)', function () {
     });
   });
 
+  describe('extents and placement (125.2)', function () {
+    // Round 125's first sitting: flow far too spread with labels
+    // included, the Greek-gods scene only so, and a leaf sitting far
+    // from its only parent.  Three readings were wrong, one placement
+    // was given up: the layout separated by symmetric halves (a label
+    // hung to one side counted twice), by the model axes whatever the
+    // direction (a rightward rank separated by widths), and left an
+    // unaligned singleton wherever the compaction packed it.  Each row
+    // here pins the corrected reading against the rendered boxes, and
+    // each went red on the code before the fix (run once by hand):
+    // 130 and 122 px where 50 is asserted, 60 px rows where 24 is,
+    // and the leaf 136 px from its parent where one pitch is.
+
+    var box = (id, labels = true) =>
+      cy.$id(id).boundingBox({ includeLabels: labels });
+
+    var gapX = (a, b) => Math.max(a.x1 - b.x2, b.x1 - a.x2);
+    var gapY = (a, b) => Math.max(a.y1 - b.y2, b.y1 - a.y2);
+
+    var labelled = (label, extra) => ({
+      nodes: [
+        { data: { id: 'p', label: '' } },
+        { data: { id: 'a', label } },
+        { data: { id: 'b', label } },
+      ].map((n) => Object.assign(n, extra)),
+      edges: edges(['p', 'a'], ['p', 'b']),
+    });
+
+    var withStyle = (elements, nodeStyle) =>
+      (cy = cytoscape({
+        headlessWidth: 400,
+        headlessHeight: 400,
+        elements,
+        style: {
+          nodes: Object.assign(
+            { width: 12, height: 12, label: { data: 'label' } },
+            nodeStyle,
+          ),
+        },
+      }));
+
+    it('a label hung to the right extends the right side alone: label boxes sit nodeSep apart', function () {
+      withStyle(labelled('a label hung to the right of a small body'), {
+        'text-valign': 'center',
+        'text-halign': 'right',
+        'text-margin-x': 4,
+      });
+      run({ nodeDimensionsIncludeLabels: true, nodeSep: 50 });
+
+      var a = box('a');
+      var b = box('b');
+
+      // the precondition: the box really is one-sided
+      expect(a.x2 - posOf('a').x).to.be.greaterThan(4 * (posOf('a').x - a.x1));
+      expect(gapX(a, b)).to.be.closeTo(50, 1);
+    });
+
+    it('a label hung under the body extends the bottom alone: rank rows sit rankSep apart', function () {
+      withStyle(labelled('a label under the body'), {
+        'text-valign': 'bottom',
+        'text-margin-y': 3,
+      });
+      run({ nodeDimensionsIncludeLabels: true, rankSep: 24, edgeSep: 0 });
+
+      var p = box('p');
+      var a = box('a');
+
+      // p has no label: its row is its body; a's label hangs below it
+      expect(a.y2 - posOf('a').y).to.be.greaterThan(3 * (posOf('a').y - a.y1));
+      expect(gapY(p, a)).to.be.closeTo(24, 1);
+    });
+
+    it('rightward: a rank is separated by heights, its ranks by widths', function () {
+      // wide flat nodes: 60 x 10
+      withStyle(labelled(''), { width: 60, height: 10 });
+      run({ direction: 'rightward', nodeSep: 50, rankSep: 24, edgeSep: 0 });
+
+      var a = box('a', false);
+      var b = box('b', false);
+      var p = box('p', false);
+
+      // a and b share a rank (a column): their y-gap is nodeSep, read
+      // from their 10 px heights, not their 60 px widths
+      expect(posOf('a').x).to.be.closeTo(posOf('b').x, 1e-6);
+      expect(gapY(a, b)).to.be.closeTo(50, 1);
+      // the rank gap is read from the widths
+      expect(gapX(p, a)).to.be.closeTo(24, 1);
+    });
+
+    it('control: downward on the same nodes separates the rank by widths', function () {
+      withStyle(labelled(''), { width: 60, height: 10 });
+      run({ nodeSep: 50, rankSep: 24, edgeSep: 0 });
+
+      expect(gapX(box('a', false), box('b', false))).to.be.closeTo(50, 1);
+      expect(gapY(box('p', false), box('a', false))).to.be.closeTo(24, 1);
+    });
+
+    // a 12-node DAG found by a seeded search over the code before the
+    // fix: n5 is a leaf whose only parent n0 has two children, and the
+    // balance of its four candidates put it 220 px from n0 — 2.75
+    // pitches — in the room the rank had to its right
+    var drifter = () => ({
+      nodes: nodes(...Array.from({ length: 12 }, (_, i) => 'n' + i)),
+      edges: edges(
+        ...'0>1 1>2 1>3 3>4 0>5 1>6 3>7 1>7 6>8 3>9 6>9 6>10 4>11'
+          .split(' ')
+          .map((e) => e.split('>').map((k) => 'n' + k)),
+      ),
+    });
+
+    it('a leaf with one parent sits within a pitch of it, not in the empty end of its rank', function () {
+      mk(drifter());
+      run({ nodeSep: 50 });
+
+      var pitch = cy.$id('n5').boundingBox().w + 50;
+      var dx = Math.abs(posOf('n5').x - posOf('n0').x);
+
+      // n0's other child n1 heads a subtree and takes the alignment;
+      // n5 sits beside it, one pitch off at most (was 220)
+      expect(dx).to.be.at.most(pitch + 1);
+    });
+
+    it('control: the placement keeps every separation — no rank-adjacent pair closer than nodeSep', function () {
+      mk(drifter());
+      run({ nodeSep: 50 });
+
+      var rows = new Map();
+
+      cy.nodes().forEach((n) => {
+        var y = n.position().y;
+
+        if (!rows.has(y)) {
+          rows.set(y, []);
+        }
+
+        rows.get(y).push(n);
+      });
+
+      for (var row of rows.values()) {
+        row.sort((u, v) => u.position().x - v.position().x);
+
+        for (var i = 1; i < row.length; i++) {
+          expect(
+            gapX(row[i - 1].boundingBox(), row[i].boundingBox()),
+            `${row[i - 1].id()} | ${row[i].id()}`,
+          ).to.be.at.least(50 - 1e-6);
+        }
+      }
+    });
+  });
+
   describe('rank constraints', function () {
     it("'same' shares a rank across the graph", function () {
       mk(pulledChain());

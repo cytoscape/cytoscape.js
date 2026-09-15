@@ -393,11 +393,14 @@ const chainToGroup = (model: GroupModel, g: number): number[] => {
  *
  * @param L — the layered form (borders inserted)
  * @param view — the component compound view
+ * @param pad — per group, the padding along the depth axis (125.2:
+ *   `padY` for a vertical direction, `padX` for a horizontal one)
  * @returns `{ top, bottom }` extra margin per rank
  */
 export const rankPadMargins = (
   L: Layered,
   view: CompoundView,
+  pad: Float64Array = view.model.padY,
 ): { top: Float64Array; bottom: Float64Array } => {
   const { model, chainOf } = view;
   const rankCount = L.layers.length;
@@ -418,8 +421,8 @@ export const rankPadMargins = (
       continue;
     }
 
-    top[minRank[g]] += model.padY[g];
-    bottom[maxRank[g]] += model.padY[g];
+    top[minRank[g]] += pad[g];
+    bottom[maxRank[g]] += pad[g];
   }
 
   return { top, bottom };

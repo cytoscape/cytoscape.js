@@ -32,6 +32,7 @@ import {
   greedyFAS,
   dfsFAS,
 } from './flow-graph.mjs';
+import type { CanonicalExtents } from './flow-graph.mjs';
 import {
   rankLongestPath,
   rankNetworkSimplex,
@@ -72,6 +73,65 @@ const LAYERINGS = ['network-simplex', 'longest-path', 'auto'] as const;
 
 /** past this scope size, layering 'auto' takes the O(V+E) path */
 const AUTO_SIMPLEX_LIMIT = 50_000;
+
+/** Model extents as typed arrays (a `NodeExtents` the layout owns). */
+export interface ModelExtents {
+  x1: Float64Array;
+  y1: Float64Array;
+  x2: Float64Array;
+  y2: Float64Array;
+}
+
+/**
+ * The model extents mapped onto the canonical (downward) axes for a
+ * direction (125.2).  Canonical x is the breadth axis (along a rank),
+ * canonical y the depth axis (across ranks); `applyDirection` is the
+ * inverse map on positions.
+ *
+ * @param ext — per-node model extents (`x1`, `y1` negative or zero)
+ * @param direction — the drawing direction
+ * @returns per-node magnitudes before/after the centre on each axis
+ */
+export const canonicalExtents = (
+  ext: ModelExtents,
+  direction: 'downward' | 'upward' | 'leftward' | 'rightward',
+): CanonicalExtents => {
+  const neg = (a: Float64Array): Float64Array => a.map((v) => -v);
+
+  switch (direction) {
+    case 'downward':
+      return {
+        left: neg(ext.x1),
+        right: ext.x2,
+        top: neg(ext.y1),
+        bottom: ext.y2,
+      };
+    case 'upward':
+      // canonical y = -model y: the model bottom leads
+      return {
+        left: neg(ext.x1),
+        right: ext.x2,
+        top: ext.y2,
+        bottom: neg(ext.y1),
+      };
+    case 'rightward':
+      // canonical x = model y, canonical y = model x
+      return {
+        left: neg(ext.y1),
+        right: ext.y2,
+        top: neg(ext.x1),
+        bottom: ext.x2,
+      };
+    case 'leftward':
+      // canonical x = model y, canonical y = -model x
+      return {
+        left: neg(ext.y1),
+        right: ext.y2,
+        top: ext.x2,
+        bottom: neg(ext.x1),
+      };
+  }
+};
 
 const defaults: Omit<FlowLayoutOptions, 'name'> = {
   fit: true, // whether to fit the viewport to the graph
@@ -192,8 +252,9 @@ interface RunState {
   slots: number[];
   xy: Float64Array;
   /** per-node symmetric half extents (114.6), set by compute() */
-  halfW?: Float64Array;
-  halfH?: Float64Array;
+  /** per-node model extents (bodies plus labels on request); zero
+   * under avoidOverlap: false */
+  ext?: ModelExtents;
 }
 
 export class FlowLayoutImpl implements LayoutImpl {
@@ -302,11 +363,20 @@ export class FlowLayoutImpl implements LayoutImpl {
     }
 
     // extents from the shared reading (114.6): bodies plus labels on
-    // request, padded; symmetric halves (the larger side) because the
-    // BK separation is symmetric.  avoidOverlap: false places points —
-    // nodeSep and rankSep then read centre to centre
-    const halfW = new Float64Array(n);
-    const halfH = new Float64Array(n);
+    // request, padded.  avoidOverlap: false places points — nodeSep and
+    // rankSep then read centre to centre.  125.2: the four sides are
+    // kept as the node has them — a label hung to one side extends
+    // that side alone — and mapped onto the canonical axes by the
+    // direction, so a rightward flow separates a rank's members by
+    // their heights and its ranks by their widths.  The first version
+    // used symmetric halves of the model axes for every direction:
+    // the larger side twice, and the width along a rightward rank.
+    const ext: ModelExtents = {
+      x1: new Float64Array(n),
+      y1: new Float64Array(n),
+      x2: new Float64Array(n),
+      y2: new Float64Array(n),
+    };
 
     if (merged.avoidOverlap !== false) {
       const dims = ctx.nodeDimensions(slots, {
@@ -314,14 +384,15 @@ export class FlowLayoutImpl implements LayoutImpl {
         padding: merged.avoidOverlapPadding ?? 0,
       });
 
-      for (let i = 0; i < n; i++) {
-        halfW[i] = Math.max(-dims.x1[i], dims.x2[i]);
-        halfH[i] = Math.max(-dims.y1[i], dims.y2[i]);
-      }
+      ext.x1.set(dims.x1.subarray(0, n));
+      ext.y1.set(dims.y1.subarray(0, n));
+      ext.x2.set(dims.x2.subarray(0, n));
+      ext.y2.set(dims.y2.subarray(0, n));
     }
 
-    state.halfW = halfW;
-    state.halfH = halfH;
+    state.ext = ext;
+
+    const canonical = canonicalExtents(ext, merged.direction!);
 
     const groupModel = buildGroupModel(cy, slots);
 
@@ -416,8 +487,7 @@ export class FlowLayoutImpl implements LayoutImpl {
       rawSlots,
       rawWeight,
       rawMinLen,
-      halfW,
-      halfH,
+      canonical,
     );
 
     // rank constraints resolve to scope indices before the split so
@@ -453,15 +523,12 @@ export class FlowLayoutImpl implements LayoutImpl {
       // empty, and packComponentsExact would overlap their bodies
       // body boxes, the field left at the origin: applyBoundingBox
       // centres afterwards (114.4: the packer moved to pack.mts)
-      const negW = halfW.map((v) => -v);
-      const negH = halfH.map((v) => -v);
-
       packComponentBodies(
         n,
         compOf,
         comps.length,
         state.xy,
-        { x1: negW, y1: negH, x2: halfW, y2: halfH },
+        ext,
         opts.componentSpacing,
         false,
       );
@@ -575,7 +642,12 @@ export class FlowLayoutImpl implements LayoutImpl {
     const L = buildLayers(comp, rank, rankCount, !nested);
 
     let margins: { top: Float64Array; bottom: Float64Array } | null = null;
-    let halfWAll: Float64Array = comp.halfW;
+    let leftAll: Float64Array = comp.left;
+    let rightAll: Float64Array = comp.right;
+    // the group padding on each canonical axis (125.2: a horizontal
+    // direction reads the style's x padding along the ranks)
+    const horizontal =
+      opts.direction === 'leftward' || opts.direction === 'rightward';
 
     if (nested) {
       const view = buildCompoundView(
@@ -589,25 +661,30 @@ export class FlowLayoutImpl implements LayoutImpl {
       orderLayers(L, opts.thoroughness, view.chainOf);
 
       const wallGroup = insertBorders(L, view);
+      const padAcross = horizontal ? groupModel!.padY : groupModel!.padX;
+      const padAlong = horizontal ? groupModel!.padX : groupModel!.padY;
 
-      margins = rankPadMargins(L, view);
-      halfWAll = new Float64Array(L.nTotal).fill(1);
-      halfWAll.set(comp.halfW.subarray(0, comp.n));
+      margins = rankPadMargins(L, view, padAlong);
+      leftAll = new Float64Array(L.nTotal).fill(1);
+      rightAll = new Float64Array(L.nTotal).fill(1);
+      leftAll.set(comp.left.subarray(0, comp.n));
+      rightAll.set(comp.right.subarray(0, comp.n));
 
       for (let v = 0; v < L.nTotal; v++) {
         if (wallGroup[v] >= 0) {
-          halfWAll[v] = Math.max(1, groupModel!.padX[wallGroup[v]]);
+          leftAll[v] = Math.max(1, padAcross[wallGroup[v]]);
+          rightAll[v] = leftAll[v];
         }
       }
     } else {
       orderLayers(L, opts.thoroughness);
     }
 
-    const x = assignX(L, halfWAll, { nodeSep: opts.nodeSep });
+    const x = assignX(L, leftAll, { nodeSep: opts.nodeSep }, rightAll);
     // 124.5: a gap grows to hold its taxi tracks (edgeSep per track,
     // the style's 10 px min-turn clearance at both ends)
     const gaps = gapSeparations(L, x, comp, opts.rankSep, opts.edgeSep, 10);
-    const y = assignY(L, comp.halfH, gaps, margins);
+    const y = assignY(L, comp.top, gaps, margins, comp.bottom);
     const [outX, outY] = applyDirection(x, y, opts.direction);
 
     for (let v = 0; v < comp.n; v++) {
@@ -831,8 +908,10 @@ export class FlowLayoutImpl implements LayoutImpl {
       inOff: new Uint32Array(0),
       inAdj: new Uint32Array(0),
       scopeOf: new Uint32Array(n),
-      halfW: new Float64Array(n),
-      halfH: new Float64Array(n),
+      left: new Float64Array(n),
+      right: new Float64Array(n),
+      top: new Float64Array(n),
+      bottom: new Float64Array(n),
     };
 
     // CSR for the rankers
@@ -889,16 +968,7 @@ export class FlowLayoutImpl implements LayoutImpl {
       return;
     }
 
-    const { halfW, halfH } = state;
-    const extents: NodeExtents | null =
-      halfW != null && halfH != null
-        ? {
-            x1: halfW.map((v) => -v),
-            y1: halfH.map((v) => -v),
-            x2: halfW,
-            y2: halfH,
-          }
-        : null;
+    const extents: NodeExtents | null = state.ext ?? null;
 
     fitBodiesToBox(state.slots.length, state.xy, extents, box);
   }

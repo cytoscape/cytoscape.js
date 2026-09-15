@@ -49,10 +49,25 @@ export interface FlowComponent {
   inAdj: Uint32Array;
   /** component-local node -> scope node index */
   scopeOf: Uint32Array;
-  /** per-node half width (body + border) */
-  halfW: Float64Array;
-  /** per-node half height (body + border) */
-  halfH: Float64Array;
+  /** per-node extent before its centre along the canonical breadth
+   * axis (125.2: the four canonical extents replace symmetric halves —
+   * a label hung to one side, or a wide node under a rightward
+   * direction, was read as twice its larger side) */
+  left: Float64Array;
+  /** per-node extent after its centre along the canonical breadth axis */
+  right: Float64Array;
+  /** per-node extent before its centre along the canonical depth axis */
+  top: Float64Array;
+  /** per-node extent after its centre along the canonical depth axis */
+  bottom: Float64Array;
+}
+
+/** Per-node extents along the canonical axes, as magnitudes. */
+export interface CanonicalExtents {
+  left: Float64Array;
+  right: Float64Array;
+  top: Float64Array;
+  bottom: Float64Array;
 }
 
 /** The whole scope as simple edges over scope-node indices. */
@@ -63,8 +78,8 @@ export interface FlowScope {
   tgt: Uint32Array;
   weight: Float64Array;
   minLen: Int32Array;
-  halfW: Float64Array;
-  halfH: Float64Array;
+  /** per-node canonical extents (see `FlowComponent`) */
+  ext: CanonicalExtents;
   /** for each simple edge, the scoped edge slots it collapses */
   members: number[][];
 }
@@ -79,8 +94,7 @@ export interface FlowScope {
  * @param rawSlots — the scoped edge slot per pair, for membership
  * @param rawWeight — per raw edge weight (resolved edgeWeight)
  * @param rawMinLen — per raw edge minimum rank span (resolved minLength)
- * @param halfW — per scope node half width
- * @param halfH — per scope node half height
+ * @param ext — per scope node canonical extents
  * @returns the simple-edge scope view
  */
 export const buildScope = (
@@ -89,8 +103,7 @@ export const buildScope = (
   rawSlots: number[],
   rawWeight: Float64Array,
   rawMinLen: Int32Array,
-  halfW: Float64Array,
-  halfH: Float64Array,
+  ext: CanonicalExtents,
 ): FlowScope => {
   const byPair = new Map<number, number>();
   const src: number[] = [];
@@ -135,8 +148,7 @@ export const buildScope = (
     tgt: Uint32Array.from(tgt),
     weight: Float64Array.from(weight),
     minLen: Int32Array.from(minLen),
-    halfW,
-    halfH,
+    ext,
     members,
   };
 };
@@ -239,8 +251,10 @@ export const splitComponents = (
       inOff: new Uint32Array(0),
       inAdj: new Uint32Array(0),
       scopeOf: new Uint32Array(n),
-      halfW: new Float64Array(n),
-      halfH: new Float64Array(n),
+      left: new Float64Array(n),
+      right: new Float64Array(n),
+      top: new Float64Array(n),
+      bottom: new Float64Array(n),
     });
     scopeEdgeOf.push(new Uint32Array(mc));
   }
@@ -250,8 +264,10 @@ export const splitComponents = (
     const local = localOf[i];
 
     comp.scopeOf[local] = i;
-    comp.halfW[local] = scope.halfW[i];
-    comp.halfH[local] = scope.halfH[i];
+    comp.left[local] = scope.ext.left[i];
+    comp.right[local] = scope.ext.right[i];
+    comp.top[local] = scope.ext.top[i];
+    comp.bottom[local] = scope.ext.bottom[i];
   }
 
   const cursor = new Uint32Array(count);

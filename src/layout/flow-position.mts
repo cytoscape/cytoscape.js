@@ -21,9 +21,25 @@ only the original's placement of totally unconstrained classes, which
 the four-way balance step reintroduces.
 
 Separation is size-aware (Rüegg): adjacent nodes u, v in a layer are
-kept `halfW(u) + halfW(v) + gap` apart, where the gap is `nodeSep`
+kept `right(u) + left(v) + gap` apart, where the gap is `nodeSep`
 between real nodes and half that beside a dummy — edge corridors pack
-tighter than node bodies.
+tighter than node bodies.  The extents are the node's own on each side
+of its centre (125.2): a label hung to the right of its body extends
+the right side alone, where the symmetric `halfW` the first version
+used read the node as twice its larger side.
+
+A block nothing aligned — a real node whose alignment failed in this
+sweep, or a leaf in a sweep that aligns to lower neighbours — is a
+singleton the longest-path compaction leaves at its leftmost feasible
+x (rightmost, mirrored).  Averaged across the four candidates that
+put a leaf with one parent in the middle of whatever empty interval
+its rank had, far from the parent (125.2: reactome's "IRAK1 recruits
+IKK complex upon TLR7/8 or 9 stimulation" sat 1,632 px from its only
+neighbour).  So compaction ends with a placement pass: each free
+singleton moves, within the slack its rank neighbours leave it, to the
+median x of its neighbours on the sweep's side (the other side when it
+has none there) — the paper's placement of unconstrained classes,
+which the block graph had given up.
 
 Balance is the paper's: align the four assignments to the one of
 minimum width (left-biased ones by min x, right-biased by max x), then
@@ -281,8 +297,10 @@ const verticalAlignment = (
 const compact = (
   L: Layered,
   root: Int32Array,
-  halfW: Float64Array,
+  left: Float64Array,
+  right: Float64Array,
   opts: XOptions,
+  prefer: Prefer,
 ): Float64Array => {
   // block ids = root node ids; collect constraints from every layer's
   // adjacent pairs
@@ -307,9 +325,7 @@ const compact = (
       ensure(bu);
       ensure(bv);
 
-      const bothReal = u < L.n && v < L.n;
-      const gap = bothReal ? opts.nodeSep : opts.nodeSep / 2;
-      const sep = halfW[u] + halfW[v] + gap;
+      const sep = sepOf(L, u, v, left, right, opts.nodeSep);
 
       if (bu !== bv) {
         out.get(bu)!.push({ to: bv, sep });
@@ -361,7 +377,115 @@ const compact = (
     x[v] = xBlock.get(root[v])!;
   }
 
+  placeFree(L, root, x, left, right, opts.nodeSep, prefer);
+
   return x;
+};
+
+/** The separation two rank-adjacent nodes keep: u's extent after its
+ * centre, v's before, and the gap — `nodeSep` between real nodes, half
+ * beside a dummy. */
+const sepOf = (
+  L: Layered,
+  u: number,
+  v: number,
+  left: Float64Array,
+  right: Float64Array,
+  nodeSep: number,
+): number => {
+  const bothReal = u < L.n && v < L.n;
+
+  return right[u] + left[v] + (bothReal ? nodeSep : nodeSep / 2);
+};
+
+/** Which neighbours a free singleton is placed towards: the sweep's
+ * side first (upper neighbours in a down sweep), the other side when
+ * it has none there. */
+interface Prefer {
+  off: Uint32Array;
+  adj: Uint32Array;
+  end: Uint32Array;
+  altOff: Uint32Array;
+  altAdj: Uint32Array;
+  altEnd: Uint32Array;
+}
+
+/**
+ * The placement pass (125.2): every real node that is a block of its
+ * own moves, within the slack its rank neighbours leave, to the median
+ * x of its preferred neighbours.  Right to left within a rank, so a
+ * node's right bound is a neighbour already placed; a move never
+ * breaks a separation, because each bound is read from the positions
+ * as they stand.
+ */
+const placeFree = (
+  L: Layered,
+  root: Int32Array,
+  x: Float64Array,
+  left: Float64Array,
+  right: Float64Array,
+  nodeSep: number,
+  prefer: Prefer,
+): void => {
+  const size = new Int32Array(L.nTotal);
+
+  for (let v = 0; v < L.nTotal; v++) {
+    size[root[v]]++;
+  }
+
+  const xs: number[] = [];
+
+  const median = (
+    v: number,
+    off: Uint32Array,
+    adj: Uint32Array,
+    end: Uint32Array,
+  ): number | null => {
+    xs.length = 0;
+
+    for (let k = off[v]; k < off[v + 1]; k++) {
+      xs.push(x[end[adj[k]]]);
+    }
+
+    if (xs.length === 0) {
+      return null;
+    }
+
+    xs.sort((a, b) => a - b);
+
+    const m = xs.length >> 1;
+
+    return xs.length % 2 === 1 ? xs[m] : (xs[m - 1] + xs[m]) / 2;
+  };
+
+  for (const layer of L.layers) {
+    for (let i = layer.length - 1; i >= 0; i--) {
+      const v = layer[i];
+
+      if (v >= L.n || size[root[v]] !== 1) {
+        continue;
+      }
+
+      const target =
+        median(v, prefer.off, prefer.adj, prefer.end) ??
+        median(v, prefer.altOff, prefer.altAdj, prefer.altEnd);
+
+      if (target == null) {
+        continue;
+      }
+
+      const lo =
+        i > 0
+          ? x[layer[i - 1]] + sepOf(L, layer[i - 1], v, left, right, nodeSep)
+          : -Infinity;
+      const hi =
+        i + 1 < layer.length
+          ? x[layer[i + 1]] - sepOf(L, v, layer[i + 1], left, right, nodeSep)
+          : Infinity;
+
+      x[v] = Math.min(hi, Math.max(lo, target));
+    }
+  }
 };
 
 /** Mirror the layered form's orders in place (for right-biased runs). */
@@ -377,31 +501,53 @@ const mirror = (L: Layered): void => {
 
 /**
  * Brandes–Köpf x-assignment: four alignments, size-aware block-graph
- * compaction, aligned-to-min-width balance, average of the two
- * medians.
+ * compaction with the free-singleton placement pass, aligned-to-min-
+ * width balance, average of the two medians.
  *
  * @param L — the ordered layered form
- * @param realHalfW — per real node half width; a full `nTotal`-length
- *   array assigns every dummy too (compound walls carry their group's
- *   padding as half-width this way — 112.3)
+ * @param realLeft — per real node extent before its centre on the
+ *   breadth axis; a full `nTotal`-length array assigns every dummy too
+ *   (compound walls carry their group's padding this way — 112.3)
  * @param opts — separation options
+ * @param realRight — per real node extent after its centre (125.2);
+ *   `realLeft` again when omitted — symmetric nodes
  * @returns x per node (real and dummy), centred per balance
  */
 export const assignX = (
   L: Layered,
-  realHalfW: Float64Array,
+  realLeft: Float64Array,
   opts: XOptions,
+  realRight: Float64Array = realLeft,
 ): Float64Array => {
-  const halfW = new Float64Array(L.nTotal).fill(DUMMY_HALF_W);
+  const left = new Float64Array(L.nTotal).fill(DUMMY_HALF_W);
+  const right = new Float64Array(L.nTotal).fill(DUMMY_HALF_W);
 
-  if (realHalfW.length >= L.nTotal) {
-    halfW.set(realHalfW.subarray(0, L.nTotal));
+  if (realLeft.length >= L.nTotal) {
+    left.set(realLeft.subarray(0, L.nTotal));
+    right.set(realRight.subarray(0, L.nTotal));
   } else {
-    halfW.set(realHalfW.subarray(0, L.n));
+    left.set(realLeft.subarray(0, L.n));
+    right.set(realRight.subarray(0, L.n));
   }
 
   const marked = markConflicts(L);
   const candidates: Float64Array[] = [];
+  const upward: Prefer = {
+    off: L.upOff,
+    adj: L.upAdj,
+    end: L.usrc,
+    altOff: L.downOff,
+    altAdj: L.downAdj,
+    altEnd: L.utgt,
+  };
+  const downward: Prefer = {
+    off: L.downOff,
+    adj: L.downAdj,
+    end: L.utgt,
+    altOff: L.upOff,
+    altAdj: L.upAdj,
+    altEnd: L.usrc,
+  };
 
   for (const dir of DIRECTIONS) {
     if (dir.right) {
@@ -409,7 +555,10 @@ export const assignX = (
     }
 
     const { root } = verticalAlignment(L, marked, dir);
-    const x = compact(L, root, halfW, opts);
+    // mirrored, a node's right side leads and its left trails
+    const x = dir.right
+      ? compact(L, root, right, left, opts, dir.up ? downward : upward)
+      : compact(L, root, left, right, opts, dir.up ? downward : upward);
 
     if (dir.right) {
       // unmirror both the form and the coordinates
@@ -433,8 +582,8 @@ export const assignX = (
     const x = candidates[i];
 
     for (let v = 0; v < L.nTotal; v++) {
-      const lo = x[v] - halfW[v];
-      const hi = x[v] + halfW[v];
+      const lo = x[v] - left[v];
+      const hi = x[v] + right[v];
 
       if (lo < mins[i]) {
         mins[i] = lo;
@@ -484,33 +633,40 @@ export const assignX = (
 };
 
 /**
- * Rank rows from cumulative half-heights: each rank's row is as tall
- * as its tallest node and `rankSep` from its neighbours — or, per gap,
- * the entry of a `rankSep` array (124.5: a gap grows for the taxi
- * tracks it has to hold).
+ * Rank rows from cumulative extents: each rank's row reaches as far
+ * above its centre line as its tallest node's top and as far below as
+ * its deepest node's bottom (125.2: a label hung under the body
+ * extends the bottom alone), and sits `rankSep` from its neighbours —
+ * or, per gap, the entry of a `rankSep` array (124.5: a gap grows for
+ * the taxi tracks it has to hold).
  *
  * @param L — the layered form
- * @param realHalfH — per real node half height
+ * @param realTop — per real node extent above its centre
  * @param rankSep — the gap between rank rows, one number or one per gap
  * @param margins — compound mode (112.3): per-rank extra top/bottom
  *   space reserving group vertical padding at interval boundaries
+ * @param realBottom — per real node extent below its centre;
+ *   `realTop` again when omitted
  * @returns y per node (all members of a rank share it)
  */
 export const assignY = (
   L: Layered,
-  realHalfH: Float64Array,
+  realTop: Float64Array,
   rankSep: number | ArrayLike<number>,
   margins: { top: Float64Array; bottom: Float64Array } | null = null,
+  realBottom: Float64Array = realTop,
 ): Float64Array => {
   const y = new Float64Array(L.nTotal);
   let cursor = 0;
 
   for (let r = 0; r < L.layers.length; r++) {
-    let maxHalf = 0;
+    let maxTop = 0;
+    let maxBottom = 0;
 
     for (const v of L.layers[r]) {
-      if (v < L.n && realHalfH[v] > maxHalf) {
-        maxHalf = realHalfH[v];
+      if (v < L.n) {
+        maxTop = Math.max(maxTop, realTop[v]);
+        maxBottom = Math.max(maxBottom, realBottom[v]);
       }
     }
 
@@ -518,14 +674,14 @@ export const assignY = (
       cursor += margins.top[r];
     }
 
-    const center = cursor + maxHalf;
+    const center = cursor + maxTop;
 
     for (const v of L.layers[r]) {
       y[v] = center;
     }
 
     cursor =
-      center + maxHalf + (typeof rankSep === 'number' ? rankSep : rankSep[r]);
+      center + maxBottom + (typeof rankSep === 'number' ? rankSep : rankSep[r]);
 
     if (margins != null) {
       cursor += margins.bottom[r];

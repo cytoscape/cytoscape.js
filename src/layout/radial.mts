@@ -56,6 +56,7 @@ const defaults: Omit<RadialLayoutOptions, 'name'> = {
   levelSpacing: undefined,
   avoidOverlap: true,
   avoidOverlapPadding: 10,
+  condense: false, // size the rings by their nodes and the padding, not by the box (125.3)
   weight: 'leaves',
   spacingFactor: undefined,
   packComponents: false,
@@ -344,9 +345,13 @@ export class RadialLayout {
       maxRing = Math.max(maxRing, (depthOf.get(node) as number) + rootOffset);
     }
 
+    // 125.3: condensed, every ring starts at nothing and takes the
+    // smallest radius the clearance pass below allows — the box then
+    // only centres; levelSpacing, given, stays the floor
+    const condense = options.condense === true;
     const base =
       options.levelSpacing ??
-      Math.min(bb.w, bb.h) / 2 / Math.max(1, maxRing + 1);
+      (condense ? 0 : Math.min(bb.w, bb.h) / 2 / Math.max(1, maxRing + 1));
     const bisectorOf = (node: Collection): number =>
       (wedgeStart.get(node) as number) + (wedgeSize.get(node) as number) / 2;
 
@@ -363,7 +368,7 @@ export class RadialLayout {
       radii[k] = k * base;
     }
 
-    if (options.avoidOverlap !== false && nodes.length > 1) {
+    if ((options.avoidOverlap !== false || condense) && nodes.length > 1) {
       const dims = nodeDimsOf(this.cy, nodes, {
         includeLabels: options.nodeDimensionsIncludeLabels === true,
         padding: options.avoidOverlapPadding ?? 10,

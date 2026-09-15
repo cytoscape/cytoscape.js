@@ -1069,6 +1069,34 @@ its Cosmos engine are v3-cose limitations, and `force` runs em-web
 (7.5k elements) in 0.3 s and 25k × 50k in 3.0 s on the GPU from a
 seed.
 
+**The geometric layouts, and `condense` (round 125.3 / 5 / 6 / 7).**
+The audit of `radial`, `circle`, `concentric` and `grid` found the
+four sizing themselves three different ways: `grid` fills the box
+unless `condense: true` (then each cell is the largest node plus
+`avoidOverlapPadding`); `concentric` always sizes its rings by their
+nodes (each ring at the smallest radius that clears its own nodes and
+the ring inside it, the gap `minNodeSpacing`) and reads the box only
+with `avoidOverlap` off; `circle` and `radial` filled the box's
+shorter side and let `avoidOverlap` grow the ring(s) from there.  The
+maintainer's ask was an explicit node separation on the geometric
+layouts — say the margin, not a factor — and the one spelling that
+already existed for it is grid's, so **`condense: true` now exists on
+`circle` and `radial`** with `avoidOverlapPadding` as the margin: the
+ring is the tangential radius at that gap, every radial ring the
+smallest that clears at that gap (`levelSpacing`, given, stays the
+floor).  Off by default: the pictures the apps ship are unchanged
+until a sitting says otherwise.  Measured on the app graphs it
+changes nothing — reactome under radial and em-web's packed
+components are already past the box's share, since the clearance
+rule sets those rings — and everything on a six-node star (a 270 px
+ring becomes a 60 px one).  Two findings for the sittings, not
+changed: radial infers its roots by maximum degree, breadthfirst's
+undirected rule, so on reactome — a directed hierarchy with one true
+root — the centre goes to *Innate Immune System* (degree 17) and the
+root sits on ring 1; and every ring layout's outer ring is set by its
+most crowded ring's circumference, so a shallow wide tree draws as a
+rim around an empty middle.
+
 **Preset and random, audited for their contract (round 125.8).**  The
 two built-ins without an algorithm were audited for what they promise
 rather than for a picture.  `preset`: an id-keyed map or a function;

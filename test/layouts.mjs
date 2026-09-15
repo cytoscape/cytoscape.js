@@ -32,6 +32,57 @@ describe('gpu/layouts', function () {
       cy = star();
     });
 
+    // 125.5: the ring sized by its nodes, not by the box — the gap is
+    // avoidOverlapPadding and the viewport only centres
+    it('condense: the ring takes the tangential radius; the default fills the box (control)', function () {
+      const radiusOf = (c) => {
+        const hub = c.$id('hub').position();
+        const centre = { x: 400, y: 300 };
+
+        return Math.hypot(hub.x - centre.x, hub.y - centre.y);
+      };
+      const boxed = star();
+      const tight = star();
+      const tighter = star();
+
+      boxed.layout({ name: 'circle', fit: false }).run();
+      tight.layout({ name: 'circle', fit: false, condense: true }).run();
+      tighter
+        .layout({
+          name: 'circle',
+          fit: false,
+          condense: true,
+          avoidOverlapPadding: 0,
+        })
+        .run();
+
+      // six 30 px nodes on a 600 px box: the box's ring is ~270 px; six
+      // 30 px boxes at 10 px apart need a ring well under 100 px
+      expect(radiusOf(boxed)).to.be.greaterThan(250);
+      expect(radiusOf(tight)).to.be.lessThan(100);
+      expect(radiusOf(tight)).to.be.greaterThan(radiusOf(tighter));
+
+      // and nothing touches: consecutive boxes sit at least the padding apart
+      const boxes = tight
+        .nodes()
+        .map((n) => n.boundingBox({ includeLabels: false }));
+
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i];
+          const b = boxes[j];
+          const gap = Math.max(
+            a.x1 - b.x2,
+            b.x1 - a.x2,
+            a.y1 - b.y2,
+            b.y1 - a.y2,
+          );
+
+          expect(gap).to.be.at.least(10 - 1e-6);
+        }
+      }
+    });
+
     it('places all nodes equidistant from the center', function () {
       cy.layout({ name: 'circle', fit: false }).run();
 

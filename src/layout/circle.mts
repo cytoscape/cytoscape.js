@@ -36,6 +36,7 @@ const defaults: Omit<CircleLayoutOptions, 'name'> = {
   boundingBox: undefined,
   avoidOverlap: true,
   avoidOverlapPadding: 10,
+  condense: false, // size the ring by its nodes and the padding, not by the box (125.5)
   spacingFactor: undefined,
   radius: undefined,
   startAngle: (3 / 2) * Math.PI,
@@ -189,9 +190,14 @@ export class CircleLayout {
       minDistance = Math.max(minDistance, nbb.w, nbb.h);
     }
 
+    // 125.5: condensed, the ring is as small as the nodes allow — the
+    // tangential radius below is the radius, not a floor under the
+    // box's; the box then only centres
+    const condense = options.condense === true;
+
     if (typeof options.radius === 'number') {
       r = options.radius;
-    } else if (nodes.length <= 1) {
+    } else if (nodes.length <= 1 || condense) {
       r = 0;
     } else {
       r = Math.max(0, Math.min(bb.h, bb.w) / 2 - minDistance);
@@ -201,7 +207,7 @@ export class CircleLayout {
       (options.startAngle as number) + i * dTheta * (clockwise ? 1 : -1);
 
     // grow the radius until no two nodes overlap (115: exact per pair)
-    if (nodes.length > 1 && options.avoidOverlap) {
+    if (nodes.length > 1 && (options.avoidOverlap || condense)) {
       const dims = nodeDimsOf(cy, nodes, {
         includeLabels: options.nodeDimensionsIncludeLabels === true,
         padding: options.avoidOverlapPadding ?? 10,

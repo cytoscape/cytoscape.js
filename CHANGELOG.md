@@ -24,6 +24,11 @@ that compile and then behave differently.
 
 ### Added
 
+- **`condense` on `circle` and `radial`** (round 125.3 / 125.5, grid's
+  spelling): size the ring(s) by the nodes and `avoidOverlapPadding`
+  rather than by the viewport box, so the gap between neighbours is the
+  option and the box only centres.  Off by default; the rings fill the
+  box as before.
 - **A `seed` on the `random` layout** (round 125.8): the same seed places
   the same graph the same way, run after run — the stability every other
   built-in has.  Omitted, the scatter is unseeded as before.

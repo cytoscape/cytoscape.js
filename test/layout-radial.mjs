@@ -282,6 +282,66 @@ describe('gpu/layout: radial (round 85.1)', function () {
     expect(radiusOf('a0')).to.be.greaterThan(74);
   });
 
+  // 125.3: the rings sized by their nodes, not by the box — every ring
+  // at the smallest radius that clears its own nodes and the ring
+  // inside it at avoidOverlapPadding
+  it('condense: rings sit at their clearance; the default fills the box (control)', function () {
+    mk(unbalanced());
+    cy.layout({ name: 'radial', roots: ['r'], fit: false }).run();
+
+    const boxedA = radiusOf('a');
+    const boxedA0 = radiusOf('a0');
+
+    mk(unbalanced());
+    cy.layout({
+      name: 'radial',
+      roots: ['r'],
+      fit: false,
+      condense: true,
+    }).run();
+
+    // the first ring holds two 30 px bodies padded by 10 around a 30 px
+    // root: the band alone is 40 px, and no more than the diagonal
+    expect(radiusOf('a')).to.be.at.least(40 - 1e-4);
+    expect(radiusOf('a')).to.be.lessThan(40 * Math.SQRT2);
+    expect(radiusOf('a')).to.be.lessThan(boxedA);
+    expect(radiusOf('a0')).to.be.lessThan(boxedA0);
+
+    // nothing touches, at the padding
+    const nodes = cy.nodes();
+    const boxes = nodes.map((n) => n.boundingBox({ includeLabels: false }));
+
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const gap = Math.max(
+          a.x1 - b.x2,
+          b.x1 - a.x2,
+          a.y1 - b.y2,
+          b.y1 - a.y2,
+        );
+
+        expect(gap, `${nodes[i].id()} / ${nodes[j].id()}`).to.be.at.least(
+          10 - 1e-4,
+        );
+      }
+    }
+  });
+
+  it('condense keeps levelSpacing as the floor', function () {
+    mk(unbalanced());
+    cy.layout({
+      name: 'radial',
+      roots: ['r'],
+      fit: false,
+      condense: true,
+      levelSpacing: 200,
+    }).run();
+
+    expect(radiusOf('a')).to.be.closeTo(200, 1e-4);
+  });
+
   it('throws on a selector-string roots, and joins the dispatch throw', function () {
     mk(unbalanced());
 

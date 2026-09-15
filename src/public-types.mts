@@ -507,6 +507,14 @@ export interface CircleLayoutOptions
   avoidOverlap?: boolean;
   /** extra room around every node under `avoidOverlap` (default 10) */
   avoidOverlapPadding?: number;
+  /** size the ring by its nodes rather than by the box (125.5, grid's
+   * spelling): the radius is the smallest at which no two neighbours
+   * are closer than `avoidOverlapPadding`, so the gap is the option
+   * and the viewport only centres.  Off (the default), the ring fills
+   * the box's shorter side, as v3's does, and `avoidOverlap` only
+   * grows it.  An explicit `radius` replaces the box's; `avoidOverlap`
+   * still grows either. */
+  condense?: boolean;
   /** the circle's radius (computed when omitted) */
   radius?: number;
   /** where nodes start in radians (default 3/2 π) */
@@ -620,6 +628,14 @@ export interface RadialLayoutOptions
   avoidOverlap?: boolean;
   /** the gap kept between neighbouring boxes (default 10) */
   avoidOverlapPadding?: number;
+  /** size the rings by their nodes rather than by the box (125.3,
+   * grid's spelling): every ring takes the smallest radius that
+   * clears its own nodes and the ring inside it at
+   * `avoidOverlapPadding`, so the gap is the option and the viewport
+   * only centres.  Off (the default), the rings start at an even share
+   * of the box's shorter side (or `levelSpacing`) and only grow from
+   * there.  Implies `avoidOverlap`. */
+  condense?: boolean;
   /** what sizes a subtree's wedge: its leaf count (default) or its
    * whole node count */
   weight?: 'leaves' | 'subtree';

@@ -101,6 +101,18 @@ became `typeof COL.…`; one `new Set([...])` that had inferred
 The three tween pseudo-columns became `TWEEN_COL` in `animation.mts`.
 `npm run -s verify`: green, 2,719 specs.
 
+### 127.2 — carried out (2026-09-15)
+
+`DATA_ID`, `DATA_PARENT`, `DATA_SOURCE`, `DATA_TARGET` and the `EndKey`
+type sit beside `GroupName` in the contract.  34 comparison sites in
+five files read them — the sidecar's reserved-key skips in the
+converter and the store, the collection's `data()` getter and setter
+guards, the style engine's four `key === 'id'` first-class-id reads,
+and the end-label and arrow-fold loops that iterate `[source, target]`.
+What stayed literal, on purpose: `prop.startsWith('source')` is a
+property-name prefix test, and `TAXI_TRACK_NAMES` holds the values of
+`taxi-track`, which happen to share the spelling.
+
 ### Verification
 
 `npm run -s verify` per commit; `npm run -s test:node:quiet` and

@@ -1,5 +1,8 @@
 import { color2tuple } from './util/colors.mjs';
 import {
+  DATA_TARGET,
+  DATA_SOURCE,
+  DATA_ID,
   COL,
   ARROW_CHEVRON,
   ARROW_CIRCLE,
@@ -6684,7 +6687,7 @@ export class StyleEngine {
       return this.store.hasFlag(group, slot, bit);
     }
 
-    return key === 'id'
+    return key === DATA_ID
       ? this.store.idAt(group, slot)
       : this.store.data.get(group, slot, key);
   };
@@ -6810,7 +6813,7 @@ export class StyleEngine {
       // data-write refresh gate (id is immutable and never registers)
       let deps: GroupDef['deps'] = null;
       const dep = (key: string, what: 'label' | 'mappers' | 'chart'): void => {
-        if (key === 'id') {
+        if (key === DATA_ID) {
           return;
         }
 
@@ -9738,7 +9741,7 @@ export class StyleEngine {
     let text =
       key == null
         ? computed.label
-        : key === 'id'
+        : key === DATA_ID
           ? (store.idAt(group, slot) ?? '')
           : stringify(store.data.get(group, slot, key));
 
@@ -9755,16 +9758,16 @@ export class StyleEngine {
     // before the shared record is built
     const endTexts =
       group === 'edges'
-        ? (['source', 'target'] as const).map((end) => {
+        ? ([DATA_SOURCE, DATA_TARGET] as const).map((end) => {
             const ec = computed as Computed;
             const key2 =
-              end === 'source' ? ec.sourceLabelKey : ec.targetLabelKey;
+              end === DATA_SOURCE ? ec.sourceLabelKey : ec.targetLabelKey;
             const raw =
               key2 == null
-                ? end === 'source'
+                ? end === DATA_SOURCE
                   ? ec.sourceLabel
                   : ec.targetLabel
-                : key2 === 'id'
+                : key2 === DATA_ID
                   ? (store.idAt(group, slot) ?? '')
                   : stringify(store.data.get(group, slot, key2));
 
@@ -9903,8 +9906,8 @@ export class StyleEngine {
     if (group === 'edges') {
       const ec = computed as Computed;
 
-      for (const end of ['source', 'target'] as const) {
-        const src = end === 'source';
+      for (const end of [DATA_SOURCE, DATA_TARGET] as const) {
+        const src = end === DATA_SOURCE;
         const endText = endTexts[src ? 0 : 1];
         const marginY = src ? ec.sourceTextMarginY : ec.targetTextMarginY;
 

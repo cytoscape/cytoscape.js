@@ -11,6 +11,21 @@ when the layout changes.
 
 export type GroupName = 'nodes' | 'edges';
 
+/**
+ * The reserved element-data keys (round 127): the four `data` fields
+ * that are first-class in the model rather than sidecar columns — the
+ * id index, the hierarchy and the edge endpoints own them, and the
+ * data paths test for them by these names.  Spelled once here;
+ * `test/modules/string-keys.mjs` rejects a literal comparison elsewhere.
+ */
+export const DATA_ID = 'id';
+export const DATA_PARENT = 'parent';
+export const DATA_SOURCE = 'source';
+export const DATA_TARGET = 'target';
+
+/** An edge end, named by its data key. */
+export type EndKey = typeof DATA_SOURCE | typeof DATA_TARGET;
+
 /** "No slot here" sentinel in slot-valued arrays (compaction remaps,
  * the columnar `parent` column's NO_PARENT twin). */
 export const NO_SLOT = 0xffffffff;

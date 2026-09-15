@@ -1,4 +1,8 @@
 import {
+  DATA_TARGET,
+  DATA_SOURCE,
+  DATA_PARENT,
+  DATA_ID,
   COL,
   CURVE_MULTI,
   CURVE_STRAIGHT,
@@ -2347,15 +2351,18 @@ export class Collection {
       if (ref == null || !this._store.isCurrent(ref)) {
         return undefined;
       }
-      if (key === 'id') {
+      if (key === DATA_ID) {
         return this._store.idAt(ref.group, ref.slot);
       }
 
-      if (ref.group === 'edges' && (key === 'source' || key === 'target')) {
-        return (key === 'source' ? this.source() : this.target()).id();
+      if (
+        ref.group === 'edges' &&
+        (key === DATA_SOURCE || key === DATA_TARGET)
+      ) {
+        return (key === DATA_SOURCE ? this.source() : this.target()).id();
       }
 
-      if (ref.group === 'nodes' && key === 'parent') {
+      if (ref.group === 'nodes' && key === DATA_PARENT) {
         const parentSlot = this._store.parentOf(ref.slot);
 
         return parentSlot < 0
@@ -2389,7 +2396,7 @@ export class Collection {
     };
 
     for (const k of keys) {
-      if (k === 'id') {
+      if (k === DATA_ID) {
         throw new Error(`Can not change the immutable data field 'id'`);
       }
     }
@@ -2402,13 +2409,13 @@ export class Collection {
       }
 
       for (const k of keys) {
-        if (ref.group === 'edges' && (k === 'source' || k === 'target')) {
+        if (ref.group === 'edges' && (k === DATA_SOURCE || k === DATA_TARGET)) {
           throw new Error(
             `Can not change the immutable data field '${k}' of an edge`,
           );
         }
 
-        if (ref.group === 'nodes' && k === 'parent') {
+        if (ref.group === 'nodes' && k === DATA_PARENT) {
           throw new Error(
             `Can not change the immutable data field 'parent' of a node; reparent with move()`,
           );
@@ -4087,9 +4094,9 @@ export class Collection {
     }
 
     const newSource =
-      opts.source != null ? this._resolveNode(opts.source, 'source') : null;
+      opts.source != null ? this._resolveNode(opts.source, DATA_SOURCE) : null;
     const newTarget =
-      opts.target != null ? this._resolveNode(opts.target, 'target') : null;
+      opts.target != null ? this._resolveNode(opts.target, DATA_TARGET) : null;
 
     for (let i = 0; i < this.length; i++) {
       const ref = this._refs[i];

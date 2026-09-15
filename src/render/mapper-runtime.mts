@@ -15,7 +15,7 @@ import type {
   Transform,
   RGBA,
 } from '../style-scales.mjs';
-import { COL } from '../contract.mjs';
+import { DATA_TARGET, DATA_SOURCE, COL } from '../contract.mjs';
 
 /*
 CPU-side packing for the GPU mapper eval pass: lowers compiled paint-
@@ -301,7 +301,7 @@ export const packPrograms = (
   }[] = [];
 
   if (group === 'edges' && ctx != null && ctx.opacityMapped) {
-    for (const end of ['source', 'target'] as const) {
+    for (const end of [DATA_SOURCE, DATA_TARGET] as const) {
       const arrow = ctx[end];
 
       if (arrow.enabled && !arrow.colorMapped) {

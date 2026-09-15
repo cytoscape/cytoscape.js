@@ -29,6 +29,10 @@ import type { TrackEdge } from '../taxi-tracks.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
+  DATA_TARGET,
+  DATA_SOURCE,
+  DATA_PARENT,
+  DATA_ID,
   COL,
   columnSpec,
   columnSpecsForGroup,
@@ -5140,13 +5144,13 @@ export class GraphStore implements ModelView {
     }
 
     for (const key of Object.keys(data)) {
-      if (key === 'id' || key === 'source' || key === 'target') {
+      if (key === DATA_ID || key === DATA_SOURCE || key === DATA_TARGET) {
         continue;
       }
 
       // round 14: a node def's parent resolves as hierarchy (in a second
       // pass, once the batch's nodes all exist), never as sidecar data
-      if (key === 'parent' && group === 'nodes') {
+      if (key === DATA_PARENT && group === 'nodes') {
         continue;
       }
 

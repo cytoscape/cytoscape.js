@@ -9,6 +9,8 @@ import type {
   ElementsDefinition,
   PackedIds,
 } from './public-types.mjs';
+import { DATA_TARGET, DATA_SOURCE, DATA_PARENT, DATA_ID } from './contract.mjs';
+import type { EndKey } from './contract.mjs';
 
 /*
 Definition-form (v3-style JSON) → columnar bulk-load form.  The columnar
@@ -206,7 +208,7 @@ export const buildColumnar = (
   /** The payload index of an endpoint, or -1 when it does not resolve. */
   const endpoint = (
     edgeId: string | undefined,
-    which: 'source' | 'target',
+    which: EndKey,
     raw: unknown,
   ): number => {
     if (raw == null) {
@@ -239,8 +241,8 @@ export const buildColumnar = (
     const def = edges[i];
     const data = def.data ?? {};
     const id = data.id != null ? String(data.id) : undefined;
-    const source = endpoint(id, 'source', data.source);
-    const target = endpoint(id, 'target', data.target);
+    const source = endpoint(id, DATA_SOURCE, data.source);
+    const target = endpoint(id, DATA_TARGET, data.target);
 
     if (source < 0 || target < 0) {
       // non-strict only: not a self-contained payload, so not this
@@ -285,14 +287,14 @@ const collectDataColumns = (
 
     for (const key of Object.keys(data)) {
       if (
-        key === 'id' ||
-        key === 'source' ||
-        key === 'target' ||
+        key === DATA_ID ||
+        key === DATA_SOURCE ||
+        key === DATA_TARGET ||
         data[key] === undefined
       ) {
         continue;
       }
-      if (skipParent && key === 'parent') {
+      if (skipParent && key === DATA_PARENT) {
         continue;
       }
 

@@ -2203,7 +2203,10 @@ each is deliberate, not a pass-1 deferral:
   `TweenColumn` in `animation.mts`.  The string values are unchanged —
   they are what crosses the worker wire and what the specs under
   `test/` spell out, deliberately, so a test still pins the value a
-  constant resolves to.
+  constant resolves to.  The four reserved data keys are `DATA_ID`,
+  `DATA_PARENT`, `DATA_SOURCE` and `DATA_TARGET` in the same file, and
+  `EndKey` names the source/target pair; every `key === 'id'`-style
+  test in the data, ingest, style and label paths reads them.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

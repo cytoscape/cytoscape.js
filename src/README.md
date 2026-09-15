@@ -1792,8 +1792,19 @@ round records carry the histories.
   equilateral triangle and four a diamond (`tidySmallComponents`,
   `layout/pack.mts`; the option is `tidyComponents`, default true).
   The radius is the larger of the component's edge length along every
-  side and its bodies' clearance; the perimeter is walked depth-first
-  from a path's end or a star's hub.  Every component of a size is
+  side and what its bodies need — since 125.1, for every pair of the
+  shape's points, the distance along the pair's own direction at which
+  their boxes stop intersecting (`separationAlong`, the separation
+  pass's rule), because 120 cleared only the shape's *neighbours* a
+  body apart along the sides and the axis-aligned pass that followed
+  broke every diamond of square bodies it was handed (0 of em-web's 4
+  survived a `settle` run; with labels, no triangle did).  The pass
+  now also separates only *within* components when the re-pack
+  follows (the re-pack places components apart by their boxes; a sweep
+  across them only pushed foreign nodes into the shapes) — measured on
+  em-web: 20/20 pairs, 9/9 triangles and 4/4 diamonds stand in every
+  `avoidOverlap` mode, bodies and labels alike.  The perimeter is
+  walked depth-first from a path's end or a star's hub.  Every component of a size is
   then the same box, so the largest-first re-pack lays the quads,
   triples, pairs and singletons out in rows — the EnrichmentMap
   preset's shape — and two centre labels on a pair never sit side by

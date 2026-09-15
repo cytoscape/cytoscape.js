@@ -1242,6 +1242,54 @@ describe('the smallest components take canonical shapes (120)', function () {
     expect(pos(cy, 'd1').y).to.be.closeTo(pos(cy, 'd3').y, 1e-3);
   });
 
+  it('bodies wider than the edges: the diamond and the triangle stand after the settle pass, apart (125.1)', async function () {
+    // em-web's case: 40 px bodies on shorter edges, avoidOverlap on
+    // (the settle's separation pass follows the shapes).  120 sized the
+    // shapes for their neighbours along the sides; the axis-aligned
+    // pass then broke every diamond
+    const cy = cytoscape({
+      elements: SMALL(),
+      style: { nodes: { width: 40, height: 40 } },
+    });
+
+    await cy
+      .layout({ name: 'force', seed: 4, fit: false, edgeLength: 20 })
+      .run()
+      .promise();
+
+    // the diamond: axis-aligned diagonals, four equal sides
+    expect(pos(cy, 'd0').x).to.be.closeTo(pos(cy, 'd2').x, 1e-3);
+    expect(pos(cy, 'd1').y).to.be.closeTo(pos(cy, 'd3').y, 1e-3);
+    expect(d(cy, 'd0', 'd1')).to.be.closeTo(d(cy, 'd1', 'd2'), 1e-3);
+    expect(d(cy, 'd1', 'd2')).to.be.closeTo(d(cy, 'd2', 'd3'), 1e-3);
+
+    // the triangle: equal sides, level base
+    expect(d(cy, 't0', 't1')).to.be.closeTo(d(cy, 't1', 't2'), 1e-3);
+
+    const ys = ['t0', 't1', 't2']
+      .map((id) => pos(cy, id).y)
+      .sort((a, b) => a - b);
+
+    expect(ys[1]).to.be.closeTo(ys[2], 1e-3);
+
+    // and no two bodies overlap, in the shapes or anywhere
+    const boxes = cy
+      .nodes()
+      .map((n) => n.boundingBox({ includeLabels: false }));
+
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+
+        expect(
+          a.x1 < b.x2 && b.x1 < a.x2 && a.y1 < b.y2 && b.y1 < a.y2,
+          `${cy.nodes()[i].id()} overlaps ${cy.nodes()[j].id()}`,
+        ).to.equal(false);
+      }
+    }
+  });
+
   it('tidyComponents: false keeps the sim’s shapes (the control), and a locked node holds its component', async function () {
     const raw = await run({ tidyComponents: false });
 

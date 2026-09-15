@@ -3,6 +3,7 @@ import {
   computeComponents,
   tidySmallComponents,
 } from '../../src/layout/pack.mjs';
+import { separateBodies } from '../../src/layout/force.mjs';
 
 // Round 120: the smallest components take canonical shapes at the
 // settle — a vertical barbell, a point-up triangle, a diamond — so the
@@ -110,12 +111,13 @@ describe('layout/pack: canonical shapes for the smallest components (120)', () =
     const ys = [p[1], p[3], p[5], p[7]];
 
     expect(p[5]).to.equal(Math.min(...ys));
-    // 80 px wide bodies with a 10 px gap: left and right sit 90 apart,
-    // not the 30 the edges asked for
+    // 80 px wide bodies with a 10 px gap: left and right sit 90 apart
+    // (plus the half-pixel the separation pass's strict test needs —
+    // 125.1), not the 30 the edges asked for
     const left = [0, 1, 3].find((i) => p[i * 2] < p[4] - 1);
     const right = [0, 1, 3].find((i) => p[i * 2] > p[4] + 1);
 
-    expect(p[right * 2] - p[left * 2]).to.be.closeTo(90, 1e-4);
+    expect(p[right * 2] - p[left * 2]).to.be.closeTo(90.5, 1e-4);
   });
 
   it('leaves singletons, larger components and a pinned component alone', () => {
@@ -146,5 +148,121 @@ describe('layout/pack: canonical shapes for the smallest components (120)', () =
 
     expect(shaped).to.equal(0);
     expect(Array.from(p)).to.deep.equal(Array.from(before));
+  });
+});
+
+// Round 125.1: the shapes survive the separation pass that follows
+// them.  120 cleared each shape's neighbours a body apart along the
+// shape's sides; the pass clears axis-aligned boxes on either axis,
+// which a diamond's top and right are not, so it broke every diamond
+// of square bodies (0 of em-web's 4 stood after a `settle` run).  The
+// radius now clears every pair by the pass's own rule, and the pass
+// leaves foreign nodes alone when the re-pack follows.
+describe('layout/pack: the shapes survive the separation pass (125.1)', () => {
+  /** square bodies of `side`, padded as the settle pads them (5 per side) */
+  const squares = (n, side, pad = 5) => {
+    const h = side / 2 + pad;
+
+    return {
+      n,
+      x1: new Float32Array(n).fill(-h),
+      y1: new Float32Array(n).fill(-h),
+      x2: new Float32Array(n).fill(h),
+      y2: new Float32Array(n).fill(h),
+      maxW: 2 * h,
+      maxH: 2 * h,
+    };
+  };
+  const cycle = Uint32Array.from([0, 1, 1, 2, 2, 3, 3, 0]);
+  const snapshot = (p) => Array.from(p);
+  const moved = (a, b) => a.some((v, i) => Math.abs(v - b[i]) > 1e-4);
+
+  it('a diamond of square bodies stands after the pass', () => {
+    // 40 px bodies on 30 px edges: the bodies, not the edges, size it
+    const p = new Float32Array([0, 0, 30, 0, 0, 30, 30, 30]);
+    const dims = squares(4, 40);
+    const comps = computeComponents(4, cycle);
+
+    tidySmallComponents(4, cycle, [30, 30, 30, 30], comps, p, dims, 0, null);
+
+    const before = snapshot(p);
+
+    separateBodies(4, p, dims, new Uint8Array(4), comps.compOf, comps.count);
+
+    expect(moved(before, snapshot(p)), 'the pass moved the diamond').to.equal(
+      false,
+    );
+    // and it is a diamond: axis-aligned diagonals, four equal sides
+    const d = (a, b) =>
+      Math.hypot(p[a * 2] - p[b * 2], p[a * 2 + 1] - p[b * 2 + 1]);
+
+    expect(d(0, 1)).to.be.closeTo(d(1, 2), 1e-3);
+    expect(d(0, 2)).to.be.closeTo(d(1, 3), 1e-3);
+  });
+
+  it('control: sized for its edges alone (no boxes), the same diamond is broken by the pass', () => {
+    const p = new Float32Array([0, 0, 30, 0, 0, 30, 30, 30]);
+    const dims = squares(4, 40);
+    const comps = computeComponents(4, cycle);
+
+    // dims null: 120's shape at the edge length, 30 px sides
+    tidySmallComponents(4, cycle, [30, 30, 30, 30], comps, p, null, 0, null);
+
+    const before = snapshot(p);
+
+    separateBodies(4, p, dims, new Uint8Array(4), comps.compOf, comps.count);
+
+    expect(moved(before, snapshot(p))).to.equal(true);
+  });
+
+  it('within components, a foreign node overlapping the shape is left to the re-pack', () => {
+    // the diamond, and a fifth node of another component sitting on
+    // its right point
+    const edges = cycle;
+    const p = new Float32Array([0, 0, 30, 0, 0, 30, 30, 30, 0, 0]);
+    const dims = squares(5, 40);
+    const comps = computeComponents(5, edges);
+
+    tidySmallComponents(5, edges, [30, 30, 30, 30], comps, p, dims, 0, null);
+
+    // drop the singleton onto the diamond's right point
+    const right = [0, 1, 2, 3].reduce((a, b) => (p[b * 2] > p[a * 2] ? b : a));
+
+    p[8] = p[right * 2];
+    p[9] = p[right * 2 + 1];
+
+    const before = snapshot(p);
+    const across = Float32Array.from(p);
+
+    separateBodies(
+      5,
+      p,
+      dims,
+      new Uint8Array(5),
+      comps.compOf,
+      comps.count,
+      undefined,
+      true,
+    );
+    expect(
+      moved(before.slice(0, 8), snapshot(p).slice(0, 8)),
+      'the diamond moved',
+    ).to.equal(false);
+
+    // the control: across components (no re-pack to follow), the pass
+    // clears the pair and the diamond gives
+    separateBodies(
+      5,
+      across,
+      dims,
+      new Uint8Array(5),
+      comps.compOf,
+      comps.count,
+      undefined,
+      false,
+    );
+    expect(moved(before.slice(0, 8), Array.from(across).slice(0, 8))).to.equal(
+      true,
+    );
   });
 });

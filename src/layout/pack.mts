@@ -19,6 +19,8 @@ export interface Components {
   count: number;
 }
 
+import { separationAlong } from './separation.mjs';
+
 /**
  * Union-find over the sim's edge pairs.
  *
@@ -643,7 +645,9 @@ export const fitBodiesToBox = (
  * @param comps — the component assignment
  * @param positions — 2n interleaved coordinates, rewritten in place
  * @param dims — per-node body boxes (node-local), or null for points
- * @param gap — the clearance between neighbouring bodies
+ * @param gap — the clearance to add between neighbouring bodies beyond
+ *   what the boxes carry: 0 when the boxes are already padded (the
+ *   settle's, under avoidOverlap), the padding otherwise
  * @param pinned — per-node non-zero for a node that must not move
  * @returns how many components took a shape
  */
@@ -760,42 +764,70 @@ export const tidySmallComponents = (
       }
     }
 
-    // the shape's radius: the edge length along every side, or the
-    // bodies' clearance, whichever is larger
+    // the shape at unit radius, and the radius the edge length asks
     let r: number;
-    let points: [number, number][];
+    let unit: [number, number][];
 
     if (size === 2) {
-      r = Math.max(meanL / 2, (bodyH + gap) / 2);
-      points = [
-        [0, -r],
-        [0, r],
+      r = meanL / 2;
+      unit = [
+        [0, -1],
+        [0, 1],
       ];
     } else if (size === 3) {
       // circumradius of an equilateral triangle of side meanL, point up;
-      // the base pair sits side by side, a body width apart
-      r = Math.max(meanL / Math.sqrt(3), (bodyW + gap) / Math.sqrt(3));
-      points = [
-        [0, -r],
-        [r * Math.cos(Math.PI / 6), r * Math.sin(Math.PI / 6)],
-        [-r * Math.cos(Math.PI / 6), r * Math.sin(Math.PI / 6)],
+      // the base pair sits side by side
+      r = meanL / Math.sqrt(3);
+      unit = [
+        [0, -1],
+        [Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)],
+        [-Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)],
       ];
     } else {
       // a diamond of side meanL: top, right, bottom, left
-      r = Math.max(meanL / Math.SQRT2, (bodyW + gap) / 2, (bodyH + gap) / 2);
-      points = [
-        [0, -r],
-        [r, 0],
-        [0, r],
-        [-r, 0],
+      r = meanL / Math.SQRT2;
+      unit = [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
       ];
+    }
+
+    // ... or what the bodies need, whichever is larger.  120 cleared
+    // each shape's *neighbours* a body apart along the shape's own
+    // sides; the separation pass that follows (114.5) clears
+    // axis-aligned boxes on either axis, which a diamond's top and
+    // right, a body width apart along the diagonal, are not — so the
+    // pass broke every diamond of square bodies it was handed (125.1:
+    // 0 of em-web's 4 survived a `settle` run; with labels, no
+    // triangle did either).  The radius now clears every pair of the
+    // shape by the pass's own rule — `separationAlong`, the distance
+    // along the pair's direction at which their boxes no longer
+    // intersect — plus the gap, so the pass finds the shape clear and
+    // leaves it standing.  Without boxes the old clearance stands in.
+    for (let k = 0; k < unit.length; k++) {
+      for (let l = k + 1; l < unit.length; l++) {
+        const dx = unit[l][0] - unit[k][0];
+        const dy = unit[l][1] - unit[k][1];
+        const len = Math.hypot(dx, dy);
+        // the pass tests strictly, so a hair past touching
+        const need =
+          dims != null
+            ? separationAlong(dims, order[k], order[l], dx / len, dy / len) +
+              gap +
+              0.5
+            : Math.max(bodyW, bodyH) + gap;
+
+        r = Math.max(r, need / len);
+      }
     }
 
     for (let k = 0; k < order.length; k++) {
       const i = order[k];
 
-      positions[i * 2] = cx + points[k][0];
-      positions[i * 2 + 1] = cy + points[k][1];
+      positions[i * 2] = cx + unit[k][0] * r;
+      positions[i * 2 + 1] = cy + unit[k][1] * r;
     }
 
     shaped++;

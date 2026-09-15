@@ -25,6 +25,16 @@ import type { LayoutNodeDims } from './dims.mjs';
 /** Boxes can be any four parallel node-local extents. */
 export type Extents = Pick<LayoutNodeDims, 'x1' | 'y1' | 'x2' | 'y2'>;
 
+/** The same four columns as any array-like — what `separationAlong`
+ * reads, so a caller holding plain arrays (the pack module's
+ * `NodeExtents`) asks the same question of the same rule. */
+export interface ExtentsLike {
+  x1: ArrayLike<number>;
+  y1: ArrayLike<number>;
+  x2: ArrayLike<number>;
+  y2: ArrayLike<number>;
+}
+
 /** Boxes with their largest width and height — what a grid over them
  * is hashed by (118.2: the force sim's `extents` and the settle's dims
  * are both this shape). */
@@ -259,17 +269,30 @@ export class OverlapGrid {
    *
    * @param pos — 2n interleaved positions, moved in place
    * @param pinned — per-node 1 when the node must not move, or null
+   * @param compOf — per-node component id; when given, a pair from two
+   *   components is left alone (125.1: the settle's re-pack places
+   *   components apart by their boxes, and a sweep that pushed a
+   *   foreign node into a small component's canonical shape broke the
+   *   shape for nothing)
    * @returns the largest distance any pair was opened by — 0 when no
    *   pair overlapped (or every overlapping pair was pinned at both
    *   ends), so a caller folding it into a settle test reads a quiet
    *   sweep as quiet
    */
-  sweep(pos: Float32Array, pinned: Uint8Array | null): number {
+  sweep(
+    pos: Float32Array,
+    pinned: Uint8Array | null,
+    compOf: Int32Array | null = null,
+  ): number {
     let largest = 0;
 
     this.forEach(
       pos,
       (i, j, ox, oy) => {
+        if (compOf != null && compOf[i] !== compOf[j]) {
+          return;
+        }
+
         largest = Math.max(largest, pushApart(pos, pinned, i, j, ox, oy));
       },
       true,
@@ -295,7 +318,7 @@ export class OverlapGrid {
  * @returns the distance `d`, never negative
  */
 export const separationAlong = (
-  dims: Extents,
+  dims: ExtentsLike,
   i: number,
   j: number,
   ux: number,

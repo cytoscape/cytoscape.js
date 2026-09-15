@@ -152,7 +152,9 @@ export interface ForceRunOptions {
   /** the smallest components take canonical shapes at the settle
    * (round 120, default true): two nodes stand as a vertical barbell,
    * three as a point-up triangle, four as a diamond, sized to the
-   * component's edge length and its bodies' clearance — so every
+   * component's edge length and its bodies' clearance by the
+   * separation pass's own rule (125.1), so the pass leaves the shape
+   * standing — so every
    * component of a size is the same box and the largest-first re-pack
    * lays them out in orderly rows, and two centre labels on a pair
    * never sit side by side.  A component holding a locked node keeps
@@ -367,6 +369,13 @@ const EXPAND_ROUNDS = 12;
  * @param trace — called after each stage with its name (`sweeps`,
  *   `stress:<round>`, `final`) — the per-stage measurement hook the
  *   modules tier and item 57's probe read; never called by the layout
+ * @param withinComponents — separate only pairs of one component
+ *   (125.1): what the settle asks when its re-pack follows, since the
+ *   re-pack places components apart by their boxes anyway and a sweep
+ *   that pushed a foreign node into a small component's canonical
+ *   shape (120) broke the shape for nothing.  The stress rounds and
+ *   the expansion were already per component; this extends the rule
+ *   to the sweeps and to the depth the best-state guard compares.
  */
 export const separateBodies = (
   n: number,
@@ -376,12 +385,14 @@ export const separateBodies = (
   compOf: Int32Array,
   count: number,
   trace?: (stage: string) => void,
+  withinComponents: boolean = false,
 ): void => {
   if (n < 2 || count < 1) {
     return;
   }
 
   const grid = new OverlapGrid(n, dims);
+  const sweepComps = withinComponents ? compOf : null;
   const forEachNear = (
     visit: (i: number, j: number, ox: number, oy: number) => void,
     overlappingOnly: boolean,
@@ -389,7 +400,7 @@ export const separateBodies = (
 
   const sweeps = (limit: number): boolean => {
     for (let k = 0; k < limit; k++) {
-      if (grid.sweep(pos, pinned) === 0) {
+      if (grid.sweep(pos, pinned, sweepComps) === 0) {
         return false;
       }
     }
@@ -577,11 +588,18 @@ export const separateBodies = (
     ratiosOf.length = 0;
 
     forEachNear((i, j, ox, oy) => {
-      depth += Math.min(ox, oy);
-
       if (compOf[i] !== compOf[j]) {
+        // a foreign pair's depth is the re-pack's to clear when one
+        // follows; counting it would have the guard hold a field back
+        // for overlaps this pass no longer touches
+        if (!withinComponents) {
+          depth += Math.min(ox, oy);
+        }
+
         return;
       }
+
+      depth += Math.min(ox, oy);
 
       for (const node of [i, j]) {
         if (touched[node] === 0) {
@@ -1355,7 +1373,9 @@ export class ForceLayoutImpl implements LayoutImpl {
           comps,
           arr,
           dims,
-          avoidOverlap ? (options.avoidOverlapPadding ?? 10) : 10,
+          // the settle's dims already carry the padding (half per
+          // side); raw boxes take it here
+          avoidOverlap ? 0 : (options.avoidOverlapPadding ?? 10),
           pinned,
         );
         // and the larger ones turn to a canonical angle (121.2) — the
@@ -1369,7 +1389,19 @@ export class ForceLayoutImpl implements LayoutImpl {
       }
 
       if (overlapMode === 'settle' || overlapMode === 'both') {
-        separateBodies(n, arr, dims, pinned, comps.compOf, comps.count);
+        // within components when the re-pack follows (125.1): the
+        // re-pack places components apart; a pass across them only
+        // broke the small components' shapes
+        separateBodies(
+          n,
+          arr,
+          dims,
+          pinned,
+          comps.compOf,
+          comps.count,
+          undefined,
+          !skipRepack,
+        );
       }
 
       if (constraints != null && arr === positions) {

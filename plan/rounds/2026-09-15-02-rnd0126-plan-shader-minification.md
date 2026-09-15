@@ -93,7 +93,7 @@ bundle reliably, retain the current transform and record the evidence.
 
 Use [glslx](https://github.com/evanw/glslx) for build-time GLSL minification
 in the future WebGL renderer fallback. Carry this requirement into the
-fallback work scoped by [round 73](2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md).
+fallback work scoped by round 73 (the WebGL2 fallback, scoped).
 Validate glslx against the fallback's actual GLSL ES version and shader
 features before integration, and preserve or map host-visible shader names.
 Apply equivalent compressed-size measurements and browser/pixel-parity

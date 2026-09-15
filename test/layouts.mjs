@@ -325,6 +325,41 @@ describe('gpu/layouts', function () {
 
       expect(allAtSame).to.be.false;
     });
+
+    // 125.8: the audit's stability criterion — a seed makes the scatter
+    // a function of the graph, as every other built-in is
+    it('a seed makes the scatter deterministic; seeds differ; none is unseeded', function () {
+      const snap = (c) =>
+        c.nodes().map((n) => [n.id(), n.position().x, n.position().y]);
+      const a = star();
+      const b = star();
+      const c = star();
+      const d = star();
+      const e = star();
+
+      a.layout({ name: 'random', fit: false, seed: 7 }).run();
+      b.layout({ name: 'random', fit: false, seed: 7 }).run();
+      c.layout({ name: 'random', fit: false, seed: 8 }).run();
+      d.layout({ name: 'random', fit: false }).run();
+      e.layout({ name: 'random', fit: false }).run();
+
+      expect(snap(a)).to.deep.equal(snap(b));
+      expect(snap(a)).to.not.deep.equal(snap(c));
+      // the control: without a seed two runs (almost surely) differ
+      expect(snap(d)).to.not.deep.equal(snap(e));
+      // and every seeded position is inside the viewport box
+      a.nodes().forEach((node) => {
+        expect(node.position().x).to.be.within(0, 800);
+        expect(node.position().y).to.be.within(0, 600);
+      });
+    });
+
+    it('rejects a non-finite seed', function () {
+      expect(() => star().layout({ name: 'random', seed: NaN }).run()).to.throw(
+        TypeError,
+        /seed must be a finite number/,
+      );
+    });
   });
 
   describe('eles.layout() scoping', function () {

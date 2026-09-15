@@ -1069,6 +1069,25 @@ its Cosmos engine are v3-cose limitations, and `force` runs em-web
 (7.5k elements) in 0.3 s and 25k × 50k in 3.0 s on the GPU from a
 seed.
 
+**Preset and random, audited for their contract (round 125.8).**  The
+two built-ins without an algorithm were audited for what they promise
+rather than for a picture.  `preset`: an id-keyed map or a function;
+a node without an entry keeps its position (a node never positioned
+sits at the model's `(0, 0)`); parents derive from their children and
+locked nodes hold; `fit` wins over `zoom` / `pan` when both are given
+(v3's rule — set `fit: false` to use them); `spacingFactor` is ignored
+on both paths, since explicit positions are not scaled.  **A supplied
+position must carry a finite x and y**: a map entry of `{ x: 100 }`
+used to write `y: NaN` into the store and a `null` axis became `0`
+through the column, both silently — the half-positions a data import
+produces — and both now throw a `TypeError` naming the node, on the
+direct path and the finisher path alike.  `random`: uniform over the
+viewport box or the given `boundingBox`; **a `seed` makes the scatter
+deterministic** (mulberry32; omitted, `Math.random` as v3), which is
+the stability the audit asks of every layout.  Neither takes
+`avoidOverlap` — a pushed-apart scatter is neither random nor uniform,
+and preset's positions are the user's.
+
 ## Component packing on the discrete layouts, and the `pack` layout (round 123, item 58)
 
 **`packComponents: true`** on `circle`, `concentric`, `grid`,

@@ -17,6 +17,30 @@ the run finishes through the shared `eles.layoutPositions` instead
 (87.3).
 */
 
+/**
+ * A supplied position must carry a finite x and a finite y (125.8): a
+ * map entry of `{ x: 100 }` used to write `y: NaN` into the store, and
+ * a `null` axis was coerced to 0 by the column — both silently, and
+ * both the kind of half-position a data import produces.  Loud, as v4
+ * is by design.
+ *
+ * @param pos — the position handed in for `id`
+ * @param id — the node it is for, for the message
+ */
+const checkPosition = (pos: Position, id: string): void => {
+  if (
+    pos == null ||
+    typeof pos.x !== 'number' ||
+    typeof pos.y !== 'number' ||
+    !Number.isFinite(pos.x) ||
+    !Number.isFinite(pos.y)
+  ) {
+    throw new TypeError(
+      `The preset layout's position for node '${id}' must have a finite x and y, got ${JSON.stringify(pos)}`,
+    );
+  }
+};
+
 const defaults: Omit<PresetLayoutOptions, 'name'> = {
   positions: undefined, // map of (node id) => position, or function(node) => position
   zoom: undefined, // the zoom level to set (prob want fit = false if set)
@@ -92,11 +116,17 @@ export class PresetLayout {
           return false;
         } // parents derive (14.11)
 
-        return (
-          (positions as (node: Collection) => Position | null | undefined)(
-            ele,
-          ) ?? false
-        );
+        const pos = (
+          positions as (node: Collection) => Position | null | undefined
+        )(ele);
+
+        if (pos == null) {
+          return false;
+        }
+
+        checkPosition(pos, ele.id() as string);
+
+        return pos;
       });
     } else if (positions != null) {
       // map form: resolve ids to slots directly; absent ids keep their position
@@ -111,6 +141,8 @@ export class PresetLayout {
         if (entry == null || entry.group !== 'nodes' || pos == null) {
           continue;
         }
+
+        checkPosition(pos, id);
         if (store.hasFlag('nodes', entry.slot, FLAG_PARENT)) {
           continue;
         } // parents derive (14.11)
@@ -173,9 +205,15 @@ export class PresetLayout {
         pos = positions[node.id() as string];
       }
 
+      if (pos != null) {
+        checkPosition(pos, node.id() as string);
+
+        return pos;
+      }
+
       const current = node.position() as Position;
 
-      return pos ?? { x: current.x, y: current.y };
+      return { x: current.x, y: current.y };
     };
 
     nodes.layoutPositions(

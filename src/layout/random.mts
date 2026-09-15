@@ -4,12 +4,39 @@ import type { RandomLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
 
-/** Random layout: v3's, over the collection scope via layoutPositions. */
+/** Random layout: v3's, over the collection scope via layoutPositions.
+ * 125.8: a `seed` makes the scatter deterministic — the one property
+ * the audit's stability criterion asks of every layout and a scatter
+ * from `Math.random` cannot give; without one it is v3's, unseeded. */
+
+/**
+ * mulberry32: a small, well-distributed 32-bit generator, enough for a
+ * scatter.  Not shared with force's Knuth hash — that one is indexed
+ * by sim slot for the GPU's sake; this one is a plain stream.
+ *
+ * @param seed — any number; its low 32 bits seed the stream
+ * @returns a function yielding uniform doubles in [0, 1)
+ */
+export const mulberry32 = (seed: number): (() => number) => {
+  let a = seed >>> 0;
+
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+
+    let t = a;
+
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
 
 const defaults: Omit<RandomLayoutOptions, 'name'> = {
   fit: true,
   padding: 30,
   boundingBox: undefined,
+  seed: undefined,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -66,9 +93,18 @@ export class RandomLayout {
       },
     ) as BoundingBox;
 
+    const seed = options.seed;
+
+    if (seed != null && !Number.isFinite(seed)) {
+      throw new TypeError(
+        `The random layout's seed must be a finite number, got ${String(seed)}`,
+      );
+    }
+
+    const rand = seed != null ? mulberry32(seed) : Math.random;
     const getPos = (): { x: number; y: number } => ({
-      x: bb.x1 + Math.round(Math.random() * bb.w),
-      y: bb.y1 + Math.round(Math.random() * bb.h),
+      x: bb.x1 + Math.round(rand() * bb.w),
+      y: bb.y1 + Math.round(rand() * bb.h),
     });
 
     eles.nodes().layoutPositions(this, { ...options, eles }, getPos);

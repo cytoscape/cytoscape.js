@@ -574,6 +574,11 @@ export interface BreadthFirstLayoutOptions
 
 export interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
+  /** a seed for the scatter (125.8): the same seed places the same
+   * graph the same way, run after run and instance after instance —
+   * the stability every other built-in has and a scatter otherwise
+   * cannot.  Omitted (the default), the scatter is `Math.random`'s. */
+  seed?: number;
 }
 
 /** The `pack` layout (round 123, item 58): a translation-only re-pack

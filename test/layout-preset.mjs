@@ -106,6 +106,33 @@ describe('gpu/layout: preset', function () {
     expect(spans).to.have.length(1);
   });
 
+  // 125.8: a half position used to write NaN into the store (a map
+  // entry of { x: 100 }), and a null axis became 0 through the column
+  it('rejects a position without a finite x and y, on both paths (125.8)', function () {
+    const bad = [
+      { x: 100 },
+      { x: 1, y: null },
+      { x: NaN, y: 1 },
+      { x: '7', y: 1 },
+    ];
+
+    for (const pos of bad) {
+      expect(
+        () => cy.layout({ name: 'preset', positions: { a: pos } }).run(),
+        JSON.stringify(pos),
+      ).to.throw(TypeError, /position for node 'a' must have a finite x and y/);
+      // the finisher path (a stop callback) validates the same
+      expect(
+        () =>
+          cy.layout({ name: 'preset', positions: () => pos, stop() {} }).run(),
+        'finisher: ' + JSON.stringify(pos),
+      ).to.throw(TypeError, /must have a finite x and y/);
+    }
+
+    // the control: nothing was written by the failed runs
+    expect(cy.$id('a').position()).to.deep.equal({ x: 1, y: 1 });
+  });
+
   it('runs via the layout init option', function () {
     var laidOut = cytoscape({
       headlessWidth: 400,

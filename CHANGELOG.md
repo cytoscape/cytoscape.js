@@ -24,6 +24,9 @@ that compile and then behave differently.
 
 ### Added
 
+- **A `seed` on the `random` layout** (round 125.8): the same seed places
+  the same graph the same way, run after run — the stability every other
+  built-in has.  Omitted, the scatter is unseeded as before.
 - **Taxi tracks — automatic turn distances per bundle** (round 124,
   item 59): `taxi-turn: auto` takes an edge's px turn from a track the
   store assigns from live positions, so the runs of different fan-outs

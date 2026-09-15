@@ -5171,6 +5171,23 @@ fragment premium is **unmeasurable at scene level** on real hardware
 > two entries that once said otherwise are both closed: the arrow `gap`
 > landed in round 56, and `border-style` / `outline-style` in round 38.)
 
+- **`breadthfirst` is sized by the viewport in pixels, not by the
+  zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
+  `cy.extent()` — the viewport in model coordinates — so the drawing
+  scales with 1 / zoom at the moment the layout runs: on the debug page
+  after a fitted `flow` run (zoom 0.11) the same reactome tree came out
+  nine times airier than headless (nearest gap 269 px against 30 for
+  18 px nodes), which is what the layout quality audit's first sitting
+  saw as "too airy even without avoidOverlap".  v4 reads the pixel
+  viewport, as its grid, circle, concentric and radial already did, so
+  a layout's output is not a function of where the user was zoomed; at
+  zoom 1 nothing changes.  The same round made a compound parent never
+  a root: v3's undirected root inference took the maximal-degree node
+  of every component, and an edgeless parent is its own component of
+  degree 0, so it was walked into a depth and every node's dimensions
+  were then read through an index the parent was never in — NaN for
+  the whole drawing on any graph with such a parent (the npm-deps
+  scene).  Parents derive from their children and are never placed.
 - **`:active` reaches edges a frame late** (round 57.1, narrowed in
   round 57.8 — kept here because the answer changed).  As recorded in
   57.1, pressing an edge activated *nothing*: the press target was the

@@ -139,8 +139,19 @@ export class BreadthFirstLayout {
     }
 
     const hasBoundingBox = options.boundingBox != null;
+    // the box the rows and ranks are spread over: an explicit
+    // boundingBox, else the viewport in *pixels* as grid, circle,
+    // concentric and radial take it (125.4).  v3 (and v4 until 125.4)
+    // read `cy.extent()` here — the viewport in model coordinates —
+    // so the drawing scaled with 1 / zoom at the moment the layout
+    // ran: on the debug page after a fitted flow run (zoom 0.11) the
+    // same tree came out nine times airier than headless, which is
+    // the first sitting's "too airy even without avoidOverlap".  A
+    // layout's output is not a function of where the user was zoomed.
     const bb = math.makeBoundingBox(
-      hasBoundingBox ? options.boundingBox : cy.extent(),
+      hasBoundingBox
+        ? options.boundingBox
+        : { x1: 0, y1: 0, w: cy.width(), h: cy.height() },
     ) as BoundingBox;
 
     // resolve the roots: collection, id array, or derived
@@ -165,9 +176,21 @@ export class BreadthFirstLayout {
       roots = cy.collection();
 
       for (const comp of components) {
-        const maxDegree = comp.maxDegree(false) as number;
-        const compRoots = comp.filter(
-          (ele: Collection) => ele.isNode() && ele.degree(false) === maxDegree,
+        // over the placed nodes only (125.4): a compound parent is its
+        // own edgeless component, so it read as a root of degree 0,
+        // the walk placed it in a depth, and every node's dimensions
+        // were then read through an index the parent was never in —
+        // NaN for the whole drawing on any graph with an edgeless
+        // parent (the npm-deps scene, or one parent with two children)
+        const placed = comp.filter((ele: Collection) => nodes.has(ele));
+
+        if (placed.length === 0) {
+          continue;
+        }
+
+        const maxDegree = placed.maxDegree(false) as number;
+        const compRoots = placed.filter(
+          (ele: Collection) => ele.degree(false) === maxDegree,
         );
 
         roots = roots.union(compRoots);
@@ -275,6 +298,13 @@ export class BreadthFirstLayout {
       roots,
       directed,
       visit: (node, _edge, _pNode, _i, depth) => {
+        // a parent reached through an edge to it is not placed (parents
+        // derive from their children); a root handed in by the caller
+        // that is a parent is skipped the same way
+        if (!nodes.has(node)) {
+          return;
+        }
+
         addToDepth(node, depth);
         foundByBfs.add(node);
       },

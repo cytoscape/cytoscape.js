@@ -551,6 +551,14 @@ export interface ConcentricLayoutOptions
   levelWidth?: (nodes: unknown) => number;
 }
 
+/**
+ * v3's depth rows.  Without a `boundingBox` the rows and ranks are
+ * spread over the viewport in *pixels*, as grid, circle, concentric and
+ * radial spread theirs (125.4) — v3 read the viewport in model
+ * coordinates, so its drawing scaled with the zoom at the moment the
+ * layout ran.  A compound parent is never a root or a placed node;
+ * parents derive from their children.
+ */
 export interface BreadthFirstLayoutOptions
   extends LayoutBaseOptions, ComponentPackingOptions {
   name: 'breadthfirst';

@@ -343,6 +343,57 @@ describe('gpu/layouts', function () {
       expect(posOf('d').y).to.be.above(posOf('b').y);
     });
 
+    it('undirected: a compound parent with no edges is not a root, and every node is finite (125.4)', function () {
+      // the parent was its own edgeless component, read as a root of
+      // degree 0, walked into a depth, and every dimension was then
+      // read through an index it was never in: NaN for the whole
+      // drawing (the npm-deps scene, or this graph).  Before the fix
+      // a, b and s1 came out NaN here.
+      cy = makeCy([
+        { data: { id: 'p' } },
+        { data: { id: 'a', parent: 'p' } },
+        { data: { id: 'b', parent: 'p' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 's1' } },
+      ]);
+      cy.layout({ name: 'breadthfirst', fit: false }).run();
+
+      for (const id of ['a', 'b', 's1']) {
+        expect(Number.isFinite(posOf(id).x), id).to.equal(true);
+        expect(Number.isFinite(posOf(id).y), id).to.equal(true);
+      }
+
+      // both ends of the pair have the maximal degree, so both are
+      // roots on one row (v3's inference); the pair is still a pair
+      expect(posOf('a').x).to.not.be.closeTo(posOf('b').x, 1e-3);
+    });
+
+    it('is sized by the viewport in pixels, not by the zoomed extent (125.4)', function () {
+      // v3 (and v4 until 125.4) spread the rows over cy.extent(), the
+      // viewport in model coordinates, so the drawing scaled with
+      // 1 / zoom at the moment the layout ran — nine times airier on
+      // the debug page after a fitted flow run than headless.  The
+      // control: with the extent read back in, the zoomed run's span
+      // is ten times the other's.
+      cy = tree();
+      cy.zoom(1);
+      cy.pan({ x: 0, y: 0 });
+      cy.layout({ name: 'breadthfirst', fit: false }).run();
+
+      const atOne = Object.fromEntries(
+        cy.nodes().map((n) => [n.id(), { ...n.position() }]),
+      );
+
+      cy.zoom(0.1);
+      cy.pan({ x: 300, y: -200 });
+      cy.layout({ name: 'breadthfirst', fit: false }).run();
+
+      cy.nodes().forEach((n) => {
+        expect(n.position().x, n.id()).to.be.closeTo(atOne[n.id()].x, 1e-6);
+        expect(n.position().y, n.id()).to.be.closeTo(atOne[n.id()].y, 1e-6);
+      });
+    });
+
     it('undirected with derived roots covers all nodes', function () {
       cy = tree();
       cy.layout({ name: 'breadthfirst', fit: false }).run();

@@ -1,5 +1,5 @@
 import * as is from '../../is.mjs';
-import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math.mjs';
+import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox, getRotatedLabelBox as getRotatedLabelBoxGeometry } from '../../math.mjs';
 import {defaults, endsWith, getPrefixedProperty, hashIntsArray, memoize} from '../../util/index.mjs';
 import { labelHalign, labelValign } from '../../style/align.mjs';
 
@@ -28,60 +28,38 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
-elesfn.renderedActualLabelBoundingBox = function( options ){
-  let polygon = this.actualLabelBoundingBox( options );
-  let cy = this.cy();
-  let zoom = cy.zoom();
-  let pan = cy.pan();
-
-  return polygon.map(p => ({
-    x: p.x * zoom + pan.x,
-    y: p.y * zoom + pan.y
-  }));
-};
-
 elesfn.actualLabelBoundingBox = function( options ) {
+  let ele = this[0];
+
+  if( !ele ){ return null; }
+
   let label = (options && options.label) || 'main';
   let prefix = label === 'main' ? undefined : label; // 'source' | 'target' | undefined
 
-  let isDirty = memoize(ele => {
-    let _p = ele._private;
-    let cache = _p.labelPolygonCache;
+  let _p = ele._private;
+  let cache = _p.labelPolygonCache;
+  let posKey = getLabelPolygonPosKey(ele);
+  let isDirty = cache == null || cache[label] == null || _p.styleDirty || _p.labelPolygonPosKey !== posKey;
 
-    return cache == null || cache[label] == null || _p.styleDirty || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele);
-  }, ele => ele.id());
-
-  if (this.length === 1 && !isDirty(this[0])) {
-    return this[0]._private.labelPolygonCache[label];
+  if( !isDirty ){
+    return cache[label];
   }
 
-  let eles = this;
-  let cy = eles.cy();
-  let styleEnabled = cy.styleEnabled();
-  this.edges().forEach(isDirty);
-  this.nodes().forEach(isDirty);
-
-  if(styleEnabled) {
-    this.recalculateRenderedStyle();
+  if( ele.cy().styleEnabled() ){
+    ele.recalculateRenderedStyle();
   }
 
-  let bounds;
+  posKey = getLabelPolygonPosKey(ele);
 
-  for (let i = 0; i < eles.length; i++) {
-    let ele = eles[i];
-    let _p = ele._private;
-
-    if( _p.labelPolygonCache == null || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele) ){
-      _p.labelPolygonCache = {};
-      _p.labelPolygonPosKey = getLabelPolygonPosKey(ele);
-    }
-
-    let polygon = getRotatedLabelBox(ele, prefix);
-    _p.labelPolygonCache[label] = polygon;
-    bounds = polygon;
+  if( _p.labelPolygonCache == null || _p.labelPolygonPosKey !== posKey ){
+    _p.labelPolygonCache = {};
+    _p.labelPolygonPosKey = posKey;
   }
 
-  return bounds;
+  let polygon = getRotatedLabelBox(ele, prefix);
+  _p.labelPolygonCache[label] = polygon;
+
+  return polygon;
 };
 
 elesfn.dirtyCompoundBoundsCache = function(silent = false){
@@ -285,63 +263,30 @@ let getRotatedLabelBox = function (ele, prefix) {
 
   if( ele.cy().headless() ){ return; }
 
-  var _p = ele._private;
-  let cy = ele.cy();
-  var zoom = cy.zoom();
-  var th = 2 / zoom;
-  ele.boundingBox({ includeLabels: true });
-
-  var prefixDash = prefix ? prefix + '-' : '';
+  let _p = ele._private;
+  let prefixDash = prefix ? prefix + '-' : '';
   let label = ele.pstyle( prefixDash + 'label' ).strValue;
   if (!label) {
     return null;
   }
-  let bbPrefix = prefix || 'main';
-  let bbs = _p.labelBounds;
-  let bb = bbs[bbPrefix] = bbs[bbPrefix] || {};
 
-  // If the bounding box is not available, return null.
-  // This indicates that the label box cannot be calculated, which is consistent
-  // with the expected behavior of this function. Returning null allows the caller
-  // to handle the absence of a bounding box explicitly.
+  ele.boundingBox({ includeLabels: true });
+
+  let bbPrefix = prefix || 'main';
+  let bb = _p.labelBounds[bbPrefix];
+
   if (!bb) {
     return null;
   }
 
-  var lx = prefixedProperty(_p.rscratch, 'labelX', prefix);
-  var ly = prefixedProperty(_p.rscratch, 'labelY', prefix);
-  var theta = prefixedProperty(_p.rscratch, 'labelAngle', prefix);
+  let lx = prefixedProperty(_p.rscratch, 'labelX', prefix);
+  let ly = prefixedProperty(_p.rscratch, 'labelY', prefix);
+  let theta = prefixedProperty(_p.rscratch, 'labelAngle', prefix);
 
-  var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
-  var oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
+  let ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
+  let oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
 
-  var lx1 = bb.x1 - th - ox;
-  var lx2 = bb.x2 + th - ox;
-  var ly1 = bb.y1 - th - oy;
-  var ly2 = bb.y2 + th - oy;
-
-  if (theta) {
-    var cos = Math.cos(theta);
-    var sin = Math.sin(theta);
-
-    var rotate = function (x, y) {
-      x = x - lx;
-      y = y - ly;
-      return {
-        x: x * cos - y * sin + lx,
-        y: x * sin + y * cos + ly,
-      };
-    };
-
-    return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
-  } else {
-    return [
-      { x: lx1, y: ly1 },
-      { x: lx2, y: ly1 },
-      { x: lx2, y: ly2 },
-      { x: lx1, y: ly2 },
-    ];
-  }
+  return getRotatedLabelBoxGeometry(bb, lx, ly, theta, ox, oy, 0);
 }
 
 let updateBoundsFromArrow = function( bounds, ele, prefix ){
@@ -1179,6 +1124,5 @@ elesfn.boundingBoxAt = function( fn ){
 fn.boundingbox = fn.bb = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
 fn.actualLabelBoundingbox = fn.actualLabelBoundingBox;
-fn.renderedActualLabelBoundingbox = fn.renderedActualLabelBoundingBox;
 
 export default elesfn;

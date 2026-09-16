@@ -2205,13 +2205,6 @@ declare namespace cytoscape {
          */
         actualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
         actualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
-        /**
-         * Get the bounding polygon of a label in rendered coordinates.
-         * For edges, use `label: 'source'` or `label: 'target'` to select a specific label slot.
-         * Defaults to the main label.
-         */
-        renderedActualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
-        renderedActualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
     }
 
     /**
@@ -3017,29 +3010,28 @@ declare namespace cytoscape {
             ele: SingularElementReturnValue;
         };
         /**
-         * Returns a new collection containing nodes whose position lies inside
-         * the specified rectangular box in model coordinates.
-         * This is a spatial filter based on element positions.
+         * Returns subset of collection within the given box, using the
+         * renderer's box-selection rules. Only considers interactive elements.
          *
          * @param box BoundingBox12 & BoundingBoxWH
          */
         withinBox(box: BoundingBox12 & BoundingBoxWH): Collection<TIn>;
         /**
-         * Returns a new collection containing nodes whose polygonal bounds
-         * intersect the specified polygon in model coordinates.
+         * Returns a new collection containing elements whose body or main label
+         * polygonal bounds intersect the specified polygon in model coordinates.
          * This is a spatial filter based on polygon-polygon intersection using SAT.
          *
          * @param polygon Array of points {x, y} defining a polygon
          */
         polygonIntersection(polygon: PolygonBoundingBox): Collection<TIn>;
         /**
-         * Returns a new collection containing nodes whose label polygon bounds
-         * contain the specified point (in model coordinates).
-         * This is useful for hit-testing clicks inside rendered labels.
+         * Returns elements from collection that are hit by the given position,
+         * sorted topmost first (by z-order); also works with rotated labels.
          *
-         * @param point The point in model coordinates {x, y}
+         * @param pos        The point in model coordinates {x, y}
+         * @param options    What to include in the hit test
          */
-        labelsContainPoint(point: Position): Collection<TIn>;
+        hit(pos: Position, options?: HitTestOptions): Collection<TIn>;
     }
 
     /**
@@ -6302,6 +6294,13 @@ declare namespace cytoscape {
         h: number;
     }
     type PolygonBoundingBox = Position[];
+    interface HitTestOptions {
+        includeBody?: boolean;
+        includeMainLabels?: boolean;
+        includeSourceLabels?: boolean;
+        includeTargetLabels?: boolean;
+        isTouch?: boolean;
+    }
     interface AnimatedLayoutOptions {
         // whether to transition the node positions
         animate?: boolean;

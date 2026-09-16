@@ -72,6 +72,115 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
+// Returns the label's hit/selection polygon for ele, or null if unavailable.
+BRp.getLabelHitPolygon = function( ele, prefix, th ){
+  var _p = ele._private;
+  var prefixDash = prefix ? prefix + '-' : '';
+
+  ele.boundingBox();
+  var bb = _p.labelBounds[ prefix || 'main' ];
+
+  if( !bb ){ return null; }
+
+  var lx = util.getPrefixedProperty( _p.rscratch, 'labelX', prefix );
+  var ly = util.getPrefixedProperty( _p.rscratch, 'labelY', prefix );
+  var theta = util.getPrefixedProperty( _p.rscratch, 'labelAngle', prefix );
+  var ox = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
+  var oy = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
+
+  return math.getRotatedLabelBox( bb, lx, ly, theta, ox, oy, th );
+};
+
+// Returns true if (x, y) is inside the label of ele.
+BRp.checkLabelHitAt = function( ele, x, y, prefix, th ){
+  var prefixDash = prefix ? prefix + '-' : '';
+  var text = ele.pstyle( prefixDash + 'label' ).value;
+  var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
+
+  if( !eventsEnabled || !text ){ return false; }
+
+  var polygon = this.getLabelHitPolygon( ele, prefix, th );
+
+  if( !polygon ){ return false; }
+
+  var points = [];
+  for( var i = 0; i < polygon.length; i++ ){
+    points.push( polygon[i].x, polygon[i].y );
+  }
+
+  return math.pointInsidePolygonPoints( x, y, points );
+};
+
+// Returns true if (x, y) hits the body of node, using its shape's hit test.
+BRp.checkNodeHitAt = function( node, x, y, threshold ){
+  var r = this;
+  var width  = node.outerWidth()  + 2 * threshold;
+  var height = node.outerHeight() + 2 * threshold;
+  var pos    = node.position();
+
+  if(
+    pos.x - width/2 <= x && x <= pos.x + width/2 &&
+    pos.y - height/2 <= y && y <= pos.y + height/2
+  ){
+    var cornerRadius = node.pstyle('corner-radius').value === 'auto' ? 'auto' : node.pstyle('corner-radius').pfValue;
+    var shape = r.nodeShapes[ r.getNodeShape( node ) ];
+    return shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, node._private.rscratch );
+  }
+
+  return false;
+};
+
+// Returns all elements from eles that are hit by (x, y), sorted topmost first.
+// options: { includeBody, includeMainLabels, includeSourceLabels, includeTargetLabels, isTouch }
+BRp.hitTestAt = function( x, y, eles, options ){
+  var r = this;
+  var zoom = r.cy.zoom();
+  var opts = options || {};
+  var isTouch            = opts.isTouch;
+  var includeBody        = opts.includeBody        !== false;
+  var includeMainLabels  = opts.includeMainLabels  !== false;
+  var includeSourceLabels = opts.includeSourceLabels !== false;
+  var includeTargetLabels = opts.includeTargetLabels !== false;
+  var nodeThreshold  = ( isTouch ? 8 : 2 ) / zoom;
+  var labelThreshold = ( isTouch ? 8 : 2 ) / zoom;
+
+  var eleIds = new Set();
+  for( var i = 0; i < eles.length; i++ ){ eleIds.add( eles[i]._private.data.id ); }
+
+  var zSorted = r.getCachedZSortedEles();
+  var matches = [];
+
+  for( var i = zSorted.length - 1; i >= 0; i-- ){ // reverse = topmost first
+    var ele = zSorted[ i ];
+    if( !eleIds.has( ele._private.data.id ) ){ continue; }
+
+    var hit = false;
+
+    if( ele.isNode() ){
+      if( includeBody ){
+        hit = r.checkNodeHitAt( ele, x, y, nodeThreshold );
+      }
+      if( !hit && includeMainLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, null, labelThreshold );
+      }
+    } else { // edge
+      if( includeMainLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, null,     labelThreshold );
+      }
+      if( includeSourceLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold );
+      }
+      if( includeTargetLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
+      }
+    }
+
+    if( hit ){ matches.push( ele ); }
+  }
+
+  return matches;
+};
+
 BRp.findNearestElement = function( x, y, interactiveElementsOnly, isTouch ){
   return this.findNearestElements( x, y, interactiveElementsOnly, isTouch )[0];
 };
@@ -129,28 +238,9 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
   }
 
   function checkNode( node ){
-    var width = node.outerWidth() + 2 * nodeThreshold;
-    var height = node.outerHeight() + 2 * nodeThreshold;
-    var hw = width / 2;
-    var hh = height / 2;
-    var pos = node.position();
-    var cornerRadius = node.pstyle('corner-radius').value === 'auto' ? 'auto' : node.pstyle('corner-radius').pfValue;
-    var rs = node._private.rscratch;
-
-    if(
-      pos.x - hw <= x && x <= pos.x + hw // bb check x
-        &&
-      pos.y - hh <= y && y <= pos.y + hh // bb check y
-    ){
-      var shape = r.nodeShapes[ self.getNodeShape( node ) ];
-
-      if(
-        shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, rs )
-      ){
-        addEle( node, 0 );
-        return true;
-      }
-
+    if( r.checkNodeHitAt( node, x, y, nodeThreshold ) ){
+      addEle( node, 0 );
+      return true;
     }
   }
 
@@ -230,79 +320,11 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     }
   }
 
-  function preprop( obj, name, pre ){
-    return util.getPrefixedProperty( obj, name, pre );
-  }
-
   function checkLabel( ele, prefix ){
-    var _p = ele._private;
-    var th = labelThreshold;
-
-    var prefixDash;
-    if( prefix ){
-      prefixDash = prefix + '-';
-    } else {
-      prefixDash = '';
+    if( self.checkLabelHitAt( ele, x, y, prefix, labelThreshold ) ){
+      addEle( ele );
+      return true;
     }
-
-    ele.boundingBox();
-    var bb = _p.labelBounds[prefix || 'main'];
-
-    var text = ele.pstyle( prefixDash + 'label' ).value;
-    var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
-
-    if( !eventsEnabled || !text ){ return; }
-
-    var lx = preprop( _p.rscratch, 'labelX', prefix );
-    var ly = preprop( _p.rscratch, 'labelY', prefix );
-
-    var theta = preprop( _p.rscratch, 'labelAngle', prefix );
-
-    var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
-    let oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
-
-    var lx1 = bb.x1 - th - ox; // (-ox, -oy) as bb already includes margin
-    var lx2 = bb.x2 + th - ox; // and rotation is about (lx, ly)
-    var ly1 = bb.y1 - th - oy;
-    var ly2 = bb.y2 + th - oy;
-
-    if( theta ){
-      var cos = Math.cos( theta );
-      var sin = Math.sin( theta );
-
-      var rotate = function( x, y ){
-        x = x - lx;
-        y = y - ly;
-
-        return {
-          x: x * cos - y * sin + lx,
-          y: x * sin + y * cos + ly
-        };
-      };
-
-      var px1y1 = rotate( lx1, ly1 );
-      var px1y2 = rotate( lx1, ly2 );
-      var px2y1 = rotate( lx2, ly1 );
-      var px2y2 = rotate( lx2, ly2 );
-
-      var points = [ // with the margin added after the rotation is applied
-        px1y1.x + ox, px1y1.y + oy,
-        px2y1.x + ox, px2y1.y + oy,
-        px2y2.x + ox, px2y2.y + oy,
-        px1y2.x + ox, px1y2.y + oy
-      ];
-
-      if( math.pointInsidePolygonPoints( x, y, points ) ){
-        addEle( ele );
-        return true;
-      }
-    } else { // do a cheaper bb check
-      if( math.inBoundingBox( bb, x, y ) ){
-        addEle( ele );
-        return true;
-      }
-    }
-
   }
 
   for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence
@@ -321,6 +343,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
 
 // 'Give me everything from this box'
 BRp.getAllInBox = function( x1, y1, x2, y2 ){
+  var r = this;
   var eles = this.getCachedZSortedEles().interactive;
   var zoom = this.cy.zoom();
   var labelThreshold = 2 / zoom;
@@ -354,60 +377,8 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
   ];
 
 
-  function preprop(obj, name, pre) {
-    return util.getPrefixedProperty(obj, name, pre);
-  }
-
   function getRotatedLabelBox(ele, prefix) {
-    var _p = ele._private;
-    var th = labelThreshold;
-
-    var prefixDash = prefix ? prefix + '-' : '';
-    ele.boundingBox();
-    var bb = _p.labelBounds[prefix || 'main'];
-
-    // If the bounding box is not available, return null.
-    // This indicates that the label box cannot be calculated, which is consistent
-    // with the expected behavior of this function. Returning null allows the caller
-    // to handle the absence of a bounding box explicitly.
-    if (!bb) {
-      return null;
-    }
-
-    var lx = preprop(_p.rscratch, 'labelX', prefix);
-    var ly = preprop(_p.rscratch, 'labelY', prefix);
-    var theta = preprop(_p.rscratch, 'labelAngle', prefix);
-
-    var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
-    var oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
-
-    var lx1 = bb.x1 - th - ox;
-    var lx2 = bb.x2 + th - ox;
-    var ly1 = bb.y1 - th - oy;
-    var ly2 = bb.y2 + th - oy;
-
-    if (theta) {
-      var cos = Math.cos(theta);
-      var sin = Math.sin(theta);
-
-      var rotate = function (x, y) {
-        x = x - lx;
-        y = y - ly;
-        return {
-          x: x * cos - y * sin + lx,
-          y: x * sin + y * cos + ly,
-        };
-      };
-
-      return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
-    } else {
-      return [
-        { x: lx1, y: ly1 },
-        { x: lx2, y: ly1 },
-        { x: lx2, y: ly2 },
-        { x: lx1, y: ly2 },
-      ];
-    }
+    return r.getLabelHitPolygon( ele, prefix, labelThreshold );
   }
 
   function doLinesIntersect(p1, p2, q1, q2) {

@@ -1,4 +1,4 @@
-import { COLUMN_SPECS } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COLUMN_SPECS } from '../contract.mjs';
 import type {
   ColumnArray,
   ColumnId,
@@ -147,7 +147,7 @@ export class RemoteModelView implements RenderStoreView {
    * @param batch — the batch to apply (the init transfer included)
    */
   applyBatch(batch: StoreBatch): void {
-    for (const group of ['nodes', 'edges'] as GroupName[]) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
       if (batch.capacity[group] !== this.capacities[group]) {
         this.capacities[group] = batch.capacity[group];
 
@@ -323,12 +323,15 @@ export class RemoteModelView implements RenderStoreView {
   }
 
   /** @returns the slot's label on the stream, or undefined */
-  labelAt(slot: number, group: LabelStream = 'nodes'): LabelEntry | undefined {
+  labelAt(
+    slot: number,
+    group: LabelStream = GROUP_NODES,
+  ): LabelEntry | undefined {
     return this.labels.get(group)?.get(slot);
   }
 
   /** @returns slots whose labels changed since the last call (cleared) */
-  takeLabelDirty(group: LabelStream = 'nodes'): number[] {
+  takeLabelDirty(group: LabelStream = GROUP_NODES): number[] {
     const set = this.labelDirty.get(group) as Set<number>;
     const out = [...set];
 
@@ -356,7 +359,7 @@ export class RemoteModelView implements RenderStoreView {
 
   /** @returns the live element count (stats reporting) */
   count(group: GroupName): number {
-    return group === 'nodes' ? this.counts.nodes : this.counts.edges;
+    return group === GROUP_NODES ? this.counts.nodes : this.counts.edges;
   }
 
   /** Derived geometry is flushed by the producer before every batch. */

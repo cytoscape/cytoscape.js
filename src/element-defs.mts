@@ -1,5 +1,6 @@
 import type { GroupName } from './contract.mjs';
 import type { ElementDefinition, ElementsDefinition } from './public-types.mjs';
+import { GROUP_EDGES, GROUP_NODES } from './contract.mjs';
 
 /*
 Element-definition plumbing shared by the core's add paths and the columnar
@@ -9,7 +10,7 @@ definition shapes (single def, def array, { nodes, edges } map).
 
 export const inferGroup = (def: ElementDefinition): GroupName => {
   if (def.group != null) {
-    if (def.group !== 'nodes' && def.group !== 'edges') {
+    if (def.group !== GROUP_NODES && def.group !== GROUP_EDGES) {
       throw new Error(
         `An element must be of group 'nodes' or 'edges'; got '${def.group}'`,
       );
@@ -19,8 +20,8 @@ export const inferGroup = (def: ElementDefinition): GroupName => {
   }
 
   return def.data?.source != null && def.data?.target != null
-    ? 'edges'
-    : 'nodes';
+    ? GROUP_EDGES
+    : GROUP_NODES;
 };
 
 export interface PartitionedDefs {
@@ -41,7 +42,7 @@ export const partitionDefs = (
     const edges: ElementDefinition[] = [];
 
     for (const def of defs) {
-      (inferGroup(def) === 'nodes' ? nodes : edges).push(def);
+      (inferGroup(def) === GROUP_NODES ? nodes : edges).push(def);
     }
 
     return { nodes, edges };
@@ -58,7 +59,7 @@ export const partitionDefs = (
 
   const single = defs as ElementDefinition;
 
-  return inferGroup(single) === 'nodes'
+  return inferGroup(single) === GROUP_NODES
     ? { nodes: [single], edges: [] }
     : { nodes: [], edges: [single] };
 };

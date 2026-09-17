@@ -1,6 +1,7 @@
 import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface TarjanStronglyConnectedResult {
   /** the elements not inside any component: the edges between components */
@@ -133,7 +134,7 @@ export const tarjanStronglyConnected = (
     if (s != null && t != null && compId[s] === compId[t]) {
       componentEdges[compId[s]].push(e);
     } else {
-      cutRefs.push(store.ref('edges', e));
+      cutRefs.push(store.ref(GROUP_EDGES, e));
     }
   }
 
@@ -141,10 +142,10 @@ export const tarjanStronglyConnected = (
     const refs: Ref[] = [];
 
     for (const di of comp) {
-      refs.push(store.ref('nodes', nodeSlots[di]));
+      refs.push(store.ref(GROUP_NODES, nodeSlots[di]));
     }
     for (const e of componentEdges[ci]) {
-      refs.push(store.ref('edges', e));
+      refs.push(store.ref(GROUP_EDGES, e));
     }
 
     return coll._spawnLive(refs);

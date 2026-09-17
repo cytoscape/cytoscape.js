@@ -5,6 +5,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { floydWarshallGpu } from './algo-gpu-fw.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface FloydWarshallOptions {
   weight?: WeightFn;
@@ -167,21 +168,21 @@ export const floydWarshallResultFrom = (
       }
 
       if (i === j) {
-        return cy._ele('nodes', nodeSlots[i]);
+        return cy._ele(GROUP_NODES, nodeSlots[i]);
       }
 
       if (next[i * n + j] < 0) {
         return cy.collection();
       }
 
-      const refs: Ref[] = [store.ref('nodes', nodeSlots[i])];
+      const refs: Ref[] = [store.ref(GROUP_NODES, nodeSlots[i])];
 
       while (i !== j) {
         const prev = i;
 
         i = next[i * n + j] as number;
-        refs.push(store.ref('edges', edgeNext[prev * n + i] as number));
-        refs.push(store.ref('nodes', nodeSlots[i]));
+        refs.push(store.ref(GROUP_EDGES, edgeNext[prev * n + i] as number));
+        refs.push(store.ref(GROUP_NODES, nodeSlots[i]));
       }
 
       return coll._spawn(refs);

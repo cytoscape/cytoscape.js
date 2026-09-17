@@ -1,6 +1,7 @@
 import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, incidentEdgesInView } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /** An edge encoded as [ edge slot, source dense index, target dense index ]. */
 type EdgeIndex = [number, number, number];
@@ -151,7 +152,9 @@ export const kargerStein = (coll: Collection): KargerSteinResult => {
   const cutEdgeSlots = new Set<number>(
     minCutEdgeIndexes.map((e) => edgeSlots[e[0]]),
   );
-  const cutRefs: Ref[] = [...cutEdgeSlots].map((e) => store.ref('edges', e));
+  const cutRefs: Ref[] = [...cutEdgeSlots].map((e) =>
+    store.ref(GROUP_EDGES, e),
+  );
 
   const partition1Refs: Ref[] = [];
   const partition2Refs: Ref[] = [];
@@ -161,9 +164,9 @@ export const kargerStein = (coll: Collection): KargerSteinResult => {
   for (let i = 0; i < numNodes; i++) {
     if (minCutNodeMap[i] === witness) {
       inPartition1[i] = 1;
-      partition1Refs.push(store.ref('nodes', nodeSlots[i]));
+      partition1Refs.push(store.ref(GROUP_NODES, nodeSlots[i]));
     } else {
-      partition2Refs.push(store.ref('nodes', nodeSlots[i]));
+      partition2Refs.push(store.ref(GROUP_NODES, nodeSlots[i]));
     }
   }
 
@@ -177,12 +180,12 @@ export const kargerStein = (coll: Collection): KargerSteinResult => {
         continue;
       }
 
-      refs.push(store.ref('nodes', nodeSlots[i]));
+      refs.push(store.ref(GROUP_NODES, nodeSlots[i]));
 
       for (const e of incidentEdgesInView(view, nodeSlots[i])) {
         if (!cutEdgeSlots.has(e) && !seenEdges.has(e)) {
           seenEdges.add(e);
-          refs.push(store.ref('edges', e));
+          refs.push(store.ref(GROUP_EDGES, e));
         }
       }
     }

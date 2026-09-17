@@ -17,6 +17,7 @@ Bindings (@group(0)):
 
 import { wgsl } from './wgsl.mjs';
 import { COL } from '../contract.mjs';
+import type { GroupName } from '../contract.mjs';
 
 /** uniform-buffer program capacity (1 KB at 64 B each; plenty per group) */
 export const MAX_PROGRAMS = 16;
@@ -274,7 +275,7 @@ export const NODE_EVAL_SHADER = EVAL_COMMON + NODE_TARGETS + NODE_WRITE + MAIN;
 export const EDGE_EVAL_SHADER = EVAL_COMMON + EDGE_TARGETS + EDGE_WRITE + MAIN;
 
 /** write-target storage bindings per group, after the 5 shared ones */
-export const TARGET_BINDINGS: Record<'nodes' | 'edges', readonly string[]> = {
+export const TARGET_BINDINGS: Record<GroupName, readonly string[]> = {
   nodes: [COL.NODE_FILL_COLOR, COL.NODE_BORDER_COLOR, COL.NODE_OPACITY],
   edges: [
     COL.EDGE_LINE_COLOR,

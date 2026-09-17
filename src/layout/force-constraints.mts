@@ -1,4 +1,5 @@
 import type { Core } from '../core.mjs';
+import { GROUP_NODES } from '../contract.mjs';
 
 /*
 Force-layout constraints (round 85.2 — fcose #54/#53 absorbed): the
@@ -93,7 +94,8 @@ export const resolveConstraints = (
 
   const indexOf = (id: string, what: string): number => {
     const entry = cy._store.lookup(id);
-    const sim = entry?.group === 'nodes' ? simIndex.get(entry.slot) : undefined;
+    const sim =
+      entry?.group === GROUP_NODES ? simIndex.get(entry.slot) : undefined;
 
     if (sim == null) {
       throw new Error(

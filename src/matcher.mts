@@ -1,4 +1,4 @@
-import { COL, CONDITION_FLAGS } from './contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COL, CONDITION_FLAGS } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import {
@@ -194,7 +194,7 @@ export const compileQuery = (
 
   const group = query.group ?? null;
 
-  if (group != null && group !== 'nodes' && group !== 'edges') {
+  if (group != null && group !== GROUP_NODES && group !== GROUP_EDGES) {
     throw new Error(
       `Unknown query group '${String(group)}'; use 'nodes' or 'edges'`,
     );
@@ -234,7 +234,7 @@ export const compileQuery = (
   // structural terms are node concepts (v3's :parent/:child/:childless/
   // :orphan never match edges): an explicitly-edges query throws, an
   // unrestricted one just never matches edges
-  if (structural && (group === 'edges' || restrict === 'edges')) {
+  if (structural && (group === GROUP_EDGES || restrict === GROUP_EDGES)) {
     throw new Error(
       `The '${structuralNames.join("'/'")}' query key${structuralNames.length > 1 ? 's apply' : ' applies'} to nodes only`,
     );
@@ -243,7 +243,7 @@ export const compileQuery = (
   const allows = (g: GroupName): boolean =>
     (group == null || group === g) &&
     (restrict == null || restrict === g) &&
-    !(structural && g === 'edges');
+    !(structural && g === GROUP_EDGES);
 
   let data: CompiledCondition[] | null = null;
 
@@ -258,8 +258,8 @@ export const compileQuery = (
   }
 
   return {
-    nodes: allows('nodes') ? test : null,
-    edges: allows('edges') ? test : null,
+    nodes: allows(GROUP_NODES) ? test : null,
+    edges: allows(GROUP_EDGES) ? test : null,
     data,
   };
 };
@@ -270,7 +270,7 @@ export const planMatchesRef = (
   ref: Ref,
   plan: FlagPlan,
 ): boolean => {
-  const test = ref.group === 'nodes' ? plan.nodes : plan.edges;
+  const test = ref.group === GROUP_NODES ? plan.nodes : plan.edges;
 
   if (test == null || !store.isCurrent(ref)) {
     return false;
@@ -278,7 +278,7 @@ export const planMatchesRef = (
 
   const flags = (
     store.column(
-      ref.group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+      ref.group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array
   )[ref.slot];
 

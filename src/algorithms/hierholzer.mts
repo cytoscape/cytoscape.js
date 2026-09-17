@@ -5,6 +5,7 @@ import {
   incidentEdgesInView,
   firstNodeSlot,
 } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface HierholzerOptions {
   root?: Collection;
@@ -217,14 +218,14 @@ export const hierholzer = (
 
   while (subtour.length !== 1) {
     if ((nodesAdj.get(subtour[0]) as number[]).length === 0) {
-      trailRefs.unshift(store.ref('nodes', subtour.shift() as number));
-      trailRefs.unshift(store.ref('edges', subtour.shift() as number));
+      trailRefs.unshift(store.ref(GROUP_NODES, subtour.shift() as number));
+      trailRefs.unshift(store.ref(GROUP_EDGES, subtour.shift() as number));
     } else {
       subtour = walk(subtour.shift() as number).concat(subtour);
     }
   }
 
-  trailRefs.unshift(store.ref('nodes', subtour.shift() as number)); // final node
+  trailRefs.unshift(store.ref(GROUP_NODES, subtour.shift() as number)); // final node
 
   for (const adjList of nodesAdj.values()) {
     if (adjList.length > 0) {

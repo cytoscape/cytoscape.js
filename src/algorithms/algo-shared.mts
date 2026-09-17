@@ -2,7 +2,7 @@ import type { Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
-import { COL } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COL } from '../contract.mjs';
 
 /** Edge weighting function: receives the edge handle, returns its weight. */
 export type WeightFn = (edge: Collection) => number;
@@ -64,7 +64,7 @@ export const subgraph = (coll: Collection): SubgraphView => {
   const edgeIn = new Set<number>();
 
   for (const ref of coll._liveRefs()) {
-    if (ref.group === 'nodes') {
+    if (ref.group === GROUP_NODES) {
       if (!index.has(ref.slot)) {
         index.set(ref.slot, nodeSlots.length);
         nodeSlots.push(ref.slot);
@@ -187,7 +187,7 @@ export const firstNodeSlot = (
   }
 
   for (const ref of coll._liveRefs()) {
-    if (ref.group === 'nodes') {
+    if (ref.group === GROUP_NODES) {
       return ref.slot;
     }
   }
@@ -204,16 +204,16 @@ export const weightAt = (
     return () => 1;
   }
 
-  return (edgeSlot) => weight(view.cy._ele('edges', edgeSlot));
+  return (edgeSlot) => weight(view.cy._ele(GROUP_EDGES, edgeSlot));
 };
 
 /** Generation-stamped node ref for a slot, ready to `_spawn` a result. */
 export const nodeRef = (view: SubgraphView, slot: number): Ref =>
-  view.store.ref('nodes', slot);
+  view.store.ref(GROUP_NODES, slot);
 
 /** Generation-stamped edge ref for a slot, ready to `_spawn` a result. */
 export const edgeRef = (view: SubgraphView, slot: number): Ref =>
-  view.store.ref('edges', slot);
+  view.store.ref(GROUP_EDGES, slot);
 
 /**
  * Indexed binary min-heap over dense node indices, keyed by a caller-owned

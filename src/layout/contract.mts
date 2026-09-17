@@ -27,7 +27,14 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 (spacingFactor / transform / animate / fit and the lifecycle).
 */
 
-import { COL, FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  COL,
+  FLAG_ALIVE,
+  FLAG_LOCKED,
+  FLAG_PARENT,
+} from '../contract.mjs';
 import { computeComponents, packComponentBodies } from './pack.mjs';
 import type { Components } from './pack.mjs';
 import { nodeDims } from './dims.mjs';
@@ -168,7 +175,7 @@ export class LayoutContext {
       store.scanSlotsInto(
         out,
         0,
-        'nodes',
+        GROUP_NODES,
         FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED,
         FLAG_ALIVE,
       );
@@ -176,13 +183,13 @@ export class LayoutContext {
       // Subset scope: the caller already holds the collection, so its
       // refs are the cheap path — still no handles.
       for (const ref of scope._liveRefs()) {
-        if (ref.group !== 'nodes') {
+        if (ref.group !== GROUP_NODES) {
           continue;
         }
 
         if (
-          store.hasFlag('nodes', ref.slot, FLAG_PARENT) ||
-          store.hasFlag('nodes', ref.slot, FLAG_LOCKED)
+          store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT) ||
+          store.hasFlag(GROUP_NODES, ref.slot, FLAG_LOCKED)
         ) {
           continue;
         }
@@ -208,10 +215,10 @@ export class LayoutContext {
 
     if (scope == null) {
       // whole graph: the order-list walk, as in nodeSlots (34.4)
-      this.cy._store.scanSlotsInto(out, 0, 'edges', FLAG_ALIVE, FLAG_ALIVE);
+      this.cy._store.scanSlotsInto(out, 0, GROUP_EDGES, FLAG_ALIVE, FLAG_ALIVE);
     } else {
       for (const ref of scope._liveRefs()) {
-        if (ref.group === 'edges') {
+        if (ref.group === GROUP_EDGES) {
           out.push(ref.slot);
         }
       }

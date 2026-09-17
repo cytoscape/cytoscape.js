@@ -6,6 +6,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { closenessCentralityNormalizedGpu } from './algo-gpu-closeness.mjs';
+import { GROUP_NODES } from '../contract.mjs';
 
 export interface ClosenessCentralityOptions {
   root?: Collection | null;
@@ -51,7 +52,7 @@ export const closenessCentrality = (
       continue;
     }
 
-    const d = di.distanceTo(view.cy._ele('nodes', slot)) as number;
+    const d = di.distanceTo(view.cy._ele(GROUP_NODES, slot)) as number;
 
     totalDistance += harmonic ? 1 / d : d;
   }

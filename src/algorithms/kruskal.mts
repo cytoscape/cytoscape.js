@@ -2,6 +2,7 @@ import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /**
  * Kruskal's minimum spanning tree (forest) over the calling collection,
@@ -45,7 +46,7 @@ export const kruskal = (coll: Collection, weight?: WeightFn): Collection => {
   const refs: Ref[] = [];
 
   for (const slot of nodeSlots) {
-    refs.push(store.ref('nodes', slot));
+    refs.push(store.ref(GROUP_NODES, slot));
   }
 
   for (const { e } of sorted) {
@@ -61,7 +62,7 @@ export const kruskal = (coll: Collection, weight?: WeightFn): Collection => {
 
     if (rs !== rt) {
       parent[rt] = rs;
-      refs.push(store.ref('edges', e));
+      refs.push(store.ref(GROUP_EDGES, e));
     }
   }
 

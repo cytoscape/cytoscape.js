@@ -58,6 +58,8 @@ import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
 import {
+  GROUP_EDGES,
+  GROUP_NODES,
   COL,
   FLAG_ALIVE,
   FLAG_GRABBABLE,
@@ -255,7 +257,7 @@ export class Core {
     // group (nodes vs the parents overlay, round 14.6); the label entry
     // re-bakes through the same apply
     this._store.onParentFlip = (slot) => {
-      this._styleEngine.applyBulk('nodes', [slot]);
+      this._styleEngine.applyBulk(GROUP_NODES, [slot]);
     };
 
     // a reparented node's structural case conditions ({ child: ... } /
@@ -264,7 +266,11 @@ export class Core {
     // now sit under CPU-side derivations (auto-bounds, folds; 14.11)
     this._store.onReparented = (slot) => {
       this._animations.settleGpuAll();
-      this._styleEngine.refreshMapped('nodes', [slot], ['::parent', '::child']);
+      this._styleEngine.refreshMapped(
+        GROUP_NODES,
+        [slot],
+        ['::parent', '::child'],
+      );
     };
     // A styled state bit flipped (round 57.1): re-evaluate the mappers
     // that read it, on the slots that changed.  The store notifies only
@@ -473,7 +479,7 @@ export class Core {
       return;
     } // re-checked on the next boundary
 
-    for (const group of ['nodes', 'edges'] as GroupName[]) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
       const table = this._store.table(group);
       const dead = table.highWater - table.count;
 
@@ -518,8 +524,8 @@ export class Core {
       return;
     }
 
-    this._remapPool('nodes', result.nodes?.remap ?? null);
-    this._remapPool('edges', result.edges?.remap ?? null);
+    this._remapPool(GROUP_NODES, result.nodes?.remap ?? null);
+    this._remapPool(GROUP_EDGES, result.edges?.remap ?? null);
 
     for (const listener of this._emitter.listeners) {
       const qualifier = listener.qualifier;
@@ -629,11 +635,11 @@ export class Core {
         continue;
       } // added then removed within the batch
 
-      (ref.group === 'nodes' ? nodeSlots : edgeSlots).push(ref.slot);
+      (ref.group === GROUP_NODES ? nodeSlots : edgeSlots).push(ref.slot);
     }
 
-    this._styleEngine.applyBulk('nodes', nodeSlots);
-    this._styleEngine.applyBulk('edges', edgeSlots);
+    this._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
+    this._styleEngine.applyBulk(GROUP_EDGES, edgeSlots);
 
     const mappedNodes: number[] = [];
     const mappedEdges: number[] = [];
@@ -643,13 +649,13 @@ export class Core {
         continue;
       }
 
-      (ref.group === 'nodes' ? mappedNodes : mappedEdges).push(ref.slot);
+      (ref.group === GROUP_NODES ? mappedNodes : mappedEdges).push(ref.slot);
     }
 
     const keys = [...pending.mappedKeys];
 
-    this._styleEngine.refreshMapped('nodes', mappedNodes, keys);
-    this._styleEngine.refreshMapped('edges', mappedEdges, keys);
+    this._styleEngine.refreshMapped(GROUP_NODES, mappedNodes, keys);
+    this._styleEngine.refreshMapped(GROUP_EDGES, mappedEdges, keys);
 
     this._maybeCompact(); // removals inside the batch deferred to here
 
@@ -886,10 +892,10 @@ export class Core {
     }
 
     for (const slot of nodeSlots) {
-      this._emitOnEle('add', this._ele('nodes', slot));
+      this._emitOnEle('add', this._ele(GROUP_NODES, slot));
     }
     for (const slot of edgeSlots) {
-      this._emitOnEle('add', this._ele('edges', slot));
+      this._emitOnEle('add', this._ele(GROUP_EDGES, slot));
     }
   }
 
@@ -922,14 +928,14 @@ export class Core {
         : new Uint32Array(0);
 
     if (nodeFlags != null && nodeFlags.length > 0) {
-      this._applyFlagOverrides('nodes', nodeSlots, nodeFlags, false);
+      this._applyFlagOverrides(GROUP_NODES, nodeSlots, nodeFlags, false);
     }
     if (edgeFlags != null && edgeFlags.length > 0) {
-      this._applyFlagOverrides('edges', edgeSlots, edgeFlags, true);
+      this._applyFlagOverrides(GROUP_EDGES, edgeSlots, edgeFlags, true);
     }
 
-    this._applyStyle('nodes', nodeSlots);
-    this._applyStyle('edges', edgeSlots);
+    this._applyStyle(GROUP_NODES, nodeSlots);
+    this._applyStyle(GROUP_EDGES, edgeSlots);
 
     return { nodeSlots, edgeSlots };
   }
@@ -966,10 +972,10 @@ export class Core {
     const refs: Ref[] = [];
 
     for (const slot of nodeSlots) {
-      refs.push(this._store.ref('nodes', slot));
+      refs.push(this._store.ref(GROUP_NODES, slot));
     }
     for (const slot of edgeSlots) {
-      refs.push(this._store.ref('edges', slot));
+      refs.push(this._store.ref(GROUP_EDGES, slot));
     }
 
     return refs;
@@ -1000,9 +1006,9 @@ export class Core {
       const pos = def.position ?? { x: 0, y: 0 };
       const slot = this._store.addNode(id, pos.x, pos.y, def);
 
-      this._store.setDefData('nodes', slot, data);
+      this._store.setDefData(GROUP_NODES, slot, data);
       nodeSlots.push(slot);
-      refs.push(this._store.ref('nodes', slot));
+      refs.push(this._store.ref(GROUP_NODES, slot));
     }
 
     // second pass (round 14.2): resolve def parents once the batch's nodes
@@ -1018,9 +1024,9 @@ export class Core {
 
       const parentRef = this._store.lookup(String(parent));
 
-      if (parentRef == null || parentRef.group !== 'nodes') {
+      if (parentRef == null || parentRef.group !== GROUP_NODES) {
         console.warn(
-          `Node '${this._store.idAt('nodes', nodeSlots[i])}' has nonexistant parent ` +
+          `Node '${this._store.idAt(GROUP_NODES, nodeSlots[i])}' has nonexistant parent ` +
             `'${String(parent)}'; added as an orphan`,
         );
 
@@ -1047,13 +1053,13 @@ export class Core {
         def,
       );
 
-      this._store.setDefData('edges', slot, data);
+      this._store.setDefData(GROUP_EDGES, slot, data);
       edgeSlots.push(slot);
-      refs.push(this._store.ref('edges', slot));
+      refs.push(this._store.ref(GROUP_EDGES, slot));
     }
 
-    this._applyStyle('nodes', nodeSlots);
-    this._applyStyle('edges', edgeSlots);
+    this._applyStyle(GROUP_NODES, nodeSlots);
+    this._applyStyle(GROUP_EDGES, edgeSlots);
 
     return refs;
   }
@@ -1115,7 +1121,7 @@ export class Core {
 
     return code < 0
       ? this.collection()
-      : this._ele((code & 1) === 1 ? 'edges' : 'nodes', code >>> 1);
+      : this._ele((code & 1) === 1 ? GROUP_EDGES : GROUP_NODES, code >>> 1);
   }
 
   /**
@@ -1155,8 +1161,8 @@ export class Core {
    */
   nodes(query?: Query | EleFilterFn): Collection {
     return query === undefined
-      ? this._allOf('nodes')
-      : this._query(query, 'nodes');
+      ? this._allOf(GROUP_NODES)
+      : this._query(query, GROUP_NODES);
   }
 
   /**
@@ -1169,8 +1175,8 @@ export class Core {
    */
   edges(query?: Query | EleFilterFn): Collection {
     return query === undefined
-      ? this._allOf('edges')
-      : this._query(query, 'edges');
+      ? this._allOf(GROUP_EDGES)
+      : this._query(query, GROUP_EDGES);
   }
 
   /**
@@ -1220,7 +1226,7 @@ export class Core {
       const hit =
         restrict == null
           ? cached.all
-          : restrict === 'nodes'
+          : restrict === GROUP_NODES
             ? cached.nodes
             : cached.edges;
 
@@ -1238,7 +1244,7 @@ export class Core {
     if (restrict == null) {
       slot.all = fresh;
       this._allEles = fresh;
-    } else if (restrict === 'nodes') {
+    } else if (restrict === GROUP_NODES) {
       slot.nodes = fresh;
     } else {
       slot.edges = fresh;
@@ -1339,8 +1345,8 @@ export class Core {
   ): Collection {
     const store = this._store;
     const cap =
-      (nodeTest == null ? 0 : store.count('nodes')) +
-      (edgeTest == null ? 0 : store.count('edges'));
+      (nodeTest == null ? 0 : store.count(GROUP_NODES)) +
+      (edgeTest == null ? 0 : store.count(GROUP_EDGES));
     const refs: Ref[] = new Array(cap);
     const dataTests =
       dataConds == null
@@ -1355,7 +1361,7 @@ export class Core {
       n = store.scanRefsInto(
         refs,
         n,
-        'nodes',
+        GROUP_NODES,
         nodeTest.mask,
         nodeTest.want,
         dataTests,
@@ -1365,7 +1371,7 @@ export class Core {
       n = store.scanRefsInto(
         refs,
         n,
-        'edges',
+        GROUP_EDGES,
         edgeTest.mask,
         edgeTest.want,
         dataTests,
@@ -2034,7 +2040,7 @@ export class Core {
     }
 
     const isEdge = (id & EDGE_PICK_BIT) !== 0;
-    const group: GroupName = isEdge ? 'edges' : 'nodes';
+    const group: GroupName = isEdge ? GROUP_EDGES : GROUP_NODES;
     const slot = (isEdge ? id & ~EDGE_PICK_BIT : id) - 1;
 
     if (
@@ -2801,8 +2807,8 @@ export class Core {
 
     store.flushDerived(); // parent positions are derived (round 14.8)
 
-    const nodeSlots = store.slotsOrdered('nodes');
-    const edgeSlots = store.slotsOrdered('edges');
+    const nodeSlots = store.slotsOrdered(GROUP_NODES);
+    const edgeSlots = store.slotsOrdered(GROUP_EDGES);
     const pos = store.column(COL.NODE_POSITION) as Float32Array;
     const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
     const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
@@ -2818,7 +2824,7 @@ export class Core {
       const slot = nodeSlots[i];
 
       indexOfSlot.set(slot, i);
-      nodeIds[i] = store.idAt('nodes', slot) as string;
+      nodeIds[i] = store.idAt(GROUP_NODES, slot) as string;
       positions[i * 2] = pos[slot * 2];
       positions[i * 2 + 1] = pos[slot * 2 + 1];
       nodeSelected[i] = (nodeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
@@ -2850,7 +2856,7 @@ export class Core {
     for (let i = 0; i < edgeSlots.length; i++) {
       const slot = edgeSlots[i];
 
-      edgeIds[i] = store.idAt('edges', slot) as string;
+      edgeIds[i] = store.idAt(GROUP_EDGES, slot) as string;
       sources[i] = indexOfSlot.get(endpoints[slot * 2]) as number;
       targets[i] = indexOfSlot.get(endpoints[slot * 2 + 1]) as number;
       edgeSelected[i] = (edgeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
@@ -2866,7 +2872,7 @@ export class Core {
         selected: nodeSelected,
         selectable: nodeSelectable,
         ...(nodeParents != null ? { parent: nodeParents } : {}),
-        data: store.data.exportColumns('nodes', nodeSlots),
+        data: store.data.exportColumns(GROUP_NODES, nodeSlots),
       },
       edges: {
         count: edgeSlots.length,
@@ -2875,7 +2881,7 @@ export class Core {
         targets,
         selected: edgeSelected,
         selectable: edgeSelectable,
-        data: store.data.exportColumns('edges', edgeSlots),
+        data: store.data.exportColumns(GROUP_EDGES, edgeSlots),
       },
       // graph-level data (round 39.2), copied rather than held by
       // reference: the buffer is a snapshot, and a later cy.data() write
@@ -3226,7 +3232,7 @@ export class Core {
 
       if (
         ref != null &&
-        ref.group === 'nodes' &&
+        ref.group === GROUP_NODES &&
         store.parentOf(ref.slot) >= 0
       ) {
         // compound bubbling (round 14.5): origin -> ancestors -> core in
@@ -3248,7 +3254,7 @@ export class Core {
             return;
           }
 
-          const phaseEle = this._ele('nodes', p);
+          const phaseEle = this._ele(GROUP_NODES, p);
 
           eventObj._phaseRef = phaseEle._eventRef();
           eventObj._phaseEle = phaseEle;

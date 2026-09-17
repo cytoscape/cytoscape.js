@@ -2,6 +2,7 @@ import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface BellmanFordOptions {
   root?: Collection | null;
@@ -150,11 +151,11 @@ export const bellmanFord = (
         cycleEdges = cycleEdges.slice(at);
 
         // rotate the smallest node id to the front (v3's canonical form)
-        let smallestId = store.idAt('nodes', nodeSlots[nodes[0]]) as string;
+        let smallestId = store.idAt(GROUP_NODES, nodeSlots[nodes[0]]) as string;
         let smallestIndex = 0;
 
         for (let c = 1; c < nodes.length; c++) {
-          const id = store.idAt('nodes', nodeSlots[nodes[c]]) as string;
+          const id = store.idAt(GROUP_NODES, nodeSlots[nodes[c]]) as string;
 
           if (id < smallestId) {
             smallestId = id;
@@ -172,7 +173,7 @@ export const bellmanFord = (
         const cycleId = nodes
           .map(
             (ni, c) =>
-              `${store.idAt('nodes', nodeSlots[ni])},${store.idAt('edges', cycleEdges[c])}`,
+              `${store.idAt(GROUP_NODES, nodeSlots[ni])},${store.idAt(GROUP_EDGES, cycleEdges[c])}`,
           )
           .join(',');
 
@@ -182,11 +183,11 @@ export const bellmanFord = (
           const refs: Ref[] = [];
 
           for (let c = 0; c < nodes.length; c++) {
-            refs.push(store.ref('nodes', nodeSlots[nodes[c]]));
-            refs.push(store.ref('edges', cycleEdges[c]));
+            refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[c]]));
+            refs.push(store.ref(GROUP_EDGES, cycleEdges[c]));
           }
 
-          refs.push(store.ref('nodes', nodeSlots[nodes[0]])); // close the cycle (deduped)
+          refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[0]])); // close the cycle (deduped)
           negativeWeightCycles.push(coll._spawn(refs));
         }
       }
@@ -223,14 +224,14 @@ export const bellmanFord = (
           return coll._spawn([]);
         } // unreachable → empty, as v3
 
-        refs.unshift(store.ref('nodes', nodeSlots[u]));
+        refs.unshift(store.ref(GROUP_NODES, nodeSlots[u]));
 
         if (u === start) {
           break;
         }
 
         if (edgeOf[u] >= 0) {
-          refs.unshift(store.ref('edges', edgeOf[u]));
+          refs.unshift(store.ref(GROUP_EDGES, edgeOf[u]));
         }
 
         u = pred[u];

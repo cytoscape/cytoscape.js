@@ -1,4 +1,5 @@
 import {
+  GROUP_NODES,
   COL,
   FLAG_ALIVE,
   FLAG_DRAWN,
@@ -164,7 +165,7 @@ export function pickNodeTierAt(
       const lb = view.nodeLabelBox(slot);
 
       if (lb != null) {
-        const rot = view.labelAt(slot, 'nodes')?.rotation ?? 0;
+        const rot = view.labelAt(slot, GROUP_NODES)?.rotation ?? 0;
         const lpad = pad / frame.zoomDpr; // halo in model px
         let lx = dx / frame.zoomDpr;
         let ly = dy / frame.zoomDpr;
@@ -237,7 +238,7 @@ export function pickNodeTierAt(
     return insideShape(shape, dx, dy, hw, hh, radius, frame.zoomDpr);
   };
 
-  for (let slot = view.highWater('nodes') - 1; slot >= 0; slot--) {
+  for (let slot = view.highWater(GROUP_NODES) - 1; slot >= 0; slot--) {
     if ((flags[slot] & FLAG_PARENT) !== 0) {
       continue;
     } // the parent pass below

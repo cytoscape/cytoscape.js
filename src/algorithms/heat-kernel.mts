@@ -29,6 +29,7 @@ import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { seedDistribution } from './random-walk.mjs';
 import { heatKernelGpu } from './algo-gpu-heat.mjs';
+import { GROUP_EDGES } from '../contract.mjs';
 
 /** Terms of the scaled Taylor series both executors sum: at operator
  * norm ≤ ½ the truncation error is under 0.5¹⁰/10! ≈ 3e-10. */
@@ -126,7 +127,7 @@ export const buildHeatStructure = (
       continue;
     }
 
-    const w = weight == null ? 1 : weight(cy._ele('edges', e));
+    const w = weight == null ? 1 : weight(cy._ele(GROUP_EDGES, e));
 
     if (!(w > 0) || !Number.isFinite(w)) {
       throw new TypeError(

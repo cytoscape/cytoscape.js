@@ -7,6 +7,7 @@ import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { hierarchicalClusteringGpu } from './algo-gpu-cluster.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export type HierarchicalAttributeFn = (node: Collection) => number;
 
@@ -248,12 +249,18 @@ const buildDendrogram = (
     const rightStr = buildDendrogram(root.right, coll);
     const cy = coll.cy();
     const node = cy.add({
-      group: 'nodes',
+      group: GROUP_NODES,
       data: { id: leftStr + ',' + rightStr },
     });
 
-    cy.add({ group: 'edges', data: { source: leftStr, target: node.id() } });
-    cy.add({ group: 'edges', data: { source: rightStr, target: node.id() } });
+    cy.add({
+      group: GROUP_EDGES,
+      data: { source: leftStr, target: node.id() },
+    });
+    cy.add({
+      group: GROUP_EDGES,
+      data: { source: rightStr, target: node.id() },
+    });
 
     return node.id() as string;
   }

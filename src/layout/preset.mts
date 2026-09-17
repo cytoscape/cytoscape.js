@@ -1,4 +1,4 @@
-import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { GROUP_NODES, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { Position } from '../types.mjs';
 import type { PresetLayoutOptions } from '../public-types.mjs';
@@ -138,15 +138,15 @@ export class PresetLayout {
         const entry = store.lookup(id);
         const pos = positions[id];
 
-        if (entry == null || entry.group !== 'nodes' || pos == null) {
+        if (entry == null || entry.group !== GROUP_NODES || pos == null) {
           continue;
         }
 
         checkPosition(pos, id);
-        if (store.hasFlag('nodes', entry.slot, FLAG_PARENT)) {
+        if (store.hasFlag(GROUP_NODES, entry.slot, FLAG_PARENT)) {
           continue;
         } // parents derive (14.11)
-        if (store.hasFlag('nodes', entry.slot, FLAG_LOCKED)) {
+        if (store.hasFlag(GROUP_NODES, entry.slot, FLAG_LOCKED)) {
           continue;
         } // locked nodes hold their place (114.3)
 
@@ -158,7 +158,7 @@ export class PresetLayout {
 
       if (hasListeners(cy._emitter, 'position')) {
         for (const slot of slots) {
-          cy._emitOnEle('position', cy._ele('nodes', slot));
+          cy._emitOnEle('position', cy._ele(GROUP_NODES, slot));
         }
       }
     }

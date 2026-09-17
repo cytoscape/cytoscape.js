@@ -29,6 +29,8 @@ import type { TrackEdge } from '../taxi-tracks.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
+  GROUP_EDGES,
+  GROUP_NODES,
   DATA_TARGET,
   DATA_SOURCE,
   DATA_PARENT,
@@ -395,8 +397,8 @@ export class GraphStore implements ModelView {
    * headless and grows on demand.
    */
   constructor() {
-    this.nodes = new ColumnTable('nodes', columnSpecsForGroup('nodes'));
-    this.edges = new ColumnTable('edges', columnSpecsForGroup('edges'));
+    this.nodes = new ColumnTable(GROUP_NODES, columnSpecsForGroup(GROUP_NODES));
+    this.edges = new ColumnTable(GROUP_EDGES, columnSpecsForGroup(GROUP_EDGES));
     this.ids = new IdMap();
     this.adj = new Adjacency();
     this.data = new DataStore();
@@ -425,12 +427,12 @@ export class GraphStore implements ModelView {
 
     this.curves = new CurveIndex({
       endpoints: () => this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
-      aliveEdgeSlots: () => this.slotsOrdered('edges'),
+      aliveEdgeSlots: () => this.slotsOrdered(GROUP_EDGES),
       writeParams: (slot, p0, p1, p2, kind) =>
         this.setCurveParams(slot, p0, p1, p2, kind),
       writeBlobParams: (slot, kind, values, n, dev, box, endptPct) =>
         this.setCurveParamsBlob(slot, kind, values, n, dev, box, endptPct),
-      idHash: (slot) => this.ids.hashAt('edges', slot),
+      idHash: (slot) => this.ids.hashAt(GROUP_EDGES, slot),
       schedule: () => this.dirty.touch(),
       // display tier (round 22.3): hidden members leave their bundles
       edgeShown: (slot) =>
@@ -563,7 +565,7 @@ export class GraphStore implements ModelView {
    * growth, so never cache the arrays across a mutation)
    */
   table(group: GroupName): ColumnTable {
-    return group === 'nodes' ? this.nodes : this.edges;
+    return group === GROUP_NODES ? this.nodes : this.edges;
   }
 
   // -- ModelView (the renderer's read surface) --
@@ -1243,11 +1245,11 @@ export class GraphStore implements ModelView {
       table.highWater + Math.max(0, adding - table.freeCount);
 
     if (this.nodes.reserve(minCap(this.nodes, nodeCount))) {
-      this.dirty.markResized('nodes');
+      this.dirty.markResized(GROUP_NODES);
     }
 
     if (this.edges.reserve(minCap(this.edges, edgeCount))) {
-      this.dirty.markResized('edges');
+      this.dirty.markResized(GROUP_EDGES);
     }
   }
 
@@ -1263,7 +1265,7 @@ export class GraphStore implements ModelView {
    * @throws when the id already exists
    */
   addNode(id: string, x: number, y: number, opts: AddElementOpts = {}): number {
-    const { slot, resized } = this.allocSlot('nodes', id);
+    const { slot, resized } = this.allocSlot(GROUP_NODES, id);
 
     const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
@@ -1306,19 +1308,19 @@ export class GraphStore implements ModelView {
     const source = this.ids.get(sourceId);
     const target = this.ids.get(targetId);
 
-    if (source == null || source.group !== 'nodes') {
+    if (source == null || source.group !== GROUP_NODES) {
       throw new Error(
         `Can not create edge '${id}' with nonexistant source '${sourceId}'`,
       );
     }
 
-    if (target == null || target.group !== 'nodes') {
+    if (target == null || target.group !== GROUP_NODES) {
       throw new Error(
         `Can not create edge '${id}' with nonexistant target '${targetId}'`,
       );
     }
 
-    const { slot, resized } = this.allocSlot('edges', id);
+    const { slot, resized } = this.allocSlot(GROUP_EDGES, id);
 
     const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
@@ -1354,10 +1356,10 @@ export class GraphStore implements ModelView {
     const { slots, resized, contiguousFrom } = this.nodes.allocBulk(count);
 
     if (resized) {
-      this.dirty.markResized('nodes');
+      this.dirty.markResized(GROUP_NODES);
     }
 
-    this.registerBulk('nodes', slots, cols.ids, newId);
+    this.registerBulk(GROUP_NODES, slots, cols.ids, newId);
 
     const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
 
@@ -1384,7 +1386,7 @@ export class GraphStore implements ModelView {
     }
 
     this.geoEpoch++;
-    this.writeBulkFlags('nodes', slots, contiguousFrom, cols);
+    this.writeBulkFlags(GROUP_NODES, slots, contiguousFrom, cols);
 
     // parent column (round 14.8): payload indices, sentinel = orphan;
     // linked after the flags fill so the derived bits survive it
@@ -1413,7 +1415,7 @@ export class GraphStore implements ModelView {
       }
     }
 
-    this.ingestDataColumns('nodes', slots, cols.data);
+    this.ingestDataColumns(GROUP_NODES, slots, cols.data);
 
     if (!resized) {
       this.markBulk(COL.NODE_POSITION, slots);
@@ -1461,10 +1463,10 @@ export class GraphStore implements ModelView {
     const { slots, resized, contiguousFrom } = this.edges.allocBulk(count);
 
     if (resized) {
-      this.dirty.markResized('edges');
+      this.dirty.markResized(GROUP_EDGES);
     }
 
-    this.registerBulk('edges', slots, cols.ids, newId);
+    this.registerBulk(GROUP_EDGES, slots, cols.ids, newId);
 
     const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
 
@@ -1484,8 +1486,8 @@ export class GraphStore implements ModelView {
     this.adj.addBulk(slots, endpoints, this.nodes.cap);
     this.maybeRebuildAdjacency();
 
-    this.writeBulkFlags('edges', slots, contiguousFrom, cols);
-    this.ingestDataColumns('edges', slots, cols.data);
+    this.writeBulkFlags(GROUP_EDGES, slots, contiguousFrom, cols);
+    this.ingestDataColumns(GROUP_EDGES, slots, cols.data);
 
     if (!resized) {
       this.markBulk(COL.EDGE_ENDPOINTS, slots);
@@ -1510,7 +1512,7 @@ export class GraphStore implements ModelView {
       endpoints[slot * 2],
       endpoints[slot * 2 + 1],
     );
-    this.freeSlot('edges', slot);
+    this.freeSlot(GROUP_EDGES, slot);
     this.maybeRebuildAdjacency();
   }
 
@@ -1551,7 +1553,7 @@ export class GraphStore implements ModelView {
     this.polyPool.free(slot);
     this.setNodeImages(slot, null); // releases registry refs too (15.2)
     this.setChart(slot, null); // frees the chart record (round 23)
-    this.freeSlot('nodes', slot);
+    this.freeSlot(GROUP_NODES, slot);
   }
 
   // -- compound hierarchy (round 14) --
@@ -1800,7 +1802,7 @@ export class GraphStore implements ModelView {
           : 0) + entry.marginY;
 
     if (anchorX !== entry.anchorX || anchorY !== entry.anchorY) {
-      this.setLabel(slot, { ...entry, anchorX, anchorY }, 'nodes');
+      this.setLabel(slot, { ...entry, anchorX, anchorY }, GROUP_NODES);
     }
   }
 
@@ -1959,10 +1961,10 @@ export class GraphStore implements ModelView {
     for (const i of changed) {
       const ref = refs[i];
 
-      if (ref.group === 'edges') {
+      if (ref.group === GROUP_EDGES) {
         // edges have no ancestors: effective = own state; DRAWN also
         // folds the visibility prop (round 22)
-        this.setFlag('edges', ref.slot, FLAG_VISIBLE, visible);
+        this.setFlag(GROUP_EDGES, ref.slot, FLAG_VISIBLE, visible);
         this.refreshEdgeDrawn(ref.slot);
         // display-tier semantics (22.3): a hidden bezier-bundle member
         // leaves its bundle — siblings re-fan
@@ -1984,7 +1986,8 @@ export class GraphStore implements ModelView {
    * so an invisible element keeps its space and its bundle rank.
    */
   setInvisibility(group: GroupName, slot: number, invisible: boolean): void {
-    const id: ColumnId = group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
+    const id: ColumnId =
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = this.table(group).column(id) as Uint32Array;
     const cur = (flags[slot] & FLAG_SELF_INVISIBLE) !== 0;
 
@@ -1994,7 +1997,7 @@ export class GraphStore implements ModelView {
 
     this.setFlag(group, slot, FLAG_SELF_INVISIBLE, invisible);
 
-    if (group === 'edges') {
+    if (group === GROUP_EDGES) {
       this.refreshEdgeDrawn(slot);
     } else {
       this.refreshEffectiveVisibility(slot);
@@ -2010,17 +2013,17 @@ export class GraphStore implements ModelView {
       (flags[slot] & FLAG_VISIBLE) !== 0 &&
       (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
 
-    this.setFlag('edges', slot, FLAG_DRAWN, drawn);
+    this.setFlag(GROUP_EDGES, slot, FLAG_DRAWN, drawn);
   }
 
   /** Whether the element renders (round 22): the derived FLAG_DRAWN, with
    * edges additionally folding their endpoints (v3's visible() rule). */
   isDrawn(ref: Ref): boolean {
-    if (ref.group === 'nodes') {
-      return this.hasFlag('nodes', ref.slot, FLAG_DRAWN);
+    if (ref.group === GROUP_NODES) {
+      return this.hasFlag(GROUP_NODES, ref.slot, FLAG_DRAWN);
     }
 
-    if (!this.hasFlag('edges', ref.slot, FLAG_DRAWN)) {
+    if (!this.hasFlag(GROUP_EDGES, ref.slot, FLAG_DRAWN)) {
       return false;
     }
 
@@ -2418,7 +2421,7 @@ export class GraphStore implements ModelView {
   /** The whole flags word for a slot (see the FLAG_* bits in
    * contract.mts); 0 for a tombstoned slot. */
   flags(group: GroupName, slot: number): number {
-    return group === 'nodes'
+    return group === GROUP_NODES
       ? this.hotNodeFlags()[slot]
       : this.hotEdgeFlags()[slot];
   }
@@ -2475,7 +2478,8 @@ export class GraphStore implements ModelView {
    * the curve writers rather than here.
    */
   setFlag(group: GroupName, slot: number, bit: number, on: boolean): void {
-    const id: ColumnId = group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
+    const id: ColumnId =
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const arr = this.table(group).column(id) as Uint32Array;
     const prev = arr[slot];
     const next = on ? prev | bit : prev & ~bit;
@@ -2564,7 +2568,7 @@ export class GraphStore implements ModelView {
     for (let i = 0; i < refs.length; i++) {
       const ref = refs[i];
       const slot = ref.slot;
-      const isNode = ref.group === 'nodes';
+      const isNode = ref.group === GROUP_NODES;
       const gen = isNode ? nodeGen : edgeGen;
 
       if (gen[slot] !== ref.gen) {
@@ -2620,10 +2624,10 @@ export class GraphStore implements ModelView {
     }
 
     if (nodeStateSlots.length > 0) {
-      this.noteStateChange('nodes', bit, nodeStateSlots);
+      this.noteStateChange(GROUP_NODES, bit, nodeStateSlots);
     }
     if (edgeStateSlots.length > 0) {
-      this.noteStateChange('edges', bit, edgeStateSlots);
+      this.noteStateChange(GROUP_EDGES, bit, edgeStateSlots);
     }
 
     return changed;
@@ -4089,10 +4093,10 @@ export class GraphStore implements ModelView {
     if (curvedStream) {
       this.curvedEver = true;
     } // gates the curved pipelines
-    this.setFlag('edges', slot, FLAG_CURVED, curvedStream);
+    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED, curvedStream);
     // compound loops (14.10) are box-bounded: their excursion tracks the
     // (live) node sizes, so no frame constant alone can bound the chord
-    this.setFlag('edges', slot, FLAG_CURVED_BOX, kind === CURVE_CMPD);
+    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED_BOX, kind === CURVE_CMPD);
   }
 
   /**
@@ -4133,8 +4137,8 @@ export class GraphStore implements ModelView {
 
     this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
     this.curvedEver = true; // every blob-backed kind is curved-stream
-    this.setFlag('edges', slot, FLAG_CURVED, true);
-    this.setFlag('edges', slot, FLAG_CURVED_BOX, box);
+    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED, true);
+    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED_BOX, box);
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
@@ -4151,7 +4155,10 @@ export class GraphStore implements ModelView {
    * @param group — which of the four label streams; defaults 'nodes'
    * so the node-side call sites read unchanged (round 10)
    */
-  labelAt(slot: number, group: LabelStream = 'nodes'): LabelEntry | undefined {
+  labelAt(
+    slot: number,
+    group: LabelStream = GROUP_NODES,
+  ): LabelEntry | undefined {
     return this.labels[group][slot];
   }
 
@@ -4184,8 +4191,8 @@ export class GraphStore implements ModelView {
   /** Queue every labelled slot (both groups) for a glyph-run rebuild. */
   markAllLabelsDirty(): void {
     for (const group of [
-      'nodes',
-      'edges',
+      GROUP_NODES,
+      GROUP_EDGES,
       'edgeSource',
       'edgeTarget',
     ] as LabelStream[]) {
@@ -4206,7 +4213,7 @@ export class GraphStore implements ModelView {
   setLabel(
     slot: number,
     entry: LabelEntry | null,
-    group: LabelStream = 'nodes',
+    group: LabelStream = GROUP_NODES,
   ): void {
     const labels = this.labels[group];
     const prev = labels[slot];
@@ -4326,7 +4333,9 @@ export class GraphStore implements ModelView {
    */
   setLabelFontSize(slot: number, group: GroupName, fontSize: number): void {
     const streams: LabelStream[] =
-      group === 'nodes' ? ['nodes'] : ['edges', 'edgeSource', 'edgeTarget'];
+      group === GROUP_NODES
+        ? [GROUP_NODES]
+        : [GROUP_EDGES, 'edgeSource', 'edgeTarget'];
 
     for (const stream of streams) {
       const entry = this.labels[stream][slot];
@@ -4336,7 +4345,7 @@ export class GraphStore implements ModelView {
       }
 
       const anchorY =
-        stream === 'nodes' ? entry.anchorY : -fontSize / 2 + entry.marginY;
+        stream === GROUP_NODES ? entry.anchorY : -fontSize / 2 + entry.marginY;
 
       this.setLabel(slot, { ...entry, fontSize, anchorY }, stream);
     }
@@ -4345,7 +4354,7 @@ export class GraphStore implements ModelView {
   /** A label's laid (or headless-estimated) block dims, model px. */
   labelDimsAt(
     slot: number,
-    group: LabelStream = 'nodes',
+    group: LabelStream = GROUP_NODES,
   ): { w: number; h: number; exact: boolean } | null {
     return this.labelDims[group].get(slot) ?? null;
   }
@@ -4373,7 +4382,7 @@ export class GraphStore implements ModelView {
    *
    * @returns the queued slots; an empty array when nothing is pending
    */
-  takeLabelDirty(group: LabelStream = 'nodes'): number[] {
+  takeLabelDirty(group: LabelStream = GROUP_NODES): number[] {
     const dirty = this.labelDirty[group];
 
     if (dirty.size === 0) {
@@ -4444,7 +4453,7 @@ export class GraphStore implements ModelView {
     const gens = order.gens;
     const gen = this.table(group).gen;
     const flags = this.column(
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     let n = at;
 
@@ -4483,7 +4492,7 @@ export class GraphStore implements ModelView {
     const gens = order.gens;
     const gen = this.table(group).gen;
     const flags = this.column(
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     let n = at;
 
@@ -4602,7 +4611,7 @@ export class GraphStore implements ModelView {
         }
 
         if (hit) {
-          out.push({ group: 'nodes', slot, gen: g });
+          out.push({ group: GROUP_NODES, slot, gen: g });
         }
 
         continue;
@@ -4627,7 +4636,7 @@ export class GraphStore implements ModelView {
           }
         }
 
-        out.push({ group: 'nodes', slot, gen: g });
+        out.push({ group: GROUP_NODES, slot, gen: g });
       }
     }
 
@@ -4665,7 +4674,7 @@ export class GraphStore implements ModelView {
 
       if (overlap) {
         if (this.edgeHitsBox(slot, lx, ly, hx, hy)) {
-          out.push({ group: 'edges', slot, gen: g });
+          out.push({ group: GROUP_EDGES, slot, gen: g });
         }
 
         continue;
@@ -4700,7 +4709,7 @@ export class GraphStore implements ModelView {
       }
 
       if (contained) {
-        out.push({ group: 'edges', slot, gen: g });
+        out.push({ group: GROUP_EDGES, slot, gen: g });
       }
     }
 
@@ -4847,7 +4856,7 @@ export class GraphStore implements ModelView {
     let r = 0;
 
     for (const stream of [
-      'edges',
+      GROUP_EDGES,
       'edgeSource',
       'edgeTarget',
     ] as LabelStream[]) {
@@ -4942,7 +4951,7 @@ export class GraphStore implements ModelView {
     // closed); `visibility: 'hidden'` ones keep theirs (VISIBLE, not DRAWN)
     const nodeFlags = this.column(COL.NODE_FLAGS) as Uint32Array;
 
-    this.forEachAlive('nodes', (slot) => {
+    this.forEachAlive(GROUP_NODES, (slot) => {
       if ((nodeFlags[slot] & FLAG_VISIBLE) === 0) {
         return;
       }
@@ -5037,7 +5046,7 @@ export class GraphStore implements ModelView {
     const curveParams = this.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
     const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
 
-    this.forEachAlive('edges', (slot) => {
+    this.forEachAlive(GROUP_EDGES, (slot) => {
       // the space tier (round 22): hidden edges — or edges with a hidden
       // endpoint (the drawn-edge rule) — take no space
       if (
@@ -5150,7 +5159,7 @@ export class GraphStore implements ModelView {
 
       // round 14: a node def's parent resolves as hierarchy (in a second
       // pass, once the batch's nodes all exist), never as sidecar data
-      if (key === DATA_PARENT && group === 'nodes') {
+      if (key === DATA_PARENT && group === GROUP_NODES) {
         continue;
       }
 
@@ -5221,7 +5230,7 @@ export class GraphStore implements ModelView {
     cols: { selected?: Uint8Array; selectable?: Uint8Array },
   ): void {
     const flagsId: ColumnId =
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = this.table(group).column(flagsId) as Uint32Array;
     const defaults =
       FLAG_ALIVE |
@@ -5229,7 +5238,7 @@ export class GraphStore implements ModelView {
       FLAG_DRAWN |
       FLAG_SELECTABLE |
       FLAG_GRABBABLE |
-      (group === 'edges' ? FLAG_PANNABLE : 0); // edges default pannable, as in v3
+      (group === GROUP_EDGES ? FLAG_PANNABLE : 0); // edges default pannable, as in v3
     const count = slots.length;
 
     if (contiguousFrom < count) {
@@ -5314,7 +5323,7 @@ export class GraphStore implements ModelView {
       this.ids.remove(id);
     }
 
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       // recycled slots must not inherit compound state
       this.parentFallback.delete(slot);
       this.opacityBase.delete(slot);
@@ -5326,7 +5335,7 @@ export class GraphStore implements ModelView {
       this.setLabel(slot, null, group);
     }
 
-    if (group === 'edges') {
+    if (group === GROUP_EDGES) {
       for (const stream of ['edgeSource', 'edgeTarget'] as LabelStream[]) {
         if (this.labels[stream][slot] != null) {
           this.setLabel(slot, null, stream);
@@ -5336,7 +5345,7 @@ export class GraphStore implements ModelView {
 
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad
     const flagsId: ColumnId =
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
 
     (this.table(group).column(flagsId) as Uint32Array)[slot] = 0;
     this.dirty.mark(flagsId, slot);
@@ -5371,7 +5380,7 @@ export class GraphStore implements ModelView {
     }
 
     this.adj.rebuild(
-      this.slotsOrdered('edges'),
+      this.slotsOrdered(GROUP_EDGES),
       this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
       this.nodes.cap,
     );
@@ -5395,8 +5404,8 @@ export class GraphStore implements ModelView {
   compact(): { nodes: GroupCompaction | null; edges: GroupCompaction | null } {
     this.flushDerived(); // settle derived geometry before anything moves
 
-    const edgesRes = this.compactGroup('edges');
-    const nodesRes = this.compactGroup('nodes');
+    const edgesRes = this.compactGroup(GROUP_EDGES);
+    const nodesRes = this.compactGroup(GROUP_NODES);
 
     if (nodesRes != null) {
       // endpoints hold node slots — the one column with cross-group slots
@@ -5415,7 +5424,7 @@ export class GraphStore implements ModelView {
 
     if (nodesRes != null || edgesRes != null) {
       this.adj.rebuild(
-        this.slotsOrdered('edges'),
+        this.slotsOrdered(GROUP_EDGES),
         this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
         this.nodes.cap,
       );
@@ -5429,8 +5438,8 @@ export class GraphStore implements ModelView {
 
     if (edgesRes != null) {
       this.blob.remapSlots(edgesRes.remap);
-      this.data.remapSlots('edges', edgesRes.remap);
-      this.remapLabelStream('edges', edgesRes.remap);
+      this.data.remapSlots(GROUP_EDGES, edgesRes.remap);
+      this.remapLabelStream(GROUP_EDGES, edgesRes.remap);
       this.remapLabelStream('edgeSource', edgesRes.remap);
       this.remapLabelStream('edgeTarget', edgesRes.remap);
     }
@@ -5439,8 +5448,8 @@ export class GraphStore implements ModelView {
       this.polyPool.remapSlots(nodesRes.remap);
       this.imagePool.remapSlots(nodesRes.remap);
       this.chartPool.remapSlots(nodesRes.remap);
-      this.data.remapSlots('nodes', nodesRes.remap);
-      this.remapLabelStream('nodes', nodesRes.remap);
+      this.data.remapSlots(GROUP_NODES, nodesRes.remap);
+      this.remapLabelStream(GROUP_NODES, nodesRes.remap);
       this.hierarchy.remapSlots(nodesRes.remap, this.nodes.gen);
       this.opacityBase = rekeyMap(this.opacityBase, nodesRes.remap);
       this.parentFallback = rekeyMap(this.parentFallback, nodesRes.remap);
@@ -5454,8 +5463,8 @@ export class GraphStore implements ModelView {
 
       // stale mapper spans carry old-coordinate ranges: replace them
       // with whole-column spans per watched key of a compacted group
-      for (const group of ['nodes', 'edges'] as GroupName[]) {
-        const res = group === 'nodes' ? nodesRes : edgesRes;
+      for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
+        const res = group === GROUP_NODES ? nodesRes : edgesRes;
 
         if (res == null) {
           continue;
@@ -5515,7 +5524,7 @@ export class GraphStore implements ModelView {
     const table = this.table(group);
     const hw = table.highWater;
     const flagsId: ColumnId =
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
     const flags = table.column(flagsId) as Uint32Array;
     const remap = new Uint32Array(hw);
     let next = 0;

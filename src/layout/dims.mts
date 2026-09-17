@@ -23,7 +23,7 @@ estimates (round 16.4), so overlap avoidance with labels is exact only
 once a renderer has laid the glyphs.
 */
 
-import { COL, FLAG_VISIBLE } from '../contract.mjs';
+import { GROUP_NODES, COL, FLAG_VISIBLE } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
@@ -152,7 +152,7 @@ export const nodeDimsOf = (
   const slots: number[] = [];
 
   for (const ref of nodes._liveRefs()) {
-    if (ref.group === 'nodes') {
+    if (ref.group === GROUP_NODES) {
       slots.push(ref.slot);
     }
   }

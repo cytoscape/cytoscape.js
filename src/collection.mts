@@ -1,4 +1,6 @@
 import {
+  GROUP_EDGES,
+  GROUP_NODES,
   DATA_TARGET,
   DATA_SOURCE,
   DATA_PARENT,
@@ -143,7 +145,7 @@ type FilterLike = Query | EleFilterFn;
 // keying on the full {group, slot, gen} identity. Safe for slot < 2^28 and
 // gen < 2^24 — far beyond any practical graph.
 const packRef = (r: Ref): number =>
-  (r.group === 'nodes' ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;
+  (r.group === GROUP_NODES ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;
 
 /** Model-px style props that renderedStyle() scales by the zoom. */
 const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set([
@@ -383,7 +385,7 @@ export class Collection {
 
         for (let i = 0; i < refs.length; i++) {
           const ref = refs[i];
-          const pool = ref.group === 'nodes' ? nodePool : edgePool;
+          const pool = ref.group === GROUP_NODES ? nodePool : edgePool;
           let ele = pool[ref.slot];
 
           if (ele == null || ele._refs[0].gen !== ref.gen) {
@@ -944,7 +946,7 @@ export class Collection {
       classes: '',
     };
 
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       json.position = (this.position() as Position | undefined) ?? {
         x: 0,
         y: 0,
@@ -976,7 +978,7 @@ export class Collection {
    * @returns true for a node
    */
   isNode(): boolean {
-    return this.group() === 'nodes';
+    return this.group() === GROUP_NODES;
   }
 
   /**
@@ -985,7 +987,7 @@ export class Collection {
    * @returns true for an edge
    */
   isEdge(): boolean {
-    return this.group() === 'edges';
+    return this.group() === GROUP_EDGES;
   }
 
   /**
@@ -1010,7 +1012,11 @@ export class Collection {
   private _isLoop(wantLoop: boolean): boolean {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return false;
     }
 
@@ -1327,7 +1333,7 @@ export class Collection {
 
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
-      const isNode = ref.group === 'nodes';
+      const isNode = ref.group === GROUP_NODES;
       const test = isNode ? nodeTest : edgeTest;
 
       if (test == null) {
@@ -1375,7 +1381,7 @@ export class Collection {
    */
   nodes(criterion?: FilterLike): Collection {
     const nodes = this._spawnUnique(
-      this._refs.filter((ref) => ref.group === 'nodes'),
+      this._refs.filter((ref) => ref.group === GROUP_NODES),
     );
 
     return criterion == null ? nodes : nodes.filter(criterion);
@@ -1389,7 +1395,7 @@ export class Collection {
    */
   edges(criterion?: FilterLike): Collection {
     const edges = this._spawnUnique(
-      this._refs.filter((ref) => ref.group === 'edges'),
+      this._refs.filter((ref) => ref.group === GROUP_EDGES),
     );
 
     return criterion == null ? edges : edges.filter(criterion);
@@ -1592,7 +1598,7 @@ export class Collection {
       const ref = this._refs[0];
       const store = this._store;
 
-      if (ref == null || ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref == null || ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         return undefined;
       }
 
@@ -1815,7 +1821,7 @@ export class Collection {
         const ref = this._refs[i];
 
         if (
-          ref.group !== 'nodes' ||
+          ref.group !== GROUP_NODES ||
           !store.isCurrent(ref) ||
           (flags[ref.slot] & FLAG_LOCKED) !== 0
         ) {
@@ -1851,7 +1857,7 @@ export class Collection {
       const ref = this._refs[i];
 
       if (
-        ref.group !== 'nodes' ||
+        ref.group !== GROUP_NODES ||
         !store.isCurrent(ref) ||
         (flags[ref.slot] & FLAG_LOCKED) !== 0
       ) {
@@ -1908,7 +1914,7 @@ export class Collection {
     for (const i of emitIdx) {
       const ref = this._refs[i];
 
-      if (ref.group === 'nodes') {
+      if (ref.group === GROUP_NODES) {
         emitted.add(ref.slot);
       }
     }
@@ -1917,8 +1923,8 @@ export class Collection {
       const ref = this._refs[i];
 
       if (
-        ref.group !== 'nodes' ||
-        !store.hasFlag('nodes', ref.slot, FLAG_PARENT)
+        ref.group !== GROUP_NODES ||
+        !store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
       ) {
         continue;
       }
@@ -1930,7 +1936,7 @@ export class Collection {
 
         // a locked descendant stayed, and its subtree with it (116.3):
         // nothing moved there, so nothing to announce
-        if (store.hasFlag('nodes', s, FLAG_LOCKED)) {
+        if (store.hasFlag(GROUP_NODES, s, FLAG_LOCKED)) {
           continue;
         }
 
@@ -1940,7 +1946,7 @@ export class Collection {
 
         if (!emitted.has(s)) {
           emitted.add(s);
-          this._cy._emitOnEle('position', this._cy._ele('nodes', s));
+          this._cy._emitOnEle('position', this._cy._ele(GROUP_NODES, s));
         }
       }
     }
@@ -2009,7 +2015,7 @@ export class Collection {
 
     if (inSet != null) {
       for (const ref of this._refs) {
-        if (ref.group === 'nodes' && store.isCurrent(ref)) {
+        if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
           inSet.add(ref.slot);
         }
       }
@@ -2019,7 +2025,7 @@ export class Collection {
       const ref = this._refs[i];
 
       if (
-        ref.group !== 'nodes' ||
+        ref.group !== GROUP_NODES ||
         !store.isCurrent(ref) ||
         (flags[ref.slot] & FLAG_LOCKED) !== 0
       ) {
@@ -2211,7 +2217,7 @@ export class Collection {
       return undefined;
     }
 
-    return ref.group === 'nodes'
+    return ref.group === GROUP_NODES
       ? this._nodeDim(ref, 0)
       : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
   }
@@ -2236,7 +2242,7 @@ export class Collection {
       return undefined;
     }
 
-    return ref.group === 'nodes'
+    return ref.group === GROUP_NODES
       ? this._nodeDim(ref, 1)
       : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
   }
@@ -2247,7 +2253,10 @@ export class Collection {
   private _nodeDim(ref: Ref, axis: 0 | 1): number {
     const store = this._store;
 
-    if (store.hasCompounds() && store.hasFlag('nodes', ref.slot, FLAG_PARENT)) {
+    if (
+      store.hasCompounds() &&
+      store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
+    ) {
       store.flushDerived();
 
       const size = store.column(COL.NODE_SIZE) as Float32Array;
@@ -2303,7 +2312,7 @@ export class Collection {
       // until the next data write, where v3 hands out its live internal
       // object outright.
       const aux =
-        ref.group === 'edges'
+        ref.group === GROUP_EDGES
           ? (() => {
               const endpoints = store.edgeEndpoints();
 
@@ -2328,14 +2337,14 @@ export class Collection {
         id: store.idAt(ref.group, ref.slot),
       };
 
-      if (ref.group === 'edges') {
+      if (ref.group === GROUP_EDGES) {
         out.source = this.source().id();
         out.target = this.target().id();
       } else {
         // parent is first-class hierarchy state, synthesized on read
         // like edge source/target (round 14); absent for orphans
         if (aux >= 0) {
-          out.parent = store.idAt('nodes', aux);
+          out.parent = store.idAt(GROUP_NODES, aux);
         }
       }
 
@@ -2357,18 +2366,18 @@ export class Collection {
       }
 
       if (
-        ref.group === 'edges' &&
+        ref.group === GROUP_EDGES &&
         (key === DATA_SOURCE || key === DATA_TARGET)
       ) {
         return (key === DATA_SOURCE ? this.source() : this.target()).id();
       }
 
-      if (ref.group === 'nodes' && key === DATA_PARENT) {
+      if (ref.group === GROUP_NODES && key === DATA_PARENT) {
         const parentSlot = this._store.parentOf(ref.slot);
 
         return parentSlot < 0
           ? undefined
-          : this._store.idAt('nodes', parentSlot);
+          : this._store.idAt(GROUP_NODES, parentSlot);
       }
 
       return this._store.data.get(ref.group, ref.slot, key);
@@ -2391,9 +2400,9 @@ export class Collection {
     // a data write can only change computed style through a mapper (or a
     // mapped label) on one of the written keys — decided once per group,
     // not per element
-    const touched: Record<'nodes' | 'edges', number[] | null> = {
-      nodes: cy._stylesDependOnData('nodes', keys) ? [] : null,
-      edges: cy._stylesDependOnData('edges', keys) ? [] : null,
+    const touched: Record<GroupName, number[] | null> = {
+      nodes: cy._stylesDependOnData(GROUP_NODES, keys) ? [] : null,
+      edges: cy._stylesDependOnData(GROUP_EDGES, keys) ? [] : null,
     };
 
     for (const k of keys) {
@@ -2410,13 +2419,16 @@ export class Collection {
       }
 
       for (const k of keys) {
-        if (ref.group === 'edges' && (k === DATA_SOURCE || k === DATA_TARGET)) {
+        if (
+          ref.group === GROUP_EDGES &&
+          (k === DATA_SOURCE || k === DATA_TARGET)
+        ) {
           throw new Error(
             `Can not change the immutable data field '${k}' of an edge`,
           );
         }
 
-        if (ref.group === 'nodes' && k === DATA_PARENT) {
+        if (ref.group === GROUP_NODES && k === DATA_PARENT) {
           throw new Error(
             `Can not change the immutable data field 'parent' of a node; reparent with move()`,
           );
@@ -2429,7 +2441,7 @@ export class Collection {
     }
 
     // mapped style refreshes before emits so data listeners observe fresh state
-    for (const group of ['nodes', 'edges'] as const) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as const) {
       const slots = touched[group];
 
       if (slots != null && slots.length > 0) {
@@ -2738,7 +2750,7 @@ export class Collection {
       return undefined;
     }
 
-    if (ref.group === 'nodes' && store.hasCompounds()) {
+    if (ref.group === GROUP_NODES && store.hasCompounds()) {
       return (store.column(COL.NODE_OPACITY) as Float32Array)[ref.slot];
     }
 
@@ -2746,7 +2758,7 @@ export class Collection {
     // the column cannot answer is a kernel-owned opacity mapper, whose
     // stored bytes go stale (round 62.6 — the same gate readProp keeps)
     if (!this._cy._styleEngine.ownsProp(ref.group, PROP.OPACITY)) {
-      return ref.group === 'nodes'
+      return ref.group === GROUP_NODES
         ? (store.nodes.column(COL.NODE_OPACITY) as Float32Array)[ref.slot]
         : (store.edges.column(COL.EDGE_OPACITY) as Float32Array)[ref.slot];
     }
@@ -2825,7 +2837,7 @@ export class Collection {
     }
 
     if (
-      ref.group !== 'nodes' ||
+      ref.group !== GROUP_NODES ||
       !this._store.isCurrent(ref) ||
       !this._store.hasCompounds()
     ) {
@@ -2868,9 +2880,9 @@ export class Collection {
     }
 
     if (
-      ref.group === 'nodes' &&
+      ref.group === GROUP_NODES &&
       this._store.hasCompounds() &&
-      this._store.hasFlag('nodes', ref.slot, FLAG_PARENT)
+      this._store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
     ) {
       this._store.flushDerived();
 
@@ -2909,7 +2921,7 @@ export class Collection {
   private _borderWidth(): number {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'nodes') {
+    if (ref == null || ref.group !== GROUP_NODES) {
       return 0;
     }
 
@@ -2992,12 +3004,12 @@ export class Collection {
       (flags[slot] & shownMask) === shownMask;
 
     for (const ref of this._liveRefs()) {
-      if (ref.group === 'nodes' && !shown(nodeFlags, ref.slot)) {
+      if (ref.group === GROUP_NODES && !shown(nodeFlags, ref.slot)) {
         continue;
       }
 
       if (
-        ref.group === 'edges' &&
+        ref.group === GROUP_EDGES &&
         !(
           shown(edgeFlags, ref.slot) &&
           shown(nodeFlags, endpoints[ref.slot * 2]) &&
@@ -3007,7 +3019,7 @@ export class Collection {
         continue;
       }
 
-      if (ref.group === 'nodes') {
+      if (ref.group === GROUP_NODES) {
         const slot = ref.slot;
         let hw = size[slot * 2] / 2 + border[slot] / 2;
         let hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
@@ -3131,7 +3143,7 @@ export class Collection {
     };
 
     for (const ref of this._liveRefs()) {
-      if (ref.group === 'nodes') {
+      if (ref.group === GROUP_NODES) {
         const lb = store.nodeLabelBox(ref.slot);
 
         if (lb != null) {
@@ -3146,8 +3158,8 @@ export class Collection {
 
       // edge mid-labels: the block about the drawn midpoint; end labels
       // ride the conservative endpoint radius
-      const entry = store.labelAt(ref.slot, 'edges');
-      const dims = store.labelDimsAt(ref.slot, 'edges');
+      const entry = store.labelAt(ref.slot, GROUP_EDGES);
+      const dims = store.labelDimsAt(ref.slot, GROUP_EDGES);
 
       if (entry != null && dims != null) {
         const m = this._cy._ele(ref.group, ref.slot).midpoint() ?? {
@@ -3280,7 +3292,11 @@ export class Collection {
   midpoint(): Position | undefined {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return undefined;
     }
 
@@ -3406,7 +3422,11 @@ export class Collection {
   isBundledBezier(): boolean {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return false;
     }
 
@@ -3426,7 +3446,11 @@ export class Collection {
   controlPoints(): Position[] | undefined {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return undefined;
     }
 
@@ -3479,7 +3503,11 @@ export class Collection {
   segmentPoints(): Position[] | undefined {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return undefined;
     }
 
@@ -3521,7 +3549,11 @@ export class Collection {
   private _endpointPoint(which: 0 | 1): Position | undefined {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_EDGES ||
+      !this._store.isCurrent(ref)
+    ) {
       return undefined;
     }
 
@@ -3972,11 +4004,11 @@ export class Collection {
       const slot = ele._refs[0].slot;
 
       for (const edgeSlot of store.adj.connectedEdges(slot)) {
-        addEdge(cy._ele('edges', edgeSlot));
+        addEdge(cy._ele(GROUP_EDGES, edgeSlot));
       }
 
       for (const childSlot of store.childrenOf(slot)) {
-        addNode(cy._ele('nodes', childSlot));
+        addNode(cy._ele(GROUP_NODES, childSlot));
       }
     };
 
@@ -3987,7 +4019,7 @@ export class Collection {
         continue;
       }
 
-      if (ref.group === 'edges') {
+      if (ref.group === GROUP_EDGES) {
         addEdge(this[i]);
       } else {
         addNode(this[i]);
@@ -4049,7 +4081,7 @@ export class Collection {
       if (opts.parent != null) {
         const parentRef = store.lookup(String(opts.parent));
 
-        if (parentRef == null || parentRef.group !== 'nodes') {
+        if (parentRef == null || parentRef.group !== GROUP_NODES) {
           return this;
         } // v3: silent no-op
 
@@ -4063,7 +4095,7 @@ export class Collection {
       for (let i = 0; i < this.length; i++) {
         const ref = this._refs[i];
 
-        if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+        if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
           continue;
         }
         if (store.parentOf(ref.slot) === parentSlot) {
@@ -4102,7 +4134,7 @@ export class Collection {
     for (let i = 0; i < this.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4125,7 +4157,7 @@ export class Collection {
   private _resolveNode(id: string, role: string): number {
     const ref = this._store.lookup(id);
 
-    if (ref == null || ref.group !== 'nodes') {
+    if (ref == null || ref.group !== GROUP_NODES) {
       throw new Error(`Can not move edge to nonexistant ${role} node '${id}'`);
     }
 
@@ -4173,7 +4205,7 @@ export class Collection {
   private _endpoint(which: 0 | 1): Collection {
     const ref = this._first();
 
-    if (ref == null || ref.group !== 'edges') {
+    if (ref == null || ref.group !== GROUP_EDGES) {
       return this._spawn([]);
     }
 
@@ -4181,7 +4213,7 @@ export class Collection {
     // column spec walk alone (round 62.4)
     const endpoints = this._store.edgeEndpoints();
 
-    return this._cy._ele('nodes', endpoints[ref.slot * 2 + which]);
+    return this._cy._ele(GROUP_NODES, endpoints[ref.slot * 2 + which]);
   }
 
   private _endpoints(which: 0 | 1): Collection {
@@ -4193,7 +4225,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4201,7 +4233,7 @@ export class Collection {
 
       if (!seen.has(nodeSlot)) {
         seen.add(nodeSlot);
-        refs.push(store.ref('nodes', nodeSlot));
+        refs.push(store.ref(GROUP_NODES, nodeSlot));
       }
     }
 
@@ -4228,7 +4260,7 @@ export class Collection {
     for (let i = 0; i < list.length; i++) {
       const ref = list[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4241,7 +4273,7 @@ export class Collection {
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
 
-      refs[i] = { group: 'edges', slot, gen: egen[slot] };
+      refs[i] = { group: GROUP_EDGES, slot, gen: egen[slot] };
     }
 
     const eles = this._spawnLive(refs);
@@ -4266,7 +4298,7 @@ export class Collection {
     for (let i = 0; i < list.length; i++) {
       const ref = list[i];
 
-      if (ref.group !== 'edges' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4275,12 +4307,12 @@ export class Collection {
 
       if (!seen.has(source)) {
         seen.add(source);
-        refs.push(store.ref('nodes', source));
+        refs.push(store.ref(GROUP_NODES, source));
       }
 
       if (!seen.has(target)) {
         seen.add(target);
-        refs.push(store.ref('nodes', target));
+        refs.push(store.ref(GROUP_NODES, target));
       }
     }
 
@@ -4326,7 +4358,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4342,12 +4374,12 @@ export class Collection {
 
         if (!seen.has(edgeSlot * 2 + 1)) {
           seen.add(edgeSlot * 2 + 1);
-          refs.push(store.ref('edges', edgeSlot));
+          refs.push(store.ref(GROUP_EDGES, edgeSlot));
         }
 
         if (!seen.has(otherSlot * 2)) {
           seen.add(otherSlot * 2);
-          refs.push(store.ref('nodes', otherSlot));
+          refs.push(store.ref(GROUP_NODES, otherSlot));
         }
       }
     }
@@ -4380,14 +4412,14 @@ export class Collection {
       const ref = this._refs[i];
 
       if (store.isCurrent(ref)) {
-        seen.add(ref.group === 'nodes' ? ref.slot * 2 : ref.slot * 2 + 1);
+        seen.add(ref.group === GROUP_NODES ? ref.slot * 2 : ref.slot * 2 + 1);
       }
     }
 
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4405,12 +4437,12 @@ export class Collection {
 
           if (!seen.has(edgeSlot * 2 + 1)) {
             seen.add(edgeSlot * 2 + 1);
-            refs.push(store.ref('edges', edgeSlot));
+            refs.push(store.ref(GROUP_EDGES, edgeSlot));
           }
 
           if (!seen.has(otherSlot * 2)) {
             seen.add(otherSlot * 2);
-            refs.push(store.ref('nodes', otherSlot));
+            refs.push(store.ref(GROUP_NODES, otherSlot));
           }
         }
       }
@@ -4453,7 +4485,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4461,7 +4493,7 @@ export class Collection {
 
       if (p >= 0 && !seen.has(p)) {
         seen.add(p);
-        refs.push(store.ref('nodes', p));
+        refs.push(store.ref(GROUP_NODES, p));
       }
     }
 
@@ -4486,7 +4518,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group === 'nodes' && store.isCurrent(ref)) {
+      if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
         level.push(ref.slot);
       }
     }
@@ -4499,7 +4531,7 @@ export class Collection {
 
         if (p >= 0 && !seen.has(p)) {
           seen.add(p);
-          refs.push(store.ref('nodes', p));
+          refs.push(store.ref(GROUP_NODES, p));
           next.push(p);
         }
       }
@@ -4528,14 +4560,14 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
       for (const child of store.childrenOf(ref.slot)) {
         if (!seen.has(child)) {
           seen.add(child);
-          refs.push(store.ref('nodes', child));
+          refs.push(store.ref(GROUP_NODES, child));
         }
       }
     }
@@ -4569,7 +4601,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4583,7 +4615,7 @@ export class Collection {
         }
 
         seen.add(slot);
-        refs.push(store.ref('nodes', slot));
+        refs.push(store.ref(GROUP_NODES, slot));
         pushChildren(slot);
       }
     }
@@ -4636,12 +4668,12 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
       if (store.parentOf(ref.slot) >= 0 === wantChild) {
-        refs.push(store.ref('nodes', ref.slot));
+        refs.push(store.ref(GROUP_NODES, ref.slot));
       }
     }
 
@@ -4670,7 +4702,7 @@ export class Collection {
 
       const own: number[] = [];
 
-      if (ref.group === 'nodes') {
+      if (ref.group === GROUP_NODES) {
         for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
           own.push(p);
         }
@@ -4690,7 +4722,7 @@ export class Collection {
     }
 
     const eles = this._spawnLive(
-      (chain ?? []).map((slot) => store.ref('nodes', slot)),
+      (chain ?? []).map((slot) => store.ref(GROUP_NODES, slot)),
     );
 
     return criterion == null ? eles : eles.filter(criterion);
@@ -4758,7 +4790,9 @@ export class Collection {
     // instead of the syncing getter — the 62.6 fast-read shape
     const ref = this.__refs[0];
 
-    return ref != null && ref.group === 'nodes' && this._store.isCurrent(ref)
+    return ref != null &&
+      ref.group === GROUP_NODES &&
+      this._store.isCurrent(ref)
       ? ref
       : null;
   }
@@ -4798,7 +4832,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group !== 'nodes' || !store.isCurrent(ref)) {
+      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
         continue;
       }
 
@@ -4867,7 +4901,7 @@ export class Collection {
     for (let i = 0; i < this._refs.length; i++) {
       const ref = this._refs[i];
 
-      if (ref.group === 'nodes' && store.isCurrent(ref)) {
+      if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
         frontier.push(ref.slot);
       }
     }
@@ -4889,12 +4923,12 @@ export class Collection {
 
           if (!seen.has(edgeSlot * 2 + 1)) {
             seen.add(edgeSlot * 2 + 1);
-            acc.push(store.ref('edges', edgeSlot));
+            acc.push(store.ref(GROUP_EDGES, edgeSlot));
           }
 
           if (!seen.has(otherSlot * 2)) {
             seen.add(otherSlot * 2);
-            acc.push(store.ref('nodes', otherSlot));
+            acc.push(store.ref(GROUP_NODES, otherSlot));
             next.push(otherSlot);
           }
         }
@@ -4947,7 +4981,7 @@ export class Collection {
     const refs: Ref[] = [];
 
     for (const oref of otherColl._liveRefs()) {
-      if (oref.group !== 'nodes') {
+      if (oref.group !== GROUP_NODES) {
         continue;
       }
 
@@ -4964,7 +4998,7 @@ export class Collection {
           continue;
         }
 
-        refs.push(store.ref('edges', edgeSlot));
+        refs.push(store.ref(GROUP_EDGES, edgeSlot));
       }
     }
 
@@ -5005,7 +5039,7 @@ export class Collection {
     const refs: Ref[] = [];
 
     for (const ref of this._liveRefs()) {
-      if (ref.group !== 'edges') {
+      if (ref.group !== GROUP_EDGES) {
         continue;
       }
 
@@ -5023,7 +5057,7 @@ export class Collection {
           (codirectedOnly && codirected) ||
           (!codirectedOnly && (codirected || opposed))
         ) {
-          refs.push(store.ref('edges', e2));
+          refs.push(store.ref(GROUP_EDGES, e2));
         }
       }
     }
@@ -5051,7 +5085,7 @@ export class Collection {
     const edgeSlotSet = new Set<number>();
 
     for (const ref of this._liveRefs()) {
-      if (ref.group === 'edges') {
+      if (ref.group === GROUP_EDGES) {
         edgeSlots.push(ref.slot);
         edgeSlotSet.add(ref.slot);
       }
@@ -5071,7 +5105,7 @@ export class Collection {
           : // root has only edges: seed from their source-side nodes
             rootColl
               ._liveRefs()
-              .filter((r) => r.group === 'edges')
+              .filter((r) => r.group === GROUP_EDGES)
               .map((r) => endpoints[r.slot * 2])
               .filter((s) => nodeSlots.has(s));
     }
@@ -5113,7 +5147,7 @@ export class Collection {
       const refs: Ref[] = [];
 
       for (const s of compNodes) {
-        refs.push(store.ref('nodes', s));
+        refs.push(store.ref(GROUP_NODES, s));
       }
 
       for (const edgeSlot of edgeSlots) {
@@ -5121,7 +5155,7 @@ export class Collection {
           compNodes.has(endpoints[edgeSlot * 2]) &&
           compNodes.has(endpoints[edgeSlot * 2 + 1])
         ) {
-          refs.push(store.ref('edges', edgeSlot));
+          refs.push(store.ref(GROUP_EDGES, edgeSlot));
         }
       }
 
@@ -5152,7 +5186,7 @@ export class Collection {
     const set = new Set<number>();
 
     for (const ref of this._liveRefs()) {
-      if (ref.group === 'nodes') {
+      if (ref.group === GROUP_NODES) {
         set.add(ref.slot);
       }
     }
@@ -5234,11 +5268,11 @@ export class Collection {
     this._store.flushDerived();
 
     for (const ref of this._liveRefs()) {
-      if (ref.group !== 'edges') {
+      if (ref.group !== GROUP_EDGES) {
         continue;
       }
 
-      const edge = this._cy._ele('edges', ref.slot);
+      const edge = this._cy._ele(GROUP_EDGES, ref.slot);
 
       // curved edges: chord-bounded kinds expand by the conservative
       // hull deviation — cheap, symmetric, and tight enough for a fit
@@ -5314,7 +5348,11 @@ export class Collection {
   } {
     const ref = this._refs[0];
 
-    if (ref == null || ref.group !== 'nodes' || !this._store.isCurrent(ref)) {
+    if (
+      ref == null ||
+      ref.group !== GROUP_NODES ||
+      !this._store.isCurrent(ref)
+    ) {
       return { w: 1, h: 1 };
     }
 
@@ -6264,7 +6302,7 @@ export class Collection {
     const ref = this._first();
 
     // first element must be a live node, else undefined (as in v3)
-    if (ref == null || ref.group !== 'nodes' || !store.isCurrent(ref)) {
+    if (ref == null || ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
       return undefined;
     }
 

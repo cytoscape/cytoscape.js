@@ -8,6 +8,7 @@ import {
   NodeHeap,
 } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export type AStarHeuristicFn = (node: Collection) => number;
 
@@ -63,7 +64,7 @@ export const aStar = (
   const t = index.get(goalSlot) as number;
 
   gScore[s] = 0;
-  fScore[s] = heuristic(cy._ele('nodes', rootSlot));
+  fScore[s] = heuristic(cy._ele(GROUP_NODES, rootSlot));
   open.push(s);
 
   let steps = 0;
@@ -77,12 +78,12 @@ export const aStar = (
       const refs: Ref[] = [];
       let u = c;
 
-      refs.push(store.ref('nodes', nodeSlots[u]));
+      refs.push(store.ref(GROUP_NODES, nodeSlots[u]));
 
       while (cameFrom[u] >= 0) {
-        refs.unshift(store.ref('edges', cameFromEdge[u]));
+        refs.unshift(store.ref(GROUP_EDGES, cameFromEdge[u]));
         u = cameFrom[u];
-        refs.unshift(store.ref('nodes', nodeSlots[u]));
+        refs.unshift(store.ref(GROUP_NODES, nodeSlots[u]));
       }
 
       return {
@@ -106,13 +107,13 @@ export const aStar = (
 
       if (!open.has(w)) {
         gScore[w] = tempScore;
-        fScore[w] = tempScore + heuristic(cy._ele('nodes', otherSlot));
+        fScore[w] = tempScore + heuristic(cy._ele(GROUP_NODES, otherSlot));
         cameFrom[w] = c;
         cameFromEdge[w] = edgeSlot;
         open.push(w);
       } else if (tempScore < gScore[w]) {
         gScore[w] = tempScore;
-        fScore[w] = tempScore + heuristic(cy._ele('nodes', otherSlot));
+        fScore[w] = tempScore + heuristic(cy._ele(GROUP_NODES, otherSlot));
         cameFrom[w] = c;
         cameFromEdge[w] = edgeSlot;
         open.update(w);

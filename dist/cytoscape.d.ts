@@ -119,221 +119,262 @@ declare class ImageRegistry {
 }
 //#endregion
 //#region src/contract.d.mts
-type GroupName = 'nodes' | 'edges';
-type ColumnId = 'node.position' | 'node.size' | 'node.fillColor' | 'node.borderColor' | 'node.borderWidth' | 'node.opacity' | 'node.shape' |
 /**
- * Float32Array(2·cap) — *derived*: size/2 + borderWidth/2 per axis, the
- * outer half-extent (v3's outerWidth/outerHeight frame).  Maintained by
- * the store on every node.size / node.borderWidth write, never written
- * directly.  The curve/arrow/edge-label shaders bind this single column
- * instead of size + border, which keeps their vertex stages within
- * WebGPU's base 8-storage-buffer budget (and leaves room for the 12b
- * curve param blob).
+ * The two element groups (round 127.6): the discriminant every
+ * per-group table, column, index and event path branches on, and the
+ * `group` field of an element definition.  Spelled once here;
+ * `test/modules/string-keys.mjs` rejects the literal elsewhere.
  */
-'node.outerHalf' |
+declare const GROUP_NODES = "nodes";
+declare const GROUP_EDGES = "edges";
+type GroupName = typeof GROUP_NODES | typeof GROUP_EDGES;
 /**
- * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
- * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
- * into one column, so a vertex stage that binds both can swap them
- * for this and spend the freed slot on `edge.width` (the arrow-trim
- * word).  Bound by exactly the two stages that were at the
- * 8-storage-buffer budget with no slot for the trim: the curved
- * layer-stroke VS and the edge-label VS.  Maintained by the store —
- * `updateOuterHalf` writes lanes 0/1 beside every outerHalf write,
- * the `node.shape` write refreshes lane 2 — and never written
- * directly.  Shape ids are small integers, so the f32 lane is exact
- * (`node.borderGeom.y` carrying a shape copy for the node FS is the
- * precedent).  Nothing reads it on the CPU; `test/modules/`
- * pins it in lockstep with its two source columns.
- */
-'node.outerGeom' |
-/**
- * Float32Array(4·cap) — ghost props (round 13 A1): [offsetX, offsetY,
- * ghostOpacity, enabled].  The decided simplified form: a ghost
- * duplicates only the basic node body (shape, border, background) at
- * the offset — one extra instance draw off its own cull stream, drawn
- * after edges/arrows and under the nodes, never a full node redraw
- * (labels and decorations excluded).
- */
-'node.ghost' |
-/**
- * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
- * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
- * 'auto', v3's min(w/4, h/4, 8)), borderPosition (bits 0..7: 0
- * center — v3's default, 1 inside, 2 outside) | border-style
- * bits 8..9 | outline-style bits 10..11 (round 38; see the stroke
- * style constants) | shape id << 16
- * (round 13 C2: a copy of node.shape so the node FS can drop the
- * shapes binding — the slot went to the gradient column; the style
- * engine writes both together), outline rgba (outline-opacity
- * folded into alpha; a=0 = no outline), outlineWidth × 256 |
- * outlineOffset × 256 << 16 (u16 fixed-point each)].  Read by the
- * node/ghost FS, the depth prepass, the node cull (outward borders
- * and outlines grow the quad), and the CPU pick (the
- * round-rectangle inside test).
- */
-'node.borderGeom' |
-/**
- * Float32Array(4·cap) — the dashed border's pattern (round 38),
- * normalized to two on/off pairs exactly like `edge.dashPattern`
- * (v3's default [4, 2] stores as [4, 2, 4, 2]).  Read only when
- * borderGeom.y's border-style bits say `dashed`; `dotted` hardcodes
- * [1, 1] in the shader (v3's rule).  Binds vertex-only in the node
- * pipeline — the FS is at its 8-storage-buffer budget — and reaches
- * the fragment stage as flat varyings.
- */
-'node.borderDash' |
-/**
- * Float32Array(2·cap) — [border-dash-offset (model px), reserved],
- * the `edge.dashMeta` twin for borders (round 38).  Same vertex-only
- * binding rule as 'node.borderDash'.
- */
-'node.borderDashMeta' |
-/**
- * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
- * stops (v3's canvas gradients), constants-only, capped at 5 (a
- * recorded cap): [meta (kind 0 solid | 1 linear | 2 radial, bits
- * 0..1; direction id bits 2..4; stop count bits 5..7), c0..c4
- * (packed rgba), pos0..3 (×255 in one word), pos4].  Same layout
- * for edges as 'edge.gradient' (line-fill; no direction — linear
- * runs along the edge, radial from the midpoint).
- */
-'node.gradient' |
-/**
- * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
- * column per layer: [rgba (layer opacity folded into alpha; a=0 =
- * disabled), padding × 256 (fixed-point model px), shape (0
- * round-rectangle, 1 ellipse), cornerRadius × 256 (0xffffffff =
- * 'auto' — v3's min(w/4, h/4, 8), resolved in the shader from live
- * extents)].  The underlay draws under the node body (after ghosts),
- * the overlay above the nodes (before labels).
- */
-'node.overlay' | 'node.underlay' | 'node.flags' |
-/**
- * Uint32Array(cap) — background-image list ref (round 15.2): record
- * offset into the image param blob | image count << 24 (0 = no
- * images; count ≤ 4 — the recorded multi-image cap).  Records are
- * IMG_STRIDE floats per image (see store/graph-store.mts
- * setNodeImages): registry entry id, packed mode flags, opacity,
- * position/offset/size values with unit bits, and the sdf tint.
- * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
- */
-'node.imageRef' |
-/**
- * Uint32Array(cap) — chart record ref (round 23): offset into the
- * chart blob | slice count << 24 (0 = no chart).  The record is
- * CHART_HEADER floats (kind, size, hole, startAngle, direction,
- * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
- * paint, like images: nothing in bb, cull-extent or CPU-pick.
- */
-'node.chartRef' | 'edge.endpoints' | 'edge.lineColor' |
-/**
- * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
+ * Every column id, spelled once (round 127).  The store, the renderer,
+ * the mirror, the tween paths and the worker protocol all name a column
+ * through this table; the string values are still what crosses the
+ * wire and what `COLUMN_SPECS` is keyed by, and `ColumnId` is derived
+ * from the table so the two cannot drift.  `test/modules/string-keys.mjs`
+ * rejects a column-id literal anywhere else under `src/`.
  *
- * Lane 0 is the edge width in model px.  Lane 1 is `edge.arrowShapes`
- * **plus two derived flags** (`ARROW_SHIFT_*_SHOWS_LINE`),
- * reinterpreted as f32, so that the four edge vertex stages — all of
- * which already bind this column and none of which has a spare
- * storage-buffer slot — can derive v3's per-shape arrow `gap`/`spacing`
- * without a new binding (round 56).
- *
- * It is written by `GraphStore.updateArrowBits` alone — from the shape
- * word *and* the two stored arrow colours, so either input changing
- * refreshes it — through a `Uint32Array` view of this column's own
- * buffer rather than a bitcast via a JS number.  Today's packing leaves bit 23 clear, so no
- * reachable word is an f32 NaN and a number round trip would in fact
- * be exact — but that is a property of the *packing*, not of the
- * mirror, and the reserved span at bits 18..23 is explicitly there to
- * be spent.  The aliased view is exact for any word, so the mirror
- * does not quietly acquire a dependency on which bits are free.
- *
- * Nothing reads lane 1 on the CPU — `edge.arrowShapes` is the readable
- * truth, and a spec pins the two in step.
- *
- * Deriving the gap from the *same quantized* arrow-scale the head is
- * drawn at is deliberate: the line then meets the head exactly, where
- * a gap computed from the unquantized scale would not.
+ * The comment on each member is the column's backing format and its
+ * meaning — the co-signed part.
  */
-'edge.width' | 'edge.opacity' | 'edge.flags' | 'edge.sourceArrow' | 'edge.targetArrow' | 'edge.lineStyle' |
-/**
- * Uint32Array(cap) — the four arrowhead ids, the two hollow-fill flags
- * and the quantized arrow-scale in one word.  **The layout is written
- * out once, above `packArrowShapes`** — read it there rather than here,
- * and change it only there.
- *
- * (This comment used to restate the layout and had been wrong since
- * round 27.1: it still described the mid ids as 3-bit fields at
- * 18..20 / 21..23, which is the packing 27.1 replaced with 4-bit
- * fields at 8..11 / 12..15 — contradicting the correct block twelve
- * lines above it.  Round 56 found it by writing a spec against the
- * prose, and deleted the restatement rather than fixing it twice.)
- */
-'edge.arrowShapes' |
-/** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
- * folded like the end arrows (opacity × line-opacity; a=0 = none).
- * Mid arrows anchor at the curve/route midpoint with the midpoint
- * tangent (mid-source pointing backward), and are always filled at
- * the standard width (mid fill/width props are unsupported — a
- * recorded scope note). */
-'edge.midSourceArrow' | 'edge.midTargetArrow' |
-/** Float32Array(2·cap) — hollow-arrow stroke widths per end, model px
- * (round 13 B7; 'match-line' and % forms resolve at style-write). */
-'edge.arrowWidths' |
-/**
- * Uint32Array(2·cap) — edge overlay/underlay records (round 13 A2),
- * one column per layer: [rgba (layer opacity folded; a=0 = disabled),
- * strokeWidth × 256 (fixed-point model px — the edge width + 2 ×
- * layer padding, derived at style-write so the layer shaders need no
- * width binding)].  The underlay strokes under the edges, the overlay
- * over edges + arrows; both ride the existing edge cull streams with
- * a VS collapse for disabled instances.
- */
-'edge.overlay' | 'edge.underlay' |
-/**
- * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
- * record layout: [rgba (folded by opacity × line-opacity; a=0 =
- * disabled), strokeWidth × 256 (edge width + line-outline-width —
- * v3's context.lineWidth)].  Strokes under the edge line, over the
- * edge underlay, via the shared layer entry points.
- */
-'edge.gradient' | 'edge.casing' |
-/**
- * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
- * to two on/off pairs in model px (a 2-entry pattern repeats; odd
- * patterns double, canvas semantics; longer patterns truncate — a
- * recorded cap).  Applies when line-style is dashed; dotted keeps
- * [1, 1].
- */
-'edge.dashPattern' |
-/** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
- * (0 butt, 1 round, 2 square)] (round 13 B3). */
-'edge.dashMeta' |
-/**
- * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
- * all position-independent so drags/layouts/position tweens follow
- * on-GPU with zero rebuild.  [3] is the curve kind (CURVE_*, exact
- * small ints in f32 — packed here so the curve shaders stay within
- * the vertex stage's 8-storage-buffer budget):
- * - CURVE_STRAIGHT: unused
- * - CURVE_BEZIER: [0] signed control offset d (model px, edge frame),
- *   [1] control-point-weight
- * - CURVE_LOOP: [0] out angle, [1] in angle (radians), [2] control
- *   radius (model px)
- * - CURVE_MULTI / CURVE_SEGMENTS / CURVE_TAXI (12b, blob-backed
- *   headers): [0] record offset into the curve param blob (exact
- *   integer in f32), [1] the conservative chord deviation max|d|
- *   (model px; 0 for taxi — box-bounded, see FLAG_CURVED_BOX),
- *   [2] interior point count n (0 for taxi — the routing derives its
- *   own points).  Record layouts are documented in
- *   store/curve-blob.mts.  The CURVE_HAS_ENDPT flag (12c) marks a
- *   10-float manual-endpoint block prefixed to the record; [1] then
- *   also covers the endpoint px offsets.
- * - CURVE_HAYSTACK (12c): [0] source angle, [1] target angle
- *   (radians), [2] haystack-radius — straight-stream kind (no
- *   FLAG_CURVED)
- * - CURVE_TRIANGLE (12c): straight-stream kind, no params
- */
-'edge.curveParams';
+declare const COL: {
+  readonly NODE_POSITION: 'node.position';
+  readonly NODE_SIZE: 'node.size';
+  readonly NODE_FILL_COLOR: 'node.fillColor';
+  readonly NODE_BORDER_COLOR: 'node.borderColor';
+  readonly NODE_BORDER_WIDTH: 'node.borderWidth';
+  readonly NODE_OPACITY: 'node.opacity';
+  readonly NODE_SHAPE: 'node.shape';
+  /**
+   * Float32Array(2·cap) — *derived*: size/2 + borderWidth/2 per axis, the
+   * outer half-extent (v3's outerWidth/outerHeight frame).  Maintained by
+   * the store on every node.size / node.borderWidth write, never written
+   * directly.  The curve/arrow/edge-label shaders bind this single column
+   * instead of size + border, which keeps their vertex stages within
+   * WebGPU's base 8-storage-buffer budget (and leaves room for the 12b
+   * curve param blob).
+   */
+  readonly NODE_OUTER_HALF: 'node.outerHalf';
+  /**
+   * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
+   * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
+   * into one column, so a vertex stage that binds both can swap them
+   * for this and spend the freed slot on `edge.width` (the arrow-trim
+   * word).  Bound by exactly the two stages that were at the
+   * 8-storage-buffer budget with no slot for the trim: the curved
+   * layer-stroke VS and the edge-label VS.  Maintained by the store —
+   * `updateOuterHalf` writes lanes 0/1 beside every outerHalf write,
+   * the `node.shape` write refreshes lane 2 — and never written
+   * directly.  Shape ids are small integers, so the f32 lane is exact
+   * (`node.borderGeom.y` carrying a shape copy for the node FS is the
+   * precedent).  Nothing reads it on the CPU; `test/modules/`
+   * pins it in lockstep with its two source columns.
+   */
+  readonly NODE_OUTER_GEOM: 'node.outerGeom';
+  /**
+   * Float32Array(4·cap) — ghost props (round 13 A1): [offsetX, offsetY,
+   * ghostOpacity, enabled].  The decided simplified form: a ghost
+   * duplicates only the basic node body (shape, border, background) at
+   * the offset — one extra instance draw off its own cull stream, drawn
+   * after edges/arrows and under the nodes, never a full node redraw
+   * (labels and decorations excluded).
+   */
+  readonly NODE_GHOST: 'node.ghost';
+  /**
+   * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
+   * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
+   * 'auto', v3's min(w/4, h/4, 8)), borderPosition (bits 0..7: 0
+   * center — v3's default, 1 inside, 2 outside) | border-style
+   * bits 8..9 | outline-style bits 10..11 (round 38; see the stroke
+   * style constants) | shape id << 16
+   * (round 13 C2: a copy of node.shape so the node FS can drop the
+   * shapes binding — the slot went to the gradient column; the style
+   * engine writes both together), outline rgba (outline-opacity
+   * folded into alpha; a=0 = no outline), outlineWidth × 256 |
+   * outlineOffset × 256 << 16 (u16 fixed-point each)].  Read by the
+   * node/ghost FS, the depth prepass, the node cull (outward borders
+   * and outlines grow the quad), and the CPU pick (the
+   * round-rectangle inside test).
+   */
+  readonly NODE_BORDER_GEOM: 'node.borderGeom';
+  /**
+   * Float32Array(4·cap) — the dashed border's pattern (round 38),
+   * normalized to two on/off pairs exactly like `edge.dashPattern`
+   * (v3's default [4, 2] stores as [4, 2, 4, 2]).  Read only when
+   * borderGeom.y's border-style bits say `dashed`; `dotted` hardcodes
+   * [1, 1] in the shader (v3's rule).  Binds vertex-only in the node
+   * pipeline — the FS is at its 8-storage-buffer budget — and reaches
+   * the fragment stage as flat varyings.
+   */
+  readonly NODE_BORDER_DASH: 'node.borderDash';
+  /**
+   * Float32Array(2·cap) — [border-dash-offset (model px), reserved],
+   * the `edge.dashMeta` twin for borders (round 38).  Same vertex-only
+   * binding rule as 'node.borderDash'.
+   */
+  readonly NODE_BORDER_DASH_META: 'node.borderDashMeta';
+  /**
+   * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
+   * stops (v3's canvas gradients), constants-only, capped at 5 (a
+   * recorded cap): [meta (kind 0 solid | 1 linear | 2 radial, bits
+   * 0..1; direction id bits 2..4; stop count bits 5..7), c0..c4
+   * (packed rgba), pos0..3 (×255 in one word), pos4].  Same layout
+   * for edges as 'edge.gradient' (line-fill; no direction — linear
+   * runs along the edge, radial from the midpoint).
+   */
+  readonly NODE_GRADIENT: 'node.gradient';
+  /**
+   * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
+   * column per layer: [rgba (layer opacity folded into alpha; a=0 =
+   * disabled), padding × 256 (fixed-point model px), shape (0
+   * round-rectangle, 1 ellipse), cornerRadius × 256 (0xffffffff =
+   * 'auto' — v3's min(w/4, h/4, 8), resolved in the shader from live
+   * extents)].  The underlay draws under the node body (after ghosts),
+   * the overlay above the nodes (before labels).
+   */
+  readonly NODE_OVERLAY: 'node.overlay';
+  readonly NODE_UNDERLAY: 'node.underlay';
+  readonly NODE_FLAGS: 'node.flags';
+  /**
+   * Uint32Array(cap) — background-image list ref (round 15.2): record
+   * offset into the image param blob | image count << 24 (0 = no
+   * images; count ≤ 4 — the recorded multi-image cap).  Records are
+   * IMG_STRIDE floats per image (see store/graph-store.mts
+   * setNodeImages): registry entry id, packed mode flags, opacity,
+   * position/offset/size values with unit bits, and the sdf tint.
+   * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
+   */
+  readonly NODE_IMAGE_REF: 'node.imageRef';
+  /**
+   * Uint32Array(cap) — chart record ref (round 23): offset into the
+   * chart blob | slice count << 24 (0 = no chart).  The record is
+   * CHART_HEADER floats (kind, size, hole, startAngle, direction,
+   * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
+   * paint, like images: nothing in bb, cull-extent or CPU-pick.
+   */
+  readonly NODE_CHART_REF: 'node.chartRef';
+  readonly EDGE_ENDPOINTS: 'edge.endpoints';
+  readonly EDGE_LINE_COLOR: 'edge.lineColor';
+  /**
+   * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
+   *
+   * Lane 0 is the edge width in model px.  Lane 1 is `edge.arrowShapes`
+   * **plus two derived flags** (`ARROW_SHIFT_*_SHOWS_LINE`),
+   * reinterpreted as f32, so that the four edge vertex stages — all of
+   * which already bind this column and none of which has a spare
+   * storage-buffer slot — can derive v3's per-shape arrow `gap`/`spacing`
+   * without a new binding (round 56).
+   *
+   * It is written by `GraphStore.updateArrowBits` alone — from the shape
+   * word *and* the two stored arrow colours, so either input changing
+   * refreshes it — through a `Uint32Array` view of this column's own
+   * buffer rather than a bitcast via a JS number.  Today's packing leaves bit 23 clear, so no
+   * reachable word is an f32 NaN and a number round trip would in fact
+   * be exact — but that is a property of the *packing*, not of the
+   * mirror, and the reserved span at bits 18..23 is explicitly there to
+   * be spent.  The aliased view is exact for any word, so the mirror
+   * does not quietly acquire a dependency on which bits are free.
+   *
+   * Nothing reads lane 1 on the CPU — `edge.arrowShapes` is the readable
+   * truth, and a spec pins the two in step.
+   *
+   * Deriving the gap from the *same quantized* arrow-scale the head is
+   * drawn at is deliberate: the line then meets the head exactly, where
+   * a gap computed from the unquantized scale would not.
+   */
+  readonly EDGE_WIDTH: 'edge.width';
+  readonly EDGE_OPACITY: 'edge.opacity';
+  readonly EDGE_FLAGS: 'edge.flags';
+  readonly EDGE_SOURCE_ARROW: 'edge.sourceArrow';
+  readonly EDGE_TARGET_ARROW: 'edge.targetArrow';
+  readonly EDGE_LINE_STYLE: 'edge.lineStyle';
+  /**
+   * Uint32Array(cap) — the four arrowhead ids, the two hollow-fill flags
+   * and the quantized arrow-scale in one word.  **The layout is written
+   * out once, above `packArrowShapes`** — read it there rather than here,
+   * and change it only there.
+   *
+   * (This comment used to restate the layout and had been wrong since
+   * round 27.1: it still described the mid ids as 3-bit fields at
+   * 18..20 / 21..23, which is the packing 27.1 replaced with 4-bit
+   * fields at 8..11 / 12..15 — contradicting the correct block twelve
+   * lines above it.  Round 56 found it by writing a spec against the
+   * prose, and deleted the restatement rather than fixing it twice.)
+   */
+  readonly EDGE_ARROW_SHAPES: 'edge.arrowShapes';
+  /** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
+   * folded like the end arrows (opacity × line-opacity; a=0 = none).
+   * Mid arrows anchor at the curve/route midpoint with the midpoint
+   * tangent (mid-source pointing backward), and are always filled at
+   * the standard width (mid fill/width props are unsupported — a
+   * recorded scope note). */
+  readonly EDGE_MID_SOURCE_ARROW: 'edge.midSourceArrow';
+  readonly EDGE_MID_TARGET_ARROW: 'edge.midTargetArrow';
+  /** Float32Array(2·cap) — hollow-arrow stroke widths per end, model px
+   * (round 13 B7; 'match-line' and % forms resolve at style-write). */
+  readonly EDGE_ARROW_WIDTHS: 'edge.arrowWidths';
+  /**
+   * Uint32Array(2·cap) — edge overlay/underlay records (round 13 A2),
+   * one column per layer: [rgba (layer opacity folded; a=0 = disabled),
+   * strokeWidth × 256 (fixed-point model px — the edge width + 2 ×
+   * layer padding, derived at style-write so the layer shaders need no
+   * width binding)].  The underlay strokes under the edges, the overlay
+   * over edges + arrows; both ride the existing edge cull streams with
+   * a VS collapse for disabled instances.
+   */
+  readonly EDGE_OVERLAY: 'edge.overlay';
+  readonly EDGE_UNDERLAY: 'edge.underlay';
+  /**
+   * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
+   * record layout: [rgba (folded by opacity × line-opacity; a=0 =
+   * disabled), strokeWidth × 256 (edge width + line-outline-width —
+   * v3's context.lineWidth)].  Strokes under the edge line, over the
+   * edge underlay, via the shared layer entry points.
+   */
+  readonly EDGE_GRADIENT: 'edge.gradient';
+  readonly EDGE_CASING: 'edge.casing';
+  /**
+   * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
+   * to two on/off pairs in model px (a 2-entry pattern repeats; odd
+   * patterns double, canvas semantics; longer patterns truncate — a
+   * recorded cap).  Applies when line-style is dashed; dotted keeps
+   * [1, 1].
+   */
+  readonly EDGE_DASH_PATTERN: 'edge.dashPattern';
+  /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
+   * (0 butt, 1 round, 2 square)] (round 13 B3). */
+  readonly EDGE_DASH_META: 'edge.dashMeta';
+  /**
+   * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
+   * all position-independent so drags/layouts/position tweens follow
+   * on-GPU with zero rebuild.  [3] is the curve kind (CURVE_*, exact
+   * small ints in f32 — packed here so the curve shaders stay within
+   * the vertex stage's 8-storage-buffer budget):
+   * - CURVE_STRAIGHT: unused
+   * - CURVE_BEZIER: [0] signed control offset d (model px, edge frame),
+   *   [1] control-point-weight
+   * - CURVE_LOOP: [0] out angle, [1] in angle (radians), [2] control
+   *   radius (model px)
+   * - CURVE_MULTI / CURVE_SEGMENTS / CURVE_TAXI (12b, blob-backed
+   *   headers): [0] record offset into the curve param blob (exact
+   *   integer in f32), [1] the conservative chord deviation max|d|
+   *   (model px; 0 for taxi — box-bounded, see FLAG_CURVED_BOX),
+   *   [2] interior point count n (0 for taxi — the routing derives its
+   *   own points).  Record layouts are documented in
+   *   store/curve-blob.mts.  The CURVE_HAS_ENDPT flag (12c) marks a
+   *   10-float manual-endpoint block prefixed to the record; [1] then
+   *   also covers the endpoint px offsets.
+   * - CURVE_HAYSTACK (12c): [0] source angle, [1] target angle
+   *   (radians), [2] haystack-radius — straight-stream kind (no
+   *   FLAG_CURVED)
+   * - CURVE_TRIANGLE (12c): straight-stream kind, no params
+   */
+  readonly EDGE_CURVE_PARAMS: 'edge.curveParams';
+};
+/** A column id: one of the `COL` values. */
+type ColumnId = (typeof COL)[keyof typeof COL];
 type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 type ColumnCtor = Float32ArrayConstructor | Uint32ArrayConstructor | Uint8ArrayConstructor;
 interface ColumnSpec {
@@ -645,7 +686,7 @@ interface ElementData {
 }
 interface ElementDefinition {
   /** inferred from `data.source`/`data.target` when omitted */
-  group?: 'nodes' | 'edges';
+  group?: GroupName;
   data?: ElementData;
   /** nodes only */
   position?: Position;
@@ -3266,7 +3307,7 @@ declare class GraphStore implements ModelView {
    * 0xffffffff = auto].  Padding is geometry (it grows the bb scans),
    * so writes bump the geometry epoch.
    */
-  setNodeLayer(id: 'node.overlay' | 'node.underlay', slot: number, rgba: number, padding: number, shape: number, radius: number): void;
+  setNodeLayer(id: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY, slot: number, rgba: number, padding: number, shape: number, radius: number): void;
   /** live counts of edges with a visible overlay / underlay / casing */
   private edgeOverlays;
   private edgeUnderlays;
@@ -3282,7 +3323,7 @@ declare class GraphStore implements ModelView {
    * [rgba (opacity folded), strokeWidth×256] — the stroke width is the
    * edge width + 2 × padding, derived at style-write time.
    */
-  setEdgeLayer(id: 'edge.overlay' | 'edge.underlay' | 'edge.casing', slot: number, rgba: number, strokeWidth: number): void;
+  setEdgeLayer(id: typeof COL.EDGE_OVERLAY | typeof COL.EDGE_UNDERLAY | typeof COL.EDGE_CASING, slot: number, rgba: number, strokeWidth: number): void;
   /** live count of edges with any visible mid arrow (round 13 C1) —
    * the renderer skips the mid draws entirely while 0 */
   private midArrows;
@@ -3290,7 +3331,7 @@ declare class GraphStore implements ModelView {
    * mid-arrow draws entirely at 0. */
   midArrowCount(): number;
   /** setColor wrapper for the mid-arrow columns that keeps the count. */
-  setMidArrow(id: 'edge.midSourceArrow' | 'edge.midTargetArrow', slot: number, r: number, g: number, b: number, a: number, otherId: 'edge.midSourceArrow' | 'edge.midTargetArrow'): void;
+  setMidArrow(id: typeof COL.EDGE_MID_SOURCE_ARROW | typeof COL.EDGE_MID_TARGET_ARROW, slot: number, r: number, g: number, b: number, a: number, otherId: typeof COL.EDGE_MID_SOURCE_ARROW | typeof COL.EDGE_MID_TARGET_ARROW): void;
   /** monotone (round 13 B7): the largest arrow-scale any edge styles —
    * the arrow quads size for it and the FS renders the exact scale */
   private arrowScaleMaxV;
@@ -3344,7 +3385,7 @@ declare class GraphStore implements ModelView {
    * Write a gradient record (round 13 C2): kind 0 clears; stops are
    * [rgba, pos-fraction] pairs, capped at 5 by the style layer.
    */
-  setGradient(id: 'node.gradient' | 'edge.gradient', slot: number, kind: number, dir: number, stops: {
+  setGradient(id: typeof COL.NODE_GRADIENT | typeof COL.EDGE_GRADIENT, slot: number, kind: number, dir: number, stops: {
     rgba: number;
     pos: number;
   }[]): void;

@@ -5,12 +5,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-15, after round 127 gave every string
+- **Last updated**: 2026-09-17, after round 127 gave every string
   vocabulary one declaration: column ids are `COL.NODE_POSITION`,
-  style property names `PROP.BACKGROUND_COLOR` and the reserved data
-  keys `DATA_SOURCE`, never the literal, anywhere under `src/`, with a
-  scanning spec holding the line.  Some 1,500 sites moved; nothing a
-  user sees changed, the bundle grew 1%, and the scanners that read
+  style property names `PROP.BACKGROUND_COLOR`, the reserved data
+  keys `DATA_SOURCE` and, on the maintainer's call two days later,
+  the group names `GROUP_NODES`, never the literal, anywhere under
+  `src/`, with a scanning spec holding the line.  Some 2,200 sites
+  moved; nothing a user sees changed, the bundle is 0.7% larger
+  minified and 1.4% larger gzipped, and the scanners that read
   the sources as text — the feature inventory, the throw gate — were
   the round's finding, since a mechanical edit falsified the
   assumptions each had made about the literal form.  Earlier the same
@@ -75,12 +77,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,719 unit · 745 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,719 unit · 749 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | 841 KiB minified / 231 KiB gzipped as of 15 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 1% of it |
+| Bundle | 839 KiB minified / 231 KiB gzipped as of 17 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
@@ -1027,9 +1029,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a rename that touches one line, a "who reads this column"
     search that needs no spelling, and a property table the docs and
     tools can read instead of regex-mining the engine.
-  - The price: 1% of the bundle (2.7 KB gzipped), because the minifier
-    mangles the table's name but not its member names.  Recorded, not
-    hidden; the maintainer's call.
+  - The price: 0.7% of the minified bundle and 1.4% gzipped, because
+    the minifier mangles a table's name but not its member names.
+    Recorded, not hidden; the maintainer's call (item 63).
   - The finding: two source-scanning tools failed on the second full
     run — the feature inventory had regex-mined the read registries'
     literals and found an empty surface; two `file:line` allowlist
@@ -1039,6 +1041,16 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     class of bug: not regex-aware, it read one `['"]` on one line of
     the style engine as an unterminated string and skipped 8,300 lines
     silently.  That line is now a control in the gate.
+- **17 Sep** — the group names too
+  - The maintainer's one-line call on the one vocabulary round 127
+    had left alone: `'nodes'` / `'edges'` are `GROUP_NODES` /
+    `GROUP_EDGES` at 718 sites, `GroupName` derives from them, and
+    the public `group` field's declaration names the pair once.
+  - The walker learned template expressions on the way: three
+    literals sat inside `${…}` in error messages, which a walker that
+    treats a template as opaque text skips along with the text.  The
+    gate reads the code inside the braces now and has a control for
+    it.
 
 ## What changed for users of v3
 

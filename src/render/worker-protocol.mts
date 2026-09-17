@@ -1,4 +1,4 @@
-import { COLUMN_SPECS } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COLUMN_SPECS } from '../contract.mjs';
 import type {
   ColumnId,
   ColumnSpec,
@@ -173,8 +173,8 @@ export type WorkerMessage =
 
 /** The four label streams, in the order batches drain them. */
 export const LABEL_STREAMS: readonly LabelStream[] = [
-  'nodes',
-  'edges',
+  GROUP_NODES,
+  GROUP_EDGES,
   'edgeSource',
   'edgeTarget',
 ];
@@ -312,7 +312,9 @@ export function buildBatch(
         });
       }
     } else {
-      const high = store.highWater(stream === 'nodes' ? 'nodes' : 'edges');
+      const high = store.highWater(
+        stream === GROUP_NODES ? GROUP_NODES : GROUP_EDGES,
+      );
 
       // the full transfer sends every labelled slot once; the drain the
       // store accumulated before init is subsumed and cleared
@@ -338,12 +340,12 @@ export function buildBatch(
 
   return {
     capacity: {
-      nodes: store.capacity('nodes'),
-      edges: store.capacity('edges'),
+      nodes: store.capacity(GROUP_NODES),
+      edges: store.capacity(GROUP_EDGES),
     },
     highWater: {
-      nodes: store.highWater('nodes'),
-      edges: store.highWater('edges'),
+      nodes: store.highWater(GROUP_NODES),
+      edges: store.highWater(GROUP_EDGES),
     },
     resized,
     spans,
@@ -384,8 +386,8 @@ export function buildBatch(
       arrowWidthMax: store.arrowWidthMax(),
     },
     counts: {
-      nodes: store.count('nodes'),
-      edges: store.count('edges'),
+      nodes: store.count(GROUP_NODES),
+      edges: store.count(GROUP_EDGES),
       parents: store.parentCount(),
       ghosts: store.ghostCount(),
       overlays: store.overlayCount(),

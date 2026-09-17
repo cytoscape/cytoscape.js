@@ -32,7 +32,7 @@ import type {
   RendererOptions,
   RendererStats,
 } from '../public-types.mjs';
-import { COL } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COL } from '../contract.mjs';
 import type { ColumnId } from '../contract.mjs';
 
 /*
@@ -503,8 +503,8 @@ export class Renderer {
       uploadedBytes:
         (this.mirror?.uploadedBytes ?? 0) +
         (this.labelLayer?.uploadedBytes() ?? 0),
-      nodes: this.store.count('nodes'),
-      edges: this.store.count('edges'),
+      nodes: this.store.count(GROUP_NODES),
+      edges: this.store.count(GROUP_EDGES),
       glyphs: this.labelLayer?.count() ?? 0,
       pickLatencyMs: this.pickLatencyMs(),
       pickDeferrals: this.picking?.deferrals ?? 0,
@@ -1087,7 +1087,7 @@ export class Renderer {
     const sizes = store.column(COL.NODE_SIZE) as Float32Array;
     const positions = store.column(COL.NODE_POSITION) as Float32Array;
     const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
-    const high = store.highWater('nodes');
+    const high = store.highWater(GROUP_NODES);
     const panX = this.frameData[2],
       panY = this.frameData[3];
     const vw = this.frameData[0],
@@ -2084,7 +2084,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('nodes'),
+      store.highWater(GROUP_NODES),
       cull.node,
     );
 
@@ -2097,7 +2097,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.parent,
       );
 
@@ -2109,7 +2109,7 @@ export class Renderer {
           uniform,
           mirror,
           this.imageArrays,
-          store.highWater('nodes'),
+          store.highWater(GROUP_NODES),
           cull.parent,
         );
       }
@@ -2121,7 +2121,7 @@ export class Renderer {
           device,
           uniform,
           mirror,
-          store.highWater('nodes'),
+          store.highWater(GROUP_NODES),
           cull.parent,
         );
       }
@@ -2133,7 +2133,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.edge,
         COL.EDGE_UNDERLAY,
       );
@@ -2142,7 +2142,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.curved,
         COL.EDGE_UNDERLAY,
       );
@@ -2160,7 +2160,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.edge,
       );
     } else {
@@ -2169,7 +2169,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.edge,
       );
     }
@@ -2181,7 +2181,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.curved,
       );
     } else {
@@ -2190,7 +2190,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.curved,
       );
     }
@@ -2199,7 +2199,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('edges'),
+      store.highWater(GROUP_EDGES),
       cull.edge,
       this.host.arrowEnds(),
     );
@@ -2208,7 +2208,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('edges'),
+      store.highWater(GROUP_EDGES),
       cull.curved,
       this.host.arrowEnds(),
     );
@@ -2220,7 +2220,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.edge,
         this.host.midArrowEnds(),
       );
@@ -2229,7 +2229,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.curved,
         this.host.midArrowEnds(),
       );
@@ -2240,7 +2240,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.edge,
         COL.EDGE_OVERLAY,
       );
@@ -2249,7 +2249,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         cull.curved,
         COL.EDGE_OVERLAY,
       );
@@ -2261,7 +2261,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.ghost,
       );
     }
@@ -2272,7 +2272,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.underlay,
         true,
       );
@@ -2283,7 +2283,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('nodes'),
+      store.highWater(GROUP_NODES),
       cull.node,
     );
 
@@ -2296,7 +2296,7 @@ export class Renderer {
         uniform,
         mirror,
         this.imageArrays,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.node,
       );
     }
@@ -2308,7 +2308,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.node,
       );
     }
@@ -2319,7 +2319,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('nodes'),
+        store.highWater(GROUP_NODES),
         cull.overlay,
         false,
       );
@@ -2449,7 +2449,7 @@ export class Renderer {
 
     groups.node?.ensure(
       uniform,
-      Math.max(1, store.capacity('nodes')),
+      Math.max(1, store.capacity(GROUP_NODES)),
       [
         mirror.buffer(COL.NODE_POSITION),
         mirror.buffer(COL.NODE_SIZE),
@@ -2516,7 +2516,7 @@ export class Renderer {
     if (anyGhosts && groups.ghost != null) {
       groups.ghost.ensure(
         uniform,
-        Math.max(1, store.capacity('nodes')),
+        Math.max(1, store.capacity(GROUP_NODES)),
         [
           mirror.buffer(COL.NODE_POSITION),
           mirror.buffer(COL.NODE_SIZE),
@@ -2545,7 +2545,7 @@ export class Renderer {
     if (store.overlayCount() > 0 && groups.overlay != null) {
       groups.overlay.ensure(
         uniform,
-        Math.max(1, store.capacity('nodes')),
+        Math.max(1, store.capacity(GROUP_NODES)),
         layerInputs(COL.NODE_OVERLAY),
         mv,
       );
@@ -2554,7 +2554,7 @@ export class Renderer {
     if (store.underlayCount() > 0 && groups.underlay != null) {
       groups.underlay.ensure(
         uniform,
-        Math.max(1, store.capacity('nodes')),
+        Math.max(1, store.capacity(GROUP_NODES)),
         layerInputs(COL.NODE_UNDERLAY),
         mv,
       );
@@ -2569,14 +2569,14 @@ export class Renderer {
 
     groups.edge.ensure(
       uniform,
-      Math.max(1, store.capacity('edges')),
+      Math.max(1, store.capacity(GROUP_EDGES)),
       edgeCullInputs,
       mv,
     );
     // the curved stream culls over the same inputs; FLAG_CURVED splits them
     groups.curved.ensure(
       uniform,
-      Math.max(1, store.capacity('edges')),
+      Math.max(1, store.capacity(GROUP_EDGES)),
       edgeCullInputs,
       mv,
     );
@@ -2642,25 +2642,25 @@ export class Renderer {
       this.tweenRuntime?.encode(pass, now, 'paint');
     }
 
-    groups.node?.encode(pass, store.highWater('nodes'));
+    groups.node?.encode(pass, store.highWater(GROUP_NODES));
 
     if (anyParents && groups.parent != null) {
       groups.parent.encode(pass, parentOrderLen);
     }
 
-    groups.edge.encode(pass, store.highWater('edges'));
-    groups.curved.encode(pass, store.highWater('edges'));
+    groups.edge.encode(pass, store.highWater(GROUP_EDGES));
+    groups.curved.encode(pass, store.highWater(GROUP_EDGES));
 
     if (anyGhosts && groups.ghost != null) {
-      groups.ghost.encode(pass, store.highWater('nodes'));
+      groups.ghost.encode(pass, store.highWater(GROUP_NODES));
     }
 
     if (store.overlayCount() > 0 && groups.overlay != null) {
-      groups.overlay.encode(pass, store.highWater('nodes'));
+      groups.overlay.encode(pass, store.highWater(GROUP_NODES));
     }
 
     if (store.underlayCount() > 0 && groups.underlay != null) {
-      groups.underlay.encode(pass, store.highWater('nodes'));
+      groups.underlay.encode(pass, store.highWater(GROUP_NODES));
     }
 
     if (groups.glyph != null && labelLayer != null) {
@@ -2721,7 +2721,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('edges'),
+      store.highWater(GROUP_EDGES),
       pickCull.edge,
       true,
     );
@@ -2730,7 +2730,7 @@ export class Renderer {
       device,
       uniform,
       mirror,
-      store.highWater('edges'),
+      store.highWater(GROUP_EDGES),
       pickCull.edge,
       this.host.arrowEnds(),
       true,
@@ -2742,7 +2742,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         pickCull.curved,
         true,
       );
@@ -2751,7 +2751,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         pickCull.curved,
         this.host.arrowEnds(),
         true,
@@ -2764,7 +2764,7 @@ export class Renderer {
         device,
         uniform,
         mirror,
-        store.highWater('edges'),
+        store.highWater(GROUP_EDGES),
         pickCull.edge,
         this.host.midArrowEnds(),
         true,
@@ -2776,7 +2776,7 @@ export class Renderer {
           device,
           uniform,
           mirror,
-          store.highWater('edges'),
+          store.highWater(GROUP_EDGES),
           pickCull.curved,
           this.host.midArrowEnds(),
           true,

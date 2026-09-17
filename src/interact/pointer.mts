@@ -1,4 +1,5 @@
 import {
+  GROUP_NODES,
   FLAG_ACTIVE,
   FLAG_GRABBABLE,
   FLAG_GRABBED,
@@ -1872,7 +1873,7 @@ export class PointerHandler {
   private nodeAt(x: number, y: number, padPx: number): Collection | null {
     const slot = this.renderer.pickNodeSync(x, y, padPx);
 
-    return slot == null ? null : this.cy._ele('nodes', slot);
+    return slot == null ? null : this.cy._ele(GROUP_NODES, slot);
   }
 
   private listen(

@@ -1,5 +1,7 @@
 import { color2tuple } from './util/colors.mjs';
 import {
+  GROUP_EDGES,
+  GROUP_NODES,
   DATA_TARGET,
   DATA_SOURCE,
   DATA_ID,
@@ -3033,7 +3035,7 @@ const assertGroupProp = (
     );
   }
 
-  if (END_LABEL_PROPS.has(norm) && group === 'nodes') {
+  if (END_LABEL_PROPS.has(norm) && group === GROUP_NODES) {
     throw new Error(`'${norm}' is an edge style property`);
   }
 
@@ -3041,7 +3043,7 @@ const assertGroupProp = (
   // keyword directly rather than parsing
   if (
     norm === PROP.TEXT_ROTATION &&
-    group === 'nodes' &&
+    group === GROUP_NODES &&
     value === 'autorotate'
   ) {
     // 27.7: numeric rotations now work on node labels; `autorotate`
@@ -3052,7 +3054,7 @@ const assertGroupProp = (
     );
   }
 
-  if (CURVE_PROPS.has(norm) && group === 'nodes') {
+  if (CURVE_PROPS.has(norm) && group === GROUP_NODES) {
     throw new Error(`'${norm}' is an edge style property`);
   }
 
@@ -3062,14 +3064,14 @@ const assertGroupProp = (
       NODE_ONLY_EXTRA.has(norm) ||
       IMAGE_PROPS.has(norm) ||
       CHART_PROPS.has(norm)) &&
-    group === 'edges'
+    group === GROUP_EDGES
   ) {
     throw new Error(`'${norm}' is a node style property`);
   }
 
   if (GLOBAL_FONT_PROPS.has(norm)) {
     // one glyph atlas keyed by character ⇒ one font face, globally
-    if (group === 'edges') {
+    if (group === GROUP_EDGES) {
       throw new Error(
         `'${norm}' is a node style property (labels are node-only)`,
       );
@@ -3233,7 +3235,7 @@ interface MappableChannel {
 const MAPPABLE: Record<string, MappableChannel> = {
   [PROP.BACKGROUND_COLOR]: {
     kind: 'color',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.fillColor = v as RGBA;
     },
@@ -3241,7 +3243,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_COLOR]: {
     kind: 'color',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.borderColor = v as RGBA;
     },
@@ -3249,16 +3251,16 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   width: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.width = v as number;
     },
     default: (group) =>
-      group === 'nodes' ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width,
+      group === GROUP_NODES ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width,
   },
   height: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.height = v as number;
     },
@@ -3266,7 +3268,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_WIDTH]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.borderWidth = v as number;
     },
@@ -3274,7 +3276,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   opacity: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.opacity = v as number;
     },
@@ -3282,7 +3284,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   shape: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => SHAPES[String(v)] ?? null,
     set: (c, v) => {
       c.shape = v as number;
@@ -3291,7 +3293,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.FONT_SIZE]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.fontSize = v as number;
     },
@@ -3299,7 +3301,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.MIN_ZOOMED_FONT_SIZE]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.minZoomedFontSize = v as number;
     },
@@ -3307,7 +3309,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_HALIGN]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => HALIGNS[String(v)] ?? null,
     set: (c, v) => {
       c.textHalign = v as number;
@@ -3316,7 +3318,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_VALIGN]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => VALIGNS[String(v)] ?? null,
     set: (c, v) => {
       c.textValign = v as number;
@@ -3325,7 +3327,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   color: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textColor = v as RGBA;
     },
@@ -3333,7 +3335,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_OUTLINE_WIDTH]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textOutlineWidth = v as number;
     },
@@ -3341,7 +3343,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_OUTLINE_COLOR]: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textOutlineColor = v as RGBA;
     },
@@ -3349,7 +3351,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_OUTLINE_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textOutlineOpacity = v as number;
     },
@@ -3357,7 +3359,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BACKGROUND_COLOR]: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBgColor = v as RGBA;
     },
@@ -3365,7 +3367,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BACKGROUND_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBgOpacity = v as number;
     },
@@ -3373,7 +3375,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BACKGROUND_PADDING]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBgPadding = v as number;
     },
@@ -3381,7 +3383,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_MARGIN_X]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textMarginX = v as number;
     },
@@ -3389,7 +3391,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_MARGIN_Y]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textMarginY = v as number;
     },
@@ -3399,7 +3401,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     // 27.7: nodes joined edges here — v3 allows a numeric rotation on any
     // label, while `autorotate` stays edge-only (it needs a slope)
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => {
       try {
         return parseTextRotation(v);
@@ -3411,13 +3413,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
       c.textRotation = v as number;
     },
     default: (group) =>
-      group === 'nodes'
+      group === GROUP_NODES
         ? NODE_DEFAULTS.textRotation
         : EDGE_DEFAULTS.textRotation,
   },
   [PROP.SOURCE_TEXT_OFFSET]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.sourceTextOffset = v as number;
     },
@@ -3425,7 +3427,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_TEXT_OFFSET]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.targetTextOffset = v as number;
     },
@@ -3433,7 +3435,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_TEXT_MARGIN_X]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.sourceTextMarginX = v as number;
     },
@@ -3441,7 +3443,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_TEXT_MARGIN_Y]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.sourceTextMarginY = v as number;
     },
@@ -3449,7 +3451,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_TEXT_MARGIN_X]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.targetTextMarginX = v as number;
     },
@@ -3457,7 +3459,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_TEXT_MARGIN_Y]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.targetTextMarginY = v as number;
     },
@@ -3465,7 +3467,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_TEXT_ROTATION]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => {
       try {
         return parseTextRotation(v);
@@ -3480,7 +3482,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_TEXT_ROTATION]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => {
       try {
         return parseTextRotation(v);
@@ -3495,7 +3497,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.lineColor = v as RGBA;
     },
@@ -3503,7 +3505,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_STYLE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => LINE_STYLES[String(v)] ?? null,
     set: (c, v) => {
       c.lineStyle = v as number;
@@ -3512,7 +3514,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_ARROW_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.sourceArrowColor = v as RGBA;
     },
@@ -3520,7 +3522,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_ARROW_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.targetArrowColor = v as RGBA;
     },
@@ -3528,7 +3530,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CURVE_STYLE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => CURVE_STYLES[String(v)] ?? null,
     set: (c, v) => {
       c.curveStyle = v as number;
@@ -3537,7 +3539,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CONTROL_POINT_STEP_SIZE]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.controlPointStepSize = v as number;
     },
@@ -3545,7 +3547,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CONTROL_POINT_WEIGHT]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.controlPointWeight = v as number;
     },
@@ -3553,7 +3555,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LOOP_DIRECTION]: {
     kind: 'number',
-    groups: ['edges'], // mapped values are radians
+    groups: [GROUP_EDGES], // mapped values are radians
     set: (c, v) => {
       c.loopDirection = v as number;
     },
@@ -3561,7 +3563,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LOOP_SWEEP]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.loopSweep = v as number;
     },
@@ -3573,7 +3575,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // list (a recorded 12b scope note)
   [PROP.EDGE_DISTANCES]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => EDGE_DISTANCES[String(v)] ?? null,
     set: (c, v) => {
       c.edgeDistances = v as number;
@@ -3582,7 +3584,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TAXI_DIRECTION]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => TAXI_DIRECTIONS[String(v)] ?? null,
     set: (c, v) => {
       c.taxiDirection = v as number;
@@ -3595,7 +3597,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
     // mapper fallback to control this.  `fallback: 'auto'` (124) rides
     // the sentinel and lands as the auto flag.
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       if (v === TAXI_TURN_AUTO_SENTINEL) {
         c.taxiTurn = 0.5;
@@ -3611,7 +3613,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TAXI_TURN_MIN_DISTANCE]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.taxiTurnMinDistance = v as number;
     },
@@ -3619,7 +3621,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TAXI_RADIUS]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.taxiRadius = v as number;
     },
@@ -3628,7 +3630,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // round 124: which edges share a track, and how far apart tracks sit
   [PROP.TAXI_TRACK]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => TAXI_TRACKS[String(v)] ?? null,
     set: (c, v) => {
       c.taxiTrack = v as number;
@@ -3637,7 +3639,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TAXI_TRACK_SPACING]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.taxiTrackSpacing = Math.max(0, v as number);
     },
@@ -3646,7 +3648,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B5 node outline (solid ring outside the border)
   [PROP.OUTLINE_COLOR]: {
     kind: 'color',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.outlineColor = v as RGBA;
     },
@@ -3654,7 +3656,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OUTLINE_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.outlineOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3662,7 +3664,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OUTLINE_WIDTH]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.outlineWidth = Math.max(0, v as number);
     },
@@ -3670,7 +3672,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OUTLINE_OFFSET]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.outlineOffset = Math.max(0, v as number);
     },
@@ -3679,7 +3681,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B2 border/corner geometry (CPU-evaluated; the pick replica reads it)
   [PROP.CORNER_RADIUS]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.cornerRadius = Math.max(0, v as number);
     },
@@ -3687,7 +3689,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_POSITION]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => BORDER_POSITIONS[String(v)] ?? null,
     set: (c, v) => {
       c.borderPosition = v as number;
@@ -3696,7 +3698,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_STYLE]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
     set: (c, v) => {
       c.borderStyle = v as number;
@@ -3705,7 +3707,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OUTLINE_STYLE]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
     set: (c, v) => {
       c.outlineStyle = v as number;
@@ -3714,7 +3716,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_DASH_OFFSET]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.borderDashOffset = v as number;
     },
@@ -3723,7 +3725,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B6 label box props
   [PROP.TEXT_TRANSFORM]: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => TEXT_TRANSFORMS[String(v)] ?? null,
     set: (c, v) => {
       c.textTransform = v as number;
@@ -3732,7 +3734,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BACKGROUND_SHAPE]: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => TEXT_BG_SHAPES[String(v)] ?? null,
     set: (c, v) => {
       c.textBgShape = v as number;
@@ -3743,7 +3745,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // every other label channel (CPU-evaluated, the sidecar tier)
   [PROP.TEXT_WRAP]: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => TEXT_WRAPS[String(v)] ?? null,
     set: (c, v) => {
       c.textWrap = v as number;
@@ -3752,7 +3754,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_MAX_WIDTH]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textMaxWidth = Math.max(0, v as number);
     },
@@ -3760,7 +3762,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_HEIGHT]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.lineHeight = Math.max(0, v as number);
     },
@@ -3768,7 +3770,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_OVERFLOW_WRAP]: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => OFLOW_WRAPS[String(v)] ?? null,
     set: (c, v) => {
       c.textOverflowWrap = v as number;
@@ -3777,7 +3779,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_JUSTIFICATION]: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => JUSTIFICATIONS[String(v)] ?? null,
     set: (c, v) => {
       c.textJustification = v as number;
@@ -3786,7 +3788,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BORDER_WIDTH]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBorderWidth = Math.max(0, v as number);
     },
@@ -3794,7 +3796,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BORDER_COLOR]: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBorderColor = v as RGBA;
     },
@@ -3802,7 +3804,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_BORDER_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textBorderOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3811,7 +3813,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // C2 gradient enums (stop lists stay constants-only)
   [PROP.BACKGROUND_FILL]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => FILL_KINDS[String(v)] ?? null,
     set: (c, v) => {
       c.backgroundFill = v as number;
@@ -3820,7 +3822,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BACKGROUND_GRADIENT_DIRECTION]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => GRADIENT_DIRECTIONS[String(v)] ?? null,
     set: (c, v) => {
       c.backgroundGradientDirection = v as number;
@@ -3829,7 +3831,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_FILL]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => FILL_KINDS[String(v)] ?? null,
     set: (c, v) => {
       c.lineFill = v as number;
@@ -3839,7 +3841,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // C1 mid arrows
   [PROP.MID_SOURCE_ARROW_SHAPE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
     set: (c, v) => {
       c.midSourceArrowShape = ARROW_NAMES[v as number] ?? 'none';
@@ -3848,7 +3850,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.MID_TARGET_ARROW_SHAPE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
     set: (c, v) => {
       c.midTargetArrowShape = ARROW_NAMES[v as number] ?? 'none';
@@ -3857,7 +3859,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.MID_SOURCE_ARROW_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.midSourceArrowColor = v as RGBA;
     },
@@ -3865,7 +3867,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.MID_TARGET_ARROW_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.midTargetArrowColor = v as RGBA;
     },
@@ -3874,7 +3876,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B7 arrow scalars (arrow widths are constants: keyword/% forms)
   [PROP.ARROW_SCALE]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.arrowScale = Math.max(0.0625, v as number);
     },
@@ -3882,7 +3884,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_ARROW_FILL]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_FILLS[String(v)] ?? null,
     set: (c, v) => {
       c.sourceArrowFill = v as number;
@@ -3891,7 +3893,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_ARROW_FILL]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_FILLS[String(v)] ?? null,
     set: (c, v) => {
       c.targetArrowFill = v as number;
@@ -3901,7 +3903,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B4 line-outline casing
   [PROP.LINE_OUTLINE_WIDTH]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.lineOutlineWidth = Math.max(0, v as number);
     },
@@ -3909,7 +3911,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_OUTLINE_COLOR]: {
     kind: 'color',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.lineOutlineColor = v as RGBA;
     },
@@ -3918,7 +3920,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // B3 dash props (pattern is a constants-only list)
   [PROP.LINE_CAP]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => LINE_CAPS[String(v)] ?? null,
     set: (c, v) => {
       c.lineCap = v as number;
@@ -3927,7 +3929,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_DASH_OFFSET]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.lineDashOffset = v as number;
     },
@@ -3936,7 +3938,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // the B1 opacity split (CPU-evaluated; folds at write time)
   [PROP.BACKGROUND_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.backgroundOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3944,7 +3946,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BORDER_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.borderOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3952,7 +3954,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.LINE_OPACITY]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.lineOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3960,7 +3962,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TEXT_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.textOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -3969,7 +3971,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // events (round 20.2): pointer transparency, both groups
   events: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) =>
       v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
     set: (c, v) => {
@@ -3980,7 +3982,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // visibility (round 22): paint-only invisibility, both groups
   visibility: {
     kind: 'enum',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     parseEnum: (v) => (v === 'hidden' ? 1 : v === 'visible' ? 0 : null),
     set: (c, v) => {
       c.invisible = (v as number) === 1;
@@ -3991,7 +3993,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // chart prop is constants-only (list/config props, the 12b rule)
   chart: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) =>
       v === 'none'
         ? CHART_NONE
@@ -4007,7 +4009,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CHART_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.chartOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -4015,7 +4017,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CHART_SIZE]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.chartSize = Math.max(0, Math.min(1, v as number));
     },
@@ -4023,7 +4025,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CHART_HOLE]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.chartHole = Math.max(0, Math.min(1, v as number));
     },
@@ -4031,7 +4033,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CHART_START_ANGLE]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.chartStartAngle = v as number;
     },
@@ -4039,7 +4041,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.CHART_DIRECTION]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) => (v === 'vertical' ? 0 : v === 'horizontal' ? 1 : null),
     set: (c, v) => {
       c.chartDirection = v as number;
@@ -4049,7 +4051,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // text-events (round 20.3): the label box picks the node; node-only
   [PROP.TEXT_EVENTS]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) =>
       v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
     set: (c, v) => {
@@ -4060,7 +4062,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // ghost props (round 13 A1; node-only)
   ghost: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     parseEnum: (v) =>
       v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
     set: (c, v) => {
@@ -4070,7 +4072,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.GHOST_OFFSET_X]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.ghostOffsetX = v as number;
     },
@@ -4078,7 +4080,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.GHOST_OFFSET_Y]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.ghostOffsetY = v as number;
     },
@@ -4086,7 +4088,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.GHOST_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.ghostOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -4095,7 +4097,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // overlay/underlay props (round 13 A2; node-only)
   [PROP.OVERLAY_COLOR]: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.overlayColor = v as RGBA;
     },
@@ -4103,7 +4105,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OVERLAY_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.overlayOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -4111,7 +4113,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.OVERLAY_PADDING]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.overlayPadding = Math.max(0, v as number);
     },
@@ -4119,7 +4121,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.UNDERLAY_COLOR]: {
     kind: 'color',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.underlayColor = v as RGBA;
     },
@@ -4127,7 +4129,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.UNDERLAY_OPACITY]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.underlayOpacity = Math.max(0, Math.min(1, v as number));
     },
@@ -4135,7 +4137,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.UNDERLAY_PADDING]: {
     kind: 'number',
-    groups: ['nodes', 'edges'],
+    groups: [GROUP_NODES, GROUP_EDGES],
     set: (c, v) => {
       c.underlayPadding = Math.max(0, v as number);
     },
@@ -4145,7 +4147,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // its point form is a list, per the 12b list-prop scope rule)
   [PROP.HAYSTACK_RADIUS]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.haystackRadius = Math.max(0, Math.min(1, v as number));
     },
@@ -4153,7 +4155,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_DISTANCE_FROM_NODE]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.sourceDistanceFromNode = Math.max(0, v as number);
     },
@@ -4161,7 +4163,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_DISTANCE_FROM_NODE]: {
     kind: 'number',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     set: (c, v) => {
       c.targetDistanceFromNode = Math.max(0, v as number);
     },
@@ -4169,7 +4171,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.SOURCE_ARROW_SHAPE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
     set: (c, v) => {
       c.sourceArrowShape = ARROW_NAMES[v as number] ?? 'none';
@@ -4178,7 +4180,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.TARGET_ARROW_SHAPE]: {
     kind: 'enum',
-    groups: ['edges'],
+    groups: [GROUP_EDGES],
     parseEnum: (v) => ARROW_ENUM[String(v)] ?? null,
     set: (c, v) => {
       c.targetArrowShape = ARROW_NAMES[v as number] ?? 'none';
@@ -4191,7 +4193,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   // set() is wrapped in compileChannel with the intern table.
   [PROP.BACKGROUND_IMAGE]: {
     kind: 'enum',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     intern: true,
     set: () => {
       /* wrapped per compile */
@@ -4200,7 +4202,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BACKGROUND_IMAGE_OPACITY]: {
     kind: 'number',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.backgroundImageOpacity = [Math.max(0, Math.min(1, v as number))];
     },
@@ -4208,7 +4210,7 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   [PROP.BACKGROUND_IMAGE_COLOR]: {
     kind: 'color',
-    groups: ['nodes'],
+    groups: [GROUP_NODES],
     set: (c, v) => {
       c.backgroundImageColor = v as RGBA;
     },
@@ -4329,7 +4331,7 @@ const constOpacityFor = (
   prop: string,
   computed: Computed,
 ): number => {
-  if (group === 'nodes') {
+  if (group === GROUP_NODES) {
     return prop === PROP.BACKGROUND_COLOR
       ? computed.backgroundOpacity
       : prop === PROP.BORDER_COLOR
@@ -4654,7 +4656,7 @@ const parseTransitionSpec = (
   group: GroupName,
   config: Record<string, unknown>,
 ): TransitionSpec => {
-  const readSet = group === 'nodes' ? NODE_READ : EDGE_READ;
+  const readSet = group === GROUP_NODES ? NODE_READ : EDGE_READ;
   const constOnly = (prop: string, v: unknown): void => {
     if (v != null && typeof v === 'object' && !Array.isArray(v)) {
       throw new Error(
@@ -4683,7 +4685,7 @@ const parseTransitionSpec = (
       // channels become tweenable — but it has to *be* a prop of this group
       if (TRANSITION_CONFIG_PROPS.has(p) || !readSet.has(p)) {
         throw new Error(
-          `'${p}' is not a ${group === 'nodes' ? 'node' : 'edge'} style property ` +
+          `'${p}' is not a ${group === GROUP_NODES ? 'node' : 'edge'} style property ` +
             `(transition-property lists the group's own props)`,
         );
       }
@@ -4814,8 +4816,8 @@ const BULK_MIN_RUN = 64;
 const EMPTY_END_TEXTS: readonly string[] = ['', ''];
 
 const SHEET_KEYS: ReadonlySet<string> = new Set([
-  'nodes',
-  'edges',
+  GROUP_NODES,
+  GROUP_EDGES,
   'parents',
   'core',
   'bypasses',
@@ -5127,7 +5129,7 @@ const unfoldLabelAlpha = (
   ref: Ref,
   packed: number,
 ): number => {
-  if (ref.group !== 'edges') {
+  if (ref.group !== GROUP_EDGES) {
     return packed;
   }
 
@@ -5420,7 +5422,7 @@ defineReader([PROP.EVENTS], (store, slot, ref) => {
 
 defineReader([PROP.TEXT_EVENTS], (store, slot) => {
   // 20.3
-  return store.hasFlag('nodes', slot, FLAG_TEXT_EVENTS) ? 'yes' : 'no';
+  return store.hasFlag(GROUP_NODES, slot, FLAG_TEXT_EVENTS) ? 'yes' : 'no';
 });
 
 defineReader([PROP.VISIBILITY], (store, slot, ref) => {
@@ -5509,7 +5511,7 @@ defineReader(
     PROP.UNDERLAY_CORNER_RADIUS,
   ],
   (store, slot, ref, engine, prop) => {
-    if (ref.group === 'edges') {
+    if (ref.group === GROUP_EDGES) {
       // edge layers: [rgba folded, strokeWidth×256]; padding reads
       // back as (stroke − width) / 2
       const eid = prop.startsWith('overlay')
@@ -5709,7 +5711,7 @@ defineReader([PROP.MIN_ZOOMED_FONT_SIZE], (store, slot, ref, engine) => {
 });
 
 defineReader([PROP.TEXT_HALIGN], (store, slot, ref, engine) => {
-  const entry = store.labelAt(slot, 'nodes');
+  const entry = store.labelAt(slot, GROUP_NODES);
 
   return HALIGN_NAMES[
     entry != null
@@ -5719,7 +5721,7 @@ defineReader([PROP.TEXT_HALIGN], (store, slot, ref, engine) => {
 });
 
 defineReader([PROP.TEXT_VALIGN], (store, slot, ref, engine) => {
-  const entry = store.labelAt(slot, 'nodes');
+  const entry = store.labelAt(slot, GROUP_NODES);
 
   return VALIGN_NAMES[
     entry != null
@@ -5867,7 +5869,7 @@ defineReader(
 
 // shared names, resolved per group
 defineReader([PROP.WIDTH], (store, slot, ref) =>
-  ref.group === 'nodes'
+  ref.group === GROUP_NODES
     ? readPair(store, slot, COL.NODE_SIZE, 0)
     : readScalar(store, slot, COL.EDGE_WIDTH),
 );
@@ -5875,14 +5877,14 @@ defineReader([PROP.WIDTH], (store, slot, ref) =>
 defineReader([PROP.OPACITY], (store, slot, ref, engine) => {
   // under compounds the node column stores the ancestor-folded
   // value; the declared style reads the base (round 14.4)
-  if (ref.group === 'nodes' && engine.store.hasCompounds()) {
+  if (ref.group === GROUP_NODES && engine.store.hasCompounds()) {
     return engine.store.baseOpacityOf(ref.slot);
   }
 
   return readScalar(
     store,
     slot,
-    ref.group === 'nodes' ? COL.NODE_OPACITY : COL.EDGE_OPACITY,
+    ref.group === GROUP_NODES ? COL.NODE_OPACITY : COL.EDGE_OPACITY,
   );
 });
 
@@ -6410,13 +6412,13 @@ export class StyleEngine {
     let nodesErr: unknown = null;
 
     try {
-      nodes = captureBypassPatch('nodes', raw);
+      nodes = captureBypassPatch(GROUP_NODES, raw);
     } catch (e) {
       nodesErr = e;
     }
 
     try {
-      edges = captureBypassPatch('edges', raw);
+      edges = captureBypassPatch(GROUP_EDGES, raw);
     } catch {
       // the nodes error carries the message when both reject
     }
@@ -6691,7 +6693,7 @@ export class StyleEngine {
     if (bit != null) {
       // the hierarchy pair is nodes-only; an edge is neither, rather
       // than reading a bit that means nothing on its flags word
-      if (group !== 'nodes' && (key === '::parent' || key === '::child')) {
+      if (group !== GROUP_NODES && (key === '::parent' || key === '::child')) {
         return false;
       }
 
@@ -6812,7 +6814,10 @@ export class StyleEngine {
     // (they are per-parent auto-bounds inputs, not channels)
     const parentsSplit = splitCompoundProps(sheet.parents ?? {});
 
-    const compile = (group: GroupName, def: Stylesheet['nodes']): GroupDef => {
+    const compile = (
+      group: GroupName,
+      def: Stylesheet[typeof GROUP_NODES],
+    ): GroupDef => {
       // the transition config props are engine config, not channels
       // (round 24.1) — split them out before channel resolution
       const { channels, config } = splitTransitionProps(def ?? {});
@@ -6872,11 +6877,11 @@ export class StyleEngine {
     // block declares replaces it — v3's order-based precedence, spelled
     // as an object spread (round 57.1)
     const defs = {
-      nodes: compile('nodes', {
+      nodes: compile(GROUP_NODES, {
         ...NODE_DEFAULT_BLOCK,
         ...(sheet.nodes ?? {}),
       }),
-      edges: compile('edges', {
+      edges: compile(GROUP_EDGES, {
         ...EDGE_DEFAULT_BLOCK,
         ...(sheet.edges ?? {}),
       }),
@@ -6884,7 +6889,7 @@ export class StyleEngine {
       // :parent block sits before the user stylesheet, so a user nodes
       // block overrides it (parity-pinned), and the user parents block
       // overrides everything
-      parents: compile('nodes', {
+      parents: compile(GROUP_NODES, {
         ...NODE_DEFAULT_BLOCK,
         ...PARENT_CHANNEL_OVERLAY,
         ...(sheet.nodes ?? {}),
@@ -6949,7 +6954,7 @@ export class StyleEngine {
     // props reset until the runtime re-configures against the new sheet.
     // Only single-key scale mappers can be GPU-evaluated — conditionals
     // (case, '' key / multi-key) stay CPU-evaluated, so they aren't watched.
-    for (const group of ['nodes', 'edges'] as const) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as const) {
       this.store.watchDataKeys(
         group,
         defs[group].mappers
@@ -6969,7 +6974,7 @@ export class StyleEngine {
       for (const key of CONDITION_KEY_SET) {
         if (
           defs[group].deps?.has(key) === true ||
-          (group === 'nodes' && defs.parents.deps?.has(key) === true)
+          (group === GROUP_NODES && defs.parents.deps?.has(key) === true)
         ) {
           states.add(key);
         }
@@ -7005,7 +7010,7 @@ export class StyleEngine {
     const def = this.defs[group];
 
     if (
-      group === 'edges' &&
+      group === GROUP_EDGES &&
       def.mappers.some((bm) => bm.m.prop.endsWith('-arrow-shape'))
     ) {
       return [];
@@ -7026,7 +7031,7 @@ export class StyleEngine {
       def.mappers.some((bm) => bm.m.prop === prop);
     const demoted = new Set<string>();
 
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       if (mapped(PROP.BACKGROUND_OPACITY)) {
         demoted.add(PROP.BACKGROUND_COLOR);
       }
@@ -7086,7 +7091,7 @@ export class StyleEngine {
     }
 
     if (
-      group === 'nodes' &&
+      group === GROUP_NODES &&
       this.store.hasCompounds() &&
       this.defs.parents.transition.duration > 0
     ) {
@@ -7121,7 +7126,7 @@ export class StyleEngine {
   } | null {
     const def = this.defs.edges;
 
-    if (group !== 'edges' || def.computed == null) {
+    if (group !== GROUP_EDGES || def.computed == null) {
       return null;
     }
 
@@ -7186,7 +7191,7 @@ export class StyleEngine {
       }
     }
 
-    if (group === 'nodes' && this.store.hasCompounds()) {
+    if (group === GROUP_NODES && this.store.hasCompounds()) {
       const parents = this.defs.parents.deps;
 
       if (parents != null) {
@@ -7292,8 +7297,8 @@ export class StyleEngine {
    * @internal
    */
   applyAll(): void {
-    this.applyBulk('nodes', this.store.slotsOrdered('nodes'));
-    this.applyBulk('edges', this.store.slotsOrdered('edges'));
+    this.applyBulk(GROUP_NODES, this.store.slotsOrdered(GROUP_NODES));
+    this.applyBulk(GROUP_EDGES, this.store.slotsOrdered(GROUP_EDGES));
   }
 
   /**
@@ -7310,7 +7315,7 @@ export class StyleEngine {
       return;
     }
 
-    if (group === 'nodes' && this.store.hasCompounds()) {
+    if (group === GROUP_NODES && this.store.hasCompounds()) {
       // parents resolve through the overlay def (round 14.6)
       const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
@@ -7323,7 +7328,7 @@ export class StyleEngine {
       }
 
       if (leaves.length > 0) {
-        this.applyGroupDef('nodes', this.defs.nodes, leaves);
+        this.applyGroupDef(GROUP_NODES, this.defs.nodes, leaves);
       }
 
       if (parents.length > 0) {
@@ -7332,16 +7337,16 @@ export class StyleEngine {
         // outside the write() funnel, so it takes its own capture.
         // The styled marks are read before the channel pass marks
         // fresh slots (instant-on-add must hold for padding too).
-        const txn = this.openTxn('nodes', def);
+        const txn = this.openTxn(GROUP_NODES, def);
         const styledBefore =
           txn != null && txn.padding
-            ? parents.map((slot) => this.wasStyled('nodes', slot))
+            ? parents.map((slot) => this.wasStyled(GROUP_NODES, slot))
             : null;
 
         try {
           // the inner openTxn no-ops while this capture is open, so
           // the channel diffs land in the same preset animation
-          this.applyGroupDef('nodes', def, parents);
+          this.applyGroupDef(GROUP_NODES, def, parents);
 
           for (let i = 0; i < parents.length; i++) {
             this.applyCompoundStyle(
@@ -7410,7 +7415,7 @@ export class StyleEngine {
       txn.entries.set(TWEEN_COL.NODE_PADDING, entry);
     }
 
-    entry.refs.push(store.ref('nodes', slot));
+    entry.refs.push(store.ref(GROUP_NODES, slot));
     entry.from.push(before.padding);
     entry.to.push(after.padding);
 
@@ -7477,7 +7482,7 @@ export class StyleEngine {
 
     // compound padding (25.4) diffs in the parents' compound-style
     // write, not the channel funnel — flag it as listed
-    const padding = group === 'nodes' && spec.props.includes(PROP.PADDING);
+    const padding = group === GROUP_NODES && spec.props.includes(PROP.PADDING);
 
     if (channels.length === 0 && !padding) {
       return null;
@@ -7544,7 +7549,8 @@ export class StyleEngine {
     if (ch.kind === 'fontSize') {
       // -1 = no sidecar entry (unlabelled); a diff with a sentinel on
       // either side snaps rather than tweening from/to nothing
-      const stream = ch.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges';
+      const stream =
+        ch.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES;
 
       return this.store.labelAt(slot, stream)?.fontSize ?? -1;
     }
@@ -7650,7 +7656,7 @@ export class StyleEngine {
       } else if (ch.kind === 'fontSize') {
         this.store.setLabelFontSize(
           slot,
-          ch.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges',
+          ch.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES,
           from as number,
         );
       } else {
@@ -7672,9 +7678,9 @@ export class StyleEngine {
     // a compound parent's size is auto-bounds-derived: its lanes never
     // record (the tween would fight the derivation — round 25.3)
     const isParentSlot =
-      group === 'nodes' &&
+      group === GROUP_NODES &&
       this.store.hasCompounds() &&
-      this.store.hasFlag('nodes', slot, FLAG_PARENT);
+      this.store.hasFlag(GROUP_NODES, slot, FLAG_PARENT);
 
     for (const { main, rides } of txn.channels) {
       const from = pre[i++];
@@ -7734,7 +7740,7 @@ export class StyleEngine {
    * styled (style applies on add, and compaction never runs mid-batch).
    * @internal */
   onCompacted(): void {
-    for (const group of ['nodes', 'edges'] as const) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as const) {
       const table = this.store.table(group);
       const arr = this.styledGen[group];
 
@@ -7752,9 +7758,9 @@ export class StyleEngine {
    * nodes (round 14.6), else the element's own group. */
   private defFor(ref: Ref): GroupDef {
     if (
-      ref.group === 'nodes' &&
+      ref.group === GROUP_NODES &&
       this.store.hasCompounds() &&
-      this.store.hasFlag('nodes', ref.slot, FLAG_PARENT)
+      this.store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
     ) {
       return this.defs.parents;
     }
@@ -7766,7 +7772,7 @@ export class StyleEngine {
   private allSlotsFor(group: GroupName, def: GroupDef): number[] {
     const all = this.store.slotsOrdered(group);
 
-    if (group !== 'nodes' || !this.store.hasCompounds()) {
+    if (group !== GROUP_NODES || !this.store.hasCompounds()) {
       return all;
     }
 
@@ -7853,7 +7859,7 @@ export class StyleEngine {
     const flagsCol =
       stateEvals.length > 0
         ? (store.column(
-            group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+            group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
           ) as Uint32Array)
         : null;
     let lastWord = -1;
@@ -7926,7 +7932,7 @@ export class StyleEngine {
    */
   private bulkEdgeRun(group: GroupName, slots: ArrayLike<number>): boolean {
     if (
-      group !== 'edges' ||
+      group !== GROUP_EDGES ||
       slots.length < BULK_MIN_RUN ||
       this.txn != null || // a transition capture diffs per slot
       this.bypassRaw.size > 0 // a bypassed slot is not the template's
@@ -8060,7 +8066,7 @@ export class StyleEngine {
       evals[j].set(scratch, evals[j].ev(first));
     }
 
-    this.write('edges', first, scratch);
+    this.write(GROUP_EDGES, first, scratch);
     this.store.replicateEdgeStyle(first, n);
 
     // A state-only mapper reaches the loop only when the run's word is
@@ -8096,7 +8102,7 @@ export class StyleEngine {
       }
 
       this.writeEdgePerSlot(slot, scratch);
-      this.markStyled('edges', slot);
+      this.markStyled(GROUP_EDGES, slot);
     }
   }
 
@@ -8117,7 +8123,7 @@ export class StyleEngine {
   ): void {
     const part = def.partition as NonNullable<GroupDef['partition']>;
     const flags = this.store.column(
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
 
     // round 67.2: at rest every slot carries the same masked word — a
@@ -8262,7 +8268,7 @@ export class StyleEngine {
     slots: ArrayLike<number>,
     keys: string[],
   ): void {
-    if (group === 'nodes' && this.store.hasCompounds()) {
+    if (group === GROUP_NODES && this.store.hasCompounds()) {
       const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
       const parents: number[] = [];
@@ -8274,10 +8280,10 @@ export class StyleEngine {
       }
 
       if (leaves.length > 0) {
-        this.refreshGroupDef('nodes', this.defs.nodes, leaves, keys);
+        this.refreshGroupDef(GROUP_NODES, this.defs.nodes, leaves, keys);
       }
       if (parents.length > 0) {
-        this.refreshGroupDef('nodes', this.defs.parents, parents, keys);
+        this.refreshGroupDef(GROUP_NODES, this.defs.parents, parents, keys);
       }
 
       return;
@@ -8319,7 +8325,7 @@ export class StyleEngine {
       return;
     }
 
-    if (group === 'nodes' && this.store.hasCompounds()) {
+    if (group === GROUP_NODES && this.store.hasCompounds()) {
       const flags = this.store.column(COL.NODE_FLAGS) as Uint32Array;
       const leaves: number[] = [];
       const parents: number[] = [];
@@ -8330,8 +8336,8 @@ export class StyleEngine {
         );
       }
 
-      this.refreshStateDef('nodes', this.defs.nodes, leaves, key);
-      this.refreshStateDef('nodes', this.defs.parents, parents, key);
+      this.refreshStateDef(GROUP_NODES, this.defs.nodes, leaves, key);
+      this.refreshStateDef(GROUP_NODES, this.defs.parents, parents, key);
 
       return;
     }
@@ -8373,7 +8379,7 @@ export class StyleEngine {
     }
 
     const flags = this.store.column(
-      group === 'nodes' ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
+      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
     ) as Uint32Array;
     // a bulk flip's slots almost always share one masked word (nothing
     // else is usually pressed or hovered mid-select), so the record and
@@ -8631,7 +8637,7 @@ export class StyleEngine {
       this.readPlans.set(propRaw, plan);
     }
 
-    if (!(ref.group === 'nodes' ? plan.node : plan.edge)) {
+    if (!(ref.group === GROUP_NODES ? plan.node : plan.edge)) {
       return undefined;
     }
 
@@ -8660,7 +8666,7 @@ export class StyleEngine {
     // either of which may be kernel-owned.
     const owned = this.gpuOwnedProps[ref.group];
 
-    if (ref.group === 'edges' && plan.arrowColorProp != null) {
+    if (ref.group === GROUP_EDGES && plan.arrowColorProp != null) {
       const colorProp = plan.arrowColorProp;
 
       if (owned.has(colorProp) || owned.has(PROP.OPACITY)) {
@@ -8718,7 +8724,7 @@ export class StyleEngine {
    * @internal
    */
   readProps(ref: Ref): Record<string, string | number> {
-    const props = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
+    const props = ref.group === GROUP_NODES ? NODE_READ : EDGE_READ;
     const out: Record<string, string | number> = {};
 
     for (const prop of props) {
@@ -8826,8 +8832,8 @@ export class StyleEngine {
       : bindEvaluator(
           bm.m,
           this.store.data,
-          'edges',
-          bm.channel.default('edges'),
+          GROUP_EDGES,
+          bm.channel.default(GROUP_EDGES),
           this.readValue,
         )(ref.slot);
   }
@@ -8904,7 +8910,7 @@ export class StyleEngine {
     const computed: Computed = {
       ...NODE_DEFAULTS,
       ...EDGE_DEFAULTS,
-      width: group === 'nodes' ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width,
+      width: group === GROUP_NODES ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width,
     };
 
     for (const prop of Object.keys(props)) {
@@ -9257,7 +9263,7 @@ export class StyleEngine {
    * because they land in one packed store call.
    */
   private fastStateWriter(group: GroupName, prop: string): StateWriter | null {
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       switch (prop) {
         case PROP.BACKGROUND_COLOR:
           return (slot, c) => this.writeNodeFillColor(slot, c);
@@ -9343,7 +9349,7 @@ export class StyleEngine {
   ): void {
     const store = this.store;
 
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       // equal-radii ellipses render via the cheaper exact circle SDF
       const shape =
         computed.shape === SHAPE_ELLIPSE && computed.width === computed.height
@@ -9351,9 +9357,9 @@ export class StyleEngine {
           : computed.shape;
 
       store.setPair(COL.NODE_SIZE, slot, computed.width, computed.height);
-      store.setFlag('nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
-      store.setFlag('nodes', slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
-      store.setInvisibility('nodes', slot, computed.invisible); // 22
+      store.setFlag(GROUP_NODES, slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
+      store.setFlag(GROUP_NODES, slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
+      store.setInvisibility(GROUP_NODES, slot, computed.invisible); // 22
       this.writeNodeFillColor(slot, computed);
       this.writeNodeBorderColor(slot, computed);
       store.setScalar(COL.NODE_BORDER_WIDTH, slot, computed.borderWidth);
@@ -9546,8 +9552,8 @@ export class StyleEngine {
   private writeEdgePerSlot(slot: number, computed: Computed): void {
     const store = this.store;
 
-    store.setFlag('edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
-    store.setInvisibility('edges', slot, computed.invisible); // 22
+    store.setFlag(GROUP_EDGES, slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
+    store.setInvisibility(GROUP_EDGES, slot, computed.invisible); // 22
 
     // blob-family styles carry the 12b record; straight/bezier store none
     const extras: CurveStyleExtras | null = isBlobStyle(computed.curveStyle)
@@ -9604,7 +9610,7 @@ export class StyleEngine {
       endpoints,
     );
 
-    this.writeLabel(slot, computed, 'edges');
+    this.writeLabel(slot, computed, GROUP_EDGES);
   }
 
   /** warn-once flag for the multi-image cap (recorded: 4 per node) */
@@ -9632,7 +9638,11 @@ export class StyleEngine {
     let raw: readonly unknown[] | null = computed.chartValues;
 
     if (computed.chartValuesKey != null) {
-      const dataValue = store.data.get('nodes', slot, computed.chartValuesKey);
+      const dataValue = store.data.get(
+        GROUP_NODES,
+        slot,
+        computed.chartValuesKey,
+      );
 
       raw = Array.isArray(dataValue) ? dataValue : null;
     }
@@ -9745,7 +9755,7 @@ export class StyleEngine {
   private writeLabel(
     slot: number,
     computed: NodeComputed | Computed,
-    group: GroupName = 'nodes',
+    group: GroupName = GROUP_NODES,
   ): void {
     const store = this.store;
     const key = computed.labelKey;
@@ -9768,7 +9778,7 @@ export class StyleEngine {
     // own loop below so that an element with *no* text at all can leave
     // before the shared record is built
     const endTexts =
-      group === 'edges'
+      group === GROUP_EDGES
         ? ([DATA_SOURCE, DATA_TARGET] as const).map((end) => {
             const ec = computed as Computed;
             const key2 =
@@ -9800,7 +9810,7 @@ export class StyleEngine {
     if (text === '' && endTexts[0] === '' && endTexts[1] === '') {
       store.setLabel(slot, null, group);
 
-      if (group === 'edges') {
+      if (group === GROUP_EDGES) {
         store.setLabel(slot, null, 'edgeSource');
         store.setLabel(slot, null, 'edgeTarget');
       }
@@ -9815,7 +9825,7 @@ export class StyleEngine {
     // is at its storage-buffer budget, so it cannot read the column the
     // way node labels do since 115.6, and folds like edge lines do)
     const textOp =
-      computed.textOpacity * (group === 'edges' ? computed.opacity : 1);
+      computed.textOpacity * (group === GROUP_EDGES ? computed.opacity : 1);
     const fold = ([r, g, b, a]: RGBA, opacity: number): number =>
       packRgba([
         r,
@@ -9834,7 +9844,7 @@ export class StyleEngine {
       valignShift = 0;
     let anchorY = -computed.fontSize / 2 + computed.textMarginY;
 
-    if (group === 'nodes') {
+    if (group === GROUP_NODES) {
       const halfW = nc.width / 2,
         halfH = nc.height / 2;
 
@@ -9855,7 +9865,7 @@ export class StyleEngine {
     const justification =
       computed.textJustification !== -1
         ? computed.textJustification
-        : group === 'nodes'
+        : group === GROUP_NODES
           ? nc.textHalign === 0
             ? 2
             : nc.textHalign === 2
@@ -9902,7 +9912,7 @@ export class StyleEngine {
             marginY: computed.textMarginY,
             endOffset: 0,
             rotate:
-              group === 'edges' &&
+              group === GROUP_EDGES &&
               Number.isNaN((computed as Computed).textRotation),
             rotation: Number.isNaN((computed as Computed).textRotation)
               ? 0
@@ -9914,7 +9924,7 @@ export class StyleEngine {
     // end labels (D4): two more streams per edge, anchored at arc
     // distance *-text-offset from each end (the label VS walks the
     // drawn path); placement channels are prefixed, text style shared
-    if (group === 'edges') {
+    if (group === GROUP_EDGES) {
       const ec = computed as Computed;
 
       for (const end of [DATA_SOURCE, DATA_TARGET] as const) {

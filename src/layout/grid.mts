@@ -1,5 +1,10 @@
 import * as math from '../math.mjs';
-import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import {
+  GROUP_NODES,
+  FLAG_ALIVE,
+  FLAG_LOCKED,
+  FLAG_PARENT,
+} from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDims, nodeDimsOf } from './dims.mjs';
@@ -148,7 +153,7 @@ export class GridLayout {
       store.scanSlotsInto(
         slots,
         0,
-        'nodes',
+        GROUP_NODES,
         FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED,
         FLAG_ALIVE,
       );
@@ -178,7 +183,7 @@ export class GridLayout {
 
     if (hasListeners(cy._emitter, 'position')) {
       for (const slot of slots) {
-        cy._emitOnEle('position', cy._ele('nodes', slot));
+        cy._emitOnEle('position', cy._ele(GROUP_NODES, slot));
       }
     }
   }

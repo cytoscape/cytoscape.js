@@ -2207,6 +2207,11 @@ each is deliberate, not a pass-1 deferral:
   `DATA_PARENT`, `DATA_SOURCE` and `DATA_TARGET` in the same file, and
   `EndKey` names the source/target pair; every `key === 'id'`-style
   test in the data, ingest, style and label paths reads them.  The
+  group names are `GROUP_NODES` / `GROUP_EDGES` and `GroupName` is
+  derived from them (127.6, on the maintainer's call — 718 sites, the
+  largest of the four vocabularies); the public `group` field's type
+  is that `GroupName`, so the shipped declaration now names the pair
+  once too.  The
   style property names — all 173 the engine accepts — are `PROP` in
   `src/style-props.mts` (`PROP.BACKGROUND_COLOR`), keying the engine's
   switches, read sets, mapper channels, readers and defaults, the
@@ -2216,8 +2221,8 @@ each is deliberate, not a pass-1 deferral:
   tables, and a value is what a user writes, not what the engine
   spells.  `test/modules/string-keys.mjs` holds the line: it scans
   `src/` for a column-id literal, a data-key comparison or a
-  hyphenated property literal outside its declaration, with a control
-  per rule and the walk's size pinned.  The price: the minified bundle
+  hyphenated property literal or a group-name literal outside its
+  declaration, with a control per rule and the walk's size pinned.  The price: the minified bundle
   grew 1.0% (1.2% gzipped), since the minifier mangles `PROP` but not
   `.BACKGROUND_COLOR`; the round record has the numbers.
 - **Strictness resolves at the type layer at the constructor, and at

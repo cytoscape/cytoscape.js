@@ -3,6 +3,7 @@ Public option/type surface of the GPU prototype entry point.
 */
 
 import type { Position } from './types.mjs';
+import type { GroupName } from './contract.mjs';
 
 export type { Position };
 
@@ -21,7 +22,7 @@ export interface ElementData {
 
 export interface ElementDefinition {
   /** inferred from `data.source`/`data.target` when omitted */
-  group?: 'nodes' | 'edges';
+  group?: GroupName;
   data?: ElementData;
   /** nodes only */
   position?: Position;

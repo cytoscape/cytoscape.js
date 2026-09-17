@@ -9,6 +9,8 @@ import {
   DATA_PARENT,
   DATA_SOURCE,
   DATA_TARGET,
+  GROUP_EDGES,
+  GROUP_NODES,
 } from '../../src/contract.mjs';
 import { TWEEN_COL } from '../../src/animation.mjs';
 import { PROP } from '../../src/style-props.mjs';
@@ -36,6 +38,13 @@ own replacement tool lacked it at first, read `/['"]?/` on one line of
 remaining 8,300 lines.  Each rule therefore runs on a planted line
 before it runs on the tree, and one control plants the literal *after*
 a regex containing a quote.
+
+Round 127.6 added the group names (`'nodes'` / `'edges'`, 712 sites)
+on the maintainer's call, and with them the walker learned template
+expressions: three of those literals sat inside `${…}` in error
+messages, which the first walker skipped along with the template text
+around them.  A template's text is not code; the code inside its
+braces is.
 
 What is deliberately outside the gate: the single-word property names
 (`width`, `color`, `opacity`, …) collide with channel kinds, write
@@ -89,6 +98,8 @@ export const codeLiterals = (src) => {
   const lines = src.split('\n');
   // '' = code; otherwise the active delimiter: ", `, //, /*
   let mode = '';
+  // one entry per open `${` — the brace depth inside that expression
+  const templates = [];
   let line = 1;
   // the code emitted so far on the current statement, for the regex test
   let recent = '';
@@ -119,10 +130,29 @@ export const codeLiterals = (src) => {
     if (mode !== '') {
       if (ch === '\\') {
         i++;
+      } else if (mode === '`' && two === '${') {
+        // into the expression: code until its closing brace
+        templates.push(0);
+        mode = '';
+        i++;
       } else if (ch === mode) {
         mode = '';
       }
       continue;
+    }
+
+    if (templates.length > 0) {
+      if (ch === '{') {
+        templates[templates.length - 1]++;
+      } else if (ch === '}') {
+        if (templates[templates.length - 1] === 0) {
+          // back into the template's text
+          templates.pop();
+          mode = '`';
+          continue;
+        }
+        templates[templates.length - 1]--;
+      }
     }
 
     if (two === '//' || two === '/*') {
@@ -207,6 +237,7 @@ const COLUMN_ID = /^(node|edge)\.[A-Za-z]+$/;
 /** A table member line: `  NAME: 'value',` — the one place a column id may be spelled. */
 const TABLE_MEMBER = /^\s+[A-Z_]+: '[^']+',/;
 const DATA_KEYS = new Set([DATA_ID, DATA_PARENT, DATA_SOURCE, DATA_TARGET]);
+const GROUP_NAMES = new Set([GROUP_NODES, GROUP_EDGES]);
 const HYPHENATED_PROPS = new Set(
   Object.values(PROP).filter((name) => name.includes('-')),
 );
@@ -237,6 +268,11 @@ export const findings = {
     codeLiterals(src)
       .filter((l) => HYPHENATED_PROPS.has(l.value))
       .map((l) => `${l.line}: '${l.value}'`),
+  /** a group name spelled outside `GROUP_NODES` / `GROUP_EDGES` (127.6) */
+  groupNames: (src) =>
+    codeLiterals(src)
+      .filter((l) => GROUP_NAMES.has(l.value))
+      .map((l) => `${l.line}: '${l.value}'`),
 };
 
 /** Where each rule's declarations live — the only files it does not scan. */
@@ -244,6 +280,7 @@ const DECLARED_IN = {
   columnIds: [],
   dataKeys: ['contract.mts'],
   styleProps: ['style-props.mts'],
+  groupNames: ['contract.mts'],
 };
 
 const screaming = (name) =>
@@ -287,6 +324,23 @@ describe('string keys are spelled once (round 127)', () => {
       expect(findings.columnIds(src)).to.deep.equal([`3: 'node.position'`]);
     });
 
+    it('reads the code inside a template expression, and not the text around it (127.6)', () => {
+      const src = [
+        "`Node ${store.idAt('nodes', slot)} has no parent`",
+        "`${a ? `${b} nodes` : 'edges'} ${{ x: 1 }.x}`",
+        '`nodes edges`',
+        '`${"nodes"}`',
+      ].join('\n');
+
+      expect(findings.groupNames(src)).to.deep.equal([
+        `1: 'nodes'`,
+        `2: 'edges'`,
+      ]);
+      expect(
+        findings.columnIds("`${`${store.column('node.size')}`}`"),
+      ).to.deep.equal([`1: 'node.size'`]);
+    });
+
     it('still reads a division as code', () => {
       const src = [
         `const r = a / b;`,
@@ -315,6 +369,19 @@ describe('string keys are spelled once (round 127)', () => {
       // a prefix test on a property name is not a data-key comparison
       expect(
         findings.dataKeys(`const src = prop.startsWith('source');`),
+      ).to.deep.equal([]);
+    });
+
+    it('finds a planted group name anywhere in code', () => {
+      expect(
+        findings.groupNames(`if (group === 'nodes') return this.nodes;`),
+      ).to.deep.equal([`1: 'nodes'`]);
+      expect(
+        findings.groupNames(`const t: Record<'nodes' | 'edges', number>`),
+      ).to.deep.equal([`1: 'nodes'`, `1: 'edges'`]);
+      // an error message names the groups in prose
+      expect(
+        findings.groupNames("throw new Error(`use 'nodes' or 'edges'`)"),
       ).to.deep.equal([]);
     });
 
@@ -398,6 +465,15 @@ describe('string keys are spelled once (round 127)', () => {
         expect(COLUMN_ID.test(value)).to.equal(true);
         expect(real.has(value), value).to.equal(false);
       }
+    });
+
+    it('derives GroupName from the two group constants', () => {
+      // the constants are the type's members: a third group would have to
+      // be declared here, and the walk's own table rule reads it
+      expect([GROUP_NODES, GROUP_EDGES]).to.deep.equal(['nodes', 'edges']);
+      expect(COLUMN_SPECS.every((s) => GROUP_NAMES.has(s.group))).to.equal(
+        true,
+      );
     });
 
     it('spells every PROP key from its value, with no duplicates', () => {

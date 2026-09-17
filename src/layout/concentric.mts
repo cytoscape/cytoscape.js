@@ -12,6 +12,7 @@ import type { BoundingBox, Position } from '../types.mjs';
 import type { ConcentricLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Core } from '../core.mjs';
+import { GROUP_NODES } from '../contract.mjs';
 
 /*
 Concentric layout: v3's level-binning over the collection scope.  The
@@ -126,7 +127,7 @@ export class ConcentricLayout {
 
     if (isScoreMapping(concentricOpt)) {
       validateScoreMapping(concentricOpt, 'concentric');
-      checkScoreColumn(cy, 'nodes', concentricOpt, 'concentric');
+      checkScoreColumn(cy, GROUP_NODES, concentricOpt, 'concentric');
 
       const key = concentricOpt.data;
       const resolved = resolveScores(

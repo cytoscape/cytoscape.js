@@ -67,6 +67,7 @@ import type {
   FlowLayoutOptions,
   LayoutScoreMapping,
 } from '../public-types.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 const DIRECTIONS = ['downward', 'upward', 'leftward', 'rightward'] as const;
 const LAYERINGS = ['network-simplex', 'longest-path', 'auto'] as const;
@@ -181,7 +182,7 @@ const checkIdList = (
 
     const ref = cy._store.lookup(id);
 
-    if (ref == null || ref.group !== 'nodes') {
+    if (ref == null || ref.group !== GROUP_NODES) {
       throw new Error(
         `The flow layout's ${optionName} names node '${id}', which does not exist`,
       );
@@ -211,16 +212,16 @@ const resolveEdgeOption = (
 
   if (isScoreMapping(value)) {
     validateScoreMapping(value, optionName);
-    checkScoreColumn(ctx.cy, 'edges', value, optionName);
+    checkScoreColumn(ctx.cy, GROUP_EDGES, value, optionName);
 
-    const read = ctx.cy._store.data.reader('edges', value.data);
+    const read = ctx.cy._store.data.reader(GROUP_EDGES, value.data);
 
     return resolveScores(edgeSlots.map(read), value, fallback);
   }
 
   if (typeof value === 'function') {
     for (let i = 0; i < edgeSlots.length; i++) {
-      const v = value(ctx.cy._ele('edges', edgeSlots[i]));
+      const v = value(ctx.cy._ele(GROUP_EDGES, edgeSlots[i]));
 
       out[i] = typeof v === 'number' && Number.isFinite(v) ? v : fallback;
     }

@@ -176,6 +176,36 @@ a purely mechanical change to the sources is a free control on every
 source-scanning tool, and this one found the inventory reader's
 unstated assumption.
 
+### 127.6 — the group names, on the maintainer's call (2026-09-17)
+
+Item 64 was logged as a decision not to; the maintainer's answer the
+next sitting was one line: **group names should also be constants.**
+`GROUP_NODES` / `GROUP_EDGES` sit beside the data keys in the contract
+and `GroupName` derives from them.  718 sites in 40 files: 712 through
+the walker, the five `'nodes' | 'edges'` type unions (one of them the
+public `group` field in `public-types.mts`, so the shipped declaration
+now reads `GroupName`) by hand, and one `Stylesheet['nodes']` index
+type as `typeof GROUP_NODES`.
+
+The walker missed three, and the miss is the sub-round's finding: an
+`idAt('nodes', …)` inside a template string's `${…}` in an error
+message.  The 127.1 walker treated a template as opaque text, which is
+right for the text and wrong for the expressions in it; both the tool
+and the gate now read the code inside the braces (nested templates
+included) and skip the text around it, with a control that plants one
+of each.  The gate's fourth rule holds the group names to the contract.
+
+The control on the new tree rule was run by planting `'nodes'` in
+`element-defs.mts` and reading the red row — and then `git checkout`
+restored the file to its *committed* state, which was the pre-127.6
+one, so the next full run found five literals the sub-round had
+already replaced.  A control on an uncommitted tree restores by hand,
+not by checkout; recorded so the next one does.
+
+Two more `file:line` throw-coverage entries had moved under the
+imports and were re-pointed.  `npm run -s test:types` rebuilt the
+declaration green.
+
 ### Verification (carried out)
 
 - `npm run -s verify` after each sub-round: green, 2,719 specs; the
@@ -200,8 +230,16 @@ unstated assumption.
   | `build/cytoscape.min.js` | minified | gzipped |
   |---|--:|--:|
   | before (`988cca81`) | 852,759 B | 233,456 B |
-  | after | 861,544 B | 236,179 B |
-  | delta | +8,785 B (+1.0%) | +2,723 B (+1.2%) |
+  | after 127.5 | 861,544 B | 236,179 B |
+  | after 127.6 | 858,612 B | 236,636 B |
+  | delta | +5,853 B (+0.7%) | +3,180 B (+1.4%) |
+
+  127.6 *shrank* the minified bundle by 2.9 KB — a module-level
+  binding is mangled to one or two characters where the literal
+  `'nodes'` was seven — and grew the gzipped one by 0.5 KB, since the
+  literal compressed better than the varied short names.  So the
+  price is one of the two figures depending on which the reader
+  ships; both are on the record.
 
   The cost is the table itself (173 property strings the sources
   used to carry inline, now carried once *and* referenced) plus

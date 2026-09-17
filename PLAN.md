@@ -200,7 +200,7 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-15, round 125 planned), the genuinely open questions
+**As last swept** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -235,7 +235,10 @@ then the first sitting pass the same day: one sub-round signed off,
 radial's roots decided and shipped, the rest deferred to the page —
 which raised **item 61** (one consistent option surface: spacing,
 compacting, the bounding box as hint or constraint) and **item 62**
-(AVSDF, reconsidered).  What the 2026-08-26
+(AVSDF, reconsidered).  Round 127 (2026-09-15) spelled every string
+vocabulary once and logged **item 63** (the bundle price of the
+tables) and **item 64** (group names as constants — **taken by round
+127.6** two days later, on the maintainer's one-line call).  What the 2026-08-26
 sweep changed: item 22's decided action was finally *done* (the comment,
 sixteen rounds after the code), item 32's first measurement was taken and
 is recorded on the item, and two entries were added for calls that had
@@ -1208,11 +1211,13 @@ directions".*
     call**: accept, or schedule the inline as part of round 126's
     minification work, where a shader-string inliner is already on the
     table.
-64. **Group names as constants?** (logged 2026-09-15, round 127.)
+64. **Group names as constants?** (logged 2026-09-15, round 127;
+    **taken by round 127.6, 2026-09-17: yes** — the maintainer's one-
+    line answer, and the gate's fourth rule went in the same sitting.)
     `'nodes'` / `'edges'` is the same shape as the three vocabularies
-    round 127 made constants, at 744 sites — and it was left alone: a
-    two-member typed discriminant reads best as the literal, the
-    values are public API (`group: 'nodes'`), and the directive's
-    examples did not name them.  Logged so the omission is a decision
-    on the record rather than an oversight; the gate can take a fourth
-    rule in an afternoon if the call goes the other way.
+    round 127 made constants, at 718 sites — and 127 had left it
+    alone: a two-member typed discriminant reads best as the literal,
+    the values are public API (`group: 'nodes'`), and the directive's
+    examples did not name them.  The call went the other way;
+    `GROUP_NODES` / `GROUP_EDGES` are the spelling and `GroupName`
+    derives from them.

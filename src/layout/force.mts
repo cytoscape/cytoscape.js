@@ -35,7 +35,13 @@ never move; subset scopes (`eles.layout`) simulate the subset only,
 non-members ignored entirely (recorded).
 */
 
-import { COL, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  COL,
+  FLAG_LOCKED,
+  FLAG_PARENT,
+} from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
 import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
@@ -833,7 +839,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     const indexOfTarget = (target: unknown): number | undefined => {
       const ref = (target as Collection | undefined)?._eventRef?.();
 
-      return ref != null && ref.group === 'nodes'
+      return ref != null && ref.group === GROUP_NODES
         ? this.current?.indexOf(ref.slot)
         : undefined;
     };
@@ -1072,9 +1078,9 @@ export class ForceLayoutImpl implements LayoutImpl {
 
     if (isScoreMapping(lengthOf)) {
       validateScoreMapping(lengthOf, 'edgeLength');
-      checkScoreColumn(cy, 'edges', lengthOf, 'edgeLength');
+      checkScoreColumn(cy, GROUP_EDGES, lengthOf, 'edgeLength');
 
-      const read = store.data.reader('edges', lengthOf.data);
+      const read = store.data.reader(GROUP_EDGES, lengthOf.data);
 
       mappedLengths = resolveScores(
         edgeSlots.map(read),
@@ -1100,7 +1106,7 @@ export class ForceLayoutImpl implements LayoutImpl {
         mappedLengths != null
           ? mappedLengths[ei]
           : typeof lengthOf === 'function'
-            ? lengthOf(cy._ele('edges', edgeSlot))
+            ? lengthOf(cy._ele(GROUP_EDGES, edgeSlot))
             : ((lengthOf as number | undefined) ?? DEFAULT_EDGE_LENGTH);
       const levels = spannedLevels(sSlot, tSlot);
 

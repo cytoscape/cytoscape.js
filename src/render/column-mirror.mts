@@ -1,4 +1,9 @@
-import { COLUMN_SPECS, columnSpec } from '../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  COLUMN_SPECS,
+  columnSpec,
+} from '../contract.mjs';
 import type {
   ColumnId,
   GroupName,
@@ -85,8 +90,8 @@ export class ColumnMirror {
     this.image = this.reallocImageBlob();
     this.chart = this.reallocChartBlob();
 
-    this.realloc('nodes');
-    this.realloc('edges');
+    this.realloc(GROUP_NODES);
+    this.realloc(GROUP_EDGES);
   }
 
   /**
@@ -154,7 +159,7 @@ export class ColumnMirror {
       return;
     }
 
-    for (const group of ['nodes', 'edges'] as GroupName[]) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
       if (
         delta.resized[group] ||
         this.view.capacity(group) !== this.capacities[group]

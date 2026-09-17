@@ -9,7 +9,16 @@ reads from.  Both halves must agree on everything in here; change it first
 when the layout changes.
 */
 
-export type GroupName = 'nodes' | 'edges';
+/**
+ * The two element groups (round 127.6): the discriminant every
+ * per-group table, column, index and event path branches on, and the
+ * `group` field of an element definition.  Spelled once here;
+ * `test/modules/string-keys.mjs` rejects the literal elsewhere.
+ */
+export const GROUP_NODES = 'nodes';
+export const GROUP_EDGES = 'edges';
+
+export type GroupName = typeof GROUP_NODES | typeof GROUP_EDGES;
 
 /**
  * The reserved element-data keys (round 127): the four `data` fields
@@ -782,44 +791,44 @@ const spec = (
 });
 
 export const COLUMN_SPECS: ColumnSpec[] = [
-  spec(COL.NODE_POSITION, 'nodes', Float32Array, 2),
-  spec(COL.NODE_SIZE, 'nodes', Float32Array, 2),
-  spec(COL.NODE_FILL_COLOR, 'nodes', Uint8Array, 4),
-  spec(COL.NODE_BORDER_COLOR, 'nodes', Uint8Array, 4),
-  spec(COL.NODE_BORDER_WIDTH, 'nodes', Float32Array, 1),
-  spec(COL.NODE_OPACITY, 'nodes', Float32Array, 1),
-  spec(COL.NODE_SHAPE, 'nodes', Uint32Array, 1),
-  spec(COL.NODE_OUTER_HALF, 'nodes', Float32Array, 2),
-  spec(COL.NODE_OUTER_GEOM, 'nodes', Float32Array, 4),
-  spec(COL.NODE_GHOST, 'nodes', Float32Array, 4),
-  spec(COL.NODE_BORDER_GEOM, 'nodes', Uint32Array, 4),
-  spec(COL.NODE_BORDER_DASH, 'nodes', Float32Array, 4),
-  spec(COL.NODE_BORDER_DASH_META, 'nodes', Float32Array, 2),
-  spec(COL.NODE_GRADIENT, 'nodes', Uint32Array, 8),
-  spec(COL.NODE_OVERLAY, 'nodes', Uint32Array, 4),
-  spec(COL.NODE_UNDERLAY, 'nodes', Uint32Array, 4),
-  spec(COL.NODE_IMAGE_REF, 'nodes', Uint32Array, 1),
-  spec(COL.NODE_CHART_REF, 'nodes', Uint32Array, 1),
-  spec(COL.NODE_FLAGS, 'nodes', Uint32Array, 1),
-  spec(COL.EDGE_ENDPOINTS, 'edges', Uint32Array, 2),
-  spec(COL.EDGE_LINE_COLOR, 'edges', Uint8Array, 4),
-  spec(COL.EDGE_WIDTH, 'edges', Float32Array, 2),
-  spec(COL.EDGE_OPACITY, 'edges', Float32Array, 1),
-  spec(COL.EDGE_FLAGS, 'edges', Uint32Array, 1),
-  spec(COL.EDGE_SOURCE_ARROW, 'edges', Uint8Array, 4),
-  spec(COL.EDGE_TARGET_ARROW, 'edges', Uint8Array, 4),
-  spec(COL.EDGE_LINE_STYLE, 'edges', Uint32Array, 1),
-  spec(COL.EDGE_ARROW_SHAPES, 'edges', Uint32Array, 1),
-  spec(COL.EDGE_ARROW_WIDTHS, 'edges', Float32Array, 2),
-  spec(COL.EDGE_MID_SOURCE_ARROW, 'edges', Uint8Array, 4),
-  spec(COL.EDGE_MID_TARGET_ARROW, 'edges', Uint8Array, 4),
-  spec(COL.EDGE_OVERLAY, 'edges', Uint32Array, 2),
-  spec(COL.EDGE_GRADIENT, 'edges', Uint32Array, 8),
-  spec(COL.EDGE_CASING, 'edges', Uint32Array, 2),
-  spec(COL.EDGE_DASH_PATTERN, 'edges', Float32Array, 4),
-  spec(COL.EDGE_DASH_META, 'edges', Float32Array, 2),
-  spec(COL.EDGE_UNDERLAY, 'edges', Uint32Array, 2),
-  spec(COL.EDGE_CURVE_PARAMS, 'edges', Float32Array, 4),
+  spec(COL.NODE_POSITION, GROUP_NODES, Float32Array, 2),
+  spec(COL.NODE_SIZE, GROUP_NODES, Float32Array, 2),
+  spec(COL.NODE_FILL_COLOR, GROUP_NODES, Uint8Array, 4),
+  spec(COL.NODE_BORDER_COLOR, GROUP_NODES, Uint8Array, 4),
+  spec(COL.NODE_BORDER_WIDTH, GROUP_NODES, Float32Array, 1),
+  spec(COL.NODE_OPACITY, GROUP_NODES, Float32Array, 1),
+  spec(COL.NODE_SHAPE, GROUP_NODES, Uint32Array, 1),
+  spec(COL.NODE_OUTER_HALF, GROUP_NODES, Float32Array, 2),
+  spec(COL.NODE_OUTER_GEOM, GROUP_NODES, Float32Array, 4),
+  spec(COL.NODE_GHOST, GROUP_NODES, Float32Array, 4),
+  spec(COL.NODE_BORDER_GEOM, GROUP_NODES, Uint32Array, 4),
+  spec(COL.NODE_BORDER_DASH, GROUP_NODES, Float32Array, 4),
+  spec(COL.NODE_BORDER_DASH_META, GROUP_NODES, Float32Array, 2),
+  spec(COL.NODE_GRADIENT, GROUP_NODES, Uint32Array, 8),
+  spec(COL.NODE_OVERLAY, GROUP_NODES, Uint32Array, 4),
+  spec(COL.NODE_UNDERLAY, GROUP_NODES, Uint32Array, 4),
+  spec(COL.NODE_IMAGE_REF, GROUP_NODES, Uint32Array, 1),
+  spec(COL.NODE_CHART_REF, GROUP_NODES, Uint32Array, 1),
+  spec(COL.NODE_FLAGS, GROUP_NODES, Uint32Array, 1),
+  spec(COL.EDGE_ENDPOINTS, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_LINE_COLOR, GROUP_EDGES, Uint8Array, 4),
+  spec(COL.EDGE_WIDTH, GROUP_EDGES, Float32Array, 2),
+  spec(COL.EDGE_OPACITY, GROUP_EDGES, Float32Array, 1),
+  spec(COL.EDGE_FLAGS, GROUP_EDGES, Uint32Array, 1),
+  spec(COL.EDGE_SOURCE_ARROW, GROUP_EDGES, Uint8Array, 4),
+  spec(COL.EDGE_TARGET_ARROW, GROUP_EDGES, Uint8Array, 4),
+  spec(COL.EDGE_LINE_STYLE, GROUP_EDGES, Uint32Array, 1),
+  spec(COL.EDGE_ARROW_SHAPES, GROUP_EDGES, Uint32Array, 1),
+  spec(COL.EDGE_ARROW_WIDTHS, GROUP_EDGES, Float32Array, 2),
+  spec(COL.EDGE_MID_SOURCE_ARROW, GROUP_EDGES, Uint8Array, 4),
+  spec(COL.EDGE_MID_TARGET_ARROW, GROUP_EDGES, Uint8Array, 4),
+  spec(COL.EDGE_OVERLAY, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_GRADIENT, GROUP_EDGES, Uint32Array, 8),
+  spec(COL.EDGE_CASING, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_DASH_PATTERN, GROUP_EDGES, Float32Array, 4),
+  spec(COL.EDGE_DASH_META, GROUP_EDGES, Float32Array, 2),
+  spec(COL.EDGE_UNDERLAY, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_CURVE_PARAMS, GROUP_EDGES, Float32Array, 4),
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>(
@@ -887,7 +896,7 @@ export const EDGE_PER_ELEMENT_COLUMNS: readonly ColumnId[] = [
 /** The complement of {@link EDGE_PER_ELEMENT_COLUMNS}: edge columns a
  * shared styled record fully determines. */
 export const EDGE_STYLE_COLUMNS: readonly ColumnSpec[] = COLUMN_SPECS.filter(
-  (s) => s.group === 'edges' && !EDGE_PER_ELEMENT_COLUMNS.includes(s.id),
+  (s) => s.group === GROUP_EDGES && !EDGE_PER_ELEMENT_COLUMNS.includes(s.id),
 );
 
 // -- per-frame delta --

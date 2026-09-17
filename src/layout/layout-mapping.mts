@@ -5,6 +5,8 @@ import type {
   LayoutScoreMapping,
   LayoutSortMapping,
 } from '../public-types.mjs';
+import { GROUP_NODES } from '../contract.mjs';
+import type { GroupName } from '../contract.mjs';
 
 /*
 The data-driven layout mapping spellings (round 85.3, #1514).  Five
@@ -106,7 +108,7 @@ export const validateScoreMapping = (
  */
 export const checkScoreColumn = (
   cy: Core,
-  group: 'nodes' | 'edges',
+  group: GroupName,
   spec: LayoutScoreMapping,
   optionName: string,
 ): void => {
@@ -217,7 +219,7 @@ export const sortComparator = (
   spec: LayoutSortMapping,
   optionName: string,
 ): ((a: Collection, b: Collection) => number) => {
-  const kind = cy._store.data.kind('nodes', spec.data);
+  const kind = cy._store.data.kind(GROUP_NODES, spec.data);
 
   if (kind == null) {
     throw new Error(

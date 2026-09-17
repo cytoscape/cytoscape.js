@@ -1,5 +1,5 @@
 import type { GroupName } from '../contract.mjs';
-import { NO_SLOT } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, NO_SLOT } from '../contract.mjs';
 import type { PackedIds } from '../public-types.mjs';
 import { isPackedIds } from '../columnar.mjs';
 
@@ -135,7 +135,7 @@ export class IdMap {
     }
 
     return {
-      group: (entry - BASE) & 1 ? 'edges' : 'nodes',
+      group: (entry - BASE) & 1 ? GROUP_EDGES : GROUP_NODES,
       slot: (entry - BASE) >>> 1,
     };
   }
@@ -297,7 +297,7 @@ export class IdMap {
     }
 
     const slot = (found - BASE) >>> 1;
-    const m = this.meta[(found - BASE) & 1 ? 'edges' : 'nodes'];
+    const m = this.meta[(found - BASE) & 1 ? GROUP_EDGES : GROUP_NODES];
 
     this.table[at] = TOMB;
     this.tombs++;
@@ -358,9 +358,9 @@ export class IdMap {
 
     const mask = this.table.length - 1;
 
-    for (const group of ['nodes', 'edges'] as GroupName[]) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
       const m = this.meta[group];
-      const bit = group === 'edges' ? 1 : 0;
+      const bit = group === GROUP_EDGES ? 1 : 0;
 
       for (let slot = 0; slot < m.start.length; slot++) {
         if (m.start[slot] === 0) {
@@ -402,7 +402,7 @@ export class IdMap {
         }
       } else {
         const slot = (entry - BASE) >>> 1;
-        const m = this.meta[(entry - BASE) & 1 ? 'edges' : 'nodes'];
+        const m = this.meta[(entry - BASE) & 1 ? GROUP_EDGES : GROUP_NODES];
 
         if (m.hash[slot] === h) {
           const elo = m.start[slot] - 1;
@@ -447,7 +447,7 @@ export class IdMap {
       this.tombs--;
     }
 
-    this.table[at] = ((slot << 1) | (group === 'edges' ? 1 : 0)) + BASE;
+    this.table[at] = ((slot << 1) | (group === GROUP_EDGES ? 1 : 0)) + BASE;
 
     const m = this.meta[group];
 
@@ -498,7 +498,7 @@ export class IdMap {
       }
 
       const slot = (entry - BASE) >>> 1;
-      const m = this.meta[(entry - BASE) & 1 ? 'edges' : 'nodes'];
+      const m = this.meta[(entry - BASE) & 1 ? GROUP_EDGES : GROUP_NODES];
       let at = m.hash[slot] & mask;
 
       while (this.table[at] !== EMPTY) {
@@ -571,7 +571,7 @@ export class IdMap {
     const next = new Uint8Array(cap);
     let at = 0;
 
-    for (const group of ['nodes', 'edges'] as GroupName[]) {
+    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
       const m = this.meta[group];
 
       for (let slot = 0; slot < m.start.length; slot++) {

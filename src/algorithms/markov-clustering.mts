@@ -6,6 +6,7 @@ import type { SubgraphView } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /** A similarity function: maps an edge to a numeric contribution. */
 export type MarkovAttributeFn = (edge: Collection) => number;
@@ -161,7 +162,7 @@ export const buildMarkovMatrix = (
     }
 
     let sim = 0;
-    const edge = cy._ele('edges', e);
+    const edge = cy._ele(GROUP_EDGES, e);
 
     for (const attr of attributes) {
       sim += attr(edge);
@@ -223,7 +224,7 @@ export const markovClustersFrom = (
     seen.add(key);
     clusters.push(
       coll._spawnLive(
-        cluster.map((di) => view.store.ref('nodes', view.nodeSlots[di])),
+        cluster.map((di) => view.store.ref(GROUP_NODES, view.nodeSlots[di])),
       ),
     );
   }

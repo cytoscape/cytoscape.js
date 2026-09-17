@@ -77,7 +77,7 @@ export const BROWSER_ONLY = [
 export const UNREACHABLE = {
   'src/wire.mts:88':
     'big-endian platform guard — every supported platform is little-endian',
-  'src/store/graph-store.mts:3215':
+  'src/store/graph-store.mts:3219':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
 
   // Round 36.4 classified the browser-only tier the same way 30.4
@@ -90,7 +90,7 @@ export const UNREACHABLE = {
     'constructs the Renderer synchronously, whose ctor calls init() ' +
     'whose first statement reads navigator.gpu again — nothing can run ' +
     'between the two, so no caller can pass one and fail the other',
-  'src/render/column-mirror.mts:125':
+  'src/render/column-mirror.mts:130':
     'column spec/group mismatch — an internal invariant; every caller ' +
     'passes a ColumnId the mirror was built from, and no public input ' +
     'chooses the id',

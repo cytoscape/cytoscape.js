@@ -8,6 +8,7 @@ import {
   NodeHeap,
 } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface DijkstraOptions {
   root?: Collection | null;
@@ -122,12 +123,12 @@ export const dijkstra = (
       if (target != null) {
         let u = target;
 
-        refs.push(store.ref('nodes', nodeSlots[u]));
+        refs.push(store.ref(GROUP_NODES, nodeSlots[u]));
 
         while (prevNode[u] >= 0) {
-          refs.unshift(store.ref('edges', prevEdge[u]));
+          refs.unshift(store.ref(GROUP_EDGES, prevEdge[u]));
           u = prevNode[u];
-          refs.unshift(store.ref('nodes', nodeSlots[u]));
+          refs.unshift(store.ref(GROUP_NODES, nodeSlots[u]));
         }
       }
 

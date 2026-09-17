@@ -3,6 +3,8 @@ import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { Easing, EasingProgram } from './easing.mjs';
 import {
+  GROUP_EDGES,
+  GROUP_NODES,
   COL,
   columnSpec,
   FLAG_CHILD,
@@ -80,7 +82,7 @@ const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 export type RGBA = [number, number, number, number];
 
-const GROUPS: GroupName[] = ['nodes', 'edges'];
+const GROUPS: GroupName[] = [GROUP_NODES, GROUP_EDGES];
 
 /**
  * Where an animatable style prop lands, per group — a shared name like
@@ -1157,8 +1159,9 @@ export class Animation {
     if (this.position != null && this.store.hasCompounds()) {
       for (const ref of this.refs) {
         if (
-          ref.group === 'nodes' &&
-          (this.store.flags('nodes', ref.slot) & (FLAG_PARENT | FLAG_CHILD)) !==
+          ref.group === GROUP_NODES &&
+          (this.store.flags(GROUP_NODES, ref.slot) &
+            (FLAG_PARENT | FLAG_CHILD)) !==
             0
         ) {
           return false;
@@ -1311,11 +1314,11 @@ export class Animation {
 
         if (column === COL.NODE_SIZE) {
           refs = refs.filter(
-            (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) === 0,
+            (r) => (this.store.flags(GROUP_NODES, r.slot) & FLAG_PARENT) === 0,
           );
         } else if (column === TWEEN_COL.NODE_PADDING) {
           refs = refs.filter(
-            (r) => (this.store.flags('nodes', r.slot) & FLAG_PARENT) !== 0,
+            (r) => (this.store.flags(GROUP_NODES, r.slot) & FLAG_PARENT) !== 0,
           );
         } else if (
           column === TWEEN_COL.NODE_FONT_SIZE ||
@@ -1326,7 +1329,7 @@ export class Animation {
             (r) =>
               this.store.labelAt(
                 r.slot,
-                r.group === 'nodes' ? 'nodes' : 'edges',
+                r.group === GROUP_NODES ? GROUP_NODES : GROUP_EDGES,
               ) != null,
           );
         }
@@ -1395,9 +1398,9 @@ export class Animation {
       // CPU write and the GPU tween batches built from it alike
       const refs = this.refs.filter(
         (r) =>
-          r.group === 'nodes' &&
+          r.group === GROUP_NODES &&
           this.store.isCurrent(r) &&
-          !this.store.hasFlag('nodes', r.slot, FLAG_LOCKED),
+          !this.store.hasFlag(GROUP_NODES, r.slot, FLAG_LOCKED),
       );
 
       if (refs.length > 0) {
@@ -1498,7 +1501,7 @@ export class Animation {
       channel.min,
       channel.max,
     );
-    const stream = group === 'nodes' ? 'nodes' : 'edges';
+    const stream = group === GROUP_NODES ? GROUP_NODES : GROUP_EDGES;
 
     for (let i = 0; i < refs.length; i++) {
       write.data[i * 2] =
@@ -1700,7 +1703,7 @@ export class Animation {
             // rather than fighting the derivation (round 25.1)
             if (
               w.column === COL.NODE_SIZE &&
-              (store.flags('nodes', slot) & FLAG_PARENT) !== 0
+              (store.flags(GROUP_NODES, slot) & FLAG_PARENT) !== 0
             ) {
               break;
             }
@@ -1714,7 +1717,7 @@ export class Animation {
             break;
           case 'padding':
             // parents only — a mid-tween parent→leaf flip drops the slot
-            if ((store.flags('nodes', slot) & FLAG_PARENT) === 0) {
+            if ((store.flags(GROUP_NODES, slot) & FLAG_PARENT) === 0) {
               break;
             }
 
@@ -1729,7 +1732,7 @@ export class Animation {
           case 'fontSize':
             store.setLabelFontSize(
               slot,
-              w.column === TWEEN_COL.NODE_FONT_SIZE ? 'nodes' : 'edges',
+              w.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES,
               clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
             );
             break;
@@ -1914,7 +1917,7 @@ export class AnimationManager {
       const isEdge = key >= 0x10000000000000;
       const rem = isEdge ? key - 0x10000000000000 : key;
       const ref: Ref = {
-        group: isEdge ? 'edges' : 'nodes',
+        group: isEdge ? GROUP_EDGES : GROUP_NODES,
         slot: Math.floor(rem / 0x1000000),
         gen: rem % 0x1000000,
       };
@@ -2322,4 +2325,4 @@ const now = (): number => {
 };
 
 const packRef = (r: Ref): number =>
-  (r.group === 'nodes' ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;
+  (r.group === GROUP_NODES ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;

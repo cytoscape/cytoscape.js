@@ -15,7 +15,13 @@ import type {
   Transform,
   RGBA,
 } from '../style-scales.mjs';
-import { DATA_TARGET, DATA_SOURCE, COL } from '../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  DATA_TARGET,
+  DATA_SOURCE,
+  COL,
+} from '../contract.mjs';
 import { PROP } from '../style-props.mjs';
 
 /*
@@ -301,7 +307,7 @@ export const packPrograms = (
     color: RGBA;
   }[] = [];
 
-  if (group === 'edges' && ctx != null && ctx.opacityMapped) {
+  if (group === GROUP_EDGES && ctx != null && ctx.opacityMapped) {
     for (const end of [DATA_SOURCE, DATA_TARGET] as const) {
       const arrow = ctx[end];
 
@@ -373,7 +379,7 @@ export const packPrograms = (
     let count = 0;
     let inBase = 0;
 
-    if (group === 'edges' && isArrowProp(m.prop) && ctx != null) {
+    if (group === GROUP_EDGES && isArrowProp(m.prop) && ctx != null) {
       if (ctx.opacityMapped) {
         flags |= FLAG.MUL_ALPHA;
       } else {
@@ -711,7 +717,7 @@ interface GroupState {
 }
 
 const WG_SIZE = 256;
-const GROUPS: readonly GroupName[] = ['nodes', 'edges'];
+const GROUPS: readonly GroupName[] = [GROUP_NODES, GROUP_EDGES];
 
 /**
  * The GPU-resident restyle: owns the packed program/stop/data buffers and
@@ -803,7 +809,10 @@ export class MapperRuntime {
         ],
       });
 
-    this.layouts = { nodes: layoutFor('nodes'), edges: layoutFor('edges') };
+    this.layouts = {
+      nodes: layoutFor(GROUP_NODES),
+      edges: layoutFor(GROUP_EDGES),
+    };
     this.pipelines = {} as Record<GroupName, GPUComputePipeline>;
 
     for (const group of GROUPS) {
@@ -815,7 +824,7 @@ export class MapperRuntime {
         compute: {
           module: device.createShaderModule({
             label: `cy-gpu:${group}-mapper-eval-shader`,
-            code: group === 'nodes' ? NODE_EVAL_SHADER : EDGE_EVAL_SHADER,
+            code: group === GROUP_NODES ? NODE_EVAL_SHADER : EDGE_EVAL_SHADER,
           }),
           entryPoint: 'csEval',
         },
@@ -845,7 +854,10 @@ export class MapperRuntime {
       pendingEnd: 0,
     });
 
-    this.states = { nodes: stateFor('nodes'), edges: stateFor('edges') };
+    this.states = {
+      nodes: stateFor(GROUP_NODES),
+      edges: stateFor(GROUP_EDGES),
+    };
   }
 
   /** True when any group currently evaluates on the GPU. */

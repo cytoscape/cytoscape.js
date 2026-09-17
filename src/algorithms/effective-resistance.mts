@@ -28,6 +28,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { effectiveResistanceGpu } from './algo-gpu-resistance.mjs';
+import { GROUP_EDGES } from '../contract.mjs';
 
 export interface EffectiveResistanceOptions {
   weight?: WeightFn;
@@ -103,7 +104,7 @@ export const buildResistanceSystem = (
       continue;
     }
 
-    const w = weight == null ? 1 : weight(cy._ele('edges', e));
+    const w = weight == null ? 1 : weight(cy._ele(GROUP_EDGES, e));
 
     if (!(w > 0) || !Number.isFinite(w)) {
       throw new TypeError(

@@ -30,6 +30,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { rwrProximityGpu } from './algo-gpu-rwr.mjs';
+import { GROUP_NODES } from '../contract.mjs';
 
 export interface RandomWalkWithRestartOptions {
   /** the nodes the walk restarts at (required for the seed form) */
@@ -282,7 +283,7 @@ export const seedDistribution = (
 
   if (seeds != null && typeof seeds !== 'string' && seeds._liveRefs != null) {
     for (const ref of seeds._liveRefs()) {
-      if (ref.group !== 'nodes') {
+      if (ref.group !== GROUP_NODES) {
         continue;
       }
 

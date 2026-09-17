@@ -4,6 +4,7 @@ import {
   subgraph,
   incidentEdgesInView as incidentEdges,
 } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface HopcroftTarjanBiconnectedResult {
   /** the cut vertices (articulation points), in discovery order */
@@ -50,14 +51,14 @@ export const hopcroftTarjanBiconnected = (
     const pushEdge = (e: number): void => {
       if (!seen.has(e * 2 + 1)) {
         seen.add(e * 2 + 1);
-        refs.push(store.ref('edges', e));
+        refs.push(store.ref(GROUP_EDGES, e));
       }
     };
 
     const pushNode = (slot: number): void => {
       if (!seen.has(slot * 2)) {
         seen.add(slot * 2);
-        refs.push(store.ref('nodes', slot));
+        refs.push(store.ref(GROUP_NODES, slot));
       }
     };
 
@@ -102,7 +103,7 @@ export const hopcroftTarjanBiconnected = (
 
     if (edges.length === 0) {
       components.push(
-        coll._spawnLive([store.ref('nodes', nodeSlots[current])]),
+        coll._spawnLive([store.ref(GROUP_NODES, nodeSlots[current])]),
       );
 
       return;
@@ -149,7 +150,7 @@ export const hopcroftTarjanBiconnected = (
 
   for (let i = 0; i < n; i++) {
     if (cutVertex[i]) {
-      cutRefs.push(store.ref('nodes', nodeSlots[i]));
+      cutRefs.push(store.ref(GROUP_NODES, nodeSlots[i]));
     }
   }
 

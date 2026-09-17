@@ -1,6 +1,7 @@
 import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, eachIncident } from './algo-shared.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /**
  * Visit callback: `(v, e, u, i, depth)` — the visited node, the edge and
@@ -99,7 +100,7 @@ export const search = (
 
   if (roots != null) {
     for (const ref of roots._liveRefs()) {
-      if (ref.group !== 'nodes') {
+      if (ref.group !== GROUP_NODES) {
         continue;
       }
 
@@ -143,12 +144,12 @@ export const search = (
       const s = endpoints[prevEdgeSlot * 2];
       const t = endpoints[prevEdgeSlot * 2 + 1];
 
-      prevEdge = cy._ele('edges', prevEdgeSlot);
-      prevNode = cy._ele('nodes', s === vSlot ? t : s);
+      prevEdge = cy._ele(GROUP_EDGES, prevEdgeSlot);
+      prevNode = cy._ele(GROUP_NODES, s === vSlot ? t : s);
     }
 
     const ret = visit(
-      cy._ele('nodes', vSlot),
+      cy._ele(GROUP_NODES, vSlot),
       prevEdge,
       prevNode,
       j++,
@@ -187,14 +188,14 @@ export const search = (
 
   for (const di of visitOrder) {
     if (connectedBy[di] >= 0) {
-      pathRefs.push(store.ref('edges', connectedBy[di]));
+      pathRefs.push(store.ref(GROUP_EDGES, connectedBy[di]));
     }
 
-    pathRefs.push(store.ref('nodes', nodeSlots[di]));
+    pathRefs.push(store.ref(GROUP_NODES, nodeSlots[di]));
   }
 
   return {
     path: coll._spawnLive(pathRefs),
-    found: found >= 0 ? cy._ele('nodes', found) : cy.collection(),
+    found: found >= 0 ? cy._ele(GROUP_NODES, found) : cy.collection(),
   };
 };

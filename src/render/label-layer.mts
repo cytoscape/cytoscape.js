@@ -9,6 +9,7 @@ import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { RenderStoreView } from './host.mjs';
 import type { LabelStream } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /**
  * The zoom-tier promotion threshold (round 94), displayed device px of
@@ -188,8 +189,8 @@ export class LabelLayer {
       this.shapeMemo.clear();
     }
 
-    this.processGroup('nodes', this.glyphs);
-    this.processGroup('edges', this.edgeGlyphs);
+    this.processGroup(GROUP_NODES, this.glyphs);
+    this.processGroup(GROUP_EDGES, this.edgeGlyphs);
     this.processGroup('edgeSource', this.sourceGlyphs);
     this.processGroup('edgeTarget', this.targetGlyphs);
   }

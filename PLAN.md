@@ -1026,6 +1026,79 @@ directions".*
     under the worker host against the 86.1 numbers; for fonts, a
     worker `FontFaceSet.load` spike proving the face actually
     applies to OffscreenCanvas 2D rasterization in each engine.
+    **Taken 2026-09-18** (`node benchmark/worker-host-deferrals.mjs
+    --images` / `--tweens` / `--fonts`, RX 580, Chromium 149, the
+    built UMD; WebKit could not launch on this box — Playwright's
+    webkit-2336 wants `gstreamer1.0-libav` — so every engine claim
+    below is Chromium's, and the WebKit half stays to-verify).
+    *Images* (same-thread host, the registry's `acquire` / `release` /
+    `takeReady` / `takeFreed` wrapped in-page — the lifecycle a worker
+    design mirrors): a 2,000-node load over 200 distinct 64 px
+    rasters is **2,000 acquires, 200 decodes, 3.3 MB of rasters, 377
+    ms** to settled; a churn that moves 100 nodes per frame between
+    urls already live is **5.8k acquires + 5.8k releases per second
+    (11.7k lifecycle events/s) and no decodes** — the messages a
+    boundary would carry, batchable per frame at ≤100 each way; a
+    churn to never-seen urls (50 per frame) is the worst case and
+    runs at only **153 restyles/s** because each fresh entry costs the
+    main thread ~6.5 ms of `fetch` + `createImageBitmap` — 611
+    lifecycle events/s, 2.5 MB/s of rasters, 40 s for 6,000 restyles.
+    Vector promotion (500 svg nodes, zoom 0.5 → 4) re-rastered the 20
+    visible entries at the 512 tier, 21 MB, 8.7 MB/s.  So the
+    boundary traffic is trivial (events in the low thousands per
+    second, a url string each) and the decode cost is the whole
+    argument: it is main-thread today, it is what the worker host
+    exists to move, and the plan's design (decode in the worker,
+    rasters never cross) is the right shape — the alternative
+    (decode main-side, transfer rasters) keeps the 6.5 ms on the
+    thread the host was meant to free.  *Tweens and force* (both
+    hosts, ndex-x-large, 19.6k nodes; the census's `postMessage` and
+    `writeBuffer` instruments): under the worker host a layout tween
+    (`animate: true`, one animation per node) posts **one position
+    column per drawn frame, 78 KB at 0.044–0.052 ms/post**, a
+    whole-collection opacity tween 38 KB at 0.013 ms/post, and the
+    streaming force (`animateLive`) 157 KB at 0.038 ms/post — every
+    row under 86.1's 0.086 and beside 110.1's 0.018, 1/20th to 1/50th
+    of the 1 ms trigger; the span traffic is not the cost.  The cost
+    is the executor: the CPU force at 60 iterations on 465k edges is
+    **12.8 s with zero frames drawn** under `animate: true` (the
+    silent CPU run is synchronous and holds the main thread the host
+    was meant to free — the same-thread host's GPU integrator does the
+    same 60 iterations in 1.7 s over 11 frames) and 11.5 s over 21
+    frames under `animateLive` against the GPU's 1.4 s.  The tween
+    rows also caught the *opposite* asymmetry: the same-thread host
+    drew **6 frames in 1.5 s** for the grid layout tween (8 for
+    circle) against the worker host's 31 (59) — 156,864 `writeBuffer`
+    calls, eight per node animation, so the GPU tween sink's
+    per-animation registration is the frame-starver at 19.6k
+    animations (logged as item 68; not this item's).  *Fonts*: a
+    worker's `FontFaceSet` starts empty (`self.fonts.size` 0 — the
+    page's `@font-face` does not inherit, as recorded), and a
+    `url()`-sourced `FontFace` added and loaded there reports
+    `loaded` and `fonts.check()` true in 2.7 ms **but never reaches
+    OffscreenCanvas 2D text** — the advance stays the serif fallback's
+    after `load()`, after `fonts.ready` and after a task yield —
+    while the same file registered **from an `ArrayBuffer`** applies
+    exactly (advance 425.61 = the page's, ink identical).  So the
+    build-out is bytes, not urls: fetch the face main-side (or in the
+    worker) and register it from its buffer, one message per face;
+    the url form is a Chromium dead end for the canvas path, whatever
+    `status` says.  **Recommendation, per deferral**: images — go,
+    its own sub-round, in the plan's shape (worker-side
+    `createImageBitmap`, the registry lifecycle mirrored as per-frame
+    lists on the batch; the vector promotion meter runs where the
+    columns are, so it moves with the registry); force — go, first,
+    because the worker host's CPU force is a 12.8 s freeze where the
+    GPU run is 1.7 s, and a `startForce` message plus the settle
+    readback is the whole design (the tween sink proxy rides the same
+    register/unregister channel); fonts — go, small, bytes-sourced
+    faces from an app-provided list (`renderer: { worker: true, fonts:
+    [url] }`), with the WebKit half to-verify before the option is
+    documented as cross-engine.  The probe is `benchmark/
+    worker-host-deferrals.mjs`, rows asserting what they are named
+    for (acquire count = restyled count, decodes = frees on the fresh
+    churn, one position column per worker frame, the font control
+    moving before the face is trusted).
 
 52. **The chain spec's intermittent failure, still unexplained**
     (logged 2026-08-26, round 109).  `test/force-layout.mjs`'s
@@ -1410,3 +1483,22 @@ directions".*
     number was taken.  **First measurement**: the same sixty applies
     with the diff simulated by hand (`cy.nodes().style(...)` of the
     one property), which is the target.
+68. **The GPU tween sink starves the frame at tens of thousands of
+    animations** (logged 2026-09-18, from item 51's measurement).  A
+    layout with `animate: true` on ndex-x-large creates one position
+    animation per node (19,607, `layoutPositions`'s finisher); on the
+    same-thread host every one registers with the GPU tween sink, and
+    the run drew **6 frames in 1.5 s** for grid and 8 for circle —
+    156,864 and 196,080 `writeBuffer` calls, **eight per animation**,
+    79–91 ms of upload and the rest of the second in per-animation
+    JS — while the worker host, whose animations take the CPU path
+    and post one 78 KB position span per frame, drew 31 and 59 frames
+    in the same second.  The CPU path is the faster one here by 5–7×,
+    which inverts the tween tier's premise at this count.  The fix
+    shape is the finisher's, not the sink's: a layout tween is *one*
+    animation over a position column (start and end arrays, one
+    registration, one upload), which is also what the GPU integrator
+    already does for the force settle.  **First measurement**: the
+    frame count of the grid tween at 2k / 5k / 10k / 20k nodes on
+    both hosts, which finds where the per-animation cost crosses the
+    per-frame span cost.

@@ -1148,6 +1148,17 @@ directions".*
     for (acquire count = restyled count, decodes = frees on the fresh
     churn, one position column per worker frame, the font control
     moving before the face is trusted).
+    **The force deferral closed 2026-09-18 (round 129.2)**: `startForce`
+    crosses the boundary — the proxy answers a remote runtime, the
+    worker's engine runs the integrator it already owns, the state
+    and the one readback come back as messages, `stop()` / `cancel()`
+    / `destroy()` propagate — and the same probe re-measured the
+    worker host's `animate: true` force run at **1.4 s with 24 rAF
+    ticks** on the main thread (was 12.8 s and none), the streaming
+    run at 1.4 s / 38 ticks (was 11.5 s); the same-thread host reads
+    1.75 s / 30 and 1.65 s / 30.  The rows now assert the ticks (a
+    held thread warns) rather than the position spans they no longer
+    carry.  Images and fonts stay open as recommended above.
 
 52. **The chain spec's intermittent failure, still unexplained**
     (logged 2026-08-26, round 109).  `test/force-layout.mjs`'s

@@ -349,6 +349,14 @@ that compile and then behave differently.
   the worker's kernel (one function, carried as source text), so the
   answer is bit-identical to `'cpu'`.  The pool spawns lazily: one
   worker for offloads, the full size on the first partitioned run.
+- **The force integrator runs in the worker host** (round 129.2).
+  Under `renderer: { worker: true }` the force layout now drives the
+  GPU integrator in the worker — `startForce` crosses the boundary as
+  one message, the run's state and its one readback come back as
+  messages, and `stop()` / `cancel()` / `destroy()` propagate — where
+  it ran the CPU simulation synchronously on the main thread before.
+  Measured on a 19.6k-node, 465k-edge graph: 12.8 s with the main
+  thread held became 1.4 s with it ticking.
 - **Image export converts on the device** (round 110.4).  The export
   target's premultiplied pixels are un-premultiplied, swizzled and
   row-compacted by a compute pass, so the readback maps final bytes

@@ -7,8 +7,15 @@ import type {
   BatchBuilderState,
   MainMessage,
   StoreBatch,
+  WireForceInputs,
+  WireForceUpdate,
   WorkerMessage,
 } from './worker-protocol.mjs';
+import type {
+  ForceHostLike,
+  ForceInputs,
+  ForceRuntimeLike,
+} from './gpu-force.mjs';
 import type { Core } from '../core.mjs';
 import type {
   ExportOptions,
@@ -32,9 +39,18 @@ What stays on this thread, and why:
   events; only its rendering control transfers.
 - **The animation clock.**  The manager keeps its own rAF loop (the
   sink-less path it always had); CPU tween writes cross as ordinary
-  spans.  GPU tweens and the GPU force integrator are pass-1
-  deferrals: `startForce` is absent here, so the force layout takes
-  its CPU executor.
+  spans.  GPU tweens are a pass-1 deferral still.
+- **The force integrator runs in the worker** (129.2, closing item 51's
+  first deferral): `startForce` answers a `RemoteForceRuntime` at once
+  and posts the run's inputs as one cloned message; the worker's
+  engine runs the integrator it already owns, posts the run's state
+  when converged / idle flip, answers the one readback with the
+  positions transferred, and `finishForce` releases the lease there.
+  The layout drives the proxy through the same three verbs it drives
+  the same-thread renderer with, and `forceActive()` mirrors the run
+  so compaction defers under it as it does on the same-thread host.
+  Item 51 measured the CPU fallback this replaces at 12.8 s of frozen
+  main thread on ndex-x-large against the integrator's 1.7 s.
 - **Export view resolution** (container CSS size + model bounds), via
   `resolveExportView`; the worker validates against the device and
   renders.
@@ -115,11 +131,130 @@ const spawnRenderWorker = (): Worker => {
 };
 
 /**
+ * A force run in the worker, as the layout drives it from this thread
+ * (129.2): the verbs post messages, `converged()` / `idle()` read a
+ * mirror the worker's state messages keep current, and
+ * `readPositions()` is one request/reply with the positions transferred.
+ */
+class RemoteForceRuntime implements ForceRuntimeLike {
+  /** the run's id on the wire */
+  readonly id: number;
+  /** the worker could not open the run: converged at once, and the
+   * readback rejects */
+  failed = false;
+  private state = { converged: false, idle: false };
+  private readonly send: (msg: MainMessage) => void;
+  private pendingRead: {
+    resolve: (positions: Float32Array) => void;
+    reject: (err: Error) => void;
+  } | null = null;
+
+  /**
+   * @param id — the run's id
+   * @param send — posts to the worker (a no-op once destroyed)
+   */
+  constructor(id: number, send: (msg: MainMessage) => void) {
+    this.id = id;
+    this.send = send;
+  }
+
+  /** @returns whether the worker reported the run converged */
+  converged(): boolean {
+    return this.state.converged;
+  }
+
+  /** @returns whether the worker reported the run idle */
+  idle(): boolean {
+    return this.state.idle;
+  }
+
+  /** @param alpha — the temperature to restore */
+  reheat(alpha?: number): void {
+    this.update({ op: 'reheat', alpha });
+  }
+
+  /**
+   * @param i — the sim index
+   * @param x — model x
+   * @param y — model y
+   */
+  setPosition(i: number, x: number, y: number): void {
+    this.update({ op: 'position', i, x, y });
+  }
+
+  /**
+   * @param i — the sim index
+   * @param pinned — pin or release
+   */
+  setPinned(i: number, pinned: boolean): void {
+    this.update({ op: 'pinned', i, pinned });
+  }
+
+  /**
+   * The one readback: the worker maps the sim's positions and transfers
+   * them here.
+   *
+   * @returns the final positions, sim-indexed
+   * @throws rejects when the run could not start, the worker lost the
+   *   run, or the proxy was destroyed under it
+   */
+  readPositions(): Promise<Float32Array> {
+    if (this.failed) {
+      return Promise.reject(
+        new Error('The render worker could not start the force run'),
+      );
+    }
+
+    return new Promise<Float32Array>((resolve, reject) => {
+      this.pendingRead = { resolve, reject };
+      this.send({ kind: 'forceread', id: this.id });
+    });
+  }
+
+  /** the worker's state message */
+  _onState(started: boolean, converged: boolean, idle: boolean): void {
+    if (!started) {
+      this.failed = true;
+    }
+
+    this.state = { converged, idle };
+  }
+
+  /** the worker's readback, or null when the run is gone */
+  _onPositions(positions: ArrayBuffer | null): void {
+    const pending = this.pendingRead;
+
+    this.pendingRead = null;
+
+    if (pending == null) {
+      return;
+    }
+
+    if (positions == null) {
+      pending.reject(new Error('The render worker lost the force run'));
+    } else {
+      pending.resolve(new Float32Array(positions));
+    }
+  }
+
+  /** the proxy went away under the run */
+  _onDestroy(): void {
+    this.state = { converged: true, idle: true };
+    this._onPositions(null);
+  }
+
+  private update(update: WireForceUpdate): void {
+    this.send({ kind: 'forceupdate', id: this.id, update });
+  }
+}
+
+/**
  * The worker-hosted renderer's main-thread proxy, mounted by the
  * factory under `renderer: { worker: true }`.  Implements the core's
- * `RendererLike` and the pointer layer's gesture surface.
+ * `RendererLike`, the pointer layer's gesture surface and the force
+ * layout's host surface (129.2).
  */
-export class WorkerRenderer {
+export class WorkerRenderer implements ForceHostLike {
   /** resolves when the worker's device is acquired and the first frame
    * can draw; rejects when the worker has no WebGPU or no adapter */
   ready: Promise<void>;
@@ -157,6 +292,10 @@ export class WorkerRenderer {
     }
   >();
   private imagesWarned = false;
+  /** the worker acknowledged its device (the `ready` message) */
+  private isReady = false;
+  /** the force run open in the worker (129.2), or null */
+  private forceRun: RemoteForceRuntime | null = null;
 
   /**
    * Create the canvas, transfer its control, spawn the worker from the
@@ -366,13 +505,90 @@ export class WorkerRenderer {
   }
 
   /**
-   * The GPU force integrator is a pass-1 deferral under the worker
-   * host, so no run ever owns the position column here.
+   * Whether a force run is open in the worker and not yet converged
+   * (129.2): the mirror of the same-thread renderer's lease, so
+   * compaction defers under a run as it does there.
    *
-   * @returns false always
+   * @returns true while a run is open and running
    */
   forceActive(): boolean {
-    return false;
+    return this.forceRun != null && !this.forceRun.converged();
+  }
+
+  /**
+   * Start the force integrator in the worker (129.2).  Answers a
+   * runtime at once — the inputs cross as one cloned message and the
+   * worker's engine opens the run — or null under the same two
+   * conditions the same-thread renderer answers null: the device is
+   * not ready yet, or a run is already open.
+   *
+   * @param inputs — the compacted simulation, as `Renderer.startForce`
+   * @param stepsPerFrame — iterations per presented frame
+   * @param present — publish into the mirror's position column (the
+   *   lease) rather than a silent scratch buffer
+   * @returns the remote runtime, or null
+   */
+  startForce(
+    inputs: ForceInputs,
+    stepsPerFrame: number,
+    present: boolean = true,
+  ): ForceRuntimeLike | null {
+    if (this.destroyed || !this.isReady || this.forceRun != null) {
+      return null;
+    }
+
+    const id = this.nextRequestId++;
+    const run = new RemoteForceRuntime(id, (msg) => this.post(msg));
+    const ext = inputs.extents ?? null;
+    const wire: WireForceInputs = {
+      n: inputs.n,
+      edges: inputs.edges,
+      edgeLength: inputs.edgeLength,
+      positions: inputs.positions,
+      pinned: inputs.pinned,
+      anchors: inputs.anchors,
+      extents:
+        ext == null
+          ? null
+          : {
+              n: ext.x1.length,
+              x1: ext.x1,
+              y1: ext.y1,
+              x2: ext.x2,
+              y2: ext.y2,
+              maxW: ext.maxW,
+              maxH: ext.maxH,
+            },
+      slots: Int32Array.from(inputs.slots),
+      params: { ...inputs.params },
+      cutoff: inputs.cutoff,
+      frame: { ...inputs.frame },
+      infinite: inputs.infinite === true,
+    };
+
+    this.forceRun = run;
+    this.post({ kind: 'forcestart', id, inputs: wire, stepsPerFrame, present });
+
+    return run;
+  }
+
+  /** Release the run in the worker after its readback (129.2). */
+  finishForce(): void {
+    const run = this.forceRun;
+
+    if (run == null) {
+      return;
+    }
+
+    this.forceRun = null;
+    this.post({ kind: 'forcefinish', id: run.id });
+  }
+
+  /** Ask the worker for a frame so an idle run's reheat lands (129.2). */
+  wakeForce(): void {
+    if (this.forceRun != null) {
+      this.post({ kind: 'forcewake' });
+    }
   }
 
   /** Ask the worker for a redraw on its next frame. */
@@ -553,6 +769,14 @@ export class WorkerRenderer {
     }
 
     this.pendingExports.clear();
+
+    // a force run open under the destroy (129.2): its readback rejects,
+    // so the layout's run resolves through its rejection branch
+    // (128.4) rather than waiting on a worker that is gone
+    const run = this.forceRun;
+
+    this.forceRun = null;
+    run?._onDestroy();
     this.worker.postMessage({ kind: 'destroy' } satisfies MainMessage);
     this.worker.terminate();
     this.canvas.remove();
@@ -625,6 +849,7 @@ export class WorkerRenderer {
   ): void {
     switch (msg.kind) {
       case 'ready': {
+        this.isReady = true;
         readyResolve();
         break;
       }
@@ -689,6 +914,20 @@ export class WorkerRenderer {
 
       case 'error': {
         this.cy.emit({ type: 'error' }, [msg.message]);
+        break;
+      }
+
+      case 'forcestate': {
+        if (this.forceRun?.id === msg.id) {
+          this.forceRun._onState(msg.started, msg.converged, msg.idle);
+        }
+        break;
+      }
+
+      case 'forcepositions': {
+        if (this.forceRun?.id === msg.id) {
+          this.forceRun._onPositions(msg.positions);
+        }
         break;
       }
     }

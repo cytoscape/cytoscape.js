@@ -5239,12 +5239,25 @@ round trips are spec'd (`playwright-tests/worker-renderer.spec.js`,
 `test/modules/worker-renderer.mjs` — the protocol crossing a real
 structuredClone).
 
-Pass-1 deferrals, recorded in the round record: background images are
-not drawn under the worker host (loud one-time error event); GPU
-tweens, the GPU force integrator and the page's @font-face labels take
-their CPU/fallback paths (the animation manager keeps its own rAF
-clock; `startForce` is absent on the proxy, so the force layout uses
-its CPU executor).
+**The force integrator runs in the worker** (round 129.2, closing the
+first of item 51's deferrals): the proxy answers the layout's
+`startForce` at once with a remote runtime, the run's inputs cross as
+one cloned message, the worker's engine runs the integrator it already
+owns and posts the run's state when converged / idle flip, the one
+readback comes back transferred, and `finishForce` releases the lease
+in the worker; `stop()`, `cancel()` and `destroy()` propagate through
+the same poll the same-thread host uses.  Measured on ndex-x-large
+(19.6k nodes, 465k edges, RX 580): the worker host's `animate: true`
+force run went from **12.8 s with the main thread held** (the CPU
+fallback, item 51) to **1.4 s with the main thread ticking** (24 rAF
+ticks over the run; the same-thread host reads 1.75 s / 30 ticks), the
+streaming run from 11.5 s to 1.4 s / 38 ticks.  The first ~300 ms of a
+run on either host are the force pipelines' compile stall.
+
+Pass-1 deferrals still open, recorded in the round record: background
+images are not drawn under the worker host (loud one-time error
+event); GPU tweens and the page's @font-face labels take their
+CPU/fallback paths (the animation manager keeps its own rAF clock).
 
 ## Cancellation (round 128)
 

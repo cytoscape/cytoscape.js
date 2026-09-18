@@ -76,8 +76,7 @@ import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Event } from '../event.mjs';
 import type { Position } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
-import type { Renderer } from '../render/renderer.mjs';
-import type { GpuForceRuntime } from '../render/gpu-force.mjs';
+import type { ForceHostLike, ForceRuntimeLike } from '../render/gpu-force.mjs';
 
 export interface ForceRunOptions {
   /** ideal edge length: a number; a `{ data, scale?, range?, invert?,
@@ -1462,7 +1461,10 @@ export class ForceLayoutImpl implements LayoutImpl {
     // `constrain` dispatch design is recorded in the round for the day
     // the demand justifies it).
     if (!store.hasCompounds() && constraints == null) {
-      const renderer = cy.renderer() as Renderer | null;
+      // both hosts answer the same three verbs (129.2): the same-thread
+      // renderer runs the integrator itself, the worker host's proxy
+      // runs it in the worker and mirrors its state
+      const renderer = cy.renderer() as ForceHostLike | null;
 
       if (renderer != null && typeof renderer.startForce === 'function') {
         // the fixed grid frame for the whole run: the seed bounds grown
@@ -1603,8 +1605,8 @@ export class ForceLayoutImpl implements LayoutImpl {
 
   /** Poll the device sim to convergence, then the one settle readback. */
   private runGpu(
-    runtime: GpuForceRuntime,
-    renderer: Renderer,
+    runtime: ForceRuntimeLike,
+    renderer: ForceHostLike,
     settle: (arr: Float32Array) => void,
   ): Promise<void> {
     return new Promise<void>((resolve) => {

@@ -396,4 +396,323 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     expect(png.width).toBeGreaterThan(0);
     await destroyCy(page);
   });
+
+  // -- the force integrator across the boundary (round 129.2) -----------
+
+  const RING = (n, seedLine = false) => {
+    const els = [];
+
+    for (let i = 0; i < n; i++) {
+      els.push({
+        data: { id: 'n' + i },
+        position: seedLine
+          ? { x: i * 30 - (n * 30) / 2 + 15, y: (i % 2) * 40 - 20 }
+          : { x: 0, y: 0 },
+      });
+      els.push({
+        data: { id: 'e' + i, source: 'n' + i, target: 'n' + ((i + 1) % n) },
+      });
+    }
+
+    return els;
+  };
+
+  // a provably long run (the same-thread spec's shape): threshold 0
+  // never settles by displacement and the tiny decay keeps alpha hot
+  const LONG_RUN = {
+    name: 'force',
+    seed: 9,
+    animateLive: true,
+    fit: false,
+    iterations: 100000,
+    threshold: 0,
+    decay: 0.0005,
+    stepsPerFrame: 6,
+  };
+
+  test('the force integrator runs in the worker: frames draw and the main thread stays free during the run, the settle lands (129.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    await makeReadyCy(page, {
+      elements: RING(40),
+      style: {
+        nodes: { width: 12, height: 12, 'background-color': '#c0392b' },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+      renderer: { worker: true },
+    });
+
+    const result = await page.evaluate(async (LONG_RUN) => {
+      const cy = window.cy;
+      const before = { ...cy.$id('n7').position() };
+      const layout = cy.layout(LONG_RUN);
+      let resolved = false;
+
+      const f0 = cy.stats().frames;
+
+      layout.run();
+      layout.promise().then(() => {
+        resolved = true;
+      });
+
+      // the main thread's availability while the worker integrates: rAF
+      // ticks over the sample — a blocked thread counts none
+      let ticks = 0;
+      let sampling = true;
+      const tick = () => {
+        ticks++;
+
+        if (sampling) {
+          requestAnimationFrame(tick);
+        }
+      };
+
+      // 700 ms: the first ~300 ms of a run on either host are the
+      // force pipelines' compile stall (one frame drawn), then 60 fps —
+      // measured on the RX 580 for both hosts, 2026-09-18
+      requestAnimationFrame(tick);
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      sampling = false;
+
+      const framesDuring = cy.stats().frames - f0;
+      const midRun = { ...cy.$id('n7').position() };
+      const staleDuring = midRun.x === before.x && midRun.y === before.y;
+      const stillRunning = !resolved;
+      const activeDuring = cy.renderer().forceActive();
+
+      layout.stop();
+      await layout.promise();
+
+      const after = { ...cy.$id('n7').position() };
+      const settledMoved =
+        Math.hypot(after.x - before.x, after.y - before.y) > 20;
+      const a = cy.$id('n3').position();
+      const b = cy.$id('n4').position();
+      const linkLen = Math.hypot(b.x - a.x, b.y - a.y);
+      const activeAfter = cy.renderer().forceActive();
+
+      return {
+        ticks,
+        framesDuring,
+        staleDuring,
+        stillRunning,
+        activeDuring,
+        settledMoved,
+        linkLen,
+        activeAfter,
+      };
+    }, LONG_RUN);
+
+    expect(result.stillRunning, 'the run outlived the sample').toBe(true);
+    expect(
+      result.framesDuring,
+      'the worker drew frames mid-run',
+    ).toBeGreaterThan(3);
+    expect(
+      result.ticks,
+      'the main thread ticked through the run',
+    ).toBeGreaterThan(10);
+    expect(result.staleDuring, 'CPU reads stale mid-run (the lease)').toBe(
+      true,
+    );
+    expect(result.activeDuring, 'forceActive() mirrors the run').toBe(true);
+    expect(result.settledMoved, 'the settle readback landed').toBe(true);
+    expect(result.linkLen).toBeGreaterThan(10);
+    expect(result.linkLen).toBeLessThan(250);
+    expect(result.activeAfter).toBe(false);
+    await destroyCy(page);
+  });
+
+  test('a silent force run under the worker host (animate: true) settles and tweens as the same-thread host does (87.2; 129.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    const run = async (renderer) => {
+      await makeReadyCy(page, {
+        elements: RING(30),
+        style: {
+          nodes: { width: 12, height: 12, 'background-color': '#c0392b' },
+        },
+        zoom: 1,
+        pan: { x: 200, y: 150 },
+        renderer,
+      });
+
+      const out = await page.evaluate(async () => {
+        const cy = window.cy;
+        const layout = cy.layout({
+          name: 'force',
+          seed: 4,
+          animate: true,
+          animationDuration: 150,
+          fit: false,
+          iterations: 300,
+        });
+
+        layout.run();
+        await layout.promise();
+
+        const a = cy.$id('n3').position();
+        const b = cy.$id('n4').position();
+        const c = cy.$id('n18').position();
+
+        return {
+          link: Math.hypot(b.x - a.x, b.y - a.y),
+          spread: Math.hypot(c.x - a.x, c.y - a.y),
+        };
+      });
+
+      await destroyCy(page);
+
+      return out;
+    };
+
+    const mainThread = await run(undefined);
+    const worker = await run({ worker: true });
+
+    // the same invariants, not the same trajectory (the executors agree
+    // on invariants — 18.4): links near the ideal length, the ring open
+    for (const r of [mainThread, worker]) {
+      expect(r.link).toBeGreaterThan(10);
+      expect(r.link).toBeLessThan(250);
+      expect(r.spread).toBeGreaterThan(r.link * 2);
+    }
+  });
+
+  test('layout.cancel() on a worker-hosted force run: no settle lands, the mirror shows the snapshot (128; 129.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    await page.setViewportSize({ width: 800, height: 600 });
+    await makeReadyCy(page, {
+      elements: RING(24, true),
+      style: {
+        nodes: { width: 16, height: 16, 'background-color': '#c0392b' },
+      },
+      zoom: 1,
+      pan: { x: 400, y: 300 },
+      renderer: { worker: true },
+    });
+
+    const result = await page.evaluate(async (LONG_RUN) => {
+      const cy = window.cy;
+      const before = cy.nodes().map((n) => ({ ...n.position() }));
+      const layout = cy.layout(LONG_RUN);
+      let outcome = 'pending';
+
+      layout.run();
+      layout.promise().then(
+        () => {
+          outcome = 'resolved';
+        },
+        (err) => {
+          outcome = err.name;
+        },
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const stillRunning = outcome === 'pending';
+      let cancelledEvent = null;
+
+      cy.on('layoutstop', (e) => {
+        cancelledEvent = e.cancelled === true;
+      });
+      layout.cancel();
+
+      try {
+        await layout.promise();
+      } catch {
+        // the rejection is the expected outcome
+      }
+
+      const after = cy.nodes().map((n) => ({ ...n.position() }));
+      const restored = after.every(
+        (p, i) => p.x === before[i].x && p.y === before[i].y,
+      );
+
+      // the mirror followed the restore: an edge pick through the
+      // worker at the restored geometry — wait for the batch and a frame
+      for (let i = 0; i < 6; i++) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      const pan = cy.pan();
+      const zoom = cy.zoom();
+      const probe = before[5];
+      const hit = await cy.pick(probe.x * zoom + pan.x, probe.y * zoom + pan.y);
+
+      return {
+        stillRunning,
+        outcome,
+        cancelledEvent,
+        restored,
+        hitId: hit == null ? null : hit.id(),
+        forceActive: cy.renderer().forceActive(),
+      };
+    }, LONG_RUN);
+
+    expect(result.stillRunning, 'the run outlived the sample').toBe(true);
+    expect(result.outcome).toBe('CancelledError');
+    expect(result.cancelledEvent).toBe(true);
+    expect(result.restored, 'the CPU column is back on the snapshot').toBe(
+      true,
+    );
+    expect(result.hitId, 'the mirror shows the restored positions').toBe('n5');
+    expect(result.forceActive).toBe(false);
+    await destroyCy(page);
+  });
+
+  test('destroy() under a worker-hosted force run resolves the run without a settle (128.4; 129.2)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    await makeReadyCy(page, {
+      elements: RING(30),
+      style: { nodes: { width: 12, height: 12 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+      renderer: { worker: true },
+    });
+
+    const result = await page.evaluate(async (LONG_RUN) => {
+      const cy = window.cy;
+      const layout = cy.layout(LONG_RUN);
+      let outcome = 'pending';
+
+      layout.run();
+      layout.promise().then(
+        () => {
+          outcome = 'resolved';
+        },
+        (err) => {
+          outcome = err.name;
+        },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const stillRunning = outcome === 'pending';
+
+      cy.destroy();
+      window.cy = null;
+
+      // the rejection lands on a microtask after the destroy's cancel
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      return { stillRunning, outcome };
+    }, LONG_RUN);
+
+    expect(result.stillRunning).toBe(true);
+    expect(result.outcome).toBe('CancelledError');
+  });
 });

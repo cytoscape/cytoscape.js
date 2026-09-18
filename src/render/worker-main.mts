@@ -6,6 +6,7 @@ import type {
   WorkerMessage,
 } from './worker-protocol.mjs';
 import type { RenderHost } from './host.mjs';
+import type { ForceInputs, GpuForceRuntime } from './gpu-force.mjs';
 
 /*
 The worker-side entry (round 86.3): the real `Renderer` running against
@@ -36,6 +37,35 @@ export function runRenderWorker(
 ): void {
   let engine: Renderer | null = null;
   let view: RemoteModelView | null = null;
+  // the force run open here (129.2), its id and the state poll that
+  // posts `forcestate` when converged / idle flip
+  let force: {
+    id: number;
+    runtime: GpuForceRuntime;
+    timer: ReturnType<typeof setInterval>;
+    last: { converged: boolean; idle: boolean };
+  } | null = null;
+
+  const closeForce = (): void => {
+    if (force != null) {
+      clearInterval(force.timer);
+      force = null;
+    }
+  };
+
+  const postForceState = (id: number, runtime: GpuForceRuntime): void => {
+    const converged = runtime.converged();
+    const idle = runtime.idle();
+
+    if (
+      force != null &&
+      force.id === id &&
+      (force.last.converged !== converged || force.last.idle !== idle)
+    ) {
+      force.last = { converged, idle };
+      post({ kind: 'forcestate', id, started: true, converged, idle });
+    }
+  };
   const viewport: WireViewport = { panX: 0, panY: 0, zoom: 1 };
   const viewportCbs: (() => void)[] = [];
   let arrows = {
@@ -217,7 +247,107 @@ export function runRenderWorker(
         break;
       }
 
+      case 'forcestart': {
+        const id = msg.id;
+        const w = msg.inputs;
+        const inputs: ForceInputs = {
+          n: w.n,
+          edges: w.edges,
+          edgeLength: w.edgeLength,
+          positions: w.positions,
+          pinned: w.pinned,
+          anchors: w.anchors,
+          extents: w.extents,
+          slots: Array.from(w.slots),
+          params: w.params,
+          cutoff: w.cutoff,
+          frame: w.frame,
+          infinite: w.infinite,
+        };
+        const runtime =
+          engine == null
+            ? null
+            : engine.startForce(inputs, msg.stepsPerFrame, msg.present);
+
+        if (runtime == null) {
+          post({
+            kind: 'forcestate',
+            id,
+            started: false,
+            converged: true,
+            idle: true,
+          });
+          break;
+        }
+
+        closeForce();
+        force = {
+          id,
+          runtime,
+          // the state poll: the layout polls its mirror every 60 ms,
+          // so a 30 ms cadence keeps the mirror at most one poll behind
+          timer: setInterval(() => postForceState(id, runtime), 30),
+          last: { converged: false, idle: false },
+        };
+        postForceState(id, runtime);
+        break;
+      }
+
+      case 'forceupdate': {
+        if (force == null || force.id !== msg.id) {
+          break;
+        }
+
+        const u = msg.update;
+
+        if (u.op === 'position') {
+          force.runtime.setPosition(u.i, u.x, u.y);
+        } else if (u.op === 'pinned') {
+          force.runtime.setPinned(u.i, u.pinned);
+        } else {
+          force.runtime.reheat(u.alpha);
+        }
+        break;
+      }
+
+      case 'forcewake': {
+        engine?.wakeForce();
+        break;
+      }
+
+      case 'forceread': {
+        const id = msg.id;
+
+        if (force == null || force.id !== id) {
+          post({ kind: 'forcepositions', id, positions: null });
+          break;
+        }
+
+        force.runtime.readPositions().then(
+          (positions) =>
+            post(
+              {
+                kind: 'forcepositions',
+                id,
+                positions: positions.buffer as ArrayBuffer,
+              },
+              [positions.buffer as ArrayBuffer],
+            ),
+          () => post({ kind: 'forcepositions', id, positions: null }),
+        );
+        break;
+      }
+
+      case 'forcefinish': {
+        if (force != null && force.id === msg.id) {
+          closeForce();
+          engine?.finishForce();
+        }
+        break;
+      }
+
       case 'destroy': {
+        closeForce();
         engine?.destroy();
         engine = null;
         view = null;

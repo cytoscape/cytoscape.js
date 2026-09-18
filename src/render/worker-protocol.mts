@@ -10,6 +10,7 @@ import type { GraphStore } from '../store/graph-store.mjs';
 import type { RendererOptions, RendererStats } from '../public-types.mjs';
 import type { ExportView } from './renderer.mjs';
 import type { ArrowEndFlags } from './host.mjs';
+import type { ForceParams } from '../layout/force-sim.mjs';
 
 /*
 The worker-renderer message contract (round 86.1, written before the
@@ -123,6 +124,41 @@ export interface StoreBatch {
   viewport: WireViewport;
 }
 
+/**
+ * A force run's inputs as they cross to the worker (129.2): the
+ * integrator's own `ForceInputs` with the publish map as an
+ * `Int32Array` and the boxes flattened, every array cloned (the
+ * layout keeps its copies), one message per run.
+ */
+export interface WireForceInputs {
+  n: number;
+  edges: Uint32Array;
+  edgeLength: Float32Array;
+  positions: Float32Array;
+  pinned: Uint8Array;
+  anchors: Float32Array;
+  extents: {
+    n: number;
+    x1: Float32Array;
+    y1: Float32Array;
+    x2: Float32Array;
+    y2: Float32Array;
+    maxW: number;
+    maxH: number;
+  } | null;
+  slots: Int32Array;
+  params: ForceParams;
+  cutoff: number;
+  frame: { x: number; y: number; w: number; h: number };
+  infinite: boolean;
+}
+
+/** The verbs a running force run takes from the layout (129.2). */
+export type WireForceUpdate =
+  | { op: 'position'; i: number; x: number; y: number }
+  | { op: 'pinned'; i: number; pinned: boolean }
+  | { op: 'reheat'; alpha: number | undefined };
+
 /** Main → worker messages. */
 export type MainMessage =
   | {
@@ -149,7 +185,20 @@ export type MainMessage =
     }
   | { kind: 'export'; id: number; view: ExportView }
   | { kind: 'render' }
-  | { kind: 'destroy' };
+  | { kind: 'destroy' }
+  // the force integrator across the boundary (129.2): one start per
+  // run, verbs while it runs, one readback, one finish
+  | {
+      kind: 'forcestart';
+      id: number;
+      inputs: WireForceInputs;
+      stepsPerFrame: number;
+      present: boolean;
+    }
+  | { kind: 'forceupdate'; id: number; update: WireForceUpdate }
+  | { kind: 'forcewake' }
+  | { kind: 'forceread'; id: number }
+  | { kind: 'forcefinish'; id: number };
 
 /** Worker → main messages. */
 export type WorkerMessage =
@@ -169,7 +218,18 @@ export type WorkerMessage =
     }
   | { kind: 'labeldims'; dims: [LabelStream, number, number, number][] }
   | { kind: 'devicelost'; message: string }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string }
+  // a force run's state, posted when it changes (129.2): `started`
+  // false means the engine could not open the run
+  | {
+      kind: 'forcestate';
+      id: number;
+      started: boolean;
+      converged: boolean;
+      idle: boolean;
+    }
+  // the readback (transferred), or null when the run is gone
+  | { kind: 'forcepositions'; id: number; positions: ArrayBuffer | null };
 
 /** The four label streams, in the order batches drain them. */
 export const LABEL_STREAMS: readonly LabelStream[] = [

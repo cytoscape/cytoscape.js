@@ -641,7 +641,45 @@ export interface ForceInputs {
   infinite?: boolean;
 }
 
-export class GpuForceRuntime {
+/**
+ * What the force layout drives while a run is on a device, whichever
+ * host owns it (129.2): the GPU runtime itself on the same-thread host,
+ * or the worker host's proxy of one.
+ */
+export interface ForceRuntimeLike {
+  /** the run has ended (never true for an infinite run) */
+  converged(): boolean;
+  /** an infinite run is at rest and encoding would move nothing */
+  idle(): boolean;
+  /** restore alpha (a drag, a moved node, `layout.reheat()`) */
+  reheat(alpha?: number): void;
+  /** move one sim node (a drag under an infinite run) */
+  setPosition(i: number, x: number, y: number): void;
+  /** pin or release one sim node */
+  setPinned(i: number, pinned: boolean): void;
+  /** the one readback: the final positions, sim-indexed */
+  readPositions(): Promise<Float32Array>;
+}
+
+/**
+ * What the force layout asks of a renderer that can host the integrator
+ * (129.2): the same three verbs on the same-thread renderer and the
+ * worker host's proxy.
+ */
+export interface ForceHostLike {
+  /** start a run, or null where none can start (not ready, one open) */
+  startForce(
+    inputs: ForceInputs,
+    stepsPerFrame: number,
+    present?: boolean,
+  ): ForceRuntimeLike | null;
+  /** release the run after its readback */
+  finishForce(): void;
+  /** ask for a frame so an idle infinite run's reheat lands */
+  wakeForce(): void;
+}
+
+export class GpuForceRuntime implements ForceRuntimeLike {
   /** iterations executed on-device (CPU bookkeeping mirrors the tick) */
   iterations = 0;
   /** the CPU's mirror of the annealing alpha; decays once per encoded

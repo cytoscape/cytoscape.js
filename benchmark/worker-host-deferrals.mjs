@@ -642,8 +642,25 @@ if (modes.includes('tweens')) {
           const a = snap();
           const f0 = cy.stats().frames;
           const t = now();
+          // the main thread's availability over the row (129.2): rAF
+          // ticks that landed while the work ran — a synchronous run
+          // counts none, a run on the worker (or the device) counts
+          // one per frame
+          let rafTicks = 0;
+          let sampling = true;
+          const tick = () => {
+            rafTicks++;
+
+            if (sampling) {
+              requestAnimationFrame(tick);
+            }
+          };
+
+          requestAnimationFrame(tick);
 
           await run();
+
+          sampling = false;
 
           const wallMs = now() - t;
           const framesDrawn = cy.stats().frames - f0;
@@ -655,6 +672,7 @@ if (modes.includes('tweens')) {
           r[name] = {
             wallMs: +wallMs.toFixed(0),
             framesDrawn,
+            rafTicks,
             ...d,
             positionColumnsPerFrame: +perFrame.toFixed(2),
             msPerFrame: +(
@@ -665,6 +683,12 @@ if (modes.includes('tweens')) {
           if (opts.expectSpans && host === 'worker' && perFrame < 0.9) {
             warnings.push(
               `${host} ${name}: ${perFrame.toFixed(2)} position columns per frame, expected one`,
+            );
+          }
+
+          if (opts.expectTicks && rafTicks < wallMs / 100) {
+            warnings.push(
+              `${host} ${name}: ${rafTicks} rAF ticks over ${wallMs.toFixed(0)} ms — the main thread was held`,
             );
           }
         };
@@ -720,7 +744,12 @@ if (modes.includes('tweens')) {
               }).run();
               await stopped;
             },
-            { expectSpans: extra.animateLive === true },
+            // since 129.2 the worker host integrates on its own device
+            // (item 51's force deferral closed): no position span
+            // crosses per frame under either host, so the row asserts
+            // its rAF ticks instead — the main thread ticking through
+            // the run is what the round bought
+            { expectSpans: false, expectTicks: true },
           );
         }
 

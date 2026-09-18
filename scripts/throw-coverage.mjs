@@ -138,7 +138,7 @@ export const UNREACHABLE = {
  * here suppresses a *covered* reading, which is the direction that hides work.
  */
 export const MISATTRIBUTED = {
-  'src/render/renderer.mts:152':
+  'src/render/renderer.mts:154':
     'inside the module-level exportScale const; its body reads as module-eval count',
 };
 

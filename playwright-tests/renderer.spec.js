@@ -5566,6 +5566,36 @@ test.describe('WebGPU renderer', () => {
     expect(pixels[1][3]).toBe(0);
   });
 
+  test('png() un-premultiplies on the device: a half-opaque node exports as straight alpha (110.4)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the renderer draws premultiplied, so a red body at opacity 0.5 sits
+    // in the target as (128, 0, 0, 128); the image must read (255, 0, 0,
+    // 128).  A readback that skipped the un-premultiply — the control
+    // that was run against this spec — reads red at ~128 and fails here.
+    await makeReadyCy(page, {
+      ...RED_NODE_GRAPH,
+      style: {
+        nodes: { ...RED_NODE_GRAPH.style.nodes, opacity: 0.5 },
+      },
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const { pixels } = await pngAndSample(page, {}, [[center.x, center.y]]);
+    const [r, g, b, a] = pixels[0];
+
+    expect(a).toBeGreaterThan(120);
+    expect(a).toBeLessThan(136);
+    expect(r).toBeGreaterThan(245);
+    expect(g).toBeLessThan(10);
+    expect(b).toBeLessThan(10);
+  });
+
   test('png() full export sizes to the graph bounds; scale and maxWidth apply', async ({
     page,
   }) => {

@@ -24,6 +24,8 @@ import { GpuForceRuntime, nextBatch } from './gpu-force.mjs';
 import type { ForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
+import { ExportPacker } from './export-pack.mjs';
+import type { PackedExport } from './export-pack.mjs';
 import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 import { color2tuple } from '../util/colors.mjs';
 import type { RenderHost, RenderStoreView } from './host.mjs';
@@ -321,6 +323,8 @@ export class Renderer {
   private upscaler: Upscaler | null;
   private pendingExports: ExportJob[];
   private exportUniform: GPUBuffer | null;
+  /** the device-side straight-alpha pack an export's readback maps (110.4) */
+  private exportPacker: ExportPacker | null;
   private exportFrameData: Float32Array;
   private exportCull: SceneCullGroups | null;
   /** the parent draw permutation on-GPU (round 14.9): re-uploaded when
@@ -402,6 +406,7 @@ export class Renderer {
     this.upscaler = null;
     this.pendingExports = [];
     this.exportUniform = null;
+    this.exportPacker = null;
     this.exportFrameData = new Float32Array(20);
     this.exportCull = null;
 
@@ -694,6 +699,7 @@ export class Renderer {
     this.uniform?.destroy();
     this.pickUniform?.destroy();
     this.exportUniform?.destroy();
+    this.exportPacker = null; // its pipeline dies with the device below
     this.device?.destroy();
 
     if (this.canvas instanceof HTMLCanvasElement) {
@@ -1252,23 +1258,19 @@ export class Renderer {
       }
 
       const format = this.format as GPUTextureFormat;
+      // the pack pass reads the target back through a texture binding
+      // (110.4), so no COPY_SRC and no padded row copy
       const texture = device.createTexture({
         label: 'cy-gpu:export-target',
         size: { width: wPx, height: hPx },
         format,
-        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.COPY_SRC,
+        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.TEXTURE_BINDING,
       });
       const depth = device.createTexture({
         label: 'cy-gpu:export-depth',
         size: { width: wPx, height: hPx },
         format: DEPTH_FORMAT,
         usage: TEXTURE_USAGE.RENDER_ATTACHMENT,
-      });
-      const bytesPerRow = Math.ceil((wPx * 4) / 256) * 256;
-      const staging = device.createBuffer({
-        label: 'cy-gpu:export-staging',
-        size: bytesPerRow * hPx,
-        usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST,
       });
 
       const encoder = device.createCommandEncoder({ label: 'cy-gpu:export' });
@@ -1311,54 +1313,38 @@ export class Renderer {
       this.drawScene(pass, this.exportUniform as GPUBuffer, this.exportCull);
       pass.end();
 
-      encoder.copyTextureToBuffer(
-        { texture },
-        { buffer: staging, bytesPerRow },
-        { width: wPx, height: hPx },
-      );
+      // the device converts the premultiplied target into final
+      // straight-alpha RGBA bytes (110.4); the readback only maps them
+      this.exportPacker ??= new ExportPacker(device);
+
+      const packed = this.exportPacker.encode(encoder, texture, wPx, hPx);
 
       device.queue.submit([encoder.finish()]);
 
-      void this.readbackExport(job, staging, texture, depth, bytesPerRow);
+      void this.readbackExport(job, packed, texture, depth);
     } catch (err) {
       job.reject(err as Error);
     }
   }
 
-  /** Map the staging buffer, strip row padding, convert to straight-alpha RGBA. */
+  /**
+   * Map the packed staging buffer and hand its bytes over.  The one copy
+   * left is the `slice()` out of the mapped range, which dies at
+   * `unmap()`; the census priced it at the memcpy floor (110.4).
+   */
   private async readbackExport(
     job: ExportJob,
-    staging: GPUBuffer,
+    packed: PackedExport,
     texture: GPUTexture,
     depth: GPUTexture,
-    bytesPerRow: number,
   ): Promise<void> {
     const { wPx, hPx } = job.view;
+    const { staging, scratch } = packed;
 
     try {
       await staging.mapAsync(MAP_MODE.READ);
 
-      const mapped = new Uint8Array(staging.getMappedRange());
-      const data = new Uint8ClampedArray(wPx * hPx * 4);
-      const bgra = (this.format as string).startsWith('bgra');
-
-      for (let y = 0; y < hPx; y++) {
-        const src = y * bytesPerRow;
-        const dst = y * wPx * 4;
-
-        for (let x = 0; x < wPx; x++) {
-          const s = src + x * 4;
-          const d = dst + x * 4;
-          const a = mapped[s + 3];
-          // rendered colors are premultiplied; image pixels want straight alpha
-          const un = a === 0 || a === 255 ? 1 : 255 / a;
-
-          data[d] = mapped[s + (bgra ? 2 : 0)] * un;
-          data[d + 1] = mapped[s + 1] * un;
-          data[d + 2] = mapped[s + (bgra ? 0 : 2)] * un;
-          data[d + 3] = a;
-        }
-      }
+      const data = new Uint8ClampedArray(staging.getMappedRange().slice(0));
 
       staging.unmap();
       job.resolve({ data, width: wPx, height: hPx });
@@ -1366,6 +1352,11 @@ export class Renderer {
       job.reject(err as Error); // device lost or destroyed mid-flight
     } finally {
       staging.destroy();
+
+      for (const buffer of scratch) {
+        buffer.destroy();
+      }
+
       texture.destroy();
       depth.destroy();
     }

@@ -11,6 +11,7 @@ import {
 } from './algorithms/algo-workers.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
+import { CancelledError } from './algorithms/cancel.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
 import type { CytoscapeOptions } from './public-types.mjs';
 
@@ -21,6 +22,9 @@ export type { Collection } from './collection.mjs';
 // and `event.target` is no longer `unknown`
 export type { Event, EventProps, EventTarget } from './event.mjs';
 export type { EventHandler } from './emitter.mjs';
+// round 128: the cancellation contract's types — the handle every async
+// algorithm returns, and the rejection a cancelled run or layout carries
+export type { AlgoRun } from './algorithms/cancel.mjs';
 // round 45: the layout-extension contract, for the same reason.  Round 17
 // made `cy.layout({ impl })` the whole extension story — no registry, an
 // import passed straight in — but only `CustomLayoutOptions` reached the
@@ -135,6 +139,10 @@ export default function cytoscape(options: CytoscapeOptions = {}): Core {
 cytoscape.toColumnarElements = toColumnarElements;
 cytoscape.serializeElements = serializeElements;
 cytoscape.deserializeElements = deserializeElements;
+// the cancellation class (round 128), a static for the same reason: a
+// `.catch` that wants `instanceof` needs the value, and the UMD global
+// has no named exports to carry it
+cytoscape.CancelledError = CancelledError;
 // the worker-side entry (round 86.3): the proxy's spawn bootstrap loads
 // this same bundle inside a worker and calls it.  Underscored because it
 // is the machinery's own hook, not API — and assigned through a cast so

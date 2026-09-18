@@ -3,6 +3,7 @@ import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { pageRankGpu } from './algo-gpu-pagerank.mjs';
 
 /**
@@ -40,7 +41,7 @@ export interface PageRankResult {
 export const pageRankAsync = (
   coll: Collection,
   options: PageRankOptions = {},
-): Promise<PageRankResult> => {
+): AlgoRun<PageRankResult> => {
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 

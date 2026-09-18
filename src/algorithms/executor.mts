@@ -42,6 +42,14 @@ acquisition failure (no worker platform, a CSP refusal) falls back
 from workers to the CPU; any other error thrown by a kernel or a
 worker run propagates, so a defect is loud rather than quietly
 rerouted (the guard-nothing-triggers rule).
+
+Cancellation (round 128): every entry returns an `AlgoRun` — the
+promise plus `cancel()`.  The router polls the run's token after each
+await, so a cancel lands before the next lane starts: after the GPU or
+pool acquisition, after a `GpuUnfitError` fallback, before the CPU
+fallthrough.  A lane already running completes on its own — the device
+work was submitted, the pool's in-flight ranges answer — and its value
+is discarded rather than decoded; see `cancel.mts`.
 */
 
 import {
@@ -52,6 +60,8 @@ import {
 import type { AlgoGpu } from './algo-gpu.mjs';
 import { acquireAlgoWorkers, algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
+import { throwIfCancelled, withCancel } from './cancel.mjs';
+import type { AlgoRun, CancelToken } from './cancel.mjs';
 
 /** Where an async algorithm runs: the reference CPU path, the WGSL
  * kernels, the worker pool (round 74), or (the default) whichever fits
@@ -158,13 +168,15 @@ export const resolveExecutor = (
  * @param workers — the family's workers lane (round 74), or null when
  *   the family has none; under `'auto'` it sits between the GPU and
  *   the CPU, taken when no GPU lane fits and n clears `minN`
- * @returns the algorithm result, from whichever executor ran
+ * @returns the algorithm result, from whichever executor ran, as a
+ *   promise carrying `cancel()` (round 128)
  * @throws if `executor: 'gpu'` is asked of an environment without
  *   WebGPU, or of an option combination with no GPU path; if
  *   `executor: 'workers'` is asked of a family with no workers lane,
- *   or of an environment where no worker can be constructed
+ *   or of an environment where no worker can be constructed; rejects
+ *   with `CancelledError` once `cancel()` is called on a pending run
  */
-export const runAlgo = async <T,>(
+export const runAlgo = <T,>(
   executor: AlgoExecutor,
   n: number,
   minGpuN: number,
@@ -172,7 +184,34 @@ export const runAlgo = async <T,>(
   gpu: ((ctx: AlgoGpu) => Promise<T>) | null,
   gpuNoPathReason?: string,
   workers: WorkersLane<T> | null = null,
+): AlgoRun<T> => {
+  const token: CancelToken = { cancelled: false, done: false };
+
+  return withCancel(
+    token,
+    route(token, executor, n, minGpuN, cpu, gpu, gpuNoPathReason, workers),
+    'the algorithm run',
+  );
+};
+
+/** The lanes, in `runAlgo`'s order; `token` is polled after each await. */
+const route = async <T,>(
+  token: CancelToken,
+  executor: AlgoExecutor,
+  n: number,
+  minGpuN: number,
+  cpu: () => T,
+  gpu: ((ctx: AlgoGpu) => Promise<T>) | null,
+  gpuNoPathReason: string | undefined,
+  workers: WorkersLane<T> | null,
 ): Promise<T> => {
+  // a lane's value is in hand: a cancel from here on answers false
+  const settled = (value: T): T => {
+    token.done = true;
+
+    return value;
+  };
+
   if (executor === 'workers') {
     if (workers == null) {
       throw new Error(
@@ -181,22 +220,25 @@ export const runAlgo = async <T,>(
     }
 
     // acquisition failure propagates: an explicit 'workers' is loud
-    return workers.run(await acquireAlgoWorkers());
+    const pool = await acquireAlgoWorkers();
+
+    throwIfCancelled(token);
+
+    return settled(await workers.run(cancellable(pool, token)));
   }
 
   // the workers lane under 'auto': a pool that cannot be acquired (no
   // platform, a CSP refusal) answers null and the next lane runs; a
-  // failed run propagates, exactly as a kernel error does
+  // failed run propagates, exactly as a kernel error does.  Consulted
+  // only when the lane applies, so a run that ends on the CPU never
+  // awaits — the reference completes inside the call (the round-128
+  // contract: `cancel()` on a 'cpu' run answers false)
+  const workersApply =
+    executor === 'auto' &&
+    workers != null &&
+    n >= workers.minN &&
+    algoWorkersSupported();
   const tryWorkers = async (): Promise<{ value: T } | null> => {
-    if (
-      executor !== 'auto' ||
-      workers == null ||
-      n < workers.minN ||
-      !algoWorkersSupported()
-    ) {
-      return null;
-    }
-
     let pool: AlgoWorkers | null;
 
     try {
@@ -205,7 +247,15 @@ export const runAlgo = async <T,>(
       pool = null;
     }
 
-    return pool == null ? null : { value: await workers.run(pool) };
+    throwIfCancelled(token);
+
+    return pool == null
+      ? null
+      : {
+          value: await (workers as WorkersLane<T>).run(
+            cancellable(pool, token),
+          ),
+        };
   };
 
   if (executor === 'gpu') {
@@ -223,14 +273,24 @@ export const runAlgo = async <T,>(
       );
     }
 
-    return gpu(await acquireAlgoGpu());
+    const ctx = await acquireAlgoGpu();
+
+    throwIfCancelled(token);
+
+    const value = await gpu(ctx);
+
+    // the device work ran to its readback; a cancel meanwhile discards
+    // the bytes rather than decoding them
+    throwIfCancelled(token);
+
+    return settled(value);
   }
 
-  if (workers?.first === true) {
+  if (workersApply && workers?.first === true) {
     const ran = await tryWorkers();
 
     if (ran != null) {
-      return ran.value;
+      return settled(ran.value);
     }
   }
 
@@ -248,26 +308,47 @@ export const runAlgo = async <T,>(
       ctx = null; // no adapter: 'auto' falls back to the reference path
     }
 
+    throwIfCancelled(token);
+
     if (ctx != null) {
       try {
-        return await gpu(ctx);
+        const value = await gpu(ctx);
+
+        throwIfCancelled(token);
+
+        return settled(value);
       } catch (err) {
         // an input the device cannot fit routes to the next lane; any
         // *other* kernel error propagates (a defect must be loud)
         if (!(err instanceof GpuUnfitError)) {
           throw err;
         }
+
+        throwIfCancelled(token);
       }
     }
   }
 
-  if (workers?.first !== true) {
+  if (workersApply && workers?.first !== true) {
     const ran = await tryWorkers();
 
     if (ran != null) {
-      return ran.value;
+      return settled(ran.value);
     }
   }
 
-  return cpu();
+  return settled(cpu());
 };
+
+/**
+ * The pool as one run sees it: the same workers, with the run's token
+ * threaded into `run` so the pool stops posting ranges on a cancel.
+ *
+ * @param pool — the shared pool
+ * @param token — this run's token
+ * @returns a view of the pool bound to the token
+ */
+const cancellable = (pool: AlgoWorkers, token: CancelToken): AlgoWorkers => ({
+  size: pool.size,
+  run: (snapshot, n) => pool.run(snapshot, n, token),
+});

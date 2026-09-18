@@ -29,6 +29,7 @@ const EXPECTED_EXPORTS = new Set([
   'Event', // round 41
   'EventProps', // round 41
   'EventTarget', // round 41
+  'AlgoRun', // round 128
   'BoundingBoxInput',
   'BreadthFirstLayoutOptions',
   'CaseClause',
@@ -90,6 +91,7 @@ const EXPECTED_STATICS = [
   'toColumnarElements',
   'serializeElements',
   'deserializeElements',
+  'CancelledError', // round 128
 ];
 
 /**

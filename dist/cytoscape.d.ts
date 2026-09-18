@@ -4038,6 +4038,38 @@ declare class AnimationManager {
   private schedule;
 }
 //#endregion
+//#region src/algorithms/cancel.d.mts
+/**
+ * Thrown (as a rejection) by a cancelled run: an async algorithm whose
+ * handle's `cancel()` was called, a layout's `promise()` after
+ * `layout.cancel()`, or either when `cy.destroy()` ran while the run
+ * was in flight.  `error.name` is `'CancelledError'`, so a `.catch`
+ * can tell a cancellation from a defect without importing the class.
+ */
+declare class CancelledError extends Error {
+  /**
+   * @param message — what was cancelled; a default names the run
+   */
+  constructor(message?: string);
+}
+/**
+ * The promise an async algorithm returns: a `Promise` of the result
+ * plus `cancel()`.  A caller that never cancels sees an ordinary
+ * promise.
+ */
+type AlgoRun<T> = Promise<T> & {
+  /**
+   * Cancel the run: the promise rejects with a `CancelledError` and
+   * whatever the executor can reclaim is reclaimed (see the module
+   * note).
+   *
+   * @returns true when the run was still pending and is now rejected;
+   *   false when it had already settled — a `'cpu'` run always answers
+   *   false, since the reference completes inside the call
+   */
+  cancel(): boolean;
+};
+//#endregion
 //#region src/algorithms/search.d.mts
 /**
  * Visit callback: `(v, e, u, i, depth)` — the visited node, the edge and
@@ -6344,10 +6376,12 @@ declare class Collection {
    *
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ distance, path }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  floydWarshall(options?: FloydWarshallOptions): Promise<FloydWarshallResult>;
+  floydWarshall(options?: FloydWarshallOptions): AlgoRun<FloydWarshallResult>;
   /**
    * Kruskal's minimum spanning tree/forest.
    *
@@ -6396,10 +6430,12 @@ declare class Collection {
    *
    * @param options — `{ dampingFactor, precision, iterations, executor }`
    * @returns a promise of `{ rank }`, a per-node accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  pageRank(options?: PageRankOptions): Promise<PageRankResult>;
+  pageRank(options?: PageRankOptions): AlgoRun<PageRankResult>;
   /**
    * Degree centrality of one node relative to the collection.
    *
@@ -6443,11 +6479,13 @@ declare class Collection {
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` or
    *   `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
-  closenessCentralityNormalized(options?: ClosenessCentralityOptions): Promise<ClosenessCentralityNormalizedResult>;
+  closenessCentralityNormalized(options?: ClosenessCentralityOptions): AlgoRun<ClosenessCentralityNormalizedResult>;
   ccn: this['closenessCentralityNormalized'];
   closenessCentralityNormalised: this['closenessCentralityNormalized'];
   /**
@@ -6464,10 +6502,12 @@ declare class Collection {
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
    *   accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable or the run is weighted
    */
-  betweennessCentrality(options?: BetweennessCentralityOptions): Promise<BetweennessCentralityResult>;
+  betweennessCentrality(options?: BetweennessCentralityOptions): AlgoRun<BetweennessCentralityResult>;
   bc: this['betweennessCentrality'];
   /**
    * Katz centrality — attenuated walk counting, where a node is
@@ -6481,10 +6521,12 @@ declare class Collection {
    * @param options — `{ alpha, beta, maxIterations, tolerance,
    *   directed, weight, executor }`
    * @returns a promise of the `{ katz, katzNormalized }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
-  katzCentrality(options?: KatzCentralityOptions): Promise<KatzCentralityResult>;
+  katzCentrality(options?: KatzCentralityOptions): AlgoRun<KatzCentralityResult>;
   /**
    * Triangle counting: per-node triangle counts, local clustering
    * coefficients, and the collection's transitivity, read over the
@@ -6498,10 +6540,12 @@ declare class Collection {
    * @param options — `{ executor }`
    * @returns a promise of `{ triangles, clusteringCoefficient,
    *   totalTriangles, transitivity }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  triangleCount(options?: TriangleCountOptions): Promise<TriangleCountResult>;
+  triangleCount(options?: TriangleCountOptions): AlgoRun<TriangleCountResult>;
   /**
    * Neighborhood similarity — pairwise Jaccard, cosine or overlap
    * coefficients over neighbor sets (deduped; loops excluded;
@@ -6515,10 +6559,12 @@ declare class Collection {
    *
    * @param options — `{ metric, directed, executor }`
    * @returns a promise of the `{ similarity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `metric` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
-  neighborhoodSimilarity(options?: NeighborhoodSimilarityOptions): Promise<NeighborhoodSimilarityResult>;
+  neighborhoodSimilarity(options?: NeighborhoodSimilarityOptions): AlgoRun<NeighborhoodSimilarityResult>;
   /**
    * SimRank — "two nodes are similar when their neighbors are
    * similar", the Jeh–Widom recursive fixed point, iterated as dense
@@ -6533,10 +6579,12 @@ declare class Collection {
    * @param options — `{ dampingFactor, maxIterations, tolerance,
    *   directed, executor }`
    * @returns a promise of the `{ similarity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `dampingFactor` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
-  simRank(options?: SimRankOptions): Promise<SimRankResult>;
+  simRank(options?: SimRankOptions): AlgoRun<SimRankResult>;
   /**
    * Random walk with restart — network propagation from a `seeds`
    * collection: a walker follows edges with probability 1−c and
@@ -6551,10 +6599,12 @@ declare class Collection {
    * @param options — `{ seeds, restartProbability, maxIterations,
    *   tolerance, directed, weight, executor }`
    * @returns a promise of the `{ score }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `restartProbability` is invalid, or if
    *   `seeds` holds no node of the collection
    */
-  randomWalkWithRestart(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartResult>;
+  randomWalkWithRestart(options?: RandomWalkWithRestartOptions): AlgoRun<RandomWalkWithRestartResult>;
   /**
    * All-pairs random-walk-with-restart proximity — the full matrix
    * S = c·(I − (1−c)·W)⁻¹, whose column s is the walk restarting at
@@ -6569,10 +6619,12 @@ declare class Collection {
    * @param options — `{ restartProbability, maxIterations, tolerance,
    *   directed, weight, executor }`
    * @returns a promise of the `{ proximity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `restartProbability` is invalid; rejects
    *   if `executor: 'gpu'` is unavailable in this environment
    */
-  randomWalkWithRestartProximity(options?: RandomWalkWithRestartOptions): Promise<RandomWalkWithRestartProximityResult>;
+  randomWalkWithRestartProximity(options?: RandomWalkWithRestartOptions): AlgoRun<RandomWalkWithRestartProximityResult>;
   /**
    * Heat diffusion from a `seeds` collection: unit heat spread over
    * the seeds flows along edges for `time`, through the kernel
@@ -6588,11 +6640,13 @@ declare class Collection {
    *
    * @param options — `{ seeds, time, weight, laplacian, executor }`
    * @returns a promise of the `{ score }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `time` or `laplacian` is invalid, if
    *   `seeds` holds no node of the collection, or if an edge weight
    *   is not positive
    */
-  heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult>;
+  heatDiffusion(options?: HeatDiffusionOptions): AlgoRun<HeatDiffusionResult>;
   /**
    * The all-pairs heat kernel exp(−t·L) — `heat(from, to)` is the
    * heat at `to` after unit heat starts at `from` (symmetric).  Async
@@ -6609,10 +6663,12 @@ declare class Collection {
    *
    * @param options — `{ time, weight, laplacian, executor }`
    * @returns a promise of the `{ heat }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `time` or `laplacian` is invalid, or if an
    *   edge weight is not positive
    */
-  heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult>;
+  heatKernel(options?: HeatDiffusionOptions): AlgoRun<HeatKernelResult>;
   /**
    * Effective resistance and commute time — the graph as a resistor
    * network (weights are conductances): `resistance(a, b)` from the
@@ -6627,10 +6683,12 @@ declare class Collection {
    *
    * @param options — `{ weight, executor }`
    * @returns a promise of the `{ resistance, commuteTime }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if an edge weight is
    *   not positive or `executor: 'gpu'` is unavailable
    */
-  effectiveResistance(options?: EffectiveResistanceOptions): Promise<EffectiveResistanceResult>;
+  effectiveResistance(options?: EffectiveResistanceOptions): AlgoRun<EffectiveResistanceResult>;
   /**
    * The triad census — every three-node subgraph classified into the
    * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
@@ -6645,10 +6703,12 @@ declare class Collection {
    *
    * @param options — `{ directed, executor }`
    * @returns a promise of `{ counts }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  motifCensus(options?: MotifCensusOptions): Promise<MotifCensusResult>;
+  motifCensus(options?: MotifCensusOptions): AlgoRun<MotifCensusResult>;
   /**
    * k-means clustering in attribute space.  Like v3's clustering
    * algorithms this works on handles and `attributes` accessors rather
@@ -6662,10 +6722,12 @@ declare class Collection {
    *   sensitivityThreshold, executor }`, with `attributes` as plain
    *   functions
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  kMeans(options?: KClusteringOptions): Promise<Collection[]>;
+  kMeans(options?: KClusteringOptions): AlgoRun<Collection[]>;
   /**
    * k-medoids clustering — like k-means, but cluster centres are actual
    * elements, which makes it robust to outliers.  Async, with the same
@@ -6673,10 +6735,12 @@ declare class Collection {
    *
    * @param options — as `kMeans`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable, or if `k` exceeds the node count
    */
-  kMedoids(options?: KClusteringOptions): Promise<Collection[]>;
+  kMedoids(options?: KClusteringOptions): AlgoRun<Collection[]>;
   /**
    * Fuzzy c-means clustering: each element gets a degree of membership
    * in every cluster rather than one hard assignment.  Async, with the
@@ -6684,10 +6748,12 @@ declare class Collection {
    *
    * @param options — as `kMeans`, plus the fuzziness exponent
    * @returns a promise of `{ clusters, degreeOfMembership }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  fuzzyCMeans(options?: KClusteringOptions): Promise<FuzzyCMeansResult>;
+  fuzzyCMeans(options?: KClusteringOptions): AlgoRun<FuzzyCMeansResult>;
   fcm: this['fuzzyCMeans'];
   /**
    * Agglomerative hierarchical clustering.  Async (round 65): returns a
@@ -6698,10 +6764,12 @@ declare class Collection {
    * @param options — `{ attributes, distance, linkage, mode,
    *   dendrogramDepth, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  hierarchicalClustering(options?: HierarchicalClusteringOptions): Promise<Collection[]>;
+  hierarchicalClustering(options?: HierarchicalClusteringOptions): AlgoRun<Collection[]>;
   hca: this['hierarchicalClustering'];
   /**
    * Markov clustering (MCL) — flow simulation over the graph, so unlike
@@ -6714,10 +6782,12 @@ declare class Collection {
    * @param options — `{ attributes, expandFactor, inflateFactor,
    *   multFactor, maxIterations, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  markovClustering(options?: MarkovClusteringOptions): Promise<Collection[]>;
+  markovClustering(options?: MarkovClusteringOptions): AlgoRun<Collection[]>;
   mcl: this['markovClustering'];
   /**
    * Affinity propagation, which picks exemplars by message passing and
@@ -6730,10 +6800,12 @@ declare class Collection {
    * @param options — `{ attributes, distance, preference, damping,
    *   minIterations, maxIterations, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable, or if `damping`/`preference` are invalid
    */
-  affinityPropagation(options?: AffinityPropagationOptions): Promise<Collection[]>;
+  affinityPropagation(options?: AffinityPropagationOptions): AlgoRun<Collection[]>;
   ap: this['affinityPropagation'];
   /**
    * The **first** element's total degree, in + out, answered in O(1) off
@@ -8071,6 +8143,15 @@ declare class Core {
   private _allEles;
   _animations: AnimationManager;
   /**
+   * The runs in flight on this instance (round 128): every pending
+   * async algorithm handle and every running layout registers here and
+   * leaves on settle, so `destroy()` can cancel whatever is still
+   * running before the renderer goes.
+   */
+  _inflight: Set<{
+    cancel(): unknown;
+  }>;
+  /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(
    * options )` factory: it is the documented entry point and additionally
    * ingests `options.elements`, runs `options.layout`, and attaches a
@@ -9285,7 +9366,8 @@ declare namespace cytoscape {
   export { toColumnarElements };
   export { serializeElements };
   export { deserializeElements };
+  export { CancelledError };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

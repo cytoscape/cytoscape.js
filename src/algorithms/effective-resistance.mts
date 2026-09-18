@@ -27,6 +27,7 @@ import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { effectiveResistanceGpu } from './algo-gpu-resistance.mjs';
 import { GROUP_EDGES } from '../contract.mjs';
 
@@ -228,7 +229,7 @@ export const resistanceResultFrom = (
 export const effectiveResistanceAsync = (
   coll: Collection,
   options: EffectiveResistanceOptions = {},
-): Promise<EffectiveResistanceResult> => {
+): AlgoRun<EffectiveResistanceResult> => {
   const executor = resolveExecutor(options.executor);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;

@@ -1477,3 +1477,91 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.populated).toBeGreaterThan(10);
   });
 });
+
+test.describe('cancellation on the GPU executor (round 128)', () => {
+  test('a cancelled GPU run rejects with CancelledError and the device serves the next run', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      const n = 240;
+      const els = [];
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + ((i + 1) % n),
+            w: 1 + ((i * 31) % 7),
+          },
+        });
+
+        if (i % 3 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 13 + 29) % n), w: 2 },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const eles = cy.elements();
+      const weight = (e) => e.data('w');
+
+      // one warm run so the pipelines are compiled and the cancel below
+      // lands on a run in flight, not on a compile
+      await eles.floydWarshall({ weight, executor: 'gpu' });
+
+      // cancel before the readback: the promise rejects at once
+      const run = eles.floydWarshall({ weight, executor: 'gpu' });
+      const first = run.cancel();
+      const second = run.cancel();
+      let name = null;
+      let isClass = false;
+
+      try {
+        await run;
+      } catch (err) {
+        name = err.name;
+        isClass = err instanceof cytoscape.CancelledError;
+      }
+
+      // the device is still good: a fresh run answers the reference
+      const gpu = await eles.floydWarshall({ weight, executor: 'gpu' });
+      const cpu = await eles.floydWarshall({ weight, executor: 'cpu' });
+      let worst = 0;
+      const a = cy.$id('n0');
+
+      for (let i = 0; i < n; i++) {
+        const b = cy.$id('n' + i);
+        const dg = gpu.distance(a, b);
+        const dc = cpu.distance(a, b);
+
+        worst = Math.max(worst, Math.abs(dg - dc));
+      }
+
+      // and a settled run answers false
+      const settled = eles.pageRank({ executor: 'gpu' });
+
+      await settled;
+
+      return {
+        first,
+        second,
+        name,
+        isClass,
+        worst,
+        afterSettle: settled.cancel(),
+      };
+    });
+
+    expect(out.first).toBe(true);
+    expect(out.second).toBe(false);
+    expect(out.name).toBe('CancelledError');
+    expect(out.isClass).toBe(true);
+    expect(out.worst).toBeLessThan(1e-4);
+    expect(out.afterSettle).toBe(false);
+  });
+});

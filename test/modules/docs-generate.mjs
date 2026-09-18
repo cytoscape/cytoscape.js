@@ -171,6 +171,7 @@ describe('docs generator: factoryStatics', () => {
     const statics = factoryStatics();
 
     expect([...statics].sort()).to.deep.equal([
+      'CancelledError', // round 128: the cancellation class, for instanceof
       'deserializeElements',
       'serializeElements',
       'toColumnarElements',

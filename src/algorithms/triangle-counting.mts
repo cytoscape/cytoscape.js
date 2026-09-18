@@ -21,6 +21,7 @@ import {
   runAlgo,
 } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { triangleCountGpu } from './algo-gpu-triangles.mjs';
 
 export interface TriangleCountOptions {
@@ -164,7 +165,7 @@ export const triangleResultFrom = (
 export const triangleCountAsync = (
   coll: Collection,
   options: TriangleCountOptions = {},
-): Promise<TriangleCountResult> => {
+): AlgoRun<TriangleCountResult> => {
   const executor = resolveExecutor(options.executor);
   const view = subgraph(coll);
   const adjacency = buildTriangleAdjacency(view);

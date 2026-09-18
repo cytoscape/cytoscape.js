@@ -170,6 +170,71 @@ describe('soak: the algorithm worker pool', () => {
     b.destroy();
   });
 
+  it('a cancelled run leaves the pool standing, and repeated cancels grow nothing (round 128)', async () => {
+    const cy = cytoscape({ elements: ring(600) });
+
+    // the pool is up before the count is read
+    await cy.elements().closenessCentralityNormalized({ executor: 'workers' });
+
+    const before = _algoWorkersStats();
+    const refs = [];
+
+    // one iteration per call, as `runOne` above: a loop body's bindings
+    // in the test's own frame keep the last iteration's instance
+    // reachable until the frame ends, whatever the library does
+    const cancelOne = async (midRun) => {
+      const inner = cytoscape({ elements: ring(600) });
+      const run = inner
+        .elements()
+        .betweennessCentrality({ weight, executor: 'workers' });
+
+      // alternate a cancel before the snapshot with one mid-run
+      if (midRun) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
+
+      run.cancel();
+
+      let name = null;
+
+      try {
+        await run;
+      } catch (err) {
+        name = err.name;
+      }
+
+      expect(name).to.equal('CancelledError');
+      refs.push(new WeakRef(inner));
+      inner.destroy();
+    };
+
+    for (let i = 0; i < 12; i++) {
+      await cancelOne(i % 2 === 1);
+    }
+
+    // the pool served the cancels without respawning, and the next run
+    // on it answers the reference bits
+    const after = _algoWorkersStats();
+
+    expect(after.spawns).to.equal(before.spawns);
+    expect(after.workers).to.equal(2);
+
+    const w = await cy
+      .elements()
+      .closenessCentralityNormalized({ executor: 'workers' });
+    const c = await cy
+      .elements()
+      .closenessCentralityNormalized({ executor: 'cpu' });
+
+    cy.nodes().forEach((n) => {
+      expect(w.closeness(n)).to.equal(c.closeness(n));
+    });
+
+    await collect(refs);
+    expect(aliveOf(refs), 'a cancelled run pinned its instance').to.equal(0);
+    cy.destroy();
+  });
+
   it('a child process exits on its own after a workers run (the unref claim)', function () {
     const script = `
       import cytoscape from '${ROOT}/src/index.mjs';

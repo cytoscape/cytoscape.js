@@ -121,3 +121,83 @@ test.describe('the workers executor in the browser (round 74)', () => {
     expect(out.noPath).toMatch(/no workers path/);
   });
 });
+
+test.describe('cancellation on the workers executor in the browser (round 128)', () => {
+  test('a cancelled Blob-worker run rejects, the pool stands, and the next run agrees with the CPU', async ({
+    page,
+  }) => {
+    await page.goto(PAGE);
+
+    const out = await page.evaluate(async () => {
+      const n = 400;
+      const els = [];
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + ((i + 1) % n),
+            w: 1 + ((i * 31) % 7),
+          },
+        });
+
+        if (i % 3 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 13 + 29) % n), w: 2 },
+          });
+        }
+      }
+
+      const cy = cytoscape({ headless: true, elements: els });
+      const eles = cy.elements();
+      const weight = (e) => e.data('w');
+
+      await eles.closenessCentralityNormalized({ executor: 'workers' });
+
+      const before = cytoscape.__algoWorkersStats__();
+      const run = eles.betweennessCentrality({ weight, executor: 'workers' });
+
+      await new Promise((r) => setTimeout(r, 5));
+
+      const cancelled = run.cancel();
+      let name = null;
+
+      try {
+        await run;
+      } catch (err) {
+        name = err.name;
+      }
+
+      const w = await eles.closenessCentralityNormalized({
+        executor: 'workers',
+      });
+      const c = await eles.closenessCentralityNormalized({ executor: 'cpu' });
+      const after = cytoscape.__algoWorkersStats__();
+      let bits = true;
+
+      cy.nodes().forEach((node) => {
+        if (w.closeness(node) !== c.closeness(node)) {
+          bits = false;
+        }
+      });
+
+      return {
+        cancelled,
+        name,
+        bits,
+        respawned: after.spawns !== before.spawns,
+        workers: after.workers,
+      };
+    });
+
+    expect(out.cancelled).toBe(true);
+    expect(out.name).toBe('CancelledError');
+    expect(out.bits).toBe(true);
+    expect(out.respawned).toBe(false);
+    expect(out.workers).toBeGreaterThan(0);
+  });
+});

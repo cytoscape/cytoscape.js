@@ -8,6 +8,7 @@
 
 import cytoscape from '../../build/dts/index.js';
 import type {
+  AlgoRun,
   CytoscapeOptions,
   Collection,
   ColumnarElements,
@@ -141,6 +142,18 @@ const components: Collection[] = cy.elements().components();
 const clusters: Promise<Collection[]> = cy
   .nodes()
   .kMeans({ k: 2, attributes: [(n) => n.degree() ?? 0], executor: 'cpu' });
+// round 128: the promise carries cancel(), and the class is a factory static
+const run: AlgoRun<{ rank(node: Collection): number | undefined }> = cy
+  .elements()
+  .pageRank({ executor: 'workers' });
+const cancelled: boolean = run.cancel();
+const CancelledCtor: typeof cytoscape.CancelledError = cytoscape.CancelledError;
+const isCancelled: boolean = new Error() instanceof cytoscape.CancelledError;
+
+void cancelled;
+void CancelledCtor;
+void isCancelled;
+
 const ranks: Promise<{ rank(node: Collection): number | undefined }> = cy
   .elements()
   .pageRank({ executor: 'auto' });

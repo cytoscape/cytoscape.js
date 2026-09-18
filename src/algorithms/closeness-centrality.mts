@@ -5,6 +5,7 @@ import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import {
   closenessCentralityNormalizedBfsGpu,
@@ -128,7 +129,7 @@ export const closenessCentrality = (
 export const closenessCentralityNormalizedAsync = (
   coll: Collection,
   options: ClosenessCentralityOptions = {},
-): Promise<ClosenessCentralityNormalizedResult> => {
+): AlgoRun<ClosenessCentralityNormalizedResult> => {
   const executor = resolveExecutor(options.executor);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;

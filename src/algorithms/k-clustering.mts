@@ -7,6 +7,7 @@ import { resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { fuzzyCMeansGpu, kMeansGpu, kMedoidsGpu } from './algo-gpu-cluster.mjs';
 
 /** Why a feature-space run has no GPU path, when it doesn't. */
@@ -393,7 +394,7 @@ const findCost = (
 export const kMeansAsync = (
   coll: Collection,
   options?: KClusteringOptions,
-): Promise<Collection[]> => {
+): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
@@ -424,7 +425,7 @@ export const kMeansAsync = (
 export const kMedoidsAsync = (
   coll: Collection,
   options?: KClusteringOptions,
-): Promise<Collection[]> => {
+): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
@@ -455,7 +456,7 @@ export const kMedoidsAsync = (
 export const fuzzyCMeansAsync = (
   coll: Collection,
   options?: KClusteringOptions,
-): Promise<FuzzyCMeansResult> => {
+): AlgoRun<FuzzyCMeansResult> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);

@@ -70,6 +70,7 @@ import {
   effectiveResistanceAsync as effectiveResistanceImpl,
   motifCensusAsync as motifCensusImpl,
 } from './algorithms/index.mjs';
+import type { AlgoRun } from './algorithms/cancel.mjs';
 import type {
   SearchArgs,
   SearchResult,
@@ -5645,11 +5646,13 @@ export class Collection {
    *
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ distance, path }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  floydWarshall(options?: FloydWarshallOptions): Promise<FloydWarshallResult> {
-    return floydWarshallImpl(this, options);
+  floydWarshall(options?: FloydWarshallOptions): AlgoRun<FloydWarshallResult> {
+    return this._cy._trackRun(floydWarshallImpl(this, options));
   }
 
   /**
@@ -5717,11 +5720,13 @@ export class Collection {
    *
    * @param options — `{ dampingFactor, precision, iterations, executor }`
    * @returns a promise of `{ rank }`, a per-node accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  pageRank(options?: PageRankOptions): Promise<PageRankResult> {
-    return pageRankImpl(this, options);
+  pageRank(options?: PageRankOptions): AlgoRun<PageRankResult> {
+    return this._cy._trackRun(pageRankImpl(this, options));
   }
 
   /**
@@ -5781,14 +5786,16 @@ export class Collection {
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` or
    *   `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
   closenessCentralityNormalized(
     options?: ClosenessCentralityOptions,
-  ): Promise<ClosenessCentralityNormalizedResult> {
-    return closenessCentralityNormalizedImpl(this, options);
+  ): AlgoRun<ClosenessCentralityNormalizedResult> {
+    return this._cy._trackRun(closenessCentralityNormalizedImpl(this, options));
   }
 
   declare ccn: this['closenessCentralityNormalized'];
@@ -5808,13 +5815,15 @@ export class Collection {
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
    *   accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable or the run is weighted
    */
   betweennessCentrality(
     options?: BetweennessCentralityOptions,
-  ): Promise<BetweennessCentralityResult> {
-    return betweennessCentralityImpl(this, options);
+  ): AlgoRun<BetweennessCentralityResult> {
+    return this._cy._trackRun(betweennessCentralityImpl(this, options));
   }
 
   declare bc: this['betweennessCentrality'];
@@ -5831,13 +5840,15 @@ export class Collection {
    * @param options — `{ alpha, beta, maxIterations, tolerance,
    *   directed, weight, executor }`
    * @returns a promise of the `{ katz, katzNormalized }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
   katzCentrality(
     options?: KatzCentralityOptions,
-  ): Promise<KatzCentralityResult> {
-    return katzCentralityImpl(this, options);
+  ): AlgoRun<KatzCentralityResult> {
+    return this._cy._trackRun(katzCentralityImpl(this, options));
   }
 
   /**
@@ -5853,11 +5864,13 @@ export class Collection {
    * @param options — `{ executor }`
    * @returns a promise of `{ triangles, clusteringCoefficient,
    *   totalTriangles, transitivity }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  triangleCount(options?: TriangleCountOptions): Promise<TriangleCountResult> {
-    return triangleCountImpl(this, options);
+  triangleCount(options?: TriangleCountOptions): AlgoRun<TriangleCountResult> {
+    return this._cy._trackRun(triangleCountImpl(this, options));
   }
 
   /**
@@ -5873,13 +5886,15 @@ export class Collection {
    *
    * @param options — `{ metric, directed, executor }`
    * @returns a promise of the `{ similarity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `metric` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
   neighborhoodSimilarity(
     options?: NeighborhoodSimilarityOptions,
-  ): Promise<NeighborhoodSimilarityResult> {
-    return neighborhoodSimilarityImpl(this, options);
+  ): AlgoRun<NeighborhoodSimilarityResult> {
+    return this._cy._trackRun(neighborhoodSimilarityImpl(this, options));
   }
 
   /**
@@ -5896,11 +5911,13 @@ export class Collection {
    * @param options — `{ dampingFactor, maxIterations, tolerance,
    *   directed, executor }`
    * @returns a promise of the `{ similarity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `dampingFactor` is invalid; rejects if
    *   `executor: 'gpu'` is unavailable in this environment
    */
-  simRank(options?: SimRankOptions): Promise<SimRankResult> {
-    return simRankImpl(this, options);
+  simRank(options?: SimRankOptions): AlgoRun<SimRankResult> {
+    return this._cy._trackRun(simRankImpl(this, options));
   }
 
   /**
@@ -5917,13 +5934,15 @@ export class Collection {
    * @param options — `{ seeds, restartProbability, maxIterations,
    *   tolerance, directed, weight, executor }`
    * @returns a promise of the `{ score }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `restartProbability` is invalid, or if
    *   `seeds` holds no node of the collection
    */
   randomWalkWithRestart(
     options?: RandomWalkWithRestartOptions,
-  ): Promise<RandomWalkWithRestartResult> {
-    return randomWalkWithRestartImpl(this, options);
+  ): AlgoRun<RandomWalkWithRestartResult> {
+    return this._cy._trackRun(randomWalkWithRestartImpl(this, options));
   }
 
   /**
@@ -5940,13 +5959,15 @@ export class Collection {
    * @param options — `{ restartProbability, maxIterations, tolerance,
    *   directed, weight, executor }`
    * @returns a promise of the `{ proximity }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` or `restartProbability` is invalid; rejects
    *   if `executor: 'gpu'` is unavailable in this environment
    */
   randomWalkWithRestartProximity(
     options?: RandomWalkWithRestartOptions,
-  ): Promise<RandomWalkWithRestartProximityResult> {
-    return rwrProximityImpl(this, options);
+  ): AlgoRun<RandomWalkWithRestartProximityResult> {
+    return this._cy._trackRun(rwrProximityImpl(this, options));
   }
 
   /**
@@ -5964,12 +5985,14 @@ export class Collection {
    *
    * @param options — `{ seeds, time, weight, laplacian, executor }`
    * @returns a promise of the `{ score }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `time` or `laplacian` is invalid, if
    *   `seeds` holds no node of the collection, or if an edge weight
    *   is not positive
    */
-  heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult> {
-    return heatDiffusionImpl(this, options);
+  heatDiffusion(options?: HeatDiffusionOptions): AlgoRun<HeatDiffusionResult> {
+    return this._cy._trackRun(heatDiffusionImpl(this, options));
   }
 
   /**
@@ -5988,11 +6011,13 @@ export class Collection {
    *
    * @param options — `{ time, weight, laplacian, executor }`
    * @returns a promise of the `{ heat }` accessor
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor`, `time` or `laplacian` is invalid, or if an
    *   edge weight is not positive
    */
-  heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult> {
-    return heatKernelImpl(this, options);
+  heatKernel(options?: HeatDiffusionOptions): AlgoRun<HeatKernelResult> {
+    return this._cy._trackRun(heatKernelImpl(this, options));
   }
 
   /**
@@ -6009,13 +6034,15 @@ export class Collection {
    *
    * @param options — `{ weight, executor }`
    * @returns a promise of the `{ resistance, commuteTime }` accessors
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if an edge weight is
    *   not positive or `executor: 'gpu'` is unavailable
    */
   effectiveResistance(
     options?: EffectiveResistanceOptions,
-  ): Promise<EffectiveResistanceResult> {
-    return effectiveResistanceImpl(this, options);
+  ): AlgoRun<EffectiveResistanceResult> {
+    return this._cy._trackRun(effectiveResistanceImpl(this, options));
   }
 
   /**
@@ -6032,11 +6059,13 @@ export class Collection {
    *
    * @param options — `{ directed, executor }`
    * @returns a promise of `{ counts }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  motifCensus(options?: MotifCensusOptions): Promise<MotifCensusResult> {
-    return motifCensusImpl(this, options);
+  motifCensus(options?: MotifCensusOptions): AlgoRun<MotifCensusResult> {
+    return this._cy._trackRun(motifCensusImpl(this, options));
   }
 
   /**
@@ -6052,11 +6081,13 @@ export class Collection {
    *   sensitivityThreshold, executor }`, with `attributes` as plain
    *   functions
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  kMeans(options?: KClusteringOptions): Promise<Collection[]> {
-    return kMeansImpl(this, options);
+  kMeans(options?: KClusteringOptions): AlgoRun<Collection[]> {
+    return this._cy._trackRun(kMeansImpl(this, options));
   }
 
   /**
@@ -6066,11 +6097,13 @@ export class Collection {
    *
    * @param options — as `kMeans`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable, or if `k` exceeds the node count
    */
-  kMedoids(options?: KClusteringOptions): Promise<Collection[]> {
-    return kMedoidsImpl(this, options);
+  kMedoids(options?: KClusteringOptions): AlgoRun<Collection[]> {
+    return this._cy._trackRun(kMedoidsImpl(this, options));
   }
 
   /**
@@ -6080,11 +6113,13 @@ export class Collection {
    *
    * @param options — as `kMeans`, plus the fuzziness exponent
    * @returns a promise of `{ clusters, degreeOfMembership }`
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  fuzzyCMeans(options?: KClusteringOptions): Promise<FuzzyCMeansResult> {
-    return fuzzyCMeansImpl(this, options);
+  fuzzyCMeans(options?: KClusteringOptions): AlgoRun<FuzzyCMeansResult> {
+    return this._cy._trackRun(fuzzyCMeansImpl(this, options));
   }
 
   declare fcm: this['fuzzyCMeans'];
@@ -6098,13 +6133,15 @@ export class Collection {
    * @param options — `{ attributes, distance, linkage, mode,
    *   dendrogramDepth, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
   hierarchicalClustering(
     options?: HierarchicalClusteringOptions,
-  ): Promise<Collection[]> {
-    return hierarchicalClusteringImpl(this, options);
+  ): AlgoRun<Collection[]> {
+    return this._cy._trackRun(hierarchicalClusteringImpl(this, options));
   }
 
   declare hca: this['hierarchicalClustering'];
@@ -6120,11 +6157,13 @@ export class Collection {
    * @param options — `{ attributes, expandFactor, inflateFactor,
    *   multFactor, maxIterations, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  markovClustering(options?: MarkovClusteringOptions): Promise<Collection[]> {
-    return markovClusteringImpl(this, options);
+  markovClustering(options?: MarkovClusteringOptions): AlgoRun<Collection[]> {
+    return this._cy._trackRun(markovClusteringImpl(this, options));
   }
 
   declare mcl: this['markovClustering'];
@@ -6140,13 +6179,15 @@ export class Collection {
    * @param options — `{ attributes, distance, preference, damping,
    *   minIterations, maxIterations, executor }`
    * @returns a promise of one collection per cluster
+   *   — with `cancel()` on it (round 128): a pending run rejects
+   *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable, or if `damping`/`preference` are invalid
    */
   affinityPropagation(
     options?: AffinityPropagationOptions,
-  ): Promise<Collection[]> {
-    return affinityPropagationImpl(this, options);
+  ): AlgoRun<Collection[]> {
+    return this._cy._trackRun(affinityPropagationImpl(this, options));
   }
 
   declare ap: this['affinityPropagation'];

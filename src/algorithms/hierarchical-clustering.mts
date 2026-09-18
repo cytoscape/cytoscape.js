@@ -6,6 +6,7 @@ import { namedMetricKind, resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { hierarchicalClusteringGpu } from './algo-gpu-cluster.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
@@ -331,7 +332,7 @@ const buildClustersFromTree = (
 export const hierarchicalClusteringAsync = (
   coll: Collection,
   options?: HierarchicalClusteringOptions,
-): Promise<Collection[]> => {
+): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason =

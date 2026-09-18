@@ -33,6 +33,7 @@ import {
   runAlgo,
 } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { motifCensusGpu } from './algo-gpu-motifs.mjs';
 
 /** The sixteen triad classes, in Holland–Leinhardt order. */
@@ -307,7 +308,7 @@ export const censusFromPrimitives = (
 export const motifCensusAsync = (
   coll: Collection,
   options: MotifCensusOptions = {},
-): Promise<MotifCensusResult> => {
+): AlgoRun<MotifCensusResult> => {
   const executor = resolveExecutor(options.executor);
   const directed = options.directed !== false;
   const view = subgraph(coll);

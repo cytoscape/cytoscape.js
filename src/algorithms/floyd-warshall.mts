@@ -4,6 +4,7 @@ import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { floydWarshallGpu } from './algo-gpu-fw.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
@@ -32,7 +33,7 @@ export interface FloydWarshallResult {
 export const floydWarshallAsync = (
   coll: Collection,
   options: FloydWarshallOptions = {},
-): Promise<FloydWarshallResult> => {
+): AlgoRun<FloydWarshallResult> => {
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 

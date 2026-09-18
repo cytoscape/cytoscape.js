@@ -42,6 +42,7 @@ import {
   runAlgo,
 } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { seedDistribution } from './random-walk.mjs';
 import { heatKernelGpu } from './algo-gpu-heat.mjs';
@@ -288,7 +289,7 @@ export const diffuseVector = (
 export const heatDiffusionAsync = (
   coll: Collection,
   options: HeatDiffusionOptions = {},
-): Promise<HeatDiffusionResult> => {
+): AlgoRun<HeatDiffusionResult> => {
   const executor = resolveExecutor(options.executor);
   const time = resolveHeatTime(options);
 
@@ -338,7 +339,7 @@ export const heatDiffusionAsync = (
 export const heatKernelAsync = (
   coll: Collection,
   options: HeatDiffusionOptions = {},
-): Promise<HeatKernelResult> => {
+): AlgoRun<HeatKernelResult> => {
   const executor = resolveExecutor(options.executor);
 
   resolveHeatTime(options); // an invalid time throws at the call site

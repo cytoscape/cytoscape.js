@@ -21,6 +21,7 @@ import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { simRankGpu } from './algo-gpu-simrank.mjs';
 
 export interface SimRankOptions {
@@ -166,7 +167,7 @@ export const simRankResultFrom = (
 export const simRankAsync = (
   coll: Collection,
   options: SimRankOptions = {},
-): Promise<SimRankResult> => {
+): AlgoRun<SimRankResult> => {
   const executor = resolveExecutor(options.executor);
 
   resolveSimRankDamping(options); // an invalid damping throws at the call site

@@ -23,6 +23,7 @@ import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { katzCentralityGpu } from './algo-gpu-katz.mjs';
 
 /**
@@ -107,7 +108,7 @@ export const resolveKatzParams = (
 export const katzCentralityAsync = (
   coll: Collection,
   options: KatzCentralityOptions = {},
-): Promise<KatzCentralityResult> => {
+): AlgoRun<KatzCentralityResult> => {
   const executor = resolveExecutor(options.executor);
 
   resolveKatzParams(options); // an invalid alpha/beta throws at the call site

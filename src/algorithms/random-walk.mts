@@ -29,6 +29,7 @@ import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { rwrProximityGpu } from './algo-gpu-rwr.mjs';
 import { GROUP_NODES } from '../contract.mjs';
@@ -224,7 +225,7 @@ export const solveWalk = (
 export const randomWalkWithRestartAsync = (
   coll: Collection,
   options: RandomWalkWithRestartOptions = {},
-): Promise<RandomWalkWithRestartResult> => {
+): AlgoRun<RandomWalkWithRestartResult> => {
   const executor = resolveExecutor(options.executor);
   const c = resolveRestartProbability(options);
   const view = subgraph(coll);
@@ -325,7 +326,7 @@ export const seedDistribution = (
 export const randomWalkWithRestartProximityAsync = (
   coll: Collection,
   options: RandomWalkWithRestartOptions = {},
-): Promise<RandomWalkWithRestartProximityResult> => {
+): AlgoRun<RandomWalkWithRestartProximityResult> => {
   const executor = resolveExecutor(options.executor);
 
   resolveRestartProbability(options); // an invalid restart throws here

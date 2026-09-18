@@ -6,6 +6,7 @@ import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { affinityPropagationGpu } from './algo-gpu-ap.mjs';
 
 export type AffinityAttributeFn = (node: Collection) => number;
@@ -154,7 +155,7 @@ const assign = (n: number, S: Float64Array, exemplars: number[]): number[] => {
 export const affinityPropagationAsync = (
   coll: Collection,
   options: AffinityPropagationOptions = {},
-): Promise<Collection[]> => {
+): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options.executor);
   const n = coll.nodes().length;
 

@@ -46,6 +46,8 @@ import type {
   AlgoWorkerRequest,
   AlgoWorkerSnapshot,
 } from './algo-worker-body.mjs';
+import { throwIfCancelled } from './cancel.mjs';
+import type { CancelToken } from './cancel.mjs';
 
 /** The largest pool the executor ever spawns, whatever the core count:
  * 74.1 measured 4 → 8 workers at 1.3× (n = 2048) and 1.4× (n = 4096),
@@ -105,9 +107,16 @@ export interface AlgoWorkers {
    *
    * @param snapshot — the run's inputs, cloned into each worker
    * @param n — the source (or column) count the ranges partition
+   * @param token — the run's cancel token (round 128): a cancelled run
+   *   posts no further range, discards the partials still in flight
+   *   as they land, and rejects with `CancelledError`; the pool stands
    * @returns one partial per range, in range (merge) order
    */
-  run(snapshot: AlgoWorkerSnapshot, n: number): Promise<Float64Array[]>;
+  run(
+    snapshot: AlgoWorkerSnapshot,
+    n: number,
+    token?: CancelToken,
+  ): Promise<Float64Array[]>;
 }
 
 /** The run counters `_algoWorkersStats()` reports — how a benchmark
@@ -453,7 +462,11 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
       const runOnce = async (
         snapshot: AlgoWorkerSnapshot,
         n: number,
+        token?: CancelToken,
       ): Promise<Float64Array[]> => {
+        // cancelled while queued behind another run: nothing is sent
+        throwIfCancelled(token);
+
         const readies = await Promise.all(
           workers.map((_, i) => ask(i, { type: 'snapshot', snapshot })),
         );
@@ -475,7 +488,11 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
         // a free worker takes the next range: dynamic assignment over a
         // fixed partition, so the merge order never sees the pool size
         const drain = async (i: number): Promise<void> => {
-          while (next < ranges.length && jobError == null) {
+          while (
+            next < ranges.length &&
+            jobError == null &&
+            token?.cancelled !== true
+          ) {
             const r = next++;
             const [s0, s1] = ranges[r];
             const reply = await ask(i, { type: 'job', s0, s1 });
@@ -498,6 +515,11 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
           throw jobError;
         }
 
+        // the ranges in flight at the cancel have answered (a worker
+        // holds one snapshot at a time, so the next run waits for them);
+        // their partials are dropped with the rest
+        throwIfCancelled(token);
+
         stats.runs++;
 
         return parts;
@@ -505,13 +527,13 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
 
       const pool: AlgoWorkers = {
         size,
-        run: (snapshot, n) => {
+        run: (snapshot, n, token) => {
           // runs are serialized: a worker holds one snapshot at a time
           const turn = queue.then(async () => {
             hold();
 
             try {
-              return await runOnce(snapshot, n);
+              return await runOnce(snapshot, n, token);
             } finally {
               release();
             }

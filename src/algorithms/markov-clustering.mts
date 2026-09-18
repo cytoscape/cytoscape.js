@@ -5,6 +5,7 @@ import { subgraph } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
@@ -115,7 +116,7 @@ const hasConverged = (
 export const markovClusteringAsync = (
   coll: Collection,
   options: MarkovClusteringOptions = {},
-): Promise<Collection[]> => {
+): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options.executor);
   const n = subgraph(coll).nodeSlots.length;
 

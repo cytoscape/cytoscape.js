@@ -279,6 +279,33 @@ export function generate() {
     }
   }
 
+  // a static no PUBLIC_API member produced — a class hung on the factory
+  // for `instanceof` (round 128's `CancelledError`) — is published from
+  // its own declaration, found through the entry point's import of it
+  for (const name of statics) {
+    const bucket = get(byPrefix, 'cytoscape', () => new Map());
+    const section = defaultSection('cytoscape');
+    const fns = get(bucket, section, () => new Map());
+
+    if (fns.has(name)) continue;
+
+    const found = resolveStatic(name);
+
+    if (found == null) {
+      skipped.push(
+        `cytoscape.${name} (no declaration found behind the static)`,
+      );
+      continue;
+    }
+
+    fns.set(name, {
+      name: `cytoscape.${name}`,
+      blocks: [parseDoc(found.doc)],
+      src: `${found.rel}:${found.line}`,
+      pureAliases: [],
+    });
+  }
+
   const sections = [];
 
   for (const [prefix, bucket] of byPrefix) {
@@ -354,6 +381,52 @@ function toDocmakerFn(fn) {
   out.src = fn.src;
 
   return out;
+}
+
+/**
+ * Where a factory static is declared, for one that is not an exported
+ * function of a PUBLIC_API file: read the entry point's `import { name }
+ * from './x.mjs'` line, open that file and take the doc block above its
+ * `export class name` / `export const name` / `export function name`.
+ * Derived, like `factoryStatics()` itself, so nothing here goes stale
+ * when a static moves.
+ *
+ * @param {string} name — the static's name
+ * @returns {{ rel: string, line: number, doc: string } | null}
+ */
+function resolveStatic(name) {
+  const entry = readFileSync(join(ROOT, 'src/index.mts'), 'utf8');
+  const imported = entry.match(
+    new RegExp(
+      `^import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*'([^']+)\\.mjs';`,
+      'm',
+    ),
+  );
+
+  if (imported == null) return null;
+
+  const rel = join('src', `${imported[1]}.mts`);
+  const lines = readFileSync(join(ROOT, rel), 'utf8').split('\n');
+  const decl = new RegExp(
+    `^export\\s+(?:abstract\\s+)?(?:class|const|function|let)\\s+${name}\\b`,
+  );
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!decl.test(lines[i])) continue;
+
+    // the doc block ending on the line above the declaration
+    if (i === 0 || !lines[i - 1].trim().endsWith('*/')) {
+      return { rel, line: i + 1, doc: '' };
+    }
+
+    let start = i - 1;
+
+    while (start > 0 && !lines[start].includes('/**')) start--;
+
+    return { rel, line: i + 1, doc: lines.slice(start, i).join('\n') };
+  }
+
+  return null;
 }
 
 /** The docmaker prefix a member belongs under, or null when unpublished. */

@@ -54,6 +54,8 @@ export type Layout =
   | RandomLayout
   | RadialLayout
   | PackLayout;
+import { whenSettled } from './algorithms/cancel.mjs';
+import type { AlgoRun } from './algorithms/cancel.mjs';
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
@@ -218,6 +220,13 @@ export class Core {
    * the same push-invalidation as `_allCache` */
   private _allEles: Collection | null = null;
   _animations: AnimationManager;
+  /**
+   * The runs in flight on this instance (round 128): every pending
+   * async algorithm handle and every running layout registers here and
+   * leaves on settle, so `destroy()` can cancel whatever is still
+   * running before the renderer goes.
+   */
+  _inflight: Set<{ cancel(): unknown }>;
 
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(
@@ -330,6 +339,7 @@ export class Core {
     this._touchTapThreshold = 8; // before a press stops being a tap
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
+    this._inflight = new Set();
     this._batchPending = null;
 
     if (options.boxSelectionMode != null) {
@@ -3105,6 +3115,16 @@ export class Core {
       return this;
     }
 
+    // the last cancel (round 128): a layout still running restores its
+    // positions and closes its lifecycle, a pending algorithm handle
+    // rejects with CancelledError — before the listeners go, so a
+    // `layoutstop` still reaches them, and before the renderer goes, so
+    // nothing in flight writes into a dead one
+    for (const run of [...this._inflight]) {
+      run.cancel();
+    }
+
+    this._inflight.clear();
     this.emit('destroy');
     this._emitter.removeAllListeners();
 
@@ -3128,6 +3148,28 @@ export class Core {
    */
   destroyed(): boolean {
     return this._destroyed;
+  }
+
+  /**
+   * Register an async algorithm run for `destroy()` to cancel (round
+   * 128); it leaves the registry when it settles either way.
+   *
+   * @param run — the handle an algorithm entry returned
+   * @returns the same handle
+   * @internal
+   */
+  _trackRun<T>(run: AlgoRun<T>): AlgoRun<T> {
+    const done = (): void => {
+      this._inflight.delete(run);
+    };
+
+    this._inflight.add(run);
+    // observed through the handle's own settle promise, never through
+    // `run.then` — a handler here would mark the caller's rejection as
+    // handled, and a cancelled run nobody catches must stay theirs to see
+    whenSettled(run).then(done);
+
+    return run;
   }
 
   // -- internals --

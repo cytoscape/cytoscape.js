@@ -3,6 +3,7 @@ import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
 import { algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
@@ -43,7 +44,7 @@ export interface BetweennessCentralityResult {
 export const betweennessCentralityAsync = (
   coll: Collection,
   options: BetweennessCentralityOptions = {},
-): Promise<BetweennessCentralityResult> => {
+): AlgoRun<BetweennessCentralityResult> => {
   const executor = resolveExecutor(options.executor);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;

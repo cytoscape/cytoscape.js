@@ -24,6 +24,7 @@ import {
   runAlgo,
 } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoRun } from './cancel.mjs';
 import { neighborhoodSimilarityGpu } from './algo-gpu-similarity.mjs';
 
 /** How a pair's shared-neighbor count is normalized: Jaccard divides
@@ -200,7 +201,7 @@ export const similarityResultFrom = (
 export const neighborhoodSimilarityAsync = (
   coll: Collection,
   options: NeighborhoodSimilarityOptions = {},
-): Promise<NeighborhoodSimilarityResult> => {
+): AlgoRun<NeighborhoodSimilarityResult> => {
   const executor = resolveExecutor(options.executor);
   const metric = resolveMetric(options.metric);
   const directed = options.directed === true;

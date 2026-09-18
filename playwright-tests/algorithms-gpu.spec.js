@@ -357,6 +357,60 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.cpu.length).toBe(2);
   });
 
+  test('affinityPropagation: identical partition of a seeded 2-D cloud at n=128 (72.2)', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // the six-node fixture above is two well-separated triples, and
+      // round 72.2 found it passes with the availability column sums
+      // halved: the message passing never decides anything there.  A
+      // seeded 128-point cloud (the bench's feature fixture) makes
+      // dozens of exemplars compete, so a defect in either update
+      // moves the partition — verified by control (colSum × 0.5 flips
+      // it; × 1.01 does not, so the skew a control needs is recorded)
+      const n = 128;
+      let seed = 42;
+      const rand = () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+
+        return seed / 0x7fffffff;
+      };
+      const cy = cytoscape({
+        elements: Array.from({ length: n }, (_, i) => ({
+          data: { id: 'n' + i, a: rand() * 40, b: rand() * 10 },
+        })),
+      });
+      const opts = {
+        preference: 'median',
+        damping: 0.8,
+        maxIterations: 100,
+        minIterations: 20,
+        attributes: [(node) => node.data('a'), (node) => node.data('b')],
+      };
+      const key = (clusters) =>
+        clusters
+          .map((c) =>
+            c
+              .map((node) => node.id())
+              .sort()
+              .join(','),
+          )
+          .sort();
+      const cpu = await cy
+        .elements()
+        .affinityPropagation({ ...opts, executor: 'cpu' });
+      const gpu = await cy
+        .elements()
+        .affinityPropagation({ ...opts, executor: 'gpu' });
+
+      return { cpu: key(cpu), gpu: key(gpu) };
+    });
+
+    expect(out.gpu).toEqual(out.cpu);
+    // the scene must discriminate: many exemplars, not a trivial split
+    expect(out.cpu.length).toBeGreaterThan(4);
+  });
+
   test('kMeans + kMedoids: identical clusters with fixed seeds', async ({
     page,
   }) => {

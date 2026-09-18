@@ -273,3 +273,48 @@ and measured another invalid pipeline as the fastest shape.  The rule
 the module now states: **a timing row must check its result, or it
 will price an empty command buffer as a fast kernel.**  d.ts
 regenerated (the Katz option comment moved).
+
+### 72.2 — AP coalesced, the reduction item closed with its figure (2026-09-18)
+
+**Attribution first, by omission.**  The AP GPU call at n=1024
+(the bench row's knobs: damping 0.8, median preference, 100/20
+iterations) was rebuilt four ways and timed whole (median of 5):
+
+| variant | ms | per iteration |
+|---|---:|---:|
+| full run (converges ~iteration 70, the rest no-op) | 300.8 | — |
+| without track + converge (never converges: all 100 run) | 410.9 | R + A = 4.1 ms |
+| without A_UPDATE (no exemplars: all 100 run) | 169.2 | R + T + C = 1.69 ms |
+| R_UPDATE alone | 168.2 | R = 1.68 ms |
+
+So A_UPDATE was **2.4 ms** of a 4.1 ms iteration — the 65.8 figure
+(~2.6) stood — and the two tracking kernels together ~10 µs.
+pageRank's fused epilogue, priced the same way over 1000 forced
+iterations at n=2048: 17.5 µs per dispatch (25.7 ms with it, 8.2 ms
+without) — microseconds, as the item said, and (a) is closed: a true
+two-stage reduction would add a dispatch (~5–8 µs on this box) to
+shave part of 17, and is declined.
+
+**(b) landed, but not as a transpose.**  The stride-n walk was
+`A_UPDATE` reading column i from one workgroup, lane j at
+rr[j·n + i].  A transposed R copy would have fixed the read and moved
+the same stride onto the write of A (which `R_UPDATE` then reads
+row-wise — two transposes per iteration).  Instead the update is two
+kernels in the natural layout: `A_COLSUM` — a workgroup owns 32
+consecutive columns × 8 row-lanes, so each row's read is 32
+consecutive floats, tree-reduced across the row-lanes — and
+`A_APPLY`, one invocation per cell with the column as the fast axis.
+Same maths, same diagonal rule, summation order changed.  Measured:
+**300.8 → 174.5 ms at n=1024 (−42%)**, the same 53 clusters; the
+column width bracketed at 16/32/64 → 168/174/172 ms (noise), 32
+kept.  Well past the ≥20% gate.
+
+**Verified by** the AP parity spec — which turned out to verify
+nothing here: the six-node fixture is two well-separated triples and
+stayed green with the column sums *halved*.  A second spec joined:
+the bench's seeded 2-D cloud at n=128, partitions compared exactly
+(11 exemplars; the scene asserts more than four), and the same
+fixture agrees pair-for-pair at n=64/128/256 on both the old and the
+new kernel.  Its control: colSum × 0.5 turns it red (× 1.01 does
+not — recorded on the spec so the next control is not too gentle).
+The `affinityPropagation` bench row re-prices in 72.6's sweep.

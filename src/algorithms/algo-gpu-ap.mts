@@ -7,11 +7,12 @@ custom distance functions run there, on the CPU) and the cluster
 assignment tail — the GPU replaces the responsibility/availability
 message passing, which is the O(n²·iterations) part.
 
-Kernel shape: one invocation owns one whole row (responsibilities) or
-one whole column (availabilities), because the damped update needs the
-row's running top-two maximum and the column's positive sum — serial
-per line, parallel across lines, exactly the CPU loops' structure with
-the outer loop distributed.  Convergence is the CPU's exemplar-history
+Kernel shape: a workgroup owns one whole row for the responsibilities
+(the damped update needs the row's running top-two maximum, reduced
+across lanes); the availabilities, which need each column's positive
+sum, are a coalesced column-sum kernel followed by a per-cell apply
+(round 72.2 — the one-workgroup-per-column form walked the matrix at
+stride n and cost 2.4 ms of a 4.1 ms iteration at n=1024).  Convergence is the CPU's exemplar-history
 test verbatim: a bit per node per iteration lands in an n×minIterations
 ring, a per-node kernel checks its column is all-0 or all-1, and a
 serial kernel folds that to the converged flag.  All iterations encode
@@ -34,7 +35,13 @@ import {
   uniformFrom,
 } from './algo-gpu.mjs';
 import type { Dispatch } from './algo-gpu.mjs';
-import { WG } from './algo-gpu-dense.mjs';
+import { TILE, WG } from './algo-gpu-dense.mjs';
+
+/** Columns one `A_COLSUM` workgroup owns — the coalesced read width
+ * (COLS × 4 bytes per row per workgroup). */
+const COLS = 32;
+/** Row-lanes per column in `A_COLSUM`. */
+const ROW_LANES = WG / COLS;
 import {
   apClustersFrom,
   buildAffinitySimilarity,
@@ -131,15 +138,20 @@ fn main(
 }
 `;
 
-/** Damped availability update — one *workgroup* per column i
- * (round 65.8): phase one tree-reduces the column's clipped
- * responsibility sum, phase two applies the damped update with the
- * diagonal taking the unclipped rule. */
-const A_UPDATE = wgsl`
+/** The availability update's column sums (round 72.2): colSum[i] =
+ * R[i][i] + Σ_{k≠i} max(0, R[k][i]).  The 65.8 kernel walked column i
+ * from one workgroup, lane j reading rr[j·n + i] — stride-n access,
+ * every lane its own cache line, 2.4 ms of a 4.1 ms iteration at
+ * n=1024.  Here a workgroup owns COLS consecutive columns and
+ * WG/COLS row-lanes: for a fixed row k the COLS lanes read COLS
+ * consecutive floats, so every read is coalesced, and the row-lanes'
+ * partials tree-reduce in workgroup memory.  The apply step is a
+ * separate per-cell kernel (`A_APPLY`) that reads the natural layout. */
+const A_COLSUM = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
 @group(0) @binding(1) var<storage, read> rr : array<f32>;
-@group(0) @binding(2) var<storage, read_write> a : array<f32>;
+@group(0) @binding(2) var<storage, read_write> colSum : array<f32>;
 @group(0) @binding(3) var<storage, read_write> flags : array<atomic<u32>>;
 
 var<workgroup> partial : array<f32, ${WG}>;
@@ -153,47 +165,80 @@ fn main(
   if (lid.x == 0u) { wflag = atomicLoad(&flags[0]); }
   if (workgroupUniformLoad(&wflag) == 1u) { return; }
 
-  let i = wid.x;
   let n = p.n;
-  let damping = p.r;
+  let c = lid.x % ${COLS}u;
+  let r = lid.x / ${COLS}u;
+  let i = wid.x * ${COLS}u + c;
   var sum = 0.0;
 
-  for (var j = lid.x; j < n; j = j + ${WG}u) {
-    if (j == i) {
-      sum = sum + rr[i * n + i];
-    } else {
-      sum = sum + max(0.0, rr[j * n + i]);
+  if (i < n) {
+    for (var k = r; k < n; k = k + ${ROW_LANES}u) {
+      let v = rr[k * n + i];
+
+      if (k == i) {
+        sum = sum + v;
+      } else {
+        sum = sum + max(0.0, v);
+      }
     }
   }
 
   partial[lid.x] = sum;
   workgroupBarrier();
 
-  for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
-    if (lid.x < stride) {
-      partial[lid.x] = partial[lid.x] + partial[lid.x + stride];
+  for (var stride = ${ROW_LANES >> 1}u; stride > 0u; stride = stride >> 1u) {
+    if (r < stride) {
+      partial[lid.x] = partial[lid.x] + partial[lid.x + stride * ${COLS}u];
     }
     workgroupBarrier();
   }
 
-  let total = partial[0];
-
-  for (var j = lid.x; j < n; j = j + ${WG}u) {
-    var rp = max(0.0, rr[j * n + i]);
-
-    if (j == i) {
-      rp = rr[i * n + i];
-    }
-
-    let old = a[j * n + i];
-    var next = (1.0 - damping) * min(0.0, total - rp) + damping * old;
-
-    if (j == i) {
-      next = (1.0 - damping) * (total - rp) + damping * old;
-    }
-
-    a[j * n + i] = next;
+  if (r == 0u && i < n) {
+    colSum[i] = partial[c];
   }
+}
+`;
+
+/** Damped availability update per cell (round 72.2), the 65.8 rule
+ * verbatim over the column sums: off the diagonal a[j][i] ←
+ * (1−λ)·min(0, colSum[i] − max(0, R[j][i])) + λ·a[j][i]; on it the
+ * unclipped colSum[i] − R[i][i].  One invocation per cell with the
+ * column as the fast axis, so rr, a and colSum are all read and
+ * written coalesced.  No barriers, so the flag guard may return
+ * per invocation. */
+const A_APPLY = wgsl`
+struct P { n : u32, r : f32 }
+@group(0) @binding(0) var<uniform> p : P;
+@group(0) @binding(1) var<storage, read> rr : array<f32>;
+@group(0) @binding(2) var<storage, read> colSum : array<f32>;
+@group(0) @binding(3) var<storage, read_write> a : array<f32>;
+@group(0) @binding(4) var<storage, read_write> flags : array<atomic<u32>>;
+
+@compute @workgroup_size(${TILE}, ${TILE})
+fn main(@builtin(global_invocation_id) gid : vec3u) {
+  if (atomicLoad(&flags[0]) == 1u) { return; }
+
+  let n = p.n;
+  let i = gid.x;
+  let j = gid.y;
+
+  if (i >= n || j >= n) { return; }
+
+  let damping = p.r;
+  let idx = j * n + i;
+  let old = a[idx];
+  let total = colSum[i];
+  var next = 0.0;
+
+  if (j == i) {
+    next = (1.0 - damping) * (total - rr[idx]) + damping * old;
+  } else {
+    let rp = max(0.0, rr[idx]);
+
+    next = (1.0 - damping) * min(0.0, total - rp) + damping * old;
+  }
+
+  a[idx] = next;
 }
 `;
 
@@ -362,6 +407,7 @@ export const affinityPropagationGpu = async (
   const hist = storageOf(ctx, n * minIterations * 4);
   const ok = storageOf(ctx, n * 4);
   const diag = storageOf(ctx, n * 4);
+  const colSum = storageOf(ctx, n * 4);
   const iterBuf = storageFrom(ctx, new Uint32Array([0]));
   const flags = storageFrom(ctx, new Uint32Array([0]));
   const pN = paramsNR(ctx, n, damping);
@@ -374,12 +420,14 @@ export const affinityPropagationGpu = async (
   const pQu = uniformFrom(ctx, new Uint32Array(qBytes));
 
   const rUpdate = getPipeline(ctx, 'ap-r-update', R_UPDATE);
-  const aUpdate = getPipeline(ctx, 'ap-a-update', A_UPDATE);
+  const aColSum = getPipeline(ctx, 'ap-a-colsum', A_COLSUM);
+  const aApply = getPipeline(ctx, 'ap-a-apply', A_APPLY);
   const track = getPipeline(ctx, 'ap-track', AP_TRACK);
   const converge = getPipeline(ctx, 'ap-converge', AP_CONVERGE);
   const diagSum = getPipeline(ctx, 'ap-diag-sum', DIAG_SUM);
 
   const grid: [number] = [Math.ceil(n / WG)];
+  const cells = Math.ceil(n / TILE);
   const one: [number] = [1];
   const iteration: Dispatch[] = [
     {
@@ -389,10 +437,16 @@ export const affinityPropagationGpu = async (
       groups: [n],
     },
     {
-      pipeline: aUpdate,
-      // one workgroup per column
-      group: groupFor(ctx, aUpdate, [pN, rBuf, aBuf, flags]),
-      groups: [n],
+      pipeline: aColSum,
+      // one workgroup per COLS columns
+      group: groupFor(ctx, aColSum, [pN, rBuf, colSum, flags]),
+      groups: [Math.ceil(n / COLS)],
+    },
+    {
+      pipeline: aApply,
+      // one invocation per cell
+      group: groupFor(ctx, aApply, [pN, rBuf, colSum, aBuf, flags]),
+      groups: [cells, cells],
     },
     {
       pipeline: track,
@@ -438,6 +492,7 @@ export const affinityPropagationGpu = async (
     hist,
     ok,
     diag,
+    colSum,
     iterBuf,
     flags,
     pN,

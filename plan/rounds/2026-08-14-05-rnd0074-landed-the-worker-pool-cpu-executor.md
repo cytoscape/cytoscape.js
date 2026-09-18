@@ -438,3 +438,56 @@ without a lane say `'workers'` rejects), `dist/cytoscape.d.ts`
 regenerated, `src/README.md`'s executor paragraph carries the ladder
 and the 74.1 numbers, `docs/features.csv` rows updated, MIGRATING and
 CHANGELOG rows added.
+
+### 74.4 — tests: parity, throws, soak
+
+`test/algorithms-workers.mjs` (23 specs, forced 2-worker pools beside
+the runner's own parallelism): betweenness cpu-vs-workers at 1e-12
+relative — weighted, unweighted, directed — with the merged maximum
+normalizing to 1; closeness bit-equal (`===`) in harmonic and plain
+modes, directed, on a disconnected graph and on a subset collection;
+heatKernel bit-equal under both Laplacians; RWR proximity bit-equal;
+pools of 1, 2 and 3 workers identical bits; `'auto'` taking the pool
+from `WORKERS_MIN_N` and the CPU below, and answering the pool's bits.
+**Controls, run and restored**: a skewed partial turned both
+betweenness specs red; a dropped range turned them red and left the
+pool-size spec green (every pool size dropped the same range — which
+is why independence and parity are separate specs, and the file's
+header says so instead of claiming otherwise); a flipped `harmonic`
+in the closeness snapshot turned all three closeness specs red.  The
+guards are pinned in `test/` because the throw gate reads only there:
+the four-value executor message, the no-workers-path rejection
+(pageRank; weighted closeness), the no-GPU-path message naming
+`'workers'`, and — under a stubbed `process.getBuiltinModule`, the
+stubbed-navigator precedent — no platform (explicit rejects, `'auto'`
+runs the CPU and the pool stays untouched), a body that fails its
+ping (acquisition rejects, is not cached, `'auto'` falls back), a
+rejected snapshot and a failed job (both propagate, under `'auto'`
+too), a worker error event; and the body's own two throws through a
+fake port.  `test:throws` at zero.
+
+`test/modules/algo-worker-body.mjs` (18 specs) is the tripwire for the
+carriage: the complete worker source from each of the five built
+bundles and from tsx, evaluated with `new Function` in a scope that
+supplies only a fake `process` (a free identifier is a ReferenceError
+— the control plants one and sees it), driven through every message
+kind with a four-node path whose betweenness and closeness are known
+by hand, the browser flavour evaluated against a fake `self`, and one
+real `worker_threads` worker pinged per source.  The minified bundles
+pass: oxc's minifier keeps the body whole.
+
+`test/soak/workers.mjs` (5 specs under `--expose-gc`): the
+reachability control; twelve destroyed instances that ran on the pool
+all collect (the pool holds snapshots, never a core), the pool neither
+grows nor respawns; a reset drops to zero workers and the next run
+spawns afresh; two instances' interleaved runs each match their own
+reference; and a child process that ran on the pool without a reset
+exits 0 on its own — the `unref()` claim asserted, which is the spec
+that found lessons (b) and (c) above.
+
+`playwright-tests/algorithms-workers.spec.js` rides the `renderer` and
+`renderer-webkit` projects with no adapter need and no skip:
+cpu-vs-workers through the served UMD, then again with
+`build/cytoscape.min.js` swapped in — the one place the Blob path and
+the minified stringified body run for real.  Green on Chromium and
+WebKit (4/4).

@@ -1,0 +1,123 @@
+import { test, expect } from '@playwright/test';
+
+/*
+Round 74.4: the `'workers'` executor in a real browser.
+
+Two things only a browser can prove: that the Blob-URL worker path
+constructs and answers (the Node tier spawns `worker_threads`), and
+that the *minified* stringified body survives the minifier — the
+unminified UMD serves the page, so the second test swaps in
+`build/cytoscape.min.js` and runs the same comparison.
+
+No adapter is needed and there is no `hasAdapter` skip (the
+`routing.spec.js` rule: a suite that soft-skips where CI is cheapest
+stops running there).  The comparison is cpu-vs-workers on the same
+fixture: closeness must match to the bit, betweenness to f64 rounding.
+*/
+
+const PAGE = 'http://127.0.0.1:3333/playwright-page/index.html';
+
+const compare = async (page) =>
+  await page.evaluate(async () => {
+    const n = 320;
+    const els = [];
+
+    for (let i = 0; i < n; i++) {
+      els.push({ data: { id: 'n' + i } });
+    }
+
+    for (let i = 0; i < n; i++) {
+      els.push({
+        data: {
+          source: 'n' + i,
+          target: 'n' + ((i + 1) % n),
+          w: 1 + ((i * 31) % 7),
+        },
+      });
+
+      if (i % 3 === 0) {
+        els.push({
+          data: { source: 'n' + i, target: 'n' + ((i * 13 + 29) % n), w: 2 },
+        });
+      }
+    }
+
+    const cy = cytoscape({ headless: true, elements: els });
+    const eles = cy.elements();
+    const nodes = cy.nodes();
+    const weight = (e) => e.data('w');
+    const t0 = performance.now();
+    const bcW = await eles.betweennessCentrality({
+      weight,
+      executor: 'workers',
+    });
+    const workersMs = performance.now() - t0;
+    const t1 = performance.now();
+    const bcC = await eles.betweennessCentrality({ weight, executor: 'cpu' });
+    const cpuMs = performance.now() - t1;
+    const ccW = await eles.closenessCentralityNormalized({
+      executor: 'workers',
+    });
+    const ccC = await eles.closenessCentralityNormalized({ executor: 'cpu' });
+    let bcErr = 0;
+    let ccBits = true;
+
+    nodes.forEach((node) => {
+      const a = bcW.betweenness(node);
+      const b = bcC.betweenness(node);
+
+      bcErr = Math.max(bcErr, Math.abs(a - b) / Math.max(1, Math.abs(b)));
+
+      if (ccW.closeness(node) !== ccC.closeness(node)) {
+        ccBits = false;
+      }
+    });
+
+    let noPath = null;
+
+    try {
+      await eles.pageRank({ executor: 'workers' });
+    } catch (err) {
+      noPath = err.message;
+    }
+
+    cy.destroy();
+
+    return {
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      workersMs,
+      cpuMs,
+      bcErr,
+      ccBits,
+      noPath,
+    };
+  });
+
+test.describe('the workers executor in the browser (round 74)', () => {
+  test('Blob workers: cpu-vs-workers parity through the served UMD', async ({
+    page,
+  }) => {
+    await page.goto(PAGE);
+
+    const out = await compare(page);
+
+    expect(out.bcErr).toBeLessThan(1e-12);
+    expect(out.ccBits).toBe(true);
+    expect(out.noPath).toMatch(/no workers path/);
+  });
+
+  test('the minified bundle: the stringified body survives the minifier', async ({
+    page,
+  }) => {
+    await page.goto(PAGE);
+    // the served page loads the unminified UMD; swap in the minified
+    // one, whose body text is what a CDN consumer's pool evaluates
+    await page.addScriptTag({ url: '/build/cytoscape.min.js' });
+
+    const out = await compare(page);
+
+    expect(out.bcErr).toBeLessThan(1e-12);
+    expect(out.ccBits).toBe(true);
+    expect(out.noPath).toMatch(/no workers path/);
+  });
+});

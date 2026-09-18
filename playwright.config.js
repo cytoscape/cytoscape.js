@@ -132,9 +132,11 @@ export default defineConfig({
     {
       name: 'renderer',
       // algorithms-gpu (round 65) rides this project: same launch args,
-      // same soft-skip, headless instances (compute needs no canvas)
+      // same soft-skip, headless instances (compute needs no canvas).
+      // algorithms-workers (round 74) rides it too, with no adapter
+      // need and no skip: its subject is the Blob worker path
       testMatch: [
-        /(renderer|algorithms-gpu)\.spec\.js/,
+        /(renderer|algorithms-gpu|algorithms-workers)\.spec\.js/,
         /status-features\.spec\.mjs/,
       ],
       use: {
@@ -159,7 +161,7 @@ export default defineConfig({
     {
       name: 'renderer-webkit',
       testMatch: [
-        /(renderer|algorithms-gpu)\.spec\.js/,
+        /(renderer|algorithms-gpu|algorithms-workers)\.spec\.js/,
         /status-features\.spec\.mjs/,
       ],
       use: { ...devices['Desktop Safari'] },

@@ -16,6 +16,7 @@ import type {
   ForceInputs,
   ForceRuntimeLike,
 } from './gpu-force.mjs';
+import { SELF_URL } from '../util/self-url.mjs';
 import type { Core } from '../core.mjs';
 import type {
   ExportOptions,
@@ -63,29 +64,9 @@ harness scale, buffers transferred.
 const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
 
-/** Resolve the URL the current bundle was loaded from, if knowable. */
-const selfUrl = (): { url: string; module: boolean } | null => {
-  if (typeof document !== 'undefined') {
-    const el = document.currentScript;
-
-    if (el instanceof HTMLScriptElement && el.src !== '') {
-      return { url: el.src, module: el.type === 'module' };
-    }
-  }
-
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.url != null) {
-      return { url: import.meta.url, module: true };
-    }
-  } catch {
-    // a classic-script transform may leave no import.meta at all
-  }
-
-  return null;
-};
-
-/** captured at evaluation time — currentScript is null after load */
-const SELF = selfUrl();
+/** the artifact's URL, captured at evaluation (shared with the force
+ * sim worker since 129.3: `src/util/self-url.mts`) */
+const SELF = SELF_URL;
 
 /**
  * Spawn the render worker from this bundle's own URL: a classic worker

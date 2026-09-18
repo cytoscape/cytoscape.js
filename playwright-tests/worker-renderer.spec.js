@@ -715,4 +715,123 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     expect(result.stillRunning).toBe(true);
     expect(result.outcome).toBe('CancelledError');
   });
+
+  // -- the CPU simulation on a worker (round 129.3) ----------------------
+
+  const COMPOUND_SCENE = () => {
+    const els = [{ data: { id: 'p' } }, { data: { id: 'q' } }];
+
+    for (let i = 0; i < 12; i++) {
+      els.push({
+        data: { id: 'n' + i, parent: i < 6 ? 'p' : 'q' },
+        position: { x: (i % 6) * 20 - 50, y: i < 6 ? -40 : 40 },
+      });
+      els.push({
+        data: { id: 'e' + i, source: 'n' + i, target: 'n' + ((i + 1) % 12) },
+      });
+    }
+
+    return els;
+  };
+
+  for (const host of ['same-thread', 'worker']) {
+    test(`a compound graph's force run takes the sim worker on a rendered instance (${host} host): bit-identical to 'cpu', the main thread ticking (129.3)`, async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+      test.skip(
+        host === 'worker' && !(await hasWorkerCanvas(page)),
+        'no OffscreenCanvas workers',
+      );
+
+      await makeReadyCy(page, {
+        elements: COMPOUND_SCENE(),
+        style: { nodes: { width: 12, height: 12 } },
+        zoom: 1,
+        pan: { x: 200, y: 150 },
+        renderer: host === 'worker' ? { worker: true } : undefined,
+      });
+
+      const result = await page.evaluate(async () => {
+        const cy = window.cy;
+        const positionsOf = () =>
+          cy
+            .nodes()
+            .filter((n) => !n.isParent())
+            .map((n) => [n.id(), n.position().x, n.position().y]);
+
+        // the in-thread reference first, synchronously — the same
+        // options the 'auto' run takes below, or the two are not one
+        // simulation
+        const RUN = {
+          name: 'force',
+          seed: 4,
+          fit: false,
+          iterations: 2000,
+          threshold: 0,
+        };
+
+        cy.layout({ ...RUN, executor: 'cpu' }).run();
+
+        const reference = positionsOf();
+
+        // reseed the scene so the 'auto' run starts from the same
+        // positions the reference started from
+        cy.nodes()
+          .filter((n) => !n.isParent())
+          .forEach((n, i) => {
+            n.position({ x: (i % 6) * 20 - 50, y: i < 6 ? -40 : 40 });
+          });
+
+        const before = cytoscape.__forceWorkerStats__();
+        const layout = cy.layout(RUN);
+        // the main thread's availability: a 5 ms interval's tick count.
+        // Not rAF here — a run that draws nothing until it lands gets no
+        // begin-frames in headless Chromium (measured 2026-09-18: 2 rAF
+        // ticks over an idle 300 ms against 60 timer ticks, and 0 timer
+        // ticks over a held 300 ms), so the timer is the instrument
+        // that reads a held thread as zero and a free one as the wall
+        let ticks = 0;
+        const interval = setInterval(() => {
+          ticks++;
+        }, 5);
+
+        const t0 = performance.now();
+
+        layout.run();
+
+        // 'auto' on a rendered compound graph: asynchronous now — the
+        // positions land at the promise, not inside run()
+        const syncStill = positionsOf().every(
+          ([, x, y], i) => x === (i % 6) * 20 - 50 && y === (i < 6 ? -40 : 40),
+        );
+
+        await layout.promise();
+        clearInterval(interval);
+
+        const wallMs = performance.now() - t0;
+        const after = cytoscape.__forceWorkerStats__();
+
+        return {
+          syncStill,
+          ticks,
+          wallMs,
+          ran: after.runs - before.runs,
+          same: JSON.stringify(positionsOf()) === JSON.stringify(reference),
+        };
+      });
+
+      expect(result.ran, 'the run went to the sim worker').toBe(1);
+      expect(result.syncStill, 'the run is asynchronous').toBe(true);
+      expect(result.same, "bit-identical to 'cpu'").toBe(true);
+      // the main thread ticked through the run: a held thread counts
+      // none (the item-51 reading of this fixture class: zero frames
+      // over 12.8 s), a free one about one tick per 5 ms
+      expect(
+        result.ticks,
+        `${result.ticks} timer ticks over ${result.wallMs.toFixed(0)} ms`,
+      ).toBeGreaterThan(Math.max(4, result.wallMs / 20));
+      await destroyCy(page);
+    });
+  }
 });

@@ -349,6 +349,17 @@ that compile and then behave differently.
   the worker's kernel (one function, carried as source text), so the
   answer is bit-identical to `'cpu'`.  The pool spawns lazily: one
   worker for offloads, the full size on the first partitioned run.
+- **The force layout's CPU simulation runs on a worker** (round
+  129.3).  A new `executor` option (`'auto' | 'cpu' | 'gpu' |
+  'workers'`, default `'auto'`) names the three executors; under
+  `'auto'` a rendered instance whose run cannot take the GPU
+  integrator (a compound graph, a constrained run, no adapter) runs
+  the simulation on a worker that loaded the same bundle, so the main
+  thread stays free — such runs are asynchronous now (positions at
+  `layoutstop` / `promise()`); headless runs keep their synchronous
+  contract, `'cpu'` is the in-thread reference, `'workers'` asks for
+  the worker anywhere.  The worker's trajectory is bit-identical to
+  the in-thread simulation's.
 - **The force integrator runs in the worker host** (round 129.2).
   Under `renderer: { worker: true }` the force layout now drives the
   GPU integrator in the worker — `startForce` crosses the boundary as

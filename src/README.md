@@ -1522,6 +1522,38 @@ included, not just tweens); a bare call still takes the bulk path.
 
 ## The force layout (rounds 18 + 59)
 
+**Round 129.3 put the CPU simulation on a worker.**  The force layout
+has three executors now, and an `executor` option (`'auto' | 'cpu' |
+'gpu' | 'workers'`, default `'auto'`) names them: the GPU integrator
+(a flat, unconstrained graph on a rendered instance with a device —
+either host since 129.2), the CPU simulation on a worker that loaded
+this same bundle (`src/layout/force-worker.mts` the loop,
+`src/layout/force-remote.mts` the spawn and the run handle, the render
+worker's mechanism rather than a stringified kernel because `ForceSim`
+is a class over `OverlapGrid` and the constraint projection), and the
+in-thread simulation.  `'auto'` is availability-driven, as 87.2 made
+it: the integrator where the renderer offers one, else the worker on a
+rendered instance — so a compound graph, a constrained run and a page
+without an adapter no longer hold the main thread for the run — else
+in-thread; a headless run keeps its contract (`animate: false`
+synchronous).  `'cpu'` is the in-thread reference; `'workers'` is the
+worker wherever one can be constructed, headless included (the run is
+then asynchronous), throwing at start where none can be; `'gpu'`
+throws at start where no integrator is available.  The worker's
+trajectory is **bit-identical** to the in-thread sim's — the same
+class, the same inputs cloned — on the plain, the compound and the
+constrained fixtures (`test/force-worker.mjs`, asserted with `===`);
+a live run streams its frames through the layout's own write-back,
+an infinite run's verbs (a drag, a pin, a reheat, a wake) are messages,
+`stop()` / `cancel()` / `destroy()` propagate, one worker serves a
+page or process for the session (spawned lazily; a second concurrent
+run while it is busy runs in-thread), and the constraint projection
+is a pure function (`projectConstraints`) so the settle projects a
+remote run's positions as it projects the in-thread sim's.  In the
+Node suites the worker loads the source tree: a worker thread inherits
+tsx's loader but not its `.mjs` → `.mts` aliasing, so the bootstrap
+registers tsx inside the worker first — a source-tree-only branch.
+
 **Round 85.2 added constraints** (fcose #54/#53 absorbed): **fixed** is
 already spelled `lock()` (deliberately no second spelling);
 **alignment** — `alignment: { horizontal?: string[][], vertical?:

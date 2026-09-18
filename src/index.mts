@@ -4,6 +4,11 @@ import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
 import { WorkerRenderer } from './render/worker-renderer.mjs';
 import { runRenderWorker } from './render/worker-main.mjs';
+import { runForceSimWorker } from './layout/force-worker.mjs';
+import {
+  _forceWorkerStats,
+  _resetForceWorker,
+} from './layout/force-remote.mjs';
 import {
   _algoWorkerSource,
   _algoWorkersStats,
@@ -150,6 +155,18 @@ cytoscape.CancelledError = CancelledError;
 // a factory static
 (cytoscape as unknown as { __runRenderWorker__: unknown }).__runRenderWorker__ =
   runRenderWorker;
+// the force sim worker's entry (129.3), the same way: the layout's
+// spawn bootstrap loads this bundle inside a worker and calls it, so
+// the CPU simulation runs off the main thread on the very same code
+(
+  cytoscape as unknown as { __runForceSimWorker__: unknown }
+).__runForceSimWorker__ = runForceSimWorker;
+(
+  cytoscape as unknown as { __resetForceWorker__: unknown }
+).__resetForceWorker__ = _resetForceWorker;
+(
+  cytoscape as unknown as { __forceWorkerStats__: unknown }
+).__forceWorkerStats__ = _forceWorkerStats;
 
 // the algorithm worker's source text (round 74.2), attached the same
 // way: `test/modules/algo-worker-body.mjs` pulls it out of each built

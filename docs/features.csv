@@ -574,7 +574,7 @@ Category,Feature,Status,Comments,Reference
 "Layout","concentric","Implemented","Concentric rings from node scores, with component packing.","src/layout/concentric.mts"
 "Layout","cose","Replaced","Use force; the v3 cose option surface is not accepted unchanged.","MIGRATING.md"
 "Layout","flow","Implemented","Layered directed layout with rank assignment, compound handling and edge routing support.","src/layout/flow.mts"
-"Layout","force","Implemented","CPU and GPU force layout; constraints, component packing, overlap avoidance and infinite interactive runs.","src/layout/force.mts"
+"Layout","force","Implemented","CPU and GPU force layout; constraints, component packing, overlap avoidance and infinite interactive runs. Three executors since round 129.3 (executor: 'auto' | 'cpu' | 'gpu' | 'workers'): the GPU integrator on either host, the CPU simulation on a worker (bit-identical to in-thread; 'auto' takes it on a rendered instance wherever the integrator cannot run, so compound and constrained graphs no longer hold the main thread), and the in-thread simulation.","src/layout/force.mts"
 "Layout","grid","Implemented","Grid placement with node-size-aware spacing and component packing.","src/layout/grid.mts"
 "Layout","Layout extensions","Implemented","Pass implementations directly through the layout contract; no extension registry.","src/layout/contract.mts"
 "Layout","pack","Implemented","Pack disconnected components while preserving their internal drawing.","src/layout/pack-layout.mts"

@@ -60,6 +60,7 @@ Pinned nodes (locked, or outside a subset scope) take part in every
 force pair but never move.
 */
 
+import { projectConstraints } from './force-constraints.mjs';
 import type { ForceConstraints } from './force-constraints.mjs';
 import { OverlapGrid } from './separation.mjs';
 import type { Boxes } from './separation.mjs';
@@ -863,69 +864,12 @@ export class ForceSim {
       return;
     }
 
-    const pos = this.positions;
-    const pinned = this.pinned;
-
-    for (const group of constraints.groups) {
-      const { axis, members, pinnedAt } = group;
-      let target: number;
-
-      if (pinnedAt != null) {
-        target = pinnedAt;
-      } else {
-        let sum = 0;
-
-        for (let k = 0; k < members.length; k++) {
-          sum += pos[members[k] * 2 + axis];
-        }
-
-        target = sum / members.length;
-      }
-
-      for (let k = 0; k < members.length; k++) {
-        const i = members[k];
-
-        if (pinned == null || pinned[i] !== 1) {
-          pos[i * 2 + axis] = target;
-        }
-      }
-    }
-
-    const corrections = this.pairCorrections;
-
-    if (corrections == null) {
-      return;
-    }
-
-    corrections.fill(0);
-
-    for (const { a, b, axis, gap } of constraints.pairs) {
-      const violation = pos[a * 2 + axis] + gap - pos[b * 2 + axis];
-
-      if (violation <= 0) {
-        continue;
-      }
-
-      const aPinned = pinned != null && pinned[a] === 1;
-      const bPinned = pinned != null && pinned[b] === 1;
-
-      if (aPinned && bPinned) {
-        continue;
-      } // both locked: unresolvable, left violated (documented)
-
-      if (aPinned) {
-        corrections[b * 2 + axis] += violation;
-      } else if (bPinned) {
-        corrections[a * 2 + axis] -= violation;
-      } else {
-        corrections[a * 2 + axis] -= violation / 2;
-        corrections[b * 2 + axis] += violation / 2;
-      }
-    }
-
-    for (let i = 0; i < this.n; i++) {
-      pos[i * 2] += corrections[i * 2];
-      pos[i * 2 + 1] += corrections[i * 2 + 1];
-    }
+    projectConstraints(
+      this.n,
+      this.positions,
+      this.pinned,
+      constraints,
+      this.pairCorrections,
+    );
   }
 }

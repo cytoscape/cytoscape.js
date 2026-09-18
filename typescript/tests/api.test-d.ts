@@ -215,6 +215,11 @@ const gridOpts: GridLayoutOptions = { name: 'grid', fit: true, padding: 30 };
 
 cy.layout(gridOpts).run();
 cy.layout({ name: 'force', animate: true } as LayoutOptions).run();
+// the force executor (round 129.3): the four spellings type, a fifth does not
+cy.layout({ name: 'force', executor: 'workers' } as LayoutOptions).run();
+cy.layout({ name: 'force', executor: 'cpu' }).run();
+// @ts-expect-error — not an executor
+cy.layout({ name: 'force', executor: 'threads' }).run();
 
 class SpiralLayout {
   run(ctx: {

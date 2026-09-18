@@ -76,7 +76,44 @@ import type { LayoutContext, LayoutImpl } from './contract.mjs';
 import type { Event } from '../event.mjs';
 import type { Position } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 import type { ForceHostLike, ForceRuntimeLike } from '../render/gpu-force.mjs';
+import { projectConstraints } from './force-constraints.mjs';
+import { acquireForceWorker, forceWorkerSupported } from './force-remote.mjs';
+import type { ForceWorker, RemoteSimRun } from './force-remote.mjs';
+import type { ForceSimInputs } from './force-sim.mjs';
+
+/** Where the force simulation runs (129.3); see `executor`. */
+export type ForceExecutor = 'auto' | 'cpu' | 'gpu' | 'workers';
+
+/**
+ * Validate the `executor` option at start.
+ *
+ * @param value — the option as passed, or undefined for the default
+ * @returns the resolved executor ('auto' when omitted)
+ * @throws if the value is not 'auto', 'cpu', 'gpu' or 'workers'
+ */
+export const resolveForceExecutor = (
+  value: ForceExecutor | undefined,
+): ForceExecutor => {
+  if (value == null) {
+    return 'auto';
+  }
+
+  if (
+    value === 'auto' ||
+    value === 'cpu' ||
+    value === 'gpu' ||
+    value === 'workers'
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    "force layout: executor must be 'auto', 'cpu', 'gpu' or 'workers' — " +
+      `got ${String(value)}`,
+  );
+};
 
 export interface ForceRunOptions {
   /** ideal edge length: a number; a `{ data, scale?, range?, invert?,
@@ -142,6 +179,21 @@ export interface ForceRunOptions {
    * / an add or remove, ends on `stop()` with the positions as they
    * stand (no settle pass, re-pack, fit or tween) */
   infinite?: boolean;
+  /** where the simulation runs (129.3; default `'auto'`).  `'auto'`
+   * is availability-driven, as 87.2 made it: the GPU integrator where
+   * the renderer offers one (a flat rendered graph with a device, on
+   * either host), else — on a rendered instance — the CPU simulation
+   * on a worker that loaded this same bundle, so the main thread stays
+   * free through the run, else the in-thread simulation.  A headless
+   * run keeps its contract under `'auto'` (`animate: false`
+   * synchronous).  `'cpu'` is the in-thread reference
+   * (bit-reproducible); `'workers'` is the worker simulation wherever
+   * a worker can be constructed, headless included (the run is then
+   * asynchronous — read positions at `layoutstop` / `promise()`), and
+   * throws at start where none can be; `'gpu'` throws at start where
+   * no integrator is available (headless, a compound graph, a
+   * constrained run, no device).  Any other value throws at start. */
+  executor?: ForceExecutor;
   /** keep node bodies apart — labels included when
    * `nodeDimensionsIncludeLabels` is true, pinned (locked) nodes as
    * obstacles — and how (118.2): `true` or `'settle'` (the default)
@@ -971,6 +1023,17 @@ export class ForceLayoutImpl implements LayoutImpl {
     // a data key here would fail silently at the settle
     validatePackOptions(options, 'force');
 
+    // where the sim runs (129.3): validated here so a bad value throws
+    // at start, like every other option
+    const executor = resolveForceExecutor(options.executor);
+
+    if (executor === 'workers' && !forceWorkerSupported()) {
+      throw new Error(
+        "force layout: executor 'workers' needs a worker platform and a " +
+          "bundle loaded from a URL — use 'cpu' or 'auto'",
+      );
+    }
+
     // the sim set: every leaf in scope — unlocked ones move, locked
     // ones pin in place as obstacles
     const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
@@ -1283,7 +1346,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     const extents =
       overlapMode === 'sim' || overlapMode === 'both' ? dims : null;
 
-    const sim = new ForceSim({
+    const simInputs: ForceSimInputs = {
       n,
       edges: edgesArr,
       edgeLength: lengthsArr,
@@ -1295,14 +1358,30 @@ export class ForceLayoutImpl implements LayoutImpl {
       constraints: constraints ?? undefined,
       infinite,
       ...params,
-    });
+    };
+    // the in-thread sim, constructed only where it runs (129.3 — the
+    // worker and the GPU build their own from the same inputs)
+    let sim: ForceSim | null = null;
+    const inThreadSim = (): ForceSim => {
+      if (sim == null) {
+        sim = new ForceSim(simInputs);
 
-    // the seed is constraint-blind (spectral or scatter alike), so a
-    // constrained run projects once before the first tick to shorten
-    // the transient (85.2)
-    if (constraints != null) {
-      sim.project();
-    }
+        // the seed is constraint-blind (spectral or scatter alike), so
+        // a constrained run projects once before the first tick to
+        // shorten the transient (85.2)
+        if (constraints != null) {
+          sim.project();
+        }
+      }
+
+      return sim;
+    };
+    // the settle's projection (85.2; a pure function since 129.3, so a
+    // remote sim's positions project like the in-thread sim's own)
+    const pairCorrections =
+      constraints != null && constraints.pairs.length > 0
+        ? new Float64Array(n * 2)
+        : null;
 
     const movableSlots = movable.map((i) => simSlots[i]);
     const movableXy = (arr: Float32Array): number[] => {
@@ -1413,8 +1492,8 @@ export class ForceLayoutImpl implements LayoutImpl {
         );
       }
 
-      if (constraints != null && arr === positions) {
-        sim.project();
+      if (constraints != null) {
+        projectConstraints(n, arr, pinned, constraints, pairCorrections);
       }
 
       if (!skipRepack) {
@@ -1460,7 +1539,12 @@ export class ForceLayoutImpl implements LayoutImpl {
     // is in the render bench's --layout mode, and the on-device
     // `constrain` dispatch design is recorded in the round for the day
     // the demand justifies it).
-    if (!store.hasCompounds() && constraints == null) {
+    if (
+      !store.hasCompounds() &&
+      constraints == null &&
+      executor !== 'cpu' &&
+      executor !== 'workers'
+    ) {
       // both hosts answer the same three verbs (129.2): the same-thread
       // renderer runs the integrator itself, the worker host's proxy
       // runs it in the worker and mirrors its state
@@ -1523,14 +1607,49 @@ export class ForceLayoutImpl implements LayoutImpl {
       }
     }
 
+    if (executor === 'gpu') {
+      throw new Error(
+        "force layout: executor 'gpu' needs the GPU integrator — a flat, " +
+          'unconstrained graph on a rendered instance with a WebGPU device ' +
+          "— use 'cpu', 'workers' or 'auto'",
+      );
+    }
+
+    // the CPU simulation on a worker (129.3): explicitly, or under
+    // 'auto' on a rendered instance — the host whose main thread the
+    // run would otherwise hold.  A headless 'auto' run keeps its
+    // synchronous contract (and a headless live run its in-thread
+    // clock), which is also what keeps the Node suites' timing honest.
+    if (
+      executor === 'workers' ||
+      (executor === 'auto' && cy.renderer() != null && forceWorkerSupported())
+    ) {
+      return this.runRemote(
+        cy,
+        simInputs,
+        live,
+        infinite,
+        options.stepsPerFrame ?? 3,
+        executor === 'workers',
+        simIndex,
+        positions,
+        writeBack,
+        settle,
+        inThreadSim,
+      );
+    }
+
     if (!live) {
       // settle-then-land on the CPU executor: run to convergence
       // synchronously, settle once (a tween under `animate`).  Reached
-      // only when the GPU integrator is unavailable (headless,
-      // compounds, no device) — a flat rendered graph took the silent
-      // GPU path above (87.2)
-      while (!sim.converged() && !this.stopped) {
-        sim.step(50);
+      // when neither the GPU integrator nor the worker sim applies
+      // (headless; an explicit 'cpu') — a flat rendered graph took the
+      // silent GPU path above (87.2), a rendered compound or
+      // constrained graph the worker (129.3)
+      const cpuSim = inThreadSim();
+
+      while (!cpuSim.converged() && !this.stopped) {
+        cpuSim.step(50);
       }
 
       if (!this.cancelled) {
@@ -1540,12 +1659,42 @@ export class ForceLayoutImpl implements LayoutImpl {
       return;
     }
 
-    // live mode: the sim streams positions to the store per frame — the
-    // watchable-layout path (the 18.3 GPU integrator hooks in here).
-    // An infinite run (118.3) sleeps once the sim is idle — no frame is
-    // scheduled — and a wake (a drag, a moved node, a reheat, a stop)
-    // schedules the next
-    const stepsPerFrame = options.stepsPerFrame ?? 3;
+    return this.runLive(
+      inThreadSim(),
+      infinite,
+      options.stepsPerFrame ?? 3,
+      simIndex,
+      positions,
+      writeBack,
+      settle,
+    );
+  }
+
+  /**
+   * The in-thread live loop (`animateLive`, `infinite`): the sim
+   * streams positions to the store per frame — the watchable-layout
+   * path.  An infinite run (118.3) sleeps once the sim is idle — no
+   * frame is scheduled — and a wake (a drag, a moved node, a reheat, a
+   * stop) schedules the next.
+   *
+   * @param sim — the in-thread sim
+   * @param infinite — the run has no end of its own
+   * @param stepsPerFrame — iterations per frame
+   * @param simIndex — node slot → sim index
+   * @param positions — the sim's positions (the caller's array)
+   * @param writeBack — land the current positions in the store
+   * @param settle — the end-of-run adjustment and landing
+   * @returns a promise that resolves at the run's end
+   */
+  private runLive(
+    sim: ForceSim,
+    infinite: boolean,
+    stepsPerFrame: number,
+    simIndex: Map<number, number>,
+    positions: Float32Array,
+    writeBack: () => void,
+    settle: (arr: Float32Array) => void,
+  ): Promise<void> {
     const tick =
       typeof requestAnimationFrame !== 'undefined'
         ? (cb: () => void) => requestAnimationFrame(cb)
@@ -1601,6 +1750,147 @@ export class ForceLayoutImpl implements LayoutImpl {
 
       frame();
     });
+  }
+
+  /**
+   * The CPU simulation on the sim worker (129.3): the inputs cross as
+   * one clone, the worker ticks, a live run's frames land through the
+   * layout's own write-back, and the final positions settle here.  The
+   * worker's failure modes fall back in-thread rather than failing the
+   * run — a layout run has no rejection path — with an `error` event on
+   * the core when the executor was explicit.
+   *
+   * @param cy — the core
+   * @param inputs — the sim's inputs
+   * @param live — stream per frame
+   * @param infinite — the run has no end of its own
+   * @param stepsPerFrame — iterations per live tick
+   * @param explicit — `executor: 'workers'` was asked for
+   * @param simIndex — node slot → sim index
+   * @param positions — the layout's positions (the settle's array)
+   * @param writeBack — land `positions` in the store
+   * @param settle — the end-of-run adjustment and landing
+   * @param inThreadSim — the in-thread sim, for the fallback
+   * @returns a promise that resolves at the run's end
+   */
+  private async runRemote(
+    cy: Core,
+    inputs: ForceSimInputs,
+    live: boolean,
+    infinite: boolean,
+    stepsPerFrame: number,
+    explicit: boolean,
+    simIndex: Map<number, number>,
+    positions: Float32Array,
+    writeBack: () => void,
+    settle: (arr: Float32Array) => void,
+    inThreadSim: () => ForceSim,
+  ): Promise<void> {
+    let worker: ForceWorker | null = null;
+
+    try {
+      worker = await acquireForceWorker();
+    } catch (err) {
+      if (explicit) {
+        cy.emit({ type: 'error' }, [
+          `force layout: ${err instanceof Error ? err.message : String(err)}` +
+            ' — the run continued in-thread',
+        ]);
+      }
+    }
+
+    // stopped or cancelled while the worker spawned: nothing ran, and
+    // the positions stand where the seed put them
+    if (this.stopped) {
+      if (!this.cancelled) {
+        settle(positions);
+      }
+
+      return;
+    }
+
+    const run: RemoteSimRun | null =
+      worker == null ? null : worker.start(inputs, live, stepsPerFrame);
+
+    if (run == null) {
+      // no worker, or one busy with another run: in-thread, as before
+      if (live) {
+        return this.runLive(
+          inThreadSim(),
+          infinite,
+          stepsPerFrame,
+          simIndex,
+          positions,
+          writeBack,
+          settle,
+        );
+      }
+
+      const cpuSim = inThreadSim();
+
+      while (!cpuSim.converged() && !this.stopped) {
+        cpuSim.step(50);
+      }
+
+      if (!this.cancelled) {
+        settle(positions);
+      }
+
+      return;
+    }
+
+    this.current = {
+      indexOf: (slot) => simIndex.get(slot),
+      setPosition: (i, x, y) => {
+        positions[i * 2] = x;
+        positions[i * 2 + 1] = y;
+        run.setPosition(i, x, y);
+      },
+      setPinned: (i, flag) => run.setPinned(i, flag),
+      reheat: (alpha) => run.reheat(alpha),
+      // a wake after a stop or a topology change ends the run instead
+      // (the in-thread frame's test, posted as the verb it is)
+      wake: () => {
+        if (this.stopped || this.restartWanted) {
+          run.stop();
+        } else {
+          run.wake();
+        }
+      },
+    };
+
+    if (live) {
+      run.onTick((frame) => {
+        positions.set(frame);
+        writeBack();
+
+        if (this.stopped || this.restartWanted) {
+          run.stop();
+        }
+      });
+    }
+
+    let final: Float32Array;
+
+    try {
+      final = await run.done;
+    } catch (err) {
+      // the worker failed or was reset under the run: the positions as
+      // last seen stand, and the run closes
+      if (explicit) {
+        cy.emit({ type: 'error' }, [
+          `force layout: ${err instanceof Error ? err.message : String(err)}`,
+        ]);
+      }
+
+      final = positions;
+    }
+
+    positions.set(final);
+
+    if (!this.cancelled) {
+      settle(positions);
+    }
   }
 
   /** Poll the device sim to convergence, then the one settle readback. */

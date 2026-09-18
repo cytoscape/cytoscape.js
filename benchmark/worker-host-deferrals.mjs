@@ -655,12 +655,22 @@ if (modes.includes('tweens')) {
               requestAnimationFrame(tick);
             }
           };
+          // and a 5 ms timer beside it: headless Chromium issues no
+          // begin-frames while nothing draws, so a run that lands its
+          // positions only at the end reads ~2 rAF ticks per 300 ms
+          // free or held alike (measured 2026-09-18) — the timer reads
+          // a held thread as zero
+          let timerTicks = 0;
+          const interval = setInterval(() => {
+            timerTicks++;
+          }, 5);
 
           requestAnimationFrame(tick);
 
           await run();
 
           sampling = false;
+          clearInterval(interval);
 
           const wallMs = now() - t;
           const framesDrawn = cy.stats().frames - f0;
@@ -673,6 +683,7 @@ if (modes.includes('tweens')) {
             wallMs: +wallMs.toFixed(0),
             framesDrawn,
             rafTicks,
+            timerTicks,
             ...d,
             positionColumnsPerFrame: +perFrame.toFixed(2),
             msPerFrame: +(
@@ -686,9 +697,9 @@ if (modes.includes('tweens')) {
             );
           }
 
-          if (opts.expectTicks && rafTicks < wallMs / 100) {
+          if (opts.expectTicks && timerTicks < wallMs / 20) {
             warnings.push(
-              `${host} ${name}: ${rafTicks} rAF ticks over ${wallMs.toFixed(0)} ms — the main thread was held`,
+              `${host} ${name}: ${timerTicks} timer ticks over ${wallMs.toFixed(0)} ms — the main thread was held`,
             );
           }
         };

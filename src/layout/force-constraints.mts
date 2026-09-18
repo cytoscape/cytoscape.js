@@ -299,3 +299,88 @@ const assertAcyclic = (pairs: RelativePair[], axis: 0 | 1): void => {
     );
   }
 };
+
+/**
+ * Project the constraints onto a position array (85.2; extracted in
+ * 129.3 so the settle can project without a sim in hand — the remote
+ * sim's positions come back as a bare array).  Alignment groups first
+ * (each member takes the group's mean coordinate, or a locked member's
+ * pin), then the relative pairs as one Jacobi pass: every violated
+ * gap's correction is accumulated and applied at once, so the pass
+ * cannot oscillate whatever the pairs' order.  `ForceSim.project()`
+ * is this function on the sim's own arrays.
+ *
+ * @param n — the node count
+ * @param pos — 2n interleaved coordinates, corrected in place
+ * @param pinned — 1 = never moved, or null for none
+ * @param constraints — the resolved groups and pairs
+ * @param corrections — 2n scratch for the pair pass, or null when the
+ *   constraints carry no pairs
+ */
+export const projectConstraints = (
+  n: number,
+  pos: Float32Array,
+  pinned: Uint8Array | null,
+  constraints: ForceConstraints,
+  corrections: Float64Array | null,
+): void => {
+  for (const group of constraints.groups) {
+    const { axis, members, pinnedAt } = group;
+    let target: number;
+
+    if (pinnedAt != null) {
+      target = pinnedAt;
+    } else {
+      let sum = 0;
+
+      for (let k = 0; k < members.length; k++) {
+        sum += pos[members[k] * 2 + axis];
+      }
+
+      target = sum / members.length;
+    }
+
+    for (let k = 0; k < members.length; k++) {
+      const i = members[k];
+
+      if (pinned == null || pinned[i] !== 1) {
+        pos[i * 2 + axis] = target;
+      }
+    }
+  }
+
+  if (corrections == null) {
+    return;
+  }
+
+  corrections.fill(0);
+
+  for (const { a, b, axis, gap } of constraints.pairs) {
+    const violation = pos[a * 2 + axis] + gap - pos[b * 2 + axis];
+
+    if (violation <= 0) {
+      continue;
+    }
+
+    const aPinned = pinned != null && pinned[a] === 1;
+    const bPinned = pinned != null && pinned[b] === 1;
+
+    if (aPinned && bPinned) {
+      continue;
+    } // both locked: unresolvable, left violated (documented)
+
+    if (aPinned) {
+      corrections[b * 2 + axis] += violation;
+    } else if (bPinned) {
+      corrections[a * 2 + axis] -= violation;
+    } else {
+      corrections[a * 2 + axis] -= violation / 2;
+      corrections[b * 2 + axis] += violation / 2;
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    pos[i * 2] += corrections[i * 2];
+    pos[i * 2 + 1] += corrections[i * 2 + 1];
+  }
+};

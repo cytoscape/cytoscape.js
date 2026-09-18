@@ -57,8 +57,8 @@ export interface HeatDiffusionOptions {
    * `time` alone — heat is then not conserved (round 72.4) */
   laplacian?: HeatLaplacian;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * The seed form has no GPU path; the kernel form routes to the GPU
-   * only on dense graphs. */
+   * The seed form has no GPU path; the kernel form takes the GPU from
+   * `GPU_MIN_N` nodes at any density (72.6). */
   executor?: AlgoExecutor;
 }
 
@@ -340,16 +340,18 @@ export const heatKernelAsync = (
 
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
-  const arcs = view.edgeSlots.length * 2;
 
-  // the CPU diffuses per column at O(E) per term where the dense
-  // chain is O(n³) per product — the triangle family's density gate
-  const dense = arcs >= (n * n) / 32;
-
+  // round 70 gated this on density like the triangle family; the
+  // 72.6 sweep found the GPU ahead at *every* density — 2.1× / 2.9× /
+  // 5.7× at n = 256 / 512 / 1024 on the sparsest fixture (E = n/2),
+  // 219× / 1230× / 6000× on the densest — because the CPU pays
+  // TAYLOR_TERMS·2^s sparse products per *column* and the GPU pays
+  // them once as dense products.  So 'auto' takes the GPU on size
+  // alone.
   return runAlgo(
     executor,
     n,
-    dense ? GPU_MIN_N : Infinity,
+    GPU_MIN_N,
     () => heatKernel(view, options),
     (ctx) => heatKernelGpu(ctx, view, options),
   );

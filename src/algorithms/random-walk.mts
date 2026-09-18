@@ -46,9 +46,8 @@ export interface RandomWalkWithRestartOptions {
   directed?: boolean;
   weight?: WeightFn;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * The seed form has no GPU path; the proximity form routes to the
-   * GPU only on dense graphs (the CPU solves per column at O(E) per
-   * step, so sparse graphs are its outright). */
+   * The seed form has no GPU path; the proximity form takes the GPU
+   * from `GPU_MIN_N` nodes at any density (72.6). */
   executor?: AlgoExecutor;
 }
 
@@ -332,16 +331,17 @@ export const randomWalkWithRestartProximityAsync = (
 
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
-  const arcs = view.edgeSlots.length * (options.directed === true ? 1 : 2);
 
-  // the CPU solves per column at O(E) per step where the matmul is
-  // O(n³) regardless — the triangle family's density gate
-  const dense = arcs >= (n * n) / 32;
-
+  // round 70 gated this on density like the triangle family; the
+  // 72.6 sweep found the GPU ahead at every density — 2.8× / 6.3× /
+  // 10.3× at n = 256 / 512 / 1024 on the sparsest fixture (E = n/2),
+  // 22× / 74× / 213× on the densest — so 'auto' takes the GPU on
+  // size alone (the CPU's O(E) per step is per *column*, n of them,
+  // to a 1e-5 tolerance each).
   return runAlgo(
     executor,
     n,
-    dense ? GPU_MIN_N : Infinity,
+    GPU_MIN_N,
     () => rwrProximity(view, options),
     (ctx) => rwrProximityGpu(ctx, view, options),
   );

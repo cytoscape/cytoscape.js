@@ -14,7 +14,12 @@ v3 counterpart — this API is v4's own.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_EDGES_PER_NODE,
+  GPU_MIN_N,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { triangleCountGpu } from './algo-gpu-triangles.mjs';
 
@@ -167,10 +172,11 @@ export const triangleCountAsync = (
 
   // the CPU walk is O(Σ deg²) where the matmul is O(n³) regardless, so
   // 'auto' takes the GPU only on graphs dense enough for the cubic
-  // side to win: m ≥ n²/32 (average degree n/16).  A starting figure
-  // in the GPU_MIN_N tradition, to be re-measured by the sweep —
-  // sparse graphs stay on the CPU however large they are.
-  const dense = adjacency.edges >= (n * n) / 32;
+  // side to win — measured in 72.6 as a mean degree, not a share of
+  // n²: E ≥ 32·n (triangles 1.7× / 1.7× / 1.2× GPU at n = 512 / 1024
+  // / 2048 there, 0.8× / 0.8× / 0.5× one step sparser).  Sparse
+  // graphs stay on the CPU however large they are.
+  const dense = adjacency.edges >= GPU_MIN_EDGES_PER_NODE * n;
 
   return runAlgo(
     executor,

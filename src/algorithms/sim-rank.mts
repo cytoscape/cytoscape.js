@@ -33,8 +33,8 @@ export interface SimRankOptions {
   /** compare in-neighborhoods (the classic form) instead of undirected ones */
   directed?: boolean;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * 'auto' routes to the GPU only on graphs dense enough that the
-   * O(n³) products beat the CPU's O(n·m)-per-iteration sparse form. */
+   * 'auto' takes the GPU from `GPU_MIN_N` nodes at any density
+   * (72.6: the products beat the per-pair CPU iteration everywhere). */
   executor?: AlgoExecutor;
 }
 
@@ -176,15 +176,15 @@ export const simRankAsync = (
   const hoods = buildSimRankNeighborhoods(view, directed);
   const n = view.nodeSlots.length;
 
-  // the CPU iteration is O(n·m) per step where the two products are
-  // O(n³) regardless — the triangle family's density gate, for the
-  // triangle family's reason
-  const dense = hoods.adjacencies >= (n * n) / 16;
-
+  // round 70 gated this on density like the triangle family; the
+  // 72.6 sweep found the GPU ahead at every density — 4.1× / 6.1× /
+  // 9.6× at n = 256 / 512 / 1024 on the sparsest fixture (E = n/2),
+  // 40× / 98× / 197× on the densest — so 'auto' takes the GPU on size
+  // alone.  (The CPU's O(n·m) per step is per *pair*, n² of them.)
   return runAlgo(
     executor,
     n,
-    dense ? GPU_MIN_N : Infinity,
+    GPU_MIN_N,
     () => simRank(view, hoods, options),
     (ctx) => simRankGpu(ctx, view, hoods, options),
   );

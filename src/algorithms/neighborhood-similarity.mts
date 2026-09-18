@@ -17,7 +17,12 @@ v4's own.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_EDGES_PER_NODE,
+  GPU_MIN_N,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { neighborhoodSimilarityGpu } from './algo-gpu-similarity.mjs';
 
@@ -205,8 +210,12 @@ export const neighborhoodSimilarityAsync = (
 
   // the CPU wedge walk is O(n² + Σ deg²) where the matmul is O(n³)
   // regardless, so 'auto' takes the GPU only on dense graphs — the
-  // triangle family's gate, for the triangle family's reason
-  const dense = hoods.adjacencies >= (n * n) / 16;
+  // triangle family's gate, for the triangle family's reason: E ≥
+  // 32·n, where `adjacencies` counts each undirected edge twice
+  // (72.6: 1.2× / 1.5× / 1.6× GPU at n = 512 / 1024 / 2048 on the
+  // gate, 0.7× / 0.8× / 0.9× one step sparser)
+  const edges = directed ? hoods.adjacencies : hoods.adjacencies / 2;
+  const dense = edges >= GPU_MIN_EDGES_PER_NODE * n;
 
   return runAlgo(
     executor,

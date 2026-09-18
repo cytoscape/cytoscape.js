@@ -26,7 +26,12 @@ excluded.  No v3 counterpart.
 import { subgraph } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import type { Collection } from '../collection.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_EDGES_PER_NODE,
+  GPU_MIN_N,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { motifCensusGpu } from './algo-gpu-motifs.mjs';
 
@@ -310,8 +315,12 @@ export const motifCensusAsync = (
   const n = view.nodeSlots.length;
 
   // the CPU walks wedges at O(Σ deg²) where the trace products are
-  // O(n³) regardless — the triangle family's density gate
-  const dense = structure.adjacencies >= (n * n) / 32;
+  // O(n³) regardless — the triangle family's density gate, on the
+  // arc count (each undirected edge is two arcs): E ≥ 32·n (72.6:
+  // 2.1× / 2.0× / 1.4× GPU at n = 512 / 1024 / 2048 on the gate,
+  // 0.6× / 0.8× / 0.4× one step sparser)
+  const edges = directed ? structure.adjacencies : structure.adjacencies / 2;
+  const dense = edges >= GPU_MIN_EDGES_PER_NODE * n;
 
   return runAlgo(
     executor,

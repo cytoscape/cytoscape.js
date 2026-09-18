@@ -1408,7 +1408,9 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
       return { maxRel, infMismatch, pairR, crossR, commute };
     }, RING_FIXTURE);
 
-    // Newton–Schulz runs in f32 against the CPU's f64 elimination
+    // Newton–Schulz runs in f32 against the CPU's f64 elimination.
+    // Measured on the RX 580 (72.6): 1.9e-6 here, 1.3e-5 at n=800 —
+    // the bound keeps the M2's headroom (70.5) rather than this card's
     expect(out.maxRel).toBeLessThan(5e-3);
     expect(out.infMismatch).toBe(0);
     expect(Math.abs(out.pairR - 1)).toBeLessThan(1e-3);

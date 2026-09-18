@@ -44,6 +44,21 @@ export type AlgoExecutor = 'cpu' | 'gpu' | 'auto';
 export const GPU_MIN_N = 256;
 
 /**
+ * The density gate for the families whose CPU walk is O(Σ deg²) and
+ * whose kernel is a dense O(n³) product (triangles, neighborhood
+ * similarity, the triad census): `'auto'` takes the GPU once the
+ * graph carries at least this many *edges per node* — E ≥ 32·n, a
+ * mean degree of 64 undirected.  Round 72.6 measured the crossover at
+ * n = 512 / 1024 / 2048 on ring-plus-chord fixtures across six
+ * densities (amd gcn-4) and found it a constant mean degree rather
+ * than the n²/k form the families first shipped with: the GPU is
+ * ahead at E = n²/16 / n²/32 / n²/64 respectively — E/n = 32 at every
+ * size — and behind one step sparser (0.8×, 0.8×, 0.5×).  The full
+ * table is in the round-72 record.
+ */
+export const GPU_MIN_EDGES_PER_NODE = 32;
+
+/**
  * Validate the `executor` option — called synchronously by every async
  * algorithm entry, so a bad value throws at the call site rather than
  * surfacing later as a rejection.

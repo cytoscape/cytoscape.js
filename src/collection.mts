@@ -5838,8 +5838,8 @@ export class Collection {
    * collapsed, loops excluded).  Async (round 69): returns a promise,
    * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
    * where the counting runs — under 'auto' the GPU's A²∘A matmul is
-   * used only on graphs dense enough to beat the CPU's sparse walk.
-   * v4-only — v3 has no counterpart.
+   * used only on graphs dense enough to beat the CPU's sparse walk (a
+   * mean degree of 64, round 72.6).  v4-only — v3 has no counterpart.
    *
    * @param options — `{ executor }`
    * @returns a promise of `{ triangles, clusteringCoefficient,
@@ -5859,8 +5859,8 @@ export class Collection {
    * (round 69): returns a promise, and `executor` ('cpu' | 'gpu' |
    * 'auto', default 'auto') picks where the shared-neighbor counts
    * are computed — under 'auto' the GPU's A·Aᵀ matmul is used only on
-   * graphs dense enough to beat the CPU's wedge walk.  v4-only — v3
-   * has no counterpart.
+   * graphs dense enough to beat the CPU's wedge walk (a mean degree
+   * of 64, round 72.6).  v4-only — v3 has no counterpart.
    *
    * @param options — `{ metric, directed, executor }`
    * @returns a promise of the `{ similarity }` accessor
@@ -5878,8 +5878,8 @@ export class Collection {
    * similar", the Jeh–Widom recursive fixed point, iterated as dense
    * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
    * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where
-   * the iteration runs — under 'auto' the GPU only on graphs dense
-   * enough to beat the CPU's sparse form.  The undirected default
+   * the iteration runs — under 'auto' the GPU from 256 nodes at any
+   * density (round 72.6 measured it ahead everywhere).  The undirected default
    * compares all neighbors; `directed: true` compares the classic
    * in-neighborhoods.  All-pairs (O(n²) memory).  v4-only — v3 has no
    * counterpart.
@@ -5923,7 +5923,8 @@ export class Collection {
    * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
    * 'auto') picks between one sparse solve per column on the CPU and
    * the dense Neumann iteration on the GPU — under 'auto' the GPU
-   * only on graphs dense enough to beat the per-column solves.
+   * from 256 nodes at any density (round 72.6 measured it ahead
+   * everywhere).
    * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
    *
    * @param options — `{ restartProbability, maxIterations, tolerance,
@@ -5966,8 +5967,9 @@ export class Collection {
    * heat at `to` after unit heat starts at `from` (symmetric).  Async
    * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
    * picks between per-column sparse series on the CPU and the dense
-   * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
-   * on dense graphs.  `laplacian` ('combinatorial' | 'normalized',
+   * scaling-and-squaring chain on the GPU — under 'auto' the GPU
+   * from 256 nodes at any density (round 72.6).  `laplacian`
+   * ('combinatorial' | 'normalized',
    * default 'combinatorial') picks L = D − A or I − D^{-½}AD^{-½}
    * (round 72.4).  All-pairs (O(n²) memory).  v4-only — v3 has no
    * counterpart.
@@ -6010,8 +6012,9 @@ export class Collection {
    * feed-forward loop).  The counts sum to C(n, 3).  Async (round
    * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
    * between sparse wedge walks on the CPU and matmul trace products
-   * on the GPU — under 'auto' the GPU only on dense graphs.
-   * `directed: false` reads every edge as mutual, so only 003 / 102 /
+   * on the GPU — under 'auto' the GPU only on dense graphs (a mean
+   * degree of 64, round 72.6).  `directed: false` reads every edge as
+   * mutual, so only 003 / 102 /
    * 201 / 300 (empty / one-edge / path / triangle) can be non-zero.
    * v4-only — v3 has no counterpart.
    *

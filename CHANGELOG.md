@@ -337,6 +337,13 @@ that compile and then behave differently.
 
 ### Changed
 
+- **Image export converts on the device** (round 110.4).  The export
+  target's premultiplied pixels are un-premultiplied, swizzled and
+  row-compacted by a compute pass, so the readback maps final bytes
+  instead of walking every pixel in JavaScript: the readback drops
+  from 81 to 12 ms for a 4k-wide figure of a 465k-edge graph and from
+  332 to 52 ms at 8k, on both hosts.  Output pixels are the same to
+  within the two rounding rules' ties; the goldens are unchanged.
 - **A worker-pool executor for the per-source-parallel algorithms**
   (round 74).  `executor: 'workers'` runs both betweenness forms,
   unweighted `closenessCentralityNormalized`, `heatKernel` and

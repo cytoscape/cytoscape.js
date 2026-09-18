@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–109, 111–124, 127 |
-| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 110, 125–126 |
+| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–124, 127 |
+| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126 |
 
 ## The sections
 
@@ -174,7 +174,7 @@ A round can land with an item held open; the round file says which.
 | 145 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |
 | 146 | 108.9 | 2026-08-25 | landed | [The headings become titles](rounds/2026-08-25-02-rnd0108.9-landed-the-headings-become-titles.md) |
 | 147 | 109 | 2026-08-26 | landed | [The spectral-seed spec fails without the setup preload](rounds/2026-08-26-01-rnd0109-landed-the-spectral-seed-spec-fails-without-the-setup-preload.md) |
-| 148 | 110 | 2026-08-26 | plan | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-02-rnd0110-plan-zero-copy-the-copy-census-and-what-each-copy-buys.md) |
+| 148 | 110 | 2026-08-26 | landed | [Zero-copy: the copy census, and what each copy buys](rounds/2026-08-26-02-rnd0110-landed-zero-copy-the-copy-census-and-what-each-copy-buys.md) |
 | 149 | 111 | 2026-08-26 | landed | [The kind field tells the truth](rounds/2026-08-26-03-rnd0111-landed-the-kind-field-tells-the-truth.md) |
 | 150 | 111.1 | 2026-08-28 | landed | [A round that shipped nothing is still closed](rounds/2026-08-28-01-rnd0111.1-landed-a-round-that-shipped-nothing-is-still-closed.md) |
 | 151 | 112 | 2026-09-01 | landed | [The flow layout: a Sugiyama-class built-in](rounds/2026-09-01-01-rnd0112-landed-the-flow-layout-a-sugiyama-class-built-in.md) |

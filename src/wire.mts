@@ -116,7 +116,13 @@ export const isSerializedElements = (
  *   payload's optional graph-level `data` rides along (round 39.2); the
  *   definition form has nowhere to put it, so it carries none
  * @returns one little-endian ArrayBuffer holding the whole payload —
- *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets
+ *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets.
+ *   Every section starts at an offset aligned to its element width
+ *   (8 for f64 columns), and that alignment is the encoder's contract:
+ *   `deserializeElements` returns views over the buffer rather than
+ *   copies because of it (round 110's census measured the decode at
+ *   zero copies), so a reader may rely on it and a future encoder must
+ *   keep it
  * @throws if the platform is big-endian, or if a definition-form payload
  *   names an edge endpoint that is not a node in the same payload
  */

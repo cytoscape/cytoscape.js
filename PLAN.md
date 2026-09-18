@@ -646,6 +646,10 @@ directions".*
     limiter.  Companion to item 36; likely the same harness.
     **First measurement**: the bisect at 1M/2M/5M edges on the
     RX 580 — failure mode and owning subsystem for each.
+    **Note (round 110.3)**: the designed SharedArrayBuffer tier for
+    the worker host declares a `maxSlots` ceiling per column and
+    refuses growth past it with this item's message; the number it
+    defaults to is the one this round measures.
 36. **The VRAM budget, and failing gracefully** (raised
     2026-08-19).  Device *loss* is tested; allocation *failure* is
     not — nothing defines what a `createBuffer` failure mid-session
@@ -757,6 +761,10 @@ directions".*
     **First measurement**: what the current encoding lacks for
     evolution — is there any version field at all, and which
     column ids would break if the contract reordered.
+    **Note (round 110, 2026-09-18)**: the section alignment the
+    decoder's zero-copy views rest on is now written on
+    `serializeElements` as the encoder's contract; going public
+    inherits that sentence as a wire guarantee.
 44. **A v3→v4 codemod** (raised 2026-08-19).  `MIGRATING.md` is
     prose, but its property table is machine-checked
     (`test/modules/migration-guide.mjs`) — a codemod can be driven
@@ -1265,3 +1273,33 @@ directions".*
     at the bench sizes through the built bundle, and the max relative
     difference of the scores — expected 0 (the per-source dependency
     order is the heap's, unchanged) or f64 rounding.
+66. **Edge id registration is a third of a bulk load** (logged
+    2026-09-18, from round 110.1's census).  A CPU profile of the
+    wire-form init of ndex-x-large puts `registerBulk` →
+    `IdIndex.setBulk` at **120 ms of 370** — the 464,657 edges carry no
+    ids, so the store generates a string per edge and interns it,
+    which is more than the adjacency build, the flags, the data
+    column and every column copy together (the copies are 1.4 ms;
+    the round was looking for copies and found this).  Two shapes
+    to measure: lazy ids for id-less edges (an edge without an id
+    is addressed by slot until something asks `id()`, and the
+    generated string is minted then — `ele.id()`, `json()`, the
+    wire encoder), or a numeric fast path in the index (a generated
+    id is `e<n>`; the index could store the counter and format on
+    read).  Either must keep the duplicate-id guard exact and the
+    `cy.getElementById` contract.  **First measurement**: init with
+    ids pre-generated in the payload versus generated at ingest, to
+    split the string cost from the interning cost.
+67. **A whole-sheet `cy.style()` re-apply re-derives and re-uploads
+    every column** (logged 2026-09-18, from round 110.1's census).
+    Sixty re-applies of a sheet whose only change was one node
+    `background-color` constant cost **198 ms each** on ndex-x-large,
+    of which 22 ms is the 60 MB upload of every dirtied column; the
+    rest is the style path recomputing channels that did not change.
+    A sheet diff — apply only the properties whose compiled value
+    differs from the installed sheet's, per group — would make the
+    row read as a one-channel restyle (a mapper refresh, tens of ms).
+    Not a copy question; logged here because the census is where the
+    number was taken.  **First measurement**: the same sixty applies
+    with the diff simulated by hand (`cy.nodes().style(...)` of the
+    one property), which is the target.

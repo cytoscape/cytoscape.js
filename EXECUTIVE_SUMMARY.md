@@ -64,10 +64,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,751 unit · 767 module · 29 soak · 458 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,751 unit · 767 module · 29 soak · 459 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 26 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead |
+| Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | 839 KiB minified / 231 KiB gzipped as of 17 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
@@ -1099,6 +1099,30 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Left for later: the CPU reference itself is 2.5× behind its own
     worker body on one thread — the cheapest algorithm win still in
     the tree (item 65).
+- **18 Sep** — the copy census: every copy priced, one removed
+  - Asked whether copying could be removed generally, the round
+    measured instead of assuming, and found v4 already at the
+    zero-copy floor on every path but one — with the floor set by
+    WebGPU, not by v4.  Wire decode copies nothing (every numeric
+    column is a view); the load-time column copy is 0.4% of a 370 ms
+    init; the per-frame upload of a whole moving graph is 12 µs; the
+    worker host's batch is 18 µs; the first frame's 95 MB upload
+    runs at the speed of a memcpy.  Each declined pass is written in
+    the design decisions with its number.
+  - The one path above the line was the image export's readback: a
+    JavaScript loop over every pixel, 81 ms of a 4k figure and 332 at
+    8k.  It is a compute pass now — the device un-premultiplies and
+    packs, the readback maps final bytes — 12 and 52 ms, both hosts,
+    goldens unchanged, pinned by a spec the older export specs could
+    not have failed (a half-opaque body over transparency).
+  - The SharedArrayBuffer tier for the worker host is designed in
+    full and not built: epoch-double-buffered columns behind a
+    byte-less notice, a declared growth ceiling, a loud refusal
+    without cross-origin isolation.  Its trigger is unchanged and
+    unmet — the census reads a fiftieth of it.
+  - What the census found instead of copies: registering 465k
+    generated edge ids is a third of a bulk load (item 66), and a
+    whole-sheet restyle re-derives every column (item 67).
 
 ## What changed for users of v3
 
@@ -1207,7 +1231,6 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation

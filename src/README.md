@@ -2168,6 +2168,15 @@ says "wait" is the wrong fix for work that should not block.
 Decisions made for the v4 direction and reflected in this prototype;
 each is deliberate, not a pass-1 deferral:
 
+- **Copying is priced, not assumed away (round 110).**  A copy is
+  removed only when its measured cost clears an absolute gate (1 ms per
+  frame sustained, or 5% of init) — never for a ratio.  The census
+  section below carries the table; what it declined is written there
+  with its number: adopting wire buffers as store backing (the copy is
+  0.4% of init), a SharedArrayBuffer tier for the worker host (0.018
+  ms per frame against a 1 ms trigger), and removing `png()`'s canvas
+  hop (2.6 ms at 4k).  What it took: the export readback's
+  per-pixel JavaScript loop, now a compute pass (81 → 12 ms at 4k).
 - **No selector strings, anywhere.**  v4 drops the selector language
   outright — there is no parser, no dialect of v3 selectors, and no plan
   to grow one back.  The replacements, by role:
@@ -5183,6 +5192,54 @@ tweens, the GPU force integrator and the page's @font-face labels take
 their CPU/fallback paths (the animation manager keeps its own rAF
 clock; `startForce` is absent on the proxy, so the force layout uses
 its CPU executor).
+
+## Zero-copy: the copy census (round 110)
+
+Every copy a byte pays between a wire payload and the screen, priced on
+the benchmark machine (RX 580, Chromium on the hardware adapter) against
+ndex-x-large (19.6k nodes, 465k edges), with the two instruments that
+re-take the table: `benchmark/copy-census-headless.mjs` (the ingest
+phases through the built ESM bundle, and a CPU-profile splitter) and
+`benchmark/copy-census.mjs` (patches `writeBuffer`, `mapAsync` and
+`postMessage` in-page and runs a load, a viewport spin, the every-node
+writer, whole-sheet restyles and four exports through both hosts).  The
+round's finding: **v4 was already at the zero-copy floor on every path
+but one, and the floor is WebGPU's, not v4's.**
+
+| pathway | what it copies | measured | verdict |
+| --- | --- | --: | --- |
+| wire decode | nothing — every numeric column is a view over the buffer | 5.3 ms (the name dictionary) | zero-copy; the bench fails if a copy creeps in |
+| bulk ingest, column copy | the position column (157 KB memcpy) and the endpoint index→slot remap (3.7 MB) | 0.006 + 1.4 ms of a 370 ms init (0.4%) | **adoption declined**: the gate was 5% |
+| bulk ingest, the rest | id registration 120 ms, style apply 177 ms, adjacency 7 ms | 82% of init | not copies — see ledger item 66 |
+| first frame's full-state upload | 95 MB through 54 `writeBuffer`s | 62 ms one-shot | at the floor: `writeBuffer` 33.6 ms vs `mappedAtCreation` 32.1 vs a JS memcpy 37.5 for the same bytes |
+| per-frame upload, every node moved every frame | one position column, 153 KB | 0.012 ms/frame | at the floor |
+| worker host, the same writer | one 153 KB batch per frame, transferred | 0.018 ms/frame | 86.1's copy design holds at 1/50th of its 1 ms trigger; the SAB tier stays designed-not-built |
+| whole-sheet `cy.style()` re-apply | every column re-derived, 60 MB | 22 ms of a 198 ms apply | the dirty-span floor for a full re-apply — the apply is the cost (item 67) |
+| export readback loop | row un-pad + swizzle + un-premultiply in JS | 81 ms at 4k, 332 at 8k | **moved to the device (110.4)**: 12 and 52 ms |
+| `png()`'s canvas hop | `putImageData` | 2.6 ms at 4k | at the floor; the PNG encoder (177 ms) is not a copy |
+
+The export pack pass (`src/render/export-pack.mts`): one compute
+dispatch reads the premultiplied export target through `textureLoad`,
+un-premultiplies as the CPU loop did (alpha 0 and 1 pass through) and
+packs each pixel to a `u32` in a tightly packed storage buffer, copied
+into the staging buffer the readback maps — so the map yields the final
+image and the readback is a single `slice()`, the one copy WebGPU's
+mapping model cannot remove.  The dispatch runs in 64-row-multiple
+bands so every band's byte offset is 256-aligned under the storage
+binding limit, which is smaller than the largest export the texture
+limit allows.  Both hosts take the pass.  A spec pins the conversion
+with a half-opaque body over a transparent background — the case the
+older export specs passed through unchanged.
+
+**The SharedArrayBuffer tier for the worker host is designed and not
+built** (110.3, the design in full in the round record): `renderer: {
+worker: true, sharedMemory: true }`, probing `crossOriginIsolated` and
+throwing without it; one SAB per column, double-buffered by epoch so a
+batch becomes a byte-less notice and the region being read is never the
+region being written; growth by re-sharing a new pair under a declared
+`maxSlots` ceiling; blobs and labels stay on the message path.  It is
+built the day a real application measures span traffic above 1 ms per
+frame — the census reads 0.018.
 
 ## Porting from v3 (round 47)
 

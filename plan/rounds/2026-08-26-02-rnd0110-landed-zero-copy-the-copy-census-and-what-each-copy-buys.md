@@ -153,3 +153,206 @@ Non-goal: chasing relative ratios.  The SAB row reads "34× faster" at
 gates on absolute cost against the frame or init budget, which is the
 lesson 86.4 just paid for (the occupancy win that "obviously" existed
 measured at ~0.2 ms because the architecture had already removed it).
+
+### Landed (2026-09-18)
+
+Run on the benchmark machine (i9-9900K, AMD RX 580 / gcn-4, Chromium
+via Playwright on the hardware adapter, Node 24 through the built
+bundles), against ndex-x-large (19,607 nodes, 464,657 edges, a 9.99 MB
+wire payload).  Two instruments landed with the numbers so the table
+can be re-taken: `benchmark/copy-census-headless.mjs` (the ingest
+phases through `build/cytoscape.esm.mjs`, plus a `--profile` /
+`--aggregate` pair that splits a CPU profile by the ingest's own
+function names) and `benchmark/copy-census.mjs` (Chromium: patches
+`GPUQueue.writeBuffer`, `GPUBuffer.mapAsync` and `Worker.postMessage`
+in-page before the instance exists, then runs the load, an idle hold,
+a viewport spin, the 86.1 writer worst case, whole-sheet restyles and
+four exports through both hosts; rows assert what they are named for
+and print a warning otherwise).
+
+#### 110.1 — the census, measured
+
+**Ingest (headless, medians of 5 through the ESM bundle).**  Init
+from wire views **370 ms**, from the columnar form 335, from
+definitions 432 (round 67's 622 has moved on with rounds 67.3–103).
+Decode is zero-copy as designed: all six numeric columns of the
+payload are views over the wire buffer (`positions`, `sources`,
+`targets`, both `selected` columns, `Mechanism_of_Action`; the two
+dictionary columns' index arrays too — the spec asserts it and the
+bench exits non-zero if a copy creeps in).  What the wire form pays is
+5.3 ms of decode (the 19,607-entry name dictionary), against JSON's
+440 ms parse + 98 ms convert.
+
+The split, from a CPU profile of three wire-form inits (inclusive ms
+per init, `--aggregate`):
+
+| phase of init | ms | share | copy? |
+| --- | --: | --: | --- |
+| `_applyStyle` (style apply, both groups) | 177 | 48% | no — derivation |
+| `registerBulk` → `IdIndex.setBulk` (465k generated edge ids) | 120 | 32% | no — string interning |
+| `ingestDataColumns` (per-slot `set` of the numeric column) | 16 | 4% | scatter, not memcpy |
+| `addBulk` → `buildCsr` (adjacency) | 7 | 2% | no — derivation |
+| endpoint index→slot remap (3.7 MB) | 1.4 | 0.4% | a transform |
+| `allocBulk` + `writeBulkFlags` | 2.6 | 0.7% | fill |
+| **position column memcpy (157 KB)** | **0.006** | **0.002%** | **the one true copy** |
+| `deserializeElements` | 5.6 | 1.5% | dictionary decode |
+
+The load-time column copy the plan asked about is **1.4 ms of 370
+(0.4%)**, and 1.38 of that is the endpoint remap, which is a
+transform — a payload index becomes a slot — rather than a copy.  The
+memcpy proper is six microseconds.  **110.2's gate (≥5% of init) is
+missed by an order of magnitude**; see below.  The finding the profile
+does surface is elsewhere: **registering 465k generated edge ids costs
+120 ms, a third of init** — logged as ledger item 66.
+
+**Rendered (Chromium, hardware adapter, same-thread host).**
+
+| pathway | bytes | ms | per | verdict |
+| --- | --: | --: | --- | --- |
+| first frame's full-state upload | 95.0 MB in 54 `writeBuffer`s | 62 | one-shot | at the floor: `writeBuffer` 33.6 ms vs `mappedAtCreation` 32.1 vs a JS memcpy 37.5 for the same 95 MB |
+| idle hold, 60 frames | 0 | 0 | frame | — |
+| viewport spin, 240 frames | 17 KB (the frame uniform) | 1.2 | run | — |
+| **writer worst case** (every node moved every frame) | 153 KB per drawn frame — one position column | **0.012** | frame | at the floor; 86.1's 0.086 was the whole round trip |
+| whole-sheet `cy.style()` re-apply | 59.6 MB per apply | 22 | apply | the dirty-span floor for a full re-apply (every column re-derives); the apply itself is 198 ms — style path, not copy (item 67) |
+| export readback loop, viewport 1× (4.1 MB) | 4.1 MB | **10.3** | export | **110.4** |
+| export readback loop, viewport 2× (16.4 MB) | 16.4 MB | **40.9** | export | 110.4 |
+| export readback loop, full 4k (32.8 MB) | 32.8 MB | **81** | export | 110.4 — a quarter of the 335 ms export, 14% of `png()`'s 562 |
+| export readback loop, full 8k (131 MB) | 131 MB | **332** | export | 110.4 — of a 1,154 ms export |
+| `png()`'s canvas hop (`putImageData`) | 4.1 → 131 MB | 0.4 → 11.7 | export | at the floor; the encoder (`toDataURL`) is 24 → 704 ms and is not a copy |
+
+**Worker host** (`renderer: { worker: true }`): the initial full-state
+transfer is 88.1 MB in 3 posts, 39 ms; the writer worst case posts
+153 KB per batch at **0.018 ms/post** (240 batches, 173 frames drawn
+against the same-thread host's 120 — 86.4's cadence-isolation finding
+again); the spin posts a 0-byte viewport notice per frame at 0.006 ms.
+Nothing on the worker boundary approaches the 1 ms/frame trigger:
+86.1's design holds at 1/50th of the line.
+
+**The small crossings (inventory item 6), confirmed under the line by
+their byte counts**: label sidecar entries ride the same batch as the
+spans above (tens of bytes each, label-dirty only); a force settle
+readback is one 157 KB map per run; an algorithm result is one map per
+run, whose ~3.5 ms `mapAsync` floor 72.1 already priced — one-shot,
+not per frame.
+
+#### 110.2 — zero-copy bulk ingest: declined, with the number
+
+The column copy is 0.4% of init and the memcpy proper 0.002%; the
+gate was 5%.  Adopting wire buffers as store backing would buy nothing
+measurable and cost the two things the copy buys — a capacity policy
+independent of the payload, and a store that never aliases caller
+memory.  Declined; the number is in `src/README.md`'s design
+decisions so the question starts from the table next time.  The
+alignment promise the decoder's zero-copy views rest on is now written
+on `serializeElements` as the encoder's contract (item 43 inherits
+it).
+
+#### 110.3 — the SharedArrayBuffer tier, designed, not built
+
+The census re-measured 86's trigger and it has not fired (0.018
+ms/post against a 1 ms line), so the design lands and the code does
+not.  The design, in full, so the build is an afternoon when a real
+app measures span traffic above the line:
+
+- **Spelling and gate.**  `renderer: { worker: true, sharedMemory:
+  true }`.  Construction probes `globalThis.crossOriginIsolated` and
+  `typeof SharedArrayBuffer`; without both it throws — loudly, naming
+  the two headers the page needs (`Cross-Origin-Opener-Policy:
+  same-origin`, `Cross-Origin-Embedder-Policy: require-corp`) —
+  rather than silently taking the copy path, the executor-'gpu'
+  precedent.  `sharedMemory` without `worker` throws too.
+- **Layout.**  One `SharedArrayBuffer` per column, sized to the table's
+  capacity, **double-buffered by epoch**: two regions per column, the
+  writer (main) writes region `epoch % 2` while the reader (worker)
+  draws from the other.  A batch becomes a *notice* — `{ epoch,
+  spans: [{ column, start, end }] }`, no bytes — and the worker copies
+  each span from the shared region into its local column at the
+  notice (so its cull/draw reads stable arrays, as today), then posts
+  an ack.  Main advances the epoch only after the ack, so a region is
+  never written while it is being read: transactional coherence without
+  fences, at the cost of one extra span copy on the worker side (which
+  is the copy `RemoteModelView` already makes today).
+- **Growth.**  A table grow allocates a new pair of regions at the new
+  capacity, posts a `{ kind: 'regrow', column, buffer }` message
+  carrying the new SAB (structured clone shares it — no copy), and
+  the worker swaps on receipt; the old pair is released once acked.
+  A declared ceiling — `sharedMemory: { maxSlots }`, default the
+  table's cap at construction rounded to the ×2 step — refuses growth
+  past it with the round-35 scale-ceiling message, so an app that
+  opted in knows its budget.
+- **Blobs and labels** stay on the message path: the float pools
+  (curves, polygons, images, charts) are resized rarely and copied
+  whole today, and label entries are tens of bytes.  Only the
+  per-element columns move to shared memory, because they are the
+  only per-frame traffic the census found.
+- **Testing** (when built): the protocol spec runs headless against a
+  `worker_threads` pair sharing a real SAB; the tearing control writes
+  a column mid-notice and asserts the worker's local copy is the
+  epoch's, not the writer's; the ceiling spec grows past `maxSlots`
+  and reads the throw; the 86.3 export-parity scene runs a third time
+  under `sharedMemory`.
+- **Benefit side, already measured**: 0.018 → ~0.006 ms per batch at
+  harness scale (the notice is what the spin posts today), 0.681 →
+  0.02 at 500k nodes (86.1).  The trigger stands: a real app above
+  1 ms/frame of span traffic.
+
+#### 110.4 — export post-processing on the device: landed
+
+`src/render/export-pack.mts`.  The export target gains
+`TEXTURE_BINDING` and loses `COPY_SRC`; after the scene pass, one
+compute dispatch reads the premultiplied target through `textureLoad`
+(the format's own swizzle makes the channel order RGBA under
+`bgra8unorm` and `rgba8unorm` alike), un-premultiplies exactly as the
+CPU loop did — alpha 0 and 1 pass through, every other alpha divides —
+and packs each pixel as one `u32` into a tightly packed storage buffer,
+which is copied into the mappable staging buffer.  The readback is a
+`slice()` of the mapped range: the one copy WebGPU's mapping model
+cannot remove.  The dispatch runs in row bands of a multiple of 64 rows
+so every band's byte offset is 256-aligned for any width, because the
+storage binding limit (128 MiB by default) is smaller than the largest
+export the texture limit allows (an 8192² figure is 256 MiB).  Both
+hosts take the pass — the worker engine runs the same renderer.
+
+Measured, same session shape as the census, medians of three:
+
+| export | readback loop before → after | export before → after | `png()` before → after |
+| --- | --: | --: | --: |
+| viewport 1× (1280×800) | 10.3 → **1.4 ms** | 76 → 67 | 119 → 122 |
+| viewport 2× (2560×1600) | 40.9 → **6.3** | 122 → 79 | 223 → 196 |
+| full 4k (4096×2004) | 81 → **12.4** | 335 → 257 | 562 → 451 |
+| full 8k (8192×4007) | 332 → **51.7** | 1,154 → 878 | 1,756 → 1,461 |
+
+The remainder is the slice memcpy plus the promise hop; the GPU wait
+(65 → 803 ms across the sizes, the scene pass over 465k edges plus the
+copy) and the PNG encoder are what an export costs now.  The canvas
+hop in `png()` (`putImageData`, 2.6 ms at 4k) was priced and left: no
+direct RGBA→PNG encoder exists outside a canvas.
+
+**Verified by** the existing export specs (`renderer.spec.js`'s nine
+`png()`/`jpg()` specs, the worker host's export-parity scene in
+`worker-renderer.spec.js`, the 130-golden visual project — all green,
+goldens unchanged) plus one new spec, *png() un-premultiplies on the
+device*: a red body at opacity 0.5 over a transparent background must
+read (255, 0, 0, 128), not the target's premultiplied (128, 0, 0,
+128).  **Control**: the shader's un-premultiply replaced by `un = 1.0`
+turns that spec red (red reads ~128) while the older transparent-
+background spec stays green — which is why the new one exists.  The
+WebKit project skips the export specs here (no adapter for them on this
+box's WebKit), as before the round.
+
+#### 110.5 — the record
+
+`src/README.md` gains the census as a design decision, with every
+declined pass and its number; the two bench files carry their own
+headers; ledger items 66 and 67 log the two findings the census made
+that are not copies (edge id registration, whole-sheet re-apply
+upload).  Nothing else moved: the dirty-span discipline, the wire
+layout and the 106 multi-consumer question are untouched, as the plan's
+non-goals said.
+
+**Lessons the round writes down.**  An instrument that reads a
+transferred buffer's `byteLength` *after* `postMessage` reads zero —
+the call detaches it; count before.  And the un-premultiply's old
+transparent-background spec never discriminated the conversion: it
+sampled an opaque body and a fully transparent pixel, the two cases the
+conversion passes through unchanged.

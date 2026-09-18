@@ -4,6 +4,7 @@ import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
 import { WorkerRenderer } from './render/worker-renderer.mjs';
 import { runRenderWorker } from './render/worker-main.mjs';
+import { _algoWorkerSource } from './algorithms/algo-workers.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
@@ -137,3 +138,11 @@ cytoscape.deserializeElements = deserializeElements;
 // a factory static
 (cytoscape as unknown as { __runRenderWorker__: unknown }).__runRenderWorker__ =
   runRenderWorker;
+
+// the algorithm worker's source text (round 74.2), attached the same
+// way: `test/modules/algo-worker-body.mjs` pulls it out of each built
+// bundle and evaluates it in a bare scope, which is the one place the
+// "self-contained body" claim can actually break
+(
+  cytoscape as unknown as { __algoWorkerSource__: unknown }
+).__algoWorkerSource__ = _algoWorkerSource;

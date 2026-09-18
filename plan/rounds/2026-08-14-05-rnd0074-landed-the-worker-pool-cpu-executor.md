@@ -339,3 +339,54 @@ body through a Blob-URL `Worker` in headless Chromium
 (`hardwareConcurrency` 16), n = 2048 — 1 worker 720 ms, 4 workers
 188 ms, 8 workers 108.6 ms warm (209 ms cold), the sums identical to
 Node's.  The one-code-path claim holds on both platforms.
+
+### 74.2 — the pool: lifecycle and the worker entry
+
+Two files, as planned.  `src/algorithms/algo-worker-body.mts` is the
+worker body: one exported function, no imports, no outer references,
+no class syntax, ES2018-plain, that installs a `snapshot` and answers
+`job` messages over contiguous ranges with a transferred
+`Float64Array`.  It grew past the plan's one family because 74.3's
+scope gate opened all four: a Brandes range over a CSR (the 74.1 body,
+weighted through the inline heap or unit-step), a closeness BFS range
+(`closenessRowSumsBfs` copied operation for operation), heat-kernel
+columns (`diffuseVector`) and RWR columns (`solveWalk`) — the
+per-column three copied from the reference so their bits are the
+reference's.  An unknown snapshot kind throws rather than answering
+zeros.  `src/algorithms/algo-workers.mts` is the pool: the
+`algo-gpu.mts` lifecycle shape — a lazy singleton promise, an
+acquisition failure never cached, `_resetAlgoWorkers()` beside it (with
+an optional forced size for the pool-size specs) and
+`_algoWorkersStats()` for the rows that must prove where they ran;
+size `min(availableParallelism − 1, 8)` in Node,
+`min(hardwareConcurrency − 1, 8)` in a browser, never below one; 64
+fixed ranges (`rangeCount(n) = min(n, 64)`) handed dynamically to
+whichever worker is free, merged in range order; runs serialized over
+the pool, which is also what isolates two instances' runs.
+
+**The carriage works as designed, with two Node lessons the plan did
+not have.**  The bundle carries the body as source text through
+`algoWorkerBody.toString()` wrapped in a per-platform preamble
+(`_algoWorkerSource(node)`, exposed on the bundle as
+`__algoWorkerSource__` for the module spec); Node workers are
+constructed with `eval: true`, browser workers from a Blob URL; all
+five bundles stayed single-file and the packaging gate stayed green
+with no rolldown configuration touched.  `process.getBuiltinModule`
+reaches `worker_threads` and `os` without an import a bundler would
+have to resolve (Node ≥ 20.16 / 22.3; older Nodes answer no platform
+and run the CPU).  The lessons, both found by the specs that were
+written for exactly this: **(a) `unref()` must follow the listeners**
+— adding a `'message'` listener to a Node worker refs its port again,
+so a pool unref'ed at spawn held the process open once it listened;
+**(b) an unref'ed worker does not keep the event loop alive for a
+pending reply** — the first fix made a process exit with code 13
+(an unsettled top-level await) mid-run.  The pool therefore `ref()`s
+its workers for exactly the span of a request (the spawn ping, each
+run) and `unref()`s them idle.  A third, from the soak's child-process
+spec: an eval-mode worker inherits the parent's `--input-type`, so
+under `--input-type=module` its source is ESM and `require` does not
+exist — the Node preamble reaches the parent port through
+`process.getBuiltinModule` instead, which holds under both readings.
+The tsx `__name` hazard behaved as predicted (the preamble's no-op
+covers it); no other helper appeared in any bundle's body, which
+74.4's bare-scope spec now watches.

@@ -9,6 +9,14 @@
 //
 //   npm run benchmark:algorithms-gpu                     # the full sweep
 //   npm run benchmark:algorithms-gpu -- --family markov  # one family
+//   npm run benchmark:algorithms-gpu -- --repeat 3       # publish medians
+//
+// `--repeat N` (round 72.6) runs every cell N times — each repeat a fresh
+// page, so the per-page pipeline cache and JIT state are independent
+// samples — and merges them with `mergeRepeats`, exactly as `report.mjs`
+// does: the published row is the repeat whose p50 is the median, whole,
+// beside `repeats` and `repeatSpread`.  Publish with `--repeat 3` (the
+// 65.12 rule; every executor sweep before this round was a single pass).
 //
 // Results write to `benchmark/results/` in the standard results shape —
 // `results-alggpu-<stamp>.json` plus `report.html` — under the
@@ -41,6 +49,7 @@ import { toStats, oneShotStats } from './render-stats.mjs';
 import { renderReport } from './report-html.mjs';
 import { buildMeta } from './run-meta.mjs';
 import { stampHarness } from './harness-id.mjs';
+import { mergeRepeats } from './repeat-merge.mjs';
 import { describeMachine } from '../scripts/machine-info.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -53,6 +62,8 @@ const args = process.argv.slice(2);
 const allowSwiftshader = args.includes('--allow-swiftshader');
 const familyAt = args.indexOf('--family');
 const familyFilter = familyAt >= 0 ? args[familyAt + 1] : null;
+const repeatAt = args.indexOf('--repeat');
+const repeat = Math.max(1, Number(repeatAt >= 0 ? args[repeatAt + 1] : 1) || 1);
 
 const MIME = {
   '.html': 'text/html',
@@ -146,8 +157,10 @@ const FAMILIES = [
         .then((r) => r.rank(cy.nodes()[0]))`,
   },
   // 65.10: the sparse CPU iteration owns sparse graphs outright, so the
-  // GPU's dense mat-vec is priced where it can compete — E = n²/12,
-  // above the wrapper's density gate
+  // GPU's mat-vec is priced where it could compete — E = n²/12.  Since
+  // 72.1 the gpu bench is the CSR SpMV; 'auto' still never takes it (the
+  // shared O(E) build dominates both sides here, the readback floor on
+  // the sparse row)
   {
     key: 'pageRankDense',
     sizes: [512, 1024, 2048],
@@ -235,13 +248,39 @@ const FAMILIES = [
         threshold: 0.75,
       }).then((cs) => cs.length)`,
   },
-  // round 69: closeness rides the blocked FW relaxation with an on-device
-  // row fold, so its readback is n floats where floydWarshall's is 2n² —
-  // the same sizes as FW price the difference
+  // round 69 priced closeness on the blocked FW relaxation; since 72.3 an
+  // unweighted run walks a BFS per source on both executors (the CPU's
+  // O(n·(n+E)) walk, the GPU's batched level-sync BFS), so this row's
+  // meaning moved without a harness edit — the round-72 record says so —
+  // and its sizes extend upward to where the GPU BFS takes 'auto' (1024)
   {
     key: 'closenessCentralityNormalized',
+    sizes: [256, 512, 1024, 2048, 4096],
+    kind: 'graph',
+    op: `(cy, executor) =>
+      cy.elements().closenessCentralityNormalized({ executor })
+        .then((r) => r.closeness(cy.nodes()[0]))`,
+  },
+  // 72.3: the weighted form keeps the FW route on both executors, so it
+  // is priced separately (a unit-weight closure — what a weighted run
+  // pays is the route, plus one user call per edge)
+  {
+    key: 'closenessCentralityNormalizedWeighted',
     sizes: [256, 512, 1024],
     kind: 'graph',
+    op: `(cy, executor) =>
+      cy.elements().closenessCentralityNormalized({
+        executor,
+        weight: () => 1,
+      }).then((r) => r.closeness(cy.nodes()[0]))`,
+  },
+  // 72.3: on the dense fixture an unweighted GPU run relaxes FW rather
+  // than walking (arcs ≥ n²/8, CLOSENESS_FW_DENSE_DIVISOR) while the CPU
+  // still walks — the row prices that routing decision
+  {
+    key: 'closenessCentralityNormalizedDense',
+    sizes: [256, 512, 1024],
+    kind: 'graph-dense',
     op: `(cy, executor) =>
       cy.elements().closenessCentralityNormalized({ executor })
         .then((r) => r.closeness(cy.nodes()[0]))`,
@@ -267,7 +306,8 @@ const FAMILIES = [
   },
   // round 69: priced on the sparse fixture to document why 'auto' never
   // routes Katz to the GPU — the pageRank verdict (65.10) for the same
-  // iteration shape; the gpu bench is the explicit-'gpu' price
+  // iteration shape; the gpu bench is the explicit-'gpu' price (the CSR
+  // SpMV since 72.1)
   {
     key: 'katzCentrality',
     sizes: [512, 1024, 2048],
@@ -313,6 +353,9 @@ const FAMILIES = [
         tolerance: 0.00001,
       }).then((r) => r.proximity(cy.nodes()[0], cy.nodes()[1]))`,
   },
+  // the row prices the combinatorial Laplacian; `laplacian: 'normalized'`
+  // (72.4) has the same cost shape and changing the mode here would break
+  // cross-run comparability
   {
     key: 'heatKernel',
     sizes: [256, 512, 1024],
@@ -340,60 +383,87 @@ const families = familyFilter
 for (const family of families) {
   for (const n of family.sizes) {
     const t0 = Date.now();
-    let row;
+    const passes = [];
 
-    try {
-      row = await runCell(family, n);
-    } catch (err) {
-      console.error(`  ${family.key} n=${n} FAILED: ${err.message}`);
-      failures.push({ job: `${family.key} n=${n}`, exitCode: 1 });
+    for (let pass = 0; pass < repeat; pass++) {
+      let row;
+
+      try {
+        row = await runCell(family, n);
+      } catch (err) {
+        console.error(`  ${family.key} n=${n} FAILED: ${err.message}`);
+        failures.push({ job: `${family.key} n=${n}`, exitCode: 1 });
+        continue;
+      }
+
+      // the standard results shape: one job per (family, size), so the
+      // report merges same-n families into one section and its scaling
+      // table reads families × sizes
+      passes.push({
+        suite: 'algorithms-gpu',
+        n,
+        op: null,
+        durationMs: 0,
+        context: { arch: null, runtime: 'chromium', cpu: null },
+        groups: [
+          {
+            name: family.key,
+            benches: [
+              { name: 'cpu', stats: toStats(row.cpuSamples) },
+              { name: 'gpu', stats: toStats(row.gpuSamples) },
+              { name: 'gpu first call', stats: oneShotStats(row.firstGpu) },
+            ],
+          },
+        ],
+      });
+    }
+
+    const merged = mergeRepeats(passes);
+
+    if (merged == null) {
       continue;
     }
 
-    // the standard results shape: one job per (family, size), so the
-    // report merges same-n families into one section and its scaling
-    // table reads families × sizes
-    jobs.push({
-      suite: 'algorithms-gpu',
-      n,
-      op: null,
-      durationMs: Date.now() - t0,
-      context: { arch: null, runtime: 'chromium', cpu: null },
-      groups: [
-        {
-          name: family.key,
-          benches: [
-            { name: 'cpu', stats: toStats(row.cpuSamples) },
-            { name: 'gpu', stats: toStats(row.gpuSamples) },
-            { name: 'gpu first call', stats: oneShotStats(row.firstGpu) },
-          ],
-        },
-      ],
-    });
+    merged.durationMs = Date.now() - t0;
+    jobs.push(merged);
 
-    const cpu = median(row.cpuSamples);
-    const gpu = median(row.gpuSamples);
+    const benches = merged.groups[0].benches;
+    const cpu = benches[0].stats.p50 / 1e6;
+    const gpu = benches[1].stats.p50 / 1e6;
+    const first = benches[2].stats.p50 / 1e6;
+    const spread =
+      repeat > 1 ? `  spread ×${benches[1].stats.repeatSpread.toFixed(2)}` : '';
 
     console.log(
-      `${family.key.padEnd(24)} n=${String(n).padEnd(6)} ` +
+      `${family.key.padEnd(36)} n=${String(n).padEnd(6)} ` +
         `cpu ${cpu.toFixed(1).padStart(9)} ms   ` +
         `gpu ${gpu.toFixed(1).padStart(9)} ms   ` +
         `×${(cpu / gpu).toFixed(2).padStart(7)}   ` +
-        `(first gpu call ${row.firstGpu.toFixed(1)} ms)`,
+        `(first gpu call ${first.toFixed(1)} ms)${spread}`,
     );
   }
 }
 
-function median(samples) {
-  const s = [...samples].sort((a, b) => a - b);
-
-  return s[Math.floor(s.length / 2)];
-}
-
 /** Time one (family, size) cell in-page: warmups, then REPS samples of
  * each executor.  Returns raw sample arrays so the report gets real
- * percentiles rather than a pre-collapsed median. */
+ * percentiles rather than a pre-collapsed median.  Every call opens a
+ * fresh page (72.6) so repeats are independent samples — a shared page
+ * would hand the second repeat the first's compiled pipelines and warm
+ * JIT, which is exactly the correlation a repeat band must not hide. */
 async function runCell(family, n) {
+  const page = await browser.newPage();
+
+  page.on('pageerror', (err) => console.error('[pageerror]', err.message));
+  await page.goto(`http://127.0.0.1:${PORT}/playwright-page/index.html`);
+
+  try {
+    return await runCellIn(page, family, n);
+  } finally {
+    await page.close();
+  }
+}
+
+async function runCellIn(page, family, n) {
   return await page.evaluate(
     async ({ key, kind, opSrc, n, reps }) => {
       // deterministic fixtures: graph = ring + chords, degree ~2.3;
@@ -491,6 +561,7 @@ const results = {
     startedAt,
     profile: 'algorithms-gpu',
     suiteFilter: familyFilter,
+    repeat,
     failures,
     context: { ...jobs[0]?.context, runtime: 'chromium' },
     adapter,

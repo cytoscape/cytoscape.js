@@ -1,6 +1,24 @@
 {
   "runs": [
     {
+      "file": "results-alggpu-2026-09-18T09-19-49-758Z.json",
+      "date": "2026-09-18T09:19:49.758Z",
+      "commit": "e169b98a",
+      "commitSubject": "algorithms(72.4): laplacian: 'normalized' for heatDiffusion and heatKernel",
+      "branch": "feature/rounds-110-74-72-cancel",
+      "profile": "algorithms-gpu",
+      "suiteFilter": null,
+      "dirty": true,
+      "concurrency": 1,
+      "totalMs": 3099208,
+      "node": "v24.18.0",
+      "fingerprint": "5cf3f79c",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 65,
+      "note": "round 72.6: the executor sweep with the round's re-tunes (sparse SpMV, coalesced AP, closeness BFS on both executors, the round-70 gates removed), the first algorithms-gpu run with --repeat 3; measured on the tree committed as e5fa0db4 (the src and suite as run), the gpu-first-call rows now a fresh page per cell so they include the compile"
+    },
+    {
       "file": "results-2026-09-02T02-03-57-714Z.json",
       "date": "2026-09-02T02:03:57.714Z",
       "commit": "9ed49abc",

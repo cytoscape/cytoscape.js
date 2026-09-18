@@ -2,10 +2,25 @@ import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { floydWarshallGpu } from './algo-gpu-fw.mjs';
+import { floydWarshallKernel } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` relaxes Floyd–Warshall on one
+ * pool worker rather than in-thread (129.1): a starting figure,
+ * stamped from the `algorithms-workers` offload rows.  O(n³): at 128
+ * the in-thread run is already a couple of milliseconds.
+ */
+export const FLOYD_WARSHALL_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export interface FloydWarshallOptions {
@@ -40,13 +55,64 @@ export const floydWarshallAsync = (
   // measured crossover (65.8, amd gcn-4): 3.4x GPU at n=256 already
   // (28x at n=1024, blocked) — the default threshold is the measured
   // one
+  const lane = floydWarshallLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
-    () => floydWarshall(coll, options),
+    () => inThread(lane),
     (ctx) => floydWarshallGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * Floyd–Warshall's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `floydWarshallKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the lane
+ */
+export const floydWarshallLane = (
+  coll: Collection,
+  options: FloydWarshallOptions,
+): OffloadLane<FloydWarshallResult> => {
+  let built: ReturnType<typeof initFloydWarshall> | null = null;
+
+  return {
+    minN: FLOYD_WARSHALL_OFFLOAD_MIN_N,
+    snapshot: () => {
+      built = initFloydWarshall(coll, options);
+
+      return {
+        kind: 'kernel',
+        name: 'floydWarshall',
+        input: { n: built.n, dist: built.dist, next: built.next },
+      };
+    },
+    wrap: (out) => {
+      const { view, n, edgeNext } = built as ReturnType<
+        typeof initFloydWarshall
+      >;
+
+      return floydWarshallResultFrom(
+        coll,
+        view,
+        n,
+        out.dist as Float64Array,
+        out.next as Int32Array,
+        edgeNext,
+      );
+    },
+  };
 };
 
 /**
@@ -208,46 +274,15 @@ export const relaxFloydWarshall = (
   dist: Float64Array,
   next: Int32Array,
 ): void => {
-  for (let k = 0; k < n; k++) {
-    const kn = k * n;
-
-    for (let i = 0; i < n; i++) {
-      const rowI = i * n;
-      const ik = rowI + k;
-      const dik = dist[ik];
-
-      // Infinity relaxes nothing (Inf + x is never < anything finite or
-      // not), so an unreachable (i, k) pair skips its whole j row — a
-      // real win on sparse graphs early in k, and a no-op otherwise.
-      if (dik === Infinity) {
-        continue;
-      }
-
-      // dist[ik] is loop-invariant across j: the only ij aliasing ik is
-      // j === k, where the update needs dist[kk] < 0 — a negative cycle,
-      // on which Floyd–Warshall is undefined either way (v3 reloads and
-      // is equally undefined there).  Running ij/kj indices replace the
-      // two per-iteration multiplies, and the sum is computed once.
-      for (let j = 0, ij = rowI, kj = kn; j < n; j++, ij++, kj++) {
-        const alt = dik + dist[kj];
-
-        if (alt < dist[ij]) {
-          dist[ij] = alt;
-          next[ij] = next[ik];
-        }
-      }
-    }
-  }
+  // the loop is `floydWarshallKernel` (`algo-kernels.mts`) since 129.1
+  // — the one function the in-thread reference and the offload lane
+  // run; this is its in-place spelling for the callers that hold the
+  // matrices (the closeness family's weighted route)
+  floydWarshallKernel({ n, dist, next });
 };
 
 /** All-pairs shortest paths over the calling collection (dense N² matrices). */
 export const floydWarshall = (
   coll: Collection,
   options: FloydWarshallOptions = {},
-): FloydWarshallResult => {
-  const { view, n, dist, next, edgeNext } = initFloydWarshall(coll, options);
-
-  relaxFloydWarshall(n, dist, next);
-
-  return floydWarshallResultFrom(coll, view, n, dist, next, edgeNext);
-};
+): FloydWarshallResult => inThread(floydWarshallLane(coll, options));

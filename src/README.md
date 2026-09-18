@@ -766,16 +766,37 @@ per-source-parallel families — both betweenness forms, unweighted
 `worker_threads` or browser `Worker`s, at most eight, one less than
 the cores; the worker entry ships as source text inside every bundle,
 so the bundles stay single-file and no bundler configuration is asked
-of an embedder) and rejects on the other families or where no worker
-can be constructed; 'auto' takes the GPU above a per-family
+of an embedder), **and since round 129.1 runs the families the pool
+cannot partition on ONE worker** — the *offload lane*: `pageRank`,
+`katzCentrality`, `floydWarshall` and weighted
+`closenessCentralityNormalized`, `triangleCount`,
+`neighborhoodSimilarity`, `motifCensus`, `simRank`,
+`effectiveResistance`, `markovClustering`, `affinityPropagation`.
+Each of those references is one self-contained kernel over a snapshot
+(`src/algorithms/algo-kernels.mts`; the builders evaluate every user
+closure — `weight`, MCL's `attributes`, AP's `attributes` and
+`distance` — on the calling thread first), the in-thread `'cpu'` path
+calls the same function, and the pool carries that function's own
+source text, so a worker answers the reference's bits by
+construction.  The value is the calling thread, not speed: a run on
+the lane costs a clone and a wake and frees the UI thread for its
+whole length.  `'workers'` rejects only on the families with no lane
+of either kind (the k-clusterings and hierarchical clustering, whose
+references call the metric per iteration) or where no worker can be
+constructed; 'auto' takes the GPU above a per-family
 measured crossover, then the pool from the family's stamped crossover
 (74.5: weighted betweenness and RWR proximity 128, unweighted
 betweenness and the heat kernel 256, closeness 512) where a family
 has that lane and no GPU lane fits (headless Node, a blocklisted
-adapter, an input past the device's buffer limits), then the CPU —
+adapter, an input past the device's buffer limits), then the offload
+lane from the family's `offloadMinN` (129.1: 64 for MCL and AP, 128
+for the dense families, 2048 for pageRank and Katz whose sparse
+iterations are sub-millisecond below it), then the CPU —
 except the sparse closeness BFS, where the pool measured ahead of the
 GPU at every size (4.0 vs 14.6 ms at n = 1024, 50.1 vs 87.5 at 4096)
-and is tried first.
+and is tried first.  The pool spawns lazily (129.1): one worker at
+acquisition, the size on the first whole-pool run, so an offload
+never pays for workers it will not use.
 Determinism is a ladder, cpu > workers > gpu: the pool partitions the
 sources into a fixed number of ranges (a function of n, never of the
 pool size) and merges in range order, so a workers result is

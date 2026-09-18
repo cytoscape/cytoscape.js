@@ -3,10 +3,18 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
+
+/**
+ * The node count from which `'auto'` iterates MCL on one pool worker
+ * rather than in-thread (129.1): a starting figure, stamped from the
+ * `algorithms-workers` offload rows; the expansion is a dense matrix
+ * product per iteration, so the lane opens early.
+ */
+export const MARKOV_OFFLOAD_MIN_N = 64;
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 /** A similarity function: maps an edge to a numeric contribution. */
@@ -36,72 +44,6 @@ const normalize = (M: Float64Array, n: number): void => {
   }
 };
 
-const mmult = (A: Float64Array, B: Float64Array, n: number): Float64Array => {
-  const C = new Float64Array(n * n);
-
-  for (let i = 0; i < n; i++) {
-    for (let k = 0; k < n; k++) {
-      const a = A[i * n + k];
-
-      for (let j = 0; j < n; j++) {
-        C[i * n + j] += a * B[k * n + j];
-      }
-    }
-  }
-
-  return C;
-};
-
-const expand = (
-  M: Float64Array,
-  n: number,
-  expandFactor: number,
-): Float64Array => {
-  const _M = M.slice();
-
-  for (let p = 1; p < expandFactor; p++) {
-    M = mmult(M, _M, n);
-  }
-
-  return M;
-};
-
-const inflate = (
-  M: Float64Array,
-  n: number,
-  inflateFactor: number,
-): Float64Array => {
-  const _M = new Float64Array(n * n);
-
-  for (let i = 0; i < n * n; i++) {
-    _M[i] = Math.pow(M[i], inflateFactor);
-  }
-
-  normalize(_M, n);
-
-  return _M;
-};
-
-const hasConverged = (
-  M: Float64Array,
-  _M: Float64Array,
-  n2: number,
-  roundFactor: number,
-): boolean => {
-  const scale = Math.pow(10, roundFactor);
-
-  for (let i = 0; i < n2; i++) {
-    if (
-      Math.round(M[i] * scale) / scale !==
-      Math.round(_M[i] * scale) / scale
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
 /**
  * The async MCL entry point behind `eles.markovClustering()`: validates
  * `executor` synchronously (so a bad value throws at the call site),
@@ -122,13 +64,61 @@ export const markovClusteringAsync = (
 
   // measured crossover (65.8, amd gcn-4): 70x GPU at n=256 and n^3
   // growth put the wash near n=128
+  const lane = markovLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     128,
-    () => markovClustering(coll, options),
+    () => inThread(lane),
     (ctx) => markovClusteringGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * Markov clustering's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `markovKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the lane
+ */
+export const markovLane = (
+  coll: Collection,
+  options: MarkovClusteringOptions,
+): OffloadLane<Collection[]> => {
+  let built: ReturnType<typeof buildMarkovMatrix> | null = null;
+
+  return {
+    minN: MARKOV_OFFLOAD_MIN_N,
+    snapshot: () => {
+      built = buildMarkovMatrix(coll, options);
+
+      return {
+        kind: 'kernel',
+        name: 'markov',
+        input: {
+          n: built.n,
+          M: built.M,
+          expandFactor: options.expandFactor ?? 2,
+          inflateFactor: options.inflateFactor ?? 2,
+          maxIterations: options.maxIterations ?? 20,
+        },
+      };
+    },
+    wrap: (out) => {
+      const { view, n } = built as ReturnType<typeof buildMarkovMatrix>;
+
+      return markovClustersFrom(coll, view, out.M as Float64Array, n);
+    },
+  };
 };
 
 /**
@@ -241,7 +231,8 @@ export const markovClustersFrom = (
  * self loops on the diagonal, then alternates expansion and inflation
  * until the matrix stops changing to four decimal places or
  * `maxIterations` passes.  The matrix is dense N-by-N and expansion
- * multiplies it, so cost is cubic in node count per iteration.
+ * multiplies it, so cost is cubic in node count per iteration.  The
+ * loop is `markovKernel` (`algo-kernels.mts`) since 129.1.
  *
  * @param coll — the calling collection; only edges inside it contribute
  * @param options — `expandFactor` (matrix power, default 2),
@@ -253,33 +244,4 @@ export const markovClustersFrom = (
 export const markovClustering = (
   coll: Collection,
   options: MarkovClusteringOptions = {},
-): Collection[] => {
-  const expandFactor = options.expandFactor ?? 2;
-  const inflateFactor = options.inflateFactor ?? 2;
-  const maxIterations = options.maxIterations ?? 20;
-
-  const built = buildMarkovMatrix(coll, options);
-  const { view, n } = built;
-  const n2 = n * n;
-  let M = built.M;
-
-  let isStillMoving = true;
-  let iterations = 0;
-
-  while (isStillMoving && iterations < maxIterations) {
-    isStillMoving = false;
-
-    const _M = expand(M, n, expandFactor);
-
-    M = inflate(_M, n, inflateFactor);
-
-    if (!hasConverged(M, _M, n2, 4)) {
-      isStillMoving = true;
-    }
-
-    iterations++;
-  }
-
-  // row-wise attractors and their attracted nodes form the clusters
-  return markovClustersFrom(coll, view, M, n);
-};
+): Collection[] => inThread(markovLane(coll, options));

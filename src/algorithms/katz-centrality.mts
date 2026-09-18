@@ -21,10 +21,18 @@ crossover sweep's call, spelled in `KATZ_GPU_MIN_N`.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { katzCentralityGpu } from './algo-gpu-katz.mjs';
+
+/**
+ * The node count from which `'auto'` runs Katz on one pool worker
+ * rather than in-thread (129.1): a starting figure, stamped from the
+ * `algorithms-workers` offload rows; the sparse fixed point is as
+ * cheap as pageRank's, so the same late opening.
+ */
+export const KATZ_OFFLOAD_MIN_N = 2048;
 
 /**
  * The node count above which `'auto'` would take the GPU for Katz:
@@ -118,13 +126,64 @@ export const katzCentralityAsync = (
   // the pageRank verdict (65.10), re-measured against the sparse CSR
   // kernel in 72.1 (amd gcn-4): 0.2–0.3 ms CPU against a ~3.6 ms GPU
   // call floored by its one readback, at every bench size
+  const lane = katzLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     KATZ_GPU_MIN_N,
-    () => katzCentrality(coll, options),
+    () => inThread(lane),
     (ctx) => katzCentralityGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * Katz's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `katzKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the lane
+ * @throws if `alpha` is invalid (see `resolveKatzParams`)
+ */
+export const katzLane = (
+  coll: Collection,
+  options: KatzCentralityOptions,
+): OffloadLane<KatzCentralityResult> => {
+  let view: SubgraphView | null = null;
+
+  return {
+    minN: KATZ_OFFLOAD_MIN_N,
+    snapshot: () => {
+      const { beta } = resolveKatzParams(options);
+      const built = buildKatzSparse(coll, options);
+
+      view = built.view;
+
+      return {
+        kind: 'kernel',
+        name: 'katz',
+        input: {
+          n: built.n,
+          arcs: built.arcs,
+          srcs: built.srcs,
+          dsts: built.dsts,
+          ws: built.ws,
+          beta,
+          maxIterations: options.maxIterations ?? 200,
+          tolerance: options.tolerance ?? 0.000001,
+        },
+      };
+    },
+    wrap: (out) => katzResultFrom(view as SubgraphView, out.x as Float64Array),
+  };
 };
 
 /**
@@ -239,42 +298,10 @@ export const katzResultFrom = (
  * until the L1 step drops under n·tolerance or `maxIterations` runs
  * out (the un-converged vector is returned as-is, like `pageRank` —
  * an `alpha` past 1/λ_max diverges rather than throwing, so check the
- * spectrum when scores explode).
+ * spectrum when scores explode).  The loop is `katzKernel`
+ * (`algo-kernels.mts`) since 129.1.
  */
 export const katzCentrality = (
   coll: Collection,
   options: KatzCentralityOptions = {},
-): KatzCentralityResult => {
-  const { beta } = resolveKatzParams(options);
-  const maxIterations = options.maxIterations ?? 200;
-  const tolerance = options.tolerance ?? 0.000001;
-  const { view, n, arcs, srcs, dsts, ws } = buildKatzSparse(coll, options);
-
-  let x = new Float64Array(n);
-  let next = new Float64Array(n);
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    next.fill(beta);
-
-    for (let a = 0; a < arcs; a++) {
-      next[dsts[a]] += ws[a] * x[srcs[a]];
-    }
-
-    let diff = 0;
-
-    for (let i = 0; i < n; i++) {
-      diff += Math.abs(next[i] - x[i]);
-    }
-
-    const previous = x;
-
-    x = next;
-    next = previous;
-
-    if (diff < n * tolerance) {
-      break;
-    }
-  }
-
-  return katzResultFrom(view, x);
-};
+): KatzCentralityResult => inThread(katzLane(coll, options));

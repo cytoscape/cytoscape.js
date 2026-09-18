@@ -337,6 +337,18 @@ that compile and then behave differently.
 
 ### Changed
 
+- **One worker for the algorithms the pool cannot partition** (round
+  129.1).  `pageRank`, `katzCentrality`, `floydWarshall`, weighted
+  `closenessCentralityNormalized`, `triangleCount`,
+  `neighborhoodSimilarity`, `motifCensus`, `simRank`,
+  `effectiveResistance`, `markovClustering` and `affinityPropagation`
+  run their reference on one pool worker under `executor: 'workers'`
+  (which rejected on them before) and under `'auto'` from a
+  per-family size wherever neither the GPU nor the pool runs — so the
+  calling thread is free for the run's length.  The reference *is*
+  the worker's kernel (one function, carried as source text), so the
+  answer is bit-identical to `'cpu'`.  The pool spawns lazily: one
+  worker for offloads, the full size on the first partitioned run.
 - **Image export converts on the device** (round 110.4).  The export
   target's premultiplied pixels are un-premultiplied, swizzled and
   row-compacted by a compute pass, so the readback maps final bytes

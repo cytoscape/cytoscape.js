@@ -29,12 +29,22 @@ import type { Collection } from '../collection.mjs';
 import {
   GPU_MIN_EDGES_PER_NODE,
   GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
   resolveExecutor,
   runAlgo,
 } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { motifCensusGpu } from './algo-gpu-motifs.mjs';
+import { listsToCsr } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` walks the census on one pool
+ * worker rather than in-thread (129.1): a starting figure, stamped
+ * from the `algorithms-workers` offload rows.
+ */
+export const MOTIFS_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 
 /** The sixteen triad classes, in Holland–Leinhardt order. */
 export const TRIAD_CLASSES = [
@@ -323,124 +333,82 @@ export const motifCensusAsync = (
   const edges = directed ? structure.adjacencies : structure.adjacencies / 2;
   const dense = edges >= GPU_MIN_EDGES_PER_NODE * n;
 
+  const lane = motifLane(structure);
+
   return runAlgo(
     executor,
     n,
     dense ? GPU_MIN_N : Infinity,
-    () => motifCensus(structure),
+    () => inThread(lane),
     (ctx) => motifCensusGpu(ctx, structure),
+    undefined,
+    null,
+    lane,
   );
 };
+
+/**
+ * The triad census's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `motifKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param structure — from `buildTriadStructure`
+ * @returns the lane
+ */
+export const motifLane = (
+  structure: ReturnType<typeof buildTriadStructure>,
+): OffloadLane<MotifCensusResult> => ({
+  minN: MOTIFS_OFFLOAD_MIN_N,
+  snapshot: () => {
+    const out = listsToCsr(structure.outC);
+    const inn = listsToCsr(structure.inC);
+    const mut = listsToCsr(structure.mut);
+
+    return {
+      kind: 'kernel',
+      name: 'motifs',
+      input: {
+        n: structure.base.n,
+        outPtr: out.rowPtr,
+        outIdx: out.colIdx,
+        inPtr: inn.rowPtr,
+        inIdx: inn.colIdx,
+        mutPtr: mut.rowPtr,
+        mutIdx: mut.colIdx,
+      },
+    };
+  },
+  wrap: (out) => {
+    const s = out.s as Float64Array;
+
+    return {
+      counts: censusFromPrimitives({
+        ...structure.base,
+        s1: s[0],
+        s2: s[1],
+        s3: s[2],
+        s4: s[3],
+        s5: s[4],
+        s6: s[5],
+        s7: s[6],
+      }),
+    };
+  },
+});
 
 /**
  * The CPU reference: accumulate the seven traces by walking wedges
  * around every center — asymmetric in×out pairs for S₁–S₃, mutual
  * pairs for S₄–S₅, out×out and in×in pairs for S₆–S₇ — with O(1)
- * membership probes against per-node sets.
+ * membership probes against per-node sets.  The walk is `motifKernel`
+ * (`algo-kernels.mts`) since 129.1.
  *
  * @param structure — from `buildTriadStructure`
  * @returns `{ counts }`
  */
 export const motifCensus = (
   structure: ReturnType<typeof buildTriadStructure>,
-): MotifCensusResult => {
-  const { outC, inC, mut, base } = structure;
-  const n = base.n;
-  const outSets: Set<number>[] = new Array(n);
-  const mutSets: Set<number>[] = new Array(n);
-
-  for (let i = 0; i < n; i++) {
-    outSets[i] = new Set(outC[i]);
-    mutSets[i] = new Set(mut[i]);
-  }
-
-  let s1 = 0;
-  let s2 = 0;
-  let s3 = 0;
-  let s4 = 0;
-  let s5 = 0;
-  let s6 = 0;
-  let s7 = 0;
-
-  for (let j = 0; j < n; j++) {
-    const into = inC[j];
-    const outOf = outC[j];
-    const mutual = mut[j];
-
-    // asymmetric paths i→j→k: (C²)_ik once each
-    for (let a = 0; a < into.length; a++) {
-      const i = into[a];
-
-      for (let b = 0; b < outOf.length; b++) {
-        const k = outOf[b];
-
-        if (i === k) {
-          continue;
-        }
-
-        if (outSets[i].has(k)) {
-          s1++;
-        }
-
-        if (outSets[k].has(i)) {
-          s2++;
-        }
-
-        if (mutSets[i].has(k)) {
-          s3++;
-        }
-      }
-    }
-
-    // mutual wedges x−j−y: (M²)_xy over ordered pairs
-    for (let a = 0; a < mutual.length; a++) {
-      const x = mutual[a];
-
-      for (let b = 0; b < mutual.length; b++) {
-        const y = mutual[b];
-
-        if (x === y) {
-          continue;
-        }
-
-        if (mutSets[x].has(y)) {
-          s4++;
-        }
-
-        if (outSets[x].has(y) && !mutSets[x].has(y)) {
-          s5++;
-        }
-      }
-    }
-
-    // out-out wedges x←j→y: (CᵀC)... (S₆ gathers at the *source*
-    // center: Σ_j C_jx·C_jy·M_xy), and in-in wedges x→j←y for S₇
-    for (let a = 0; a < outOf.length; a++) {
-      const x = outOf[a];
-
-      for (let b = 0; b < outOf.length; b++) {
-        const y = outOf[b];
-
-        if (x !== y && mutSets[x].has(y)) {
-          s6++;
-        }
-      }
-    }
-
-    for (let a = 0; a < into.length; a++) {
-      const x = into[a];
-
-      for (let b = 0; b < into.length; b++) {
-        const y = into[b];
-
-        if (x !== y && mutSets[x].has(y)) {
-          s7++;
-        }
-      }
-    }
-  }
-
-  return {
-    counts: censusFromPrimitives({ ...base, s1, s2, s3, s4, s5, s6, s7 }),
-  };
-};
+): MotifCensusResult => inThread(motifLane(structure));

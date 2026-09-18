@@ -17,12 +17,22 @@ import type { SubgraphView } from './algo-shared.mjs';
 import {
   GPU_MIN_EDGES_PER_NODE,
   GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
   resolveExecutor,
   runAlgo,
 } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { triangleCountGpu } from './algo-gpu-triangles.mjs';
+import { listsToCsr } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` counts triangles on one pool
+ * worker rather than in-thread (129.1): a starting figure, stamped
+ * from the `algorithms-workers` offload rows.
+ */
+export const TRIANGLES_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 
 export interface TriangleCountOptions {
   /** where the run executes; see `AlgoExecutor` (default 'auto').
@@ -179,20 +189,56 @@ export const triangleCountAsync = (
   // graphs stay on the CPU however large they are.
   const dense = adjacency.edges >= GPU_MIN_EDGES_PER_NODE * n;
 
+  const lane = triangleLane(view, adjacency);
+
   return runAlgo(
     executor,
     n,
     dense ? GPU_MIN_N : Infinity,
-    () => triangleCount(view, adjacency),
+    () => inThread(lane),
     (ctx) => triangleCountGpu(ctx, view, adjacency),
+    undefined,
+    null,
+    lane,
   );
 };
+
+/**
+ * Triangle counting's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `triangleKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param view — the subgraph view
+ * @param adjacency — from `buildTriangleAdjacency`
+ * @returns the lane
+ */
+export const triangleLane = (
+  view: SubgraphView,
+  adjacency: { neighbors: Int32Array[]; degrees: Int32Array },
+): OffloadLane<TriangleCountResult> => ({
+  minN: TRIANGLES_OFFLOAD_MIN_N,
+  snapshot: () => {
+    const { rowPtr, colIdx } = listsToCsr(adjacency.neighbors);
+
+    return {
+      kind: 'kernel',
+      name: 'triangles',
+      input: { n: adjacency.degrees.length, rowPtr, colIdx },
+    };
+  },
+  wrap: (out) =>
+    triangleResultFrom(view, adjacency.degrees, out.triangles as Float64Array),
+});
 
 /**
  * The CPU reference: for every edge (u, v) with u < v, walk the sorted
  * neighbor lists' intersection counting the w > v that close a
  * triangle — each triangle is found exactly once, at its sorted (u, v)
- * edge, and credits all three corners.
+ * edge, and credits all three corners.  The walk is `triangleKernel`
+ * (`algo-kernels.mts`) since 129.1.
  *
  * @param view — the subgraph view
  * @param adjacency — from `buildTriangleAdjacency`
@@ -201,48 +247,4 @@ export const triangleCountAsync = (
 export const triangleCount = (
   view: SubgraphView,
   adjacency: { neighbors: Int32Array[]; degrees: Int32Array },
-): TriangleCountResult => {
-  const { neighbors, degrees } = adjacency;
-  const n = degrees.length;
-  const triangles = new Float64Array(n);
-
-  for (let u = 0; u < n; u++) {
-    const nu = neighbors[u];
-
-    for (let vi = 0; vi < nu.length; vi++) {
-      const v = nu[vi];
-
-      if (v <= u) {
-        continue;
-      }
-
-      const nv = neighbors[v];
-      // two-pointer intersection over the tails past v
-      let a = 0;
-      let b = 0;
-
-      while (a < nu.length && b < nv.length) {
-        const x = nu[a];
-        const y = nv[b];
-
-        if (x <= v) {
-          a++;
-        } else if (y <= v) {
-          b++;
-        } else if (x < y) {
-          a++;
-        } else if (y < x) {
-          b++;
-        } else {
-          triangles[u]++;
-          triangles[v]++;
-          triangles[x]++;
-          a++;
-          b++;
-        }
-      }
-    }
-  }
-
-  return triangleResultFrom(view, degrees, triangles);
-};
+): TriangleCountResult => inThread(triangleLane(view, adjacency));

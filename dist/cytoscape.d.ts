@@ -6377,7 +6377,7 @@ declare class Collection {
    * Floyd–Warshall all-pairs shortest paths.  O(n³) — for a single
    * source prefer `dijkstra`/`bellmanFord`.  Async (round 65): the
    * expensive whole-graph tier returns promises, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the maths
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the maths
    * runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ weight, directed, executor }`
@@ -6430,7 +6430,7 @@ declare class Collection {
   kargerStein(): KargerSteinResult;
   /**
    * PageRank over the (directed) subgraph.  Async (round 65): returns a
-   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path)
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1)
    * picks where the power method runs; 'cpu' is the reproducible
    * reference.
    *
@@ -6480,7 +6480,7 @@ declare class Collection {
    * 'cpu'; under 'auto' a sparse graph takes the pool first from 512
    * nodes, since it measured ahead of the GPU's batched BFS at every
    * size, and a dense one the GPU first); weighted runs relax
-   * Floyd–Warshall, O(n³), and have no workers path.  The single-root
+   * Floyd–Warshall, O(n³), and take the offload lane (round 129.1: one pool worker).  The single-root
    * `closenessCentrality` stays synchronous.
    *
    * @param options — `{ weight, directed, harmonic, executor }`
@@ -6519,7 +6519,7 @@ declare class Collection {
    * Katz centrality — attenuated walk counting, where a node is
    * central when many short walks end at it and a walk of length k is
    * worth alphaᵏ.  Async (round 69): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the iteration
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the iteration
    * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
    * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
    * counterpart.
@@ -6538,7 +6538,7 @@ declare class Collection {
    * coefficients, and the collection's transitivity, read over the
    * simple undirected graph (direction ignored, parallel edges
    * collapsed, loops excluded).  Async (round 69): returns a promise,
-   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks
+   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks
    * where the counting runs — under 'auto' the GPU's A²∘A matmul is
    * used only on graphs dense enough to beat the CPU's sparse walk (a
    * mean degree of 64, round 72.6).  v4-only — v3 has no counterpart.
@@ -6575,7 +6575,7 @@ declare class Collection {
    * SimRank — "two nodes are similar when their neighbors are
    * similar", the Jeh–Widom recursive fixed point, iterated as dense
    * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
-   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where
    * the iteration runs — under 'auto' the GPU from 256 nodes at any
    * density (round 72.6 measured it ahead everywhere).  The undirected default
    * compares all neighbors; `directed: true` compares the classic
@@ -6699,7 +6699,7 @@ declare class Collection {
    * The triad census — every three-node subgraph classified into the
    * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
    * feed-forward loop).  The counts sum to C(n, 3).  Async (round
-   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks
+   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks
    * between sparse wedge walks on the CPU and matmul trace products
    * on the GPU — under 'auto' the GPU only on dense graphs (a mean
    * degree of 64, round 72.6).  `directed: false` reads every edge as
@@ -6782,7 +6782,7 @@ declare class Collection {
    * the attribute-space algorithms this one clusters by structure.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the
    * expand/inflate iteration runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ attributes, expandFactor, inflateFactor,
@@ -6800,7 +6800,7 @@ declare class Collection {
    * so needs no target cluster count.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the message
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the message
    * passing runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ attributes, distance, preference, damping,

@@ -1,10 +1,19 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { pageRankGpu } from './algo-gpu-pagerank.mjs';
+
+/**
+ * The node count from which `'auto'` runs pageRank on one pool worker
+ * rather than in-thread (129.1): a starting figure, stamped from the
+ * `algorithms-workers` offload rows.  The sparse iteration is O(E) and
+ * fast — 0.3–0.8 ms at n = 2048 — so the lane opens later here than
+ * for the dense families.
+ */
+export const PAGE_RANK_OFFLOAD_MIN_N = 2048;
 
 /**
  * The node count above which `'auto'` would take the GPU for
@@ -55,13 +64,64 @@ export const pageRankAsync = (
   // so the crossover exists only past ~1M edges, beyond the sweep.
   // The GPU path stays for an explicit `executor: 'gpu'` and the
   // parity suite.
+  const lane = pageRankLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     PAGE_RANK_GPU_MIN_N,
-    () => pageRank(coll, options),
+    () => inThread(lane),
     (ctx) => pageRankGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * PageRank's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `pageRankKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the lane
+ */
+export const pageRankLane = (
+  coll: Collection,
+  options: PageRankOptions,
+): OffloadLane<PageRankResult> => {
+  let view: SubgraphView | null = null;
+
+  return {
+    minN: PAGE_RANK_OFFLOAD_MIN_N,
+    snapshot: () => {
+      const built = buildPageRankSparse(coll, options);
+
+      view = built.view;
+
+      return {
+        kind: 'kernel',
+        name: 'pageRank',
+        input: {
+          n: built.n,
+          edges: built.edges,
+          srcs: built.srcs,
+          dsts: built.dsts,
+          ws: built.ws,
+          dangling: built.dangling,
+          additionalProb: built.additionalProb,
+          precision: options.precision ?? 0.000001,
+          iterations: options.iterations ?? 200,
+        },
+      };
+    },
+    wrap: (out) =>
+      pageRankResultFrom(view as SubgraphView, out.ranks as Float64Array),
+  };
 };
 
 /**
@@ -187,71 +247,11 @@ export const pageRankResultFrom = (
  * magnitude, and it moved the GPU crossover accordingly (see the
  * async wrapper).  Summation order differs from the dense form, so
  * ranks can differ in ulps; the public contract (tolerance-based) and
- * the CPU-vs-GPU parity suite are unaffected.
+ * the CPU-vs-GPU parity suite are unaffected.  The loop itself is
+ * `pageRankKernel` (`algo-kernels.mts`) since 129.1, so the in-thread
+ * reference and the offload lane run one function.
  */
 export const pageRank = (
   coll: Collection,
   options: PageRankOptions = {},
-): PageRankResult => {
-  const precision = options.precision ?? 0.000001;
-  const iterations = options.iterations ?? 200;
-  const { view, n, edges, srcs, dsts, ws, dangling, additionalProb } =
-    buildPageRankSparse(coll, options);
-
-  // dominant eigenvector via the power method
-  let eigenvector = new Float64Array(n).fill(1);
-  let temp = new Float64Array(n);
-
-  for (let iter = 0; iter < iterations; iter++) {
-    let vSum = 0;
-
-    for (let i = 0; i < n; i++) {
-      vSum += eigenvector[i];
-    }
-
-    let danglingSum = 0;
-
-    for (let k = 0; k < dangling.length; k++) {
-      danglingSum += eigenvector[dangling[k]];
-    }
-
-    const base = additionalProb * vSum + danglingSum / n;
-
-    temp.fill(base);
-
-    for (let e = 0; e < edges; e++) {
-      temp[dsts[e]] += ws[e] * eigenvector[srcs[e]];
-    }
-
-    let sum = 0;
-
-    for (let i = 0; i < n; i++) {
-      sum += temp[i];
-    }
-
-    if (sum !== 0) {
-      for (let i = 0; i < n; i++) {
-        temp[i] /= sum;
-      }
-    }
-
-    const previous = eigenvector;
-
-    eigenvector = temp;
-    temp = previous;
-
-    let diff = 0;
-
-    for (let i = 0; i < n; i++) {
-      const delta = previous[i] - eigenvector[i];
-
-      diff += delta * delta;
-    }
-
-    if (diff < precision) {
-      break;
-    }
-  }
-
-  return pageRankResultFrom(view, eigenvector);
-};
+): PageRankResult => inThread(pageRankLane(coll, options));

@@ -19,10 +19,24 @@ all-pairs (O(n²) memory, like `floydWarshall`).  No v3 counterpart.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { simRankGpu } from './algo-gpu-simrank.mjs';
+import { listsToCsr } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` iterates SimRank on one pool
+ * worker rather than in-thread (129.1): a starting figure, stamped
+ * from the `algorithms-workers` offload rows.
+ */
+export const SIM_RANK_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 
 export interface SimRankOptions {
   /** the decay per neighborhood step (default 0.8); must sit in (0, 1) */
@@ -182,20 +196,66 @@ export const simRankAsync = (
   // 9.6× at n = 256 / 512 / 1024 on the sparsest fixture (E = n/2),
   // 40× / 98× / 197× on the densest — so 'auto' takes the GPU on size
   // alone.  (The CPU's O(n·m) per step is per *pair*, n² of them.)
+  const lane = simRankLane(view, hoods, options);
+
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
-    () => simRank(view, hoods, options),
+    () => inThread(lane),
     (ctx) => simRankGpu(ctx, view, hoods, options),
+    undefined,
+    null,
+    lane,
   );
 };
+
+/**
+ * SimRank's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `simRankKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param view — the subgraph view
+ * @param hoods — from `buildSimRankNeighborhoods`
+ * @param options — the caller's options
+ * @returns the lane
+ * @throws if `dampingFactor` is invalid (see `resolveSimRankDamping`)
+ */
+export const simRankLane = (
+  view: SubgraphView,
+  hoods: { inLists: Int32Array[] },
+  options: SimRankOptions = {},
+): OffloadLane<SimRankResult> => ({
+  minN: SIM_RANK_OFFLOAD_MIN_N,
+  snapshot: () => {
+    const c = resolveSimRankDamping(options);
+    const { rowPtr, colIdx } = listsToCsr(hoods.inLists);
+
+    return {
+      kind: 'kernel',
+      name: 'simRank',
+      input: {
+        n: hoods.inLists.length,
+        inPtr: rowPtr,
+        inIdx: colIdx,
+        c,
+        maxIterations: options.maxIterations ?? 50,
+        tolerance: options.tolerance ?? 0.0001,
+      },
+    };
+  },
+  wrap: (out) => simRankResultFrom(view, out.scores as Float64Array),
+});
 
 /**
  * The CPU reference: the same fixed point iterated sparsely — Q·S as
  * per-row neighbor sums, (Q·S)·Qᵀ as per-column neighbor sums, both
  * O(n·m) per iteration — from S⁰ = I, stopping once max |Δs| drops
- * under `tolerance` or `maxIterations` runs out.
+ * under `tolerance` or `maxIterations` runs out.  The loop is
+ * `simRankKernel` (`algo-kernels.mts`) since 129.1.
  *
  * @param view — the subgraph view
  * @param hoods — from `buildSimRankNeighborhoods`
@@ -207,101 +267,4 @@ export const simRank = (
   view: SubgraphView,
   hoods: { inLists: Int32Array[] },
   options: SimRankOptions = {},
-): SimRankResult => {
-  const c = resolveSimRankDamping(options);
-  const maxIterations = options.maxIterations ?? 50;
-  const tolerance = options.tolerance ?? 0.0001;
-  const { inLists } = hoods;
-  const n = inLists.length;
-
-  let scores = new Float64Array(n * n);
-  const t = new Float64Array(n * n);
-  let u = new Float64Array(n * n);
-
-  for (let i = 0; i < n; i++) {
-    scores[i * n + i] = 1;
-  }
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    // t = Q·S: row a averages the rows of a's neighbors
-    for (let a = 0; a < n; a++) {
-      const list = inLists[a];
-      const row = a * n;
-
-      t.fill(0, row, row + n);
-
-      if (list.length === 0) {
-        continue;
-      }
-
-      for (let k = 0; k < list.length; k++) {
-        const src = list[k] * n;
-
-        for (let j = 0; j < n; j++) {
-          t[row + j] += scores[src + j];
-        }
-      }
-
-      const inv = 1 / list.length;
-
-      for (let j = 0; j < n; j++) {
-        t[row + j] *= inv;
-      }
-    }
-
-    // u = t·Qᵀ: column b averages the columns of b's neighbors
-    for (let b = 0; b < n; b++) {
-      const list = inLists[b];
-
-      if (list.length === 0) {
-        for (let a = 0; a < n; a++) {
-          u[a * n + b] = 0;
-        }
-
-        continue;
-      }
-
-      const inv = 1 / list.length;
-
-      for (let a = 0; a < n; a++) {
-        const row = a * n;
-        let sum = 0;
-
-        for (let k = 0; k < list.length; k++) {
-          sum += t[row + list[k]];
-        }
-
-        u[row + b] = sum * inv;
-      }
-    }
-
-    // epilogue: decay, pin the diagonal, measure the step
-    let maxDiff = 0;
-
-    for (let a = 0; a < n; a++) {
-      for (let b = 0; b < n; b++) {
-        const i = a * n + b;
-        const next = a === b ? 1 : c * u[i];
-        const diff = Math.abs(next - scores[i]);
-
-        if (diff > maxDiff) {
-          maxDiff = diff;
-        }
-
-        u[i] = next;
-      }
-    }
-
-    // u was fully rewritten this iteration, so the buffers swap
-    const previous = scores;
-
-    scores = u;
-    u = previous;
-
-    if (maxDiff <= tolerance) {
-      break;
-    }
-  }
-
-  return simRankResultFrom(view, scores);
-};
+): SimRankResult => inThread(simRankLane(view, hoods, options));

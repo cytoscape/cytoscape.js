@@ -132,6 +132,146 @@ const exercise = (port) => {
   port.send({ type: 'snapshot', id: 8, snapshot: { kind: 'nope', n: 1 } });
   port.send({ type: 'job', id: 9, s0: 0, s1: 1 });
   expect(port.replies[8].type).to.equal('error');
+
+  // the offload kernels (129.1) travel beside the body: every one of
+  // them runs here from its own source text, on a two-node input,
+  // and a name the registry lacks fails loudly
+  const kernelJobs = [
+    [
+      'pageRank',
+      {
+        n: 2,
+        edges: 2,
+        srcs: Int32Array.from([0, 1]),
+        dsts: Int32Array.from([1, 0]),
+        ws: Float64Array.from([1, 1]),
+        dangling: new Int32Array(0),
+        additionalProb: 0.1,
+        precision: 1e-6,
+        iterations: 50,
+      },
+      (out) => expect(Array.from(out.ranks)).to.deep.equal([0.5, 0.5]),
+    ],
+    [
+      'katz',
+      {
+        n: 2,
+        arcs: 2,
+        srcs: Int32Array.from([0, 1]),
+        dsts: Int32Array.from([1, 0]),
+        ws: Float64Array.from([0.5, 0.5]),
+        beta: 1,
+        maxIterations: 100,
+        tolerance: 1e-9,
+      },
+      (out) => expect(out.x[0]).to.be.closeTo(2, 1e-6),
+    ],
+    [
+      'floydWarshall',
+      {
+        n: 2,
+        dist: Float64Array.from([0, 3, 3, 0]),
+        next: Int32Array.from([-1, 1, 0, -1]),
+      },
+      (out) => expect(Array.from(out.dist)).to.deep.equal([0, 3, 3, 0]),
+    ],
+    [
+      'triangles',
+      {
+        n: 3,
+        rowPtr: Int32Array.from([0, 2, 4, 6]),
+        colIdx: Int32Array.from([1, 2, 0, 2, 0, 1]),
+      },
+      (out) => expect(Array.from(out.triangles)).to.deep.equal([1, 1, 1]),
+    ],
+    [
+      'similarity',
+      {
+        n: 3,
+        rowPtr: Int32Array.from([0, 2, 4, 6]),
+        colIdx: Int32Array.from([1, 2, 0, 2, 0, 1]),
+        directed: false,
+      },
+      (out) => expect(out.counts[1]).to.equal(1),
+    ],
+    [
+      'motifs',
+      {
+        n: 3,
+        outPtr: Int32Array.from([0, 1, 2, 3]),
+        outIdx: Int32Array.from([1, 2, 0]),
+        inPtr: Int32Array.from([0, 1, 2, 3]),
+        inIdx: Int32Array.from([2, 0, 1]),
+        mutPtr: Int32Array.from([0, 0, 0, 0]),
+        mutIdx: new Int32Array(0),
+      },
+      // the 3-cycle: S₂ counts each i→j→k→i once per center
+      (out) => expect(Array.from(out.s)).to.deep.equal([0, 3, 0, 0, 0, 0, 0]),
+    ],
+    [
+      'simRank',
+      {
+        n: 2,
+        inPtr: Int32Array.from([0, 1, 2]),
+        inIdx: Int32Array.from([1, 0]),
+        c: 0.8,
+        maxIterations: 20,
+        tolerance: 1e-9,
+      },
+      (out) => expect(out.scores[0]).to.equal(1),
+    ],
+    [
+      'resistance',
+      { n: 2, b: Float64Array.from([2, 0, 0, 2]) },
+      (out) => expect(Array.from(out.inv)).to.deep.equal([0.5, 0, 0, 0.5]),
+    ],
+    [
+      'markov',
+      {
+        n: 2,
+        M: Float64Array.from([0.5, 0.5, 0.5, 0.5]),
+        expandFactor: 2,
+        inflateFactor: 2,
+        maxIterations: 5,
+      },
+      (out) => expect(out.M.length).to.equal(4),
+    ],
+    [
+      'affinity',
+      {
+        n: 2,
+        S: Float64Array.from([-1, -2, -2, -1]),
+        damping: 0.5,
+        maxIterations: 20,
+        minIterations: 5,
+      },
+      (out) => expect(out.exemplars.length).to.be.greaterThan(0),
+    ],
+  ];
+  let id = 10;
+
+  for (const [name, input, check] of kernelJobs) {
+    port.send({
+      type: 'snapshot',
+      id: id++,
+      snapshot: { kind: 'kernel', name, input },
+    });
+    expect(port.replies[port.replies.length - 1].type, name).to.equal('ready');
+    port.send({ type: 'kernel', id: id++ });
+
+    const reply = port.replies[port.replies.length - 1];
+
+    expect(reply.type, `${name}: ${reply.message ?? ''}`).to.equal('result');
+    check(reply.out);
+  }
+
+  port.send({
+    type: 'snapshot',
+    id: id++,
+    snapshot: { kind: 'kernel', name: 'nope', input: {} },
+  });
+  port.send({ type: 'kernel', id: id++ });
+  expect(port.replies[port.replies.length - 1].type).to.equal('error');
 };
 
 /** Spin a real eval-mode worker on the source and ping it. */
@@ -173,7 +313,7 @@ const loadBundle = async (file, kind) => {
   return require(path);
 };
 
-describe('the algorithm worker body travels as self-contained source (round 74.4)', function () {
+describe('the algorithm worker body and the offload kernels travel as self-contained source (round 74.4; 129.1)', function () {
   it('the control: a free identifier in the source is a ReferenceError here', function () {
     const src = _algoWorkerSource(true).replace(
       'port.on(',
@@ -184,6 +324,31 @@ describe('the algorithm worker body travels as self-contained source (round 74.4
       ReferenceError,
       /notDefinedAnywhere/,
     );
+  });
+
+  it('the control for the kernels: a free identifier inside one is an error reply at its job', function () {
+    // whitespace-tolerant: tsx minifies the function text it hands
+    // `toString()`, the bundles keep the source's spacing
+    const src = _algoWorkerSource(true).replace(
+      /a\.set\(inv\)/,
+      'notDefinedInKernel; a.set(inv)',
+    );
+
+    expect(src).to.not.equal(_algoWorkerSource(true));
+    const port = evaluateBare(src);
+
+    port.send({
+      type: 'snapshot',
+      id: 1,
+      snapshot: {
+        kind: 'kernel',
+        name: 'resistance',
+        input: { n: 1, b: Float64Array.from([2]) },
+      },
+    });
+    port.send({ type: 'kernel', id: 2 });
+    expect(port.replies[1].type).to.equal('error');
+    expect(port.replies[1].message).to.match(/notDefinedInKernel/);
   });
 
   it('under tsx: the source evaluates bare and answers every message', function () {

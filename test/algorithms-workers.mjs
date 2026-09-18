@@ -341,22 +341,25 @@ describe('algorithms: the workers executor (round 74)', function () {
       );
     });
 
-    it("a family with no workers path rejects an explicit 'workers'", async function () {
+    it("a family with neither a pool lane nor an offload lane rejects an explicit 'workers'", async function () {
+      // the k-clusterings call their metric per iteration (129's fact
+      // 2), so they have no lane of either kind
       const err = await rejection(
-        cy.elements().pageRank({ executor: 'workers' }),
-      );
-
-      expect(err.message).to.match(/no workers path/);
-
-      // weighted closeness keeps Floyd–Warshall and has no lane either
-      const weighted = await rejection(
-        cy.elements().closenessCentralityNormalized({
-          weight,
+        cy.nodes().kMeans({
+          k: 2,
+          attributes: [(n) => n.data('x') ?? 0],
           executor: 'workers',
         }),
       );
 
-      expect(weighted.message).to.match(/no workers path/);
+      expect(err.message).to.match(/no workers path/);
+
+      // pageRank and weighted closeness rejected here through round
+      // 128; since 129.1 an explicit 'workers' runs their offload lane
+      // (test/algorithms-offload.mjs pins that they ran on a worker)
+      const ranks = await cy.elements().pageRank({ executor: 'workers' });
+
+      expect(ranks.rank(cy.nodes()[0])).to.be.a('number');
     });
 
     it("the no-GPU-path message for weighted betweenness now names 'workers'", async function () {

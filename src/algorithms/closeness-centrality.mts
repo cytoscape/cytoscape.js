@@ -1,10 +1,10 @@
 import type { Collection } from '../collection.mjs';
 import { dijkstra } from './dijkstra.mjs';
-import { initFloydWarshall, relaxFloydWarshall } from './floyd-warshall.mjs';
+import { initFloydWarshall } from './floyd-warshall.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { GPU_MIN_N, inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import {
@@ -13,6 +13,7 @@ import {
 } from './algo-gpu-closeness.mjs';
 import { GROUP_NODES } from '../contract.mjs';
 import { brandesCsr } from './betweenness-centrality.mjs';
+import { FLOYD_WARSHALL_OFFLOAD_MIN_N } from './floyd-warshall.mjs';
 
 /**
  * The node count above which `'auto'` takes the GPU BFS for an
@@ -165,14 +166,99 @@ export const closenessCentralityNormalizedAsync = (
 
   // weighted: the relaxation dominates and is Floyd–Warshall's, so the
   // family inherits FW's measured crossover (65.8: 3.4x GPU at n=256
-  // already)
+  // already) — and FW's offload lane (129.1): the same relaxation
+  // kernel on one pool worker, the rows folded here
+  const lane = closenessWeightedLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
-    () => closenessCentralityNormalized(coll, options),
+    () => inThread(lane),
     (ctx) => closenessCentralityNormalizedGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * The weighted route's offload lane (129.1): Floyd–Warshall's matrices
+ * built here, relaxed by `floydWarshallKernel` (`algo-kernels.mts`) —
+ * in this thread under `'cpu'`, on one pool worker under `'auto'` /
+ * `'workers'` — and the rows folded into scores over whichever
+ * answered.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options (weighted)
+ * @returns the lane
+ */
+export const closenessWeightedLane = (
+  coll: Collection,
+  options: ClosenessCentralityOptions,
+): OffloadLane<ClosenessCentralityNormalizedResult> => {
+  const harmonic = options.harmonic !== false;
+  let view: SubgraphView | null = null;
+
+  return {
+    minN: FLOYD_WARSHALL_OFFLOAD_MIN_N,
+    snapshot: () => {
+      const built = initFloydWarshall(coll, options);
+
+      view = built.view;
+
+      return {
+        kind: 'kernel',
+        name: 'floydWarshall',
+        input: { n: built.n, dist: built.dist, next: built.next },
+      };
+    },
+    wrap: (out) =>
+      closenessResultFrom(
+        view as SubgraphView,
+        closenessFromDistances(
+          (view as SubgraphView).nodeSlots.length,
+          out.dist as Float64Array,
+          harmonic,
+        ),
+      ),
+  };
+};
+
+/**
+ * Fold a relaxed distance matrix into per-node scores — the weighted
+ * route's tail, shared by the in-thread reference and the offload
+ * lane.
+ *
+ * @param n — the node count
+ * @param dist — the row-major relaxed distances
+ * @param harmonic — sum 1/d instead of 1/sum d
+ * @returns the scores, by dense index
+ */
+export const closenessFromDistances = (
+  n: number,
+  dist: Float64Array,
+  harmonic: boolean,
+): Float64Array => {
+  const closenesses = new Float64Array(n);
+
+  for (let i = 0; i < n; i++) {
+    let sum = 0;
+
+    for (let j = 0; j < n; j++) {
+      if (i === j) {
+        continue;
+      }
+
+      const d = dist[i * n + j];
+
+      sum += harmonic ? 1 / d : d;
+    }
+
+    closenesses[i] = closenessOfRowSum(sum, harmonic);
+  }
+
+  return closenesses;
 };
 
 /**
@@ -351,27 +437,5 @@ export const closenessCentralityNormalized = (
     return closenessResultFrom(view, closenesses);
   }
 
-  const { view, n, dist, next } = initFloydWarshall(coll, options);
-
-  relaxFloydWarshall(n, dist, next);
-
-  const closenesses = new Float64Array(n);
-
-  for (let i = 0; i < n; i++) {
-    let sum = 0;
-
-    for (let j = 0; j < n; j++) {
-      if (i === j) {
-        continue;
-      }
-
-      const d = dist[i * n + j];
-
-      sum += harmonic ? 1 / d : d;
-    }
-
-    closenesses[i] = closenessOfRowSum(sum, harmonic);
-  }
-
-  return closenessResultFrom(view, closenesses);
+  return inThread(closenessWeightedLane(coll, options));
 };

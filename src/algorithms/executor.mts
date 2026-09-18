@@ -43,6 +43,21 @@ from workers to the CPU; any other error thrown by a kernel or a
 worker run propagates, so a defect is loud rather than quietly
 rerouted (the guard-nothing-triggers rule).
 
+The offload lane (round 129.1): a family whose reference is a
+self-contained kernel over a snapshot — pageRank, Katz, Floyd–Warshall,
+triangles, neighborhood similarity, the motif census, SimRank,
+effective resistance, Markov clustering, affinity propagation — hands
+`runAlgo` an `OffloadLane`, and `'auto'` runs the kernel on ONE pool
+worker before falling through to the in-thread reference: the value is
+a free main thread, not speed, so the lane sits last and its crossover
+(`offloadMinN`, stamped per family from the 129.4 measurement) is the
+size under which a run is too short to block anything perceptible.
+The in-thread `'cpu'` path calls the same kernel function, and the pool
+carries that function's own source text, so the two answer identical
+bits by construction.  An explicit `'workers'` on such a family runs
+the offload lane (a worker is the workers executor) rather than
+rejecting as it did through round 128.
+
 Cancellation (round 128): every entry returns an `AlgoRun` — the
 promise plus `cancel()`.  The router polls the run's token after each
 await, so a cancel lands before the next lane starts: after the GPU or
@@ -60,6 +75,8 @@ import {
 import type { AlgoGpu } from './algo-gpu.mjs';
 import { acquireAlgoWorkers, algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
+import { runKernelInThread } from './algo-kernels.mjs';
+import type { KernelOutput, KernelSnapshot } from './algo-kernels.mjs';
 import { throwIfCancelled, withCancel } from './cancel.mjs';
 import type { AlgoRun, CancelToken } from './cancel.mjs';
 
@@ -95,6 +112,34 @@ export interface WorkersLane<T> {
    * GPU, then the CPU */
   first?: boolean;
 }
+
+/** A family's offload lane (129.1), as `runAlgo` routes it. */
+export interface OffloadLane<T> {
+  /** the `'auto'` crossover: below it the reference runs in-thread */
+  minN: number;
+  /** build the kernel's snapshot (the closures evaluated here) */
+  snapshot: () => KernelSnapshot;
+  /** wrap the kernel's output as the public result */
+  wrap: (out: KernelOutput) => T;
+}
+
+/**
+ * The in-thread reference of an offload family: the same kernel the
+ * worker runs, called here.  Every offload family's `cpu` is this, so
+ * the reference and the lane cannot drift apart.
+ *
+ * @param lane — the family's offload lane
+ * @returns the public result
+ */
+export const inThread = <T,>(lane: OffloadLane<T>): T =>
+  lane.wrap(runKernelInThread(lane.snapshot()));
+
+/**
+ * The base node count under which `'auto'` keeps an offload family's
+ * run in-thread (129.1): a starting figure, stamped per family beside
+ * its entry point from the `algorithms-workers` offload rows.
+ */
+export const OFFLOAD_MIN_N = 128;
 
 /**
  * The node count under which `'auto'` stays on the CPU: below this the
@@ -168,13 +213,18 @@ export const resolveExecutor = (
  * @param workers — the family's workers lane (round 74), or null when
  *   the family has none; under `'auto'` it sits between the GPU and
  *   the CPU, taken when no GPU lane fits and n clears `minN`
+ * @param offload — the family's offload lane (129.1), or null when
+ *   the family has none; under `'auto'` it sits last before the
+ *   in-thread reference, taken when n clears `minN` and a worker can
+ *   be constructed
  * @returns the algorithm result, from whichever executor ran, as a
  *   promise carrying `cancel()` (round 128)
  * @throws if `executor: 'gpu'` is asked of an environment without
  *   WebGPU, or of an option combination with no GPU path; if
- *   `executor: 'workers'` is asked of a family with no workers lane,
- *   or of an environment where no worker can be constructed; rejects
- *   with `CancelledError` once `cancel()` is called on a pending run
+ *   `executor: 'workers'` is asked of a family with neither a workers
+ *   lane nor an offload lane, or of an environment where no worker can
+ *   be constructed; rejects with `CancelledError` once `cancel()` is
+ *   called on a pending run
  */
 export const runAlgo = <T,>(
   executor: AlgoExecutor,
@@ -184,12 +234,23 @@ export const runAlgo = <T,>(
   gpu: ((ctx: AlgoGpu) => Promise<T>) | null,
   gpuNoPathReason?: string,
   workers: WorkersLane<T> | null = null,
+  offload: OffloadLane<T> | null = null,
 ): AlgoRun<T> => {
   const token: CancelToken = { cancelled: false, done: false };
 
   return withCancel(
     token,
-    route(token, executor, n, minGpuN, cpu, gpu, gpuNoPathReason, workers),
+    route(
+      token,
+      executor,
+      n,
+      minGpuN,
+      cpu,
+      gpu,
+      gpuNoPathReason,
+      workers,
+      offload,
+    ),
     'the algorithm run',
   );
 };
@@ -204,6 +265,7 @@ const route = async <T,>(
   gpu: ((ctx: AlgoGpu) => Promise<T>) | null,
   gpuNoPathReason: string | undefined,
   workers: WorkersLane<T> | null,
+  offload: OffloadLane<T> | null,
 ): Promise<T> => {
   // a lane's value is in hand: a cancel from here on answers false
   const settled = (value: T): T => {
@@ -212,8 +274,15 @@ const route = async <T,>(
     return value;
   };
 
+  // the offload lane's run (129.1): the kernel on one worker
+  const offloadOn = async (pool: AlgoWorkers): Promise<T> => {
+    const lane = offload as OffloadLane<T>;
+
+    return lane.wrap(await pool.runOne(lane.snapshot(), token));
+  };
+
   if (executor === 'workers') {
-    if (workers == null) {
+    if (workers == null && offload == null) {
       throw new Error(
         "this algorithm has no workers path — use executor 'cpu' or 'auto'",
       );
@@ -224,7 +293,11 @@ const route = async <T,>(
 
     throwIfCancelled(token);
 
-    return settled(await workers.run(cancellable(pool, token)));
+    if (workers != null) {
+      return settled(await workers.run(cancellable(pool, token)));
+    }
+
+    return settled(await offloadOn(pool));
   }
 
   // the workers lane under 'auto': a pool that cannot be acquired (no
@@ -337,6 +410,30 @@ const route = async <T,>(
     }
   }
 
+  // the offload lane (129.1): one worker, so the calling thread stays
+  // free — taken last, and only where a worker can be constructed; a
+  // pool that cannot be acquired falls through to the reference
+  if (
+    executor === 'auto' &&
+    offload != null &&
+    n >= offload.minN &&
+    algoWorkersSupported()
+  ) {
+    let pool: AlgoWorkers | null;
+
+    try {
+      pool = await acquireAlgoWorkers();
+    } catch {
+      pool = null;
+    }
+
+    throwIfCancelled(token);
+
+    if (pool != null) {
+      return settled(await offloadOn(pool));
+    }
+  }
+
   return settled(cpu());
 };
 
@@ -351,4 +448,5 @@ const route = async <T,>(
 const cancellable = (pool: AlgoWorkers, token: CancelToken): AlgoWorkers => ({
   size: pool.size,
   run: (snapshot, n) => pool.run(snapshot, n, token),
+  runOne: (snapshot) => pool.runOne(snapshot, token),
 });

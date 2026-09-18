@@ -450,8 +450,19 @@ the pool even where a GPU is present, since it measured faster there.  The pool'
 are bit-stable across runs and pool sizes, and bit-identical to `'cpu'`
 for closeness, heat and RWR; betweenness agrees with `'cpu'` to f64
 rounding but not to the bit, so a caller that compares betweenness
-scores bit-for-bit across versions says `executor: 'cpu'`.  `'workers'`
-on any other family rejects. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
+scores bit-for-bit across versions says `executor: 'cpu'`.  **Since
+round 129.1 `'workers'` also runs the families the pool cannot
+partition — `pageRank`, `katzCentrality`, `floydWarshall`, weighted
+`closenessCentralityNormalized`, `triangleCount`,
+`neighborhoodSimilarity`, `motifCensus`, `simRank`,
+`effectiveResistance`, `markovClustering`, `affinityPropagation` —
+on one worker**, and `'auto'` takes that lane wherever neither the GPU
+nor the pool runs, from a per-family size (64–2048 nodes): the calling
+thread stays free for the run's whole length, and the answer is
+bit-identical to `'cpu'` (the same kernel function runs on both
+sides).  `'workers'` rejects only on `kMeans`, `kMedoids`,
+`fuzzyCMeans` and `hierarchicalClustering`, whose references call the
+distance per iteration. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
 `bellmanFord`, `kruskal`, the components algorithms, degree centrality and
 the single-root `closenessCentrality`) stays synchronous: those run
 per-root in tight loops, and no GPU formulation would beat their

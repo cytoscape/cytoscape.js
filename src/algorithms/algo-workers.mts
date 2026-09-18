@@ -45,7 +45,9 @@ import type {
   AlgoWorkerReply,
   AlgoWorkerRequest,
   AlgoWorkerSnapshot,
+  KernelWorkerSnapshot,
 } from './algo-worker-body.mjs';
+import { ALGO_KERNELS } from './algo-kernels.mjs';
 import { throwIfCancelled } from './cancel.mjs';
 import type { CancelToken } from './cancel.mjs';
 
@@ -100,7 +102,9 @@ interface PoolWorker {
 
 /** What a run borrows: the workers plus the pool's run counters. */
 export interface AlgoWorkers {
-  /** how many workers the pool holds */
+  /** how many workers a whole-pool run uses — the pool's size, which
+   * it grows to lazily (129.1); `_algoWorkersStats().workers` is how
+   * many are spawned right now */
   readonly size: number;
   /**
    * Run one snapshot over every range of `n`, on every worker at once.
@@ -117,6 +121,21 @@ export interface AlgoWorkers {
     n: number,
     token?: CancelToken,
   ): Promise<Float64Array[]>;
+  /**
+   * Run one kernel on one worker (129.1, the offload lane): the
+   * snapshot is cloned into an idle worker, the kernel runs there, and
+   * its output comes back with every typed array transferred.
+   *
+   * @param snapshot — the kernel by name and its input
+   * @param token — the run's cancel token: a cancelled run sends
+   *   nothing more, and an answer that lands after the cancel is
+   *   dropped; the worker stands
+   * @returns the kernel's output
+   */
+  runOne(
+    snapshot: KernelWorkerSnapshot,
+    token?: CancelToken,
+  ): Promise<Record<string, unknown>>;
 }
 
 /** The run counters `_algoWorkersStats()` reports — how a benchmark
@@ -128,14 +147,22 @@ export interface AlgoWorkersStats {
   runs: number;
   /** range jobs completed */
   jobs: number;
-  /** workers in the live pool, 0 when none */
+  /** single-worker kernel runs completed (129.1, the offload lane) */
+  offloads: number;
+  /** workers spawned right now, 0 when none */
   workers: number;
 }
 
-const stats: AlgoWorkersStats = { spawns: 0, runs: 0, jobs: 0, workers: 0 };
+const stats: AlgoWorkersStats = {
+  spawns: 0,
+  runs: 0,
+  jobs: 0,
+  offloads: 0,
+  workers: 0,
+};
 
 let cached: Promise<AlgoWorkers> | null = null;
-let live: { workers: PoolWorker[]; terminate(): void } | null = null;
+let live: { terminate(): void } | null = null;
 let forcedSize: number | null = null;
 
 interface NodeWorkerThreads {
@@ -255,6 +282,15 @@ export const algoWorkersSize = (): number => {
  */
 export const _algoWorkerSource = (node: boolean): string => {
   const body = `(${algoWorkerBody.toString()})`;
+  // the offload kernels (129.1), each from its own source text: the
+  // very functions the in-thread path calls, so a worker answers the
+  // reference's bits by construction
+  const kernels =
+    '{' +
+    Object.entries(ALGO_KERNELS)
+      .map(([name, fn]) => `${name}: (${fn.toString()})`)
+      .join(',\n') +
+    '}';
   // the Node port comes through `process.getBuiltinModule`, not
   // `require`: an eval-mode worker inherits the process's `--input-type`,
   // and under `--input-type=module` its source is ESM, where `require`
@@ -268,7 +304,7 @@ export const _algoWorkerSource = (node: boolean): string => {
 
   // tsx wraps every closure creation in `__name(fn, "name")`; the
   // bundles carry no such helper, but the body must evaluate under both
-  return `const __name = (f) => f;\n${port}\n${body}(port);`;
+  return `const __name = (f) => f;\n${port}\nconst kernels = ${kernels};\n${body}(port, kernels);`;
 };
 
 /** Spawn one worker on whichever platform is here. */
@@ -325,11 +361,29 @@ const spawnWorker = (): PoolWorker => {
   };
 };
 
+/** One worker of the pool, with the state the scheduler keys on. */
+interface PoolSlot {
+  w: PoolWorker;
+  /** the pending replies, keyed by request id */
+  pending: Map<number, (reply: AlgoWorkerReply) => void>;
+  /** the mutex: resolves once every earlier holder has released */
+  chain: Promise<void>;
+  /** holders queued or running on this worker */
+  load: number;
+}
+
 /**
  * Acquire (or reuse) the shared pool.  Cached across calls; a spawn or
  * ping failure rejects (and is not cached, so a later call retries),
  * which `executor: 'auto'` treats like a missing GPU adapter and
  * `executor: 'workers'` surfaces to the caller.
+ *
+ * The pool spawns lazily (129.1): one worker at acquisition, grown to
+ * `algoWorkersSize()` by the first whole-pool run — so an offload run
+ * never pays for the workers it will not use.  Whole-pool runs still
+ * serialize behind one queue and hold every worker for their span;
+ * single-worker runs take an idle worker each (spawning one while the
+ * pool is under its size) and interleave.
  *
  * @returns the shared pool
  * @throws if no worker platform exists, or a worker fails to construct
@@ -347,55 +401,43 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
       }
 
       const size = algoWorkersSize();
-      const workers: PoolWorker[] = [];
+      const slots: PoolSlot[] = [];
       let nextId = 1;
+      /** the whole-pool runs' queue: a worker holds one snapshot at a time */
       let queue: Promise<unknown> = Promise.resolve();
+      /** growth is serialized so two callers never over-spawn */
+      let growing: Promise<void> = Promise.resolve();
+      let failure: Error | null = null;
 
       const terminate = (): void => {
-        for (const w of workers) {
-          w.terminate();
+        for (const slot of slots) {
+          slot.w.terminate();
         }
 
-        workers.length = 0;
+        slots.length = 0;
         stats.workers = 0;
       };
 
-      // per worker: the pending replies, keyed by request id
-      const pending: Map<number, (reply: AlgoWorkerReply) => void>[] = [];
-      let failure: Error | null = null;
-      const failAll = (err: Error): void => {
-        failure = err;
-
-        for (const map of pending) {
-          for (const resolve of map.values()) {
-            resolve({ type: 'error', id: -1, message: err.message });
-          }
-
-          map.clear();
+      const failSlot = (slot: PoolSlot, err: Error): void => {
+        for (const resolve of slot.pending.values()) {
+          resolve({ type: 'error', id: -1, message: err.message });
         }
+
+        slot.pending.clear();
       };
 
-      try {
-        for (let i = 0; i < size; i++) {
-          const w = spawnWorker();
-          const map = new Map<number, (reply: AlgoWorkerReply) => void>();
+      /** a worker's error event fails every pending request — on every
+       * spawned worker, and on the one still spawning (its ping is the
+       * request in flight, and it is not in `slots` yet) */
+      const failAll = (err: Error, spawning: PoolSlot): void => {
+        failure = err;
 
-          workers.push(w);
-          pending.push(map);
-          w.onMessage((reply) => {
-            const resolve = map.get(reply.id);
-
-            if (resolve != null) {
-              map.delete(reply.id);
-              resolve(reply);
-            }
-          });
-          w.onError((err) => failAll(err));
+        for (const slot of slots) {
+          failSlot(slot, err);
         }
-      } catch (err) {
-        terminate();
-        throw err;
-      }
+
+        failSlot(spawning, err);
+      };
 
       type Request = AlgoWorkerRequest extends infer R
         ? R extends { id: number }
@@ -403,7 +445,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
           : never
         : never;
       const ask = (
-        i: number,
+        slot: PoolSlot,
         msg: Request,
         transfer?: ArrayBuffer[],
       ): Promise<AlgoWorkerReply> =>
@@ -416,50 +458,99 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
 
           const id = nextId++;
 
-          pending[i].set(id, resolve);
-          workers[i].post({ ...msg, id }, transfer);
+          slot.pending.set(id, resolve);
+          slot.w.post({ ...msg, id }, transfer);
         });
 
-      const hold = (): void => {
-        for (const w of workers) {
-          w.ref();
-        }
-      };
-      const release = (): void => {
-        for (const w of workers) {
+      /** spawn one worker and prove it evaluates: the liveness probe —
+       * a body that does not evaluate (a stray helper reference) errors
+       * here, before any caller depends on it */
+      const spawnOne = async (): Promise<PoolSlot> => {
+        const w = spawnWorker();
+        const slot: PoolSlot = {
+          w,
+          pending: new Map(),
+          chain: Promise.resolve(),
+          load: 0,
+        };
+
+        w.onMessage((reply) => {
+          const resolve = slot.pending.get(reply.id);
+
+          if (resolve != null) {
+            slot.pending.delete(reply.id);
+            resolve(reply);
+          }
+        });
+        w.onError((err) => failAll(err, slot));
+        w.ref();
+
+        let pong: AlgoWorkerReply;
+
+        try {
+          pong = await ask(slot, { type: 'ping' });
+        } finally {
           w.unref();
         }
-      };
 
-      // the liveness probe: a body that does not evaluate (a stray
-      // helper reference) errors here, before any caller depends on it
-      hold();
-
-      let pongs: AlgoWorkerReply[];
-
-      try {
-        pongs = await Promise.all(
-          workers.map((_, i) => ask(i, { type: 'ping' })),
-        );
-      } finally {
-        release();
-      }
-
-      for (const reply of pongs) {
-        if (reply.type !== 'pong') {
-          terminate();
+        if (pong.type !== 'pong') {
+          w.terminate();
           throw new Error(
             'the algorithm worker failed to start' +
-              (reply.type === 'error' ? `: ${reply.message}` : ''),
+              (pong.type === 'error' ? `: ${pong.message}` : ''),
           );
         }
-      }
 
+        return slot;
+      };
+
+      /** grow the pool to `count` workers, at most its size */
+      const ensure = (count: number): Promise<void> => {
+        const turn = growing.then(async () => {
+          const target = Math.min(size, count);
+          const missing = target - slots.length;
+
+          if (missing <= 0) {
+            return;
+          }
+
+          const spawned = await Promise.all(
+            Array.from({ length: missing }, () => spawnOne()),
+          );
+
+          for (const slot of spawned) {
+            slots.push(slot);
+          }
+
+          stats.workers = slots.length;
+        });
+
+        growing = turn.catch(() => undefined);
+
+        return turn;
+      };
+
+      /** take a worker's mutex; resolves to the release */
+      const lock = (slot: PoolSlot): Promise<() => void> => {
+        const previous = slot.chain;
+        let release!: () => void;
+
+        slot.chain = new Promise<void>((r) => {
+          release = r;
+        });
+        slot.load++;
+
+        return previous.then(() => () => {
+          slot.load--;
+          release();
+        });
+      };
+
+      await ensure(1);
       stats.spawns++;
-      stats.workers = workers.length;
-      live = { workers, terminate };
 
       const runOnce = async (
+        workers: PoolSlot[],
         snapshot: AlgoWorkerSnapshot,
         n: number,
         token?: CancelToken,
@@ -468,7 +559,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
         throwIfCancelled(token);
 
         const readies = await Promise.all(
-          workers.map((_, i) => ask(i, { type: 'snapshot', snapshot })),
+          workers.map((slot) => ask(slot, { type: 'snapshot', snapshot })),
         );
 
         for (const reply of readies) {
@@ -487,7 +578,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
 
         // a free worker takes the next range: dynamic assignment over a
         // fixed partition, so the merge order never sees the pool size
-        const drain = async (i: number): Promise<void> => {
+        const drain = async (slot: PoolSlot): Promise<void> => {
           while (
             next < ranges.length &&
             jobError == null &&
@@ -495,7 +586,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
           ) {
             const r = next++;
             const [s0, s1] = ranges[r];
-            const reply = await ask(i, { type: 'job', s0, s1 });
+            const reply = await ask(slot, { type: 'job', s0, s1 });
 
             if (reply.type === 'done') {
               parts[r] = reply.out;
@@ -509,7 +600,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
           }
         };
 
-        await Promise.all(workers.map((_, i) => drain(i)));
+        await Promise.all(workers.map((slot) => drain(slot)));
 
         if (jobError != null) {
           throw jobError;
@@ -525,17 +616,103 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
         return parts;
       };
 
+      /** one kernel on one worker (129.1): the offload lane's run */
+      const runSingle = async (
+        snapshot: KernelWorkerSnapshot,
+        token?: CancelToken,
+      ): Promise<Record<string, unknown>> => {
+        throwIfCancelled(token);
+
+        // an idle worker, else a fresh one while the pool is under its
+        // size, else the least loaded
+        let slot = slots.find((s) => s.load === 0);
+
+        if (slot == null && slots.length < size) {
+          await ensure(slots.length + 1);
+          throwIfCancelled(token);
+          slot = slots.find((s) => s.load === 0);
+        }
+
+        if (slot == null) {
+          slot = slots[0];
+
+          for (const s of slots) {
+            if (s.load < slot.load) {
+              slot = s;
+            }
+          }
+        }
+
+        const release = await lock(slot);
+
+        slot.w.ref();
+
+        try {
+          // cancelled while waiting for the worker: nothing is sent
+          throwIfCancelled(token);
+
+          const ready = await ask(slot, { type: 'snapshot', snapshot });
+
+          if (ready.type !== 'ready') {
+            throw new Error(
+              'the algorithm worker rejected its snapshot' +
+                (ready.type === 'error' ? `: ${ready.message}` : ''),
+            );
+          }
+
+          throwIfCancelled(token);
+
+          const reply = await ask(slot, { type: 'kernel' });
+
+          if (reply.type !== 'result') {
+            throw new Error(
+              'the algorithm worker failed a kernel' +
+                (reply.type === 'error' ? `: ${reply.message}` : ''),
+            );
+          }
+
+          // the kernel ran to its end; a cancel meanwhile drops the
+          // answer rather than wrapping it
+          throwIfCancelled(token);
+
+          stats.offloads++;
+
+          return reply.out;
+        } finally {
+          slot.w.unref();
+          release();
+        }
+      };
+
       const pool: AlgoWorkers = {
-        size,
+        get size() {
+          return size;
+        },
         run: (snapshot, n, token) => {
-          // runs are serialized: a worker holds one snapshot at a time
+          // whole-pool runs are serialized: a worker holds one snapshot
+          // at a time — and each holds every worker for the run's span,
+          // so an offload run in flight is waited for, never displaced
           const turn = queue.then(async () => {
-            hold();
+            await ensure(size);
+
+            const workers = slots.slice();
+            const releases: (() => void)[] = [];
+
+            for (const slot of workers) {
+              releases.push(await lock(slot));
+              slot.w.ref();
+            }
 
             try {
-              return await runOnce(snapshot, n, token);
+              return await runOnce(workers, snapshot, n, token);
             } finally {
-              release();
+              for (const slot of workers) {
+                slot.w.unref();
+              }
+
+              for (const release of releases) {
+                release();
+              }
             }
           });
 
@@ -543,7 +720,10 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
 
           return turn;
         },
+        runOne: (snapshot, token) => runSingle(snapshot, token),
       };
+
+      live = { terminate };
 
       return pool;
     })();

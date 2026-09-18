@@ -20,12 +20,22 @@ import type { SubgraphView } from './algo-shared.mjs';
 import {
   GPU_MIN_EDGES_PER_NODE,
   GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
   resolveExecutor,
   runAlgo,
 } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { neighborhoodSimilarityGpu } from './algo-gpu-similarity.mjs';
+import { listsToCsr } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` counts shared neighbors on one
+ * pool worker rather than in-thread (129.1): a starting figure,
+ * stamped from the `algorithms-workers` offload rows.
+ */
+export const SIMILARITY_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 
 /** How a pair's shared-neighbor count is normalized: Jaccard divides
  * by the union, cosine by the geometric mean of the sizes, overlap by
@@ -218,14 +228,53 @@ export const neighborhoodSimilarityAsync = (
   const edges = directed ? hoods.adjacencies : hoods.adjacencies / 2;
   const dense = edges >= GPU_MIN_EDGES_PER_NODE * n;
 
+  const lane = similarityLane(view, hoods, metric, directed);
+
   return runAlgo(
     executor,
     n,
     dense ? GPU_MIN_N : Infinity,
-    () => neighborhoodSimilarity(view, hoods, metric, directed),
+    () => inThread(lane),
     (ctx) => neighborhoodSimilarityGpu(ctx, view, hoods, metric, directed),
+    undefined,
+    null,
+    lane,
   );
 };
+
+/**
+ * Neighborhood similarity's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `similarityKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param view — the subgraph view
+ * @param hoods — from `buildNeighborhoods`
+ * @param metric — the resolved normalization
+ * @param directed — whether `hoods` holds out-neighborhoods
+ * @returns the lane
+ */
+export const similarityLane = (
+  view: SubgraphView,
+  hoods: { neighbors: Int32Array[]; sizes: Int32Array },
+  metric: SimilarityMetric,
+  directed: boolean,
+): OffloadLane<NeighborhoodSimilarityResult> => ({
+  minN: SIMILARITY_OFFLOAD_MIN_N,
+  snapshot: () => {
+    const { rowPtr, colIdx } = listsToCsr(hoods.neighbors);
+
+    return {
+      kind: 'kernel',
+      name: 'similarity',
+      input: { n: hoods.sizes.length, rowPtr, colIdx, directed },
+    };
+  },
+  wrap: (out) =>
+    similarityResultFrom(view, hoods.sizes, out.counts as Float64Array, metric),
+});
 
 /**
  * The CPU reference: wedge counting.  Every shared neighbor w of a
@@ -233,6 +282,7 @@ export const neighborhoodSimilarityAsync = (
  * nodes that count w as a neighbor — and crediting each pair fills
  * the count matrix in O(Σ witnesses²) without any per-pair set
  * intersection.  The diagonal is each node's own neighborhood size.
+ * The walk is `similarityKernel` (`algo-kernels.mts`) since 129.1.
  *
  * @param view — the subgraph view
  * @param hoods — from `buildNeighborhoods`
@@ -245,65 +295,5 @@ export const neighborhoodSimilarity = (
   hoods: { neighbors: Int32Array[]; sizes: Int32Array },
   metric: SimilarityMetric,
   directed: boolean,
-): NeighborhoodSimilarityResult => {
-  const { neighbors, sizes } = hoods;
-  const n = sizes.length;
-  const counts = new Float64Array(n * n);
-
-  // witness lists: rev[w] = the u with w ∈ N(u).  Undirected
-  // neighborhoods are symmetric, so rev is the neighbor list itself.
-  let rev: Int32Array[];
-
-  if (directed) {
-    const revCounts = new Int32Array(n);
-
-    for (let u = 0; u < n; u++) {
-      const nu = neighbors[u];
-
-      for (let k = 0; k < nu.length; k++) {
-        revCounts[nu[k]]++;
-      }
-    }
-
-    rev = new Array(n);
-
-    for (let w = 0; w < n; w++) {
-      rev[w] = new Int32Array(revCounts[w]);
-    }
-
-    const fill = new Int32Array(n);
-
-    for (let u = 0; u < n; u++) {
-      const nu = neighbors[u];
-
-      for (let k = 0; k < nu.length; k++) {
-        const w = nu[k];
-
-        rev[w][fill[w]++] = u;
-      }
-    }
-  } else {
-    rev = neighbors;
-  }
-
-  for (let w = 0; w < n; w++) {
-    const witnesses = rev[w];
-
-    for (let a = 0; a < witnesses.length; a++) {
-      const u = witnesses[a];
-
-      for (let b = a + 1; b < witnesses.length; b++) {
-        const v = witnesses[b];
-
-        counts[u * n + v]++;
-        counts[v * n + u]++;
-      }
-    }
-  }
-
-  for (let i = 0; i < n; i++) {
-    counts[i * n + i] = sizes[i];
-  }
-
-  return similarityResultFrom(view, sizes, counts, metric);
-};
+): NeighborhoodSimilarityResult =>
+  inThread(similarityLane(view, hoods, metric, directed));

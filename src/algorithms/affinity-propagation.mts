@@ -4,10 +4,19 @@ import type { Collection } from '../collection.mjs';
 import { median, mean, min, max } from '../math.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { affinityPropagationGpu } from './algo-gpu-ap.mjs';
+
+/**
+ * The node count from which `'auto'` passes AP's messages on one pool
+ * worker rather than in-thread (129.1): a starting figure, stamped
+ * from the `algorithms-workers` offload rows; each iteration is two
+ * dense n² passes and a run is hundreds of them, so the lane opens
+ * early.
+ */
+export const AFFINITY_OFFLOAD_MIN_N = 64;
 
 export type AffinityAttributeFn = (node: Collection) => number;
 export type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
@@ -59,18 +68,6 @@ const getPreference = (
   }
 
   return preference; // custom number
-};
-
-const findExemplars = (n: number, R: number[], A: number[]): number[] => {
-  const indices: number[] = [];
-
-  for (let i = 0; i < n; i++) {
-    if (R[i * n + i] + A[i * n + i] > 0) {
-      indices.push(i);
-    }
-  }
-
-  return indices;
 };
 
 const assignClusters = (
@@ -162,13 +159,71 @@ export const affinityPropagationAsync = (
   // measured crossover (65.8, amd gcn-4): workgroup-per-line updates
   // and the shared-build fix moved it left — 2.5x at n=256, 3.8x at
   // n=1024 (iteration-capped rows)
+  const lane = affinityLane(coll, options);
+
   return runAlgo(
     executor,
     n,
     256,
-    () => affinityPropagation(coll, options),
+    () => inThread(lane),
     (ctx) => affinityPropagationGpu(ctx, coll, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * Affinity propagation's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `affinityKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @returns the lane
+ * @throws if `damping` or `preference` is invalid (at the snapshot;
+ *   see `buildAffinitySimilarity`)
+ */
+export const affinityLane = (
+  coll: Collection,
+  options: AffinityPropagationOptions,
+): OffloadLane<Collection[]> => {
+  let built: ReturnType<typeof buildAffinitySimilarity> | null = null;
+
+  return {
+    minN: AFFINITY_OFFLOAD_MIN_N,
+    snapshot: () => {
+      built = buildAffinitySimilarity(coll, options);
+
+      return {
+        kind: 'kernel',
+        name: 'affinity',
+        input: {
+          n: built.n,
+          S: built.S,
+          damping: built.damping,
+          maxIterations: built.maxIterations,
+          minIterations: built.minIterations,
+        },
+      };
+    },
+    wrap: (out) => {
+      const { nodes, n, S } = built as ReturnType<
+        typeof buildAffinitySimilarity
+      >;
+
+      return apClustersFrom(
+        coll,
+        nodes,
+        n,
+        S,
+        Array.from(out.exemplars as Int32Array),
+      );
+    },
+  };
 };
 
 /**
@@ -376,102 +431,4 @@ export const apClustersFrom = (
 export const affinityPropagation = (
   coll: Collection,
   options: AffinityPropagationOptions = {},
-): Collection[] => {
-  const { nodes, n, S, damping, maxIterations, minIterations } =
-    buildAffinitySimilarity(coll, options);
-  const n2 = n * n;
-
-  const R: number[] = new Array(n2).fill(0);
-  const A: number[] = new Array(n2).fill(0);
-  const old: number[] = new Array(n).fill(0);
-  const Rp: number[] = new Array(n).fill(0);
-  const se: number[] = new Array(n).fill(0);
-  const e: number[] = new Array(n * minIterations).fill(0);
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    // update responsibilities
-    for (let i = 0; i < n; i++) {
-      let maxAS = -Infinity;
-      let max2 = -Infinity;
-      let maxI = -1;
-
-      for (let j = 0; j < n; j++) {
-        old[j] = R[i * n + j];
-
-        const AS = A[i * n + j] + S[i * n + j];
-
-        if (AS >= maxAS) {
-          max2 = maxAS;
-          maxAS = AS;
-          maxI = j;
-        } else if (AS > max2) {
-          max2 = AS;
-        }
-      }
-
-      for (let j = 0; j < n; j++) {
-        R[i * n + j] =
-          (1 - damping) * (S[i * n + j] - maxAS) + damping * old[j];
-      }
-
-      R[i * n + maxI] =
-        (1 - damping) * (S[i * n + maxI] - max2) + damping * old[maxI];
-    }
-
-    // update availabilities
-    for (let i = 0; i < n; i++) {
-      let sum = 0;
-
-      for (let j = 0; j < n; j++) {
-        old[j] = A[j * n + i];
-        Rp[j] = Math.max(0, R[j * n + i]);
-        sum += Rp[j];
-      }
-
-      sum -= Rp[i];
-      Rp[i] = R[i * n + i];
-      sum += Rp[i];
-
-      for (let j = 0; j < n; j++) {
-        A[j * n + i] =
-          (1 - damping) * Math.min(0, sum - Rp[j]) + damping * old[j];
-      }
-
-      A[i * n + i] = (1 - damping) * (sum - Rp[i]) + damping * old[i];
-    }
-
-    // convergence check
-    let K = 0;
-
-    for (let i = 0; i < n; i++) {
-      const E = A[i * n + i] + R[i * n + i] > 0 ? 1 : 0;
-
-      e[(iter % minIterations) * n + i] = E;
-      K += E;
-    }
-
-    if (K > 0 && (iter >= minIterations - 1 || iter === maxIterations - 1)) {
-      let sum = 0;
-
-      for (let i = 0; i < n; i++) {
-        se[i] = 0;
-
-        for (let j = 0; j < minIterations; j++) {
-          se[i] += e[j * n + i];
-        }
-
-        if (se[i] === 0 || se[i] === minIterations) {
-          sum++;
-        }
-      }
-
-      if (sum === n) {
-        break;
-      } // converged
-    }
-  }
-
-  const exemplarsIndices = findExemplars(n, R, A);
-
-  return apClustersFrom(coll, nodes, n, S, exemplarsIndices);
-};
+): Collection[] => inThread(affinityLane(coll, options));

@@ -25,10 +25,24 @@ different components answer Infinity.  No v3 counterpart.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  OFFLOAD_MIN_N,
+  inThread,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { effectiveResistanceGpu } from './algo-gpu-resistance.mjs';
+import { resistanceKernel } from './algo-kernels.mjs';
+
+/**
+ * The node count from which `'auto'` inverts the system on one pool
+ * worker rather than in-thread (129.1): a starting figure, stamped
+ * from the `algorithms-workers` offload rows.
+ */
+export const RESISTANCE_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 import { GROUP_EDGES } from '../contract.mjs';
 
 export interface EffectiveResistanceOptions {
@@ -234,13 +248,58 @@ export const effectiveResistanceAsync = (
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
 
+  const lane = resistanceLane(view, options);
+
   return runAlgo(
     executor,
     n,
     GPU_MIN_N,
-    () => effectiveResistance(view, options),
+    () => inThread(lane),
     (ctx) => effectiveResistanceGpu(ctx, view, options),
+    undefined,
+    null,
+    lane,
   );
+};
+
+/**
+ * Effective resistance's offload lane (129.1): the snapshot built here — every
+ * closure evaluated on this thread — the maths as `resistanceKernel`
+ * (`algo-kernels.mts`), run in this thread under `'cpu'` and on one
+ * pool worker under `'auto'` / `'workers'`, and the public result over
+ * whichever answered.  One function on both sides, so the two agree
+ * bit for bit.
+ *
+ * @param view — the subgraph view
+ * @param options — the caller's options
+ * @returns the lane
+ * @throws if an edge weight is not positive (at the snapshot)
+ */
+export const resistanceLane = (
+  view: SubgraphView,
+  options: EffectiveResistanceOptions = {},
+): OffloadLane<EffectiveResistanceResult> => {
+  let built: ReturnType<typeof buildResistanceSystem> | null = null;
+
+  return {
+    minN: RESISTANCE_OFFLOAD_MIN_N,
+    snapshot: () => {
+      built = buildResistanceSystem(view, options);
+
+      return {
+        kind: 'kernel',
+        name: 'resistance',
+        input: { n: view.nodeSlots.length, b: built.b },
+      };
+    },
+    wrap: (out) => {
+      const { comp, volumes } = built as ReturnType<
+        typeof buildResistanceSystem
+      >;
+
+      return resistanceResultFrom(view, out.inv as Float64Array, comp, volumes);
+    },
+  };
 };
 
 /**
@@ -252,61 +311,10 @@ export const effectiveResistanceAsync = (
  * @param a — overwritten with its inverse
  */
 export const invertDense = (n: number, a: Float64Array): void => {
-  const inv = new Float64Array(n * n);
-
-  for (let i = 0; i < n; i++) {
-    inv[i * n + i] = 1;
-  }
-
-  for (let col = 0; col < n; col++) {
-    let pivot = col;
-
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(a[row * n + col]) > Math.abs(a[pivot * n + col])) {
-        pivot = row;
-      }
-    }
-
-    if (pivot !== col) {
-      for (let j = 0; j < n; j++) {
-        const t = a[col * n + j];
-
-        a[col * n + j] = a[pivot * n + j];
-        a[pivot * n + j] = t;
-
-        const ti = inv[col * n + j];
-
-        inv[col * n + j] = inv[pivot * n + j];
-        inv[pivot * n + j] = ti;
-      }
-    }
-
-    const scale = 1 / a[col * n + col];
-
-    for (let j = 0; j < n; j++) {
-      a[col * n + j] *= scale;
-      inv[col * n + j] *= scale;
-    }
-
-    for (let row = 0; row < n; row++) {
-      if (row === col) {
-        continue;
-      }
-
-      const factor = a[row * n + col];
-
-      if (factor === 0) {
-        continue;
-      }
-
-      for (let j = 0; j < n; j++) {
-        a[row * n + j] -= factor * a[col * n + j];
-        inv[row * n + j] -= factor * inv[col * n + j];
-      }
-    }
-  }
-
-  a.set(inv);
+  // the elimination is `resistanceKernel` (`algo-kernels.mts`) since
+  // 129.1 — the one function the in-thread reference and the offload
+  // lane run; this is its in-place spelling
+  resistanceKernel({ n, b: a });
 };
 
 /**
@@ -321,11 +329,4 @@ export const invertDense = (n: number, a: Float64Array): void => {
 export const effectiveResistance = (
   view: SubgraphView,
   options: EffectiveResistanceOptions = {},
-): EffectiveResistanceResult => {
-  const n = view.nodeSlots.length;
-  const { b, comp, volumes } = buildResistanceSystem(view, options);
-
-  invertDense(n, b);
-
-  return resistanceResultFrom(view, b, comp, volumes);
-};
+): EffectiveResistanceResult => inThread(resistanceLane(view, options));

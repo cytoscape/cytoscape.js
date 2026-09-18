@@ -30,6 +30,14 @@ inputs (structured-cloned per worker, priced in 74.1 at ~0.2 ms for a
 100 KB CSR), then each `job` names a contiguous source or column range
 and answers one transferred `Float64Array`.  `ping` is the pool's
 liveness probe at spawn.
+
+The offload lane (round 129.1) adds one snapshot kind and one job: a
+`kernel` snapshot names a function in the registry the pool hands the
+body at evaluation (`algo-kernels.mts`, each carried as source text
+beside this one) and holds its input; a `kernel` job runs it once and
+answers its output with every typed array transferred.  The body
+never knows a kernel's shape — it is the same function the in-thread
+`'cpu'` path calls, which is the whole point.
 */
 
 /** The port the body talks through — one method each way, so the pool
@@ -85,31 +93,52 @@ export interface WalkSnapshot {
   tolerance: number;
 }
 
+/** An offload run's inputs (129.1): a kernel by name and its input. */
+export interface KernelWorkerSnapshot {
+  kind: 'kernel';
+  name: string;
+  input: Record<string, unknown>;
+}
+
 export type AlgoWorkerSnapshot =
   | BrandesSnapshot
   | ClosenessSnapshot
   | HeatSnapshot
-  | WalkSnapshot;
+  | WalkSnapshot
+  | KernelWorkerSnapshot;
 
 export type AlgoWorkerRequest =
   | { type: 'ping'; id: number }
   | { type: 'snapshot'; id: number; snapshot: AlgoWorkerSnapshot }
-  | { type: 'job'; id: number; s0: number; s1: number };
+  | { type: 'job'; id: number; s0: number; s1: number }
+  | { type: 'kernel'; id: number };
 
 export type AlgoWorkerReply =
   | { type: 'pong'; id: number }
   | { type: 'ready'; id: number }
   | { type: 'done'; id: number; out: Float64Array }
+  | { type: 'result'; id: number; out: Record<string, unknown> }
   | { type: 'error'; id: number; message: string };
+
+/** The kernels as the body receives them: one function per name. */
+export type WorkerKernels = Record<
+  string,
+  (input: Record<string, unknown>) => Record<string, unknown>
+>;
 
 /**
  * The worker's message loop.  Self-contained by contract (see the
  * module note): the pool evaluates `algoWorkerBody.toString()` inside
- * the worker and hands it a port adapter.
+ * the worker and hands it a port adapter and the kernel registry.
  *
  * @param port — the adapted message port
+ * @param kernels — the offload kernels by name (129.1), re-created in
+ *   the worker from their own source text
  */
-export function algoWorkerBody(port: WorkerPortLike): void {
+export function algoWorkerBody(
+  port: WorkerPortLike,
+  kernels: WorkerKernels,
+): void {
   let snapshot: AlgoWorkerSnapshot | null = null;
 
   // -- Brandes over a CSR: one contiguous source range ------------------
@@ -447,9 +476,51 @@ export function algoWorkerBody(port: WorkerPortLike): void {
     return out;
   };
 
+  const runKernel = (): Record<string, unknown> => {
+    if (snapshot === null) {
+      throw new Error('a kernel job arrived before its snapshot');
+    }
+
+    if (snapshot.kind !== 'kernel') {
+      throw new Error('a kernel job arrived on a range snapshot');
+    }
+
+    const kernel = kernels[snapshot.name];
+
+    if (typeof kernel !== 'function') {
+      throw new Error('unknown kernel: ' + snapshot.name);
+    }
+
+    const out = kernel(snapshot.input);
+
+    // a kernel may answer the snapshot's own buffers (relaxed in
+    // place); they transfer out below, so the snapshot is spent
+    snapshot = null;
+
+    return out;
+  };
+
+  const buffersOf = (out: Record<string, unknown>): ArrayBuffer[] => {
+    const buffers: ArrayBuffer[] = [];
+
+    for (const key in out) {
+      const value = out[key];
+
+      if (ArrayBuffer.isView(value)) {
+        buffers.push(value.buffer as ArrayBuffer);
+      }
+    }
+
+    return buffers;
+  };
+
   const runJob = (s0: number, s1: number): Float64Array => {
     if (snapshot === null) {
       throw new Error('a job arrived before its snapshot');
+    }
+
+    if (snapshot.kind === 'kernel') {
+      throw new Error('a range job arrived on a kernel snapshot');
     }
 
     if (snapshot.kind === 'brandes') {
@@ -488,6 +559,18 @@ export function algoWorkerBody(port: WorkerPortLike): void {
         port.post({ type: 'done', id: msg.id, out }, [
           out.buffer as ArrayBuffer,
         ]);
+      } catch (err) {
+        port.post({
+          type: 'error',
+          id: msg.id,
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else if (msg.type === 'kernel') {
+      try {
+        const out = runKernel();
+
+        port.post({ type: 'result', id: msg.id, out }, buffersOf(out));
       } catch (err) {
         port.post({
           type: 'error',

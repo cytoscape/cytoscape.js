@@ -27,8 +27,14 @@ No v3 counterpart.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  WORKERS_MIN_N,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoWorkers } from './algo-workers.mjs';
 import { rwrProximityGpu } from './algo-gpu-rwr.mjs';
 import { GROUP_NODES } from '../contract.mjs';
 
@@ -344,7 +350,61 @@ export const randomWalkWithRestartProximityAsync = (
     GPU_MIN_N,
     () => rwrProximity(view, options),
     (ctx) => rwrProximityGpu(ctx, view, options),
+    undefined,
+    {
+      minN: RWR_WORKERS_MIN_N,
+      run: (pool) => rwrProximityWorkers(pool, view, options),
+    },
   );
+};
+
+/**
+ * The `'auto'` crossover to the worker pool for the proximity form
+ * (round 74; 74.5 stamps it).  Behind the GPU's lane: it runs where no
+ * adapter fits, which headless Node always is.
+ */
+export const RWR_WORKERS_MIN_N = WORKERS_MIN_N;
+
+/**
+ * The workers lane (round 74): the CPU reference's per-column solve,
+ * one contiguous column range per job; every column is computed whole
+ * by one worker in `solveWalk`'s operation order, so the matrix is
+ * bit-identical to `'cpu'`.
+ *
+ * @param pool — the acquired worker pool
+ * @param view — the subgraph view
+ * @param options — the caller's options
+ * @returns the `{ proximity }` accessor
+ * @throws if `restartProbability` is invalid
+ */
+export const rwrProximityWorkers = async (
+  pool: AlgoWorkers,
+  view: SubgraphView,
+  options: RandomWalkWithRestartOptions,
+): Promise<RandomWalkWithRestartProximityResult> => {
+  const c = resolveRestartProbability(options);
+  const maxIterations = options.maxIterations ?? 200;
+  const tolerance = options.tolerance ?? 0.000001;
+  const n = view.nodeSlots.length;
+  const walk = buildWalkArcs(view, options);
+  const parts = await pool.run(
+    { kind: 'walk', n, ...walk, c, maxIterations, tolerance },
+    n,
+  );
+  const matrix = new Float64Array(n * n);
+  let s = 0;
+
+  for (const part of parts) {
+    const columns = part.length / n;
+
+    for (let col = 0; col < columns; col++, s++) {
+      for (let t = 0; t < n; t++) {
+        matrix[t * n + s] = part[col * n + t];
+      }
+    }
+  }
+
+  return rwrProximityResultFrom(view, matrix);
 };
 
 /**

@@ -390,3 +390,51 @@ exist — the Node preamble reaches the parent port through
 The tsx `__name` hazard behaved as predicted (the preamble's no-op
 covers it); no other helper appeared in any bundle's body, which
 74.4's bare-scope spec now watches.
+
+### 74.3 — the 'workers' executor, wired
+
+`AlgoExecutor` is `'cpu' | 'gpu' | 'workers' | 'auto'`;
+`resolveExecutor` accepts the value and its throw names four;
+`runAlgo` takes an optional workers lane (`{ minN, run }`) after the
+GPU arguments.  The routing, in the order a caller can now read at
+the top of `executor.mts`: an explicit `'workers'` rejects when the
+family has no lane or no pool can be acquired (loud both ways);
+`'auto'` keeps the GPU first where a GPU lane exists, fits and clears
+its crossover, then takes the pool where the family has a lane, n
+clears the lane's `minN` and a pool can be acquired, then the CPU —
+and a `GpuUnfitError` now falls back to the pool before the CPU.  A
+failed *run* propagates on every lane, exactly as a kernel error does.
+
+**All four families are wired**, because 74.1's scaling generalized:
+the column families are the same shape (n independent columns, one
+worker each, no cross-source sum at all), and the smoke measurement
+under tsx at n = 600 put heatKernel at 296 → 76 ms and RWR proximity
+at 303 → 73 ms on eight workers, closeness at 13 → 6 ms, weighted
+betweenness at 119 → 91 ms (the reference's memoised view makes the
+small-n comparison unflattering; 74.5 prices the real sizes).  Lanes:
+`betweennessCentrality` weighted and unweighted (`brandesCsr` flattens
+`buildBrandesNeighbors` to CSR with the weights pre-evaluated on the
+main thread, and the closeness BFS now walks the same flattening, one
+builder for both), unweighted `closenessCentralityNormalized`
+(weighted keeps Floyd–Warshall and has no lane), `heatKernel` and
+`randomWalkWithRestartProximity`.  Not wired, with the reason: the
+seed forms (`heatDiffusion`, `randomWalkWithRestart`) are one column
+and have nothing to split; `motifCensus` shares dyad counters mid-walk
+(the plan's fact 3); every dense-matrix family is a matmul, the GPU's
+shape, not a source loop.  Each lane's `'auto'` crossover is its own
+exported constant (`BETWEENNESS_WORKERS_MIN_N`,
+`CLOSENESS_WORKERS_MIN_N`, `HEAT_WORKERS_MIN_N`, `RWR_WORKERS_MIN_N`)
+seeded from `WORKERS_MIN_N = 256` and stamped in 74.5.
+
+**What changed for a headless Node caller**, said plainly because it
+is the round's one behavioural move: `'auto'` on these four families
+above 256 nodes now runs on the pool, where it ran the CPU reference
+before.  Closeness, heat and RWR answer the same bits; betweenness
+answers f64-tight numbers that are not the reference's bits, and a
+caller comparing betweenness bit-for-bit across versions says
+`executor: 'cpu'` — the MIGRATING row says so.  JSDoc on every
+`executor` option now names the four values (the eleven families
+without a lane say `'workers'` rejects), `dist/cytoscape.d.ts`
+regenerated, `src/README.md`'s executor paragraph carries the ladder
+and the 74.1 numbers, `docs/features.csv` rows updated, MIGRATING and
+CHANGELOG rows added.

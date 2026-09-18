@@ -1,16 +1,19 @@
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
+import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
+import type { AlgoWorkers } from './algo-workers.mjs';
 
 export interface BetweennessCentralityOptions {
   weight?: WeightFn | null;
   directed?: boolean;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Weighted runs have no GPU path: 'auto' quietly uses the CPU and an
-   * explicit 'gpu' rejects. */
+   * Weighted runs have no GPU path: 'auto' takes the worker pool
+   * (round 74) from `WORKERS_MIN_N` nodes and an explicit 'gpu'
+   * rejects.  Unweighted runs keep the GPU first under 'auto', then
+   * the pool where no adapter fits. */
   executor?: AlgoExecutor;
 }
 
@@ -23,22 +26,26 @@ export interface BetweennessCentralityResult {
 /**
  * The async betweenness entry point behind `eles.betweennessCentrality()`:
  * validates `executor` synchronously, then routes to the CPU reference
- * implementation or the WGSL kernels.  Weighted runs
+ * implementation, the WGSL kernels or the worker pool.  Weighted runs
  * (a `weight` fn given) have no GPU formulation here — Brandes over
- * weights needs a priority queue — so they always run on the CPU, and
- * an explicit `executor: 'gpu'` rejects rather than silently degrading.
+ * weights needs a priority queue — so an explicit `executor: 'gpu'`
+ * rejects rather than silently degrading; both forms have a workers
+ * lane (round 74): n independent single-source sweeps over a CSR
+ * snapshot with the weights pre-evaluated on this thread, one
+ * contiguous source range per job, partial sums merged in range order.
  *
  * @param coll — the calling collection
  * @param options — as `betweennessCentrality`, plus `executor`
  * @returns a promise of the betweenness accessors
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu', 'workers' or 'auto'
  */
 export const betweennessCentralityAsync = (
   coll: Collection,
   options: BetweennessCentralityOptions = {},
 ): Promise<BetweennessCentralityResult> => {
   const executor = resolveExecutor(options.executor);
-  const n = subgraph(coll).nodeSlots.length;
+  const view = subgraph(coll);
+  const n = view.nodeSlots.length;
 
   // measured crossover (65.8, amd gcn-4): the 256-wide batches and
   // frontier-empty probes moved it left — 4.1x at n=512, 18.3x at
@@ -53,9 +60,106 @@ export const betweennessCentralityAsync = (
       : null,
     options.weight != null
       ? 'weighted betweennessCentrality has no GPU path — ' +
-          "use executor 'cpu' or 'auto'"
+          "use executor 'cpu', 'workers' or 'auto'"
       : undefined,
+    {
+      minN: BETWEENNESS_WORKERS_MIN_N,
+      run: (pool) => betweennessCentralityWorkers(pool, view, options),
+    },
   );
+};
+
+/**
+ * The `'auto'` crossover to the worker pool for both betweenness
+ * forms (74.5 stamps it from the `algorithms-workers` sweep).
+ */
+export const BETWEENNESS_WORKERS_MIN_N = WORKERS_MIN_N;
+
+/**
+ * Flatten `buildBrandesNeighbors`' lists to CSR — the snapshot both
+ * the workers lane and the closeness BFS walk — with the weights
+ * pre-evaluated here, on the main thread, since a user closure cannot
+ * cross a worker.
+ *
+ * @param view — the subgraph view
+ * @param directed — the traversal mode
+ * @param weight — the caller's weight fn, or undefined for unit steps
+ * @returns `rowPtr` / `colIdx`, and `w` (one per entry) when weighted
+ */
+export const brandesCsr = (
+  view: ReturnType<typeof subgraph>,
+  directed: boolean,
+  weight: WeightFn | undefined,
+): { rowPtr: Int32Array; colIdx: Int32Array; w: Float64Array | null } => {
+  const { neighbors, neighborEdge } = buildBrandesNeighbors(view, directed);
+  const n = view.nodeSlots.length;
+  const rowPtr = new Int32Array(n + 1);
+
+  for (let v = 0; v < n; v++) {
+    rowPtr[v + 1] = rowPtr[v] + neighbors[v].length;
+  }
+
+  const colIdx = new Int32Array(rowPtr[n]);
+  let w: Float64Array | null = null;
+
+  for (let v = 0; v < n; v++) {
+    colIdx.set(neighbors[v], rowPtr[v]);
+  }
+
+  if (weight != null) {
+    const weightOf = weightAt(view, weight);
+
+    w = new Float64Array(rowPtr[n]);
+
+    for (let v = 0; v < n; v++) {
+      const edges = neighborEdge[v];
+
+      for (let j = 0; j < edges.length; j++) {
+        w[rowPtr[v] + j] = weightOf(edges[j]);
+      }
+    }
+  }
+
+  return { rowPtr, colIdx, w };
+};
+
+/**
+ * The workers lane: one Brandes sweep per source range over the CSR
+ * snapshot, the partial `C` vectors summed in range order.
+ *
+ * @param pool — the acquired worker pool
+ * @param view — the subgraph view
+ * @param options — the caller's options
+ * @returns the betweenness accessors
+ */
+export const betweennessCentralityWorkers = async (
+  pool: AlgoWorkers,
+  view: ReturnType<typeof subgraph>,
+  options: BetweennessCentralityOptions,
+): Promise<BetweennessCentralityResult> => {
+  const n = view.nodeSlots.length;
+  const { rowPtr, colIdx, w } = brandesCsr(
+    view,
+    options.directed === true,
+    options.weight ?? undefined,
+  );
+  const parts = await pool.run({ kind: 'brandes', n, rowPtr, colIdx, w }, n);
+  const C = new Float64Array(n);
+  let max = 0;
+
+  for (const part of parts) {
+    for (let i = 0; i < n; i++) {
+      C[i] += part[i];
+    }
+  }
+
+  for (let i = 0; i < n; i++) {
+    if (C[i] > max) {
+      max = C[i];
+    }
+  }
+
+  return bcResultFrom(view, C, max);
 };
 
 /**

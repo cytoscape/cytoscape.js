@@ -3,14 +3,20 @@ import { dijkstra } from './dijkstra.mjs';
 import { initFloydWarshall, relaxFloydWarshall } from './floyd-warshall.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  resolveExecutor,
+  runAlgo,
+  WORKERS_MIN_N,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoWorkers } from './algo-workers.mjs';
 import {
   closenessCentralityNormalizedBfsGpu,
   closenessCentralityNormalizedGpu,
 } from './algo-gpu-closeness.mjs';
 import { GROUP_NODES } from '../contract.mjs';
-import { buildBrandesNeighbors } from './betweenness-centrality.mjs';
+import { brandesCsr } from './betweenness-centrality.mjs';
 
 /**
  * The node count above which `'auto'` takes the GPU BFS for an
@@ -42,6 +48,14 @@ export const CLOSENESS_BFS_DENSE_DIVISOR = 64;
  * regardless: it beats the CPU's FW at every density.
  */
 export const CLOSENESS_FW_DENSE_DIVISOR = 8;
+
+/**
+ * The `'auto'` crossover to the worker pool for the unweighted BFS
+ * route (round 74; 74.5 stamps it from the `algorithms-workers`
+ * sweep).  The lane sits behind the GPU's: it runs where no adapter
+ * fits, which headless Node always is.
+ */
+export const CLOSENESS_WORKERS_MIN_N = WORKERS_MIN_N;
 
 export interface ClosenessCentralityOptions {
   root?: Collection | null;
@@ -137,6 +151,12 @@ export const closenessCentralityNormalizedAsync = (
       veryDense
         ? (ctx) => closenessCentralityNormalizedGpu(ctx, coll, options)
         : (ctx) => closenessCentralityNormalizedBfsGpu(ctx, coll, options),
+      undefined,
+      {
+        minN: CLOSENESS_WORKERS_MIN_N,
+        run: (pool) =>
+          closenessCentralityNormalizedWorkers(pool, view, options),
+      },
     );
   }
 
@@ -220,21 +240,14 @@ export const closenessRowSumsBfs = (
   harmonic: boolean,
 ): Float64Array => {
   const n = view.nodeSlots.length;
-  const { neighbors } = buildBrandesNeighbors(view, directed);
-  // flattened to CSR once: the per-source walk then touches typed
-  // arrays only (measured 84 → 72 ms at n=2048 over the nested lists)
-  const starts = new Int32Array(n + 1);
-
-  for (let v = 0; v < n; v++) {
-    starts[v + 1] = starts[v] + neighbors[v].length;
-  }
-
-  const entries = new Int32Array(starts[n]);
-
-  for (let v = 0; v < n; v++) {
-    entries.set(neighbors[v], starts[v]);
-  }
-
+  // flattened to CSR once (the snapshot the workers lane clones): the
+  // per-source walk then touches typed arrays only (measured 84 → 72
+  // ms at n=2048 over the nested lists)
+  const { rowPtr: starts, colIdx: entries } = brandesCsr(
+    view,
+    directed,
+    undefined,
+  );
   const sums = new Float64Array(n);
   const dist = new Int32Array(n);
   const queue = new Int32Array(n);
@@ -270,6 +283,45 @@ export const closenessRowSumsBfs = (
   }
 
   return sums;
+};
+
+/**
+ * The workers lane (round 74): the same BFS per source, one contiguous
+ * source range per job; each row sum is computed whole by one worker
+ * in the reference's operation order, so the scores are bit-identical
+ * to `'cpu'`.
+ *
+ * @param pool — the acquired worker pool
+ * @param view — the subgraph view
+ * @param options — the caller's options
+ * @returns the `{ closeness }` accessor
+ */
+export const closenessCentralityNormalizedWorkers = async (
+  pool: AlgoWorkers,
+  view: SubgraphView,
+  options: ClosenessCentralityOptions,
+): Promise<ClosenessCentralityNormalizedResult> => {
+  const n = view.nodeSlots.length;
+  const harmonic = options.harmonic !== false;
+  const { rowPtr, colIdx } = brandesCsr(
+    view,
+    options.directed === true,
+    undefined,
+  );
+  const parts = await pool.run(
+    { kind: 'closeness', n, rowPtr, colIdx, harmonic },
+    n,
+  );
+  const closenesses = new Float64Array(n);
+  let at = 0;
+
+  for (const part of parts) {
+    for (let i = 0; i < part.length; i++) {
+      closenesses[at++] = closenessOfRowSum(part[i], harmonic);
+    }
+  }
+
+  return closenessResultFrom(view, closenesses);
 };
 
 /**

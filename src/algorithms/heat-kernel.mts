@@ -35,8 +35,14 @@ hub-heavy network: a hub neither hoards nor floods.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
+import {
+  GPU_MIN_N,
+  WORKERS_MIN_N,
+  resolveExecutor,
+  runAlgo,
+} from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
+import type { AlgoWorkers } from './algo-workers.mjs';
 import { seedDistribution } from './random-walk.mjs';
 import { heatKernelGpu } from './algo-gpu-heat.mjs';
 import { GROUP_EDGES } from '../contract.mjs';
@@ -354,7 +360,60 @@ export const heatKernelAsync = (
     GPU_MIN_N,
     () => heatKernel(view, options),
     (ctx) => heatKernelGpu(ctx, view, options),
+    undefined,
+    {
+      minN: HEAT_WORKERS_MIN_N,
+      run: (pool) => heatKernelWorkers(pool, view, options),
+    },
   );
+};
+
+/**
+ * The `'auto'` crossover to the worker pool for the kernel form
+ * (round 74; 74.5 stamps it).  Behind the GPU's lane: it runs where no
+ * adapter fits, which headless Node always is.
+ */
+export const HEAT_WORKERS_MIN_N = WORKERS_MIN_N;
+
+/**
+ * The workers lane (round 74): the CPU reference's per-column
+ * diffusion, one contiguous column range per job; every column is
+ * computed whole by one worker in `diffuseVector`'s operation order,
+ * so the kernel is bit-identical to `'cpu'`.
+ *
+ * @param pool — the acquired worker pool
+ * @param view — the subgraph view
+ * @param options — the caller's options
+ * @returns the `{ heat }` accessor
+ * @throws if `time` or `laplacian` is invalid, or an edge weight is
+ *   not positive
+ */
+export const heatKernelWorkers = async (
+  pool: AlgoWorkers,
+  view: SubgraphView,
+  options: HeatDiffusionOptions,
+): Promise<HeatKernelResult> => {
+  const time = resolveHeatTime(options);
+  const n = view.nodeSlots.length;
+  const heat = buildHeatStructure(view, options);
+  const parts = await pool.run(
+    { kind: 'heat', n, ...heat, time, terms: TAYLOR_TERMS },
+    n,
+  );
+  const matrix = new Float64Array(n * n);
+  let s = 0;
+
+  for (const part of parts) {
+    const columns = part.length / n;
+
+    for (let c = 0; c < columns; c++, s++) {
+      for (let t = 0; t < n; t++) {
+        matrix[t * n + s] = part[c * n + t];
+      }
+    }
+  }
+
+  return heatKernelResultFrom(view, matrix);
 };
 
 /**

@@ -753,14 +753,38 @@ blocked FW kernels and folds each distance row on the device, so the
 readback is n floats rather than the n² matrix), `markovClustering`,
 `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans`,
 `hierarchicalClustering` and the rounds-69/70 families return
-promises, and an `executor` option ('cpu' | 'gpu' | 'auto', default
-'auto') picks where the maths runs.  'cpu' is the bit-reproducible f64 reference (the
-spec, and what headless Node always runs); 'gpu' runs the WGSL kernels
+promises, and an `executor` option ('cpu' | 'gpu' | 'workers' | 'auto',
+default 'auto') picks where the maths runs.  'cpu' is the bit-reproducible f64 reference (the
+spec, and what headless Node ran alone before round 74); 'gpu' runs the WGSL kernels
 and rejects rather than degrading when WebGPU or the algorithm's GPU
 path is missing (weighted betweenness, custom distance functions, and
 attribute-less feature runs are contracted CPU-only — kernels never
-call back into user code); 'auto' takes the GPU above a per-family
-measured crossover — for the rounds-69/70 iterated-product families a
+call back into user code); **'workers' (round 74) runs the
+per-source-parallel families — both betweenness forms, unweighted
+`closenessCentralityNormalized`, `heatKernel`,
+`randomWalkWithRestartProximity` — on a pool of plain workers** (Node
+`worker_threads` or browser `Worker`s, at most eight, one less than
+the cores; the worker entry ships as source text inside every bundle,
+so the bundles stay single-file and no bundler configuration is asked
+of an embedder) and rejects on the other families or where no worker
+can be constructed; 'auto' takes the GPU above a per-family
+measured crossover, then the pool from `WORKERS_MIN_N` where a family
+has that lane and no GPU lane fits (headless Node, a blocklisted
+adapter, an input past the device's buffer limits), then the CPU.
+Determinism is a ladder, cpu > workers > gpu: the pool partitions the
+sources into a fixed number of ranges (a function of n, never of the
+pool size) and merges in range order, so a workers result is
+bit-stable across runs, machines and pool sizes, bit-identical to
+'cpu' for the per-column families (closeness, heat, RWR — each
+element computed whole by one worker in the reference's operation
+order) and f64-tight but not bit-equal for betweenness (whose sums
+across sources round differently when grouped by range).  Measured
+on the 8-core benchmark machine (74.1): weighted betweenness at
+n = 2048 12.2× the sequential reference warm, 7.2× cold including the
+spawn; the per-worker snapshot clone of a 103 KB CSR 0.21 ms against
+0.10 ms shared memory, which is why SharedArrayBuffer — and the
+COOP/COEP demand it would put on every embedder — was declined.  The
+'auto' crossover for the GPU — for the rounds-69/70 iterated-product families a
 *density* gate as well, since their sparse CPU walks own sparse
 graphs however large (round 72.6 re-measured the triangle, similarity
 and census gates across three sizes and six densities and found the

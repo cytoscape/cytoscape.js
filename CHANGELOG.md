@@ -337,6 +337,18 @@ that compile and then behave differently.
 
 ### Changed
 
+- **A worker-pool executor for the per-source-parallel algorithms**
+  (round 74).  `executor: 'workers'` runs both betweenness forms,
+  unweighted `closenessCentralityNormalized`, `heatKernel` and
+  `randomWalkWithRestartProximity` on a pool of plain workers — Node
+  `worker_threads` or browser `Worker`s, at most eight — with the
+  worker entry carried as source text inside every bundle (nothing to
+  configure, the bundles stay single-file), and `'auto'` takes the
+  pool from 256 nodes wherever the GPU does not run.  Results are
+  bit-stable across runs and pool sizes; closeness, heat and RWR are
+  bit-identical to `'cpu'`, betweenness f64-tight.  Measured on the
+  8-core benchmark machine: weighted betweenness at 2,048 nodes 12.2×
+  the sequential reference warm (7.2× cold, spawn included).
 - **Label boxes are measured where a canvas exists** (round 125.1): the
   store measures label blocks with `measureText` at style time in a
   document or with an `OffscreenCanvas`, so a layout run before the

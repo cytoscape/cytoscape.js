@@ -434,7 +434,19 @@ reference implementation, and `'gpu'` forces the kernels (rejecting where
 WebGPU is unavailable, so a silent slow path cannot masquerade as a fast
 one). GPU results may differ from CPU results in float detail — WGSL is
 f32 — so a caller that needs run-to-run identical numbers says
-`executor: 'cpu'`. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
+`executor: 'cpu'`.  **`'workers'`** (round 74) is the fourth value: the
+per-source-parallel families — `betweennessCentrality` (weighted and
+not), unweighted `closenessCentralityNormalized`, `heatKernel` and
+`randomWalkWithRestartProximity` — run on a pool of plain workers (Node
+`worker_threads`, browser `Worker`s; nothing to configure, the worker
+entry is inside the bundle), and `'auto'` takes that pool from 256 nodes
+wherever the GPU does not run — which in headless Node means every run
+of those families above 256 nodes now uses the pool.  The pool's results
+are bit-stable across runs and pool sizes, and bit-identical to `'cpu'`
+for closeness, heat and RWR; betweenness agrees with `'cpu'` to f64
+rounding but not to the bit, so a caller that compares betweenness
+scores bit-for-bit across versions says `executor: 'cpu'`.  `'workers'`
+on any other family rejects. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
 `bellmanFord`, `kruskal`, the components algorithms, degree centrality and
 the single-root `closenessCentrality`) stays synchronous: those run
 per-root in tight loops, and no GPU formulation would beat their

@@ -5640,7 +5640,7 @@ export class Collection {
    * Floyd–Warshall all-pairs shortest paths.  O(n³) — for a single
    * source prefer `dijkstra`/`bellmanFord`.  Async (round 65): the
    * expensive whole-graph tier returns promises, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the maths
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the maths
    * runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ weight, directed, executor }`
@@ -5711,7 +5711,7 @@ export class Collection {
 
   /**
    * PageRank over the (directed) subgraph.  Async (round 65): returns a
-   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path)
    * picks where the power method runs; 'cpu' is the reproducible
    * reference.
    *
@@ -5769,16 +5769,19 @@ export class Collection {
    * Closeness centrality for every node, normalized to [0, 1].  Async
    * (round 69): the whole-collection form is the all-pairs tier, so
    * like `floydWarshall` it returns a promise and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where it runs;
-   * 'cpu' is the reproducible reference.  Unweighted runs walk a BFS
-   * per source, O(n·(n+E)) (round 72.3); weighted runs relax
-   * Floyd–Warshall, O(n³).  The single-root `closenessCentrality`
-   * stays synchronous.
+   * ('cpu' | 'gpu' | 'workers' | 'auto', default 'auto') picks where
+   * it runs; 'cpu' is the reproducible reference.  Unweighted runs
+   * walk a BFS per source, O(n·(n+E)) (round 72.3) — on the worker
+   * pool too (round 74: one source range per worker, bit-identical to
+   * 'cpu'; under 'auto' the pool runs where no GPU adapter fits);
+   * weighted runs relax Floyd–Warshall, O(n³), and have no workers
+   * path.  The single-root `closenessCentrality` stays synchronous.
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` or
+   *   `'workers'` is unavailable in this environment, or `'workers'` is
+   *   asked of a weighted run
    */
   closenessCentralityNormalized(
     options?: ClosenessCentralityOptions,
@@ -5792,9 +5795,12 @@ export class Collection {
   /**
    * Betweenness centrality — how often each node lies on shortest paths
    * between other pairs.  Async (round 65): returns a promise, and
-   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
-   * Brandes sweep runs.  Weighted runs have no GPU path: 'auto' uses
-   * the CPU and an explicit 'gpu' rejects.
+   * `executor` ('cpu' | 'gpu' | 'workers' | 'auto', default 'auto')
+   * picks where the Brandes sweep runs.  Weighted runs have no GPU
+   * path: 'auto' takes the worker pool (round 74 — one source range
+   * per worker, f64-tight to 'cpu' and bit-stable across pool sizes)
+   * from 256 nodes and an explicit 'gpu' rejects; unweighted runs keep
+   * the GPU first under 'auto', then the pool where no adapter fits.
    *
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
@@ -5814,7 +5820,7 @@ export class Collection {
    * Katz centrality — attenuated walk counting, where a node is
    * central when many short walks end at it and a walk of length k is
    * worth alphaᵏ.  Async (round 69): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the iteration
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the iteration
    * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
    * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
    * counterpart.
@@ -5836,7 +5842,7 @@ export class Collection {
    * coefficients, and the collection's transitivity, read over the
    * simple undirected graph (direction ignored, parallel edges
    * collapsed, loops excluded).  Async (round 69): returns a promise,
-   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks
    * where the counting runs — under 'auto' the GPU's A²∘A matmul is
    * used only on graphs dense enough to beat the CPU's sparse walk (a
    * mean degree of 64, round 72.6).  v4-only — v3 has no counterpart.
@@ -5877,7 +5883,7 @@ export class Collection {
    * SimRank — "two nodes are similar when their neighbors are
    * similar", the Jeh–Widom recursive fixed point, iterated as dense
    * products S′ = C·Q·S·Qᵀ.  Async (round 70): returns a promise, and
-   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks where
+   * `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where
    * the iteration runs — under 'auto' the GPU from 256 nodes at any
    * density (round 72.6 measured it ahead everywhere).  The undirected default
    * compares all neighbors; `directed: true` compares the classic
@@ -5920,11 +5926,12 @@ export class Collection {
   /**
    * All-pairs random-walk-with-restart proximity — the full matrix
    * S = c·(I − (1−c)·W)⁻¹, whose column s is the walk restarting at
-   * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'auto', default
-   * 'auto') picks between one sparse solve per column on the CPU and
-   * the dense Neumann iteration on the GPU — under 'auto' the GPU
-   * from 256 nodes at any density (round 72.6 measured it ahead
-   * everywhere).
+   * s.  Async (round 70): `executor` ('cpu' | 'gpu' | 'workers' |
+   * 'auto', default 'auto') picks between one sparse solve per column
+   * on the CPU, the same solves spread over the worker pool (round
+   * 74 — bit-identical to 'cpu') and the dense Neumann iteration on
+   * the GPU — under 'auto' the GPU from 256 nodes at any density
+   * (round 72.6 measured it ahead everywhere), else the pool from 256.
    * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
    *
    * @param options — `{ restartProbability, maxIterations, tolerance,
@@ -5965,10 +5972,12 @@ export class Collection {
   /**
    * The all-pairs heat kernel exp(−t·L) — `heat(from, to)` is the
    * heat at `to` after unit heat starts at `from` (symmetric).  Async
-   * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
-   * picks between per-column sparse series on the CPU and the dense
-   * scaling-and-squaring chain on the GPU — under 'auto' the GPU
-   * from 256 nodes at any density (round 72.6).  `laplacian`
+   * (round 70): `executor` ('cpu' | 'gpu' | 'workers' | 'auto',
+   * default 'auto') picks between per-column sparse series on the
+   * CPU, the same columns spread over the worker pool (round 74 —
+   * bit-identical to 'cpu') and the dense scaling-and-squaring chain
+   * on the GPU — under 'auto' the GPU from 256 nodes at any density
+   * (round 72.6), else the pool from 256.  `laplacian`
    * ('combinatorial' | 'normalized',
    * default 'combinatorial') picks L = D − A or I − D^{-½}AD^{-½}
    * (round 72.4).  All-pairs (O(n²) memory).  v4-only — v3 has no
@@ -6010,7 +6019,7 @@ export class Collection {
    * The triad census — every three-node subgraph classified into the
    * sixteen Holland–Leinhardt classes ('003' … '300'; '030T' is the
    * feed-forward loop).  The counts sum to C(n, 3).  Async (round
-   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto') picks
+   * 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks
    * between sparse wedge walks on the CPU and matmul trace products
    * on the GPU — under 'auto' the GPU only on dense graphs (a mean
    * degree of 64, round 72.6).  `directed: false` reads every edge as
@@ -6033,7 +6042,7 @@ export class Collection {
    * than on graph structure.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the iteration
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the iteration
    * runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ k, attributes, distance, maxIterations,
@@ -6079,7 +6088,7 @@ export class Collection {
 
   /**
    * Agglomerative hierarchical clustering.  Async (round 65): returns a
-   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path)
    * picks where the distance matrix is built; the merge chain itself is
    * sequential and always runs on the CPU.
    *
@@ -6102,7 +6111,7 @@ export class Collection {
    * the attribute-space algorithms this one clusters by structure.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the
    * expand/inflate iteration runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ attributes, expandFactor, inflateFactor,
@@ -6122,7 +6131,7 @@ export class Collection {
    * so needs no target cluster count.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the message
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the message
    * passing runs; 'cpu' is the reproducible reference.
    *
    * @param options — `{ attributes, distance, preference, damping,

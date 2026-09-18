@@ -73,13 +73,33 @@ const compare = async (page) =>
       }
     });
 
+    // a family with neither a pool lane nor an offload lane still
+    // rejects an explicit 'workers' (129.1 moved pageRank to the offload
+    // lane, so the k-means clustering is the probe now) — and pageRank
+    // runs its kernel on one Blob worker, answering 'cpu''s bits
     let noPath = null;
 
     try {
-      await eles.pageRank({ executor: 'workers' });
+      await nodes.kMeans({
+        k: 2,
+        attributes: [(node) => node.data('w') ?? 0],
+        executor: 'workers',
+      });
     } catch (err) {
       noPath = err.message;
     }
+
+    const prW = await eles.pageRank({ weight, executor: 'workers' });
+    const prC = await eles.pageRank({ weight, executor: 'cpu' });
+    let prBits = true;
+
+    nodes.forEach((node) => {
+      if (prW.rank(node) !== prC.rank(node)) {
+        prBits = false;
+      }
+    });
+
+    const offloads = cytoscape.__algoWorkersStats__().offloads;
 
     cy.destroy();
 
@@ -90,6 +110,8 @@ const compare = async (page) =>
       bcErr,
       ccBits,
       noPath,
+      prBits,
+      offloads,
     };
   });
 
@@ -104,6 +126,10 @@ test.describe('the workers executor in the browser (round 74)', () => {
     expect(out.bcErr).toBeLessThan(1e-12);
     expect(out.ccBits).toBe(true);
     expect(out.noPath).toMatch(/no workers path/);
+    expect(out.prBits, 'the offload kernel answers the reference bits').toBe(
+      true,
+    );
+    expect(out.offloads).toBeGreaterThan(0);
   });
 
   test('the minified bundle: the stringified body survives the minifier', async ({
@@ -119,6 +145,9 @@ test.describe('the workers executor in the browser (round 74)', () => {
     expect(out.bcErr).toBeLessThan(1e-12);
     expect(out.ccBits).toBe(true);
     expect(out.noPath).toMatch(/no workers path/);
+    // the kernels' source text survives the minifier too (129.1)
+    expect(out.prBits).toBe(true);
+    expect(out.offloads).toBeGreaterThan(0);
   });
 });
 

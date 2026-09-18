@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–124, 127–128 |
-| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126, 129 |
+| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–124, 127–129 |
+| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126 |
 
 ## The sections
 
@@ -194,4 +194,4 @@ A round can land with an item held open; the round file says which.
 | 165 | 126 | 2026-09-15 | plan | [Shader minification](rounds/2026-09-15-02-rnd0126-plan-shader-minification.md) |
 | 166 | 127 | 2026-09-15 | landed | [String keys become constants](rounds/2026-09-15-03-rnd0127-landed-string-keys-become-constants.md) |
 | 167 | 128 | 2026-09-18 | landed | [Cancellation: `.cancel()` on the async algorithm runs, `layout.cancel()` beside `stop()`, and destroy as the last cancel](rounds/2026-09-18-01-rnd0128-landed-cancellation-cancel-on-the-async-runs-layout-cancel-beside-stop-destroy-as-the-last-cancel.md) |
-| 168 | 129 | 2026-09-18 | plan | [The UI thread kept free: one worker for the in-thread algorithms, `startForce` across the worker host, the CPU sim on a worker](rounds/2026-09-18-02-rnd0129-plan-the-ui-thread-kept-free-one-worker-for-the-in-thread-algorithms-startforce-across-the-worker-host-the-cpu-sim-on-a-worker.md) |
+| 168 | 129 | 2026-09-18 | landed | [The UI thread kept free: one worker for the in-thread algorithms, `startForce` across the worker host, the CPU sim on a worker](rounds/2026-09-18-02-rnd0129-landed-the-ui-thread-kept-free-one-worker-for-the-in-thread-algorithms-startforce-across-the-worker-host-the-cpu-sim-on-a-worker.md) |

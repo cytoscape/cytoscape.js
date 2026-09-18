@@ -10,9 +10,14 @@ import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
 
 /**
  * The node count from which `'auto'` iterates MCL on one pool worker
- * rather than in-thread (129.1): a starting figure, stamped from the
- * `algorithms-workers` offload rows; the expansion is a dense matrix
- * product per iteration, so the lane opens early.
+ * rather than in-thread (129.1).  Measured 2026-09-18 (i9-9900K): 1.1
+ * / 11.9 / 79.6 / 593 ms in-thread at n = 32 / 64 / 128 / 256 (a dense
+ * matrix product per iteration), the thread held 0.3 / 0.7 / 0.0 /
+ * 0.0 ms of those under the lane.
+ * Stamped 2026-09-18 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker; the rule: the smallest size whose in-thread
+ * run reaches ~4 ms, a quarter frame — a shorter run blocks nothing
+ * perceptible, and the lane's clone-and-wake is 0.2–0.6 ms).
  */
 export const MARKOV_OFFLOAD_MIN_N = 64;
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';

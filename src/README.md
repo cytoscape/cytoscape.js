@@ -789,9 +789,15 @@ measured crossover, then the pool from the family's stamped crossover
 betweenness and the heat kernel 256, closeness 512) where a family
 has that lane and no GPU lane fits (headless Node, a blocklisted
 adapter, an input past the device's buffer limits), then the offload
-lane from the family's `offloadMinN` (129.1: 64 for MCL and AP, 128
-for the dense families, 2048 for pageRank and Katz whose sparse
-iterations are sub-millisecond below it), then the CPU —
+lane from the family's `offloadMinN` (129.4, stamped from the
+`algorithms-workers` offload rows by one rule — the smallest size
+whose in-thread run reaches a quarter frame: affinity propagation 32,
+MCL 64, Floyd–Warshall / SimRank / effective resistance 128, the
+similarity count 1024, the census 4096, triangles 8192, Katz 16384,
+pageRank 32768 — the lane's clone-and-wake costs 0.2–0.6 ms, and what
+it frees is the kernel's share of the run: on a sparse graph pageRank's
+and Katz's structure is built in-thread and is most of the call), then
+the CPU —
 except the sparse closeness BFS, where the pool measured ahead of the
 GPU at every size (4.0 vs 14.6 ms at n = 1024, 50.1 vs 87.5 at 4096)
 and is tried first.  The pool spawns lazily (129.1): one worker at

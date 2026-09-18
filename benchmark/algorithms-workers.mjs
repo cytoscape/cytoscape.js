@@ -34,6 +34,22 @@
 // a run onto the status site.  `--repeat N` merges N passes per cell
 // with `mergeRepeats`, as the GPU sweep does; publish with `--repeat 3`.
 //
+// The offload tier (round 129.4) prices the families the pool cannot
+// partition — pageRank, Katz, Floyd–Warshall, triangles, neighborhood
+// similarity, the motif census, SimRank, effective resistance, MCL and
+// affinity propagation — under `'cpu'` against `'workers'`, which runs
+// their kernel on ONE worker (the offload lane).  Its rows are `cpu` /
+// `offload` / `offload first call` and, beside them, **`main thread held
+// (cpu)` / `main thread held (offload)`**: the wall time over which a 1 ms
+// interval on the calling thread did not tick (calibrated idle first), so
+// an in-thread run reads its whole length held and an offloaded run reads
+// near zero — the value the lane buys, measured rather than inferred, and
+// each row asserts its property (a held row over half the wall for the
+// cpu executor, under half for the offload; an `offload` sample that did
+// not add an offload fails the cell).  `--tier pool|offload|all` picks
+// the tier (default all); the offload crossovers (`offloadMinN`, one per
+// family) are stamped from `--tier offload --sizes …` at the small end.
+//
 // Needs the built bundles (`npm run build`).
 
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -67,6 +83,14 @@ const sizesOverride =
         .map((v) => Number(v))
         .filter((v) => v > 0)
     : null;
+
+const tierAt = args.indexOf('--tier');
+const tier = tierAt >= 0 ? args[tierAt + 1] : 'all';
+
+if (!['pool', 'offload', 'all'].includes(tier)) {
+  console.error(`--tier must be pool, offload or all — got ${tier}`);
+  process.exit(1);
+}
 
 if (!existsSync(BUNDLE)) {
   console.error(`missing ${BUNDLE} — run \`npm run build\` first`);
@@ -196,9 +220,149 @@ const FAMILIES = [
 ];
 
 const families =
-  familyFilter != null
-    ? FAMILIES.filter((f) => f.key.includes(familyFilter))
-    : FAMILIES;
+  tier === 'offload'
+    ? []
+    : familyFilter != null
+      ? FAMILIES.filter((f) => f.key.includes(familyFilter))
+      : FAMILIES;
+
+/* The offload tier's families (129.4): the same fixture; the sizes sit
+ * where the in-thread run is milliseconds to seconds, which is where a
+ * free calling thread is worth a clone. */
+const OFFLOAD_FAMILIES = [
+  {
+    key: 'pageRank',
+    sizes: [2048, 4096, 8192, 16384],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .pageRank({ weight, executor })
+        .then((r) => r.rank(cy.nodes()[0])),
+  },
+  {
+    key: 'katzCentrality',
+    sizes: [2048, 4096, 8192, 16384],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .katzCentrality({ weight, alpha: 0.05, executor })
+        .then((r) => r.katz(cy.nodes()[0])),
+  },
+  {
+    key: 'floydWarshall',
+    sizes: [128, 256, 512],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .floydWarshall({ weight, executor })
+        .then((r) => r.distance(cy.nodes()[0], cy.nodes()[1])),
+  },
+  {
+    key: 'triangleCount',
+    sizes: [2048, 4096, 8192],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .triangleCount({ executor })
+        .then((r) => r.transitivity),
+  },
+  {
+    key: 'neighborhoodSimilarity',
+    sizes: [512, 1024, 2048],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .neighborhoodSimilarity({ executor })
+        .then((r) => r.similarity(cy.nodes()[0], cy.nodes()[1])),
+  },
+  {
+    key: 'motifCensus',
+    sizes: [2048, 4096, 8192],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .motifCensus({ executor })
+        .then((r) => r.counts['030T']),
+  },
+  {
+    key: 'simRank',
+    sizes: [128, 256, 512],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .simRank({ executor })
+        .then((r) => r.similarity(cy.nodes()[0], cy.nodes()[1])),
+  },
+  {
+    key: 'effectiveResistance',
+    sizes: [128, 256, 512],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .effectiveResistance({ weight, executor })
+        .then((r) => r.resistance(cy.nodes()[0], cy.nodes()[1])),
+  },
+  {
+    key: 'markovClustering',
+    sizes: [64, 128, 256],
+    op: (cy, executor) =>
+      cy
+        .elements()
+        .markovClustering({ executor })
+        .then((clusters) => clusters.length),
+  },
+  {
+    key: 'affinityPropagation',
+    sizes: [64, 128, 256],
+    op: (cy, executor) =>
+      cy
+        .nodes()
+        .affinityPropagation({
+          damping: 0.8,
+          preference: 'median',
+          attributes: [(n) => n.data('w') ?? 1],
+          executor,
+        })
+        .then((clusters) => clusters.length),
+  },
+];
+
+const offloadFamilies =
+  tier === 'pool'
+    ? []
+    : familyFilter != null
+      ? OFFLOAD_FAMILIES.filter((f) => f.key.includes(familyFilter))
+      : OFFLOAD_FAMILIES;
+
+/** The calling thread's availability over a run: a 1 ms interval's
+ * ticks, against the rate it ticks at when idle (calibrated once), so
+ * `held` is the wall time the thread could not tick — a synchronous
+ * run reads its whole length, an offloaded run near zero. */
+let idleTickMs = null;
+
+async function calibrateTicks() {
+  let ticks = 0;
+  const iv = setInterval(() => ticks++, 1);
+  const t0 = performance.now();
+
+  await new Promise((r) => setTimeout(r, 300));
+  clearInterval(iv);
+  idleTickMs = (performance.now() - t0) / Math.max(1, ticks);
+}
+
+async function timedHeld(run) {
+  let ticks = 0;
+  const iv = setInterval(() => ticks++, 1);
+  const t0 = performance.now();
+
+  await run();
+
+  const wall = performance.now() - t0;
+
+  clearInterval(iv);
+
+  return { wall, held: Math.max(0, wall - ticks * idleTickMs) };
+}
 
 const startedAt = Date.now();
 const jobs = [];
@@ -264,6 +428,155 @@ async function runCell(family, n) {
     return { cpuSamples, workersSamples, firstWorkers };
   } finally {
     cy.destroy();
+  }
+}
+
+/** Time one offload cell (129.4): a fresh worker's first call, then
+ * REPS samples of each executor with the thread's held time beside
+ * each, every sample asserting where it ran. */
+async function runOffloadCell(family, n) {
+  const cy = cytoscape({ headless: true, elements: fixture(n) });
+
+  try {
+    resetPool();
+
+    const offloadsBefore = stats().offloads;
+    const tFirst = performance.now();
+
+    await family.op(cy, 'workers');
+
+    const firstOffload = performance.now() - tFirst;
+
+    if (stats().offloads !== offloadsBefore + 1) {
+      throw new Error('the offload first call did not run on a worker');
+    }
+
+    await family.op(cy, 'cpu');
+    await family.op(cy, 'workers');
+
+    const sample = async (executor) => {
+      const walls = [];
+      const helds = [];
+
+      for (let r = 0; r < REPS; r++) {
+        const before = stats().offloads;
+        const runs = stats().runs;
+        const { wall, held } = await timedHeld(() => family.op(cy, executor));
+
+        walls.push(wall);
+        helds.push(held);
+
+        const ran = stats().offloads - before;
+
+        if (executor === 'workers' && ran !== 1) {
+          throw new Error(`an offload sample ran ${ran} offloads, not 1`);
+        }
+
+        if (executor === 'cpu' && (ran !== 0 || stats().runs !== runs)) {
+          throw new Error('a cpu sample touched the pool');
+        }
+      }
+
+      return { walls, helds };
+    };
+
+    const cpu = await sample('cpu');
+    const offload = await sample('workers');
+    const median = (xs) => [...xs].sort((a, b) => a - b)[xs.length >> 1];
+    const cpuWall = median(cpu.walls);
+
+    // the rows assert their property: a synchronous run holds the
+    // thread for most of its wall, an offloaded one for little of it
+    // (judged where the run is long enough for a 1 ms tick to see)
+    if (cpuWall >= 8 && median(cpu.helds) < cpuWall * 0.5) {
+      throw new Error(
+        `the cpu row read the thread free (${median(cpu.helds).toFixed(1)} of ${cpuWall.toFixed(1)} ms held)`,
+      );
+    }
+
+    if (cpuWall >= 8 && median(offload.helds) > median(offload.walls) * 0.5) {
+      throw new Error(
+        `the offload row read the thread held (${median(offload.helds).toFixed(1)} of ${median(offload.walls).toFixed(1)} ms)`,
+      );
+    }
+
+    return { cpu, offload, firstOffload, workers: stats().workers };
+  } finally {
+    cy.destroy();
+  }
+}
+
+if (offloadFamilies.length > 0) {
+  await calibrateTicks();
+}
+
+for (const family of offloadFamilies) {
+  for (const n of sizesOverride ?? family.sizes) {
+    const t0 = Date.now();
+    const passes = [];
+
+    for (let pass = 0; pass < repeat; pass++) {
+      let row;
+
+      try {
+        row = await runOffloadCell(family, n);
+      } catch (err) {
+        console.error(`  ${family.key} n=${n} FAILED: ${err.message}`);
+        failures.push({ job: `${family.key} n=${n}`, exitCode: 1 });
+        continue;
+      }
+
+      passes.push({
+        suite: 'algorithms-workers',
+        n,
+        op: null,
+        durationMs: 0,
+        context: { arch: process.arch, runtime: 'node', cpu: null },
+        groups: [
+          {
+            name: `${family.key} (offload)`,
+            benches: [
+              { name: 'cpu', stats: toStats(row.cpu.walls) },
+              { name: 'offload', stats: toStats(row.offload.walls) },
+              {
+                name: 'offload first call',
+                stats: oneShotStats(row.firstOffload),
+              },
+              {
+                name: 'main thread held (cpu)',
+                stats: toStats(row.cpu.helds),
+              },
+              {
+                name: 'main thread held (offload)',
+                stats: toStats(row.offload.helds),
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    const merged = mergeRepeats(passes);
+
+    if (merged == null) {
+      continue;
+    }
+
+    merged.durationMs = Date.now() - t0;
+    jobs.push(merged);
+
+    const b = merged.groups[0].benches;
+    const ms = (i) => b[i].stats.p50 / 1e6;
+    const spread =
+      repeat > 1 ? `  spread ×${b[1].stats.repeatSpread.toFixed(2)}` : '';
+
+    console.log(
+      `${family.key.padEnd(36)} n=${String(n).padEnd(6)} ` +
+        `cpu ${ms(0).toFixed(1).padStart(9)} ms   ` +
+        `offload ${ms(1).toFixed(1).padStart(9)} ms   ` +
+        `held ${ms(3).toFixed(1).padStart(8)} → ${ms(4).toFixed(1).padStart(6)} ms   ` +
+        `(first call ${ms(2).toFixed(1)} ms)${spread}`,
+    );
   }
 }
 

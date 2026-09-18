@@ -8,12 +8,15 @@ import { pageRankGpu } from './algo-gpu-pagerank.mjs';
 
 /**
  * The node count from which `'auto'` runs pageRank on one pool worker
- * rather than in-thread (129.1): a starting figure, stamped from the
- * `algorithms-workers` offload rows.  The sparse iteration is O(E) and
- * fast — 0.3–0.8 ms at n = 2048 — so the lane opens later here than
- * for the dense families.
+ * rather than in-thread (129.1).  Measured 2026-09-18 on the sparse
+ * fixture (mean degree 2.7, i9-9900K): the whole call is 0.7 / 1.2 /
+ * 2.4 / 5.5 ms at n = 2048 / 8192 / 16384 / 32768, and the lane frees
+ * the thread for the *kernel's* share only — the sparse structure is
+ * built in-thread, and at 32768 that build is 4.0 of the 5.5 ms — so
+ * the lane opens where the run first reaches a quarter frame, and
+ * what it buys on a sparse graph is the iteration, not the build.
  */
-export const PAGE_RANK_OFFLOAD_MIN_N = 2048;
+export const PAGE_RANK_OFFLOAD_MIN_N = 32768;
 
 /**
  * The node count above which `'auto'` would take the GPU for

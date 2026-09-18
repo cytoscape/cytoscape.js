@@ -136,8 +136,15 @@ export const inThread = <T,>(lane: OffloadLane<T>): T =>
 
 /**
  * The base node count under which `'auto'` keeps an offload family's
- * run in-thread (129.1): a starting figure, stamped per family beside
- * its entry point from the `algorithms-workers` offload rows.
+ * run in-thread (129.1): the O(n³) families' crossover — Floyd–Warshall,
+ * SimRank, effective resistance — where the in-thread run first
+ * reaches a quarter frame (3.2 / 6.3 / 6.2 ms at n = 128, 2026-09-18,
+ * i9-9900K).  Every other family carries its own stamped constant
+ * beside its entry point: MCL 64, affinity propagation 32, the
+ * similarity count 1024, the census 4096, triangles 8192, Katz 16384,
+ * pageRank 32768 — the last two because their sparse iteration is
+ * sub-millisecond below that and their structure is built in-thread
+ * either way (the lane frees the thread for the kernel's share).
  */
 export const OFFLOAD_MIN_N = 128;
 

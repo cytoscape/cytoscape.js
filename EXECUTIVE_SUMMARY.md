@@ -5,13 +5,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-18, after a day of four rounds and three
-  measurements.  The execution model now has a cancellation contract
+- **Last updated**: 2026-09-18, after a day of five rounds and three
+  measurements.  The last of them (round 129) made the main thread's
+  availability a lane's value: the ten whole-graph algorithms the
+  worker pool cannot partition run their reference on one worker
+  under `'auto'` — the same kernel function on both sides, so the
+  bits are the reference's — the worker-hosted renderer runs the
+  force integrator in its worker (12.8 s of frozen page → 1.4 s with
+  the page ticking), and the force layout's CPU simulation runs on a
+  worker that loaded the same bundle, behind a new `executor` option,
+  so a compound or constrained graph no longer holds the page for its
+  run.  Before it, the execution model got a cancellation contract
   (round 128): every async algorithm's promise carries `cancel()`, a
   layout has `cancel()` beside `stop()` — the nodes go back where the
   run found them, `layoutstop` still fires, `promise()` rejects with
   `CancelledError` — and `cy.destroy()` cancels whatever is still in
-  flight.  Before it, the same day: the algorithm tier's follow-ups
+  flight.  Earlier the same day: the algorithm tier's follow-ups
   measured and closed (round 72 — closeness a BFS per source on both
   executors, every routing constant a measured number), a fourth
   executor (round 74 — a pool of plain workers, 12× the reference at
@@ -21,8 +30,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   recommendations: the scale ceiling is exactly 4,194,304 edges, set
   by a device limit the renderer never asks to raise; an allocation
   failure today is silent validation errors and a blank frame; and
-  the worker host's deferrals are priced (its CPU force run freezes
-  the page for 12.8 s where the GPU takes 1.7).  The day before,
+  the worker host's deferrals are priced — the force one closed by
+  round 129 the same evening, images and fonts still open.  The day
+  before,
   round 127 gave every string vocabulary one declaration, and the
   layout quality audit was carried out, one sub-round per layout,
   each waiting on the maintainer's review sitting.
@@ -1175,6 +1185,47 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     quietly made every CPU run yield once before running (restored),
     and a reachability soak's loop body pins its last instance
     whatever the library does.
+- **18 Sep** — the main thread kept free: one worker where the pool
+  cannot help, the force integrator across the worker host, the CPU
+  simulation on a worker
+  - The ten whole-graph algorithms the pool cannot partition —
+    pageRank, Katz, Floyd–Warshall, triangles, neighborhood
+    similarity, the motif census, SimRank, effective resistance, MCL,
+    affinity propagation — run their reference on **one** pool worker
+    under `'auto'` from a per-family size, and under an explicit
+    `'workers'` (which rejected on them before).  The reference *is*
+    the worker's kernel: each moved into `algo-kernels.mts` as a
+    self-contained function the pool carries as source text and the
+    in-thread path calls, so the two answer identical bits — asserted
+    with `===`, per family.  The pool spawns lazily now (one worker
+    for an offload, the full size for a partitioned run).  A new bench
+    tier measures what the lane buys as the wall time the calling
+    thread could not tick: a 180 ms Floyd–Warshall holds the thread
+    for 180 ms in-thread and 0 on the worker; the crossovers were
+    stamped where a run first reaches a quarter frame.  What the lane
+    frees is the kernel's share — on a sparse graph a cheap family's
+    call is mostly its in-thread builder (item 69).
+  - The worker-hosted renderer runs the force integrator in its
+    worker: `startForce` crosses the boundary as one message, the
+    run's state and readback come back as messages, stop / cancel /
+    destroy propagate.  The worker host's force run on the 465k-edge
+    graph: **12.8 s with the page frozen → 1.4 s with it ticking**
+    (the same-thread host reads 1.75 s).
+  - The force layout's CPU simulation runs on a worker that loaded the
+    same bundle (the render worker's mechanism), behind `executor:
+    'auto' | 'cpu' | 'gpu' | 'workers'`.  `'auto'` takes the GPU
+    integrator where the renderer offers one, else the worker on a
+    rendered instance — so a compound graph, a constrained run or a
+    page without an adapter no longer holds the page — else in-thread;
+    headless runs keep their synchronous contract.  The worker's
+    trajectory is bit-identical to the in-thread simulation's, on the
+    plain, the compound and the constrained fixtures.
+  - Two facts the suites found: a Node worker thread inherits tsx's
+    loader but not its `.mjs` → `.mts` aliasing (the test setup
+    registers tsx inside the worker; the library names no loader),
+    and headless Chromium issues no animation frames while nothing
+    draws, so main-thread availability is measured by a timer where a
+    run draws nothing.
 
 ## What changed for users of v3
 
@@ -1291,8 +1342,9 @@ round, and is regenerated rather than maintained:
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured
-  18 Sep), and a fresh idea-ledger sweep of ~20 further candidates awaiting
-  scheduling.
+  18 Sep), the offload families' in-thread builders and the k-clusterings'
+  missing lane (items 69 and 70, 18 Sep), and a fresh idea-ledger sweep of
+  ~20 further candidates awaiting scheduling.
 
 ## How this project works
 

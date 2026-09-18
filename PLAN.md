@@ -1562,3 +1562,40 @@ directions".*
     frame count of the grid tween at 2k / 5k / 10k / 20k nodes on
     both hosts, which finds where the per-animation cost crosses the
     per-frame span cost.
+69. **The offload lane frees the kernel's share; the builders are
+    still in-thread** (logged 2026-09-18, from round 129.4's offload
+    rows).  Every offload family builds its snapshot on the calling
+    thread — the view, the weights, the CSR from per-node `Set`s — and
+    on a sparse graph that build is most of the call once the kernel
+    is cheap: at n = 32,768 (mean degree 2.7) pageRank's whole call is
+    5.5 ms with 4.0 held, Katz's 12.2 with 4.6, the triangle walk's
+    13.6 with 12.5, the census's 45.4 with 27.7, the similarity
+    count's 268 with 45.7 — the row that asserts the thread free under
+    the lane fails the last two at that size, which is the row doing
+    its job.  The lane's crossovers were stamped where the *whole*
+    call reaches a quarter frame, so what a caller gets there is the
+    kernel off the thread and the build on it.  The fix shape is the
+    builders': write the CSR from the view in one pass (no `Set` per
+    node — the round-74 snapshot builders do this already), and for
+    the wire path (item 43) hand the worker the columnar payload and
+    let it build there.  **First measurement**: the build's share of
+    each family's call at 8k / 32k / 128k nodes on the sparse fixture,
+    which says whether the builders or a worker-side build is the
+    round.
+70. **The k-clusterings and hierarchical clustering have no offload
+    lane** (logged 2026-09-18, round 129.1's decision).  Their
+    references call the distance per iteration through per-node
+    caches (`vecOf`, `makeGetDist`) and accept a custom metric, so
+    the maths is not a self-contained kernel over a snapshot, and
+    materializing attribute vectors for the *named* metrics would put
+    a second implementation beside the closure path — which the
+    same-kernel rule forbids.  The honest shape is one kernel over
+    materialized vectors that the in-thread reference *also* runs for
+    the named-metric case (the closure path kept for custom metrics
+    alone), with a parity record for the reference's own change of
+    operation order.  Until then `executor: 'workers'` rejects on
+    `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering`,
+    and `'auto'` runs them in-thread.  **First measurement**: the
+    named-metric share of real calls (the GPU path already requires
+    attributes and a named metric, so its parity suite is the
+    fixture), and the in-thread run's length at 1k / 5k nodes.

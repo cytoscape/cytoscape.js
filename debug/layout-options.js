@@ -285,6 +285,12 @@ var layoutOptionsPanel = (function () {
         note: 'fresh scatter (on) or relax the current positions',
       },
       { key: 'stepsPerFrame', type: 'number', note: 'under Live' },
+      {
+        key: 'executor',
+        type: 'select',
+        values: ['auto', 'cpu', 'gpu', 'workers'],
+        note: 'where the sim runs (129.3): the GPU integrator, the worker, in-thread',
+      },
       avoidOverlapPadding(10),
       { key: 'componentSpacing', type: 'number' },
       { key: 'init', type: 'select', values: ['spectral', 'scatter'] },

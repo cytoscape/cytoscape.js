@@ -41,10 +41,16 @@ import { listsToCsr } from './algo-kernels.mjs';
 
 /**
  * The node count from which `'auto'` walks the census on one pool
- * worker rather than in-thread (129.1): a starting figure, stamped
- * from the `algorithms-workers` offload rows.
+ * worker rather than in-thread (129.1).  Measured 2026-09-18 (sparse
+ * fixture, i9-9900K): 1.4 / 2.2 / 3.4 / 7.2 ms in-thread at n = 512 /
+ * 2048 / 4096 / 8192, the thread held 0.4 / 1.8 / 3.6 ms of the last
+ * three under the lane (the triad structure is built in-thread).
+ * Stamped 2026-09-18 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker; the rule: the smallest size whose in-thread
+ * run reaches ~4 ms, a quarter frame — a shorter run blocks nothing
+ * perceptible, and the lane's clone-and-wake is 0.2–0.6 ms).
  */
-export const MOTIFS_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
+export const MOTIFS_OFFLOAD_MIN_N = 4096;
 
 /** The sixteen triad classes, in Holland–Leinhardt order. */
 export const TRIAD_CLASSES = [

@@ -28,11 +28,13 @@ import { katzCentralityGpu } from './algo-gpu-katz.mjs';
 
 /**
  * The node count from which `'auto'` runs Katz on one pool worker
- * rather than in-thread (129.1): a starting figure, stamped from the
- * `algorithms-workers` offload rows; the sparse fixed point is as
- * cheap as pageRank's, so the same late opening.
+ * rather than in-thread (129.1).  Measured 2026-09-18 (sparse fixture,
+ * i9-9900K): 0.8 / 2.7 / 5.4 / 12.2 ms at n = 2048 / 8192 / 16384 /
+ * 32768, the thread held 1.7 → 4.6 ms of the last two under the lane
+ * (the arcs are built in-thread; the kernel is what the worker takes)
+ * — pageRank's shape, opened where the run reaches a quarter frame.
  */
-export const KATZ_OFFLOAD_MIN_N = 2048;
+export const KATZ_OFFLOAD_MIN_N = 16384;
 
 /**
  * The node count above which `'auto'` would take the GPU for Katz:

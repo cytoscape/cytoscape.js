@@ -33,8 +33,14 @@ import { listsToCsr } from './algo-kernels.mjs';
 
 /**
  * The node count from which `'auto'` iterates SimRank on one pool
- * worker rather than in-thread (129.1): a starting figure, stamped
- * from the `algorithms-workers` offload rows.
+ * worker rather than in-thread (129.1).  Measured 2026-09-18
+ * (i9-9900K): 1.4 / 6.3 / 25.0 / 80.1 ms in-thread at n = 64 / 128 /
+ * 256 / 512, the thread held 0.8 / 0.4 / 0.0 / 0.0 ms of those under
+ * the lane.
+ * Stamped 2026-09-18 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker; the rule: the smallest size whose in-thread
+ * run reaches ~4 ms, a quarter frame — a shorter run blocks nothing
+ * perceptible, and the lane's clone-and-wake is 0.2–0.6 ms).
  */
 export const SIM_RANK_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 

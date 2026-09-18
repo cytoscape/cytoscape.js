@@ -16,9 +16,15 @@ import { floydWarshallKernel } from './algo-kernels.mjs';
 
 /**
  * The node count from which `'auto'` relaxes Floyd–Warshall on one
- * pool worker rather than in-thread (129.1): a starting figure,
- * stamped from the `algorithms-workers` offload rows.  O(n³): at 128
- * the in-thread run is already a couple of milliseconds.
+ * pool worker rather than in-thread (129.1).  Measured 2026-09-18
+ * (i9-9900K): 0.4 / 3.2 / 23.6 / 180.8 ms in-thread at n = 64 / 128 /
+ * 256 / 512, the thread held 0.9 / 0.0 / 0.0 ms of those under the
+ * lane, the lane's own cost within noise (−0.1 to −17 ms — the worker
+ * runs the relaxation slightly faster than the loaded main thread).
+ * Stamped 2026-09-18 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker; the rule: the smallest size whose in-thread
+ * run reaches ~4 ms, a quarter frame — a shorter run blocks nothing
+ * perceptible, and the lane's clone-and-wake is 0.2–0.6 ms).
  */
 export const FLOYD_WARSHALL_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';

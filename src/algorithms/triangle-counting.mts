@@ -29,10 +29,13 @@ import { listsToCsr } from './algo-kernels.mjs';
 
 /**
  * The node count from which `'auto'` counts triangles on one pool
- * worker rather than in-thread (129.1): a starting figure, stamped
- * from the `algorithms-workers` offload rows.
+ * worker rather than in-thread (129.1).  Measured 2026-09-18 (sparse
+ * fixture, i9-9900K): 0.8 / 1.4 / 2.9 ms in-thread at n = 2048 / 4096
+ * / 8192 — the sorted-intersection walk is O(Σ deg²), cheap on a sparse
+ * graph however large — so the lane opens at the size where the run
+ * nears a quarter frame; a dense graph takes the GPU before that.
  */
-export const TRIANGLES_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
+export const TRIANGLES_OFFLOAD_MIN_N = 8192;
 
 export interface TriangleCountOptions {
   /** where the run executes; see `AlgoExecutor` (default 'auto').

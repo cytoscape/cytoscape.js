@@ -1,6 +1,24 @@
 {
   "runs": [
     {
+      "file": "results-algworkers-2026-09-18T18-49-35-964Z.json",
+      "date": "2026-09-18T18:49:35.964Z",
+      "commit": "116f6857",
+      "commitSubject": "layout(129.3): the force layout's CPU simulation runs on a worker — an executor option, one worker per session, bit-identical trajectories",
+      "branch": "feature/rounds-110-74-72-cancel",
+      "profile": "algorithms-workers",
+      "suiteFilter": null,
+      "dirty": true,
+      "concurrency": 1,
+      "totalMs": 224307,
+      "node": "v24.18.0",
+      "fingerprint": "5cf3f79c",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 50,
+      "note": "round 129.4: the algorithms-workers profile with the offload tier — cpu / offload / offload-first-call and the main-thread-held rows per family beside the pool rows, medians of three; measured on the tree that became the 129.4 commit (the stamped constants do not enter the rows)"
+    },
+    {
       "file": "results-algworkers-2026-09-18T14-22-42-054Z.json",
       "date": "2026-09-18T14:22:42.054Z",
       "commit": "31f65b7d",

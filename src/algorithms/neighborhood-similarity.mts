@@ -32,10 +32,17 @@ import { listsToCsr } from './algo-kernels.mjs';
 
 /**
  * The node count from which `'auto'` counts shared neighbors on one
- * pool worker rather than in-thread (129.1): a starting figure,
- * stamped from the `algorithms-workers` offload rows.
+ * pool worker rather than in-thread (129.1).  Measured 2026-09-18
+ * (sparse fixture, i9-9900K): 0.2 / 4.1 / 10.4 / 268 ms in-thread at
+ * n = 512 / 1024 / 2048 / 32768 (the n² count matrix is what grows),
+ * the thread held 0.0 / 0.7 / 45.7 ms of the last three under the
+ * lane (the neighborhoods are built in-thread).
+ * Stamped 2026-09-18 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker; the rule: the smallest size whose in-thread
+ * run reaches ~4 ms, a quarter frame — a shorter run blocks nothing
+ * perceptible, and the lane's clone-and-wake is 0.2–0.6 ms).
  */
-export const SIMILARITY_OFFLOAD_MIN_N = OFFLOAD_MIN_N;
+export const SIMILARITY_OFFLOAD_MIN_N = 1024;
 
 /** How a pair's shared-neighbor count is normalized: Jaccard divides
  * by the union, cosine by the geometric mean of the sizes, overlap by

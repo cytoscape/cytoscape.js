@@ -5,27 +5,27 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-18, after round 72 closed the algorithm
-  tier's follow-up list with a measurement for each item: unweighted
-  closeness walks a BFS per source on both executors (18–47× faster
-  on the CPU; the GPU walk, lifted out of the betweenness kernels,
-  takes over from a thousand nodes), the heat family takes
-  `laplacian: 'normalized'`, affinity propagation's availability
-  update is coalesced (−42%), pageRank and Katz run a sparse kernel
-  under an explicit `'gpu'` (2–19× cheaper) while `'auto'` keeps them
-  on the CPU because the whole CPU run is under one GPU readback, and
-  every routing constant is now a measured number — two of which were
-  wrong in opposite directions (the triangle family's gate is a
-  constant mean degree, not a share of n²; the round-70 families had
-  no crossover at all and their gates are gone).  The executor sweep
-  publishes medians of three now.  The day before, round 127 gave
-  every string vocabulary one declaration — column ids, style
-  property names, the reserved data keys and the group names, never
-  the literal, with a scanning spec holding the line — and the layout
-  quality audit was carried out, one sub-round per layout with its
-  fixtures, baseline, pictures and fixes on the record, each waiting
-  on the maintainer's review sitting (preset and random signed off;
-  radial now centres a hierarchy's true root).
+- **Last updated**: 2026-09-18, after a day of four rounds and three
+  measurements.  The execution model now has a cancellation contract
+  (round 128): every async algorithm's promise carries `cancel()`, a
+  layout has `cancel()` beside `stop()` — the nodes go back where the
+  run found them, `layoutstop` still fires, `promise()` rejects with
+  `CancelledError` — and `cy.destroy()` cancels whatever is still in
+  flight.  Before it, the same day: the algorithm tier's follow-ups
+  measured and closed (round 72 — closeness a BFS per source on both
+  executors, every routing constant a measured number), a fourth
+  executor (round 74 — a pool of plain workers, 12× the reference at
+  2,048 nodes warm), and the copy census (round 110 — v4 at the
+  zero-copy floor everywhere but the export readback, now a compute
+  pass).  Three ledger items were measured and left as
+  recommendations: the scale ceiling is exactly 4,194,304 edges, set
+  by a device limit the renderer never asks to raise; an allocation
+  failure today is silent validation errors and a blank frame; and
+  the worker host's deferrals are priced (its CPU force run freezes
+  the page for 12.8 s where the GPU takes 1.7).  The day before,
+  round 127 gave every string vocabulary one declaration, and the
+  layout quality audit was carried out, one sub-round per layout,
+  each waiting on the maintainer's review sitting.
 
 ## How to maintain this file
 
@@ -64,8 +64,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,751 unit · 767 module · 29 soak · 459 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
-| Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Automated tests | 2,792 unit · 767 module · 33 soak · 476 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Documented API | 335 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
@@ -1123,6 +1123,58 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - What the census found instead of copies: registering 465k
     generated edge ids is a third of a bulk load (item 66), and a
     whole-sheet restyle re-derives every column (item 67).
+- **18 Sep** — three ledger items measured, none built
+  - The scale ceiling has a number: 4,194,304 edges render and
+    4,194,305 are blank, on any card — the edge gradient column at
+    the next power-of-two capacity crosses the device's *default*
+    storage-binding limit, which the renderer never asks to raise
+    although the adapter offers thirty-two times more.  Labels cap
+    two million glyphs the same way.  Nothing else fails first at
+    5M edges: ingest, style, the curve blob, cull and pick all hold.
+  - An allocation failure today is silent: a bad buffer on a mirror
+    growth yields twenty-six validation errors in thirty frames and
+    a blank picture — no device loss, no exception, no event, and
+    `png()` returns an empty image.  The VRAM price is 196 B per node,
+    164 per edge, 68 per glyph (a labelled node ~544 B), exact across
+    three sizes; real exhaustion could not be provoked on this driver,
+    which spills to system RAM.  Recommended: one round for both —
+    error scopes and a limits pre-flight before any degradation order.
+  - The worker host's deferrals, priced: its boundary traffic is
+    trivial (a position column per frame at 13–52 µs), but the force
+    layout under it runs on the CPU and freezes the page for 12.8 s
+    where the GPU integrator takes 1.7 — the worst deferral, first to
+    build.  Images cost the main thread 6.5 ms of decode each, the
+    case for worker-side decode; a font loaded in a worker from a URL
+    reports loaded and never applies to its canvas, while the same
+    bytes registered from a buffer apply exactly — the build-out is
+    bytes, not URLs.  Found beside them: a per-node layout tween on
+    the same-thread host drew six frames in 1.5 s (item 68).
+- **18 Sep** — cancellation: the execution model gets an off switch
+  - Every async algorithm returns its promise with `cancel()` on it.
+    A pending run rejects with `cytoscape.CancelledError` at once and
+    answers `true`; a settled one answers `false` — a `'cpu'` run
+    always does, because the reference completes inside the call and
+    the handle says so rather than pretending.  What a cancel reclaims
+    is per executor: a GPU run's submitted work runs out and is
+    discarded undecoded; a workers run stops posting ranges, drops the
+    partials in flight and leaves the pool standing.
+  - Layouts have `cancel()` beside `stop()`.  `stop()` keeps what
+    stands; `cancel()` puts the nodes back where the run found them,
+    drops a tween where it is, leaves the viewport alone, still fires
+    `layoutstop` (with `cancelled: true`) so UI that re-enables on it
+    keeps working, and rejects `promise()` — marked handled for a
+    caller who never awaits it.  A custom impl may implement
+    `cancel()`; one without is asked to `stop()`.
+  - `cy.destroy()` is the last cancel: every run still open closes
+    before the renderer goes, so an `await` outstanding across a
+    destroy rejects instead of hanging and nothing writes into a dead
+    renderer.
+  - Decided as a handle, not an `AbortSignal` option (the maintainer's
+    call): it is what a caller already holds, and it composes with
+    destroy.  Two things the specs found on the way: round 74 had
+    quietly made every CPU run yield once before running (restored),
+    and a reachability soak's loop body pins its last instance
+    whatever the library does.
 
 ## What changed for users of v3
 
@@ -1135,9 +1187,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 - **display/visibility split** into a structural tier and a paint-only tier.
 - **`cy.layout({ impl })` is the whole extension story.**
 - **The expensive whole-graph algorithms return promises** and take
-  `executor: 'cpu' | 'gpu' | 'auto'` — including, since 12 Aug, the
-  whole-collection `closenessCentralityNormalized`; the single-root form
-  stays synchronous.
+  `executor: 'cpu' | 'gpu' | 'workers' | 'auto'` — including, since 12
+  Aug, the whole-collection `closenessCentralityNormalized`; the
+  single-root form stays synchronous.  Since 18 Sep the promise carries
+  `cancel()`, and a cancelled run rejects with `cytoscape.CancelledError`.
+- **Layouts can be cancelled, not only stopped** (18 Sep):
+  `layout.cancel()` restores the pre-run positions and rejects
+  `promise()`; `layout.stop()` is unchanged.
 - **Eight algorithm families v3 never had**, on the same executor
   contract: `triangleCount`, `neighborhoodSimilarity`, `katzCentrality`,
   `randomWalkWithRestart` (+ its all-pairs proximity form),

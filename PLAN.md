@@ -646,6 +646,57 @@ directions".*
     limiter.  Companion to item 36; likely the same harness.
     **First measurement**: the bisect at 1M/2M/5M edges on the
     RX 580 — failure mode and owning subsystem for each.
+    **Taken 2026-09-18** (`node benchmark/scale-ceiling.mjs`, RX 580
+    through Chromium's hardware adapter, the built UMD, a columnar
+    payload built in-page with n = m/4, each size in a fresh browser
+    process): **1M and 2M edges render; 5M edges is blank**, and the
+    owning subsystem is neither ingest, style apply, the curve blob,
+    the atlas, cull nor pick — every one of those completed (5M: init
+    4.9 s, ready 1.4 s, first frame 5 ms, `cy.pick()` still answered)
+    — it is **the mirror's per-column buffers against the device's
+    *default* limits**.  The store's capacity is the next power of two
+    ≥ count and the gradient column is 32 B/slot on both groups, so at
+    a capacity of 2²³ that one buffer is 256 MiB: allowed by
+    `maxBufferSize` (256 MiB) but over `maxStorageBufferBindingSize`
+    (128 MiB), the edge bind group is invalid, and the frame's command
+    buffer is rejected at `queue.submit` — every frame, silently (item
+    36 below).  Bisected exactly: **4,194,304 edges render and
+    4,194,305 are blank; the same for nodes** (4,194,304 nodes ×
+    100k edges renders at 849 MB, 4.3 s init, 33 ms GPU frame).  With
+    labels the ceiling is far lower: 1M labelled nodes at ~8
+    characters need a glyph capacity of 2²³ × 64 B = 537 MB, over
+    even `maxBufferSize`, so the glyph buffer is invalid and the whole
+    frame — not only the labels — is gone; **2,097,152 glyphs** (128
+    MiB) is the last capacity that binds, ~260k labelled nodes at
+    this label length.  The figures (n = m/4 unless stated):
+
+    | scene | init | ready | VRAM | JS heap | GPU frame | outcome |
+    | --- | --: | --: | --: | --: | --: | --- |
+    | 250k × 1M | 0.9 s | 0.18 s | 237 MB | 0.42 GB | 12.7 ms | rendered |
+    | 500k × 2M | 1.8 s | 0.35 s | 469 MB | 0.88 GB | 13.8 ms | rendered |
+    | 1M × 3M | 3.1 s | 0.71 s | 899 MB | 1.49 GB | 23.0 ms | rendered |
+    | 1.25M × 5M | 4.9 s | 1.37 s | 1,793 MB | 2.88 GB | — | blank (edge.gradient 256 MiB > 128 MiB binding) |
+    | 1M × 3M, labelled | 4.5 s | 0.71 s | 1,470 MB | 1.90 GB | — | blank (glyphs 537 MB > 256 MiB buffer) |
+
+    **The cheapest limiter is one line**: the validation message itself
+    says this adapter offers `maxStorageBufferBindingSize` 4 GiB
+    (4,294,967,292), and `initGpuContext` (`src/gpu-context.mts`)
+    requests no limits at all — requesting the adapter's own
+    `maxBufferSize` and `maxStorageBufferBindingSize` at device
+    creation (both hosts; the algorithm device in `algo-gpu.mts` too)
+    moves the ceiling from 4.19M slots per group to the card's memory,
+    where the byte price (item 36: ~164 B per edge slot, ~196 B per
+    node slot) puts an 8 GiB card near 40M edges — and the *next*
+    ceiling becomes the renderer's V8 heap, which read 2.9 GB at 5M
+    edges (~460 B per element on the host, against Chromium's ~4 GB
+    default cap), i.e. roughly 8M edges.  **Recommendation: a round
+    now, and a short one** — request the limits, add the pre-flight
+    item 36 asks for on the same path, pin the boundary with a spec
+    that reads `device.limits` rather than a hard-coded count, and
+    re-run the probe to publish the new ceiling; the probe is
+    `benchmark/scale-ceiling.mjs` (`--sizes n:m,…`, `--price`,
+    `--labels`, `--inject`, `--oom`) and stays in the tree for that
+    re-run.
     **Note (round 110.3)**: the designed SharedArrayBuffer tier for
     the worker host declares a `maxSlots` ceiling per column and
     refuses growth past it with this item's message; the number it
@@ -664,6 +715,62 @@ directions".*
     **First measurement**: force an allocation failure on a real
     adapter and record what actually happens now; then the
     per-element byte price at three graph sizes.
+    **Taken 2026-09-18** (`node benchmark/scale-ceiling.mjs --inject`
+    / `--oom` / `--price`, RX 580, the built UMD).  *What an
+    allocation failure does today*: with a 20k × 60k scene rendered,
+    the probe made the next mirror reallocation (a `cy.add()` that
+    doubled the node capacity) return an invalid `node.position`
+    buffer — the exact object WebGPU hands back on out-of-memory — and
+    the instance produced **26 uncaptured validation errors in 30
+    frames and nothing else**: the `writeBuffer` into the invalid
+    buffer, every bind group that binds the column (eight compute
+    entries for cull and pick, three vertex entries), the frame's
+    command buffer, then `queue.submit` — per frame, forever.  No
+    device loss, no exception, no `error` event, `stats().frames`
+    keeps counting, `cy.png()` returns a 766-byte blank with a second
+    rejected encoder.  The renderer pushes no error scope, listens for
+    no `uncapturederror`, and consults `device.limits` nowhere but the
+    export pack; the failure is visible only in a devtools console.
+    The 5M-edge and 1M-labelled rows of item 35 are the same failure
+    reached naturally.  *Real exhaustion could not be provoked on this
+    box*: radv spills device memory to system RAM, so 96 fully written
+    256 MiB storage buffers — 24 GiB on an 8 GiB card — raised no
+    out-of-memory scope, no uncaptured error and no loss, and the
+    scene's GPU frame moved 1.41 → 1.83 ms; the one crash seen
+    (`OperationError: Instance dropped in popErrorScope`, the GPU
+    process gone and every page's device with it) came from an
+    earlier variant that hogged from a second device before the scene
+    existed, and did not reproduce.  So on Linux/AMD the graceful
+    path is a residency cliff, not an error; on D3D12 and integrated
+    parts it will be a `GPUOutOfMemoryError`, unmeasured here.  *The
+    byte price*, measured as bytes per capacity slot (the three sizes
+    agree exactly; capacity is the next power of two ≥ count, so up to
+    2× slack): **node 196 B** (gradient 32; outerGeom, ghost,
+    borderGeom, borderDash, overlay, underlay 16 each; position, size,
+    outerHalf, borderDashMeta 8 each; fillColor, borderColor,
+    borderWidth, opacity, shape, imageRef, chartRef, flags 4 each; the
+    cull's visible index 4), **edge 164 B** (gradient 32; dashPattern,
+    curveParams 16; endpoints, width, arrowWidths, overlay, casing,
+    dashMeta, underlay 8; lineColor, opacity, flags, sourceArrow,
+    targetArrow, lineStyle, arrowShapes, midSourceArrow, midTargetArrow
+    4; two cull indices 4 + 4), **glyph 68 B** (the 64-byte record and
+    a cull index) — ~8 glyphs per labelled node here, so a label costs
+    ~544 B, 2.8× the node under it.  Fixed: the depth target 4.1 MB at
+    1280 × 800, the atlas 1 MB per tier, pick under 0.1 MB, the four
+    blobs empty for a plain scene.  Totals 14 / 121 / 899 MB unlabelled
+    and 23 / 193 / 1,470 MB labelled at 10k × 30k / 100k × 300k / 1M ×
+    3M; host heap after init 20 / 167 / 1,491 MB (1,901 labelled).
+    **Recommendation: go, folded into item 35's round, and detection
+    before degradation** — (1) an `uncapturederror` listener and an
+    `out-of-memory` scope around every realloc so a failed allocation
+    becomes an instance event with the column and the byte count, (2)
+    a pre-flight of the reallocation size against `device.limits`
+    that refuses growth loudly (the `GpuUnfitError` shape from the
+    algorithm path) instead of submitting rejected frames, (3) only
+    then the degradation order, which the price now settles: labels
+    first (the dominant term whenever present), then charts and
+    images, then the gradient columns made lazy (32 B of 196 and of
+    164, allocated for every scene and used by gradient fills alone).
 37. **Accessibility** (raised 2026-08-19).  A canvas renderer is
     invisible to assistive tech, and no scheduled round touches it.
     Scope, in priority order: keyboard navigation (a focus model —

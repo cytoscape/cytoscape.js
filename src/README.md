@@ -768,9 +768,14 @@ the cores; the worker entry ships as source text inside every bundle,
 so the bundles stay single-file and no bundler configuration is asked
 of an embedder) and rejects on the other families or where no worker
 can be constructed; 'auto' takes the GPU above a per-family
-measured crossover, then the pool from `WORKERS_MIN_N` where a family
+measured crossover, then the pool from the family's stamped crossover
+(74.5: weighted betweenness and RWR proximity 128, unweighted
+betweenness and the heat kernel 256, closeness 512) where a family
 has that lane and no GPU lane fits (headless Node, a blocklisted
-adapter, an input past the device's buffer limits), then the CPU.
+adapter, an input past the device's buffer limits), then the CPU —
+except the sparse closeness BFS, where the pool measured ahead of the
+GPU at every size (4.0 vs 14.6 ms at n = 1024, 50.1 vs 87.5 at 4096)
+and is tried first.
 Determinism is a ladder, cpu > workers > gpu: the pool partitions the
 sources into a fixed number of ranges (a function of n, never of the
 pool size) and merges in range order, so a workers result is

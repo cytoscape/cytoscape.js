@@ -16,7 +16,10 @@ where the maths runs:
   'auto' — the default: GPU when an adapter exists and the input is
            large enough to beat the dispatch/readback overhead; else
            workers where the family has that lane, a pool can spawn
-           and the input clears its crossover; otherwise CPU.
+           and the input clears its crossover; otherwise CPU.  One
+           family inverts the first two (74.5): the sparse closeness
+           BFS measured the pool ahead of the GPU at every size, so
+           its lane is tried first.
 
 The determinism ladder callers read: **cpu > workers > gpu**.  'cpu' is
 the bit-reproducible reference.  'workers' is bit-stable across runs,
@@ -56,12 +59,17 @@ import type { AlgoWorkers } from './algo-workers.mjs';
 export type AlgoExecutor = 'cpu' | 'gpu' | 'workers' | 'auto';
 
 /**
- * The node count under which `'auto'` prefers the CPU to the worker
- * pool, for every family with a workers lane: below it the per-worker
- * snapshot clone and the message round trips outweigh the division of
- * the walk.  A starting figure from the 74.1 probe (the pool answered
- * 12× at n = 1024 and 3.5× cold), to be stamped per family by the
- * `algorithms-workers` sweep (74.5).
+ * The base node count under which `'auto'` prefers the CPU to the
+ * worker pool: below it the per-worker snapshot clone and the message
+ * round trips outweigh the division of the walk.  Each family carries
+ * its own stamped constant beside its entry point (74.5, from the
+ * `algorithms-workers` crossover sweep at n = 64 / 128 / 256 / 512 on
+ * the i9-9900K, eight workers — the rule was a warm speedup of at
+ * least 3×): weighted betweenness 128 (3.2×), unweighted betweenness
+ * 256 (3.3×), the closeness BFS 512 (3.9×; 1.4× at 256), the heat
+ * kernel 256 (4.2×), RWR proximity 128 (4.6×).  A first call on a
+ * fresh pool pays the spawn besides — 38–48 ms at these sizes — once
+ * per page or process.
  */
 export const WORKERS_MIN_N = 256;
 
@@ -71,6 +79,11 @@ export interface WorkersLane<T> {
   minN: number;
   /** the lane: build the snapshot, run the ranges, merge */
   run: (pool: AlgoWorkers) => Promise<T>;
+  /** `'auto'` tries the pool *before* the GPU (74.5: only where the
+   * sweep measured the pool ahead of a present adapter — the sparse
+   * closeness BFS); a pool that cannot be acquired still falls to the
+   * GPU, then the CPU */
+  first?: boolean;
 }
 
 /**
@@ -171,6 +184,30 @@ export const runAlgo = async <T,>(
     return workers.run(await acquireAlgoWorkers());
   }
 
+  // the workers lane under 'auto': a pool that cannot be acquired (no
+  // platform, a CSP refusal) answers null and the next lane runs; a
+  // failed run propagates, exactly as a kernel error does
+  const tryWorkers = async (): Promise<{ value: T } | null> => {
+    if (
+      executor !== 'auto' ||
+      workers == null ||
+      n < workers.minN ||
+      !algoWorkersSupported()
+    ) {
+      return null;
+    }
+
+    let pool: AlgoWorkers | null;
+
+    try {
+      pool = await acquireAlgoWorkers();
+    } catch {
+      pool = null;
+    }
+
+    return pool == null ? null : { value: await workers.run(pool) };
+  };
+
   if (executor === 'gpu') {
     if (!algoGpuSupported()) {
       throw new Error(
@@ -187,6 +224,14 @@ export const runAlgo = async <T,>(
     }
 
     return gpu(await acquireAlgoGpu());
+  }
+
+  if (workers?.first === true) {
+    const ran = await tryWorkers();
+
+    if (ran != null) {
+      return ran.value;
+    }
   }
 
   if (
@@ -216,23 +261,11 @@ export const runAlgo = async <T,>(
     }
   }
 
-  if (
-    executor === 'auto' &&
-    workers != null &&
-    n >= workers.minN &&
-    algoWorkersSupported()
-  ) {
-    let pool: AlgoWorkers | null;
+  if (workers?.first !== true) {
+    const ran = await tryWorkers();
 
-    try {
-      pool = await acquireAlgoWorkers();
-    } catch {
-      pool = null; // no pool (a CSP refusal, say): the reference path
-    }
-
-    if (pool != null) {
-      // a failed run propagates, exactly as a kernel error does
-      return workers.run(pool);
+    if (ran != null) {
+      return ran.value;
     }
   }
 

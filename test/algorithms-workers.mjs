@@ -10,7 +10,13 @@ import {
   WORKERS_MAX,
 } from '../src/algorithms/algo-workers.mjs';
 import { algoWorkerBody } from '../src/algorithms/algo-worker-body.mjs';
-import { runAlgo, WORKERS_MIN_N } from '../src/algorithms/executor.mjs';
+import { runAlgo } from '../src/algorithms/executor.mjs';
+import {
+  BETWEENNESS_GPU_MIN_N,
+  BETWEENNESS_GPU_MIN_N_WITH_POOL,
+  BETWEENNESS_WEIGHTED_WORKERS_MIN_N,
+} from '../src/algorithms/betweenness-centrality.mjs';
+import { _resetAlgoGpu, GpuUnfitError } from '../src/algorithms/algo-gpu.mjs';
 
 /*
 Round 74: the `'workers'` executor — parity, determinism and the guards.
@@ -289,13 +295,15 @@ describe('algorithms: the workers executor (round 74)', function () {
     }
   });
 
-  it("'auto' takes the pool from WORKERS_MIN_N where the GPU is absent, the CPU below", async function () {
+  it("'auto' takes the pool from the family's crossover where the GPU is absent, the CPU below", async function () {
     const before = _algoWorkersStats();
 
-    await cy.elements().betweennessCentrality({ weight }); // n = 320 ≥ 256
+    await cy.elements().betweennessCentrality({ weight }); // n = 320 ≥ 128
     expect(_algoWorkersStats().runs).to.equal(before.runs + 1);
 
-    const small = cytoscape({ elements: ring(WORKERS_MIN_N - 1) });
+    const small = cytoscape({
+      elements: ring(BETWEENNESS_WEIGHTED_WORKERS_MIN_N - 1),
+    });
 
     await small.elements().betweennessCentrality({ weight });
     expect(_algoWorkersStats().runs).to.equal(before.runs + 1);
@@ -546,6 +554,101 @@ describe('algorithms: the workers executor (round 74)', function () {
         const err = await rejection(acquireAlgoWorkers());
 
         expect(err.message).to.match(/failed to start: thread died/);
+      });
+    });
+
+    describe("the three-way 'auto' ordering, with a stubbed adapter", function () {
+      var realDescriptor;
+
+      beforeEach(function () {
+        realDescriptor = Object.getOwnPropertyDescriptor(
+          globalThis,
+          'navigator',
+        );
+        _resetAlgoGpu();
+        // a working adapter, as test/algorithms-executor.mjs stubs it
+        Object.defineProperty(globalThis, 'navigator', {
+          value: {
+            gpu: {
+              requestAdapter: async () => ({
+                requestDevice: async () => ({ lost: new Promise(() => {}) }),
+              }),
+            },
+          },
+          configurable: true,
+        });
+      });
+
+      afterEach(function () {
+        if (realDescriptor != null) {
+          Object.defineProperty(globalThis, 'navigator', realDescriptor);
+        } else {
+          delete globalThis.navigator;
+        }
+
+        _resetAlgoGpu();
+      });
+
+      const lanes = (first) => [
+        () => 'cpu',
+        async () => 'gpu',
+        undefined,
+        { minN: 256, first, run: async () => 'workers' },
+      ];
+
+      it('the GPU precedes the pool by default', async function () {
+        expect(await runAlgo('auto', 1000, 256, ...lanes(false))).to.equal(
+          'gpu',
+        );
+        expect(await runAlgo('auto', 1000, 256, ...lanes(undefined))).to.equal(
+          'gpu',
+        );
+      });
+
+      it('a `first` lane precedes a present GPU (the sparse closeness BFS)', async function () {
+        expect(await runAlgo('auto', 1000, 256, ...lanes(true))).to.equal(
+          'workers',
+        );
+      });
+
+      it('a `first` lane below its crossover leaves the GPU in place', async function () {
+        expect(await runAlgo('auto', 100, 50, ...lanes(true))).to.equal('gpu');
+      });
+
+      it('a `first` lane whose pool cannot spawn falls to the GPU, not the CPU', async function () {
+        const realGetBuiltin = process.getBuiltinModule;
+
+        process.getBuiltinModule = () => null;
+
+        try {
+          expect(await runAlgo('auto', 1000, 256, ...lanes(true))).to.equal(
+            'gpu',
+          );
+        } finally {
+          process.getBuiltinModule = realGetBuiltin;
+        }
+      });
+
+      it('the pool takes over where the GPU lane is unfit', async function () {
+        const out = await runAlgo(
+          'auto',
+          1000,
+          256,
+          () => 'cpu',
+          async () => {
+            throw new GpuUnfitError('too big');
+          },
+          undefined,
+          { minN: 256, run: async () => 'workers' },
+        );
+
+        expect(out).to.equal('workers');
+      });
+
+      it('unweighted betweenness: the GPU crossover moves to 1024 where a pool can exist', function () {
+        expect(BETWEENNESS_GPU_MIN_N).to.equal(512);
+        expect(BETWEENNESS_GPU_MIN_N_WITH_POOL).to.equal(1024);
+        expect(algoWorkersSupported()).to.be.true;
       });
     });
 

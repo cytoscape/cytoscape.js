@@ -27,12 +27,7 @@ No v3 counterpart.
 import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import {
-  GPU_MIN_N,
-  WORKERS_MIN_N,
-  resolveExecutor,
-  runAlgo,
-} from './executor.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { rwrProximityGpu } from './algo-gpu-rwr.mjs';
@@ -360,10 +355,11 @@ export const randomWalkWithRestartProximityAsync = (
 
 /**
  * The `'auto'` crossover to the worker pool for the proximity form
- * (round 74; 74.5 stamps it).  Behind the GPU's lane: it runs where no
- * adapter fits, which headless Node always is.
+ * (74.5, i9-9900K, eight workers: 2.1× at n = 64, 4.6× at 128, 5.0×
+ * at 256, 5.7× at 512).  Behind the GPU's lane, which stays ahead at
+ * every size (6.0 vs 9.8 ms at 256, 10.8 vs 34 at 512).
  */
-export const RWR_WORKERS_MIN_N = WORKERS_MIN_N;
+export const RWR_WORKERS_MIN_N = 128;
 
 /**
  * The workers lane (round 74): the CPU reference's per-column solve,

@@ -439,9 +439,12 @@ per-source-parallel families — `betweennessCentrality` (weighted and
 not), unweighted `closenessCentralityNormalized`, `heatKernel` and
 `randomWalkWithRestartProximity` — run on a pool of plain workers (Node
 `worker_threads`, browser `Worker`s; nothing to configure, the worker
-entry is inside the bundle), and `'auto'` takes that pool from 256 nodes
-wherever the GPU does not run — which in headless Node means every run
-of those families above 256 nodes now uses the pool.  The pool's results
+entry is inside the bundle), and `'auto'` takes that pool wherever the
+GPU does not run — from 128 nodes for weighted betweenness and RWR, 256
+for unweighted betweenness and the heat kernel, 512 for closeness, each
+a measured crossover — which in headless Node means every run of those
+families above its crossover now uses the pool; sparse closeness takes
+the pool even where a GPU is present, since it measured faster there.  The pool's results
 are bit-stable across runs and pool sizes, and bit-identical to `'cpu'`
 for closeness, heat and RWR; betweenness agrees with `'cpu'` to f64
 rounding but not to the bit, so a caller that compares betweenness

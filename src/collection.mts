@@ -5773,9 +5773,11 @@ export class Collection {
    * it runs; 'cpu' is the reproducible reference.  Unweighted runs
    * walk a BFS per source, O(n·(n+E)) (round 72.3) — on the worker
    * pool too (round 74: one source range per worker, bit-identical to
-   * 'cpu'; under 'auto' the pool runs where no GPU adapter fits);
-   * weighted runs relax Floyd–Warshall, O(n³), and have no workers
-   * path.  The single-root `closenessCentrality` stays synchronous.
+   * 'cpu'; under 'auto' a sparse graph takes the pool first from 512
+   * nodes, since it measured ahead of the GPU's batched BFS at every
+   * size, and a dense one the GPU first); weighted runs relax
+   * Floyd–Warshall, O(n³), and have no workers path.  The single-root
+   * `closenessCentrality` stays synchronous.
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
@@ -5799,8 +5801,9 @@ export class Collection {
    * picks where the Brandes sweep runs.  Weighted runs have no GPU
    * path: 'auto' takes the worker pool (round 74 — one source range
    * per worker, f64-tight to 'cpu' and bit-stable across pool sizes)
-   * from 256 nodes and an explicit 'gpu' rejects; unweighted runs keep
-   * the GPU first under 'auto', then the pool where no adapter fits.
+   * from 128 nodes and an explicit 'gpu' rejects; unweighted runs keep
+   * the GPU first under 'auto', then the pool from 256 nodes where no
+   * adapter fits.
    *
    * @param options — `{ weight, directed, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
@@ -5931,7 +5934,7 @@ export class Collection {
    * on the CPU, the same solves spread over the worker pool (round
    * 74 — bit-identical to 'cpu') and the dense Neumann iteration on
    * the GPU — under 'auto' the GPU from 256 nodes at any density
-   * (round 72.6 measured it ahead everywhere), else the pool from 256.
+   * (round 72.6 measured it ahead everywhere), else the pool from 128.
    * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
    *
    * @param options — `{ restartProbability, maxIterations, tolerance,

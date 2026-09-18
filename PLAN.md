@@ -508,6 +508,22 @@ rather than from a blank page.
     speedup clears ~3× at 8 workers after pool-startup amortization,
     and re-check the per-worker copy cost of the CSR against
     SharedArrayBuffer before concluding SAB is unnecessary.
+    **Closed by round 74 (2026-09-18), with one correction.**  The
+    gate cleared by four times its bar — 12.2× warm, 7.2× cold at
+    n = 2048 on the benchmark machine — and the per-worker clone
+    measured 0.21 ms against 0.10 ms for SAB, so SAB is declined with
+    the number.  `executor: 'workers'` ships for both betweenness
+    forms, unweighted closeness, heatKernel and RWR proximity, and
+    `'auto'` takes the pool where the GPU does not run.  The
+    correction: **this item's bit-reproducibility claim was wrong for
+    betweenness** — contiguous ranges merged in range order group the
+    cross-source f64 sums differently from the sequential loop, so
+    the pool answers f64-tight numbers that are not the reference's
+    bits (measured 5.9e-15 relative).  What contiguous ranges do buy,
+    exactly: bit-stability across runs, machines and pool sizes, and
+    bit-identity with `'cpu'` for every family whose output element
+    is computed whole from one source — closeness, heat and RWR.  The
+    round's record derives it; the specs assert bits only there.
 
 *Items 30–50 entered 2026-08-19 — a brainstorm sitting swept against
 the scheduled rounds 71–97, so nothing below duplicates a scheduled
@@ -1229,3 +1245,23 @@ directions".*
     examples did not name them.  The call went the other way;
     `GROUP_NODES` / `GROUP_EDGES` are the spelling and `GroupName`
     derives from them.
+65. **The Brandes reference's data layout** (logged 2026-09-18, from
+    round 74.1's gate measurement).  The worker body — flat typed
+    arrays, an inline indexed heap, predecessor lists as one linked
+    pool, weights pre-evaluated into a `Float64Array` — ran the same
+    weighted betweenness **2.4–2.7× faster on one thread** than the
+    CPU reference in `betweenness-centrality.mts`, which builds a
+    `number[][]` of predecessor lists per source and calls the weight
+    closure per relaxation (n = 1024 / 2048 / 4096: 449 → 170 ms,
+    1912 → 807 ms, 8986 → 3348 ms).  The reference is the
+    bit-reproducible spec, so changing its layout changes the
+    operation order the parity suite pins and wants its own parity
+    record — round 74 logged it rather than took it.  The same body
+    already exists (`algo-worker-body.mts`'s `brandesRange`, run over
+    `[0, n)`), so the round is small: run it in-thread as the
+    reference, re-derive which sums move, and re-pin.  Closeness's
+    BFS already went flat in 72.3 for the same reason (84 → 72 ms).
+    **First measurement**: the in-thread body against the reference
+    at the bench sizes through the built bundle, and the max relative
+    difference of the scores — expected 0 (the per-source dependency
+    order is the heap's, unchanged) or f64 rounding.

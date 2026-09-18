@@ -370,8 +370,10 @@ export const heatKernelAsync = (
 
 /**
  * The `'auto'` crossover to the worker pool for the kernel form
- * (round 74; 74.5 stamps it).  Behind the GPU's lane: it runs where no
- * adapter fits, which headless Node always is.
+ * (74.5, i9-9900K, eight workers: 2.4× at n = 128, 4.2× at 256, 4.3×
+ * at 512).  Behind the GPU's lane, which stays ahead of the pool at
+ * every size (3.8 vs 3.3 ms at 256 — a tie — then 10.7 vs 12.6 at
+ * 512 and 34 vs the pool's hundreds at 1024).
  */
 export const HEAT_WORKERS_MIN_N = WORKERS_MIN_N;
 

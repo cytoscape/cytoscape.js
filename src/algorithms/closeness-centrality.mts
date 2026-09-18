@@ -3,12 +3,7 @@ import { dijkstra } from './dijkstra.mjs';
 import { initFloydWarshall, relaxFloydWarshall } from './floyd-warshall.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
-import {
-  GPU_MIN_N,
-  resolveExecutor,
-  runAlgo,
-  WORKERS_MIN_N,
-} from './executor.mjs';
+import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import {
@@ -51,11 +46,16 @@ export const CLOSENESS_FW_DENSE_DIVISOR = 8;
 
 /**
  * The `'auto'` crossover to the worker pool for the unweighted BFS
- * route (round 74; 74.5 stamps it from the `algorithms-workers`
- * sweep).  The lane sits behind the GPU's: it runs where no adapter
- * fits, which headless Node always is.
+ * route (74.5, i9-9900K, eight workers: 1.4× at n = 256, 3.9× at
+ * 512, 5.1× at 1024, 6.4× at 4096).  On the *sparse* route the pool
+ * is tried before the GPU: the same sweep read the pool ahead of the
+ * RX 580's batched BFS at every size — 4.0 vs 14.6 ms at n = 1024,
+ * 15.2 vs 28.3 at 2048, 50.1 vs 87.5 at 4096 — because a BFS per
+ * source is a walk, not a product.  On the dense routes the GPU keeps
+ * precedence (Floyd–Warshall 38.0 ms vs the pool's 74.4 at n = 1024
+ * on the E ≈ n²/12 fixture; a tie at 512).
  */
-export const CLOSENESS_WORKERS_MIN_N = WORKERS_MIN_N;
+export const CLOSENESS_WORKERS_MIN_N = 512;
 
 export interface ClosenessCentralityOptions {
   root?: Collection | null;
@@ -123,7 +123,7 @@ export const closenessCentrality = (
  * @param coll — the calling collection
  * @param options — as `closenessCentralityNormalized`, plus `executor`
  * @returns a promise of the `{ closeness }` accessor
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu', 'workers' or 'auto'
  */
 export const closenessCentralityNormalizedAsync = (
   coll: Collection,
@@ -156,6 +156,8 @@ export const closenessCentralityNormalizedAsync = (
         minN: CLOSENESS_WORKERS_MIN_N,
         run: (pool) =>
           closenessCentralityNormalizedWorkers(pool, view, options),
+        // sparse: the pool measured ahead of the GPU at every size
+        first: !dense,
       },
     );
   }

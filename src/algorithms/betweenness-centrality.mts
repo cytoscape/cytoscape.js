@@ -4,6 +4,7 @@ import type { WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
+import { algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 
 export interface BetweennessCentralityOptions {
@@ -47,13 +48,12 @@ export const betweennessCentralityAsync = (
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
 
-  // measured crossover (65.8, amd gcn-4): the 256-wide batches and
-  // frontier-empty probes moved it left — 4.1x at n=512, 18.3x at
-  // n=2048
   return runAlgo(
     executor,
     n,
-    512,
+    algoWorkersSupported()
+      ? BETWEENNESS_GPU_MIN_N_WITH_POOL
+      : BETWEENNESS_GPU_MIN_N,
     () => betweennessCentrality(coll, options),
     options.weight == null
       ? (ctx) => betweennessCentralityGpu(ctx, coll, options)
@@ -63,17 +63,49 @@ export const betweennessCentralityAsync = (
           "use executor 'cpu', 'workers' or 'auto'"
       : undefined,
     {
-      minN: BETWEENNESS_WORKERS_MIN_N,
+      minN:
+        options.weight != null
+          ? BETWEENNESS_WEIGHTED_WORKERS_MIN_N
+          : BETWEENNESS_WORKERS_MIN_N,
       run: (pool) => betweennessCentralityWorkers(pool, view, options),
     },
   );
 };
 
 /**
- * The `'auto'` crossover to the worker pool for both betweenness
- * forms (74.5 stamps it from the `algorithms-workers` sweep).
+ * The unweighted GPU crossover where no worker pool can exist
+ * (measured 65.8, amd gcn-4: the 256-wide batches and frontier-empty
+ * probes moved it left — 4.1× at n = 512, 18.3× at 2048).
+ */
+export const BETWEENNESS_GPU_MIN_N = 512;
+
+/**
+ * The unweighted GPU crossover where a worker pool *can* exist (74.5,
+ * the two sweeps on the same box): the pool is ahead of the RX 580's
+ * batched BFS at n = 512 (5.5 vs 9.0 ms) and behind from 1024 (19.5
+ * vs 15.1, 73.3 vs 36.6 at 2048), so `'auto'` runs the pool from 256
+ * to 1023 nodes and the GPU from 1024.  The one corner this leaves:
+ * a page whose platform *can* construct workers but refuses the Blob
+ * URL (a CSP `worker-src`) runs the CPU between 512 and 1023 where
+ * the GPU would have been 4× ahead — accepted, and the symmetry of
+ * GPU acquisition failure.
+ */
+export const BETWEENNESS_GPU_MIN_N_WITH_POOL = 1024;
+
+/**
+ * The `'auto'` crossover to the worker pool for unweighted betweenness
+ * (74.5, i9-9900K, eight workers: 1.9× at n = 128, 3.3× at 256, 6.3×
+ * at 512).  Behind the GPU's lane where an adapter fits.
  */
 export const BETWEENNESS_WORKERS_MIN_N = WORKERS_MIN_N;
+
+/**
+ * The `'auto'` crossover to the worker pool for weighted betweenness
+ * (74.5: 2.1× at n = 64, 3.2× at 128, 7.7× at 256, 11.3× at 512 —
+ * the heap-driven walk has more to divide than the unit-step one).
+ * The family's only accelerated lane: there is no weighted kernel.
+ */
+export const BETWEENNESS_WEIGHTED_WORKERS_MIN_N = 128;
 
 /**
  * Flatten `buildBrandesNeighbors`' lists to CSR — the snapshot both

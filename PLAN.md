@@ -607,6 +607,55 @@ directions".*
     **So the round is: four algorithm rows, then an exemption list
     with a reason each, then gate at zero** — and the gate's real
     content is the exemption list, which is the part that rots.
+    **Proposals (2026-09-18; no implementation yet, on the maintainer's
+    instruction).**  Re-taken today: `node scripts/bench-coverage.mjs
+    --verbose` reads **333/401 callable members, 83.0%**, 68 uncovered
+    (27 fields excluded).  The composition matches the 26 Aug reading
+    with the count moved by round 118–127's additions: `animation.mts`
+    29 and `style.mts` 22 are internals reached through the public
+    calls the benchmarks already drive; `event.mts` 3 (constructor,
+    `preventDefault`, `stopPropagation`); `layout/contract.mts` 6
+    (`LayoutContext.eles`/`refreshScope`/`nodeDimensions`/
+    `packComponents`, `CustomLayout.reheat`, a constructor); `core.mts`
+    2 (constructor, `pointerCursors`); `collection.mts` 5 (constructor,
+    `breadthFirstSearch`, `depthFirstSearch`, `randomWalkWithRestart`,
+    `heatDiffusion`); `columnar.mts` 1 (`buildColumnar`).
+    1. **Four algorithm rows, then an exemption list, then gate at
+       zero** — as the item says.  The exemption list is a keyed table
+       in `bench-coverage.mjs` (`{ member, reason }`), audited the way
+       the throw gate audits its entries: a key that no longer names a
+       member fails, so the list cannot rot silently.  Reasons come in
+       three kinds and the table says which: *reached-through* (an
+       internal driven by a benchmarked public call — the 51 in
+       animation/style), *not-perf-relevant* (constructors, the event
+       methods), *covered-by-suite* (`buildColumnar` is the wire
+       suite's subject under another name).  Only `LayoutContext`'s
+       four and `CustomLayout.reheat` need a decision: `reheat` is
+       118.3's infinite-run API and deserves a row (a reheat's cost is
+       a real interaction figure); the context members are reached
+       through every layout row.
+    2. **A row that discriminates, defined for this audit**: the row
+       calls the member by name *and* asserts the property it is named
+       for (the round-33 rule) — the coverage script should accept a
+       row only when both hold, which means it reads the bench files'
+       assertions, not just their call sites.  Cheap to add: the
+       script already parses the suites for member names.
+    3. **The representative-application tier, proposed separately**:
+       coverage says which members are priced, not whether the prices
+       add up to what an application pays.  A `workloads` profile
+       (standard results shape, promotable by `benchmark:publish`)
+       with three or four scripted sessions — load `ndex-x-large`, run
+       the flagship layout, select and drag, style a class, export a
+       figure; a 10k-node dashboard refresh loop; a 500-node editor
+       session with undoable edits — each row a whole session phase
+       with its own assertion (the layout converged, the export is the
+       golden size).  It is the only place a per-member win can be
+       shown *not* to matter, and the one the 86.4 lesson (an
+       "obvious" win measuring 0.2 ms) argues for.  It composes with
+       round 110's census, which prices the copies these sessions
+       pay.
+    4. **Gate order**: land 1 (an afternoon), then 2 (a day), then
+       gate at zero; 3 is its own round with a plan file.
 33. **Mutation testing as the automated control** (raised
     2026-08-19).  The repo's most productive habit is the hand-made
     control: break the behaviour deliberately, watch the spec fail.

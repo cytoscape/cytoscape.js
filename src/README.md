@@ -762,9 +762,14 @@ attribute-less feature runs are contracted CPU-only — kernels never
 call back into user code); 'auto' takes the GPU above a per-family
 measured crossover — for the rounds-69/70 iterated-product families a
 *density* gate as well, since their sparse CPU walks own sparse
-graphs however large, and for `katzCentrality` never (the pageRank
-verdict for the same iteration shape) — and otherwise the CPU,
-falling back only on
+graphs however large (round 72.6 re-measured the triangle, similarity
+and census gates across three sizes and six densities and found the
+crossover a constant *mean degree*, E ≥ 32·n, rather than a share of
+n²; `GPU_MIN_EDGES_PER_NODE` spells it once), for unweighted
+`closenessCentralityNormalized` a BFS on both executors with the GPU
+from n = 1024 sparse or earlier dense (72.3), and for `katzCentrality`
+and `pageRank` never (their sparse CPU iteration is under one GPU
+readback) — and otherwise the CPU, falling back only on
 acquisition failure or an input past the device's buffer limits — a
 kernel error propagates.  GPU results may differ from CPU results in
 f32 detail (the force layout's round-18.4 determinism precedent);

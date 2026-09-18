@@ -5,40 +5,27 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-17, after round 127 gave every string
-  vocabulary one declaration: column ids are `COL.NODE_POSITION`,
-  style property names `PROP.BACKGROUND_COLOR`, the reserved data
-  keys `DATA_SOURCE` and, on the maintainer's call two days later,
-  the group names `GROUP_NODES`, never the literal, anywhere under
-  `src/`, with a scanning spec holding the line.  Some 2,200 sites
-  moved; nothing a user sees changed, the bundle is 0.7% larger
-  minified and 1.4% larger gzipped, and the scanners that read
-  the sources as text — the feature inventory, the throw gate — were
-  the round's finding, since a mechanical edit falsified the
-  assumptions each had made about the literal form.  Earlier the same
-  day, the layout quality audit was carried out: one sub-round per
-  layout, one for packing and one for the debug page as the
-  instrument, each with its fixtures, its measured baseline, its
-  pictures and its fixes on the record, and each waiting on the
-  maintainer's review sitting before it counts as landed.  What the
-  audit fixed: labels are measured with a canvas at style time so a
-  layout run at load separates the boxes the frame draws; force's
-  small-component shapes survive its separation pass; flow reads
-  extents per side and per direction and no longer strands a leaf far
-  from its only parent; breadthfirst is sized in pixels rather than
-  scaling with the zoom it ran at; the shelf packer fills the room
-  under a short component; preset rejects a half position; random
-  takes a seed; circle and radial take `condense`.  The default
-  changes the pictures argue for are measured and recommended, not
-  made — those are the sittings' calls.  The first sitting pass, the
-  same day from the desk: preset and random signed off; radial now
-  centres a hierarchy's true root (its maximum-degree node before);
-  the rest waits for the page, which first has to expose each
-  layout's options.  Two questions came out of it for the whole
-  layout surface: one consistent spelling for spacing and compacting,
-  and whether the bounding box is a constraint (v3) or a hint with an
-  explicit constraint option (proposed for v4); and AVSDF's ring order
-  is reconsidered.
+- **Last updated**: 2026-09-18, after round 72 closed the algorithm
+  tier's follow-up list with a measurement for each item: unweighted
+  closeness walks a BFS per source on both executors (18–47× faster
+  on the CPU; the GPU walk, lifted out of the betweenness kernels,
+  takes over from a thousand nodes), the heat family takes
+  `laplacian: 'normalized'`, affinity propagation's availability
+  update is coalesced (−42%), pageRank and Katz run a sparse kernel
+  under an explicit `'gpu'` (2–19× cheaper) while `'auto'` keeps them
+  on the CPU because the whole CPU run is under one GPU readback, and
+  every routing constant is now a measured number — two of which were
+  wrong in opposite directions (the triangle family's gate is a
+  constant mean degree, not a share of n²; the round-70 families had
+  no crossover at all and their gates are gone).  The executor sweep
+  publishes medians of three now.  The day before, round 127 gave
+  every string vocabulary one declaration — column ids, style
+  property names, the reserved data keys and the group names, never
+  the literal, with a scanning spec holding the line — and the layout
+  quality audit was carried out, one sub-round per layout with its
+  fixtures, baseline, pictures and fixes on the record, each waiting
+  on the maintainer's review sitting (preset and random signed off;
+  radial now centres a hierarchy's true root).
 
 ## How to maintain this file
 
@@ -77,10 +64,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,719 unit · 749 module · 24 soak · 450 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,723 unit · 749 module · 24 soak · 454 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 20 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.7× geo-mean over their CPU reference across the whole 57-pair sweep (small sizes included) |
+| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | 839 KiB minified / 231 KiB gzipped as of 17 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
@@ -1052,6 +1039,35 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     gate reads the code inside the braces now and has a control for
     it.
 
+- **18 Sep** — the algorithm tier's follow-ups, measured and closed
+  - Unweighted closeness walks a BFS per source on both executors:
+    18–47× faster on the CPU at the bench sizes, and the GPU walk,
+    lifted out of the betweenness kernels into a shared plan, takes
+    over from a thousand nodes (3.4× at 4,096); weighted runs keep
+    Floyd–Warshall.
+  - The heat family takes `laplacian: 'normalized'` — the
+    bounded-spectrum form a hub-heavy network wants, at the price of
+    heat conservation, asserted deliberately.
+  - Affinity propagation's availability update is coalesced (−42%
+    per run).  pageRank and Katz run a sparse CSR kernel on the GPU
+    (2–19× cheaper when asked for), but `'auto'` keeps both on the
+    CPU, because the whole CPU run is under one GPU readback — the
+    3.5 ms floor this box pays per call, measured phase by phase.
+  - Every `'auto'` constant the sweep touches is a measured number
+    now, and two of them were wrong in opposite directions: the
+    triangle family's density gate is a constant mean degree of 64,
+    not a share of n² (right at n=1024 only), and the round-70
+    iterated-product families had no crossover at all — the GPU wins
+    from 256 nodes at any density, 2–10× on the sparsest fixture — so
+    their gates are gone.  The executor sweep publishes medians of
+    three like every other profile.
+  - Three lessons written where they bit: a WGSL pipeline that fails
+    to compile runs as a silent no-op, so a timing row must check its
+    result (`precision` is a reserved word); a uniform skew is
+    invisible under max-normalization, so a control must be
+    non-uniform; and the six-node affinity fixture could not see its
+    own availability update, so a seeded cloud joined the suite.
+
 ## What changed for users of v3
 
 - *Each removal was a decision with a recorded rationale, not an omission.*
@@ -1158,7 +1174,7 @@ round, and is regenerated rather than maintained:
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
-| Performance follow-ups | The algorithm-tier follow-up list, gathered and re-verified; a worker-pool CPU executor for the per-source-parallel algorithms |
+| Performance follow-ups | A worker-pool CPU executor for the per-source-parallel algorithms (the algorithm-tier follow-up list itself closed 18 Sep) |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
 | Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |

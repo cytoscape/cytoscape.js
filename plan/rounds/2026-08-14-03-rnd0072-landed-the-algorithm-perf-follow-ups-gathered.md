@@ -434,3 +434,155 @@ d_s = √(d_s·d_t), so the pair and the triangle cannot see it — and
 restored.  No new bench row (same cost shape; the existing row's
 comment notes it prices combinatorial, batched with 72.6's bench
 edits), and the CHANGELOG carries the round's public rows.
+
+### 72.5 — device-side bench rows: declined, with the reason (2026-09-18)
+
+The option was to adopt only if 72.1–72.3's tuning needed the
+kernel-vs-transfer split.  It did not, and the reason is worth
+writing down because it will hold for the next tuning too: every
+verdict this round turned on a *host-side* phase — the ~3.5 ms
+`mapAsync` readback that floors a GPU call on this box, the shared
+O(E) build that dominates both executors on dense pageRank, the CSR
+pack, the per-dispatch encode — none of which a `timestamp-query`
+pair around a compute pass can see.  Where a kernel-only figure was
+needed (the SpMV lane shape, A_UPDATE's share of an AP iteration,
+the epilogue's microseconds), forcing the iteration count and
+building omission variants gave it at the precision the decision
+needed, with the result checked each time.  A device timer would
+add a feature request to `acquireAlgoGpu`, a bench-only hook on
+`submitPass` and three rows per family to keep honest, for a number
+this round never had to ask for.  Declined; the machinery stays on
+the render side where frame attribution is the question.
+
+### 72.6 — the sweep, the re-tune, and the close (2026-09-18)
+
+**The standing debt, paid with a table each.**  Before the published
+sweep, two one-off measurements on the benchmark machine answered
+the questions the 69.6 and 70.4 records had left open, because the
+sweep's two fixtures (sparse, E = n²/12) cannot locate a crossover
+that lies between them.  Ring-plus-chord fixtures at six densities,
+whole call, median of 3, the results checked equal on both executors
+every cell (amd gcn-4):
+
+*The triangle family — triangleCount / neighborhoodSimilarity /
+motifCensus, cpu÷gpu:*
+
+| E/n² | n=512 | n=1024 | n=2048 |
+|---:|---|---|---|
+| 1/256 | 0.16 / 0.35 / 0.03 | 0.15 / 0.53 / 0.06 | 0.18 / 0.61 / 0.12 |
+| 1/128 | 0.26 / 0.53 / 0.05 | 0.32 / 0.60 / 0.15 | 0.46 / 0.85 / 0.39 |
+| 1/64 | 0.32 / 0.48 / 0.13 | 0.79 / 0.83 / 0.81 | **1.20 / 1.55 / 1.41** |
+| 1/32 | 0.81 / 0.71 / 0.56 | **1.69 / 1.48 / 1.99** | 2.82 / 5.20 / 4.78 |
+| 1/16 | **1.71 / 1.23 / 2.09** | 3.60 / 2.64 / 6.07 | 6.14 / 11.35 / — |
+| 1/8 | 3.59 / 2.65 / 5.75 | 7.82 / 5.19 / 21.3 | 13.2 / 22.0 / — |
+
+The crossover is a *diagonal* on this table: n²/16 at 512, n²/32 at
+1024, n²/64 at 2048 — which is E = 32·n at every size, a constant
+mean degree of 64, and not the n²/k share the families shipped with
+(n²/32 was exactly right at n=1024 and nowhere else).  All three gates
+now read `edges ≥ GPU_MIN_EDGES_PER_NODE · n` with the constant
+declared once in `executor.mts` (32), each family dividing its own
+adjacency count by two for the undirected case.  Old → new: triangles
+`E ≥ n²/32` → `E ≥ 32n`; similarity `adjacencies ≥ n²/16` → `E ≥
+32n`; census `arcs ≥ n²/32` → `E ≥ 32n`.
+
+*The round-70 iterated-product families — heatKernel / simRank /
+rwrProximity, cpu÷gpu, the bench's knobs (t = 0.02, 10 iterations,
+tolerance 1e-5):*
+
+| E/n² | n=256 | n=512 | n=1024 |
+|---:|---|---|---|
+| 1/512 | 2.1 / 4.1 / 2.8 | 2.9 / 6.1 / 6.3 | 5.7 / 9.6 / 10.3 |
+| 1/128 | 3.0 / 6.0 / 4.2 | 8.3 / 15.3 / 9.0 | 34.6 / 26.4 / 26.7 |
+| 1/32 | 16.0 / 16.1 / 8.1 | 93 / 41.7 / 28.0 | 475 / 79.5 / 92.9 |
+| 1/8 | 219 / 39.6 / 22.2 | 1230 / 98.3 / 74.2 | 5997 / 197 / 213 |
+
+No crossover at all: the GPU is ahead on the sparsest fixture at the
+smallest size (E = n/2 — a ring with half its chords) and the gap
+only widens.  Round 70 had copied the triangle family's density gate
+across on the argument that a sparse per-column solve owns sparse
+graphs, and the argument is wrong for these three because the CPU
+pays its sparse cost *per column* (n solves) or *per pair* (n² of
+them), while the GPU pays a dense product once.  The three gates are
+removed: `'auto'` takes the GPU from `GPU_MIN_N` at any density.  Old
+→ new: heatKernel `arcs ≥ n²/32` → none; simRank `adjacencies ≥
+n²/16` → none; rwrProximity `arcs ≥ n²/32` → none.  The public
+JSDoc, `docs/features.csv` and the README said "only on dense graphs"
+for all three and say the measured thing now.
+
+*Closeness* was re-tuned in 72.3 (three constants, the table there).
+*The resistance parity bound*: Newton–Schulz on this card's f32
+measures a maximum relative error of 1.9e-6 at n=80 (the spec's
+fixture) and 1.3e-5 at n=800 against the f64 elimination; the bound
+stays 5e-3 — the M2's headroom, not this card's — with the figure on
+the spec.
+
+**The published sweep.**  `benchmark/algorithms-gpu-bench.mjs`
+learned `--repeat N` (each repeat a fresh page, so pipeline caches and
+JIT state are independent; merged with `mergeRepeats` like every
+other profile; `meta.repeat` carried) — every executor sweep before
+this one was a single pass, so this is the first with a repeat band.
+The suite edit is batched: the closeness row's sizes extend to 4096
+(where the GPU BFS takes `'auto'`), a `…Weighted` row keeps the FW
+route measured, a `…Dense` row prices the very-dense routing
+decision, and the pageRank / Katz / heat rows carry their round-72
+notes.
+
+Published 2026-09-18 (`--repeat 3` serial, Node 24.18, amd gcn-4,
+65 cells, 51.7 min; the results file is the archive's
+`results-alggpu-2026-09-18T09-19-49-758Z.json`).  The rows the round
+touched, cpu / gpu ms and the ratio, beside the 2 Sep run:
+
+| family | n | cpu | gpu | × | 2 Sep × |
+|---|---:|---:|---:|---:|---:|
+| pageRank | 2048 | 0.8 | 3.8 | 0.21 | 0.01 |
+| pageRankDense | 2048 | 14.7 | 21.9 | 0.67 | 0.19 |
+| katzCentrality | 2048 | 0.5 | 3.7 | 0.14 | 0.01 |
+| affinityPropagation | 256 / 512 / 1024 | 41.7 / 215.9 / 1144.8 | 14.2 / 41.2 / 166.5 | 2.9 / 5.2 / 6.9 | 3.2 / 3.7 / 3.7 |
+| closeness (unweighted) | 256 / 512 / 1024 / 2048 / 4096 | 1.4 / 5.0 / 19.1 / 72.5 / 288.4 | 5.7 / 8.7 / 14.6 / 28.3 / 87.5 | 0.25 / 0.57 / 1.31 / 2.56 / 3.30 | 6.4 / 25 / 49 (the FW route on both sides) |
+| closeness (weighted, FW) | 256 / 512 / 1024 | 23.6 / 180.9 / 1310.5 | 4.1 / 10.2 / 34.4 | 5.8 / 17.7 / 38.1 | — |
+| closeness (dense, unweighted) | 256 / 512 / 1024 | 4.9 / 30.6 / 213.4 | 4.3 / 11.9 / 38.0 | 1.1 / 2.6 / 5.6 | — |
+| heatKernel | 256 / 512 / 1024 | 310.9 / 4772 / 75603 | 3.8 / 10.7 / 34.2 | 82 / 446 / 2211 | 76 / 674 / 2222 |
+
+Read against the routing: the unweighted closeness row's CPU column
+is the 72.3 BFS (18.8 → 19.1 ms at n=1024, where the old FW-shaped CPU
+read 1288) and its GPU column the GPU BFS, crossing exactly where
+`CLOSENESS_BFS_GPU_MIN_N` says; the dense row's GPU column is the FW
+route the very-dense divisor selects, ahead from 256.  The sweep
+confirms every constant the round stamped and moves none of them: the
+AP crossover stays 256 (2.9×), FW's and resistance's `GPU_MIN_N` 256
+(3.4× and 6.1×), betweenness 512 (4.0×), kMeans/fcm/kMedoids as
+65.8 left them.  Whole-sweep: the GPU ahead on 51 of 65 pairs at a
+geometric mean of 7.5× (the 14 behind are the ten pageRank / Katz /
+hierarchical cells the CPU owns by design plus closeness's four
+sub-crossover cells).  The repeat bands are tight — 55 of 65 gpu rows
+within ×1.05, the widest ×1.43 on the census at n=512 — which is
+what makes the single-pass archive readable against this one at all.
+
+**Two things the published run records deliberately.**  (1) The
+`gpu first call` rows are not comparable to earlier runs: each cell
+now opens a fresh page, so the row includes the pipeline compile
+(39–512 ms) where the shared page had handed every cell but the first
+a warm cache (6–13 ms).  That is what the row was *named* for, so
+the new figure is the right one, and the harness hash moves
+(`c51e69ae` → `218b0bad`) without an `EQUIVALENT_HARNESSES` entry —
+the row's meaning changed, which is exactly the break the ledger
+exists to refuse to paper over.  (2) The run's `meta.commit` reads
+e169b98a with `dirty: true`: it measured the tree that became
+e5fa0db4 (the src) and the suite commit after it, unchanged between
+the run and the commits, and was published with `--allow-dirty`
+saying so in its note.
+
+**Close.**  Gates green at the close: `test:node:quiet`, the JSDoc
+tags 100%, the throw gate at zero, the Playwright `algorithms-gpu`
+project (24 scenes, four new this round).  The record: this file
+(renamed `landed` at 72.1), `src/README.md`'s executor passages,
+`docs/features.csv`, the CHANGELOG's round-72 paragraph,
+`EXECUTIVE_SUMMARY.md` restated, d.ts regenerated, `plan/INDEX.md`
+regenerated.  The 69.6 and 70.4 "open" lists are answered here
+rather than edited there.  Rounds 74's dependency on 72.3 is met:
+the closeness per-source BFS exists on the CPU, so the workers lane
+may wire it.  The maintainer decision this round made without a
+sitting, stated for review: the round-70 gates were removed on the
+strength of the density sweep alone (no crossover anywhere measured),
+which is the plan's "re-tune every touched constant" read literally.

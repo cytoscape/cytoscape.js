@@ -920,6 +920,14 @@ directions".*
     after `spectralSeed`, held in memory and flushed at exit —
     since the inputs are already known to be constant and it is
     the *effect* that goes missing.
+    **Seen again 2026-09-18** (round 72's closing `test:node:quiet`,
+    1 of 2 runs; the spec file alone then passed 3 of 3): the
+    diagnosis printed **355.0107327290165** — "the scatter path
+    measures 355.01 in this same process, so the spectral seed did
+    not run" — a different constant from the 346.46 on file, so the
+    scatter result itself has moved since round 109 (the layout
+    rounds since) while the failure's shape has not: the seed's
+    effect goes missing, the inputs do not.
 
 53. **The merged round branches** (logged 2026-08-26; raised by
     round 108, which carried it only in its own record).  Round

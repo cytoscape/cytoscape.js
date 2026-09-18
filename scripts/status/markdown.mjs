@@ -137,6 +137,10 @@ export const PLANNED_PATHS = {
   // round 74's five entries left on 2026-09-18, the day it landed: the
   // files exist, so the resolve check would have gone red — the
   // lifecycle working as designed
+  // round 129 — the offload lane's kernels; the entry leaves the day
+  // the file lands
+  'src/algorithms/algo-kernels.mts':
+    'planned by round 129 (the UI thread kept free)',
   // rounds 77/78 — SVG export and headless figures
   'src/svg-export.mts': 'planned by round 77 (SVG vector export)',
   'playwright-tests/svg-parity.spec.js':

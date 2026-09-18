@@ -40,6 +40,7 @@ import type { Components } from './pack.mjs';
 import { nodeDims } from './dims.mjs';
 import type { DimsOptions, LayoutNodeDims } from './dims.mjs';
 import type { Core } from '../core.mjs';
+import { layoutCancelled, layoutRunOf, openLayoutRun } from './run-state.mjs';
 import type { Collection } from '../collection.mjs';
 import type {
   CustomLayoutOptions,
@@ -50,6 +51,12 @@ import type {
 export interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
   stop?(): void;
+  /** abandon the run (round 128): exit the loop *without* landing
+   * positions — the wrapper restores the pre-run snapshot once `run`
+   * settles.  An impl without one is asked to `stop()` instead, and
+   * one with neither runs to completion before the wrapper closes the
+   * cancelled run. */
+  cancel?(): void;
   /** heat a running layout back up (118.3): a force layout's
    * `infinite` run ticks only while its field moves, and this asks it
    * to move again — after a programmatic change the run cannot see */
@@ -604,38 +611,77 @@ export class CustomLayout {
   run(): this {
     const cy = this.cy;
     let resolve!: () => void;
+    let reject!: (err: unknown) => void;
 
-    this.donePromise = new Promise<void>((r) => {
-      resolve = r;
+    this.donePromise = new Promise<void>((res, rej) => {
+      resolve = res;
+      reject = rej;
     });
+    // marked handled at creation (round 128): a caller who never awaits
+    // `promise()` must not see an unhandled rejection when the run is
+    // cancelled; one who does still gets the rejection
+    this.donePromise.catch(() => undefined);
 
-    const ctx = new LayoutContext(cy, this, {
-      ...this.options,
-      // the finisher resolves the run promise at its stop callback
-      stop: () => {
-        this.options.stop?.();
-        resolve();
+    const run = openLayoutRun(
+      cy,
+      this,
+      this.options.eles as Collection | undefined,
+      this.options.stop,
+      () => {
+        this.cancel();
       },
-    });
+    );
+
+    run.onClose = (cancelled) => {
+      if (cancelled) {
+        reject(layoutCancelled());
+      } else {
+        resolve();
+      }
+    };
+
+    const ctx = new LayoutContext(cy, this, this.options);
 
     cy.emit({ type: 'layoutstart', layout: this });
 
     Promise.resolve(this.impl.run(ctx)).then(() => {
+      run.implSettled = true;
+
+      // closed already: the finisher's lifecycle covered the run, or
+      // a destroy closed it
+      if (run.closed) {
+        return;
+      }
+
+      // cancelled while running: the impl has settled, so the snapshot
+      // can go back without a late write landing over it
+      if (run.cancelled) {
+        run.close(true);
+
+        return;
+      }
+
       if (ctx._finisherUsed) {
         return;
-      } // its lifecycle covers the run
+      } // its lifecycle covers the run (a tween still closes it)
 
       this.options.ready?.();
       cy.emit({ type: 'layoutready', layout: this });
       this.options.stop?.();
       cy.emit({ type: 'layoutstop', layout: this });
-      resolve();
+      run.close(false);
     });
 
     return this;
   }
 
-  /** Resolves at this run's layoutstop (immediately when never run). */
+  /**
+   * Resolves at this run's `layoutstop` (immediately when never run);
+   * rejects with `CancelledError` when the run was cancelled (round
+   * 128) — by `cancel()` or by `cy.destroy()`.
+   *
+   * @returns the run's promise
+   */
   promise(): Promise<void> {
     return this.donePromise;
   }
@@ -648,6 +694,41 @@ export class CustomLayout {
    */
   stop(): this {
     this.impl.stop?.();
+
+    return this;
+  }
+
+  /**
+   * Abandon the run in flight (round 128) — the alternative to
+   * `stop()`, which keeps what stands.  The impl is asked to `cancel()`
+   * (or `stop()` when it has no `cancel`), and once its `run` settles
+   * the scope's nodes go back to where `run()` found them, a tween
+   * under way is dropped where it is, the viewport is left alone,
+   * `layoutstop` fires with `cancelled: true`, and `promise()` rejects
+   * with `CancelledError`.  A layout that is not running is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this {
+    const run = layoutRunOf(this.cy, this);
+
+    if (run == null || run.closed || run.cancelled) {
+      return this;
+    }
+
+    run.cancelled = true;
+
+    if (this.impl.cancel != null) {
+      this.impl.cancel();
+    } else {
+      this.impl.stop?.();
+    }
+
+    // the impl has settled already — only a finisher tween is still
+    // running — so nothing later will close the run: close it now
+    if (run.implSettled) {
+      run.close(true);
+    }
 
     return this;
   }

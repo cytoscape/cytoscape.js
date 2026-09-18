@@ -2207,6 +2207,123 @@ test.describe('WebGPU renderer', () => {
     expect(result.linkLen).toBeLessThan(250);
   });
 
+  test('layout.cancel() on a GPU force run: the lease is released, no settle lands, the mirror shows the snapshot (round 128)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // a ring seeded on a line: the sim pulls it into a circle, so every
+    // node leaves its start — and the restore has somewhere to go back to
+    await makeReadyCy(page, {
+      elements: (() => {
+        const els = [];
+
+        for (let i = 0; i < 24; i++) {
+          els.push({
+            data: { id: 'n' + i },
+            position: { x: i * 30 - 345, y: (i % 2) * 40 - 20 },
+          });
+          els.push({
+            data: {
+              id: 'e' + i,
+              source: 'n' + i,
+              target: 'n' + ((i + 1) % 24),
+            },
+          });
+        }
+
+        return els;
+      })(),
+      style: {
+        nodes: { width: 16, height: 16, 'background-color': '#c0392b' },
+      },
+      zoom: 1,
+      pan: { x: 400, y: 300 },
+    });
+    await waitFrames(page);
+
+    const result = await page.evaluate(async () => {
+      const cy = window.cy;
+      const before = cy.nodes().map((n) => ({ ...n.position() }));
+      const layout = cy.layout({
+        name: 'force',
+        seed: 9,
+        animateLive: true,
+        fit: false,
+        iterations: 100000,
+        threshold: 0,
+        decay: 0.0005,
+        stepsPerFrame: 6,
+      });
+      let outcome = 'pending';
+
+      layout.run();
+      layout.promise().then(
+        () => {
+          outcome = 'resolved';
+        },
+        (err) => {
+          outcome = err.name;
+        },
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const stillRunning = outcome === 'pending';
+      let cancelledEvent = null;
+
+      cy.on('layoutstop', (e) => {
+        cancelledEvent = e.cancelled === true;
+      });
+      layout.cancel();
+
+      try {
+        await layout.promise();
+      } catch {
+        // the rejection is the expected outcome
+      }
+
+      // the CPU column is back on the snapshot, bit for bit
+      const after = cy.nodes().map((n) => ({ ...n.position() }));
+      const restored = after.every(
+        (p, i) => p.x === before[i].x && p.y === before[i].y,
+      );
+
+      // and the mirror followed: a GPU pick at a node's pre-run spot
+      // hits that node after the restore has uploaded (a pick can be
+      // two frames stale, so wait a few)
+      for (let i = 0; i < 4; i++) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+
+      const pan = cy.pan();
+      const zoom = cy.zoom();
+      const probe = before[5];
+      const hit = await cy.pick(probe.x * zoom + pan.x, probe.y * zoom + pan.y);
+      const forceActive = cy.renderer().forceActive?.() ?? null;
+
+      return {
+        stillRunning,
+        outcome,
+        cancelledEvent,
+        restored,
+        hitId: hit == null ? null : hit.id(),
+        forceActive,
+      };
+    });
+
+    expect(result.stillRunning, 'the run outlived the sample').toBe(true);
+    expect(result.outcome).toBe('CancelledError');
+    expect(result.cancelledEvent).toBe(true);
+    expect(result.restored, 'the CPU column is back on the snapshot').toBe(
+      true,
+    );
+    expect(result.hitId, 'the mirror shows the restored positions').toBe('n5');
+    expect(result.forceActive === null || result.forceActive === false).toBe(
+      true,
+    );
+  });
+
   test('the GPU kernel keeps the bodies apart itself: a live run under avoidOverlap: "sim" lands clear (116.1; projection since 118.2)', async ({
     page,
   }) => {

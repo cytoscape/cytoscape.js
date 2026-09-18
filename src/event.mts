@@ -60,6 +60,10 @@ export interface EventProps {
   originalEvent?: NativeEvent;
   /** the layout instance, on `layoutstart`/`layoutready`/`layoutstop` */
   layout?: unknown;
+  /** on `layoutstop`: true when the run was abandoned by
+   * `layout.cancel()` or `cy.destroy()` rather than finished or
+   * stopped (round 128) */
+  cancelled?: boolean;
   timeStamp?: number;
 }
 
@@ -89,6 +93,8 @@ export class Event {
   originalEvent?: NativeEvent;
   /** the layout instance, on the layout lifecycle events */
   layout?: unknown;
+  /** on `layoutstop`, whether the run was cancelled (round 128) */
+  cancelled?: boolean;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
 
@@ -120,6 +126,7 @@ export class Event {
     this.renderedPosition = props.renderedPosition;
     this.originalEvent = props.originalEvent;
     this.layout = props.layout;
+    this.cancelled = props.cancelled;
 
     // the rendered position follows from the model one and the viewport, so
     // an emitter only has to supply the model position it actually knows

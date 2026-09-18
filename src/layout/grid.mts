@@ -1,4 +1,5 @@
 import * as math from '../math.mjs';
+import { layoutRunOf, openLayoutRun } from './run-state.mjs';
 import {
   GROUP_NODES,
   FLAG_ALIVE,
@@ -96,6 +97,18 @@ export class GridLayout {
    * @returns this layout, for chaining
    */
   run(): this {
+    // the run's snapshot and registry entry (round 128), before any
+    // position is written
+    openLayoutRun(
+      this.cy,
+      this,
+      this.options.eles as Collection | undefined,
+      this.options.stop,
+      () => {
+        this.cancel();
+      },
+    );
+
     const cy = this.cy;
     const options = this.options;
 
@@ -136,6 +149,23 @@ export class GridLayout {
 
     cy.emit({ type: 'layoutready', layout: this });
     cy.emit({ type: 'layoutstop', layout: this });
+    layoutRunOf(cy, this)?.close(false);
+
+    return this;
+  }
+
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this {
+    layoutRunOf(this.cy, this)?.close(true);
 
     return this;
   }

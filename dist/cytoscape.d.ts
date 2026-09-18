@@ -4543,6 +4543,10 @@ interface EventProps {
   originalEvent?: NativeEvent;
   /** the layout instance, on `layoutstart`/`layoutready`/`layoutstop` */
   layout?: unknown;
+  /** on `layoutstop`: true when the run was abandoned by
+   * `layout.cancel()` or `cy.destroy()` rather than finished or
+   * stopped (round 128) */
+  cancelled?: boolean;
   timeStamp?: number;
 }
 /**
@@ -4566,6 +4570,8 @@ declare class Event {
   originalEvent?: NativeEvent;
   /** the layout instance, on the layout lifecycle events */
   layout?: unknown;
+  /** on `layoutstop`, whether the run was cancelled (round 128) */
+  cancelled?: boolean;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
   /**
@@ -7433,6 +7439,12 @@ interface DimsOptions {
 interface LayoutImpl {
   run(ctx: LayoutContext): void | Promise<void>;
   stop?(): void;
+  /** abandon the run (round 128): exit the loop *without* landing
+   * positions — the wrapper restores the pre-run snapshot once `run`
+   * settles.  An impl without one is asked to `stop()` instead, and
+   * one with neither runs to completion before the wrapper closes the
+   * cancelled run. */
+  cancel?(): void;
   /** heat a running layout back up (118.3): a force layout's
    * `infinite` run ticks only while its field moves, and this asks it
    * to move again — after a programmatic change the run cannot see */
@@ -7687,7 +7699,13 @@ declare class CustomLayout {
    *   completion
    */
   run(): this;
-  /** Resolves at this run's layoutstop (immediately when never run). */
+  /**
+   * Resolves at this run's `layoutstop` (immediately when never run);
+   * rejects with `CancelledError` when the run was cancelled (round
+   * 128) — by `cancel()` or by `cy.destroy()`.
+   *
+   * @returns the run's promise
+   */
   promise(): Promise<void>;
   /**
    * Ask the layout to stop early, by calling the impl's optional
@@ -7696,6 +7714,18 @@ declare class CustomLayout {
    * @returns this layout, for chaining
    */
   stop(): this;
+  /**
+   * Abandon the run in flight (round 128) — the alternative to
+   * `stop()`, which keeps what stands.  The impl is asked to `cancel()`
+   * (or `stop()` when it has no `cancel`), and once its `run` settles
+   * the scope's nodes go back to where `run()` found them, a tween
+   * under way is dropped where it is, the viewport is left alone,
+   * `layoutstop` fires with `cancelled: true`, and `promise()` rejects
+   * with `CancelledError`.  A layout that is not running is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /**
    * Heat a running layout back up (118.3), by calling the impl's
    * optional `reheat()`.  A force layout's `infinite` run ticks only
@@ -7746,6 +7776,17 @@ declare class GridLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /** Columnar path: cell sizes from the size/border columns, one bulk write. */
   private runBySlot;
   /** Per-element path for the `sort`/`position` callback options,
@@ -7796,6 +7837,17 @@ declare class PresetLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /** The finisher path (87.3): both forms resolve to a position per
    * node — absent entries resolve to the node's current position, so
    * an unmentioned node tweens nowhere — and the shared
@@ -7835,6 +7887,17 @@ declare class CircleLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /**
    * One ring: `nodes` evenly around the centre of `bb`, at the given
    * radius, or the box's, grown under `avoidOverlap` until no two
@@ -7877,6 +7940,17 @@ declare class ConcentricLayout {
    */
   run(): this;
   /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
+  /**
    * One set of rings: `nodes` binned into levels by score and
    * `levelWidth`, each ring at the radius that clears its own nodes
    * and the ring inside it, about the centre of `bb`.
@@ -7918,6 +7992,17 @@ declare class BreadthFirstLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /**
    * One drawing: the BFS depths from `roots` over `nodes`, the ranks
    * sorted, the overlap floors, the rows (or rings) about the centre
@@ -7966,6 +8051,17 @@ declare class RandomLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
 }
 //#endregion
 //#region src/layout/radial.d.mts
@@ -8005,6 +8101,17 @@ declare class RadialLayout {
    *   that could mean anything here
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
   /**
    * One radial: the BFS trees grown from `roots` over `nodes` (unreached
    * nodes seed their own, in order), every subtree a wedge, every ring
@@ -8051,6 +8158,66 @@ declare class PackLayout {
    *   and is not a function
    */
   run(): this;
+  /**
+   * Abandon a run still in flight (round 128) — the tween a
+   * `animate: true` run started is dropped where it is, the scope's
+   * nodes go back to where `run()` found them, the viewport is left
+   * alone, `layoutstop` fires with `cancelled: true`.  A run that has
+   * already finished (the bare synchronous call has, by the time this
+   * can be called) is unchanged.
+   *
+   * @returns this layout, for chaining
+   */
+  cancel(): this;
+}
+//#endregion
+//#region src/layout/run-state.d.mts
+/** One layout run, from `run()` to its `layoutstop`. */
+declare class LayoutRun {
+  /** set by `cancel()`; the finisher and the wrappers read it */
+  cancelled: boolean;
+  /** the run has closed (its `layoutstop` fired) */
+  closed: boolean;
+  /** the tweens the finisher started under `animate: true` */
+  anis: AnimationHandle[];
+  /** a custom impl's `run` has settled (its wrapper's `.then` ran): a
+   * later cancel closes at once rather than waiting for it */
+  implSettled: boolean;
+  /** the wrapper's hook: a custom layout resolves or rejects its
+   * `promise()` here */
+  onClose: ((cancelled: boolean) => void) | null;
+  /** what `cy.destroy()` calls: the owner's own `cancel()`, so an impl
+   * is asked to stop as well as the run being closed */
+  cancelNow: () => void;
+  private readonly cy;
+  private readonly layout;
+  private readonly slots;
+  private readonly xy;
+  private readonly stop;
+  /**
+   * Open a run: snapshot the scope's positions and register it.
+   *
+   * @param cy — the core being laid out
+   * @param layout — the wrapper (the object `event.layout` carries)
+   * @param eles — the scope, or undefined for the whole graph
+   * @param stop — the caller's `stop` callback, called on a cancel too
+   * @param cancelNow — the owner's `cancel()`, for `destroy()`
+   */
+  constructor(cy: Core, layout: object, eles: Collection | undefined, stop: (() => void) | undefined, cancelNow: () => void);
+  /** `destroy()`'s entry point: the owner's cancel, then the close. */
+  cancel(): void;
+  /**
+   * End the run.  Idempotent: the first call closes, later ones are
+   * ignored — so an impl settling after a cancel closed the run
+   * changes nothing.
+   *
+   * @param cancelled — true to abandon: drop the tweens, restore the
+   *   snapshot, fire `layoutstop` with `cancelled: true`
+   */
+  close(cancelled: boolean): void;
+  /** Put the scope's leaves back where `run()` found them. */
+  private restore;
+  private unregister;
 }
 //#endregion
 //#region src/core.d.mts
@@ -8151,6 +8318,8 @@ declare class Core {
   _inflight: Set<{
     cancel(): unknown;
   }>;
+  /** the open layout run per layout object (round 128), for `cancel()` */
+  _layoutRuns: Map<object, LayoutRun>;
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(
    * options )` factory: it is the documented entry point and additionally

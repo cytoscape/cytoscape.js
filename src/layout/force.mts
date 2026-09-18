@@ -806,6 +806,9 @@ interface ActiveRun {
 
 export class ForceLayoutImpl implements LayoutImpl {
   private stopped = false;
+  /** a cancel (round 128): the loop exits as on `stop()`, and no
+   * settle lands — the wrapper restores the pre-run positions */
+  private cancelled = false;
   /** the sim under way (118.3), for the drag / position / reheat wiring */
   private current: ActiveRun | null = null;
   /** an add or remove asked for the sim to be rebuilt on the live graph */
@@ -827,6 +830,7 @@ export class ForceLayoutImpl implements LayoutImpl {
     const options = ctx.options as ForceRunOptions;
 
     this.stopped = false;
+    this.cancelled = false;
     this.resumed = false;
     this.restartWanted = false;
 
@@ -1527,7 +1531,9 @@ export class ForceLayoutImpl implements LayoutImpl {
         sim.step(50);
       }
 
-      settle(positions);
+      if (!this.cancelled) {
+        settle(positions);
+      }
 
       return;
     }
@@ -1555,7 +1561,11 @@ export class ForceLayoutImpl implements LayoutImpl {
 
         if (this.stopped || this.restartWanted || sim.converged()) {
           done = true;
-          settle(positions);
+
+          if (!this.cancelled) {
+            settle(positions);
+          }
+
           resolve();
 
           return;
@@ -1605,14 +1615,27 @@ export class ForceLayoutImpl implements LayoutImpl {
           return;
         }
 
-        runtime.readPositions().then((finalPositions) => {
-          // release the lease before the CPU write, so the settle
-          // uploads through the normal dirty-span path — and so the
-          // finisher's tween, under `animate`, takes a lease of its own
-          renderer.finishForce();
-          settle(finalPositions);
-          resolve();
-        });
+        runtime.readPositions().then(
+          (finalPositions) => {
+            // release the lease before the CPU write, so the settle
+            // uploads through the normal dirty-span path — and so the
+            // finisher's tween, under `animate`, takes a lease of its own
+            renderer.finishForce();
+
+            // a cancelled run (128) lands nothing: the wrapper restores
+            // the snapshot once this settles, after the lease is gone
+            if (!this.cancelled) {
+              settle(finalPositions);
+            }
+
+            resolve();
+          },
+          () => {
+            // the device went away under the run (a destroy mid-sim):
+            // nothing to settle, and the run must still resolve
+            resolve();
+          },
+        );
       };
 
       poll();
@@ -1627,6 +1650,16 @@ export class ForceLayoutImpl implements LayoutImpl {
   stop(): void {
     this.stopped = true;
     this.current?.wake();
+  }
+
+  /**
+   * Abandon the run (round 128): the loop exits as on `stop()`, but no
+   * settle, re-pack, fit or tween lands — the wrapper puts the nodes
+   * back where the run found them.
+   */
+  cancel(): void {
+    this.cancelled = true;
+    this.stop();
   }
 
   /**

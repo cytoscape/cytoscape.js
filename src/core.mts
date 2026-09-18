@@ -55,6 +55,7 @@ export type Layout =
   | RadialLayout
   | PackLayout;
 import { whenSettled } from './algorithms/cancel.mjs';
+import type { LayoutRun } from './layout/run-state.mjs';
 import type { AlgoRun } from './algorithms/cancel.mjs';
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
@@ -227,6 +228,8 @@ export class Core {
    * running before the renderer goes.
    */
   _inflight: Set<{ cancel(): unknown }>;
+  /** the open layout run per layout object (round 128), for `cancel()` */
+  _layoutRuns: Map<object, LayoutRun>;
 
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(
@@ -340,6 +343,7 @@ export class Core {
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
     this._inflight = new Set();
+    this._layoutRuns = new Map();
     this._batchPending = null;
 
     if (options.boxSelectionMode != null) {

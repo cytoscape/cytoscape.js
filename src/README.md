@@ -812,6 +812,20 @@ driver module per family, each run encoding all its iterations up
 front behind converge-flag-guarded kernels so a run costs exactly one
 readback (the round-9 discipline, compute form).
 
+**Every one of these returns its promise with `cancel()` on it (round
+128).**  A pending run rejects with `cytoscape.CancelledError` the
+moment `cancel()` is called and answers `true`, once; a run that has
+settled answers `false` — and a `'cpu'` run always does, since the
+reference completes inside the call.  The router polls the run's
+token after each await (the GPU or pool acquisition, a
+`GpuUnfitError` fallback, the CPU fallthrough), so a cancel during
+acquisition starts no lane; a lane already running completes on its
+own — the device work was submitted, the pool's in-flight ranges
+answer — and its value is discarded rather than decoded, while the
+pool stops posting the ranges not yet sent and stands for the next
+run.  `cy.destroy()` cancels every pending handle.  See "Cancellation"
+below.
+
 Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
 `cy.batch(fn)`) defers *style application* — the first apply of
 elements added inside the batch, sheet re-application (`cy.style(sheet)`
@@ -1686,7 +1700,8 @@ round records carry the histories.
   cannot see (an edge length under a data mapping, a restyle that
   resized the boxes).  `stop()` ends it, landing the positions as they
   stand — no separation pass, no re-pack, no fit and no tween: the
-  person is looking at them.  So `avoidOverlap` under `infinite` means
+  person is looking at them; `cancel()` (round 128) ends it the other
+  way, the nodes back where the run found them.  So `avoidOverlap` under `infinite` means
   the per-tick sweep (`'sim'`), `iterations` is ignored, and the
   lifecycle's `layoutstop` fires at `stop()`.  Priced: at rest an
   infinite run is the cost of its listeners.
@@ -2177,6 +2192,19 @@ each is deliberate, not a pass-1 deferral:
   ms per frame against a 1 ms trigger), and removing `png()`'s canvas
   hop (2.6 ms at 4k).  What it took: the export readback's
   per-pixel JavaScript loop, now a compute pass (81 → 12 ms at 4k).
+- **Cancellation is a handle, not a signal (round 128).**  The
+  promise an async algorithm returns carries `cancel()`, and a layout
+  has `cancel()` beside `stop()` — rather than an `AbortSignal` option
+  on every entry.  The handle is what a caller already holds, it
+  composes with `destroy()` (the core keeps the runs in flight and
+  cancels them last), and it lets each ending say what it reclaims:
+  `stop()` keeps what stands, `cancel()` puts the nodes back where the
+  run found them, and both close the lifecycle with `layoutstop`, the
+  cancelled one carrying `cancelled: true`.  A `'cpu'` algorithm run
+  cannot be cancelled and the handle says so (`cancel()` answers
+  `false`) instead of pretending: the reference is synchronous by
+  design, and chunking it for cancellability would cost the very
+  speed it exists for.
 - **No selector strings, anywhere.**  v4 drops the selector language
   outright — there is no parser, no dialect of v3 selectors, and no plan
   to grow one back.  The replacements, by role:
@@ -4249,6 +4277,10 @@ pattern at all.  Neither was undocumented; both were uncounted.
 
 v4 fails loudly by decided design, which makes its throws part of the
 public contract — and until round 30 most of them were unverified.
+One rejection is not a failure: `CancelledError` (round 128) is what a
+run rejects with when its caller — or `cy.destroy()` — cancelled it,
+and a `.catch` tells it from a defect by `instanceof
+cytoscape.CancelledError` or `error.name`.
 `scripts/throw-coverage.mjs` finds every `throw new` in `src`
 and reports which the Node suite reaches, the same way
 `scripts/jsdoc-coverage.mjs` reports documented members:
@@ -5192,6 +5224,58 @@ tweens, the GPU force integrator and the page's @font-face labels take
 their CPU/fallback paths (the animation manager keeps its own rAF
 clock; `startForce` is absent on the proxy, so the force layout uses
 its CPU executor).
+
+## Cancellation (round 128)
+
+The execution model — CPU, GPU and worker executors, Promise
+completion, the error contract — had no cancellation contract until
+round 128.  What exists now, and what each ending reclaims:
+
+- **`CancelledError`** (`cytoscape.CancelledError`, a factory static
+  so `instanceof` works through the UMD global; `error.name ===
+  'CancelledError'` for a check without the class) is the rejection a
+  cancelled run carries: an async algorithm whose handle's `cancel()`
+  was called, a layout's `promise()` after `layout.cancel()`, or
+  either when `cy.destroy()` ran while the run was in flight.
+- **Async algorithms** return `AlgoRun<T>` — the promise plus
+  `cancel(): boolean`.  Per executor: `'cpu'` has completed inside the
+  call (`cancel()` answers `false`; nothing is hidden); `'gpu'`'s
+  submitted device work cannot be recalled, so the pending readback is
+  abandoned and the bytes are never decoded, the kernel's own epilogue
+  releasing its buffers as it always did; `'workers'` stops posting
+  ranges, drops the partials still in flight as they land and leaves
+  the pool standing — `_algoWorkersStats().jobs` counts only the
+  ranges that completed, which is the spec's evidence that the unsent
+  ones never ran.  The router polls the token after each await, so a
+  cancel during acquisition starts no lane.
+- **Layouts**: `cancel()` beside `stop()`.  `stop()` keeps what
+  stands.  `cancel()` abandons the run: the impl's loop exits (an impl
+  is asked to `cancel()`, or `stop()` when it has no `cancel`; one
+  with neither runs to completion before the wrapper closes the
+  cancelled run), a tween under way is stopped where it is, the
+  scope's leaf positions go back to a snapshot taken at `run()` — one
+  `Float32Array` copy, restored through the store's bulk write as one
+  dirty span — the viewport is left as it is, `layoutstop` fires once
+  with `cancelled: true` (the lifecycle always closes; the caller's
+  `stop` callback runs too), and `promise()` rejects with
+  `CancelledError`, marked handled at creation so a caller who never
+  awaits it sees no unhandled rejection.  The force layout lands no
+  settle on a cancel; under the GPU integrator the lease is released
+  first and the restore uploads through the normal dirty-span path,
+  so the next frame shows the snapshot (the Playwright spec picks a
+  node at its pre-run spot after the cancel).
+- **`destroy()` is the last cancel**: the core keeps every pending
+  handle and open layout run in `_inflight`, cancels them before the
+  listeners and the renderer go — so a `layoutstop` still reaches a
+  listener and nothing in flight writes into a dead renderer — and an
+  `await` outstanding across a destroy rejects rather than hanging.
+  The registry is observed through each handle's own settle promise,
+  never through `run.then`, so a cancelled algorithm run nobody catches
+  stays the caller's unhandled rejection to see.
+- **Out of scope, deliberately**: `cy.pick()` and `cy.png()`/`jpg()`
+  are one-shot frame-scale operations with nothing to reclaim;
+  animations have `stop()`; the worker-hosted renderer's batch
+  protocol is fire-and-forget.
 
 ## Zero-copy: the copy census (round 110)
 

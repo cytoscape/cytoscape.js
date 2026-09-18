@@ -71,6 +71,7 @@ import {
   motifCensusAsync as motifCensusImpl,
 } from './algorithms/index.mjs';
 import type { AlgoRun } from './algorithms/cancel.mjs';
+import { layoutRunOf } from './layout/run-state.mjs';
 import type {
   SearchArgs,
   SearchResult,
@@ -5388,6 +5389,14 @@ export class Collection {
     fn: (node: Collection, i: number) => Position,
   ): this {
     const cy = this._cy;
+    // the run this finisher closes (round 128): a cancelled run writes
+    // nothing and fires nothing — its close already did
+    const run = layoutRunOf(cy, layout);
+
+    if (run?.cancelled === true) {
+      return this;
+    }
+
     // v3: parents are excluded from layout positioning (auto-bounds
     // derive them from their placed leaves, round 14.11), and so are
     // locked nodes (114.3) — they hold their place; the layout that
@@ -5539,12 +5548,22 @@ export class Collection {
         ani.play();
       }
 
+      // a cancel mid-tween stops these where they are (run-state.mts)
+      run?.anis.push(...anis);
+
       options.ready?.();
       cy.emit({ type: 'layoutready', layout });
 
       Promise.all(anis.map((ani) => ani.promise())).then(() => {
+        // a cancelled run closed its own lifecycle when the tweens
+        // were dropped; nothing more fires here
+        if (run?.cancelled === true) {
+          return;
+        }
+
         options.stop?.();
         cy.emit({ type: 'layoutstop', layout });
+        run?.close(false);
       });
     } else {
       nodes.positions(getFinalPos);
@@ -5555,6 +5574,7 @@ export class Collection {
 
       options.stop?.();
       cy.emit({ type: 'layoutstop', layout });
+      run?.close(false);
     }
 
     return this;

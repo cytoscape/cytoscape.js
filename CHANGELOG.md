@@ -344,6 +344,22 @@ that compile and then behave differently.
   from 81 to 12 ms for a 4k-wide figure of a 465k-edge graph and from
   332 to 52 ms at 8k, on both hosts.  Output pixels are the same to
   within the two rounding rules' ties; the goldens are unchanged.
+- **Cancellation** (round 128).  Every async algorithm returns its
+  promise with `cancel()` on it: a pending run rejects with
+  `cytoscape.CancelledError` at once and answers `true`; a run that
+  has settled answers `false` (a `'cpu'` run has, inside the call).
+  What a cancel reclaims is per executor — a GPU run's submitted work
+  runs to its readback and is discarded undecoded; a workers run stops
+  posting ranges, drops the partials in flight and leaves the pool
+  standing.  Layouts gain `cancel()` beside `stop()`: the run is
+  abandoned, a tween under way is dropped where it is, the scope's
+  nodes go back to where `run()` found them, the viewport is left
+  alone, `layoutstop` fires with `cancelled: true`, and `promise()`
+  rejects with `CancelledError` (marked handled for a caller who never
+  awaits it).  A custom impl may implement `cancel()`; one without is
+  asked to `stop()`.  `cy.destroy()` cancels every run still open
+  before the renderer goes, so an `await` outstanding across a destroy
+  rejects rather than hanging.
 - **A worker-pool executor for the per-source-parallel algorithms**
   (round 74).  `executor: 'workers'` runs both betweenness forms,
   unweighted `closenessCentralityNormalized`, `heatKernel` and

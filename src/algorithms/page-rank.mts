@@ -5,6 +5,15 @@ import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { pageRankGpu } from './algo-gpu-pagerank.mjs';
 
+/**
+ * The node count above which `'auto'` would take the GPU for
+ * pageRank: `Infinity` — the sparse CPU iteration wins at every
+ * measured size and density (65.10; re-measured against the CSR
+ * kernel in 72.1, amd gcn-4 — see the async wrapper).  Exported so
+ * the sweep's verdict is spelled once.
+ */
+export const PAGE_RANK_GPU_MIN_N = Infinity;
+
 export interface PageRankOptions {
   dampingFactor?: number;
   precision?: number;
@@ -33,56 +42,67 @@ export const pageRankAsync = (
   options: PageRankOptions = {},
 ): Promise<PageRankResult> => {
   const executor = resolveExecutor(options.executor);
-  const view = subgraph(coll);
-  const n = view.nodeSlots.length;
-  const m = view.edgeSlots.length;
+  const n = subgraph(coll).nodeSlots.length;
 
-  // 'auto' never routes pageRank to the GPU since the CPU went sparse
-  // (65.10): the CPU pays O(E) per iteration where the GPU's dense
-  // mat-vec pays O(n²) regardless — and denser graphs converge in
-  // *fewer* power iterations, so even at E = n²/12 the sparse CPU
-  // measured 5× ahead (16.5 ms vs 82.1 at n=2048, amd gcn-4; ~200×
-  // ahead on the sparse fixture).  The GPU path stays for an explicit
-  // `executor: 'gpu'` and the parity suite; the revisit that could
-  // change this verdict is a sparse SpMV kernel, logged in the round
-  // record.
-  void m;
-
+  // 'auto' never routes pageRank to the GPU (65.10; re-measured in
+  // 72.1 against the sparse CSR kernel, amd gcn-4): on the sparse
+  // bench fixture the whole CPU call is 0.3–0.6 ms at n=512–2048
+  // where the GPU call floors at ~3.7 ms — one mapAsync readback —
+  // and on the dense fixture (E = n²/12) the shared O(E) build
+  // dominates both sides, 15.4 ms CPU vs 20.6 ms GPU at n=2048.  The
+  // kernel itself is 18× the CPU iteration on dense (56 µs vs 1 ms),
+  // so the crossover exists only past ~1M edges, beyond the sweep.
+  // The GPU path stays for an explicit `executor: 'gpu'` and the
+  // parity suite.
   return runAlgo(
     executor,
     n,
-    Infinity,
+    PAGE_RANK_GPU_MIN_N,
     () => pageRank(coll, options),
     (ctx) => pageRankGpu(ctx, coll, options),
   );
 };
 
 /**
- * Build the damped, column-normalized transition matrix (transposed —
- * rows gather from sources) the **GPU** executor iterates on.  Since
- * round 65.10 the CPU reference iterates sparsely over the edges
- * instead — the same maths, refactored (see `pageRank`) — so this
- * dense build is the GPU path's alone; both executors still agree
- * within the parity suite's tolerances.
+ * The sparse transition structure both executors iterate on (round
+ * 65.10 for the CPU, 72.1 for the GPU): dense-index (source, target)
+ * pairs with the weight column-normalized by the source's out-weight,
+ * plus the dangling set — the sources with no out-edges, which the
+ * dense form gave a uniform 1/n column.  Loops are excluded and edges
+ * outside the collection ignored, exactly as the dense build did, so
+ * the two executors agree within the parity suite's tolerances.
  *
  * @param coll — the calling collection
  * @param options — the caller's options (weight, dampingFactor)
- * @returns the view, node count and row-major matrix
+ * @returns the view, node count, live edge count, the triplets and the
+ *   dangling indices
  */
-export const buildPageRankMatrix = (
+export const buildPageRankSparse = (
   coll: Collection,
   options: PageRankOptions,
-): { view: SubgraphView; n: number; matrix: Float64Array } => {
+): {
+  view: SubgraphView;
+  n: number;
+  edges: number;
+  srcs: Int32Array;
+  dsts: Int32Array;
+  ws: Float64Array;
+  dangling: Int32Array;
+  additionalProb: number;
+} => {
   const dampingFactor = options.dampingFactor ?? 0.8;
   const view = subgraph(coll);
   const { endpoints, index, nodeSlots } = view;
   const weightOf = weightAt(view, options.weight);
   const n = nodeSlots.length;
-
-  // transposed adjacency matrix + per-column (source) weight sums
-  const matrix = new Float64Array(n * n);
-  const columnSum = new Float64Array(n);
   const additionalProb = (1 - dampingFactor) / n;
+
+  const m = view.edgeSlots.length;
+  const srcs = new Int32Array(m);
+  const dsts = new Int32Array(m);
+  const ws = new Float64Array(m);
+  const columnSum = new Float64Array(n);
+  let edges = 0;
 
   for (const e of view.edgeSlots) {
     const sSlot = endpoints[e * 2];
@@ -92,35 +112,43 @@ export const buildPageRankMatrix = (
       continue;
     } // exclude loops
 
-    const s = index.get(sSlot);
-    const t = index.get(tSlot);
+    const sIdx = index.get(sSlot);
+    const tIdx = index.get(tSlot);
 
-    if (s == null || t == null) {
+    if (sIdx == null || tIdx == null) {
       continue;
     }
 
     const w = weightOf(e);
 
-    matrix[t * n + s] += w;
-    columnSum[s] += w;
+    srcs[edges] = sIdx;
+    dsts[edges] = tIdx;
+    ws[edges] = w;
+    columnSum[sIdx] += w;
+    edges++;
   }
 
-  const p = 1.0 / n + additionalProb;
+  for (let e = 0; e < edges; e++) {
+    ws[e] /= columnSum[srcs[e]]; // srcs always have columnSum > 0
+  }
+
+  let danglingCount = 0;
 
   for (let j = 0; j < n; j++) {
     if (columnSum[j] === 0) {
-      // no links out of node j: assume equal probability for each node
-      for (let i = 0; i < n; i++) {
-        matrix[i * n + j] = p;
-      }
-    } else {
-      for (let i = 0; i < n; i++) {
-        matrix[i * n + j] = matrix[i * n + j] / columnSum[j] + additionalProb;
-      }
+      danglingCount++;
     }
   }
 
-  return { view, n, matrix };
+  const dangling = new Int32Array(danglingCount);
+
+  for (let j = 0, k = 0; j < n; j++) {
+    if (columnSum[j] === 0) {
+      dangling[k++] = j;
+    }
+  }
+
+  return { view, n, edges, srcs, dsts, ws, dangling, additionalProb };
 };
 
 /**
@@ -164,60 +192,10 @@ export const pageRank = (
   coll: Collection,
   options: PageRankOptions = {},
 ): PageRankResult => {
-  const dampingFactor = options.dampingFactor ?? 0.8;
   const precision = options.precision ?? 0.000001;
   const iterations = options.iterations ?? 200;
-
-  const view = subgraph(coll);
-  const { endpoints, index, nodeSlots } = view;
-  const weightOf = weightAt(view, options.weight);
-  const n = nodeSlots.length;
-  const additionalProb = (1 - dampingFactor) / n;
-
-  // sparse build: dense source/target index pairs, normalized weights,
-  // and the dangling set (no out-edges → uniform teleport, as dense)
-  const m = view.edgeSlots.length;
-  const srcs = new Int32Array(m);
-  const dsts = new Int32Array(m);
-  const ws = new Float64Array(m);
-  const columnSum = new Float64Array(n);
-  let edges = 0;
-
-  for (const e of view.edgeSlots) {
-    const sSlot = endpoints[e * 2];
-    const tSlot = endpoints[e * 2 + 1];
-
-    if (sSlot === tSlot) {
-      continue;
-    } // exclude loops
-
-    const sIdx = index.get(sSlot);
-    const tIdx = index.get(tSlot);
-
-    if (sIdx == null || tIdx == null) {
-      continue;
-    }
-
-    const w = weightOf(e);
-
-    srcs[edges] = sIdx;
-    dsts[edges] = tIdx;
-    ws[edges] = w;
-    columnSum[sIdx] += w;
-    edges++;
-  }
-
-  for (let e = 0; e < edges; e++) {
-    ws[e] /= columnSum[srcs[e]]; // srcs always have columnSum > 0
-  }
-
-  const dangling: number[] = [];
-
-  for (let j = 0; j < n; j++) {
-    if (columnSum[j] === 0) {
-      dangling.push(j);
-    }
-  }
+  const { view, n, edges, srcs, dsts, ws, dangling, additionalProb } =
+    buildPageRankSparse(coll, options);
 
   // dominant eigenvector via the power method
   let eigenvector = new Float64Array(n).fill(1);

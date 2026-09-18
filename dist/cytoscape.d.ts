@@ -4354,8 +4354,9 @@ interface KatzCentralityOptions {
   directed?: boolean;
   weight?: WeightFn;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Like `pageRank`, 'auto' always stays on the sparse CPU iteration;
-   * the GPU path serves an explicit 'gpu'. */
+   * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
+   * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
+   * explicit 'gpu'. */
   executor?: AlgoExecutor;
 }
 interface KatzCentralityResult {

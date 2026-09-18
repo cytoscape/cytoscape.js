@@ -1,14 +1,13 @@
 /*
-Katz centrality on the GPU (round 69).
+Katz centrality on the GPU (round 69; sparse since 72.1).
 
 The CPU reference (`katz-centrality.mts`) is the spec: both executors
 iterate the same attenuated fixed point x' = α·Aᵀ·x + β to the same
-L1 stopping rule.  The GPU runs pageRank's flags-guarded mat-vec (the
-matrix carries α already) with a Katz epilogue — add β, accumulate the
-L1 step, set the converge bit — every iteration encoded up front, one
-readback (the round-9 discipline).  Like pageRank, the dense mat-vec
-never beats the sparse CPU under 'auto'; this path serves an explicit
-`executor: 'gpu'` and the parity suite.
+L1 stopping rule over the same sparse arcs (`buildKatzSparse`).  The
+GPU runs the shared CSR SpMV (the arcs carry α already) with a Katz
+epilogue — add β, accumulate the L1 step, set the converge bit —
+every iteration encoded up front, one readback (the round-9
+discipline).
 */
 
 import type { Collection } from '../collection.mjs';
@@ -27,9 +26,9 @@ import {
 } from './algo-gpu.mjs';
 import type { Dispatch } from './algo-gpu.mjs';
 import { WG } from './algo-gpu-dense.mjs';
-import { MATVEC } from './algo-gpu-pagerank.mjs';
+import { csrFromTriplets, spmvDispatch, uploadCsr } from './algo-gpu-spmv.mjs';
 import {
-  buildKatzMatrix,
+  buildKatzSparse,
   katzResultFrom,
   resolveKatzParams,
 } from './katz-centrality.mjs';
@@ -38,7 +37,7 @@ import type {
   KatzCentralityResult,
 } from './katz-centrality.mjs';
 
-/** The between-matvec epilogue, pageRank's shape with Katz's maths
+/** The between-SpMV epilogue, pageRank's shape with Katz's maths
  * (round 69): v' = tmp + β per lane, the L1 step accumulated and
  * tree-reduced, and the converge bit set once it drops under
  * n·tolerance (kp.thresh — pre-multiplied on the CPU).  One
@@ -94,8 +93,9 @@ fn main(@builtin(local_invocation_id) lid : vec3u) {
  * @param options — as the CPU reference
  * @returns the `{ katz, katzNormalized }` accessors over the read-back
  *   vector
- * @throws GpuUnfitError when n² floats exceed the device's buffer
- *   limit; also if `alpha`/`beta` are invalid (see `resolveKatzParams`)
+ * @throws GpuUnfitError when the CSR (one entry per arc) or a vector
+ *   exceeds the device's buffer limit; also if `alpha`/`beta` are
+ *   invalid (see `resolveKatzParams`)
  */
 export const katzCentralityGpu = async (
   ctx: AlgoGpu,
@@ -106,15 +106,16 @@ export const katzCentralityGpu = async (
   const maxIterations = options.maxIterations ?? 200;
   const tolerance = options.tolerance ?? 0.000001;
 
-  const { view, n, matrix } = buildKatzMatrix(coll, options);
+  const { view, n, arcs, srcs, dsts, ws } = buildKatzSparse(coll, options);
 
   if (n === 0) {
     return katzResultFrom(view, []);
   }
 
-  assertFits(ctx, n * n * 4, 'katzCentrality');
+  assertFits(ctx, Math.max(arcs, n) * 4, 'katzCentrality');
 
-  const m = storageFrom(ctx, Float32Array.from(matrix));
+  // rows gather from sources: row = target, column = source
+  const csr = uploadCsr(ctx, csrFromTriplets(n, dsts, srcs, ws, arcs));
   const v = storageFrom(ctx, new Float32Array(n)); // x⁰ = 0, as on CPU
   const tmp = storageOf(ctx, n * 4);
   const flags = storageFrom(ctx, new Uint32Array([0]));
@@ -130,17 +131,10 @@ export const katzCentralityGpu = async (
   kpFloats[2] = n * tolerance;
 
   const kp = uniformFrom(ctx, kpWords);
-
-  const matvec = getPipeline(ctx, 'pr-matvec', MATVEC);
   const epilogue = getPipeline(ctx, 'katz-epilogue', KATZ_EPILOGUE);
 
   const iteration: Dispatch[] = [
-    {
-      pipeline: matvec,
-      // one workgroup per row
-      group: groupFor(ctx, matvec, [pIter, m, v, tmp, flags]),
-      groups: [n],
-    },
+    spmvDispatch(ctx, n, pIter, csr, v, tmp, flags),
     {
       pipeline: epilogue,
       group: groupFor(ctx, epilogue, [kp, tmp, v, flags]),
@@ -158,7 +152,16 @@ export const katzCentralityGpu = async (
 
   const out = new Float32Array(await readBack(ctx, v, n * 4));
 
-  for (const buffer of [m, v, tmp, flags, pIter, kp]) {
+  for (const buffer of [
+    csr.rowPtr,
+    csr.colIdx,
+    csr.vals,
+    v,
+    tmp,
+    flags,
+    pIter,
+    kp,
+  ]) {
     buffer.destroy();
   }
 

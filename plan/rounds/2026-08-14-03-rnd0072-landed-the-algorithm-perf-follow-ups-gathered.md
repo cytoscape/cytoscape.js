@@ -187,3 +187,89 @@ from this file, d.ts regenerated, gates green (`test:js`,
   shape — run the JSDoc gate before each commit.
 - Sequencing: 72.1–72.5 land before 72.6 so the sweep and the
   re-tune happen exactly once.
+
+## Landed
+
+Executed 2026-09-18 on the benchmark machine (amd gcn-4, the RX 580;
+`npm run gpu` reads HARDWARE), sub-round by sub-round, each with its
+measurement before its decision.
+
+### 72.1 — sparse CSR SpMV: landed for `'gpu'`, declined for `'auto'` (2026-09-18)
+
+The kernel landed and the verdict did not move.  `algo-gpu-spmv.mts`
+holds the CSR builder (counting sort on the row, input order kept
+within a row), the `SPMV` kernel and its dispatch; pageRank and Katz
+both run it.  The dense `MATVEC`, `buildPageRankMatrix` and
+`buildKatzMatrix` are gone — each family now has **one** build
+(`buildPageRankSparse`, `buildKatzSparse`) that both executors call,
+so the GPU path can no longer drift from the CPU's edge semantics by
+construction, and the n²-buffer `assertFits` ceiling went with the
+dense matrix (the CSR is O(E)).  pageRank's epilogue carries the two
+rank-1 terms the CPU split out in 65.10: Σv and Σ_dangling·v reduce
+beside Σtmp in the same single-workgroup kernel, and a dangling-index
+buffer rides the bind group.
+
+**Lane shape, measured.**  1000 forced iterations at n=2048, whole
+call, median of 5, every cell checked against the CPU result (see
+below for why):
+
+| lanes per row | sparse (2.3k edges) | dense (350k edges) |
+|---:|---:|---:|
+| 1 | 25.6 ms | 229.3 ms |
+| 8 | 25.1 ms | 65.1 ms |
+| 16 | 25.2 ms | 64.5 ms |
+| 32 | 26.1 ms | **55.8 ms** |
+| 64 | 29.6 ms | 56.7 ms |
+| CPU | 15.8 ms | 1007 ms |
+
+Sparse sits at the two-dispatch floor whatever the shape; dense picks
+32.  Per iteration the kernel is 18× the CPU on the dense fixture
+(56 µs against 1.0 ms) and *slower* than the CPU on the sparse one
+(25 µs against 16 µs — dispatch overhead against a 2.3k-edge loop).
+
+**The whole call, on the bench fixtures** (REPS 5 medians, the
+`pageRank` / `pageRankDense` / `katzCentrality` rows):
+
+| family | n | cpu | gpu (72.1) | gpu (dense, 2 Sep) |
+|---|---:|---:|---:|---:|
+| pageRank (sparse) | 512 | 0.6 ms | 3.7 ms | 6.6 ms |
+| | 1024 | 0.3 ms | 3.6 ms | 18.2 ms |
+| | 2048 | 0.6 ms | 3.7 ms | 69.0 ms |
+| pageRankDense | 512 | 1.2 ms | 4.5 ms | 6.7 ms |
+| | 1024 | 3.8 ms | 7.8 ms | 19.3 ms |
+| | 2048 | 15.4 ms | 20.6 ms | 80.5 ms |
+| katzCentrality | 512 | 0.3 ms | 3.6 ms | 6.0 ms |
+| | 1024 | 0.2 ms | 3.5 ms | 13.0 ms |
+| | 2048 | 0.3 ms | 3.7 ms | 34.9 ms |
+
+An explicit `'gpu'` call is 2–19× cheaper than before and flat in n
+on sparse graphs; `'auto'` still never takes it.  The phase split
+says why, and it is not the kernel: on sparse n=2048 the GPU call is
+build 0.2–1.0 ms, CSR 0.1–0.6, upload ~0, encode 0.1, submit 0.2 and
+**readback 3.5 ms** — one `mapAsync` round trip on this box is the
+floor, and the CPU's whole run is under it.  On dense n=2048 the
+shared build is 17–18 ms of both sides, the CSR pack another 3–6 and
+the readback 3.6–4.4, so the GPU pays ~8–10 ms over the build against
+the CPU's ~10–15 iterations at 1 ms each: a wash, measured 20.6
+against 15.4.  Extrapolating the per-iteration ratio, the GPU wins
+only past ~1M edges — beyond the sweep and beyond the sizes anyone
+runs pageRank on in a browser — so an edge-count gate was **declined
+with these numbers** rather than stamped from an extrapolation.
+`PAGE_RANK_GPU_MIN_N` and `KATZ_GPU_MIN_N` spell `Infinity` once
+each, exported, with the reason on the constant.
+
+**Verified by** the existing pageRank and Katz parity specs (green;
+maxDelta 1.8e-8 on the pageRank fixture), and a control with the CSR
+values skewed ×1.01 turned **both** red — the specs discriminate the
+new path.  Two hazards found while measuring, both now written on the
+module: (1) `precision` is a WGSL reserved word; the first epilogue
+draft used it as a uniform field, the module failed to compile, and
+the run *read back its initial vector* — WebGPU makes an invalid
+pipeline a silent no-op.  The parity spec caught it (the vector was
+nowhere near the reference), and the bench had already priced the
+no-op at 3.6 ms as if it were a kernel.  (2) The first lane sweep
+interpolated `ROW_LANES / 2` for a 1-lane variant, produced `0.5u`,
+and measured another invalid pipeline as the fastest shape.  The rule
+the module now states: **a timing row must check its result, or it
+will price an empty command buffer as a fast kernel.**  d.ts
+regenerated (the Katz option comment moved).

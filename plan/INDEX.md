@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 85–87, 89–98, 101, 108–109, 111–124, 127 |
-| planned | 49–51, 71–84, 88, 99–100, 102–107, 110, 125–126 |
+| landed | 7–48, 52–70, 72, 85–87, 89–98, 101, 108–109, 111–124, 127 |
+| planned | 49–51, 71, 73–84, 88, 99–100, 102–107, 110, 125–126 |
 
 ## The sections
 
@@ -130,7 +130,7 @@ A round can land with an item held open; the round file says which.
 | 101 | 70 | 2026-08-12 | landed | [The propagation tier: network biology's algorithms](rounds/2026-08-12-03-rnd0070-landed-the-propagation-tier-network-biology-s-algorithms.md) |
 | 102 | 71 | 2026-08-14 | plan | [cyext: the extension toolchain](rounds/2026-08-14-01-rnd0071-plan-cyext-the-extension-toolchain.md) |
 | 103 | — | 2026-08-14 | note | [The tenth design sitting — the idea backlog swept into a shortlist](rounds/2026-08-14-02-rnd0000-note-the-tenth-design-sitting-the-idea-backlog-swept-into-a.md) |
-| 104 | 72 | 2026-08-14 | plan | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-plan-the-algorithm-perf-follow-ups-gathered.md) |
+| 104 | 72 | 2026-08-14 | landed | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-landed-the-algorithm-perf-follow-ups-gathered.md) |
 | 105 | 73 | 2026-08-14 | plan | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md) |
 | 106 | 74 | 2026-08-14 | plan | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-plan-the-worker-pool-cpu-executor.md) |
 | 107 | 75 | 2026-08-14 | plan | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-plan-the-dx-polish-bundle.md) |

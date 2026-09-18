@@ -12,10 +12,10 @@ conventions `pageRank` set.  There is no v3 counterpart — this API is
 v4's own.
 
 Like `pageRank` — the same iteration shape — the CPU reference
-iterates *sparsely* over the edges at O(E + n) per step, so the dense
-O(n²) mat-vec kernels never win under 'auto' and the GPU path exists
-for an explicit `executor: 'gpu'` and the parity suite (see the async
-entry's note).
+iterates *sparsely* over the edges at O(E + n) per step.  The GPU
+runs the same gather as a CSR SpMV since round 72.1 (the dense n²
+mat-vec before it never won); whether 'auto' ever routes here is the
+crossover sweep's call, spelled in `KATZ_GPU_MIN_N`.
 */
 
 import type { Collection } from '../collection.mjs';
@@ -24,6 +24,13 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import { katzCentralityGpu } from './algo-gpu-katz.mjs';
+
+/**
+ * The node count above which `'auto'` would take the GPU for Katz:
+ * `Infinity` — the sparse CPU iteration wins at every measured size
+ * (69.4; re-measured against the CSR kernel in 72.1, amd gcn-4).
+ */
+export const KATZ_GPU_MIN_N = Infinity;
 
 export interface KatzCentralityOptions {
   /** the walk attenuation per step (default 0.1); must be positive,
@@ -39,8 +46,9 @@ export interface KatzCentralityOptions {
   directed?: boolean;
   weight?: WeightFn;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Like `pageRank`, 'auto' always stays on the sparse CPU iteration;
-   * the GPU path serves an explicit 'gpu'. */
+   * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
+   * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
+   * explicit 'gpu'. */
   executor?: AlgoExecutor;
 }
 
@@ -106,44 +114,52 @@ export const katzCentralityAsync = (
 
   const n = subgraph(coll).nodeSlots.length;
 
-  // 'auto' never routes Katz to the GPU, for pageRank's reason
-  // (65.10): the sparse CPU iteration pays O(E) per step where the
-  // dense mat-vec pays O(n²) regardless, and the pageRank family —
-  // the identical iteration shape — measured the sparse CPU 5× ahead
-  // even at E = n²/12.  The GPU path stays for an explicit
-  // `executor: 'gpu'` and the parity suite; a sparse SpMV kernel is
-  // the revisit that could change the verdict.
+  // the pageRank verdict (65.10), re-measured against the sparse CSR
+  // kernel in 72.1 (amd gcn-4): 0.2–0.3 ms CPU against a ~3.6 ms GPU
+  // call floored by its one readback, at every bench size
   return runAlgo(
     executor,
     n,
-    Infinity,
+    KATZ_GPU_MIN_N,
     () => katzCentrality(coll, options),
     (ctx) => katzCentralityGpu(ctx, coll, options),
   );
 };
 
 /**
- * Build the dense attenuated matrix the **GPU** executor iterates on:
- * M[t][s] = α · Σ w over the edges s→t (rows gather from sources —
- * the transposed adjacency, as `buildPageRankMatrix` lays out), both
- * directions under the undirected default.  The CPU reference runs
- * the same maths sparsely off the edge list.
+ * The sparse attenuated arcs both executors iterate on: dense-index
+ * (source, target) pairs weighted α·w — one arc per edge s→t, and the
+ * reverse arc too under the undirected default, so a row gathers from
+ * every walk that ends at it.  Loops are excluded and edges outside
+ * the collection ignored.
  *
  * @param coll — the calling collection
  * @param options — the caller's options (alpha, weight, directed)
- * @returns the view, node count and row-major matrix
+ * @returns the view, node count, live arc count and the triplets
+ * @throws if `alpha` is invalid (see `resolveKatzParams`)
  */
-export const buildKatzMatrix = (
+export const buildKatzSparse = (
   coll: Collection,
   options: KatzCentralityOptions,
-): { view: SubgraphView; n: number; matrix: Float64Array } => {
+): {
+  view: SubgraphView;
+  n: number;
+  arcs: number;
+  srcs: Int32Array;
+  dsts: Int32Array;
+  ws: Float64Array;
+} => {
   const { alpha } = resolveKatzParams(options);
   const directed = options.directed === true;
   const view = subgraph(coll);
   const { endpoints, index, nodeSlots } = view;
   const weightOf = weightAt(view, options.weight);
   const n = nodeSlots.length;
-  const matrix = new Float64Array(n * n);
+  const m = view.edgeSlots.length * (directed ? 1 : 2);
+  const srcs = new Int32Array(m);
+  const dsts = new Int32Array(m);
+  const ws = new Float64Array(m);
+  let arcs = 0;
 
   for (const e of view.edgeSlots) {
     const sSlot = endpoints[e * 2];
@@ -162,14 +178,20 @@ export const buildKatzMatrix = (
 
     const w = alpha * weightOf(e);
 
-    matrix[t * n + s] += w;
+    srcs[arcs] = s;
+    dsts[arcs] = t;
+    ws[arcs] = w;
+    arcs++;
 
     if (!directed) {
-      matrix[s * n + t] += w;
+      srcs[arcs] = t;
+      dsts[arcs] = s;
+      ws[arcs] = w;
+      arcs++;
     }
   }
 
-  return { view, n, matrix };
+  return { view, n, arcs, srcs, dsts, ws };
 };
 
 /**
@@ -222,44 +244,10 @@ export const katzCentrality = (
   coll: Collection,
   options: KatzCentralityOptions = {},
 ): KatzCentralityResult => {
-  const { alpha, beta } = resolveKatzParams(options);
+  const { beta } = resolveKatzParams(options);
   const maxIterations = options.maxIterations ?? 200;
   const tolerance = options.tolerance ?? 0.000001;
-  const directed = options.directed === true;
-
-  const view = subgraph(coll);
-  const { endpoints, index, nodeSlots } = view;
-  const weightOf = weightAt(view, options.weight);
-  const n = nodeSlots.length;
-
-  // sparse build: dense index pairs plus attenuated weights, exactly
-  // the triplets the dense GPU matrix is assembled from
-  const m = view.edgeSlots.length;
-  const srcs = new Int32Array(m);
-  const dsts = new Int32Array(m);
-  const ws = new Float64Array(m);
-  let edges = 0;
-
-  for (const e of view.edgeSlots) {
-    const sSlot = endpoints[e * 2];
-    const tSlot = endpoints[e * 2 + 1];
-
-    if (sSlot === tSlot) {
-      continue;
-    } // exclude loops
-
-    const sIdx = index.get(sSlot);
-    const tIdx = index.get(tSlot);
-
-    if (sIdx == null || tIdx == null) {
-      continue;
-    }
-
-    srcs[edges] = sIdx;
-    dsts[edges] = tIdx;
-    ws[edges] = alpha * weightOf(e);
-    edges++;
-  }
+  const { view, n, arcs, srcs, dsts, ws } = buildKatzSparse(coll, options);
 
   let x = new Float64Array(n);
   let next = new Float64Array(n);
@@ -267,12 +255,8 @@ export const katzCentrality = (
   for (let iter = 0; iter < maxIterations; iter++) {
     next.fill(beta);
 
-    for (let e = 0; e < edges; e++) {
-      next[dsts[e]] += ws[e] * x[srcs[e]];
-
-      if (!directed) {
-        next[srcs[e]] += ws[e] * x[dsts[e]];
-      }
+    for (let a = 0; a < arcs; a++) {
+      next[dsts[a]] += ws[a] * x[srcs[a]];
     }
 
     let diff = 0;

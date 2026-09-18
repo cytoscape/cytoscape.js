@@ -4753,7 +4753,17 @@ sparse (O(E + n) per iteration — 0.3–0.6 ms where the dense form took
 E = n²/12, because denser graphs converge in fewer power iterations),
 and the flattened, typed hierarchical build took the CPU to a wash
 with the GPU (0.92–1.03×).  Their kernels stay for an explicit
-`executor: 'gpu'` and the parity suite.
+`executor: 'gpu'` and the parity suite.  Round 72.1 replaced the
+dense mat-vec behind pageRank and Katz with a CSR SpMV (32 lanes per
+row, O(E) bytes, one build shared by both executors) and re-measured:
+an explicit `'gpu'` call fell 2–19× (69 → 3.7 ms at n=2048 sparse,
+80.5 → 20.6 ms dense) but the verdict held, because the GPU call
+floors at one ~3.5 ms `mapAsync` readback on this box while the sparse
+CPU run is under 1 ms, and on dense graphs the shared O(E) build
+dominates both sides (15.4 vs 20.6 ms at n=2048, E = n²/12).  The
+crossover exists only past ~1M edges, so `'auto'` keeps `Infinity`
+for both families, spelled once as `PAGE_RANK_GPU_MIN_N` and
+`KATZ_GPU_MIN_N`.
 
 ## Loading
 

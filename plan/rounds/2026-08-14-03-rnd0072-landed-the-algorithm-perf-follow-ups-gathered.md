@@ -400,3 +400,37 @@ of 23 in the suite).  The bench's unweighted closeness row now
 measures a different path on both sides — recorded here, since the
 harness hash cannot see a `src/` change — and 72.6 adds the weighted
 row so the FW route stays measured.
+
+### 72.4 — `laplacian: 'normalized'` for the heat family (2026-09-18)
+
+Landed as planned, almost entirely inside `buildHeatStructure`:
+under `'normalized'` each arc's weight is scaled by 1/√(d_s·d_t)
+and the diagonal becomes 1 (0 on an isolated node, whose heat stays
+put), so `degrees` reads as "the diagonal of L" on either setting —
+which is all `diffuseVector` and the GPU's dense build ever consumed,
+so neither changed.  The norm bound is 2 regardless of degree, so
+`squarings = ⌈log₂(4t)⌉⁺` depends on `time` alone.  `heatDiffusion`
+and `heatKernel` both honor it; both entries validate it
+synchronously (a `TypeError` naming the option, the throw gate at
+zero with its spec in `test/`).  `HeatLaplacian` ships in the
+declaration; d.ts regenerated.
+
+**Verified by** closed forms on a *weighted* pair (w = 4: the
+combinatorial ½(1 ± e^{−8t}) against the normalized ½(1 ± e^{−2t}) —
+the weight is what makes the two Laplacians disagree) and on the
+triangle (every degree 2, eigenvalues 0, 3/2, 3/2 → (1 + 2e^{−1.5t})/3
+on the diagonal); a path a–b–c plus an isolated node, asserting that
+the normalized rows do **not** sum to one (conservation is a
+combinatorial-only invariant, and the same graph still conserves
+under the default), that the isolated node's heat is exactly 1 on
+itself and 0 elsewhere, and that the seed form is the kernel's
+column; and the Playwright parity spec running `heatKernel`
+normalized at t = 2 on the ring fixture (1e-4, symmetric, and the
+row drift asserted *above* 1e-3).  Two controls, because the first
+one taught something: `ws /= d_s` (one factor instead of the root of
+the product) turned only the path spec red — on a regular graph
+d_s = √(d_s·d_t), so the pair and the triangle cannot see it — and
+`ws /= d_s·d_t` (no root) turned the closed forms red.  Both
+restored.  No new bench row (same cost shape; the existing row's
+comment notes it prices combinatorial, batched with 72.6's bench
+edits), and the CHANGELOG carries the round's public rows.

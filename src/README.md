@@ -727,7 +727,9 @@ neighbor sets — A·Aᵀ) and `katzCentrality` (attenuated walk counting).
 Round 70, aimed at network-biology workloads: `randomWalkWithRestart`
 (seed propagation) and `randomWalkWithRestartProximity` (the all-pairs
 matrix via Neumann matmul iteration), `heatDiffusion`/`heatKernel`
-(exp(−tL) by scaling-and-squaring), `effectiveResistance` (the
+(exp(−tL) by scaling-and-squaring; `laplacian: 'normalized'` since
+round 72.4 swaps D − A for I − D^{-½}AD^{-½}, bounded spectrum, no
+conservation), `effectiveResistance` (the
 Laplacian pseudo-inverse via f64 elimination on the CPU and
 Newton–Schulz matmuls on the GPU — O(n³) both sides, so the GPU wins
 at every density), `simRank` (two matmuls per iteration) and

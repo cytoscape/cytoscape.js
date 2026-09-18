@@ -20,6 +20,16 @@ squaring, which is the same power).  Edges are read undirected, with
 positive weights — a Laplacian with a negative edge is not a heat
 problem, so a non-positive weight throws.  Parallel edges sum, loops
 drop.  No v3 counterpart.
+
+`laplacian: 'normalized'` (round 72.4) swaps L for the symmetric
+normalized Laplacian I − D^{-½}·A·D^{-½}: the same structure with
+each arc weight scaled by 1/√(d_s·d_t) and a unit diagonal (zero on
+an isolated node, whose heat stays put).  Its spectrum is bounded by
+2 whatever the degrees, so the scaling exponent depends on t alone —
+`squarings = ⌈log₂(4t)⌉⁺` — instead of on the heaviest weighted
+degree; the price is that heat is no longer conserved (the rows of
+L_norm do not sum to zero), which is the intended reading in a
+hub-heavy network: a hub neither hoards nor floods.
 */
 
 import type { Collection } from '../collection.mjs';
@@ -41,11 +51,19 @@ export interface HeatDiffusionOptions {
   /** how long the heat flows (default 0.1); must be positive */
   time?: number;
   weight?: WeightFn;
+  /** which Laplacian drives the diffusion (default 'combinatorial',
+   * L = D − A, heat-conserving); 'normalized' is I − D^{-½}AD^{-½},
+   * whose spectrum is bounded by 2 so the scaling exponent depends on
+   * `time` alone — heat is then not conserved (round 72.4) */
+  laplacian?: HeatLaplacian;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * The seed form has no GPU path; the kernel form routes to the GPU
    * only on dense graphs. */
   executor?: AlgoExecutor;
 }
+
+/** The Laplacian a heat run diffuses over. */
+export type HeatLaplacian = 'combinatorial' | 'normalized';
 
 export interface HeatDiffusionResult {
   /** the node's share of the diffused heat, or undefined outside the
@@ -79,16 +97,42 @@ export const resolveHeatTime = (options: HeatDiffusionOptions): number => {
 };
 
 /**
+ * Validate `laplacian` — called synchronously by both async entries.
+ *
+ * @param options — the caller's options
+ * @returns the resolved Laplacian ('combinatorial' when omitted)
+ * @throws if the value is not 'combinatorial' or 'normalized'
+ */
+export const resolveHeatLaplacian = (
+  options: HeatDiffusionOptions,
+): HeatLaplacian => {
+  const laplacian = options.laplacian ?? 'combinatorial';
+
+  if (laplacian !== 'combinatorial' && laplacian !== 'normalized') {
+    throw new TypeError(
+      "`laplacian` must be 'combinatorial' or 'normalized' — got " +
+        String(options.laplacian),
+    );
+  }
+
+  return laplacian;
+};
+
+/**
  * The undirected weighted adjacency the Laplacian is built from:
  * dense-index arcs in both directions with their (summed) positive
- * weights, per-node weighted degrees, and the scaling exponent s that
- * puts ‖tL/2^s‖∞ under ½.
+ * weights, per-node diagonal entries, and the scaling exponent s that
+ * puts ‖tL/2^s‖∞ under ½.  Under `laplacian: 'normalized'` the arc
+ * weights are scaled by 1/√(d_s·d_t) and the diagonal is 1 (0 on an
+ * isolated node), so `degrees` reads as "the diagonal of L" on
+ * either setting — which is all `diffuseVector` and the GPU build
+ * consume.
  *
  * @param view — the subgraph view
- * @param options — the caller's options (weight, time)
- * @returns arcs, weighted degrees, and the scaling exponent
+ * @param options — the caller's options (weight, time, laplacian)
+ * @returns arcs, the Laplacian's diagonal, and the scaling exponent
  * @throws if the weight function answers a non-positive or non-finite
- *   number for any edge
+ *   number for any edge, or `laplacian` is invalid
  */
 export const buildHeatStructure = (
   view: SubgraphView,
@@ -102,6 +146,7 @@ export const buildHeatStructure = (
   squarings: number;
 } => {
   const time = resolveHeatTime(options);
+  const normalized = resolveHeatLaplacian(options) === 'normalized';
   const { endpoints, index, cy } = view;
   const weight = options.weight;
   const n = view.nodeSlots.length;
@@ -154,8 +199,21 @@ export const buildHeatStructure = (
     maxDegree = Math.max(maxDegree, degrees[i]);
   }
 
-  // ‖L‖∞ ≤ 2·max weighted degree; scale until t·‖L‖/2^s ≤ ½
-  const norm = 2 * maxDegree * time;
+  if (normalized) {
+    // w_st / √(d_s·d_t) per arc, then the diagonal: 1 where the node
+    // has any weight, 0 where it is isolated (its heat stays put)
+    for (let a = 0; a < arcs; a++) {
+      ws[a] /= Math.sqrt(degrees[srcs[a]] * degrees[dsts[a]]);
+    }
+
+    for (let i = 0; i < n; i++) {
+      degrees[i] = degrees[i] > 0 ? 1 : 0;
+    }
+  }
+
+  // ‖L‖∞ ≤ 2·max weighted degree (combinatorial) or 2 (normalized);
+  // scale until t·‖L‖/2^s ≤ ½
+  const norm = 2 * (normalized ? 1 : maxDegree) * time;
   const squarings = norm <= 0.5 ? 0 : Math.ceil(Math.log2(norm / 0.5));
 
   return { srcs, dsts, ws, arcs, degrees, squarings };
@@ -215,10 +273,11 @@ export const diffuseVector = (
  * points at the kernel form.
  *
  * @param coll — the calling collection
- * @param options — `{ seeds, time, weight, executor }`
+ * @param options — `{ seeds, time, weight, laplacian, executor }`
  * @returns a promise of the `{ score }` accessor
- * @throws if `executor` or `time` is invalid, if `seeds` holds no
- *   node of the collection, or if an edge weight is not positive
+ * @throws if `executor`, `time` or `laplacian` is invalid, if `seeds`
+ *   holds no node of the collection, or if an edge weight is not
+ *   positive
  */
 export const heatDiffusionAsync = (
   coll: Collection,
@@ -226,6 +285,9 @@ export const heatDiffusionAsync = (
 ): Promise<HeatDiffusionResult> => {
   const executor = resolveExecutor(options.executor);
   const time = resolveHeatTime(options);
+
+  resolveHeatLaplacian(options); // an invalid value throws at the call site
+
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
   const p0 = seedDistribution(view, options.seeds);
@@ -262,10 +324,10 @@ export const heatDiffusionAsync = (
  * WGSL scaling-and-squaring chain.
  *
  * @param coll — the calling collection
- * @param options — `{ time, weight, executor }`
+ * @param options — `{ time, weight, laplacian, executor }`
  * @returns a promise of the `{ heat }` accessor
- * @throws if `executor` or `time` is invalid, or if an edge weight is
- *   not positive
+ * @throws if `executor`, `time` or `laplacian` is invalid, or if an
+ *   edge weight is not positive
  */
 export const heatKernelAsync = (
   coll: Collection,
@@ -274,6 +336,7 @@ export const heatKernelAsync = (
   const executor = resolveExecutor(options.executor);
 
   resolveHeatTime(options); // an invalid time throws at the call site
+  resolveHeatLaplacian(options);
 
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
@@ -330,7 +393,8 @@ export const heatKernelResultFrom = (
  * @param view — the subgraph view
  * @param options — the caller's options
  * @returns the `{ heat }` accessor
- * @throws if `time` is invalid, or an edge weight is not positive
+ * @throws if `time` or `laplacian` is invalid, or an edge weight is
+ *   not positive
  */
 export const heatKernel = (
   view: SubgraphView,

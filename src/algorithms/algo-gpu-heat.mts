@@ -65,7 +65,8 @@ fn main(@builtin(global_invocation_id) gid : vec3u) {
  * @param options — as the CPU reference
  * @returns the `{ heat }` accessor over the read-back kernel
  * @throws GpuUnfitError when n² floats exceed the device's buffer
- *   limit; also if `time` is invalid or an edge weight is not positive
+ *   limit; also if `time` or `laplacian` is invalid or an edge weight
+ *   is not positive
  */
 export const heatKernelGpu = async (
   ctx: AlgoGpu,
@@ -84,7 +85,8 @@ export const heatKernelGpu = async (
   const heat = buildHeatStructure(view, options);
   const step = -time / Math.pow(2, heat.squarings);
 
-  // M = (−t/2^s)·L, dense: step·degree on the diagonal, −step·w off it
+  // M = (−t/2^s)·L, dense: step·diagonal on the diagonal, −step·w off
+  // it — `degrees` is L's diagonal on either Laplacian setting
   const m32 = new Float32Array(n * n);
 
   for (let i = 0; i < n; i++) {

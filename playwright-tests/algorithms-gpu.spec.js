@@ -1318,6 +1318,51 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.worstRowSum).toBeGreaterThan(0.999);
   });
 
+  test("heatKernel: laplacian 'normalized' within 1e-4, symmetric, and rows deliberately not conserved (72.4)", async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async (fixtureSrc) => {
+      const cy = new Function('return ' + fixtureSrc)()(90);
+      const nodes = cy.nodes();
+      // t = 2 forces squarings on the normalized operator too (its
+      // norm bound is 2, so s = ⌈log₂(8)⌉ = 3)
+      const opts = { time: 2, laplacian: 'normalized' };
+      const cpu = await cy.elements().heatKernel({ ...opts, executor: 'cpu' });
+      const gpu = await cy.elements().heatKernel({ ...opts, executor: 'gpu' });
+      let maxDelta = 0;
+      let asymmetry = 0;
+      let worstRowDrift = 0;
+
+      for (let i = 0; i < nodes.length; i += 3) {
+        let rowSum = 0;
+
+        for (let j = 0; j < nodes.length; j++) {
+          const g = gpu.heat(nodes[i], nodes[j]);
+
+          rowSum += g;
+          maxDelta = Math.max(
+            maxDelta,
+            Math.abs(cpu.heat(nodes[i], nodes[j]) - g),
+          );
+          asymmetry = Math.max(
+            asymmetry,
+            Math.abs(g - gpu.heat(nodes[j], nodes[i])),
+          );
+        }
+
+        worstRowDrift = Math.max(worstRowDrift, Math.abs(rowSum - 1));
+      }
+
+      return { maxDelta, asymmetry, worstRowDrift };
+    }, RING_FIXTURE);
+
+    expect(out.maxDelta).toBeLessThan(1e-4);
+    expect(out.asymmetry).toBeLessThan(1e-5);
+    // conservation is a combinatorial-only invariant: on the ring +
+    // chords (unequal degrees) a normalized row must drift from 1
+    expect(out.worstRowDrift).toBeGreaterThan(1e-3);
+  });
+
   test('effectiveResistance: relative parity, circuit identity, Infinity across components', async ({
     page,
   }) => {

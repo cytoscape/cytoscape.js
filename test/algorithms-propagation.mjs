@@ -180,6 +180,120 @@ describe('algorithms: the propagation families (round 70)', function () {
       );
     });
 
+    it("laplacian: 'normalized' — closed forms on a weighted pair and a triangle (72.4)", async function () {
+      // weight 4 discriminates the two Laplacians: combinatorial
+      // L = [[4,−4],[−4,4]] gives ½(1 ± e^(−8t)); normalized
+      // L = [[1,−1],[−1,1]] gives ½(1 ± e^(−2t)) — a defect in the
+      // √(d_s·d_t) scaling lands somewhere else
+      var w4 = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'ab', source: 'a', target: 'b', w: 4 } },
+        ],
+      });
+      var weight = (e) => e.data('w');
+      var comb = await w4.elements().heatKernel({ time: t, weight });
+      var norm = await w4
+        .elements()
+        .heatKernel({ time: t, weight, laplacian: 'normalized' });
+      var e8 = Math.exp(-8 * t);
+
+      expect(comb.heat(w4.$id('a'), w4.$id('b'))).to.be.closeTo(
+        (1 - e8) / 2,
+        1e-9,
+      );
+      expect(norm.heat(w4.$id('a'), w4.$id('b'))).to.be.closeTo(
+        (1 - e2) / 2,
+        1e-9,
+      );
+      expect(norm.heat(w4.$id('a'), w4.$id('a'))).to.be.closeTo(
+        (1 + e2) / 2,
+        1e-9,
+      );
+
+      // the triangle: every degree is 2, so L_norm = I − A/2 with
+      // eigenvalues 0, 3/2, 3/2
+      var tri = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { source: 'a', target: 'b' } },
+          { data: { source: 'b', target: 'c' } },
+          { data: { source: 'c', target: 'a' } },
+        ],
+      });
+      var e15 = Math.exp(-1.5 * t);
+      var k = await tri
+        .elements()
+        .heatKernel({ time: t, laplacian: 'normalized' });
+
+      expect(k.heat(tri.$id('a'), tri.$id('a'))).to.be.closeTo(
+        (1 + 2 * e15) / 3,
+        1e-9,
+      );
+      expect(k.heat(tri.$id('a'), tri.$id('b'))).to.be.closeTo(
+        (1 - e15) / 3,
+        1e-9,
+      );
+    });
+
+    it("laplacian: 'normalized' — an isolated node keeps its heat, a path does not conserve it, and the seed form agrees (72.4)", async function () {
+      // a path a–b–c has degrees 1, 2, 1: the normalized rows do not
+      // sum to zero, so total heat is *not* conserved — asserted
+      // deliberately, since conservation is a combinatorial-only
+      // invariant.  The isolated node d has a zero diagonal and
+      // diffuses nothing.
+      var g = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'd' } },
+          { data: { source: 'a', target: 'b' } },
+          { data: { source: 'b', target: 'c' } },
+        ],
+      });
+      var opts = { time: 1, laplacian: 'normalized' };
+      var k = await g.elements().heatKernel(opts);
+      var d = await g.elements().heatDiffusion({ ...opts, seeds: g.$id('a') });
+      var ids = ['a', 'b', 'c', 'd'];
+      var rowSum = 0;
+
+      for (var id of ids) {
+        rowSum += k.heat(g.$id('a'), g.$id(id));
+        // the seed form is the kernel's column
+        expect(d.score(g.$id(id))).to.be.closeTo(
+          k.heat(g.$id('a'), g.$id(id)),
+          1e-9,
+        );
+      }
+
+      expect(Math.abs(rowSum - 1)).to.be.above(1e-3);
+      expect(k.heat(g.$id('d'), g.$id('d'))).to.equal(1);
+      expect(k.heat(g.$id('d'), g.$id('a'))).to.equal(0);
+
+      // the combinatorial default still conserves on the same graph
+      var c = await g.elements().heatKernel({ time: 1 });
+      var combSum = 0;
+
+      for (var id2 of ids) {
+        combSum += c.heat(g.$id('a'), g.$id(id2));
+      }
+
+      expect(combSum).to.be.closeTo(1, 1e-9);
+    });
+
+    it('validates laplacian synchronously on both entries (72.4)', function () {
+      expect(() =>
+        pair.elements().heatKernel({ laplacian: 'signless' }),
+      ).to.throw(TypeError, /laplacian/);
+      expect(() =>
+        pair.elements().heatDiffusion({ seeds: pair.$id('a'), laplacian: 1 }),
+      ).to.throw(TypeError, /laplacian/);
+    });
+
     it('validates time, weights, seeds and executor', async function () {
       expect(() => pair.elements().heatKernel({ time: -1 })).to.throw(
         TypeError,

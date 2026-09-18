@@ -130,6 +130,7 @@ export type {
   HeatDiffusionOptions,
   HeatDiffusionResult,
   HeatKernelResult,
+  HeatLaplacian,
 } from './heat-kernel.mjs';
 export {
   effectiveResistance,

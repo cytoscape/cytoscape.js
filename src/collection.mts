@@ -5941,16 +5941,21 @@ export class Collection {
   /**
    * Heat diffusion from a `seeds` collection: unit heat spread over
    * the seeds flows along edges for `time`, through the kernel
-   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved.
-   * Async (round 70); the vector form is O(E) per series term on the
-   * CPU, so there is no GPU path — an explicit `executor: 'gpu'`
-   * rejects and points at `heatKernel`.  Edges are read undirected
-   * with positive weights.  v4-only — v3 has no counterpart.
+   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved
+   * under the default `laplacian: 'combinatorial'`; `'normalized'`
+   * (round 72.4) diffuses over I − D^{-½}AD^{-½} instead, whose
+   * spectrum is bounded whatever the degrees — hubs neither hoard nor
+   * flood — at the price of conservation.  Async (round 70); the
+   * vector form is O(E) per series term on the CPU, so there is no
+   * GPU path — an explicit `executor: 'gpu'` rejects and points at
+   * `heatKernel`.  Edges are read undirected with positive weights.
+   * v4-only — v3 has no counterpart.
    *
-   * @param options — `{ seeds, time, weight, executor }`
+   * @param options — `{ seeds, time, weight, laplacian, executor }`
    * @returns a promise of the `{ score }` accessor
-   * @throws if `executor` or `time` is invalid, if `seeds` holds no
-   *   node of the collection, or if an edge weight is not positive
+   * @throws if `executor`, `time` or `laplacian` is invalid, if
+   *   `seeds` holds no node of the collection, or if an edge weight
+   *   is not positive
    */
   heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult> {
     return heatDiffusionImpl(this, options);
@@ -5962,13 +5967,15 @@ export class Collection {
    * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
    * picks between per-column sparse series on the CPU and the dense
    * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
-   * on dense graphs.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * on dense graphs.  `laplacian` ('combinatorial' | 'normalized',
+   * default 'combinatorial') picks L = D − A or I − D^{-½}AD^{-½}
+   * (round 72.4).  All-pairs (O(n²) memory).  v4-only — v3 has no
    * counterpart.
    *
-   * @param options — `{ time, weight, executor }`
+   * @param options — `{ time, weight, laplacian, executor }`
    * @returns a promise of the `{ heat }` accessor
-   * @throws if `executor` or `time` is invalid, or if an edge weight
-   *   is not positive
+   * @throws if `executor`, `time` or `laplacian` is invalid, or if an
+   *   edge weight is not positive
    */
   heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult> {
     return heatKernelImpl(this, options);

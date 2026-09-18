@@ -322,7 +322,18 @@ that compile and then behave differently.
   The whole-collection `closenessCentralityNormalized` joined the
   async tier in round 69: its GPU path rides the blocked
   Floyd–Warshall kernels and folds each distance row on the device,
-  reading back n floats instead of the n² matrix.
+  reading back n floats instead of the n² matrix.  Round 72 made the
+  tier faster where the measurements said so: unweighted closeness
+  walks a BFS per source on both executors (O(n·(n+E)) — 18–47× on
+  the CPU at the bench sizes; the weighted form keeps Floyd–Warshall),
+  pageRank and Katz run a sparse CSR kernel under `executor: 'gpu'`
+  (2–19× cheaper, though `'auto'` still keeps both on the sparse CPU
+  iteration, which is faster than one GPU readback), affinity
+  propagation's availability update is coalesced (−42% per run), and
+  the heat family takes **`laplacian: 'normalized'`** (72.4:
+  I − D^{-½}AD^{-½} instead of D − A — a bounded spectrum, so the
+  scaling exponent depends on `time` alone, at the price of heat
+  conservation).
 
 ### Changed
 

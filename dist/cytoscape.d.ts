@@ -4429,11 +4429,18 @@ interface HeatDiffusionOptions {
   /** how long the heat flows (default 0.1); must be positive */
   time?: number;
   weight?: WeightFn;
+  /** which Laplacian drives the diffusion (default 'combinatorial',
+   * L = D − A, heat-conserving); 'normalized' is I − D^{-½}AD^{-½},
+   * whose spectrum is bounded by 2 so the scaling exponent depends on
+   * `time` alone — heat is then not conserved (round 72.4) */
+  laplacian?: HeatLaplacian;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * The seed form has no GPU path; the kernel form routes to the GPU
    * only on dense graphs. */
   executor?: AlgoExecutor;
 }
+/** The Laplacian a heat run diffuses over. */
+type HeatLaplacian = 'combinatorial' | 'normalized';
 interface HeatDiffusionResult {
   /** the node's share of the diffused heat, or undefined outside the
    * collection */
@@ -6420,11 +6427,13 @@ declare class Collection {
   cc: this['closenessCentrality'];
   /**
    * Closeness centrality for every node, normalized to [0, 1].  Async
-   * (round 69): the whole-collection form is the O(n³) all-pairs tier,
-   * so like `floydWarshall` it returns a promise and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
-   * relaxation runs; 'cpu' is the reproducible reference.  The
-   * single-root `closenessCentrality` stays synchronous.
+   * (round 69): the whole-collection form is the all-pairs tier, so
+   * like `floydWarshall` it returns a promise and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where it runs;
+   * 'cpu' is the reproducible reference.  Unweighted runs walk a BFS
+   * per source, O(n·(n+E)) (round 72.3); weighted runs relax
+   * Floyd–Warshall, O(n³).  The single-root `closenessCentrality`
+   * stays synchronous.
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
@@ -6554,16 +6563,21 @@ declare class Collection {
   /**
    * Heat diffusion from a `seeds` collection: unit heat spread over
    * the seeds flows along edges for `time`, through the kernel
-   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved.
-   * Async (round 70); the vector form is O(E) per series term on the
-   * CPU, so there is no GPU path — an explicit `executor: 'gpu'`
-   * rejects and points at `heatKernel`.  Edges are read undirected
-   * with positive weights.  v4-only — v3 has no counterpart.
+   * exp(−t·L) of the weighted Laplacian.  Total heat is conserved
+   * under the default `laplacian: 'combinatorial'`; `'normalized'`
+   * (round 72.4) diffuses over I − D^{-½}AD^{-½} instead, whose
+   * spectrum is bounded whatever the degrees — hubs neither hoard nor
+   * flood — at the price of conservation.  Async (round 70); the
+   * vector form is O(E) per series term on the CPU, so there is no
+   * GPU path — an explicit `executor: 'gpu'` rejects and points at
+   * `heatKernel`.  Edges are read undirected with positive weights.
+   * v4-only — v3 has no counterpart.
    *
-   * @param options — `{ seeds, time, weight, executor }`
+   * @param options — `{ seeds, time, weight, laplacian, executor }`
    * @returns a promise of the `{ score }` accessor
-   * @throws if `executor` or `time` is invalid, if `seeds` holds no
-   *   node of the collection, or if an edge weight is not positive
+   * @throws if `executor`, `time` or `laplacian` is invalid, if
+   *   `seeds` holds no node of the collection, or if an edge weight
+   *   is not positive
    */
   heatDiffusion(options?: HeatDiffusionOptions): Promise<HeatDiffusionResult>;
   /**
@@ -6572,13 +6586,15 @@ declare class Collection {
    * (round 70): `executor` ('cpu' | 'gpu' | 'auto', default 'auto')
    * picks between per-column sparse series on the CPU and the dense
    * scaling-and-squaring chain on the GPU — under 'auto' the GPU only
-   * on dense graphs.  All-pairs (O(n²) memory).  v4-only — v3 has no
+   * on dense graphs.  `laplacian` ('combinatorial' | 'normalized',
+   * default 'combinatorial') picks L = D − A or I − D^{-½}AD^{-½}
+   * (round 72.4).  All-pairs (O(n²) memory).  v4-only — v3 has no
    * counterpart.
    *
-   * @param options — `{ time, weight, executor }`
+   * @param options — `{ time, weight, laplacian, executor }`
    * @returns a promise of the `{ heat }` accessor
-   * @throws if `executor` or `time` is invalid, or if an edge weight
-   *   is not positive
+   * @throws if `executor`, `time` or `laplacian` is invalid, or if an
+   *   edge weight is not positive
    */
   heatKernel(options?: HeatDiffusionOptions): Promise<HeatKernelResult>;
   /**

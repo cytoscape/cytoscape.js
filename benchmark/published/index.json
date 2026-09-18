@@ -1,6 +1,24 @@
 {
   "runs": [
     {
+      "file": "results-algworkers-2026-09-18T14-22-42-054Z.json",
+      "date": "2026-09-18T14:22:42.054Z",
+      "commit": "31f65b7d",
+      "commitSubject": "algorithms(74.5): the crossovers stamped from the sweep — per-family pool thresholds, the sparse closeness BFS ahead of the GPU, unweighted betweenness's GPU crossover at 1024 where a pool can exist",
+      "branch": "feature/rounds-110-74-72-cancel",
+      "profile": "algorithms-workers",
+      "suiteFilter": null,
+      "dirty": false,
+      "concurrency": 1,
+      "totalMs": 104439,
+      "node": "v24.18.0",
+      "fingerprint": "5cf3f79c",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 18,
+      "note": "round 74.5: the first algorithms-workers sweep — cpu vs workers on the i9-9900K, eight workers, medians of three"
+    },
+    {
       "file": "results-alggpu-2026-09-18T09-19-49-758Z.json",
       "date": "2026-09-18T09:19:49.758Z",
       "commit": "e169b98a",

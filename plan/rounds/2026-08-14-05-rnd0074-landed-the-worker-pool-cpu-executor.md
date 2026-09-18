@@ -491,3 +491,118 @@ cpu-vs-workers through the served UMD, then again with
 `build/cytoscape.min.js` swapped in — the one place the Blob path and
 the minified stringified body run for real.  Green on Chromium and
 WebKit (4/4).
+
+### 74.5 — bench rows, crossover constants, and the close
+
+`benchmark/algorithms-workers.mjs`, a standalone profile in the
+`algorithms-gpu` shape, priced through the built ESM (the closures the
+CPU references build are the shape tsx's `__name` distorts): per
+(family, size) a `cpu` row, a `workers` row and a `workers first call`
+row — a fresh pool's spawn + snapshot + first run — with **every
+sample asserting its executor** through the bundle's
+`__algoWorkersStats__` hook, so a row cannot measure the wrong lane
+and read plausibly.  The report pairs `workers` with `cpu` the way it
+pairs `gpu`; `harness-id` knows the suite.  It is never a job in
+`report.mjs`'s table: it saturates every core by design, and the
+exclusivity flag the plan asked for would have been a flag on a job
+that does not exist there — the same standing as `algorithms-gpu`,
+which is what the plan's premise missed.
+
+**Published** (`--repeat 3`, serial, Node 24.18, i9-9900K, eight
+workers; medians of three, `repeatSpread` 1.01–1.34):
+
+| family | n | cpu | workers | speedup | first call (fresh pool) |
+| --- | --: | --: | --: | --: | --: |
+| betweenness (weighted) | 512 | 77.6 ms | 6.6 ms | 11.7× | 77.9 ms |
+| | 1024 | 317.6 | 22.1 | 14.4× | 117.0 |
+| | 2048 | 1431.6 | 79.2 | 18.1× | 204.7 |
+| betweenness | 512 | 33.8 | 6.1 | 5.6× | 71.8 |
+| | 1024 | 148.9 | 19.3 | 7.7× | 104.9 |
+| | 2048 | 662.0 | 72.5 | 9.1× | 178.0 |
+| closeness (sparse BFS) | 1024 | 20.2 | 4.2 | 4.8× | 56.1 |
+| | 2048 | 79.6 | 13.0 | 6.1× | 71.9 |
+| | 4096 | 319.2 | 48.6 | 6.6× | 100.0 |
+| closeness (dense, E ≈ n²/12) | 256 | 6.1 | 2.5 | 2.4× | 51.8 |
+| | 512 | 41.4 | 10.8 | 3.8× | 82.0 |
+| | 1024 | 300.8 | 61.9 | 4.9× | 185.9 |
+| heatKernel | 256 | 13.5 | 2.8 | 4.8× | 63.1 |
+| | 512 | 51.8 | 10.4 | 5.0× | 86.2 |
+| | 1024 | 205.7 | 36.6 | 5.6× | 117.0 |
+| RWR proximity | 256 | 54.2 | 10.2 | 5.3× | 85.4 |
+| | 512 | 213.9 | 31.9 | 6.7× | 109.2 |
+| | 1024 | 855.0 | 128.4 | 6.7× | 234.9 |
+
+Two readings.  The weighted betweenness ratios run past the 74.1
+probe's (18.1× against 12.2× at n = 2048) because the bench's
+sequential side is the library reference through the bundle, whose
+per-call closures and nested lists the probe's flat body did not pay —
+the ledger-65 gap, in the row.  And the first call costs 50–235 ms
+where the warm call costs 3–128: the spawn is ~40 ms once per page or
+process, the rest is the run itself on cold JIT; an application's
+second call is the warm row.
+
+**The crossovers, stamped** from a second sweep of the same instrument
+at n = 64 / 128 / 256 / 512 (`--sizes`), by the rule *a warm speedup
+of at least 3×*: weighted betweenness **128** (2.1× at 64, 3.2× at
+128, 7.7× at 256); unweighted betweenness **256** (0.6× at 64, 1.9×
+at 128, 3.3× at 256); the closeness BFS **512** (below 1× to 128,
+1.4× at 256, 3.9× at 512); heatKernel **256** (2.4× at 128, 4.2× at
+256); RWR proximity **128** (2.1× at 64, 4.6× at 128).  Each is its
+own exported constant beside its entry point, comment stamped with the
+machine and the figures; `WORKERS_MIN_N = 256` remains the documented
+base.  `WORKERS_MAX = 8` stamped from 74.1's 4 → 8 curve.
+
+**The three-way `'auto'` ordering**, decision (2) re-checked against
+round 72.6's published GPU sweep on the same box (RX 580, the
+`graph` fixture — ring plus a chord every seventh node, a shade
+sparser than this suite's every third):
+
+- **Sparse closeness BFS: the pool wins at every size** — 4.2 vs
+  14.6 ms at n = 1024, 13.0 vs 28.3 at 2048, 48.6 vs 87.5 at 4096 —
+  because a BFS per source is a walk, not a product, and eight cores
+  walking beat one adapter's batched frontier.  So this lane is the
+  one that inverts the default: `WorkersLane.first` is new in
+  `runAlgo`, and `'auto'` tries the pool before the GPU on the sparse
+  route; a pool that cannot spawn falls to the GPU, then the CPU.  The
+  dense routes keep GPU precedence: Floyd–Warshall 38.0 ms against the
+  pool's 61.9 at n = 1024, a tie at 512 (11.9 vs 10.8), the pool
+  ahead only at 256 (4.3 vs 2.5) — not worth a second inversion.
+- **Unweighted betweenness: the pool at 512, the GPU from 1024** —
+  6.1 vs 9.0 ms at 512, 19.3 vs 15.1 at 1024, 72.5 vs 36.6 at 2048.
+  Expressed without a second flag: the family's GPU crossover is
+  `BETWEENNESS_GPU_MIN_N_WITH_POOL = 1024` where
+  `algoWorkersSupported()`, `BETWEENNESS_GPU_MIN_N = 512` where not,
+  so the pool owns 256–1023 and the GPU 1024 up.  The corner this
+  leaves — a page whose platform can construct workers but refuses the
+  Blob URL under a CSP runs the CPU between 512 and 1023 where the GPU
+  was 4× ahead — is accepted and written on the constant, as the
+  symmetry of GPU acquisition failure.
+- **heatKernel and RWR: the GPU stays first** — a tie at 256 (heat
+  3.8 vs 2.8; RWR 6.0 vs 10.2), the GPU ahead beyond (heat 10.7 vs
+  10.4 at 512 then 34 vs 37; RWR 10.8 vs 31.9, 37 vs 128).  Note the
+  GPU sweep's heat fixture carries heavier weights (its CPU column
+  reads seconds where this suite's reads hundreds of milliseconds —
+  the squarings count), so the heat comparison is between fixtures;
+  the verdict does not depend on it.
+
+**The close.**  This record; `src/README.md`'s executor paragraph
+(the four values, the ladder, the stamped crossovers, the inversion);
+MIGRATING (the `'workers'` value, the `'auto'` behaviour change in
+headless Node, the bit-for-bit caveat) and CHANGELOG rows;
+`docs/features.csv` (the four wired families say so, the eleven
+without a lane say `'workers'` rejects); JSDoc on every `executor`
+option, d.ts regenerated; ledger item 29 closed with its correction
+and item 65 logged; `EXECUTIVE_SUMMARY.md` rewritten from this file;
+`npm run format`; gates green — `test:js` (2,751 with the workers
+specs; the one red in a full run was ledger item 52's chain flake,
+green 3/3 alone), `test:modules`, `test:soak`, `test:throws` at zero,
+JSDoc 100%, the `algorithms-workers` Playwright spec on Chromium and
+WebKit; the sweep published under its own profile.  No worktree was
+created; the 74.1 probe lives in this record, not the tree.
+
+**Left open, for the maintainer**: none of the four decisions — each
+taken as recommended and measured.  One observation is worth a call
+later: with the pool present, headless Node's `'auto'` for weighted
+betweenness is now 12–18× faster than 4.0's reference was going to be,
+and the reference itself is 2.5× behind its own worker body (item 65)
+— the cheapest algorithm win left in the tree.

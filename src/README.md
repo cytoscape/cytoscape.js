@@ -789,7 +789,7 @@ n = 2048 12.2× the sequential reference warm, 7.2× cold including the
 spawn; the per-worker snapshot clone of a 103 KB CSR 0.21 ms against
 0.10 ms shared memory, which is why SharedArrayBuffer — and the
 COOP/COEP demand it would put on every embedder — was declined.  The
-'auto' crossover for the GPU — for the rounds-69/70 iterated-product families a
+GPU's own 'auto' crossovers are per family — for the rounds-69/70 iterated-product families a
 *density* gate as well, since their sparse CPU walks own sparse
 graphs however large (round 72.6 re-measured the triangle, similarity
 and census gates across three sizes and six densities and found the

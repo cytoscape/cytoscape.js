@@ -64,10 +64,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,723 unit · 749 module · 24 soak · 454 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,751 unit · 767 module · 29 soak · 458 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 330 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 25 suites, 4 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) |
+| Benchmarks | 26 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | 839 KiB minified / 231 KiB gzipped as of 17 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
@@ -1067,6 +1067,38 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     invisible under max-normalization, so a control must be
     non-uniform; and the six-node affinity fixture could not see its
     own availability update, so a seeded cloud joined the suite.
+- **18 Sep** — a fourth executor: the worker pool
+  - The per-source-parallel algorithms — both betweenness forms,
+    unweighted closeness, the heat kernel and RWR proximity — run on a
+    pool of plain workers under `executor: 'workers'`, and `'auto'`
+    takes the pool wherever the GPU does not run.  The gate the ledger
+    set (3× at eight workers after start-up) cleared by four times:
+    weighted betweenness at 2,048 nodes 12× the sequential reference
+    warm, 7× cold, on the 8-core benchmark machine; the published
+    sweep reads 2.4–18× across eighteen cells.
+  - Nothing to configure: the worker entry ships as source text inside
+    every bundle (Node `worker_threads`, browser `Worker`s), so the
+    bundles stay single-file.  SharedArrayBuffer was priced at a tenth
+    of a millisecond per run and declined — it would have demanded
+    cross-origin isolation of every embedder.
+  - Determinism is a ladder, and the ledger's bit-identity claim was
+    corrected on the record: the pool is bit-stable across runs and
+    pool sizes, bit-identical to the CPU for closeness, heat and RWR,
+    and f64-tight but not bit-equal for betweenness.  A caller that
+    compares betweenness bit-for-bit says `executor: 'cpu'`.
+  - One family inverts the GPU's precedence: the sparse closeness BFS
+    measured the pool ahead of the adapter at every size, so it is
+    tried first; unweighted betweenness hands over to the GPU at
+    1,024 nodes where a pool exists.  Heat and RWR keep the GPU first.
+  - Three Node lessons a spec found: a worker must be `unref()`ed
+    *after* its listeners (a listener refs it again), an unref'ed
+    worker does not keep the loop alive for a pending reply (the pool
+    refs for the span of each request), and an eval-mode worker
+    inherits `--input-type`, so the parent port is reached through
+    `process.getBuiltinModule` rather than `require`.
+  - Left for later: the CPU reference itself is 2.5× behind its own
+    worker body on one thread — the cheapest algorithm win still in
+    the tree (item 65).
 
 ## What changed for users of v3
 
@@ -1174,13 +1206,13 @@ round, and is regenerated rather than maintained:
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
-| Performance follow-ups | A worker-pool CPU executor for the per-source-parallel algorithms (the algorithm-tier follow-up list itself closed 18 Sep) |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
 | Zero-copy census | Every remaining copy priced (round 110): ingest column adoption, the designed-but-deferred SAB tier for the worker host, GPU-side export post-processing — each pass gated on absolute cost, with the declines recorded |
 | Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
-  files, and a fresh idea-ledger sweep of ~20 further candidates awaiting
+  files, the Brandes reference's data layout (2.5× on one thread, measured
+  18 Sep), and a fresh idea-ledger sweep of ~20 further candidates awaiting
   scheduling.
 
 ## How this project works

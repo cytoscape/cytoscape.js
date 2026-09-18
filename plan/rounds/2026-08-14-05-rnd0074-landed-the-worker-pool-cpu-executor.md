@@ -260,3 +260,82 @@ Whether a `poolSize` option ships publicly now or the cap stays an
 internal stamped constant until someone asks — and, smaller, whether
 the 74.1 probe is committed as a scratch (the `d2.scratch.mjs`
 precedent) or discarded once its numbers are in this record.
+
+## Landed
+
+Executed 2026-09-18 on the feature branch, after round 72 (so the
+closeness lane had 72.3's BFS to ride).  The four open decisions were
+taken as the plan recommended, each recorded where it bit: (1) the
+value is spelled `'workers'`; (2) `'auto'` keeps GPU precedence where
+both lanes exist — 74.5 measured no family where the pool beats a
+present GPU; (3) betweenness's fixed-partition, f64-tight merge is
+accepted as designed; (4) no public `poolSize` — the cap is the
+internal `WORKERS_MAX`, stamped below — and the 74.1 probe is not
+committed: its method is described here in full and its numbers are
+this record, which is what the `d2.scratch.mjs` precedent was for.
+
+Two of the plan's facts did not survive re-reading, and both are
+corrected on the record rather than in silence.  **Fact 6 was stale
+before the plan was written**: round 86's worker-hosted renderer
+spawns a browser `Worker` from the bundle's own URL
+(`render/worker-renderer.mts`), so "no worker exists anywhere in the
+tree" was false — what was true, and still is, is that nothing in the
+tree ran a *Node* worker, and that the renderer's mechanism
+(re-evaluate the whole bundle inside the worker) is browser-only and
+would not serve an executor that headless Node needs most.  The
+stringified-body carriage is therefore the round's mechanism as
+planned, for a narrower reason than the plan gave.  **The ledger's
+bit-identity claim** is the fact-5 correction the plan already made;
+the parity specs assert bits only where the derivation allows them.
+
+### 74.1 — the gate measurement
+
+Method, as planned: a plain `.mjs` probe, no tsx, the sequential
+baseline through `build/cytoscape.esm.mjs`, the worker half a
+hand-rolled body (CSR Dijkstra–Brandes with an inline indexed heap and
+flat linked predecessor lists) in `worker_threads` eval-mode workers,
+the fixture a deterministic degree-4 ring-plus-chord graph with a
+data-driven weight, 64 fixed source ranges assigned round-robin,
+partials merged in range order.  Three timed passes per cell, medians;
+this machine (i9-9900K, 8 physical cores / 16 threads, the benchmark
+box).
+
+| n | sequential reference | 1 worker (same body) | 4 workers warm | 8 workers warm | 8 workers cold (spawn + first run) |
+| --: | --: | --: | --: | --: | --: |
+| 1024 | 449.0 ms | 170.5 ms (2.6×) | 45.2 ms (9.9×) | 36.1 ms (12.4×) | 128.9 ms (3.5×) |
+| 2048 | 1911.6 ms | 806.9 ms (2.4×) | 207.5 ms (9.2×) | 156.6 ms (12.2×) | 266.3 ms (7.2×) |
+| 4096 | 8985.8 ms | 3348.0 ms (2.7×) | 845.4 ms (10.6×) | 603.8 ms (14.9×) | 632.5 ms (14.2×) |
+
+**Verdict: the gate clears by a wide margin** — 12.2× at n = 2048
+against the ~3× the ledger asked for, and 7.2× cold.  Two readings the
+table forces, both honest:
+
+- **A third of the "speedup" is the body, not the threads.**  The
+  single-worker column is the same flat-array body run alone, and it
+  is 2.4–2.7× the library's reference — the reference builds a
+  `number[][]` of predecessor lists per source and calls the weight
+  closure per relaxation.  The thread scaling proper is 1 → 8 workers
+  at 5.2× (n = 2048) and 5.5× (n = 4096); 4 → 8 buys 1.3–1.4×, the
+  diminishing half of an 8-core curve, which is where `WORKERS_MAX =
+  8` comes from.  The reference's own 2.5× is logged as a follow-up
+  (ledger item 65) rather than taken here: changing the CPU path's
+  data layout is a change to the bit-reproducible spec's operation
+  order and wants its own parity record.
+- **The clone is not the cost.**  Snapshot build 1.9 ms at n = 2048
+  (103 KB CSR, weights pre-evaluated); the per-worker structured clone
+  0.21 ms against 0.10 ms for a SharedArrayBuffer variant, 0.34 vs
+  0.14 at n = 4096 (207 KB).  SAB would buy a tenth of a millisecond
+  per run and cost every embedder COOP/COEP; declined, the 86.1
+  reasoning re-confirmed with the number.  Spawn: 26 ms for one
+  worker, 44 ms for eight.
+
+**Parity and determinism, measured on the probe**: max relative error
+against the reference 5.9e-15 (n = 2048), 1.1e-14 (n = 4096) — f64
+rounding, as fact 5 derived; pools of 1 and 3 workers over the 64
+fixed ranges answered bit-identical vectors.
+
+**The browser spot check** ran scripted rather than by hand: the same
+body through a Blob-URL `Worker` in headless Chromium
+(`hardwareConcurrency` 16), n = 2048 — 1 worker 720 ms, 4 workers
+188 ms, 8 workers 108.6 ms warm (209 ms cold), the sums identical to
+Node's.  The one-code-path claim holds on both platforms.

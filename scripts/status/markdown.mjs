@@ -134,16 +134,9 @@ export const HISTORICAL_PATHS = {
  * @type {Record<string, string>}
  */
 export const PLANNED_PATHS = {
-  // round 74 — the worker-pool CPU executor
-  'src/algorithms/algo-workers.mts':
-    'planned by round 74 (the worker-pool CPU executor)',
-  'src/algorithms/algo-worker-body.mts':
-    'planned by round 74 (the worker-pool CPU executor)',
-  'test/algorithms-workers.mjs':
-    'planned by round 74 (the worker-pool CPU executor)',
-  'test/soak/workers.mjs': 'planned by round 74 (the worker-pool CPU executor)',
-  'benchmark/algorithms-workers.mjs':
-    'planned by round 74 (the worker-pool CPU executor)',
+  // round 74's five entries left on 2026-09-18, the day it landed: the
+  // files exist, so the resolve check would have gone red — the
+  // lifecycle working as designed
   // rounds 77/78 — SVG export and headless figures
   'src/svg-export.mts': 'planned by round 77 (SVG vector export)',
   'playwright-tests/svg-parity.spec.js':

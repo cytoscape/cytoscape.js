@@ -4,7 +4,11 @@ import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
 import { WorkerRenderer } from './render/worker-renderer.mjs';
 import { runRenderWorker } from './render/worker-main.mjs';
-import { _algoWorkerSource } from './algorithms/algo-workers.mjs';
+import {
+  _algoWorkerSource,
+  _algoWorkersStats,
+  _resetAlgoWorkers,
+} from './algorithms/algo-workers.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
@@ -146,3 +150,12 @@ cytoscape.deserializeElements = deserializeElements;
 (
   cytoscape as unknown as { __algoWorkerSource__: unknown }
 ).__algoWorkerSource__ = _algoWorkerSource;
+// and the pool's counters and reset (74.5): the `algorithms-workers`
+// benchmark runs through the built ESM (the hot-path rule) and its rows
+// assert they ran where their names say
+(
+  cytoscape as unknown as { __algoWorkersStats__: unknown }
+).__algoWorkersStats__ = _algoWorkersStats;
+(
+  cytoscape as unknown as { __resetAlgoWorkers__: unknown }
+).__resetAlgoWorkers__ = _resetAlgoWorkers;

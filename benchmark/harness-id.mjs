@@ -58,7 +58,7 @@ const EXTRA_INPUTS = {
 
 /**
  * Modules a suite imports that render or describe a run rather than measure it.
- * `render-bench.mjs` and `algorithms-gpu-bench.mjs` write their own report and
+ * `render-bench.mjs`, `algorithms-gpu-bench.mjs` and `algorithms-workers.mjs` write their own report and
  * `meta` block, so without this a change to the report's HTML would break every
  * renderer epoch for no measurement reason — a false break is as damaging as a
  * missed one, because it teaches the reader to ignore breaks.
@@ -77,11 +77,12 @@ const NOT_INSTRUMENT = new Set([
  * The display name is chosen by each suite's own `finishRun()` call and is not
  * derivable from the file name (`index.mjs` reports as `core+collection`), so
  * this map is scanned from the sources rather than written down twice — see
- * `scanSuiteFiles`.  The two dynamic families are matched by prefix.
+ * `scanSuiteFiles`.  The three dynamic families are matched by prefix.
  */
 const DYNAMIC_SUITES = [
   { prefix: 'render — ', file: 'render-bench.mjs' },
   { prefix: 'algorithms-gpu', file: 'algorithms-gpu-bench.mjs' },
+  { prefix: 'algorithms-workers', file: 'algorithms-workers.mjs' },
 ];
 
 /**

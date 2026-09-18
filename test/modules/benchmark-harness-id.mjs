@@ -141,12 +141,15 @@ describe('the harness fingerprint (round 65.12)', () => {
       expect(suiteFileOf('curves')).to.equal('curves.mjs');
     });
 
-    it('matches the two dynamic families by prefix', () => {
+    it('matches the three dynamic families by prefix', () => {
       expect(suiteFileOf('render — generated 25k × 50k')).to.equal(
         'render-bench.mjs',
       );
       expect(suiteFileOf('algorithms-gpu')).to.equal(
         'algorithms-gpu-bench.mjs',
+      );
+      expect(suiteFileOf('algorithms-workers')).to.equal(
+        'algorithms-workers.mjs',
       );
     });
 

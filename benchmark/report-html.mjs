@@ -93,12 +93,16 @@ function toSections(jobs) {
   return [...byKey.values()];
 }
 
-// a group is a comparison pair when it holds the gpu bench beside a
-// baseline bench: 'v3' (the cross-library suites) or — since the round-65.8
-// executor sweep, where both sides are v4 — 'cpu'.  Exact names only: a
-// bench called 'cpu eval' is a plain row, not a baseline.
+// a group is a comparison pair when it holds the subject bench — 'gpu', or
+// (round 74.5) 'workers' — beside a baseline bench: 'v3' (the cross-library
+// suites) or — since the round-65.8 executor sweep, where both sides are v4
+// — 'cpu'.  Exact names only: a bench called 'cpu eval' is a plain row, not
+// a baseline.  `pair.gpu` keeps its name for the subject whichever it is;
+// `pair.subject` says which, for the labels.
 function pairOf(group) {
-  const gpu = group.benches.find((b) => b.name === 'gpu');
+  const gpu =
+    group.benches.find((b) => b.name === 'gpu') ??
+    group.benches.find((b) => b.name === 'workers');
   const base =
     group.benches.find((b) => b.name === 'v3') ??
     group.benches.find((b) => b.name === 'cpu');
@@ -110,6 +114,7 @@ function pairOf(group) {
   return {
     base,
     gpu,
+    subject: gpu.name,
     speedup: base.stats.p50 / gpu.stats.p50,
     baseline: base.name,
   };
@@ -171,7 +176,7 @@ function pairRow(group, pair, axis) {
     <div class="track">${gridlines(axis.ticks)}
       <i class="link" style="left:${lo.toFixed(2)}%;width:${w.toFixed(2)}%"></i>
       ${dot('v3', b, tipFor(baselineLabel(pair.baseline), pair.base.stats))}
-      ${dot('gpu', a, tipFor('v4 (gpu)', pair.gpu.stats))}
+      ${dot('gpu', a, tipFor(`v4 (${pair.subject})`, pair.gpu.stats))}
     </div>
     <span class="val${losing ? ' losing' : ''}">${fmtSpeedup(pair.speedup)}</span>
   </div>`;
@@ -248,6 +253,14 @@ function sectionHtml(section) {
 
 // -- summary --------------------------------------------------------------------
 
+// what the pairs compare against the baseline: 'gpu', 'workers', or —
+// a run mixing both — 'gpu/workers'
+function subjectOf(pairs) {
+  const subjects = [...new Set(pairs.map((p) => p.subject ?? 'gpu'))];
+
+  return subjects.length === 1 ? subjects[0] : subjects.join('/');
+}
+
 function collectPairs(sections) {
   const pairs = [];
 
@@ -278,8 +291,9 @@ function tiles(pairs, meta) {
     ['v3', pairs.filter((p) => p.baseline === 'v3').length],
     ['cpu', pairs.filter((p) => p.baseline === 'cpu').length],
   ].filter(([, count]) => count > 0);
+  const subject = subjectOf(pairs);
   const pairsSub = kinds
-    .map(([kind, count]) => `${count} ${kind}-vs-gpu`)
+    .map(([kind, count]) => `${count} ${kind}-vs-${subject}`)
     .join(' + ')
     .concat(' comparisons');
   const aheadLabel =
@@ -318,7 +332,7 @@ function overview(pairs) {
         ${dot(
           'gpu',
           axis.pos(p.speedup),
-          `${fmtSpeedup(p.speedup)} — ${p.baseline} p50 ${fmtTime(p.base.stats.p50)} vs gpu p50 ${fmtTime(p.gpu.stats.p50)}`,
+          `${fmtSpeedup(p.speedup)} — ${p.baseline} p50 ${fmtTime(p.base.stats.p50)} vs ${p.subject} p50 ${fmtTime(p.gpu.stats.p50)}`,
         )}
       </div>
       <span class="val${losing ? ' losing' : ''}">${fmtSpeedup(p.speedup)}</span>
@@ -328,9 +342,10 @@ function overview(pairs) {
 
   const kinds = [...new Set(pairs.map((p) => p.baseline))];
   const what = kinds.length === 1 ? kinds[0] : 'baseline';
+  const subject = subjectOf(pairs);
 
   return `<section>
-    <h2>Speedup overview <small>${esc(what)} p50 ÷ gpu p50, log scale · right of the 1× line = gpu faster</small></h2>
+    <h2>Speedup overview <small>${esc(what)} p50 ÷ ${esc(subject)} p50, log scale · right of the 1× line = ${esc(subject)} faster</small></h2>
     <div class="chart">${rows}${axisBand(axis.ticks, (v) => `${v >= 1 ? Math.round(v) : v}×`)}</div>
   </section>`;
 }
@@ -618,11 +633,12 @@ export function renderReport(results) {
   </section>`;
 
   // the tagline names what the run compares: the classic v3-vs-v4
-  // suites, or (algorithms-gpu, 65.9) v4's own cpu-vs-gpu executors
+  // suites, or (algorithms-gpu, 65.9; algorithms-workers, 74.5) v4's
+  // own cpu-vs-gpu / cpu-vs-workers executors
   const kinds = [...new Set(pairs.map((p) => p.baseline))];
   const tagline =
     kinds.length === 1 && kinds[0] === 'cpu'
-      ? "v4 executor 'cpu' vs 'gpu' · times are per-call p50"
+      ? `v4 executor 'cpu' vs '${subjectOf(pairs)}' · times are per-call p50`
       : 'v4 (src/) vs v3 (v3/src/) · Mitata · times are per-iteration p50';
 
   return `<!doctype html>

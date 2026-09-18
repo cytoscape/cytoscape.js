@@ -190,6 +190,99 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.closeness(a)).to.be.within(0.7, 0.8); // 3.33 / 4.5
   });
 
+  it('closenessCentralityNormalized: the unweighted BFS path agrees with the FW route (72.3)', async function () {
+    // an unweighted call walks a BFS per source; `weight: () => 1`
+    // forces the Floyd–Warshall route over unit weights, whose
+    // distances are the same hop counts — so plain-mode scores are
+    // bit-identical (integer sums) and harmonic scores agree to f64
+    // summation order.  Ring + chords at n=60 leaves real distances;
+    // a second component checks the unreachable rule on both paths.
+    var els = [];
+    var n = 60;
+
+    for (var i = 0; i < n; i++) {
+      els.push({ data: { id: 'n' + i } });
+    }
+
+    for (var i = 0; i < n; i++) {
+      var half = i < 40 ? 0 : 40;
+      var span = i < 40 ? 40 : 20;
+
+      els.push({
+        data: {
+          source: 'n' + i,
+          target: 'n' + (half + ((i - half + 1) % span)),
+        },
+      });
+
+      if (i % 5 === 0 && i < 40) {
+        els.push({
+          data: { source: 'n' + i, target: 'n' + ((i * 13 + 7) % 40) },
+        });
+      }
+    }
+
+    var g = cytoscape({ elements: els });
+    var unit = () => 1;
+
+    for (var directed of [false, true]) {
+      for (var harmonic of [true, false]) {
+        var bfs = await g
+          .elements()
+          .closenessCentralityNormalized({ directed, harmonic });
+        var fw = await g
+          .elements()
+          .closenessCentralityNormalized({ directed, harmonic, weight: unit });
+        var maxDelta = 0;
+        var nonZero = 0;
+
+        g.nodes().forEach((node) => {
+          var b = bfs.closeness(node);
+
+          maxDelta = Math.max(maxDelta, Math.abs(b - fw.closeness(node)));
+          nonZero += b > 0 ? 1 : 0;
+        });
+
+        if (harmonic) {
+          expect(maxDelta, `harmonic directed=${directed}`).to.be.below(1e-12);
+          expect(nonZero).to.equal(n); // harmonic survives disconnection
+        } else {
+          expect(maxDelta, `plain directed=${directed}`).to.equal(0);
+          expect(nonZero).to.equal(0); // every node has an unreachable peer
+        }
+      }
+    }
+
+    // the plain rule discriminates on a connected graph too: drop the
+    // second component and plain scores are positive and still bit-equal
+    var one = cytoscape({
+      elements: els.filter((e) => {
+        var ids = [e.data.id, e.data.source, e.data.target].filter(Boolean);
+
+        return ids.every((id) => Number(id.slice(1)) < 40);
+      }),
+    });
+    var pb = await one
+      .elements()
+      .closenessCentralityNormalized({ harmonic: false });
+    var pf = await one
+      .elements()
+      .closenessCentralityNormalized({ harmonic: false, weight: unit });
+    var maxPlain = 0;
+    var positive = 0;
+
+    one.nodes().forEach((node) => {
+      maxPlain = Math.max(
+        maxPlain,
+        Math.abs(pb.closeness(node) - pf.closeness(node)),
+      );
+      positive += pb.closeness(node) > 0 ? 1 : 0;
+    });
+
+    expect(maxPlain).to.equal(0);
+    expect(positive).to.equal(40);
+  });
+
   it('eles.betweennessCentrality() unweighted undirected', async function () {
     var res = await cy.elements().betweennessCentrality();
 

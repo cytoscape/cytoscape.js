@@ -5,8 +5,43 @@ import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
-import { closenessCentralityNormalizedGpu } from './algo-gpu-closeness.mjs';
+import {
+  closenessCentralityNormalizedBfsGpu,
+  closenessCentralityNormalizedGpu,
+} from './algo-gpu-closeness.mjs';
 import { GROUP_NODES } from '../contract.mjs';
+import { buildBrandesNeighbors } from './betweenness-centrality.mjs';
+
+/**
+ * The node count above which `'auto'` takes the GPU BFS for an
+ * unweighted closeness run on a sparse graph.  Measured 2026-09-18
+ * (amd gcn-4, whole call, ring + chords at mean degree ~2.3): CPU BFS
+ * 1.2 / 8.3 / 18.8 / 70.7 / 285.7 ms against GPU BFS 5.9 / 8.6 /
+ * 12.7 / 25.3 / 83.0 ms at n = 256 / 512 / 1024 / 2048 / 4096 — a
+ * wash at 512, the GPU ahead from 1024 and 3.4× at 4096.
+ */
+export const CLOSENESS_BFS_GPU_MIN_N = 1024;
+
+/**
+ * The density (arcs ≥ n² / this) past which `'auto'` takes the GPU
+ * BFS at `GPU_MIN_N` already: the CPU's O(n·(n+E)) walk grows with E
+ * where the level-synchronous GPU BFS finishes in a few levels.
+ * Measured at mean degree 18 (arcs/n² = 0.036 at n=512): CPU 13.2 ms
+ * against GPU 7.0 ms at n=512 and 52.1 against 16.8 at n=1024; at
+ * n=256 the two are a wash (3.5 vs 3.9).
+ */
+export const CLOSENESS_BFS_DENSE_DIVISOR = 64;
+
+/**
+ * The density (arcs ≥ n² / this) past which an unweighted GPU run
+ * relaxes Floyd–Warshall instead of walking the BFS: the pulled BFS
+ * scans every reverse list per level, so at arcs/n² ≈ 0.17 the
+ * blocked FW is the cheaper kernel — 9.6 against 13.4 ms at n=512
+ * and 34.1 against 55.4 at n=1024 — while at 0.07 (n=256) the two
+ * are level and at 0.036 the BFS wins.  The CPU side walks the BFS
+ * regardless: it beats the CPU's FW at every density.
+ */
+export const CLOSENESS_FW_DENSE_DIVISOR = 8;
 
 export interface ClosenessCentralityOptions {
   root?: Collection | null;
@@ -17,7 +52,9 @@ export interface ClosenessCentralityOptions {
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
    * the single-root `closenessCentrality` is a cheap Dijkstra walk and
-   * stays synchronous on the CPU. */
+   * stays synchronous on the CPU.  Unweighted runs walk a BFS per
+   * source on either executor (72.3); weighted runs relax
+   * Floyd–Warshall. */
   executor?: AlgoExecutor;
 }
 
@@ -64,9 +101,10 @@ export const closenessCentrality = (
  * The async whole-collection closeness entry point behind
  * `eles.closenessCentralityNormalized()`: validates `executor`
  * synchronously, then routes to the CPU reference implementation or
- * the WGSL kernels (the blocked Floyd–Warshall relaxation plus a
- * per-row reduction, so the readback is n floats rather than the n²
- * distance matrix).
+ * the WGSL kernels — for unweighted runs the batched BFS shared with
+ * Brandes, for weighted ones the blocked Floyd–Warshall relaxation —
+ * each with a per-row fold on the device, so the readback is n floats
+ * rather than the n² distance matrix.
  *
  * @param coll — the calling collection
  * @param options — as `closenessCentralityNormalized`, plus `executor`
@@ -78,10 +116,33 @@ export const closenessCentralityNormalizedAsync = (
   options: ClosenessCentralityOptions = {},
 ): Promise<ClosenessCentralityNormalizedResult> => {
   const executor = resolveExecutor(options.executor);
-  const n = subgraph(coll).nodeSlots.length;
+  const view = subgraph(coll);
+  const n = view.nodeSlots.length;
 
-  // the relaxation dominates and is Floyd–Warshall's, so the family
-  // inherits FW's measured crossover (65.8: 3.4x GPU at n=256 already)
+  if (options.weight == null) {
+    // unweighted (72.3): the CPU walks a BFS per source at every
+    // density; the GPU walks the batched BFS, or on very dense graphs
+    // relaxes Floyd–Warshall, whichever kernel measured cheaper.  The
+    // constants above carry the measurements.
+    const arcs = view.edgeSlots.length * (options.directed === true ? 1 : 2);
+    const density = n === 0 ? 0 : arcs / (n * n);
+    const veryDense = density >= 1 / CLOSENESS_FW_DENSE_DIVISOR;
+    const dense = density >= 1 / CLOSENESS_BFS_DENSE_DIVISOR;
+
+    return runAlgo(
+      executor,
+      n,
+      dense ? GPU_MIN_N : CLOSENESS_BFS_GPU_MIN_N,
+      () => closenessCentralityNormalized(coll, options),
+      veryDense
+        ? (ctx) => closenessCentralityNormalizedGpu(ctx, coll, options)
+        : (ctx) => closenessCentralityNormalizedBfsGpu(ctx, coll, options),
+    );
+  }
+
+  // weighted: the relaxation dominates and is Floyd–Warshall's, so the
+  // family inherits FW's measured crossover (65.8: 3.4x GPU at n=256
+  // already)
   return runAlgo(
     executor,
     n,
@@ -138,12 +199,103 @@ export const closenessResultFrom = (
   };
 };
 
-/** Closeness centrality of every collection node, normalized by the maximum. */
+/**
+ * The unweighted row sums by per-source BFS (round 72.3): one
+ * breadth-first walk per node over the deduped neighbor lists both
+ * executors share with Brandes, accumulating the row's closeness sum
+ * as levels are assigned — O(n·(n + E)) where Floyd–Warshall is O(n³)
+ * whatever the density.  Distances are exact integers, so plain-mode
+ * sums are bit-identical to the FW route's and harmonic sums differ
+ * only in f64 summation order.  A plain-mode row with an unreachable
+ * node sums to Infinity, exactly as FW's Infinity entries do.
+ *
+ * @param view — the subgraph view
+ * @param directed — out-neighbors only, or both sides
+ * @param harmonic — the mode
+ * @returns Σ over j≠i of (harmonic ? 1/d : d), per dense index
+ */
+export const closenessRowSumsBfs = (
+  view: SubgraphView,
+  directed: boolean,
+  harmonic: boolean,
+): Float64Array => {
+  const n = view.nodeSlots.length;
+  const { neighbors } = buildBrandesNeighbors(view, directed);
+  // flattened to CSR once: the per-source walk then touches typed
+  // arrays only (measured 84 → 72 ms at n=2048 over the nested lists)
+  const starts = new Int32Array(n + 1);
+
+  for (let v = 0; v < n; v++) {
+    starts[v + 1] = starts[v] + neighbors[v].length;
+  }
+
+  const entries = new Int32Array(starts[n]);
+
+  for (let v = 0; v < n; v++) {
+    entries.set(neighbors[v], starts[v]);
+  }
+
+  const sums = new Float64Array(n);
+  const dist = new Int32Array(n);
+  const queue = new Int32Array(n);
+
+  for (let s = 0; s < n; s++) {
+    dist.fill(-1);
+    dist[s] = 0;
+    queue[0] = s;
+
+    let head = 0;
+    let tail = 1;
+    let sum = 0;
+
+    while (head < tail) {
+      const v = queue[head++];
+      const dv = dist[v] + 1;
+      const term = harmonic ? 1 / dv : dv;
+      const end = starts[v + 1];
+
+      for (let e = starts[v]; e < end; e++) {
+        const w = entries[e];
+
+        if (dist[w] === -1) {
+          dist[w] = dv;
+          queue[tail++] = w;
+          sum += term;
+        }
+      }
+    }
+
+    // plain mode: one unreachable node makes the row's sum infinite
+    sums[s] = !harmonic && tail < n ? Infinity : sum;
+  }
+
+  return sums;
+};
+
+/**
+ * Closeness centrality of every collection node, normalized by the
+ * maximum.  Unweighted runs walk a BFS per source (72.3); weighted
+ * runs relax Floyd–Warshall over the shared init — the same numbers
+ * either way, since unit weights make FW's distances the BFS levels.
+ */
 export const closenessCentralityNormalized = (
   coll: Collection,
   options: ClosenessCentralityOptions = {},
 ): ClosenessCentralityNormalizedResult => {
   const harmonic = options.harmonic !== false;
+
+  if (options.weight == null) {
+    const view = subgraph(coll);
+    const sums = closenessRowSumsBfs(view, options.directed === true, harmonic);
+    const closenesses = new Float64Array(sums.length);
+
+    for (let i = 0; i < sums.length; i++) {
+      closenesses[i] = closenessOfRowSum(sums[i], harmonic);
+    }
+
+    return closenessResultFrom(view, closenesses);
+  }
+
   const { view, n, dist, next } = initFloydWarshall(coll, options);
 
   relaxFloydWarshall(n, dist, next);

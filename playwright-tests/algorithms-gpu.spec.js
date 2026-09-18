@@ -833,6 +833,141 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.plain.gpuSum).toBe(0);
   });
 
+  test('closenessCentralityNormalized: the unweighted GPU BFS agrees across batches, modes and directions (72.3)', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // n=300 spans two 256-wide source batches (so the fold runs on
+      // a short last batch) and the ring + chords leave real level
+      // depth; three components put unreachable pairs in every batch,
+      // and the directed variant exercises the reverse CSR.  Integer
+      // levels make plain sums exact in f32 up to this n; harmonic
+      // sums differ by f32 summation only.
+      const els = [];
+      const n = 300;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        const comp = Math.floor(i / 100) * 100;
+
+        els.push({
+          data: {
+            source: 'n' + i,
+            target: 'n' + (comp + ((i - comp + 1) % 100)),
+          },
+        });
+
+        if (i % 9 === 0) {
+          els.push({
+            data: {
+              source: 'n' + i,
+              target: 'n' + (comp + ((i * 13 + 7) % 100)),
+            },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const rows = {};
+
+      for (const directed of [false, true]) {
+        for (const harmonic of [true, false]) {
+          const cpu = await cy.elements().closenessCentralityNormalized({
+            directed,
+            harmonic,
+            executor: 'cpu',
+          });
+          const gpu = await cy.elements().closenessCentralityNormalized({
+            directed,
+            harmonic,
+            executor: 'gpu',
+          });
+          let maxDelta = 0;
+          let nonZero = 0;
+
+          cy.nodes().forEach((node) => {
+            const c = cpu.closeness(node);
+
+            maxDelta = Math.max(maxDelta, Math.abs(c - gpu.closeness(node)));
+            nonZero += c > 0 ? 1 : 0;
+          });
+
+          rows[
+            `${directed ? 'directed' : 'undirected'}-${harmonic ? 'harmonic' : 'plain'}`
+          ] = { maxDelta, nonZero };
+        }
+      }
+
+      return rows;
+    });
+
+    for (const [key, row] of Object.entries(out)) {
+      // harmonic scores survive the disconnection; plain ones answer 0
+      // everywhere on both sides (every node has an unreachable peer)
+      if (key.endsWith('harmonic')) {
+        expect(row.maxDelta, key).toBeLessThan(1e-4);
+        expect(row.nonZero, key).toBe(300);
+      } else {
+        expect(row.maxDelta, key).toBe(0);
+        expect(row.nonZero, key).toBe(0);
+      }
+    }
+  });
+
+  test('closenessCentralityNormalized: plain scores on a connected graph agree bit-for-bit across executors (72.3)', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // one component at n=300: plain sums are small integers on both
+      // sides, so the normalized scores must agree exactly — the
+      // discrete invariant the disconnected fixture cannot pin
+      const els = [];
+      const n = 300;
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < n; i++) {
+        els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % n) } });
+
+        if (i % 9 === 0) {
+          els.push({
+            data: { source: 'n' + i, target: 'n' + ((i * 13 + 7) % n) },
+          });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const cpu = await cy
+        .elements()
+        .closenessCentralityNormalized({ harmonic: false, executor: 'cpu' });
+      const gpu = await cy
+        .elements()
+        .closenessCentralityNormalized({ harmonic: false, executor: 'gpu' });
+      let mismatches = 0;
+      let cpuMax = 0;
+
+      cy.nodes().forEach((node) => {
+        const c = cpu.closeness(node);
+
+        cpuMax = Math.max(cpuMax, c);
+
+        if (c !== gpu.closeness(node)) {
+          mismatches++;
+        }
+      });
+
+      return { mismatches, cpuMax };
+    });
+
+    expect(out.cpuMax).toBe(1);
+    expect(out.mismatches).toBe(0);
+  });
+
   test('triangleCount: identical integer counts and coefficients', async ({
     page,
   }) => {

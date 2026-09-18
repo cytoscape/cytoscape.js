@@ -5767,11 +5767,13 @@ export class Collection {
 
   /**
    * Closeness centrality for every node, normalized to [0, 1].  Async
-   * (round 69): the whole-collection form is the O(n³) all-pairs tier,
-   * so like `floydWarshall` it returns a promise and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where the
-   * relaxation runs; 'cpu' is the reproducible reference.  The
-   * single-root `closenessCentrality` stays synchronous.
+   * (round 69): the whole-collection form is the all-pairs tier, so
+   * like `floydWarshall` it returns a promise and `executor`
+   * ('cpu' | 'gpu' | 'auto', default 'auto') picks where it runs;
+   * 'cpu' is the reproducible reference.  Unweighted runs walk a BFS
+   * per source, O(n·(n+E)) (round 72.3); weighted runs relax
+   * Floyd–Warshall, O(n³).  The single-root `closenessCentrality`
+   * stays synchronous.
    *
    * @param options — `{ weight, directed, harmonic, executor }`
    * @returns a promise of a `closeness` accessor

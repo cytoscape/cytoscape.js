@@ -318,3 +318,85 @@ fixture agrees pair-for-pair at n=64/128/256 on both the old and the
 new kernel.  Its control: colSum × 0.5 turns it red (× 1.01 does
 not — recorded on the spec so the next control is not too gentle).
 The `affinityPropagation` bench row re-prices in 72.6's sweep.
+
+### 72.3 — closeness: the unweighted BFS path, on both executors (2026-09-18)
+
+**(a) CPU, landed.**  `closenessRowSumsBfs`: one queue-driven BFS per
+source over the deduped neighbor lists Brandes already builds,
+flattened once to CSR (84 → 72 ms at n=2048 over the nested lists),
+each row's sum accumulated as levels are assigned; plain mode marks a
+row infinite when the queue drains short of n.  The whole-collection
+entry routes on `weight`: absent → BFS, present → the FW relaxation
+as before.  Against the old CPU (FW) on the sparse bench fixture:
+21.8 → 1.2 ms at n=256 and 389 → 8.3 ms at n=512 — the asymptotic win
+the plan promised, 18–47× at the sizes the row prices.
+
+**Verified by** a Node spec that runs the same unweighted graph
+through both CPU routes — the BFS by default, the FW route forced by
+`weight: () => 1` — and asserts plain scores bit-equal (integer sums)
+and harmonic scores within 1e-12, directed and undirected, on a
+two-component ring-and-chords fixture (plain answers 0 everywhere,
+harmonic survives) and on a connected one (plain positive, still
+bit-equal).  Its first control taught something: `dist + 2` in
+place of `+ 1` stayed green, because a uniform scale on every
+distance cancels under max-normalization — the control has to be
+non-uniform (`+1` on each term, run red, restored).
+
+**(b) measured, three ways.**  Whole call, median of 3, the bench's
+generators plus a mean-degree-18 middle fixture (amd gcn-4):
+
+| fixture | n | arcs/n² | CPU BFS | GPU BFS | GPU FW |
+|---|---:|---:|---:|---:|---:|
+| sparse (deg ~2.3) | 256 | 0.009 | 1.2 | 5.9 | 3.6 |
+| | 512 | 0.0045 | 8.3 | 8.6 | 8.7 |
+| | 1024 | 0.0022 | 18.8 | **12.7** | 36.8 |
+| | 2048 | 0.0011 | 70.7 | **25.3** | — |
+| | 4096 | 0.0006 | 285.7 | **83.0** | — |
+| mid (deg 18) | 256 | 0.071 | 3.5 | 3.9 | 4.3 |
+| | 512 | 0.036 | 13.2 | **7.0** | 12.7 |
+| | 1024 | 0.018 | 52.1 | **16.8** | 30.1 |
+| | 2048 | 0.009 | 199.7 | **56.2** | — |
+| dense (E = n²/12) | 256 | 0.17 | 6.5 | 4.3 | **4.0** |
+| | 512 | 0.17 | 46.6 | 13.4 | **9.6** |
+| | 1024 | 0.17 | 337.3 | 55.4 | **34.1** |
+| | 2048 | 0.17 | 2575.6 | 460.0 | — |
+
+The sparse CPU BFS beats the GPU-FW route at every bench size (the
+`'auto'` route to GPU-FW for sparse unweighted graphs *was* wrong, as
+(b) predicted), but it does not own the family the way the CPU owns
+pageRank: the GPU BFS is ahead from n=1024 sparse and n=512 at
+degree 18, 3.4× at n=4096.  And on very dense graphs the blocked FW
+is still the cheaper *kernel* — the pulled BFS rescans every reverse
+list per level.
+
+**(c) GPU, built.**  The forward half of `algo-gpu-brandes.mts` is
+now `algo-gpu-bfs.mts` — `bfsPlan` (CSR upload, reverse CSR when
+directed, the BATCH×n working arrays, the per-batch dispatches) and
+`bfsForwardBatch` (seed, CHUNK-level encodes, the 16-byte
+frontier-empty probes) — and the Brandes driver keeps only what is
+its own (the dependency sweep, the C fold, and a delta-zero kernel,
+since the shared init clears d and sigma).  Closeness gains
+`closenessCentralityNormalizedBfsGpu`: the same plan, and after each
+batch a fold kernel — one workgroup per lane — that sums the lane's
+levels (harmonic 1/level, plain level) and marks a plain row with an
+unreached node for the sentinel.  The `'auto'` routing for unweighted
+runs is three constants, each carrying its row of the table:
+`CLOSENESS_BFS_GPU_MIN_N = 1024` (sparse), `CLOSENESS_BFS_DENSE_DIVISOR
+= 64` (arcs ≥ n²/64 takes the GPU at `GPU_MIN_N`), and
+`CLOSENESS_FW_DENSE_DIVISOR = 8` (arcs ≥ n²/8: the GPU relaxes FW
+instead of walking).  The CPU side walks the BFS at every density —
+it beats the CPU's FW everywhere.
+
+**Verified by** two Playwright specs: the multi-batch one (n=300 —
+two source batches, so the fold runs on a short last batch — three
+components, both modes, both directions: harmonic within 1e-4 and
+positive everywhere, plain exactly 0 everywhere) and a connected one
+(plain scores bit-equal across executors at n=300, the discrete
+invariant the disconnected fixture cannot pin).  Controls: `level +
+1` in the plain fold turns the connected spec red; `1/(level + 1)`
+in the harmonic fold turns the multi-batch spec red; both restored.
+The betweenness parity specs stay green over the extracted plan (23
+of 23 in the suite).  The bench's unweighted closeness row now
+measures a different path on both sides — recorded here, since the
+harness hash cannot see a `src/` change — and 72.6 adds the weighted
+row so the FW route stays measured.

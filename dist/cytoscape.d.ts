@@ -4206,7 +4206,9 @@ interface ClosenessCentralityOptions {
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
    * the single-root `closenessCentrality` is a cheap Dijkstra walk and
-   * stays synchronous on the CPU. */
+   * stays synchronous on the CPU.  Unweighted runs walk a BFS per
+   * source on either executor (72.3); weighted runs relax
+   * Floyd–Warshall. */
   executor?: AlgoExecutor;
 }
 interface ClosenessCentralityNormalizedResult {

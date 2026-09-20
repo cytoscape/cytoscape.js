@@ -3013,9 +3013,9 @@ declare namespace cytoscape {
          * Returns subset of collection within the given box, using the
          * renderer's box-selection rules. Only considers interactive elements.
          *
-         * @param box BoundingBox12 & BoundingBoxWH
+         * @param box BoundingBox12 | BoundingBoxWH
          */
-        withinBox(box: BoundingBox12 & BoundingBoxWH): Collection<TIn>;
+        withinBox(box: BoundingBox12 | BoundingBoxWH): Collection<TIn>;
         /**
          * Returns a new collection containing elements whose body or main label
          * polygonal bounds intersect the specified polygon in model coordinates.

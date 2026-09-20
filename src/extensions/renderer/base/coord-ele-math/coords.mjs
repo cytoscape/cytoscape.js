@@ -130,6 +130,71 @@ BRp.checkNodeHitAt = function( node, x, y, threshold ){
   return false;
 };
 
+// Returns { sqDist } if (x, y) hits the line/curve or arrows of edge, else null.
+BRp.checkEdgeHitAt = function( edge, x, y, threshold ){
+  var r = this;
+  var _p = edge._private;
+  var rs = _p.rscratch;
+  var styleWidth = edge.pstyle( 'width' ).pfValue;
+  var scale = edge.pstyle( 'arrow-scale' ).value;
+  var width = styleWidth / 2 + threshold; // more like a distance radius from centre
+  var widthSq = width * width;
+  var width2 = width * 2;
+  var sqDist;
+
+  if( rs.edgeType === 'segments' || rs.edgeType === 'straight' || rs.edgeType === 'haystack' ){
+    var linePts = rs.allpts;
+
+    for( var i = 0; i + 3 < linePts.length; i += 2 ){
+      if(
+        (math.inLineVicinity( x, y, linePts[ i ], linePts[ i + 1], linePts[ i + 2], linePts[ i + 3], width2 ))
+          &&
+        widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, linePts[ i ], linePts[ i + 1], linePts[ i + 2], linePts[ i + 3] ) )
+      ){
+        return { sqDist: sqDist };
+      }
+    }
+
+  } else if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    var bezierPts = rs.allpts;
+    for( var k = 0; k + 5 < bezierPts.length; k += 4 ){
+      if(
+        (math.inBezierVicinity( x, y, bezierPts[ k ], bezierPts[ k + 1], bezierPts[ k + 2], bezierPts[ k + 3], bezierPts[ k + 4], bezierPts[ k + 5], width2 ))
+          &&
+        (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, bezierPts[ k ], bezierPts[ k + 1], bezierPts[ k + 2], bezierPts[ k + 3], bezierPts[ k + 4], bezierPts[ k + 5] )) )
+      ){
+        return { sqDist: sqDist };
+      }
+    }
+  }
+
+  // if we're close to the edge but didn't hit it, maybe we hit its arrows
+
+  var arSize = r.getArrowWidth( styleWidth, scale );
+
+  var arrows = [
+    { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
+    { name: 'target', x: rs.arrowEndX, y: rs.arrowEndY, angle: rs.tgtArrowAngle },
+    { name: 'mid-source', x: rs.midX, y: rs.midY, angle: rs.midsrcArrowAngle },
+    { name: 'mid-target', x: rs.midX, y: rs.midY, angle: rs.midtgtArrowAngle }
+  ];
+
+  for( var j = 0; j < arrows.length; j++ ){
+    var ar = arrows[ j ];
+    var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
+    var edgeWidth = styleWidth;
+    if(
+      shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, threshold )
+       &&
+      shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, threshold )
+    ){
+      return { sqDist: null };
+    }
+  }
+
+  return null;
+};
+
 // Returns all elements from eles that are hit by (x, y), sorted topmost first.
 // options: { includeBody, includeMainLabels, includeSourceLabels, includeTargetLabels, isTouch }
 BRp.hitTestAt = function( x, y, eles, options ){
@@ -143,6 +208,7 @@ BRp.hitTestAt = function( x, y, eles, options ){
   var includeTargetLabels = opts.includeTargetLabels !== false;
   var nodeThreshold  = ( isTouch ? 8 : 2 ) / zoom;
   var labelThreshold = ( isTouch ? 8 : 2 ) / zoom;
+  var edgeThreshold  = ( isTouch ? 24 : 8 ) / zoom;
 
   var eleIds = new Set();
   for( var i = 0; i < eles.length; i++ ){ eleIds.add( eles[i]._private.data.id ); }
@@ -150,8 +216,8 @@ BRp.hitTestAt = function( x, y, eles, options ){
   var zSorted = r.getCachedZSortedEles();
   var matches = [];
 
-  for( var i = zSorted.length - 1; i >= 0; i-- ){ // reverse = topmost first
-    var ele = zSorted[ i ];
+  for( var j = zSorted.length - 1; j >= 0; j-- ){ // reverse = topmost first
+    var ele = zSorted[ j ];
     if( !eleIds.has( ele._private.data.id ) ){ continue; }
 
     var hit = false;
@@ -164,14 +230,17 @@ BRp.hitTestAt = function( x, y, eles, options ){
         hit = r.checkLabelHitAt( ele, x, y, null, labelThreshold );
       }
     } else { // edge
-      if( includeMainLabels ){
-        hit = hit || r.checkLabelHitAt( ele, x, y, null,     labelThreshold );
+      if( includeBody ){
+        hit = r.checkEdgeHitAt( ele, x, y, edgeThreshold ) != null;
       }
-      if( includeSourceLabels ){
-        hit = hit || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold );
+      if( !hit && includeMainLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, null,     labelThreshold );
       }
-      if( includeTargetLabels ){
-        hit = hit || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
+      if( !hit && includeSourceLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, 'source', labelThreshold );
+      }
+      if( !hit && includeTargetLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
       }
     }
 

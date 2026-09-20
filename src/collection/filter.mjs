@@ -385,7 +385,12 @@ let elesfn = ({
     const cy = this.cy();
     const r = cy.renderer();
     if( cy.styleEnabled() ){ this.recalculateRenderedStyle(); }
-    const bb = makeBoundingBox(box);
+    const x2 = box.x2 != null ? box.x2 : box.x1 + box.w;
+    const y2 = box.y2 != null ? box.y2 : box.y1 + box.h;
+    const bb = makeBoundingBox({
+      x1: Math.min(box.x1, x2), x2: Math.max(box.x1, x2),
+      y1: Math.min(box.y1, y2), y2: Math.max(box.y1, y2)
+    });
     const allInBox = r.getAllInBox(bb.x1, bb.y1, bb.x2, bb.y2);
     const col = this;
     return this.spawn( allInBox.filter(ele => col.has(ele)) );

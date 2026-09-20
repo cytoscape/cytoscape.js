@@ -77,9 +77,6 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
-
-      buffCxt.scale( 1/scale, 1/scale );
-      buffCxt.translate( bb.x1 * scale, bb.y1 * scale );
     } else { // draw the current view
       var pan = cy.pan();
 
@@ -94,10 +91,10 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
-
-      buffCxt.scale( 1/scale, 1/scale );
-      buffCxt.translate( -translation.x, -translation.y );
     }
+
+    // Inverse transforms can leave rounding errors that make the background edges translucent.
+    buffCxt.setTransform( 1, 0, 0, 1, 0, 0 );
 
     // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
     if( options.bg ){

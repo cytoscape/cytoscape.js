@@ -49,6 +49,47 @@ test.describe('Renderer', () => {
     expect(numNodes).toBe(1);
   });
 
+  test.describe('image export', () => {
+    for( const [name, options] of [
+      ['viewport', {}],
+      ['scaled viewport', { scale: 1.5 }],
+      ['full graph', { full: true, scale: 0.718394 }]
+    ] ){
+      test(`fills the entire ${name} PNG with an opaque background`, async ({ page }) => {
+        const minimumAlpha = await page.evaluate(async options => {
+          const cy = window.cy;
+          const zoom = 0.718394;
+          const pan = { x: 123456.7, y: -123456.7 };
+          cy.add([
+            { data: { id: 'a' }, position: { x: (100 - pan.x) / zoom, y: (100 - pan.y) / zoom } },
+            { data: { id: 'b' }, position: { x: (240 - pan.x) / zoom, y: (200 - pan.y) / zoom } }
+          ]);
+          cy.zoom(zoom);
+          cy.pan(pan);
+
+          const image = new Image();
+          image.src = cy.png({ ...options, bg: '#ffffff' });
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0);
+          const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+          let minimum = 255;
+
+          for( let i = 3; i < data.length; i += 4 ){
+            minimum = Math.min(minimum, data[i]);
+          }
+
+          return minimum;
+        }, options);
+
+        expect(minimumAlpha).toBe(255);
+      });
+    }
+  });
+
   test.describe('node style', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {

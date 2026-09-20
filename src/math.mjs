@@ -1458,7 +1458,33 @@ export const getBarrelCurveConstants = ( width, height ) => ({
   ctrlPtOffsetPct: 0.05
 });
 
-// Separating Axis Theorem (SAT) to determine if two polygons intersect. 
+export const getRotatedLabelBox = (bb, lx, ly, theta, ox, oy, th) => {
+  let lx1 = bb.x1 - th - ox;
+  let lx2 = bb.x2 + th - ox;
+  let ly1 = bb.y1 - th - oy;
+  let ly2 = bb.y2 + th - oy;
+
+  if (theta) {
+    let cos = Math.cos(theta);
+    let sin = Math.sin(theta);
+    let rotate = (x, y) => {
+      x = x - lx;
+      y = y - ly;
+      return { x: x * cos - y * sin + lx, y: x * sin + y * cos + ly };
+    };
+
+    return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
+  } else {
+    return [
+      { x: lx1, y: ly1 },
+      { x: lx2, y: ly1 },
+      { x: lx2, y: ly2 },
+      { x: lx1, y: ly2 },
+    ];
+  }
+};
+
+// Separating Axis Theorem (SAT) to determine if two polygons intersect.
 // The function takes two polygons as input and returns a boolean value indicating 
 // whether the two polygons intersect.
 export function satPolygonIntersection(poly1, poly2) {

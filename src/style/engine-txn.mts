@@ -9,7 +9,8 @@ import {
   columnSpec,
   FLAG_PARENT,
 } from '../contract.mjs';
-import { TWEEN_COL, buildChannelWrite } from '../animation.mjs';
+import { TWEEN_COL } from '../animation.mjs';
+import { buildChannelWrite } from '../animation/channels.mjs';
 import type { ChannelWrite } from '../animation.mjs';
 import type { ColumnId, GroupName, Ref } from '../contract.mjs';
 import { PROP } from '../style-props.mjs';

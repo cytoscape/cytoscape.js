@@ -258,6 +258,28 @@ follow `exportScale` to `renderer/export-view.mts`.
 renderer module specs green; the visual goldens run after this
 sub-round.
 
+### 130.8 — `src/animation/`, carried out (2026-09-20)
+
+The slicer cut the three classes apart — `handle` (122 lines),
+`animation` (1,270 before its own extraction), `manager` (570) — with
+the channel tables, the write kit and `TWEEN_COL` in `channels` (338);
+then the extractor moved `Animation`'s capture (the nine write builders
+and ride captures — `capture`, 430) and its apply/finish/`swapEnds`
+(`apply`, 140) out, leaving `animation.mts` at 798.  The facade keeps
+the module prose and re-exports every name it exported before **except
+`buildChannelWrite`**: it is `@internal`, `stripInternal` drops it from
+`channels.d.mts`, and a re-export of a stripped name breaks the d.ts
+bundle — its one importer (`style/engine-txn.mts`) reaches the module
+directly.  `PUBLIC_API` lists the three class files (the
+`AnimationHandleImpl → ani` mapping is by class name and unchanged);
+`now()` in `manager.mts`, exported for the class, gained the `@returns`
+the public tier demands.  Nine `features.csv` rows re-anchored.
+
+`animation.mts`: 2,328 → **62 lines**.  API JSON identical modulo line
+stamps; the compile-only consumer type test green; the shipped d.ts is
+714 lines shorter across the round so far — the demoted `private`
+lines and their docs.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

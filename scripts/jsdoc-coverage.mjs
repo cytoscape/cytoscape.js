@@ -32,7 +32,11 @@ export const PUBLIC_API = [
   // own viewport surface under another spelling, and the class is stripped
   // from the shipped declaration.  BoundsLike stays exported for the
   // members that take one.
-  'src/animation.mts',
+  // round 130 split animation.mts: the three classes live in these files
+  // (the facade re-exports them and holds TWEEN_COL's re-export only)
+  'src/animation/handle.mts',
+  'src/animation/animation.mts',
+  'src/animation/manager.mts',
   'src/style.mts',
   'src/columnar.mts',
   'src/wire.mts',

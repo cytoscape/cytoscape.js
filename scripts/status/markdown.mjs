@@ -185,6 +185,16 @@ export const PLANNED_PATHS = {
   // entries left this list when the files began resolving, exactly the
   // lifecycle documented above; the planned-but-renamed .js spelling
   // moved to HISTORICAL_PATHS.
+  // round 131 — use-case bundles (cytoscape/headless, cytoscape/headless-gpu)
+  'src/headless.mts': 'planned by round 131 (use-case bundles)',
+  'src/headless-gpu.mts': 'planned by round 131 (use-case bundles)',
+  'src/factory.mts': 'planned by round 131 (use-case bundles)',
+  'src/public-exports.mts': 'planned by round 131 (use-case bundles)',
+  'src/algorithms/gpu-registry.mts': 'planned by round 131 (use-case bundles)',
+  'src/gpu/headless-force-host.mts': 'planned by round 131 (use-case bundles)',
+  'test/modules/bundle-size.mjs': 'planned by round 131 (use-case bundles)',
+  'test/modules/isolate-smoke.mjs': 'planned by round 131 (use-case bundles)',
+  'test/runtimes/workerd.capnp': 'planned by round 131 (use-case bundles)',
 };
 
 /**

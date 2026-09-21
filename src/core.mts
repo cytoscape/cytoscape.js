@@ -286,7 +286,9 @@ export class Core {
       this._allCache = null;
       this._allEles = null;
     };
-    this._animations = new AnimationManager(() => this._afterAnimationTick());
+    this._animations = new AnimationManager(() =>
+      viewportImpl._afterAnimationTick(this),
+    );
 
     // round 24.1: the engine's transition diffs spawn preset bulk tweens
     // through the manager — the round-21 channel eviction gives uniform
@@ -1152,11 +1154,6 @@ export class Core {
     return this;
   }
 
-  /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. @internal */
-  _afterAnimationTick(): void {
-    viewportImpl._afterAnimationTick(this);
-  }
-
   /**
    * The model-space rectangle currently visible, as
    * `{ x1, y1, x2, y2, w, h }` — the inverse of the pan/zoom transform
@@ -1381,7 +1378,7 @@ export class Core {
    * @returns the encoded image in the requested output form
    */
   png(options: ExportOptions = {}): Promise<string | Blob> {
-    return this._exportImage('image/png', options);
+    return exportImpl._exportImage(this, 'image/png', options);
   }
 
   /**
@@ -1392,18 +1389,13 @@ export class Core {
    * @returns the encoded image in the requested output form
    */
   jpg(options: ExportOptions = {}): Promise<string | Blob> {
-    return this._exportImage('image/jpeg', { bg: '#fff', ...options });
+    return exportImpl._exportImage(this, 'image/jpeg', {
+      bg: '#fff',
+      ...options,
+    });
   }
 
   declare jpeg: this['jpg'];
-
-  /** @internal */
-  async _exportImage(
-    mime: string,
-    options: ExportOptions,
-  ): Promise<string | Blob> {
-    return exportImpl._exportImage(this, mime, options);
-  }
 
   // -- graph-level data & scratch (plain objects, not columns) --
 
@@ -1422,7 +1414,7 @@ export class Core {
   data(
     ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
   ): unknown {
-    return this._objectAccess(this._graphData, args, 'data');
+    return graphDataImpl._objectAccess(this, this._graphData, args, 'data');
   }
 
   /**
@@ -1433,7 +1425,12 @@ export class Core {
    * @returns this core, for chaining
    */
   removeData(names?: string): this {
-    return this._objectRemove(this._graphData, names, 'data');
+    return graphDataImpl._objectRemove(
+      this,
+      this._graphData,
+      names,
+      'data',
+    ) as this;
   }
 
   declare attr: this['data'];
@@ -1452,7 +1449,7 @@ export class Core {
   scratch(
     ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
   ): unknown {
-    return this._objectAccess(this._scratch, args, null);
+    return graphDataImpl._objectAccess(this, this._scratch, args, null);
   }
 
   /**
@@ -1462,25 +1459,12 @@ export class Core {
    * @returns this core, for chaining
    */
   removeScratch(names?: string): this {
-    return this._objectRemove(this._scratch, names, null);
-  }
-
-  /** @internal */
-  _objectAccess(
-    target: Record<string, unknown>,
-    args: [] | [string] | [string, unknown] | [Record<string, unknown>],
-    event: string | null,
-  ): unknown {
-    return graphDataImpl._objectAccess(this, target, args, event);
-  }
-
-  /** @internal */
-  _objectRemove(
-    target: Record<string, unknown>,
-    names: string | undefined,
-    event: string | null,
-  ): this {
-    return graphDataImpl._objectRemove(this, target, names, event) as this;
+    return graphDataImpl._objectRemove(
+      this,
+      this._scratch,
+      names,
+      null,
+    ) as this;
   }
 
   // -- interaction gating --

@@ -237,14 +237,24 @@ export class PointerHandler {
     this.lastTap = null;
     this.cleanups = [];
 
-    this.listen('wheel', (e) => this.onWheel(e as WheelEvent), {
-      passive: false,
-    });
-    this.listen('pointerdown', (e) => this.onPointerDown(e as PointerEvent));
-    this.listen('pointermove', (e) => this.onPointerMove(e as PointerEvent));
-    this.listen('pointerup', (e) => this.onPointerUp(e as PointerEvent));
+    this.listen(
+      'wheel',
+      (e) => pointerHandlersImpl.onWheel(this, e as WheelEvent),
+      {
+        passive: false,
+      },
+    );
+    this.listen('pointerdown', (e) =>
+      pointerHandlersImpl.onPointerDown(this, e as PointerEvent),
+    );
+    this.listen('pointermove', (e) =>
+      pointerHandlersImpl.onPointerMove(this, e as PointerEvent),
+    );
+    this.listen('pointerup', (e) =>
+      pointerHandlersImpl.onPointerUp(this, e as PointerEvent),
+    );
     this.listen('pointercancel', (e) =>
-      this.onPointerCancel(e as PointerEvent),
+      pointerHandlersImpl.onPointerCancel(this, e as PointerEvent),
     );
     this.listen('pointerleave', () => this.updateHover(null));
     // right-button gestures are ours (cxttap family), not the browser menu's
@@ -285,35 +295,10 @@ export class PointerHandler {
 
     // destroy also runs on the device-loss re-mount (round 10), so a
     // cursor left behind here would outlive the handler that set it
-    this.releaseCursor();
+    pointerHoverImpl.releaseCursor(this);
   }
 
   // -- handlers --
-
-  /** @internal */
-  onWheel(e: WheelEvent): void {
-    pointerHandlersImpl.onWheel(this, e);
-  }
-
-  /** @internal */
-  onPointerDown(e: PointerEvent): void {
-    pointerHandlersImpl.onPointerDown(this, e);
-  }
-
-  /** @internal */
-  onPointerMove(e: PointerEvent): void {
-    pointerHandlersImpl.onPointerMove(this, e);
-  }
-
-  /** @internal */
-  onPointerUp(e: PointerEvent): void {
-    pointerHandlersImpl.onPointerUp(this, e);
-  }
-
-  /** @internal */
-  onPointerCancel(e: PointerEvent): void {
-    pointerHandlersImpl.onPointerCancel(this, e);
-  }
 
   // -- the two-finger cxt gesture (round 20.4) --
 
@@ -456,11 +441,6 @@ export class PointerHandler {
    */
   applyCursor(): void {
     pointerHoverImpl.applyCursor(this);
-  }
-
-  /** Hand the canvas and the page their cursors back (destroy). @internal */
-  releaseCursor(): void {
-    pointerHoverImpl.releaseCursor(this);
   }
 
   /** @internal */

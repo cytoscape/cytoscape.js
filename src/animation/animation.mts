@@ -572,7 +572,7 @@ export class Animation {
         ? 1
         : clamp01((nowMs - this.startTime) / this.duration);
 
-    this.swapEnds();
+    applyImpl.swapEnds(this);
     this.startTime = nowMs - (1 - t) * this.duration;
   }
 
@@ -599,11 +599,6 @@ export class Animation {
         : clamp01((now - (this.startTime ?? now)) / this.duration);
 
     this.apply(this.easing(t));
-  }
-
-  /** Swap every write's from/to halves (and the viewport targets). @internal */
-  swapEnds(): void {
-    applyImpl.swapEnds(this);
   }
 
   /** set when a slot compaction demoted this animation mid-flight: the

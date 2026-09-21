@@ -418,7 +418,7 @@ export class GraphStore implements ModelView {
         }
       },
       materialize: (slot, x, y, w, h) =>
-        this.materializeParentGeom(slot, x, y, w, h),
+        compoundImpl.materializeParentGeom(this, slot, x, y, w, h),
     });
 
     // a blob compaction moves records: rewrite the header offset (a
@@ -779,24 +779,13 @@ export class GraphStore implements ModelView {
       return true;
     }
 
-    return this.repairStale(ref);
+    return compactionImpl.repairStale(this, ref);
   }
 
   /** Bumped once per slot-moving compaction; collections use it to
    * invalidate cached packed-key membership sets (19.3). */
   get compactEpoch(): number {
     return this._compactEpoch;
-  }
-
-  /**
-   * Chase a stale ref through the forwarding chain (each compaction a
-   * moved element survives adds one link) and, on reaching a live
-   * identity, rewrite the ref in place.  Entries persist and compose, so
-   * repair is total for any ref whose element still exists.
-   * @internal
-   */
-  repairStale(ref: Ref): boolean {
-    return compactionImpl.repairStale(this, ref);
   }
 
   /**
@@ -936,22 +925,6 @@ export class GraphStore implements ModelView {
   flushDerived(): void {
     this.hierarchy.flush();
     this.curves.flush();
-    this.refreshTaxiTracks();
-  }
-
-  /**
-   * The taxi-track pass (round 124): assign every `taxi-turn: auto`
-   * edge its px turn from live positions, into the params header's n
-   * lane, which both `evalTaxi` and the WGSL twin read for a taxi
-   * record whose turn mode is 2.  Lazy off the geo epoch — a drag fires
-   * many pointermoves per frame and a layout writes positions in
-   * several passes, so the sweep runs once per epoch, at frame start
-   * (`takeDelta`) and on the CPU readers (`flushDerived`), and is a
-   * single size check when no edge is `auto`.  It writes a column,
-   * never the blob, and never bumps the epoch it is keyed on.
-   * @internal
-   */
-  refreshTaxiTracks(): void {
     compoundImpl.refreshTaxiTracks(this);
   }
 
@@ -991,25 +964,6 @@ export class GraphStore implements ModelView {
    */
   replicateEdgeStyle(start: number, count: number): void {
     compoundImpl.replicateEdgeStyle(this, start, count);
-  }
-
-  /**
-   * The hierarchy flush's write sink: derived parent geometry lands in
-   * the real columns (position, size, outerHalf) with normal dirty
-   * spans — but never re-marks the hierarchy, so a flush can not
-   * re-trigger itself.  A size change re-anchors the parent's label
-   * (the sidecar entry bakes anchors from the node extents) and feeds
-   * the monotone cull-slack meter.
-   * @internal
-   */
-  materializeParentGeom(
-    slot: number,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-  ): void {
-    compoundImpl.materializeParentGeom(this, slot, x, y, w, h);
   }
 
   /** Mark a node's ancestor chain (and its own derived bounds when it is

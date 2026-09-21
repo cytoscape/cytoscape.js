@@ -445,7 +445,7 @@ export class Renderer {
 
     this.armDprListener();
 
-    this.ready = this.init();
+    this.ready = frameImpl.init(this);
   }
 
   /**
@@ -598,12 +598,12 @@ export class Renderer {
       return null;
     }
 
-    return this.cpuPickNode(x * this.dpr, y * this.dpr, padPx * this.dpr);
-  }
-
-  /** @internal */
-  cpuPickNode(xPx: number, yPx: number, padPx: number = 0): number | null {
-    return pickImpl.cpuPickNode(this, xPx, yPx, padPx);
+    return pickImpl.cpuPickNode(
+      this,
+      x * this.dpr,
+      y * this.dpr,
+      padPx * this.dpr,
+    );
   }
 
   /** @internal */
@@ -727,11 +727,6 @@ export class Renderer {
   // -- internals --
 
   /** @internal */
-  async init(): Promise<void> {
-    return frameImpl.init(this);
-  }
-
-  /** @internal */
   schedule(): void {
     if (this.frameRequested || this.destroyed || !this.isReady) {
       return;
@@ -750,15 +745,10 @@ export class Renderer {
     this.inFrame = true;
 
     try {
-      this.frameBody();
+      frameImpl.frameBody(this);
     } finally {
       this.inFrame = false;
     }
-  }
-
-  /** @internal */
-  frameBody(): void {
-    frameImpl.frameBody(this);
   }
 
   // -- deferred pipelines --

@@ -732,7 +732,7 @@ export class Collection {
    * @returns true for a loop edge; false for nodes and removed elements
    */
   isLoop(): boolean {
-    return this._isLoop(true);
+    return identityImpl._isLoop(this, true);
   }
 
   /**
@@ -741,12 +741,7 @@ export class Collection {
    * @returns true for an edge between two distinct nodes
    */
   isSimple(): boolean {
-    return this._isLoop(false);
-  }
-
-  /** @internal */
-  _isLoop(wantLoop: boolean): boolean {
-    return identityImpl._isLoop(this, wantLoop);
+    return identityImpl._isLoop(this, false);
   }
 
   /**
@@ -1063,7 +1058,7 @@ export class Collection {
     valFn: (ele: Collection, i: number, eles: Collection) => number,
     thisArg?: unknown,
   ): { value: number; ele: Collection | undefined } {
-    return this._extremum(valFn, thisArg, 1);
+    return filteringImpl._extremum(this, valFn, thisArg, 1);
   }
 
   /**
@@ -1078,16 +1073,7 @@ export class Collection {
     valFn: (ele: Collection, i: number, eles: Collection) => number,
     thisArg?: unknown,
   ): { value: number; ele: Collection | undefined } {
-    return this._extremum(valFn, thisArg, -1);
-  }
-
-  /** @internal */
-  _extremum(
-    valFn: (ele: Collection, i: number, eles: Collection) => number,
-    thisArg: unknown,
-    sign: 1 | -1,
-  ): { value: number; ele: Collection | undefined } {
-    return filteringImpl._extremum(this, valFn, thisArg, sign);
+    return filteringImpl._extremum(this, valFn, thisArg, -1);
   }
 
   // -- position and dimensions --
@@ -1282,7 +1268,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   shift(dim: string | Position, value?: number): this {
-    return this._shift(dim, value, false);
+    return positionImpl._shift(this, dim, value, false) as this;
   }
 
   /**
@@ -1294,16 +1280,7 @@ export class Collection {
    * @internal
    */
   silentShift(dim: string | Position, value?: number): this {
-    return this._shift(dim, value, true);
-  }
-
-  /** @internal */
-  _shift(
-    dim: string | Position,
-    value: number | undefined,
-    silent: boolean,
-  ): this {
-    return positionImpl._shift(this, dim, value, silent) as this;
+    return positionImpl._shift(this, dim, value, true) as this;
   }
 
   /**
@@ -1739,7 +1716,7 @@ export class Collection {
    *   have no padding; undefined when empty or removed
    */
   paddedWidth(): number | undefined {
-    return this._paddedDim(0);
+    return styleImpl._paddedDim(this, 0);
   }
 
   /**
@@ -1752,12 +1729,7 @@ export class Collection {
    * @returns the padded height, or undefined when empty or removed
    */
   paddedHeight(): number | undefined {
-    return this._paddedDim(1);
-  }
-
-  /** @internal */
-  _paddedDim(axis: 0 | 1): number | undefined {
-    return styleImpl._paddedDim(this, axis);
+    return styleImpl._paddedDim(this, 1);
   }
 
   /**
@@ -1769,7 +1741,7 @@ export class Collection {
   outerWidth(): number | undefined {
     const w = this.paddedWidth();
 
-    return w == null ? undefined : w + this._borderWidth();
+    return w == null ? undefined : w + styleImpl._borderWidth(this);
   }
 
   /**
@@ -1780,12 +1752,7 @@ export class Collection {
   outerHeight(): number | undefined {
     const h = this.paddedHeight();
 
-    return h == null ? undefined : h + this._borderWidth();
-  }
-
-  /** @internal */
-  _borderWidth(): number {
-    return styleImpl._borderWidth(this);
+    return h == null ? undefined : h + styleImpl._borderWidth(this);
   }
 
   /**
@@ -1915,7 +1882,7 @@ export class Collection {
    * @returns the rendered midpoint, or undefined for non-edges
    */
   renderedMidpoint(): Position | undefined {
-    return this._toRenderedPoint(this.midpoint());
+    return edgeGeometryImpl._toRenderedPoint(this, this.midpoint());
   }
 
   /**
@@ -1933,7 +1900,7 @@ export class Collection {
    * @returns the endpoint, or undefined for non-edges
    */
   sourceEndpoint(): Position | undefined {
-    return this._endpointPoint(0);
+    return edgeGeometryImpl._endpointPoint(this, 0);
   }
 
   /**
@@ -1951,7 +1918,7 @@ export class Collection {
    * @returns the endpoint, or undefined for non-edges
    */
   targetEndpoint(): Position | undefined {
-    return this._endpointPoint(1);
+    return edgeGeometryImpl._endpointPoint(this, 1);
   }
 
   /**
@@ -1960,7 +1927,7 @@ export class Collection {
    * @returns the rendered endpoint, or undefined for non-edges
    */
   renderedSourceEndpoint(): Position | undefined {
-    return this._toRenderedPoint(this.sourceEndpoint());
+    return edgeGeometryImpl._toRenderedPoint(this, this.sourceEndpoint());
   }
 
   /**
@@ -1969,7 +1936,7 @@ export class Collection {
    * @returns the rendered endpoint, or undefined for non-edges
    */
   renderedTargetEndpoint(): Position | undefined {
-    return this._toRenderedPoint(this.targetEndpoint());
+    return edgeGeometryImpl._toRenderedPoint(this, this.targetEndpoint());
   }
 
   /** Whether the edge participates in bezier bundling — v3 semantics:
@@ -2013,7 +1980,9 @@ export class Collection {
       return undefined;
     }
 
-    return pts.map((p) => this._toRenderedPoint(p) as Position);
+    return pts.map(
+      (p) => edgeGeometryImpl._toRenderedPoint(this, p) as Position,
+    );
   }
 
   /** The edge's segment points (model coords) — v3's getSegmentPoints:
@@ -2041,17 +2010,9 @@ export class Collection {
       return undefined;
     }
 
-    return pts.map((p) => this._toRenderedPoint(p) as Position);
-  }
-
-  /** @internal */
-  _endpointPoint(which: 0 | 1): Position | undefined {
-    return edgeGeometryImpl._endpointPoint(this, which);
-  }
-
-  /** @internal */
-  _toRenderedPoint(pos: Position | undefined): Position | undefined {
-    return edgeGeometryImpl._toRenderedPoint(this, pos);
+    return pts.map(
+      (p) => edgeGeometryImpl._toRenderedPoint(this, p) as Position,
+    );
   }
 
   // -- selection --
@@ -2094,7 +2055,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   select(): this {
-    return this._setSelected(true);
+    return stateImpl._setSelected(this, true) as this;
   }
 
   /**
@@ -2104,7 +2065,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unselect(): this {
-    return this._setSelected(false);
+    return stateImpl._setSelected(this, false) as this;
   }
 
   declare deselect: this['unselect'];
@@ -2115,7 +2076,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   selectify(): this {
-    return this._setBit(FLAG_SELECTABLE, true);
+    return stateImpl._setBit(this, FLAG_SELECTABLE, true) as this;
   }
 
   /**
@@ -2125,7 +2086,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unselectify(): this {
-    return this._setBit(FLAG_SELECTABLE, false);
+    return stateImpl._setBit(this, FLAG_SELECTABLE, false) as this;
   }
 
   // -- grab / lock --
@@ -2157,7 +2118,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   grabify(): this {
-    return this._setBit(FLAG_GRABBABLE, true);
+    return stateImpl._setBit(this, FLAG_GRABBABLE, true) as this;
   }
 
   /**
@@ -2167,7 +2128,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   ungrabify(): this {
-    return this._setBit(FLAG_GRABBABLE, false);
+    return stateImpl._setBit(this, FLAG_GRABBABLE, false) as this;
   }
 
   // -- visibility --
@@ -2216,7 +2177,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   show(): this {
-    return this._setVisibility(true);
+    return stateImpl._setVisibility(this, true) as this;
   }
 
   /**
@@ -2230,16 +2191,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   hide(): this {
-    return this._setVisibility(false);
-  }
-
-  /** show/hide (round 14.4): the store records the own state in
-   * FLAG_SELF_HIDDEN and recomputes the effective FLAG_VISIBLE over
-   * affected subtrees — descendants gate on hidden ancestors, and
-   * hidden children leave their ancestors' auto-bounds.
-   * @internal */
-  _setVisibility(on: boolean): this {
-    return stateImpl._setVisibility(this, on) as this;
+    return stateImpl._setVisibility(this, false) as this;
   }
 
   /**
@@ -2267,7 +2219,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   lock(): this {
-    return this._setBit(FLAG_LOCKED, true);
+    return stateImpl._setBit(this, FLAG_LOCKED, true) as this;
   }
 
   /**
@@ -2276,7 +2228,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unlock(): this {
-    return this._setBit(FLAG_LOCKED, false);
+    return stateImpl._setBit(this, FLAG_LOCKED, false) as this;
   }
 
   // -- active / pannable --
@@ -2316,7 +2268,7 @@ export class Collection {
    * @internal
    */
   activate(): this {
-    return this._setBit(FLAG_ACTIVE, true);
+    return stateImpl._setBit(this, FLAG_ACTIVE, true) as this;
   }
 
   /**
@@ -2326,7 +2278,7 @@ export class Collection {
    * @internal
    */
   unactivate(): this {
-    return this._setBit(FLAG_ACTIVE, false);
+    return stateImpl._setBit(this, FLAG_ACTIVE, false) as this;
   }
 
   /**
@@ -2346,7 +2298,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   panify(): this {
-    return this._setBit(FLAG_PANNABLE, true);
+    return stateImpl._setBit(this, FLAG_PANNABLE, true) as this;
   }
 
   /**
@@ -2356,22 +2308,12 @@ export class Collection {
    * @returns this collection, for chaining
    */
   unpanify(): this {
-    return this._setBit(FLAG_PANNABLE, false);
+    return stateImpl._setBit(this, FLAG_PANNABLE, false) as this;
   }
 
   /** @internal */
   _hasBit(bit: number): boolean {
     return stateImpl._hasBit(this, bit);
-  }
-
-  /** @internal */
-  _setBit(bit: number, on: boolean): this {
-    return stateImpl._setBit(this, bit, on) as this;
-  }
-
-  /** @internal */
-  _setSelected(selected: boolean): this {
-    return stateImpl._setSelected(this, selected) as this;
   }
 
   // -- graph manipulation --
@@ -2421,7 +2363,7 @@ export class Collection {
    * @returns the source node, or an empty collection for a non-edge
    */
   source(): Collection {
-    return this._endpoint(0);
+    return traversalImpl._endpoint(this, 0);
   }
 
   /**
@@ -2430,7 +2372,7 @@ export class Collection {
    * @returns the target node, or an empty collection for a non-edge
    */
   target(): Collection {
-    return this._endpoint(1);
+    return traversalImpl._endpoint(this, 1);
   }
 
   /**
@@ -2439,7 +2381,7 @@ export class Collection {
    * @returns the source nodes
    */
   sources(): Collection {
-    return this._endpoints(0);
+    return traversalImpl._endpoints(this, 0);
   }
 
   /**
@@ -2448,17 +2390,7 @@ export class Collection {
    * @returns the target nodes
    */
   targets(): Collection {
-    return this._endpoints(1);
-  }
-
-  /** @internal */
-  _endpoint(which: 0 | 1): Collection {
-    return traversalImpl._endpoint(this, which);
-  }
-
-  /** @internal */
-  _endpoints(which: 0 | 1): Collection {
-    return traversalImpl._endpoints(this, which);
+    return traversalImpl._endpoints(this, 1);
   }
 
   /**
@@ -2495,7 +2427,7 @@ export class Collection {
    * @returns the outgoing edges and their target nodes
    */
   outgoers(criterion?: FilterLike): Collection {
-    return this._goers('out', criterion);
+    return traversalImpl._goers(this, 'out', criterion);
   }
 
   /**
@@ -2508,12 +2440,7 @@ export class Collection {
    * @returns the incoming edges and their source nodes
    */
   incomers(criterion?: FilterLike): Collection {
-    return this._goers('in', criterion);
-  }
-
-  /** @internal */
-  _goers(direction: 'out' | 'in', criterion?: FilterLike): Collection {
-    return traversalImpl._goers(this, direction, criterion);
+    return traversalImpl._goers(this, 'in', criterion);
   }
 
   /**
@@ -2612,7 +2539,7 @@ export class Collection {
    * @returns the parentless nodes
    */
   orphans(criterion?: FilterLike): Collection {
-    return this._byParentedness(false, criterion);
+    return hierarchyImpl._byParentedness(this, false, criterion);
   }
 
   /**
@@ -2622,12 +2549,7 @@ export class Collection {
    * @returns the parented nodes
    */
   nonorphans(criterion?: FilterLike): Collection {
-    return this._byParentedness(true, criterion);
-  }
-
-  /** @internal */
-  _byParentedness(wantChild: boolean, criterion?: FilterLike): Collection {
-    return hierarchyImpl._byParentedness(this, wantChild, criterion);
+    return hierarchyImpl._byParentedness(this, true, criterion);
   }
 
   /**
@@ -2650,7 +2572,7 @@ export class Collection {
   isParent(): boolean {
     // FLAG_PARENT is store-managed (set while a node has >= 1 child), so
     // the flags word answers without the child-list map hop (round 62.5b)
-    const ref = this._liveNodeRef();
+    const ref = hierarchyImpl._liveNodeRef(this);
 
     return (
       ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_PARENT) !== 0
@@ -2664,7 +2586,7 @@ export class Collection {
    *   negation of `isParent()`
    */
   isChildless(): boolean {
-    const ref = this._liveNodeRef();
+    const ref = hierarchyImpl._liveNodeRef(this);
 
     return (
       ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_PARENT) === 0
@@ -2677,7 +2599,7 @@ export class Collection {
    * @returns v3's `:child`; false for edges and removed elements
    */
   isChild(): boolean {
-    const ref = this._liveNodeRef();
+    const ref = hierarchyImpl._liveNodeRef(this);
 
     return (
       ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_CHILD) !== 0
@@ -2691,16 +2613,11 @@ export class Collection {
    *   negation of `isChild()`
    */
   isOrphan(): boolean {
-    const ref = this._liveNodeRef();
+    const ref = hierarchyImpl._liveNodeRef(this);
 
     return (
       ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_CHILD) === 0
     );
-  }
-
-  /** @internal */
-  _liveNodeRef(): Ref | null {
-    return hierarchyImpl._liveNodeRef(this);
   }
 
   // -- DAG traversal --
@@ -2713,7 +2630,7 @@ export class Collection {
    * @returns the source nodes
    */
   roots(criterion?: FilterLike): Collection {
-    return this._dagExtremity('in', criterion);
+    return hierarchyImpl._dagExtremity(this, 'in', criterion);
   }
 
   /**
@@ -2723,12 +2640,7 @@ export class Collection {
    * @returns the sink nodes
    */
   leaves(criterion?: FilterLike): Collection {
-    return this._dagExtremity('out', criterion);
-  }
-
-  /** @internal */
-  _dagExtremity(direction: 'in' | 'out', criterion?: FilterLike): Collection {
-    return hierarchyImpl._dagExtremity(this, direction, criterion);
+    return hierarchyImpl._dagExtremity(this, 'out', criterion);
   }
 
   /**
@@ -2741,7 +2653,7 @@ export class Collection {
    * @returns the reachable edges and nodes
    */
   successors(criterion?: FilterLike): Collection {
-    return this._dagAllHops('out', criterion);
+    return hierarchyImpl._dagAllHops(this, 'out', criterion);
   }
 
   /**
@@ -2753,12 +2665,7 @@ export class Collection {
    * @returns the edges and nodes of the backward closure
    */
   predecessors(criterion?: FilterLike): Collection {
-    return this._dagAllHops('in', criterion);
-  }
-
-  /** @internal */
-  _dagAllHops(direction: 'out' | 'in', criterion?: FilterLike): Collection {
-    return hierarchyImpl._dagAllHops(this, direction, criterion);
+    return hierarchyImpl._dagAllHops(this, 'in', criterion);
   }
 
   // -- edge relations --
@@ -2774,7 +2681,7 @@ export class Collection {
   edgesWith(others: Collection): Collection {
     assertCollection(others, 'edgesWith', this._cy);
 
-    return this._edgesWith(others, false);
+    return traversalImpl._edgesWith(this, others, false);
   }
 
   /**
@@ -2787,12 +2694,7 @@ export class Collection {
   edgesTo(others: Collection): Collection {
     assertCollection(others, 'edgesTo', this._cy);
 
-    return this._edgesWith(others, true);
-  }
-
-  /** @internal */
-  _edgesWith(others: Collection, thisIsSrc: boolean): Collection {
-    return traversalImpl._edgesWith(this, others, thisIsSrc);
+    return traversalImpl._edgesWith(this, others, true);
   }
 
   /**
@@ -2805,7 +2707,7 @@ export class Collection {
    * @returns the parallel edges
    */
   parallelEdges(criterion?: FilterLike): Collection {
-    return this._parallelEdges(false, criterion);
+    return traversalImpl._parallelEdges(this, false, criterion);
   }
 
   /**
@@ -2817,12 +2719,7 @@ export class Collection {
    * @returns the codirected edges
    */
   codirectedEdges(criterion?: FilterLike): Collection {
-    return this._parallelEdges(true, criterion);
-  }
-
-  /** @internal */
-  _parallelEdges(codirectedOnly: boolean, criterion?: FilterLike): Collection {
-    return traversalImpl._parallelEdges(this, codirectedOnly, criterion);
+    return traversalImpl._parallelEdges(this, true, criterion);
   }
 
   // -- connected components --
@@ -3571,7 +3468,8 @@ export class Collection {
    *   live node
    */
   degree(includeLoops: boolean = true): number | undefined {
-    return this._degree(
+    return degreeImpl._degree(
+      this,
       includeLoops,
       (store, slot) => store.adj.outDegree(slot) + store.adj.inDegree(slot),
     );
@@ -3584,7 +3482,8 @@ export class Collection {
    * @returns the out-degree, or undefined when not a live node
    */
   outdegree(includeLoops: boolean = true): number | undefined {
-    return this._degree(
+    return degreeImpl._degree(
+      this,
       includeLoops,
       (store, slot) => store.adj.outDegree(slot),
       'out',
@@ -3598,7 +3497,8 @@ export class Collection {
    * @returns the in-degree, or undefined when not a live node
    */
   indegree(includeLoops: boolean = true): number | undefined {
-    return this._degree(
+    return degreeImpl._degree(
+      this,
       includeLoops,
       (store, slot) => store.adj.inDegree(slot),
       'in',
@@ -3612,7 +3512,7 @@ export class Collection {
    * @returns the minimum degree, or undefined when there are no nodes
    */
   minDegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('degree', includeLoops, -1);
+    return degreeImpl._degreeBound(this, 'degree', includeLoops, -1);
   }
 
   /**
@@ -3622,7 +3522,7 @@ export class Collection {
    * @returns the maximum degree, or undefined when there are no nodes
    */
   maxDegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('degree', includeLoops, 1);
+    return degreeImpl._degreeBound(this, 'degree', includeLoops, 1);
   }
 
   /**
@@ -3632,7 +3532,7 @@ export class Collection {
    * @returns the minimum in-degree, or undefined when there are no nodes
    */
   minIndegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('indegree', includeLoops, -1);
+    return degreeImpl._degreeBound(this, 'indegree', includeLoops, -1);
   }
 
   /**
@@ -3642,7 +3542,7 @@ export class Collection {
    * @returns the maximum in-degree, or undefined when there are no nodes
    */
   maxIndegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('indegree', includeLoops, 1);
+    return degreeImpl._degreeBound(this, 'indegree', includeLoops, 1);
   }
 
   /**
@@ -3653,7 +3553,7 @@ export class Collection {
    *   nodes
    */
   minOutdegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('outdegree', includeLoops, -1);
+    return degreeImpl._degreeBound(this, 'outdegree', includeLoops, -1);
   }
 
   /**
@@ -3664,7 +3564,7 @@ export class Collection {
    *   nodes
    */
   maxOutdegree(includeLoops: boolean = true): number | undefined {
-    return this._degreeBound('outdegree', includeLoops, 1);
+    return degreeImpl._degreeBound(this, 'outdegree', includeLoops, 1);
   }
 
   /**
@@ -3676,24 +3576,6 @@ export class Collection {
    */
   totalDegree(includeLoops: boolean = true): number {
     return degreeImpl.totalDegree(this, includeLoops);
-  }
-
-  /** @internal */
-  _degreeBound(
-    fn: 'degree' | 'indegree' | 'outdegree',
-    includeLoops: boolean,
-    sign: 1 | -1,
-  ): number | undefined {
-    return degreeImpl._degreeBound(this, fn, includeLoops, sign);
-  }
-
-  /** @internal */
-  _degree(
-    includeLoops: boolean,
-    count: (store: Core['_store'], slot: number) => number,
-    direction?: 'out' | 'in',
-  ): number | undefined {
-    return degreeImpl._degree(this, includeLoops, count, direction);
   }
 
   // -- events --

@@ -310,6 +310,61 @@ is a `BROWSER_ONLY` prefix so the new files inherit the throw tier.
 `pointer.mts`: 1,916 → **540 lines**.  The cursor spec and the gates
 green; the pointer gestures are driven in the browser at the close.
 
+### The sizes, measured (2026-09-20)
+
+| File | Before | After | Modules (largest) |
+| --- | --: | --: | --- |
+| `src/style.mts` | 9,961 | 789 | 20 files under `src/style/` (`mappable` 1,041, `engine-write` 982, `apply-prop` 886) |
+| `src/collection.mts` | 6,581 | 3,870 | 16 under `src/collection/` (`position` 507) |
+| `src/store/graph-store.mts` | 5,665 | 2,279 | 13 under `src/store/graph-store/` (`scan` 746, `curves` 716) |
+| `src/render/shaders.mts` | 5,220 | 26 | 9 under `src/render/shaders/` (`sdf` 956, `edge` 864) |
+| `src/core.mts` | 3,385 | 2,218 | 9 under `src/core/` (`elements` 347) |
+| `src/render/renderer.mts` | 3,016 | 832 | 9 under `src/render/renderer/` (`scene` 615, `frame` 542) |
+| `src/animation.mts` | 2,328 | 64 | 6 under `src/animation/` (`animation` 798) |
+| `src/curve-geometry.mts` | 2,166 | 100 | 4 under `src/curve-geometry/` (`route` 685) |
+| `src/layout/force.mts` | 1,968 | 263 | `force-options` 238, `force-separate` 506, `force-run` 757, `force-executors` 278 |
+| `src/interact/pointer.mts` | 1,916 | 540 | `pointer-handlers` 553, `pointer-press` 340, `pointer-touch` 325, `pointer-hover` 228, `pointer-box` 130 |
+
+The three facades still over 2,000 are doc comments: `collection.mts`
+carried 2,180 lines of them before the round, `core.mts` 1,177.  The
+gates read those from the class body and they ship as hover text, so
+under the mechanism the maintainer chose they stay — the planning
+estimate (3,400 / 2,000 / 2,100) held to within a hundred lines.
+`src/style/mappable.mts` at 1,041 is the one new file over the line:
+one table, one entry per mapper-capable prop.  Tools, kept in the
+session scratchpad and not committed: a line-range slicer, a
+TypeScript-API method extractor (the rules it learned are in the
+sub-rounds above: `arguments`-reading bodies stay, `Promise<void>` is
+returned, a local that shadows a removed method's name renames the
+export `<name>Impl`, spy points keep instance dispatch, an `@internal`
+export is never re-exported by a facade), an import pruner, and the
+`features.csv` re-anchorer.
+
+### 130.12 — the benchmark check, and the double hop it found (2026-09-21)
+
+The plan asked for the collection, mapper and force rows against the
+last published run before closing.  Against the 2 Sep archive the v4
+p50s read 7% slower with v3 drifting 3.6% on the same box, but that
+archive predates rounds 125–129 too, so the fair A/B was the pre-round
+commit in a worktree on this machine, same suites, same hour: **v4
+now/base 1.021 geometric mean with the v3 control at 1.030** — inside
+the noise overall — but with `maxDegree()` at 1.31×, `totalDegree()`
+1.21×, `contains()` 1.21×, `same()` 1.23×.  The degree rows exposed a
+double hop: a private helper the extractor had kept as a delegator
+(because the class still called it) forwarded to the module, so a
+public method paid two calls per node instead of one.  A pass over the
+eight facades inlined 42 such delegators at their class call sites
+(`this._degreeBound(…)` → `degreeImpl._degreeBound(this, …)`) and
+removed the methods — skipping the two spy points, `labelChannels`/
+`readImageProp` (the read context's closures), and `setCurveParams`,
+which `test/curve-blob.mjs` reaches directly.  Re-measured: **1.005
+against the base with the v3 control at 1.015**; `maxDegree()` and
+`contains()` back at par, `totalDegree()` the one row still over 1.15×
+(84 µs vs 69 µs — its per-node `degree()` is now one cross-module call
+V8 does not inline as it did the prototype method; ~7 ns a node).
+`same()` at 16 vs 15 ns is the one extra call a public delegator costs,
+as planned.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

@@ -214,15 +214,18 @@ export class ForceLayoutImpl implements LayoutImpl {
    * for the duration.  Otherwise the run publishes off-mirror, the
    * screen holds the pre-run frame, and convergence triggers a single
    * readback that settles the columns — then `animate: true` tweens
-   * the nodes into place through the shared finisher.  A rendered
-   * flat-graph run is async either way, settling at `layoutstop` /
-   * `promise()`; headless `animate: false` is the synchronous spelling.
+   * the nodes into place through the shared finisher.  A run is async
+   * wherever the integrator or the sim worker takes it — a rendered
+   * flat graph, and any instance with a worker platform, headless
+   * included (129.3, revisited in 131) — settling at `layoutstop` /
+   * `promise()`; `executor: 'cpu'` is the synchronous spelling.
    *
    * @param ctx — the layout context: unlocked leaf slots, live position
    *   views, O(1) CSR degrees and the bulk `setPositions` write
    * @returns a promise that resolves at convergence, or void when the
-   *   run completed synchronously (headless / compound / no device
-   *   with neither `animate` nor `animateLive`)
+   *   run completed synchronously (`executor: 'cpu'`, or `'auto'` on a
+   *   platform with neither an integrator nor a worker, with neither
+   *   `animate` nor `animateLive`)
    * @internal
    */
   runOnce(ctx: LayoutContext): void | Promise<void> {

@@ -349,6 +349,31 @@ pays tsx's registration — so a headless run keeps its contract
 and `'workers'` is the explicit spelling anywhere.  `'gpu'` throws at
 start where no integrator is available.
 
+**Revisited 2026-09-21, on the maintainer's addendum: the deviation is
+withdrawn.**  "Headless instances would likely want the main thread
+free.  In envs like node, you don't want to max out the main thread.
+The main thread needs to be mostly free for the event loop."  So
+`'auto'` now takes the worker wherever `forceWorkerSupported()` holds,
+headless included, and a headless `'auto'` run is asynchronous where
+the platform offers a worker — `executor: 'cpu'` is the synchronous
+spelling.  The two reasons the deviation gave were weaker than they
+read: the suites' timing was one spawn per test process (the worker
+is kept and `unref()`ed), and tsx's in-worker registration is a
+source-tree cost no bundle pays.  What the change cost in the suites:
+`test/force-constraints.mjs` and the force block of
+`test/layout-mapping.mjs` await `promise()` (they pin the CPU
+simulation's bits, which the worker answers), the mid-tween cancel
+spec waits for the first tweened frame instead of a 40 ms clock (the
+tween now starts when the worker answers, later under a loaded
+machine), and `benchmark/layouts.mjs`'s force rows spell `executor:
+'cpu'` — they are named for the CPU executor and a bench measuring an
+asynchronous dispatch would read as a 100× speedup.  The `'auto'`
+placement specs in `test/force-worker.mjs` assert the opposite of what
+they did: a headless run takes the worker, is asynchronous, answers
+`'cpu'`'s bits; a headless live run streams from the worker; `'cpu'`
+never asks it.  Control: with the gate reverted to the rendered-only
+form, the two worker-placement specs went red.
+
 **Found: a Node worker thread inherits tsx's loader hooks but not its
 `.mjs` → `.mts` aliasing** ("Cannot find module …/src/core.mjs imported
 from …/src/index.mts", from `[worker eval]`), so a worker that
@@ -370,8 +395,8 @@ Specs: 17 in `test/force-worker.mjs` (bit-equality per fixture —
 plain, compound, constrained — the asynchronous contract, a live run
 streaming, cancel restoring the snapshot, an infinite run reheating
 through a drag on the worker (118.3's spec on the worker), destroy
-closing the run, the busy fallback, `'auto'` headless never asking
-the worker, the three throws and the start-failure rejection);
+closing the run, the busy fallback, `'auto'` headless taking the
+worker (the revisit above; originally never asking it), the three throws and the start-failure rejection);
 `test/soak/force-worker.mjs` (one worker across twelve runs with the
 instances collecting, a reset closing an open run, a child process
 exiting on its own); two browser specs on the hardware adapter — a
@@ -442,8 +467,9 @@ the new fingerprint.
   (item 70), and none for the round-74 families below their pool
   crossover (their pool bodies are not the reference function, and
   the runs there are single-digit milliseconds).
-- The worker sim under `'auto'` on headless instances (the deviation
-  above); `executor: 'workers'` is the spelling.
+- ~~The worker sim under `'auto'` on headless instances (the deviation
+  above); `executor: 'workers'` is the spelling.~~  Done 2026-09-21 —
+  the revisit under 129.3.
 - The builders' in-thread share (item 69).
 - The worker host's images and fonts (item 51's two remaining
   deferrals) and the GPU tween proxy (item 68).

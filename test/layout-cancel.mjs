@@ -64,19 +64,35 @@ const same = (a, b) => {
   }
 };
 
-const moved = (a, b) => {
-  let any = false;
-
+const anyMoved = (a, b) => {
   for (let i = 0; i < a.length; i++) {
     if (a[i].x !== b[i].x || a[i].y !== b[i].y) {
-      any = true;
+      return true;
     }
   }
 
-  expect(any, 'expected at least one node to have moved').to.equal(true);
+  return false;
+};
+
+const moved = (a, b) => {
+  expect(anyMoved(a, b), 'expected at least one node to have moved').to.equal(
+    true,
+  );
 };
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+
+const until = async (test, limit = 5000) => {
+  const start = Date.now();
+
+  while (!test()) {
+    if (Date.now() - start > limit) {
+      throw new Error('until: the condition did not hold within the limit');
+    }
+
+    await tick(5);
+  }
+};
 
 const eventLog = (cy) => {
   const log = [];
@@ -515,8 +531,9 @@ describe('layouts: cancel() (round 128)', function () {
       });
 
       layout.run();
-      await tick(40);
-      moved(before, positionsOf(cy));
+      // the sim runs on the worker (129.3 / 131), so the tween starts
+      // when it answers — wait for the first tweened frame, not a clock
+      await until(() => anyMoved(before, positionsOf(cy)));
       layout.cancel();
       await rejection(layout.promise());
       same(before, positionsOf(cy));

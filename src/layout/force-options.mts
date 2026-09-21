@@ -73,9 +73,11 @@ export interface ForceRunOptions {
    * `transform`, `animateFilter`, `animationDuration`,
    * `animationEasing`, `zoom` and `pan` apply.  False lands the settle
    * in one write.  Executor choice is availability-driven either way
-   * (87.2), so a rendered flat-graph run is async for both values —
-   * read positions at `layoutstop` / `promise()`.  Headless runs with
-   * `animate: false` stay synchronous. */
+   * (87.2), so a run is async for both values wherever the integrator
+   * or the sim worker takes it (a rendered flat graph; any instance
+   * with a worker platform, headless included — 129.3 as revisited in
+   * 131) — read positions at `layoutstop` / `promise()`.  `executor:
+   * 'cpu'` is the synchronous spelling. */
   animate?: boolean;
   /** stream the run: positions land per frame while the sim runs,
    * presenting each frame on the GPU executor (the pre-114 `animate:
@@ -109,17 +111,17 @@ export interface ForceRunOptions {
   /** where the simulation runs (129.3; default `'auto'`).  `'auto'`
    * is availability-driven, as 87.2 made it: the GPU integrator where
    * the renderer offers one (a flat rendered graph with a device, on
-   * either host), else — on a rendered instance — the CPU simulation
-   * on a worker that loaded this same bundle, so the main thread stays
-   * free through the run, else the in-thread simulation.  A headless
-   * run keeps its contract under `'auto'` (`animate: false`
-   * synchronous).  `'cpu'` is the in-thread reference
-   * (bit-reproducible); `'workers'` is the worker simulation wherever
-   * a worker can be constructed, headless included (the run is then
-   * asynchronous — read positions at `layoutstop` / `promise()`), and
-   * throws at start where none can be; `'gpu'` throws at start where
-   * no integrator is available (headless, a compound graph, a
-   * constrained run, no device).  Any other value throws at start. */
+   * either host), else the CPU simulation on a worker that loaded this
+   * same bundle wherever one can be constructed — headless included
+   * (131 revisited 129.3: a Node process wants its main thread free
+   * for the event loop as a page wants its UI thread free) — so the
+   * run is asynchronous (read positions at `layoutstop` /
+   * `promise()`), else the in-thread simulation.  `'cpu'` is the
+   * in-thread reference (bit-reproducible) and the synchronous
+   * spelling; `'workers'` is the worker simulation, throwing at start
+   * where none can be constructed; `'gpu'` throws at start where no
+   * integrator is available (headless, a compound graph, a constrained
+   * run, no device).  Any other value throws at start. */
   executor?: ForceExecutor;
   /** keep node bodies apart — labels included when
    * `nodeDimensionsIncludeLabels` is true, pinned (locked) nodes as

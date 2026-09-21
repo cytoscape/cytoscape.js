@@ -430,6 +430,7 @@ if (OP == null || 'force'.includes(OP)) {
       force
         .layout({
           name: 'force',
+          executor: 'cpu',
           animate: false,
           fit: false,
           iterations: 20,
@@ -454,6 +455,7 @@ if (OP == null || 'constrained'.includes(OP)) {
   const alignment = { horizontal: [['n0', 'n50', 'n100', 'n150']] };
   const opts = {
     name: 'force',
+    executor: 'cpu',
     animate: false,
     fit: false,
     iterations: 20,
@@ -515,6 +517,7 @@ if (OP == null || 'seed'.includes(OP) || 'overlap'.includes(OP)) {
   const b = gpuInstance();
   const opts = {
     name: 'force',
+    executor: 'cpu',
     animate: false,
     fit: false,
     iterations: 20,
@@ -571,6 +574,7 @@ if (N <= 500 && (OP == null || 'cose'.includes(OP))) {
       bench('gpu', () => {
         b.layout({
           name: 'force',
+          executor: 'cpu',
           animate: false,
           fit: false,
           iterations: 10,

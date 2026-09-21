@@ -57,15 +57,18 @@ import { runLive, runRemote, runGpu } from './force-executors.mjs';
  * for the duration.  Otherwise the run publishes off-mirror, the
  * screen holds the pre-run frame, and convergence triggers a single
  * readback that settles the columns — then `animate: true` tweens
- * the nodes into place through the shared finisher.  A rendered
- * flat-graph run is async either way, settling at `layoutstop` /
- * `promise()`; headless `animate: false` is the synchronous spelling.
+ * the nodes into place through the shared finisher.  A run is async
+ * wherever the integrator or the sim worker takes it — a rendered
+ * flat graph, and any instance with a worker platform, headless
+ * included (129.3, revisited in 131) — settling at `layoutstop` /
+ * `promise()`; `executor: 'cpu'` is the synchronous spelling.
  *
  * @param ctx — the layout context: unlocked leaf slots, live position
  *   views, O(1) CSR degrees and the bulk `setPositions` write
  * @returns a promise that resolves at convergence, or void when the
- *   run completed synchronously (headless / compound / no device
- *   with neither `animate` nor `animateLive`)
+ *   run completed synchronously (`executor: 'cpu'`, or `'auto'` on a
+ *   platform with neither an integrator nor a worker, with neither
+ *   `animate` nor `animateLive`)
  */
 export function runOnce(
   fl: ForceLayoutImpl,
@@ -700,13 +703,15 @@ export function runOnce(
   }
 
   // the CPU simulation on a worker (129.3): explicitly, or under
-  // 'auto' on a rendered instance — the host whose main thread the
-  // run would otherwise hold.  A headless 'auto' run keeps its
-  // synchronous contract (and a headless live run its in-thread
-  // clock), which is also what keeps the Node suites' timing honest.
+  // 'auto' wherever a worker can be constructed — headless included
+  // (131.x revisits 129.3's deviation: a Node process wants its main
+  // thread free for the event loop as much as a page wants its UI
+  // thread free).  A headless 'auto' run is therefore asynchronous
+  // where the platform offers a worker; `'cpu'` is the synchronous
+  // spelling.
   if (
     executor === 'workers' ||
-    (executor === 'auto' && cy.renderer() != null && forceWorkerSupported())
+    (executor === 'auto' && forceWorkerSupported())
   ) {
     return runRemote(
       fl,
@@ -727,10 +732,10 @@ export function runOnce(
   if (!live) {
     // settle-then-land on the CPU executor: run to convergence
     // synchronously, settle once (a tween under `animate`).  Reached
-    // when neither the GPU integrator nor the worker sim applies
-    // (headless; an explicit 'cpu') — a flat rendered graph took the
-    // silent GPU path above (87.2), a rendered compound or
-    // constrained graph the worker (129.3)
+    // when neither the GPU integrator nor the worker sim applies (an
+    // explicit 'cpu'; a platform with no worker) — a flat rendered
+    // graph took the silent GPU path above (87.2), anything else with
+    // a worker platform the worker (129.3, headless too since 131)
     const cpuSim = inThreadSim();
 
     while (!cpuSim.converged() && !fl.stopped) {

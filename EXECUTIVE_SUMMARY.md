@@ -5,7 +5,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-20, after round 130 split the ten largest
+- **Last updated**: 2026-09-21, after 129.3 was revisited (headless `'auto'` takes the worker) and round 130 split the ten largest
   source files — `style` (9,961 lines), `collection` (6,581),
   `graph-store` (5,665), `shaders` (5,220), `core` (3,385), `renderer`
   (3,016), `animation`, `curve-geometry`, `force`, `pointer` — on the
@@ -1227,10 +1227,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - The force layout's CPU simulation runs on a worker that loaded the
     same bundle (the render worker's mechanism), behind `executor:
     'auto' | 'cpu' | 'gpu' | 'workers'`.  `'auto'` takes the GPU
-    integrator where the renderer offers one, else the worker on a
-    rendered instance — so a compound graph, a constrained run or a
-    page without an adapter no longer holds the page — else in-thread;
-    headless runs keep their synchronous contract.  The worker's
+    integrator where the renderer offers one, else the worker wherever
+    one can be constructed — so a compound graph, a constrained run or
+    a page without an adapter no longer holds the page, and a headless
+    Node process keeps its event loop free (the maintainer's addendum
+    of 21 Sep; the round had kept headless in-thread) — else
+    in-thread; `'cpu'` is the synchronous spelling.  The worker's
     trajectory is bit-identical to the in-thread simulation's, on the
     plain, the compound and the constrained fixtures.
   - Two facts the suites found: a Node worker thread inherits tsx's
@@ -1294,7 +1296,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   edge lies under the cursor, which is v3's behaviour restored.
 - **`force` with `animate: false` on a rendered flat graph is async**
   (31 Aug): executor choice is availability-driven — read positions at
-  `layoutstop` / `promise()`.  Headless runs stay synchronous.
+  `layoutstop` / `promise()`.  **Headless runs are async too under
+  `'auto'`** (21 Sep) wherever a worker can be constructed; `executor:
+  'cpu'` is the synchronous spelling.
 - **`force` can avoid overlap in the sim, and honours `boundingBox`**
   (3–7 Sep): `avoidOverlap` on force takes the mechanism — `true` /
   `'settle'` (the default) separates after the settle, `'sim'` runs a

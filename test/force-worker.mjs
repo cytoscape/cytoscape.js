@@ -25,11 +25,13 @@ changes between samples), `stop()` lands the positions where they
 stand, `cancel()` restores the snapshot and rejects `promise()`, an
 infinite run reheats through a drag and its grabbed node holds where
 the pointer put it (118.3's spec, word for word, on the worker), and
-`destroy()` closes an open run.  The placement under `'auto'`: a
-headless run stays in-thread and synchronous (the documented contract
-— the worker's counters do not move), a second concurrent run while
-the worker is busy runs in-thread, and the three start-time throws
-fire where they should.
+`destroy()` closes an open run.  The placement under `'auto'` (131
+revisited 129.3: the worker headless too, since a Node process wants
+its event loop free): a headless run takes the worker, is asynchronous
+and answers `'cpu'`'s bits, `'cpu'` is the synchronous spelling (the
+worker's counters do not move), a second concurrent run while the
+worker is busy runs in-thread, and the three start-time throws fire
+where they should.
 
 Controls run while writing this file (2026-09-18), each restored:
 posting the worker's final positions with one coordinate nudged by
@@ -372,19 +374,31 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
   });
 
   describe("where 'auto' puts the simulation", function () {
-    it('a headless run stays in-thread and synchronous: the worker is never asked', function () {
+    // 131 revisited 129.3's deviation: a Node process wants its main
+    // thread free for the event loop as a page wants its UI thread
+    // free, so 'auto' takes the worker headless too — the run is then
+    // asynchronous, and 'cpu' is the synchronous spelling
+    it('a headless run takes the worker, is asynchronous, and answers the in-thread bits', async function () {
       const cy = cytoscape({ elements: RING() });
       const before = _forceWorkerStats();
-      const positions = positionsOf(cy);
+      const seed = positionsOf(cy);
+      const layout = cy.layout({ name: 'force', seed: 4, fit: false });
 
-      cy.layout({ name: 'force', seed: 4, fit: false }).run();
+      layout.run();
+      expect(positionsOf(cy)).to.deep.equal(seed); // nothing landed yet
+      await layout.promise();
+      expect(positionsOf(cy)).to.not.deep.equal(seed);
+      expect(_forceWorkerStats().runs).to.equal(before.runs + 1);
 
-      expect(positionsOf(cy)).to.not.deep.equal(positions);
-      expect(_forceWorkerStats()).to.deep.equal(before);
+      const cpu = cytoscape({ elements: RING() });
+
+      cpu.layout({ name: 'force', seed: 4, fit: false, executor: 'cpu' }).run();
+      expect(positionsOf(cpu)).to.deep.equal(positionsOf(cy));
       cy.destroy();
+      cpu.destroy();
     });
 
-    it('a headless live run keeps its in-thread clock too', async function () {
+    it('a headless live run streams from the worker too', async function () {
       const cy = cytoscape({ elements: RING() });
       const before = _forceWorkerStats();
       const layout = cy.layout({
@@ -396,6 +410,18 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
 
       layout.run();
       await layout.promise();
+      expect(_forceWorkerStats().runs).to.equal(before.runs + 1);
+      cy.destroy();
+    });
+
+    it("'cpu' is the synchronous spelling: the worker is never asked", function () {
+      const cy = cytoscape({ elements: RING() });
+      const before = _forceWorkerStats();
+      const seed = positionsOf(cy);
+
+      cy.layout({ name: 'force', seed: 4, fit: false, executor: 'cpu' }).run();
+
+      expect(positionsOf(cy)).to.not.deep.equal(seed);
       expect(_forceWorkerStats()).to.deep.equal(before);
       cy.destroy();
     });

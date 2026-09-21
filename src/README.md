@@ -1556,14 +1556,17 @@ this same bundle (`src/layout/force-worker.mts` the loop,
 worker's mechanism rather than a stringified kernel because `ForceSim`
 is a class over `OverlapGrid` and the constraint projection), and the
 in-thread simulation.  `'auto'` is availability-driven, as 87.2 made
-it: the integrator where the renderer offers one, else the worker on a
-rendered instance — so a compound graph, a constrained run and a page
-without an adapter no longer hold the main thread for the run — else
-in-thread; a headless run keeps its contract (`animate: false`
-synchronous).  `'cpu'` is the in-thread reference; `'workers'` is the
-worker wherever one can be constructed, headless included (the run is
-then asynchronous), throwing at start where none can be; `'gpu'`
-throws at start where no integrator is available.  The worker's
+it: the integrator where the renderer offers one, else the worker
+wherever one can be constructed — a compound graph, a constrained run
+and a page without an adapter no longer hold the main thread for the
+run, and **headless too** (round 131 revisited 129.3's deviation on
+the maintainer's addendum: a Node process wants its main thread free
+for the event loop as much as a page wants its UI thread free), so a
+headless `'auto'` run is asynchronous where the platform offers a
+worker — else in-thread.  `'cpu'` is the in-thread reference and the
+synchronous spelling; `'workers'` is the worker, throwing at start
+where none can be constructed; `'gpu'` throws at start where no
+integrator is available.  The worker's
 trajectory is **bit-identical** to the in-thread sim's — the same
 class, the same inputs cloned — on the plain, the compound and the
 constrained fixtures (`test/force-worker.mjs`, asserted with `===`);

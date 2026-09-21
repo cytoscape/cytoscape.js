@@ -46,18 +46,19 @@ describe('gpu/layout: data mappings (round 85.3)', function () {
           iterations: 600,
           edgeLength,
         })
-        .run();
+        .run()
+        .promise();
 
-    it('a { data } passthrough drives per-edge settled distances', function () {
+    it('a { data } passthrough drives per-edge settled distances', async function () {
       // data lengths 50 vs 200: the settled neighbor-distance ratio
       // follows — while the constant-edgeLength control on the same
       // graph reads ~1:1, so the pair discriminates
       path((id) => ({ len: id === 'ab' ? 50 : 200 }));
-      settle({ data: 'len' });
+      await settle({ data: 'len' });
 
       expect(dist('b', 'c') / dist('a', 'b')).to.be.above(2);
 
-      settle(125);
+      await settle(125);
 
       var ratio = dist('b', 'c') / dist('a', 'b');
 
@@ -65,23 +66,28 @@ describe('gpu/layout: data mappings (round 85.3)', function () {
       expect(ratio).to.be.below(1.4);
     });
 
-    it('scale + range + invert: large scores settle short', function () {
+    it('scale + range + invert: large scores settle short', async function () {
       // the FAQ recipe: affinity scores, log-scaled, inverted — the
       // score-1 edge takes range[1] px and the score-100 edge range[0]
       path((id) => ({ score: id === 'ab' ? 1 : 100 }));
-      settle({ data: 'score', scale: 'log', range: [50, 200], invert: true });
+      await settle({
+        data: 'score',
+        scale: 'log',
+        range: [50, 200],
+        invert: true,
+      });
 
       expect(dist('a', 'b') / dist('b', 'c')).to.be.above(2);
     });
 
-    it('a missing value takes default, then the option default', function () {
+    it('a missing value takes default, then the option default', async function () {
       path((id) => (id === 'ab' ? { len: 50 } : {}));
-      settle({ data: 'len', default: 200 });
+      await settle({ data: 'len', default: 200 });
 
       expect(dist('b', 'c') / dist('a', 'b')).to.be.above(2);
     });
 
-    it('throws on an unknown key and on a non-number column', function () {
+    it('throws on an unknown key and on a non-number column', async function () {
       path((id) => ({ name: 'edge-' + id, len: 5 }));
 
       expect(() => settle({ data: 'lne' })).to.throw(
@@ -92,7 +98,7 @@ describe('gpu/layout: data mappings (round 85.3)', function () {
       );
     });
 
-    it('throws on a malformed mapping, loudly', function () {
+    it('throws on a malformed mapping, loudly', async function () {
       path(() => ({ len: 5 }));
 
       expect(() => settle({ data: 'len', invert: true })).to.throw(

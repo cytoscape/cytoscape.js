@@ -700,14 +700,15 @@ export interface ForceLayoutOptions extends LayoutBaseOptions {
   stepsPerFrame?: number;
   /** where the simulation runs (round 129.3; default `'auto'`):
    * `'auto'` takes the GPU integrator where the renderer offers one,
-   * else — on a rendered instance — the CPU simulation on a worker
-   * that loaded this same bundle, so the main thread stays free (the
-   * run is then asynchronous: positions at `layoutstop` /
-   * `promise()`), else in-thread; a headless run keeps its contract.
-   * `'cpu'` is the in-thread reference (bit-reproducible; the worker
-   * answers the same bits); `'workers'` asks for the worker anywhere
-   * one can be constructed and throws at start where none can;
-   * `'gpu'` throws at start where no integrator is available */
+   * else the CPU simulation on a worker that loaded this same bundle
+   * wherever one can be constructed — headless included, so a Node
+   * process keeps its event loop free as a page keeps its UI thread
+   * (the run is then asynchronous: positions at `layoutstop` /
+   * `promise()`) — else in-thread.  `'cpu'` is the in-thread reference
+   * (bit-reproducible; the worker answers the same bits) and the
+   * synchronous spelling; `'workers'` asks for the worker and throws
+   * at start where none can be constructed; `'gpu'` throws at start
+   * where no integrator is available */
   executor?: 'auto' | 'cpu' | 'gpu' | 'workers';
   /** fit the settle into an explicit box (116.2 — flow's rule): scaled
    * down, never up, until every body fits, then centred; uniform, so

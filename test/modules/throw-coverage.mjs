@@ -53,17 +53,19 @@ const throwLine = (file, anchor) => {
   return at + 1; // lcov lines are 1-based
 };
 
-// two guards of style.mts's hundreds stand in for "covered" and "never run"
-const KEYWORD_GUARD = throwLine('src/style.mts', 'const parseKeyword =');
-const PERCENT_GUARD = throwLine('src/style.mts', 'is not a valid percent for');
-const IMAGE_ENUM_GUARD = throwLine('src/style.mts', 'const parseImageEnum =');
+// two guards of the style parsers' hundreds stand in for "covered" and
+// "never run" (round 130 moved the parsers to `src/style/parse.mts`)
+const PARSE = 'src/style/parse.mts';
+const KEYWORD_GUARD = throwLine(PARSE, 'const parseKeyword =');
+const PERCENT_GUARD = throwLine(PARSE, 'is not a valid percent for');
+const IMAGE_ENUM_GUARD = throwLine(PARSE, 'const parseImageEnum =');
 const EMPTY_EXPORT_GUARD = throwLine(
   'src/render/renderer.mts',
   'Cannot export a full-graph image',
 );
 const BIG_ENDIAN_GUARD = throwLine('src/wire.mts', 'little-endian');
 
-const lcov = ({ covered = [], dead = [], file = 'src/style.mts' }) =>
+const lcov = ({ covered = [], dead = [], file = PARSE }) =>
   [
     'TN:',
     `SF:${file}`,
@@ -81,11 +83,11 @@ describe('scripts/throw-coverage', function () {
     const at = (file, line) =>
       result.sites.find((s) => s.file === file && s.line === line);
 
-    expect(at('src/style.mts', KEYWORD_GUARD).covered).to.equal(true);
-    expect(at('src/style.mts', PERCENT_GUARD).covered).to.equal(false);
+    expect(at(PARSE, KEYWORD_GUARD).covered).to.equal(true);
+    expect(at(PARSE, PERCENT_GUARD).covered).to.equal(false);
 
     // and a throw the report says nothing about is unknown, not covered
-    expect(at('src/style.mts', IMAGE_ENUM_GUARD).covered).to.equal(null);
+    expect(at(PARSE, IMAGE_ENUM_GUARD).covered).to.equal(null);
   });
 
   it('counts only Node-reachable sites as dead', function () {
@@ -99,7 +101,7 @@ describe('scripts/throw-coverage', function () {
     const isDead = (file, line) =>
       result.dead.some((s) => s.file === file && s.line === line);
 
-    expect(isDead('src/style.mts', KEYWORD_GUARD)).to.equal(true);
+    expect(isDead(PARSE, KEYWORD_GUARD)).to.equal(true);
     expect(isDead('src/render/renderer.mts', EMPTY_EXPORT_GUARD)).to.equal(
       false,
     ); // browser
@@ -213,7 +215,7 @@ describe('scripts/throw-coverage', function () {
       const failures = gateFailures(audit(lcov({ dead: [KEYWORD_GUARD] })));
 
       expect(failures).to.have.lengthOf(1);
-      expect(failures[0]).to.contain(`src/style.mts:${KEYWORD_GUARD}`);
+      expect(failures[0]).to.contain(`${PARSE}:${KEYWORD_GUARD}`);
       expect(failures[0]).to.contain('never run');
     });
 

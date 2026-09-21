@@ -233,6 +233,31 @@ pointed into a field's doc block (`cy.ready`) now points at the field.
 `core.mts`: 3,385 → **2,218 lines**.  API JSON identical modulo line
 stamps; every gate green.
 
+### 130.7 — `src/render/renderer/`, carried out (2026-09-20)
+
+`export-view` (the export scale rule and `resolveExportView`, which the
+worker renderer imports through the facade — 103 lines) by the slicer;
+38 methods by the extractor into eight modules: `frame` (542 — device
+init, the 356-line frame body, the settle timer), `scene` (615 —
+`drawScene`, `encodeCulls`), `pick` (311), `export` (325), `force`
+(170), `targets` (196), `pipelines` (146 — the nine deferred builders),
+`lifecycle` (195 — stats, resize, the DPR listener, destroy).  Thirty
+private helpers left the class; ~50 private fields are `@internal`;
+`schedule()`, `frame()` and `requestRender()` stay whole (13 call
+sites; the loop's spine).  Three extractor rules were born here: a
+delegator returns a `Promise<void>` rather than dropping it (the
+constructor's `this.ready = this.init()` had lost its rejection —
+`test/modules/renderer-resize.mjs` found it as an unhandled rejection);
+a removed method whose name a moved body also declares as a local
+(`const curvedEdges = this.curvedEdges()`) exports as `<name>Impl`; and
+a kept range must start at a doc comment's `/**`, not inside it.  The
+`MISATTRIBUTED` throw-coverage key and `test/modules/throw-coverage.mjs`
+follow `exportScale` to `renderer/export-view.mts`.
+
+`renderer.mts`: 3,016 → **832 lines**.  Verify, the throw gate and the
+renderer module specs green; the visual goldens run after this
+sub-round.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

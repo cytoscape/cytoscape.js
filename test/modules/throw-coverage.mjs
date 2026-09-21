@@ -60,7 +60,7 @@ const KEYWORD_GUARD = throwLine(PARSE, 'const parseKeyword =');
 const PERCENT_GUARD = throwLine(PARSE, 'is not a valid percent for');
 const IMAGE_ENUM_GUARD = throwLine(PARSE, 'const parseImageEnum =');
 const EMPTY_EXPORT_GUARD = throwLine(
-  'src/render/renderer.mts',
+  'src/render/renderer/export-view.mts',
   'Cannot export a full-graph image',
 );
 const BIG_ENDIAN_GUARD = throwLine('src/wire.mts', 'little-endian');
@@ -94,7 +94,10 @@ describe('scripts/throw-coverage', function () {
     // three never-run throws, one per classification
     const report = [
       lcov({ dead: [KEYWORD_GUARD] }),
-      lcov({ dead: [EMPTY_EXPORT_GUARD], file: 'src/render/renderer.mts' }),
+      lcov({
+        dead: [EMPTY_EXPORT_GUARD],
+        file: 'src/render/renderer/export-view.mts',
+      }),
       lcov({ dead: [BIG_ENDIAN_GUARD], file: 'src/wire.mts' }),
     ].join('');
     const result = audit(report);
@@ -102,9 +105,9 @@ describe('scripts/throw-coverage', function () {
       result.dead.some((s) => s.file === file && s.line === line);
 
     expect(isDead(PARSE, KEYWORD_GUARD)).to.equal(true);
-    expect(isDead('src/render/renderer.mts', EMPTY_EXPORT_GUARD)).to.equal(
-      false,
-    ); // browser
+    expect(
+      isDead('src/render/renderer/export-view.mts', EMPTY_EXPORT_GUARD),
+    ).to.equal(false); // browser
     expect(isDead('src/wire.mts', BIG_ENDIAN_GUARD)).to.equal(false); // unreachable
 
     expect(result.browser).to.be.greaterThan(0);

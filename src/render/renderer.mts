@@ -1,42 +1,40 @@
-import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
-import { pickNodeTierAt, type NodePickTier } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import { NodeLayerPipeline } from './node-layer-pipeline.mjs';
-import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
+import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { CurvedEdgePipeline } from './curved-edge-pipeline.mjs';
 import { CurvedArrowPipeline } from './curved-arrow-pipeline.mjs';
-import { CURVE_SEGS } from '../curve-geometry.mjs';
 import { ArrowPipeline } from './arrow-pipeline.mjs';
-import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
+import { Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
-import { GLYPH_BYTES } from './glyph-buffer.mjs';
-import type { GlyphBuffer } from './glyph-buffer.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
 import { ImageArrays } from './image-arrays.mjs';
 import { ImagePipeline } from './image-pipeline.mjs';
 import { ChartPipeline } from './chart-pipeline.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
-import { GpuForceRuntime, nextBatch } from './gpu-force.mjs';
+import { GpuForceRuntime } from './gpu-force.mjs';
 import type { ForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { ExportPacker } from './export-pack.mjs';
-import type { PackedExport } from './export-pack.mjs';
-import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
-import { color2tuple } from '../util/colors.mjs';
 import type { RenderHost, RenderStoreView } from './host.mjs';
 import type {
   ExportOptions,
   RendererOptions,
   RendererStats,
 } from '../public-types.mjs';
-import { GROUP_EDGES, GROUP_NODES, COL } from '../contract.mjs';
+import { COL } from '../contract.mjs';
 import type { ColumnId } from '../contract.mjs';
-
+import * as frameImpl from './renderer/frame.mjs';
+import * as pickImpl from './renderer/pick.mjs';
+import * as exportImpl from './renderer/export.mjs';
+import * as forceImpl from './renderer/force.mjs';
+import * as targetsImpl from './renderer/targets.mjs';
+import * as lifecycleImpl from './renderer/lifecycle.mjs';
+export { resolveExportView } from './renderer/export-view.mjs';
 /*
 The frame graph: a render-on-dirty rAF loop.
 
@@ -77,14 +75,14 @@ export interface ExportView {
   bg: [number, number, number, number] | null;
 }
 
-interface ExportJob {
+export interface ExportJob {
   view: ExportView;
   resolve: (image: ExportedImage) => void;
   reject: (err: Error) => void;
 }
 
 /** the culled instance streams a full scene draw needs */
-interface SceneCullGroups {
+export interface SceneCullGroups {
   node: CulledGroup;
   /** compound parent bodies (round 14.9): permuted, drawn before edges */
   parent: CulledGroup;
@@ -99,24 +97,24 @@ interface SceneCullGroups {
   underlay: CulledGroup;
 }
 
-const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
-const DEFAULT_NODE_LOD_PX = 3;
-const DEFAULT_HIDE_PX = 1;
-const DEFAULT_LABEL_FADE_PX = 6;
-const DEFAULT_IMAGE_MIN_PX = 8;
-const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
+export const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
+export const DEFAULT_NODE_LOD_PX = 3;
+export const DEFAULT_HIDE_PX = 1;
+export const DEFAULT_LABEL_FADE_PX = 6;
+export const DEFAULT_IMAGE_MIN_PX = 8;
+export const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
 const DEFAULT_RENDER_SCALE_MIN = 0.5;
 const DEFAULT_RENDER_SCALE_MAX = 1;
 /** after this long without redraws, re-render one frame at max scale */
-const SETTLE_TO_MAX_MS = 250;
+export const SETTLE_TO_MAX_MS = 250;
 
-const EMPTY_DELTA = {
+export const EMPTY_DELTA = {
   resized: { nodes: false, edges: false },
   spans: [] as { column: never; start: number; end: number }[],
 };
 
 /** columns whose changes never affect pick coverage (keep the pick cache) */
-const PICK_NEUTRAL_COLUMNS = new Set<ColumnId>([
+export const PICK_NEUTRAL_COLUMNS = new Set<ColumnId>([
   COL.NODE_FILL_COLOR,
   COL.NODE_BORDER_COLOR,
   COL.NODE_BORDER_WIDTH,
@@ -136,105 +134,7 @@ const PICK_NEUTRAL_COLUMNS = new Set<ColumnId>([
  * behind GPU makes the loop skip encoding and coalesce viewport/model
  * state into the next frame instead.
  */
-const MAX_IN_FLIGHT_FRAMES = 2;
-
-/** v3 semantics: maxWidth/maxHeight override scale; else scale (default 1). */
-const exportScale = (w: number, h: number, opts: ExportOptions): number => {
-  const { maxWidth, maxHeight } = opts;
-  let scale = opts.scale ?? 1;
-
-  if (maxWidth != null || maxHeight != null) {
-    const scaleW = maxWidth != null ? maxWidth / w : Infinity;
-    const scaleH = maxHeight != null ? maxHeight / h : Infinity;
-
-    scale = Math.min(scaleW, scaleH);
-  }
-
-  if (typeof scale !== 'number' || !isFinite(scale) || scale <= 0) {
-    throw new Error(`Invalid image export scale ${String(scale)}`);
-  }
-
-  return scale;
-};
-
-/**
- * Resolve export options into an {@link ExportView} — output px
- * dimensions plus the Frame transform — against the container's CSS
- * size, the model bounds and the viewport.  Pure of the renderer so
- * the worker proxy (round 86.3) resolves views on the main thread,
- * where all three inputs live, and ships the result across.
- *
- * @param opts — the public export options
- * @param containerW — the container's CSS px width
- * @param containerH — the container's CSS px height
- * @param boundingBox — the model bounds provider (full-graph exports)
- * @param viewport — the current pan/zoom (viewport exports)
- * @returns the resolved view
- * @throws for an invalid bg colour, an empty full-graph export, or a
- *   zero-sized container
- */
-export const resolveExportView = (
-  opts: ExportOptions,
-  containerW: number,
-  containerH: number,
-  boundingBox: () => {
-    x1: number;
-    y1: number;
-    w: number;
-    h: number;
-  } | null,
-  viewport: { pan(): { x: number; y: number }; zoom(): number },
-): ExportView => {
-  let bg: ExportView['bg'] = null;
-
-  if (opts.bg != null) {
-    const tuple = color2tuple(opts.bg);
-
-    if (tuple == null) {
-      throw new Error(
-        `The value '${String(opts.bg)}' is not a valid colour for 'bg'`,
-      );
-    }
-
-    bg = [tuple[0], tuple[1], tuple[2], tuple[3] ?? 1];
-  }
-
-  let w: number, h: number, panX: number, panY: number, zoom: number;
-
-  if (opts.full === true) {
-    const bb = boundingBox();
-
-    if (bb == null) {
-      throw new Error('Cannot export a full-graph image of an empty graph');
-    }
-
-    const scale = exportScale(bb.w, bb.h, opts);
-
-    w = bb.w * scale;
-    h = bb.h * scale;
-    panX = -bb.x1 * scale;
-    panY = -bb.y1 * scale;
-    zoom = scale;
-  } else {
-    if (containerW === 0 || containerH === 0) {
-      throw new Error('Cannot export the viewport of a zero-sized container');
-    }
-
-    const scale = exportScale(containerW, containerH, opts);
-    const pan = viewport.pan();
-
-    w = containerW * scale;
-    h = containerH * scale;
-    panX = pan.x * scale;
-    panY = pan.y * scale;
-    zoom = viewport.zoom() * scale;
-  }
-
-  const wPx = Math.max(1, Math.round(w));
-  const hPx = Math.max(1, Math.round(h));
-
-  return { wPx, hPx, panX, panY, zoom, bg };
-};
+export const MAX_IN_FLIGHT_FRAMES = 2;
 
 /**
  * A worker mount (round 86.3): the main thread created the canvas
@@ -259,79 +159,136 @@ export class Renderer {
    * OffscreenCanvas under a worker mount */
   canvas: HTMLCanvasElement | OffscreenCanvas;
 
-  protected host: RenderHost;
-  protected store: RenderStoreView;
-  protected device: GPUDevice | null;
-  protected mirror: ColumnMirror | null;
-  protected dpr: number;
-  protected destroyed: boolean;
+  /** @internal */
+  host: RenderHost;
+  /** @internal */
+  store: RenderStoreView;
+  /** @internal */
+  device: GPUDevice | null;
+  /** @internal */
+  mirror: ColumnMirror | null;
+  /** @internal */
+  dpr: number;
+  /** @internal */
+  destroyed: boolean;
 
-  private container: HTMLElement | null;
-  private opts: RendererOptions;
-  private context: GPUCanvasContext | null;
-  private nodePipeline: NodePipeline | null;
-  private imagePipeline: ImagePipeline | null = null;
-  private chartPipeline: ChartPipeline | null = null;
-  private imageArrays: ImageArrays | null = null;
-  private overlayPipeline: NodeLayerPipeline | null = null;
-  private underlayPipeline: NodeLayerPipeline | null = null;
-  private edgePipeline: EdgePipeline | null;
-  private curvedEdgePipeline: CurvedEdgePipeline | null = null;
-  private curvedArrowPipeline: CurvedArrowPipeline | null = null;
-  private arrowPipeline: ArrowPipeline | null;
-  private uniform: GPUBuffer | null;
-  private frameData: Float32Array;
-  private isReady: boolean;
+  /** @internal */
+  container: HTMLElement | null;
+  /** @internal */
+  opts: RendererOptions;
+  /** @internal */
+  context: GPUCanvasContext | null;
+  /** @internal */
+  nodePipeline: NodePipeline | null;
+  /** @internal */
+  imagePipeline: ImagePipeline | null = null;
+  /** @internal */
+  chartPipeline: ChartPipeline | null = null;
+  /** @internal */
+  imageArrays: ImageArrays | null = null;
+  /** @internal */
+  overlayPipeline: NodeLayerPipeline | null = null;
+  /** @internal */
+  underlayPipeline: NodeLayerPipeline | null = null;
+  /** @internal */
+  edgePipeline: EdgePipeline | null;
+  /** @internal */
+  curvedEdgePipeline: CurvedEdgePipeline | null = null;
+  /** @internal */
+  curvedArrowPipeline: CurvedArrowPipeline | null = null;
+  /** @internal */
+  arrowPipeline: ArrowPipeline | null;
+  /** @internal */
+  uniform: GPUBuffer | null;
+  /** @internal */
+  frameData: Float32Array;
+  /** @internal */
+  isReady: boolean;
   private frameRequested: boolean;
-  private resizeObserver: ResizeObserver | null;
+  /** @internal */
+  resizeObserver: ResizeObserver | null;
   /** live device-pixel-ratio tracking (91.2): true when the ctor left
-   * `pixelRatio` 'auto', so every measure re-reads `devicePixelRatio` */
-  private autoDpr: boolean;
-  /** tears down the armed matchMedia resolution listener (91.2) */
-  private offDprChange: (() => void) | null = null;
+   * `pixelRatio` 'auto', so every measure re-reads `devicePixelRatio`
+   * @internal */
+  autoDpr: boolean;
+  /** tears down the armed matchMedia resolution listener (91.2) @internal */
+  offDprChange: (() => void) | null = null;
   /** re-entrancy latch (91.1): a `cy.resize()` from inside a 'render'
-   * handler must schedule rather than recurse into frame() */
-  private inFrame = false;
-  private offInvalidate: () => void;
-  private offViewport: () => void;
-  private frameCount: number;
-  private cpuFrameMs: number;
-  private gpuTimer: GpuTimer | null;
-  private picking: Picking | null;
-  private pickUniform: GPUBuffer | null;
-  private pickFrameData: Float32Array;
-  private needsRedraw: boolean;
-  private inFlightFrames: number;
-  /** the store compaction epoch this renderer last synced against (19.4) */
-  private seenCompactEpoch = 0;
-  private labelLayer: LabelLayer | null;
-  private onFontsLoadingDone: (() => void) | null = null;
+   * handler must schedule rather than recurse into frame()
+   * @internal */
+  inFrame = false;
+  /** @internal */
+  offInvalidate: () => void;
+  /** @internal */
+  offViewport: () => void;
+  /** @internal */
+  frameCount: number;
+  /** @internal */
+  cpuFrameMs: number;
+  /** @internal */
+  gpuTimer: GpuTimer | null;
+  /** @internal */
+  picking: Picking | null;
+  /** @internal */
+  pickUniform: GPUBuffer | null;
+  /** @internal */
+  pickFrameData: Float32Array;
+  /** @internal */
+  needsRedraw: boolean;
+  /** @internal */
+  inFlightFrames: number;
+  /** the store compaction epoch this renderer last synced against (19.4) @internal */
+  seenCompactEpoch = 0;
+  /** @internal */
+  labelLayer: LabelLayer | null;
+  /** @internal */
+  onFontsLoadingDone: (() => void) | null = null;
   /** wired by the factory: an external device loss hands recovery to the core */
   onDeviceLost: ((message: string) => void) | null = null;
-  private labelPipeline: LabelPipeline | null = null;
-  private edgeLabelPipeline: LabelPipeline | null = null;
-  private cullKernels: CullKernels | null;
-  private mapperRuntime: MapperRuntime | null;
-  private tweenRuntime: GpuTweenRuntime | null;
-  private sceneCull: SceneCullGroups | null;
-  private pickCull: { edge: CulledGroup; curved: CulledGroup } | null;
-  private scaleCtl: ScaleController;
-  private settleTimer: ReturnType<typeof setTimeout> | null;
-  private format: GPUTextureFormat | null;
-  private sceneTarget: GPUTexture | null;
-  private depthTarget: GPUTexture | null;
-  private upscaler: Upscaler | null;
-  private pendingExports: ExportJob[];
-  private exportUniform: GPUBuffer | null;
-  /** the device-side straight-alpha pack an export's readback maps (110.4) */
-  private exportPacker: ExportPacker | null;
-  private exportFrameData: Float32Array;
-  private exportCull: SceneCullGroups | null;
+  /** @internal */
+  labelPipeline: LabelPipeline | null = null;
+  /** @internal */
+  edgeLabelPipeline: LabelPipeline | null = null;
+  /** @internal */
+  cullKernels: CullKernels | null;
+  /** @internal */
+  mapperRuntime: MapperRuntime | null;
+  /** @internal */
+  tweenRuntime: GpuTweenRuntime | null;
+  /** @internal */
+  sceneCull: SceneCullGroups | null;
+  /** @internal */
+  pickCull: { edge: CulledGroup; curved: CulledGroup } | null;
+  /** @internal */
+  scaleCtl: ScaleController;
+  /** @internal */
+  settleTimer: ReturnType<typeof setTimeout> | null;
+  /** @internal */
+  format: GPUTextureFormat | null;
+  /** @internal */
+  sceneTarget: GPUTexture | null;
+  /** @internal */
+  depthTarget: GPUTexture | null;
+  /** @internal */
+  upscaler: Upscaler | null;
+  /** @internal */
+  pendingExports: ExportJob[];
+  /** @internal */
+  exportUniform: GPUBuffer | null;
+  /** the device-side straight-alpha pack an export's readback maps (110.4) @internal */
+  exportPacker: ExportPacker | null;
+  /** @internal */
+  exportFrameData: Float32Array;
+  /** @internal */
+  exportCull: SceneCullGroups | null;
   /** the parent draw permutation on-GPU (round 14.9): re-uploaded when
-   * the hierarchy's (depth, slot) order object changes identity */
-  private parentOrderBuf: GPUBuffer | null = null;
-  private parentOrderRef: Uint32Array | null = null;
-  private parentOrderVersion = 0;
+   * the hierarchy's (depth, slot) order object changes identity
+   * @internal */
+  parentOrderBuf: GPUBuffer | null = null;
+  /** @internal */
+  parentOrderRef: Uint32Array | null = null;
+  /** @internal */
+  parentOrderVersion = 0;
 
   /**
    * Creates and mounts the canvas, subscribes to store invalidation,
@@ -499,27 +456,7 @@ export class Renderer {
    * without 'timestamp-query'.
    */
   stats(): RendererStats {
-    return {
-      frames: this.frameCount,
-      cpuFrameMs: this.cpuFrameMs,
-      gpuFrameMs: this.gpuTimer?.lastMs ?? 0,
-      gpuFrameReadings: this.gpuTimer?.readings ?? 0,
-      renderScale: this.scaleCtl.scale,
-      uploadedBytes:
-        (this.mirror?.uploadedBytes ?? 0) +
-        (this.labelLayer?.uploadedBytes() ?? 0),
-      nodes: this.store.count(GROUP_NODES),
-      edges: this.store.count(GROUP_EDGES),
-      glyphs: this.labelLayer?.count() ?? 0,
-      pickLatencyMs: this.pickLatencyMs(),
-      pickDeferrals: this.picking?.deferrals ?? 0,
-      mapperUploadedBytes: this.mapperRuntime?.uploadedBytes ?? 0,
-      mapperDispatches: this.mapperRuntime?.dispatches ?? 0,
-      // the shaping memo (16.5): shared texts shape once per face
-      labelShapeHits: this.labelLayer?.memoHits ?? 0,
-      labelShapeMisses: this.labelLayer?.memoMisses ?? 0,
-      glyphAtlasTier: this.labelLayer?.atlas.tier ?? 1,
-    };
+    return lifecycleImpl.stats(this);
   }
 
   /**
@@ -541,18 +478,7 @@ export class Renderer {
    * back to the scheduler.
    */
   resize(): void {
-    if (this.destroyed) {
-      return;
-    }
-
-    this.applySize();
-    this.needsRedraw = true;
-
-    if (this.isReady && !this.inFrame) {
-      this.frame();
-    } else {
-      this.schedule();
-    }
+    lifecycleImpl.resize(this);
   }
 
   /**
@@ -567,33 +493,10 @@ export class Renderer {
    * handler re-measures through `resize()` (applySize re-reads the live
    * ratio) and emits `resize` on the core — v3's `cy.resize()`
    * semantics for a re-rasterizing viewport.
+   * @internal
    */
-  private armDprListener(): void {
-    if (
-      !this.autoDpr ||
-      this.container == null ||
-      typeof matchMedia === 'undefined'
-    ) {
-      return;
-    }
-
-    const query = matchMedia(`(resolution: ${this.dpr}dppx)`);
-    const onChange = (): void => {
-      if (this.destroyed) {
-        return;
-      }
-
-      this.offDprChange?.(); // drop the stale-ratio query
-      this.resize(); // applySize re-reads devicePixelRatio
-      this.host.emitResize();
-      this.armDprListener(); // re-arm at the new ratio
-    };
-
-    query.addEventListener('change', onChange);
-    this.offDprChange = () => {
-      query.removeEventListener('change', onChange);
-      this.offDprChange = null;
-    };
+  armDprListener(): void {
+    lifecycleImpl.armDprListener(this);
   }
 
   /** True while a GPU force-layout run owns the position column (18.3) —
@@ -631,80 +534,7 @@ export class Renderer {
    * recovery works).
    */
   destroy(): void {
-    if (this.destroyed) {
-      return;
-    }
-
-    this.destroyed = true;
-
-    if (this.settleTimer != null) {
-      clearTimeout(this.settleTimer);
-      this.settleTimer = null;
-    }
-
-    this.resizeObserver?.disconnect();
-    this.offDprChange?.();
-    this.offInvalidate();
-    this.offViewport();
-
-    if (this.onFontsLoadingDone != null) {
-      document.fonts.removeEventListener(
-        'loadingdone',
-        this.onFontsLoadingDone,
-      );
-      this.onFontsLoadingDone = null;
-    }
-    this.picking?.destroy();
-    this.gpuTimer?.destroy();
-    this.labelLayer?.destroy();
-    this.imageArrays?.destroy();
-    this.imageArrays = null;
-    this.forceRuntime?.destroy();
-    this.forceRuntime = null;
-    this.store.images.setDecoder(null); // headless again on unmount
-
-    if (this.imagePromoteTimer != null) {
-      clearTimeout(this.imagePromoteTimer);
-      this.imagePromoteTimer = null;
-    }
-    this.parentOrderBuf?.destroy();
-    this.parentOrderBuf = null;
-    this.parentOrderRef = null;
-
-    for (const group of [
-      ...Object.values(this.sceneCull ?? {}),
-      ...Object.values(this.pickCull ?? {}),
-      ...Object.values(this.exportCull ?? {}),
-    ]) {
-      group.destroy();
-    }
-
-    for (const job of this.pendingExports) {
-      job.reject(
-        new Error(
-          'The renderer was destroyed before the image export completed',
-        ),
-      );
-    }
-
-    this.pendingExports = [];
-
-    this.upscaler?.destroy();
-    this.sceneTarget?.destroy();
-    this.depthTarget?.destroy();
-    this.host.animations.detachDriver();
-    this.mapperRuntime?.destroy();
-    this.tweenRuntime?.destroy();
-    this.mirror?.destroy();
-    this.uniform?.destroy();
-    this.pickUniform?.destroy();
-    this.exportUniform?.destroy();
-    this.exportPacker = null; // its pipeline dies with the device below
-    this.device?.destroy();
-
-    if (this.canvas instanceof HTMLCanvasElement) {
-      this.canvas.remove(); // an OffscreenCanvas has no DOM presence
-    }
+    lifecycleImpl.destroy(this);
   }
 
   // -- picking --
@@ -750,61 +580,7 @@ export class Renderer {
     y: number,
     pads?: { edgePadPx?: number; nodePadPx?: number },
   ): Promise<number | null> {
-    if (this.destroyed || !this.isReady || this.picking == null) {
-      return null;
-    }
-
-    const xPx = x * this.dpr;
-    const yPx = y * this.dpr;
-    // hit halos in CSS px (57.9): the gesture layer passes v3's
-    // findNearestElement thresholds; the default is exact, which is what
-    // the public `cy.pick` promises
-    const edgePadPx = (pads?.edgePadPx ?? 0) * this.dpr;
-    const nodePadPx = (pads?.nodePadPx ?? 0) * this.dpr;
-
-    const nodeHit = this.cpuPickNodeTier(xPx, yPx, nodePadPx);
-
-    if (nodeHit != null && !nodeHit.isParent) {
-      // the node id namespace: slot + 1, high bit clear.  A leaf draws
-      // over every edge, so nothing below it can win — no GPU work.
-      return nodeHit.slot + 1;
-    }
-
-    // 97.1: a parent body draws *under* the edges crossing it, so its hit
-    // is held while the edge tier answers, and spends only over background
-    const parentSlot = nodeHit?.slot ?? null;
-    const overParent = (): number | null =>
-      parentSlot == null ? null : parentSlot + 1;
-
-    const cached = this.picking.cachedIdAt(xPx, yPx, edgePadPx);
-
-    if (cached != null) {
-      return cached === 0 ? overParent() : cached;
-    }
-
-    const epoch = this.store.compactEpoch;
-    const promise = this.picking.request(xPx, yPx, edgePadPx);
-
-    this.schedule(); // the pick pass runs with the next frame
-
-    const id = await promise;
-
-    if (id != null && id !== 0) {
-      return id;
-    }
-
-    if (parentSlot == null || this.destroyed || !this.isReady) {
-      return null;
-    }
-
-    // slots move under compaction (19.4), so a held slot only survives an
-    // await while the epoch does; otherwise the scan re-runs against the
-    // current columns, which is cheap next to the roundtrip just paid
-    if (this.store.compactEpoch !== epoch) {
-      return this.cpuPickNodeTier(xPx, yPx, nodePadPx)?.slot ?? null;
-    }
-
-    return overParent();
+    return pickImpl.pick(this, x, y, pads);
   }
 
   /**
@@ -825,43 +601,13 @@ export class Renderer {
     return this.cpuPickNode(x * this.dpr, y * this.dpr, padPx * this.dpr);
   }
 
-  private cpuPickNode(
-    xPx: number,
-    yPx: number,
-    padPx: number = 0,
-  ): number | null {
-    return this.cpuPickNodeTier(xPx, yPx, padPx)?.slot ?? null;
+  /** @internal */
+  cpuPickNode(xPx: number, yPx: number, padPx: number = 0): number | null {
+    return pickImpl.cpuPickNode(this, xPx, yPx, padPx);
   }
 
-  /** the same scan, carrying the draw tier the hit came from (97.1) */
-  private cpuPickNodeTier(
-    xPx: number,
-    yPx: number,
-    padPx: number = 0,
-  ): NodePickTier | null {
-    const viewport = this.host.viewport;
-    const pan = viewport.pan();
-    const opts = this.opts;
-
-    this.store.flushDerived(); // parent geometry is derived (round 14.9)
-
-    // same view state as writePickUniform: native device px, no renderScale
-    return pickNodeTierAt(
-      this.store,
-      {
-        panXPx: pan.x * this.dpr,
-        panYPx: pan.y * this.dpr,
-        zoomDpr: viewport.zoom() * this.dpr,
-        hidePx: opts.hidePx ?? DEFAULT_HIDE_PX,
-        nodeLodPx: opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX,
-        padPx,
-      },
-      xPx,
-      yPx,
-    );
-  }
-
-  private pickLatencyMs(): number {
+  /** @internal */
+  pickLatencyMs(): number {
     return this.picking?.lastLatencyMs ?? 0;
   }
 
@@ -881,31 +627,7 @@ export class Renderer {
    * label culling.
    */
   async exportImage(opts: ExportOptions = {}): Promise<ExportedImage> {
-    await this.ready;
-
-    if (this.destroyed || this.device == null) {
-      throw new Error('Cannot export an image: the renderer is destroyed');
-    }
-
-    const view = this.computeExportView(opts);
-
-    // 15.6: a high-scale export can demand resolution the screen never
-    // did — re-raster vector images at the export scale and wait for
-    // the decodes (bounded), so the WYSIWYG figure is crisp
-    if (this.store.imageCount() > 0) {
-      this.promoteVectors(view.zoom, false);
-
-      if (this.store.images.busy()) {
-        await Promise.race([
-          this.store.images.whenSettled(),
-          new Promise<void>((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        // let the fresh rasters upload before the export frame encodes
-        this.imageArrays?.sync(this.store.images);
-      }
-    }
-
-    return this.exportFromView(view);
+    return exportImpl.exportImage(this, opts);
   }
 
   /**
@@ -919,57 +641,40 @@ export class Renderer {
    * @returns straight-alpha RGBA pixels, as `exportImage`
    */
   async exportFromView(view: ExportView): Promise<ExportedImage> {
-    await this.ready;
-
-    if (this.destroyed || this.device == null) {
-      throw new Error('Cannot export an image: the renderer is destroyed');
-    }
-
-    const limit = this.device.limits.maxTextureDimension2D;
-
-    if (view.wPx > limit || view.hPx > limit) {
-      throw new Error(
-        `The export dimensions ${view.wPx}×${view.hPx} exceed the device's ${limit}px texture limit; ` +
-          `use maxWidth/maxHeight or a smaller scale`,
-      );
-    }
-
-    // a high-scale export can demand label resolution the screen never
-    // did (round 94, the 15.6 image rule applied to text): promote the
-    // atlas tier at the export scale so the WYSIWYG figure is crisp.
-    // Safe here because the export encodes inside the frame loop after
-    // labelLayer.process() rebuilds the freshly-dirtied runs.
-    this.labelLayer?.maybePromote(view.zoom);
-
-    return new Promise((resolve, reject) => {
-      this.pendingExports.push({ view, resolve, reject });
-      this.schedule();
-    });
+    return exportImpl.exportFromView(this, view);
   }
 
-  private imagePromoteTimer: ReturnType<typeof setTimeout> | null = null;
+  /** @internal */
+  imagePromoteTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** the live GPU force integrator (round 18.3), while a run holds it */
-  private forceRuntime: GpuForceRuntime | null = null;
-  private forceStepsPerFrame = 3;
-  private forcePresents = true;
+  /** the live GPU force integrator (round 18.3), while a run holds it @internal */
+  forceRuntime: GpuForceRuntime | null = null;
+  /** @internal */
+  forceStepsPerFrame = 3;
+  /** @internal */
+  forcePresents = true;
   /** the iterations this frame encodes (119): `forceStepsPerFrame` for
    * a presenting run — the watchable rate — and an adaptive batch for
-   * a silent or tweened one, which nobody watches mid-run */
-  private forceBatch = 3;
+   * a silent or tweened one, which nobody watches mid-run
+   * @internal */
+  forceBatch = 3;
   /** the last frame skipped its scene pass under backpressure while a
    * force run was encoding (119): the device is behind, and a
-   * non-presenting run's batch should shrink */
-  private forceFrameSkipped = false;
+   * non-presenting run's batch should shrink
+   * @internal */
+  forceFrameSkipped = false;
   /** the device's own price of the last non-presenting batch (121.5):
    * the GPU time its frame took — from the later of its submit and the
    * previous frame's completion to its own — and the iterations it
    * carried.  The frame's wall clock cannot see this: a vsync-paced
    * frame submits and returns while the queue absorbs the work, until
-   * the frames in flight fill and the stall lands all at once */
-  private forcePriceMs = 0;
-  private forcePriceBatch = 0;
-  private forceDoneAt = 0;
+   * the frames in flight fill and the stall lands all at once
+   * @internal */
+  forcePriceMs = 0;
+  /** @internal */
+  forcePriceBatch = 0;
+  /** @internal */
+  forceDoneAt = 0;
 
   /**
    * Start the GPU force integrator (18.3): returns null when the device
@@ -989,27 +694,7 @@ export class Renderer {
     stepsPerFrame: number,
     present: boolean = true,
   ): GpuForceRuntime | null {
-    if (
-      this.destroyed ||
-      !this.isReady ||
-      this.device == null ||
-      this.forceRuntime != null
-    ) {
-      return null;
-    }
-
-    this.forceRuntime = new GpuForceRuntime(this.device, inputs);
-    this.forceStepsPerFrame = stepsPerFrame;
-    this.forceBatch = stepsPerFrame;
-    this.forceFrameSkipped = false;
-    this.forcePriceMs = 0;
-    this.forcePriceBatch = 0;
-    this.forceDoneAt = 0;
-    this.forcePresents = present;
-    this.needsRedraw = true;
-    this.schedule();
-
-    return this.forceRuntime;
+    return forceImpl.startForce(this, inputs, stepsPerFrame, present);
   }
 
   /** Detach + destroy the integrator (after the settle readback). */
@@ -1033,478 +718,21 @@ export class Renderer {
 
   /** Debounced zoom-promotion check: the svg re-raster meter (15.6)
    * and the label atlas tier meter (round 94) share one settle timer —
-   * both run shortly after the viewport settles, never per wheel tick. */
-  private schedulePromotionCheck(): void {
-    if (
-      this.store.imageCount() === 0 &&
-      !(this.labelLayer?.canPromote() ?? false)
-    ) {
-      return;
-    }
-
-    if (this.imagePromoteTimer != null) {
-      clearTimeout(this.imagePromoteTimer);
-    }
-
-    this.imagePromoteTimer = setTimeout(() => {
-      this.imagePromoteTimer = null;
-
-      if (!this.destroyed && this.isReady) {
-        this.promoteVectors();
-        this.promoteLabelTier();
-      }
-    }, 250);
-  }
-
-  /** The label half of the settle meter (round 94): displayed device px
-   * are zoom × dpr — deliberately render-scale-free, like the label LOD
-   * thresholds, since readability is judged at native resolution.  The
-   * label layer owns the threshold and the one-way tier policy. */
-  private promoteLabelTier(): void {
-    const zoomDpr = this.host.viewport.zoom() * this.dpr;
-
-    if (this.labelLayer?.maybePromote(zoomDpr) ?? false) {
-      this.needsRedraw = true;
-      this.schedule();
-    }
-  }
-
-  /**
-   * The demand meter (15.6): per unique *vector* rgba entry, the max
-   * on-screen device-px demand among its visible user nodes; entries
-   * whose demand exceeds their raster by 1.5x re-raster at the covering
-   * tier (registry.promote snaps and clamps; raster sources never
-   * promote).  Runs on viewport settles, fresh uploads, and — with the
-   * export scale and no viewport test — before image exports.
-   */
-  private promoteVectors(
-    zoomDprOverride?: number,
-    checkViewport: boolean = true,
-  ): void {
-    const store = this.store;
-
-    if (store.imageCount() === 0) {
-      return;
-    }
-
-    const registry = store.images;
-    const zoomDpr = zoomDprOverride ?? (this.frameData[4] || 1);
-    const refs = store.column(COL.NODE_IMAGE_REF) as Uint32Array;
-    const sizes = store.column(COL.NODE_SIZE) as Float32Array;
-    const positions = store.column(COL.NODE_POSITION) as Float32Array;
-    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
-    const high = store.highWater(GROUP_NODES);
-    const panX = this.frameData[2],
-      panY = this.frameData[3];
-    const vw = this.frameData[0],
-      vh = this.frameData[1];
-    const demand = new Map<number, number>();
-
-    for (let slot = 0; slot < high; slot++) {
-      if (refs[slot] === 0) {
-        continue;
-      }
-      if ((flags[slot] & 3) !== 3) {
-        continue;
-      } // SHOWN = ALIVE | VISIBLE
-
-      const sizePx = Math.max(sizes[slot * 2], sizes[slot * 2 + 1]) * zoomDpr;
-
-      if (checkViewport) {
-        const x = positions[slot * 2] * zoomDpr + panX;
-        const y = positions[slot * 2 + 1] * zoomDpr + panY;
-
-        if (x < -sizePx || x > vw + sizePx || y < -sizePx || y > vh + sizePx) {
-          continue;
-        }
-      }
-
-      const recs = store.nodeImagesAt(slot);
-
-      if (recs == null) {
-        continue;
-      }
-
-      for (const rec of recs) {
-        if (rec.sdf) {
-          continue;
-        } // icons re-threshold; no promotion
-
-        const entry = registry.get(rec.entryId);
-
-        if (entry == null || !entry.vector) {
-          continue;
-        }
-
-        const prev = demand.get(rec.entryId);
-
-        if (prev == null || sizePx > prev) {
-          demand.set(rec.entryId, sizePx);
-        }
-      }
-    }
-
-    for (const [id, px] of demand) {
-      const entry = registry.get(id);
-
-      // 1.5x hysteresis: wheel jitter never thrashes re-rasters
-      if (entry != null && px > entry.rasterPx * 1.5) {
-        registry.promote(id, px);
-      }
-    }
-  }
-
-  /** Resolve the export options to output dimensions + Frame transform. */
-  private computeExportView(opts: ExportOptions): ExportView {
-    // same-thread only: a worker engine has no container, and its proxy
-    // resolves views on the main thread (exportFromView)
-    const container = this.container as HTMLElement;
-
-    return resolveExportView(
-      opts,
-      container.clientWidth,
-      container.clientHeight,
-      () => this.store.boundingBox(),
-      this.host.viewport,
-    );
-  }
-
-  /** The export Frame uniform: output px viewport, dpr-free transform,
-   * LOD thresholds in export px (see exportImage). */
-  private writeExportUniform(view: ExportView): void {
-    const device = this.device as GPUDevice;
-    const opts = this.opts;
-    const f = this.exportFrameData;
-
-    if (this.exportUniform == null) {
-      this.exportUniform = device.createBuffer({
-        label: 'cy-gpu:export-frame-uniform',
-        size: f.byteLength,
-        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
-      });
-    }
-
-    f[0] = view.wPx;
-    f[1] = view.hPx;
-    f[2] = view.panX;
-    f[3] = view.panY;
-    f[4] = view.zoom;
-    f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
-    f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
-    f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
-    f[8] = opts.edgeDimming
-      ? Math.min(0.85, Math.max(0, 1 - view.zoom) * 0.85)
-      : 0;
-    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
-    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
-    f[11] = this.store.curveSlack();
-    f[12] = this.store.haystackSlack();
-    f[13] = this.store.outlineSlack();
-    f[14] = this.store.arrowScaleMax();
-    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
-    f[15] = opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX; // export scale is the figure's own resolution
-
-    device.queue.writeBuffer(
-      this.exportUniform,
-      0,
-      f.buffer,
-      f.byteOffset,
-      f.byteLength,
-    );
-  }
-
-  /**
-   * Encode + submit one export: cull against the export uniform, draw the
-   * scene into a transient offscreen target, copy to a staging buffer.
-   * Synchronous up to the submit (so per-job uniform writes order
-   * correctly against per-job submits); the readback resolves async.
-   */
-  private renderExport(job: ExportJob): void {
-    const device = this.device as GPUDevice;
-    const { wPx, hPx, bg } = job.view;
-
-    try {
-      this.writeExportUniform(job.view);
-
-      if (this.exportCull == null) {
-        const kernels = this.cullKernels as CullKernels;
-
-        this.exportCull = {
-          node: new CulledGroup(kernels, 'node', 'export-node'),
-          parent: new CulledGroup(kernels, 'parentNode', 'export-parent'),
-          edge: new CulledGroup(kernels, 'edge', 'export-edge'),
-          curved: new CulledGroup(
-            kernels,
-            'curvedEdge',
-            'export-curved-edge',
-            6 * CURVE_SEGS,
-          ),
-          glyph: new CulledGroup(kernels, 'glyph', 'export-glyph'),
-          edgeGlyph: new CulledGroup(kernels, 'edgeGlyph', 'export-edge-glyph'),
-          sourceGlyph: new CulledGroup(
-            kernels,
-            'edgeGlyph',
-            'export-source-glyph',
-          ),
-          targetGlyph: new CulledGroup(
-            kernels,
-            'edgeGlyph',
-            'export-target-glyph',
-          ),
-          ghost: new CulledGroup(kernels, 'ghost', 'export-ghost'),
-          overlay: new CulledGroup(kernels, 'nodeLayer', 'export-overlay'),
-          underlay: new CulledGroup(kernels, 'nodeLayer', 'export-underlay'),
-        };
-      }
-
-      const format = this.format as GPUTextureFormat;
-      // the pack pass reads the target back through a texture binding
-      // (110.4), so no COPY_SRC and no padded row copy
-      const texture = device.createTexture({
-        label: 'cy-gpu:export-target',
-        size: { width: wPx, height: hPx },
-        format,
-        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.TEXTURE_BINDING,
-      });
-      const depth = device.createTexture({
-        label: 'cy-gpu:export-depth',
-        size: { width: wPx, height: hPx },
-        format: DEPTH_FORMAT,
-        usage: TEXTURE_USAGE.RENDER_ATTACHMENT,
-      });
-
-      const encoder = device.createCommandEncoder({ label: 'cy-gpu:export' });
-
-      this.encodeCulls(
-        encoder,
-        this.exportUniform as GPUBuffer,
-        this.exportCull,
-        false,
-      );
-
-      // the clear color is premultiplied, like everything the pipelines blend
-      const a = bg == null ? 0 : bg[3];
-      const pass = encoder.beginRenderPass({
-        label: 'cy-gpu:export-pass',
-        colorAttachments: [
-          {
-            view: texture.createView(),
-            clearValue:
-              bg == null
-                ? { r: 0, g: 0, b: 0, a: 0 }
-                : {
-                    r: (bg[0] / 255) * a,
-                    g: (bg[1] / 255) * a,
-                    b: (bg[2] / 255) * a,
-                    a,
-                  },
-            loadOp: 'clear',
-            storeOp: 'store',
-          },
-        ],
-        depthStencilAttachment: {
-          view: depth.createView(),
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'discard',
-        },
-      });
-
-      this.drawScene(pass, this.exportUniform as GPUBuffer, this.exportCull);
-      pass.end();
-
-      // the device converts the premultiplied target into final
-      // straight-alpha RGBA bytes (110.4); the readback only maps them
-      this.exportPacker ??= new ExportPacker(device);
-
-      const packed = this.exportPacker.encode(encoder, texture, wPx, hPx);
-
-      device.queue.submit([encoder.finish()]);
-
-      void this.readbackExport(job, packed, texture, depth);
-    } catch (err) {
-      job.reject(err as Error);
-    }
-  }
-
-  /**
-   * Map the packed staging buffer and hand its bytes over.  The one copy
-   * left is the `slice()` out of the mapped range, which dies at
-   * `unmap()`; the census priced it at the memcpy floor (110.4).
-   */
-  private async readbackExport(
-    job: ExportJob,
-    packed: PackedExport,
-    texture: GPUTexture,
-    depth: GPUTexture,
-  ): Promise<void> {
-    const { wPx, hPx } = job.view;
-    const { staging, scratch } = packed;
-
-    try {
-      await staging.mapAsync(MAP_MODE.READ);
-
-      const data = new Uint8ClampedArray(staging.getMappedRange().slice(0));
-
-      staging.unmap();
-      job.resolve({ data, width: wPx, height: hPx });
-    } catch (err) {
-      job.reject(err as Error); // device lost or destroyed mid-flight
-    } finally {
-      staging.destroy();
-
-      for (const buffer of scratch) {
-        buffer.destroy();
-      }
-
-      texture.destroy();
-      depth.destroy();
-    }
+   * both run shortly after the viewport settles, never per wheel tick.
+   * @internal */
+  schedulePromotionCheck(): void {
+    forceImpl.schedulePromotionCheck(this);
   }
 
   // -- internals --
 
-  private async init(): Promise<void> {
-    const { device, context, format } = await initGpuContext(
-      this.canvas,
-      (info) => {
-        // our own teardown destroys the device after flagging `destroyed`;
-        // anything else is a real external loss
-        if (this.destroyed) {
-          return;
-        }
-
-        this.isReady = false;
-
-        if (this.onDeviceLost != null) {
-          this.onDeviceLost(info.message);
-        } else {
-          this.host.emitError(`WebGPU device lost: ${info.message}`);
-        }
-      },
-    );
-
-    if (this.destroyed) {
-      device.destroy();
-
-      return;
-    }
-
-    this.device = device;
-    this.context = context;
-    this.uniform = device.createBuffer({
-      label: 'cy-gpu:frame-uniform',
-      size: this.frameData.byteLength,
-      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
-    });
-
-    // the mirror constructor uploads the full backing arrays, so any delta
-    // accumulated before readiness is already covered — pending derived
-    // geometry (parent auto-bounds, curve params) must land in the
-    // backing arrays first, though: their usual flush point is takeDelta,
-    // whose result is discarded here (the 12a init-order lesson, which
-    // round 14.9 re-hit for the hierarchy flush)
-    this.store.flushDerived();
-    this.mirror = new ColumnMirror(device, this.store);
-    this.store.takeDelta();
-
-    // the CPU-applied base is current at init, so pre-ready data spans are
-    // covered too; the runtime's first update() configures + fully
-    // evaluates.  No mapper seam (a worker host, 86.2) means no runtime:
-    // the CPU-applied style columns stay canonical and nothing is ever
-    // marked GPU-owned, so correctness is unchanged — data-driven style
-    // updates just cost their CPU apply.
-    const mappers = this.host.gpuMappers;
-
-    this.mapperRuntime =
-      mappers == null
-        ? null
-        : new MapperRuntime(
-            device,
-            mappers.store,
-            mappers.styleEngine,
-            this.mirror,
-          );
-
-    // GPU tweens: any mirrored column + the mirror version (rebinds on
-    // realloc).  Attaching makes the animation manager route position and
-    // paint animations here and cede its clock to this frame loop.
-    this.tweenRuntime = new GpuTweenRuntime(
-      device,
-      (id) => (this.mirror as ColumnMirror).buffer(id),
-      () => (this.mirror as ColumnMirror).version,
-    );
-    this.host.animations.attachDriver(this.tweenRuntime);
-    this.store.takeMapperSpans();
-
-    this.pickUniform = device.createBuffer({
-      label: 'cy-gpu:pick-frame-uniform',
-      size: this.pickFrameData.byteLength,
-      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
-    });
-
-    const kernels = new CullKernels(device);
-
-    this.cullKernels = kernels;
-    this.sceneCull = {
-      node: new CulledGroup(kernels, 'node', 'scene-node'),
-      parent: new CulledGroup(kernels, 'parentNode', 'scene-parent'),
-      edge: new CulledGroup(kernels, 'edge', 'scene-edge'),
-      curved: new CulledGroup(
-        kernels,
-        'curvedEdge',
-        'scene-curved-edge',
-        6 * CURVE_SEGS,
-      ),
-      glyph: new CulledGroup(kernels, 'glyph', 'scene-glyph'),
-      edgeGlyph: new CulledGroup(kernels, 'edgeGlyph', 'scene-edge-glyph'),
-      sourceGlyph: new CulledGroup(kernels, 'edgeGlyph', 'scene-source-glyph'),
-      targetGlyph: new CulledGroup(kernels, 'edgeGlyph', 'scene-target-glyph'),
-      ghost: new CulledGroup(kernels, 'ghost', 'scene-ghost'),
-      overlay: new CulledGroup(kernels, 'nodeLayer', 'scene-overlay'),
-      underlay: new CulledGroup(kernels, 'nodeLayer', 'scene-underlay'),
-    };
-    this.pickCull = {
-      // nodes pick synchronously on the CPU; only edges need the GPU pass
-      edge: new CulledGroup(kernels, 'edge', 'pick-edge'),
-      curved: new CulledGroup(
-        kernels,
-        'curvedEdge',
-        'pick-curved-edge',
-        6 * CURVE_SEGS,
-      ),
-    };
-
-    this.format = format;
-    // Every graph draws nodes and straight edges, so those pipelines are
-    // built here.  The feature pipelines are not — see the "deferred
-    // pipelines" section: each is built the first time its own draw runs.
-    this.nodePipeline = new NodePipeline(device, format, kernels.visibleLayout);
-    this.imageArrays = new ImageArrays(device);
-    // the environment's rasterizer: entries acquired while headless kick
-    // now (null where the host cannot decode — the worker host, pass 1)
-    const decoder = this.host.createImageDecoder();
-
-    if (decoder != null) {
-      this.store.images.setDecoder(decoder);
-    }
-    this.edgePipeline = new EdgePipeline(device, format, kernels.visibleLayout);
-    this.arrowPipeline = new ArrowPipeline(
-      device,
-      format,
-      kernels.visibleLayout,
-    );
-    this.labelLayer = new LabelLayer(device, this.store);
-    this.picking = new Picking(device);
-    this.upscaler = this.scaleCtl.min < 1 ? new Upscaler(device, format) : null;
-    this.gpuTimer = GpuTimer.isSupported(device) ? new GpuTimer(device) : null;
-
-    this.isReady = true;
-    this.needsRedraw = true;
-    this.schedule(); // first frame
+  /** @internal */
+  async init(): Promise<void> {
+    return frameImpl.init(this);
   }
 
-  private schedule(): void {
+  /** @internal */
+  schedule(): void {
     if (this.frameRequested || this.destroyed || !this.isReady) {
       return;
     }
@@ -1517,7 +745,8 @@ export class Renderer {
     });
   }
 
-  private frame(): void {
+  /** @internal */
+  frame(): void {
     this.inFrame = true;
 
     try {
@@ -1527,361 +756,9 @@ export class Renderer {
     }
   }
 
-  private frameBody(): void {
-    const device = this.device;
-    const context = this.context;
-    const mirror = this.mirror;
-
-    if (
-      this.destroyed ||
-      !this.isReady ||
-      device == null ||
-      context == null ||
-      mirror == null
-    ) {
-      return;
-    }
-    if (this.canvas.width === 0 || this.canvas.height === 0) {
-      return;
-    }
-
-    const t0 = performance.now();
-    const store = this.store;
-    let delta: ReturnType<typeof store.takeDelta> | null = null;
-
-    // advance animations on our frame clock (CPU tweens write columns →
-    // dirty; GPU tweens register/settle here).  A tweened column is
-    // GPU-owned while its batch runs so the mirror won't clobber it; the
-    // settle in tick() releases ownership before setTweenOwned below, so
-    // the settled values upload on this same frame
-    this.host.animations.tick(t0);
-
-    // a live *presenting* force run owns node.position like a tween
-    // lease (18.3); a silent run (87.2) publishes into its own scratch
-    // buffer and leaves the mirror column alone
-    const forceOwned =
-      this.forceRuntime != null &&
-      this.forcePresents &&
-      !this.forceRuntime.converged()
-        ? this.forceRuntime.ownedColumns()
-        : [];
-
-    mirror.setTweenOwned([
-      ...(this.tweenRuntime?.ownedColumns() ?? []),
-      ...forceOwned,
-    ] as Parameters<ColumnMirror['setTweenOwned']>[0]);
-
-    if (this.forceRuntime != null) {
-      // a non-presenting run batches by what the device kept up with
-      // (119): read before the poll, which is what clears the pending
-      // readback this frame's batch is judged by
-      if (!this.forcePresents) {
-        this.forceBatch = nextBatch(
-          this.forceBatch,
-          this.forceStepsPerFrame,
-          this.forceFrameSkipped,
-          this.forcePriceMs,
-          this.forcePriceBatch,
-        );
-        this.forceFrameSkipped = false;
-      }
-
-      this.forceRuntime.pollConvergence();
-
-      // the sim advances every frame — unless an infinite run is at
-      // rest (118.3), when the frame is the last until a wake
-      if (!this.forceRuntime.idle() || this.forceRuntime.converged()) {
-        this.needsRedraw = true;
-      }
-    }
-
-    if (this.host.animations.active()) {
-      this.needsRedraw = true;
-    }
-
-    if (store.hasDirty()) {
-      this.needsRedraw = true;
-
-      delta = store.takeDelta();
-
-      // color/opacity-only changes can't alter pick coverage; anything
-      // else (geometry, flags, growth) drops the cached pick tile
-      if (
-        delta.resized.nodes ||
-        delta.resized.edges ||
-        delta.spans.some((span) => !PICK_NEUTRAL_COLUMNS.has(span.column))
-      ) {
-        this.picking?.invalidateCache();
-      }
-
-      mirror.sync(delta);
-    }
-
-    // unconditional: a sheet change reconfigures on the next frame even
-    // when the store itself is clean
-    this.mapperRuntime?.update(delta ?? EMPTY_DELTA);
-
-    // slot compaction (19.4): glyph owner words are stale wholesale —
-    // drop every run before the rebuild pass below (the store marked all
-    // labels dirty at compaction); the column mirror handles its own
-    // capacity change, and `resized` already invalidated the pick cache
-    if (store.compactEpoch !== this.seenCompactEpoch) {
-      this.seenCompactEpoch = store.compactEpoch;
-      this.labelLayer?.onCompacted();
-    }
-
-    this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
-
-    // a graph built while already zoomed in promotes its labels on
-    // arrival (round 94, the 15.6 fresh-upload rule): construction sets
-    // the viewport without firing a viewport event, so a larger label
-    // landing re-arms the debounced meter here
-    if (this.labelLayer?.takeMaxFontRose() ?? false) {
-      this.schedulePromotionCheck();
-    }
-
-    // background images (15.3): reclaim freed layers, upload rasters that
-    // landed since the last frame (+ their mip chains, own submits).
-    // Fresh uploads re-check the promotion meter — a graph built while
-    // already zoomed in promotes its vectors on arrival (15.6).
-    if (this.imageArrays != null && this.imageArrays.sync(store.images) > 0) {
-      this.schedulePromotionCheck();
-    }
-
-    // pick pass first, in its own submit: a tiny cursor-centered tile whose
-    // readback maps as soon as it executes, never queued behind a scene draw.
-    // A full staging ring defers the request — no encode, no drop; the
-    // pending check in the reschedule tail below retries it next frame,
-    // and a slot frees as soon as the oldest readback maps
-    const picking = this.picking;
-    const pending = picking?.peekPending() ?? null;
-
-    if (picking != null && pending != null && this.pickCull != null) {
-      if (picking.hasFreeSlot()) {
-        this.writePickUniform(pending.xPx, pending.yPx, pending.padPx);
-
-        const pickEncoder = device.createCommandEncoder({
-          label: 'cy-gpu:pick',
-        });
-
-        // the pick-tile Frame uniform turns the cull predicates' viewport
-        // test into cursor-region culling: the pick draw stays O(region)
-        this.encodeCulls(
-          pickEncoder,
-          this.pickUniform as GPUBuffer,
-          this.pickCull,
-          false,
-        );
-        this.drawPickPasses(pickEncoder, picking.targetView());
-
-        const copy = picking.encodeCopy(pickEncoder);
-
-        device.queue.submit([pickEncoder.finish()]);
-
-        if (copy != null) {
-          void picking.finish(copy);
-        }
-      } else {
-        picking.deferrals++; // observable saturation (stats().pickDeferrals)
-      }
-    }
-
-    // scene pass only when something actually changed: render-on-dirty is
-    // preserved while hover picking runs over a static graph.  When the GPU
-    // is behind, keep needsRedraw and retry next rAF rather than queueing
-    // deeper (state coalesces; latency stays bounded).
-    if (
-      this.needsRedraw &&
-      this.inFlightFrames >= MAX_IN_FLIGHT_FRAMES &&
-      this.forceRuntime != null
-    ) {
-      this.forceFrameSkipped = true;
-    }
-
-    if (
-      this.needsRedraw &&
-      this.inFlightFrames < MAX_IN_FLIGHT_FRAMES &&
-      this.sceneCull != null
-    ) {
-      this.needsRedraw = false;
-      this.writeFrameUniform();
-
-      const encoder = device.createCommandEncoder({ label: 'cy-gpu:frame' });
-      // the non-presenting force batch this frame carries, for its
-      // price (121.5)
-      let encodedBatch = 0;
-
-      // GPU position tweens: their own compute pass, before cull — the
-      // pass boundary is the barrier so cull (and the edge shaders) read
-      // the freshly-tweened node.position.  Paint tweens don't need it and
-      // ride the cull pass instead (see encodeCulls).
-      if (this.tweenRuntime != null && this.tweenRuntime.hasPositions()) {
-        const tweenPass = encoder.beginComputePass({
-          label: 'cy-gpu:tween-pass',
-        });
-
-        this.tweenRuntime.encode(tweenPass, t0, 'position');
-        tweenPass.end();
-      }
-
-      // the GPU force integrator (18.3): its iterations advance the
-      // sim and publish into the mirror's position buffer before the
-      // cull pass reads it — edges and labels follow for free.  A
-      // silent run (87.2) publishes into the runtime's own scratch
-      // buffer instead, so the draw keeps reading the pre-run column
-      if (
-        this.forceRuntime != null &&
-        !this.forceRuntime.converged() &&
-        !this.forceRuntime.idle()
-      ) {
-        this.forceRuntime.encode(
-          encoder,
-          this.forcePresents
-            ? mirror.buffer(COL.NODE_POSITION)
-            : this.forceRuntime.silentTarget(),
-          this.forcePresents ? this.forceStepsPerFrame : this.forceBatch,
-        );
-        encodedBatch = this.forcePresents ? 0 : this.forceBatch;
-      }
-
-      // compact each group's visible slots + indirect args before drawing
-      this.encodeCulls(
-        encoder,
-        this.uniform as GPUBuffer,
-        this.sceneCull,
-        true,
-        t0,
-      );
-
-      // render scale < 1: draw into a low-res offscreen target, then a
-      // Catmull-Rom upscale pass resamples it to the swapchain
-      const scaled = this.upscaler != null && this.scaleCtl.scale < 1;
-      const view = scaled
-        ? (this.ensureSceneTarget() as GPUTexture).createView()
-        : context.getCurrentTexture().createView();
-      const pass = encoder.beginRenderPass({
-        label: 'cy-gpu:render-pass',
-        colorAttachments: [
-          {
-            view,
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: 'clear',
-            storeOp: 'store',
-          },
-        ],
-        depthStencilAttachment: {
-          view: this.ensureDepthTarget().createView(),
-          depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'discard', // only consumed within this pass
-        },
-        ...(this.gpuTimer != null
-          ? { timestampWrites: this.gpuTimer.timestampWrites() }
-          : {}),
-      });
-
-      this.drawScene(pass, this.uniform as GPUBuffer, this.sceneCull);
-      pass.end();
-
-      if (scaled) {
-        const upscalePass = encoder.beginRenderPass({
-          label: 'cy-gpu:upscale-pass',
-          colorAttachments: [
-            {
-              view: context.getCurrentTexture().createView(),
-              clearValue: { r: 0, g: 0, b: 0, a: 0 },
-              loadOp: 'clear',
-              storeOp: 'store',
-            },
-          ],
-          ...(this.gpuTimer != null
-            ? { timestampWrites: this.gpuTimer.postTimestampWrites() }
-            : {}),
-        });
-
-        (this.upscaler as Upscaler).draw(
-          upscalePass,
-          device,
-          this.sceneTarget as GPUTexture,
-        );
-        upscalePass.end();
-      }
-
-      const finishTiming =
-        this.gpuTimer?.encodeResolve(encoder, scaled) ?? null;
-
-      device.queue.submit([encoder.finish()]);
-      finishTiming?.();
-
-      this.inFlightFrames++;
-
-      const submittedAt = performance.now();
-
-      device.queue.onSubmittedWorkDone().then(
-        () => {
-          this.inFlightFrames--;
-
-          // the batch's price (121.5): the device's time on this frame
-          // is from the later of its submit and the previous frame's
-          // completion — the queue runs frames back to back — to now
-          if (encodedBatch > 0) {
-            const now = performance.now();
-
-            this.forcePriceMs = now - Math.max(submittedAt, this.forceDoneAt);
-            this.forcePriceBatch = encodedBatch;
-            this.forceDoneAt = now;
-          }
-        },
-        () => {
-          this.inFlightFrames--;
-        },
-      );
-
-      this.frameCount++;
-      this.host.emitRender();
-
-      // adaptive resolution: feed the drawn frame's GPU cost to the
-      // controller and rearm the idle settle-to-max timer
-      if (this.scaleCtl.frameDrawn(t0, this.gpuTimer?.lastMs ?? 0) != null) {
-        this.needsRedraw = true;
-      }
-
-      this.armSettleTimer();
-    } else if (this.needsRedraw) {
-      // wanted to draw but the GPU is behind: a stall tick is the
-      // adaptive-scale fallback signal when GPU timing is unavailable
-      if (this.scaleCtl.frameStalled(t0) != null) {
-        this.needsRedraw = true;
-      }
-    }
-
-    // exports see exactly this frame's state: when the scene drew, the
-    // mapper/tween dispatches above are already encoded ahead of the
-    // export submit; when nothing was dirty, the buffers were already
-    // current.  A skipped scene pass (backpressure) leaves needsRedraw
-    // set, deferring the export to a coherent later frame.
-    if (this.pendingExports.length > 0 && !this.needsRedraw) {
-      const jobs = this.pendingExports;
-
-      this.pendingExports = [];
-
-      for (const job of jobs) {
-        this.renderExport(job);
-      }
-    }
-
-    this.cpuFrameMs = performance.now() - t0;
-
-    if (
-      store.hasDirty() ||
-      this.needsRedraw ||
-      this.host.animations.active() ||
-      (this.forceRuntime != null && !this.forceRuntime.idle()) || // a live force run drives the clock (18.3); an idle infinite run does not (118.3)
-      (picking?.hasPending() ?? false) ||
-      this.pendingExports.length > 0
-    ) {
-      this.schedule();
-    }
+  /** @internal */
+  frameBody(): void {
+    frameImpl.frameBody(this);
   }
 
   // -- deferred pipelines --
@@ -1909,874 +786,6 @@ export class Renderer {
    * feature goes away again: compiling twice costs more than holding one.
    */
 
-  /** The three inputs every deferred pipeline needs, or null before ready. */
-  private pipelineInputs():
-    | [GPUDevice, GPUTextureFormat, GPUBindGroupLayout]
-    | null {
-    const device = this.device;
-    const format = this.format;
-    const kernels = this.cullKernels;
-
-    if (device == null || format == null || kernels == null) {
-      return null;
-    }
-
-    return [device, format, kernels.visibleLayout];
-  }
-
-  /** Node background images (15.3), built on the first image draw. */
-  private images(): ImagePipeline | null {
-    if (this.imagePipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.imagePipeline = new ImagePipeline(...inputs);
-    }
-
-    return this.imagePipeline;
-  }
-
-  /** Pie / donut charts (round 23), built on the first chart draw. */
-  private charts(): ChartPipeline | null {
-    if (this.chartPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.chartPipeline = new ChartPipeline(...inputs);
-    }
-
-    return this.chartPipeline;
-  }
-
-  /** Node overlay (13 A2), built on the first overlay draw. */
-  private overlays(): NodeLayerPipeline | null {
-    if (this.overlayPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.overlayPipeline = new NodeLayerPipeline(...inputs, COL.NODE_OVERLAY);
-    }
-
-    return this.overlayPipeline;
-  }
-
-  /** Node underlay (13 A2), built on the first underlay draw. */
-  private underlays(): NodeLayerPipeline | null {
-    if (this.underlayPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.underlayPipeline = new NodeLayerPipeline(
-        ...inputs,
-        COL.NODE_UNDERLAY,
-      );
-    }
-
-    return this.underlayPipeline;
-  }
-
-  /** The curved-edge stream, built once the store has ever curved an edge. */
-  private curvedEdges(): CurvedEdgePipeline | null {
-    if (this.curvedEdgePipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.curvedEdgePipeline = new CurvedEdgePipeline(...inputs);
-    }
-
-    return this.curvedEdgePipeline;
-  }
-
-  /** Arrows on the curved stream, built alongside the curved edges. */
-  private curvedArrows(): CurvedArrowPipeline | null {
-    if (this.curvedArrowPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.curvedArrowPipeline = new CurvedArrowPipeline(...inputs);
-    }
-
-    return this.curvedArrowPipeline;
-  }
-
-  /** Node labels, built on the first frame with a node glyph to draw. */
-  private labels(): LabelPipeline | null {
-    if (this.labelPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.labelPipeline = new LabelPipeline(...inputs);
-    }
-
-    return this.labelPipeline;
-  }
-
-  /** Edge labels — the mid, source and end streams share this one. */
-  private edgeLabels(): LabelPipeline | null {
-    if (this.edgeLabelPipeline == null) {
-      const inputs = this.pipelineInputs();
-
-      if (inputs == null) {
-        return null;
-      }
-
-      this.edgeLabelPipeline = new LabelPipeline(...inputs, 'edge');
-    }
-
-    return this.edgeLabelPipeline;
-  }
-
-  /**
-   * The scene draw sequence against a Frame uniform + culled groups —
-   * shared by the on-screen frame and image export.  Z-order: edges under
-   * arrows under nodes under labels, slot order within each group (the
-   * cull compaction preserves slot order).  The node depth prepass runs
-   * first so edge fragments under opaque node interiors are killed by
-   * early-z before blending; arrow draws are skipped per end when no
-   * style block enables that end.
-   */
-  private drawScene(
-    pass: GPURenderPassEncoder,
-    uniform: GPUBuffer,
-    cull: SceneCullGroups,
-  ): void {
-    const device = this.device as GPUDevice;
-    const mirror = this.mirror as ColumnMirror;
-    const store = this.store;
-    // the curved stream draws nothing until some edge has curved, so its
-    // two pipelines stay uncompiled until then (see "deferred pipelines")
-    const curved = store.hasCurvedEdges();
-    const curvedEdges = curved ? this.curvedEdges() : null;
-    const curvedArrows = curved ? this.curvedArrows() : null;
-
-    this.nodePipeline?.drawDepthPrepass(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_NODES),
-      cull.node,
-    );
-
-    // compound parent bodies draw under everything (round 14.9): the
-    // permuted stream is already shallow-under-deep, and parents are
-    // excluded from the prepass so edges/children still draw over them
-    if (store.parentCount() > 0) {
-      this.nodePipeline?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_NODES),
-        cull.parent,
-      );
-
-      // parent background images ride their bodies' tier (v3's layering)
-      if (store.imageCount() > 0 && this.imageArrays != null) {
-        this.images()?.draw(
-          pass,
-          device,
-          uniform,
-          mirror,
-          this.imageArrays,
-          store.highWater(GROUP_NODES),
-          cull.parent,
-        );
-      }
-
-      // parent charts over their images (round 23; v3's pie order)
-      if (store.chartCount() > 0) {
-        this.charts()?.draw(
-          pass,
-          device,
-          uniform,
-          mirror,
-          store.highWater(GROUP_NODES),
-          cull.parent,
-        );
-      }
-    }
-
-    if (store.edgeUnderlayCount() > 0) {
-      this.edgePipeline?.drawLayer(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.edge,
-        COL.EDGE_UNDERLAY,
-      );
-      curvedEdges?.drawLayer(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.curved,
-        COL.EDGE_UNDERLAY,
-      );
-    }
-
-    // Round 124.4: with any casing on, each stream draws casing-then-
-    // line *per edge* (two instances per edge), so a later edge's
-    // casing gaps an earlier edge's line where they cross — v3's order;
-    // the pre-124 global casing pass haloed against nodes only.
-    const cased = store.casingCount() > 0;
-
-    if (cased) {
-      this.edgePipeline?.drawCased(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.edge,
-      );
-    } else {
-      this.edgePipeline?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.edge,
-      );
-    }
-    // curved edges draw after straight ones (two streams; within each,
-    // slot order — a recorded z-order deviation)
-    if (cased) {
-      curvedEdges?.drawCased(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.curved,
-      );
-    } else {
-      curvedEdges?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.curved,
-      );
-    }
-    this.arrowPipeline?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_EDGES),
-      cull.edge,
-      this.host.arrowEnds(),
-    );
-    curvedArrows?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_EDGES),
-      cull.curved,
-      this.host.arrowEnds(),
-    );
-
-    if (store.midArrowCount() > 0) {
-      // C1: mid arrows on both streams
-      this.arrowPipeline?.drawMid(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.edge,
-        this.host.midArrowEnds(),
-      );
-      curvedArrows?.drawMid(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.curved,
-        this.host.midArrowEnds(),
-      );
-    }
-    if (store.edgeOverlayCount() > 0) {
-      this.edgePipeline?.drawLayer(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.edge,
-        COL.EDGE_OVERLAY,
-      );
-      curvedEdges?.drawLayer(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        cull.curved,
-        COL.EDGE_OVERLAY,
-      );
-    }
-
-    if (store.ghostCount() > 0 && cull.ghost != null) {
-      this.nodePipeline?.drawGhost(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_NODES),
-        cull.ghost,
-      );
-    }
-
-    if (store.underlayCount() > 0 && cull.underlay != null) {
-      this.underlays()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_NODES),
-        cull.underlay,
-        true,
-      );
-    }
-
-    this.nodePipeline?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_NODES),
-      cull.node,
-    );
-
-    // leaf background images composite right over their bodies (15.3),
-    // under overlays and labels; zero-cost while no node styles one
-    if (store.imageCount() > 0 && this.imageArrays != null) {
-      this.images()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        this.imageArrays,
-        store.highWater(GROUP_NODES),
-        cull.node,
-      );
-    }
-
-    // leaf charts over their images (round 23), under overlays/labels
-    if (store.chartCount() > 0) {
-      this.charts()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_NODES),
-        cull.node,
-      );
-    }
-
-    if (store.overlayCount() > 0 && cull.overlay != null) {
-      this.overlays()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_NODES),
-        cull.overlay,
-        false,
-      );
-    }
-
-    // an unlabelled graph rasters no glyph, so neither label pipeline is
-    // built until some stream has one (see "deferred pipelines")
-    const labels = this.labelLayer;
-
-    if (labels == null) {
-      return;
-    }
-
-    const nodeStream = labels.glyphs.highWater > 0;
-    const edgeStreams =
-      labels.edgeGlyphs.highWater > 0 ||
-      labels.sourceGlyphs.highWater > 0 ||
-      labels.targetGlyphs.highWater > 0;
-    const nodeLabels = nodeStream ? this.labels() : null;
-    const edgeLabels = edgeStreams ? this.edgeLabels() : null;
-
-    // round 95: the outline goes under the ink.  Glyph quads overlap by
-    // construction, so a one-pass draw composites glyph N's outline
-    // ring over glyph N-1's fill — white notches in every outlined
-    // word.  Encode every stream's outline coverage first, then every
-    // fill over it (v3 strokes the line, then fills; here the split is
-    // global across streams — a recorded deviation where two *distinct*
-    // labels overlap).  Streams without an outlined glyph skip the
-    // extra pass before any GPU work, so the outline-free path encodes
-    // exactly what it did before.
-    const drawPhase = (phase: 'fill' | 'outline'): void => {
-      if (nodeStream && (phase === 'fill' || labels.glyphs.hasOutline())) {
-        nodeLabels?.draw(
-          pass,
-          device,
-          uniform,
-          labels.glyphs,
-          mirror,
-          labels.atlas,
-          cull.glyph,
-          phase,
-        );
-      }
-
-      if (!edgeStreams) {
-        return;
-      }
-
-      // the end-label streams (D4) share the pipeline; their glyphs
-      // carry the endParam re-anchor
-      const streams = [
-        [labels.edgeGlyphs, cull.edgeGlyph],
-        [labels.sourceGlyphs, cull.sourceGlyph],
-        [labels.targetGlyphs, cull.targetGlyph],
-      ] as const;
-
-      for (const [glyphs, culled] of streams) {
-        if (phase === 'fill' || glyphs.hasOutline()) {
-          edgeLabels?.draw(
-            pass,
-            device,
-            uniform,
-            glyphs,
-            mirror,
-            labels.atlas,
-            culled,
-            phase,
-          );
-        }
-      }
-    };
-
-    drawPhase('outline');
-    drawPhase('fill');
-  }
-
-  /** Shortly after drawing stops, re-render one frame at max scale so
-   * the still image the user actually inspects is full-resolution. */
-  private armSettleTimer(): void {
-    if (this.settleTimer != null) {
-      clearTimeout(this.settleTimer);
-    }
-
-    this.settleTimer = setTimeout(() => {
-      this.settleTimer = null;
-
-      if (this.destroyed || !this.isReady || this.needsRedraw) {
-        return;
-      }
-
-      if (this.scaleCtl.settleToMax() != null) {
-        this.needsRedraw = true;
-        this.schedule();
-      }
-    }, SETTLE_TO_MAX_MS);
-  }
-
-  /**
-   * Ensure + encode the cull compaction for a set of groups against a
-   * Frame uniform (the scene frame or the pick tile).  The compute pass is
-   * always opened when it may be timed — timestamp queries persist, so a
-   * skipped pass would leave stale values in the frame timing sum.
-   */
-  private encodeCulls(
-    encoder: GPUCommandEncoder,
-    uniform: GPUBuffer,
-    groups: {
-      node?: CulledGroup;
-      parent?: CulledGroup;
-      edge: CulledGroup;
-      curved: CulledGroup;
-      glyph?: CulledGroup;
-      edgeGlyph?: CulledGroup;
-      sourceGlyph?: CulledGroup;
-      targetGlyph?: CulledGroup;
-      ghost?: CulledGroup;
-      overlay?: CulledGroup;
-      underlay?: CulledGroup;
-    },
-    timed: boolean,
-    now: number = 0,
-  ): void {
-    const mirror = this.mirror as ColumnMirror;
-    const store = this.store;
-    const labelLayer = this.labelLayer;
-    const mv = `${mirror.version}`;
-
-    groups.node?.ensure(
-      uniform,
-      Math.max(1, store.capacity(GROUP_NODES)),
-      [
-        mirror.buffer(COL.NODE_POSITION),
-        mirror.buffer(COL.NODE_SIZE),
-        mirror.buffer(COL.NODE_FLAGS),
-        mirror.buffer(COL.NODE_BORDER_WIDTH),
-        mirror.buffer(COL.NODE_BORDER_GEOM),
-      ],
-      mv,
-    );
-
-    // compound parents (round 14.9): their stream iterates the CPU-built
-    // (depth, slot) permutation, uploaded only when the hierarchy changes
-    const anyParents = store.parentCount() > 0;
-    let parentOrderLen = 0;
-
-    if (anyParents && groups.parent != null) {
-      const device = this.device as GPUDevice;
-      const order = store.parentOrder();
-
-      parentOrderLen = order.length;
-
-      if (order !== this.parentOrderRef) {
-        this.parentOrderRef = order;
-        this.parentOrderVersion++;
-
-        if (
-          this.parentOrderBuf == null ||
-          this.parentOrderBuf.size < order.byteLength
-        ) {
-          this.parentOrderBuf?.destroy();
-          this.parentOrderBuf = device.createBuffer({
-            label: 'cy-gpu:parent-order',
-            size: Math.max(4, order.byteLength),
-            usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
-          });
-        }
-
-        device.queue.writeBuffer(
-          this.parentOrderBuf,
-          0,
-          order.buffer,
-          order.byteOffset,
-          order.byteLength,
-        );
-      }
-
-      groups.parent.ensure(
-        uniform,
-        Math.max(1, parentOrderLen),
-        [
-          mirror.buffer(COL.NODE_POSITION),
-          mirror.buffer(COL.NODE_SIZE),
-          mirror.buffer(COL.NODE_FLAGS),
-          mirror.buffer(COL.NODE_BORDER_WIDTH),
-          this.parentOrderBuf as GPUBuffer,
-        ],
-        `${mv}:po${this.parentOrderVersion}`,
-      );
-    }
-
-    // ghosts (round 13 A1): zero-cost until some node styles a ghost
-    const anyGhosts = store.ghostCount() > 0;
-
-    if (anyGhosts && groups.ghost != null) {
-      groups.ghost.ensure(
-        uniform,
-        Math.max(1, store.capacity(GROUP_NODES)),
-        [
-          mirror.buffer(COL.NODE_POSITION),
-          mirror.buffer(COL.NODE_SIZE),
-          mirror.buffer(COL.NODE_FLAGS),
-          mirror.buffer(COL.NODE_GHOST),
-          mirror.buffer(COL.NODE_BORDER_WIDTH),
-        ],
-        mv,
-      );
-    }
-
-    // overlay/underlay (round 13 A2): same gating, one kind, two groups.
-    // Round 57.1c widened the overlay's gate: v3's `:active` is drawn as
-    // an overlay, so a pressed element with no *styled* overlay still
-    // needs the pass — otherwise the affordance would appear only in
-    // graphs that happened to style one.
-    const layerInputs = (
-      id: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY,
-    ): GPUBuffer[] => [
-      mirror.buffer(COL.NODE_POSITION),
-      mirror.buffer(COL.NODE_SIZE),
-      mirror.buffer(COL.NODE_FLAGS),
-      mirror.buffer(id),
-    ];
-
-    if (store.overlayCount() > 0 && groups.overlay != null) {
-      groups.overlay.ensure(
-        uniform,
-        Math.max(1, store.capacity(GROUP_NODES)),
-        layerInputs(COL.NODE_OVERLAY),
-        mv,
-      );
-    }
-
-    if (store.underlayCount() > 0 && groups.underlay != null) {
-      groups.underlay.ensure(
-        uniform,
-        Math.max(1, store.capacity(GROUP_NODES)),
-        layerInputs(COL.NODE_UNDERLAY),
-        mv,
-      );
-    }
-    const edgeCullInputs = [
-      mirror.buffer(COL.EDGE_ENDPOINTS),
-      mirror.buffer(COL.EDGE_WIDTH),
-      mirror.buffer(COL.EDGE_FLAGS),
-      mirror.buffer(COL.NODE_POSITION),
-      mirror.buffer(COL.NODE_FLAGS),
-    ];
-
-    groups.edge.ensure(
-      uniform,
-      Math.max(1, store.capacity(GROUP_EDGES)),
-      edgeCullInputs,
-      mv,
-    );
-    // the curved stream culls over the same inputs; FLAG_CURVED splits them
-    groups.curved.ensure(
-      uniform,
-      Math.max(1, store.capacity(GROUP_EDGES)),
-      edgeCullInputs,
-      mv,
-    );
-
-    if (groups.glyph != null && labelLayer != null) {
-      const glyphs = labelLayer.glyphs;
-
-      groups.glyph.ensure(
-        uniform,
-        Math.max(1, glyphs.buffer().size / GLYPH_BYTES),
-        [
-          glyphs.buffer(),
-          mirror.buffer(COL.NODE_POSITION),
-          mirror.buffer(COL.NODE_FLAGS),
-        ],
-        `${mv}:${glyphs.version}`,
-      );
-    }
-
-    const edgeGlyphStreams: [CulledGroup | undefined, GlyphBuffer][] =
-      labelLayer == null
-        ? []
-        : [
-            [groups.edgeGlyph, labelLayer.edgeGlyphs],
-            [groups.sourceGlyph, labelLayer.sourceGlyphs], // end labels (D4)
-            [groups.targetGlyph, labelLayer.targetGlyphs],
-          ];
-
-    for (const [cullGroup, glyphs] of edgeGlyphStreams) {
-      if (cullGroup == null) {
-        continue;
-      }
-
-      cullGroup.ensure(
-        uniform,
-        Math.max(1, glyphs.buffer().size / GLYPH_BYTES),
-        [
-          glyphs.buffer(),
-          mirror.buffer(COL.EDGE_ENDPOINTS),
-          mirror.buffer(COL.NODE_POSITION),
-          mirror.buffer(COL.EDGE_FLAGS),
-          mirror.buffer(COL.NODE_FLAGS),
-        ],
-        `${mv}:${glyphs.version}`,
-      );
-    }
-
-    const pass = encoder.beginComputePass({
-      label: 'cy-gpu:cull-pass',
-      ...(timed && this.gpuTimer != null
-        ? { timestampWrites: this.gpuTimer.computeTimestampWrites() }
-        : {}),
-    });
-
-    // mapper eval first (scene invocation only): paint channels must be
-    // evaluated before the render pass reads them; pick frames skip it
-    // (paint never affects pick coverage).  Paint tweens dispatch straight
-    // after, in the same pass — dispatches within a pass see each other's
-    // writes, so an animation's slots outrank a mapper writing the same
-    // channel for as long as it holds the lease
-    if (timed) {
-      this.mapperRuntime?.encode(pass);
-      this.tweenRuntime?.encode(pass, now, 'paint');
-    }
-
-    groups.node?.encode(pass, store.highWater(GROUP_NODES));
-
-    if (anyParents && groups.parent != null) {
-      groups.parent.encode(pass, parentOrderLen);
-    }
-
-    groups.edge.encode(pass, store.highWater(GROUP_EDGES));
-    groups.curved.encode(pass, store.highWater(GROUP_EDGES));
-
-    if (anyGhosts && groups.ghost != null) {
-      groups.ghost.encode(pass, store.highWater(GROUP_NODES));
-    }
-
-    if (store.overlayCount() > 0 && groups.overlay != null) {
-      groups.overlay.encode(pass, store.highWater(GROUP_NODES));
-    }
-
-    if (store.underlayCount() > 0 && groups.underlay != null) {
-      groups.underlay.encode(pass, store.highWater(GROUP_NODES));
-    }
-
-    if (groups.glyph != null && labelLayer != null) {
-      groups.glyph.encode(pass, labelLayer.glyphs.highWater);
-    }
-
-    if (groups.edgeGlyph != null && labelLayer != null) {
-      groups.edgeGlyph.encode(pass, labelLayer.edgeGlyphs.highWater);
-    }
-
-    if (labelLayer != null) {
-      groups.sourceGlyph?.encode(pass, labelLayer.sourceGlyphs.highWater);
-      groups.targetGlyph?.encode(pass, labelLayer.targetGlyphs.highWater);
-    }
-
-    pass.end();
-  }
-
-  private drawPickPasses(
-    encoder: GPUCommandEncoder,
-    targetView: GPUTextureView,
-  ): void {
-    const device = this.device;
-    const mirror = this.mirror;
-    const uniform = this.pickUniform;
-    const pickCull = this.pickCull;
-
-    if (
-      device == null ||
-      mirror == null ||
-      uniform == null ||
-      pickCull == null
-    ) {
-      return;
-    }
-
-    const pass = encoder.beginRenderPass({
-      label: 'cy-gpu:pick-pass',
-      colorAttachments: [
-        {
-          view: targetView,
-          clearValue: { r: 0, g: 0, b: 0, a: 0 }, // 0 = background
-          loadOp: 'clear',
-          storeOp: 'store',
-        },
-      ],
-    });
-
-    const store = this.store;
-
-    // edges and their arrowheads; node picks are answered synchronously
-    // on the CPU.  Arrows (57.10) write the same id as their edge's
-    // line, so the draw order within the tile cannot matter — what they
-    // add is coverage: the head's area (hollow included), which since
-    // round 56's trim is exactly where the line no longer reaches.
-    this.edgePipeline?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_EDGES),
-      pickCull.edge,
-      true,
-    );
-    this.arrowPipeline?.draw(
-      pass,
-      device,
-      uniform,
-      mirror,
-      store.highWater(GROUP_EDGES),
-      pickCull.edge,
-      this.host.arrowEnds(),
-      true,
-    );
-
-    if (store.hasCurvedEdges()) {
-      this.curvedEdges()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        pickCull.curved,
-        true,
-      );
-      this.curvedArrows()?.draw(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        pickCull.curved,
-        this.host.arrowEnds(),
-        true,
-      );
-    }
-
-    if (store.midArrowCount() > 0) {
-      this.arrowPipeline?.drawMid(
-        pass,
-        device,
-        uniform,
-        mirror,
-        store.highWater(GROUP_EDGES),
-        pickCull.edge,
-        this.host.midArrowEnds(),
-        true,
-      );
-
-      if (store.hasCurvedEdges()) {
-        this.curvedArrows()?.drawMid(
-          pass,
-          device,
-          uniform,
-          mirror,
-          store.highWater(GROUP_EDGES),
-          pickCull.curved,
-          this.host.midArrowEnds(),
-          true,
-        );
-      }
-    }
-    pass.end();
-  }
-
   /**
    * Measure the container and size both halves of the canvas from it:
    * the backing store in device px (clientWidth × dpr) and the CSS box
@@ -2791,41 +800,10 @@ export class Renderer {
    * measure (91.2), so a browser-zoom or monitor-density change
    * re-rasterizes rather than blurring at the construction-time ratio; a
    * ratio change drops the cached pick tile (device px).
+   * @internal
    */
-  private applySize(): void {
-    const container = this.container;
-
-    if (container == null) {
-      return; // worker mount: sizes arrive via setSize()
-    }
-
-    if (this.autoDpr) {
-      const live = globalThis.devicePixelRatio || 1;
-
-      if (live !== this.dpr) {
-        this.dpr = live;
-        this.picking?.invalidateCache(); // cached pick tile is device px
-      }
-    }
-
-    const cssW = container.clientWidth;
-    const cssH = container.clientHeight;
-    const w = Math.max(1, Math.round(cssW * this.dpr));
-    const h = Math.max(1, Math.round(cssH * this.dpr));
-
-    if (this.canvas.width !== w || this.canvas.height !== h) {
-      this.canvas.width = w;
-      this.canvas.height = h;
-    }
-
-    const style = (this.canvas as HTMLCanvasElement).style;
-    const wPx = `${cssW}px`;
-    const hPx = `${cssH}px`;
-
-    if (style.width !== wPx || style.height !== hPx) {
-      style.width = wPx;
-      style.height = hPx;
-    }
+  applySize(): void {
+    targetsImpl.applySize(this);
   }
 
   /**
@@ -2839,178 +817,16 @@ export class Renderer {
    *   (91.2); omitted, the current ratio stands
    */
   setSize(wPx: number, hPx: number, dpr?: number): void {
-    if (this.destroyed) {
-      return;
-    }
-
-    if (dpr != null && dpr !== this.dpr) {
-      this.dpr = dpr;
-      this.picking?.invalidateCache(); // cached pick tile is device px
-    }
-
-    const w = Math.max(1, Math.round(wPx));
-    const h = Math.max(1, Math.round(hPx));
-
-    if (this.canvas.width !== w || this.canvas.height !== h) {
-      this.canvas.width = w;
-      this.canvas.height = h;
-    }
-
-    this.needsRedraw = true;
-    this.schedule();
+    targetsImpl.setSize(this, wPx, hPx, dpr);
   }
 
-  /** Low-res scene target dimensions (must match writeFrameUniform). */
-  private scaledSize(): { w: number; h: number } {
+  /** Low-res scene target dimensions (must match writeFrameUniform). @internal */
+  scaledSize(): { w: number; h: number } {
     const scale = this.scaleCtl.scale;
 
     return {
       w: Math.max(1, Math.round(this.canvas.width * scale)),
       h: Math.max(1, Math.round(this.canvas.height * scale)),
     };
-  }
-
-  private ensureSceneTarget(): GPUTexture {
-    const device = this.device as GPUDevice;
-    const { w, h } = this.scaledSize();
-    let target = this.sceneTarget;
-
-    if (target == null || target.width !== w || target.height !== h) {
-      const old = target;
-
-      target = device.createTexture({
-        label: 'cy-gpu:scene-target',
-        size: { width: w, height: h },
-        format: this.format as GPUTextureFormat,
-        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.TEXTURE_BINDING,
-      });
-      this.sceneTarget = target;
-
-      if (old != null) {
-        // may still be referenced by in-flight frames
-        void device.queue.onSubmittedWorkDone().then(() => old.destroy());
-      }
-    }
-
-    return target;
-  }
-
-  private ensureDepthTarget(): GPUTexture {
-    const device = this.device as GPUDevice;
-    const { w, h } = this.scaledSize(); // matches the scene color target
-    let target = this.depthTarget;
-
-    if (target == null || target.width !== w || target.height !== h) {
-      const old = target;
-
-      target = device.createTexture({
-        label: 'cy-gpu:depth-target',
-        size: { width: w, height: h },
-        format: DEPTH_FORMAT,
-        usage: TEXTURE_USAGE.RENDER_ATTACHMENT,
-      });
-      this.depthTarget = target;
-
-      if (old != null) {
-        // may still be referenced by in-flight frames
-        void device.queue.onSubmittedWorkDone().then(() => old.destroy());
-      }
-    }
-
-    return target;
-  }
-
-  private writeFrameUniform(): void {
-    const viewport = this.host.viewport;
-    const zoom = viewport.zoom();
-    const pan = viewport.pan();
-    const f = this.frameData;
-    const opts = this.opts;
-
-    // with render scale < 1 the scene renders in scaled device px; LOD
-    // thresholds stay in render px (a floored 1px edge is 1 low-res px)
-    const { w, h } = this.scaledSize();
-    const dprScale = this.dpr * this.scaleCtl.scale;
-
-    f[0] = w;
-    f[1] = h;
-    f[2] = pan.x * dprScale;
-    f[3] = pan.y * dprScale;
-    f[4] = zoom * dprScale;
-    f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
-    f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
-    f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
-    f[8] = opts.edgeDimming ? Math.min(0.85, Math.max(0, 1 - zoom) * 0.85) : 0;
-    // label thresholds are readability criteria, so they live in *displayed*
-    // px regardless of the adaptive render scale: scaling them into render
-    // px here makes the shader/cull comparisons (which are in render px)
-    // equivalent to native-px ones.  The node/edge raster floors above stay
-    // in render px on purpose — sub-render-pixel geometry can't rasterize.
-    f[9] = (opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX) * this.scaleCtl.scale;
-    f[10] = (opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX) * this.scaleCtl.scale;
-    f[11] = this.store.curveSlack(); // model px; shaders scale by zoomDpr
-    f[12] = this.store.haystackSlack();
-    f[13] = this.store.outlineSlack();
-    f[14] = this.store.arrowScaleMax();
-    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
-    f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * this.scaleCtl.scale; // displayed px, like labelMinPx
-
-    (this.device as GPUDevice).queue.writeBuffer(
-      this.uniform as GPUBuffer,
-      0,
-      f.buffer,
-      f.byteOffset,
-      f.byteLength,
-    );
-  }
-
-  /**
-   * The pick pass reuses the render shaders with a Frame whose viewport is
-   * the cursor-centered tile: pan is offset by the tile origin, so the
-   * shaders' own conservative viewport culling collapses every instance
-   * that doesn't overlap the cursor region — the pick pass costs
-   * O(region), not O(scene).  LOD values match the render frame so what
-   * you see is what you pick.
-   */
-  private writePickUniform(xPx: number, yPx: number, padPx: number): void {
-    const viewport = this.host.viewport;
-    const zoom = viewport.zoom();
-    const pan = viewport.pan();
-    const f = this.pickFrameData;
-    const opts = this.opts;
-
-    // floor keeps the cursor inside the center texel [TILE/2, TILE/2 + 1)
-    const tileX = Math.floor(xPx) - PICK_TILE / 2;
-    const tileY = Math.floor(yPx) - PICK_TILE / 2;
-
-    f[0] = PICK_TILE;
-    f[1] = PICK_TILE;
-    f[2] = pan.x * this.dpr - tileX;
-    f[3] = pan.y * this.dpr - tileY;
-    f[4] = zoom * this.dpr;
-    f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
-    f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
-    f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
-    f[8] = 0; // edge dimming never affects pick coverage
-    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
-    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
-    f[11] = this.store.curveSlack();
-    f[12] = this.store.haystackSlack();
-    f[13] = this.store.outlineSlack();
-    f[14] = this.store.arrowScaleMax();
-    f[17] = this.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
-    f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * this.scaleCtl.scale; // displayed px, like labelMinPx
-    f[16] = 1; // pickMode (20.2): the edge cull kernels drop events:'no' edges here only
-    // 57.9: v3's edgeThreshold — the edge pick quads, their fragment
-    // test and the cull margins all grow by this halo (device px)
-    f[18] = padPx;
-
-    (this.device as GPUDevice).queue.writeBuffer(
-      this.pickUniform as GPUBuffer,
-      0,
-      f.buffer,
-      f.byteOffset,
-      f.byteLength,
-    );
   }
 }

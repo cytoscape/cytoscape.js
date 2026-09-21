@@ -42,24 +42,35 @@ export const FEATURES_SCRIPT = `
   const category = document.getElementById('feature-category');
   const status = document.getElementById('feature-status');
   const count = document.getElementById('feature-count');
+  const caption = document.getElementById('feature-legend-caption');
   const empty = document.getElementById('feature-empty');
+  const tallies = [...document.querySelectorAll('.feature-legend [data-status]')];
   const rows = [...document.querySelectorAll('.features tbody tr')].map(row => ({
     row, category: row.cells[0].textContent, status: row.cells[2].textContent,
     text: [...row.cells].slice(0, 4).map(cell => cell.textContent).join(' ').toLowerCase()
   }));
   function filter() {
     const query = search.value.trim().toLowerCase();
+    const tally = {};
     let shown = 0;
     for (const item of rows) {
       const match = (!category.value || item.category === category.value)
         && (!status.value || item.status === status.value)
         && (!query || item.text.includes(query));
       item.row.hidden = !match;
-      if (match) shown++;
+      if (match) { shown++; tally[item.status] = (tally[item.status] || 0) + 1; }
     }
     count.textContent = shown === rows.length
       ? 'Showing all ' + rows.length + ' rows'
       : 'Showing ' + shown + ' of ' + rows.length + ' rows';
+    for (const cell of tallies) {
+      const n = tally[cell.dataset.status] || 0;
+      cell.textContent = n;
+      cell.classList.toggle('is-zero', n === 0);
+    }
+    caption.textContent = shown === rows.length ? 'Statuses \u2014 all ' + rows.length + ' rows'
+      : category.value && !status.value && !query ? 'Statuses \u2014 ' + category.value + ', ' + shown + ' rows'
+      : 'Statuses \u2014 ' + shown + ' matching rows';
     empty.hidden = shown !== 0;
   }
   search.addEventListener('input', filter);
@@ -117,6 +128,11 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   <p class="feature-composition"><strong>${sum.total} rows: ${sum.api} API members, ${sum.style} style properties, ${sum.capability} capabilities.</strong> A member row is one function or one style property; a capability row is a whole feature. The total counts rows, not work.</p>
   <p>Priority areas appear first: performance, developer experience, Cytoscape Web v2, application workflows and core capabilities; the feature-direction review gives the reasoning. Proposed rows are suggestions, not roadmap commitments.</p>
   <p>API rows use <code>eles.</code> for collections, single elements, nodes and edges. Aliases have separate rows; overloads share a row. Comments describe v4 behaviour, not a promise of complete v3 compatibility. The CSV download is the complete inventory, including comments and source references; the build stamp identifies this snapshot.</p>
+  <div class="feature-tools" hidden>
+    <div class="feature-field"><label for="feature-search">Search features and comments</label><input id="feature-search" type="search" placeholder="e.g. labels, force, cy.json"></div>
+    <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories (${rows.length})</option>${options([...byCategory.keys()].sort(), (v) => `${v} (${byCategory.get(v)})`)}</select></div>
+    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses (${rows.length})</option>${options(Object.keys(STATUSES), (v) => `${v} (${byStatus.get(v) ?? 0}) — ${STATUSES[v]}`)}</select></div>
+  </div>
   <table class="feature-legend"><caption id="feature-legend-caption">Statuses — all ${rows.length} rows</caption>
   <thead><tr><th scope="col">Status</th><th scope="col" class="legend-count">Rows</th><th scope="col">Meaning</th></tr></thead>
   <tbody>${Object.entries(STATUSES)
@@ -125,11 +141,6 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
       return `<tr><th scope="row" title="${esc(meaning)}">${esc(name)}</th><td class="legend-count${n === 0 ? ' is-zero' : ''}" data-status="${esc(name)}">${n}</td><td>${esc(meaning)}</td></tr>`;
     })
     .join('')}</tbody></table>
-  <div class="feature-tools" hidden>
-    <div class="feature-field"><label for="feature-search">Search features and comments</label><input id="feature-search" type="search" placeholder="e.g. labels, force, cy.json"></div>
-    <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories (${rows.length})</option>${options([...byCategory.keys()].sort(), (v) => `${v} (${byCategory.get(v)})`)}</select></div>
-    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses (${rows.length})</option>${options(Object.keys(STATUSES), (v) => `${v} (${byStatus.get(v) ?? 0}) — ${STATUSES[v]}`)}</select></div>
-  </div>
   <p id="feature-count" role="status" aria-live="polite">Showing all ${rows.length} rows</p>
   <div class="feature-scroll" role="region" aria-label="Feature inventory" tabindex="0">
   <table class="features"><caption>Current v4 support; see comments for limitations and alternatives.</caption>

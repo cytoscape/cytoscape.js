@@ -11,7 +11,10 @@ comment that is *present and wrong*.
   `npm run status` validates it and publishes the Features page and an
   identical CSV download. Keep comments concise, name replacements and
   limitations, and cite a repository source in `Reference` (optionally
-  `:line`). The status definitions live on that page. Proposed marks analytical
+  `:line`). The status definitions live on that page, in a legend table with
+  the totals per status; the counts in the legend, the pickers and the
+  composition line are computed from the CSV at build time, never typed
+  (round 132). Proposed marks analytical
   suggestions, not approved plans; see `docs/feature-direction.md`. Implemented
   means prototype support, not release readiness. API rows use `eles.`
   for all collection/element/node/edge prefixes, one row per member or

@@ -5,7 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-21, after 129.3 was revisited (headless `'auto'` takes the worker) and round 130 split the ten largest
+- **Last updated**: 2026-09-21, after round 132 made the status site's
+  Features page say what its numbers mean — `Showing all 929 rows`
+  over a composition line (495 API members, 303 style properties, 131
+  capabilities), a visible legend that tallies the selection per status,
+  counts and definitions in the pickers, a tooltip on every status
+  cell, and the CSV download and the feature-direction review as
+  buttons.  The same morning, 129.3 was revisited (headless `'auto'` takes the worker); the day before, round 130 split the ten largest
   source files — `style` (9,961 lines), `collection` (6,581),
   `graph-store` (5,665), `shaders` (5,220), `core` (3,385), `renderer`
   (3,016), `animation`, `curve-geometry`, `force`, `pointer` — on the
@@ -1241,6 +1247,23 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **21 Sep** — the Features page says what its numbers mean (round 132)
+  - The status site's counter read `929 of 929 features` — done, or
+    total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
+    rows`, and a line under the buttons says what the rows are: 495 API
+    members, 303 style properties, 131 capabilities — one function or
+    one property each for the first two, a whole feature for the third,
+    so the total counts rows, not work.
+  - The status legend is a visible table with the totals per status,
+    and the filter script tallies those same cells for the selection:
+    pick `Style (303)` and the legend is Style's statuses and counts.
+    The pickers carry counts, the status picker its definitions too, and
+    every status cell has the definition as a tooltip.  Download CSV
+    and the feature-direction review are buttons under the lede.
+  - Buys a page a reader can take a number from without asking what it
+    means.  Every count is computed from the CSV at build time; the
+    module test and the Playwright spec derive theirs from the same
+    inventory, never a literal.
 - **20 Sep** — the large files split (round 130)
   - Ten sub-rounds, one file each: `shaders` and `curve-geometry` became
     re-export facades over a directory; `style`, `collection`,

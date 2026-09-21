@@ -87,6 +87,34 @@ back, `npm run -s test:modules:quiet` and
 `npm run -s test:playwright:quiet`; `npm run status` and open
 http://localhost:3335/features.html at desktop and 390px width.
 
+### What landed (2026-09-21)
+
+All four sub-rounds, one commit each, the same day.  The page now opens
+with the two buttons under the lede, then the composition line — `929
+rows: 495 API members, 303 style properties, 131 capabilities` — then
+the three filters, then the legend table whose count cells tally the
+selection, then the counter and the inventory.  Screenshots at 1280px
+and at 390px in dark mode: no horizontal overflow, the buttons wrap to
+two lines on the phone.  Selecting `Style (303)` with all statuses
+reads `Statuses — Style, 303 rows` over Implemented 160, Partial 11,
+Planned 1, Proposed 0 (muted), Not implemented 2, Replaced 117,
+Excluded 10, Undecided 2, and the counter `Showing 303 of 929 rows`.
+
+The gates: `test/modules/status-features.mjs` grew from two cases to
+three, every number in it derived from the inventory through the
+exported `summarise` and `countBy`; the Playwright spec asserts the
+tally before and after a category selection, the muted zero, the
+caption in its three forms, the tooltip attribute, and the no-JS page's
+legend, direction button and counter.  Six browser runs green
+(renderer and renderer-webkit).  The one red module test on this branch
+is round 131's: PLAN.md names five files that round has not written yet
+(the headless entries, the factory seam, the GPU registry), which is
+that round's to resolve.
+
+One rule the round left in the tests: the `<tr>` count gate now reads
+inside `<table class="features">` alone, because the page has two
+tables.
+
 ### Risks named at planning
 
 - **Option labels grow long.**  A status option now carries its

@@ -182,7 +182,7 @@ describe('scripts/throw-coverage', function () {
     const files = new Set(result.sites.map((s) => s.file));
 
     expect(result.sites.length).to.be.greaterThan(100);
-    expect(files.has('src/style.mts')).to.equal(true);
+    expect(files.has(PARSE)).to.equal(true);
     expect(files.has('src/core.mts')).to.equal(true);
 
     // the browser prefixes are matched against repo-relative paths: every

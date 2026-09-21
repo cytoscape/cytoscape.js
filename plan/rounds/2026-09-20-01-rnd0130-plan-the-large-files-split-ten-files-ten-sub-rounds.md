@@ -129,6 +129,38 @@ the functions that own them.  Two helpers siblings now share —
 tier is gated at 100%, which is how the split found them).  The 146
 curve specs and the minified bundle are unchanged.
 
+### 130.3 — `src/style/`, carried out (2026-09-20)
+
+Two commits.  **130.3a** moved the ~6,200 lines of module scope into
+thirteen files: `defaults` (507 lines), `tables` (625), `parse` (683),
+`parse-edge` (516), `normalize` (39), `apply-prop` (887), `mappable`
+(1,041 — the one table over the line; oxfmt's wrapping, one entry per
+mapper-capable prop, and splitting a table buys nothing), `compile`
+(553), `sheet` (322), `readers` (142) and the 117 `defineReader` calls
+as `readers-nodes` (440), `readers-labels` (272) and `readers-edges`
+(392), which the facade imports for their side effect ahead of any
+read.  Thirty-two helpers that siblings now share became documented
+exports — the internal tier's 100% gate is how the split found them.
+
+**130.3b** moved `StyleEngine`'s private groups out as functions over
+the engine, with the extractor built on the TypeScript compiler API
+(exact member spans, parameter names, body positions): `engine-apply`
+(652), `engine-refresh` (412), `engine-read` (541), `engine-write`
+(982), `engine-txn` (295), `engine-bypass` (358), `engine-sheet` (428).
+Fifty-two private methods left the class; fifteen public and `@internal`
+members keep their signature and doc and delegate; twenty private fields
+and four private helpers are `@internal` now (the round-90 convention),
+which is the only change the shipped d.ts shows.  Two members stay
+instance-dispatched on purpose — `write` and `mergeBypass` — because
+`test/state-conditions.mjs` and `test/style-bypass.mjs` spy on them
+through the prototype to tell the state-refresh fast path from the full
+write; the extractor's `viaInstance` list is that rule.
+`test/modules/throw-coverage.mjs` anchors its parser fixtures on
+`style/parse.mts`, which is also where the file's throws now are.
+
+`style.mts`: 9,961 → **790 lines**.  The docs API JSON is identical
+modulo line stamps; the minified bundle is 1.6 kB smaller.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–124, 127–130 |
-| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126 |
+| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126, 131 |
 
 ## The sections
 
-169 sections.
+170 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -196,3 +196,4 @@ A round can land with an item held open; the round file says which.
 | 167 | 128 | 2026-09-18 | landed | [Cancellation: `.cancel()` on the async algorithm runs, `layout.cancel()` beside `stop()`, and destroy as the last cancel](rounds/2026-09-18-01-rnd0128-landed-cancellation-cancel-on-the-async-runs-layout-cancel-beside-stop-destroy-as-the-last-cancel.md) |
 | 168 | 129 | 2026-09-18 | landed | [The UI thread kept free: one worker for the in-thread algorithms, `startForce` across the worker host, the CPU sim on a worker](rounds/2026-09-18-02-rnd0129-landed-the-ui-thread-kept-free-one-worker-for-the-in-thread-algorithms-startforce-across-the-worker-host-the-cpu-sim-on-a-worker.md) |
 | 169 | 130 | 2026-09-20 | landed | [The large files split: ten files, ten sub-rounds](rounds/2026-09-20-01-rnd0130-landed-the-large-files-split-ten-files-ten-sub-rounds.md) |
+| 170 | 131 | 2026-09-21 | plan | [Use-case bundles: `cytoscape/headless`, `cytoscape/headless-gpu`, and a shake-clean tree](rounds/2026-09-21-01-rnd0131-plan-use-case-bundles-headless-headless-gpu-and-a-shake-clean-tree.md) |

@@ -1311,14 +1311,15 @@ interface ForceLayoutOptions extends LayoutBaseOptions {
   stepsPerFrame?: number;
   /** where the simulation runs (round 129.3; default `'auto'`):
    * `'auto'` takes the GPU integrator where the renderer offers one,
-   * else — on a rendered instance — the CPU simulation on a worker
-   * that loaded this same bundle, so the main thread stays free (the
-   * run is then asynchronous: positions at `layoutstop` /
-   * `promise()`), else in-thread; a headless run keeps its contract.
-   * `'cpu'` is the in-thread reference (bit-reproducible; the worker
-   * answers the same bits); `'workers'` asks for the worker anywhere
-   * one can be constructed and throws at start where none can;
-   * `'gpu'` throws at start where no integrator is available */
+   * else the CPU simulation on a worker that loaded this same bundle
+   * wherever one can be constructed — headless included, so a Node
+   * process keeps its event loop free as a page keeps its UI thread
+   * (the run is then asynchronous: positions at `layoutstop` /
+   * `promise()`) — else in-thread.  `'cpu'` is the in-thread reference
+   * (bit-reproducible; the worker answers the same bits) and the
+   * synchronous spelling; `'workers'` asks for the worker and throws
+   * at start where none can be constructed; `'gpu'` throws at start
+   * where no integrator is available */
   executor?: 'auto' | 'cpu' | 'gpu' | 'workers';
   /** fit the settle into an explicit box (116.2 — flow's rule): scaled
    * down, never up, until every body fits, then centred; uniform, so
@@ -2429,7 +2430,7 @@ interface CompoundStyle {
   paddingBottom?: SidePadding;
 }
 //#endregion
-//#region src/curve-geometry.d.mts
+//#region src/curve-geometry/bezier.d.mts
 /**
  * Per-end arrow shortenings for one edge, in model px (round 56).
  *
@@ -2480,6 +2481,8 @@ interface CurveEval {
   aex: number;
   aey: number;
 }
+//#endregion
+//#region src/curve-geometry/route.d.mts
 /**
  * One evaluated route: the two boundary endpoints plus the interior
  * points (multibezier: the control points; segments/taxi: the segment
@@ -2513,7 +2516,6 @@ interface CurveRoute {
 }
 //#endregion
 //#region src/store/graph-store.d.mts
-/** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
 interface BgLen {
   v: number;
   pct: boolean;
@@ -2592,11 +2594,6 @@ declare class GraphStore implements ModelView {
   readonly dirty: DirtyTracker;
   /** styled curve records + the lazy derivation of edge.curveParams */
   readonly curves: CurveIndex;
-  /** the compound hierarchy (round 14); reads go through the delegates below */
-  private hierarchy;
-  /** per-parent stashed *style* size: the degenerate-children fallback,
-   * restored to the column when the node becomes a leaf again (14.3) */
-  private parentFallback;
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null;
@@ -2606,59 +2603,14 @@ declare class GraphStore implements ModelView {
   /** fires when a node's parent changes (structural case conditions on
    * the moved node re-evaluate, round 14.7) */
   onReparented: ((slot: number) => void) | null;
-  private curveDevMax;
-  private nodeHalfMax;
-  private borderMax;
-  /** monotone: some edge has carried a box-bounded curve kind (taxi /
-   * extrapolated weights), so curveSlack() must stay engaged even when
-   * curveDevMax is 0 */
-  private hasBoxCurves;
-  /** monotone: some edge has entered the curved *stream* — see
-   * hasCurvedEdges(), which gates the renderer's curved pipelines */
-  private curvedEver;
-  /** monotone (12c): the largest pct-endpoint magnitude in node-half
-   * units — offsets past 1 exceed the slack's node-half term, so the
-   * excess joins curveSlack() (see that doc) */
-  private endptPctMax;
-  /** monotone (12c): the largest haystack-radius any edge has styled —
-   * haystack offsets stray from the endpoint centers by at most
-   * radius × outerHalf, and the straight-stream cull tests grow by
-   * haystackSlack() to stay sound */
-  private haystackRadiusMax;
-  /** the 12b variable-length curve param pool (see store/curve-blob.mts) */
-  private blob;
-  /** the C3 custom-polygon unit-point pool */
-  private polyPool;
-  /** the 15.2 background-image record pool (IMG_STRIDE floats per image) */
-  private imagePool;
-  /** round 23: chart records (node.chartRef = offset | n << 24) */
-  private chartPool;
-  /** live charted nodes (the chart pass skips at 0) */
-  private chartedNodes;
   /** the unique-image registry (round 15.1); style writes acquire/release */
   readonly images: ImageRegistry;
-  private geoEpoch;
-  /** the geo epoch the taxi-track pass last ran at (round 124) */
-  private taxiTrackEpoch;
-  private edgeBBEpoch;
-  private edgeBB;
-  private curveScratch;
-  private routeScratch;
-  private order;
-  private labels;
-  private labelDirty;
-  /** laid (or estimated) label block dims per stream (round 16.2) */
-  private labelDims;
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
   /** global label font-style ('normal' / 'italic'); style-owned (13 D1) */
   labelFontStyle: string;
   /** global label font-weight ('normal', 'bold', a number); style-owned */
   labelFontWeight: string;
-  /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
-  private watchedKeys;
-  /** reserved state keys some `case` condition reads (registered by the StyleEngine) */
-  private watchedStates;
   /**
    * Told when a styled state bit flips on live slots — the core wires
    * this to the StyleEngine's state refresh (round 57.1; the round-61
@@ -2667,12 +2619,6 @@ declare class GraphStore implements ModelView {
    * does the flag write and nothing else.
    */
   onStateChange: ((group: GroupName, key: string, slots: readonly number[]) => void) | null;
-  /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
-  private mapperSpans;
-  /** forwarding chains for refs staled by slot compaction (19.3):
-   * packed (slot, gen) → packed (newSlot, newGen), per group */
-  private forwards;
-  private _compactEpoch;
   /**
    * Monotonic counter of structural changes — every element added or
    * removed, and every slot compaction (round 34.2; a plain field since
@@ -2684,9 +2630,6 @@ declare class GraphStore implements ModelView {
    * whole-graph collection cache here, so the memo-hit read needs no
    * epoch compare at all. */
   onStructureChange: (() => void) | null;
-  /** The one place structureEpoch moves: bump plus the push-invalidation
-   * hook (round 62.5b). */
-  private bumpStructureEpoch;
   /**
    * Build an empty store: both tables at zero capacity, empty id /
    * adjacency / data / hierarchy / curve indexes, and the sub-index
@@ -2772,8 +2715,6 @@ declare class GraphStore implements ModelView {
   chartBlobLength(): number;
   /** Live charted nodes (round 23) — the renderer's pass-skip gate. */
   chartCount(): number;
-  /** live imaged-node count (the renderer's zero-cost gate, 15.3) */
-  private imagedNodes;
   /** Live nodes carrying background images (15.3) — the renderer's
    * pass-skip gate, so an imageless graph pays nothing. */
   imageCount(): number;
@@ -2887,13 +2828,6 @@ declare class GraphStore implements ModelView {
    * invalidate cached packed-key membership sets (19.3). */
   get compactEpoch(): number;
   /**
-   * Chase a stale ref through the forwarding chain (each compaction a
-   * moved element survives adds one link) and, on reaching a live
-   * identity, rewrite the ref in place.  Entries persist and compose, so
-   * repair is total for any ref whose element still exists.
-   */
-  private repairStale;
-  /**
    * Resolve an element id to a fresh ref (backs cy.getElementById).
    * Ids are unique across both groups, so no group argument is needed.
    *
@@ -2981,18 +2915,6 @@ declare class GraphStore implements ModelView {
    */
   flushDerived(): void;
   /**
-   * The taxi-track pass (round 124): assign every `taxi-turn: auto`
-   * edge its px turn from live positions, into the params header's n
-   * lane, which both `evalTaxi` and the WGSL twin read for a taxi
-   * record whose turn mode is 2.  Lazy off the geo epoch — a drag fires
-   * many pointermoves per frame and a layout writes positions in
-   * several passes, so the sweep runs once per epoch, at frame start
-   * (`takeDelta`) and on the CPU readers (`flushDerived`), and is a
-   * single size check when no edge is `auto`.  It writes a column,
-   * never the blob, and never bumps the epoch it is keyed on.
-   */
-  private refreshTaxiTracks;
-  /**
    * Open a bulk-load window on the derived indexes (round 67): the curve
    * index stops accumulating one pair mark per edge and takes their
    * union at `endBulkLoad`, which on a whole-graph load is the whole
@@ -3021,32 +2943,6 @@ declare class GraphStore implements ModelView {
    * @param count — how many slots the run covers, template included
    */
   replicateEdgeStyle(start: number, count: number): void;
-  /**
-   * The hierarchy flush's write sink: derived parent geometry lands in
-   * the real columns (position, size, outerHalf) with normal dirty
-   * spans — but never re-marks the hierarchy, so a flush can not
-   * re-trigger itself.  A size change re-anchors the parent's label
-   * (the sidecar entry bakes anchors from the node extents) and feeds
-   * the monotone cull-slack meter.
-   */
-  private materializeParentGeom;
-  /**
-   * Re-derive a node label's anchor from new drawn extents.  The sidecar
-   * entry carries enough to invert the StyleEngine's bake: halign/valign
-   * reconstruct from the block-fraction shifts, and the anchor formulas
-   * are the engine's own (see writeLabel) — no engine round trip needed.
-   */
-  private reanchorLabel;
-  /**
-   * Shift a parent's subtree by a delta (raw writes, one span).  A
-   * locked descendant stays, and so does its own subtree (116.3 — v3's
-   * rule: a parent write shifts `children()` through the locked-aware
-   * shift, so a locked child's `shift` is refused and its children are
-   * never reached).  Every ancestor of a node left behind re-derives —
-   * their boxes now span the stayers and the movers, so a uniform
-   * translation of the written position no longer describes them.
-   */
-  private shiftSubtree;
   /** Mark a node's ancestor chain (and its own derived bounds when it is
    * a parent) stale; flushed lazily by flushDerived(). */
   markNodeGeo(slot: number): void;
@@ -3071,8 +2967,6 @@ declare class GraphStore implements ModelView {
    * and the parent draw permutation.
    */
   setParent(slot: number, parentSlot: number): void;
-  /** Re-derive curve routing for every edge incident to a subtree (14.10). */
-  private invalidateSubtreeEdgeRelations;
   /**
    * show()/hide() (round 14.4): FLAG_SELF_HIDDEN records the element's
    * own state; the effective FLAG_VISIBLE recomputes over affected node
@@ -3090,40 +2984,11 @@ declare class GraphStore implements ModelView {
    * so an invisible element keeps its space and its bundle rank.
    */
   setInvisibility(group: GroupName, slot: number, invisible: boolean): void;
-  /** Re-derive an edge's FLAG_DRAWN from its shown + invisible state.
-   * (Endpoint invisibility is folded by the consumers — the kernels'
-   * endpoint tests and the edge `visible()` read — not stored here.) */
-  private refreshEdgeDrawn;
   /** Whether the element renders (round 22): the derived FLAG_DRAWN, with
    * edges additionally folding their endpoints (v3's visible() rule). */
   isDrawn(ref: Ref): boolean;
-  /**
-   * Recompute effective FLAG_VISIBLE — and, round 22, the derived
-   * FLAG_DRAWN (visible AND no `visibility: 'hidden'` on self or any
-   * ancestor) — for a node subtree, top-down with pruning: a node with
-   * both bits unchanged has consistent descendants (their inputs did not
-   * move).  A shown-bit change marks the ancestor chain's auto-bounds
-   * stale (it entered or left the bb); a drawn-only change is paint-only
-   * (invisible elements keep their space).
-   */
-  private refreshEffectiveVisibility;
-  /** Bases of nodes whose stored opacity carries an ancestor fold
-   * (absent = the column holds the base). */
-  private opacityBase;
   /** The node's declared (pre-fold) opacity — what style('opacity') reads. */
   baseOpacityOf(slot: number): number;
-  /** The product of the strict ancestors' bases. */
-  private ancestorOpacityProduct;
-  /**
-   * A node opacity write under compounds: `base` is the declared value;
-   * the stored column takes base x the ancestor product (v3's rendered
-   * effectiveOpacity), and a parent's write refolds its subtree.
-   */
-  private writeBaseOpacity;
-  /** Refold a whole subtree against its (possibly new) ancestor chain. */
-  private refoldOpacitySubtree;
-  /** Recursive half of the fold: children of a node whose folded value is `parentFolded`. */
-  private refoldChildren;
   /** The node's parent slot, or -1 for orphans. */
   parentOf(slot: number): number;
   /** The node's child slots in link order (read-only; empty for leaves). */
@@ -3190,20 +3055,6 @@ declare class GraphStore implements ModelView {
    */
   setFlag(group: GroupName, slot: number, bit: number, on: boolean): void;
   /**
-   * Tell the style engine that a *styled* state bit flipped, so the
-   * affected slots restyle.  This is what makes `{ when: { active:
-   * true } }` work on any property: the flag write is the only event,
-   * and every consequence — the mapper re-evaluation, the column
-   * writes, the upload — is the ordinary refresh path from there.
-   *
-   * Cheap when nothing styles the state, which is the common case: the
-   * mask test rejects the structural and internal bits outright, and
-   * `markDataWrite`'s watched-key set rejects a state no `case`
-   * condition mentions.  A sheet that says nothing about press pays one
-   * `&` per press.
-   */
-  private noteStateChange;
-  /**
    * Bulk flag write over a refs array (a collection's _refs): sets or
    * clears `bit` on every live ref, with the flags/gen columns hoisted out
    * of the loop and one coalesced dirty span per touched group.  Refs
@@ -3242,9 +3093,6 @@ declare class GraphStore implements ModelView {
    * raw with a dirty mark.
    */
   setLane(id: ColumnId, slot: number, lane: number, value: number): void;
-  /** `Uint32Array` alias of `edge.width`'s buffer, for the exact bit
-   * copy below.  Re-derived when growth or compaction swaps the array. */
-  private widthBitsView;
   /**
    * Write the packed arrow-shapes word, mirroring it bit-for-bit into
    * lane 1 of `edge.width` (round 56).
@@ -3264,38 +3112,6 @@ declare class GraphStore implements ModelView {
    * @param word — the packed word (see `edge.arrowShapes` in the contract)
    */
   setArrowShapes(slot: number, word: number): void;
-  /**
-   * Write-through for `edge.width`'s mirror lane: the shape word plus the
-   * two `SHOWS_LINE` flags (round 56).
-   *
-   * Called from every write to either input — the shape word and the two
-   * end-arrow colours — because the flags derive from both.  A head
-   * "shows the line" when it is hollow, or when its stored alpha is below
-   * opaque: exactly the cases where v3's `destination-out` erase is doing
-   * the hiding rather than the head's own fill, and so exactly the cases
-   * where v4 has to shorten the line past v3's `gap` to the head's own
-   * depth.  An opaque filled head hides the difference either way, and
-   * shortening further would cut the slivers v3 leaves where the head is
-   * narrower than the line.
-   *
-   * Known limit, inherited rather than introduced: a paint channel the
-   * mapper kernel owns can leave the *stored* arrow bytes stale (see the
-   * getters' note in `style.mts`), so a head made translucent purely
-   * on-device reads as opaque here.  The CPU column is what every other
-   * CPU consumer reads too.
-   */
-  private updateArrowBits;
-  /**
-   * Write-through for the derived node.outerHalf column (size/2 +
-   * borderWidth/2 per axis — see the contract): follows every size/border
-   * write, so the column is never stale.  The curve shaders and the CPU
-   * curve evaluator both read this column, so the two sides agree on the
-   * exact f32 half-extents by construction.
-   */
-  private updateOuterHalf;
-  /** live count of ghost-enabled nodes (the renderer skips the ghost
-   * cull + draw entirely while this is 0) */
-  private ghosts;
   /** Live ghost-enabled nodes (13 A1) — the renderer's pass-skip gate;
    * the bb scan also uses it to skip the ghost term. */
   ghostCount(): number;
@@ -3305,9 +3121,6 @@ declare class GraphStore implements ModelView {
    * they grow the bb scans — so writes bump the geometry epoch.
    */
   setGhost(slot: number, offX: number, offY: number, opacity: number, enabled: boolean): void;
-  /** live counts of nodes with a visible overlay / underlay (13 A2) */
-  private overlays;
-  private underlays;
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number;
   /** Nodes with a visible underlay (13 A2) — the pass-skip gate. */
@@ -3319,10 +3132,6 @@ declare class GraphStore implements ModelView {
    * so writes bump the geometry epoch.
    */
   setNodeLayer(id: typeof COL.NODE_OVERLAY | typeof COL.NODE_UNDERLAY, slot: number, rgba: number, padding: number, shape: number, radius: number): void;
-  /** live counts of edges with a visible overlay / underlay / casing */
-  private edgeOverlays;
-  private edgeUnderlays;
-  private casings;
   /** Edges with a visible overlay (13 A2) — the pass-skip gate. */
   edgeOverlayCount(): number;
   /** Edges with a visible underlay (13 A2) — the pass-skip gate. */
@@ -3335,9 +3144,6 @@ declare class GraphStore implements ModelView {
    * edge width + 2 × padding, derived at style-write time.
    */
   setEdgeLayer(id: typeof COL.EDGE_OVERLAY | typeof COL.EDGE_UNDERLAY | typeof COL.EDGE_CASING, slot: number, rgba: number, strokeWidth: number): void;
-  /** live count of edges with any visible mid arrow (round 13 C1) —
-   * the renderer skips the mid draws entirely while 0 */
-  private midArrows;
   /** Edges with any visible mid arrow (13 C1) — the renderer skips the
    * mid-arrow draws entirely at 0. */
   midArrowCount(): number;
@@ -3369,10 +3175,6 @@ declare class GraphStore implements ModelView {
   /** Raise the monotone hollow-stroke maximum (the style layer's
    * report, after 'match-line' and percent forms are resolved). */
   noteArrowWidth(width: number): void;
-  /** monotone (round 13 B5): the largest outline outward extent any
-   * node has styled — the ghost cull grows by it (no binding left for
-   * the packed geometry there) */
-  private outlineSlackMax;
   /** The largest outward outline extent any node has styled (13 B5) —
    * the ghost cull grows its tests by this.  Monotone: never shrinks on
    * a restyle, which costs cull efficiency, never correctness. */
@@ -3388,8 +3190,6 @@ declare class GraphStore implements ModelView {
    * geometry epoch.
    */
   setBorderGeom(slot: number, cornerRadius: number, borderPos: number, outlineRgba: number, outlineWidth: number, outlineOffset: number, shapeId?: number, polyRef?: number, borderStyle?: number, outlineStyle?: number): void;
-  /** live count of elements carrying a gradient record (13 C2) */
-  private gradients;
   /** Elements with a gradient fill (13 C2) — the pass-skip gate. */
   gradientCount(): number;
   /**
@@ -3418,8 +3218,6 @@ declare class GraphStore implements ModelView {
    * pending derivation flushed first (the accessors' read path).
    */
   curveParamsAt(slot: number): [number, number, number, number];
-  /** scratch for `arrowTrimAt` — the geometry readers never allocate */
-  private trimScratch;
   /**
    * v3's two per-end shortenings for one edge, resolved from the arrow
    * and width columns (round 56).
@@ -3602,18 +3400,6 @@ declare class GraphStore implements ModelView {
    * styles haystack.  Monotone, like the curve slack.
    */
   haystackSlack(): number;
-  /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
-   * Fixed-kind writes (straight/bezier/loop) release any blob record
-   * the slot held from a previous blob-backed style. */
-  private setCurveParams;
-  /**
-   * The CurveIndex's write sink for blob-backed kinds (12b): store the
-   * record in the blob, the header [offset, dev, n, kind] in the params
-   * column, and the curved/box flags.  `dev` is the conservative chord
-   * deviation (max|d|); `box` marks kinds no chord bound covers (taxi,
-   * extrapolated weights) for the AABB cull branch.
-   */
-  private setCurveParamsBlob;
   /**
    * The sidecar label entry for a slot in one stream, or undefined when
    * unlabelled.  The live object the store holds — treat it as
@@ -3804,25 +3590,6 @@ declare class GraphStore implements ModelView {
   } | null;
   /** Sidecar data() values from a def's data object (id/source/target/parent stay first-class). */
   setDefData(group: GroupName, slot: number, data: Record<string, unknown> | undefined): void;
-  private ingestDataColumns;
-  /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
-  private registerBulk;
-  /** Default flags for the whole bulk, then per-element deviations. */
-  private writeBulkFlags;
-  /** One coalesced dirty span covering all of `slots`. */
-  private markBulk;
-  private allocSlot;
-  private freeSlot;
-  /**
-   * Rebuild the CSR adjacency when the waste meters cross the threshold:
-   * stranded CSR entries (removals) plus overlay entries (post-build
-   * adds) exceeding half the live entry count.  A rebuild walks the live
-   * edges in insertion order — so it also folds a purely incremental
-   * graph's overlay into the compact CSR shape — and O(edges) at a
-   * proportional-growth threshold amortizes to O(1) per mutation.  The
-   * floor keeps tiny graphs from rebuilding on every mutation.
-   */
-  private maybeRebuildAdjacency;
   /**
    * Slot-moving compaction (round 19.1, store core): move live elements
    * down to a dense slot prefix per group with a **monotone** remap —
@@ -3842,86 +3609,9 @@ declare class GraphStore implements ModelView {
     nodes: GroupCompaction | null;
     edges: GroupCompaction | null;
   };
-  /** Permute one label stream's entries, dims and dirty slots (19.2). */
-  private remapLabelStream;
-  private compactGroup;
-  private compactOrder;
 }
 //#endregion
-//#region src/matcher.d.mts
-/** One data comparison; exactly one op per condition object. */
-interface DataCondition {
-  eq?: unknown;
-  ne?: unknown;
-  lt?: number;
-  lte?: number;
-  gt?: number;
-  gte?: number;
-  in?: (string | number)[];
-}
-/**
- * A structured element query; every present key must hold.
- *
- * The state keys are the ones a `case` mapper's `when` takes, from the
- * same table (`STATE_CONDITIONS` in style-scales.mts) — so anything you
- * can style on, you can query for.  Each is a boolean, which is how v3's
- * paired selectors collapse: `{ selected: false }` is `:unselected`,
- * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
- */
-interface Query {
-  /** restrict to one group */
-  group?: GroupName;
-  /** require the element (not) to be selected */
-  selected?: boolean;
-  /** whether the element may be selected by the user */
-  selectable?: boolean;
-  /** whether the element is locked in place */
-  locked?: boolean;
-  /** whether the user is dragging the element */
-  grabbed?: boolean;
-  /** whether the element may be dragged */
-  grabbable?: boolean;
-  /** whether the element is under an active press */
-  active?: boolean;
-  /** whether the pointer is over the element */
-  hovered?: boolean;
-  /** structural (round 14.7, nodes only): has at least one child */
-  parent?: boolean;
-  /** structural (nodes only): has no children — v3's `:childless`, and
-   * exactly `{ parent: false }` */
-  childless?: boolean;
-  /** structural (round 14.7, nodes only): has a parent */
-  child?: boolean;
-  /** structural (nodes only): has no parent — v3's `:orphan`, and
-   * exactly `{ child: false }` */
-  orphan?: boolean;
-  /** data-sidecar conditions per key; a bare value means equality */
-  data?: Record<string, DataCondition | string | number | boolean | null>;
-}
-//#endregion
-//#region src/animation.d.mts
-interface Position$1 {
-  x: number;
-  y: number;
-}
-/** A handle to a built-but-controllable animation (from `animation()`). */
-interface AnimationHandle {
-  /** Enqueue and start; resolves when it completes. */
-  play(): Promise<void>;
-  stop(jumpToEnd?: boolean): void;
-  promise(): Promise<void>;
-  playing(): boolean;
-  /** Round 24.3: freeze in place — values hold, the promise stays
-   * pending, and the paused span is excluded from the timeline. */
-  pause(): AnimationHandle;
-  resume(): AnimationHandle;
-  /** Swap the tween's ends, remapping elapsed so the current value is
-   * continuous (exactly for point-symmetric easings — linear included). */
-  reverse(): AnimationHandle;
-  /** Elapsed fraction of the duration (read-only — no scrubbing). */
-  progress(): number;
-  paused(): boolean;
-}
+//#region src/animation/animation.d.mts
 /** Options accepted by animate()/animation(). */
 interface AnimateOptions {
   style?: Record<string, string | number>;
@@ -3969,6 +3659,8 @@ interface AnimateOptions {
   delay?: number;
   complete?: () => void;
 }
+//#endregion
+//#region src/animation/manager.d.mts
 /**
  * Per-core animation manager (round 21: no queue).  Every started
  * animation runs immediately; animations sharing an element compose when
@@ -4047,6 +3739,30 @@ declare class AnimationManager {
   /** Advance one animation; returns true when it is finished. */
   private advanceOne;
   private schedule;
+}
+//#endregion
+//#region src/animation/handle.d.mts
+interface Position$1 {
+  x: number;
+  y: number;
+}
+/** A handle to a built-but-controllable animation (from `animation()`). */
+interface AnimationHandle {
+  /** Enqueue and start; resolves when it completes. */
+  play(): Promise<void>;
+  stop(jumpToEnd?: boolean): void;
+  promise(): Promise<void>;
+  playing(): boolean;
+  /** Round 24.3: freeze in place — values hold, the promise stays
+   * pending, and the paused span is excluded from the timeline. */
+  pause(): AnimationHandle;
+  resume(): AnimationHandle;
+  /** Swap the tween's ends, remapping elapsed so the current value is
+   * continuous (exactly for point-symmetric easings — linear included). */
+  reverse(): AnimationHandle;
+  /** Elapsed fraction of the duration (read-only — no scrubbing). */
+  progress(): number;
+  paused(): boolean;
 }
 //#endregion
 //#region src/algorithms/cancel.d.mts
@@ -4726,11 +4442,64 @@ declare class Emitter<TContext = unknown, TQualifier = unknown> {
   private emitOne;
 }
 //#endregion
-//#region src/collection.d.mts
+//#region src/matcher.d.mts
+/** One data comparison; exactly one op per condition object. */
+interface DataCondition {
+  eq?: unknown;
+  ne?: unknown;
+  lt?: number;
+  lte?: number;
+  gt?: number;
+  gte?: number;
+  in?: (string | number)[];
+}
+/**
+ * A structured element query; every present key must hold.
+ *
+ * The state keys are the ones a `case` mapper's `when` takes, from the
+ * same table (`STATE_CONDITIONS` in style-scales.mts) — so anything you
+ * can style on, you can query for.  Each is a boolean, which is how v3's
+ * paired selectors collapse: `{ selected: false }` is `:unselected`,
+ * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
+ */
+interface Query {
+  /** restrict to one group */
+  group?: GroupName;
+  /** require the element (not) to be selected */
+  selected?: boolean;
+  /** whether the element may be selected by the user */
+  selectable?: boolean;
+  /** whether the element is locked in place */
+  locked?: boolean;
+  /** whether the user is dragging the element */
+  grabbed?: boolean;
+  /** whether the element may be dragged */
+  grabbable?: boolean;
+  /** whether the element is under an active press */
+  active?: boolean;
+  /** whether the pointer is over the element */
+  hovered?: boolean;
+  /** structural (round 14.7, nodes only): has at least one child */
+  parent?: boolean;
+  /** structural (nodes only): has no children — v3's `:childless`, and
+   * exactly `{ parent: false }` */
+  childless?: boolean;
+  /** structural (round 14.7, nodes only): has a parent */
+  child?: boolean;
+  /** structural (nodes only): has no parent — v3's `:orphan`, and
+   * exactly `{ child: false }` */
+  orphan?: boolean;
+  /** data-sidecar conditions per key; a bare value means equality */
+  data?: Record<string, DataCondition | string | number | boolean | null>;
+}
+//#endregion
+//#region src/collection/shared.d.mts
 type EleFilterFn = (ele: Collection, i: number, eles: Collection) => boolean;
 type ElePositionFn = (ele: Collection, i: number) => Position | false | undefined;
 /** A subset criterion: a structured query or a per-element predicate. */
 type FilterLike = Query | EleFilterFn;
+//#endregion
+//#region src/collection.d.mts
 /**
  * A v3-style collection over the columnar store: an element is a length-1
  * collection, interned per live slot so `eles[0]`, `forEach` args and
@@ -4746,7 +4515,6 @@ declare class Collection {
   /** the owning store, held directly (round 62.5): every accessor read
    * it through a getter chain, which showed on the nanosecond rows */
   _store: GraphStore;
-  private __refs;
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch;
   _id: string | undefined;
@@ -5046,7 +4814,6 @@ declare class Collection {
    * @returns true for an edge between two distinct nodes
    */
   isSimple(): boolean;
-  private _isLoop;
   /**
    * Whether the first element has been removed from the graph.  A
    * removed element's handle stays usable — reads are no-ops or
@@ -5244,7 +5011,6 @@ declare class Collection {
     value: number;
     ele: Collection | undefined;
   };
-  private _extremum;
   /**
    * Get or set the first element's model-space position (nodes only).
    *
@@ -5264,7 +5030,6 @@ declare class Collection {
   position(dim?: string | Position, value?: number): Position | number | undefined | this;
   modelPosition: this['position'];
   point: this['position'];
-  private _positionImpl;
   /**
    * Set every node's position, from a constant or per-element function.
    *
@@ -5349,13 +5114,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   stop(jumpToEnd?: boolean): this;
-  private _positions;
-  /**
-   * v3 parity: descendants moved along by a parent's position write emit
-   * 'position' too — once each (members that already emitted are skipped).
-   * Only called when position listeners exist.
-   */
-  private _emitSubtreePositions;
   /**
    * Offset positions by a vector or along one axis.
    *
@@ -5364,7 +5122,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   shift(dim: string | Position, value?: number): this;
-  private _shift;
   /**
    * Compound-relative position: the model position minus the immediate
    * parent's (derived) position — the model position for orphans and
@@ -5376,8 +5133,6 @@ declare class Collection {
    * @returns the position or coordinate when reading, this when writing
    */
   relativePosition(dim?: string | Position, value?: number): Position | number | undefined | this;
-  /** The immediate parent's position ({0, 0} for orphans); flushes first. */
-  private _relOrigin;
   relativePoint: this['relativePosition'];
   /**
    * Get or set the first element's position in rendered (CSS px) space —
@@ -5421,10 +5176,6 @@ declare class Collection {
    * @returns the height, or undefined when empty or removed
    */
   height(): number | undefined;
-  /** A node's core width/height: for parents the column stores the
-   * padded/drawn box (auto-bounds, round 14.3), so the readback
-   * subtracts the padding — v3's autoWidth/autoHeight. */
-  private _nodeDim;
   /**
    * data() over the sidecar columns.  `id` (and `source`/`target` on
    * edges) are first-class and immutable — reading them works, writing
@@ -5444,7 +5195,6 @@ declare class Collection {
    * @returns the read value, or this collection when writing
    */
   data(key?: string | Record<string, unknown>, value?: unknown): unknown;
-  private _setData;
   /**
    * Remove sidecar data keys.
    *
@@ -5624,7 +5374,6 @@ declare class Collection {
    * @returns the padded height, or undefined when empty or removed
    */
   paddedHeight(): number | undefined;
-  private _paddedDim;
   /**
    * The full drawn width including the border — padded width plus the
    * border width.  This is the box bounds and endpoint clipping use.
@@ -5638,7 +5387,6 @@ declare class Collection {
    * @returns the outer height, or undefined when empty or removed
    */
   outerHeight(): number | undefined;
-  private _borderWidth;
   /**
    * The model-space box enclosing every element of the collection.
    *
@@ -5816,9 +5564,6 @@ declare class Collection {
    *   none
    */
   renderedSegmentPoints(): Position[] | undefined;
-  private _routeInteriorPoints;
-  private _endpointPoint;
-  private _toRenderedPoint;
   /**
    * Whether the first element is selected.
    *
@@ -5933,11 +5678,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   hide(): this;
-  /** show/hide (round 14.4): the store records the own state in
-   * FLAG_SELF_HIDDEN and recomputes the effective FLAG_VISIBLE over
-   * affected subtrees — descendants gate on hidden ancestors, and
-   * hidden children leave their ancestors' auto-bounds. */
-  private _setVisibility;
   /**
    * Whether the first element is locked — immovable, by layouts,
    * position writes and position tweens alike (one rule since round
@@ -5994,9 +5734,6 @@ declare class Collection {
    * @returns this collection, for chaining
    */
   unpanify(): this;
-  private _hasBit;
-  private _setBit;
-  private _setSelected;
   /**
    * Remove these elements from the graph; incident edges of removed nodes
    * cascade.  Already-removed elements are skipped (no second `remove`
@@ -6028,7 +5765,6 @@ declare class Collection {
     target?: string;
     parent?: string | null;
   }): this;
-  private _resolveNode;
   /**
    * The source node of the first edge.
    *
@@ -6053,8 +5789,6 @@ declare class Collection {
    * @returns the target nodes
    */
   targets(): Collection;
-  private _endpoint;
-  private _endpoints;
   /**
    * Every edge incident on the nodes in this collection, deduped —
    * answered off the CSR adjacency index, so it is O(incident edges)
@@ -6093,7 +5827,6 @@ declare class Collection {
    * @returns the incoming edges and their source nodes
    */
   incomers(criterion?: FilterLike): Collection;
-  private _goers;
   /**
    * The *open* neighbourhood: the incident edges and the nodes on their
    * far ends, ignoring edge direction, excluding the collection's own
@@ -6168,7 +5901,6 @@ declare class Collection {
    * @returns the parented nodes
    */
   nonorphans(criterion?: FilterLike): Collection;
-  private _byParentedness;
   /**
    * Ancestors common to every element, closest first (an edge in the
    * collection has no ancestors, so it empties the result — v3).   *
@@ -6204,7 +5936,6 @@ declare class Collection {
    *   negation of `isChild()`
    */
   isOrphan(): boolean;
-  private _liveNodeRef;
   /**
    * Collection nodes with no non-loop incoming edge (whole-graph
    * incidence, as in v3).   *
@@ -6220,7 +5951,6 @@ declare class Collection {
    * @returns the sink nodes
    */
   leaves(criterion?: FilterLike): Collection;
-  private _dagExtremity;
   /**
    * Everything reachable by following outgoing edges, transitively — the
    * edges and nodes of the forward closure, excluding these nodes
@@ -6240,7 +5970,6 @@ declare class Collection {
    * @returns the edges and nodes of the backward closure
    */
   predecessors(criterion?: FilterLike): Collection;
-  private _dagAllHops;
   /**
    * The edges connecting this collection's nodes with `others`, in
    * either direction.
@@ -6258,7 +5987,6 @@ declare class Collection {
    * @returns the directed connecting edges
    */
   edgesTo(others: Collection): Collection;
-  private _edgesWith;
   /**
    * The edges sharing endpoints with these edges, in either direction —
    * including each edge itself.  These are the edges a bezier bundle
@@ -6278,7 +6006,6 @@ declare class Collection {
    * @returns the codirected edges
    */
   codirectedEdges(criterion?: FilterLike): Collection;
-  private _parallelEdges;
   /**
    * Connected components within this collection (undirected), each as a
    * collection of the reached nodes plus the collection's edges internal
@@ -6297,7 +6024,6 @@ declare class Collection {
    *   collection when this one is empty
    */
   component(): Collection;
-  private _nodeSlotSet;
   /**
    * Node dimensions for layout spacing, as v3's layoutDimensions — the
    * body, plus the label box under `nodeDimensionsIncludeLabels: true`
@@ -6903,8 +6629,6 @@ declare class Collection {
    * @returns the total degree (0 when there are no nodes)
    */
   totalDegree(includeLoops?: boolean): number;
-  private _degreeBound;
-  private _degree;
   /**
    * Listen for events on each element of this collection.  The handler
    * is bound per element, and keeps firing across slot compaction —
@@ -6996,32 +6720,6 @@ interface Extent {
 //#endregion
 //#region src/style.d.mts
 declare class StyleEngine {
-  private store;
-  /**
-   * The narrow view of this engine that the module-scope property
-   * readers receive (35.2).  Built once here rather than per read, and
-   * its getters stay live across a sheet swap that replaces `defs`.
-   */
-  private readonly readCtx;
-  /** per-raw-name read plans (round 62.4): normalization, group
-   * membership, the transition/arrow classifications and the reader,
-   * resolved once per spelling — all from module tables no sheet swap
-   * changes, so the cache is immortal per engine */
-  private readonly readPlans;
-  private sheet;
-  private defs;
-  /** the parents-group compound style, applied per parent slot */
-  private parentCompound;
-  /** normalized channel props the parents overlay resolves differently
-   * from the nodes group (defaults + the user parents block) — a
-   * GPU-mapped nodes channel in this set demotes to the CPU path */
-  private parentsOverride;
-  private arrows;
-  private midArrows;
-  /** props per group the GPU eval kernel currently owns (set by the runtime). */
-  private gpuOwnedProps;
-  /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
-  private demoted;
   /** Round 24.1: styled-generation marks (gen + 1; 0 = never styled).  A
    * slot joins transition diffs only when its *current* element has been
    * styled before — the first application on add is instant (v3's rule),
@@ -7039,51 +6737,12 @@ declare class StyleEngine {
    * per-element path against itself.
    */
   _bulkRuns: number;
-  /** Round 24.1: the open transition capture (one per group-def pass). */
-  private txn;
-  /** id → normalized prop → raw value: the live bypass declarations
-   * (the `bypasses` sheet section plus the sugar methods' writes),
-   * exported by `json()`.  Id-keyed declarations, not element state —
-   * an entry survives remove/re-add and may name an id that does not
-   * exist yet (inert until it does). */
-  private bypassRaw;
-  /** id → per-group parsed patches.  Both groups parse at declaration
-   * time (the id may not resolve yet); null marks a group whose guards
-   * reject the entry's props (e.g. a curve prop never applies to a
-   * node), decided when the id resolves. */
-  private bypassParsed;
-  /** slot → patch per group, resolved lazily against the store's
-   * structure epoch — adds, removes and compaction all bump it, and a
-   * re-resolution is O(declared ids), never O(elements). */
-  private bypassSlots;
-  private bypassEpoch;
-  /** normalized prop → live declaration count across ids — what
-   * `paintInputs` demotes by (a kernel-owned mapper would overwrite a
-   * bypassed slot's stored bytes on its next dispatch). */
-  private bypassPropCounts;
   /** Whether any bypass is declared — the zero-cost gate every touched
    * path checks first (the round-63 performance contract).
    *
    * @returns true when at least one id has a live bypass declaration
    */
   hasBypasses(): boolean;
-  /** Validate a sheet's `bypasses` section into installable entries —
-   * called before any engine state mutates, so a bad section throws
-   * from `setSheet` with nothing half-applied. */
-  private validateBypasses;
-  /** Parse one entry's props for both groups; a group whose guards
-   * reject them parses null, and both rejecting is the caller's error. */
-  private parseBypassGroups;
-  /** Install validated bypass entries (whole-replace — `setSheet`'s
-   * swap semantics: the section is replaced like any other). */
-  private installBypasses;
-  /** Re-resolve declared ids to live slots when the structure epoch
-   * moved — O(declared ids) per structural change, amortized over the
-   * writes between changes, and nothing at all when no bypass exists. */
-  private rebuildBypassSlots;
-  /** The bypass patch for a slot, or null.  O(1) after the lazy
-   * epoch-checked re-resolution. */
-  private bypassPatchAt;
   /**
    * Set bypass props for one live element — the sugar path behind
    * `ele.style( name, value )` (round 63.4).  Unlike the sheet
@@ -7113,21 +6772,11 @@ declare class StyleEngine {
    *   the element's whole declaration
    */
   removeBypass(ref: Ref, id: string, name?: string): void;
-  /** Patch one slot's entry in the resolved maps after a sugar write —
-   * only when the maps are current (stale maps re-resolve wholesale at
-   * the next write anyway). */
-  private refreshBypassSlot;
-  /** value reader for mapper/condition keys ('id' is first-class, not in
-   * the sidecar; the reserved '::' keys answer a case condition from the
-   * flags column — the structural pair since round 14.7, the state
-   * family since 57.1) */
-  private readValue;
   /**
    * @param store — the columnar store whose channel columns this engine
    *   resolves style into
    */
   constructor(store: GraphStore);
-  private coreStyle;
   /**
    * Replace the stylesheet and re-apply it to every live element,
    * mapped channels included.
@@ -7153,261 +6802,6 @@ declare class StyleEngine {
   json(): Stylesheet;
   /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
   update(): void;
-  /**
-   * The parents' compound-style write with the padding transition
-   * capture (round 25.4): diff the declared padding around the sheet
-   * write, snap on a px↔% unit flip (tweening across units has no
-   * meaning — recorded), and restore the held pre-restyle value
-   * (CSS's delay rule, like the channel diffs).
-   */
-  private applyCompoundStyle;
-  private applyGroupDef;
-  /**
-   * Open a transition capture for one group-def apply pass: every
-   * already-styled slot the pass writes gets its tweenable channels
-   * diffed on stored truth.  Null (capture off) when nothing can
-   * transition — unconfigured specs cost nothing.
-   */
-  private openTxn;
-  /** Close a capture: pack the accumulated diffs into bulk ChannelWrites
-   * (one per column — never per-element animations) and hand them to the
-   * sink as one transition animation. */
-  private closeTxn;
-  private readTxnValue;
-  /** Pre-write snapshot of one slot's capture channels (mains + rides). */
-  private txnPre;
-  /**
-   * Post-write diff of one slot: record each moved channel (from = the
-   * snapshot, to = the newly stored value) and *restore* the old value —
-   * the store holds the pre-restyle state until the tween's first
-   * post-delay tick, so sync reads during a transition-delay report the
-   * old value (CSS's rule) and no frame can flash the target.
-   */
-  private txnPost;
-  private wasStyled;
-  private markStyled;
-  /** The group def resolving one element: the parents overlay for parent
-   * nodes (round 14.6), else the element's own group. */
-  private defFor;
-  /** All live slots the given def styles (partitioned under compounds). */
-  private allSlotsFor;
-  /**
-   * Scratch-evaluate every mapped channel and write whole elements — the
-   * per-channel write would break the cross-channel couplings that live
-   * in write() (circle collapse, arrow-alpha folding, the label anchor).
-   * Live auto-domain extents re-check here; a changed extent escalates
-   * the pass to the whole group (every slot's mapping moved).
-   */
-  private applyMapped;
-  /**
-   * The structural half of the bulk-edge gate (round 67.2): whether this
-   * run *could* be written from one template slot and filled.
-   *
-   * Nodes decline outright — their branch hands out per-slot blob
-   * records (custom polygons, images, charts) whose refs a copy would
-   * alias.  The rest is what the fill needs: enough slots to pay for the
-   * scans, one contiguous ascending range so each column is a single
-   * `copyWithin` chain, no open transition capture (which diffs per
-   * slot) and no per-element bypasses.
-   *
-   * `bulkEdgeWriters` carries the other half — what the *mappers* allow.
-   *
-   * @param group — the group being applied
-   * @param slots — the run, in apply order
-   * @returns whether the structural preconditions hold
-   */
-  private bulkEdgeRun;
-  /** Whether every slot in the run carries the same masked flag word —
-   * i.e. whether anything reading state alone can vary across it.  True
-   * at rest, which is what a freshly loaded graph is. */
-  private uniformMaskedWord;
-  /**
-   * The narrow writers a bulk edge run needs, or null when the run's
-   * mappers rule the route out (round 67.2).  `bulkEdgeRun` carries the
-   * structural half of the gate.
-   *
-   * The route writes one template slot and fills every
-   * `EDGE_STYLE_COLUMNS` column from it, so it is admissible exactly
-   * when each mapped prop either
-   *
-   *   1. has a `fastStateWriter` — which by round 61's invariant writes
-   *      *every* column that prop affects, so the fill's value for it is
-   *      overwritten per slot; or
-   *   2. reads state flags only, over a run whose masked flag word never
-   *      changes — then its value is the template's for every slot and
-   *      the fill is already right.  This is the clause that matters in
-   *      practice: a freshly loaded graph has nothing selected, so the
-   *      selection affordances this repo's sheets map (`line-opacity`,
-   *      which has no narrow writer and could not have one without the
-   *      whole B1 fold cluster) cost the route nothing.
-   *
-   * Anything else declines and the ordinary per-element loop runs.
-   *
-   * @param group — the group being applied
-   * @param active — the mappers this pass will evaluate
-   * @param uniformState — whether the run's masked flag word is constant
-   * @returns the writers to run per slot, or null to decline
-   */
-  private bulkEdgeWriters;
-  /**
-   * Apply a contiguous edge run from one template slot (round 67.2).
-   *
-   * The template takes the ordinary `write()`, so every side effect the
-   * edge branch has — the arrow-scale and arrow-width meters, the curve
-   * record, the label sidecar, the transition-free channel funnel —
-   * happens exactly as it always did.  `replicateEdgeStyle` then fills
-   * every style-owned column from it, and each remaining slot pays only
-   * its own mapped props (through the narrow writers) plus the per-slot
-   * half of the edge branch.
-   *
-   * Measured on a 464,657-edge fixture: 26 ns per `setScalar` against
-   * 0.1 ns per element for the fill.
-   */
-  private applyBulkEdges;
-  /**
-   * Apply a group whose mappers read only state flags: one record per
-   * distinct flag combination, cached on the def, instead of a program
-   * run per element.
-   *
-   * The cache is unbounded in principle and tiny in practice — its size
-   * is 2^(number of distinct bits the sheet's conditions read), and a
-   * sheet reads one or two.  It lives on the def, so a sheet swap
-   * discards it with the def that built it.
-   */
-  private applyPartitioned;
-  /** The partition record for one masked flag word — cached on the def,
-   * resolved on the first miss (round 57.1). */
-  private partRecordFor;
-  /** Resolve one flag combination into a computed record (cache miss). */
-  private partitionRecord;
-  /**
-   * Re-check live auto-domain extents against the data; returns true when
-   * any moved (the caller escalates to the whole group).  A moved extent
-   * on a GPU-owned program also bumps paintVersion so the runtime repacks
-   * its program uniform and re-evaluates in full.
-   */
-  private checkAutoExtents;
-  /** One def's share of a state flip: the fast diff path, or the
-   * general `refreshGroupDef` wherever that one is correct (see
-   * `refreshState`). */
-  private refreshStateDef;
-  /**
-   * The writers for the channels that differ between two partition
-   * records — cached per unordered pair of masked flag words (the
-   * changed set is symmetric; which record to write is the caller's).
-   * Null when some differing channel has no narrow writer: that pair
-   * takes the full `write()`.
-   */
-  private partitionDiffWriters;
-  private refreshGroupDef;
-  private refreshGroupDefInner;
-  /**
-   * The stored-arrow-bytes truth when the kernel owns edge paint: the base
-   * colour with alpha folded by the (mapped or constant) opacity.  Shapes
-   * are never kernel-owned (mapped shapes demote edge paint to the CPU), so
-   * the computed constants decide the gate.
-   */
-  private foldedArrow;
-  /** One edge prop for a slot: the mapper's value when mapped, else the constant. */
-  private evalEdgeProp;
-  /** Resolved label channels: the sidecar when labelled, else the sheet. */
-  private labelChannels;
-  /**
-   * Defaults + props for one group ('width' is shared; the group's own
-   * default wins).  Mapper specs compile into `mappersOut`; the label
-   * passthrough rides the labelKey channel instead.
-   */
-  private resolveConst;
-  /** Stored-truth readback for the background-image family (15.2). */
-  private readImageProp;
-  /** Write `node.fillColor` (the B1 background-opacity fold). */
-  private writeNodeFillColor;
-  /** Write `node.borderColor` (the B1 border-opacity fold). */
-  private writeNodeBorderColor;
-  /** Write `node.opacity` — under compounds the store folds the
-   * ancestor product itself (round 14.4), so one call is complete. */
-  private writeNodeOpacity;
-  /** Write the `node.overlay` layer record (the A2 opacity fold). */
-  private writeNodeOverlay;
-  /** Write the `node.underlay` layer record (the A2 opacity fold). */
-  private writeNodeUnderlay;
-  /** Write `edge.lineColor` (the B1 line-opacity fold). */
-  private writeEdgeLineColor;
-  /**
-   * The B1 arrow fold: v3's effective arrow opacity is opacity ×
-   * line-opacity.  A 'none' end — or any end of a haystack edge, which
-   * draws no arrows (v3 skips them) — stores NO_ARROW, so the getters
-   * read 'none' (the recorded deviation: v3's pstyle still reports the
-   * declared shape).
-   */
-  private edgeArrowRgba;
-  /** Write `edge.sourceArrow` — `setColor` re-derives the round-56
-   * shows-line bits itself, so one call is complete. */
-  private writeEdgeSourceArrowColor;
-  /** Write `edge.targetArrow` (see the source twin). */
-  private writeEdgeTargetArrowColor;
-  /** Write `edge.midSourceArrow` — `setMidArrow` maintains the live
-   * mid-arrow count, so one call is complete. */
-  private writeEdgeMidSourceArrowColor;
-  /** Write `edge.midTargetArrow` (see the source twin). */
-  private writeEdgeMidTargetArrowColor;
-  /** Write the `edge.overlay` stroke record (A2: stroke = width +
-   * 2·padding, derived here so the layer shaders need no width
-   * binding). */
-  private writeEdgeOverlay;
-  /** Write the `edge.underlay` stroke record (see the overlay twin). */
-  private writeEdgeUnderlay;
-  /**
-   * The narrow writer for one normalized prop, or null when the prop has
-   * cross-channel consequences the writers above cannot carry — geometry
-   * (bb/cull/pick/label anchors), labels, charts, the edge-opacity fold
-   * cluster — in which case a state flip that moves it falls back to the
-   * full `write()` of the target record, byte-for-byte the general
-   * path's behaviour.  The layer props share one writer per record
-   * because they land in one packed store call.
-   */
-  private fastStateWriter;
-  /**
-   * The one channel funnel, wrapped by the transition capture (round
-   * 24.1): an already-styled slot written inside an open capture gets
-   * its tweenable channels snapshotted before and diffed after — the
-   * body itself stays transition-blind.
-   */
-  private write;
-  private writeChannels;
-  /**
-   * The edge channels that land in `EDGE_STYLE_COLUMNS` — every edge
-   * column a styled record fully determines (round 67.2).  Split from
-   * the per-slot half below so the bulk apply can run this once for a
-   * run's template slot and fill the rest of the columns from it, while
-   * still calling `writeEdgePerSlot` for every slot.  One definition,
-   * two callers, as with the round-61 narrow writers.
-   */
-  private writeEdgeColumns;
-  /**
-   * The edge work a column copy cannot carry: the two flag bits (the
-   * flags word holds per-element bits too), the invisibility cascade,
-   * the curve index's own per-slot record, and the label sidecar.  Runs
-   * for every slot on both paths.
-   */
-  private writeEdgePerSlot;
-  /** warn-once flag for the multi-image cap (recorded: 4 per node) */
-  private warnedImageCap;
-  /**
-   * Resolve and store a node's chart record (round 23).  Values come
-   * from the constant list or the `{ data: key }` passthrough (a
-   * per-element array; non-arrays and invalid entries mean no chart);
-   * slices cap at CHART_MAX_SLICES and the running total clamps at 1
-   * (v3's percent semantics — the remainder stays unpainted).  Colors
-   * cycle the palette (category10 by default) and fold chart-opacity
-   * into their alphas (the B1 pattern; the header keeps the exact
-   * opacity for readback).
-   */
-  private writeChart;
-  /** Resolve a node's background-image records and store them (15.2). */
-  private writeImages;
-  /** Resolve an element's label text from its computed channels and store it. */
-  private writeLabel;
 }
 //#endregion
 //#region src/layout/pack.d.mts
@@ -8271,7 +7665,6 @@ declare class Core {
   } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
-  private _recoveringDevice;
   /** resolves once the render pipeline is usable (immediately when headless) */
   ready: Promise<Core>;
   /** true once the render pipeline is usable (immediately when headless) */
@@ -8281,29 +7674,12 @@ declare class Core {
     nodes: (Collection | undefined)[];
     edges: (Collection | undefined)[];
   };
-  private _container;
   private _options;
   private _headlessWidth;
   private _headlessHeight;
-  private _destroyed;
-  private _idCounter;
   private _scratch;
-  private _graphData;
-  private _autolock;
-  private _autoungrabify;
-  private _autounselectify;
-  private _panningEnabled;
-  private _userPanningEnabled;
-  private _zoomingEnabled;
-  private _userZoomingEnabled;
-  private _boxSelectionEnabled;
-  /** box selection considers label boxes too (16.5; default off — v3).
-   * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
-  private _boxSelectionIncludesLabels;
-  private _boxSelectionMode;
   /** round 89: whether — and how — the canvas writes gesture cursors */
   private _pointerCursors;
-  private _selectionType;
   private _multiClickDebounceTime;
   /** round 20.1: the interaction option quartet (v3 defaults) */
   private _wheelSensitivity;
@@ -8311,14 +7687,6 @@ declare class Core {
   private _desktopTapThreshold;
   private _touchTapThreshold;
   private _tapholdDuration;
-  private _batchDepth;
-  private _batchPending;
-  /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
-  private _allCache;
-  /** round 62.6: the whole-graph memo flattened to one field, so the
-   * `elements()` hit is a single load — nulled by
-   * the same push-invalidation as `_allCache` */
-  private _allEles;
   _animations: AnimationManager;
   /**
    * The runs in flight on this instance (round 128): every pending
@@ -8418,9 +7786,6 @@ declare class Core {
    * style refs hold slots and the flush must not straddle a remap.
    */
   _compact(): void;
-  /** Move the interned singleton handles to their elements' new slots
-   * (dead slots' handles drop out of the pool; holders keep dead reads). */
-  private _remapPool;
   /**
    * Open a batch: defer style application until the matching `endBatch()`.
    * Pairs nest — only the outermost `endBatch()` flushes.  Prefer
@@ -8519,31 +7884,6 @@ declare class Core {
    * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void;
-  private _bulkAddInner;
-  /** Per-element `add` for a columnar bulk, nodes before edges. */
-  private _emitBulkAdds;
-  /**
-   * Columnar ingest: store-level bulk adds + one bulk style pass.
-   *
-   * The optional flag overrides come from a converted definition payload
-   * — `locked`, `grabbable` and `pannable` have no column.  They are
-   * written before the style pass, where the def path also has them: a
-   * later write would still be *correct*, since `::locked` and
-   * `::grabbable` are styleable conditions and a condition-flag write
-   * restyles its slot, but it would pay for that restyle.
-   */
-  private _addColumnar;
-  /** Write the def flags the columnar columns cannot carry. */
-  private _applyFlagOverrides;
-  private _columnarRefs;
-  /** Shared add loop: nodes first so edges can reference same-call nodes. */
-  private _addDefs;
-  /**
-   * `_addDefs` over defs already split by group, so the bulk load path
-   * can partition once and hand the same split to whichever route it
-   * takes.
-   */
-  private _addPartition;
   /**
    * Remove elements from the graph.  Removing a node removes its
    * connected edges, and removing a compound parent removes its
@@ -8628,37 +7968,6 @@ declare class Core {
   filter(query: Query | EleFilterFn): Collection;
   $: this['filter'];
   /**
-   * The unfiltered whole-graph collections (`elements()`, `nodes()`,
-   * `edges()` with no query), memoized against the store's structure
-   * epoch (round 34.2).
-   *
-   * These are the calls an app makes in a loop, and each one was an
-   * O(V+E) scan plus a handle intern per element — the whole-graph read
-   * measured 121 µs at 2000 nodes against v3's 18 ns, because v3 hands
-   * back a live internal collection and v4 built a fresh one every
-   * time.  A v4 collection is an immutable snapshot, so the only thing
-   * that can invalidate it is an element entering or leaving the graph,
-   * which is exactly what the epoch counts.  Style, flag, position and
-   * data writes do not move it, and a compaction does — refs would
-   * self-repair anyway (19.3), but the cache drops rather than relying
-   * on that.
-   *
-   * The visible consequence, deliberate: two calls with no structural
-   * change between them now return **the same collection object**
-   * where they used to return two equal ones.  Collections are
-   * immutable, so nothing can observe the difference except identity
-   * itself.
-   */
-  private _allOf;
-  /**
-   * Resolve a whole-graph query.  Structured queries compile to per-group
-   * (mask, want) flag tests answered by one columnar scan — no element
-   * handles, no per-element matching.  Predicate functions materialize
-   * the group(s) and filter per element.  `restrict` narrows the result
-   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
-   */
-  private _query;
-  /**
    * Live, visible elements contained in the model-coordinate box (corners
    * in any order): the box-selection query, answered by one columnar
    * scan.  Nodes count when their bounding box lies fully inside; edges
@@ -8688,8 +7997,6 @@ declare class Core {
    * come through here so they cannot drift apart.
    */
   _elementsInGestureBox(x1: number, y1: number, x2: number, y2: number): Collection;
-  /** Collection of the live slots matching per-group flag tests (null matches nothing). */
-  private _scanCollection;
   /**
    * Listen for events on the core.
    *
@@ -8887,12 +8194,6 @@ declare class Core {
    */
   animation(opts: AnimateOptions): AnimationHandle;
   /**
-   * Resolve `fit`/`center`/`panBy` targets to concrete pan/zoom at
-   * creation time, as v3 does.  Precedence follows v3's override order:
-   * `fit` beats `center` beats `panBy` beats an explicit `pan`.
-   */
-  private _resolveViewportTargets;
-  /**
    * True while the viewport is animating.
    *
    * @returns whether a *viewport* animation (pan/zoom/fit/center) is
@@ -8909,8 +8210,6 @@ declare class Core {
    * @returns this core, for chaining
    */
   stop(jumpToEnd?: boolean): this;
-  /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. */
-  private _afterAnimationTick;
   /**
    * The model-space rectangle currently visible, as
    * `{ x1, y1, x2, y2, w, h }` — the inverse of the pan/zoom transform
@@ -9034,7 +8333,6 @@ declare class Core {
    */
   jpg(options?: ExportOptions): Promise<string | Blob>;
   jpeg: this['jpg'];
-  private _exportImage;
   /**
    * Graph-level data — read all, read one key, or write.  This is a plain
    * object, not a columnar sidecar (which is `ele.data()`).  It **is**
@@ -9076,8 +8374,6 @@ declare class Core {
    * @returns this core, for chaining
    */
   removeScratch(names?: string): this;
-  private _objectAccess;
-  private _objectRemove;
   /**
    * Get or set whether every node is locked (immovable) regardless of its
    * own `locked` flag — the graph-wide override.
@@ -9435,18 +8731,9 @@ declare class Core {
   _stylesDependOnData(group: GroupName, keys: string[]): boolean;
   /** Refresh style channels computed from data() (mapped channels + labels), deferred while batching. */
   _refreshMappedStyles(group: GroupName, slots: number[], keys: string[]): void;
-  /** First style apply for freshly-added slots, deferred while batching. */
-  private _applyStyle;
   _emitOnEle(type: string, ele: Collection, extraParams?: unknown[], props?: Partial<EventProps>): void;
   _hasListeners(type: string): boolean;
   _emitViewportEvents(types: string[]): void;
-  private _boundsOf;
-  /**
-   * A synthetic id for an element added without one.  The prefix read `gpu-`
-   * until round 43 — a leftover the 42.6 rename missed, and a user-visible one,
-   * since it is what `ele.id()` returns.
-   */
-  private _newId;
 }
 //#endregion
 //#region src/columnar.d.mts

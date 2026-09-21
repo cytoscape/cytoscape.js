@@ -2,6 +2,11 @@ import { esc } from '../theme.mjs';
 import { COLUMNS, STATUSES } from './feature-inventory.mjs';
 
 export const FEATURES_CSS = `
+.feature-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0 20px; }
+.feature-button { display: inline-block; padding: 11px 20px; font-size: 15px; font-weight: 600; color: var(--page); background: var(--accent); border-radius: 6px; text-decoration: none; }
+.feature-button:hover { filter: brightness(1.08); }
+.feature-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.feature-composition { color: var(--ink-2); }
 .feature-tools { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 12px; }
 .feature-tools[hidden] { display: none; }
 .feature-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
@@ -59,7 +64,26 @@ export const FEATURES_SCRIPT = `
 })();
 `;
 
+/** Counts rows by kind: one member row is one API function or one style
+ * property; a capability row is a whole feature.  The total is not a measure
+ * of work, so the page says what it is made of. */
+export function summarise(rows) {
+  let api = 0;
+  let style = 0;
+  for (const row of rows) {
+    if (row.Category === 'API') api++;
+    else if (row.Category === 'Style') style++;
+  }
+  return {
+    total: rows.length,
+    api,
+    style,
+    capability: rows.length - api - style,
+  };
+}
+
 export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
+  const sum = summarise(rows);
   const options = (values) =>
     values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
   const reference = (row) => {
@@ -73,9 +97,10 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   };
   return `<h1>V4 feature status</h1>
   <p class="lede">Public APIs, style properties, layouts and capabilities, including v3 gaps and replacements. <strong>V4 is unreleased.</strong> Implemented means available in this prototype, not release-ready.</p>
-  <p>Priority areas appear first: performance, developer experience, Cytoscape Web v2, application workflows and core capabilities. <a href="direction.html">Read the feature-direction review</a> for the reasoning. Proposed rows are suggestions, not roadmap commitments.</p>
-  <p>API rows use <code>eles.</code> for collections, single elements, nodes and edges. Aliases have separate rows; overloads share a row. Comments describe v4 behaviour, not a promise of complete v3 compatibility.</p>
-  <p><a href="features.csv" download="cytoscape-v4-features.csv">Download CSV</a> — the complete inventory, including comments and source references. Maintained with feature changes; the build stamp identifies this snapshot.</p>
+  <p class="feature-actions"><a class="feature-button" href="features.csv" download="cytoscape-v4-features.csv">Download CSV</a><a class="feature-button" href="direction.html">Feature-direction review</a></p>
+  <p class="feature-composition"><strong>${sum.total} rows: ${sum.api} API members, ${sum.style} style properties, ${sum.capability} capabilities.</strong> A member row is one function or one style property; a capability row is a whole feature. The total counts rows, not work.</p>
+  <p>Priority areas appear first: performance, developer experience, Cytoscape Web v2, application workflows and core capabilities; the feature-direction review gives the reasoning. Proposed rows are suggestions, not roadmap commitments.</p>
+  <p>API rows use <code>eles.</code> for collections, single elements, nodes and edges. Aliases have separate rows; overloads share a row. Comments describe v4 behaviour, not a promise of complete v3 compatibility. The CSV download is the complete inventory, including comments and source references; the build stamp identifies this snapshot.</p>
   <details class="feature-legend"><summary>Status definitions</summary><dl>${Object.entries(
     STATUSES,
   )

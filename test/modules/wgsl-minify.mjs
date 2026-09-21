@@ -35,9 +35,18 @@ human wrote.  Three layers of defence, in order of strength:
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
 
-// the seven modules that carry tagged WGSL (see src/render/wgsl.mts)
+// the modules that carry tagged WGSL (see src/render/wgsl.mts); round
+// 130 split `shaders.mts` into `src/render/shaders/`, one file per shader
 const WGSL_FILES = [
-  'src/render/shaders.mts',
+  'src/render/shaders/common.mts',
+  'src/render/shaders/curve.mts',
+  'src/render/shaders/sdf.mts',
+  'src/render/shaders/node.mts',
+  'src/render/shaders/edge.mts',
+  'src/render/shaders/arrow.mts',
+  'src/render/shaders/label.mts',
+  'src/render/shaders/image.mts',
+  'src/render/shaders/chart.mts',
   'src/render/cull.mts',
   'src/render/gpu-force.mts',
   'src/render/gpu-tween.mts',
@@ -259,7 +268,7 @@ describe('wgsl-minify (round 52)', () => {
 
         // a comment that lives inside a tagged literal in source...
         expect(
-          readFileSync(join(root, 'src/render/shaders.mts'), 'utf8'),
+          readFileSync(join(root, 'src/render/shaders/common.mts'), 'utf8'),
         ).to.include('Knuth hash decorrelates');
         // ...must be gone from what ships, while the shader is present
         expect(code, `${bundle} must not carry WGSL comments`).to.not.include(

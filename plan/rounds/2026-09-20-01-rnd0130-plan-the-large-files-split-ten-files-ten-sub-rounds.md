@@ -96,6 +96,24 @@ benchmark rows against the last published run before closing;
 `test:playwright:quiet` after the shader, style, renderer and pointer
 sub-rounds.
 
+### 130.1 — `src/render/shaders/`, carried out (2026-09-20)
+
+`shaders.mts` (5,220 lines) is now a 21-line facade re-exporting the
+seventeen names it exported before, over nine files: `common` (the
+frame struct, `COMMON`, glyphs, boundary, dash — 255 lines), `curve`
+(the bezier and route twins of `curve-geometry`, 823), `sdf` (the
+generated polygon and arrow SDFs, `SDF`, the node perimeter, 920),
+`node` (681), `edge` (864), `arrow` (696), `label` (435), `image` (299),
+`chart` (210).  The one-way composition (`FRAME_STRUCT → COMMON → every
+shader`; fragments → shaders; the three generators → `SDF` and the arrow
+shaders) became sibling imports; `SDF`, `NODE_PERIM_WGSL`, `POLY`,
+`ARROW_POLY`, `ARROW_GAP_WGSL`, `END_WALK_WGSL` gained `export` for it.
+Every literal kept its `wgsl` tag.  `test/modules/wgsl-minify.mjs` lists
+the nine files in `WGSL_FILES` and reads the `Knuth hash decorrelates`
+comment from `shaders/common.mts`.  `build/cytoscape.min.js` is
+byte-identical to the pre-round build (894,905 bytes) — the minifier
+sees the same literals through the re-exports.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

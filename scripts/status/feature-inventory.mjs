@@ -138,7 +138,9 @@ export function apiEntries(model) {
 
 /** Read the explicit v4 read registries and core compiler without importing the library. */
 export function v4StyleNames(root) {
-  const source = readFileSync(join(root, 'src/style.mts'), 'utf8');
+  // the readable-prop registries and the core sheet resolver live in
+  // src/style/tables.mts since round 130 split style.mts
+  const source = readFileSync(join(root, 'src/style/tables.mts'), 'utf8');
   // round 127: the registries name properties through the PROP table
   // (`PROP.BACKGROUND_COLOR`), so resolve each member against the table's
   // own text rather than importing it — the reader stays import-free

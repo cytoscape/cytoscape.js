@@ -161,6 +161,35 @@ write; the extractor's `viaInstance` list is that rule.
 `style.mts`: 9,961 → **790 lines**.  The docs API JSON is identical
 modulo line stamps; the minified bundle is 1.6 kB smaller.
 
+### 130.4 — `src/collection/`, carried out (2026-09-20)
+
+`shared` (the packed ref key, the membership index, the cross-instance
+guard, the filter callback types — 109 lines) by the slicer; then 86
+methods by the extractor into fifteen modules along the section
+banners: `iteration` (189), `filtering` (192), `identity` (205),
+`position` (489), `animation` (98), `data` (169), `style` (212),
+`bounds` (441), `edge-geometry` (226), `state` (59), `manipulation`
+(202), `traversal` (403), `hierarchy` (331), `layout` (244), `degree`
+(80).  Thirty-one private helpers left the class (`_positions`,
+`_shift`, `_goers`, `_dagAllHops`, `_setSelected` …); the public
+members keep signature and doc and delegate through `*Impl` namespace
+imports, the `this`-typed ones with an `as this`; `_first`, `_spawn*`,
+`_liveRefs`, `_keySet` and `_eventRef` stay as methods because
+`src/algorithms/` and `src/layout/` reach them.  Two methods stayed on
+purpose: `data()` and `collection()` branch on `arguments.length` (the
+round-62.6 hot-read shape), which a delegator cannot forward — the
+extractor now refuses any body that reads `arguments`, which is how
+this was found (the weighted-centrality specs read `NaN`).  The 263
+`features.csv` rows re-anchored by line text (195) or by member (68),
+none unresolved.  `scripts/status/feature-inventory.mjs` reads the
+readable-prop registries from `style/tables.mts` (a 130.3 loose end
+`test:modules` caught — `verify` does not run that tier).
+
+`collection.mts`: 6,581 → **3,870 lines**, of which 2,180 were doc
+comments before the round.  The docs API JSON is identical modulo
+line stamps; the d.ts now carries `Query` and `DataCondition` with
+their doc comments; the Node tier is green.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

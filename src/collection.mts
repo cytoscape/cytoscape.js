@@ -5,12 +5,7 @@ import {
   DATA_SOURCE,
   DATA_PARENT,
   DATA_ID,
-  COL,
-  CURVE_MULTI,
-  CURVE_STRAIGHT,
   FLAG_ACTIVE,
-  FLAG_ALIVE,
-  FLAG_CURVED_BOX,
   FLAG_GRABBABLE,
   FLAG_GRABBED,
   FLAG_LOCKED,
@@ -24,15 +19,8 @@ import {
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
-import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
-import type { CurveRoute } from './curve-geometry.mjs';
-import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
-import type { Query } from './matcher.mjs';
-import { testCondition } from './style-scales.mjs';
-import { hasListeners, refQualifier } from './events.mjs';
-import { normalizeProp as normalizeCss } from './style.mjs';
-import { Animation, AnimationHandleImpl } from './animation.mjs';
+import { refQualifier } from './events.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
 import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
@@ -71,7 +59,6 @@ import {
   motifCensusAsync as motifCensusImpl,
 } from './algorithms/index.mjs';
 import type { AlgoRun } from './algorithms/cancel.mjs';
-import { layoutRunOf } from './layout/run-state.mjs';
 import type {
   SearchArgs,
   SearchResult,
@@ -122,113 +109,31 @@ import type {
   MotifCensusOptions,
   MotifCensusResult,
 } from './algorithms/index.mjs';
-import { nodeDims } from './layout/dims.mjs';
 import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { Event } from './event.mjs';
-import { PROP } from './style-props.mjs';
-
-export type EleFilterFn = (
-  ele: Collection,
-  i: number,
-  eles: Collection,
-) => boolean;
-export type ElePositionFn = (
-  ele: Collection,
-  i: number,
-) => Position | false | undefined;
-
-/** A subset criterion: a structured query or a per-element predicate. */
-type FilterLike = Query | EleFilterFn;
-
-// Pack a ref into a single safe integer (group in bit 52, slot in bits 24..51,
-// gen in bits 0..23) for set membership. Avoids the per-element string
-// allocation of refKey() in the hot dedupe and set-operation paths, while still
-// keying on the full {group, slot, gen} identity. Safe for slot < 2^28 and
-// gen < 2^24 — far beyond any practical graph.
-const packRef = (r: Ref): number =>
-  (r.group === GROUP_NODES ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;
-
-/** Model-px style props that renderedStyle() scales by the zoom. */
-const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set([
-  PROP.WIDTH,
-  PROP.HEIGHT,
-  PROP.BORDER_WIDTH,
-  PROP.FONT_SIZE,
-]);
-
-/**
- * Guard for the methods that take another collection (29.3).  v4 has no
- * selector strings, so these take collections — but a v3-style string
- * used to reach the body and either crash with an internal TypeError
- * (`other._refs is not iterable`) or, worse, answer silently: `same('#a')`
- * returned false.
- *
- * @param other — the argument to check
- * @param method — the method name, for the message
- * @throws when `other` is not a collection
- */
-const assertCollection = (other: unknown, method: string, cy?: Core): void => {
-  if (other == null || !Array.isArray((other as Collection)._refs)) {
-    throw new Error(
-      `${method}() takes a collection, not ${
-        typeof other === 'string'
-          ? `the selector string '${other}'`
-          : `a ${other === null ? 'null' : typeof other}`
-      } — ` +
-        `v4 has no selector strings; use cy.$id( id ), a query object like ` +
-        `cy.nodes({ selected: true }), or a predicate`,
-    );
-  }
-
-  // Round 48.4, found by the multi-instance soak. A ref is
-  // `{ group, slot, gen }` and identity keys on those three packed into an
-  // integer — all of which are *per instance*, so the first node of one
-  // graph and the first node of another pack identically. Every method
-  // below then answered as though they were one element: `same()` was true,
-  // `intersection()` returned everything, `difference()` returned nothing,
-  // and `union()` silently dropped the other graph's elements entirely
-  // (two graphs of two nodes united to two).
-  //
-  // A collection belongs to one core — mixing two is not a thing v4 can
-  // represent, since `_refs` are meaningless outside their store — so the
-  // answer is to refuse rather than to invent a cross-instance identity.
-  // That is this repo's rule for the same shape of defect one round over:
-  // round 29.3 added this guard because these twelve methods crashed on a
-  // non-collection *or, in `same()`'s case, quietly returned false, which
-  // reads as working code*. This is that sentence again with a different
-  // wrong answer.
-  if (cy != null && (other as Collection)._cy !== cy) {
-    throw new Error(
-      `${method}() takes a collection from the same instance — element ` +
-        'identity is per instance in v4 (a ref is a slot in *this* store), so ' +
-        'comparing across two cytoscape instances has no meaning',
-    );
-  }
-};
-
-// Round 34.1: a Map from packed key to *first index*, not a Set.  Set
-// membership only ever asks `.has()`, which a Map answers identically,
-// and carrying the index makes `indexOf` O(1) off the same cache
-// instead of a linear scan that re-packs every ref (3.63 µs over a
-// 2000-element collection, against v3's 45 ns).  One cache, two
-// consumers — the shape this codebase reaches for elsewhere.
-const refIndex = (refs: Ref[]): Map<number, number> => {
-  const index = new Map<number, number>();
-
-  for (let i = 0; i < refs.length; i++) {
-    const key = packRef(refs[i]);
-
-    // first index wins: collections are unique by construction, so this
-    // only matters if one ever is not
-    if (!index.has(key)) {
-      index.set(key, i);
-    }
-  }
-
-  return index;
-};
-
+import { packRef, assertCollection, refIndex } from './collection/shared.mjs';
+import type {
+  EleFilterFn,
+  ElePositionFn,
+  FilterLike,
+} from './collection/shared.mjs';
+import * as iterationImpl from './collection/iteration.mjs';
+import * as filteringImpl from './collection/filtering.mjs';
+import * as identityImpl from './collection/identity.mjs';
+import * as positionImpl from './collection/position.mjs';
+import * as animationImpl from './collection/animation.mjs';
+import * as dataImpl from './collection/data.mjs';
+import * as styleImpl from './collection/style.mjs';
+import * as boundsImpl from './collection/bounds.mjs';
+import * as edgeGeometryImpl from './collection/edge-geometry.mjs';
+import * as stateImpl from './collection/state.mjs';
+import * as manipulationImpl from './collection/manipulation.mjs';
+import * as traversalImpl from './collection/traversal.mjs';
+import * as hierarchyImpl from './collection/hierarchy.mjs';
+import * as layoutImpl from './collection/layout.mjs';
+import * as degreeImpl from './collection/degree.mjs';
+export type { EleFilterFn, ElePositionFn } from './collection/shared.mjs';
 /**
  * A v3-style collection over the columnar store: an element is a length-1
  * collection, interned per live slot so `eles[0]`, `forEach` args and
@@ -248,7 +153,8 @@ export class Collection {
   /** the owning store, held directly (round 62.5): every accessor read
    * it through a getter chain, which showed on the nanosecond rows */
   _store: GraphStore;
-  private __refs!: Ref[];
+  /** @internal */
+  __refs!: Ref[];
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch = -1;
   _id: string | undefined;
@@ -578,25 +484,7 @@ export class Collection {
    * @returns the index, or -1 when it is not in this collection
    */
   indexOf(ele: Collection): number {
-    // same-instance collections skip the full guard on one identity
-    // compare (round 62.6); anything else takes the 29.3/48.4 throw
-    if (ele == null || ele._cy !== this._cy) {
-      assertCollection(ele, 'indexOf', this._cy);
-    }
-
-    const ref = ele.__refs[0];
-
-    if (ref == null) {
-      return -1;
-    }
-
-    // isCurrent repairs a forwarded ref in place, so the packed key
-    // below is its current identity without the full getter sync
-    this._store.isCurrent(ref);
-
-    // O(1) off the shared packed-key cache (34.1), which set membership
-    // builds anyway; a linear re-packing scan was 81× v3 here
-    return this._keySet().get(packRef(ref)) ?? -1;
+    return identityImpl.indexOf(this, ele);
   }
 
   /**
@@ -608,32 +496,7 @@ export class Collection {
    * @returns the index, or -1 when absent
    */
   indexOfId(id: string): number {
-    // Lazily-built id → index map, sound for the same reason `_keys`
-    // is: `_refs` is immutable, ids are immutable, and a removed
-    // member's handle keeps its cached `_id` — which is exactly what
-    // the linear scan compared, so the map preserves the
-    // still-answers-for-removed-elements contract round 34.1 kept
-    // this method out of the id index for (round 62.4: the scan read
-    // 0.02× against v3's indexed lookup).
-    let map = this._idIdx;
-
-    if (map == null) {
-      map = new Map();
-
-      for (let i = this.length - 1; i >= 0; i--) {
-        const id0 = this[i]._id;
-
-        if (id0 != null) {
-          map.set(id0, i);
-        }
-      }
-
-      this._idIdx = map;
-    }
-
-    const at = map.get(id);
-
-    return at === undefined ? -1 : at;
+    return identityImpl.indexOfId(this, id);
   }
 
   // -- iteration --
@@ -669,21 +532,7 @@ export class Collection {
    * family's backing (round 62.5).  Internal: never handed out (the
    * public form is toArray(), which copies). */
   _arr(): Collection[] {
-    let arr = this._eles;
-
-    if (arr == null) {
-      const n = this.length;
-
-      arr = new Array(n);
-
-      for (let i = 0; i < n; i++) {
-        arr[i] = this[i];
-      }
-
-      this._eles = arr;
-    }
-
-    return arr;
+    return iterationImpl._arr(this);
   }
 
   /**
@@ -702,27 +551,7 @@ export class Collection {
     fn: (ele: Collection, i: number, eles: Collection) => void | false,
     thisArg?: unknown,
   ): this {
-    const arr = this._arr();
-    const n = arr.length;
-
-    // exit early like v3 when the callback returns false; a plain call when
-    // there is no thisArg, like v3 — rebinding the receiver per element via
-    // fn.call() costs ~2x on large collections
-    if (thisArg == null) {
-      for (let i = 0; i < n; i++) {
-        if (fn(arr[i], i, this) === false) {
-          break;
-        }
-      }
-    } else {
-      for (let i = 0; i < n; i++) {
-        if (fn.call(thisArg, arr[i], i, this) === false) {
-          break;
-        }
-      }
-    }
-
-    return this;
+    return iterationImpl.forEach(this, fn, thisArg) as this;
   }
 
   declare each: this['forEach'];
@@ -747,23 +576,7 @@ export class Collection {
    * @returns the sub-range as a new collection
    */
   slice(start: number = 0, end: number = this.length): Collection {
-    if (start < 0) {
-      start = this.length + start;
-    }
-    if (end < 0) {
-      end = this.length + end;
-    }
-
-    // the _refs getter syncs the compaction epoch first, so the copied
-    // refs and handles are current together (round 62.4)
-    const refs = this._refs.slice(start, end);
-    const handles: Collection[] = new Array(refs.length);
-
-    for (let i = 0; i < refs.length; i++) {
-      handles[i] = this[start + i];
-    }
-
-    return new Collection(this._cy, refs, { unique: true, handles });
+    return iterationImpl.slice(this, start, end);
   }
 
   /**
@@ -776,21 +589,7 @@ export class Collection {
    * @returns a new, sorted collection
    */
   sort(sortFn: (a: Collection, b: Collection) => number): Collection {
-    if (typeof sortFn !== 'function') {
-      return this;
-    }
-
-    const sorted = this.toArray().sort(sortFn);
-    // the sorted handles are this collection's own interned singletons,
-    // so they pass straight through as the new collection's handles —
-    // no per-element re-validation or dedupe (round 62.5)
-    const refs: Ref[] = new Array(sorted.length);
-
-    for (let i = 0; i < sorted.length; i++) {
-      refs[i] = sorted[i]._refs[0];
-    }
-
-    return new Collection(this._cy, refs, { unique: true, handles: sorted });
+    return iterationImpl.sort(this, sortFn);
   }
 
   /**
@@ -832,21 +631,7 @@ export class Collection {
     fn: (ele: Collection, i: number, eles: Collection) => T,
     thisArg?: unknown,
   ): T[] {
-    const arr = this._arr();
-    const n = arr.length;
-    const array: T[] = new Array(n);
-
-    if (thisArg == null) {
-      for (let i = 0; i < n; i++) {
-        array[i] = fn(arr[i], i, this);
-      }
-    } else {
-      for (let i = 0; i < n; i++) {
-        array[i] = fn.call(thisArg, arr[i], i, this);
-      }
-    }
-
-    return array;
+    return iterationImpl.map(this, fn, thisArg);
   }
 
   /**
@@ -857,20 +642,7 @@ export class Collection {
    * @returns true when at least one element matches
    */
   some(fn: EleFilterFn, thisArg?: unknown): boolean {
-    const arr = this._arr();
-
-    for (let i = 0; i < arr.length; i++) {
-      const ret =
-        thisArg == null
-          ? fn(arr[i], i, this)
-          : fn.call(thisArg, arr[i], i, this);
-
-      if (ret) {
-        return true;
-      }
-    }
-
-    return false;
+    return iterationImpl.some(this, fn, thisArg);
   }
 
   /**
@@ -882,18 +654,7 @@ export class Collection {
    * @returns true when all elements match
    */
   every(fn: EleFilterFn, thisArg?: unknown): boolean {
-    for (let i = 0; i < this.length; i++) {
-      const ret =
-        thisArg == null
-          ? fn(this[i], i, this)
-          : fn.call(thisArg, this[i], i, this);
-
-      if (!ret) {
-        return false;
-      }
-    }
-
-    return true;
+    return iterationImpl.every(this, fn, thisArg);
   }
 
   // -- identity --
@@ -927,35 +688,7 @@ export class Collection {
    *   import form is not in v4
    */
   json(): Record<string, unknown> | undefined {
-    const ref = this._first();
-
-    if (ref == null) {
-      return undefined;
-    }
-
-    const group = this._group ?? ref.group;
-    const data = (this.data() as Record<string, unknown>) ?? { id: this.id() };
-    const json: Record<string, unknown> = {
-      group,
-      data,
-      removed: this.removed(),
-      selected: this.selected(),
-      selectable: this.selectable(),
-      locked: this._hasBit(FLAG_LOCKED), // the node's own flag, not autolock's
-      // the raw grabbable field, not the pannable-overridden getter (as in v3 json)
-      grabbable: this._hasBit(FLAG_GRABBABLE),
-      pannable: this.pannable(),
-      classes: '',
-    };
-
-    if (group === GROUP_NODES) {
-      json.position = (this.position() as Position | undefined) ?? {
-        x: 0,
-        y: 0,
-      };
-    }
-
-    return json;
+    return identityImpl.json(this);
   }
 
   /**
@@ -1011,21 +744,9 @@ export class Collection {
     return this._isLoop(false);
   }
 
-  private _isLoop(wantLoop: boolean): boolean {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return false;
-    }
-
-    const endpoints = this._store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const isLoop = endpoints[ref.slot * 2] === endpoints[ref.slot * 2 + 1];
-
-    return wantLoop ? isLoop : !isLoop;
+  /** @internal */
+  _isLoop(wantLoop: boolean): boolean {
+    return identityImpl._isLoop(this, wantLoop);
   }
 
   /**
@@ -1066,25 +787,7 @@ export class Collection {
    * @returns true when the element sets are equal
    */
   same(other: Collection): boolean {
-    assertCollection(other, 'same', this._cy);
-
-    if (this === other) {
-      return true;
-    }
-    if (this.length !== other.length) {
-      return false;
-    }
-
-    const keys = this._keySet();
-    const or = other._refs;
-
-    for (let i = 0; i < or.length; i++) {
-      if (!keys.has(packRef(or[i]))) {
-        return false;
-      }
-    }
-
-    return true;
+    return identityImpl.same(this, other);
   }
 
   /**
@@ -1094,22 +797,7 @@ export class Collection {
    * @returns true when the sets intersect
    */
   anySame(other: Collection): boolean {
-    assertCollection(other, 'anySame', this._cy);
-
-    if (this === other) {
-      return this.length > 0;
-    }
-
-    const keys = this._keySet();
-    const or = other._refs;
-
-    for (let i = 0; i < or.length; i++) {
-      if (keys.has(packRef(or[i]))) {
-        return true;
-      }
-    }
-
-    return false;
+    return identityImpl.anySame(this, other);
   }
 
   /**
@@ -1119,25 +807,7 @@ export class Collection {
    * @returns true when `other` is contained
    */
   contains(other: Collection): boolean {
-    assertCollection(other, 'contains', this._cy);
-
-    if (this === other) {
-      return true;
-    }
-    if (other.length > this.length) {
-      return false;
-    }
-
-    const keys = this._keySet();
-    const or = other._refs;
-
-    for (let i = 0; i < or.length; i++) {
-      if (!keys.has(packRef(or[i]))) {
-        return false;
-      }
-    }
-
-    return true;
+    return identityImpl.contains(this, other);
   }
 
   declare has: this['contains'];
@@ -1260,17 +930,7 @@ export class Collection {
    * @returns a new collection
    */
   symmetricDifference(other: Collection): Collection {
-    assertCollection(other, 'symmetricDifference', this._cy);
-
-    const otherEles = other;
-    const mine = this._keySet();
-    const theirs = otherEles._keySet();
-
-    // the two parts are disjoint by construction, so the result is unique
-    return this._spawnUnique([
-      ...this._refs.filter((ref) => !theirs.has(packRef(ref))),
-      ...otherEles._refs.filter((ref) => !mine.has(packRef(ref))),
-    ]);
+    return filteringImpl.symmetricDifference(this, other);
   }
 
   declare symdiff: this['symmetricDifference'];
@@ -1293,86 +953,7 @@ export class Collection {
    *   silently match everything
    */
   filter(criterion: FilterLike, thisArg?: unknown): Collection {
-    // the result is a subset of this collection's (already unique) refs,
-    // and the handles the predicate was just called with are exactly what
-    // re-interning each kept ref would return — so pass them through the
-    // slice path (round 62.4's `handles`) instead of paying `_eleFromRef`
-    // per kept element.  Round 113.2: `nodes().filter( fn )` at 2,000
-    // nodes went 127 → 107 µs through the bundle (v3: 249).
-    if (typeof criterion === 'function') {
-      const refs: Ref[] = [];
-      const handles: Collection[] = [];
-      const n = this.length;
-
-      for (let i = 0; i < n; i++) {
-        const ele = this[i];
-        const include =
-          thisArg == null
-            ? criterion(ele, i, this)
-            : criterion.call(thisArg, ele, i, this);
-
-        if (include) {
-          refs.push(this._refs[i]);
-          handles.push(ele);
-        }
-      }
-
-      return new Collection(this._cy, refs, { handles });
-    }
-
-    // structured query: test each ref against its group's (mask, want)
-    // directly on the flags column — no per-ref handles or closures
-    const store = this._store;
-    const plan = compileQuery(criterion);
-    const nodeTest = plan.nodes;
-    const edgeTest = plan.edges;
-    const nodeGen = store.nodes.gen;
-    const edgeGen = store.edges.gen;
-    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
-    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
-    const dataConds = plan.data;
-    const refs: Ref[] = [];
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-      const isNode = ref.group === GROUP_NODES;
-      const test = isNode ? nodeTest : edgeTest;
-
-      if (test == null) {
-        continue;
-      }
-
-      if ((isNode ? nodeGen : edgeGen)[ref.slot] !== ref.gen) {
-        continue;
-      } // stale
-
-      const flags = (isNode ? nodeFlags : edgeFlags)[ref.slot];
-
-      if ((flags & test.mask) !== test.want) {
-        continue;
-      }
-
-      if (dataConds != null) {
-        let pass = true;
-
-        for (const cond of dataConds) {
-          if (
-            !testCondition(cond, store.data.get(ref.group, ref.slot, cond.key))
-          ) {
-            pass = false;
-            break;
-          }
-        }
-
-        if (!pass) {
-          continue;
-        }
-      }
-
-      refs.push(ref);
-    }
-
-    return this._spawnUnique(refs);
+    return filteringImpl.filter(this, criterion, thisArg);
   }
 
   /**
@@ -1452,23 +1033,7 @@ export class Collection {
     right: Collection;
     both: Collection;
   } {
-    assertCollection(other, 'diff', this._cy);
-
-    const otherColl = other;
-    const mine = this._keySet();
-    const theirs = otherColl._keySet();
-
-    return {
-      left: this._spawnUnique(
-        this._refs.filter((ref) => !theirs.has(packRef(ref))),
-      ),
-      right: this._spawnUnique(
-        otherColl._refs.filter((ref) => !mine.has(packRef(ref))),
-      ),
-      both: this._spawnUnique(
-        this._refs.filter((ref) => theirs.has(packRef(ref))),
-      ),
-    };
+    return filteringImpl.diff(this, other);
   }
 
   /**
@@ -1483,13 +1048,7 @@ export class Collection {
     fn: (acc: T, ele: Collection, i: number, eles: Collection) => T,
     initial: T,
   ): T {
-    let val = initial;
-
-    for (let i = 0; i < this.length; i++) {
-      val = fn(val, this[i], i, this);
-    }
-
-    return val;
+    return filteringImpl.reduce(this, fn, initial);
   }
 
   /**
@@ -1522,27 +1081,13 @@ export class Collection {
     return this._extremum(valFn, thisArg, -1);
   }
 
-  private _extremum(
+  /** @internal */
+  _extremum(
     valFn: (ele: Collection, i: number, eles: Collection) => number,
     thisArg: unknown,
     sign: 1 | -1,
   ): { value: number; ele: Collection | undefined } {
-    let best = sign * -Infinity;
-    let bestEle: Collection | undefined;
-
-    for (let i = 0; i < this.length; i++) {
-      const val =
-        thisArg == null
-          ? valFn(this[i], i, this)
-          : valFn.call(thisArg, this[i], i, this);
-
-      if (sign * val > sign * best) {
-        best = val;
-        bestEle = this[i];
-      }
-    }
-
-    return { value: best, ele: bestEle };
+    return filteringImpl._extremum(this, valFn, thisArg, sign);
   }
 
   // -- position and dimensions --
@@ -1590,40 +1135,17 @@ export class Collection {
   declare modelPosition: this['position'];
   declare point: this['position'];
 
-  private _positionImpl(
+  /** @internal */
+  _positionImpl(
     dim: string | Position | undefined,
     value: number | undefined,
     silent: boolean,
   ): Position | number | undefined | this {
-    // getter forms
-    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
-      const ref = this._refs[0];
-      const store = this._store;
-
-      if (ref == null || ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        return undefined;
-      }
-
-      // parent positions are derived: settle pending auto-bounds first
-      if (store.hasCompounds()) {
-        store.flushDerived();
-      }
-
-      // the hot cache (round 62.5): no Map hop at all on the array the
-      // most-read accessor in the API reads
-      const xy = store.nodePositions();
-      const slot = ref.slot;
-      const pos = { x: xy[slot * 2], y: xy[slot * 2 + 1] };
-
-      return typeof dim === 'string' ? pos[dim as 'x' | 'y'] : pos;
-    }
-
-    // setter forms
-    if (typeof dim === 'string') {
-      return this._positions(dim === 'x' ? { x: value } : { y: value }, silent);
-    }
-
-    return this._positions(dim, silent);
+    return positionImpl._positionImpl(this, dim, value, silent) as
+      | Position
+      | number
+      | undefined
+      | this;
   }
 
   /**
@@ -1685,24 +1207,7 @@ export class Collection {
    *   `promise`/`pause`/`resume`/`reverse`
    */
   animate(opts: AnimateOptions): this {
-    // start directly rather than through the handle: the chaining form
-    // never exposes the promise, so play()'s per-call Promise + resolver
-    // would be pure allocation here (round 62.4)
-    const cy = this._cy;
-
-    const ani = new Animation(
-      cy._store,
-      null,
-      this._liveRefs(),
-      false,
-      opts,
-      cy._styleEngine,
-    );
-
-    ani.lockAll = cy.autolock() === true;
-    cy._animations.start(ani);
-
-    return this;
+    return animationImpl.animate(this, opts) as this;
   }
 
   /**
@@ -1713,19 +1218,7 @@ export class Collection {
    * @returns the handle; nothing runs until `play()`
    */
   animation(opts: AnimateOptions): AnimationHandle {
-    const cy = this._cy;
-    const ani = new Animation(
-      cy._store,
-      null,
-      this._liveRefs(),
-      false,
-      opts,
-      cy._styleEngine,
-    );
-
-    ani.lockAll = cy.autolock() === true;
-
-    return new AnimationHandleImpl(cy._animations, ani);
+    return animationImpl.animation(this, opts);
   }
 
   /**
@@ -1759,21 +1252,7 @@ export class Collection {
    *   are, and not whether the viewport is (that is `cy.animated()`)
    */
   animated(): boolean {
-    const mgr = this._cy._animations;
-
-    // nothing running anywhere answers without touching refs — the
-    // common case for a UI polling animation state (round 62.4)
-    if (!mgr.anyRunning()) {
-      return false;
-    }
-
-    for (const ref of this._refs) {
-      if (mgr.isAnimating(ref)) {
-        return true;
-      }
-    }
-
-    return false;
+    return animationImpl.animated(this);
   }
 
   /**
@@ -1790,168 +1269,9 @@ export class Collection {
     return this;
   }
 
-  private _positions(
-    pos: Partial<Position> | ElePositionFn,
-    silent: boolean,
-  ): this {
-    const store = this._store;
-    const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
-
-    // a locked node holds its position against every API-tier write
-    // (114.3 — v3's rule, and what locked() always promised); autolock
-    // locks them all
-    if (this._cy.autolock() === true) {
-      return this;
-    }
-
-    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
-
-    // constant (possibly partial) object: direct columnar write — no
-    // per-element handles, callbacks, or Position allocations
-    if (typeof pos !== 'function') {
-      const x = pos.x ?? null;
-      const y = pos.y ?? null;
-
-      if (x == null && y == null) {
-        return this;
-      }
-
-      const slots: number[] = [];
-      const emitIdx: number[] | null = wantEmit ? [] : null;
-
-      for (let i = 0; i < this.length; i++) {
-        const ref = this._refs[i];
-
-        if (
-          ref.group !== GROUP_NODES ||
-          !store.isCurrent(ref) ||
-          (flags[ref.slot] & FLAG_LOCKED) !== 0
-        ) {
-          continue;
-        }
-
-        slots.push(ref.slot);
-
-        if (emitIdx != null) {
-          emitIdx.push(i);
-        }
-      }
-
-      store.setPositionsConst(slots, x, y);
-
-      if (emitIdx != null) {
-        for (const i of emitIdx) {
-          this._cy._emitOnEle('position', this[i]);
-        }
-
-        this._emitSubtreePositions(emitIdx);
-      }
-
-      return this;
-    }
-
-    const posCol = store.column(COL.NODE_POSITION) as Float32Array;
-    const slots: number[] = [];
-    const xy: number[] = [];
-    const emitIdx: number[] | null = wantEmit ? [] : null;
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (
-        ref.group !== GROUP_NODES ||
-        !store.isCurrent(ref) ||
-        (flags[ref.slot] & FLAG_LOCKED) !== 0
-      ) {
-        continue;
-      }
-
-      const p = pos(this[i], i);
-
-      if (p == null || (p as unknown) === false) {
-        continue;
-      }
-
-      // a partial object (e.g. { y: 3 }) leaves the omitted axis unchanged,
-      // matching v3's position() merge semantics
-      const pp = p as { x?: number; y?: number };
-      const px = pp.x ?? posCol[ref.slot * 2];
-      const py = pp.y ?? posCol[ref.slot * 2 + 1];
-
-      slots.push(ref.slot);
-      xy.push(px, py);
-
-      if (emitIdx != null) {
-        emitIdx.push(i);
-      }
-    }
-
-    store.setPositions(slots, xy);
-
-    if (emitIdx != null) {
-      for (const i of emitIdx) {
-        this._cy._emitOnEle('position', this[i]);
-      }
-
-      this._emitSubtreePositions(emitIdx);
-    }
-
-    return this;
-  }
-
-  /**
-   * v3 parity: descendants moved along by a parent's position write emit
-   * 'position' too — once each (members that already emitted are skipped).
-   * Only called when position listeners exist.
-   */
-  private _emitSubtreePositions(emitIdx: number[]): void {
-    const store = this._store;
-
-    if (!store.hasCompounds()) {
-      return;
-    }
-
-    const emitted = new Set<number>();
-
-    for (const i of emitIdx) {
-      const ref = this._refs[i];
-
-      if (ref.group === GROUP_NODES) {
-        emitted.add(ref.slot);
-      }
-    }
-
-    for (const i of emitIdx) {
-      const ref = this._refs[i];
-
-      if (
-        ref.group !== GROUP_NODES ||
-        !store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
-      ) {
-        continue;
-      }
-
-      const stack: number[] = [...store.childrenOf(ref.slot)];
-
-      while (stack.length > 0) {
-        const s = stack.pop() as number;
-
-        // a locked descendant stayed, and its subtree with it (116.3):
-        // nothing moved there, so nothing to announce
-        if (store.hasFlag(GROUP_NODES, s, FLAG_LOCKED)) {
-          continue;
-        }
-
-        for (const kid of store.childrenOf(s)) {
-          stack.push(kid);
-        }
-
-        if (!emitted.has(s)) {
-          emitted.add(s);
-          this._cy._emitOnEle('position', this._cy._ele(GROUP_NODES, s));
-        }
-      }
-    }
+  /** @internal */
+  _positions(pos: Partial<Position> | ElePositionFn, silent: boolean): this {
+    return positionImpl._positions(this, pos, silent) as this;
   }
 
   /**
@@ -1977,96 +1297,13 @@ export class Collection {
     return this._shift(dim, value, true);
   }
 
-  private _shift(
+  /** @internal */
+  _shift(
     dim: string | Position,
     value: number | undefined,
     silent: boolean,
   ): this {
-    const dx =
-      typeof dim === 'string'
-        ? dim === 'x'
-          ? (value as number)
-          : 0
-        : dim.x || 0;
-    const dy =
-      typeof dim === 'string'
-        ? dim === 'y'
-          ? (value as number)
-          : 0
-        : dim.y || 0;
-
-    if (dx === 0 && dy === 0) {
-      return this;
-    }
-
-    // a locked node holds against a shift as against any write (114.3)
-    if (this._cy.autolock() === true) {
-      return this;
-    }
-
-    // direct columnar offset — no callbacks or per-element Position objects
-    const store = this._store;
-    const wantEmit = !silent && hasListeners(this._cy._emitter, 'position');
-    const slots: number[] = [];
-    const emitIdx: number[] | null = wantEmit ? [] : null;
-    const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
-
-    // v3's shift dedupe: an element whose ancestor is also shifted is
-    // skipped — the ancestor's subtree shift moves it exactly once
-    const inSet: Set<number> | null = store.hasCompounds() ? new Set() : null;
-
-    if (inSet != null) {
-      for (const ref of this._refs) {
-        if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
-          inSet.add(ref.slot);
-        }
-      }
-    }
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (
-        ref.group !== GROUP_NODES ||
-        !store.isCurrent(ref) ||
-        (flags[ref.slot] & FLAG_LOCKED) !== 0
-      ) {
-        continue;
-      }
-
-      if (inSet != null) {
-        let ancestorInSet = false;
-
-        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
-          if (inSet.has(p)) {
-            ancestorInSet = true;
-            break;
-          }
-        }
-
-        if (ancestorInSet) {
-          continue;
-        }
-      }
-
-      slots.push(ref.slot);
-
-      if (emitIdx != null) {
-        emitIdx.push(i);
-      }
-    }
-
-    store.shiftPositions(slots, dx, dy);
-
-    if (emitIdx != null) {
-      for (const i of emitIdx) {
-        this._cy._emitOnEle('position', this[i]);
-      }
-
-      this._emitSubtreePositions(emitIdx);
-    }
-
-    return this;
+    return positionImpl._shift(this, dim, value, silent) as this;
   }
 
   /**
@@ -2083,65 +1320,11 @@ export class Collection {
     dim?: string | Position,
     value?: number,
   ): Position | number | undefined | this {
-    const store = this._store;
-
-    if (!store.hasCompounds()) {
-      return this._positionImpl(dim, value, false);
-    }
-
-    // getter forms
-    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
-      const pos = this._positionImpl(undefined, undefined, false) as
-        | Position
-        | undefined;
-
-      if (pos == null) {
-        return undefined;
-      }
-
-      const origin = this._relOrigin(this._refs[0]);
-      const rel = { x: pos.x - origin.x, y: pos.y - origin.y };
-
-      return typeof dim === 'string' ? rel[dim as 'x' | 'y'] : rel;
-    }
-
-    // setter forms: model = parent origin + rel, resolved per element
-    if (typeof dim === 'string') {
-      return this._positions((ele) => {
-        const prev = ele.relativePosition() as Position;
-        const origin = ele._relOrigin(ele._refs[0]);
-        const rx = dim === 'x' ? (value as number) : prev.x;
-        const ry = dim === 'y' ? (value as number) : prev.y;
-
-        return { x: origin.x + rx, y: origin.y + ry };
-      }, false);
-    }
-
-    return this._positions((ele) => {
-      const origin = ele._relOrigin(ele._refs[0]);
-
-      return {
-        x: origin.x + (dim as Position).x,
-        y: origin.y + (dim as Position).y,
-      };
-    }, false);
-  }
-
-  /** The immediate parent's position ({0, 0} for orphans); flushes first. */
-  private _relOrigin(ref: Ref): Position {
-    const store = this._store;
-
-    store.flushDerived();
-
-    const p = store.parentOf(ref.slot);
-
-    if (p < 0) {
-      return { x: 0, y: 0 };
-    }
-
-    const xy = store.column(COL.NODE_POSITION) as Float32Array;
-
-    return { x: xy[p * 2], y: xy[p * 2 + 1] };
+    return positionImpl.relativePosition(this, dim, value) as
+      | Position
+      | number
+      | undefined
+      | this;
   }
 
   declare relativePoint: this['relativePosition'];
@@ -2162,39 +1345,11 @@ export class Collection {
     dim?: string | Position,
     value?: number,
   ): Position | number | undefined | this {
-    const zoom = this._cy.zoom() as number;
-    const pan = this._cy.pan() as Position;
-
-    // getter forms
-    if (dim === undefined || (typeof dim === 'string' && value === undefined)) {
-      const pos = this.position() as Position | undefined;
-
-      if (pos == null) {
-        return undefined;
-      }
-
-      const rendered = { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
-
-      return typeof dim === 'string' ? rendered[dim as 'x' | 'y'] : rendered;
-    }
-
-    // setter forms: rendered → model
-    const toModel = (rx: number, ry: number): Position => ({
-      x: (rx - pan.x) / zoom,
-      y: (ry - pan.y) / zoom,
-    });
-
-    if (typeof dim === 'string') {
-      return this._positions((ele) => {
-        const prev = ele.renderedPosition() as Position;
-        const rx = dim === 'x' ? (value as number) : prev.x;
-        const ry = dim === 'y' ? (value as number) : prev.y;
-
-        return toModel(rx, ry);
-      }, false);
-    }
-
-    return this._positions(toModel(dim.x, dim.y), false);
+    return positionImpl.renderedPosition(this, dim, value) as
+      | Position
+      | number
+      | undefined
+      | this;
   }
 
   declare renderedPoint: this['renderedPosition'];
@@ -2213,15 +1368,7 @@ export class Collection {
    * @see Collection#outerWidth to include the border
    */
   width(): number | undefined {
-    const ref = this._first();
-
-    if (ref == null || !this._store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    return ref.group === GROUP_NODES
-      ? this._nodeDim(ref, 0)
-      : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
+    return positionImpl.width(this);
   }
 
   /**
@@ -2238,37 +1385,7 @@ export class Collection {
    * @returns the height, or undefined when empty or removed
    */
   height(): number | undefined {
-    const ref = this._first();
-
-    if (ref == null || !this._store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    return ref.group === GROUP_NODES
-      ? this._nodeDim(ref, 1)
-      : (this._store.column(COL.EDGE_WIDTH) as Float32Array)[ref.slot * 2];
-  }
-
-  /** A node's core width/height: for parents the column stores the
-   * padded/drawn box (auto-bounds, round 14.3), so the readback
-   * subtracts the padding — v3's autoWidth/autoHeight. */
-  private _nodeDim(ref: Ref, axis: 0 | 1): number {
-    const store = this._store;
-
-    if (
-      store.hasCompounds() &&
-      store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
-    ) {
-      store.flushDerived();
-
-      const size = store.column(COL.NODE_SIZE) as Float32Array;
-
-      // the per-axis sums, so asymmetric per-side padding (85.4)
-      // still reads back the true core size
-      return size[ref.slot * 2 + axis] - store.paddingSumsOf(ref.slot)[axis];
-    }
-
-    return (store.column(COL.NODE_SIZE) as Float32Array)[ref.slot * 2 + axis];
+    return positionImpl.height(this);
   }
 
   /**
@@ -2394,72 +1511,9 @@ export class Collection {
     return this._setData(patch);
   }
 
-  private _setData(patch: Record<string, unknown>): this {
-    const store = this._store;
-    const cy = this._cy;
-    const keys = Object.keys(patch);
-    const wantEmit = hasListeners(cy._emitter, 'data');
-    // a data write can only change computed style through a mapper (or a
-    // mapped label) on one of the written keys — decided once per group,
-    // not per element
-    const touched: Record<GroupName, number[] | null> = {
-      nodes: cy._stylesDependOnData(GROUP_NODES, keys) ? [] : null,
-      edges: cy._stylesDependOnData(GROUP_EDGES, keys) ? [] : null,
-    };
-
-    for (const k of keys) {
-      if (k === DATA_ID) {
-        throw new Error(`Can not change the immutable data field 'id'`);
-      }
-    }
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (!store.isCurrent(ref)) {
-        continue;
-      }
-
-      for (const k of keys) {
-        if (
-          ref.group === GROUP_EDGES &&
-          (k === DATA_SOURCE || k === DATA_TARGET)
-        ) {
-          throw new Error(
-            `Can not change the immutable data field '${k}' of an edge`,
-          );
-        }
-
-        if (ref.group === GROUP_NODES && k === DATA_PARENT) {
-          throw new Error(
-            `Can not change the immutable data field 'parent' of a node; reparent with move()`,
-          );
-        }
-
-        store.setData(ref.group, ref.slot, k, patch[k]);
-      }
-
-      touched[ref.group]?.push(ref.slot);
-    }
-
-    // mapped style refreshes before emits so data listeners observe fresh state
-    for (const group of [GROUP_NODES, GROUP_EDGES] as const) {
-      const slots = touched[group];
-
-      if (slots != null && slots.length > 0) {
-        cy._refreshMappedStyles(group, slots, keys);
-      }
-    }
-
-    if (wantEmit) {
-      for (let i = 0; i < this.length; i++) {
-        if (store.isCurrent(this._refs[i])) {
-          cy._emitOnEle('data', this[i]);
-        }
-      }
-    }
-
-    return this;
+  /** @internal */
+  _setData(patch: Record<string, unknown>): this {
+    return dataImpl._setData(this, patch) as this;
   }
 
   /**
@@ -2469,31 +1523,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   removeData(names?: string): this {
-    const store = this._store;
-    const requested =
-      names == null ? null : names.split(/\s+/).filter((n) => n !== '');
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (!store.isCurrent(ref)) {
-        continue;
-      }
-
-      const keys =
-        requested ?? Object.keys(store.data.object(ref.group, ref.slot));
-      const patch: Record<string, unknown> = {};
-
-      for (const k of keys) {
-        patch[k] = undefined;
-      }
-
-      if (Object.keys(patch).length > 0) {
-        this[i]._setData(patch);
-      }
-    }
-
-    return this;
+    return dataImpl.removeData(this, names) as this;
   }
 
   declare attr: this['data'];
@@ -2515,31 +1545,7 @@ export class Collection {
   scratch(
     ...args: [] | [string] | [string, unknown] | [Record<string, unknown>]
   ): unknown {
-    const [ns, value] = args;
-
-    // whole-object getter
-    if (args.length === 0) {
-      return this[0]?._scratch ?? {};
-    }
-
-    // single-namespace getter
-    if (typeof ns === 'string' && args.length === 1) {
-      return this[0]?._scratch?.[ns];
-    }
-
-    const patch: Record<string, unknown> =
-      typeof ns === 'string'
-        ? { [ns]: value }
-        : (ns as Record<string, unknown>);
-
-    for (let i = 0; i < this.length; i++) {
-      const ele = this[i];
-
-      ele._scratch ??= {};
-      Object.assign(ele._scratch, patch);
-    }
-
-    return this;
+    return dataImpl.scratch(this, ...args);
   }
 
   /**
@@ -2550,21 +1556,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   removeScratch(namespace?: string): this {
-    for (let i = 0; i < this.length; i++) {
-      const ele = this[i];
-
-      if (ele._scratch == null) {
-        continue;
-      }
-
-      if (namespace == null) {
-        ele._scratch = {};
-      } else {
-        delete ele._scratch[namespace];
-      }
-    }
-
-    return this;
+    return dataImpl.removeScratch(this, namespace) as this;
   }
 
   // -- style (read-only) --
@@ -2614,38 +1606,7 @@ export class Collection {
    */
   style(props: Record<string, unknown>): this;
   style(name?: string | Record<string, unknown>, value?: unknown): unknown {
-    const objectForm = name != null && typeof name !== 'string';
-
-    if (value !== undefined || objectForm) {
-      const props = objectForm
-        ? (name as Record<string, unknown>)
-        : { [name as string]: value };
-      const engine = this._cy.style();
-      const store = this._store;
-
-      for (let i = 0; i < this.length; i++) {
-        const ele = this[i];
-        const ref = ele.__refs[0];
-
-        if (ref == null || !store.isCurrent(ref)) {
-          continue;
-        }
-
-        engine.setBypass(ref, ele.id() as string, props);
-      }
-
-      return this;
-    }
-
-    const ref = this._first();
-
-    if (ref == null || !this._store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    const engine = this._cy.style();
-
-    return name == null ? engine.readProps(ref) : engine.readProp(ref, name);
+    return styleImpl.style(this, name, value);
   }
 
   declare css: this['style'];
@@ -2660,21 +1621,7 @@ export class Collection {
    * @returns this collection, for chaining
    */
   removeStyle(name?: string): this {
-    const engine = this._cy.style();
-    const store = this._store;
-
-    for (let i = 0; i < this.length; i++) {
-      const ele = this[i];
-      const ref = ele.__refs[0];
-
-      if (ref == null || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      engine.removeBypass(ref, ele.id() as string, name);
-    }
-
-    return this;
+    return styleImpl.removeStyle(this, name) as this;
   }
 
   declare removeCss: this['removeStyle'];
@@ -2687,29 +1634,7 @@ export class Collection {
    * @returns the rendered-space value, or the whole group's props
    */
   renderedStyle(name?: string): unknown {
-    const value = name == null ? this.style() : this.style(name);
-
-    if (value === undefined) {
-      return undefined;
-    }
-
-    const zoom = this._cy.zoom() as number;
-
-    if (name != null) {
-      return RENDERED_LENGTH_PROPS.has(normalizeCss(name))
-        ? (value as number) * zoom
-        : value;
-    }
-
-    const props = value as Record<string, string | number>;
-
-    for (const prop of RENDERED_LENGTH_PROPS) {
-      if (typeof props[prop] === 'number') {
-        props[prop] = (props[prop] as number) * zoom;
-      }
-    }
-
-    return props;
+    return styleImpl.renderedStyle(this, name);
   }
 
   declare renderedCss: this['renderedStyle'];
@@ -2723,17 +1648,7 @@ export class Collection {
    * @throws if the prop resolves to a colour or a keyword rather than a number
    */
   numericStyle(name: string): number | undefined {
-    const value = this.style(name);
-
-    if (value === undefined) {
-      return undefined;
-    }
-
-    if (typeof value !== 'number') {
-      throw new Error(`The style property '${name}' is not numeric`);
-    }
-
-    return value;
+    return styleImpl.numericStyle(this, name);
   }
 
   /** The rendered opacity: a node's own opacity times its ancestors'
@@ -2745,27 +1660,7 @@ export class Collection {
    *   `style('opacity')` reads; undefined when empty or removed
    */
   effectiveOpacity(): number | undefined {
-    const ref = this.__refs[0];
-    const store = this._store;
-
-    if (ref == null || !store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    if (ref.group === GROUP_NODES && store.hasCompounds()) {
-      return (store.column(COL.NODE_OPACITY) as Float32Array)[ref.slot];
-    }
-
-    // stored truth is the effective value on the flat path; the one case
-    // the column cannot answer is a kernel-owned opacity mapper, whose
-    // stored bytes go stale (round 62.6 — the same gate readProp keeps)
-    if (!this._cy._styleEngine.ownsProp(ref.group, PROP.OPACITY)) {
-      return ref.group === GROUP_NODES
-        ? (store.nodes.column(COL.NODE_OPACITY) as Float32Array)[ref.slot]
-        : (store.edges.column(COL.EDGE_OPACITY) as Float32Array)[ref.slot];
-    }
-
-    return this.numericStyle(PROP.OPACITY);
+    return styleImpl.effectiveOpacity(this);
   }
 
   /**
@@ -2832,21 +1727,7 @@ export class Collection {
    *   undefined when the collection is empty
    */
   padding(): number | undefined {
-    const ref = this._first();
-
-    if (ref == null) {
-      return undefined;
-    }
-
-    if (
-      ref.group !== GROUP_NODES ||
-      !this._store.isCurrent(ref) ||
-      !this._store.hasCompounds()
-    ) {
-      return 0;
-    }
-
-    return this._store.paddingOf(ref.slot);
+    return styleImpl.padding(this);
   }
 
   /**
@@ -2874,27 +1755,9 @@ export class Collection {
     return this._paddedDim(1);
   }
 
-  private _paddedDim(axis: 0 | 1): number | undefined {
-    const ref = this._first();
-
-    if (ref == null || !this._store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    if (
-      ref.group === GROUP_NODES &&
-      this._store.hasCompounds() &&
-      this._store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
-    ) {
-      this._store.flushDerived();
-
-      // the size column stores the padded/drawn box for parents
-      return (this._store.column(COL.NODE_SIZE) as Float32Array)[
-        ref.slot * 2 + axis
-      ];
-    }
-
-    return axis === 0 ? this.width() : this.height();
+  /** @internal */
+  _paddedDim(axis: 0 | 1): number | undefined {
+    return styleImpl._paddedDim(this, axis);
   }
 
   /**
@@ -2920,16 +1783,9 @@ export class Collection {
     return h == null ? undefined : h + this._borderWidth();
   }
 
-  private _borderWidth(): number {
-    const ref = this._first();
-
-    if (ref == null || ref.group !== GROUP_NODES) {
-      return 0;
-    }
-
-    return (this._store.column(COL.NODE_BORDER_WIDTH) as Float32Array)[
-      ref.slot
-    ];
+  /** @internal */
+  _borderWidth(): number {
+    return styleImpl._borderWidth(this);
   }
 
   /**
@@ -2956,159 +1812,7 @@ export class Collection {
     w: number;
     h: number;
   } {
-    // labels join the box by default (round 16.4); unknown keys throw —
-    // a typo must not silently change fit semantics
-    if (options != null) {
-      for (const key of Object.keys(options)) {
-        if (key !== 'includeLabels') {
-          throw new Error(
-            `Unknown boundingBox() option '${key}'; supported: includeLabels`,
-          );
-        }
-      }
-    }
-
-    const includeLabels = options?.includeLabels !== false;
-    const store = this._store;
-    let x1 = Infinity,
-      y1 = Infinity,
-      x2 = -Infinity,
-      y2 = -Infinity;
-
-    const expandPoint = (
-      x: number,
-      y: number,
-      halfW: number = 0,
-      halfH: number = 0,
-    ): void => {
-      x1 = Math.min(x1, x - halfW);
-      y1 = Math.min(y1, y - halfH);
-      x2 = Math.max(x2, x + halfW);
-      y2 = Math.max(y2, y + halfH);
-    };
-
-    const size = store.column(COL.NODE_SIZE) as Float32Array;
-    const border = store.column(COL.NODE_BORDER_WIDTH) as Float32Array;
-    const ghost = store.column(COL.NODE_GHOST) as Float32Array;
-    const bGeom = store.column(COL.NODE_BORDER_GEOM) as Uint32Array;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-    store.flushDerived(); // parent auto-bounds + curved-edge params derive below
-
-    // the space tier (round 22): display-hidden elements take no space
-    // (v3's rule; the whole-graph fit scan already excluded them), while
-    // `visibility: 'hidden'` elements keep theirs — the mask is VISIBLE,
-    // not DRAWN.  An edge needs both endpoints shown (the drawn-edge rule).
-    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
-    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
-    const shownMask = FLAG_ALIVE | FLAG_VISIBLE;
-    const shown = (flags: Uint32Array, slot: number): boolean =>
-      (flags[slot] & shownMask) === shownMask;
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group === GROUP_NODES && !shown(nodeFlags, ref.slot)) {
-        continue;
-      }
-
-      if (
-        ref.group === GROUP_EDGES &&
-        !(
-          shown(edgeFlags, ref.slot) &&
-          shown(nodeFlags, endpoints[ref.slot * 2]) &&
-          shown(nodeFlags, endpoints[ref.slot * 2 + 1])
-        )
-      ) {
-        continue;
-      }
-
-      if (ref.group === GROUP_NODES) {
-        const slot = ref.slot;
-        let hw = size[slot * 2] / 2 + border[slot] / 2;
-        let hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
-
-        // an outline ring grows the box (round 13 B5)
-        if (bGeom[slot * 4 + 2] >>> 24 !== 0) {
-          const wo = bGeom[slot * 4 + 3];
-          const extra = (wo >>> 16) / 256 / 2 + (wo & 0xffff) / 256;
-
-          hw += extra;
-          hh += extra;
-        }
-
-        expandPoint(store.getX(slot), store.getY(slot), hw, hh);
-
-        // a ghost duplicates the body at the offset (round 13 A1)
-        if (ghost[slot * 4 + 3] !== 0) {
-          expandPoint(
-            store.getX(slot) + ghost[slot * 4],
-            store.getY(slot) + ghost[slot * 4 + 1],
-            hw,
-            hh,
-          );
-        }
-
-        // the node label's laid box at its anchor (round 16.4)
-        if (includeLabels) {
-          const lb = store.nodeLabelBox(slot);
-
-          if (lb != null) {
-            expandPoint(store.getX(slot) + lb.x1, store.getY(slot) + lb.y1);
-            expandPoint(store.getX(slot) + lb.x2, store.getY(slot) + lb.y2);
-          }
-        }
-      } else {
-        // curved edges use the exact lazy bound (memoized flattened
-        // polyline); straight edges span their endpoint centers
-        const curveBB = store.curveBBAt(ref.slot);
-        const hay = curveBB == null ? store.haystackPointsAt(ref.slot) : null;
-
-        if (curveBB != null) {
-          expandPoint(curveBB.x1, curveBB.y1);
-          expandPoint(curveBB.x2, curveBB.y2);
-        } else if (hay != null) {
-          // haystack edges (12c) span their offset points (v3's allpts)
-          expandPoint(hay.sx, hay.sy);
-          expandPoint(hay.tx, hay.ty);
-        } else {
-          expandPoint(
-            store.getX(endpoints[ref.slot * 2]),
-            store.getY(endpoints[ref.slot * 2]),
-          );
-          expandPoint(
-            store.getX(endpoints[ref.slot * 2 + 1]),
-            store.getY(endpoints[ref.slot * 2 + 1]),
-          );
-        }
-
-        // edge labels (16.4): the conservative block-covering radius
-        // about both endpoints (the anchor lies on the drawn path) — a
-        // recorded approximation; node labels are exact above
-        if (includeLabels) {
-          const r = store.edgeLabelSlack(ref.slot);
-
-          if (r > 0) {
-            expandPoint(
-              store.getX(endpoints[ref.slot * 2]),
-              store.getY(endpoints[ref.slot * 2]),
-              r,
-              r,
-            );
-            expandPoint(
-              store.getX(endpoints[ref.slot * 2 + 1]),
-              store.getY(endpoints[ref.slot * 2 + 1]),
-              r,
-              r,
-            );
-          }
-        }
-      }
-    }
-
-    if (x1 === Infinity) {
-      return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 };
-    }
-
-    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+    return boundsImpl.boundingBox(this, options);
   }
 
   /**
@@ -3126,89 +1830,7 @@ export class Collection {
     w: number;
     h: number;
   } {
-    const store = this._store;
-    let x1 = Infinity,
-      y1 = Infinity,
-      x2 = -Infinity,
-      y2 = -Infinity;
-
-    const expand = (
-      bx1: number,
-      by1: number,
-      bx2: number,
-      by2: number,
-    ): void => {
-      x1 = Math.min(x1, bx1);
-      y1 = Math.min(y1, by1);
-      x2 = Math.max(x2, bx2);
-      y2 = Math.max(y2, by2);
-    };
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group === GROUP_NODES) {
-        const lb = store.nodeLabelBox(ref.slot);
-
-        if (lb != null) {
-          const x = store.getX(ref.slot);
-          const y = store.getY(ref.slot);
-
-          expand(x + lb.x1, y + lb.y1, x + lb.x2, y + lb.y2);
-        }
-
-        continue;
-      }
-
-      // edge mid-labels: the block about the drawn midpoint; end labels
-      // ride the conservative endpoint radius
-      const entry = store.labelAt(ref.slot, GROUP_EDGES);
-      const dims = store.labelDimsAt(ref.slot, GROUP_EDGES);
-
-      if (entry != null && dims != null) {
-        const m = this._cy._ele(ref.group, ref.slot).midpoint() ?? {
-          x: 0,
-          y: 0,
-        };
-        const dx = entry.marginX;
-        const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
-
-        expand(
-          m.x + dx - dims.w / 2 - pad,
-          m.y + entry.anchorY - pad,
-          m.x + dx + dims.w / 2 + pad,
-          m.y + entry.anchorY + dims.h + pad,
-        );
-      }
-
-      const r = Math.max(
-        store.labelDimsAt(ref.slot, 'edgeSource') != null
-          ? store.edgeLabelSlack(ref.slot)
-          : 0,
-        store.labelDimsAt(ref.slot, 'edgeTarget') != null
-          ? store.edgeLabelSlack(ref.slot)
-          : 0,
-      );
-
-      if (r > 0) {
-        const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-        for (let end = 0; end < 2; end++) {
-          const node = endpoints[ref.slot * 2 + end];
-
-          expand(
-            store.getX(node) - r,
-            store.getY(node) - r,
-            store.getX(node) + r,
-            store.getY(node) + r,
-          );
-        }
-      }
-    }
-
-    if (x1 === Infinity) {
-      return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 };
-    }
-
-    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+    return boundsImpl.labelBoundingBox(this);
   }
 
   /**
@@ -3226,15 +1848,7 @@ export class Collection {
     w: number;
     h: number;
   } {
-    const bb = this.boundingBox(options);
-    const zoom = this._cy.zoom() as number;
-    const pan = this._cy.pan() as Position;
-    const x1 = bb.x1 * zoom + pan.x;
-    const y1 = bb.y1 * zoom + pan.y;
-    const x2 = bb.x2 * zoom + pan.x;
-    const y2 = bb.y2 * zoom + pan.y;
-
-    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+    return boundsImpl.renderedBoundingBox(this, options);
   }
 
   declare renderedBoundingbox: this['renderedBoundingBox'];
@@ -3292,60 +1906,7 @@ export class Collection {
    *   lease's staleness, like the endpoints it derives from
    */
   midpoint(): Position | undefined {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return undefined;
-    }
-
-    const ev = this._store.curveEvalAt(ref.slot);
-
-    if (ev != null) {
-      return { x: ev.mx, y: ev.my };
-    }
-
-    const route = this._store.curveRouteAt(ref.slot);
-
-    if (route != null) {
-      const m = { x: 0, y: 0, tx: 0, ty: 0 };
-
-      routeMidpoint(route, m);
-
-      return { x: m.x, y: m.y };
-    }
-
-    // haystack edges (12c): the offset-point average, v3's rs.mid
-    const hay = this._store.haystackPointsAt(ref.slot);
-
-    if (hay != null) {
-      return { x: (hay.sx + hay.tx) / 2, y: (hay.sy + hay.ty) / 2 };
-    }
-
-    // Straight edges: v3's `storeAllpts` does *not* answer the chord
-    // midpoint here, it answers
-    //
-    //     ( startX + endX + arrowStartX + arrowEndX ) / 4
-    //
-    // — the mean of the two gap-shortened line ends and the two
-    // spacing-shortened arrow points.  With the same head at both ends
-    // the shortenings cancel and it lands back on the chord midpoint,
-    // which is why this read as correct for four rounds; give the ends
-    // different heads and it stops cancelling.  It matters beyond the
-    // accessor: this is where a mid-arrow sits and an edge label
-    // anchors.
-    const line = this._store.straightLineEndAt(ref.slot, 0);
-    const lineEnd = this._store.straightLineEndAt(ref.slot, 1);
-    const arrow = this._store.straightEndpointAt(ref.slot, 0);
-    const arrowEnd = this._store.straightEndpointAt(ref.slot, 1);
-
-    return {
-      x: (line.x + lineEnd.x + arrow.x + arrowEnd.x) / 4,
-      y: (line.y + lineEnd.y + arrow.y + arrowEnd.y) / 4,
-    };
+    return edgeGeometryImpl.midpoint(this);
   }
 
   /**
@@ -3422,17 +1983,7 @@ export class Collection {
    * @internal
    */
   isBundledBezier(): boolean {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return false;
-    }
-
-    return this._store.curveStyleAt(ref.slot).style === CURVE_STYLE_BEZIER;
+    return edgeGeometryImpl.isBundledBezier(this);
   }
 
   /** The edge's curve control points (model coords): one for a bundled
@@ -3446,36 +1997,7 @@ export class Collection {
    *   chord)
    */
   controlPoints(): Position[] | undefined {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return undefined;
-    }
-
-    const ev = this._store.curveEvalAt(ref.slot);
-
-    if (ev != null) {
-      return ev.c1x === ev.c2x && ev.c1y === ev.c2y
-        ? [{ x: ev.c1x, y: ev.c1y }]
-        : [
-            { x: ev.c1x, y: ev.c1y },
-            { x: ev.c2x, y: ev.c2y },
-          ];
-    }
-
-    const route = this._store.curveRouteAt(ref.slot);
-
-    // a straight-styled edge with manual endpoints derives as the
-    // MULTI n = 0 chord (12c) — it has no control points
-    if (route == null || route.kind !== CURVE_MULTI || route.n === 0) {
-      return undefined;
-    }
-
-    return this._routeInteriorPoints(route);
+    return edgeGeometryImpl.controlPoints(this);
   }
 
   /**
@@ -3503,23 +2025,7 @@ export class Collection {
    *   for every other family
    */
   segmentPoints(): Position[] | undefined {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return undefined;
-    }
-
-    const route = this._store.curveRouteAt(ref.slot);
-
-    if (route == null || route.kind === CURVE_MULTI) {
-      return undefined;
-    }
-
-    return this._routeInteriorPoints(route);
+    return edgeGeometryImpl.segmentPoints(this);
   }
 
   /**
@@ -3538,71 +2044,14 @@ export class Collection {
     return pts.map((p) => this._toRenderedPoint(p) as Position);
   }
 
-  private _routeInteriorPoints(route: CurveRoute): Position[] {
-    const pts: Position[] = [];
-
-    for (let i = 0; i < route.n; i++) {
-      pts.push({ x: route.qx[i + 1], y: route.qy[i + 1] });
-    }
-
-    return pts;
+  /** @internal */
+  _endpointPoint(which: 0 | 1): Position | undefined {
+    return edgeGeometryImpl._endpointPoint(this, which);
   }
 
-  private _endpointPoint(which: 0 | 1): Position | undefined {
-    const ref = this._first();
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_EDGES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return undefined;
-    }
-
-    // v3 answers its *arrow* points here (`rs.arrowStartX/Y`), which sit
-    // `spacing` behind the boundary — not the drawn line's ends, which
-    // sit `gap` behind it.  The evaluators carry both since round 56.
-    const ev = this._store.curveEvalAt(ref.slot);
-
-    if (ev != null) {
-      return which === 0 ? { x: ev.asx, y: ev.asy } : { x: ev.aex, y: ev.aey };
-    }
-
-    const route = this._store.curveRouteAt(ref.slot);
-
-    if (route != null) {
-      return which === 0
-        ? { x: route.asx, y: route.asy }
-        : { x: route.aex, y: route.aey };
-    }
-
-    // haystack edges (12c): the offset points — v3's haystackPts
-    const hay = this._store.haystackPointsAt(ref.slot);
-
-    if (hay != null) {
-      return which === 0 ? { x: hay.sx, y: hay.sy } : { x: hay.tx, y: hay.ty };
-    }
-
-    // straight edges (round 55): the node boundary along the chord, which
-    // is both what v3 answers and what v4's arrow shader draws to.  This
-    // used to return the node *centre* — off by a whole node radius, and
-    // visible to anyone using renderedTargetEndpoint() to place an
-    // overlay.  v3 additionally pulls the point back by the arrow shape's
-    // `spacing`, which is zero for every head except `tee`; that term
-    // lands with the gap/trim port, so that the accessor never describes
-    // a point the renderer does not draw.
-    return this._store.straightEndpointAt(ref.slot, which);
-  }
-
-  private _toRenderedPoint(pos: Position | undefined): Position | undefined {
-    if (pos == null) {
-      return undefined;
-    }
-
-    const zoom = this._cy.zoom() as number;
-    const pan = this._cy.pan() as Position;
-
-    return { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
+  /** @internal */
+  _toRenderedPoint(pos: Position | undefined): Position | undefined {
+    return edgeGeometryImpl._toRenderedPoint(this, pos);
   }
 
   // -- selection --
@@ -3787,11 +2236,10 @@ export class Collection {
   /** show/hide (round 14.4): the store records the own state in
    * FLAG_SELF_HIDDEN and recomputes the effective FLAG_VISIBLE over
    * affected subtrees — descendants gate on hidden ancestors, and
-   * hidden children leave their ancestors' auto-bounds. */
-  private _setVisibility(on: boolean): this {
-    this._store.setVisibility(this._refs, on);
-
-    return this;
+   * hidden children leave their ancestors' auto-bounds.
+   * @internal */
+  _setVisibility(on: boolean): this {
+    return stateImpl._setVisibility(this, on) as this;
   }
 
   /**
@@ -3911,54 +2359,19 @@ export class Collection {
     return this._setBit(FLAG_PANNABLE, false);
   }
 
-  private _hasBit(bit: number): boolean {
-    const ref = this._first();
-
-    return (
-      ref != null &&
-      this._store.isCurrent(ref) &&
-      this._store.hasFlag(ref.group, ref.slot, bit)
-    );
+  /** @internal */
+  _hasBit(bit: number): boolean {
+    return stateImpl._hasBit(this, bit);
   }
 
-  private _setBit(bit: number, on: boolean): this {
-    this._store.flagRefs(this._refs, bit, on);
-
-    return this;
+  /** @internal */
+  _setBit(bit: number, on: boolean): this {
+    return stateImpl._setBit(this, bit, on) as this;
   }
 
-  private _setSelected(selected: boolean): this {
-    const cy = this._cy;
-    const changedIdx: number[] = [];
-
-    this._store.flagRefs(
-      this._refs,
-      FLAG_SELECTED,
-      selected,
-      FLAG_SELECTABLE,
-      changedIdx,
-    );
-
-    if (changedIdx.length === 0) {
-      return this;
-    }
-
-    // The restyle a selection change may need is not here: `flagRefs`
-    // notifies the store's `onStateChange`, which the core wires to the
-    // round-61 state refresh (the partition-record diff; refreshMapped
-    // before that).  Round 57.1 wrote that hook by hand at this one
-    // site and then wanted it at six more (lock, grab, activate,
-    // selectify, grabify, hover), which is the argument for it living at
-    // the flag choke point instead.
-    const type = selected ? 'select' : 'unselect';
-
-    if (cy._hasListeners(type)) {
-      for (const i of changedIdx) {
-        cy._emitOnEle(type, this[i]);
-      }
-    }
-
-    return this;
+  /** @internal */
+  _setSelected(selected: boolean): this {
+    return stateImpl._setSelected(this, selected) as this;
   }
 
   // -- graph manipulation --
@@ -3975,85 +2388,7 @@ export class Collection {
    *   so only their cached `id()`/`group()` still read
    */
   remove(): Collection {
-    const cy = this._cy;
-    const store = this._store;
-
-    // build the closure: requested live elements + their descendants
-    // (compound removal cascades, v3) + incident edges of removed nodes
-    const edgeHandles: Collection[] = [];
-    const nodeHandles: Collection[] = [];
-    const seen = new Set<number>();
-
-    const addEdge = (ele: Collection): void => {
-      const key = packRef(ele._refs[0]);
-
-      if (!seen.has(key)) {
-        seen.add(key);
-        edgeHandles.push(ele);
-      }
-    };
-
-    const addNode = (ele: Collection): void => {
-      const key = packRef(ele._refs[0]);
-
-      if (seen.has(key)) {
-        return;
-      }
-
-      seen.add(key);
-      nodeHandles.push(ele);
-
-      const slot = ele._refs[0].slot;
-
-      for (const edgeSlot of store.adj.connectedEdges(slot)) {
-        addEdge(cy._ele(GROUP_EDGES, edgeSlot));
-      }
-
-      for (const childSlot of store.childrenOf(slot)) {
-        addNode(cy._ele(GROUP_NODES, childSlot));
-      }
-    };
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (!store.isCurrent(ref)) {
-        continue;
-      }
-
-      if (ref.group === GROUP_EDGES) {
-        addEdge(this[i]);
-      } else {
-        addNode(this[i]);
-      }
-    }
-
-    // children before parents: the store refuses to remove a node whose
-    // children are still alive (depths are strictly increasing down a chain)
-    nodeHandles.sort(
-      (a, b) => store.depthOf(b._refs[0].slot) - store.depthOf(a._refs[0].slot),
-    );
-
-    // edges first, then nodes; emit remove per element after the store mutation
-    for (const edge of edgeHandles) {
-      store.removeEdge(edge._refs[0].slot);
-    }
-
-    for (const node of nodeHandles) {
-      store.removeNode(node._refs[0].slot);
-    }
-
-    for (const ele of [...edgeHandles, ...nodeHandles]) {
-      cy._emitOnEle('remove', ele);
-    }
-
-    const removed = this._spawn(
-      [...edgeHandles, ...nodeHandles].map((ele) => ele._refs[0]),
-    );
-
-    cy._maybeCompact(); // the auto dead-slot trigger's safe boundary (19.5)
-
-    return removed;
+    return manipulationImpl.remove(this);
   }
 
   /**
@@ -4075,95 +2410,7 @@ export class Collection {
     target?: string;
     parent?: string | null;
   }): this {
-    const store = this._store;
-
-    if (opts.parent !== undefined) {
-      let parentSlot = -1;
-
-      if (opts.parent != null) {
-        const parentRef = store.lookup(String(opts.parent));
-
-        if (parentRef == null || parentRef.group !== GROUP_NODES) {
-          return this;
-        } // v3: silent no-op
-
-        parentSlot = parentRef.slot;
-      }
-
-      const wantEmit =
-        hasListeners(this._cy._emitter, 'moveout') ||
-        hasListeners(this._cy._emitter, 'move');
-
-      for (let i = 0; i < this.length; i++) {
-        const ref = this._refs[i];
-
-        if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-          continue;
-        }
-        if (store.parentOf(ref.slot) === parentSlot) {
-          continue;
-        }
-
-        // a cyclic assignment is dropped by setParent (with its warning);
-        // it gets no events since nothing changes
-        const cyclic =
-          parentSlot >= 0 &&
-          (parentSlot === ref.slot || store.isAncestorOf(ref.slot, parentSlot));
-
-        if (!cyclic && wantEmit) {
-          this._cy._emitOnEle('moveout', this[i]);
-        }
-
-        store.setParent(ref.slot, parentSlot);
-
-        if (!cyclic && wantEmit) {
-          this._cy._emitOnEle('move', this[i]);
-        }
-      }
-
-      return this;
-    }
-
-    if (opts.source == null && opts.target == null) {
-      return this;
-    }
-
-    const newSource =
-      opts.source != null ? this._resolveNode(opts.source, DATA_SOURCE) : null;
-    const newTarget =
-      opts.target != null ? this._resolveNode(opts.target, DATA_TARGET) : null;
-
-    for (let i = 0; i < this.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-      store.moveEdge(
-        ref.slot,
-        newSource ?? endpoints[ref.slot * 2],
-        newTarget ?? endpoints[ref.slot * 2 + 1],
-      );
-
-      if (hasListeners(this._cy._emitter, 'move')) {
-        this._cy._emitOnEle('move', this[i]);
-      }
-    }
-
-    return this;
-  }
-
-  private _resolveNode(id: string, role: string): number {
-    const ref = this._store.lookup(id);
-
-    if (ref == null || ref.group !== GROUP_NODES) {
-      throw new Error(`Can not move edge to nonexistant ${role} node '${id}'`);
-    }
-
-    return ref.slot;
+    return manipulationImpl.move(this, opts) as this;
   }
 
   // -- traversal --
@@ -4204,42 +2451,14 @@ export class Collection {
     return this._endpoints(1);
   }
 
-  private _endpoint(which: 0 | 1): Collection {
-    const ref = this._first();
-
-    if (ref == null || ref.group !== GROUP_EDGES) {
-      return this._spawn([]);
-    }
-
-    // the lean accessor: source()/target() lost to v3 on the per-call
-    // column spec walk alone (round 62.4)
-    const endpoints = this._store.edgeEndpoints();
-
-    return this._cy._ele(GROUP_NODES, endpoints[ref.slot * 2 + which]);
+  /** @internal */
+  _endpoint(which: 0 | 1): Collection {
+    return traversalImpl._endpoint(this, which);
   }
 
-  private _endpoints(which: 0 | 1): Collection {
-    const store = this._store;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const nodeSlot = endpoints[ref.slot * 2 + which];
-
-      if (!seen.has(nodeSlot)) {
-        seen.add(nodeSlot);
-        refs.push(store.ref(GROUP_NODES, nodeSlot));
-      }
-    }
-
-    return this._spawnLive(refs);
+  /** @internal */
+  _endpoints(which: 0 | 1): Collection {
+    return traversalImpl._endpoints(this, which);
   }
 
   /**
@@ -4252,35 +2471,7 @@ export class Collection {
    * @returns the incident edges
    */
   connectedEdges(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const adj = store.adj;
-    const list = this._refs; // hoisted: the getter syncs per call (62.6)
-    const egen = store.edges.gen;
-    const slots: number[] = [];
-    const seen = new Set<number>(); // edge slots: dedupes loops and shared edges alike
-
-    for (let i = 0; i < list.length; i++) {
-      const ref = list[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      // reads the CSR rows in place — no per-node subarray views (62.6)
-      adj.appendIncident(ref.slot, seen, slots);
-    }
-
-    const refs: Ref[] = new Array(slots.length);
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      refs[i] = { group: GROUP_EDGES, slot, gen: egen[slot] };
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return traversalImpl.connectedEdges(this, criterion);
   }
 
   /**
@@ -4291,36 +2482,7 @@ export class Collection {
    * @returns the endpoint nodes
    */
   connectedNodes(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const list = this._refs; // hoisted: the getter syncs per call (62.6)
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-
-    for (let i = 0; i < list.length; i++) {
-      const ref = list[i];
-
-      if (ref.group !== GROUP_EDGES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const source = endpoints[ref.slot * 2];
-      const target = endpoints[ref.slot * 2 + 1];
-
-      if (!seen.has(source)) {
-        seen.add(source);
-        refs.push(store.ref(GROUP_NODES, source));
-      }
-
-      if (!seen.has(target)) {
-        seen.add(target);
-        refs.push(store.ref(GROUP_NODES, target));
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return traversalImpl.connectedNodes(this, criterion);
   }
 
   /**
@@ -4349,46 +2511,9 @@ export class Collection {
     return this._goers('in', criterion);
   }
 
-  private _goers(direction: 'out' | 'in', criterion?: FilterLike): Collection {
-    const store = this._store;
-    const adj = store.adj;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const refs: Ref[] = [];
-    // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1
-    const seen = new Set<number>();
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const edgeSlots =
-        direction === 'out' ? adj.outEdges(ref.slot) : adj.inEdges(ref.slot);
-
-      for (let j = 0; j < edgeSlots.length; j++) {
-        const edgeSlot = edgeSlots[j];
-        const otherSlot =
-          direction === 'out'
-            ? endpoints[edgeSlot * 2 + 1]
-            : endpoints[edgeSlot * 2];
-
-        if (!seen.has(edgeSlot * 2 + 1)) {
-          seen.add(edgeSlot * 2 + 1);
-          refs.push(store.ref(GROUP_EDGES, edgeSlot));
-        }
-
-        if (!seen.has(otherSlot * 2)) {
-          seen.add(otherSlot * 2);
-          refs.push(store.ref(GROUP_NODES, otherSlot));
-        }
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+  /** @internal */
+  _goers(direction: 'out' | 'in', criterion?: FilterLike): Collection {
+    return traversalImpl._goers(this, direction, criterion);
   }
 
   /**
@@ -4402,57 +2527,7 @@ export class Collection {
    * @see Collection#closedNeighborhood to include these nodes
    */
   neighborhood(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const adj = store.adj;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const refs: Ref[] = [];
-    // packed (group, slot) keys; the collection's own live elements are
-    // pre-seeded so the open neighborhood excludes them during the walk
-    const seen = new Set<number>();
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (store.isCurrent(ref)) {
-        seen.add(ref.group === GROUP_NODES ? ref.slot * 2 : ref.slot * 2 + 1);
-      }
-    }
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const out = adj.outEdges(ref.slot);
-      const inn = adj.inEdges(ref.slot);
-
-      for (let pass = 0; pass < 2; pass++) {
-        const edgeSlots = pass === 0 ? out : inn;
-
-        for (let j = 0; j < edgeSlots.length; j++) {
-          const edgeSlot = edgeSlots[j];
-          const source = endpoints[edgeSlot * 2];
-          const target = endpoints[edgeSlot * 2 + 1];
-          const otherSlot = source === ref.slot ? target : source;
-
-          if (!seen.has(edgeSlot * 2 + 1)) {
-            seen.add(edgeSlot * 2 + 1);
-            refs.push(store.ref(GROUP_EDGES, edgeSlot));
-          }
-
-          if (!seen.has(otherSlot * 2)) {
-            seen.add(otherSlot * 2);
-            refs.push(store.ref(GROUP_NODES, otherSlot));
-          }
-        }
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return traversalImpl.neighborhood(this, criterion);
   }
 
   declare openNeighborhood: this['neighborhood'];
@@ -4480,28 +2555,7 @@ export class Collection {
    * @returns the immediate parents
    */
   parent(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const p = store.parentOf(ref.slot);
-
-      if (p >= 0 && !seen.has(p)) {
-        seen.add(p);
-        refs.push(store.ref(GROUP_NODES, p));
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return hierarchyImpl.parent(this, criterion);
   }
 
   /**
@@ -4512,38 +2566,7 @@ export class Collection {
    * @returns the ancestors, nearest first
    */
   parents(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-    let level: number[] = [];
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
-        level.push(ref.slot);
-      }
-    }
-
-    while (level.length > 0) {
-      const next: number[] = [];
-
-      for (const slot of level) {
-        const p = store.parentOf(slot);
-
-        if (p >= 0 && !seen.has(p)) {
-          seen.add(p);
-          refs.push(store.ref(GROUP_NODES, p));
-          next.push(p);
-        }
-      }
-
-      level = next;
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return hierarchyImpl.parents(this, criterion);
   }
 
   declare ancestors: this['parents'];
@@ -4555,28 +2578,7 @@ export class Collection {
    * @returns the children
    */
   children(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      for (const child of store.childrenOf(ref.slot)) {
-        if (!seen.has(child)) {
-          seen.add(child);
-          refs.push(store.ref(GROUP_NODES, child));
-        }
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return hierarchyImpl.children(this, criterion);
   }
 
   /**
@@ -4587,44 +2589,7 @@ export class Collection {
    * @returns the descendants
    */
   descendants(criterion?: FilterLike): Collection {
-    const store = this._store;
-    const refs: Ref[] = [];
-    const seen = new Set<number>();
-    const stack: number[] = [];
-
-    const pushChildren = (slot: number): void => {
-      const kids = store.childrenOf(slot);
-
-      for (let j = kids.length - 1; j >= 0; j--) {
-        stack.push(kids[j]);
-      }
-    };
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      pushChildren(ref.slot);
-
-      while (stack.length > 0) {
-        const slot = stack.pop() as number;
-
-        if (seen.has(slot)) {
-          continue;
-        }
-
-        seen.add(slot);
-        refs.push(store.ref(GROUP_NODES, slot));
-        pushChildren(slot);
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return hierarchyImpl.descendants(this, criterion);
   }
 
   /**
@@ -4660,28 +2625,9 @@ export class Collection {
     return this._byParentedness(true, criterion);
   }
 
-  private _byParentedness(
-    wantChild: boolean,
-    criterion?: FilterLike,
-  ): Collection {
-    const store = this._store;
-    const refs: Ref[] = [];
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      if (store.parentOf(ref.slot) >= 0 === wantChild) {
-        refs.push(store.ref(GROUP_NODES, ref.slot));
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+  /** @internal */
+  _byParentedness(wantChild: boolean, criterion?: FilterLike): Collection {
+    return hierarchyImpl._byParentedness(this, wantChild, criterion);
   }
 
   /**
@@ -4692,42 +2638,7 @@ export class Collection {
    * @returns the shared ancestors, closest first
    */
   commonAncestors(criterion?: FilterLike): Collection {
-    const store = this._store;
-    let chain: number[] | null = null;
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (!store.isCurrent(ref)) {
-        continue;
-      }
-
-      const own: number[] = [];
-
-      if (ref.group === GROUP_NODES) {
-        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
-          own.push(p);
-        }
-      }
-
-      if (chain == null) {
-        chain = own;
-      } else {
-        const keep = new Set(own);
-
-        chain = chain.filter((slot) => keep.has(slot));
-      }
-
-      if (chain.length === 0) {
-        break;
-      }
-    }
-
-    const eles = this._spawnLive(
-      (chain ?? []).map((slot) => store.ref(GROUP_NODES, slot)),
-    );
-
-    return criterion == null ? eles : eles.filter(criterion);
+    return hierarchyImpl.commonAncestors(this, criterion);
   }
 
   /**
@@ -4787,16 +2698,9 @@ export class Collection {
     );
   }
 
-  private _liveNodeRef(): Ref | null {
-    // raw ref + isCurrent (which repairs a forwarded ref in place)
-    // instead of the syncing getter — the 62.6 fast-read shape
-    const ref = this.__refs[0];
-
-    return ref != null &&
-      ref.group === GROUP_NODES &&
-      this._store.isCurrent(ref)
-      ? ref
-      : null;
+  /** @internal */
+  _liveNodeRef(): Ref | null {
+    return hierarchyImpl._liveNodeRef(this);
   }
 
   // -- DAG traversal --
@@ -4822,44 +2726,9 @@ export class Collection {
     return this._dagExtremity('out', criterion);
   }
 
-  private _dagExtremity(
-    direction: 'in' | 'out',
-    criterion?: FilterLike,
-  ): Collection {
-    const store = this._store;
-    const adj = store.adj;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const refs: Ref[] = [];
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-        continue;
-      }
-
-      const edges =
-        direction === 'in' ? adj.inEdges(ref.slot) : adj.outEdges(ref.slot);
-      let disqualified = false;
-
-      for (let j = 0; j < edges.length; j++) {
-        const edgeSlot = edges[j];
-
-        // a loop (source === target) never disqualifies
-        if (endpoints[edgeSlot * 2] !== endpoints[edgeSlot * 2 + 1]) {
-          disqualified = true;
-          break;
-        }
-      }
-
-      if (!disqualified) {
-        refs.push(ref);
-      }
-    }
-
-    const eles = this._spawnLive(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+  /** @internal */
+  _dagExtremity(direction: 'in' | 'out', criterion?: FilterLike): Collection {
+    return hierarchyImpl._dagExtremity(this, direction, criterion);
   }
 
   /**
@@ -4887,61 +2756,9 @@ export class Collection {
     return this._dagAllHops('in', criterion);
   }
 
-  private _dagAllHops(
-    direction: 'out' | 'in',
-    criterion?: FilterLike,
-  ): Collection {
-    const store = this._store;
-    const adj = store.adj;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const acc: Ref[] = [];
-    // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1;
-    // a raw slot BFS — no per-hop collection spawns or handle interning
-    const seen = new Set<number>();
-    let frontier: number[] = [];
-
-    for (let i = 0; i < this._refs.length; i++) {
-      const ref = this._refs[i];
-
-      if (ref.group === GROUP_NODES && store.isCurrent(ref)) {
-        frontier.push(ref.slot);
-      }
-    }
-
-    while (frontier.length > 0) {
-      const next: number[] = [];
-
-      for (let i = 0; i < frontier.length; i++) {
-        const nodeSlot = frontier[i];
-        const edgeSlots =
-          direction === 'out' ? adj.outEdges(nodeSlot) : adj.inEdges(nodeSlot);
-
-        for (let j = 0; j < edgeSlots.length; j++) {
-          const edgeSlot = edgeSlots[j];
-          const otherSlot =
-            direction === 'out'
-              ? endpoints[edgeSlot * 2 + 1]
-              : endpoints[edgeSlot * 2];
-
-          if (!seen.has(edgeSlot * 2 + 1)) {
-            seen.add(edgeSlot * 2 + 1);
-            acc.push(store.ref(GROUP_EDGES, edgeSlot));
-          }
-
-          if (!seen.has(otherSlot * 2)) {
-            seen.add(otherSlot * 2);
-            acc.push(store.ref(GROUP_NODES, otherSlot));
-            next.push(otherSlot);
-          }
-        }
-      }
-
-      frontier = next;
-    }
-
-    const out = this._spawnLive(acc);
-
-    return criterion == null ? out : out.filter(criterion);
+  /** @internal */
+  _dagAllHops(direction: 'out' | 'in', criterion?: FilterLike): Collection {
+    return hierarchyImpl._dagAllHops(this, direction, criterion);
   }
 
   // -- edge relations --
@@ -4973,38 +2790,9 @@ export class Collection {
     return this._edgesWith(others, true);
   }
 
-  private _edgesWith(others: Collection, thisIsSrc: boolean): Collection {
-    const store = this._store;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const otherColl = others;
-
-    const thisNodes = this._nodeSlotSet();
-    const otherNodes = otherColl._nodeSlotSet();
-    const refs: Ref[] = [];
-
-    for (const oref of otherColl._liveRefs()) {
-      if (oref.group !== GROUP_NODES) {
-        continue;
-      }
-
-      for (const edgeSlot of store.adj.connectedEdges(oref.slot)) {
-        const s = endpoints[edgeSlot * 2];
-        const t = endpoints[edgeSlot * 2 + 1];
-        const thisToOther = thisNodes.has(s) && otherNodes.has(t);
-        const otherToThis = otherNodes.has(s) && thisNodes.has(t);
-
-        if (!(thisToOther || otherToThis)) {
-          continue;
-        }
-        if (thisIsSrc && !thisToOther) {
-          continue;
-        }
-
-        refs.push(store.ref(GROUP_EDGES, edgeSlot));
-      }
-    }
-
-    return this._spawn(refs);
+  /** @internal */
+  _edgesWith(others: Collection, thisIsSrc: boolean): Collection {
+    return traversalImpl._edgesWith(this, others, thisIsSrc);
   }
 
   /**
@@ -5032,41 +2820,9 @@ export class Collection {
     return this._parallelEdges(true, criterion);
   }
 
-  private _parallelEdges(
-    codirectedOnly: boolean,
-    criterion?: FilterLike,
-  ): Collection {
-    const store = this._store;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const refs: Ref[] = [];
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group !== GROUP_EDGES) {
-        continue;
-      }
-
-      const src1 = endpoints[ref.slot * 2];
-      const tgt1 = endpoints[ref.slot * 2 + 1];
-
-      // every edge parallel to this one is incident to its source node
-      for (const e2 of store.adj.connectedEdges(src1)) {
-        const s2 = endpoints[e2 * 2];
-        const t2 = endpoints[e2 * 2 + 1];
-        const codirected = s2 === src1 && t2 === tgt1;
-        const opposed = s2 === tgt1 && t2 === src1;
-
-        if (
-          (codirectedOnly && codirected) ||
-          (!codirectedOnly && (codirected || opposed))
-        ) {
-          refs.push(store.ref(GROUP_EDGES, e2));
-        }
-      }
-    }
-
-    const eles = this._spawn(refs);
-
-    return criterion == null ? eles : eles.filter(criterion);
+  /** @internal */
+  _parallelEdges(codirectedOnly: boolean, criterion?: FilterLike): Collection {
+    return traversalImpl._parallelEdges(this, codirectedOnly, criterion);
   }
 
   // -- connected components --
@@ -5080,91 +2836,7 @@ export class Collection {
    * @returns one collection per component
    */
   components(root?: Collection | null): Collection[] {
-    const store = this._store;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const nodeSlots = this._nodeSlotSet();
-    const edgeSlots: number[] = [];
-    const edgeSlotSet = new Set<number>();
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group === GROUP_EDGES) {
-        edgeSlots.push(ref.slot);
-        edgeSlotSet.add(ref.slot);
-      }
-    }
-
-    let seeds: number[];
-
-    if (root == null) {
-      seeds = [...nodeSlots];
-    } else {
-      const rootColl = root;
-      const rootNodes = rootColl._nodeSlotSet();
-
-      seeds =
-        rootNodes.size > 0
-          ? [...rootNodes].filter((s) => nodeSlots.has(s))
-          : // root has only edges: seed from their source-side nodes
-            rootColl
-              ._liveRefs()
-              .filter((r) => r.group === GROUP_EDGES)
-              .map((r) => endpoints[r.slot * 2])
-              .filter((s) => nodeSlots.has(s));
-    }
-
-    const visited = new Set<number>();
-    const comps: Collection[] = [];
-
-    for (const seed of seeds) {
-      if (visited.has(seed)) {
-        continue;
-      }
-
-      const compNodes = new Set<number>();
-      const stack = [seed];
-
-      visited.add(seed);
-
-      while (stack.length > 0) {
-        const n = stack.pop() as number;
-
-        compNodes.add(n);
-
-        for (const edgeSlot of store.adj.connectedEdges(n)) {
-          if (!edgeSlotSet.has(edgeSlot)) {
-            continue;
-          } // only walk edges within this collection
-
-          const s = endpoints[edgeSlot * 2];
-          const t = endpoints[edgeSlot * 2 + 1];
-          const other = s === n ? t : s;
-
-          if (nodeSlots.has(other) && !visited.has(other)) {
-            visited.add(other);
-            stack.push(other);
-          }
-        }
-      }
-
-      const refs: Ref[] = [];
-
-      for (const s of compNodes) {
-        refs.push(store.ref(GROUP_NODES, s));
-      }
-
-      for (const edgeSlot of edgeSlots) {
-        if (
-          compNodes.has(endpoints[edgeSlot * 2]) &&
-          compNodes.has(endpoints[edgeSlot * 2 + 1])
-        ) {
-          refs.push(store.ref(GROUP_EDGES, edgeSlot));
-        }
-      }
-
-      comps.push(this._spawn(refs));
-    }
-
-    return comps;
+    return traversalImpl.components(this, root);
   }
 
   declare componentsOf: this['components'];
@@ -5182,18 +2854,6 @@ export class Collection {
     }
 
     return this._cy.elements().components(this)[0] ?? this._spawn([]);
-  }
-
-  private _nodeSlotSet(): Set<number> {
-    const set = new Set<number>();
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group === GROUP_NODES) {
-        set.add(ref.slot);
-      }
-    }
-
-    return set;
   }
 
   /**
@@ -5216,121 +2876,7 @@ export class Collection {
     w: number;
     h: number;
   } {
-    const nodes = this.nodes();
-    const posFn = typeof fn === 'function' ? fn : () => fn;
-    const posMap = new Map<Collection, Position>();
-
-    let x1 = Infinity,
-      y1 = Infinity,
-      x2 = -Infinity,
-      y2 = -Infinity;
-
-    const expandPoint = (x: number, y: number): void => {
-      x1 = Math.min(x1, x);
-      x2 = Math.max(x2, x);
-      y1 = Math.min(y1, y);
-      y2 = Math.max(y2, y);
-    };
-
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-
-      // parents derive from their children (14.11): the leaves'
-      // hypothetical boxes stand in for the parent body (the padding
-      // margin is not modeled — a recorded fit-target approximation)
-      if (node.isParent()) {
-        continue;
-      }
-
-      const pos = posFn(node, i);
-
-      posMap.set(node, pos);
-
-      const halfW = (node.outerWidth() ?? 0) / 2;
-      const halfH = (node.outerHeight() ?? 0) / 2;
-
-      expandPoint(pos.x - halfW, pos.y - halfH);
-      expandPoint(pos.x + halfW, pos.y + halfH);
-
-      // the node-relative label box comes along (round 16.4): an
-      // animated layout's fit target covers the labels too
-      const lb = this._store.nodeLabelBox(node._refs[0].slot);
-
-      if (lb != null) {
-        expandPoint(pos.x + lb.x1, pos.y + lb.y1);
-        expandPoint(pos.x + lb.x2, pos.y + lb.y2);
-      }
-    }
-
-    const curveParams = this._store.column(
-      COL.EDGE_CURVE_PARAMS,
-    ) as Float32Array;
-    const edgeFlags = this._store.column(COL.EDGE_FLAGS) as Uint32Array;
-
-    this._store.flushDerived();
-
-    for (const ref of this._liveRefs()) {
-      if (ref.group !== GROUP_EDGES) {
-        continue;
-      }
-
-      const edge = this._cy._ele(GROUP_EDGES, ref.slot);
-
-      // curved edges: chord-bounded kinds expand by the conservative
-      // hull deviation — cheap, symmetric, and tight enough for a fit
-      // target — twinned with `GraphStore.boundingBox`.
-      const at = ref.slot * 4;
-      const kind = curveParams[at + 3];
-      const source = edge.source();
-      const target = edge.target();
-      const sPos = posMap.get(source) ?? (source.position() as Position);
-      const tPos = posMap.get(target) ?? (target.position() as Position);
-
-      // box-bounded kinds — compound loops, taxi, extrapolated
-      // weights — evaluate EXACTLY at the hypothetical centres
-      // (rounds 54/92, the same tiering as the whole-graph scan):
-      // round 54's sweep caught a forced-direction taxi escaping any
-      // node-half margin, and round 92 retired the compound-loop and
-      // extrapolated-margin terms whose p2 cushion misframed and
-      // de-centered compound fits.  The flattened polyline hull-bounds
-      // the drawn path.
-      if ((edgeFlags[ref.slot] & FLAG_CURVED_BOX) !== 0) {
-        const bb = this._store.curveBBAtPositions(
-          ref.slot,
-          sPos.x,
-          sPos.y,
-          tPos.x,
-          tPos.y,
-        );
-
-        if (bb != null) {
-          expandPoint(bb.x1, bb.y1);
-          expandPoint(bb.x2, bb.y2);
-          continue;
-        }
-      }
-
-      const dev =
-        kind === CURVE_STRAIGHT
-          ? 0
-          : headerDeviation(
-              kind,
-              curveParams[at],
-              curveParams[at + 1],
-              curveParams[at + 2],
-            );
-
-      for (const pos of [sPos, tPos]) {
-        expandPoint(pos.x - dev, pos.y - dev);
-        expandPoint(pos.x + dev, pos.y + dev);
-      }
-    }
-
-    if (x1 === Infinity) {
-      x1 = y1 = x2 = y2 = 0;
-    }
-
-    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+    return boundsImpl.boundingBoxAt(this, fn);
   }
 
   // -- layouts --
@@ -5348,23 +2894,7 @@ export class Collection {
     w: number;
     h: number;
   } {
-    const ref = this._refs[0];
-
-    if (
-      ref == null ||
-      ref.group !== GROUP_NODES ||
-      !this._store.isCurrent(ref)
-    ) {
-      return { w: 1, h: 1 };
-    }
-
-    // one reading for every layout (114.1): the body plus, on request,
-    // the label box; hidden sanitises to 1 x 1 as v3 did
-    const d = nodeDims(this._store, [ref.slot], {
-      includeLabels: options.nodeDimensionsIncludeLabels === true,
-    });
-
-    return { w: d.x2[0] - d.x1[0], h: d.y2[0] - d.y1[0] };
+    return layoutImpl.layoutDimensions(this, options);
   }
 
   /**
@@ -5388,196 +2918,7 @@ export class Collection {
     options: LayoutBaseOptions,
     fn: (node: Collection, i: number) => Position,
   ): this {
-    const cy = this._cy;
-    // the run this finisher closes (round 128): a cancelled run writes
-    // nothing and fires nothing — its close already did
-    const run = layoutRunOf(cy, layout);
-
-    if (run?.cancelled === true) {
-      return this;
-    }
-
-    // v3: parents are excluded from layout positioning (auto-bounds
-    // derive them from their placed leaves, round 14.11), and so are
-    // locked nodes (114.3) — they hold their place; the layout that
-    // computed positions for them still counted them in its structure
-    const nodes = this.nodes().filter(
-      (n: Collection) => !n.isParent() && !n.locked(),
-    );
-    const eles = (options.eles as Collection | undefined) ?? this;
-
-    // the extension wrapper emits its own layoutstart before run()
-    // (round 17.5); the finisher folds into that lifecycle
-    if ((options as { _startEmitted?: boolean })._startEmitted !== true) {
-      cy.emit({ type: 'layoutstart', layout });
-    }
-
-    // memoize by handle: handles are interned singletons
-    const rawMemo = new Map<Collection, Position>();
-
-    const rawPos = (node: Collection, i: number): Position => {
-      let p = rawMemo.get(node);
-
-      if (p == null) {
-        p = fn(node, i);
-        rawMemo.set(node, p);
-      }
-
-      return p;
-    };
-
-    const factor = options.spacingFactor;
-    const useSpacing = factor != null && factor !== 1 && nodes.length > 0;
-    let center: Position | null = null;
-
-    if (useSpacing) {
-      let x1 = Infinity,
-        y1 = Infinity,
-        x2 = -Infinity,
-        y2 = -Infinity;
-
-      for (let i = 0; i < nodes.length; i++) {
-        const p = rawPos(nodes[i], i);
-
-        x1 = Math.min(x1, p.x);
-        x2 = Math.max(x2, p.x);
-        y1 = Math.min(y1, p.y);
-        y2 = Math.max(y2, p.y);
-      }
-
-      center = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
-    }
-
-    const finalMemo = new Map<Collection, Position>();
-
-    const getFinalPos = (node: Collection, i: number): Position => {
-      let p = finalMemo.get(node);
-
-      if (p != null) {
-        return p;
-      }
-
-      p = rawPos(node, i);
-
-      if (useSpacing && center != null) {
-        const spacing = Math.abs(factor as number);
-
-        p = {
-          x: center.x + (p.x - center.x) * spacing,
-          y: center.y + (p.y - center.y) * spacing,
-        };
-      }
-
-      if (options.transform != null) {
-        p = options.transform(node, p);
-      }
-
-      finalMemo.set(node, p);
-
-      return p;
-    };
-
-    // fit defaults on (v3's default, and what every bulk path already
-    // tested — round 114.2 aligned the finisher's truthiness test)
-    const applyViewport = (): void => {
-      if (options.fit !== false) {
-        cy.fit(eles, options.padding ?? 30);
-      } else {
-        if (options.zoom != null) {
-          cy.zoom(options.zoom);
-        }
-        if (options.pan != null) {
-          cy.pan(options.pan);
-        }
-      }
-    };
-
-    if (options.animate) {
-      const anis: AnimationHandle[] = [];
-
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        const newPos = getFinalPos(node, i);
-        const animateNode =
-          options.animateFilter == null || options.animateFilter(node, i);
-
-        if (animateNode) {
-          anis.push(
-            node.animation({
-              position: newPos,
-              duration: options.animationDuration ?? 500,
-              easing: options.animationEasing,
-            }),
-          );
-        } else {
-          node.position(newPos);
-        }
-      }
-
-      // the viewport animates alongside the nodes: a fit targets the box at
-      // the final positions (v3 semantics) — a locked node's final
-      // position is where it already is
-      const framePos = (node: Collection, i: number): Position =>
-        node.locked() ? (node.position() as Position) : getFinalPos(node, i);
-
-      if (options.fit !== false) {
-        anis.push(
-          cy.animation({
-            fit: {
-              boundingBox: eles.boundingBoxAt(framePos),
-              padding: options.padding ?? 30,
-            },
-            duration: options.animationDuration ?? 500,
-            easing: options.animationEasing,
-          }),
-        );
-      } else if (options.zoom != null || options.pan != null) {
-        // whichever of the two is given animates (114.2: the pair used to
-        // be required together, so a lone zoom applied nothing)
-        anis.push(
-          cy.animation({
-            ...(options.zoom != null ? { zoom: options.zoom } : {}),
-            ...(options.pan != null ? { pan: options.pan } : {}),
-            duration: options.animationDuration ?? 500,
-            easing: options.animationEasing,
-          }),
-        );
-      }
-
-      for (const ani of anis) {
-        ani.play();
-      }
-
-      // a cancel mid-tween stops these where they are (run-state.mts)
-      run?.anis.push(...anis);
-
-      options.ready?.();
-      cy.emit({ type: 'layoutready', layout });
-
-      Promise.all(anis.map((ani) => ani.promise())).then(() => {
-        // a cancelled run closed its own lifecycle when the tweens
-        // were dropped; nothing more fires here
-        if (run?.cancelled === true) {
-          return;
-        }
-
-        options.stop?.();
-        cy.emit({ type: 'layoutstop', layout });
-        run?.close(false);
-      });
-    } else {
-      nodes.positions(getFinalPos);
-      applyViewport();
-
-      options.ready?.();
-      cy.emit({ type: 'layoutready', layout });
-
-      options.stop?.();
-      cy.emit({ type: 'layoutstop', layout });
-      run?.close(false);
-    }
-
-    return this;
+    return layoutImpl.layoutPositions(this, layout, options, fn) as this;
   }
 
   /**
@@ -6334,77 +3675,25 @@ export class Collection {
    * @returns the total degree (0 when there are no nodes)
    */
   totalDegree(includeLoops: boolean = true): number {
-    let total = 0;
-
-    for (let i = 0; i < this.length; i++) {
-      const d = this[i].degree(includeLoops);
-
-      if (d !== undefined) {
-        total += d;
-      }
-    }
-
-    return total;
+    return degreeImpl.totalDegree(this, includeLoops);
   }
 
-  private _degreeBound(
+  /** @internal */
+  _degreeBound(
     fn: 'degree' | 'indegree' | 'outdegree',
     includeLoops: boolean,
     sign: 1 | -1,
   ): number | undefined {
-    let ret: number | undefined;
-
-    for (let i = 0; i < this.length; i++) {
-      if (!this[i].isNode()) {
-        continue;
-      }
-
-      const degree =
-        fn === 'degree'
-          ? this[i].degree(includeLoops)
-          : fn === 'indegree'
-            ? this[i].indegree(includeLoops)
-            : this[i].outdegree(includeLoops);
-
-      if (degree === undefined) {
-        continue;
-      }
-
-      if (ret === undefined || sign * degree > sign * ret) {
-        ret = degree;
-      }
-    }
-
-    return ret;
+    return degreeImpl._degreeBound(this, fn, includeLoops, sign);
   }
 
-  private _degree(
+  /** @internal */
+  _degree(
     includeLoops: boolean,
     count: (store: Core['_store'], slot: number) => number,
     direction?: 'out' | 'in',
   ): number | undefined {
-    const store = this._store;
-    const ref = this._first();
-
-    // first element must be a live node, else undefined (as in v3)
-    if (ref == null || ref.group !== GROUP_NODES || !store.isCurrent(ref)) {
-      return undefined;
-    }
-
-    let total = count(store, ref.slot);
-
-    if (!includeLoops) {
-      const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-      // a loop contributes 1 to outdegree, 1 to indegree, 2 to degree
-      for (const edgeSlot of store.adj.outEdges(ref.slot)) {
-        if (endpoints[edgeSlot * 2] === endpoints[edgeSlot * 2 + 1]) {
-          total -= direction == null ? 2 : 1;
-        }
-      }
-    }
-
-    return total;
+    return degreeImpl._degree(this, includeLoops, count, direction);
   }
 
   // -- events --

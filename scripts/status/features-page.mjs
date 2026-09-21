@@ -97,8 +97,11 @@ export function countBy(rows, key) {
 export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   const sum = summarise(rows);
   const byStatus = countBy(rows, 'Status');
-  const options = (values) =>
-    values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  const byCategory = countBy(rows, 'Category');
+  const options = (values, label) =>
+    values
+      .map((v) => `<option value="${esc(v)}">${esc(label(v))}</option>`)
+      .join('');
   const reference = (row) => {
     const [file, line] = row.Reference.split(':');
     const local = pageFor(file);
@@ -124,14 +127,14 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
     .join('')}</tbody></table>
   <div class="feature-tools" hidden>
     <div class="feature-field"><label for="feature-search">Search features and comments</label><input id="feature-search" type="search" placeholder="e.g. labels, force, cy.json"></div>
-    <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories</option>${options([...new Set(rows.map((r) => r.Category))].sort())}</select></div>
-    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses</option>${options(Object.keys(STATUSES))}</select></div>
+    <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories (${rows.length})</option>${options([...byCategory.keys()].sort(), (v) => `${v} (${byCategory.get(v)})`)}</select></div>
+    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses (${rows.length})</option>${options(Object.keys(STATUSES), (v) => `${v} (${byStatus.get(v) ?? 0}) — ${STATUSES[v]}`)}</select></div>
   </div>
   <p id="feature-count" role="status" aria-live="polite">Showing all ${rows.length} rows</p>
   <div class="feature-scroll" role="region" aria-label="Feature inventory" tabindex="0">
   <table class="features"><caption>Current v4 support; see comments for limitations and alternatives.</caption>
   <thead><tr>${COLUMNS.map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>
-  <tbody>${rows.map((r) => `<tr><td>${esc(r.Category)}</td><td class="feature-name">${esc(r.Feature)}</td><td class="feature-status">${esc(r.Status)}</td><td class="feature-comment">${esc(r.Comments)}</td><td>${reference(r)}</td></tr>`).join('\n')}</tbody></table>
+  <tbody>${rows.map((r) => `<tr><td>${esc(r.Category)}</td><td class="feature-name">${esc(r.Feature)}</td><td class="feature-status" title="${esc(STATUSES[r.Status] ?? '')}">${esc(r.Status)}</td><td class="feature-comment">${esc(r.Comments)}</td><td>${reference(r)}</td></tr>`).join('\n')}</tbody></table>
   </div><p id="feature-empty" hidden>No features match these filters.</p>
   <script>${FEATURES_SCRIPT}</script>`;
 }

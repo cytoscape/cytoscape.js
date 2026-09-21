@@ -1,40 +1,14 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { Collection } from './collection.mjs';
-import { buildColumnar, isColumnarElements } from './columnar.mjs';
-import type { FlagOverride } from './columnar.mjs';
-import {
-  deserializeElements,
-  isSerializedElements,
-  serializeElements,
-} from './wire.mjs';
-import { partitionDefs } from './element-defs.mjs';
-import type { PartitionedDefs } from './element-defs.mjs';
-import {
-  hasListeners,
-  makeCoreEmitter,
-  predicateQualifier,
-  refKey,
-} from './events.mjs';
-import type { ElePredicate, Qualifier, PhasedEvent } from './events.mjs';
+import { hasListeners, makeCoreEmitter } from './events.mjs';
+import type { ElePredicate, Qualifier } from './events.mjs';
 import { Event } from './event.mjs';
-import { compileQuery } from './matcher.mjs';
-import type { FlagTest, Query } from './matcher.mjs';
-import { testCondition } from './style-scales.mjs';
-import type { CompiledCondition } from './style-scales.mjs';
+import type { Query } from './matcher.mjs';
 import { Viewport, type ZoomOptions, type Extent } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
-import {
-  Animation,
-  AnimationHandleImpl,
-  AnimationManager,
-} from './animation.mjs';
+import { Animation, AnimationManager } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
-import * as math from './math.mjs';
-import type { BoundsLike } from './viewport.mjs';
 import { CustomLayout } from './layout/contract.mjs';
-import { ForceLayoutImpl } from './layout/force.mjs';
-import { FlowLayoutImpl } from './layout/flow.mjs';
-import type { CustomLayoutOptions } from './public-types.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
 import { CircleLayout } from './layout/circle.mjs';
@@ -54,34 +28,17 @@ export type Layout =
   | RandomLayout
   | RadialLayout
   | PackLayout;
-import { whenSettled } from './algorithms/cancel.mjs';
 import type { LayoutRun } from './layout/run-state.mjs';
 import type { AlgoRun } from './algorithms/cancel.mjs';
 import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
 import type { EventProps } from './event.mjs';
-import {
-  GROUP_EDGES,
-  GROUP_NODES,
-  COL,
-  FLAG_ALIVE,
-  FLAG_GRABBABLE,
-  FLAG_LOCKED,
-  FLAG_PANNABLE,
-  FLAG_SELECTABLE,
-  FLAG_SELECTED,
-  NO_SLOT,
-} from './contract.mjs';
-import { EDGE_PICK_BIT } from './render/picking.mjs';
-import { NO_PARENT } from './public-types.mjs';
+import { GROUP_EDGES, GROUP_NODES } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   BoxSelectionMode,
   CursorMap,
   CytoscapeOptions,
-  ColumnarElements,
-  ElementDefinition,
-  ElementsDefinition,
   ElementsInput,
   ExportOptions,
   LayoutOptions,
@@ -90,6 +47,15 @@ import type {
   RendererStats,
 } from './public-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
+import * as batchingImpl from './core/batching.mjs';
+import * as elementsImpl from './core/elements.mjs';
+import * as queryImpl from './core/query.mjs';
+import * as eventsImpl from './core/events.mjs';
+import * as viewportImpl from './core/viewport.mjs';
+import * as exportImpl from './core/export.mjs';
+import * as graphDataImpl from './core/graph-data.mjs';
+import * as serializeImpl from './core/serialize.mjs';
+import * as lifecycleImpl from './core/lifecycle.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
@@ -119,7 +85,7 @@ const DEFAULT_HEADLESS_WIDTH = 800;
 const DEFAULT_HEADLESS_HEIGHT = 600;
 
 /** dead slots below this never auto-compact (small graphs don't churn) */
-const COMPACT_FLOOR = 1024;
+export const COMPACT_FLOOR = 1024;
 
 /** The hosting window, resolved once at module load — its existence
  * cannot change at runtime, and `cy.window()` is called often enough in
@@ -128,7 +94,7 @@ const GLOBAL_WINDOW: (Window & typeof globalThis) | null =
   typeof window !== 'undefined' ? window : null;
 
 /** The memoized unfiltered collections and the structure epoch they belong to (round 34.2). */
-interface AllCache {
+export interface AllCache {
   epoch: number;
   all: Collection | null;
   nodes: Collection | null;
@@ -136,7 +102,7 @@ interface AllCache {
 }
 
 /** Style work deferred by an open batch (flushed once at the outermost endBatch). */
-interface BatchPending {
+export interface BatchPending {
   /** the sheet changed during the batch: one applyAll() subsumes the per-slot work */
   sheet: boolean;
   /** freshly-added elements awaiting their first style apply */
@@ -163,7 +129,8 @@ export class Core {
   _pointer: { destroy(): void; applyCursor(): void } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
-  private _recoveringDevice: boolean;
+  /** @internal */
+  _recoveringDevice: boolean;
   /** the zoom/pan state object — reach it through cy's own viewport
    * surface
    * @internal */
@@ -182,29 +149,44 @@ export class Core {
     nodes: (Collection | undefined)[];
     edges: (Collection | undefined)[];
   };
-  private _container: HTMLElement | null;
+  /** @internal */
+  _container: HTMLElement | null;
   private _options: CytoscapeOptions;
   private _headlessWidth: number;
   private _headlessHeight: number;
-  private _destroyed: boolean;
-  private _idCounter: number;
+  /** @internal */
+  _destroyed: boolean;
+  /** @internal */
+  _idCounter: number;
   private _scratch: Record<string, unknown>;
-  private _graphData: Record<string, unknown>;
-  private _autolock: boolean;
-  private _autoungrabify: boolean;
-  private _autounselectify: boolean;
-  private _panningEnabled: boolean;
-  private _userPanningEnabled: boolean;
-  private _zoomingEnabled: boolean;
-  private _userZoomingEnabled: boolean;
-  private _boxSelectionEnabled: boolean;
+  /** @internal */
+  _graphData: Record<string, unknown>;
+  /** @internal */
+  _autolock: boolean;
+  /** @internal */
+  _autoungrabify: boolean;
+  /** @internal */
+  _autounselectify: boolean;
+  /** @internal */
+  _panningEnabled: boolean;
+  /** @internal */
+  _userPanningEnabled: boolean;
+  /** @internal */
+  _zoomingEnabled: boolean;
+  /** @internal */
+  _userZoomingEnabled: boolean;
+  /** @internal */
+  _boxSelectionEnabled: boolean;
   /** box selection considers label boxes too (16.5; default off — v3).
-   * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
-  private _boxSelectionIncludesLabels: boolean;
-  private _boxSelectionMode: BoxSelectionMode;
+   * Narrows a 'contain' selection, widens an 'overlap' one (39.1).
+   * @internal */
+  _boxSelectionIncludesLabels: boolean;
+  /** @internal */
+  _boxSelectionMode: BoxSelectionMode;
   /** round 89: whether — and how — the canvas writes gesture cursors */
   private _pointerCursors: boolean | Partial<CursorMap>;
-  private _selectionType: 'single' | 'additive';
+  /** @internal */
+  _selectionType: 'single' | 'additive';
   private _multiClickDebounceTime: number;
   /** round 20.1: the interaction option quartet (v3 defaults) */
   private _wheelSensitivity: number;
@@ -212,14 +194,17 @@ export class Core {
   private _desktopTapThreshold: number;
   private _touchTapThreshold: number;
   private _tapholdDuration: number;
-  private _batchDepth: number;
-  private _batchPending: BatchPending | null;
-  /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
-  private _allCache: AllCache | null = null;
+  /** @internal */
+  _batchDepth: number;
+  /** @internal */
+  _batchPending: BatchPending | null;
+  /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch @internal */
+  _allCache: AllCache | null = null;
   /** round 62.6: the whole-graph memo flattened to one field, so the
    * `elements()` hit is a single load — nulled by
-   * the same push-invalidation as `_allCache` */
-  private _allEles: Collection | null = null;
+   * the same push-invalidation as `_allCache`
+   * @internal */
+  _allEles: Collection | null = null;
   _animations: AnimationManager;
   /**
    * The runs in flight on this instance (round 128): every pending
@@ -486,23 +471,7 @@ export class Core {
    * silently while batching or while a GPU force run owns positions.
    */
   _maybeCompact(): void {
-    if (this._batchDepth > 0 || this._destroyed) {
-      return;
-    }
-    if (this._renderer?.forceActive()) {
-      return;
-    } // re-checked on the next boundary
-
-    for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
-      const table = this._store.table(group);
-      const dead = table.highWater - table.count;
-
-      if (dead > COMPACT_FLOOR && dead > table.count) {
-        this._compact();
-
-        return;
-      }
-    }
+    batchingImpl._maybeCompact(this);
   }
 
   /**
@@ -516,72 +485,7 @@ export class Core {
    * style refs hold slots and the flush must not straddle a remap.
    */
   _compact(): void {
-    if (this._batchDepth > 0) {
-      throw new Error('Can not compact inside a batch');
-    }
-
-    if (this._renderer?.forceActive()) {
-      // the sim owns node.position on-device (the 18.3 lease); moving
-      // slots under it would scatter the integrator's writes — defer
-      console.warn('Deferring slot compaction: a GPU force layout is running');
-
-      return;
-    }
-
-    // GPU-driven tweens leave the device (their slot buffers hold the
-    // old slots) but keep running on the CPU with repaired slot lists
-    this._animations.demoteGpuAll();
-
-    const result = this._store.compact();
-
-    if (result.nodes == null && result.edges == null) {
-      return;
-    }
-
-    this._remapPool(GROUP_NODES, result.nodes?.remap ?? null);
-    this._remapPool(GROUP_EDGES, result.edges?.remap ?? null);
-
-    for (const listener of this._emitter.listeners) {
-      const qualifier = listener.qualifier;
-
-      if (qualifier?.ref != null) {
-        this._store.isCurrent(qualifier.ref); // repairs in place
-        qualifier.key = 'ref:' + refKey(qualifier.ref);
-      }
-    }
-
-    this._animations.onCompacted(this._store);
-    this._styleEngine.onCompacted(); // refresh the styled-generation marks (24.1)
-  }
-
-  /** Move the interned singleton handles to their elements' new slots
-   * (dead slots' handles drop out of the pool; holders keep dead reads). */
-  private _remapPool(group: GroupName, remap: Uint32Array | null): void {
-    if (remap == null) {
-      return;
-    }
-
-    const pool = this._pool[group];
-    const n = Math.min(remap.length, pool.length);
-
-    for (let s = 0; s < n; s++) {
-      const ele = pool[s];
-
-      if (ele == null) {
-        continue;
-      }
-
-      pool[s] = undefined;
-
-      const d = remap[s];
-
-      if (d === NO_SLOT) {
-        continue;
-      }
-
-      void ele._refs; // the epoch-guarded getter repairs the singleton's ref
-      pool[d] = ele;
-    }
+    batchingImpl._compact(this);
   }
 
   /**
@@ -592,18 +496,7 @@ export class Core {
    * @returns this core, for chaining
    */
   startBatch(): this {
-    if (this._batchDepth === 0) {
-      this._batchPending = {
-        sheet: false,
-        style: [],
-        mapped: [],
-        mappedKeys: new Set(),
-      };
-    }
-
-    this._batchDepth++;
-
-    return this;
+    return batchingImpl.startBatch(this) as this;
   }
 
   /**
@@ -619,61 +512,7 @@ export class Core {
    * @returns this core, for chaining
    */
   endBatch(): this {
-    if (this._batchDepth === 0) {
-      return this;
-    }
-
-    this._batchDepth--;
-
-    if (this._batchDepth > 0) {
-      return this;
-    }
-
-    const pending = this._batchPending as BatchPending;
-
-    this._batchPending = null;
-
-    if (pending.sheet) {
-      this._styleEngine.applyAll(); // covers every live element, so the per-slot work is subsumed
-      this._maybeCompact();
-
-      return this;
-    }
-
-    const store = this._store;
-    const nodeSlots: number[] = [];
-    const edgeSlots: number[] = [];
-
-    for (const ref of pending.style) {
-      if (!store.isCurrent(ref)) {
-        continue;
-      } // added then removed within the batch
-
-      (ref.group === GROUP_NODES ? nodeSlots : edgeSlots).push(ref.slot);
-    }
-
-    this._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
-    this._styleEngine.applyBulk(GROUP_EDGES, edgeSlots);
-
-    const mappedNodes: number[] = [];
-    const mappedEdges: number[] = [];
-
-    for (const ref of pending.mapped) {
-      if (!store.isCurrent(ref)) {
-        continue;
-      }
-
-      (ref.group === GROUP_NODES ? mappedNodes : mappedEdges).push(ref.slot);
-    }
-
-    const keys = [...pending.mappedKeys];
-
-    this._styleEngine.refreshMapped(GROUP_NODES, mappedNodes, keys);
-    this._styleEngine.refreshMapped(GROUP_EDGES, mappedEdges, keys);
-
-    this._maybeCompact(); // removals inside the batch deferred to here
-
-    return this;
+    return batchingImpl.endBatch(this) as this;
   }
 
   /**
@@ -720,60 +559,7 @@ export class Core {
    * @see Collection#layout to lay out a subset
    */
   layout(options: LayoutOptions): Layout {
-    // the extension contract (round 17.5): direct objects, no registry
-    if ((options as { impl?: unknown })?.impl != null) {
-      return new CustomLayout(this, options as CustomLayoutOptions);
-    }
-
-    if (options?.name === 'grid') {
-      return new GridLayout(this, options);
-    }
-    if (options?.name === 'preset') {
-      return new PresetLayout(this, options);
-    }
-    if (options?.name === 'circle') {
-      return new CircleLayout(this, options);
-    }
-    if (options?.name === 'concentric') {
-      return new ConcentricLayout(this, options);
-    }
-    if (options?.name === 'breadthfirst') {
-      return new BreadthFirstLayout(this, options);
-    }
-    if (options?.name === 'random') {
-      return new RandomLayout(this, options);
-    }
-    if (options?.name === 'radial') {
-      return new RadialLayout(this, options);
-    }
-    if (options?.name === 'pack') {
-      return new PackLayout(this, options);
-    }
-
-    // the built-in force layout (round 18.2) rides the extension
-    // contract — exactly what an external layout would do
-    if ((options as { name?: string })?.name === 'force') {
-      return new CustomLayout(this, {
-        ...(options as object),
-        impl: ForceLayoutImpl,
-      } as CustomLayoutOptions);
-    }
-
-    // the flow layout (round 112) rides the contract the same way
-    if ((options as { name?: string })?.name === 'flow') {
-      return new CustomLayout(this, {
-        ...(options as object),
-        impl: FlowLayoutImpl,
-      } as CustomLayoutOptions);
-    }
-
-    const got = (options as { name?: string } | null)?.name;
-
-    throw new Error(
-      `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
-        `'breadthfirst', 'random', 'radial', 'pack', 'force', 'flow') or an impl (the extension contract)` +
-        (got != null ? `; got name '${got}'` : ''),
-    );
+    return lifecycleImpl.layout(this, options);
   }
 
   declare makeLayout: this['layout'];
@@ -805,21 +591,7 @@ export class Core {
    * @returns a collection of the added elements
    */
   add(input: ElementsInput): Collection {
-    const defs = isSerializedElements(input)
-      ? deserializeElements(input)
-      : input;
-    const refs = isColumnarElements(defs)
-      ? this._columnarRefs(this._addColumnar(defs))
-      : this._addDefs(defs);
-    const added = new Collection(this, refs, { unique: true });
-
-    if (this._hasListeners('add')) {
-      for (let i = 0; i < added.length; i++) {
-        this._emitOnEle('add', added[i]);
-      }
-    }
-
-    return added;
+    return elementsImpl.add(this, input);
   }
 
   /**
@@ -842,240 +614,7 @@ export class Core {
    * null and the def path runs, and reports the error, as before.
    */
   _bulkAdd(input: ElementsInput): void {
-    // round 67: one bulk-load window over the whole ingest, so the curve
-    // index takes one pass over the finished pair map instead of a mark
-    // per edge.  `cy.add()` gets no window, deliberately — it adds into
-    // a populated graph, where the pairs it touches are a small subset.
-    this._store.beginBulkLoad();
-
-    try {
-      this._bulkAddInner(input);
-    } finally {
-      this._store.endBulkLoad();
-    }
-  }
-
-  private _bulkAddInner(input: ElementsInput): void {
-    const defs = isSerializedElements(input)
-      ? deserializeElements(input)
-      : input;
-
-    if (isColumnarElements(defs)) {
-      // graph-level data rides the wire since round 39.2, and only this
-      // path applies it: at construction the graph's data() is empty, so
-      // there is nothing to clobber.  `add()` deliberately drops it.
-      if (defs.data != null) {
-        Object.assign(this._graphData, defs.data);
-      }
-
-      const { nodeSlots, edgeSlots } = this._addColumnar(defs);
-
-      this._emitBulkAdds(nodeSlots, edgeSlots);
-
-      return;
-    }
-
-    const part = partitionDefs(defs);
-    const bulk = buildColumnar(part, false);
-
-    if (bulk != null) {
-      const { nodeSlots, edgeSlots } = this._addColumnar(
-        bulk.elements,
-        bulk.nodeFlags,
-        bulk.edgeFlags,
-      );
-
-      this._emitBulkAdds(nodeSlots, edgeSlots);
-
-      return;
-    }
-
-    const refs = this._addPartition(part);
-
-    if (this._hasListeners('add')) {
-      for (const ref of refs) {
-        this._emitOnEle('add', this._eleFromRef(ref));
-      }
-    }
-  }
-
-  /** Per-element `add` for a columnar bulk, nodes before edges. */
-  private _emitBulkAdds(nodeSlots: Uint32Array, edgeSlots: Uint32Array): void {
-    if (!this._hasListeners('add')) {
-      return;
-    }
-
-    for (const slot of nodeSlots) {
-      this._emitOnEle('add', this._ele(GROUP_NODES, slot));
-    }
-    for (const slot of edgeSlots) {
-      this._emitOnEle('add', this._ele(GROUP_EDGES, slot));
-    }
-  }
-
-  /**
-   * Columnar ingest: store-level bulk adds + one bulk style pass.
-   *
-   * The optional flag overrides come from a converted definition payload
-   * — `locked`, `grabbable` and `pannable` have no column.  They are
-   * written before the style pass, where the def path also has them: a
-   * later write would still be *correct*, since `::locked` and
-   * `::grabbable` are styleable conditions and a condition-flag write
-   * restyles its slot, but it would pay for that restyle.
-   */
-  private _addColumnar(
-    elements: ColumnarElements,
-    nodeFlags?: FlagOverride[],
-    edgeFlags?: FlagOverride[],
-  ): {
-    nodeSlots: Uint32Array;
-    edgeSlots: Uint32Array;
-  } {
-    const newId = (): string => this._newId();
-    const nodeSlots =
-      elements.nodes != null && elements.nodes.count > 0
-        ? this._store.addNodesColumnar(elements.nodes, newId)
-        : new Uint32Array(0);
-    const edgeSlots =
-      elements.edges != null && elements.edges.count > 0
-        ? this._store.addEdgesColumnar(elements.edges, nodeSlots, newId)
-        : new Uint32Array(0);
-
-    if (nodeFlags != null && nodeFlags.length > 0) {
-      this._applyFlagOverrides(GROUP_NODES, nodeSlots, nodeFlags, false);
-    }
-    if (edgeFlags != null && edgeFlags.length > 0) {
-      this._applyFlagOverrides(GROUP_EDGES, edgeSlots, edgeFlags, true);
-    }
-
-    this._applyStyle(GROUP_NODES, nodeSlots);
-    this._applyStyle(GROUP_EDGES, edgeSlots);
-
-    return { nodeSlots, edgeSlots };
-  }
-
-  /** Write the def flags the columnar columns cannot carry. */
-  private _applyFlagOverrides(
-    group: GroupName,
-    slots: Uint32Array,
-    overrides: FlagOverride[],
-    pannableDefault: boolean,
-  ): void {
-    for (const { at, def } of overrides) {
-      const slot = slots[at];
-
-      if (def.locked === true) {
-        this._store.setFlag(group, slot, FLAG_LOCKED, true);
-      }
-      if (def.grabbable === false) {
-        this._store.setFlag(group, slot, FLAG_GRABBABLE, false);
-      }
-      if (def.pannable != null && def.pannable !== pannableDefault) {
-        this._store.setFlag(group, slot, FLAG_PANNABLE, def.pannable);
-      }
-    }
-  }
-
-  private _columnarRefs({
-    nodeSlots,
-    edgeSlots,
-  }: {
-    nodeSlots: Uint32Array;
-    edgeSlots: Uint32Array;
-  }): Ref[] {
-    const refs: Ref[] = [];
-
-    for (const slot of nodeSlots) {
-      refs.push(this._store.ref(GROUP_NODES, slot));
-    }
-    for (const slot of edgeSlots) {
-      refs.push(this._store.ref(GROUP_EDGES, slot));
-    }
-
-    return refs;
-  }
-
-  /** Shared add loop: nodes first so edges can reference same-call nodes. */
-  private _addDefs(defs: ElementsDefinition | ElementDefinition): Ref[] {
-    return this._addPartition(partitionDefs(defs));
-  }
-
-  /**
-   * `_addDefs` over defs already split by group, so the bulk load path
-   * can partition once and hand the same split to whichever route it
-   * takes.
-   */
-  private _addPartition(part: PartitionedDefs): Ref[] {
-    const { nodes: nodeDefs, edges: edgeDefs } = part;
-
-    this._store.reserve(nodeDefs.length, edgeDefs.length);
-
-    const refs: Ref[] = [];
-    const nodeSlots: number[] = [];
-    const edgeSlots: number[] = [];
-
-    for (const def of nodeDefs) {
-      const data = def.data ?? {};
-      const id = data.id != null ? String(data.id) : this._newId();
-      const pos = def.position ?? { x: 0, y: 0 };
-      const slot = this._store.addNode(id, pos.x, pos.y, def);
-
-      this._store.setDefData(GROUP_NODES, slot, data);
-      nodeSlots.push(slot);
-      refs.push(this._store.ref(GROUP_NODES, slot));
-    }
-
-    // second pass (round 14.2): resolve def parents once the batch's nodes
-    // all exist, so forward references work in any def order; an unknown or
-    // non-node parent warns and leaves the node an orphan (v3's rule, with
-    // the silent-drop case upgraded to a warning)
-    for (let i = 0; i < nodeDefs.length; i++) {
-      const parent = nodeDefs[i].data?.parent;
-
-      if (parent == null) {
-        continue;
-      }
-
-      const parentRef = this._store.lookup(String(parent));
-
-      if (parentRef == null || parentRef.group !== GROUP_NODES) {
-        console.warn(
-          `Node '${this._store.idAt(GROUP_NODES, nodeSlots[i])}' has nonexistant parent ` +
-            `'${String(parent)}'; added as an orphan`,
-        );
-
-        continue;
-      }
-
-      this._store.setParent(nodeSlots[i], parentRef.slot);
-    }
-
-    for (const def of edgeDefs) {
-      const data = def.data ?? {};
-      const id = data.id != null ? String(data.id) : this._newId();
-
-      if (data.source == null || data.target == null) {
-        throw new Error(
-          `Can not create edge '${id}' without a source and target`,
-        );
-      }
-
-      const slot = this._store.addEdge(
-        id,
-        String(data.source),
-        String(data.target),
-        def,
-      );
-
-      this._store.setDefData(GROUP_EDGES, slot, data);
-      edgeSlots.push(slot);
-      refs.push(this._store.ref(GROUP_EDGES, slot));
-    }
-
-    this._applyStyle(GROUP_NODES, nodeSlots);
-    this._applyStyle(GROUP_EDGES, edgeSlots);
-
-    return refs;
+    elementsImpl._bulkAdd(this, input);
   }
 
   /**
@@ -1230,43 +769,10 @@ export class Core {
    * where they used to return two equal ones.  Collections are
    * immutable, so nothing can observe the difference except identity
    * itself.
+   * @internal
    */
-  private _allOf(restrict: GroupName | null): Collection {
-    const epoch = this._store.structureEpoch;
-    const cached = this._allCache;
-
-    // a non-null cache is current: onStructureChange nulls it (62.5b)
-    if (cached != null) {
-      const hit =
-        restrict == null
-          ? cached.all
-          : restrict === GROUP_NODES
-            ? cached.nodes
-            : cached.edges;
-
-      if (hit != null) {
-        return hit;
-      }
-    }
-
-    const fresh = this._query(undefined, restrict);
-    const slot =
-      cached != null && cached.epoch === epoch
-        ? cached
-        : ({ epoch, all: null, nodes: null, edges: null } as AllCache);
-
-    if (restrict == null) {
-      slot.all = fresh;
-      this._allEles = fresh;
-    } else if (restrict === GROUP_NODES) {
-      slot.nodes = fresh;
-    } else {
-      slot.edges = fresh;
-    }
-
-    this._allCache = slot;
-
-    return fresh;
+  _allOf(restrict: GroupName | null): Collection {
+    return queryImpl._allOf(this, restrict);
   }
 
   /**
@@ -1275,24 +781,13 @@ export class Core {
    * handles, no per-element matching.  Predicate functions materialize
    * the group(s) and filter per element.  `restrict` narrows the result
    * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
+   * @internal
    */
-  private _query(
+  _query(
     query: Query | EleFilterFn | undefined,
     restrict: GroupName | null,
   ): Collection {
-    if (typeof query === 'function') {
-      // the predicate runs over the whole-graph memo (34.2), not a fresh
-      // scan: `cy.filter( fn )` was compiling an empty query and
-      // re-interning every element per call — 6,000 handles before the
-      // predicate saw one — which is why the whole-graph pair read at v3
-      // parity while `nodes().filter( fn )` on the same graph read 4x
-      // faster.  Round 113.2.
-      return this._allOf(restrict).filter(query);
-    }
-
-    const plan = compileQuery(query ?? {}, restrict);
-
-    return this._scanCollection(plan.nodes, plan.edges, plan.data);
+    return queryImpl._query(this, query, restrict);
   }
 
   /**
@@ -1337,66 +832,7 @@ export class Core {
     x2: number,
     y2: number,
   ): Collection {
-    return new Collection(
-      this,
-      this._store.refsInBox(
-        x1,
-        y1,
-        x2,
-        y2,
-        this._boxSelectionIncludesLabels,
-        this._boxSelectionMode,
-      ),
-      { unique: true, live: true },
-    );
-  }
-
-  /** Collection of the live slots matching per-group flag tests (null matches nothing). */
-  private _scanCollection(
-    nodeTest: FlagTest | null,
-    edgeTest: FlagTest | null,
-    dataConds: CompiledCondition[] | null = null,
-  ): Collection {
-    const store = this._store;
-    const cap =
-      (nodeTest == null ? 0 : store.count(GROUP_NODES)) +
-      (edgeTest == null ? 0 : store.count(GROUP_EDGES));
-    const refs: Ref[] = new Array(cap);
-    const dataTests =
-      dataConds == null
-        ? undefined
-        : dataConds.map((cond) => ({
-            key: cond.key,
-            test: (v: unknown) => testCondition(cond, v),
-          }));
-    let n = 0;
-
-    if (nodeTest != null) {
-      n = store.scanRefsInto(
-        refs,
-        n,
-        GROUP_NODES,
-        nodeTest.mask,
-        nodeTest.want,
-        dataTests,
-      );
-    }
-    if (edgeTest != null) {
-      n = store.scanRefsInto(
-        refs,
-        n,
-        GROUP_EDGES,
-        edgeTest.mask,
-        edgeTest.want,
-        dataTests,
-      );
-    }
-
-    if (n !== refs.length) {
-      refs.length = n;
-    }
-
-    return new Collection(this, refs, { unique: true, live: true });
+    return queryImpl._elementsInGestureBox(this, x1, y1, x2, y2);
   }
 
   // -- events --
@@ -1453,17 +889,7 @@ export class Core {
     predicateOrCb?: ElePredicate | EventHandler,
     callback?: EventHandler,
   ): this {
-    if (callback != null) {
-      this._emitter.on(
-        events,
-        predicateQualifier(predicateOrCb as ElePredicate),
-        callback,
-      );
-    } else {
-      this._emitter.on(events, null, predicateOrCb as EventHandler | undefined);
-    }
-
-    return this;
+    return eventsImpl.on(this, events, predicateOrCb, callback) as this;
   }
 
   declare addListener: this['on'];
@@ -1493,21 +919,7 @@ export class Core {
     predicateOrCb?: ElePredicate | EventHandler,
     callback?: EventHandler,
   ): this {
-    if (callback != null) {
-      this._emitter.one(
-        events,
-        predicateQualifier(predicateOrCb as ElePredicate),
-        callback,
-      );
-    } else {
-      this._emitter.one(
-        events,
-        null,
-        predicateOrCb as EventHandler | undefined,
-      );
-    }
-
-    return this;
+    return eventsImpl.one(this, events, predicateOrCb, callback) as this;
   }
 
   declare once: this['one'];
@@ -1542,21 +954,7 @@ export class Core {
     predicateOrCb?: ElePredicate | EventHandler,
     callback?: EventHandler,
   ): this {
-    if (callback != null) {
-      this._emitter.off(
-        events,
-        predicateQualifier(predicateOrCb as ElePredicate),
-        callback,
-      );
-    } else {
-      this._emitter.off(
-        events,
-        null,
-        predicateOrCb as EventHandler | undefined,
-      );
-    }
-
-    return this;
+    return eventsImpl.off(this, events, predicateOrCb, callback) as this;
   }
 
   declare removeListener: this['off'];
@@ -1684,16 +1082,7 @@ export class Core {
    * @returns this core, for chaining
    */
   fit(eles?: Collection, padding: number = 0): this {
-    const bb = this._boundsOf(eles);
-
-    if (bb == null) {
-      return this;
-    }
-
-    this._viewport.fit(bb, padding);
-    this._emitViewportEvents(['zoom', 'pan', 'fit']);
-
-    return this;
+    return viewportImpl.fit(this, eles, padding) as this;
   }
 
   /**
@@ -1704,17 +1093,7 @@ export class Core {
    * @returns this core, for chaining
    */
   center(eles?: Collection): this {
-    const bb = this._boundsOf(eles);
-
-    if (bb == null) {
-      return this;
-    }
-
-    if (this._viewport.centerOn(bb)) {
-      this._emitViewportEvents(['pan']);
-    }
-
-    return this;
+    return viewportImpl.center(this, eles) as this;
   }
 
   declare centre: this['center'];
@@ -1733,24 +1112,7 @@ export class Core {
    * @returns this core, for chaining
    */
   animate(opts: AnimateOptions): this {
-    // resolve first, so a `panBy` delta gates on panningEnabled exactly
-    // as the absolute target it resolves to
-    const resolved = this._resolveViewportTargets(opts);
-
-    if (opts.fit == null && opts.center == null) {
-      if (resolved.pan != null && !this._panningEnabled) {
-        return this;
-      }
-      if (resolved.zoom != null && !this._zoomingEnabled) {
-        return this;
-      }
-    }
-
-    this._animations.start(
-      new Animation(this._store, this._viewport, [], true, resolved),
-    );
-
-    return this;
+    return viewportImpl.animate(this, opts) as this;
   }
 
   /**
@@ -1762,61 +1124,7 @@ export class Core {
    * @returns the handle
    */
   animation(opts: AnimateOptions): AnimationHandle {
-    return new AnimationHandleImpl(
-      this._animations,
-      new Animation(
-        this._store,
-        this._viewport,
-        [],
-        true,
-        this._resolveViewportTargets(opts),
-      ),
-    );
-  }
-
-  /**
-   * Resolve `fit`/`center`/`panBy` targets to concrete pan/zoom at
-   * creation time, as v3 does.  Precedence follows v3's override order:
-   * `fit` beats `center` beats `panBy` beats an explicit `pan`.
-   */
-  private _resolveViewportTargets(opts: AnimateOptions): AnimateOptions {
-    if (opts.panBy != null && opts.pan != null) {
-      throw new Error(
-        `'panBy' and 'pan' both target the viewport pan — pass one ` +
-          `(v3 silently preferred panBy; v4 does not guess)`,
-      );
-    }
-
-    if (opts.fit != null) {
-      const fit = opts.fit;
-      const padding = fit.padding ?? 0;
-      const fv =
-        fit.boundingBox != null
-          ? this._viewport.fitViewport(
-              math.makeBoundingBox(fit.boundingBox) as BoundsLike,
-              padding,
-            )
-          : this.getFitViewport(fit.eles as Collection | undefined, padding);
-
-      if (fv != null) {
-        return { ...opts, pan: fv.pan, zoom: fv.zoom };
-      }
-    } else if (opts.center != null) {
-      const pan = this.getCenterPan(opts.center.eles as Collection | undefined);
-
-      if (pan != null) {
-        return { ...opts, pan };
-      }
-    } else if (opts.panBy != null) {
-      const from = this._viewport.pan() as Position;
-
-      return {
-        ...opts,
-        pan: { x: from.x + opts.panBy.x, y: from.y + opts.panBy.y },
-      };
-    }
-
-    return opts;
+    return viewportImpl.animation(this, opts);
   }
 
   /**
@@ -1844,13 +1152,9 @@ export class Core {
     return this;
   }
 
-  /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. */
-  private _afterAnimationTick(): void {
-    if (this._animations.isViewportAnimating()) {
-      this._emitViewportEvents(['pan', 'zoom', 'viewport']);
-    }
-
-    this._renderer?.requestRender();
+  /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. @internal */
+  _afterAnimationTick(): void {
+    viewportImpl._afterAnimationTick(this);
   }
 
   /**
@@ -1928,22 +1232,7 @@ export class Core {
    * @returns this core, for chaining
    */
   zoomRange(min: number | { min?: number; max?: number }, max?: number): this {
-    const lo = typeof min === 'object' ? min.min : min;
-    const hi = typeof min === 'object' ? min.max : max;
-    let changed = false;
-
-    if (lo != null && this._viewport.setMinZoom(lo)) {
-      changed = true;
-    }
-    if (hi != null && this._viewport.setMaxZoom(hi)) {
-      changed = true;
-    }
-
-    if (changed) {
-      this._emitViewportEvents(['zoom']);
-    }
-
-    return this;
+    return viewportImpl.zoomRange(this, min, max) as this;
   }
 
   /**
@@ -1954,20 +1243,7 @@ export class Core {
    * @returns this core, for chaining
    */
   viewport(opts: { zoom?: number; pan?: Position }): this {
-    const events: string[] = [];
-
-    if (opts.zoom != null && this._viewport.setZoom(opts.zoom)) {
-      events.push('zoom');
-    }
-    if (opts.pan != null && this._viewport.setPan(opts.pan)) {
-      events.push('pan');
-    }
-
-    if (events.length > 0) {
-      this._emitViewportEvents(events);
-    }
-
-    return this;
+    return viewportImpl.viewport(this, opts) as this;
   }
 
   /** Reset the viewport to zoom 1, pan (0, 0). */
@@ -2049,22 +1325,7 @@ export class Core {
    * @internal
    */
   _decodePick(id: number | null): Collection | null {
-    if (id == null || id === 0) {
-      return null;
-    }
-
-    const isEdge = (id & EDGE_PICK_BIT) !== 0;
-    const group: GroupName = isEdge ? GROUP_EDGES : GROUP_NODES;
-    const slot = (isEdge ? id & ~EDGE_PICK_BIT : id) - 1;
-
-    if (
-      slot >= this._store.highWater(group) ||
-      !this._store.hasFlag(group, slot, FLAG_ALIVE)
-    ) {
-      return null;
-    }
-
-    return this._ele(group, slot);
+    return exportImpl._decodePick(this, id);
   }
 
   // -- renderer --
@@ -2136,60 +1397,12 @@ export class Core {
 
   declare jpeg: this['jpg'];
 
-  private async _exportImage(
+  /** @internal */
+  async _exportImage(
     mime: string,
     options: ExportOptions,
   ): Promise<string | Blob> {
-    const output = options.output ?? 'base64uri';
-
-    if (
-      output !== 'base64uri' &&
-      output !== 'base64' &&
-      output !== 'blob' &&
-      output !== 'blob-promise'
-    ) {
-      throw new Error(
-        `Invalid image export output '${String(output)}'; use 'base64uri', 'base64' or 'blob'`,
-      );
-    }
-
-    if (this._renderer == null) {
-      throw new Error(
-        'An image can only be exported from a rendered instance; this instance is headless',
-      );
-    }
-
-    const { data, width, height } = await this._renderer.exportImage(options);
-    const doc = (this._container as HTMLElement).ownerDocument as Document;
-    const canvas = doc.createElement('canvas');
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-    context.putImageData(new ImageData(data, width, height), 0, 0);
-
-    const quality = options.quality;
-
-    if (output === 'blob' || output === 'blob-promise') {
-      return new Promise((resolve, reject) => {
-        canvas.toBlob(
-          (blob) =>
-            blob != null
-              ? resolve(blob)
-              : reject(
-                  new Error(`Could not encode the exported image as ${mime}`),
-                ),
-          mime,
-          quality,
-        );
-      });
-    }
-
-    const uri = canvas.toDataURL(mime, quality);
-
-    return output === 'base64' ? uri.substring(uri.indexOf(',') + 1) : uri;
+    return exportImpl._exportImage(this, mime, options);
   }
 
   // -- graph-level data & scratch (plain objects, not columns) --
@@ -2252,53 +1465,22 @@ export class Core {
     return this._objectRemove(this._scratch, names, null);
   }
 
-  private _objectAccess(
+  /** @internal */
+  _objectAccess(
     target: Record<string, unknown>,
     args: [] | [string] | [string, unknown] | [Record<string, unknown>],
     event: string | null,
   ): unknown {
-    const [key, value] = args;
-
-    if (args.length === 0) {
-      return target;
-    }
-    if (typeof key === 'string' && args.length === 1) {
-      return target[key];
-    }
-
-    const patch: Record<string, unknown> =
-      typeof key === 'string'
-        ? { [key]: value }
-        : (key as Record<string, unknown>);
-
-    Object.assign(target, patch);
-
-    if (event != null) {
-      this.emit(event);
-    }
-
-    return this;
+    return graphDataImpl._objectAccess(this, target, args, event);
   }
 
-  private _objectRemove(
+  /** @internal */
+  _objectRemove(
     target: Record<string, unknown>,
     names: string | undefined,
     event: string | null,
   ): this {
-    const keys =
-      names == null
-        ? Object.keys(target)
-        : names.split(/\s+/).filter((n) => n !== '');
-
-    for (const k of keys) {
-      delete target[k];
-    }
-
-    if (event != null && keys.length > 0) {
-      this.emit(event);
-    }
-
-    return this;
+    return graphDataImpl._objectRemove(this, target, names, event) as this;
   }
 
   // -- interaction gating --
@@ -2817,94 +1999,7 @@ export class Core {
    *   ones rather than whatever was last materialized
    */
   serialize(): ArrayBuffer {
-    const store = this._store;
-
-    store.flushDerived(); // parent positions are derived (round 14.8)
-
-    const nodeSlots = store.slotsOrdered(GROUP_NODES);
-    const edgeSlots = store.slotsOrdered(GROUP_EDGES);
-    const pos = store.column(COL.NODE_POSITION) as Float32Array;
-    const nodeFlags = store.column(COL.NODE_FLAGS) as Uint32Array;
-    const edgeFlags = store.column(COL.EDGE_FLAGS) as Uint32Array;
-    const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-    const nodeIds: string[] = new Array(nodeSlots.length);
-    const positions = new Float32Array(nodeSlots.length * 2);
-    const nodeSelected = new Uint8Array(nodeSlots.length);
-    const nodeSelectable = new Uint8Array(nodeSlots.length);
-    const indexOfSlot = new Map<number, number>();
-
-    for (let i = 0; i < nodeSlots.length; i++) {
-      const slot = nodeSlots[i];
-
-      indexOfSlot.set(slot, i);
-      nodeIds[i] = store.idAt(GROUP_NODES, slot) as string;
-      positions[i * 2] = pos[slot * 2];
-      positions[i * 2 + 1] = pos[slot * 2 + 1];
-      nodeSelected[i] = (nodeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
-      nodeSelectable[i] = (nodeFlags[slot] & FLAG_SELECTABLE) !== 0 ? 1 : 0;
-    }
-
-    // hierarchy (round 14.8): parent slots -> payload indices (a second
-    // pass — a parent may sit later in slot order than its children)
-    let nodeParents: Uint32Array | undefined;
-
-    if (store.hasCompounds()) {
-      nodeParents = new Uint32Array(nodeSlots.length).fill(NO_PARENT);
-
-      for (let i = 0; i < nodeSlots.length; i++) {
-        const parentSlot = store.parentOf(nodeSlots[i]);
-
-        if (parentSlot >= 0) {
-          nodeParents[i] = indexOfSlot.get(parentSlot) as number;
-        }
-      }
-    }
-
-    const edgeIds: string[] = new Array(edgeSlots.length);
-    const sources = new Uint32Array(edgeSlots.length);
-    const targets = new Uint32Array(edgeSlots.length);
-    const edgeSelected = new Uint8Array(edgeSlots.length);
-    const edgeSelectable = new Uint8Array(edgeSlots.length);
-
-    for (let i = 0; i < edgeSlots.length; i++) {
-      const slot = edgeSlots[i];
-
-      edgeIds[i] = store.idAt(GROUP_EDGES, slot) as string;
-      sources[i] = indexOfSlot.get(endpoints[slot * 2]) as number;
-      targets[i] = indexOfSlot.get(endpoints[slot * 2 + 1]) as number;
-      edgeSelected[i] = (edgeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
-      edgeSelectable[i] = (edgeFlags[slot] & FLAG_SELECTABLE) !== 0 ? 1 : 0;
-    }
-
-    return serializeElements({
-      columnar: true,
-      nodes: {
-        count: nodeSlots.length,
-        ids: nodeIds,
-        positions,
-        selected: nodeSelected,
-        selectable: nodeSelectable,
-        ...(nodeParents != null ? { parent: nodeParents } : {}),
-        data: store.data.exportColumns(GROUP_NODES, nodeSlots),
-      },
-      edges: {
-        count: edgeSlots.length,
-        ids: edgeIds,
-        sources,
-        targets,
-        selected: edgeSelected,
-        selectable: edgeSelectable,
-        data: store.data.exportColumns(GROUP_EDGES, edgeSlots),
-      },
-      // graph-level data (round 39.2), copied rather than held by
-      // reference: the buffer is a snapshot, and a later cy.data() write
-      // must not reach back into a payload the caller may still be
-      // serializing
-      ...(Object.keys(this._graphData).length > 0
-        ? { data: { ...this._graphData } }
-        : {}),
-    });
+    return serializeImpl.serialize(this);
   }
 
   /**
@@ -2924,37 +2019,7 @@ export class Core {
    *   attempted `json( obj )` import
    */
   json(flat?: boolean): Record<string, unknown> {
-    if (flat != null && typeof flat !== 'boolean') {
-      throw new Error(
-        'cy.json() is export-only in the GPU prototype; the import/restore form is not supported',
-      );
-    }
-
-    const elements =
-      flat === true
-        ? this.elements().jsons()
-        : { nodes: this.nodes().jsons(), edges: this.edges().jsons() };
-
-    return {
-      elements,
-      style: this._styleEngine.json(),
-      data: { ...this._graphData },
-      zoom: this._viewport.zoom(),
-      pan: { ...(this._viewport.pan() as Position) },
-      minZoom: this._viewport.minZoom,
-      maxZoom: this._viewport.maxZoom,
-      zoomingEnabled: this._zoomingEnabled,
-      userZoomingEnabled: this._userZoomingEnabled,
-      panningEnabled: this._panningEnabled,
-      userPanningEnabled: this._userPanningEnabled,
-      boxSelectionEnabled: this._boxSelectionEnabled,
-      selectionType: this._selectionType,
-      autolock: this._autolock,
-      autoungrabify: this._autoungrabify,
-      autounselectify: this._autounselectify,
-      headless: this.headless(),
-      styleEnabled: this.styleEnabled(),
-    };
+    return serializeImpl.json(this, flat);
   }
 
   /**
@@ -2962,19 +2027,7 @@ export class Core {
    * CPU-canonical, so nothing is lost).  No-op when already headless.
    */
   unmount(): this {
-    if (this._container == null) {
-      return this;
-    }
-
-    this._pointer?.destroy();
-    this._pointer = null;
-    this._renderer?.destroy();
-    this._renderer = null;
-    this._container = null;
-    this._readyResolved = true; // headless is ready by definition
-    this.ready = Promise.resolve(this);
-
-    return this;
+    return lifecycleImpl.unmount(this) as this;
   }
 
   /**
@@ -2990,32 +2043,7 @@ export class Core {
    *   headless instance can demand a GPU after construction
    */
   mount(container: HTMLElement): this {
-    if (container == null) {
-      throw new Error('mount() needs a container element');
-    }
-
-    if (this._attachFn == null) {
-      throw new Error(
-        'This instance cannot mount (it was not created via the cytoscape factory)',
-      );
-    }
-
-    if (this._container != null) {
-      if (this._container === container) {
-        return this;
-      }
-
-      this.unmount();
-    }
-
-    this._container = container;
-    this._readyResolved = false;
-    // the old label layer consumed the dirty channel; a fresh one starts
-    // empty, so every labelled slot must queue for a glyph rebuild
-    this._store.markAllLabelsDirty();
-    this._attachFn(container);
-
-    return this;
+    return lifecycleImpl.mount(this, container) as this;
   }
 
   /**
@@ -3027,48 +2055,7 @@ export class Core {
    * and emits 'error' (the pre-round-10 behavior).
    */
   _handleDeviceLost(message: string): void {
-    if (this._destroyed) {
-      return;
-    }
-
-    this.emit({ type: 'devicelost' }, [message]);
-
-    const container = this._container;
-
-    if (this._recoveringDevice || container == null || this._attachFn == null) {
-      this.unmount();
-      this.emit({ type: 'error' }, [`WebGPU device lost: ${message}`]);
-
-      return;
-    }
-
-    this._recoveringDevice = true;
-    this.unmount();
-
-    try {
-      this.mount(container);
-    } catch (err) {
-      this._recoveringDevice = false;
-      this.emit({ type: 'error' }, [
-        `WebGPU device lost and could not recover: ${(err as Error).message}`,
-      ]);
-
-      return;
-    }
-
-    this.ready.then(
-      () => {
-        this._recoveringDevice = false;
-        this.emit('devicerestored');
-      },
-      (err: Error) => {
-        this._recoveringDevice = false;
-        this.unmount();
-        this.emit({ type: 'error' }, [
-          `WebGPU device lost and could not recover: ${err.message}`,
-        ]);
-      },
-    );
+    lifecycleImpl._handleDeviceLost(this, message);
   }
 
   /**
@@ -3115,34 +2102,7 @@ export class Core {
    * @returns this core
    */
   destroy(): this {
-    if (this._destroyed) {
-      return this;
-    }
-
-    // the last cancel (round 128): a layout still running restores its
-    // positions and closes its lifecycle, a pending algorithm handle
-    // rejects with CancelledError — before the listeners go, so a
-    // `layoutstop` still reaches them, and before the renderer goes, so
-    // nothing in flight writes into a dead one
-    for (const run of [...this._inflight]) {
-      run.cancel();
-    }
-
-    this._inflight.clear();
-    this.emit('destroy');
-    this._emitter.removeAllListeners();
-
-    this._pointer?.destroy();
-    this._pointer = null;
-
-    if (this._renderer != null) {
-      this._renderer.destroy();
-      this._renderer = null;
-    }
-
-    this._destroyed = true;
-
-    return this;
+    return lifecycleImpl.destroy(this) as this;
   }
 
   /**
@@ -3163,17 +2123,7 @@ export class Core {
    * @internal
    */
   _trackRun<T>(run: AlgoRun<T>): AlgoRun<T> {
-    const done = (): void => {
-      this._inflight.delete(run);
-    };
-
-    this._inflight.add(run);
-    // observed through the handle's own settle promise, never through
-    // `run.then` — a handler here would mark the caller's rejection as
-    // handled, and a cancelled run nobody catches must stay theirs to see
-    whenSettled(run).then(done);
-
-    return run;
+    return lifecycleImpl._trackRun(this, run);
   }
 
   // -- internals --
@@ -3220,32 +2170,7 @@ export class Core {
     slots: number[],
     keys: string[],
   ): void {
-    if (this._batchPending != null) {
-      for (const slot of slots) {
-        this._batchPending.mapped.push(this._store.ref(group, slot));
-      }
-
-      for (const key of keys) {
-        this._batchPending.mappedKeys.add(key);
-      }
-
-      return;
-    }
-
-    this._styleEngine.refreshMapped(group, slots, keys);
-  }
-
-  /** First style apply for freshly-added slots, deferred while batching. */
-  private _applyStyle(group: GroupName, slots: ArrayLike<number>): void {
-    if (this._batchPending != null) {
-      for (let i = 0; i < slots.length; i++) {
-        this._batchPending.style.push(this._store.ref(group, slots[i]));
-      }
-
-      return;
-    }
-
-    this._styleEngine.applyBulk(group, slots);
+    batchingImpl._refreshMappedStyles(this, group, slots, keys);
   }
 
   _emitOnEle(
@@ -3254,72 +2179,7 @@ export class Core {
     extraParams?: unknown[],
     props?: Partial<EventProps>,
   ): void {
-    // Round 34.3: nothing listens for this type, so there is nothing to
-    // do.  Sound because v4's emitter has no bubbling of its own (round
-    // 41.2 dropped v3's `bubble`/`parent`; compound bubbling is the
-    // phase walk below) — so an emit with no matching listener is
-    // observably a no-op.
-    //
-    // Most callers gate already; the *pointer layer's* sixteen do not
-    // (mouseover/mouseout, the pointer pair, tap, tapselect, the box
-    // family), and those fire on hover transitions and pointer moves.
-    // On a compound graph an ungated emit built an Event, interned a
-    // handle per ancestor and emitted once per phase before discovering
-    // that nobody cared: 338 ns for a node two ancestors deep against
-    // 159 ns for an orphan.
-    if (!hasListeners(this._emitter, type)) {
-      return;
-    }
-
-    const store = this._store;
-
-    if (store.hasCompounds()) {
-      const ref = ele._eventRef();
-
-      if (
-        ref != null &&
-        ref.group === GROUP_NODES &&
-        store.parentOf(ref.slot) >= 0
-      ) {
-        // compound bubbling (round 14.5): origin -> ancestors -> core in
-        // phases on one shared Event, so stopPropagation carries between
-        // them.  event.target stays the originator; each phase's element
-        // rides _phaseRef/_phaseEle (see events.mts).
-        const eventObj = new Event({
-          type,
-          target: ele,
-          ...props,
-        }) as PhasedEvent;
-
-        eventObj._phaseRef = ref;
-        eventObj._phaseEle = ele;
-        this._emitter.emit(eventObj, extraParams);
-
-        for (let p = store.parentOf(ref.slot); p >= 0; p = store.parentOf(p)) {
-          if (eventObj.isPropagationStopped()) {
-            return;
-          }
-
-          const phaseEle = this._ele(GROUP_NODES, p);
-
-          eventObj._phaseRef = phaseEle._eventRef();
-          eventObj._phaseEle = phaseEle;
-          this._emitter.emit(eventObj, extraParams);
-        }
-
-        if (eventObj.isPropagationStopped()) {
-          return;
-        }
-
-        eventObj._phaseRef = null;
-        eventObj._phaseEle = null;
-        this._emitter.emit(eventObj, extraParams);
-
-        return;
-      }
-    }
-
-    this._emitter.emit({ type, target: ele, ...props }, extraParams);
+    eventsImpl._emitOnEle(this, type, ele, extraParams, props);
   }
 
   _hasListeners(type: string): boolean {
@@ -3332,36 +2192,9 @@ export class Core {
     }
   }
 
-  private _boundsOf(
-    eles?: Collection,
-  ): ReturnType<Collection['boundingBox']> | null {
-    if (eles == null) {
-      // whole-graph fast path: columnar scan in the store, skipping the
-      // per-element handle layer entirely
-      return this._store.boundingBox();
-    }
-
-    if (eles.length === 0) {
-      return null;
-    }
-
-    return eles.boundingBox();
-  }
-
-  /**
-   * A synthetic id for an element added without one.  The prefix read `gpu-`
-   * until round 43 — a leftover the 42.6 rename missed, and a user-visible one,
-   * since it is what `ele.id()` returns.
-   */
-  private _newId(): string {
-    let id: string;
-
-    do {
-      id = 'cy-' + this._idCounter;
-      this._idCounter++;
-    } while (this._store.ids.has(id));
-
-    return id;
+  /** @internal */
+  _boundsOf(eles?: Collection): ReturnType<Collection['boundingBox']> | null {
+    return viewportImpl._boundsOf(this, eles);
   }
 }
 

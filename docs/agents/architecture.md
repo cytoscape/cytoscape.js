@@ -18,7 +18,7 @@ routes, these files explain.
 ## `src/` — v4's source
 
 - `src/`: v4's source — the columnar core and WebGPU renderer (issue #3486).  `src/README.md` is the maintained scope and design-decisions doc; `PLAN.md` (repo root) records each development round and the standing process rules (docs travel with every commit; a closing docs sweep ends every round).
-  - `src/core.mts`, `src/collection.mts`: the core facade and the collection API.
+  - `src/core.mts`, `src/collection.mts`: the core facade and the collection API.  Since round 130 each keeps the class — every signature and doc — and delegates its bodies to `src/core/` (batching, elements, query, events, viewport, export, graph-data, serialize, lifecycle) and `src/collection/` (see below).
   - `src/store/`: the columnar model — tables, indexes, sidecars, dirty tracking.  `graph-store.mts` is the facade; its curve reads, scans, compound hierarchy, compaction, mutation, layer/channel/image/label/position/flag writers are functions over the store in `src/store/graph-store/` (round 130).
   - `src/render/`: the WebGPU frame graph, pipelines, shaders, culling, picking.
   - `src/interact/`: pointer, wheel and touch gestures.

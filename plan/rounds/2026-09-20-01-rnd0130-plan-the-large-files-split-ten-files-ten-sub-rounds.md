@@ -212,6 +212,27 @@ invariant is rekeyed to `graph-store/layers.mts:170`.
 `graph-store.mts`: 5,665 → **2,279 lines**.  API JSON identical modulo
 line stamps; the soak tier and the store specs green.
 
+### 130.6 — `src/core/`, carried out (2026-09-20)
+
+Forty-six methods by the extractor into nine modules: `batching` (250
+lines — compaction, `startBatch`/`endBatch`, the style-apply helpers
+that share `_batchPending`), `elements` (347 — the add pipeline),
+`query` (176), `events` (143 — `on`/`one`/`off` and the compound
+bubbling emit), `viewport` (240 — `fit`/`center`/`zoomRange`/
+`viewport` and the viewport animation), `export` (95), `graph-data`
+(54), `serialize` (171), `lifecycle` (273 — the layout factory, mount,
+unmount, device loss, destroy, `_trackRun`).  Nineteen private helpers
+left the class; twenty private fields are `_`-prefixed `@internal`;
+`_ele`/`_eleFromRef` stay whole as the interned-handle hot path, and
+`collection()` because it reads `arguments`.  The module-scope types
+and constants (`Layout`, `RendererLike`, `LayoutLike`, the headless
+defaults, `AllCache`, `BatchPending`) stay in the facade.  Of the 99
+`features.csv` rows, 98 re-anchored by text or member; the one that
+pointed into a field's doc block (`cy.ready`) now points at the field.
+
+`core.mts`: 3,385 → **2,218 lines**.  API JSON identical modulo line
+stamps; every gate green.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

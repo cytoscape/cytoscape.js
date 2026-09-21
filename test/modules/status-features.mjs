@@ -32,7 +32,8 @@ describe('feature status page', () => {
     const text = (name) => plan.ops.find((op) => op.to === name)?.text;
     expect(text('features.csv')).to.equal(CSV);
     const html = text('features.html');
-    expect((html.match(/<tr>/g) ?? []).length).to.equal(rows.length + 1);
+    const table = html.slice(html.indexOf('<table class="features">'));
+    expect((table.match(/<tr>/g) ?? []).length).to.equal(rows.length + 1);
     expect(html).to.include('download="cytoscape-v4-features.csv"');
     expect(html).to.include('aria-current="page"');
     expect(html).to.include('/design.html');

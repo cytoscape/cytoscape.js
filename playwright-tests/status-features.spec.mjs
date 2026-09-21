@@ -53,7 +53,7 @@ test('feature table filters compose and the download retains the whole inventory
   await page.getByRole('searchbox').fill('  PIE-16  ');
   await expect(visible).toHaveCount(3);
   await expect(page.getByRole('status')).toHaveText(
-    `3 of ${inventory.length} features`,
+    `Showing 3 of ${inventory.length} rows`,
   );
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('link', { name: 'Download CSV' }).click();

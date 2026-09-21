@@ -20,9 +20,12 @@ table.features { width: 100%; border-collapse: collapse; }
 .features .feature-comment { min-width: 30ch; max-width: 85ch; }
 .features .feature-status { white-space: nowrap; }
 .features caption { text-align: left; margin-bottom: 12px; color: var(--muted); }
-.feature-legend { margin: 16px 0; }
-.feature-legend dt { font-weight: 600; margin-top: 8px; }
-.feature-legend dd { margin-left: 0; }
+.feature-legend { margin: 16px 0; border-collapse: collapse; }
+.feature-legend caption { text-align: left; font-weight: 600; margin-bottom: 6px; }
+.feature-legend th { text-align: left; }
+.feature-legend th, .feature-legend td { vertical-align: top; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); }
+.feature-legend .legend-count { text-align: right; font-variant-numeric: tabular-nums; padding-right: 20px; }
+.feature-legend .is-zero { color: var(--muted); }
 @media (max-width: 600px) {
   .layout { padding: 20px 12px; }
   .feature-field { width: 100%; }
@@ -54,7 +57,9 @@ export const FEATURES_SCRIPT = `
       item.row.hidden = !match;
       if (match) shown++;
     }
-    count.textContent = shown + ' of ' + rows.length + ' features';
+    count.textContent = shown === rows.length
+      ? 'Showing all ' + rows.length + ' rows'
+      : 'Showing ' + shown + ' of ' + rows.length + ' rows';
     empty.hidden = shown !== 0;
   }
   search.addEventListener('input', filter);
@@ -82,8 +87,16 @@ export function summarise(rows) {
   };
 }
 
+/** Rows per distinct value of one column, in first-seen order. */
+export function countBy(rows, key) {
+  const counts = new Map();
+  for (const row of rows) counts.set(row[key], (counts.get(row[key]) ?? 0) + 1);
+  return counts;
+}
+
 export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   const sum = summarise(rows);
+  const byStatus = countBy(rows, 'Status');
   const options = (values) =>
     values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
   const reference = (row) => {
@@ -101,17 +114,20 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   <p class="feature-composition"><strong>${sum.total} rows: ${sum.api} API members, ${sum.style} style properties, ${sum.capability} capabilities.</strong> A member row is one function or one style property; a capability row is a whole feature. The total counts rows, not work.</p>
   <p>Priority areas appear first: performance, developer experience, Cytoscape Web v2, application workflows and core capabilities; the feature-direction review gives the reasoning. Proposed rows are suggestions, not roadmap commitments.</p>
   <p>API rows use <code>eles.</code> for collections, single elements, nodes and edges. Aliases have separate rows; overloads share a row. Comments describe v4 behaviour, not a promise of complete v3 compatibility. The CSV download is the complete inventory, including comments and source references; the build stamp identifies this snapshot.</p>
-  <details class="feature-legend"><summary>Status definitions</summary><dl>${Object.entries(
-    STATUSES,
-  )
-    .map(([name, meaning]) => `<dt>${esc(name)}</dt><dd>${esc(meaning)}</dd>`)
-    .join('')}</dl></details>
+  <table class="feature-legend"><caption id="feature-legend-caption">Statuses — all ${rows.length} rows</caption>
+  <thead><tr><th scope="col">Status</th><th scope="col" class="legend-count">Rows</th><th scope="col">Meaning</th></tr></thead>
+  <tbody>${Object.entries(STATUSES)
+    .map(([name, meaning]) => {
+      const n = byStatus.get(name) ?? 0;
+      return `<tr><th scope="row" title="${esc(meaning)}">${esc(name)}</th><td class="legend-count${n === 0 ? ' is-zero' : ''}" data-status="${esc(name)}">${n}</td><td>${esc(meaning)}</td></tr>`;
+    })
+    .join('')}</tbody></table>
   <div class="feature-tools" hidden>
     <div class="feature-field"><label for="feature-search">Search features and comments</label><input id="feature-search" type="search" placeholder="e.g. labels, force, cy.json"></div>
     <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories</option>${options([...new Set(rows.map((r) => r.Category))].sort())}</select></div>
     <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses</option>${options(Object.keys(STATUSES))}</select></div>
   </div>
-  <p id="feature-count" role="status" aria-live="polite">${rows.length} of ${rows.length} features</p>
+  <p id="feature-count" role="status" aria-live="polite">Showing all ${rows.length} rows</p>
   <div class="feature-scroll" role="region" aria-label="Feature inventory" tabindex="0">
   <table class="features"><caption>Current v4 support; see comments for limitations and alternatives.</caption>
   <thead><tr>${COLUMNS.map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>

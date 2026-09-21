@@ -280,6 +280,22 @@ stamps; the compile-only consumer type test green; the shipped d.ts is
 714 lines shorter across the round so far — the demoted `private`
 lines and their docs.
 
+### 130.9 — the `force-*` siblings, carried out (2026-09-20)
+
+The family was flat already, so the file stays flat: the slicer cut
+`force-options` (the executor and overlap-mode resolvers, the run
+options — 238 lines) and `force-separate` (the tuning constants and
+`separateBodies` — 506), and the extractor moved `runOnce` whole to
+`force-run` (757 — the 686-line preparation-and-dispatch as one
+function over the layout; splitting its closure set further buys
+nothing the file limit needs) and the three executors to
+`force-executors` (278).  The five private flags are `@internal`.  The
+facade re-exports `resolveForceExecutor` and `separateBodies` for their
+three specs.
+
+`force.mts`: 1,968 → **263 lines**.  The force specs, the worker spec
+and the separation/pack specs green; the bundle unchanged in size.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

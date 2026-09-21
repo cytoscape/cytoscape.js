@@ -114,6 +114,21 @@ comment from `shaders/common.mts`.  `build/cytoscape.min.js` is
 byte-identical to the pre-round build (894,905 bytes) — the minifier
 sees the same literals through the re-exports.
 
+### 130.2 — `src/curve-geometry/`, carried out (2026-09-20)
+
+`curve-geometry.mts` (2,166 lines) keeps its round-12a header prose and
+re-exports its 57 names from four files: `bezier` (the constants,
+bundling, arrow trim, `CurveEval`, `evalCurve`, sampling and deviation —
+651 lines), `route` (the round-12b prose, the route constants,
+`CurveRoute`, `evalRoute`, endpoint resolution, haystack — 685),
+`taxi` (`setRouteBoundary`, `evalTaxi` — 227) and `route-quads`
+(corners, bend and quad allocation, `routeVertex`, `flattenRoute`,
+`routeMidpoint` — 599).  The seven module scratch objects moved with
+the functions that own them.  Two helpers siblings now share —
+`qbezier`, `setRouteBoundary` — became documented exports (the internal
+tier is gated at 100%, which is how the split found them).  The 146
+curve specs and the minified bundle are unchanged.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

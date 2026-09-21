@@ -1599,3 +1599,24 @@ directions".*
     named-metric share of real calls (the GPU path already requires
     attributes and a named metric, so its parity suite is the
     fixture), and the in-thread run's length at 1k / 5k nodes.
+
+71. **Eleven source files still sit at 1,000–1,600 lines after round
+    130** (logged 2026-09-20).  Round 130 split the ten largest — the
+    class hubs keep their path as a facade and delegate to a sibling
+    directory of implementation functions, the two pure-function files
+    re-export from theirs — and left these for the maintainer's call:
+    `store/curve-index.mts` (1,555), `render/gpu-force.mts` (1,416),
+    `style-scales.mts` (1,376), `render/mapper-runtime.mts` (1,190),
+    `contract.mts` (1,076 — a `test/modules/string-keys.mjs`
+    declaration site, so `DECLARED_IN` must follow a split),
+    `public-types.mts` (1,064), `algorithms/algo-gpu-cluster.mts`
+    (1,057), `algorithms/algo-kernels.mts` (1,045), `render/cull.mts`
+    (1,026), `taxi-tracks.mts` (1,022), plus `style/mappable.mts`
+    (1,041 — one table, one entry per mapper-capable prop).  The three
+    class facades that stayed over 2,000 (`collection.mts` 3,870,
+    `graph-store.mts` 2,279, `core.mts` 2,218) are doc comments the
+    JSDoc gates read from the class body and ship as hover text; going
+    lower means the subclass-chain split the maintainer declined, or
+    moving the docs off the class.  The round file lists the large
+    non-`src/` files too (the two Playwright specs at 9,579 and 7,425
+    lead).

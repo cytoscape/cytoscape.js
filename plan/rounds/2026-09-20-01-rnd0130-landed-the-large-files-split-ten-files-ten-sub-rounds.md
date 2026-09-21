@@ -365,6 +365,49 @@ V8 does not inline as it did the prototype method; ~7 ns a node).
 `same()` at 16 vs 15 ns is the one extra call a public delegator costs,
 as planned.
 
+### Verification (carried out)
+
+- `npm run -s verify` after every module moved, and green at every
+  commit: 2,834 unit tests.  `npm run -s test:node:quiet` zero bytes
+  after 130.4, 130.6, 130.10 and 130.12 (768 module tests, the soak
+  tier after 130.5).  `npm run -s test:throws:quiet` zero bytes at every
+  sub-round, with the two rekeyed entries and the three repointed
+  fixtures.  `npm run -s test:types` green after 130.8.
+- `npm run docs:api` against the pre-round output: **identical modulo
+  the `src` line stamps** at every sub-round — the acceptance test for
+  the facades.  The shipped d.ts loses only the demoted `private`
+  lines and their docs (714 lines), keeps every public declaration, and
+  now carries `Query` and `DataCondition` with their doc comments.
+- `build/cytoscape.min.js`: 894,905 bytes before, 892,204 after
+  (–2.6 kB); byte-identical after 130.1 and 130.2, since a re-export
+  changes nothing the minifier sees.
+- `docs/features.csv`: 371 line-anchored rows re-anchored by line text
+  or by member, one by hand; the inventory gate green.
+- Playwright, quiet: after 130.7 one timing assertion failed under the
+  concurrent `verify` load (`worker-renderer.spec.js:433`, the
+  mid-run frame count) and passed alone; after 130.10 zero bytes; after
+  130.12 one failure, `renderer.spec.js:3503` (`resize()` presents
+  synchronously), while the status build and module specs loaded the
+  box: `Received: 2` is `MAX_IN_FLIGHT_FRAMES` — with the software GPU
+  two frames behind, `frame()` skips encoding by design and `resize()`
+  schedules instead of drawing; the pre-round code has the same cap,
+  and the test passes alone on this tree.  Both flakes are the
+  renderer's load-sensitive assertions, not the split.
+- The debug harness driven in a scripted Chromium (the extension was
+  not connected): `?network=v3-default` loads and draws; tap selects,
+  a drag moves the node 141.8 px through `grab`/`drag`×10/`free`, a
+  shift-drag box-selects 23 elements, the wheel zooms 1.017 → 4.048,
+  hover emits `mouseover`.  The same script against the pre-round
+  commit in a worktree gave the **same numbers, the same event
+  sequences, and canvas pixels identical** on both screenshots (the
+  stats overlay's frame timings are the only bytes that differ).  The
+  hover *flag* reads 0 on both — the box exposes no adapter to that
+  browser, so the async hover pick never resolves; not the split.
+- Benchmarks: 130.12 above — 1.005 against the pre-round commit on the
+  same machine with the v3 control at 1.015, after the delegator
+  inlining.
+- `git worktree list`: only the checkout.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

@@ -613,6 +613,24 @@ shader over every allocated slot.
   probe adapters from a served page — a bare-page probe reads as
   "no GPU" on a box that has one.
 
+Round 130 (2026-09-20) split the ten largest source files — `style`,
+`collection`, `graph-store`, `shaders`, `core`, `renderer`,
+`animation`, `curve-geometry`, `force`, `pointer` — on the pattern
+`collection.mts` already used for `src/algorithms/`: the class hub keeps
+its path as a facade, with every signature and doc comment on the class
+body where the JSDoc gates read them, and delegates its bodies to a
+sibling directory (or flat siblings, for the `force-*` and `pointer-*`
+families) of functions that take the instance first; the two files that
+were only functions re-export from theirs.  Nothing on the public
+surface moved (the docs generator's output is identical modulo line
+stamps; the shipped declaration only lost the demoted `private` lines),
+`features.csv`'s 371 line-anchored rows were re-anchored, and the
+line-keyed gates (`throw-coverage`'s tables and fixtures,
+`wgsl-minify`'s file list, the inventory's style-registry read,
+`PUBLIC_API`) follow the code.  Item 26 in the ledger below carries
+the before/after sizes; PLAN.md item 71 lists the eleven files that
+still sit between 1,000 and 1,600 lines, for the maintainer's call.
+
 ## API scope (pass 1)
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
@@ -6633,12 +6651,21 @@ it here in round 57.4.*
   shipped is the `bypasses` sheet section with the v3 method spellings
   as sugar; the style-getters section above carries the contract.
 
-  **26** would split the
-  big implementation files the way `src/algorithms/` already is —
-  `style.mts` is 7.9k lines and `collection.mts` 5.8k — with the
-  constraint that these audits walk *class bodies*, so a v3-style split
-  onto a prototype would make every moved member invisible to all four
-  gates at once while they kept reading 100%.
+  **26 landed as round 130** (2026-09-20): the ten largest files split
+  the way `src/algorithms/` already was — each class hub keeps its path
+  as the facade (every signature and doc on the class body, where the
+  four gates read them) and delegates its bodies to a sibling directory
+  of functions over the instance; the two pure-function files re-export
+  from theirs.  The constraint this entry named held: nothing left a
+  class body's public surface, and the docs generator's output is
+  byte-identical modulo line stamps.  `style.mts` 9,961 → 789,
+  `collection.mts` 6,581 → 3,870 (2,180 of which are the doc comments
+  that must stay), `graph-store.mts` 5,665 → 2,279, `shaders.mts` 5,220
+  → 26, `core.mts` 3,385 → 2,218, `renderer.mts` 3,016 → 832,
+  `animation.mts` 2,328 → 64, `curve-geometry.mts` 2,166 → 100,
+  `force.mts` 1,968 → 263, `pointer.mts` 1,916 → 540; every new module
+  under 1,050.  The round file has the per-file layouts and the tool
+  rules the split taught (`plan/rounds/2026-09-20-01-rnd0130-…`).
 - **One deviation round 57.1 recorded**, in "Known deviations from v3"
   above: `:active` reached nodes only, because the press target is the
   synchronous CPU pick and that has been nodes-only since round 17.3.

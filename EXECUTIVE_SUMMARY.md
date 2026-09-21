@@ -5,8 +5,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-18, after a day of five rounds and three
-  measurements.  The last of them (round 129) made the main thread's
+- **Last updated**: 2026-09-20, after round 130 split the ten largest
+  source files — `style` (9,961 lines), `collection` (6,581),
+  `graph-store` (5,665), `shaders` (5,220), `core` (3,385), `renderer`
+  (3,016), `animation`, `curve-geometry`, `force`, `pointer` — on the
+  pattern `collection.mts` already used for `src/algorithms/`: the
+  class keeps its path as a facade, every signature and doc comment on
+  its body where the JSDoc gates read them, and delegates its bodies to
+  a sibling directory of functions over the instance.  Nothing on the
+  public surface moved (the generated API is byte-identical modulo
+  line stamps), 371 line-anchored inventory rows were re-anchored, and
+  every gate is green; the three facades still over 2,000 lines are
+  doc comments, and eleven files between 1,000 and 1,600 are listed
+  for the maintainer's call (PLAN.md item 71).  Before it, 18 Sep was
+  a day of five rounds and three measurements.  The last of them
+  (round 129) made the main thread's
   availability a lane's value: the ten whole-graph algorithms the
   worker pool cannot partition run their reference on one worker
   under `'auto'` — the same kernel function on both sides, so the
@@ -74,12 +87,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,837 unit · 768 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,834 unit · 768 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
 | Documented API | 335 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | 839 KiB minified / 231 KiB gzipped as of 17 Sep (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
+| Bundle | 871 KiB minified / 245 KiB gzipped as of 20 Sep (round 130's split left it 2.6 KiB smaller) (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
@@ -1226,6 +1239,27 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **20 Sep** — the large files split (round 130)
+  - Ten sub-rounds, one file each: `shaders` and `curve-geometry` became
+    re-export facades over a directory; `style`, `collection`,
+    `graph-store`, `core`, `renderer` and `pointer` kept their class as
+    a facade — every signature and doc on the class body — and moved
+    their private groups out as functions over the instance;
+    `animation` became one class per file; `force` split into flat
+    `force-*` siblings.  Facades after: 789 / 3,870 / 2,279 / 26 /
+    2,218 / 832 / 64 / 100 / 263 / 540 lines; every new module under
+    1,050.
+  - Buys a source tree a reader can hold: no file over 1,050 lines but
+    the three class facades whose remaining length is documentation,
+    with the gates (JSDoc coverage, the docs generator, the shipped
+    declaration, `features.csv`, the throw and WGSL audits) proving
+    nothing on the surface moved.
+  - What the split taught the tools, kept in the round file: a body
+    that reads `arguments` cannot delegate; a `Promise<void>` must be
+    returned or its rejection goes unhandled; a local that shadows a
+    removed method's name would call itself; a spied-on private method
+    keeps instance dispatch; an `@internal` export cannot be re-exported
+    by a facade once `stripInternal` has dropped it from the d.ts.
 
 ## What changed for users of v3
 

@@ -296,6 +296,20 @@ three specs.
 `force.mts`: 1,968 → **263 lines**.  The force specs, the worker spec
 and the separation/pack specs green; the bundle unchanged in size.
 
+### 130.10 — the `pointer-*` siblings, carried out (2026-09-20)
+
+Thirty-three methods by the extractor into five flat siblings:
+`pointer-handlers` (553 — wheel, down, move, up, cancel, so the class
+keeps only its fields, the listener wiring and the small emit/flag
+helpers), `pointer-press` (340), `pointer-touch` (325), `pointer-box`
+(130), `pointer-hover` (228 — `applyCursor` stays public on the facade
+for `test/pointer-cursors.mjs`).  The 26 private fields are documented
+bare fields (`PointerHandler` never reaches the d.ts); `src/interact/`
+is a `BROWSER_ONLY` prefix so the new files inherit the throw tier.
+
+`pointer.mts`: 1,916 → **540 lines**.  The cursor spec and the gates
+green; the pointer gestures are driven in the browser at the close.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

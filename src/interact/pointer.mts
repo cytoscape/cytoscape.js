@@ -1,15 +1,6 @@
-import {
-  GROUP_NODES,
-  FLAG_ACTIVE,
-  FLAG_GRABBABLE,
-  FLAG_GRABBED,
-  FLAG_HOVERED,
-  FLAG_LOCKED,
-  FLAG_PANNABLE,
-} from '../contract.mjs';
+import { GROUP_NODES } from '../contract.mjs';
 import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
-import type { Renderer } from '../render/renderer.mjs';
 
 /**
  * What the gesture layer needs from a renderer (round 86.3): the DOM
@@ -26,8 +17,9 @@ export interface GestureRenderer {
   ): Promise<number | null>;
   pickNodeSync(x: number, y: number, padPx?: number): number | null;
 }
-import type { CursorMap, CursorState, Position } from '../public-types.mjs';
-import { cursorFor } from './cursor.mjs';
+import type { Position } from '../public-types.mjs';
+import * as pointerHandlersImpl from './pointer-handlers.mjs';
+import * as pointerHoverImpl from './pointer-hover.mjs';
 
 /*
 Pointer/wheel interaction over the WebGPU canvas:
@@ -69,15 +61,15 @@ Pointer/wheel interaction over the WebGPU canvas:
   wheel path.
 */
 
-const HOVER_THROTTLE_MS = 25;
-const WHEEL_RATE = 500; // base zoom rate divisor (higher = slower); scaled by cy.wheelSensitivity()
+export const HOVER_THROTTLE_MS = 25;
+export const WHEEL_RATE = 500; // base zoom rate divisor (higher = slower); scaled by cy.wheelSensitivity()
 // v3's two-finger split (round 20.4): pairs closer than 200 css px start
 // the cxt gesture; spreading past 1.5x (or 150 px absolute) cancels it
 // into a pinch
-const TOUCH_CXT_MAX_DIST = 200;
-const TOUCH_CXT_CANCEL_DIST = 150;
-const TOUCH_CXT_CANCEL_FACTOR = 1.5;
-const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
+export const TOUCH_CXT_MAX_DIST = 200;
+export const TOUCH_CXT_CANCEL_DIST = 150;
+export const TOUCH_CXT_CANCEL_FACTOR = 1.5;
+export const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
 
 /**
  * v3's hit-test halos (57.9, `findNearestElement`): a press or hover does
@@ -86,14 +78,14 @@ const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last w
  * for nodes, in model units — i.e. a constant rendered-px halo, which is
  * what these are (CSS px; the renderer scales by dpr).
  */
-const MOUSE_PADS = { edgePadPx: 8, nodePadPx: 2 };
-const TOUCH_PADS = { edgePadPx: 24, nodePadPx: 8 };
+export const MOUSE_PADS = { edgePadPx: 8, nodePadPx: 2 };
+export const TOUCH_PADS = { edgePadPx: 24, nodePadPx: 8 };
 
 /** The halo pair for a pointer event's type (v3's isTouch branch). */
-const padsOf = (e: PointerEvent): typeof MOUSE_PADS =>
+export const padsOf = (e: PointerEvent): typeof MOUSE_PADS =>
   e.pointerType === 'touch' ? TOUCH_PADS : MOUSE_PADS;
 
-interface DownState {
+export interface DownState {
   pointerId: number;
   mode: 'pan' | 'grab' | 'box';
   /** the node under the press: the drag subject in 'grab' mode, the tap target otherwise */
@@ -119,69 +111,93 @@ interface DownState {
 }
 
 /** Whether a multiple-select key is held (as in v3). */
-const isMultSelKeyDown = (e: PointerEvent): boolean => {
+export const isMultSelKeyDown = (e: PointerEvent): boolean => {
   return e.shiftKey || e.metaKey || e.ctrlKey;
 };
 
 export class PointerHandler {
-  private cy: Core;
-  private renderer: GestureRenderer;
-  private canvas: HTMLCanvasElement;
-  private hovered: Collection | null;
-  private lastPick: Collection | null;
-  private pickInFlight: boolean;
-  private lastHoverAt: number;
-  private down: DownState | null;
-  private boxEl: HTMLDivElement | null;
-  /** the active-bg indicator circle (round 13 A2; background grabs) */
-  private activeEl: HTMLDivElement | null;
-  /** the *model* point the active-bg circle is anchored to (round 43) */
-  private activeModel: Position | null;
-  private touches: Map<number, Position>;
-  private pinch: { dist: number; mid: Position } | null;
-  /** the two-finger cxt gesture (round 20.4, v3's touch cxt family) */
-  private touchCxt: {
+  /** @internal */
+  cy: Core;
+  /** @internal */
+  renderer: GestureRenderer;
+  /** @internal */
+  canvas: HTMLCanvasElement;
+  /** @internal */
+  hovered: Collection | null;
+  /** @internal */
+  lastPick: Collection | null;
+  /** @internal */
+  pickInFlight: boolean;
+  /** @internal */
+  lastHoverAt: number;
+  /** @internal */
+  down: DownState | null;
+  /** @internal */
+  boxEl: HTMLDivElement | null;
+  /** the active-bg indicator circle (round 13 A2; background grabs) @internal */
+  activeEl: HTMLDivElement | null;
+  /** the *model* point the active-bg circle is anchored to (round 43) @internal */
+  activeModel: Position | null;
+  /** @internal */
+  touches: Map<number, Position>;
+  /** @internal */
+  pinch: { dist: number; mid: Position } | null;
+  /** the two-finger cxt gesture (round 20.4, v3's touch cxt family) @internal */
+  touchCxt: {
     target: Collection | null;
     dragged: boolean;
     baseDist: number;
     startX: number;
     startY: number;
   } | null;
-  /** the three-finger box gesture (round 20.5): start + current centroid */
-  private touchBox: { x1: number; y1: number; x2: number; y2: number } | null;
+  /** the three-finger box gesture (round 20.5): start + current centroid @internal */
+  touchBox: { x1: number; y1: number; x2: number; y2: number } | null;
   /** a gesture that boxed never degrades to a pinch/pan (v3's didSelect latch);
-   * cleared when the last finger lifts */
-  private touchDidSelect: boolean;
-  private deadTouch: number | null;
-  private wheelingUntil: number;
-  private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
-  private cxtDown: {
+   * cleared when the last finger lifts
+   * @internal */
+  touchDidSelect: boolean;
+  /** @internal */
+  deadTouch: number | null;
+  /** @internal */
+  wheelingUntil: number;
+  /** @internal */
+  wheelSettleTimer: ReturnType<typeof setTimeout> | null;
+  /** @internal */
+  cxtDown: {
     pointerId: number;
     target: Collection | null;
     startX: number;
     startY: number;
     moved: boolean;
   } | null;
-  /** the node under the cursor during an active press (17.3) */
-  private dragHover: Collection | null = null;
+  /** the node under the cursor during an active press (17.3) @internal */
+  dragHover: Collection | null = null;
   /** the cursor keyword last written to the canvas (round 89.1); the
-   * writer compares against it so a steady state costs no DOM write */
-  private cursor = '';
+   * writer compares against it so a steady state costs no DOM write
+   * @internal */
+  cursor = '';
   /** the page's own `documentElement` cursor, saved while a drag mirrors
-   * onto it, and put back on every release path (round 89.1, fact 4) */
-  private docCursor: string | null = null;
+   * onto it, and put back on every release path (round 89.1, fact 4)
+   * @internal */
+  docCursor: string | null = null;
   /** the pointer type of the last DOM event, since a cursor is a
-   * property of the *device* and touch never gets one */
-  private pointerType = 'mouse';
-  private lastDragHoverAt = 0;
-  private tapholdTimer: ReturnType<typeof setTimeout> | null;
-  private onetapTimer: ReturnType<typeof setTimeout> | null;
-  private lastTap: { target: Collection | null; at: number } | null;
+   * property of the *device* and touch never gets one
+   * @internal */
+  pointerType = 'mouse';
+  /** @internal */
+  lastDragHoverAt = 0;
+  /** @internal */
+  tapholdTimer: ReturnType<typeof setTimeout> | null;
+  /** @internal */
+  onetapTimer: ReturnType<typeof setTimeout> | null;
+  /** @internal */
+  lastTap: { target: Collection | null; at: number } | null;
   private cleanups: (() => void)[];
   /** The DOM event being handled right now, or null between them — the
    * source of `event.originalEvent` on everything this layer emits
-   * (round 41.4). */
-  private domEvent: Event | null = null;
+   * (round 41.4).
+   * @internal */
+  domEvent: Event | null = null;
 
   /**
    * Attach the whole gesture stack to the renderer's canvas.  Constructing
@@ -274,1315 +290,48 @@ export class PointerHandler {
 
   // -- handlers --
 
-  private onWheel(e: WheelEvent): void {
-    e.preventDefault();
-
-    if (this.cy.userZoomingEnabled() !== true) {
-      return;
-    }
-
-    const pos = this.eventPos(e);
-
-    // a wheel zoom is a viewport-only gesture: no mouseover/tap semantics
-    // apply mid-gesture, so hover picking pauses (no pick passes at all)
-    // until the wheel settles, then re-picks under the cursor once
-    this.wheelingUntil = performance.now() + WHEEL_SETTLE_MS;
-
-    if (this.wheelSettleTimer != null) {
-      clearTimeout(this.wheelSettleTimer);
-    }
-
-    this.wheelSettleTimer = setTimeout(() => {
-      this.wheelSettleTimer = null;
-      this.wheelingUntil = 0; // reopen hover before the settle re-pick
-      this.hoverPick(pos);
-    }, WHEEL_SETTLE_MS);
-
-    const zoom = this.cy.zoom() as number;
-    const dy = e.deltaY * (e.deltaMode === 1 ? 33 : 1); // lines -> px-ish
-
-    // v3's wheelSensitivity is a multiplier on the zoom-per-tick exponent
-    // (round 20.1); v4's base rate is the same as before
-    const sensitivity = this.cy.wheelSensitivity() as number;
-
-    this.cy.zoom({
-      level: zoom * Math.pow(10, (-dy / WHEEL_RATE) * sensitivity),
-      renderedPosition: pos,
-    });
-
-    // the viewport-gesture vocabulary (17.4)
-    this.cy.emit({
-      type: 'scrollzoom',
-      position: this.cy._viewport.renderedToModel(pos),
-      originalEvent: this.domEvent ?? undefined,
-    });
+  /** @internal */
+  onWheel(e: WheelEvent): void {
+    pointerHandlersImpl.onWheel(this, e);
   }
 
-  private onPointerDown(e: PointerEvent): void {
-    if (e.pointerType === 'touch') {
-      this.touches.set(e.pointerId, this.eventPos(e));
-
-      if (
-        this.touches.size === 2 &&
-        this.pinch == null &&
-        this.touchCxt == null
-      ) {
-        this.capture(e.pointerId);
-
-        // v3's two-finger split (20.4): close pairs start the cxt
-        // gesture, far pairs pinch immediately
-        const [a, b] = [...this.touches.values()];
-
-        if (Math.hypot(b.x - a.x, b.y - a.y) < TOUCH_CXT_MAX_DIST) {
-          this.beginTouchCxt();
-        } else {
-          this.beginPinch();
-        }
-
-        return;
-      }
-
-      // a third finger during an *undragged* cxt gesture converts it to
-      // the box gesture (20.5): pointer events land fingers sequentially,
-      // so this is the v4 form of v3's simultaneous three-finger landing
-      if (
-        this.touchCxt != null &&
-        !this.touchCxt.dragged &&
-        this.touches.size === 3 &&
-        this.cy.boxSelectionEnabled() === true
-      ) {
-        const cxt = this.touchCxt;
-
-        this.touchCxt = null;
-        this.dragHover = null;
-        this.emitGesture('cxttapend', cxt.target, this.eventPos(e));
-
-        return;
-      }
-
-      // extra fingers mid-gesture just get tracked
-      if (
-        this.pinch != null ||
-        this.touchCxt != null ||
-        this.deadTouch != null ||
-        this.touchDidSelect ||
-        this.touches.size >= 3
-      ) {
-        return;
-      }
-    }
-
-    // right button: the cxttap family (cxttapstart / cxtdrag / cxttapend / cxttap)
-    if (e.button === 2) {
-      if (this.down != null || this.cxtDown != null) {
-        return;
-      }
-
-      this.capture(e.pointerId);
-
-      const pos = this.eventPos(e);
-      const target = this.nodeAt(pos.x, pos.y, padsOf(e).nodePadPx);
-
-      this.cxtDown = {
-        pointerId: e.pointerId,
-        target,
-        startX: pos.x,
-        startY: pos.y,
-        moved: false,
-      };
-      this.emitGesture('pointerdown', target, pos); // the official vocabulary (17.1)
-      this.emitGesture('cxttapstart', target, pos);
-
-      return;
-    }
-
-    if (e.button !== 0 || this.down != null) {
-      return;
-    }
-
-    this.capture(e.pointerId);
-
-    const pos = this.eventPos(e);
-
-    // pan-vs-grab from a synchronous CPU node pick — current, with v3's
-    // hit halo for this pointer type (57.9)
-    const picked = this.nodeAt(pos.x, pos.y, padsOf(e).nodePadPx);
-    // box selection overrides grabbing (as in v3): a multiple-select-key
-    // press boxes even over a node, as does any press when panning is
-    // disabled; mouse/pen only for now (v4 has no touch box gesture)
-    const boxing =
-      e.pointerType !== 'touch' &&
-      this.cy.boxSelectionEnabled() === true &&
-      (isMultSelKeyDown(e) ||
-        this.cy.panningEnabled() !== true ||
-        this.cy.userPanningEnabled() !== true);
-    // a node under the cursor is only *dragged* when grabbable and unlocked
-    // (and not globally auto-locked/ungrabified); otherwise the press pans,
-    // but the node is still remembered as the tap target for selection
-    const canDrag = !boxing && picked != null && this.canDrag(picked);
-
-    // dragging a selected node drags every draggable selected node (v3)
-    let dragSet: Collection | null = null;
-
-    if (canDrag && picked != null && picked.selected()) {
-      const draggable = this.cy
-        .nodes({ selected: true })
-        .filter((n: Collection) => n === picked || this.canDrag(n));
-
-      if (draggable.length > 1) {
-        dragSet = draggable;
-      }
-    }
-
-    this.down = {
-      pointerId: e.pointerId,
-      mode: boxing ? 'box' : canDrag ? 'grab' : 'pan',
-      grabbed: picked,
-      provisional: picked != null && picked.isParent(),
-      dragSet,
-      startX: pos.x,
-      startY: pos.y,
-      lastX: pos.x,
-      lastY: pos.y,
-      moved: false,
-      shift: e.shiftKey,
-    };
-
-    // v3's `:active` (round 57.1c): the pressed element carries the flag
-    // whether or not the press turns into a drag — v3 calls
-    // `near.activate()` on mousedown, before it decides anything else —
-    // and the overlay pass draws v3's black-25%-over-10px wash from it.
-    this.setPressed(picked);
-
-    if (canDrag && picked != null) {
-      if (dragSet != null) {
-        for (let i = 0; i < dragSet.length; i++) {
-          this.setFlagOn(dragSet[i], FLAG_GRABBED, true);
-        }
-      } else {
-        this.setFlagOn(picked, FLAG_GRABBED, true);
-      }
-
-      // the drag-state family (17.2): 'grabon' only on the directly
-      // grabbed element; 'grab' on it and every selected companion (v3)
-      this.emitDragState('grabon', picked, null, pos);
-      this.emitDragState('grab', picked, dragSet, pos);
-    }
-
-    // the pointer re-emits + the normalized press (round 17.1): the
-    // official DOM vocabulary the layer itself consumes, plus v3's
-    // device-normalized tapstart — both on the pressed element or core
-    this.emitGesture('pointerdown', picked, pos);
-    this.emitGesture('tapstart', picked, pos);
-
-    // a press the node pick missed may still be on an *edge* — the CPU
-    // pick knows nodes only; edges answer through the async GPU pick —
-    // so the press affordance (v3's `:active` on the edge, or the
-    // active-bg circle on true background) waits for that answer.
-    // A press that landed on a compound *parent* waits too (97.1): a
-    // parent body draws under the edges crossing it, so the sync scan's
-    // answer is provisional until the edge tier has spoken.
-    if (
-      (this.down.mode === 'pan' && this.down.grabbed == null) ||
-      this.down.provisional === true
-    ) {
-      this.down.pending = this.resolvePressTarget(this.down, pos, padsOf(e));
-    }
-
-    // press-and-hold: 'taphold' unless the press moves or ends first
-    this.clearTaphold();
-    this.tapholdTimer = setTimeout(() => {
-      this.tapholdTimer = null;
-
-      const d = this.down;
-
-      if (d == null || d.pointerId !== e.pointerId || d.moved) {
-        return;
-      }
-
-      this.emitGesture(
-        'taphold',
-        d.grabbed ?? (this.lastPick?.inside() ? this.lastPick : null),
-        { x: d.startX, y: d.startY },
-      );
-    }, this.cy.tapholdDuration() as number);
+  /** @internal */
+  onPointerDown(e: PointerEvent): void {
+    pointerHandlersImpl.onPointerDown(this, e);
   }
 
-  /** Whether a picked node may be dragged: grabbable, unlocked, not globally gated. */
-  private canDrag(ele: Collection): boolean {
-    if (this.cy.autolock() === true || this.cy.autoungrabify() === true) {
-      return false;
-    }
-
-    const ref = ele._eventRef();
-
-    if (ref == null) {
-      return false;
-    }
-
-    // grabbing is forbidden while the element animates (the tween holds
-    // the position lease; a drag override can't fight it)
-    if (this.cy._animations.isAnimating(ref)) {
-      return false;
-    }
-
-    const store = this.cy._store;
-
-    return (
-      store.hasFlag(ref.group, ref.slot, FLAG_GRABBABLE) &&
-      !store.hasFlag(ref.group, ref.slot, FLAG_LOCKED) &&
-      !store.hasFlag(ref.group, ref.slot, FLAG_PANNABLE)
-    ); // pannable elements pan, never drag
+  /** @internal */
+  onPointerMove(e: PointerEvent): void {
+    pointerHandlersImpl.onPointerMove(this, e);
   }
 
-  private onPointerMove(e: PointerEvent): void {
-    const pos = this.eventPos(e);
-
-    // pointermove re-emits on every move (17.1); tapdrag — the
-    // normalized drag — only while a press is active
-    const pressTarget =
-      this.down?.grabbed ??
-      this.cxtDown?.target ??
-      (this.hovered?.inside() ? this.hovered : null);
-    const pressed =
-      (this.down != null && this.down.pointerId === e.pointerId) ||
-      (this.cxtDown != null && this.cxtDown.pointerId === e.pointerId);
-
-    this.emitGesture('pointermove', pressTarget, pos);
-
-    if (pressed) {
-      this.emitGesture('tapdrag', pressTarget, pos);
-
-      // hover-during-drag (17.3): a throttled sync node pick drives
-      // tapdragover/tapdragout while the press is active (nodes only —
-      // the CPU pick; recorded)
-      if (this.down != null && this.down.pointerId === e.pointerId) {
-        this.dragHoverPick(pos, 'tapdrag', padsOf(e).nodePadPx);
-      }
-    }
-
-    if (e.pointerType === 'touch' && this.touches.has(e.pointerId)) {
-      this.touches.set(e.pointerId, pos);
-
-      if (this.touchCxt != null) {
-        this.touchCxtMove();
-
-        return;
-      }
-
-      // three fingers box-select (20.5, before pinch — v3's branch order)
-      if (this.touches.size >= 3 && this.cy.boxSelectionEnabled() === true) {
-        this.touchBoxMove();
-
-        return;
-      }
-
-      if (this.touchDidSelect) {
-        return;
-      } // boxed: leftover fingers stay inert
-
-      if (this.pinch != null) {
-        this.pinchMove();
-
-        return;
-      }
-
-      if (this.deadTouch === e.pointerId) {
-        return;
-      }
-    }
-
-    const cxt = this.cxtDown;
-
-    if (cxt != null && cxt.pointerId === e.pointerId) {
-      if (
-        !cxt.moved &&
-        Math.hypot(pos.x - cxt.startX, pos.y - cxt.startY) >=
-          this.tapThreshold(e)
-      ) {
-        cxt.moved = true;
-      }
-
-      if (cxt.moved) {
-        this.emitGesture('cxtdrag', cxt.target, pos);
-        this.dragHoverPick(pos, 'cxtdrag', padsOf(e).nodePadPx); // 17.3
-      }
-
-      return;
-    }
-
-    const down = this.down;
-
-    if (down == null || down.pointerId !== e.pointerId) {
-      this.hoverPick(pos, padsOf(e));
-
-      return;
-    }
-
-    if (!down.moved) {
-      const dist = Math.hypot(pos.x - down.startX, pos.y - down.startY);
-
-      if (dist < this.tapThreshold(e)) {
-        return;
-      }
-
-      down.moved = true;
-      this.clearTaphold();
-
-      if (down.mode === 'pan') {
-        this.panStarted(down);
-      }
-    }
-
-    const dx = pos.x - down.lastX;
-    const dy = pos.y - down.lastY;
-
-    down.lastX = pos.x;
-    down.lastY = pos.y;
-
-    if (down.mode === 'pan') {
-      if (this.cy.userPanningEnabled() === true) {
-        this.cy.panBy({ x: dx, y: dy });
-        this.cy.emit({
-          type: 'dragpan',
-          position: this.cy._viewport.renderedToModel(pos),
-          originalEvent: this.domEvent ?? undefined,
-        }); // 17.4
-      }
-
-      // round 43: the pan just moved the graph under the anchor, so the
-      // indicator has to be re-projected or it is left behind at the press
-      // point.  With panning disabled nothing moved and this is a no-op,
-      // which is v3's behaviour too.
-      this.repositionActiveBg();
-    } else if (down.mode === 'box') {
-      this.boxUpdate(down, pos);
-    } else if (down.grabbed != null && down.grabbed.inside()) {
-      const zoom = this.cy.zoom() as number;
-
-      if (down.dragSet != null) {
-        down.dragSet.shift({ x: dx / zoom, y: dy / zoom });
-      } else {
-        const p = down.grabbed.position() as Position;
-
-        down.grabbed.position({ x: p.x + dx / zoom, y: p.y + dy / zoom });
-      }
-
-      // 'drag' fires per movement on every node the gesture moves (17.2)
-      this.emitDragState('drag', down.grabbed, down.dragSet, pos);
-    }
+  /** @internal */
+  onPointerUp(e: PointerEvent): void {
+    pointerHandlersImpl.onPointerUp(this, e);
   }
 
-  /**
-   * Show the active-bg circle (styled from the core sheet) at a rendered point.
-   *
-   * The press point is remembered in **model** space, which is v3's rule
-   * (`r.data.bgActivePosistion` is a projected position, drawn inside the
-   * transformed canvas).  It matters: the graph moves under a background pan,
-   * so a model-anchored circle stays glued to the point you pressed — which
-   * reads as following the cursor — while a screen-anchored one would sit
-   * still.  Round 43 fixed exactly that: the circle was positioned once, here,
-   * and no path ever moved it again.
-   */
-  private showActiveBg(x: number, y: number): void {
-    const core = this.cy._styleEngine.core();
-
-    if (core.activeBgOpacity <= 0 || core.activeBgSize <= 0) {
-      return;
-    }
-
-    if (this.activeEl == null) {
-      const el = this.canvas.ownerDocument.createElement('div');
-      const st = el.style;
-
-      st.position = 'absolute';
-      st.pointerEvents = 'none';
-      st.zIndex = '1';
-      st.borderRadius = '50%';
-      (this.canvas.parentElement ?? this.canvas).appendChild(el);
-      this.activeEl = el;
-    }
-
-    const el = this.activeEl;
-    const [r, g, b] = core.activeBgColor;
-    const size = core.activeBgSize;
-
-    this.activeModel = this.cy._viewport.renderedToModel({ x, y });
-
-    el.style.background = `rgba(${r}, ${g}, ${b}, ${core.activeBgOpacity})`;
-    el.style.width = `${size * 2}px`;
-    el.style.height = `${size * 2}px`;
-    el.style.left = `${x - size}px`;
-    el.style.top = `${y - size}px`;
-    el.style.display = 'block';
-  }
-
-  /**
-   * Re-project the circle onto the point it was pressed at.  Called per move
-   * while the press is held, so the pan that the same move performs cannot
-   * leave the indicator behind.  The radius is a constant screen size and so
-   * does not scale — v3 divides by the zoom only because it draws inside the
-   * zoomed context.
-   */
-  private repositionActiveBg(): void {
-    const el = this.activeEl;
-
-    if (el == null || this.activeModel == null || el.style.display === 'none') {
-      return;
-    }
-
-    const size = this.cy._styleEngine.core().activeBgSize;
-    const p = this.cy._viewport.modelToRendered(this.activeModel);
-
-    el.style.left = `${p.x - size}px`;
-    el.style.top = `${p.y - size}px`;
-  }
-
-  /**
-   * The press ended: hide the background-grab indicator and drop
-   * `FLAG_ACTIVE` from whatever carried it.  Called from every gesture
-   * end — pointerup, pointercancel, the touch teardown and destroy — so
-   * it is the one place the active state is released.
-   */
-  private hideActiveBg(): void {
-    this.setPressed(null);
-
-    if (this.activeEl != null) {
-      this.activeEl.style.display = 'none';
-    }
-
-    this.activeModel = null;
-  }
-
-  /**
-   * Decide what a press the synchronous node pick missed actually landed
-   * on: an edge, or the background.  Edges hit-test on the GPU, so the
-   * answer is asynchronous — ~a frame, or a microtask when the cursor
-   * sits in the cached pick tile — where v3 answers at mousedown because
-   * its hit test is synchronous.  Both affordances are purely visual, so
-   * late is fine; stale is not, hence the guards.
-   *
-   * An element under the press carries `FLAG_ACTIVE` (v3 calls
-   * `near.activate()` on mousedown for whatever is near, edges included
-   * — an edge not being draggable does not make it unclickable, and the
-   * wash is the signifier of the click in progress) and becomes the tap
-   * target the release reads (`lastPick`, which a touch press otherwise
-   * never populates).  A background press shows the active-bg circle —
-   * which v3 shows only when nothing is near, so it waits for the
-   * answer rather than flashing over every edge press.  A press that
-   * already panned gets the circle either way: v3 unactivates a
-   * pannable element the moment its pan starts (see `panStarted`), and
-   * anchors the circle at the *pressed* model point, captured here
-   * before any pan can move it.
-   */
-  private async resolvePressTarget(
-    down: DownState,
-    pos: Position,
-    pads: typeof MOUSE_PADS,
-  ): Promise<Collection | null> {
-    const model = this.cy._viewport.renderedToModel(pos);
-    let picked: Collection | null = null;
-
-    try {
-      picked = this.cy._decodePick(
-        await this.renderer.pick(pos.x, pos.y, pads),
-      );
-    } catch {
-      // a device lost mid-pick reads as a background press
-    }
-
-    const hit = picked != null && picked.inside() ? picked : null;
-    // the press may already have ended — the answer still resolves, because
-    // a release that did not move waits for it (97.1); only the *affordance*
-    // is dropped, which the release already undid
-    const live = this.down === down;
-
-    if (hit != null) {
-      // 97.1: the press landed on a parent body and the edge tier
-      // outranked it, so the parent's grab was provisional — hand the
-      // gesture to the edge, which is not draggable, so the press means
-      // a pan, exactly as a press on a bare edge does.  A press that has
-      // already moved owns its drag and keeps it.
-      if (live && down.grabbed != null && hit !== down.grabbed && !down.moved) {
-        this.dropProvisionalGrab(down, pos);
-      }
-
-      this.lastPick = hit; // the tap target for the release
-
-      if (live && !down.moved) {
-        this.setPressed(hit);
-      }
-
-      return hit;
-    }
-
-    if (live) {
-      const p = this.cy._viewport.modelToRendered(model);
-
-      this.showActiveBg(p.x, p.y);
-    }
-
-    return null;
-  }
-
-  /**
-   * Undo a grab the async press target overruled (round 97.1).  Only a
-   * *parent* grab is ever provisional — a leaf answers the pick outright
-   * — and only while the press has not moved, so nothing has been dragged
-   * and there is no `dragfree` to emit; the `free`/`freeon` pair still
-   * balances the `grab`/`grabon` the press emitted (17.2).
-   */
-  private dropProvisionalGrab(down: DownState, pos: Position): void {
-    if (down.dragSet != null) {
-      for (let i = 0; i < down.dragSet.length; i++) {
-        this.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
-      }
-    } else if (down.grabbed != null) {
-      this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-    }
-
-    if (down.mode === 'grab' && down.grabbed != null) {
-      this.emitDragState('free', down.grabbed, down.dragSet, pos);
-      this.emitDragState('freeon', down.grabbed, null, pos);
-    }
-
-    down.mode = 'pan';
-    down.grabbed = null;
-    down.dragSet = null;
-  }
-
-  /**
-   * The press left the tap threshold in 'pan' mode: v3 unactivates a
-   * *pannable* pressed element the moment the pan begins (`down.pannable()
-   * && down.active()` in its mousemove) and shows the circle at the press
-   * point instead — the press means viewport drag now, not a click in
-   * progress.  A non-pannable element keeps the flag, as in v3.
-   */
-  private panStarted(down: DownState): void {
-    const p = this.pressed;
-
-    if (p == null) {
-      return;
-    }
-
-    const ref = p._eventRef();
-
-    if (
-      ref == null ||
-      !this.cy._store.hasFlag(ref.group, ref.slot, FLAG_PANNABLE)
-    ) {
-      return;
-    }
-
-    this.setPressed(null);
-    this.showActiveBg(down.startX, down.startY);
-  }
-
-  private onPointerUp(e: PointerEvent): void {
-    this.hideActiveBg();
-    if (this.endTouch(e)) {
-      return;
-    }
-
-    // the official re-emit + the normalized release (17.1), ahead of
-    // the tap/selection flow (v3's ordering: up -> tapend -> tap)
-    {
-      const pos = this.eventPos(e);
-      const hadPress =
-        (this.down != null && this.down.pointerId === e.pointerId) ||
-        (this.cxtDown != null && this.cxtDown.pointerId === e.pointerId);
-      const target =
-        this.down?.grabbed ??
-        this.cxtDown?.target ??
-        (this.lastPick?.inside() ? this.lastPick : null);
-
-      this.emitGesture('pointerup', target, pos);
-
-      if (hadPress) {
-        this.emitGesture('tapend', target, pos);
-      }
-    }
-
-    const cxt = this.cxtDown;
-
-    if (cxt != null && cxt.pointerId === e.pointerId) {
-      this.cxtDown = null;
-      this.dragHover = null; // 17.3
-
-      const pos = this.eventPos(e);
-
-      this.emitGesture('cxttapend', cxt.target, pos);
-
-      if (!cxt.moved) {
-        this.emitGesture('cxttap', cxt.target, pos);
-      }
-
-      return;
-    }
-
-    const down = this.down;
-
-    if (down == null || down.pointerId !== e.pointerId) {
-      return;
-    }
-
-    this.down = null;
-    this.clearTaphold();
-    this.dragHover = null; // 17.3: the gesture ended
-
-    if (down.dragSet != null) {
-      for (let i = 0; i < down.dragSet.length; i++) {
-        this.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
-      }
-    } else if (down.grabbed != null) {
-      this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-    }
-
-    // release side of the drag-state family (17.2): 'free' on every
-    // grabbed node, 'freeon' on the direct one; the dragfree pair only
-    // when the gesture actually moved them
-    if (down.mode === 'grab' && down.grabbed != null) {
-      const pos = this.eventPos(e);
-
-      this.emitDragState('free', down.grabbed, down.dragSet, pos);
-      this.emitDragState('freeon', down.grabbed, null, pos);
-
-      if (down.moved) {
-        this.emitDragState('dragfree', down.grabbed, down.dragSet, pos);
-        this.emitDragState('dragfreeon', down.grabbed, null, pos);
-      }
-    }
-
-    if (!down.moved) {
-      const fallback = (): Collection | null =>
-        down.grabbed ?? (this.lastPick?.inside() ? this.lastPick : null);
-
-      if (down.provisional === true && down.pending != null) {
-        // 97.1: the parent under the press only holds the tap while no
-        // edge is above it, and that answer is a GPU roundtrip away.  A
-        // click faster than the tile would otherwise select the parent
-        // the renderer drew *underneath* the edge the user aimed at, so
-        // this one case waits.  The DOM event is restored around the
-        // deferred call, since `tap` reads it for `originalEvent` and
-        // the listener wrapper has long since cleared it (41.4).
-        const dom = this.domEvent;
-
-        void down.pending.then((resolved) => {
-          const prev = this.domEvent;
-
-          this.domEvent = dom;
-
-          try {
-            this.tap(resolved ?? fallback(), e);
-          } finally {
-            this.domEvent = prev;
-          }
-        });
-      } else {
-        this.tap(fallback(), e);
-      }
-    } else if (down.mode === 'box') {
-      this.boxEnd(down, e);
-    }
-  }
-
-  private onPointerCancel(e: PointerEvent): void {
-    this.hideActiveBg();
-    if (this.endTouch(e, true)) {
-      return;
-    }
-
-    this.emitGesture('pointercancel', null, this.eventPos(e)); // 17.1
-
-    if (this.cxtDown != null && this.cxtDown.pointerId === e.pointerId) {
-      this.cxtDown = null;
-
-      return;
-    }
-
-    const down = this.down;
-
-    if (down == null || down.pointerId !== e.pointerId) {
-      return;
-    }
-
-    this.down = null;
-    this.clearTaphold();
-
-    if (down.dragSet != null) {
-      for (let i = 0; i < down.dragSet.length; i++) {
-        this.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
-      }
-    } else if (down.grabbed != null) {
-      this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-    }
-
-    // a cancelled gesture still frees (17.2); no dragfree — it aborted
-    if (down.mode === 'grab' && down.grabbed != null) {
-      const pos = this.eventPos(e);
-
-      this.emitDragState('free', down.grabbed, down.dragSet, pos);
-      this.emitDragState('freeon', down.grabbed, null, pos);
-    }
-
-    if (this.boxEl != null) {
-      this.boxEl.style.display = 'none';
-    }
+  /** @internal */
+  onPointerCancel(e: PointerEvent): void {
+    pointerHandlersImpl.onPointerCancel(this, e);
   }
 
   // -- the two-finger cxt gesture (round 20.4) --
 
-  /**
-   * A close second finger starts v3's touch cxt gesture: 'cxttapstart'
-   * on the node under finger 1 (else finger 2, else the core), any
-   * pan/grab in progress cancelled like a pinch's.
-   */
-  private beginTouchCxt(): void {
-    const down = this.down;
-
-    if (down != null) {
-      if (down.grabbed != null) {
-        this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-      }
-
-      this.down = null;
-    }
-
-    this.clearTaphold();
-    this.hideActiveBg();
-    this.updateHover(null);
-
-    const [a, b] = [...this.touches.values()];
-    const target =
-      this.nodeAt(a.x, a.y, TOUCH_PADS.nodePadPx) ??
-      this.nodeAt(b.x, b.y, TOUCH_PADS.nodePadPx); // v3: nodes only, finger 1 first
-
-    this.touchCxt = {
-      target,
-      dragged: false,
-      baseDist: Math.hypot(b.x - a.x, b.y - a.y),
-      startX: a.x,
-      startY: a.y,
-    };
-
-    this.emitGesture('cxttapstart', target, a);
-  }
-
-  private touchCxtMove(): void {
-    const cxt = this.touchCxt as NonNullable<typeof this.touchCxt>;
-    const [a, b] = [...this.touches.values()];
-
-    if (b != null) {
-      const dist = Math.hypot(b.x - a.x, b.y - a.y);
-
-      // v3's swipe-out rule: the pair spreading past 1.5x (or 150 px)
-      // cancels the cxt gesture into a pinch (cxttapend, then the pinch
-      // machinery takes over from the current spread — no zoom jump)
-      if (
-        dist >= TOUCH_CXT_CANCEL_DIST ||
-        (cxt.baseDist > 0 && dist >= cxt.baseDist * TOUCH_CXT_CANCEL_FACTOR)
-      ) {
-        this.touchCxt = null;
-        this.dragHover = null;
-        this.emitGesture('cxttapend', cxt.target, a);
-        this.pinch = this.pinchBase();
-
-        return;
-      }
-    }
-
-    // finger-1 movement past the touch tap threshold drags (v4 rule:
-    // the mouse cxt path thresholds too — v3's touch cxt emits cxtdrag
-    // on any move event, a recorded deviation)
-    if (
-      !cxt.dragged &&
-      Math.hypot(a.x - cxt.startX, a.y - cxt.startY) <
-        (this.cy.touchTapThreshold() as number)
-    ) {
-      return;
-    }
-
-    cxt.dragged = true;
-    this.emitGesture('cxtdrag', cxt.target, a);
-    this.dragHoverPick(a, 'cxtdrag', TOUCH_PADS.nodePadPx); // cxtdragover/out, as v3
-  }
-
   // -- pinch --
-
-  /** A second finger turns any pan/grab into a pinch. */
-  private beginPinch(): void {
-    const down = this.down;
-
-    if (down != null) {
-      if (down.grabbed != null) {
-        this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-      }
-
-      this.down = null;
-    }
-
-    this.updateHover(null); // a pinch is a viewport-only gesture
-    this.pinch = this.pinchBase();
-  }
-
-  private pinchBase(): { dist: number; mid: Position } {
-    const [a, b] = [...this.touches.values()];
-
-    return {
-      dist: Math.hypot(b.x - a.x, b.y - a.y),
-      mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-    };
-  }
-
-  private pinchMove(): void {
-    const pinch = this.pinch!;
-    const { dist, mid } = this.pinchBase();
-
-    if (pinch.dist > 0 && dist > 0 && this.cy.userZoomingEnabled() === true) {
-      this.cy.zoom({
-        level: ((this.cy.zoom() as number) * dist) / pinch.dist,
-        renderedPosition: mid,
-      });
-      this.cy.emit({
-        type: 'pinchzoom',
-        position: this.cy._viewport.renderedToModel(mid),
-        originalEvent: this.domEvent ?? undefined,
-      }); // 17.4
-    }
-
-    if (this.cy.userPanningEnabled() === true) {
-      this.cy.panBy({ x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y });
-    }
-
-    this.pinch = { dist, mid };
-  }
-
-  /** Touch bookkeeping on up/cancel; true when the event is consumed by pinch/cxt state. */
-  private endTouch(e: PointerEvent, cancelled: boolean = false): boolean {
-    if (e.pointerType !== 'touch') {
-      return false;
-    }
-
-    const wasPinching = this.pinch != null && this.touches.has(e.pointerId);
-    const wasCxt = this.touchCxt != null && this.touches.has(e.pointerId);
-    const wasBoxing = this.touchBox != null && this.touches.has(e.pointerId);
-
-    this.touches.delete(e.pointerId);
-
-    if (this.deadTouch === e.pointerId) {
-      this.deadTouch = null;
-
-      if (this.touches.size === 0) {
-        this.touchDidSelect = false;
-      }
-
-      return true;
-    }
-
-    // a box finger lifting applies the swept box (20.5); the didSelect
-    // latch keeps the leftover fingers inert until every one lifts
-    if (wasBoxing) {
-      this.applyTouchBox(e, cancelled);
-
-      if (this.touches.size === 0) {
-        this.touchDidSelect = false;
-      }
-
-      return true;
-    }
-
-    if (this.touchDidSelect) {
-      if (this.touches.size === 0) {
-        this.touchDidSelect = false;
-      }
-
-      return true;
-    }
-
-    // either cxt finger lifting ends the gesture (20.4): cxttapend, and
-    // cxttap when it never dragged (never on pointercancel); the
-    // leftover finger stays inert until lifted, like a pinch's
-    if (wasCxt) {
-      const cxt = this.touchCxt as NonNullable<typeof this.touchCxt>;
-      const pos = this.eventPos(e);
-
-      this.touchCxt = null;
-      this.dragHover = null;
-      this.emitGesture('cxttapend', cxt.target, pos);
-
-      if (!cxt.dragged && !cancelled) {
-        this.emitGesture('cxttap', cxt.target, pos);
-      }
-
-      this.deadTouch = this.touches.keys().next().value ?? null;
-
-      return true;
-    }
-
-    if (!wasPinching) {
-      return false;
-    }
-
-    if (this.touches.size >= 2) {
-      this.pinch = this.pinchBase(); // rebase on the remaining pair, no jump
-    } else {
-      this.pinch = null;
-      // the leftover finger stays inert until lifted (no pan jump)
-      this.deadTouch = this.touches.keys().next().value ?? null;
-    }
-
-    return true;
-  }
 
   // -- box selection --
 
-  private boxElement(): HTMLDivElement {
-    if (this.boxEl == null) {
-      const el = this.canvas.ownerDocument.createElement('div');
-      const s = el.style;
-
-      s.position = 'absolute';
-      s.display = 'none';
-      s.pointerEvents = 'none';
-      s.zIndex = '1'; // above the (unpositioned) canvas
-      s.boxSizing = 'border-box';
-
-      // the canvas fills the container from (0, 0), so container-absolute
-      // coordinates are the same rendered coordinates events use
-      (this.canvas.parentElement ?? this.canvas).appendChild(el);
-      this.boxEl = el;
-    }
-
-    return this.boxEl;
-  }
-
-  private boxUpdate(down: DownState, pos: Position): void {
-    const cy = this.cy;
-
-    if (down.boxStarted !== true) {
-      down.boxStarted = true;
-      cy.emit({
-        type: 'boxstart',
-        position: cy._viewport.renderedToModel({
-          x: down.startX,
-          y: down.startY,
-        }),
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-
-    this.showBoxRect(down.startX, down.startY, pos.x, pos.y);
-  }
-
-  /** Show the DOM selection box over a rendered rect (themed from the
-   * core sheet — round 13 A2's selection-box-* props). */
-  private showBoxRect(x1: number, y1: number, x2: number, y2: number): void {
-    const el = this.boxElement();
-    const core = this.cy._styleEngine.core();
-    const [br, bg, bb] = core.selectionBoxColor;
-    const [rr, rg, rb] = core.selectionBoxBorderColor;
-
-    el.style.background = `rgba(${br}, ${bg}, ${bb}, ${core.selectionBoxOpacity})`;
-    el.style.border = `${core.selectionBoxBorderWidth}px solid rgba(${rr}, ${rg}, ${rb}, 1)`;
-
-    el.style.display = 'block';
-    el.style.left = Math.min(x1, x2) + 'px';
-    el.style.top = Math.min(y1, y2) + 'px';
-    el.style.width = Math.abs(x2 - x1) + 'px';
-    el.style.height = Math.abs(y2 - y1) + 'px';
-  }
-
   // -- the three-finger box gesture (round 20.5) --
 
-  /**
-   * Three fingers box-select (v3): the box spans the start centroid to
-   * the moving centroid, applied when the third finger lifts.  Starting
-   * one cancels any cxt/pinch/pan in progress, and the gesture never
-   * degrades to a pinch afterwards (the didSelect latch).
-   */
-  private touchBoxMove(): void {
-    const [a, b, c] = [...this.touches.values()];
-    const cx = (a.x + b.x + c.x) / 3;
-    const cyPx = (a.y + b.y + c.y) / 3;
-
-    if (this.touchBox == null) {
-      const down = this.down;
-
-      if (down != null) {
-        if (down.grabbed != null) {
-          this.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-        }
-
-        this.down = null;
-      }
-
-      this.clearTaphold();
-      this.hideActiveBg();
-      this.updateHover(null);
-      this.pinch = null; // the box preempts a pinch in progress (v3's branch order)
-      this.touchDidSelect = true;
-      this.touchBox = { x1: cx, y1: cyPx, x2: cx + 1, y2: cyPx + 1 }; // v3's +1 seed
-      this.cy.emit({
-        type: 'boxstart',
-        position: this.cy._viewport.renderedToModel({ x: cx, y: cyPx }),
-        originalEvent: this.domEvent ?? undefined,
-      });
-    } else {
-      this.touchBox.x2 = cx;
-      this.touchBox.y2 = cyPx;
-    }
-
-    this.showBoxRect(
-      this.touchBox.x1,
-      this.touchBox.y1,
-      this.touchBox.x2,
-      this.touchBox.y2,
-    );
-  }
-
-  /** Apply the swept box with v3's touch semantics: additive (no
-   * clearing), interactive elements only, boxend/box/boxselect. */
-  private applyTouchBox(e: PointerEvent, cancelled: boolean): void {
-    const cy = this.cy;
-    const box = this.touchBox as NonNullable<typeof this.touchBox>;
-
-    this.touchBox = null;
-
-    if (this.boxEl != null) {
-      this.boxEl.style.display = 'none';
-    }
-
-    if (cancelled) {
-      return;
-    } // an aborted gesture selects nothing (no boxend)
-
-    const p1 = cy._viewport.renderedToModel({ x: box.x1, y: box.y1 });
-    const p2 = cy._viewport.renderedToModel({ x: box.x2, y: box.y2 });
-    const position = p2;
-
-    cy.emit({
-      type: 'boxend',
-      position,
-      originalEvent: this.domEvent ?? undefined,
-    });
-
-    const eles = cy
-      ._elementsInGestureBox(p1.x, p1.y, p2.x, p2.y)
-      .filter((ele: Collection) => ele.interactive()); // the 20.2 rule
-
-    for (let i = 0; i < eles.length; i++) {
-      cy._emitOnEle('box', eles[i], undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-
-    if (cy.autounselectify() === true) {
-      return;
-    }
-
-    const toSelect = eles.filter(
-      (ele: Collection) => ele.selectable() && !ele.selected(),
-    );
-
-    toSelect.select();
-
-    for (let i = 0; i < toSelect.length; i++) {
-      cy._emitOnEle('boxselect', toSelect[i], undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-  }
-
-  /** Apply the released box with v3 semantics (boxend, box, boxselect). */
-  private boxEnd(down: DownState, e: PointerEvent): void {
-    const cy = this.cy;
-
-    if (this.boxEl != null) {
-      this.boxEl.style.display = 'none';
-    }
-
-    const p1 = cy._viewport.renderedToModel({ x: down.startX, y: down.startY });
-    const p2 = cy._viewport.renderedToModel({ x: down.lastX, y: down.lastY });
-    const position = p2;
-    // 20.2: events:'no' elements are not box-selectable and get no box
-    // events (v3 boxes over its interactive set); the geometric query
-    // itself stays unfiltered
-    const box = cy
-      ._elementsInGestureBox(p1.x, p1.y, p2.x, p2.y)
-      .filter((ele: Collection) => ele.interactive());
-
-    cy.emit({
-      type: 'boxend',
-      position,
-      originalEvent: this.domEvent ?? undefined,
-    });
-
-    for (let i = 0; i < box.length; i++) {
-      cy._emitOnEle('box', box[i], undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-
-    if (cy.autounselectify() === true) {
-      return;
-    }
-
-    const additive = isMultSelKeyDown(e) || cy.selectionType() === 'additive';
-
-    if (!additive) {
-      cy.elements({ selected: true }).difference(box).unselect();
-    }
-
-    const toSelect = box.filter((ele) => ele.selectable() && !ele.selected());
-
-    toSelect.select();
-
-    for (let i = 0; i < toSelect.length; i++) {
-      cy._emitOnEle('boxselect', toSelect[i], undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-  }
-
   // -- helpers --
-
-  private tap(target: Collection | null, e: PointerEvent): void {
-    const cy = this.cy;
-    const position = cy._viewport.renderedToModel(this.eventPos(e));
-
-    const selectionEnabled = cy.autounselectify() !== true;
-    const additive = isMultSelKeyDown(e) || cy.selectionType() === 'additive';
-
-    if (target == null) {
-      // background tap
-      cy.emit({
-        type: 'tap',
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    } else {
-      cy._emitOnEle('tap', target, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-
-    this.multiClick(target, position);
-
-    if (target == null) {
-      if (selectionEnabled && !additive) {
-        cy.elements({ selected: true }).unselect();
-      }
-
-      return;
-    }
-
-    if (!selectionEnabled || !target.selectable()) {
-      return;
-    }
-
-    if (target.selected()) {
-      target.unselect(); // toggle off
-      cy._emitOnEle('tapunselect', target, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      }); // 17.3
-    } else {
-      if (!additive) {
-        cy.elements({ selected: true }).difference(target).unselect();
-      }
-
-      target.select();
-      cy._emitOnEle('tapselect', target, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      }); // 17.3
-    }
-  }
-
-  /**
-   * v3's multi-click flow: a second tap on the same target within
-   * `cy.multiClickDebounceTime()` fires 'dbltap'; a tap with no follow-up
-   * inside the window fires the debounced 'onetap'.  ('tap' itself always
-   * fires immediately.)
-   */
-  private multiClick(target: Collection | null, position: Position): void {
-    const now = performance.now();
-    const debounce = this.cy.multiClickDebounceTime() as number;
-    const prev = this.lastTap;
-
-    if (prev != null && now - prev.at <= debounce && prev.target === target) {
-      this.lastTap = null;
-      this.clearOnetap();
-      this.emitModelGesture('dbltap', target, position);
-
-      return;
-    }
-
-    this.lastTap = { target, at: now };
-    this.clearOnetap();
-    this.onetapTimer = setTimeout(() => {
-      this.onetapTimer = null;
-      this.lastTap = null;
-      this.emitModelGesture('onetap', target, position);
-    }, debounce);
-  }
-
-  /**
-   * Hover-during-drag (17.3): while a press is active, a throttled
-   * synchronous node pick drives `<prefix>over` / `<prefix>out` as the
-   * cursor enters and leaves nodes.  Nodes only — the exact CPU pick;
-   * edges would need the async GPU tile (recorded).
-   */
-  private dragHoverPick(
-    pos: Position,
-    prefix: 'tapdrag' | 'cxtdrag',
-    nodePadPx: number,
-  ): void {
-    const now = performance.now();
-
-    if (now - this.lastDragHoverAt < HOVER_THROTTLE_MS) {
-      return;
-    }
-
-    this.lastDragHoverAt = now;
-
-    const ele = this.nodeAt(pos.x, pos.y, nodePadPx);
-    const prev = this.dragHover;
-
-    if (prev === ele) {
-      return;
-    }
-
-    const position = this.cy._viewport.renderedToModel(pos);
-
-    if (prev != null && prev.inside()) {
-      this.cy._emitOnEle(prefix + 'out', prev, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-
-    this.dragHover = ele;
-
-    if (ele != null && ele.inside()) {
-      this.cy._emitOnEle(prefix + 'over', ele, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-    }
-  }
 
   /**
    * Emit a drag-state event (17.2): on the direct element alone
    * (companions null — the -on variants), or on the direct element and
    * every companion in the drag set.
+   * @internal
    */
-  private emitDragState(
+  emitDragState(
     type: string,
     direct: Collection,
     companions: Collection | null,
@@ -1613,8 +362,8 @@ export class PointerHandler {
     }
   }
 
-  /** Emit a gesture on the element (or the core) at a rendered position. */
-  private emitGesture(
+  /** Emit a gesture on the element (or the core) at a rendered position. @internal */
+  emitGesture(
     type: string,
     target: Collection | null,
     renderedPos: Position,
@@ -1626,7 +375,8 @@ export class PointerHandler {
     );
   }
 
-  private emitModelGesture(
+  /** @internal */
+  emitModelGesture(
     type: string,
     target: Collection | null,
     position: Position,
@@ -1646,91 +396,33 @@ export class PointerHandler {
   }
 
   /** Css px a press may move before it stops being a tap: per pointer
-   * type, live off the core options (round 20.1 — v3's threshold pair). */
-  private tapThreshold(e: PointerEvent): number {
+   * type, live off the core options (round 20.1 — v3's threshold pair).
+   * @internal */
+  tapThreshold(e: PointerEvent): number {
     return e.pointerType === 'touch'
       ? (this.cy.touchTapThreshold() as number)
       : (this.cy.desktopTapThreshold() as number);
   }
 
-  private clearTaphold(): void {
+  /** @internal */
+  clearTaphold(): void {
     if (this.tapholdTimer != null) {
       clearTimeout(this.tapholdTimer);
       this.tapholdTimer = null;
     }
   }
 
-  private clearOnetap(): void {
+  /** @internal */
+  clearOnetap(): void {
     if (this.onetapTimer != null) {
       clearTimeout(this.onetapTimer);
       this.onetapTimer = null;
     }
   }
 
-  private hoverPick(pos: Position, pads: typeof MOUSE_PADS = MOUSE_PADS): void {
-    const now = performance.now();
-
-    // no hover during viewport gestures (pan drags never reach here; wheel
-    // zooms are suppressed via the settle window)
-    if (now < this.wheelingUntil) {
-      return;
-    }
-
-    if (this.pickInFlight || now - this.lastHoverAt < HOVER_THROTTLE_MS) {
-      return;
-    }
-
-    this.lastHoverAt = now;
-    this.pickInFlight = true;
-
-    this.renderer.pick(pos.x, pos.y, pads).then((id) => {
-      const ele = this.cy._decodePick(id);
-
-      this.pickInFlight = false;
-      this.lastPick = ele;
-      this.updateHover(ele, pos);
-    });
-  }
-
-  private updateHover(ele: Collection | null, pos?: Position): void {
-    const prev = this.hovered;
-
-    if (prev === ele) {
-      return;
-    } // interned handles ⇒ identity comparison works
-
-    const position =
-      pos != null ? this.cy._viewport.renderedToModel(pos) : undefined;
-
-    if (prev != null && prev.inside()) {
-      this.setFlagOn(prev, FLAG_HOVERED, false);
-      this.cy._emitOnEle('mouseout', prev, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-      this.cy._emitOnEle('pointerout', prev, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      }); // 17.1
-    }
-
-    this.hovered = ele;
-
-    if (ele != null && ele.inside()) {
-      this.setFlagOn(ele, FLAG_HOVERED, true);
-      this.cy._emitOnEle('mouseover', ele, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      });
-      this.cy._emitOnEle('pointerover', ele, undefined, {
-        position,
-        originalEvent: this.domEvent ?? undefined,
-      }); // 17.1
-    }
-
-    // the hover pick resolves a frame after the move that asked for it,
-    // outside the listener wrapper — so this transition writes its own
-    this.applyCursor();
+  /** @internal */
+  updateHover(ele: Collection | null, pos?: Position): void {
+    pointerHoverImpl.updateHover(this, ele, pos);
   }
 
   /**
@@ -1741,24 +433,9 @@ export class PointerHandler {
    * press and the touch gestures re-activate rather than accumulate, so
    * clearing the previous one here is what keeps the store's active
    * count honest without a per-gesture teardown at six call sites.
+   * @internal
    */
-  private pressed: Collection | null = null;
-
-  private setPressed(ele: Collection | null): void {
-    if (this.pressed === ele) {
-      return;
-    }
-
-    if (this.pressed != null) {
-      this.setFlagOn(this.pressed, FLAG_ACTIVE, false);
-    }
-
-    this.pressed = ele;
-
-    if (ele != null) {
-      this.setFlagOn(ele, FLAG_ACTIVE, true);
-    }
-  }
+  pressed: Collection | null = null;
 
   /**
    * Recompute the cursor from the state this handler already tracks and
@@ -1778,72 +455,16 @@ export class PointerHandler {
    * putting it back on release.
    */
   applyCursor(): void {
-    const next = cursorFor(
-      this.cursorState(),
-      this.cy.pointerCursors() as boolean | Partial<CursorMap>,
-    );
-
-    if (next !== this.cursor) {
-      this.canvas.style.cursor = next;
-      this.cursor = next;
-    }
-
-    const root = this.canvas.ownerDocument?.documentElement;
-
-    if (root == null) {
-      return;
-    }
-
-    if (this.down != null && next !== '') {
-      if (this.docCursor == null) {
-        this.docCursor = root.style.cursor;
-      }
-
-      root.style.cursor = next;
-    } else if (this.docCursor != null) {
-      root.style.cursor = this.docCursor;
-      this.docCursor = null;
-    }
+    pointerHoverImpl.applyCursor(this);
   }
 
-  /** What the cursor map is asked about: the press mode (which outranks
-   * hover — a drag across another node keeps saying `grabbing`), what
-   * the hover pick found, and the device. */
-  private cursorState(): CursorState {
-    const hovered = this.hovered;
-    let hover: CursorState['hover'] = 'none';
-
-    if (hovered != null && hovered.inside()) {
-      hover =
-        hovered.isNode() && this.canDrag(hovered)
-          ? 'draggable-node'
-          : 'element';
-    }
-
-    return {
-      gesture: this.down?.mode ?? 'idle',
-      hover,
-      pointerType: this.pointerType,
-    };
+  /** Hand the canvas and the page their cursors back (destroy). @internal */
+  releaseCursor(): void {
+    pointerHoverImpl.releaseCursor(this);
   }
 
-  /** Hand the canvas and the page their cursors back (destroy). */
-  private releaseCursor(): void {
-    if (this.cursor !== '') {
-      this.canvas.style.cursor = '';
-      this.cursor = '';
-    }
-
-    const root = this.canvas.ownerDocument?.documentElement;
-
-    if (root != null && this.docCursor != null) {
-      root.style.cursor = this.docCursor;
-    }
-
-    this.docCursor = null;
-  }
-
-  private setFlagOn(ele: Collection, bit: number, on: boolean): void {
+  /** @internal */
+  setFlagOn(ele: Collection, bit: number, on: boolean): void {
     const ref = ele._eventRef();
 
     if (ref != null && ele.inside()) {
@@ -1851,7 +472,8 @@ export class PointerHandler {
     }
   }
 
-  private capture(pointerId: number): void {
+  /** @internal */
+  capture(pointerId: number): void {
     try {
       this.canvas.setPointerCapture(pointerId);
     } catch {
@@ -1859,7 +481,8 @@ export class PointerHandler {
     }
   }
 
-  private eventPos(e: MouseEvent): Position {
+  /** @internal */
+  eventPos(e: MouseEvent): Position {
     const rect = this.canvas.getBoundingClientRect();
 
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -1869,8 +492,9 @@ export class PointerHandler {
    * Synchronous node pick wrapped to an element (round 86.2): the
    * renderer answers slots, and the element handle is made here, where
    * the core is in reach.
+   * @internal
    */
-  private nodeAt(x: number, y: number, padPx: number): Collection | null {
+  nodeAt(x: number, y: number, padPx: number): Collection | null {
     const slot = this.renderer.pickNodeSync(x, y, padPx);
 
     return slot == null ? null : this.cy._ele(GROUP_NODES, slot);

@@ -190,6 +190,28 @@ comments before the round.  The docs API JSON is identical modulo
 line stamps; the d.ts now carries `Query` and `DataCondition` with
 their doc comments; the Node tier is green.
 
+### 130.5 — `src/store/graph-store/`, carried out (2026-09-20)
+
+`curve-sample` (the exact curved-bounds sampler and its scratch — 49
+lines) and `shared` (the compaction rekey, the initial flag word — 64)
+by the slicer; 94 methods by the extractor into eleven modules:
+`curves` (716), `scan` (746), `compound` (587), `compaction` (294),
+`mutation` (649), `layers` (378), `channels` (308), `images` (382),
+`labels` (248), `positions` (217), `flags` (182).  Twenty-seven private
+helpers left the class; forty private fields (`hierarchy`, `blob`,
+`order`, the hot flag views, the label sidecar …) and
+`bumpStructureEpoch` are `@internal`; the constructor stays and its
+sub-store callbacks call the kept delegators (`setCurveParams`,
+`materializeParentGeom`).  Two extractor gaps surfaced here: a
+module-scope `const` in the facade was not seen as importable, and a
+default-parameter initializer `= this.curveScratch` in a method header
+had been rewritten as a static access — both fixed in the tool.
+`scripts/throw-coverage.mjs`'s `UNREACHABLE` entry for the `SHAPE_MASK`
+invariant is rekeyed to `graph-store/layers.mts:170`.
+
+`graph-store.mts`: 5,665 → **2,279 lines**.  API JSON identical modulo
+line stamps; the soak tier and the store specs green.
+
 ### Risks named at planning
 
 - **A moved body that reads a `private` field** is a typecheck error,

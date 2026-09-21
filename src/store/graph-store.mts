@@ -8,79 +8,15 @@ import type { CurveStyleExtras, EndpointSpec } from './curve-index.mjs';
 import { HierarchyIndex } from './hierarchy.mjs';
 import type { CompoundStyle } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
-import {
-  boundaryOffset,
-  CURVE_SEGS,
-  curveDeviation,
-  curvePointAt,
-  emptyCurveEval,
-  emptyCurveRoute,
-  evalCurve,
-  evalRoute,
-  haystackPoint,
-  headerDeviation,
-  routeVertex,
-  segmentHitsBox,
-  shortenToward,
-  EDGE_DIST_NODE_POSITION,
-} from '../curve-geometry.mjs';
-import { assignTaxiTracks } from '../taxi-tracks.mjs';
-import type { TrackEdge } from '../taxi-tracks.mjs';
+import { emptyCurveEval, emptyCurveRoute } from '../curve-geometry.mjs';
 import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
-import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
   GROUP_EDGES,
   GROUP_NODES,
-  DATA_TARGET,
-  DATA_SOURCE,
-  DATA_PARENT,
-  DATA_ID,
   COL,
   columnSpec,
   columnSpecsForGroup,
-  EDGE_STYLE_COLUMNS,
-  CHART_HEADER,
-  CURVE_BEZIER,
-  CURVE_CMPD,
-  CURVE_HAS_ENDPT,
-  CURVE_HAYSTACK,
-  CURVE_LOOP,
-  CURVE_MULTI,
-  CURVE_SEGMENTS,
-  CURVE_STRAIGHT,
-  CURVE_TAXI,
-  CURVE_TRIANGLE,
-  ARROW_SHAPE_MASK,
-  ARROW_SHIFT_HOLLOW_SOURCE,
-  ARROW_SHIFT_HOLLOW_TARGET,
-  ARROW_SHIFT_SCALE,
-  ARROW_SHIFT_SOURCE,
-  ARROW_SHIFT_SRC_SHOWS_LINE,
-  ARROW_SHIFT_TARGET,
-  ARROW_SHIFT_TGT_SHOWS_LINE,
-  CONDITION_FLAG_MASK,
-  CONDITION_KEY_OF,
-  FLAG_ALIVE,
-  FLAG_CHILD,
-  FLAG_CURVED,
-  FLAG_CURVED_BOX,
-  FLAG_GRABBABLE,
-  FLAG_LOCKED,
-  FLAG_DRAWN,
-  FLAG_PANNABLE,
-  FLAG_PARENT,
-  FLAG_SELECTABLE,
-  FLAG_SELECTED,
-  FLAG_SELF_HIDDEN,
-  FLAG_SELF_INVISIBLE,
   FLAG_VISIBLE,
-  LABEL_MARGIN,
-  NO_SLOT,
-  SHAPE_MASK,
-  SHAPE_POLYGON_CUSTOM,
-  SHAPE_SHIFT,
-  BORDER_STYLE_SHIFT,
-  OUTLINE_STYLE_SHIFT,
 } from '../contract.mjs';
 import type {
   LabelStream,
@@ -92,71 +28,25 @@ import type {
   Ref,
   StoreDelta,
 } from '../contract.mjs';
-import { NO_PARENT } from '../public-types.mjs';
 import type {
   BoxSelectionMode,
   ColumnarEdges,
   ColumnarNodes,
-  DataColumn,
-  PackedIds,
 } from '../public-types.mjs';
-import {
-  ImageRegistry,
-  IMAGE_KIND_AUTO,
-  IMAGE_KIND_SDF,
-} from '../image-registry.mjs';
-import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
-import { measureBlock } from '../label-measure.mjs';
-
-/** floats per image record in the image pool (round 15.2) */
+import { ImageRegistry } from '../image-registry.mjs';
+import * as curvesImpl from './graph-store/curves.mjs';
+import * as scanImpl from './graph-store/scan.mjs';
+import * as compoundImpl from './graph-store/compound.mjs';
+import * as compactionImpl from './graph-store/compaction.mjs';
+import * as mutationImpl from './graph-store/mutation.mjs';
+import * as layersImpl from './graph-store/layers.mjs';
+import * as channelsImpl from './graph-store/channels.mjs';
+import * as imagesImpl from './graph-store/images.mjs';
+import * as labelsImpl from './graph-store/labels.mjs';
+import * as positionsImpl from './graph-store/positions.mjs';
+import * as flagsImpl from './graph-store/flags.mjs';
 export const IMG_STRIDE = 12;
 
-/** scratch for the straight-endpoint shortenings — the geometry readers
- * never allocate on the hot path */
-const shortenScratch = { x: 0, y: 0 };
-
-/** scratch point for the exact-curve-bb sampling below */
-const sampleScratch = { x: 0, y: 0 };
-
-/** Hull of a curved edge's flattened polyline at the drawn subdivision —
- * the sampling shared by `curveBBAt` (live centres, memoized by its
- * caller) and `curveBBAtPositions` (hypothetical centres, unmemoized).
- * Exactly one of `ev`/`route` is non-null. */
-const sampleCurveBB = (
-  ev: CurveEval | null,
-  route: CurveRoute | null,
-): { x1: number; y1: number; x2: number; y2: number } => {
-  const p = sampleScratch;
-  let x1 = Infinity,
-    y1 = Infinity,
-    x2 = -Infinity,
-    y2 = -Infinity;
-
-  for (let i = 0; i <= CURVE_SEGS; i++) {
-    if (ev != null) {
-      curvePointAt(ev, i / CURVE_SEGS, p);
-    } else {
-      routeVertex(route as CurveRoute, i, p);
-    }
-
-    if (p.x < x1) {
-      x1 = p.x;
-    }
-    if (p.y < y1) {
-      y1 = p.y;
-    }
-    if (p.x > x2) {
-      x2 = p.x;
-    }
-    if (p.y > y2) {
-      y2 = p.y;
-    }
-  }
-
-  return { x1, y1, x2, y2 };
-};
-
-/** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
 export interface BgLen {
   v: number;
   pct: boolean;
@@ -234,7 +124,7 @@ export interface GroupCompaction {
 
 /** Scratch for the single-slot state-change notification (one write per
  * flag flip; the callee never retains it). */
-const ONE_SLOT = [0];
+export const ONE_SLOT = [0];
 
 /**
  * The CPU-canonical columnar model: NodeTable + EdgeTable + IdMap +
@@ -257,11 +147,12 @@ export class GraphStore implements ModelView {
   readonly dirty: DirtyTracker;
   /** styled curve records + the lazy derivation of edge.curveParams */
   readonly curves: CurveIndex;
-  /** the compound hierarchy (round 14); reads go through the delegates below */
-  private hierarchy: HierarchyIndex;
+  /** the compound hierarchy (round 14); reads go through the delegates below @internal */
+  hierarchy: HierarchyIndex;
   /** per-parent stashed *style* size: the degenerate-children fallback,
-   * restored to the column when the node becomes a leaf again (14.3) */
-  private parentFallback = new Map<number, [number, number]>();
+   * restored to the column when the node becomes a leaf again (14.3)
+   * @internal */
+  parentFallback = new Map<number, [number, number]>();
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null = null;
@@ -273,36 +164,43 @@ export class GraphStore implements ModelView {
   onReparented: ((slot: number) => void) | null = null;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
-  private curveDevMax = 0;
-  private nodeHalfMax = 0;
-  private borderMax = 0;
+  /** @internal */
+  curveDevMax = 0;
+  /** @internal */
+  nodeHalfMax = 0;
+  /** @internal */
+  borderMax = 0;
   /** monotone: some edge has carried a box-bounded curve kind (taxi /
    * extrapolated weights), so curveSlack() must stay engaged even when
-   * curveDevMax is 0 */
-  private hasBoxCurves = false;
+   * curveDevMax is 0
+   * @internal */
+  hasBoxCurves = false;
   /** monotone: some edge has entered the curved *stream* — see
-   * hasCurvedEdges(), which gates the renderer's curved pipelines */
-  private curvedEver = false;
+   * hasCurvedEdges(), which gates the renderer's curved pipelines
+   * @internal */
+  curvedEver = false;
   /** monotone (12c): the largest pct-endpoint magnitude in node-half
    * units — offsets past 1 exceed the slack's node-half term, so the
-   * excess joins curveSlack() (see that doc) */
-  private endptPctMax = 0;
+   * excess joins curveSlack() (see that doc)
+   * @internal */
+  endptPctMax = 0;
   /** monotone (12c): the largest haystack-radius any edge has styled —
    * haystack offsets stray from the endpoint centers by at most
    * radius × outerHalf, and the straight-stream cull tests grow by
-   * haystackSlack() to stay sound */
-  private haystackRadiusMax = 0;
+   * haystackSlack() to stay sound
+   * @internal */
+  haystackRadiusMax = 0;
 
-  /** the 12b variable-length curve param pool (see store/curve-blob.mts) */
-  private blob: CurveBlob;
-  /** the C3 custom-polygon unit-point pool */
-  private polyPool!: CurveBlob;
-  /** the 15.2 background-image record pool (IMG_STRIDE floats per image) */
-  private imagePool!: CurveBlob;
-  /** round 23: chart records (node.chartRef = offset | n << 24) */
-  private chartPool!: CurveBlob;
-  /** live charted nodes (the chart pass skips at 0) */
-  private chartedNodes = 0;
+  /** the 12b variable-length curve param pool (see store/curve-blob.mts) @internal */
+  blob: CurveBlob;
+  /** the C3 custom-polygon unit-point pool @internal */
+  polyPool!: CurveBlob;
+  /** the 15.2 background-image record pool (IMG_STRIDE floats per image) @internal */
+  imagePool!: CurveBlob;
+  /** round 23: chart records (node.chartRef = offset | n << 24) @internal */
+  chartPool!: CurveBlob;
+  /** live charted nodes (the chart pass skips at 0) @internal */
+  chartedNodes = 0;
   /** the unique-image registry (round 15.1); style writes acquire/release */
   readonly images = new ImageRegistry();
 
@@ -310,19 +208,27 @@ export class GraphStore implements ModelView {
   // epoch, invalidating every cached edge box at once — sound and cheap.
   // Label writes deliberately do not bump it (25.5): the memo has no
   // label terms, and a font-size tween would otherwise nuke it per tick.
-  private geoEpoch = 1;
-  /** the geo epoch the taxi-track pass last ran at (round 124) */
-  private taxiTrackEpoch = 0;
-  private edgeBBEpoch = new Uint32Array(0);
-  private edgeBB = new Float64Array(0);
-  private curveScratch = emptyCurveEval();
-  private routeScratch = emptyCurveRoute();
+  /** @internal */
+  geoEpoch = 1;
+  /** the geo epoch the taxi-track pass last ran at (round 124) @internal */
+  taxiTrackEpoch = 0;
+  /** @internal */
+  edgeBBEpoch = new Uint32Array(0);
+  /** @internal */
+  edgeBB = new Float64Array(0);
+  /** @internal */
+  curveScratch = emptyCurveEval();
+  /** @internal */
+  routeScratch = emptyCurveRoute();
 
-  private order: { nodes: OrderList; edges: OrderList };
-  private labels: Record<LabelStream, (LabelEntry | undefined)[]>;
-  private labelDirty: Record<LabelStream, Set<number>>;
-  /** laid (or estimated) label block dims per stream (round 16.2) */
-  private labelDims: Record<
+  /** @internal */
+  order: { nodes: OrderList; edges: OrderList };
+  /** @internal */
+  labels: Record<LabelStream, (LabelEntry | undefined)[]>;
+  /** @internal */
+  labelDirty: Record<LabelStream, Set<number>>;
+  /** laid (or estimated) label block dims per stream (round 16.2) @internal */
+  labelDims: Record<
     LabelStream,
     Map<number, { w: number; h: number; exact: boolean }>
   > = {
@@ -337,10 +243,10 @@ export class GraphStore implements ModelView {
   labelFontStyle: string;
   /** global label font-weight ('normal', 'bold', a number); style-owned */
   labelFontWeight: string;
-  /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
-  private watchedKeys: Record<GroupName, ReadonlySet<string>>;
-  /** reserved state keys some `case` condition reads (registered by the StyleEngine) */
-  private watchedStates: Record<GroupName, ReadonlySet<string>>;
+  /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) @internal */
+  watchedKeys: Record<GroupName, ReadonlySet<string>>;
+  /** reserved state keys some `case` condition reads (registered by the StyleEngine) @internal */
+  watchedStates: Record<GroupName, ReadonlySet<string>>;
   /**
    * Told when a styled state bit flips on live slots — the core wires
    * this to the StyleEngine's state refresh (round 57.1; the round-61
@@ -351,16 +257,18 @@ export class GraphStore implements ModelView {
   onStateChange:
     | ((group: GroupName, key: string, slots: readonly number[]) => void)
     | null = null;
-  /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
-  private mapperSpans: Map<string, MapperSpan>;
+  /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) @internal */
+  mapperSpans: Map<string, MapperSpan>;
 
   /** forwarding chains for refs staled by slot compaction (19.3):
-   * packed (slot, gen) → packed (newSlot, newGen), per group */
-  private forwards: Record<GroupName, Map<number, number>> = {
+   * packed (slot, gen) → packed (newSlot, newGen), per group
+   * @internal */
+  forwards: Record<GroupName, Map<number, number>> = {
     nodes: new Map(),
     edges: new Map(),
   };
-  private _compactEpoch = 0;
+  /** @internal */
+  _compactEpoch = 0;
   // Round 34.2: bumped whenever an element enters or leaves the
   // insertion-order list — the one structure every add and every remove
   // passes through — so a cached whole-graph collection can tell
@@ -379,8 +287,9 @@ export class GraphStore implements ModelView {
   onStructureChange: (() => void) | null = null;
 
   /** The one place structureEpoch moves: bump plus the push-invalidation
-   * hook (round 62.5b). */
-  private bumpStructureEpoch(): void {
+   * hook (round 62.5b).
+   * @internal */
+  bumpStructureEpoch(): void {
     this.structureEpoch++;
     this.onStructureChange?.();
   }
@@ -633,35 +542,7 @@ export class GraphStore implements ModelView {
    * that pool actually changed
    */
   takeDelta(): StoreDelta {
-    // pending curve derivations land as column writes in this delta
-    this.flushDerived();
-
-    const delta = this.dirty.take(this.nodes.highWater, this.edges.highWater);
-    const blobDirty = this.blob.takeDirty();
-
-    if (blobDirty != null) {
-      delta.curveBlob = blobDirty;
-    }
-
-    const polyDirty = this.polyPool.takeDirty();
-
-    if (polyDirty != null) {
-      delta.polyBlob = polyDirty;
-    }
-
-    const imageDirty = this.imagePool.takeDirty();
-
-    if (imageDirty != null) {
-      delta.imageBlob = imageDirty;
-    }
-
-    const chartDirty = this.chartPool.takeDirty();
-
-    if (chartDirty != null) {
-      delta.chartBlob = chartDirty;
-    }
-
-    return delta;
+    return imagesImpl.takeDelta(this);
   }
 
   /** The 12b curve param pool's backing array (the renderer's upload
@@ -692,18 +573,7 @@ export class GraphStore implements ModelView {
    * ref (offset | pointCount << 24) for borderGeom[0].
    */
   setPolygonPoints(slot: number, points: number[] | null): number {
-    if (points == null || points.length === 0) {
-      this.polyPool.free(slot);
-
-      return 0;
-    }
-
-    const offset = this.polyPool.write(slot, points);
-
-    this.geoEpoch++;
-    this.dirty.touch();
-
-    return (offset | ((points.length / 2) << 24)) >>> 0;
+    return imagesImpl.setPolygonPoints(this, slot, points);
   }
 
   /** The 15.2 background-image record pool's backing array. */
@@ -731,8 +601,8 @@ export class GraphStore implements ModelView {
     return this.chartedNodes;
   }
 
-  /** live imaged-node count (the renderer's zero-cost gate, 15.3) */
-  private imagedNodes = 0;
+  /** live imaged-node count (the renderer's zero-cost gate, 15.3) @internal */
+  imagedNodes = 0;
 
   /** Live nodes carrying background images (15.3) — the renderer's
    * pass-skip gate, so an imageless graph pays nothing. */
@@ -756,88 +626,7 @@ export class GraphStore implements ModelView {
    * clear (clearing an already-imageless node is a no-op fast path)
    */
   setNodeImages(slot: number, specs: NodeImageSpec[] | null): void {
-    const refs = this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array;
-    const oldRef = refs[slot];
-    const clearing = specs == null || specs.length === 0;
-
-    if (clearing && oldRef === 0) {
-      return;
-    } // the imageless fast path
-
-    if (clearing) {
-      this.imagedNodes--;
-    } else if (oldRef === 0) {
-      this.imagedNodes++;
-    }
-
-    const oldIds: number[] = [];
-
-    if (oldRef !== 0) {
-      const pool = this.imagePool.data();
-      const off = oldRef & 0xffffff;
-      const count = oldRef >>> 24;
-
-      for (let i = 0; i < count; i++) {
-        oldIds.push(pool[off + i * IMG_STRIDE]);
-      }
-    }
-
-    if (clearing) {
-      this.imagePool.free(slot);
-      refs[slot] = 0;
-      this.dirty.mark(COL.NODE_IMAGE_REF, slot);
-    } else {
-      const values = new Array<number>(specs.length * IMG_STRIDE);
-
-      for (let i = 0; i < specs.length; i++) {
-        const s = specs[i];
-        const id = this.images.acquire(
-          s.url,
-          s.sdf ? IMAGE_KIND_SDF : IMAGE_KIND_AUTO,
-          s.crossOrigin,
-        );
-        const base = i * IMG_STRIDE;
-
-        values[base] = id;
-        values[base + 1] =
-          s.fit |
-          (s.repeat << 2) |
-          (s.clip << 4) |
-          (s.containment << 5) |
-          ((s.smoothing ? 1 : 0) << 6) |
-          ((s.sdf ? 1 : 0) << 7);
-        values[base + 2] = s.opacity;
-        values[base + 3] = s.posX.v;
-        values[base + 4] = s.posY.v;
-        values[base + 5] = s.offX.v;
-        values[base + 6] = s.offY.v;
-        values[base + 7] = s.w.v;
-        values[base + 8] = s.h.v;
-        values[base + 9] =
-          (s.posX.pct ? 1 : 0) |
-          ((s.posY.pct ? 1 : 0) << 1) |
-          ((s.offX.pct ? 1 : 0) << 2) |
-          ((s.offY.pct ? 1 : 0) << 3) |
-          (s.w.mode << 4) |
-          (s.h.mode << 6);
-        values[base + 10] = s.tint[0] + s.tint[1] * 256;
-        values[base + 11] = s.tint[2] + s.tint[3] * 256;
-      }
-
-      const offset = this.imagePool.write(slot, values);
-      const ref = (offset | (specs.length << 24)) >>> 0;
-
-      if (refs[slot] !== ref) {
-        refs[slot] = ref;
-        this.dirty.mark(COL.NODE_IMAGE_REF, slot);
-      }
-    }
-
-    for (const id of oldIds) {
-      this.images.release(id);
-    }
-
-    this.dirty.touch();
+    imagesImpl.setNodeImages(this, slot, specs);
   }
 
   /**
@@ -861,57 +650,7 @@ export class GraphStore implements ModelView {
       colors: [number, number, number, number][];
     } | null,
   ): void {
-    const refs = this.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
-    const oldRef = refs[slot];
-    const clearing = rec == null || rec.values.length === 0;
-
-    if (clearing && oldRef === 0) {
-      return;
-    } // the chartless fast path
-
-    if (clearing) {
-      this.chartedNodes--;
-      this.chartPool.free(slot);
-      refs[slot] = 0;
-      this.dirty.mark(COL.NODE_CHART_REF, slot);
-      this.dirty.touch();
-
-      return;
-    }
-
-    if (oldRef === 0) {
-      this.chartedNodes++;
-    }
-
-    const { values, colors } = rec;
-    const n = values.length;
-    const record = new Array<number>(CHART_HEADER + n * 3);
-
-    record[0] = rec.kind;
-    record[1] = rec.size;
-    record[2] = rec.hole;
-    record[3] = rec.startAngle;
-    record[4] = rec.direction;
-    record[5] = rec.opacity;
-    record[6] = n;
-
-    for (let i = 0; i < n; i++) {
-      const [r, g, b, a] = colors[i];
-
-      record[CHART_HEADER + i * 3] = values[i];
-      record[CHART_HEADER + i * 3 + 1] = r + g * 256;
-      record[CHART_HEADER + i * 3 + 2] = b + a * 256;
-    }
-
-    const offset = this.chartPool.write(slot, record);
-    const ref = (offset | (n << 24)) >>> 0;
-
-    if (refs[slot] !== ref) {
-      refs[slot] = ref;
-      this.dirty.mark(COL.NODE_CHART_REF, slot);
-    }
-
-    this.dirty.touch();
+    imagesImpl.setChart(this, slot, rec);
   }
 
   /** A node's decoded chart record, or null when chartless (round 23). */
@@ -925,110 +664,17 @@ export class GraphStore implements ModelView {
     values: number[];
     colors: [number, number, number, number][];
   } | null {
-    const ref = (this.nodes.column(COL.NODE_CHART_REF) as Uint32Array)[slot];
-
-    if (ref === 0) {
-      return null;
-    }
-
-    const pool = this.chartPool.data();
-    const off = ref & 0xffffff;
-    const n = ref >>> 24;
-    const values: number[] = [];
-    const colors: [number, number, number, number][] = [];
-    // the pool is f32: snap fractions back to a friendly precision
-    const snap = (v: number): number => Math.round(v * 1e6) / 1e6;
-
-    for (let i = 0; i < n; i++) {
-      const base = off + CHART_HEADER + i * 3;
-      const rg = pool[base + 1];
-      const ba = pool[base + 2];
-
-      values.push(snap(pool[base]));
-      colors.push([
-        rg % 256,
-        Math.floor(rg / 256),
-        ba % 256,
-        Math.floor(ba / 256),
-      ]);
-    }
-
-    return {
-      kind: pool[off],
-      size: snap(pool[off + 1]),
-      hole: snap(pool[off + 2]),
-      startAngle: pool[off + 3],
-      direction: pool[off + 4],
-      opacity: snap(pool[off + 5]),
-      values,
-      colors,
-    };
+    return imagesImpl.chartAt(this, slot);
   }
 
   /** A node's decoded background-image records, or null when imageless. */
   nodeImagesAt(slot: number): NodeImageRecord[] | null {
-    const ref = (this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot];
-
-    if (ref === 0) {
-      return null;
-    }
-
-    const pool = this.imagePool.data();
-    const off = ref & 0xffffff;
-    const count = ref >>> 24;
-    const out: NodeImageRecord[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const base = off + i * IMG_STRIDE;
-      const entryId = pool[base];
-      const flags = pool[base + 1];
-      const units = pool[base + 9];
-      const rg = pool[base + 10];
-      const ba = pool[base + 11];
-
-      out.push({
-        entryId,
-        url: this.images.get(entryId)?.url ?? '',
-        fit: flags & 3,
-        repeat: (flags >> 2) & 3,
-        clip: (flags >> 4) & 1,
-        containment: (flags >> 5) & 1,
-        smoothing: ((flags >> 6) & 1) === 1,
-        sdf: ((flags >> 7) & 1) === 1,
-        opacity: pool[base + 2],
-        posX: { v: pool[base + 3], pct: (units & 1) === 1 },
-        posY: { v: pool[base + 4], pct: ((units >> 1) & 1) === 1 },
-        offX: { v: pool[base + 5], pct: ((units >> 2) & 1) === 1 },
-        offY: { v: pool[base + 6], pct: ((units >> 3) & 1) === 1 },
-        w: { mode: (units >> 4) & 3, v: pool[base + 7] },
-        h: { mode: (units >> 6) & 3, v: pool[base + 8] },
-        tint: [rg % 256, Math.floor(rg / 256), ba % 256, Math.floor(ba / 256)],
-      });
-    }
-
-    return out;
+    return imagesImpl.nodeImagesAt(this, slot);
   }
 
   /** A node's custom polygon points (unit pairs), or null. */
   polygonPointsAt(slot: number): Float64Array | null {
-    const geom = this.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
-    const shape = (geom[slot * 4 + 1] >>> 16) & 0xf;
-
-    if (shape !== 14) {
-      return null;
-    }
-
-    const ref = geom[slot * 4];
-    const off = ref & 0xffffff;
-    const count = ref >>> 24;
-    const pool = this.polyPool.data();
-    const out = new Float64Array(count * 2);
-
-    for (let i = 0; i < count * 2; i++) {
-      out[i] = pool[off + i];
-    }
-
-    return out;
+    return imagesImpl.polygonPointsAt(this, slot);
   }
 
   /**
@@ -1090,21 +736,7 @@ export class GraphStore implements ModelView {
     start: number,
     end: number,
   ): void {
-    if (!this.watchedKeys[group].has(key)) {
-      return;
-    }
-
-    const id = `${group}:${key}`;
-    const span = this.mapperSpans.get(id);
-
-    if (span == null) {
-      this.mapperSpans.set(id, { group, key, start, end });
-    } else {
-      span.start = Math.min(span.start, start);
-      span.end = Math.max(span.end, end);
-    }
-
-    this.dirty.touch();
+    mutationImpl.markDataWrite(this, group, key, start, end);
   }
 
   /** Pending watched-key write spans, returned and cleared. */
@@ -1161,42 +793,10 @@ export class GraphStore implements ModelView {
    * moved element survives adds one link) and, on reaching a live
    * identity, rewrite the ref in place.  Entries persist and compose, so
    * repair is total for any ref whose element still exists.
+   * @internal
    */
-  private repairStale(ref: Ref): boolean {
-    const fwd = this.forwards[ref.group];
-
-    if (fwd.size === 0) {
-      return false;
-    }
-
-    let cur = fwd.get(ref.slot * 0x1000000 + ref.gen);
-
-    if (cur == null) {
-      return false;
-    }
-
-    for (;;) {
-      const next = fwd.get(cur);
-
-      if (next == null) {
-        break;
-      }
-
-      cur = next;
-    }
-
-    const slot = Math.floor(cur / 0x1000000);
-    const gen = cur % 0x1000000;
-    const table = this.table(ref.group);
-
-    if (slot >= table.cap || table.gen[slot] !== gen) {
-      return false;
-    } // moved, then removed
-
-    ref.slot = slot;
-    ref.gen = gen;
-
-    return true;
+  repairStale(ref: Ref): boolean {
+    return compactionImpl.repairStale(this, ref);
   }
 
   /**
@@ -1241,16 +841,7 @@ export class GraphStore implements ModelView {
    * themselves never hit the doubling cascade.
    */
   reserve(nodeCount: number, edgeCount: number): void {
-    const minCap = (table: ColumnTable, adding: number): number =>
-      table.highWater + Math.max(0, adding - table.freeCount);
-
-    if (this.nodes.reserve(minCap(this.nodes, nodeCount))) {
-      this.dirty.markResized(GROUP_NODES);
-    }
-
-    if (this.edges.reserve(minCap(this.edges, edgeCount))) {
-      this.dirty.markResized(GROUP_EDGES);
-    }
+    mutationImpl.reserve(this, nodeCount, edgeCount);
   }
 
   /**
@@ -1265,26 +856,7 @@ export class GraphStore implements ModelView {
    * @throws when the id already exists
    */
   addNode(id: string, x: number, y: number, opts: AddElementOpts = {}): number {
-    const { slot, resized } = this.allocSlot(GROUP_NODES, id);
-
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-
-    pos[slot * 2] = x;
-    pos[slot * 2 + 1] = y;
-    this.geoEpoch++;
-
-    (this.nodes.column(COL.NODE_FLAGS) as Uint32Array)[slot] = initialFlags(
-      opts,
-      false,
-    );
-
-    if (!resized) {
-      // resized already implies a full re-upload
-      this.dirty.mark(COL.NODE_POSITION, slot);
-      this.dirty.mark(COL.NODE_FLAGS, slot);
-    }
-
-    return slot;
+    return mutationImpl.addNode(this, id, x, y, opts);
   }
 
   /**
@@ -1305,43 +877,7 @@ export class GraphStore implements ModelView {
     targetId: string,
     opts: AddElementOpts = {},
   ): number {
-    const source = this.ids.get(sourceId);
-    const target = this.ids.get(targetId);
-
-    if (source == null || source.group !== GROUP_NODES) {
-      throw new Error(
-        `Can not create edge '${id}' with nonexistant source '${sourceId}'`,
-      );
-    }
-
-    if (target == null || target.group !== GROUP_NODES) {
-      throw new Error(
-        `Can not create edge '${id}' with nonexistant target '${targetId}'`,
-      );
-    }
-
-    const { slot, resized } = this.allocSlot(GROUP_EDGES, id);
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-    endpoints[slot * 2] = source.slot;
-    endpoints[slot * 2 + 1] = target.slot;
-
-    (this.edges.column(COL.EDGE_FLAGS) as Uint32Array)[slot] = initialFlags(
-      opts,
-      true,
-    );
-
-    this.adj.addEdge(slot, source.slot, target.slot);
-    this.maybeRebuildAdjacency();
-    this.curves.onAddEdge(slot, source.slot, target.slot);
-
-    if (!resized) {
-      this.dirty.mark(COL.EDGE_ENDPOINTS, slot);
-      this.dirty.mark(COL.EDGE_FLAGS, slot);
-    }
-
-    return slot;
+    return mutationImpl.addEdge(this, id, sourceId, targetId, opts);
   }
 
   /**
@@ -1352,77 +888,7 @@ export class GraphStore implements ModelView {
    * a mid-list throw in the def path).
    */
   addNodesColumnar(cols: ColumnarNodes, newId: () => string): Uint32Array {
-    const count = cols.count;
-    const { slots, resized, contiguousFrom } = this.nodes.allocBulk(count);
-
-    if (resized) {
-      this.dirty.markResized(GROUP_NODES);
-    }
-
-    this.registerBulk(GROUP_NODES, slots, cols.ids, newId);
-
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-
-    if (cols.positions != null) {
-      if (cols.positions.length < count * 2) {
-        throw new Error(
-          `Columnar node positions must hold ${count * 2} floats; got ${cols.positions.length}`,
-        );
-      }
-
-      if (contiguousFrom < count) {
-        // fresh run: one memcpy
-        pos.set(
-          cols.positions.subarray(contiguousFrom * 2, count * 2),
-          slots[contiguousFrom] * 2,
-        );
-      }
-
-      for (let i = 0; i < contiguousFrom; i++) {
-        // reused slots: scattered
-        pos[slots[i] * 2] = cols.positions[i * 2];
-        pos[slots[i] * 2 + 1] = cols.positions[i * 2 + 1];
-      }
-    }
-
-    this.geoEpoch++;
-    this.writeBulkFlags(GROUP_NODES, slots, contiguousFrom, cols);
-
-    // parent column (round 14.8): payload indices, sentinel = orphan;
-    // linked after the flags fill so the derived bits survive it
-    if (cols.parent != null) {
-      if (cols.parent.length < count) {
-        throw new Error(
-          `Columnar node parent column must hold ${count} entries; got ${cols.parent.length}`,
-        );
-      }
-
-      for (let i = 0; i < count; i++) {
-        const at = cols.parent[i];
-
-        if (at === NO_PARENT) {
-          continue;
-        }
-
-        if (at >= count) {
-          throw new Error(
-            `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
-              `(columnar payloads are self-contained; use the definition form for cross-references)`,
-          );
-        }
-
-        this.setParent(slots[i], slots[at]); // cycle-guarded (warn + drop)
-      }
-    }
-
-    this.ingestDataColumns(GROUP_NODES, slots, cols.data);
-
-    if (!resized) {
-      this.markBulk(COL.NODE_POSITION, slots);
-      this.markBulk(COL.NODE_FLAGS, slots);
-    }
-
-    return slots;
+    return mutationImpl.addNodesColumnar(this, cols, newId);
   }
 
   /**
@@ -1434,67 +900,7 @@ export class GraphStore implements ModelView {
     nodeSlots: Uint32Array,
     newId: () => string,
   ): Uint32Array {
-    const count = cols.count;
-
-    if (
-      cols.sources == null ||
-      cols.targets == null ||
-      cols.sources.length < count ||
-      cols.targets.length < count
-    ) {
-      throw new Error(
-        `Columnar edges must provide ${count} sources and targets`,
-      );
-    }
-
-    for (let i = 0; i < count; i++) {
-      if (
-        cols.sources[i] >= nodeSlots.length ||
-        cols.targets[i] >= nodeSlots.length
-      ) {
-        throw new Error(
-          `Columnar edge ${i} references node index ` +
-            `${Math.max(cols.sources[i], cols.targets[i])} but the payload has ${nodeSlots.length} nodes ` +
-            `(columnar payloads are self-contained; use the definition form for cross-references)`,
-        );
-      }
-    }
-
-    const { slots, resized, contiguousFrom } = this.edges.allocBulk(count);
-
-    if (resized) {
-      this.dirty.markResized(GROUP_EDGES);
-    }
-
-    this.registerBulk(GROUP_EDGES, slots, cols.ids, newId);
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-    for (let i = 0; i < count; i++) {
-      const slot = slots[i];
-      const sourceSlot = nodeSlots[cols.sources[i]];
-      const targetSlot = nodeSlots[cols.targets[i]];
-
-      endpoints[slot * 2] = sourceSlot;
-      endpoints[slot * 2 + 1] = targetSlot;
-
-      // loop registration (and pair membership when the index is live)
-      this.curves.onAddEdge(slot, sourceSlot, targetSlot);
-    }
-
-    // fresh index: builds CSR in two counting passes; otherwise overlays
-    this.adj.addBulk(slots, endpoints, this.nodes.cap);
-    this.maybeRebuildAdjacency();
-
-    this.writeBulkFlags(GROUP_EDGES, slots, contiguousFrom, cols);
-    this.ingestDataColumns(GROUP_EDGES, slots, cols.data);
-
-    if (!resized) {
-      this.markBulk(COL.EDGE_ENDPOINTS, slots);
-      this.markBulk(COL.EDGE_FLAGS, slots);
-    }
-
-    return slots;
+    return mutationImpl.addEdgesColumnar(this, cols, nodeSlots, newId);
   }
 
   /**
@@ -1504,56 +910,17 @@ export class GraphStore implements ModelView {
    * — and stays stale, since ref repair never resurrects a removal.
    */
   removeEdge(slot: number): void {
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-    this.adj.removeEdge(slot, endpoints[slot * 2], endpoints[slot * 2 + 1]);
-    this.curves.onRemoveEdge(
-      slot,
-      endpoints[slot * 2],
-      endpoints[slot * 2 + 1],
-    );
-    this.freeSlot(GROUP_EDGES, slot);
-    this.maybeRebuildAdjacency();
+    mutationImpl.removeEdge(this, slot);
   }
 
   /** Re-point an existing edge at new endpoint node slots (updates adjacency in place). */
   moveEdge(slot: number, source: number, target: number): void {
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const oldSource = endpoints[slot * 2];
-    const oldTarget = endpoints[slot * 2 + 1];
-
-    if (oldSource === source && oldTarget === target) {
-      return;
-    }
-
-    this.adj.removeEdge(slot, oldSource, oldTarget);
-
-    endpoints[slot * 2] = source;
-    endpoints[slot * 2 + 1] = target;
-
-    this.adj.addEdge(slot, source, target);
-    this.maybeRebuildAdjacency();
-    this.curves.onMoveEdge(slot, oldSource, oldTarget, source, target);
-    this.geoEpoch++;
-    this.dirty.mark(COL.EDGE_ENDPOINTS, slot);
+    mutationImpl.moveEdge(this, slot, source, target);
   }
 
   /** The node must have no incident edges or children left; the caller cascades removal of them first. */
   removeNode(slot: number): void {
-    if (this.adj.outDegree(slot) > 0 || this.adj.inDegree(slot) > 0) {
-      throw new Error('Can not remove a node before its incident edges');
-    }
-
-    if (this.hierarchy.hasChildren(slot)) {
-      throw new Error('Can not remove a node before its children');
-    }
-
-    this.hierarchy.onRemoveNode(slot);
-    this.adj.clearNode(slot);
-    this.polyPool.free(slot);
-    this.setNodeImages(slot, null); // releases registry refs too (15.2)
-    this.setChart(slot, null); // frees the chart record (round 23)
-    this.freeSlot(GROUP_NODES, slot);
+    mutationImpl.removeNode(this, slot);
   }
 
   // -- compound hierarchy (round 14) --
@@ -1582,74 +949,10 @@ export class GraphStore implements ModelView {
    * (`takeDelta`) and on the CPU readers (`flushDerived`), and is a
    * single size check when no edge is `auto`.  It writes a column,
    * never the blob, and never bumps the epoch it is keyed on.
+   * @internal
    */
-  private refreshTaxiTracks(): void {
-    const slots = this.curves.taxiAutoSlots();
-
-    if (slots.size === 0 || this.taxiTrackEpoch === this.geoEpoch) {
-      return;
-    }
-
-    this.taxiTrackEpoch = this.geoEpoch;
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const half = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const edges: TrackEdge[] = [];
-    const edgeSlots: number[] = [];
-
-    for (const slot of slots) {
-      const ex = this.curves.styleAt(slot).extras;
-
-      if (ex == null) {
-        continue;
-      }
-
-      edges.push({
-        src: endpoints[slot * 2],
-        tgt: endpoints[slot * 2 + 1],
-        dir: ex.taxiDir,
-        minDist: ex.taxiTurnMinDist,
-        body: ex.edgeDistances !== EDGE_DIST_NODE_POSITION,
-        group: ex.taxiTrack,
-        spacing: ex.taxiTrackSpacing,
-      });
-      edgeSlots.push(slot);
-    }
-
-    // a run avoids the shown leaf bodies; parents are boxes around
-    // their children, not obstacles
-    const obstacles: number[] = [];
-    const shownLeaf = FLAG_ALIVE | FLAG_VISIBLE;
-
-    for (let n = 0; n < this.nodes.highWater; n++) {
-      const f = nodeFlags[n];
-
-      if ((f & shownLeaf) === shownLeaf && (f & FLAG_PARENT) === 0) {
-        obstacles.push(n);
-      }
-    }
-
-    const { turn } = assignTaxiTracks({ edges, pos, half, obstacles });
-    let min = Infinity;
-    let max = -1;
-
-    for (let i = 0; i < edgeSlots.length; i++) {
-      const slot = edgeSlots[i];
-      const at = slot * 4 + 2;
-
-      if (params[at] !== turn[i]) {
-        params[at] = turn[i];
-        min = Math.min(min, slot);
-        max = Math.max(max, slot);
-      }
-    }
-
-    if (max >= 0) {
-      this.dirty.mark(COL.EDGE_CURVE_PARAMS, min, max + 1);
-    }
+  refreshTaxiTracks(): void {
+    compoundImpl.refreshTaxiTracks(this);
   }
 
   /**
@@ -1687,29 +990,7 @@ export class GraphStore implements ModelView {
    * @param count — how many slots the run covers, template included
    */
   replicateEdgeStyle(start: number, count: number): void {
-    if (count < 2) {
-      return;
-    }
-
-    for (const spec of EDGE_STYLE_COLUMNS) {
-      const arr = this.edges.column(spec.id);
-      const c = spec.components;
-
-      // doubling fill: [start, start+done) is already the pattern, so
-      // copy it onto itself until the run is covered
-      let done = 1;
-
-      while (done < count) {
-        const n = Math.min(done, count - done);
-
-        arr.copyWithin((start + done) * c, start * c, (start + n) * c);
-        done += n;
-      }
-
-      this.dirty.mark(spec.id, start, start + count);
-    }
-
-    this.geoEpoch++;
+    compoundImpl.replicateEdgeStyle(this, start, count);
   }
 
   /**
@@ -1719,140 +1000,16 @@ export class GraphStore implements ModelView {
    * re-trigger itself.  A size change re-anchors the parent's label
    * (the sidecar entry bakes anchors from the node extents) and feeds
    * the monotone cull-slack meter.
+   * @internal
    */
-  private materializeParentGeom(
+  materializeParentGeom(
     slot: number,
     x: number,
     y: number,
     w: number,
     h: number,
   ): void {
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
-    const posChanged = pos[slot * 2] !== x || pos[slot * 2 + 1] !== y;
-    const sizeChanged = size[slot * 2] !== w || size[slot * 2 + 1] !== h;
-
-    if (!posChanged && !sizeChanged) {
-      return;
-    }
-
-    if (posChanged) {
-      pos[slot * 2] = x;
-      pos[slot * 2 + 1] = y;
-      this.dirty.mark(COL.NODE_POSITION, slot);
-    }
-
-    if (sizeChanged) {
-      size[slot * 2] = w;
-      size[slot * 2 + 1] = h;
-      this.dirty.mark(COL.NODE_SIZE, slot);
-
-      const half = Math.max(w, h) / 2;
-
-      if (half > this.nodeHalfMax) {
-        this.nodeHalfMax = half;
-      }
-
-      this.updateOuterHalf(slot);
-      this.reanchorLabel(slot, w, h);
-
-      // compound-loop excursion bounds are derivation-time (14.10):
-      // refresh them for the resized parent's incident edges (the
-      // geometry itself always evaluates from live sizes)
-      const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-
-      for (const edgeSlot of this.adj.connectedEdges(slot)) {
-        const a = endpoints[edgeSlot * 2];
-        const b = endpoints[edgeSlot * 2 + 1];
-
-        if (
-          (this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array)[
-            edgeSlot * 4 + 3
-          ] === CURVE_CMPD
-        ) {
-          this.curves.invalidateRelation(a, b);
-        }
-      }
-    }
-
-    this.geoEpoch++;
-  }
-
-  /**
-   * Re-derive a node label's anchor from new drawn extents.  The sidecar
-   * entry carries enough to invert the StyleEngine's bake: halign/valign
-   * reconstruct from the block-fraction shifts, and the anchor formulas
-   * are the engine's own (see writeLabel) — no engine round trip needed.
-   */
-  private reanchorLabel(slot: number, w: number, h: number): void {
-    const entry = this.labels.nodes[slot];
-
-    if (entry == null) {
-      return;
-    }
-
-    const halign = entry.halignShift * 2 + 1;
-    const valign = entry.valignShift * 2 + 2;
-    const anchorX = ((halign - 1) * w) / 2;
-    const anchorY =
-      (valign === 0
-        ? -h / 2 - LABEL_MARGIN
-        : valign === 2
-          ? h / 2 + LABEL_MARGIN
-          : 0) + entry.marginY;
-
-    if (anchorX !== entry.anchorX || anchorY !== entry.anchorY) {
-      this.setLabel(slot, { ...entry, anchorX, anchorY }, GROUP_NODES);
-    }
-  }
-
-  /**
-   * Shift a parent's subtree by a delta (raw writes, one span).  A
-   * locked descendant stays, and so does its own subtree (116.3 — v3's
-   * rule: a parent write shifts `children()` through the locked-aware
-   * shift, so a locked child's `shift` is refused and its children are
-   * never reached).  Every ancestor of a node left behind re-derives —
-   * their boxes now span the stayers and the movers, so a uniform
-   * translation of the written position no longer describes them.
-   */
-  private shiftSubtree(slot: number, dx: number, dy: number): void {
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const flags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
-    const stack: number[] = [];
-    let min = Infinity;
-    let max = -1;
-
-    for (const kid of this.hierarchy.childrenOf(slot)) {
-      stack.push(kid);
-    }
-
-    while (stack.length > 0) {
-      const s = stack.pop() as number;
-
-      if ((flags[s] & FLAG_LOCKED) !== 0) {
-        this.hierarchy.markAncestors(s);
-        continue;
-      }
-
-      pos[s * 2] += dx;
-      pos[s * 2 + 1] += dy;
-
-      if (s < min) {
-        min = s;
-      }
-      if (s > max) {
-        max = s;
-      }
-
-      for (const kid of this.hierarchy.childrenOf(s)) {
-        stack.push(kid);
-      }
-    }
-
-    if (max >= 0) {
-      this.geoEpoch++;
-      this.dirty.mark(COL.NODE_POSITION, min, max + 1);
-    }
+    compoundImpl.materializeParentGeom(this, slot, x, y, w, h);
   }
 
   /** Mark a node's ancestor chain (and its own derived bounds when it is
@@ -1901,46 +1058,7 @@ export class GraphStore implements ModelView {
    * and the parent draw permutation.
    */
   setParent(slot: number, parentSlot: number): void {
-    const before = this.hierarchy.parentOf(slot);
-
-    this.hierarchy.setParent(slot, parentSlot);
-
-    if (this.hierarchy.parentOf(slot) === before) {
-      return;
-    } // no-op or cycle drop
-
-    // the moved subtree's ancestor-derived state re-resolves against the
-    // new chain (round 14.4): effective visibility and the opacity fold
-    this.refreshEffectiveVisibility(slot);
-    this.refoldOpacitySubtree(slot);
-
-    // structural case conditions on the moved node re-evaluate (14.7)
-    this.onReparented?.(slot);
-
-    // compound-loop routing (14.10): the moved subtree's incident edges
-    // may have entered or left an ancestor/descendant relation
-    this.invalidateSubtreeEdgeRelations(slot);
-  }
-
-  /** Re-derive curve routing for every edge incident to a subtree (14.10). */
-  private invalidateSubtreeEdgeRelations(root: number): void {
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const stack: number[] = [root];
-
-    while (stack.length > 0) {
-      const slot = stack.pop() as number;
-
-      for (const edgeSlot of this.adj.connectedEdges(slot)) {
-        this.curves.invalidateRelation(
-          endpoints[edgeSlot * 2],
-          endpoints[edgeSlot * 2 + 1],
-        );
-      }
-
-      for (const kid of this.hierarchy.childrenOf(slot)) {
-        stack.push(kid);
-      }
-    }
+    compoundImpl.setParent(this, slot, parentSlot);
   }
 
   /**
@@ -1955,26 +1073,7 @@ export class GraphStore implements ModelView {
     visible: boolean,
     changedIdx: number[] | null = null,
   ): number {
-    const changed: number[] = changedIdx ?? [];
-    const n = this.flagRefs(refs, FLAG_SELF_HIDDEN, !visible, 0, changed);
-
-    for (const i of changed) {
-      const ref = refs[i];
-
-      if (ref.group === GROUP_EDGES) {
-        // edges have no ancestors: effective = own state; DRAWN also
-        // folds the visibility prop (round 22)
-        this.setFlag(GROUP_EDGES, ref.slot, FLAG_VISIBLE, visible);
-        this.refreshEdgeDrawn(ref.slot);
-        // display-tier semantics (22.3): a hidden bezier-bundle member
-        // leaves its bundle — siblings re-fan
-        this.curves.onEdgeShownChanged(ref.slot);
-      } else {
-        this.refreshEffectiveVisibility(ref.slot);
-      }
-    }
-
-    return n;
+    return compoundImpl.setVisibility(this, refs, visible, changedIdx);
   }
 
   /**
@@ -1986,113 +1085,21 @@ export class GraphStore implements ModelView {
    * so an invisible element keeps its space and its bundle rank.
    */
   setInvisibility(group: GroupName, slot: number, invisible: boolean): void {
-    const id: ColumnId =
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
-    const flags = this.table(group).column(id) as Uint32Array;
-    const cur = (flags[slot] & FLAG_SELF_INVISIBLE) !== 0;
-
-    if (cur === invisible) {
-      return;
-    }
-
-    this.setFlag(group, slot, FLAG_SELF_INVISIBLE, invisible);
-
-    if (group === GROUP_EDGES) {
-      this.refreshEdgeDrawn(slot);
-    } else {
-      this.refreshEffectiveVisibility(slot);
-    }
-  }
-
-  /** Re-derive an edge's FLAG_DRAWN from its shown + invisible state.
-   * (Endpoint invisibility is folded by the consumers — the kernels'
-   * endpoint tests and the edge `visible()` read — not stored here.) */
-  private refreshEdgeDrawn(slot: number): void {
-    const flags = this.edges.column(COL.EDGE_FLAGS) as Uint32Array;
-    const drawn =
-      (flags[slot] & FLAG_VISIBLE) !== 0 &&
-      (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
-
-    this.setFlag(GROUP_EDGES, slot, FLAG_DRAWN, drawn);
+    compoundImpl.setInvisibility(this, group, slot, invisible);
   }
 
   /** Whether the element renders (round 22): the derived FLAG_DRAWN, with
    * edges additionally folding their endpoints (v3's visible() rule). */
   isDrawn(ref: Ref): boolean {
-    if (ref.group === GROUP_NODES) {
-      return this.hasFlag(GROUP_NODES, ref.slot, FLAG_DRAWN);
-    }
-
-    if (!this.hasFlag(GROUP_EDGES, ref.slot, FLAG_DRAWN)) {
-      return false;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
-    const drawnMask = FLAG_ALIVE | FLAG_DRAWN;
-
-    return (
-      (nodeFlags[endpoints[ref.slot * 2]] & drawnMask) === drawnMask &&
-      (nodeFlags[endpoints[ref.slot * 2 + 1]] & drawnMask) === drawnMask
-    );
-  }
-
-  /**
-   * Recompute effective FLAG_VISIBLE — and, round 22, the derived
-   * FLAG_DRAWN (visible AND no `visibility: 'hidden'` on self or any
-   * ancestor) — for a node subtree, top-down with pruning: a node with
-   * both bits unchanged has consistent descendants (their inputs did not
-   * move).  A shown-bit change marks the ancestor chain's auto-bounds
-   * stale (it entered or left the bb); a drawn-only change is paint-only
-   * (invisible elements keep their space).
-   */
-  private refreshEffectiveVisibility(root: number): void {
-    const flags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
-    const stack: number[] = [root];
-
-    while (stack.length > 0) {
-      const slot = stack.pop() as number;
-      const p = this.hierarchy.parentOf(slot);
-      const parentEff = p < 0 || (flags[p] & FLAG_VISIBLE) !== 0;
-      const parentDrawn = p < 0 || (flags[p] & FLAG_DRAWN) !== 0;
-      const eff =
-        parentEff &&
-        (flags[slot] & FLAG_SELF_HIDDEN) === 0 &&
-        (flags[slot] & FLAG_ALIVE) !== 0;
-      const drawn =
-        eff && parentDrawn && (flags[slot] & FLAG_SELF_INVISIBLE) === 0;
-      const cur = (flags[slot] & FLAG_VISIBLE) !== 0;
-      const curDrawn = (flags[slot] & FLAG_DRAWN) !== 0;
-
-      if (eff === cur && drawn === curDrawn) {
-        continue;
-      }
-
-      flags[slot] = eff
-        ? flags[slot] | FLAG_VISIBLE
-        : flags[slot] & ~FLAG_VISIBLE;
-      flags[slot] = drawn
-        ? flags[slot] | FLAG_DRAWN
-        : flags[slot] & ~FLAG_DRAWN;
-      this.dirty.mark(COL.NODE_FLAGS, slot);
-
-      if (eff !== cur) {
-        // the space tier moved: bounds re-derive
-        this.geoEpoch++;
-        this.hierarchy.markGeo(slot);
-      }
-
-      for (const kid of this.hierarchy.childrenOf(slot)) {
-        stack.push(kid);
-      }
-    }
+    return compoundImpl.isDrawn(this, ref);
   }
 
   // -- effective opacity (round 14.4) --
 
   /** Bases of nodes whose stored opacity carries an ancestor fold
-   * (absent = the column holds the base). */
-  private opacityBase = new Map<number, number>();
+   * (absent = the column holds the base).
+   * @internal */
+  opacityBase = new Map<number, number>();
 
   /** The node's declared (pre-fold) opacity — what style('opacity') reads. */
   baseOpacityOf(slot: number): number {
@@ -2100,75 +1107,6 @@ export class GraphStore implements ModelView {
       this.opacityBase.get(slot) ??
       (this.nodes.column(COL.NODE_OPACITY) as Float32Array)[slot]
     );
-  }
-
-  /** The product of the strict ancestors' bases. */
-  private ancestorOpacityProduct(slot: number): number {
-    let product = 1;
-
-    for (
-      let p = this.hierarchy.parentOf(slot);
-      p >= 0;
-      p = this.hierarchy.parentOf(p)
-    ) {
-      product *= this.baseOpacityOf(p);
-    }
-
-    return product;
-  }
-
-  /**
-   * A node opacity write under compounds: `base` is the declared value;
-   * the stored column takes base x the ancestor product (v3's rendered
-   * effectiveOpacity), and a parent's write refolds its subtree.
-   */
-  private writeBaseOpacity(slot: number, base: number): void {
-    const col = this.nodes.column(COL.NODE_OPACITY) as Float32Array;
-    const product = this.ancestorOpacityProduct(slot);
-    const folded = base * product;
-
-    if (product !== 1) {
-      this.opacityBase.set(slot, base);
-    } else {
-      this.opacityBase.delete(slot);
-    }
-
-    if (col[slot] !== folded) {
-      col[slot] = folded;
-      this.dirty.mark(COL.NODE_OPACITY, slot);
-    }
-
-    if (this.hierarchy.childrenOf(slot).length > 0) {
-      this.refoldChildren(slot, base * product);
-    }
-  }
-
-  /** Refold a whole subtree against its (possibly new) ancestor chain. */
-  private refoldOpacitySubtree(slot: number): void {
-    this.writeBaseOpacity(slot, this.baseOpacityOf(slot));
-  }
-
-  /** Recursive half of the fold: children of a node whose folded value is `parentFolded`. */
-  private refoldChildren(slot: number, parentFolded: number): void {
-    const col = this.nodes.column(COL.NODE_OPACITY) as Float32Array;
-
-    for (const kid of this.hierarchy.childrenOf(slot)) {
-      const base = this.baseOpacityOf(kid);
-      const folded = base * parentFolded;
-
-      if (parentFolded !== 1) {
-        this.opacityBase.set(kid, base);
-      } else {
-        this.opacityBase.delete(kid);
-      }
-
-      if (col[kid] !== folded) {
-        col[kid] = folded;
-        this.dirty.mark(COL.NODE_OPACITY, kid);
-      }
-
-      this.refoldChildren(kid, folded);
-    }
   }
 
   /** The node's parent slot, or -1 for orphans. */
@@ -2228,75 +1166,14 @@ export class GraphStore implements ModelView {
    * curve-bb memo.
    */
   setPosition(slot: number, x: number, y: number): void {
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-
-    if (this.hierarchy.hasCompounds()) {
-      const flags = (this.nodes.column(COL.NODE_FLAGS) as Uint32Array)[slot];
-
-      if ((flags & FLAG_PARENT) !== 0) {
-        // the delta is against the parent's *derived* position, so any
-        // pending auto-bounds settle first (materialize never re-enters
-        // setPosition, so this can not recurse)
-        this.hierarchy.flush();
-
-        // v3's beforePositionSet: moving a parent shifts its subtree by
-        // the delta; the parent's own derived value then equals the
-        // written position exactly (uniform translation), so only its
-        // ancestors re-derive — unless a locked descendant stayed
-        // (116.3), when shiftSubtree marks the chain above it, this
-        // parent included, to re-derive about the stayers and the movers
-        const dx = x - pos[slot * 2];
-        const dy = y - pos[slot * 2 + 1];
-
-        if (dx !== 0 || dy !== 0) {
-          this.shiftSubtree(slot, dx, dy);
-        }
-      }
-
-      if ((flags & FLAG_CHILD) !== 0) {
-        this.hierarchy.markAncestors(slot);
-      }
-    }
-
-    pos[slot * 2] = x;
-    pos[slot * 2 + 1] = y;
-    this.geoEpoch++;
-
-    this.dirty.mark(COL.NODE_POSITION, slot);
+    positionsImpl.setPosition(this, slot, x, y);
   }
 
   /** Bulk position write (e.g. from a layout): one coalesced dirty span.
    * With compounds, each slot takes the sequential setPosition semantics
    * (a parent's write shifts its subtree first — v3's per-element order). */
   setPositions(slots: number[], xy: number[] | Float32Array): void {
-    if (slots.length === 0) {
-      return;
-    }
-
-    if (this.hierarchy.hasCompounds()) {
-      for (let i = 0; i < slots.length; i++) {
-        this.setPosition(slots[i], xy[i * 2], xy[i * 2 + 1]);
-      }
-
-      return;
-    }
-
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    let min = Infinity;
-    let max = -Infinity;
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      pos[slot * 2] = xy[i * 2];
-      pos[slot * 2 + 1] = xy[i * 2 + 1];
-
-      min = Math.min(min, slot);
-      max = Math.max(max, slot);
-    }
-
-    this.geoEpoch++;
-    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
+    positionsImpl.setPositions(this, slots, xy);
   }
 
   /**
@@ -2308,112 +1185,14 @@ export class GraphStore implements ModelView {
     x: number | null,
     y: number | null,
   ): void {
-    if (slots.length === 0 || (x == null && y == null)) {
-      return;
-    }
-
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-
-    if (this.hierarchy.hasCompounds()) {
-      this.hierarchy.flush(); // the kept axis reads derived parent positions
-
-      for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i];
-
-        this.setPosition(slot, x ?? pos[slot * 2], y ?? pos[slot * 2 + 1]);
-      }
-
-      return;
-    }
-    let min = Infinity;
-    let max = -1;
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      if (x != null) {
-        pos[slot * 2] = x;
-      }
-      if (y != null) {
-        pos[slot * 2 + 1] = y;
-      }
-
-      if (slot < min) {
-        min = slot;
-      }
-      if (slot > max) {
-        max = slot;
-      }
-    }
-
-    this.geoEpoch++;
-    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
+    positionsImpl.setPositionsConst(this, slots, x, y);
   }
 
   /** Bulk position offset over node slots: one coalesced dirty span.
    * With compounds, v3's shift dedupe applies: a slot whose ancestor is
    * also in the set is skipped (the ancestor's subtree shift moves it). */
   shiftPositions(slots: ArrayLike<number>, dx: number, dy: number): void {
-    if (slots.length === 0) {
-      return;
-    }
-
-    if (this.hierarchy.hasCompounds()) {
-      this.hierarchy.flush(); // offsets apply to derived parent positions
-
-      const inSet = new Set<number>();
-
-      for (let i = 0; i < slots.length; i++) {
-        inSet.add(slots[i]);
-      }
-
-      const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-
-      for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i];
-        let ancestorInSet = false;
-
-        for (
-          let p = this.hierarchy.parentOf(slot);
-          p >= 0;
-          p = this.hierarchy.parentOf(p)
-        ) {
-          if (inSet.has(p)) {
-            ancestorInSet = true;
-            break;
-          }
-        }
-
-        if (ancestorInSet) {
-          continue;
-        }
-
-        this.setPosition(slot, pos[slot * 2] + dx, pos[slot * 2 + 1] + dy);
-      }
-
-      return;
-    }
-
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    let min = Infinity;
-    let max = -1;
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      pos[slot * 2] += dx;
-      pos[slot * 2 + 1] += dy;
-
-      if (slot < min) {
-        min = slot;
-      }
-      if (slot > max) {
-        max = slot;
-      }
-    }
-
-    this.geoEpoch++;
-    this.dirty.mark(COL.NODE_POSITION, min, max + 1);
+    positionsImpl.shiftPositions(this, slots, dx, dy);
   }
 
   // -- flags --
@@ -2478,51 +1257,7 @@ export class GraphStore implements ModelView {
    * the curve writers rather than here.
    */
   setFlag(group: GroupName, slot: number, bit: number, on: boolean): void {
-    const id: ColumnId =
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
-    const arr = this.table(group).column(id) as Uint32Array;
-    const prev = arr[slot];
-    const next = on ? prev | bit : prev & ~bit;
-
-    if (next === prev) {
-      return;
-    }
-
-    arr[slot] = next;
-    this.dirty.mark(id, slot);
-    if (((prev ^ next) & CONDITION_FLAG_MASK) !== 0) {
-      ONE_SLOT[0] = slot;
-      this.noteStateChange(group, prev ^ next, ONE_SLOT);
-    }
-  }
-
-  /**
-   * Tell the style engine that a *styled* state bit flipped, so the
-   * affected slots restyle.  This is what makes `{ when: { active:
-   * true } }` work on any property: the flag write is the only event,
-   * and every consequence — the mapper re-evaluation, the column
-   * writes, the upload — is the ordinary refresh path from there.
-   *
-   * Cheap when nothing styles the state, which is the common case: the
-   * mask test rejects the structural and internal bits outright, and
-   * `markDataWrite`'s watched-key set rejects a state no `case`
-   * condition mentions.  A sheet that says nothing about press pays one
-   * `&` per press.
-   */
-  private noteStateChange(
-    group: GroupName,
-    changed: number,
-    slots: number[],
-  ): void {
-    if (this.onStateChange == null) {
-      return;
-    }
-
-    for (const [bit, key] of CONDITION_KEY_OF) {
-      if ((changed & bit) !== 0 && this.watchedStates[group].has(key)) {
-        this.onStateChange(group, key, slots);
-      }
-    }
+    flagsImpl.setFlag(this, group, slot, bit, on);
   }
 
   /**
@@ -2541,96 +1276,7 @@ export class GraphStore implements ModelView {
     requireBit = 0,
     changedIdx: number[] | null = null,
   ): number {
-    const nodeFlags = this.nodes.column(COL.NODE_FLAGS) as Uint32Array;
-    const edgeFlags = this.edges.column(COL.EDGE_FLAGS) as Uint32Array;
-    const nodeGen = this.nodes.gen;
-    const edgeGen = this.edges.gen;
-    // collecting the changed slots is only worth it when some `case`
-    // condition actually *watches* the bit — a bulk grabify() (or lock,
-    // under the default sheet, which watches selection and press only)
-    // should not build an array `noteStateChange` then discards.  The
-    // 57.1d gate stopped at "is a condition-family bit", which left
-    // every unwatched state paying the collection: measured at 1.83×
-    // on a 256-band lock+unlock through the built bundle (round 61.5).
-    // Per group, because the watched sets are.
-    const stateKey = CONDITION_KEY_OF.get(bit);
-    const notify = stateKey != null && this.onStateChange != null;
-    const styledNodes = notify && this.watchedStates.nodes.has(stateKey);
-    const styledEdges = notify && this.watchedStates.edges.has(stateKey);
-    const nodeStateSlots: number[] = [];
-    const edgeStateSlots: number[] = [];
-    let nMin = Infinity;
-    let nMax = -1;
-    let eMin = Infinity;
-    let eMax = -1;
-    let changed = 0;
-
-    for (let i = 0; i < refs.length; i++) {
-      const ref = refs[i];
-      const slot = ref.slot;
-      const isNode = ref.group === GROUP_NODES;
-      const gen = isNode ? nodeGen : edgeGen;
-
-      if (gen[slot] !== ref.gen) {
-        continue;
-      }
-
-      const flags = isNode ? nodeFlags : edgeFlags;
-      const prev = flags[slot];
-
-      if (requireBit !== 0 && (prev & requireBit) === 0) {
-        continue;
-      }
-
-      const next = on ? prev | bit : prev & ~bit;
-
-      if (next === prev) {
-        continue;
-      }
-
-      flags[slot] = next;
-      changed++;
-
-      if (isNode ? styledNodes : styledEdges) {
-        (isNode ? nodeStateSlots : edgeStateSlots).push(slot);
-      }
-
-      if (isNode) {
-        if (slot < nMin) {
-          nMin = slot;
-        }
-        if (slot > nMax) {
-          nMax = slot;
-        }
-      } else {
-        if (slot < eMin) {
-          eMin = slot;
-        }
-        if (slot > eMax) {
-          eMax = slot;
-        }
-      }
-
-      if (changedIdx != null) {
-        changedIdx.push(i);
-      }
-    }
-
-    if (nMax >= 0) {
-      this.dirty.mark(COL.NODE_FLAGS, nMin, nMax + 1);
-    }
-    if (eMax >= 0) {
-      this.dirty.mark(COL.EDGE_FLAGS, eMin, eMax + 1);
-    }
-
-    if (nodeStateSlots.length > 0) {
-      this.noteStateChange(GROUP_NODES, bit, nodeStateSlots);
-    }
-    if (edgeStateSlots.length > 0) {
-      this.noteStateChange(GROUP_EDGES, bit, edgeStateSlots);
-    }
-
-    return changed;
+    return flagsImpl.flagRefs(this, refs, bit, on, requireBit, changedIdx);
   }
 
   // -- style channel writers --
@@ -2646,50 +1292,7 @@ export class GraphStore implements ModelView {
    * Bumps the geometry epoch: scalar channels can move geometry.
    */
   setScalar(id: ColumnId, slot: number, value: number): void {
-    // round 14.4: under compounds a node opacity write is a *base* —
-    // the column stores the ancestor-folded product
-    if (id === COL.NODE_OPACITY && this.hierarchy.hasCompounds()) {
-      this.writeBaseOpacity(slot, value);
-
-      return;
-    }
-
-    const spec = columnSpec(id);
-    const arr = this.table(spec.group).column(id) as Float32Array | Uint32Array;
-    // a scalar channel on a multi-component column addresses lane 0 and
-    // leaves the rest alone: `edge.width` carries the arrow bits in lane 1
-    // (round 56), and a scalar write must not clobber them
-    const at = slot * spec.components;
-
-    if (id === COL.NODE_BORDER_WIDTH && value > this.borderMax) {
-      this.borderMax = value;
-    }
-
-    if (arr[at] === value) {
-      return;
-    }
-
-    arr[at] = value;
-    this.geoEpoch++;
-    this.dirty.mark(id, slot);
-
-    // the shape id's lane of the round-58 fused column (outerHalf +
-    // shape); the outerHalf lanes follow their own writes above
-    if (id === COL.NODE_SHAPE) {
-      const geom = this.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
-
-      geom[slot * 4 + 2] = value;
-      this.dirty.mark(COL.NODE_OUTER_GEOM, slot);
-    }
-
-    if (id === COL.NODE_BORDER_WIDTH) {
-      this.updateOuterHalf(slot);
-
-      // a border write changes the node's outer extent: stale ancestors
-      if (this.hierarchy.hasCompounds()) {
-        this.hierarchy.markGeo(slot);
-      }
-    }
+    channelsImpl.setScalar(this, id, slot, value);
   }
 
   /**
@@ -2702,48 +1305,7 @@ export class GraphStore implements ModelView {
    * ancestors' auto-bounds staleness.
    */
   setPair(id: ColumnId, slot: number, a: number, b: number): void {
-    const spec = columnSpec(id);
-    const arr = this.table(spec.group).column(id) as Float32Array | Uint32Array;
-
-    if (id === COL.NODE_SIZE) {
-      const half = Math.max(a, b) / 2;
-
-      if (half > this.nodeHalfMax) {
-        this.nodeHalfMax = half;
-      }
-
-      // a style size write on a parent updates the stashed fallback
-      // (auto-bounds owns the column and re-derives over the clobber);
-      // tracked before the no-op check so the stash never goes stale
-      if (this.parentFallback.has(slot)) {
-        this.parentFallback.set(slot, [a, b]);
-      }
-    }
-
-    if (arr[slot * 2] === a && arr[slot * 2 + 1] === b) {
-      return;
-    }
-
-    arr[slot * 2] = a;
-    arr[slot * 2 + 1] = b;
-    this.geoEpoch++;
-    this.dirty.mark(id, slot);
-
-    if (id === COL.NODE_SIZE) {
-      this.updateOuterHalf(slot);
-
-      // round 25.1: label anchors bake the node extents (the sidecar
-      // entry + the glyph run's offsets), so a size write re-anchors —
-      // previously only the style engine's same-pass writeLabel covered
-      // this, leaving raw size writes (tween ticks) stale.  Early-outs
-      // when unlabelled or the anchor is the center (the default).
-      this.reanchorLabel(slot, a, b);
-
-      // stale ancestors (and the parent's own derived size, if any)
-      if (this.hierarchy.hasCompounds()) {
-        this.hierarchy.markGeo(slot);
-      }
-    }
+    channelsImpl.setPair(this, id, slot, a, b);
   }
 
   /**
@@ -2754,54 +1316,13 @@ export class GraphStore implements ModelView {
    * raw with a dirty mark.
    */
   setLane(id: ColumnId, slot: number, lane: number, value: number): void {
-    if (id === COL.NODE_SIZE) {
-      const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
-
-      this.setPair(
-        COL.NODE_SIZE,
-        slot,
-        lane === 0 ? value : size[slot * 2],
-        lane === 1 ? value : size[slot * 2 + 1],
-      );
-
-      return;
-    }
-
-    // the edge layer records store their stroke in lane 1 as ×256
-    // fixed-point (see the contract) — encode on the way in
-    if (
-      id === COL.EDGE_CASING ||
-      id === COL.EDGE_OVERLAY ||
-      id === COL.EDGE_UNDERLAY
-    ) {
-      const arr = this.edges.column(id) as Uint32Array;
-      const enc = Math.max(0, Math.round(value * 256));
-
-      if (arr[slot * 2 + 1] === enc) {
-        return;
-      }
-
-      arr[slot * 2 + 1] = enc;
-      this.dirty.mark(id, slot);
-
-      return;
-    }
-
-    const spec = columnSpec(id);
-    const arr = this.table(spec.group).column(id) as Float32Array;
-    const i = slot * spec.components + lane;
-
-    if (arr[i] === value) {
-      return;
-    }
-
-    arr[i] = value;
-    this.dirty.mark(id, slot);
+    channelsImpl.setLane(this, id, slot, lane, value);
   }
 
   /** `Uint32Array` alias of `edge.width`'s buffer, for the exact bit
-   * copy below.  Re-derived when growth or compaction swaps the array. */
-  private widthBitsView: Uint32Array | null = null;
+   * copy below.  Re-derived when growth or compaction swaps the array.
+   * @internal */
+  widthBitsView: Uint32Array | null = null;
 
   /**
    * Write the packed arrow-shapes word, mirroring it bit-for-bit into
@@ -2822,106 +1343,15 @@ export class GraphStore implements ModelView {
    * @param word — the packed word (see `edge.arrowShapes` in the contract)
    */
   setArrowShapes(slot: number, word: number): void {
-    const shapes = this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array;
-
-    if (shapes[slot] !== word) {
-      shapes[slot] = word;
-      // the gap shortens the drawn line, so this moves geometry
-      this.geoEpoch++;
-      this.dirty.mark(COL.EDGE_ARROW_SHAPES, slot);
-    }
-
-    this.updateArrowBits(slot);
-  }
-
-  /**
-   * Write-through for `edge.width`'s mirror lane: the shape word plus the
-   * two `SHOWS_LINE` flags (round 56).
-   *
-   * Called from every write to either input — the shape word and the two
-   * end-arrow colours — because the flags derive from both.  A head
-   * "shows the line" when it is hollow, or when its stored alpha is below
-   * opaque: exactly the cases where v3's `destination-out` erase is doing
-   * the hiding rather than the head's own fill, and so exactly the cases
-   * where v4 has to shorten the line past v3's `gap` to the head's own
-   * depth.  An opaque filled head hides the difference either way, and
-   * shortening further would cut the slivers v3 leaves where the head is
-   * narrower than the line.
-   *
-   * Known limit, inherited rather than introduced: a paint channel the
-   * mapper kernel owns can leave the *stored* arrow bytes stale (see the
-   * getters' note in `style.mts`), so a head made translucent purely
-   * on-device reads as opaque here.  The CPU column is what every other
-   * CPU consumer reads too.
-   */
-  private updateArrowBits(slot: number): void {
-    const width = this.edges.column(COL.EDGE_WIDTH) as Float32Array;
-    const word = (this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[
-      slot
-    ];
-    const src = this.edges.column(COL.EDGE_SOURCE_ARROW) as Uint8Array;
-    const tgt = this.edges.column(COL.EDGE_TARGET_ARROW) as Uint8Array;
-
-    if (
-      this.widthBitsView == null ||
-      this.widthBitsView.buffer !== width.buffer
-    ) {
-      this.widthBitsView = new Uint32Array(width.buffer);
-    }
-
-    const shows = (alpha: number, hollowShift: number): number =>
-      (alpha > 0 && alpha < 255) || ((word >>> hollowShift) & 1) === 1 ? 1 : 0;
-
-    const bits =
-      word |
-      (shows(src[slot * 4 + 3], ARROW_SHIFT_HOLLOW_SOURCE) <<
-        ARROW_SHIFT_SRC_SHOWS_LINE) |
-      (shows(tgt[slot * 4 + 3], ARROW_SHIFT_HOLLOW_TARGET) <<
-        ARROW_SHIFT_TGT_SHOWS_LINE);
-
-    // the mirror can be stale even when its inputs are not: a growth or a
-    // compaction reallocates edge.width
-    if (this.widthBitsView[slot * 2 + 1] === bits) {
-      return;
-    }
-
-    this.widthBitsView[slot * 2 + 1] = bits;
-    this.geoEpoch++;
-    this.dirty.mark(COL.EDGE_WIDTH, slot);
-  }
-
-  /**
-   * Write-through for the derived node.outerHalf column (size/2 +
-   * borderWidth/2 per axis — see the contract): follows every size/border
-   * write, so the column is never stale.  The curve shaders and the CPU
-   * curve evaluator both read this column, so the two sides agree on the
-   * exact f32 half-extents by construction.
-   */
-  private updateOuterHalf(slot: number): void {
-    const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
-    const border = this.nodes.column(COL.NODE_BORDER_WIDTH) as Float32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const geom = this.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
-    const halfBorder = border[slot] / 2;
-    const hx = size[slot * 2] / 2 + halfBorder;
-    const hy = size[slot * 2 + 1] / 2 + halfBorder;
-
-    outer[slot * 2] = hx;
-    outer[slot * 2 + 1] = hy;
-    this.dirty.mark(COL.NODE_OUTER_HALF, slot);
-    // the round-58 fused twin (outerHalf + shape in one column, for the
-    // vertex stages at the storage-buffer budget) follows in the same
-    // write, so the two can never disagree; lane 2 is the shape write's
-    geom[slot * 4] = hx;
-    geom[slot * 4 + 1] = hy;
-    this.dirty.mark(COL.NODE_OUTER_GEOM, slot);
+    channelsImpl.setArrowShapes(this, slot, word);
   }
 
   // -- ghosts (round 13 A1) --
 
   /** live count of ghost-enabled nodes (the renderer skips the ghost
-   * cull + draw entirely while this is 0) */
-  private ghosts = 0;
+   * cull + draw entirely while this is 0)
+   * @internal */
+  ghosts = 0;
 
   /** Live ghost-enabled nodes (13 A1) — the renderer's pass-skip gate;
    * the bb scan also uses it to skip the ghost term. */
@@ -2941,36 +1371,15 @@ export class GraphStore implements ModelView {
     opacity: number,
     enabled: boolean,
   ): void {
-    const arr = this.nodes.column(COL.NODE_GHOST) as Float32Array;
-    const at = slot * 4;
-    const en = enabled ? 1 : 0;
-
-    if (
-      arr[at] === offX &&
-      arr[at + 1] === offY &&
-      arr[at + 2] === opacity &&
-      arr[at + 3] === en
-    ) {
-      return;
-    }
-
-    if (en !== arr[at + 3]) {
-      this.ghosts += en === 1 ? 1 : -1;
-    }
-
-    arr[at] = offX;
-    arr[at + 1] = offY;
-    arr[at + 2] = opacity;
-    arr[at + 3] = en;
-    this.geoEpoch++;
-    this.dirty.mark(COL.NODE_GHOST, slot);
+    layersImpl.setGhost(this, slot, offX, offY, opacity, enabled);
   }
 
   // -- overlay / underlay (round 13 A2) --
 
-  /** live counts of nodes with a visible overlay / underlay (13 A2) */
-  private overlays = 0;
-  private underlays = 0;
+  /** live counts of nodes with a visible overlay / underlay (13 A2) @internal */
+  overlays = 0;
+  /** @internal */
+  underlays = 0;
 
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number {
@@ -2995,45 +1404,15 @@ export class GraphStore implements ModelView {
     shape: number,
     radius: number,
   ): void {
-    const arr = this.nodes.column(id) as Uint32Array;
-    const at = slot * 4;
-    const pad = Math.max(0, Math.round(padding * 256));
-    const rad = radius < 0 ? 0xffffffff : Math.max(0, Math.round(radius * 256));
-
-    if (
-      arr[at] === rgba &&
-      arr[at + 1] === pad &&
-      arr[at + 2] === shape &&
-      arr[at + 3] === rad
-    ) {
-      return;
-    }
-
-    const wasOn = arr[at] >>> 24 !== 0;
-    const isOn = rgba >>> 24 !== 0;
-
-    if (wasOn !== isOn) {
-      const d = isOn ? 1 : -1;
-
-      if (id === COL.NODE_OVERLAY) {
-        this.overlays += d;
-      } else {
-        this.underlays += d;
-      }
-    }
-
-    arr[at] = rgba;
-    arr[at + 1] = pad;
-    arr[at + 2] = shape;
-    arr[at + 3] = rad;
-    this.geoEpoch++;
-    this.dirty.mark(id, slot);
+    layersImpl.setNodeLayer(this, id, slot, rgba, padding, shape, radius);
   }
 
-  /** live counts of edges with a visible overlay / underlay / casing */
-  private edgeOverlays = 0;
-  private edgeUnderlays = 0;
-  private casings = 0;
+  /** live counts of edges with a visible overlay / underlay / casing @internal */
+  edgeOverlays = 0;
+  /** @internal */
+  edgeUnderlays = 0;
+  /** @internal */
+  casings = 0;
 
   /** Edges with a visible overlay (13 A2) — the pass-skip gate. */
   edgeOverlayCount(): number {
@@ -3062,37 +1441,13 @@ export class GraphStore implements ModelView {
     rgba: number,
     strokeWidth: number,
   ): void {
-    const arr = this.edges.column(id) as Uint32Array;
-    const at = slot * 2;
-    const sw = Math.max(0, Math.round(strokeWidth * 256));
-
-    if (arr[at] === rgba && arr[at + 1] === sw) {
-      return;
-    }
-
-    const wasOn = arr[at] >>> 24 !== 0;
-    const isOn = rgba >>> 24 !== 0;
-
-    if (wasOn !== isOn) {
-      const d = isOn ? 1 : -1;
-
-      if (id === COL.EDGE_OVERLAY) {
-        this.edgeOverlays += d;
-      } else if (id === COL.EDGE_UNDERLAY) {
-        this.edgeUnderlays += d;
-      } else {
-        this.casings += d;
-      }
-    }
-
-    arr[at] = rgba;
-    arr[at + 1] = sw;
-    this.dirty.mark(id, slot);
+    layersImpl.setEdgeLayer(this, id, slot, rgba, strokeWidth);
   }
 
   /** live count of edges with any visible mid arrow (round 13 C1) —
-   * the renderer skips the mid draws entirely while 0 */
-  private midArrows = 0;
+   * the renderer skips the mid draws entirely while 0
+   * @internal */
+  midArrows = 0;
 
   /** Edges with any visible mid arrow (13 C1) — the renderer skips the
    * mid-arrow draws entirely at 0. */
@@ -3112,17 +1467,7 @@ export class GraphStore implements ModelView {
       | typeof COL.EDGE_MID_SOURCE_ARROW
       | typeof COL.EDGE_MID_TARGET_ARROW,
   ): void {
-    const arr = this.edges.column(id) as Uint8Array;
-    const other = this.edges.column(otherId) as Uint8Array;
-    const wasOn = arr[slot * 4 + 3] > 0 || other[slot * 4 + 3] > 0;
-
-    this.setColor(id, slot, r, g, b, a);
-
-    const isOn = a > 0 || other[slot * 4 + 3] > 0;
-
-    if (wasOn !== isOn) {
-      this.midArrows += isOn ? 1 : -1;
-    }
+    layersImpl.setMidArrow(this, id, slot, r, g, b, a, otherId);
   }
 
   /** monotone (round 13 B7): the largest arrow-scale any edge styles —
@@ -3171,8 +1516,9 @@ export class GraphStore implements ModelView {
 
   /** monotone (round 13 B5): the largest outline outward extent any
    * node has styled — the ghost cull grows by it (no binding left for
-   * the packed geometry there) */
-  private outlineSlackMax = 0;
+   * the packed geometry there)
+   * @internal */
+  outlineSlackMax = 0;
 
   /** The largest outward outline extent any node has styled (13 B5) —
    * the ghost cull grows its tests by this.  Monotone: never shrinks on
@@ -3203,68 +1549,23 @@ export class GraphStore implements ModelView {
     borderStyle: number = 0,
     outlineStyle: number = 0,
   ): void {
-    const arr = this.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
-    const at = slot * 4;
-    // C3: custom polygons carry their point-record ref (from
-    // setPolygonPoints) in the radius word — the corner radius is
-    // meaningless for polygons
-    const rad =
-      shapeId === SHAPE_POLYGON_CUSTOM
-        ? polyRef >>> 0
-        : cornerRadius < 0
-          ? 0xffffffff
-          : Math.max(0, Math.round(cornerRadius * 256));
-
-    if (shapeId > SHAPE_MASK) {
-      throw new Error(
-        `Node shape id ${shapeId} does not fit the ${SHAPE_MASK + 1}-shape field; ` +
-          'widen SHAPE_SHIFT/SHAPE_MASK in contract.mts rather than truncating',
-      );
-    }
-
-    // C2: the node FS reads the shape out of this word (its shapes
-    // binding went to the gradient column); 27.1 widened the field from
-    // a nibble to a byte.  Round 38 packs the two stroke-style enums
-    // into bits 8..11 (see the contract's stroke style constants).
-    const posShape =
-      (borderPos |
-        (borderStyle << BORDER_STYLE_SHIFT) |
-        (outlineStyle << OUTLINE_STYLE_SHIFT) |
-        (shapeId << SHAPE_SHIFT)) >>>
-      0;
-
-    borderPos = posShape;
-    const packedWO =
-      (Math.min(0xffff, Math.max(0, Math.round(outlineOffset * 256))) << 16) |
-      Math.min(0xffff, Math.max(0, Math.round(outlineWidth * 256)));
-
-    if (outlineRgba >>> 24 !== 0) {
-      const slack = outlineOffset / 2 + outlineWidth;
-
-      if (slack > this.outlineSlackMax) {
-        this.outlineSlackMax = slack;
-      }
-    }
-
-    if (
-      arr[at] === rad &&
-      arr[at + 1] === borderPos &&
-      arr[at + 2] === outlineRgba &&
-      arr[at + 3] === packedWO
-    ) {
-      return;
-    }
-
-    arr[at] = rad;
-    arr[at + 1] = borderPos;
-    arr[at + 2] = outlineRgba;
-    arr[at + 3] = packedWO;
-    this.geoEpoch++;
-    this.dirty.mark(COL.NODE_BORDER_GEOM, slot);
+    layersImpl.setBorderGeom(
+      this,
+      slot,
+      cornerRadius,
+      borderPos,
+      outlineRgba,
+      outlineWidth,
+      outlineOffset,
+      shapeId,
+      polyRef,
+      borderStyle,
+      outlineStyle,
+    );
   }
 
-  /** live count of elements carrying a gradient record (13 C2) */
-  private gradients = 0;
+  /** live count of elements carrying a gradient record (13 C2) @internal */
+  gradients = 0;
 
   /** Elements with a gradient fill (13 C2) — the pass-skip gate. */
   gradientCount(): number {
@@ -3282,54 +1583,7 @@ export class GraphStore implements ModelView {
     dir: number,
     stops: { rgba: number; pos: number }[],
   ): void {
-    const arr = this.table(columnSpec(id).group).column(id) as Uint32Array;
-    const at = slot * 8;
-    const count = Math.min(stops.length, 5);
-    const meta = kind === 0 ? 0 : (kind | (dir << 2) | (count << 5)) >>> 0;
-    const words = [meta, 0, 0, 0, 0, 0, 0, 0];
-
-    for (let i = 0; i < count; i++) {
-      words[1 + i] = stops[i].rgba;
-    }
-
-    let pos03 = 0;
-
-    for (let i = 0; i < Math.min(count, 4); i++) {
-      pos03 |=
-        Math.max(0, Math.min(255, Math.round(stops[i].pos * 255))) << (i * 8);
-    }
-
-    words[6] = pos03 >>> 0;
-    words[7] =
-      count > 4
-        ? Math.max(0, Math.min(255, Math.round(stops[4].pos * 255)))
-        : 0;
-
-    let changed = false;
-
-    for (let i = 0; i < 8; i++) {
-      if (arr[at + i] !== words[i]) {
-        changed = true;
-        break;
-      }
-    }
-
-    if (!changed) {
-      return;
-    }
-
-    const wasOn = arr[at] !== 0;
-    const isOn = meta !== 0;
-
-    if (wasOn !== isOn) {
-      this.gradients += isOn ? 1 : -1;
-    }
-
-    for (let i = 0; i < 8; i++) {
-      arr[at + i] = words[i];
-    }
-
-    this.dirty.mark(id, slot);
+    layersImpl.setGradient(this, id, slot, kind, dir, stops);
   }
 
   /** Four-component f32 write (dash patterns etc.). */
@@ -3341,23 +1595,7 @@ export class GraphStore implements ModelView {
     c: number,
     d: number,
   ): void {
-    const arr = this.table(columnSpec(id).group).column(id) as Float32Array;
-    const at = slot * 4;
-
-    if (
-      arr[at] === a &&
-      arr[at + 1] === b &&
-      arr[at + 2] === c &&
-      arr[at + 3] === d
-    ) {
-      return;
-    }
-
-    arr[at] = a;
-    arr[at + 1] = b;
-    arr[at + 2] = c;
-    arr[at + 3] = d;
-    this.dirty.mark(id, slot);
+    layersImpl.setVec4(this, id, slot, a, b, c, d);
   }
 
   /** RGBA bytes on [0, 255]. */
@@ -3369,30 +1607,7 @@ export class GraphStore implements ModelView {
     b: number,
     a: number,
   ): void {
-    const spec = columnSpec(id);
-    const arr = this.table(spec.group).column(id) as Uint8Array;
-    const at = slot * 4;
-
-    if (
-      arr[at] === r &&
-      arr[at + 1] === g &&
-      arr[at + 2] === b &&
-      arr[at + 3] === a
-    ) {
-      return;
-    }
-
-    arr[at] = r;
-    arr[at + 1] = g;
-    arr[at + 2] = b;
-    arr[at + 3] = a;
-    this.dirty.mark(id, slot);
-
-    // round 56: an end arrow's alpha decides whether the head hides the
-    // line under it, which decides how far the line is shortened
-    if (id === COL.EDGE_SOURCE_ARROW || id === COL.EDGE_TARGET_ARROW) {
-      this.updateArrowBits(slot);
-    }
+    layersImpl.setColor(this, id, slot, r, g, b, a);
   }
 
   // -- curves (round 12a; derivation in store/curve-index.mts) --
@@ -3414,7 +1629,8 @@ export class GraphStore implements ModelView {
     haystackRadius: number = 0,
     endpoints: EndpointSpec | null = null,
   ): void {
-    this.curves.setStyle(
+    curvesImpl.setCurveStyle(
+      this,
       slot,
       style,
       stepSize,
@@ -3445,8 +1661,8 @@ export class GraphStore implements ModelView {
     return [params[at], params[at + 1], params[at + 2], params[at + 3]];
   }
 
-  /** scratch for `arrowTrimAt` — the geometry readers never allocate */
-  private trimScratch: ArrowTrim = {
+  /** scratch for `arrowTrimAt` — the geometry readers never allocate @internal */
+  trimScratch: ArrowTrim = {
     srcGap: 0,
     tgtGap: 0,
     srcSpacing: 0,
@@ -3470,32 +1686,7 @@ export class GraphStore implements ModelView {
    * @returns a shared scratch — consume it before the next call
    */
   arrowTrimAt(slot: number): ArrowTrim {
-    const out = this.trimScratch;
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-
-    if (params[slot * 4 + 3] === CURVE_HAYSTACK) {
-      out.srcGap = out.tgtGap = out.srcSpacing = out.tgtSpacing = 0;
-
-      return out;
-    }
-
-    const word = (this.edges.column(COL.EDGE_ARROW_SHAPES) as Uint32Array)[
-      slot
-    ];
-    const width = (this.edges.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
-    const src = (word >>> ARROW_SHIFT_SOURCE) & ARROW_SHAPE_MASK;
-    const tgt = (word >>> ARROW_SHIFT_TARGET) & ARROW_SHAPE_MASK;
-    const q = word >>> ARROW_SHIFT_SCALE;
-    // the *quantized* scale, deliberately: the head is drawn at it, so a
-    // gap derived from the unquantized value would not meet the head
-    const scale = q === 0 ? 1 : q / 16;
-
-    out.srcGap = arrowGap(src, width, scale);
-    out.tgtGap = arrowGap(tgt, width, scale);
-    out.srcSpacing = arrowSpacing(src, width, scale);
-    out.tgtSpacing = arrowSpacing(tgt, width, scale);
-
-    return out;
+    return curvesImpl.arrowTrimAt(this, slot);
   }
 
   /**
@@ -3509,44 +1700,7 @@ export class GraphStore implements ModelView {
     slot: number,
     out: CurveEval = this.curveScratch,
   ): CurveEval | null {
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-    const kind = params[at + 3];
-
-    // blob-backed kinds evaluate as routes (curveRouteAt), not CurveEvals
-    if (kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD) {
-      return null;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
-    const s = endpoints[at / 2];
-    const t = endpoints[at / 2 + 1];
-
-    // the derived outerHalf column (size/2 + border/2) is what the WGSL
-    // twin binds, so both sides read the exact same f32 half-extents
-    return evalCurve(
-      out,
-      kind,
-      params[at],
-      params[at + 1],
-      params[at + 2],
-      pos[s * 2],
-      pos[s * 2 + 1],
-      outer[s * 2],
-      outer[s * 2 + 1],
-      shape[s],
-      pos[t * 2],
-      pos[t * 2 + 1],
-      outer[t * 2],
-      outer[t * 2 + 1],
-      shape[t],
-      this.arrowTrimAt(slot),
-    );
+    return curvesImpl.curveEvalAt(this, slot, out);
   }
 
   /**
@@ -3560,46 +1714,7 @@ export class GraphStore implements ModelView {
     slot: number,
     out: CurveRoute = this.routeScratch,
   ): CurveRoute | null {
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-    const kind = params[at + 3];
-    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind; // 12c endpoint blocks
-
-    if (
-      base !== CURVE_MULTI &&
-      base !== CURVE_SEGMENTS &&
-      base !== CURVE_TAXI
-    ) {
-      return null;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
-    const s = endpoints[at / 2];
-    const t = endpoints[at / 2 + 1];
-
-    return evalRoute(
-      out,
-      kind,
-      this.blob.data(),
-      params[at],
-      params[at + 2],
-      pos[s * 2],
-      pos[s * 2 + 1],
-      outer[s * 2],
-      outer[s * 2 + 1],
-      shape[s],
-      pos[t * 2],
-      pos[t * 2 + 1],
-      outer[t * 2],
-      outer[t * 2 + 1],
-      shape[t],
-      this.arrowTrimAt(slot),
-    );
+    return curvesImpl.curveRouteAt(this, slot, out);
   }
 
   /**
@@ -3624,45 +1739,7 @@ export class GraphStore implements ModelView {
     ty: number,
     out: CurveRoute = this.routeScratch,
   ): CurveRoute | null {
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-    const kind = params[at + 3];
-    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
-
-    if (
-      base !== CURVE_MULTI &&
-      base !== CURVE_SEGMENTS &&
-      base !== CURVE_TAXI
-    ) {
-      return null;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
-    const s = endpoints[at / 2];
-    const t = endpoints[at / 2 + 1];
-
-    return evalRoute(
-      out,
-      kind,
-      this.blob.data(),
-      params[at],
-      params[at + 2],
-      sx,
-      sy,
-      outer[s * 2],
-      outer[s * 2 + 1],
-      shape[s],
-      tx,
-      ty,
-      outer[t * 2],
-      outer[t * 2 + 1],
-      shape[t],
-      this.arrowTrimAt(slot),
-    );
+    return curvesImpl.curveRouteAtPositions(this, slot, sx, sy, tx, ty, out);
   }
 
   /**
@@ -3688,40 +1765,7 @@ export class GraphStore implements ModelView {
     ty: number,
     out: CurveEval = this.curveScratch,
   ): CurveEval | null {
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-    const kind = params[at + 3];
-
-    if (kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD) {
-      return null;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
-    const s = endpoints[at / 2];
-    const t = endpoints[at / 2 + 1];
-
-    return evalCurve(
-      out,
-      kind,
-      params[at],
-      params[at + 1],
-      params[at + 2],
-      sx,
-      sy,
-      outer[s * 2],
-      outer[s * 2 + 1],
-      shape[s],
-      tx,
-      ty,
-      outer[t * 2],
-      outer[t * 2 + 1],
-      shape[t],
-      this.arrowTrimAt(slot),
-    );
+    return curvesImpl.curveEvalAtPositions(this, slot, sx, sy, tx, ty, out);
   }
 
   /**
@@ -3734,47 +1778,7 @@ export class GraphStore implements ModelView {
   haystackPointsAt(
     slot: number,
   ): { sx: number; sy: number; tx: number; ty: number } | null {
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-
-    if (params[at + 3] !== CURVE_HAYSTACK) {
-      return null;
-    }
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const sN = endpoints[slot * 2];
-    const tN = endpoints[slot * 2 + 1];
-    const radius = params[at + 2];
-    const p = { x: 0, y: 0 };
-
-    haystackPoint(
-      pos[sN * 2],
-      pos[sN * 2 + 1],
-      outer[sN * 2],
-      outer[sN * 2 + 1],
-      params[at],
-      radius,
-      p,
-    );
-
-    const sx = p.x,
-      sy = p.y;
-
-    haystackPoint(
-      pos[tN * 2],
-      pos[tN * 2 + 1],
-      outer[tN * 2],
-      outer[tN * 2 + 1],
-      params[at + 1],
-      radius,
-      p,
-    );
-
-    return { sx, sy, tx: p.x, ty: p.y };
+    return curvesImpl.haystackPointsAt(this, slot);
   }
 
   /**
@@ -3799,62 +1803,7 @@ export class GraphStore implements ModelView {
     which: 0 | 1,
     arrows: boolean = true,
   ): { x: number; y: number } {
-    this.flushDerived();
-
-    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const pos = this.nodes.column(COL.NODE_POSITION) as Float32Array;
-    const outer = this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
-    const shape = this.nodes.column(COL.NODE_SHAPE) as Uint32Array;
-
-    const self = endpoints[slot * 2 + which];
-    const other = endpoints[slot * 2 + (which === 0 ? 1 : 0)];
-    const cx = pos[self * 2];
-    const cy = pos[self * 2 + 1];
-
-    let dx = pos[other * 2] - cx;
-    let dy = pos[other * 2 + 1] - cy;
-    const l = Math.sqrt(dx * dx + dy * dy);
-
-    // coincident endpoints have no chord direction; `setBoundaryPoint`
-    // picks +x in the same situation, so this matches it
-    if (l < 1e-6) {
-      dx = 1;
-      dy = 0;
-    } else {
-      dx /= l;
-      dy /= l;
-    }
-
-    const off = boundaryOffset(
-      shape[self],
-      outer[self * 2],
-      outer[self * 2 + 1],
-      dx,
-      dy,
-    );
-    const trim = this.arrowTrimAt(slot);
-    const back = arrows
-      ? which === 0
-        ? trim.srcSpacing
-        : trim.tgtSpacing
-      : which === 0
-        ? trim.srcGap
-        : trim.tgtGap;
-
-    shortenScratch.x = cx + dx * off;
-    shortenScratch.y = cy + dy * off;
-    // v3's shortenIntersection, toward the far node centre — the clamp
-    // matters when a head is larger than the chord it sits on
-    shortenToward(
-      shortenScratch,
-      shortenScratch.x,
-      shortenScratch.y,
-      pos[other * 2],
-      pos[other * 2 + 1],
-      back,
-    );
-
-    return { x: shortenScratch.x, y: shortenScratch.y };
+    return curvesImpl.straightEndpointAt(this, slot, which, arrows);
   }
 
   /**
@@ -3885,65 +1834,7 @@ export class GraphStore implements ModelView {
   curveBBAt(
     slot: number,
   ): { x1: number; y1: number; x2: number; y2: number } | null {
-    // flush before anything: derivation writes params, and a parent
-    // auto-bounds materialization bumps the epoch this memo checks
-    this.flushDerived();
-
-    const params = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const kind = params[slot * 4 + 3];
-    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind;
-
-    if (
-      kind !== CURVE_BEZIER &&
-      kind !== CURVE_LOOP &&
-      kind !== CURVE_CMPD &&
-      base !== CURVE_MULTI &&
-      base !== CURVE_SEGMENTS &&
-      base !== CURVE_TAXI
-    ) {
-      return null;
-    }
-
-    if (this.edgeBBEpoch.length < this.edges.cap) {
-      const epochs = new Uint32Array(this.edges.cap);
-      const boxes = new Float64Array(this.edges.cap * 4);
-
-      epochs.set(this.edgeBBEpoch);
-      boxes.set(this.edgeBB);
-      this.edgeBBEpoch = epochs;
-      this.edgeBB = boxes;
-    }
-
-    const at = slot * 4;
-
-    // a fresh memo answers without evaluating the curve at all (round
-    // 92 — the eval used to run before this check, which made every
-    // warm read pay a full route/curve evaluation it then threw away)
-    if (this.edgeBBEpoch[slot] === this.geoEpoch) {
-      return {
-        x1: this.edgeBB[at],
-        y1: this.edgeBB[at + 1],
-        x2: this.edgeBB[at + 2],
-        y2: this.edgeBB[at + 3],
-      };
-    }
-
-    const ev = this.curveEvalAt(slot);
-    const route = ev == null ? this.curveRouteAt(slot) : null;
-
-    if (ev == null && route == null) {
-      return null;
-    }
-
-    const box = sampleCurveBB(ev, route);
-
-    this.edgeBBEpoch[slot] = this.geoEpoch;
-    this.edgeBB[at] = box.x1;
-    this.edgeBB[at + 1] = box.y1;
-    this.edgeBB[at + 2] = box.x2;
-    this.edgeBB[at + 3] = box.y2;
-
-    return box;
+    return curvesImpl.curveBBAt(this, slot);
   }
 
   /**
@@ -3968,15 +1859,7 @@ export class GraphStore implements ModelView {
     tx: number,
     ty: number,
   ): { x1: number; y1: number; x2: number; y2: number } | null {
-    const ev = this.curveEvalAtPositions(slot, sx, sy, tx, ty);
-    const route =
-      ev == null ? this.curveRouteAtPositions(slot, sx, sy, tx, ty) : null;
-
-    if (ev == null && route == null) {
-      return null;
-    }
-
-    return sampleCurveBB(ev, route);
+    return curvesImpl.curveBBAtPositions(this, slot, sx, sy, tx, ty);
   }
 
   /**
@@ -3988,18 +1871,7 @@ export class GraphStore implements ModelView {
    * efficiency, never correctness; 0 while nothing is curved.
    */
   curveSlack(): number {
-    if (this.curveDevMax === 0 && !this.hasBoxCurves) {
-      return 0;
-    }
-
-    // 12c: pct endpoints stray up to pctMag × node-half from the node
-    // center; the base node-half term covers pctMag ≤ 1, the monotone
-    // excess covers the rest
-    const pctExcess =
-      Math.max(0, this.endptPctMax - 1) *
-      (this.nodeHalfMax + this.borderMax / 2);
-
-    return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2 + pctExcess;
+    return curvesImpl.curveSlack(this);
   }
 
   /**
@@ -4028,11 +1900,7 @@ export class GraphStore implements ModelView {
    * styles haystack.  Monotone, like the curve slack.
    */
   haystackSlack(): number {
-    if (this.haystackRadiusMax === 0) {
-      return 0;
-    }
-
-    return this.haystackRadiusMax * (this.nodeHalfMax + this.borderMax / 2);
+    return curvesImpl.haystackSlack(this);
   }
 
   // curveBoxMargin() (the global nodeHalfMax + borderMax/2 the fit
@@ -4045,58 +1913,16 @@ export class GraphStore implements ModelView {
 
   /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
    * Fixed-kind writes (straight/bezier/loop) release any blob record
-   * the slot held from a previous blob-backed style. */
-  private setCurveParams(
+   * the slot held from a previous blob-backed style.
+   * @internal */
+  setCurveParams(
     slot: number,
     p0: number,
     p1: number,
     p2: number,
     kind: number,
   ): void {
-    const arr = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-
-    const dev = curveDeviation(kind, p0, p2);
-
-    if (dev > this.curveDevMax) {
-      this.curveDevMax = dev;
-    }
-    if (kind === CURVE_HAYSTACK && p2 > this.haystackRadiusMax) {
-      this.haystackRadiusMax = p2;
-    }
-
-    this.blob.free(slot);
-
-    if (
-      arr[at] === p0 &&
-      arr[at + 1] === p1 &&
-      arr[at + 2] === p2 &&
-      arr[at + 3] === kind
-    ) {
-      return;
-    }
-
-    arr[at] = p0;
-    arr[at + 1] = p1;
-    arr[at + 2] = p2;
-    arr[at + 3] = kind;
-    this.geoEpoch++;
-
-    this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
-    // haystack/triangle are straight-stream kinds (12c): they draw in
-    // the straight pipeline, so FLAG_CURVED stays clear
-    const curvedStream =
-      kind !== CURVE_STRAIGHT &&
-      kind !== CURVE_HAYSTACK &&
-      kind !== CURVE_TRIANGLE;
-
-    if (curvedStream) {
-      this.curvedEver = true;
-    } // gates the curved pipelines
-    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED, curvedStream);
-    // compound loops (14.10) are box-bounded: their excursion tracks the
-    // (live) node sizes, so no frame constant alone can bound the chord
-    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED_BOX, kind === CURVE_CMPD);
+    curvesImpl.setCurveParams(this, slot, p0, p1, p2, kind);
   }
 
   /**
@@ -4105,8 +1931,9 @@ export class GraphStore implements ModelView {
    * column, and the curved/box flags.  `dev` is the conservative chord
    * deviation (max|d|); `box` marks kinds no chord bound covers (taxi,
    * extrapolated weights) for the AABB cull branch.
+   * @internal
    */
-  private setCurveParamsBlob(
+  setCurveParamsBlob(
     slot: number,
     kind: number,
     values: ArrayLike<number>,
@@ -4115,30 +1942,16 @@ export class GraphStore implements ModelView {
     box: boolean,
     endptPct: number = 0,
   ): void {
-    const arr = this.edges.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const at = slot * 4;
-    const offset = this.blob.write(slot, values);
-
-    if (dev > this.curveDevMax) {
-      this.curveDevMax = dev;
-    }
-    if (box) {
-      this.hasBoxCurves = true;
-    }
-    if (endptPct > this.endptPctMax) {
-      this.endptPctMax = endptPct;
-    }
-
-    arr[at] = offset;
-    arr[at + 1] = dev;
-    arr[at + 2] = n;
-    arr[at + 3] = kind;
-    this.geoEpoch++;
-
-    this.dirty.mark(COL.EDGE_CURVE_PARAMS, slot);
-    this.curvedEver = true; // every blob-backed kind is curved-stream
-    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED, true);
-    this.setFlag(GROUP_EDGES, slot, FLAG_CURVED_BOX, box);
+    curvesImpl.setCurveParamsBlob(
+      this,
+      slot,
+      kind,
+      values,
+      n,
+      dev,
+      box,
+      endptPct,
+    );
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
@@ -4174,39 +1987,12 @@ export class GraphStore implements ModelView {
     style: string = 'normal',
     weight: string = 'normal',
   ): void {
-    if (
-      font === this.labelFont &&
-      style === this.labelFontStyle &&
-      weight === this.labelFontWeight
-    ) {
-      return;
-    }
-
-    this.labelFont = font;
-    this.labelFontStyle = style;
-    this.labelFontWeight = weight;
-    this.markAllLabelsDirty();
+    labelsImpl.setLabelFont(this, font, style, weight);
   }
 
   /** Queue every labelled slot (both groups) for a glyph-run rebuild. */
   markAllLabelsDirty(): void {
-    for (const group of [
-      GROUP_NODES,
-      GROUP_EDGES,
-      'edgeSource',
-      'edgeTarget',
-    ] as LabelStream[]) {
-      const labels = this.labels[group];
-      const dirty = this.labelDirty[group];
-
-      for (let slot = 0; slot < labels.length; slot++) {
-        if (labels[slot] != null) {
-          dirty.add(slot);
-        }
-      }
-    }
-
-    this.dirty.touch();
+    labelsImpl.markAllLabelsDirty(this);
   }
 
   /** Set or clear (null) an element's label; no-ops when nothing changed. */
@@ -4215,112 +2001,7 @@ export class GraphStore implements ModelView {
     entry: LabelEntry | null,
     group: LabelStream = GROUP_NODES,
   ): void {
-    const labels = this.labels[group];
-    const prev = labels[slot];
-
-    if (entry == null) {
-      if (prev == null) {
-        return;
-      }
-
-      labels[slot] = undefined;
-    } else {
-      if (
-        prev != null &&
-        prev.text === entry.text &&
-        prev.fontSize === entry.fontSize &&
-        prev.color === entry.color &&
-        prev.anchorY === entry.anchorY &&
-        prev.marginX === entry.marginX &&
-        prev.marginY === entry.marginY &&
-        prev.outlineWidth === entry.outlineWidth &&
-        prev.outlineColor === entry.outlineColor &&
-        prev.bgColor === entry.bgColor &&
-        prev.bgPadding === entry.bgPadding &&
-        prev.bgShape === entry.bgShape &&
-        prev.bgBorderColor === entry.bgBorderColor &&
-        prev.bgBorderWidth === entry.bgBorderWidth &&
-        prev.minZoomedFontSize === entry.minZoomedFontSize &&
-        prev.anchorX === entry.anchorX &&
-        prev.halignShift === entry.halignShift &&
-        prev.valignShift === entry.valignShift &&
-        prev.endOffset === entry.endOffset &&
-        prev.rotate === entry.rotate &&
-        prev.wrap === entry.wrap &&
-        prev.maxWidth === entry.maxWidth &&
-        prev.lineHeight === entry.lineHeight &&
-        prev.overflowWrap === entry.overflowWrap &&
-        prev.justification === entry.justification
-      ) {
-        return;
-      }
-
-      labels[slot] = entry;
-    }
-
-    // label dims (16.2): estimate immediately — the headless bb term —
-    // and let the renderer's glyph build upgrade to exact laid dims.
-    if (entry == null) {
-      this.labelDims[group].delete(slot);
-    } else {
-      const prevDims =
-        prev != null ? this.labelDims[group].get(slot) : undefined;
-
-      // 25.5: a pure font-size delta with unchanged breaking is
-      // scale-linear — under wrap 'none' (the default, where maxWidth
-      // is ignored) the laid block scales with the em, so patch the
-      // dims by the ratio (exactness preserved) instead of re-running
-      // the estimator.  The font-size tween's per-tick path.
-      if (
-        prevDims != null &&
-        prev != null &&
-        prev.fontSize > 0 &&
-        entry.wrap === WRAP_NONE &&
-        prev.wrap === WRAP_NONE &&
-        entry.text === prev.text &&
-        entry.lineHeight === prev.lineHeight &&
-        entry.overflowWrap === prev.overflowWrap &&
-        entry.justification === prev.justification
-      ) {
-        const ratio = entry.fontSize / prev.fontSize;
-
-        this.labelDims[group].set(slot, {
-          w: prevDims.w * ratio,
-          h: prevDims.h * ratio,
-          exact: prevDims.exact,
-        });
-      } else {
-        const wrapOpts = {
-          wrap: entry.wrap,
-          maxWidth: entry.maxWidth,
-          overflowWrap: entry.overflowWrap,
-          justification: entry.justification,
-          lineHeight: entry.lineHeight,
-        };
-        // 125.1: measured where a canvas exists — the laid block's own
-        // numbers, so a layout that runs before the first frame reads
-        // the boxes the frame will draw; the flat estimate otherwise
-        const measured = measureBlock(entry.text, entry.fontSize, wrapOpts, {
-          family: this.labelFont,
-          style: this.labelFontStyle,
-          weight: this.labelFontWeight,
-        });
-        const est =
-          measured ?? estimateBlock(entry.text, entry.fontSize, wrapOpts);
-
-        this.labelDims[group].set(slot, {
-          w: est.width,
-          h: est.height,
-          exact: measured != null,
-        });
-      }
-    }
-
-    // 25.5: no geoEpoch bump — its only consumer is the per-edge exact
-    // curve-bb memo, which has no label terms; the label bb terms read
-    // the dims maps live
-    this.labelDirty[group].add(slot);
-    this.dirty.touch();
+    labelsImpl.setLabel(this, slot, entry, group);
   }
 
   /**
@@ -4332,23 +2013,7 @@ export class GraphStore implements ModelView {
    * drives all three of its streams (mid + end labels).
    */
   setLabelFontSize(slot: number, group: GroupName, fontSize: number): void {
-    const streams: LabelStream[] =
-      group === GROUP_NODES
-        ? [GROUP_NODES]
-        : [GROUP_EDGES, 'edgeSource', 'edgeTarget'];
-
-    for (const stream of streams) {
-      const entry = this.labels[stream][slot];
-
-      if (entry == null || entry.fontSize === fontSize) {
-        continue;
-      }
-
-      const anchorY =
-        stream === GROUP_NODES ? entry.anchorY : -fontSize / 2 + entry.marginY;
-
-      this.setLabel(slot, { ...entry, fontSize, anchorY }, stream);
-    }
+    labelsImpl.setLabelFontSize(this, slot, group, fontSize);
   }
 
   /** A label's laid (or headless-estimated) block dims, model px. */
@@ -4365,14 +2030,7 @@ export class GraphStore implements ModelView {
    * marks label-dirty (no rebuild loop) — only the bb consumers wake.
    */
   setLabelDims(slot: number, group: LabelStream, w: number, h: number): void {
-    const prev = this.labelDims[group].get(slot);
-
-    if (prev != null && prev.exact && prev.w === w && prev.h === h) {
-      return;
-    }
-
-    this.labelDims[group].set(slot, { w, h, exact: true });
-    this.dirty.touch(); // no geoEpoch bump (25.5) — see setLabel
+    labelsImpl.setLabelDims(this, slot, group, w, h);
   }
 
   /**
@@ -4383,17 +2041,7 @@ export class GraphStore implements ModelView {
    * @returns the queued slots; an empty array when nothing is pending
    */
   takeLabelDirty(group: LabelStream = GROUP_NODES): number[] {
-    const dirty = this.labelDirty[group];
-
-    if (dirty.size === 0) {
-      return [];
-    }
-
-    const slots = [...dirty];
-
-    dirty.clear();
-
-    return slots;
+    return labelsImpl.takeLabelDirty(this, group);
   }
 
   // -- iteration (insertion order) --
@@ -4410,16 +2058,7 @@ export class GraphStore implements ModelView {
    * remove elements in the group being walked.
    */
   forEachAlive(group: GroupName, cb: (slot: number) => void): void {
-    const order = this.order[group];
-    const gen = this.table(group).gen;
-
-    for (let i = 0; i < order.slots.length; i++) {
-      const slot = order.slots[i];
-
-      if (gen[slot] === order.gens[i]) {
-        cb(slot);
-      }
-    }
+    scanImpl.forEachAlive(this, group, cb);
   }
 
   /**
@@ -4448,26 +2087,7 @@ export class GraphStore implements ModelView {
     mask: number,
     want: number,
   ): number {
-    const order = this.order[group];
-    const slots = order.slots;
-    const gens = order.gens;
-    const gen = this.table(group).gen;
-    const flags = this.column(
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
-    ) as Uint32Array;
-    let n = at;
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      if (gen[slot] !== gens[i] || (flags[slot] & mask) !== want) {
-        continue;
-      }
-
-      out[n++] = slot;
-    }
-
-    return n;
+    return scanImpl.scanSlotsInto(this, out, at, group, mask, want);
   }
 
   /**
@@ -4487,51 +2107,7 @@ export class GraphStore implements ModelView {
     want: number,
     dataTests?: { test: (v: unknown) => boolean; key: string }[],
   ): number {
-    const order = this.order[group];
-    const slots = order.slots;
-    const gens = order.gens;
-    const gen = this.table(group).gen;
-    const flags = this.column(
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS,
-    ) as Uint32Array;
-    let n = at;
-
-    // hoist a per-slot reader per condition key out of the scan loop
-    const readers =
-      dataTests == null || dataTests.length === 0
-        ? null
-        : dataTests.map((t) => ({
-            test: t.test,
-            read: this.data.reader(group, t.key),
-          }));
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-      const g = gens[i];
-
-      if (gen[slot] !== g || (flags[slot] & mask) !== want) {
-        continue;
-      }
-
-      if (readers != null) {
-        let pass = true;
-
-        for (let t = 0; t < readers.length; t++) {
-          if (!readers[t].test(readers[t].read(slot))) {
-            pass = false;
-            break;
-          }
-        }
-
-        if (!pass) {
-          continue;
-        }
-      }
-
-      out[n++] = { group, slot, gen: g };
-    }
-
-    return n;
+    return scanImpl.scanRefsInto(this, out, at, group, mask, want, dataTests);
   }
 
   /**
@@ -4564,156 +2140,7 @@ export class GraphStore implements ModelView {
     includeLabels: boolean = false,
     mode: BoxSelectionMode = 'contain',
   ): Ref[] {
-    this.flushDerived(); // curved edges read derived params below
-    const overlap = mode === 'overlap';
-    const lx = Math.min(x1, x2);
-    const hx = Math.max(x1, x2);
-    const ly = Math.min(y1, y2);
-    const hy = Math.max(y1, y2);
-    const shown = FLAG_ALIVE | FLAG_VISIBLE;
-    const out: Ref[] = [];
-
-    const pos = this.column(COL.NODE_POSITION) as Float32Array;
-    const size = this.column(COL.NODE_SIZE) as Float32Array;
-    const border = this.column(COL.NODE_BORDER_WIDTH) as Float32Array;
-    const nodeFlags = this.column(COL.NODE_FLAGS) as Uint32Array;
-    const nodeOrder = this.order.nodes;
-    const nodeGen = this.nodes.gen;
-
-    for (let i = 0; i < nodeOrder.slots.length; i++) {
-      const slot = nodeOrder.slots[i];
-      const g = nodeOrder.gens[i];
-
-      if (nodeGen[slot] !== g || (nodeFlags[slot] & shown) !== shown) {
-        continue;
-      }
-
-      const hw = size[slot * 2] / 2 + border[slot] / 2;
-      const hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
-      const x = pos[slot * 2];
-      const y = pos[slot * 2 + 1];
-
-      if (overlap) {
-        let hit = x + hw >= lx && x - hw <= hx && y + hh >= ly && y - hh <= hy;
-
-        // the label *widens* an overlap (39.1), where it narrows a
-        // containment: a node whose body misses the band but whose label
-        // crosses it is touched by the band
-        if (!hit && includeLabels) {
-          const lb = this.nodeLabelBox(slot);
-
-          hit =
-            lb != null &&
-            x + lb.x2 >= lx &&
-            x + lb.x1 <= hx &&
-            y + lb.y2 >= ly &&
-            y + lb.y1 <= hy;
-        }
-
-        if (hit) {
-          out.push({ group: GROUP_NODES, slot, gen: g });
-        }
-
-        continue;
-      }
-
-      if (x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy) {
-        // boxSelectionIncludesLabels (16.5, default off — v3's default):
-        // the label box must be contained too
-        if (includeLabels) {
-          const lb = this.nodeLabelBox(slot);
-
-          if (
-            lb != null &&
-            !(
-              x + lb.x1 >= lx &&
-              x + lb.x2 <= hx &&
-              y + lb.y1 >= ly &&
-              y + lb.y2 <= hy
-            )
-          ) {
-            continue;
-          }
-        }
-
-        out.push({ group: GROUP_NODES, slot, gen: g });
-      }
-    }
-
-    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
-    const edgeOrder = this.order.edges;
-    const edgeGen = this.edges.gen;
-    const centerIn = (node: number): boolean => {
-      const x = pos[node * 2];
-      const y = pos[node * 2 + 1];
-
-      return x >= lx && x <= hx && y >= ly && y <= hy;
-    };
-
-    const pointIn = (x: number, y: number): boolean => {
-      return x >= lx && x <= hx && y >= ly && y <= hy;
-    };
-
-    for (let i = 0; i < edgeOrder.slots.length; i++) {
-      const slot = edgeOrder.slots[i];
-      const g = edgeOrder.gens[i];
-
-      if (edgeGen[slot] !== g || (edgeFlags[slot] & shown) !== shown) {
-        continue;
-      }
-
-      // both endpoints must be shown — the drawn-edge rule the cull
-      // kernels apply, which ancestor gating (round 14.4) also feeds
-      if (
-        (nodeFlags[endpoints[slot * 2]] & shown) !== shown ||
-        (nodeFlags[endpoints[slot * 2 + 1]] & shown) !== shown
-      ) {
-        continue;
-      }
-
-      if (overlap) {
-        if (this.edgeHitsBox(slot, lx, ly, hx, hy)) {
-          out.push({ group: GROUP_EDGES, slot, gen: g });
-        }
-
-        continue;
-      }
-
-      let contained: boolean;
-
-      if ((edgeFlags[slot] & FLAG_CURVED) !== 0) {
-        // the curve's boundary endpoints — v3's exact 'contain' rule
-        const ev = this.curveEvalAt(slot);
-
-        if (ev != null) {
-          contained = pointIn(ev.sx, ev.sy) && pointIn(ev.ex, ev.ey);
-        } else {
-          const route = this.curveRouteAt(slot) as CurveRoute;
-
-          contained =
-            pointIn(route.qx[0], route.qy[0]) &&
-            pointIn(route.qx[route.n + 1], route.qy[route.n + 1]);
-        }
-      } else {
-        const hay = this.haystackPointsAt(slot);
-
-        // haystack edges (12c) test their offset endpoints — v3's
-        // haystackPts; straight/triangle edges keep the
-        // endpoint-center approximation (recorded deviation)
-        contained =
-          hay != null
-            ? pointIn(hay.sx, hay.sy) && pointIn(hay.tx, hay.ty)
-            : centerIn(endpoints[slot * 2]) &&
-              centerIn(endpoints[slot * 2 + 1]);
-      }
-
-      if (contained) {
-        out.push({ group: GROUP_EDGES, slot, gen: g });
-      }
-    }
-
-    return out;
+    return scanImpl.refsInBox(this, x1, y1, x2, y2, includeLabels, mode);
   }
 
   /**
@@ -4742,73 +2169,7 @@ export class GraphStore implements ModelView {
     hx: number,
     hy: number,
   ): boolean {
-    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
-
-    if ((edgeFlags[slot] & FLAG_CURVED) !== 0) {
-      const bb = this.curveBBAt(slot);
-
-      // conservative reject on the memoized exact box
-      if (
-        bb != null &&
-        (bb.x2 < lx || bb.x1 > hx || bb.y2 < ly || bb.y1 > hy)
-      ) {
-        return false;
-      }
-
-      const ev = this.curveEvalAt(slot);
-      const route = ev == null ? this.curveRouteAt(slot) : null;
-
-      if (ev == null && route == null) {
-        return false;
-      }
-
-      const a = { x: 0, y: 0 };
-      const b = { x: 0, y: 0 };
-
-      for (let i = 0; i < CURVE_SEGS; i++) {
-        if (ev != null) {
-          curvePointAt(ev, i / CURVE_SEGS, a);
-          curvePointAt(ev, (i + 1) / CURVE_SEGS, b);
-        } else {
-          routeVertex(route as CurveRoute, i, a);
-          routeVertex(route as CurveRoute, i + 1, b);
-        }
-
-        if (segmentHitsBox(a.x, a.y, b.x, b.y, lx, ly, hx, hy)) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    const hay = this.haystackPointsAt(slot);
-
-    if (hay != null) {
-      return segmentHitsBox(hay.sx, hay.sy, hay.tx, hay.ty, lx, ly, hx, hy);
-    }
-
-    // straight edges keep the endpoint-center approximation containment
-    // uses: the two modes agree with each other, but since round 56 the
-    // drawn line stops short of its arrowheads, so both are a little
-    // longer than the ink.  Kept deliberately (ledger item 22): a stub
-    // of an edge beside a node is not a distinction box selection is
-    // making, and the cheap answer is the right one on UX grounds
-    const pos = this.column(COL.NODE_POSITION) as Float32Array;
-    const s = endpoints[slot * 2];
-    const t = endpoints[slot * 2 + 1];
-
-    return segmentHitsBox(
-      pos[s * 2],
-      pos[s * 2 + 1],
-      pos[t * 2],
-      pos[t * 2 + 1],
-      lx,
-      ly,
-      hx,
-      hy,
-    );
+    return scanImpl.edgeHitsBox(this, slot, lx, ly, hx, hy);
   }
 
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */
@@ -4828,23 +2189,7 @@ export class GraphStore implements ModelView {
   nodeLabelBox(
     slot: number,
   ): { x1: number; y1: number; x2: number; y2: number } | null {
-    const entry = this.labels.nodes[slot];
-    const dims = this.labelDims.nodes.get(slot);
-
-    if (entry == null || dims == null) {
-      return null;
-    }
-
-    const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
-    const dx = entry.anchorX + entry.halignShift * dims.w + entry.marginX;
-    const dy = entry.anchorY + entry.valignShift * dims.h;
-
-    return {
-      x1: dx - dims.w / 2 - pad,
-      y1: dy - pad,
-      x2: dx + dims.w / 2 + pad,
-      y2: dy + dims.h + pad,
-    };
+    return scanImpl.nodeLabelBox(this, slot);
   }
 
   /**
@@ -4853,34 +2198,7 @@ export class GraphStore implements ModelView {
    * end streams, rotation included), added to the edge term's growth.
    */
   edgeLabelSlack(slot: number): number {
-    let r = 0;
-
-    for (const stream of [
-      GROUP_EDGES,
-      'edgeSource',
-      'edgeTarget',
-    ] as LabelStream[]) {
-      const entry = this.labels[stream][slot];
-      const dims = this.labelDims[stream].get(slot);
-
-      if (entry == null || dims == null) {
-        continue;
-      }
-
-      const pad = entry.bgColor >>> 24 > 0 ? entry.bgPadding : 0;
-      const vert = Math.max(
-        Math.abs(entry.anchorY),
-        Math.abs(entry.anchorY + dims.h),
-      );
-      const own =
-        dims.w / 2 + Math.abs(entry.marginX) + vert + pad + entry.endOffset;
-
-      if (own > r) {
-        r = own;
-      }
-    }
-
-    return r;
+    return scanImpl.edgeLabelSlack(this, slot);
   }
 
   /** true when any edge-stream label exists (the scan's cheap gate) */
@@ -4926,218 +2244,7 @@ export class GraphStore implements ModelView {
     w: number;
     h: number;
   } | null {
-    this.flushDerived(); // the edge term reads derived curve params
-
-    let x1 = Infinity,
-      y1 = Infinity,
-      x2 = -Infinity,
-      y2 = -Infinity;
-
-    const pos = this.column(COL.NODE_POSITION) as Float32Array;
-    const size = this.column(COL.NODE_SIZE) as Float32Array;
-    const border = this.column(COL.NODE_BORDER_WIDTH) as Float32Array;
-
-    const ghost = this.column(COL.NODE_GHOST) as Float32Array;
-    const anyGhosts = this.ghosts > 0;
-    const anyNodeLabels = includeLabels && this.hasNodeLabels();
-    const anyEdgeLabels = includeLabels && this.hasEdgeLabels();
-    const over = this.column(COL.NODE_OVERLAY) as Uint32Array;
-    const under = this.column(COL.NODE_UNDERLAY) as Uint32Array;
-    const anyLayers = this.overlays > 0 || this.underlays > 0;
-    const bGeom = this.column(COL.NODE_BORDER_GEOM) as Uint32Array;
-    const anyOutlines = this.outlineSlackMax > 0;
-    // the space tier (round 22): display-hidden elements take no space
-    // (v3's rule — previously the fit scan included them, a gap this
-    // closed); `visibility: 'hidden'` ones keep theirs (VISIBLE, not DRAWN)
-    const nodeFlags = this.column(COL.NODE_FLAGS) as Uint32Array;
-
-    this.forEachAlive(GROUP_NODES, (slot) => {
-      if ((nodeFlags[slot] & FLAG_VISIBLE) === 0) {
-        return;
-      }
-
-      const x = pos[slot * 2];
-      const y = pos[slot * 2 + 1];
-      let hw = size[slot * 2] / 2 + border[slot] / 2;
-      let hh = size[slot * 2 + 1] / 2 + border[slot] / 2;
-
-      // an outline ring grows the body box (round 13 B5; conservative
-      // for inside borders — the center convention, like the border term)
-      if (anyOutlines && bGeom[slot * 4 + 2] >>> 24 !== 0) {
-        const wo = bGeom[slot * 4 + 3];
-        const extra = (wo >>> 16) / 256 / 2 + (wo & 0xffff) / 256;
-
-        hw += extra;
-        hh += extra;
-      }
-
-      // overlay/underlay pads grow the body box (round 13 A2; v3's
-      // overlay sits on the inner size, so border-inclusive halves +
-      // padding are conservative)
-      if (anyLayers) {
-        let pad = 0;
-
-        if (over[slot * 4] >>> 24 !== 0) {
-          pad = over[slot * 4 + 1] / 256;
-        }
-        if (under[slot * 4] >>> 24 !== 0) {
-          pad = Math.max(pad, under[slot * 4 + 1] / 256);
-        }
-
-        hw += pad;
-        hh += pad;
-      }
-
-      if (x - hw < x1) {
-        x1 = x - hw;
-      }
-      if (y - hh < y1) {
-        y1 = y - hh;
-      }
-      if (x + hw > x2) {
-        x2 = x + hw;
-      }
-      if (y + hh > y2) {
-        y2 = y + hh;
-      }
-
-      // a ghost duplicates the body at the offset (round 13 A1)
-      if (anyGhosts && ghost[slot * 4 + 3] !== 0) {
-        const gx = x + ghost[slot * 4];
-        const gy = y + ghost[slot * 4 + 1];
-
-        if (gx - hw < x1) {
-          x1 = gx - hw;
-        }
-        if (gy - hh < y1) {
-          y1 = gy - hh;
-        }
-        if (gx + hw > x2) {
-          x2 = gx + hw;
-        }
-        if (gy + hh > y2) {
-          y2 = gy + hh;
-        }
-      }
-
-      // labels join the box by default (round 16.4): the laid (or
-      // headless-estimated) block at its anchor
-      if (anyNodeLabels) {
-        const lb = this.nodeLabelBox(slot);
-
-        if (lb != null) {
-          if (x + lb.x1 < x1) {
-            x1 = x + lb.x1;
-          }
-          if (y + lb.y1 < y1) {
-            y1 = y + lb.y1;
-          }
-          if (x + lb.x2 > x2) {
-            x2 = x + lb.x2;
-          }
-          if (y + lb.y2 > y2) {
-            y2 = y + lb.y2;
-          }
-        }
-      }
-    });
-
-    const endpoints = this.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-    const curveParams = this.column(COL.EDGE_CURVE_PARAMS) as Float32Array;
-    const edgeFlags = this.column(COL.EDGE_FLAGS) as Uint32Array;
-
-    this.forEachAlive(GROUP_EDGES, (slot) => {
-      // the space tier (round 22): hidden edges — or edges with a hidden
-      // endpoint (the drawn-edge rule) — take no space
-      if (
-        (edgeFlags[slot] & FLAG_VISIBLE) === 0 ||
-        (nodeFlags[endpoints[slot * 2]] & FLAG_VISIBLE) === 0 ||
-        (nodeFlags[endpoints[slot * 2 + 1]] & FLAG_VISIBLE) === 0
-      ) {
-        return;
-      }
-
-      // curved edges: chord-bounded kinds take the conservative hull
-      // bound — the quadratic lies within the endpoint/control hull,
-      // whose controls sit at most the header deviation from the center
-      // segment.  Cheap, symmetric and tight enough that exactness buys
-      // no visible framing (fit may slightly over-fit, never under).
-      const at = slot * 4;
-      const kind = curveParams[at + 3];
-      const labelSlack = anyEdgeLabels ? this.edgeLabelSlack(slot) : 0;
-
-      // box-bounded kinds — compound loops (14.10) and the blob routes
-      // no chord bound covers (taxi, extrapolated weights) — are EXACT
-      // here via the memoized flattened bb (curveBBAt,
-      // epoch-invalidated), which the box-selection path already
-      // computes per curved edge, so the scan pays it once per geometry
-      // change rather than per call.  Round 54 made taxi exact when its
-      // sweep caught a forced-direction route escaping any node-half
-      // margin; round 92 retired the two remaining conservative terms —
-      // the directional compound-loop box and the per-edge outer-half +
-      // chord margin — because the kept p2 cushion over-framed the
-      // compound fixture 1.23x and, growing up-left only, de-centered
-      // every compound fit (fit centers the box it is given).
-      if ((edgeFlags[slot] & FLAG_CURVED_BOX) !== 0) {
-        const bb = this.curveBBAt(slot);
-
-        if (bb != null) {
-          if (bb.x1 - labelSlack < x1) {
-            x1 = bb.x1 - labelSlack;
-          }
-          if (bb.y1 - labelSlack < y1) {
-            y1 = bb.y1 - labelSlack;
-          }
-          if (bb.x2 + labelSlack > x2) {
-            x2 = bb.x2 + labelSlack;
-          }
-          if (bb.y2 + labelSlack > y2) {
-            y2 = bb.y2 + labelSlack;
-          }
-
-          return;
-        }
-      }
-
-      let dev =
-        kind === CURVE_STRAIGHT
-          ? 0
-          : headerDeviation(
-              kind,
-              curveParams[at],
-              curveParams[at + 1],
-              curveParams[at + 2],
-            );
-
-      // edge labels (16.4): conservative — the block-covering radius,
-      // valid wherever the anchor lands along the drawn path
-      dev += labelSlack;
-
-      for (let end = 0; end < 2; end++) {
-        const node = endpoints[slot * 2 + end];
-        const x = pos[node * 2];
-        const y = pos[node * 2 + 1];
-
-        if (x - dev < x1) {
-          x1 = x - dev;
-        }
-        if (y - dev < y1) {
-          y1 = y - dev;
-        }
-        if (x + dev > x2) {
-          x2 = x + dev;
-        }
-        if (y + dev > y2) {
-          y2 = y + dev;
-        }
-      }
-    });
-
-    if (x1 === Infinity) {
-      return null;
-    }
-
-    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+    return scanImpl.boundingBox(this, includeLabels);
   }
 
   // -- internals --
@@ -5148,242 +2255,7 @@ export class GraphStore implements ModelView {
     slot: number,
     data: Record<string, unknown> | undefined,
   ): void {
-    if (data == null) {
-      return;
-    }
-
-    for (const key of Object.keys(data)) {
-      if (key === DATA_ID || key === DATA_SOURCE || key === DATA_TARGET) {
-        continue;
-      }
-
-      // round 14: a node def's parent resolves as hierarchy (in a second
-      // pass, once the batch's nodes all exist), never as sidecar data
-      if (key === DATA_PARENT && group === GROUP_NODES) {
-        continue;
-      }
-
-      this.data.set(group, slot, key, data[key]);
-      this.markDataWrite(group, key, slot, slot + 1);
-    }
-  }
-
-  private ingestDataColumns(
-    group: GroupName,
-    slots: Uint32Array,
-    data: Record<string, DataColumn> | undefined,
-  ): void {
-    if (data == null) {
-      return;
-    }
-
-    let min = Infinity;
-    let max = -Infinity;
-
-    if (this.watchedKeys[group].size > 0 && slots.length > 0) {
-      for (let i = 0; i < slots.length; i++) {
-        if (slots[i] < min) {
-          min = slots[i];
-        }
-        if (slots[i] > max) {
-          max = slots[i];
-        }
-      }
-    }
-
-    for (const key of Object.keys(data)) {
-      this.data.ingestColumn(group, slots, key, data[key]);
-
-      if (max >= 0) {
-        this.markDataWrite(group, key, min, max + 1);
-      }
-    }
-  }
-
-  /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
-  private registerBulk(
-    group: GroupName,
-    slots: Uint32Array,
-    ids: (string | undefined)[] | PackedIds | undefined,
-    newId: () => string,
-  ): void {
-    this.ids.setBulk(group, slots, ids, newId); // throws on a duplicate id
-
-    const order = this.order[group];
-    const gen = this.table(group).gen;
-
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      order.slots.push(slot);
-      order.gens.push(gen[slot]);
-    }
-
-    this.bumpStructureEpoch();
-  }
-
-  /** Default flags for the whole bulk, then per-element deviations. */
-  private writeBulkFlags(
-    group: GroupName,
-    slots: Uint32Array,
-    contiguousFrom: number,
-    cols: { selected?: Uint8Array; selectable?: Uint8Array },
-  ): void {
-    const flagsId: ColumnId =
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
-    const flags = this.table(group).column(flagsId) as Uint32Array;
-    const defaults =
-      FLAG_ALIVE |
-      FLAG_VISIBLE |
-      FLAG_DRAWN |
-      FLAG_SELECTABLE |
-      FLAG_GRABBABLE |
-      (group === GROUP_EDGES ? FLAG_PANNABLE : 0); // edges default pannable, as in v3
-    const count = slots.length;
-
-    if (contiguousFrom < count) {
-      // fresh run: one fill
-      flags.fill(defaults, slots[contiguousFrom], slots[count - 1] + 1);
-    }
-
-    for (let i = 0; i < contiguousFrom; i++) {
-      flags[slots[i]] = defaults;
-    }
-
-    if (cols.selected != null) {
-      for (let i = 0; i < count; i++) {
-        if (cols.selected[i] !== 0) {
-          flags[slots[i]] |= FLAG_SELECTED;
-        }
-      }
-    }
-
-    if (cols.selectable != null) {
-      for (let i = 0; i < count; i++) {
-        if (cols.selectable[i] === 0) {
-          flags[slots[i]] &= ~FLAG_SELECTABLE;
-        }
-      }
-    }
-  }
-
-  /** One coalesced dirty span covering all of `slots`. */
-  private markBulk(id: ColumnId, slots: Uint32Array): void {
-    if (slots.length === 0) {
-      return;
-    }
-
-    let min = slots[0];
-    let max = slots[0];
-
-    for (let i = 1; i < slots.length; i++) {
-      const slot = slots[i];
-
-      if (slot < min) {
-        min = slot;
-      }
-      if (slot > max) {
-        max = slot;
-      }
-    }
-
-    this.dirty.mark(id, min, max + 1);
-  }
-
-  private allocSlot(
-    group: GroupName,
-    id: string,
-  ): { slot: number; resized: boolean } {
-    if (this.ids.has(id)) {
-      throw new Error(`Can not create second element with id '${id}'`);
-    }
-
-    const table = this.table(group);
-    const { slot, resized } = table.alloc();
-
-    if (resized) {
-      this.dirty.markResized(group);
-    }
-
-    this.ids.set(id, group, slot);
-
-    const order = this.order[group];
-
-    order.slots.push(slot);
-    order.gens.push(table.gen[slot]);
-    this.bumpStructureEpoch();
-
-    return { slot, resized };
-  }
-
-  private freeSlot(group: GroupName, slot: number): void {
-    const id = this.ids.idAt(group, slot);
-
-    if (id != null) {
-      this.ids.remove(id);
-    }
-
-    if (group === GROUP_NODES) {
-      // recycled slots must not inherit compound state
-      this.parentFallback.delete(slot);
-      this.opacityBase.delete(slot);
-    }
-
-    this.data.clearSlot(group, slot);
-
-    if (this.labels[group][slot] != null) {
-      this.setLabel(slot, null, group);
-    }
-
-    if (group === GROUP_EDGES) {
-      for (const stream of ['edgeSource', 'edgeTarget'] as LabelStream[]) {
-        if (this.labels[stream][slot] != null) {
-          this.setLabel(slot, null, stream);
-        }
-      }
-    }
-
-    // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad
-    const flagsId: ColumnId =
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
-
-    (this.table(group).column(flagsId) as Uint32Array)[slot] = 0;
-    this.dirty.mark(flagsId, slot);
-
-    this.table(group).freeSlot(slot);
-
-    const order = this.order[group];
-
-    order.stale++;
-    this.bumpStructureEpoch();
-
-    if (order.stale > order.slots.length / 2) {
-      this.compactOrder(group);
-    }
-  }
-
-  /**
-   * Rebuild the CSR adjacency when the waste meters cross the threshold:
-   * stranded CSR entries (removals) plus overlay entries (post-build
-   * adds) exceeding half the live entry count.  A rebuild walks the live
-   * edges in insertion order — so it also folds a purely incremental
-   * graph's overlay into the compact CSR shape — and O(edges) at a
-   * proportional-growth threshold amortizes to O(1) per mutation.  The
-   * floor keeps tiny graphs from rebuilding on every mutation.
-   */
-  private maybeRebuildAdjacency(): void {
-    const waste = this.adj.csrStranded + this.adj.overlayEntries;
-
-    // live entries = 2 × edge count, so waste > count is waste > live/2
-    if (waste <= 64 || waste <= this.edges.count) {
-      return;
-    }
-
-    this.adj.rebuild(
-      this.slotsOrdered(GROUP_EDGES),
-      this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
-      this.nodes.cap,
-    );
+    mutationImpl.setDefData(this, group, slot, data);
   }
 
   /**
@@ -5402,264 +2274,6 @@ export class GraphStore implements ModelView {
    * calls this in production.
    */
   compact(): { nodes: GroupCompaction | null; edges: GroupCompaction | null } {
-    this.flushDerived(); // settle derived geometry before anything moves
-
-    const edgesRes = this.compactGroup(GROUP_EDGES);
-    const nodesRes = this.compactGroup(GROUP_NODES);
-
-    if (nodesRes != null) {
-      // endpoints hold node slots — the one column with cross-group slots
-      const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
-      const remap = nodesRes.remap;
-      const hw = this.edges.highWater;
-
-      for (let i = 0; i < hw * 2; i++) {
-        endpoints[i] = remap[endpoints[i]];
-      }
-
-      if (hw > 0) {
-        this.dirty.mark(COL.EDGE_ENDPOINTS, 0, hw);
-      }
-    }
-
-    if (nodesRes != null || edgesRes != null) {
-      this.adj.rebuild(
-        this.slotsOrdered(GROUP_EDGES),
-        this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array,
-        this.nodes.cap,
-      );
-      this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
-      this._compactEpoch++; // collections invalidate cached membership sets
-      this.bumpStructureEpoch(); // and whole-graph collection caches drop
-      this.dirty.touch();
-    }
-
-    // -- dependent store indexes (19.2) --
-
-    if (edgesRes != null) {
-      this.blob.remapSlots(edgesRes.remap);
-      this.data.remapSlots(GROUP_EDGES, edgesRes.remap);
-      this.remapLabelStream(GROUP_EDGES, edgesRes.remap);
-      this.remapLabelStream('edgeSource', edgesRes.remap);
-      this.remapLabelStream('edgeTarget', edgesRes.remap);
-    }
-
-    if (nodesRes != null) {
-      this.polyPool.remapSlots(nodesRes.remap);
-      this.imagePool.remapSlots(nodesRes.remap);
-      this.chartPool.remapSlots(nodesRes.remap);
-      this.data.remapSlots(GROUP_NODES, nodesRes.remap);
-      this.remapLabelStream(GROUP_NODES, nodesRes.remap);
-      this.hierarchy.remapSlots(nodesRes.remap, this.nodes.gen);
-      this.opacityBase = rekeyMap(this.opacityBase, nodesRes.remap);
-      this.parentFallback = rekeyMap(this.parentFallback, nodesRes.remap);
-    }
-
-    if (nodesRes != null || edgesRes != null) {
-      // pair/loop keys are node slots and member lists edge slots — the
-      // index rebuilds both from the rewritten endpoints; derived params
-      // stay valid (the remap is monotone, so bundle order is unchanged)
-      this.curves.remapSlots(edgesRes?.remap ?? null);
-
-      // stale mapper spans carry old-coordinate ranges: replace them
-      // with whole-column spans per watched key of a compacted group
-      for (const group of [GROUP_NODES, GROUP_EDGES] as GroupName[]) {
-        const res = group === GROUP_NODES ? nodesRes : edgesRes;
-
-        if (res == null) {
-          continue;
-        }
-
-        for (const key of Array.from(this.mapperSpans.keys())) {
-          if (key.startsWith(`${group}:`)) {
-            this.mapperSpans.delete(key);
-          }
-        }
-
-        for (const key of this.watchedKeys[group]) {
-          this.markDataWrite(group, key, 0, this.table(group).highWater);
-        }
-      }
-
-      // owner slots are baked into the renderer's glyph instances; the
-      // label-dirty channel is the existing rebuild path (19.4 consumes)
-      this.markAllLabelsDirty();
-    }
-
-    return { nodes: nodesRes, edges: edgesRes };
-  }
-
-  /** Permute one label stream's entries, dims and dirty slots (19.2). */
-  private remapLabelStream(stream: LabelStream, remap: Uint32Array): void {
-    const entries = this.labels[stream];
-    const n = Math.min(remap.length, entries.length);
-
-    for (let s = 0; s < n; s++) {
-      const d = remap[s];
-
-      if (d === NO_SLOT || d === s) {
-        continue;
-      }
-
-      entries[d] = entries[s];
-      entries[s] = undefined;
-    }
-
-    this.labelDims[stream] = rekeyMap(this.labelDims[stream], remap);
-
-    const dirty = new Set<number>();
-
-    for (const s of this.labelDirty[stream]) {
-      const d = s < remap.length ? remap[s] : NO_SLOT;
-
-      if (d !== NO_SLOT) {
-        dirty.add(d);
-      }
-    }
-
-    this.labelDirty[stream] = dirty;
-  }
-
-  private compactGroup(group: GroupName): GroupCompaction | null {
-    const table = this.table(group);
-    const hw = table.highWater;
-    const flagsId: ColumnId =
-      group === GROUP_NODES ? COL.NODE_FLAGS : COL.EDGE_FLAGS;
-    const flags = table.column(flagsId) as Uint32Array;
-    const remap = new Uint32Array(hw);
-    let next = 0;
-    let moved = 0;
-
-    for (let s = 0; s < hw; s++) {
-      if ((flags[s] & FLAG_ALIVE) !== 0) {
-        remap[s] = next;
-
-        if (next !== s) {
-          moved++;
-        }
-
-        next++;
-      } else {
-        remap[s] = NO_SLOT;
-      }
-    }
-
-    if (moved === 0 && next === hw) {
-      return null;
-    } // already dense
-
-    // table.compact swaps in a fresh gen array, so holding the old one
-    // is the pre-move snapshot the order-list fusion validates against
-    const oldGen = table.gen;
-
-    table.compact(remap, next);
-
-    // forwarding entries for every moved element (19.3): stale refs
-    // chase these chains and repair in place; identity slots need none
-    const fwd = this.forwards[group];
-
-    for (let s = 0; s < hw; s++) {
-      const d = remap[s];
-
-      if (d === NO_SLOT || d === s) {
-        continue;
-      }
-
-      fwd.set(s * 0x1000000 + oldGen[s], d * 0x1000000 + table.gen[d]);
-    }
-
-    const order = this.order[group];
-    const slots: number[] = [];
-    const gens: number[] = [];
-
-    for (let i = 0; i < order.slots.length; i++) {
-      const s = order.slots[i];
-
-      if (order.gens[i] !== oldGen[s]) {
-        continue;
-      } // tombstoned entry
-
-      const d = remap[s];
-
-      if (d === NO_SLOT) {
-        continue;
-      }
-
-      slots.push(d);
-      gens.push(table.gen[d]);
-    }
-
-    this.order[group] = { slots, gens, stale: 0 };
-
-    this.ids.remapSlots(group, remap);
-    this.dirty.markResized(group);
-
-    return { remap, moved, oldHighWater: hw };
-  }
-
-  private compactOrder(group: GroupName): void {
-    const order = this.order[group];
-    const gen = this.table(group).gen;
-    const slots: number[] = [];
-    const gens: number[] = [];
-
-    for (let i = 0; i < order.slots.length; i++) {
-      const slot = order.slots[i];
-
-      if (gen[slot] === order.gens[i]) {
-        slots.push(slot);
-        gens.push(order.gens[i]);
-      }
-    }
-
-    this.order[group] = { slots, gens, stale: 0 };
+    return compactionImpl.compact(this);
   }
 }
-
-/** Rebuild a slot-keyed map through a compaction remap (19.2). */
-const rekeyMap = <V,>(
-  map: Map<number, V>,
-  remap: Uint32Array,
-): Map<number, V> => {
-  const next = new Map<number, V>();
-
-  for (const [slot, value] of map) {
-    const d = slot < remap.length ? remap[slot] : NO_SLOT;
-
-    if (d !== NO_SLOT) {
-      next.set(d, value);
-    }
-  }
-
-  return next;
-};
-
-const initialFlags = (
-  opts: AddElementOpts,
-  pannableDefault: boolean,
-): number => {
-  let flags = FLAG_ALIVE;
-
-  if (opts.visible !== false) {
-    flags |= FLAG_VISIBLE | FLAG_DRAWN;
-  } else {
-    flags |= FLAG_SELF_HIDDEN;
-  }
-  if (opts.selectable !== false) {
-    flags |= FLAG_SELECTABLE;
-  }
-  if (opts.selected === true) {
-    flags |= FLAG_SELECTED;
-  }
-  if (opts.grabbable !== false) {
-    flags |= FLAG_GRABBABLE;
-  }
-  if (opts.locked === true) {
-    flags |= FLAG_LOCKED;
-  }
-  if (opts.pannable ?? pannableDefault) {
-    flags |= FLAG_PANNABLE;
-  }
-
-  return flags;
-};

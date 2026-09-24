@@ -158,7 +158,10 @@ describe('layouts: cancel() (round 128)', function () {
         const layout = cy.layout(options);
 
         layout.run();
-        await tick(40);
+        // headless frames are 16 ms timeouts and a tween's first frame only
+        // stamps its start, so the first movement is the second frame; a
+        // fixed 40 ms wait lost that race under the full suite's load
+        await until(() => anyMoved(before, positionsOf(cy)));
 
         // mid-tween: something has moved off the snapshot
         moved(before, positionsOf(cy));
@@ -420,7 +423,7 @@ describe('layouts: cancel() (round 128)', function () {
       });
 
       layout.run();
-      await tick(40);
+      await until(() => anyMoved(before, positionsOf(cy)));
       moved(before, positionsOf(cy));
       layout.cancel();
 
@@ -481,7 +484,7 @@ describe('layouts: cancel() (round 128)', function () {
       });
 
       layout.run();
-      await tick(40);
+      await until(() => anyMoved(before, positionsOf(cy)));
       layout.stop();
       await layout.promise();
 
@@ -505,7 +508,7 @@ describe('layouts: cancel() (round 128)', function () {
       });
 
       layout.run();
-      await tick(40);
+      await until(() => anyMoved(before, positionsOf(cy)));
       moved(before, positionsOf(cy));
       layout.cancel();
 

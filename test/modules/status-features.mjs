@@ -6,6 +6,8 @@ import { buildPlan } from '../../scripts/status-build.mjs';
 import {
   countBy,
   featuresPage,
+  STATUS_GROUPS,
+  statusIcon,
   summarise,
 } from '../../scripts/status/features-page.mjs';
 import {
@@ -49,14 +51,17 @@ describe('feature status page', () => {
     expect(html).to.include(`Statuses — all ${rows.length} rows`);
     const byStatus = countBy(rows, 'Status');
     const byCategory = countBy(rows, 'Category');
-    for (const [name, meaning] of Object.entries(STATUSES)) {
-      const n = byStatus.get(name) ?? 0;
-      expect(html).to.include(
-        `data-status="${name}">${n}</td><td>${meaning}</td>`,
-      );
-      expect(html).to.include(
-        `<option value="${name}">${name} (${n}) — ${meaning}</option>`,
-      );
+    for (const group of STATUS_GROUPS) {
+      for (const name of group.statuses) {
+        const meaning = STATUSES[name];
+        const n = byStatus.get(name) ?? 0;
+        expect(html).to.include(
+          `${statusIcon(name)}${name}</th><td class="legend-count${n === 0 ? ' is-zero' : ''}" data-status="${name}">${n}</td><td>${meaning}</td>`,
+        );
+        expect(html).to.include(
+          `<option value="${name}">${group.icon} ${name} (${n}) — ${meaning}</option>`,
+        );
+      }
     }
     for (const [name, n] of byCategory) {
       expect(html).to.include(
@@ -74,14 +79,37 @@ describe('feature status page', () => {
     expect(html).to.include(
       'class="feature-button" href="direction.html">Feature-direction review</a>',
     );
-    const cells = html.match(
-      /<td class="feature-status" title="([^"]*)">([^<]*)</g,
-    );
+    const cell =
+      /<td class="feature-status" title="([^"]*)" data-status="([^"]*)">(<span class="status-icon" aria-hidden="true">[^<]+<\/span>)([^<]*)</g;
+    const cells = [...html.matchAll(cell)];
     expect(cells).to.have.length(rows.length);
-    const one = /<td class="feature-status" title="([^"]*)">([^<]*)</.exec(
-      cells[0],
+    for (const [, title, status, icon, text] of cells) {
+      expect(title).to.equal(STATUSES[status]);
+      expect(icon).to.equal(statusIcon(status));
+      expect(text).to.equal(status);
+    }
+  });
+
+  it('groups statuses by colour: every status in exactly one group, the picker in optgroups', () => {
+    const grouped = STATUS_GROUPS.flatMap((g) => g.statuses);
+    expect([...grouped].sort()).to.deep.equal(Object.keys(STATUSES).sort());
+    expect(STATUS_GROUPS.map((g) => g.icon)).to.deep.equal([
+      '\u2705',
+      '\u{1F7E8}',
+      '\u{1F534}',
+    ]);
+    const html = featuresPage(rows);
+    const legend = html.slice(
+      html.indexOf('<table class="feature-legend">'),
+      html.indexOf('</table>'),
     );
-    expect(one[1]).to.equal(STATUSES[one[2]]);
+    const order = [...legend.matchAll(/data-status="([^"]*)"/g)].map(
+      (m) => m[1],
+    );
+    expect(order).to.deep.equal(grouped);
+    for (const g of STATUS_GROUPS) {
+      expect(html).to.include(`<optgroup label="${g.icon} ${g.label}">`);
+    }
   });
 
   it('publishes the same complete CSV and all rows with navigation and source links', () => {

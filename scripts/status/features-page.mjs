@@ -1,6 +1,31 @@
 import { esc } from '../theme.mjs';
 import { COLUMNS, STATUSES } from './feature-inventory.mjs';
 
+/** Statuses grouped by colour: ✅ is settled (built, or decided against or
+ * around), 🟨 is built with limits, 🔴 still waits on work or a decision.
+ * The legend and the status picker list statuses in this order. */
+export const STATUS_GROUPS = [
+  {
+    label: 'Settled',
+    icon: '\u2705',
+    statuses: ['Implemented', 'Replaced', 'Not implemented', 'Excluded'],
+  },
+  { label: 'Partial', icon: '\u{1F7E8}', statuses: ['Partial'] },
+  {
+    label: 'Open',
+    icon: '\u{1F534}',
+    statuses: ['Planned', 'Proposed', 'Undecided'],
+  },
+];
+
+const ICONS = new Map(
+  STATUS_GROUPS.flatMap((g) => g.statuses.map((name) => [name, g.icon])),
+);
+
+/** The status's colour emoji; hidden from assistive tech, which reads the name. */
+export const statusIcon = (name) =>
+  `<span class="status-icon" aria-hidden="true">${ICONS.get(name) ?? ''}</span>`;
+
 export const FEATURES_CSS = `
 .feature-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0 20px; }
 .feature-button { display: inline-block; padding: 11px 20px; font-size: 15px; font-weight: 600; color: var(--page); background: var(--accent); border-radius: 6px; text-decoration: none; }
@@ -19,6 +44,7 @@ table.features { width: 100%; border-collapse: collapse; }
 .features .feature-name { font-family: var(--mono, monospace); min-width: 19ch; overflow-wrap: anywhere; }
 .features .feature-comment { min-width: 30ch; max-width: 85ch; }
 .features .feature-status { white-space: nowrap; }
+.status-icon { margin-right: 6px; }
 .features caption { text-align: left; margin-bottom: 12px; color: var(--muted); }
 .feature-legend { margin: 16px 0; border-collapse: collapse; }
 .feature-legend caption { text-align: left; font-weight: 600; margin-bottom: 6px; }
@@ -46,7 +72,7 @@ export const FEATURES_SCRIPT = `
   const empty = document.getElementById('feature-empty');
   const tallies = [...document.querySelectorAll('.feature-legend [data-status]')];
   const rows = [...document.querySelectorAll('.features tbody tr')].map(row => ({
-    row, category: row.cells[0].textContent, status: row.cells[2].textContent,
+    row, category: row.cells[0].textContent, status: row.cells[2].dataset.status,
     text: [...row.cells].slice(0, 4).map(cell => cell.textContent).join(' ').toLowerCase()
   }));
   function filter() {
@@ -131,21 +157,22 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   <div class="feature-tools" hidden>
     <div class="feature-field"><label for="feature-search">Search features and comments</label><input id="feature-search" type="search" placeholder="e.g. labels, force, cy.json"></div>
     <div class="feature-field"><label for="feature-category">Category</label><select id="feature-category"><option value="">All categories (${rows.length})</option>${options([...byCategory.keys()].sort(), (v) => `${v} (${byCategory.get(v)})`)}</select></div>
-    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses (${rows.length})</option>${options(Object.keys(STATUSES), (v) => `${v} (${byStatus.get(v) ?? 0}) — ${STATUSES[v]}`)}</select></div>
+    <div class="feature-field"><label for="feature-status">Status</label><select id="feature-status"><option value="">All statuses (${rows.length})</option>${STATUS_GROUPS.map((g) => `<optgroup label="${esc(`${g.icon} ${g.label}`)}">${options(g.statuses, (v) => `${ICONS.get(v)} ${v} (${byStatus.get(v) ?? 0}) — ${STATUSES[v]}`)}</optgroup>`).join('')}</select></div>
   </div>
   <table class="feature-legend"><caption id="feature-legend-caption">Statuses — all ${rows.length} rows</caption>
   <thead><tr><th scope="col">Status</th><th scope="col" class="legend-count">Rows</th><th scope="col">Meaning</th></tr></thead>
-  <tbody>${Object.entries(STATUSES)
-    .map(([name, meaning]) => {
+  <tbody>${STATUS_GROUPS.flatMap((g) => g.statuses)
+    .map((name) => {
+      const meaning = STATUSES[name];
       const n = byStatus.get(name) ?? 0;
-      return `<tr><th scope="row" title="${esc(meaning)}">${esc(name)}</th><td class="legend-count${n === 0 ? ' is-zero' : ''}" data-status="${esc(name)}">${n}</td><td>${esc(meaning)}</td></tr>`;
+      return `<tr><th scope="row" title="${esc(meaning)}">${statusIcon(name)}${esc(name)}</th><td class="legend-count${n === 0 ? ' is-zero' : ''}" data-status="${esc(name)}">${n}</td><td>${esc(meaning)}</td></tr>`;
     })
     .join('')}</tbody></table>
   <p id="feature-count" role="status" aria-live="polite">Showing all ${rows.length} rows</p>
   <div class="feature-scroll" role="region" aria-label="Feature inventory" tabindex="0">
   <table class="features"><caption>Current v4 support; see comments for limitations and alternatives.</caption>
   <thead><tr>${COLUMNS.map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>
-  <tbody>${rows.map((r) => `<tr><td>${esc(r.Category)}</td><td class="feature-name">${esc(r.Feature)}</td><td class="feature-status" title="${esc(STATUSES[r.Status] ?? '')}">${esc(r.Status)}</td><td class="feature-comment">${esc(r.Comments)}</td><td>${reference(r)}</td></tr>`).join('\n')}</tbody></table>
+  <tbody>${rows.map((r) => `<tr><td>${esc(r.Category)}</td><td class="feature-name">${esc(r.Feature)}</td><td class="feature-status" title="${esc(STATUSES[r.Status] ?? '')}" data-status="${esc(r.Status)}">${statusIcon(r.Status)}${esc(r.Status)}</td><td class="feature-comment">${esc(r.Comments)}</td><td>${reference(r)}</td></tr>`).join('\n')}</tbody></table>
   </div><p id="feature-empty" hidden>No features match these filters.</p>
   <script>${FEATURES_SCRIPT}</script>`;
 }

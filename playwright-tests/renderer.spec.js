@@ -2328,6 +2328,9 @@ test.describe('WebGPU renderer', () => {
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // three whole force runs on a 30-clique: ~10 s on a quick host, past
+    // the 30 s default on a starved CI runner's SwiftShader
+    test.slow();
 
     // a 30-clique of 40 px bodies: the point sim piles it up and the
     // settle's separation opens it to exactly the padding (115.5); the

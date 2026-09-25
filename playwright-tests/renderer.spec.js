@@ -3527,9 +3527,21 @@ test.describe('WebGPU renderer', () => {
     // that composites the new layout must composite new content.  The
     // pre-91 shape (a schedule()d redraw) fails the frames assertion
     // here deterministically.
-    const sync = await page.evaluate(() => {
+    //
+    // The contract holds when the GPU is keeping up: with
+    // MAX_IN_FLIGHT_FRAMES submissions unfinished, frame() skips and
+    // retries next rAF (backpressure).  A loaded SwiftShader runner still
+    // had setup's frames in flight and failed here ("> 2, received 2"),
+    // so let the queue drain first; the sampling after it is one task.
+    const sync = await page.evaluate(async () => {
       const container = document.getElementById('cytoscape');
       const canvas = document.querySelector('canvas');
+      const rd = window.cy.renderer();
+
+      while (rd.inFlightFrames > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+
       const framesBefore = window.cy.stats().frames;
 
       container.style.width = '500px';

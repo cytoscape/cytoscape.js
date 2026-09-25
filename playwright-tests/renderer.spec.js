@@ -2749,6 +2749,15 @@ test.describe('WebGPU renderer', () => {
     // and the frame counts compare iteration for iteration.  Control:
     // red with `nextBatch` returning `current` (the silent run takes
     // the live run's frames).
+    //
+    // "Even SwiftShader keeps up" is a property of the host.  On a
+    // starved CI runner (reproduced pinned to one core) the device falls
+    // behind, the batch halves under backpressure as designed, and the
+    // silent run's frame count is set by the device, not the batch: 55–79
+    // frames with the batch still reaching 12–24.  So the batch itself is
+    // the observable — it must grow past stepsPerFrame, which the control
+    // pins — and the frame count is held to the batched figure only when
+    // no frame of the silent run was skipped under backpressure.
     const els = [];
 
     for (let i = 0; i < 60; i++) {
@@ -2788,8 +2797,30 @@ test.describe('WebGPU renderer', () => {
         return cy.stats().frames - f0;
       };
 
+      // the frame loop calls rd.frame(): after each, the batch it chose
+      // and whether it skipped under backpressure
+      const rd = cy.renderer();
+      const frame = rd.frame;
+      let maxBatch = 0;
+      let skipped = 0;
+
+      rd.frame = function () {
+        frame.call(this);
+        maxBatch = Math.max(maxBatch, rd.forceBatch);
+
+        if (rd.forceFrameSkipped) {
+          skipped++;
+        }
+      };
+
+      const silent = await run({ animate: false });
+
+      rd.frame = frame;
+
       return {
-        silent: await run({ animate: false }),
+        silent,
+        maxBatch,
+        skipped,
         live: await run({ animateLive: true }),
       };
     });
@@ -2797,7 +2828,11 @@ test.describe('WebGPU renderer', () => {
     // 240 iterations at three per frame is 80 frames; the batched run
     // reaches 64 per frame by its sixth and needs about ten
     expect(result.live, 'the stream keeps stepsPerFrame').toBeGreaterThan(60);
-    expect(result.silent, 'the silent run batches').toBeLessThan(40);
+    expect(result.maxBatch, 'the silent run batches').toBeGreaterThan(6);
+
+    if (result.skipped === 0) {
+      expect(result.silent, 'the batched run is short').toBeLessThan(40);
+    }
   });
 
   test('CPU, silent-GPU and presenting-GPU force executors agree on invariants (18.4 + 87.2)', async ({

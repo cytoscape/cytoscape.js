@@ -471,14 +471,28 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
         }
       };
 
-      // 700 ms: the first ~300 ms of a run on either host are the
-      // force pipelines' compile stall (one frame drawn), then 60 fps —
-      // measured on the RX 580 for both hosts, 2026-09-18
+      // the run opens with the force pipelines' compile stall (one frame
+      // drawn), then 60 fps.  The stall is ~300 ms on the RX 580 but ~4 s
+      // on SwiftShader, where it holds the GPU process and so rAF too
+      // (the main thread's timers run on) — measured 2026-09-25.  A fixed
+      // 700 ms window from run() fell inside it on CI every time, so wait
+      // (bounded) for the second frame, then sample 700 ms from there
+      const waitStart = performance.now();
+
+      while (
+        cy.stats().frames - f0 < 2 &&
+        performance.now() - waitStart < 20000
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      const f1 = cy.stats().frames;
+
       requestAnimationFrame(tick);
       await new Promise((resolve) => setTimeout(resolve, 700));
       sampling = false;
 
-      const framesDuring = cy.stats().frames - f0;
+      const framesDuring = cy.stats().frames - f1;
       const midRun = { ...cy.$id('n7').position() };
       const staleDuring = midRun.x === before.x && midRun.y === before.y;
       const stillRunning = !resolved;

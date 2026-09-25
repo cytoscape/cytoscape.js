@@ -2545,12 +2545,26 @@ test.describe('WebGPU renderer', () => {
     await page.mouse.move(rendered.x, rendered.y);
     await page.mouse.down();
 
+    // paced in frames, not ms, since the sim advances per frame: each
+    // 20 px step gets two frames (about what 30 ms is on a quick host),
+    // then the hold lasts until the field rests again around the held
+    // node.  On the clock (30 ms steps, a 400 ms hold) a starved CI
+    // runner merged steps and stopped the run mid-relaxation: one
+    // neighbour +4 px where a quick host has +90
+    const framesAfter = async (n) => {
+      const start = await frames();
+
+      await expect
+        .poll(async () => (await frames()) - start, { timeout: 15000 })
+        .toBeGreaterThanOrEqual(n);
+    };
+
     for (let step = 1; step <= 10; step++) {
       await page.mouse.move(rendered.x + step * 20, rendered.y);
-      await page.waitForTimeout(30);
+      await framesAfter(2);
     }
 
-    await page.waitForTimeout(400);
+    await restingFrames();
 
     const f1 = await frames();
     const held = await stop();

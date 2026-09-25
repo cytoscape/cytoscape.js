@@ -2440,6 +2440,9 @@ test.describe('WebGPU renderer', () => {
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // three waits for the field to rest, each frame-paced: ~8 s on a
+    // quick host, past the 30 s default on a starved CI runner
+    test.slow();
 
     const ring = (() => {
       const els = [];

@@ -5543,15 +5543,19 @@ test.describe('WebGPU renderer', () => {
     await waitFrames(page);
 
     // ease-in-expo is ~0.03 of the way at 40% of the time; linear would be at
-    // 0.4, which is 76px further along — far more than the node is wide
+    // 0.4, which is 76px further along — far more than the node is wide.
+    // The sample must land before ~70% of the time, when even expo has
+    // carried the node off x = -95; over 2 s that left ~600 ms for the
+    // wait's round-trips and a loaded CI runner overran it, so the tween
+    // is 6 s and the sample still at 40%
     await page.evaluate(() =>
       window.cy.$id('a').animate({
         position: { x: 100, y: 0 },
-        duration: 2000,
+        duration: 6000,
         easing: 'ease-in-expo',
       }),
     );
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(2400);
     await waitFrames(page);
 
     expect((await pixelAt(page, center.x - 95, center.y))[1]).toBeLessThan(80);

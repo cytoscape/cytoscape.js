@@ -6,6 +6,8 @@
 //   node benchmark/patch.mjs                 # 100k elements, 5 repeats
 //   node benchmark/patch.mjs --elements 20000 --repeat 3
 //   node benchmark/patch.mjs --src           # through src/ (tsx) instead
+//   node benchmark/patch.mjs --overlaps none # the follow section alone
+//   node benchmark/patch.mjs --only 'patch (wire)' --overlaps 0.1  # one row, to profile
 //
 // The strategies, each timed from a freshly loaded graph A to the state
 // of payload B (the timed region is the strategy alone; building A is
@@ -56,10 +58,15 @@ const opt = (name, fallback) => {
 };
 const ELEMENTS = Number(opt('--elements', 100000));
 const REPEAT = Number(opt('--repeat', 5));
+// `--overlaps none` skips the overlap table (the follow section alone)
 const OVERLAPS = String(opt('--overlaps', '0.9,0.5,0.1'))
   .split(',')
+  .filter((o) => o !== 'none')
   .map(Number);
 const FROM_SRC = args.includes('--src');
+// `--only <substring>` keeps the strategies whose name contains it (for
+// profiling one row); the end-state checks still run
+const ONLY = opt('--only', null);
 
 const bundle = resolve(ROOT, 'build/cytoscape-headless.esm.mjs');
 
@@ -385,6 +392,10 @@ for (const overlap of OVERLAPS) {
   }
 
   for (const [name, run, prepare] of strategies) {
+    if (ONLY != null && !name.includes(ONLY)) {
+      continue;
+    }
+
     const times = [];
 
     for (let r = 0; r < REPEAT; r++) {
@@ -402,7 +413,7 @@ for (const overlap of OVERLAPS) {
     rows.push({ overlap, name, ms: median(times), counts });
   }
 
-  if (hasPatch) {
+  if (hasPatch && (ONLY == null || 'patch (wire), identity'.includes(ONLY))) {
     // the identity control: B onto a graph already equal to B
     const times = [];
 
@@ -426,17 +437,90 @@ for (const overlap of OVERLAPS) {
   }
 }
 
-console.log('');
-console.log('| overlap | strategy | median ms | vs recreate (defs) |');
-console.log('|---:|---|---:|---:|');
+if (rows.length > 0) {
+  console.log('');
+  console.log('| overlap | strategy | median ms | vs recreate (defs) |');
+  console.log('|---:|---|---:|---:|');
+}
 
 for (const row of rows) {
   const base = rows.find(
     (r) => r.overlap === row.overlap && r.name === 'recreate (defs)',
   );
+  const ratio = base == null ? '—' : `${(base.ms / row.ms).toFixed(2)}x`;
 
   console.log(
-    `| ${Math.round(row.overlap * 100)}% | ${row.name} | ${row.ms.toFixed(1)} | ` +
-      `${(base.ms / row.ms).toFixed(2)}x |`,
+    `| ${Math.round(row.overlap * 100)}% | ${row.name} | ${row.ms.toFixed(1)} | ${ratio} |`,
   );
+}
+
+// -- following: the round-106 clone-sync burst -------------------------------
+//
+// A follower instance kept equal to a master by `follower.patch(
+// master.serialize() )` after a burst of master edits — here 1% of the
+// nodes moved, the drag shape.  Priced at three scales for round 106,
+// whose live-following clone is this loop on a throttle: the
+// serialize and the patch are timed apart, and the burst's diff is
+// asserted to be exactly the moved nodes.
+
+if (hasPatch && ONLY == null) {
+  const followRows = [];
+
+  for (const total of [1000, 10000, ELEMENTS]) {
+    const { a } = buildPair(total, 1);
+    const serializeMs = [];
+    const patchMs = [];
+
+    for (let r = 0; r < REPEAT; r++) {
+      const master = cytoscape({ elements: copyDefs(a), style: STYLE });
+      const follower = cytoscape({
+        elements: master.serialize(),
+        style: STYLE,
+      });
+      const nodes = master.nodes();
+      const step = 100;
+
+      for (let i = r; i < nodes.length; i += step) {
+        const p = nodes[i].position();
+
+        nodes[i].position({ x: p.x + 1, y: p.y - 1 });
+      }
+
+      const t0 = performance.now();
+      const buffer = master.serialize();
+      const t1 = performance.now();
+      const diff = follower.patch(buffer);
+      const t2 = performance.now();
+      const want = Math.ceil((nodes.length - r) / step);
+
+      if (diff.updated.length !== want || diff.added.length !== 0) {
+        throw new Error(
+          `follow @ ${total}: updated ${diff.updated.length}, want ${want}`,
+        );
+      }
+
+      serializeMs.push(t1 - t0);
+      patchMs.push(t2 - t1);
+      master.destroy();
+      follower.destroy();
+    }
+
+    followRows.push({
+      total,
+      serialize: median(serializeMs),
+      patch: median(patchMs),
+    });
+  }
+
+  console.log('');
+  console.log(
+    '| follow: elements | master.serialize() ms | follower.patch() ms |',
+  );
+  console.log('|---:|---:|---:|');
+
+  for (const row of followRows) {
+    console.log(
+      `| ${row.total} | ${row.serialize.toFixed(2)} | ${row.patch.toFixed(2)} |`,
+    );
+  }
 }

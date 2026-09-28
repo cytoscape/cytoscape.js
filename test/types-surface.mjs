@@ -25,6 +25,7 @@ import ts from 'typescript-compiler-api';
 const EXPECTED_EXPORTS = new Set([
   'BoxSelectionMode', // round 39.1
   'CytoscapeOptions',
+  'HeadlessOptions', // round 131
   'EventHandler', // round 41
   'Event', // round 41
   'EventProps', // round 41
@@ -194,6 +195,72 @@ if (docBlocks < MIN_DOC_BLOCKS) {
       `(expected at least ${MIN_DOC_BLOCKS}) — the round-26 comments are not ` +
       `reaching consumers' editors`,
   );
+}
+
+// -- 6. the slim entries' declarations (round 131) --
+//
+// Each slim entry ships its own standalone declaration with the same named
+// type surface as the full one, a default factory that takes
+// `HeadlessOptions` — the options minus the renderer- and pointer-only
+// fields, so a `container` is a type error — and no UMD global name (two
+// declarations naming it are a duplicate identifier for a consumer whose
+// program resolves both).
+
+for (const name of ['headless', 'headless-gpu']) {
+  const path = new URL(`../dist/cytoscape-${name}.d.ts`, import.meta.url);
+
+  if (!fs.existsSync(path)) {
+    fail(`${path.pathname} does not exist; run \`npm run build:types\``);
+    continue;
+  }
+
+  const slim = fs.readFileSync(path, 'utf8');
+  const slimSource = ts.createSourceFile(
+    path.pathname,
+    slim,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const slimExports = new Set();
+
+  for (const statement of slimSource.statements) {
+    if (!ts.isExportDeclaration(statement) || statement.exportClause == null)
+      continue;
+    if (!ts.isNamedExports(statement.exportClause)) continue;
+
+    for (const element of statement.exportClause.elements) {
+      if (element.name.text !== 'default') slimExports.add(element.name.text);
+    }
+  }
+
+  if (!/\bcytoscape as default\b/.test(slim)) {
+    fail(`cytoscape-${name}.d.ts does not export cytoscape as default`);
+  }
+
+  if (/^export as namespace /m.test(slim)) {
+    fail(`cytoscape-${name}.d.ts names a UMD global; only the full entry may`);
+  }
+
+  if (
+    !/declare function cytoscape\(options\?: HeadlessOptions\): Core;/.test(
+      slim,
+    )
+  ) {
+    fail(`cytoscape-${name}.d.ts: the factory does not take HeadlessOptions`);
+  }
+
+  for (const n of exported) {
+    if (!slimExports.has(n)) fail(`cytoscape-${name}.d.ts lacks '${n}'`);
+  }
+
+  for (const n of slimExports) {
+    if (!exported.has(n)) fail(`cytoscape-${name}.d.ts adds '${n}'`);
+  }
+
+  if (/^import /m.test(slim)) {
+    fail(`cytoscape-${name}.d.ts imports a chunk; it must stand alone`);
+  }
 }
 
 if (failed) {

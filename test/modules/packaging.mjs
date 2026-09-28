@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DECLARATIONS } from '../../scripts/build-dts.mjs';
 
 /*
 Round 44.2: what `npm pack` ships, and whether the manifest points at files
@@ -14,9 +15,9 @@ Two failures this exists to catch, both of which ship silently:
    every directory added to the repo ships by default — the failure mode is
    additive and invisible until someone downloads 70 MB of v3 fixtures.
 
-2. **A manifest path nothing produces.**  `package.json` names six files under
-   `dist/` across `main`/`module`/`types`/`unpkg`/`jsdelivr` and nine `exports`
-   subpaths.  Five of the six come from `dist:copy`, which copies them out of
+2. **A manifest path nothing produces.**  `package.json` names files under
+   `dist/` across `main`/`module`/`types`/`unpkg`/`jsdelivr` and the `exports`
+   subpaths (three entries since round 131, each with its declaration).  Five of the six come from `dist:copy`, which copies them out of
    `build/` by an explicitly written list, and that list is a hand-maintained
    coupling to `rolldown.config.mjs`'s outputs.  Adding a bundle to the build
    and forgetting the copy — or renaming an output — leaves `exports` pointing
@@ -241,8 +242,9 @@ describe('packaging: the manifest resolves to build output', () => {
 
   it('names only files the build chain produces', async () => {
     const produced = new Set([
-      // build:types -> rolldown.dts.config.mjs -> scripts/build-dts.mjs
-      'cytoscape.d.ts',
+      // build:types -> rolldown.dts.config.mjs -> scripts/build-dts.mjs,
+      // one declaration per entry (round 131)
+      ...DECLARATIONS.map((d) => d.out.replace(/^dist\//, '')),
       // dist:copy, out of build/
       ...distCopyFiles(),
     ]);
@@ -261,10 +263,56 @@ describe('packaging: the manifest resolves to build output', () => {
     const outputs = (await rolldownOutputs()).sort();
     const copied = distCopyFiles().sort();
 
-    expect(outputs.length).to.equal(5);
+    // the full entry's five formats, and ESM / minified ESM / CJS for each
+    // slim entry (round 131)
+    expect(outputs.length).to.equal(11);
+    expect(outputs).to.include.members([
+      'cytoscape-headless.esm.mjs',
+      'cytoscape-headless.esm.min.mjs',
+      'cytoscape-headless.cjs.js',
+      'cytoscape-headless-gpu.esm.mjs',
+      'cytoscape-headless-gpu.esm.min.mjs',
+      'cytoscape-headless-gpu.cjs.js',
+    ]);
     // Both directions: a new bundle that dist:copy forgets never reaches the
     // package, and a copy of a file the build stopped emitting fails the copy.
     expect(copied).to.deep.equal(outputs);
+  });
+});
+
+describe('packaging: the FILE filter (round 131)', () => {
+  it('keys every output exactly and uniquely', async () => {
+    // `FILE=esm` must keep meaning the full ESM alone — the old suffix
+    // match would have selected every `*.esm.mjs` once slim entries existed
+    const prev = process.env.FILE;
+
+    delete process.env.FILE;
+
+    try {
+      const { default: configs, fileKey } = await import(pathToConfigUrl());
+      const keys = configs.map((c) => fileKey(c.output.file));
+
+      expect(new Set(keys).size).to.equal(keys.length);
+      expect(fileKey('build/cytoscape.esm.mjs')).to.equal('esm');
+      expect(fileKey('build/cytoscape.min.js')).to.equal('min');
+      expect(fileKey('build/cytoscape-headless.esm.mjs')).to.equal(
+        'headless.esm',
+      );
+      expect(fileKey('build/cytoscape-headless-gpu.cjs.js')).to.equal(
+        'headless-gpu.cjs',
+      );
+
+      // every npm build:<key> script names a key that selects one output
+      for (const [name, script] of Object.entries(pkg.scripts)) {
+        const m = /FILE=(\S+)/.exec(script);
+
+        if (m != null) {
+          expect(keys, `${name}: FILE=${m[1]}`).to.include(m[1]);
+        }
+      }
+    } finally {
+      if (prev !== undefined) process.env.FILE = prev;
+    }
   });
 });
 
@@ -336,10 +384,73 @@ describe('packaging: the exports map', () => {
     expect(`./${pkg.types}`).to.equal(root.types);
   });
 
-  it('keeps ./gpu resolving to the same files as the root entry', () => {
-    // The deprecated alias exists because v3's users type it (round 42.3).
-    // An alias that drifts from its target is worse than no alias.
-    expect(pkg.exports['./gpu']).to.deep.equal(pkg.exports['.']);
+  it('ships no ./gpu alias (removed before alpha, round 131)', () => {
+    // The deprecated alias of the full entry (round 42.3) became ambiguous
+    // once `./headless-gpu` existed — it reads as "the GPU build" and was
+    // the everything build.  The eleventh design sitting removed it before
+    // alpha (v4 is unreleased); MIGRATING.md says so.
+    expect(pkg.exports['./gpu']).to.equal(undefined);
+  });
+
+  it('maps each slim entry to its own declaration and bundles (round 131)', () => {
+    for (const name of ['headless', 'headless-gpu']) {
+      expect(pkg.exports[`./${name}`], `./${name}`).to.deep.equal({
+        types: `./dist/cytoscape-${name}.d.ts`,
+        import: `./dist/cytoscape-${name}.esm.mjs`,
+        require: `./dist/cytoscape-${name}.cjs.js`,
+      });
+    }
+  });
+
+  it('names the UMD global in exactly one shipped declaration (round 131)', () => {
+    // two declarations each saying `export as namespace cytoscape;` are a
+    // duplicate identifier for a consumer whose program resolves both —
+    // the full entry's carries it, the slim entries (no UMD) do not
+    const dist = join(ROOT, 'dist');
+    const lines = readdirSync(dist)
+      .filter((f) => f.endsWith('.d.ts'))
+      .flatMap((f) =>
+        readFileSync(join(dist, f), 'utf8')
+          .split('\n')
+          .filter((l) => /^export as namespace /.test(l))
+          .map((l) => `${f}: ${l}`),
+      );
+
+    expect(lines).to.deep.equal([
+      'cytoscape.d.ts: export as namespace cytoscape;',
+    ]);
+  });
+
+  it('declares the package free of side effects (round 131)', () => {
+    // Safe because every module-evaluation effect (`SELF_URL`,
+    // `GLOBAL_WINDOW`, the GPU registration) is internal to the
+    // single-file bundle an entry resolves to: a bundler can only drop a
+    // whole unused entry, never a statement inside the one in use.
+    expect(pkg.sideEffects).to.equal(false);
+  });
+
+  it('keeps every source module in its own build despite the field (round 131)', async () => {
+    // rolldown reads `sideEffects` for our sources too, where it is not
+    // true: `style.mts` imports its reader tables for their registration
+    // alone, and honouring the field dropped them (every style read came
+    // back undefined — the runtime smoke's first colour readback caught
+    // it).  The function form is what overrides the package field.
+    const prev = process.env.FILE;
+
+    delete process.env.FILE;
+
+    try {
+      const { default: configs } = await import(pathToConfigUrl());
+
+      for (const c of configs) {
+        const fn = c.treeshake?.moduleSideEffects;
+
+        expect(fn, `${c.output.file}: moduleSideEffects`).to.be.a('function');
+        expect(fn('src/style/readers-nodes.mts'), c.output.file).to.equal(true);
+      }
+    } finally {
+      if (prev !== undefined) process.env.FILE = prev;
+    }
   });
 
   it('points the CDN fields at a real bundle the build produces', () => {

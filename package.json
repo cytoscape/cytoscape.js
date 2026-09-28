@@ -35,16 +35,22 @@
   "types": "dist/cytoscape.d.ts",
   "main": "dist/cytoscape.cjs.js",
   "module": "dist/cytoscape.esm.mjs",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/cytoscape.d.ts",
       "import": "./dist/cytoscape.esm.mjs",
       "require": "./dist/cytoscape.cjs.js"
     },
-    "./gpu": {
-      "types": "./dist/cytoscape.d.ts",
-      "import": "./dist/cytoscape.esm.mjs",
-      "require": "./dist/cytoscape.cjs.js"
+    "./headless": {
+      "types": "./dist/cytoscape-headless.d.ts",
+      "import": "./dist/cytoscape-headless.esm.mjs",
+      "require": "./dist/cytoscape-headless.cjs.js"
+    },
+    "./headless-gpu": {
+      "types": "./dist/cytoscape-headless-gpu.d.ts",
+      "import": "./dist/cytoscape-headless-gpu.esm.mjs",
+      "require": "./dist/cytoscape-headless-gpu.cjs.js"
     },
     "./dist/cytoscape.esm.mjs": {
       "import": "./dist/cytoscape.esm.mjs"
@@ -66,6 +72,36 @@
     },
     "./dist/cytoscape.min.js": {
       "require": "./dist/cytoscape.min.js"
+    },
+    "./dist/cytoscape-headless.esm.mjs": {
+      "import": "./dist/cytoscape-headless.esm.mjs"
+    },
+    "./dist/cytoscape-headless.esm": {
+      "import": "./dist/cytoscape-headless.esm.mjs"
+    },
+    "./dist/cytoscape-headless.esm.min.mjs": {
+      "import": "./dist/cytoscape-headless.esm.min.mjs"
+    },
+    "./dist/cytoscape-headless.esm.min": {
+      "import": "./dist/cytoscape-headless.esm.min.mjs"
+    },
+    "./dist/cytoscape-headless.cjs.js": {
+      "require": "./dist/cytoscape-headless.cjs.js"
+    },
+    "./dist/cytoscape-headless-gpu.esm.mjs": {
+      "import": "./dist/cytoscape-headless-gpu.esm.mjs"
+    },
+    "./dist/cytoscape-headless-gpu.esm": {
+      "import": "./dist/cytoscape-headless-gpu.esm.mjs"
+    },
+    "./dist/cytoscape-headless-gpu.esm.min.mjs": {
+      "import": "./dist/cytoscape-headless-gpu.esm.min.mjs"
+    },
+    "./dist/cytoscape-headless-gpu.esm.min": {
+      "import": "./dist/cytoscape-headless-gpu.esm.min.mjs"
+    },
+    "./dist/cytoscape-headless-gpu.cjs.js": {
+      "require": "./dist/cytoscape-headless-gpu.cjs.js"
     }
   },
   "unpkg": "dist/cytoscape.min.js",
@@ -92,7 +128,7 @@
     "build:min": "cross-env FILE=min rolldown -c",
     "clean": "rimraf build/*",
     "copyright": "node scripts/license-update.mjs",
-    "dist:copy": "cpy --flat build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs dist",
+    "dist:copy": "cpy --flat build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs build/cytoscape-headless.esm.mjs build/cytoscape-headless.esm.min.mjs build/cytoscape-headless.cjs.js build/cytoscape-headless-gpu.esm.mjs build/cytoscape-headless-gpu.esm.min.mjs build/cytoscape-headless-gpu.cjs.js dist",
     "dist": "cross-env NODE_ENV=production run-s build build:types dist:*",
     "release": "run-s copyright dist",
     "watch": "run-s watch:fast",

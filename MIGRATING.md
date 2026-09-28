@@ -42,6 +42,36 @@ WebGPU pipeline, not a mode of v3's.
 engine, layouts and algorithms run in Node. Every v4 API except image export
 works headless, which is also how the test suite runs.
 
+**Pick the entry for the job** (round 131). The package ships three builds;
+each is a single file with its own declaration, and each is exact — it
+carries nothing of the tiers above it:
+
+```js
+// everything: the WebGPU renderer, the pointer, the GPU executors (browsers)
+import cytoscape from 'cytoscape';
+
+// headless and CPU-only: CI, Node services, edge isolates (a Cloudflare
+// Worker) — no renderer, no WebGPU code; ~525 KB minified against ~893 KB
+import cytoscape from 'cytoscape/headless';
+
+// headless with the GPU executors: Deno's native WebGPU, compute servers —
+// the WGSL algorithm kernels and a device host for `executor: 'gpu'` force
+// runs, no renderer
+import cytoscape from 'cytoscape/headless-gpu';
+```
+
+The slim builds say so when asked for what they lack, never silently: a
+`container` (or `cy.mount()`) throws `this build has no renderer — import
+'cytoscape'`, and on `cytoscape/headless` an explicit `executor: 'gpu'` —
+algorithm or force layout — rejects `this build has no GPU executors —
+import 'cytoscape/headless-gpu' or 'cytoscape'` (`'auto'` just runs on the
+CPU). Their factories take `HeadlessOptions`, the options minus the
+renderer- and pointer-only fields.
+
+**`cytoscape/gpu` is gone.** The pre-release alias of the full entry was
+removed before alpha, because beside `cytoscape/headless-gpu` it read as
+"the GPU build" while resolving to everything. Import `cytoscape`.
+
 **Types ship**, and they are the fastest porting tool you have: a v3 app run
 through `tsc` against v4's declarations will surface most of this document as
 compile errors before you run anything. `cy.on( 'tap', 'node', h )` is the

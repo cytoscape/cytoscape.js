@@ -301,6 +301,13 @@ const bundles = [
   ['cytoscape.umd.js', 'cjs'],
   ['cytoscape.min.js', 'cjs'],
   ['cytoscape.cjs.js', 'cjs'],
+  // round 131: the slim entries carry the pool too (T1)
+  ['cytoscape-headless.esm.mjs', 'esm'],
+  ['cytoscape-headless.esm.min.mjs', 'esm'],
+  ['cytoscape-headless.cjs.js', 'cjs'],
+  ['cytoscape-headless-gpu.esm.mjs', 'esm'],
+  ['cytoscape-headless-gpu.esm.min.mjs', 'esm'],
+  ['cytoscape-headless-gpu.cjs.js', 'cjs'],
 ];
 
 const loadBundle = async (file, kind) => {

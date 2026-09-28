@@ -1,16 +1,32 @@
-// Finalizes the bundled declarations (build/dts/index.d.ts, generated from
-// the TypeScript source) into the shipped dist/cytoscape.d.ts.
+// Finalizes the bundled declarations (build/dts/<entry>.d.ts, generated
+// from the TypeScript source) into the shipped dist/ declarations.
 //
-// v4's entry is ESM-first, so unlike v3's declaration (kept in v3/build-dts.mjs
-// with its callable export-assignment reshaping) this needs no restructuring —
-// the generated ESM form is what a `cytoscape` consumer imports.  The only
-// addition is the UMD global name, for consumers loading build/cytoscape.umd.js
-// from a script tag.
+// v4's entries are ESM-first, so unlike v3's declaration (kept in
+// v3/build-dts.mjs with its callable export-assignment reshaping) this
+// needs no restructuring — the generated ESM form is what a consumer
+// imports.  The only addition is the UMD global name, for consumers loading
+// build/cytoscape.umd.js from a script tag — and only on the full entry's
+// declaration (round 131): the slim entries ship no UMD, and two
+// declarations each saying `export as namespace cytoscape;` are a
+// duplicate identifier for a consumer whose program resolves both.
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { pathToFileURL } from 'url';
 
-const src = 'build/dts/index.d.ts';
-const out = 'dist/cytoscape.d.ts';
+/** Each entry's declaration: the rolled-up source, the shipped file, and
+ * whether it names the UMD global (the full entry's alone). */
+export const DECLARATIONS = [
+  { src: 'build/dts/index.d.ts', out: 'dist/cytoscape.d.ts', umdGlobal: true },
+  {
+    src: 'build/dts/headless.d.ts',
+    out: 'dist/cytoscape-headless.d.ts',
+    umdGlobal: false,
+  },
+  {
+    src: 'build/dts/headless-gpu.d.ts',
+    out: 'dist/cytoscape-headless-gpu.d.ts',
+    umdGlobal: false,
+  },
+];
 
 /**
  * Strip `@internal`-tagged declarations from a declaration file (round 90).
@@ -90,26 +106,46 @@ function declarationEnd(lines, j) {
 /**
  * Finalize the declaration.  Idempotent: a declaration that already carries
  * the global-name line is returned unchanged.
+ *
+ * @param {string} source — the rolled-up declaration
+ * @param {{ umdGlobal?: boolean }} [options] — `umdGlobal` (default true)
+ *   appends `export as namespace cytoscape;`; the slim entries pass false
+ * @returns {string} the declaration to ship
  */
-export function finalizeDts(source) {
+export function finalizeDts(source, { umdGlobal = true } = {}) {
   if (!/\bcytoscape as default\b/.test(source)) {
     throw new Error('Generated declaration has no default factory export');
   }
 
-  if (/^export as namespace cytoscape;$/m.test(source)) {
+  if (!umdGlobal || /^export as namespace cytoscape;$/m.test(source)) {
     return source;
   }
 
   return `${source.trimEnd()}\nexport as namespace cytoscape;\n`;
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
-  const dts = finalizeDts(stripInternal(readFileSync(src, 'utf8')));
+/**
+ * Finalize one entry's declaration from `src` into `out`.
+ *
+ * @param {string} src — the rolled-up declaration under build/dts/
+ * @param {string} out — the shipped path under dist/
+ * @param {{ umdGlobal: boolean }} options — see {@link finalizeDts}
+ */
+export function buildDts(src, out, { umdGlobal }) {
+  const dts = finalizeDts(stripInternal(readFileSync(src, 'utf8')), {
+    umdGlobal,
+  });
 
   mkdirSync('dist', { recursive: true });
   writeFileSync(out, dts);
   console.log(`wrote ${out} (${dts.split('\n').length} lines)`);
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  for (const { src, out, umdGlobal } of DECLARATIONS) {
+    buildDts(src, out, { umdGlobal });
+  }
 }

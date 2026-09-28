@@ -24,7 +24,8 @@ too (`node smoke.mjs <missing-dir>` is the other control); nothing here
 soft-skips.
 
 What runs, per bundle (ESM, minified ESM — what CDN users run — and CJS,
-on all three runtimes; Deno's require-compat held when measured, so CJS
+of the full entry and, since round 131, of `cytoscape/headless` and
+`cytoscape/headless-gpu`, on all three runtimes; Deno's require-compat held when measured, so CJS
 is asserted there too, not skipped): factory + headless init with
 `headlessWidth`/`headlessHeight` set (a smoke inheriting 800×600 by luck
 tests a different graph); the definition-form load and the wire
@@ -32,7 +33,10 @@ round-trip with every dictionary column checked value-for-value; a sheet
 with constants, a scale mapper and a bypass read back as *values*; grid
 plus a few CPU-force ticks; one sync algorithm and one async through the
 promise tier with `executor: 'cpu'` (which also pins microtask ordering);
-events, `json()`, and the bypasses section export.
+events, `json()`, and the bypasses section export.  Per build (131):
+the slim builds refuse a container with the build's message and carry no
+render worker entry; the headless build refuses an explicit `'gpu'` with
+its own message, and the GPU builds never give that message.
 */
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -284,24 +288,111 @@ const smokeOneBundle = async (cytoscape, label) => {
   wired.destroy();
 };
 
+const NO_RENDERER = "this build has no renderer — import 'cytoscape'";
+const NO_GPU =
+  "this build has no GPU executors — import 'cytoscape/headless-gpu' or " +
+  "'cytoscape'";
+
+/** The rejection a promise settles with, or null when it resolves. */
+const settledError = (promise) =>
+  promise.then(
+    () => null,
+    (err) => err,
+  );
+
+/**
+ * What only the entry's own build carries (round 131): the slim builds
+ * refuse a container with the build's message and ship no render worker
+ * entry; `cytoscape/headless` refuses an explicit 'gpu' — algorithm and
+ * force — with its own message, while the GPU-carrying builds never give
+ * that message (what they do give depends on the runtime's WebGPU, so
+ * the assertion is on the one message they must not produce).
+ */
+const smokeKind = async (cytoscape, kind, label) => {
+  const slim = kind !== 'full';
+  let thrown = null;
+
+  try {
+    cytoscape({ ...HEADLESS, container: {} }).destroy();
+  } catch (err) {
+    thrown = err;
+  }
+
+  if (slim) {
+    eq(thrown?.message, NO_RENDERER, `${label}: a container is refused`);
+  }
+
+  eq(
+    typeof cytoscape.__runRenderWorker__,
+    slim ? 'undefined' : 'function',
+    `${label}: the render worker entry`,
+  );
+  eq(
+    typeof cytoscape.__runForceSimWorker__,
+    'function',
+    `${label}: the force sim worker entry`,
+  );
+
+  const cy = cytoscape({ ...HEADLESS, elements: FIXTURE() });
+  const gpuErr = await settledError(
+    cy.elements().pageRank({ iterations: 5, executor: 'gpu' }),
+  );
+
+  if (kind === 'headless') {
+    eq(gpuErr?.message, NO_GPU, `${label}: executor 'gpu' names the build`);
+
+    let forceErr = null;
+
+    try {
+      cy.layout({ name: 'force', executor: 'gpu' }).run();
+    } catch (err) {
+      forceErr = err;
+    }
+
+    eq(
+      forceErr?.message,
+      "force layout: executor 'gpu' needs the GPU integrator — " + NO_GPU,
+      `${label}: force executor 'gpu' names the build`,
+    );
+  } else {
+    assert(
+      gpuErr == null || gpuErr.message !== NO_GPU,
+      `${label}: a GPU build never answers with the headless build's message`,
+    );
+  }
+
+  cy.destroy();
+};
+
+const esm = (url) => import(url.href);
+// `createRequire` exists on all three runtimes (Deno's require-compat
+// held when measured — 2.9.6), so the CJS bundle is contract, not bonus
+const cjs = (url) => ({
+  default: createRequire(import.meta.url)(fileURLToPath(url)),
+});
+
 const BUNDLES = [
-  { file: 'cytoscape.esm.mjs', load: (url) => import(url.href) },
+  { file: 'cytoscape.esm.mjs', kind: 'full', load: esm },
   // the minified ESM is what CDN users run; one more import is cheap
-  { file: 'cytoscape.esm.min.mjs', load: (url) => import(url.href) },
+  { file: 'cytoscape.esm.min.mjs', kind: 'full', load: esm },
+  { file: 'cytoscape.cjs.js', kind: 'full', load: cjs },
+  // round 131: the slim entries, each in the three formats it ships
+  { file: 'cytoscape-headless.esm.mjs', kind: 'headless', load: esm },
+  { file: 'cytoscape-headless.esm.min.mjs', kind: 'headless', load: esm },
+  { file: 'cytoscape-headless.cjs.js', kind: 'headless', load: cjs },
+  { file: 'cytoscape-headless-gpu.esm.mjs', kind: 'headless-gpu', load: esm },
   {
-    file: 'cytoscape.cjs.js',
-    // `createRequire` exists on all three runtimes (Deno's require-compat
-    // held when measured — 2.9.6), so the CJS bundle is contract, not bonus
-    load: (url) => ({
-      default: createRequire(import.meta.url)(fileURLToPath(url)),
-    }),
+    file: 'cytoscape-headless-gpu.esm.min.mjs',
+    kind: 'headless-gpu',
+    load: esm,
   },
+  { file: 'cytoscape-headless-gpu.cjs.js', kind: 'headless-gpu', load: cjs },
 ];
 
 const runtime =
   globalThis.navigator?.userAgent ?? `unknown (${typeof globalThis.Deno})`;
 
-for (const { file, load } of BUNDLES) {
+for (const { file, kind, load } of BUNDLES) {
   const url = bundleUrl(file);
   const before = assertions;
   let mod;
@@ -322,5 +413,6 @@ for (const { file, load } of BUNDLES) {
     `${file}: default export is the factory`,
   );
   await smokeOneBundle(cytoscape, file);
+  await smokeKind(cytoscape, kind, file);
   console.log(`ok ${file} (${assertions - before} assertions) on ${runtime}`);
 }

@@ -64,8 +64,11 @@ const cy = cytoscape( {
 } );
 ```
 
-`import cytoscape from 'cytoscape/gpu'` also resolves, as a deprecated alias
-of the same entry point through the prerelease line.
+Two slimmer builds carry the same core without the renderer:
+`cytoscape/headless` (CPU-only — CI, Node services, edge isolates) and
+`cytoscape/headless-gpu` (the WebGPU compute executors, no DOM — Deno's
+native WebGPU).  The pre-release alias `cytoscape/gpu` was removed before
+alpha; import `cytoscape`.
 
 The public type names carry no prefix: `Core`, `Collection`, `Event`,
 `Stylesheet`, `CytoscapeOptions` and the rest are all importable as types

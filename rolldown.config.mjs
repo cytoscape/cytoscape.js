@@ -20,6 +20,16 @@ const input = './src/index.mjs';
 
 const name = 'cytoscape';
 
+/**
+ * The slim entries (round 131): ESM, minified ESM and CJS each — no UMD, a
+ * script-tag consumer wants the full build.  `file` is the basename stem
+ * under build/.
+ */
+const SLIM_ENTRIES = [
+  { input: './src/headless.mjs', file: 'cytoscape-headless' },
+  { input: './src/headless-gpu.mjs', file: 'cytoscape-headless-gpu' },
+];
+
 // The sources are TypeScript (.mts); rolldown transpiles them natively via
 // oxc. This alias resolves the './foo.mjs' import specifiers in source to
 // their foo.mts files.
@@ -28,6 +38,17 @@ const resolve = {
     '.mjs': ['.mts', '.mjs'],
   },
 };
+
+// Every source module counts as having side effects **in this build**
+// (round 131).  `package.json` declares `sideEffects: false` for the
+// consumer's bundler — true of the shipped files, each a single module —
+// and rolldown reads that field for our own sources too, where it is not
+// true: `style.mts` imports its reader tables for their registration
+// alone, and with the field honoured here the three were dropped and
+// every style read came back undefined (measured: the runtime smoke went
+// red on its first colour readback).  The function form is what overrides
+// the package field; `moduleSideEffects: true` does not.
+const treeshake = { moduleSideEffects: () => true };
 
 // oxc transpilation target for the shipped bundles
 const transform = {
@@ -67,6 +88,7 @@ const configs = [
   {
     input,
     resolve,
+    treeshake,
     transform: transformNonEsm,
     output: {
       file: 'build/cytoscape.umd.js',
@@ -84,6 +106,7 @@ const configs = [
   {
     input,
     resolve,
+    treeshake,
     transform: transformNonEsm,
     output: {
       file: 'build/cytoscape.min.js',
@@ -101,6 +124,7 @@ const configs = [
   {
     input,
     resolve,
+    treeshake,
     transform,
     output: {
       file: 'build/cytoscape.esm.min.mjs',
@@ -117,6 +141,7 @@ const configs = [
   {
     input,
     resolve,
+    treeshake,
     transform: transformNonEsm,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     plugins: [
@@ -129,6 +154,7 @@ const configs = [
   {
     input,
     resolve,
+    treeshake,
     transform,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
     plugins: [
@@ -139,10 +165,62 @@ const configs = [
   },
 ];
 
+for (const entry of SLIM_ENTRIES) {
+  const plugins = () => [
+    wgslMinifyPlugin(),
+    replace(replaceOptions),
+    license(licenseHeaderOptions),
+  ];
+
+  configs.push(
+    {
+      input: entry.input,
+      resolve,
+      treeshake,
+      transform,
+      output: { file: `build/${entry.file}.esm.mjs`, format: 'es' },
+      plugins: plugins(),
+    },
+    {
+      input: entry.input,
+      resolve,
+      treeshake,
+      transform,
+      output: {
+        file: `build/${entry.file}.esm.min.mjs`,
+        format: 'es',
+        minify: true,
+      },
+      plugins: plugins(),
+    },
+    {
+      input: entry.input,
+      resolve,
+      treeshake,
+      transform: transformNonEsm,
+      output: { file: `build/${entry.file}.cjs.js`, format: 'cjs' },
+      plugins: plugins(),
+    },
+  );
+}
+
+/**
+ * An output's `FILE` key: its basename without the `cytoscape` stem, the
+ * separator after it, and the extension — `esm` for `cytoscape.esm.mjs`,
+ * `esm.min` for `cytoscape.esm.min.mjs`, `headless.esm` for
+ * `cytoscape-headless.esm.mjs`.  Matched exactly (round 131): the old
+ * suffix match let `FILE=esm` select every ESM output once slim entries
+ * existed, and `FILE=min` the minified ESM beside the minified UMD.
+ *
+ * @param {string} file — the output path
+ * @returns {string} the key
+ */
+export const fileKey = (file) =>
+  path
+    .basename(file)
+    .replace(/^cytoscape[.-]?/, '')
+    .replace(/\.m?js$/, '');
+
 export default FILE
-  ? configs.filter(
-      (config) =>
-        config.output.file.endsWith(FILE + '.js') ||
-        config.output.file.endsWith(FILE + '.mjs'),
-    )
+  ? configs.filter((config) => fileKey(config.output.file) === FILE)
   : configs;

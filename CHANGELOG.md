@@ -24,6 +24,16 @@ that compile and then behave differently.
 
 ### Added
 
+- **Use-case builds: `cytoscape/headless` and `cytoscape/headless-gpu`**
+  (round 131).  `cytoscape/headless` is the whole model, style engine,
+  CPU algorithms, every layout and the worker pool with no renderer and
+  no WebGPU code — ~525 KB minified against the full build's ~893 KB,
+  gated under a 1,000,000-byte budget for edge isolates;
+  `cytoscape/headless-gpu` adds the WGSL algorithm kernels and a
+  compute-only host for an explicit force `executor: 'gpu'`.  Each ships
+  ESM, minified ESM and CJS with its own declaration; their factories
+  take `HeadlessOptions`.  A slim build asked for what it lacks throws or
+  rejects naming the build to import instead.
 - **The layout audit's instrument** (round 125.10 / 125.11): the debug
   page's live spacing slider and airiness readout, an options panel
   with every option the selected layout takes and the `cy.layout()`
@@ -557,6 +567,9 @@ that compile and then behave differently.
 
 ### Removed
 
+- **The `cytoscape/gpu` export** (round 131; the eleventh design
+  sitting): the pre-release alias of the full entry, ambiguous beside
+  `cytoscape/headless-gpu`.  Import `cytoscape`.
 - **The round-90 API review's parity baggage**: `cy.forceRender()`,
   `cy.batchData()`, `cy.mutableElements()` (it was `elements()` by
   another name), `onRender`/`offRender` (use `cy.on( 'render', … )`),

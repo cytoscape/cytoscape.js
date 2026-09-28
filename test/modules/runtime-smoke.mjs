@@ -24,8 +24,8 @@ them:
   the plausible-looking graph with no labels the value assertions exist
   to catch.
 
-The passing run is asserted too — three bundles, each with a named `ok`
-line — because `test:modules` builds first (its own script), so a smoke
+The passing run is asserted too — nine bundles (three per entry since
+round 131), each with a named `ok` line — because `test:modules` builds first (its own script), so a smoke
 that cannot pass against a fresh build should fail *here*, before CI's
 `ci-bun`/`ci-deno` jobs find it in a runtime this box may not have.
 
@@ -85,7 +85,7 @@ describe('the cross-runtime smoke (round 98.2)', function () {
     );
   });
 
-  it('passes on Node against the fresh build, all three bundles', function () {
+  it('passes on Node against the fresh build, every bundle', function () {
     // `test:modules` builds before this tier runs, so a missing bundle
     // here is a broken build script, not a soft-skip
     expect(
@@ -101,6 +101,13 @@ describe('the cross-runtime smoke (round 98.2)', function () {
       'cytoscape.esm.mjs',
       'cytoscape.esm.min.mjs',
       'cytoscape.cjs.js',
+      // round 131: the slim entries
+      'cytoscape-headless.esm.mjs',
+      'cytoscape-headless.esm.min.mjs',
+      'cytoscape-headless.cjs.js',
+      'cytoscape-headless-gpu.esm.mjs',
+      'cytoscape-headless-gpu.esm.min.mjs',
+      'cytoscape-headless-gpu.cjs.js',
     ]) {
       expect(out.stdout, `no ok line for ${bundle}`).to.match(
         new RegExp(`^ok ${bundle.replace(/\./g, '\\.')} `, 'm'),

@@ -5011,11 +5011,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 ## Packaging (round 44)
 
 What ships, and what keeps the manifest honest.  The package is
-`cytoscape@4`: `exports["."]` (plus `./gpu`, the deprecated alias v3's
-users already type) resolves `types` → `dist/cytoscape.d.ts`, `import`
+`cytoscape@4`: `exports["."]` resolves `types` → `dist/cytoscape.d.ts`, `import`
 → `dist/cytoscape.esm.mjs`, `require` → `dist/cytoscape.cjs.js`, with
 the legacy `main`/`module`/`types` fields carrying the same three and
-`unpkg`/`jsdelivr` the minified UMD.  The tarball is those bundles, the
+`unpkg`/`jsdelivr` the minified UMD.  Round 131 added `./headless` and
+`./headless-gpu` (each its own declaration, ESM and CJS — see "Builds:
+the entries and what each carries") and removed `./gpu`, the deprecated
+alias of the full entry that round 42.3 kept for v3's users: beside
+`./headless-gpu` it read as "the GPU build" while resolving to
+everything, and v4 is unreleased (the eleventh design sitting).  The tarball is those bundles, the
 declaration, `src/` (source-map resolution, as v3 ships it), the README
 and the licence, plus `MIGRATING.md` and `CHANGELOG.md` — 106 files
 today, before a release build populates `dist/`.
@@ -5036,11 +5040,14 @@ directory ships by default and the failure mode is additive and silent
 What it
 checks: no development tree or repo document ships; every path the
 manifest names is produced by a build script; `dist:copy` copies
-exactly rolldown's five outputs, both directions; `types` is the first
+exactly rolldown's outputs (eleven since round 131), both directions; `types` is the first
 condition wherever it appears (TypeScript takes the first match, so a
 later one is silently dead); `import`/`require`/`types` point at
 `.mjs`/`.js`/`.d.ts`; the legacy fields agree with the `.` conditions;
-and `./gpu` resolves to identical files.  It deliberately does not
+`./gpu` is gone; each slim entry maps to its own declaration and
+bundles; exactly one shipped declaration names the UMD global; and the
+package declares `sideEffects: false` while its own build keeps every
+source module (round 131).  It deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
 

@@ -345,3 +345,145 @@ removed before alpha** — v4 is unreleased and the alias is ambiguous
 beside `headless-gpu`; the composable factory is **not exposed at
 alpha**.  Layouts as a capability and the full-bundle levers (round 126,
 item 63) stay with the round.
+
+### The round, as carried out (2026-09-28)
+
+All seven sub-rounds, one commit each, the same day, on the eleventh
+sitting's two calls: `./gpu` removed before alpha, the composable
+factory not exposed.  Measured on the i9-9900K (16 threads), Node
+24.18, rolldown 1.1.5; the Deno and workerd runs on the same box.
+
+| # | Commit | What landed |
+| --- | --- | --- |
+| 131.1 | `27f1e19e` | `gpu-force`, `wgsl`, `webgpu-constants` → `src/gpu/`; `EDGE_PICK_BIT` → `contract.mts`; `ForceHostLike`/`ForceRuntimeLike`/`ForceInputs` → `layout/force-host.mts`; the glyph types → `label-types.mts`; `core.mts`'s layout imports `import type` |
+| 131.2 | `3c0ed0da` | `gpu-registry.mts` (GPU-free), `gpu-lanes.mts` (19 lanes), sixteen algorithm files on `gpuCall`, `route()` asking the registry first |
+| 131.3 | `ed218c09` | `factory.mts` (`createCore`, `CoreCaps`, `requireWebGpu`), `public-exports.mts`, `headless.mts`, `headless-gpu.mts`, `cy._caps`, the `mount()` guard, `HeadlessOptions`, `PUBLIC_API` |
+| 131.4 | `9140007f` | `gpu/headless-force-host.mts`, the host selection in `force-run.mts`, the per-build force error, the compaction guard reading `_forceHost.active()` |
+| 131.5 | `2b391036` | eleven outputs, the exact `FILE` key, three declarations, the exports map, `sideEffects`, `./gpu` removed, every enumerating gate |
+| 131.6 | `4ec75e3f` | `bundle-size.mjs`, the isolate smoke, the smoke's checks split out, workerd and `ci-workerd`, the Deno GPU smoke and its step, the zero-byte-write guard |
+| 131.7 | this commit | the docs and the close |
+
+**Sizes** (minified ESM, raw / gzip level 9):
+
+| Artifact | Raw | Gzip | Target |
+| --- | --: | --: | --- |
+| `cytoscape.esm.min.mjs` (full) | 893,415 | 251,250 | unchanged within noise: +3,203 (+0.36%) on 890,212 — it now carries the factory, the registry and the headless force host |
+| `cytoscape-headless.esm.min.mjs` | 525,271 | 161,782 | ≤ 540 KB: met |
+| `cytoscape-headless-gpu.esm.min.mjs` | 604,356 | 180,228 | "under 600 KB": 590.2 KiB, 0.7% over the 600,000-byte reading |
+
+The headless-gpu figure is the plan's estimate missed by 4 KB, not a
+leak: the modules it carries beyond headless are exactly the nineteen
+lanes' kernels, `gpu-force`, the `wgsl` tag, the constants and the
+host (the tier walk lists them).  The lever for it is round 126's
+shader minification, which the sitting left with that round.  The
+ratchet (`test/modules/bundle-size.mjs`) is set at landing + ~10% on
+every slim artifact; the edge budget (1,000,000 raw bytes) is cleared
+by the headless build by 47%.  Modules the tier walk reaches: headless
+179, headless-gpu 203, the full entry 262.
+
+**Consumer shaking**, measured with a scratch app bundled by rolldown
+against the packed layout (`sideEffects: false` in force): a headless
+app on the full ESM keeps 880,861 bytes (877,780 at planning), on the
+headless ESM 516,436.  The entries are the slimming; nothing
+automatic was expected, and the record's reasons stand.
+
+**Controls, run and written down:**
+
+- The tier walk, run against the pre-131.1 tree, is red with six
+  chains: `core/export.mts` → `render/picking.mts` (and on to
+  `webgpu-constants`), `label-wrap.mts` → `render/glyph-atlas.mts` and
+  `render/label-layout.mts`, the force layout → `render/gpu-force.mts`,
+  and the algorithms' kernels → `render/wgsl.mts`.  The full entry is
+  the positive control in the spec (it must be seen to reach the
+  renderer, the pointer, the lanes and `gpu-force`).
+- The size gate against the full bundle with the headless ratchet
+  fails, raw and gzip — a spec, not a one-off.
+- The isolate smoke under `--control=dict-as-array` fails naming
+  `a.label`; so does workerd's (the same server must answer 500).
+- The lane spec: with a stubbed adapter whose device throws on first
+  touch, an explicit `'gpu'` pageRank reaches the kernel on the full
+  entry ("device touched") and, with the registry emptied, rejects
+  with the build's message.
+- The force host's ordering spec's control: the same held run
+  continues without `finishForce()`; the edgeless-run spec fails with
+  the zero-byte guard removed.
+
+**Browser tier**: `npm run -s test:playwright:quiet` green after 131.1
+and after 131.3 — zero output, the 45 goldens exact-zero, which is the
+renderer-untouched claim for the moves and the seam.
+
+**Calls taken in-round, and why:**
+
+- **The full build carries the headless force host too.**  The plan
+  gave it to headless-gpu; T3 carries T2, and an unmounted full-build
+  instance given an explicit `'gpu'` would otherwise throw where the
+  slimmer build runs.  `'auto'` still never reaches it.  The explicit-
+  `'gpu'` message now says "a flat, unconstrained graph and a WebGPU
+  device" on a GPU build without WebGPU (the prefix unchanged).
+- **`gpuCall(key, ...args)`** beside the plan's `gpuLane(key)`: the
+  same closure the plan spelled out, typed per lane, one expression at
+  each of the sixteen sites.  `GpuLaneTable`'s signatures are spelled
+  out rather than derived with `typeof import(…)`, because the walk
+  follows type imports and the registry must stay GPU-free.
+- **The walk counts type imports** — the plan's "no type awareness" —
+  and the import scanner now matches a side-effect `import '…'` only
+  at a line's start, because the new rejection text names `import
+  'cytoscape/headless-gpu'` inside a string.
+- **Walk counts are floors, not pins**: a floor is the control against
+  a walk that stops parsing; an exact pin would redden every round
+  that adds a module to the core.  The landing counts are above.
+- **`sideEffects: false` needed its other half.**  The plan held the
+  field safe because every module-evaluation effect is internal to one
+  bundle — true for consumers, false for our own build: rolldown reads
+  the field for our sources, `style.mts` imports its reader tables for
+  registration alone, and they were dropped (the runtime smoke caught
+  it on its first colour readback).  Every config sets `treeshake:
+  { moduleSideEffects: () => true }` — the function form; `true` does
+  not override the package field — and a packaging spec pins it.
+- **The smoke's checks moved to `smoke-checks.mjs`**, import-free, so
+  the isolate and workerd run the same assertions as Node/Bun/Deno.
+- **`FILE=min` now selects the minified UMD alone** (the exact key);
+  it used to build the minified ESM too.  `build:esm.min` is that one.
+- **Deno ran here after all**: the planning machine had none, but the
+  `deno` npm package (2.9.6) ran from the scratchpad without joining
+  the devDependencies.
+
+**The Deno GPU smoke (99.2)**: green locally, Deno 2.9.6, adapter
+"4098 / 26591 / AMD Radeon RX 580 Series (RADV POLARIS10)" — wgpu over
+Vulkan, the first non-Dawn compile of the kernels and the integrator.
+pageRank max delta against the CPU 1.83e-8 (bound 1e-4), sum and
+order held; a 200-node explicit-`'gpu'` force run settled in 341–370
+ms, every node finite and moved.  Its first run panicked Deno
+(`ext/webgpu/queue.rs:153`, an unwrap on None) on a zero-byte
+`writeBuffer` from pageRank's upload; a zero-byte write is a spec
+no-op, so `storageFrom`/`uniformFrom` and the integrator skip it now.
+`navigator.gpu` answered on 2.9.6 without `--unstable-webgpu`; the flag
+stays in the script as harmless and version-proof.  **CI**: the step
+is in `ci-deno` with `mesa-vulkan-drivers` attempted and
+`continue-on-error`; whether lavapipe gives it an adapter on a hosted
+runner is unmeasured until the branch's next CI run — this record
+claims only the local green.
+
+**workerd**: green locally (workerd 2026-09-28 from the npm package,
+56 assertions, the control 500ing); `ci-workerd` runs it.  If it proves
+flaky on runners, the isolate smoke stays the gate and workerd drops
+to a release-time run — the plan's fallback, not yet needed.
+
+**Found, not fixed** (logged as PLAN.md item 76): on Deno the CJS
+bundles' force sim worker bootstrap fails ("(m.default ??
+m).__runForceSimWorker__ is not a function") — pre-existing since
+129.3, reproduced on the pre-round tree's `cytoscape.cjs.js`; the
+smoke's values still land, so it never went red.
+
+**Open, carried** (the sitting left them with the round): layouts as a
+capability — logged as PLAN.md item 77 — and the full bundle's levers,
+round 126's shader minification and item 63's constants price, which
+stay with those rounds.  Not in scope and untouched: 100.2's
+environment census, 99.1 and 99.3.
+
+**Gates at close**: `npm run -s test:node:quiet` zero bytes (2,860
+unit tests, 813 module tests, the soak tier, the throw gate, lint);
+`test:types:all` green (56 type exports on each of the three
+declarations); `test:runtimes:node:quiet` and
+`test:runtimes:workerd:quiet` zero bytes; `git worktree list` the main
+tree alone.

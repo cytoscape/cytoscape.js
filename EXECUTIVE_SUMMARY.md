@@ -5,7 +5,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-21, after round 132 made the status site's
+- **Last updated**: 2026-09-28, after round 131 shipped builds for the
+  use case: `cytoscape/headless` (no renderer, no WebGPU code — 513 KiB
+  minified against the full build's 872 KiB, gated under a
+  1,000,000-byte edge budget, and run in a WinterTC-shaped isolate every
+  run and on Cloudflare's `workerd`) and `cytoscape/headless-gpu` (the
+  GPU executors with no DOM — green on Deno's native WebGPU, the first
+  run of the kernels on a non-Dawn implementation); the pre-release
+  `cytoscape/gpu` alias is gone.  The same day the eleventh design
+  sitting answered every open call.  On 21 Sep round 132 made the status site's
   Features page say what its numbers mean — `Showing all 929 rows`
   over a composition line (495 API members, 303 style properties, 131
   capabilities), a visible legend that tallies the selection per status,
@@ -93,13 +101,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,834 unit · 768 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (138 assertions per runtime) |
+| Automated tests | 2,860 unit · 813 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 335 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | 871 KiB minified / 245 KiB gzipped as of 20 Sep (round 130's split left it 2.6 KiB smaller) (v3: 410 / 126 KiB); the WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
-| Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run the built bundles headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS, and CI |
+| Bundle | Three builds as of 28 Sep, minified / gzipped: `cytoscape` 872 / 245 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 513 / 158 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 590 / 176 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
+| Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step) |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
 ---
@@ -1247,6 +1255,26 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **28 Sep** — builds for the use case
+  - `cytoscape/headless`: the whole model, style engine, CPU algorithms,
+    every layout and the worker pool, with no renderer and no WebGPU
+    code — 513 KiB minified against 872 KiB — for CI, Node services and
+    edge isolates (a Cloudflare Worker has no GPU, no `Worker` and a
+    script-size ceiling; the build is gated under 1,000,000 bytes and
+    run in a WinterTC-shaped isolate every run and on `workerd` in CI).
+  - `cytoscape/headless-gpu`: the WGSL algorithm kernels and a
+    compute-only host for an explicit `'gpu'` force run, with no DOM —
+    green on Deno's native WebGPU (wgpu, not Dawn: the first non-Dawn run
+    of the kernels; pageRank within 2e-8 of the CPU, a 200-node force run
+    settled in ~0.35 s on an RX 580).  The run found a Deno panic on
+    zero-byte buffer writes, which the library no longer issues.
+  - Asked for what they lack, the slim builds say which build to import
+    instead — a container, `mount()`, an explicit `'gpu'` — never a
+    silent fallback.  The pre-release `cytoscape/gpu` alias is gone.
+  - Buys an edge deployment at 60% of the full download, and a GPU
+    compute server with no browser in it.  Each build carries exactly
+    its tier, walked by a spec, so a leak fails the build rather than
+    the size.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1373,6 +1401,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Chart kinds and data capacity | Every chart kind shares a 255-value record limit; which kinds v4 will ever draw (a scatter plot may carry far more than 64 points) and the cap each gets is a design sitting before round 80 picks the pie cap |
 | Gradient stops from data | Whether gradient stop lists take per-element `{ data }` — left for further consideration |
 | Built-in editing affordances | Handles on annotations, nodes and edges, and in-place label editing: designed before alpha, built after |
+| Layouts as a capability | Every build carries every layout (~118 KB minified); whether a headless build registers only the layouts it names, as it does the GPU executors |
 
 Decided at the eleventh design sitting (28 Sep), which put every open
 call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as
@@ -1417,7 +1446,7 @@ round, and is regenerated rather than maintained:
 |---|---|
 | Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
-| Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`.  Still planned: the native Bun/Deno test runners measured, Deno's native WebGPU driving the GPU algorithm executors and the install/publish story, then a scoping pass over other environments (edge workers, React Native, Electron) |
+| Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  Still planned: the native Bun/Deno test runners measured and the install/publish story, then a scoping pass over other environments (React Native, Electron) |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |

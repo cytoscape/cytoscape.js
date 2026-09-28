@@ -271,7 +271,7 @@ behaviour: **v4 became the package.**  This source promoted from
 self-contained `v3/` subproject that still builds and tests on its
 own (`cd v3 && npm run build`), and the root `package.json` is v4's
 alone — `cytoscape@4.0.0-unstable`, v4 as `exports["."]`, `./gpu`
-kept as a deprecated alias.  The `gpu-`/`webgpu-` prefixes dropped
+kept as a deprecated alias (removed before alpha by round 131).  The `gpu-`/`webgpu-` prefixes dropped
 from the test, benchmark, script, debug and Playwright names; the
 five utility modules v4 had still been importing from v3 are now
 v4's own copies, so nothing under `src/` imports outside it.
@@ -4199,7 +4199,9 @@ Instead:
   the v3 entry uses, `scripts/build-dts.mjs` finalizes it (the gpu entry is
   ESM-only — the `./gpu` export has no `require` condition — so it
   keeps the generated ESM shape and only gains the UMD global
-  name), and the `./gpu` export carries a `types` condition.  Over
+  name), and the `./gpu` export carries a `types` condition (round
+  131 removed `./gpu` and added two slim entries, each with its own
+  declaration — see "Builds").  Over
   a thousand JSDoc blocks survive into `dist/cytoscape.d.ts`,
   so the comments above are hover text in a consumer's editor —
   which is what makes the pass pay off now rather than at release.
@@ -5008,6 +5010,140 @@ init 80 ms — down from 662 ms before the bulk path.  The wire form of the
 same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 90–113 ms parse + 27–48 ms convert.
 
+## Builds: the entries and what each carries (round 131)
+
+The package ships **three entries**, each a single-file bundle with its
+own declaration, each carrying exactly its tier of round 100.1's
+capability ladder (**T0** headless core, **T1** + Web Workers, **T2** +
+WebGPU, **T3** + DOM/canvas):
+
+| Entry | Source | Tier | Carries | Minified ESM (raw / gzip) |
+| --- | --- | --- | --- | --: |
+| `cytoscape` | `src/index.mts` | T3 | everything: the renderer (same-thread or the worker host), the pointer, the GPU executors | 893,415 / 251,250 |
+| `cytoscape/headless` | `src/headless.mts` | T0 + T1 | store, style, collections, the CPU algorithms, every layout, animation, the wire, the worker pool and the force sim worker | 525,271 / 161,782 |
+| `cytoscape/headless-gpu` | `src/headless-gpu.mts` | T0 + T1 + T2 | headless, plus the WGSL algorithm kernels and a compute-only host for an explicit force `executor: 'gpu'` | 604,356 / 180,228 |
+
+(Measured at landing, 2026-09-28; the full ESM was 890,212 at planning
+— it now also carries the headless force host.)  The full entry ships
+UMD, minified UMD, CJS, ESM and minified ESM; each slim entry ESM,
+minified ESM and CJS — a script-tag consumer wants the full build.
+
+**Entries, not annotations.**  Automatic slimming — a consumer's bundler
+dropping the renderer because a headless app never mounts — is not
+available to this API shape, and the reasons are structural, so nobody
+need re-litigate them: the factory must reference the renderer to
+honour `container` and `mount()`; `executor: 'auto'` probes
+`navigator.gpu` at run time, so every kernel is reachable from every
+algorithm call; and the prototype API (`cy.nodes().pageRank()`) retains
+every method with its class.  Measured at planning: a headless-only app
+bundled against the old single entry kept 877,780 of 890,212 bytes.  A
+dynamic `import()` of the renderer on mount was declined: it makes the
+package multi-chunk, breaking the single-file invariant the worker
+spawn-from-own-URL relies on (74.2 / 86.3 / 129.3), and makes `mount()`
+asynchronous.  Instead the tree is **shake-clean by structure**:
+
+- **The capability seam** (`src/factory.mts`, `@internal`):
+  `createCore(options, caps)` is the factory body every entry shares —
+  the container guard, `new Core`, the bulk add, `options.layout`, and
+  the attach path `mount()` reuses.  `CoreCaps` is `{ attach, gpu,
+  forceHost, noRendererMessage }`, stored as `cy._caps`.  The composable
+  factory (`cytoscape/core` plus capability modules) is **not exposed
+  at alpha** (the eleventh design sitting); the mechanism is here so
+  exposing it later is surface, types and docs, not a refactor.
+- **The GPU registry** (`src/algorithms/gpu-registry.mts`, GPU-free):
+  every async algorithm asks for its lane by key (`gpuCall('pageRank',
+  coll, options)`), and the kernels are reached only through the
+  `GpuRuntime` an entry registered (`gpu-lanes.mts`'s `GPU_RUNTIME`; the
+  full and headless-gpu entries register it).  `runAlgo`'s signature is
+  unchanged; `route()` asks the registry first.
+- **The device tier's own directory** (`src/gpu/`): the force
+  integrator, the `wgsl` tag, the WebGPU constants and the headless force
+  host.  The types lower tiers need live in them — `ForceHostLike` in
+  `layout/force-host.mts`, the glyph types in `label-types.mts`,
+  `EDGE_PICK_BIT` in `contract.mts`.
+- **The tier walk** (`test/modules/import-graph.mjs`) follows every
+  import from each entry — type imports included, by design, so no type
+  checker is in the loop — and fails if `cytoscape/headless` reaches
+  anything under `render/`, `interact/`, `gpu/`, an `algo-gpu-*` kernel
+  or `gpu-lanes.mts`, or `cytoscape/headless-gpu` anything under
+  `render/` or `interact/`.
+
+**Every edge is loud**, never a silent fallback:
+
+- a slim build given a `container` throws `this build has no renderer —
+  import 'cytoscape'` before any work (an ingest error never wins over
+  it), and `cy.mount()` throws the same; `mount()`'s guard tells a bare
+  `new Core` (the old "not created via the factory" message) from a
+  slim build;
+- on `cytoscape/headless` an explicit `executor: 'gpu'` — algorithm or
+  force layout — rejects `this build has no GPU executors — import
+  'cytoscape/headless-gpu' or 'cytoscape'` (the force error keeps its
+  `executor 'gpu' needs the GPU integrator` prefix), and `'auto'` finds
+  no GPU lane;
+- on `cytoscape/headless-gpu` (and on an unmounted full-build instance)
+  an explicit force `executor: 'gpu'` runs on the compute device, while
+  a headless `'auto'` never reaches it — the GPU host is reached only by
+  an explicit `'gpu'`.
+
+**The headless GPU force host** (`src/gpu/headless-force-host.mts`)
+drives `GpuForceRuntime` with no frame: encode into `silentTarget()` →
+submit → `await device.queue.onSubmittedWorkDone()` →
+`pollConvergence()` → `nextBatch`.  The await is what lets the
+convergence map land (a synchronous loop would starve the displacement
+copy behind `dispInFlight`, and a zero readback reads as converged — the
+118/119 class of defect).  `nextBatch`'s `behind` is never true here, so
+the batch grows until the price cap or `MAX_BATCH` holds it.  An infinite
+run parks when `idle()`; `wakeForce()` restarts it; `finishForce()` sets
+the `stopped` flag before `destroy()`; the core's compaction guard asks
+the host's `active()` as it asks the renderer's `forceActive()`.
+
+**Packaging.**  `exports["./headless"]` and `["./headless-gpu"]` (types
+first), their `./dist/…` literal subpaths and `dist:copy` entries; the
+`FILE` build filter is an exact key (`FILE=headless.esm`).  Three
+single-input declaration configs (one config with three inputs would
+emit shared chunks) finalized by `scripts/build-dts.mjs`, and **only**
+`dist/cytoscape.d.ts` names the UMD global — two `export as namespace
+cytoscape;` lines are a duplicate identifier for a consumer whose
+program resolves both.  Each declaration stands alone, so each entry's
+`Core` is its own type: a program mixing entries imports the types from
+the entry it uses.  The slim factories take `HeadlessOptions`,
+`CytoscapeOptions` minus the renderer- and pointer-only fields.
+
+**`sideEffects: false` — true for consumers, false for our own build.**
+Every module-evaluation effect (`SELF_URL`, `GLOBAL_WINDOW`, the GPU
+registration, the style reader tables) is internal to the single-file
+bundle an entry resolves to, so a consumer's bundler can only drop a
+whole unused entry — measured: an app bundled by rolldown against the
+packed layout reads style values correctly, and shakes the full ESM to
+880,861 bytes and the headless to 516,436.  But rolldown reads the field
+for *our* sources too, where `style.mts` imports its reader tables for
+registration alone: honouring it dropped them and every style read came
+back undefined.  So every bundle config sets `treeshake:
+{ moduleSideEffects: () => true }` (the function form is what overrides
+the package field; `true` does not), and a packaging spec pins it.
+Do not "fix" either half.
+
+**The gates.**  `test/modules/bundle-size.mjs`: each headless minified
+artifact under a **1,000,000-raw-byte edge budget** (the maintainer's
+stated Cloudflare Worker ceiling; the assertion names the budget, not
+the vendor, because vendor limits move — Cloudflare's current published
+limits were reported as 3 MB free / 10 MB paid, compressed), plus a raw
+and gzip ratchet per slim artifact at landing + ~10% — the number that
+does the work, since a tier leak adds tens of kilobytes at once.
+`test/modules/isolate-smoke.mjs`: the headless minified ESM in a
+WinterTC-shaped `node:vm` isolate (no `Worker`, `document`, `window`,
+`process`, `navigator.gpu`, `URL.createObjectURL`), the cross-runtime
+checks there, and `'auto'` shown to have run on the calling thread.
+`npm run test:runtimes:workerd`: the same checks on Cloudflare's own
+runtime (`workerd`, a devDependency), in CI's `ci-workerd` job.
+`npm run test:runtimes:deno:gpu`: `cytoscape/headless-gpu` on Deno's
+native WebGPU — wgpu, not Dawn — naming the adapter, `pageRank` GPU
+against CPU within the parity bounds, an explicit `'gpu'` force run
+settling; green at landing on Deno 2.9.6 with an RX 580 (RADV), a
+`continue-on-error` step in `ci-deno`.  Deno's binding panics on a
+zero-byte `writeBuffer`, which the spec makes a no-op, so the algorithm
+uploads and the integrator never issue one.
+
 ## Packaging (round 44)
 
 What ships, and what keeps the manifest honest.  The package is
@@ -5083,8 +5219,11 @@ rests on two gates, not on fortune:
   web-platform, and now both halves are gated rather than fortunate.
 
 The renderer proper stays browser-bound (canvas + container).  Deno's
-native WebGPU as a driver for the GPU *algorithm* executors is round
-99's measurement, not this one's.
+native WebGPU driving the GPU *algorithm* executors and the force
+integrator is round 131's `test:runtimes:deno:gpu` on
+`cytoscape/headless-gpu` (discharging 99.2); edge isolates are round
+131's `cytoscape/headless`, gated in a `node:vm` isolate every run and on
+`workerd` — see "Builds" above.
 
 ## Shipped shaders: WGSL minified at build time (round 52)
 

@@ -207,7 +207,10 @@ carry the call on the item, and the answers with their background are in
 `plan/rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`.
 The sitting raised **items 72–75** — the arrow-shape review, chart
 kinds and their data capacity, gradient stops from data, and built-in
-editing affordances — which are open.
+editing affordances — which are open.  Round 131 (the use-case
+bundles, landed the same day on the sitting's two calls for it) logged
+**items 76 and 77**: the force sim worker's bootstrap failing for the
+CJS bundles on Deno, and layouts as a capability.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1714,7 +1717,8 @@ directions".*
     class hubs keep their path as a facade and delegate to a sibling
     directory of implementation functions, the two pure-function files
     re-export from theirs — and left these for the maintainer's call:
-    `store/curve-index.mts` (1,555), `render/gpu-force.mts` (1,416),
+    `store/curve-index.mts` (1,555), `render/gpu-force.mts` (1,416;
+    `gpu/gpu-force.mts` since round 131.1),
     `style-scales.mts` (1,376), `render/mapper-runtime.mts` (1,190),
     `contract.mts` (1,076 — a `test/modules/string-keys.mjs`
     declaration site, so `DECLARED_IN` must follow a split),
@@ -1791,3 +1795,33 @@ directions".*
     **First measurement**: the inventory of what `edge-editing`,
     `node-resize` and the annotation editors in Cytoscape Web
     implement, against what v4's pointer state machine already owns.
+
+76. **The force sim worker's bootstrap fails for the CJS bundles on
+    Deno** (found 2026-09-28 by round 131's local Deno 2.9.6 run;
+    pre-existing since 129.3 — reproduced on the pre-round tree).  The
+    cross-runtime smoke passes, but for `cytoscape.cjs.js` and both
+    slim CJS bundles Deno prints an uncaught worker error, "(m.default
+    ?? m).__runForceSimWorker__ is not a function": the bootstrap
+    `import()`s the artifact its own URL names, and Deno's view of a
+    CJS file through `import()` does not carry the factory's statics
+    where the bootstrap looks.  The ESM bundles are unaffected.  The
+    smoke asserts values, and the run's values still land, so nothing
+    caught it — the smoke should also assert the force worker's stats
+    (`__forceWorkerStats__`) where a worker is expected.  **First
+    measurement**: what `import()` of a CJS file answers on Deno (and
+    Bun) — the namespace's shape — and whether `createRequire` in the
+    worker is the portable spelling.
+
+77. **Layouts as a capability** (round 131's open call, left with the
+    round by the eleventh sitting).  `core/lifecycle.mts`'s layout name
+    switch keeps every layout in every entry — ~118 KB minified — so
+    `cytoscape/headless` cannot drop force and flow for an app that
+    only runs grid.  A `layouts` table in `CoreCaps` (the seam 131
+    built) would let a T0 build register only what it names; the cost
+    is that `cy.layout({ name })` for an unregistered name must reject
+    naming the build, as the GPU registry's `'gpu'` does.  The same
+    open list names the full bundle's levers — round 126's shader
+    minification and item 63's constants price — which stay with those
+    rounds.  **First measurement**: the minified bytes per layout in
+    the headless build, and which layouts the flagship apps' headless
+    paths call.

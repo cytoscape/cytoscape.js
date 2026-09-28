@@ -20,6 +20,7 @@ deleting a word of them.
 | Add or interpret a benchmark | `npm run benchmark` / `npm run benchmark:all` | [`docs/agents/benchmarking.md`](docs/agents/benchmarking.md) |
 | Store, wire-format, lifecycle or multi-instance work | also `npm run -s test:soak:quiet` | [`docs/agents/testing.md`](docs/agents/testing.md) |
 | Bundle or packaging work | `npm run build`, `npm run build:types`, `npm run -s test:modules:quiet`, `npm run -s test:runtimes:node:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
+| A slim entry (`src/headless.mts`, `src/headless-gpu.mts`) or a tier move | the bundle row, plus `npm run -s test:runtimes:workerd:quiet` (and `npm run test:runtimes:deno:gpu` where Deno and a GPU exist) | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
 | Change the harness, the docs or the report | `npm run status` then `npm run status:serve` — **open it** | [`docs/agents/rendering.md`](docs/agents/rendering.md) |
 | Anything in `v3/` | see `v3/AGENTS.md` — it is frozen | — |
 | Broad, or unsure | `npm run -s test:quiet` | this file |
@@ -63,8 +64,11 @@ deleting a word of them.
   `test/node-test-setup.mjs`, which is why they look like Mocha suites.
   Browser coverage is Playwright.
 - **Bundles are produced with rolldown** (`rolldown -c`, not Rollup) from
-  the `./src/index.mjs` entry into UMD, minified UMD, CJS, ESM and
-  minified ESM.  v3 has its own `v3/rolldown.config.mjs`.
+  three entries (round 131): `./src/index.mjs` into UMD, minified UMD,
+  CJS, ESM and minified ESM; `./src/headless.mjs` and
+  `./src/headless-gpu.mjs` into ESM, minified ESM and CJS.  A slim entry
+  must not reach a higher tier — `test/modules/import-graph.mjs` walks
+  it.  v3 has its own `v3/rolldown.config.mjs`.
 - **The bundles ship minified WGSL**, so a shader literal carries the
   `wgsl` tag and never holds an interpolation inside a comment —
   [`docs/agents/rendering.md`](docs/agents/rendering.md).

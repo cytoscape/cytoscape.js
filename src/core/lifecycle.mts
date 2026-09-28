@@ -253,6 +253,10 @@ export function destroy(core: Core): Core {
     core._renderer = null;
   }
 
+  // the dirty-stream consumers beyond the renderer (round 106): none may
+  // be woken by a mutation that lands after the instance is gone
+  core._store.disposeConsumers();
+
   core._destroyed = true;
 
   return core;

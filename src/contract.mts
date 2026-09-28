@@ -909,10 +909,12 @@ export interface DirtySpan {
 }
 
 /**
- * What changed since the last `takeDelta()`.  One coalesced span per column
- * at most; when a group's capacity grew, `resized` is set and the renderer
- * must reallocate that group's buffers and do a full re-upload (spans for
- * that group may be ignored in that case).
+ * What changed since the last `takeDelta()` — or, for a registered
+ * {@link DeltaConsumer}, since that consumer's last `take()`.  One
+ * coalesced span per column at most; when a group's capacity grew,
+ * `resized` is set and the renderer must reallocate that group's buffers
+ * and do a full re-upload (spans for that group may be ignored in that
+ * case).
  */
 export interface StoreDelta {
   resized: { nodes: boolean; edges: boolean };
@@ -932,6 +934,50 @@ export interface StoreDelta {
   imageBlob?: { resized: boolean; start: number; end: number };
   /** chart blob dirt (round 23): float range [start, end) or a realloc */
   chartBlob?: { resized: boolean; start: number; end: number };
+  /**
+   * Set only on a registered consumer's delta (round 106): an element
+   * `data()` write landed that no column span records — a key no mapper
+   * watches, which the renderer has no reason to see.  A reader that
+   * mirrors the model (a following clone) needs it; the primary
+   * consumer's delta never carries it, and the store records it at all
+   * only while a consumer is registered.
+   */
+  dataWritten?: boolean;
+}
+
+/**
+ * A registered reader of the dirty stream (round 106): a second consumer
+ * beside the renderer's frame, with its own cursor.  The store's
+ * `takeDelta()` / `hasDirty()` / `onInvalidate()` are the *primary*
+ * cursor, which is never disposed; `registerConsumer()` hands out the
+ * others.  Draining is **drain-and-republish**: the mutation paths
+ * (`mark` / `markResized` / `touch`) write one live state exactly as they
+ * did with one consumer, and whichever consumer takes first drains it and
+ * folds it into every other consumer's pending buffer — so fan-out costs
+ * at the drain rate, not the mutation rate, and no consumer can starve
+ * another.  A consumer registered late starts with a full sync (both
+ * groups `resized`, every blob resized), since it saw none of the history.
+ */
+export interface DeltaConsumer {
+  /**
+   * This consumer's delta since its last take, cleared — spans, resize
+   * flags, blob ranges, and `dataWritten`.  Flushes the store's lazy
+   * derivations first, as `takeDelta()` does.
+   */
+  take(): StoreDelta;
+  /** Whether this consumer has anything to take. */
+  hasDirty(): boolean;
+  /**
+   * `cb` fires on a microtask once per burst of mutations in which this
+   * consumer has something to take — another consumer draining
+   * synchronously does not cancel it.  Returns an unsubscribe function.
+   */
+  onInvalidate(cb: () => void): () => void;
+  /**
+   * Unregister: drop the pending state and the callbacks.  Idempotent;
+   * the other consumers are unaffected.
+   */
+  dispose(): void;
 }
 
 // -- labels --
@@ -1031,9 +1077,14 @@ export interface ModelView {
   highWater(group: GroupName): number;
   column(id: ColumnId): ColumnArray;
   hasDirty(): boolean;
-  /** Returns the accumulated delta and clears it. */
+  /**
+   * Returns the accumulated delta and clears it — the *primary* consumer's
+   * cursor (the renderer's frame).  Any other reader registers its own
+   * {@link DeltaConsumer} (round 106) rather than calling this, which
+   * would starve the renderer.
+   */
   takeDelta(): StoreDelta;
-  /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
+  /** `cb` fires at most once per microtask when the model becomes dirty for the primary consumer; returns an unsubscribe fn. */
   onInvalidate(cb: () => void): () => void;
   /** The 12b curve param blob backing the params-column headers; the
    * renderer mirrors [0, curveBlobLength()) into a storage buffer. */

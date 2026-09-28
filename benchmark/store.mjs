@@ -231,6 +231,32 @@ if (has('dirty')) {
       return do_not_optimize(store.takeDelta());
     });
   });
+
+  // The same drain with a second consumer registered (round 106.2): the
+  // renderer's take folds the live state into the other cursor's pending
+  // buffer, which then takes it — the fan-out, paid at the drain rate.
+  const shared = new GraphStore();
+
+  for (let k = 0; k < N; k++) {
+    shared.addNode('n' + k, k, 0);
+  }
+
+  const second = shared.registerConsumer();
+
+  shared.takeDelta();
+  second.take();
+
+  group('dirty: store mark + takeDelta (two consumers)', () => {
+    bench('gpu', () => {
+      for (let k = 0; k < 64; k++) {
+        shared.setPosition((k * 7) % N, k, i++ & 7);
+      }
+
+      do_not_optimize(shared.takeDelta());
+
+      return do_not_optimize(second.take());
+    });
+  });
 }
 
 // -- the image registry (round 15) --------------------------------------------

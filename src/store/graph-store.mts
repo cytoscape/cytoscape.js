@@ -45,6 +45,8 @@ import * as imagesImpl from './graph-store/images.mjs';
 import * as labelsImpl from './graph-store/labels.mjs';
 import * as positionsImpl from './graph-store/positions.mjs';
 import * as flagsImpl from './graph-store/flags.mjs';
+import * as consumersImpl from './graph-store/consumers.mjs';
+import type { StoreConsumer, StoreFold } from './graph-store/consumers.mjs';
 export const IMG_STRIDE = 12;
 
 export interface BgLen {
@@ -259,6 +261,12 @@ export class GraphStore implements ModelView {
     | null = null;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) @internal */
   mapperSpans: Map<string, MapperSpan>;
+  /** the dirty-stream consumers beyond the renderer (round 106) @internal */
+  consumers: StoreConsumer[] = [];
+  /** the primary consumer's folded blob ranges and mapper spans — what
+   * another consumer drained on the renderer's behalf (round 106)
+   * @internal */
+  primaryFold: StoreFold = consumersImpl.emptyFold();
 
   /** forwarding chains for refs staled by slot compaction (19.3):
    * packed (slot, gen) → packed (newSlot, newGen), per group
@@ -535,14 +543,34 @@ export class GraphStore implements ModelView {
    * Drain the frame's pending writes: flushes the lazy derivations
    * first (so parent auto-bounds and curve params land as ordinary
    * column spans inside this delta), then takes the column spans and
-   * each blob pool's dirty range.  Destructive — the trackers are
-   * cleared, so exactly one consumer (the renderer) may call it.
+   * each blob pool's dirty range.  Destructive — this is the *primary*
+   * consumer's cursor (the renderer's frame); any other reader registers
+   * its own with {@link registerConsumer} (round 106).
    *
    * @returns the delta, with the four blob ranges attached only when
    * that pool actually changed
    */
   takeDelta(): StoreDelta {
     return imagesImpl.takeDelta(this);
+  }
+
+  /**
+   * Register a second reader of the dirty stream (round 106) — a
+   * following clone's trigger, a devtools observer.  Drain-and-republish:
+   * whichever consumer takes first folds the drained spans, blob ranges
+   * and mapper spans into every other consumer's pending state, so no
+   * reader starves another and the mutation paths are unchanged.  The
+   * consumer starts with a full sync.
+   *
+   * @returns the consumer; `dispose()` it when done
+   */
+  registerConsumer(): StoreConsumer {
+    return consumersImpl.registerConsumer(this);
+  }
+
+  /** Dispose every registered consumer (the owning core is being destroyed). */
+  disposeConsumers(): void {
+    consumersImpl.disposeConsumers(this);
   }
 
   /** The 12b curve param pool's backing array (the renderer's upload
@@ -723,6 +751,9 @@ export class GraphStore implements ModelView {
   setData(group: GroupName, slot: number, key: string, value: unknown): void {
     this.data.set(group, slot, key, value);
     this.markDataWrite(group, key, slot, slot + 1);
+    // an unwatched write marks no column; a registered consumer still
+    // wants to know (round 106) — a no-op while none is registered
+    this.dirty.markData();
   }
 
   /**
@@ -741,6 +772,10 @@ export class GraphStore implements ModelView {
 
   /** Pending watched-key write spans, returned and cleared. */
   takeMapperSpans(): MapperSpan[] {
+    if (this.consumers.length > 0 || this.primaryFold.mapper != null) {
+      return consumersImpl.takeMapperSpans(this, this.primaryFold);
+    }
+
     if (this.mapperSpans.size === 0) {
       return [];
     }

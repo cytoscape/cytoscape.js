@@ -5120,6 +5120,81 @@ Ten mutations of the implementation were run against the file; two
 first stayed green (a source-only rewire and a compound parent written
 after its children), and each gained the spec that now fails.
 
+## N viewers, by cloning (round 106)
+
+A second view of a graph is a **second instance**, not a second renderer
+over one store: `cy.clone()` builds it over the serialize/ingest path and
+round 107's `patch()` keeps it current.  Every instance keeps v4's
+one-core / one-viewport / one-renderer invariant, so no "whose
+viewport?" semantics enter the API, and each clone has its own sheet,
+selection, hover, events and `png()`.  The shared-store alternative (N
+renderers over one store) was measured and kept only as a fallback
+design: it needed six drain-once channels made multi-reader, three
+singleton leases (animation clock, image decoder, GPU column ownership)
+made per-view, and the hover/grab/active flag bits split out of the
+shared model — view-awareness seeping into channel after channel, the
+Cytoscape desktop lesson in miniature.  The plan file records the
+evaluation.
+
+### Consumer cursors on the dirty stream (106.2)
+
+The renderer's frame used to be the dirty stream's only reader, and the
+drain is destructive: a second `takeDelta()` caller starves the frame or
+is starved by it.  `GraphStore.registerConsumer()` hands out a
+`DeltaConsumer` (`src/contract.mts`: `take` / `hasDirty` /
+`onInvalidate` / `dispose`, plus `takeMapperSpans`) — the reconcile
+trigger below is one, and round 47's devtools observer will be another.
+The store's own `takeDelta()` / `hasDirty()` / `onInvalidate()` are the
+**primary** cursor, never disposed, so no call site changed.
+
+- **Drain-and-republish.**  `mark()` / `markResized()` / `touch()` are
+  byte-identical: they write one live state, as with one consumer.
+  Whichever consumer takes first drains it and folds it into every other
+  consumer's pending buffer — the column spans in the tracker
+  (`src/store/dirty.mts`), the four blob pools' ranges and the
+  watched-key mapper spans in the store
+  (`src/store/graph-store/consumers.mts`) — so the fan-out costs at the
+  drain rate, not the mutation rate.  With no consumer registered the
+  take is the one-consumer code it always was.
+- **A late registrant starts full-sync**: both groups `resized`, every
+  blob resized over its used length, a mapper span over each watched key.
+- **Per-consumer wake.**  The microtask bail that skipped the frame when
+  the delta had been taken synchronously is now per cursor: A draining
+  synchronously skips A's wake and not B's, whose pending buffer now
+  holds the state.
+- **`StoreDelta.dataWritten`**: an element `data()` write to a key no
+  mapper watches marks no column, so a mirror would miss it.
+  `setData` reports it through `DirtyTracker.markData()`, which is a
+  no-op while no consumer is registered (a data write costs what it
+  did) and never reaches the primary.
+- **`cy.destroy()` disposes every consumer**, so a mutation whose wake
+  was already queued fires nothing afterwards.
+
+Measured (`benchmark/store.mjs`, `BENCH_OP=dirty`, tsx, i9-9900K, Node
+24.18, N = 2,000; before → after): `mark` 13.1–13.2 → 13.1–13.2 ns
+contiguous and 18.1–18.5 → 18.0–18.1 ns scattered; the tracker's take
+behind 64 marks 832–866 → 807–824 ns; the store-level drain behind 64
+position writes, at one consumer, interleaved before/after over five
+process pairs, 1.42 → 1.48 µs median (pairwise −11% to +4%: zero within
+this row's run-to-run spread of 1.25–1.77 µs).  With a second consumer
+registered the same drain plus its take is ~0.3–0.4 µs more.
+
+Controls (`test/dirty-consumers.mjs`): two raw `takeDelta()` calls — the
+second reader starves; two consumers at different cadences (every step,
+every third step) each keeping a byte mirror of every `COLUMN_SPECS`
+column and the curve blob from their own deltas over a seeded 400-step
+mix (adds, moves, mapped and unwatched data writes, selection, removes,
+compactions), which must equal the store's columns byte for byte — with
+the mirror's own control (a span drained elsewhere must show); late
+registration; the per-consumer wake, both directions; `dataWritten`;
+the mapper fold.  Four mutations were run against the file (the
+tracker's fold, the blob fold, the old global wake bail, the mapper
+fold) and each fails a spec; the blob fold at first **stayed green**,
+because a bundled-bezier fixture never writes the curve blob — the mix
+now uses `segments` edges.  The soak tier's isolation suite adds dispose
+mid-stream (the peer unaffected) and destroy with a live consumer (no
+throw, no dangling callback — red with the destroy hook removed).
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its

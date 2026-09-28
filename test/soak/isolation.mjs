@@ -212,4 +212,65 @@ describe('soak: multi-instance isolation', () => {
     many.forEach((cy) => cy.destroy());
     many.forEach((cy) => expect(cy.destroyed()).to.equal(true));
   });
+
+  // Round 106: a second reader of one instance's dirty stream (a
+  // following clone's trigger, a devtools observer) must not outlive its
+  // own dispose or its instance, and must not disturb its peers.
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('disposes one dirty-stream consumer mid-stream without disturbing its peers', async () => {
+    const cy = cytoscape({ elements: graph(['x', 'y', 'z'], 'a') });
+    const store = cy._store;
+    const a = store.registerConsumer();
+    const b = store.registerConsumer();
+    let aWakes = 0;
+    let bWakes = 0;
+
+    a.onInvalidate(() => aWakes++);
+    b.onInvalidate(() => bWakes++);
+    a.take();
+    b.take();
+    await tick();
+    aWakes = bWakes = 0;
+
+    cy.$id('x').position({ x: 99, y: 0 });
+    store.takeDelta(); // the renderer's drain folds into both
+    a.dispose();
+    await tick();
+
+    expect(aWakes, 'a disposed consumer was woken').to.equal(0);
+    expect(bWakes).to.equal(1);
+
+    const delta = b.take();
+
+    expect(delta.spans.some((s) => s.column === 'node.position')).to.equal(
+      true,
+    );
+    expect(store.consumers).to.deep.equal([b]);
+
+    b.dispose();
+    cy.destroy();
+  });
+
+  it('destroys an instance with a live consumer: no throw, no dangling callback', async () => {
+    const cy = cytoscape({ elements: graph(['x', 'y'], 'a') });
+    const store = cy._store;
+    const consumer = store.registerConsumer();
+    let wakes = 0;
+
+    consumer.onInvalidate(() => wakes++);
+    consumer.take();
+    await tick();
+    wakes = 0;
+
+    // a mutation whose wake is already queued when the instance goes
+    cy.$id('x').position({ x: 5, y: 5 });
+    expect(() => cy.destroy()).to.not.throw();
+    await tick();
+
+    expect(wakes, 'a callback fired after destroy').to.equal(0);
+    expect(consumer.hasDirty()).to.equal(false);
+    expect(store.consumers).to.have.length(0);
+    expect(() => consumer.dispose()).to.not.throw();
+  });
 });

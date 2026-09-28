@@ -5,6 +5,7 @@ import { COL, CHART_HEADER } from '../../contract.mjs';
 import type { StoreDelta } from '../../contract.mjs';
 import { IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../../image-registry.mjs';
 import { IMG_STRIDE } from '../graph-store.mjs';
+import { takeBlobs } from './consumers.mjs';
 import type {
   NodeImageSpec,
   NodeImageRecord,
@@ -344,8 +345,8 @@ export function setPolygonPoints(
  * Drain the frame's pending writes: flushes the lazy derivations
  * first (so parent auto-bounds and curve params land as ordinary
  * column spans inside this delta), then takes the column spans and
- * each blob pool's dirty range.  Destructive — the trackers are
- * cleared, so exactly one consumer (the renderer) may call it.
+ * each blob pool's dirty range.  Destructive — the primary consumer's
+ * cursor (the renderer); another reader registers its own (round 106).
  *
  * @returns the delta, with the four blob ranges attached only when
  * that pool actually changed
@@ -355,6 +356,22 @@ export function takeDelta(gs: GraphStore): StoreDelta {
   gs.flushDerived();
 
   const delta = gs.dirty.take(gs.nodes.highWater, gs.edges.highWater);
+
+  const folded = gs.primaryFold.blobs;
+
+  if (
+    gs.consumers.length > 0 ||
+    folded[0] != null ||
+    folded[1] != null ||
+    folded[2] != null ||
+    folded[3] != null
+  ) {
+    // another consumer is (or was) registered: fold (round 106)
+    takeBlobs(gs, gs.primaryFold, delta);
+
+    return delta;
+  }
+
   const blobDirty = gs.blob.takeDirty();
 
   if (blobDirty != null) {

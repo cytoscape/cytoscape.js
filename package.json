@@ -171,6 +171,14 @@
     "test:runtimes:deno:run": "deno run --allow-read test/runtimes/smoke.mjs",
     "test:runtimes:deno:quiet": "run-s build:quiet test:runtimes:deno:run:quiet",
     "test:runtimes:deno:run:quiet": "node scripts/quiet-run.mjs deno run --allow-read test/runtimes/smoke.mjs",
+    "test:runtimes:deno:gpu": "run-s build test:runtimes:deno:gpu:run",
+    "test:runtimes:deno:gpu:run": "deno run --unstable-webgpu --allow-read test/runtimes/gpu-smoke.mjs",
+    "test:runtimes:deno:gpu:quiet": "run-s build:quiet test:runtimes:deno:gpu:run:quiet",
+    "test:runtimes:deno:gpu:run:quiet": "node scripts/quiet-run.mjs deno run --unstable-webgpu --allow-read test/runtimes/gpu-smoke.mjs",
+    "test:runtimes:workerd": "run-s build test:runtimes:workerd:run",
+    "test:runtimes:workerd:run": "node test/runtimes/workerd.mjs",
+    "test:runtimes:workerd:quiet": "run-s build:quiet test:runtimes:workerd:run:quiet",
+    "test:runtimes:workerd:run:quiet": "node scripts/quiet-run.mjs node test/runtimes/workerd.mjs",
     "docs:api": "node scripts/docs-generate.mjs --out build/docs/api.json",
     "test:modules:debug": "node --import tsx --import ./test/node-test-setup.mjs --inspect-brk --test --test-concurrency=1 \"test/modules/*.mjs\"",
     "test:playwright:http": "http-server -p 3333 -s -c -1",
@@ -226,6 +234,7 @@
     "rollup-plugin-license": "^3.5.3",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2",
-    "typescript-compiler-api": "npm:typescript@^6.0.3"
+    "typescript-compiler-api": "npm:typescript@^6.0.3",
+    "workerd": "^1.20260928.1"
   }
 }

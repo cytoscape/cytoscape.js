@@ -91,6 +91,40 @@ jobs:
       run: npm run build
     - name: Run the cross-runtime smoke under Deno
       run: deno run --allow-read test/runtimes/smoke.mjs
+    # Round 131 (99.2): `cytoscape/headless-gpu` on Deno's native WebGPU —
+    # wgpu, not Dawn.  A hosted runner has no GPU, so Mesa's software
+    # Vulkan (lavapipe) is attempted; where no adapter can be had the smoke
+    # fails with its named assertion (never a soft skip) and this step's
+    # `continue-on-error` keeps the job's verdict to the smoke above.  The
+    # round-131 record says where it has gone green (locally: an RX 580
+    # through RADV; CI: see the record).
+    - name: Install Mesa's Vulkan drivers for the GPU smoke
+      continue-on-error: true
+      run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers
+    - name: Run the GPU smoke under Deno (headless-gpu)
+      continue-on-error: true
+      run: deno run --unstable-webgpu --allow-read test/runtimes/gpu-smoke.mjs
+
+  # Round 131: the headless build on Cloudflare's own runtime, `workerd`
+  # (a devDependency, so `npm ci` fetches its platform binary).  Opt-in
+  # the way `ci-bun`/`ci-deno` are: its own job, gating like them.  The
+  # Node tier's isolate smoke (`test/modules/isolate-smoke.mjs`) is the
+  # per-run gate that needs nothing installed; if workerd proves flaky on
+  # runners, this drops to a release-time run and the record says so.
+  ci-workerd:
+    runs-on: ubuntu-latest
+    name: ci-workerd
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+    - name: Install dependencies
+      run: npm ci
+    - name: Build the bundles
+      run: npm run build
+    - name: Run the headless build on workerd
+      run: node test/runtimes/workerd.mjs
 
   # v4's browser tier, one job per Playwright project.  Each installs only
   # the browser it drives; only `visual` needs v3's bundle.

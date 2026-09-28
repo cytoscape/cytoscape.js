@@ -39,6 +39,10 @@ local bundle is a file read.  The quiet twins live in
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const SMOKE = join(ROOT, 'test', 'runtimes', 'smoke.mjs');
 const smokeText = readFileSync(SMOKE, 'utf8');
+const checksText = readFileSync(
+  join(ROOT, 'test', 'runtimes', 'smoke-checks.mjs'),
+  'utf8',
+);
 const { scripts } = JSON.parse(
   readFileSync(join(ROOT, 'package.json'), 'utf8'),
 );
@@ -61,12 +65,24 @@ describe('the cross-runtime smoke (round 98.2)', function () {
       (m) => m[1],
     );
 
-    expect(staticImports.sort()).to.deep.equal(['node:module', 'node:url']);
+    expect(staticImports.sort()).to.deep.equal([
+      './smoke-checks.mjs',
+      'node:module',
+      'node:url',
+    ]);
+
+    // the checks (round 131) import nothing at all: they are loaded as-is
+    // inside a vm isolate and inside workerd, where no `node:` module
+    // exists
+    expect(checksText).to.not.match(/^\s*import\s/m);
+    expect(checksText).to.not.match(/\bfrom\s+'/);
 
     // and no framework leaked in: the smoke is plain asserts
-    expect(smokeText).to.not.match(/\b(describe|it|beforeEach)\s*\(/);
-    // \b so 'chain' in a comment cannot trip it; an import would say 'chai'
-    expect(smokeText).to.not.match(/\bchai\b/);
+    for (const text of [smokeText, checksText]) {
+      expect(text).to.not.match(/\b(describe|it|beforeEach)\s*\(/);
+      // \b so 'chain' in a comment cannot trip it; an import would say 'chai'
+      expect(text).to.not.match(/\bchai\b/);
+    }
   });
 
   it('wraps the smoke in run-s build scripts, one per runtime', function () {
@@ -82,6 +98,21 @@ describe('the cross-runtime smoke (round 98.2)', function () {
     // Deno's sandbox: loading a local bundle is a file read, nothing more
     expect(scripts['test:runtimes:deno:run']).to.contain(
       'deno run --allow-read',
+    );
+
+    // round 131: the real edge runtime and Deno's WebGPU, built first the
+    // same way
+    expect(scripts['test:runtimes:workerd']).to.equal(
+      'run-s build test:runtimes:workerd:run',
+    );
+    expect(scripts['test:runtimes:workerd:run']).to.equal(
+      'node test/runtimes/workerd.mjs',
+    );
+    expect(scripts['test:runtimes:deno:gpu']).to.equal(
+      'run-s build test:runtimes:deno:gpu:run',
+    );
+    expect(scripts['test:runtimes:deno:gpu:run']).to.equal(
+      'deno run --unstable-webgpu --allow-read test/runtimes/gpu-smoke.mjs',
     );
   });
 

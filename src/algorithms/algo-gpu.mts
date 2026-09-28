@@ -160,6 +160,23 @@ const UNIFORM_USAGE = BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST;
 const STAGING_USAGE = BUFFER_USAGE.COPY_DST | BUFFER_USAGE.MAP_READ;
 const MAP_READ_MODE = MAP_MODE.READ;
 
+/**
+ * Write `data` at offset 0 — or nothing for an empty array.  A zero-byte
+ * `writeBuffer` is a no-op by the spec (the buffer is zero-initialised),
+ * and Deno 2.9.6's wgpu binding panics on one (`ext/webgpu/queue.rs`,
+ * measured 2026-09-28 by round 131's Deno GPU smoke: an empty edge list
+ * uploads an empty array), so it is never issued.
+ */
+const writeData = (
+  ctx: AlgoGpu,
+  buffer: GPUBuffer,
+  data: Float32Array | Uint32Array | Int32Array,
+): void => {
+  if (data.byteLength > 0) {
+    ctx.device.queue.writeBuffer(buffer, 0, data as unknown as BufferSource);
+  }
+};
+
 /** Upload a typed array as a storage buffer (STORAGE|COPY_DST|COPY_SRC). */
 export const storageFrom = (
   ctx: AlgoGpu,
@@ -171,7 +188,7 @@ export const storageFrom = (
     usage: STORAGE_USAGE,
   });
 
-  ctx.device.queue.writeBuffer(buffer, 0, data as unknown as BufferSource);
+  writeData(ctx, buffer, data);
 
   return buffer;
 };
@@ -195,7 +212,7 @@ export const uniformFrom = (
     usage: UNIFORM_USAGE,
   });
 
-  ctx.device.queue.writeBuffer(buffer, 0, data as unknown as BufferSource);
+  writeData(ctx, buffer, data);
 
   return buffer;
 };

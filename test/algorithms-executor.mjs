@@ -5,6 +5,8 @@ import {
   algoGpuSupported,
   assertFits,
   GpuUnfitError,
+  storageFrom,
+  uniformFrom,
   _resetAlgoGpu,
 } from '../src/algorithms/algo-gpu.mjs';
 import { runAlgo } from '../src/algorithms/executor.mjs';
@@ -295,6 +297,28 @@ describe('gpu/algorithms: the executor contract', function () {
     var tinyCtx = () => ({
       device: { limits: { maxStorageBufferBindingSize: 1024 } },
       pipelines: new Map(),
+    });
+
+    it('an empty upload issues no zero-byte write (131: Deno panics on one)', function () {
+      var writes = [];
+      var ctx = {
+        device: {
+          createBuffer: (d) => ({ size: d.size }),
+          queue: {
+            writeBuffer: (buf, off, data) => writes.push(data.byteLength),
+          },
+        },
+        pipelines: new Map(),
+      };
+
+      storageFrom(ctx, new Uint32Array(0));
+      uniformFrom(ctx, new Float32Array(0));
+      expect(writes).to.deep.equal([]);
+
+      // control: a non-empty upload writes its bytes
+      storageFrom(ctx, new Uint32Array(3));
+      uniformFrom(ctx, new Float32Array(2));
+      expect(writes).to.deep.equal([12, 8]);
     });
 
     it('assertFits throws GpuUnfitError past the binding limit', function () {

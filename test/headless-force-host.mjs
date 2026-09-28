@@ -326,6 +326,33 @@ describe('gpu/force: the headless host (131.4)', function () {
     ok.finishForce();
   });
 
+  it('an edgeless run uploads no zero-byte buffer (131: Deno panics on one)', async function () {
+    const device = fakeDevice();
+    const sizes = [];
+    const write = device.queue.writeBuffer;
+
+    device.queue.writeBuffer = (buf, offset, data, dataOffset, size) => {
+      sizes.push(size ?? data.byteLength - (dataOffset ?? 0));
+      write(buf, offset, data, dataOffset, size);
+    };
+
+    const host = new HeadlessForceHost(
+      async () => device,
+      () => {},
+    );
+    const run = {
+      ...inputs(2),
+      edges: new Uint32Array(0),
+      edgeLength: new Float32Array(0),
+    };
+    const rt = host.startForce(run, 3);
+
+    await until(() => rt.converged(), 'convergence');
+    expect(sizes.length).to.be.greaterThan(0);
+    expect(sizes.filter((n) => n === 0)).to.deep.equal([]);
+    host.finishForce();
+  });
+
   it('writes before the device exists land in the uploaded inputs', async function () {
     let release;
     const device = fakeDevice();

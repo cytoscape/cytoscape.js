@@ -81,6 +81,11 @@ const EXPECTED_TWINS = [
   'test:runtimes:bun:run:quiet',
   'test:runtimes:deno:quiet',
   'test:runtimes:deno:run:quiet',
+  // round 131: the Deno GPU smoke and the workerd runtime
+  'test:runtimes:deno:gpu:quiet',
+  'test:runtimes:deno:gpu:run:quiet',
+  'test:runtimes:workerd:quiet',
+  'test:runtimes:workerd:run:quiet',
   'test:node:quiet',
   'test:playwright:install:quiet',
   'test:playwright:build:quiet',

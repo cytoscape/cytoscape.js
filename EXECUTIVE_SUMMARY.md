@@ -1389,8 +1389,8 @@ snapshot measurement, the worker host's images and fonts, and the CJK
 label design.  During alpha: the extension ports, a devtools panel and
 a workloads benchmark profile.  After alpha: lasso and spatial queries,
 compound drag-and-drop, viewport constraints and framework bindings;
-accessibility and RTL text after 4.0.  Declined: a v3→v4 codemod and
-a core PDF export (an SVG→PDF recipe instead).  The wire format stays
+RTL text after 4.0.  Declined: a v3→v4 codemod, library-level
+accessibility (an app responsibility) and a core PDF export (an SVG→PDF recipe instead).  The wire format stays
 public but experimental until 4.x.
 Cluster hulls become a compound shape style, so a hull is a parent
 node (collapse, labels, picking and drag-and-drop come with it), and

@@ -56,7 +56,8 @@ here.
 - **Item 66 — edge id registration: measure, then the numeric fast
   path.**  Split string cost from interning cost first; lazy ids only
   if the fast path is not enough.
-- **Item 67 — the whole-sheet re-apply: a sheet diff, before alpha.**
+- **Item 67 — the whole-sheet re-apply: a sheet diff, before alpha**
+  — an alpha round, because Cytoscape Web depends on it.
   The bypass-clearing rule of a sheet replace is kept.
 - **Item 68 — animated layouts at scale: one column animation per
   layout, before alpha.**  Per-node observability during a layout
@@ -91,7 +92,11 @@ here.
   (the `GpuUnfitError` shape), leaving the store unchanged; the
   adapter's own limits are requested, failures surface as an
   instance event, and the degradation order follows.
-- **Item 37 — accessibility: after 4.0.**
+- **Item 37 — accessibility: excluded, an application
+  responsibility** (first answered "after 4.0", revised the same
+  day): Cytoscape draws a figure, and a PNG is not accessible
+  either; the app builds keyboard navigation, descriptions and
+  reduced motion on the public API.
 - **Item 38 — international labels: CJK designed before alpha (the
   shape of the font setting and its fallback chain) and built during
   alpha; RTL/bidi after 4.0**, its shaping-dependency call taken when

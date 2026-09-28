@@ -76,9 +76,12 @@ edges need their own scale fixtures, not just a check that parallel edges draw.
 Prefer shared rendering, layout, selection and aggregation primitives in core;
 use examples and adapters for domain formats and application UI. Promote more
 extension behaviour only when representative apps demonstrate shared value and
-the performance budget holds. The inventory also preserves accessibility,
-international labels and lifecycle reliability as cross-cutting gaps: the five
-priorities do not make these disappear.
+the performance budget holds. The inventory also preserves international labels
+and lifecycle reliability as cross-cutting gaps: the five priorities do not
+make these disappear. Accessibility is an application responsibility: the
+library draws a figure, and keyboard navigation, assistive descriptions and
+reduced motion belong to the app, built on the public selection, event and
+animation API.
 
 ## Semantic zoom
 
@@ -164,12 +167,10 @@ requirement to finish every feature in the inventory.
   styling, picking and draw order, plus the rendering information shared by
   raster, SVG and headless export. Decide PDF and additional-layer scope so
   exporters or overlays do not later force a renderer or scene-model redesign.
-- **Platform, text and accessibility foundations:** decide supported browser
-  and headless capabilities beyond the rendering minimum above, and worker
-  image/font limitations. Settle font/shaping dependencies and international-text
-  scope,
-  along with keyboard focus, accessible graph navigation and reduced-motion
-  hooks that affect rendering and interaction architecture.
+- **Platform and text foundations:** decide supported browser and headless
+  capabilities beyond the rendering minimum above, and worker image/font
+  limitations. Settle font/shaping dependencies and international-text scope.
+  Accessibility is out of the library's scope (an application responsibility).
 - **Core versus extension integration:** resolve which outstanding extension
   points are public and which remain excluded; only layouts currently have a
   public extension contract. Validate the chosen boundary with representative

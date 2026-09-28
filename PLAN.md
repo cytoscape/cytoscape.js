@@ -875,6 +875,12 @@ directions".*
     `debug/index.html` (predictably: silence), and an inventory of
     what Cytoscape Web built or skipped for a11y.
     **Call taken (2026-09-28, the eleventh sitting): after 4.0.**
+    **Revised the same day: excluded — an application
+    responsibility.**  Cytoscape draws a figure, and a figure (like
+    a PNG) is not itself accessible; keyboard navigation, an ARIA
+    description and reduced motion belong to the app, which already
+    has the public API (selection, events, `animate` durations) to
+    build them.  The item closes.
 38. **Label internationalization — CJK first** (raised 2026-08-19;
     **the maintainer's priority order: CJK is highest after
     Latin**).  The label pipeline shapes Latin-simple text: no CJK
@@ -1636,7 +1642,8 @@ directions".*
     with the diff simulated by hand (`cy.nodes().style(...)` of the
     one property), which is the target.
     **Call taken (2026-09-28, the eleventh sitting): go, before alpha**,
-    keeping the bypass-clearing rule of a sheet replace.
+    keeping the bypass-clearing rule of a sheet replace.  It is an
+    alpha round because Cytoscape Web depends on it.
 68. **The GPU tween sink starves the frame at tens of thousands of
     animations** (logged 2026-09-18, from item 51's measurement).  A
     layout with `animate: true` on ndex-x-large creates one position

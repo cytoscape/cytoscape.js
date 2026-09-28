@@ -106,8 +106,10 @@ export function layout(core: Core, options: LayoutOptions): Layout {
  * @returns this
  * @throws if no container is given, if the instance was built directly
  *   rather than through the `cytoscape` factory (there is no renderer
- *   to attach), or if WebGPU is unavailable — mounting is the one way a
- *   headless instance can demand a GPU after construction
+ *   to attach), if it was built by `cytoscape/headless` or
+ *   `cytoscape/headless-gpu` (a build with no renderer — round 131), or
+ *   if WebGPU is unavailable — mounting is the one way a headless
+ *   instance can demand a GPU after construction
  */
 export function mount(core: Core, container: HTMLElement): Core {
   if (container == null) {
@@ -115,6 +117,12 @@ export function mount(core: Core, container: HTMLElement): Core {
   }
 
   if (core._attachFn == null) {
+    // a slim build (131.3) carries no renderer: say which build, not
+    // "not created via the factory" — it was
+    if (core._caps != null && core._caps.attach == null) {
+      throw new Error(core._caps.noRendererMessage);
+    }
+
     throw new Error(
       'This instance cannot mount (it was not created via the cytoscape factory)',
     );

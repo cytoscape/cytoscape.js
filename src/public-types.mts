@@ -1063,3 +1063,29 @@ export interface CytoscapeOptions {
   pixelRatio?: number | 'auto';
   renderer?: RendererOptions;
 }
+
+/**
+ * The options of the slim builds' factories — `cytoscape/headless` and
+ * `cytoscape/headless-gpu` (round 131): {@link CytoscapeOptions} minus
+ * the fields only a renderer or the pointer handler reads.  A build with
+ * no renderer has nothing to honour them with, so the type rejects them
+ * (TypeScript's excess-property check) and, at run time, a `container`
+ * throws `this build has no renderer — import 'cytoscape'`.
+ */
+export type HeadlessOptions = Omit<
+  CytoscapeOptions,
+  | 'container'
+  | 'renderer'
+  | 'pixelRatio'
+  | 'pointerCursors'
+  | 'wheelSensitivity'
+  | 'desktopTapThreshold'
+  | 'touchTapThreshold'
+  | 'tapholdDuration'
+  | 'multiClickDebounceTime'
+  | 'boxSelectionEnabled'
+  | 'boxSelectionIncludesLabels'
+  | 'boxSelectionMode'
+  | 'userPanningEnabled'
+  | 'userZoomingEnabled'
+>;

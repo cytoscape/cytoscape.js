@@ -1,4 +1,4 @@
-import { Core } from './core.mjs';
+import type { Core } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
@@ -20,30 +20,58 @@ import { CancelledError } from './algorithms/cancel.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
 import { registerGpu } from './algorithms/gpu-registry.mjs';
 import { GPU_RUNTIME } from './algorithms/gpu-lanes.mjs';
+import { createCore, NO_RENDERER_BUILD, requireWebGpu } from './factory.mjs';
+import type { CoreCaps } from './factory.mjs';
 import type { CytoscapeOptions } from './public-types.mjs';
 
-export type * from './public-types.mjs';
-export type { Core } from './core.mjs';
-export type { Collection } from './collection.mjs';
-// round 41: v4's own event object, so a handler's parameter has a real type
-// and `event.target` is no longer `unknown`
-export type { Event, EventProps, EventTarget } from './event.mjs';
-export type { EventHandler } from './emitter.mjs';
-// round 128: the cancellation contract's types — the handle every async
-// algorithm returns, and the rejection a cancelled run or layout carries
-export type { AlgoRun } from './algorithms/cancel.mjs';
-// round 45: the layout-extension contract, for the same reason.  Round 17
-// made `cy.layout({ impl })` the whole extension story — no registry, an
-// import passed straight in — but only `CustomLayoutOptions` reached the
-// declaration, so an external author writing `run( ctx )` got `ctx: any` and
-// the one surface the contract exists to make obvious was the one with no
-// types.  `LayoutContext` was in no declaration at all (round 34.6 recorded
-// it appearing only inside a doc comment).
-export type {
-  LayoutContext,
-  LayoutImpl,
-  CustomLayout,
-} from './layout/contract.mjs';
+export type * from './public-exports.mjs';
+
+/**
+ * The full build's attach (round 131.3 lifted it out of the factory): a
+ * renderer — same-thread or the worker host — and the pointer handler on
+ * a container.
+ */
+const attachRenderer = (
+  cy: Core,
+  container: HTMLElement,
+  options: CytoscapeOptions,
+): void => {
+  requireWebGpu();
+
+  const rendererOpts = {
+    pixelRatio: options.pixelRatio,
+    ...options.renderer,
+  };
+  // the worker host (round 86.3): same seam, the engine in a worker;
+  // rejects loudly where unsupported, never a silent fallback
+  const renderer =
+    options.renderer?.worker === true
+      ? new WorkerRenderer(cy, container, rendererOpts)
+      : new Renderer(
+          coreRenderHost(cy, () => createBrowserImageDecoder()),
+          container,
+          rendererOpts,
+        );
+
+  renderer.onDeviceLost = (message) => cy._handleDeviceLost(message);
+  cy._pointer = new PointerHandler(cy, renderer);
+  cy._renderer = renderer;
+  cy.ready = renderer.ready.then(() => {
+    cy._readyResolved = true;
+
+    return cy;
+  });
+};
+
+/** Everything: the renderer, the pointer, the GPU executors (T3). */
+const FULL: CoreCaps = {
+  attach: attachRenderer,
+  gpu: true,
+  // a rendered instance hosts the GPU force run itself; a headless one
+  // on the full build keeps 'auto' synchronous and has no device host
+  forceHost: null,
+  noRendererMessage: NO_RENDERER_BUILD,
+};
 
 /**
  * Create a GPU-prototype cytoscape instance (issue #3486, pass 1): a
@@ -60,6 +88,11 @@ export type {
  * can be listening yet), runs `options.layout`, and attaches the renderer and
  * pointer handler when a container is given.
  *
+ * This is the full build (`cytoscape`).  Two slimmer entries carry the
+ * same core without the renderer (round 131): `cytoscape/headless` (no
+ * renderer, no GPU executors) and `cytoscape/headless-gpu` (the GPU
+ * algorithm lanes and a headless GPU force host, no renderer).
+ *
  * **Unknown options are ignored, deliberately** (decided 2026-08-04, fifth
  * design sitting): unlike an unknown sheet key, style property or query key,
  * a misspelled option does not throw, because strictness here resolves at the
@@ -74,71 +107,7 @@ export type {
  * @throws when `container` is given and `navigator.gpu` is missing
  */
 export default function cytoscape(options: CytoscapeOptions = {}): Core {
-  if (options.container != null) {
-    const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
-
-    if (nav?.gpu == null) {
-      throw new Error(
-        'WebGPU is required to render but is unavailable in this browser; ' +
-          'omit the container option to run headless',
-      );
-    }
-  }
-
-  const cy = new Core(options);
-
-  if (options.elements != null) {
-    // bulk path: no per-element handles, no add events (nobody can be
-    // listening yet), one preallocation instead of a growth cascade
-    cy._bulkAdd(options.elements);
-  }
-
-  if (options.layout != null) {
-    cy.layout(options.layout).run();
-  }
-
-  // (re)attach a renderer + pointer to a container — used at creation and
-  // by cy.mount() after an unmount()
-  cy._attachFn = (container: HTMLElement) => {
-    const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
-
-    if (nav?.gpu == null) {
-      throw new Error(
-        'WebGPU is required to render but is unavailable in this browser; ' +
-          'omit the container option to run headless',
-      );
-    }
-
-    const rendererOpts = {
-      pixelRatio: options.pixelRatio,
-      ...options.renderer,
-    };
-    // the worker host (round 86.3): same seam, the engine in a worker;
-    // rejects loudly where unsupported, never a silent fallback
-    const renderer =
-      options.renderer?.worker === true
-        ? new WorkerRenderer(cy, container, rendererOpts)
-        : new Renderer(
-            coreRenderHost(cy, () => createBrowserImageDecoder()),
-            container,
-            rendererOpts,
-          );
-
-    renderer.onDeviceLost = (message) => cy._handleDeviceLost(message);
-    cy._pointer = new PointerHandler(cy, renderer);
-    cy._renderer = renderer;
-    cy.ready = renderer.ready.then(() => {
-      cy._readyResolved = true;
-
-      return cy;
-    });
-  };
-
-  if (options.container != null) {
-    cy._attachFn(options.container);
-  }
-
-  return cy;
+  return createCore(options, FULL);
 }
 
 // the GPU executors (131.2): the full entry carries every kernel

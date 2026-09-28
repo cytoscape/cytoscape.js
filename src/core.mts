@@ -56,6 +56,7 @@ import * as exportImpl from './core/export.mjs';
 import * as graphDataImpl from './core/graph-data.mjs';
 import * as serializeImpl from './core/serialize.mjs';
 import * as lifecycleImpl from './core/lifecycle.mjs';
+import type { CoreCaps } from './factory.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
@@ -129,6 +130,10 @@ export class Core {
   _pointer: { destroy(): void; applyCursor(): void } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
+  /** what the entry that built this instance carries (round 131.3), or
+   * null for a bare `new Core` — the factory seam's record
+   * @internal */
+  _caps: CoreCaps | null;
   /** @internal */
   _recoveringDevice: boolean;
   /** the zoom/pan state object — reach it through cy's own viewport
@@ -299,6 +304,7 @@ export class Core {
     this._renderer = null;
     this._pointer = null;
     this._attachFn = null;
+    this._caps = null;
     this._recoveringDevice = false;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
@@ -2023,8 +2029,10 @@ export class Core {
    * @returns this
    * @throws if no container is given, if the instance was built directly
    *   rather than through the `cytoscape` factory (there is no renderer
-   *   to attach), or if WebGPU is unavailable — mounting is the one way a
-   *   headless instance can demand a GPU after construction
+   *   to attach), if it was built by `cytoscape/headless` or
+   *   `cytoscape/headless-gpu` (a build with no renderer — round 131), or
+   *   if WebGPU is unavailable — mounting is the one way a headless
+   *   instance can demand a GPU after construction
    */
   mount(container: HTMLElement): this {
     return lifecycleImpl.mount(this, container) as this;

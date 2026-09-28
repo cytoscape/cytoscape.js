@@ -86,7 +86,8 @@ export const UNREACHABLE = {
   // are not, and saying so is better than a spec that fakes its
   // precondition.
   'src/gpu-context.mts:38':
-    "shadowed: index.mts's _attachFn checks navigator.gpu and then " +
+    "shadowed: the full build's attach (index.mts, through factory.mts's " +
+    'requireWebGpu) checks navigator.gpu and then ' +
     'constructs the Renderer synchronously, whose ctor calls init() ' +
     'whose first statement reads navigator.gpu again — nothing can run ' +
     'between the two, so no caller can pass one and fail the other',

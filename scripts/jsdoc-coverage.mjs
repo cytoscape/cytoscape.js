@@ -21,10 +21,14 @@ const SRC_DIR = join(ROOT, 'src');
 
 /**
  * The v4 public API: the files whose exported classes a consumer of
- * `cytoscape/gpu` actually holds. Gated at 100% public-member coverage.
+ * `cytoscape` (or a slim entry, round 131) actually holds. Gated at 100% public-member coverage.
  */
 export const PUBLIC_API = [
   'src/index.mts',
+  // round 131: the two slim entries each export a factory a consumer
+  // holds, documented like the full one
+  'src/headless.mts',
+  'src/headless-gpu.mts',
   'src/core.mts',
   'src/collection.mts',
   // Round 90: `src/viewport.mts` left this list — nothing hands a consumer

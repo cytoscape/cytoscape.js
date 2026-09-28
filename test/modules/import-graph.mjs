@@ -391,4 +391,60 @@ describe('import graph: the tiers (round 131)', function () {
     // the walk's own control: it followed the core's real graph
     expect(seen.size, 'the walk touched too few modules').to.be.at.least(150);
   });
+
+  it('cytoscape/headless reaches T0 + T1 only (131.3)', function () {
+    const { seen, bad } = offenders(
+      'src/headless.mts',
+      FORBIDDEN([
+        'render/',
+        'interact/',
+        'gpu/',
+        'algorithms/algo-gpu',
+        'algorithms/gpu-lanes',
+      ]),
+    );
+
+    expect(
+      bad.map((f) => chain(seen, f)),
+      'cytoscape/headless reaches a higher tier',
+    ).to.deep.equal([]);
+    // measured at landing: 179 modules
+    expect(seen.size, 'the walk touched too few modules').to.be.at.least(170);
+  });
+
+  it('cytoscape/headless-gpu reaches T0 + T1 + T2 only (131.3)', function () {
+    const { seen, bad } = offenders(
+      'src/headless-gpu.mts',
+      FORBIDDEN(['render/', 'interact/']),
+    );
+
+    expect(
+      bad.map((f) => chain(seen, f)),
+      'cytoscape/headless-gpu reaches the renderer tier',
+    ).to.deep.equal([]);
+    // it does carry the device tier: the kernels and the force host
+    const rel = new Set([...seen.keys()].map((f) => relative(ROOT, f)));
+
+    expect(rel.has('src/algorithms/gpu-lanes.mts')).to.equal(true);
+    expect(seen.size, 'the walk touched too few modules').to.be.at.least(190);
+  });
+
+  it('control: the full entry reaches every tier', function () {
+    // the rule's positive half: were the walk to stop following an
+    // edge kind, the slim entries would pass vacuously — the full entry
+    // must still be seen to reach the renderer, the pointer and the
+    // kernels through the same walk
+    const rel = new Set(
+      [...reach('src/index.mts').keys()].map((f) => relative(ROOT, f)),
+    );
+
+    for (const f of [
+      'src/render/renderer.mts',
+      'src/interact/pointer.mts',
+      'src/algorithms/gpu-lanes.mts',
+      'src/gpu/gpu-force.mts',
+    ]) {
+      expect(rel.has(f), `the full entry does not reach ${f}`).to.equal(true);
+    }
+  });
 });

@@ -1666,6 +1666,15 @@ interface CytoscapeOptions {
   pixelRatio?: number | 'auto';
   renderer?: RendererOptions;
 }
+/**
+ * The options of the slim builds' factories — `cytoscape/headless` and
+ * `cytoscape/headless-gpu` (round 131): {@link CytoscapeOptions} minus
+ * the fields only a renderer or the pointer handler reads.  A build with
+ * no renderer has nothing to honour them with, so the type rejects them
+ * (TypeScript's excess-property check) and, at run time, a `container`
+ * throws `this build has no renderer — import 'cytoscape'`.
+ */
+type HeadlessOptions = Omit<CytoscapeOptions, 'container' | 'renderer' | 'pixelRatio' | 'pointerCursors' | 'wheelSensitivity' | 'desktopTapThreshold' | 'touchTapThreshold' | 'tapholdDuration' | 'multiClickDebounceTime' | 'boxSelectionEnabled' | 'boxSelectionIncludesLabels' | 'boxSelectionMode' | 'userPanningEnabled' | 'userZoomingEnabled'>;
 //#endregion
 //#region src/store/id-map.d.mts
 interface IdEntry {
@@ -3863,6 +3872,311 @@ interface BellmanFordResult {
   negativeWeightCycles: Collection[];
 }
 //#endregion
+//#region src/algorithms/clustering-distances.d.mts
+type DistanceMetricName = 'euclidean' | 'squaredEuclidean' | 'squared-euclidean' | 'squaredeuclidean' | 'manhattan' | 'max';
+/**
+ * A user-supplied distance function.  With no attributes (length 0) it
+ * receives the two operands directly; otherwise the per-dimension accessors.
+ */
+type CustomDistanceFn = (...args: any[]) => number;
+type DistanceMetric = DistanceMetricName | CustomDistanceFn;
+//#endregion
+//#region src/algorithms/affinity-propagation.d.mts
+type AffinityAttributeFn = (node: Collection) => number;
+type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
+interface AffinityPropagationOptions {
+  distance?: DistanceMetric;
+  preference?: AffinityPreference;
+  damping?: number;
+  maxIterations?: number;
+  minIterations?: number;
+  attributes?: AffinityAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+//#endregion
+//#region src/algorithms/betweenness-centrality.d.mts
+interface BetweennessCentralityOptions {
+  weight?: WeightFn | null;
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Weighted runs have no GPU path: 'auto' takes the worker pool
+   * (round 74) from `WORKERS_MIN_N` nodes and an explicit 'gpu'
+   * rejects.  Unweighted runs keep the GPU first under 'auto', then
+   * the pool where no adapter fits. */
+  executor?: AlgoExecutor;
+}
+interface BetweennessCentralityResult {
+  betweenness(node: Collection): number | undefined;
+  betweennessNormalized(node: Collection): number;
+  betweennessNormalised(node: Collection): number;
+}
+//#endregion
+//#region src/algorithms/closeness-centrality.d.mts
+interface ClosenessCentralityOptions {
+  root?: Collection | null;
+  weight?: WeightFn;
+  directed?: boolean;
+  /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
+  harmonic?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Read by the whole-collection `closenessCentralityNormalized` only —
+   * the single-root `closenessCentrality` is a cheap Dijkstra walk and
+   * stays synchronous on the CPU.  Unweighted runs walk a BFS per
+   * source on either executor (72.3); weighted runs relax
+   * Floyd–Warshall. */
+  executor?: AlgoExecutor;
+}
+interface ClosenessCentralityNormalizedResult {
+  closeness(node: Collection): number;
+}
+//#endregion
+//#region src/algorithms/effective-resistance.d.mts
+interface EffectiveResistanceOptions {
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+interface EffectiveResistanceResult {
+  /** the effective resistance between the nodes (Infinity across
+   * components), or undefined when either node is outside the
+   * collection */
+  resistance(a: Collection, b: Collection): number | undefined;
+  /** the expected round-trip steps of the random walk — the
+   * component volume times the resistance */
+  commuteTime(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/heat-kernel.d.mts
+interface HeatDiffusionOptions {
+  /** the nodes the heat starts on (required for the seed form) */
+  seeds?: Collection | null;
+  /** how long the heat flows (default 0.1); must be positive */
+  time?: number;
+  weight?: WeightFn;
+  /** which Laplacian drives the diffusion (default 'combinatorial',
+   * L = D − A, heat-conserving); 'normalized' is I − D^{-½}AD^{-½},
+   * whose spectrum is bounded by 2 so the scaling exponent depends on
+   * `time` alone — heat is then not conserved (round 72.4) */
+  laplacian?: HeatLaplacian;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the kernel form takes the GPU from
+   * `GPU_MIN_N` nodes at any density (72.6). */
+  executor?: AlgoExecutor;
+}
+/** The Laplacian a heat run diffuses over. */
+type HeatLaplacian = 'combinatorial' | 'normalized';
+interface HeatDiffusionResult {
+  /** the node's share of the diffused heat, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface HeatKernelResult {
+  /** the heat at `to` after unit heat starts at `from` (symmetric),
+   * or undefined when either node is outside the collection */
+  heat(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/hierarchical-clustering.d.mts
+type HierarchicalAttributeFn = (node: Collection) => number;
+interface HierarchicalClusteringOptions {
+  distance?: DistanceMetric;
+  /** linkage criterion: 'min' (single), 'max' (complete), 'mean', or per-pair */
+  linkage?: string;
+  mode?: 'threshold' | 'dendrogram';
+  threshold?: number;
+  addDendrogram?: boolean;
+  dendrogramDepth?: number;
+  attributes?: HierarchicalAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+//#endregion
+//#region src/algorithms/k-clustering.d.mts
+/** A node attribute accessor used as a clustering feature. */
+type KAttributeFn = (node: Collection) => number;
+type FeatureCentroid = number[];
+interface KClusteringOptions {
+  k?: number;
+  m?: number;
+  sensitivityThreshold?: number;
+  distance?: DistanceMetric;
+  maxIterations?: number;
+  attributes?: KAttributeFn[];
+  testMode?: boolean;
+  testCentroids?: number | FeatureCentroid[] | Collection[] | null;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+interface FuzzyCMeansResult {
+  clusters: Collection[];
+  degreeOfMembership: number[][];
+}
+//#endregion
+//#region src/algorithms/katz-centrality.d.mts
+interface KatzCentralityOptions {
+  /** the walk attenuation per step (default 0.1); must be positive,
+   * and under 1/λ_max of the adjacency for the iteration to converge */
+  alpha?: number;
+  /** the baseline every node starts each step with (default 1) */
+  beta?: number;
+  /** iteration cap when the tolerance is never met (default 200) */
+  maxIterations?: number;
+  /** stop once Σ|Δx| < n · tolerance (default 1e-6) */
+  tolerance?: number;
+  /** count incoming walks only */
+  directed?: boolean;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
+   * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
+   * explicit 'gpu'. */
+  executor?: AlgoExecutor;
+}
+interface KatzCentralityResult {
+  /** the node's converged walk sum, or undefined outside the collection */
+  katz(node: Collection): number | undefined;
+  /** the same, normalized by the maximum */
+  katzNormalized(node: Collection): number;
+  /** British-spelling alias of `katzNormalized` */
+  katzNormalised(node: Collection): number;
+}
+//#endregion
+//#region src/algorithms/markov-clustering.d.mts
+/** A similarity function: maps an edge to a numeric contribution. */
+type MarkovAttributeFn = (edge: Collection) => number;
+interface MarkovClusteringOptions {
+  expandFactor?: number;
+  inflateFactor?: number;
+  multFactor?: number;
+  maxIterations?: number;
+  attributes?: MarkovAttributeFn[];
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+//#endregion
+//#region src/algorithms/motif-census.d.mts
+/** The sixteen triad classes, in Holland–Leinhardt order. */
+declare const TRIAD_CLASSES: readonly ['003', '012', '102', '021D', '021U', '021C', '111D', '111U', '030T', '030C', '201', '120D', '120U', '120C', '210', '300'];
+type TriadClass = (typeof TRIAD_CLASSES)[number];
+interface MotifCensusOptions {
+  /** read edge direction (default true — the census is a directed
+   * notion; `false` reads every edge as mutual, so only 003/102/201/
+   * 300 can be non-zero) */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) trace products beat the CPU's O(Σ deg²) wedge walks. */
+  executor?: AlgoExecutor;
+}
+interface MotifCensusResult {
+  /** the sixteen counts; they sum to C(n, 3) */
+  counts: Record<TriadClass, number>;
+}
+//#endregion
+//#region src/algorithms/neighborhood-similarity.d.mts
+/** How a pair's shared-neighbor count is normalized: Jaccard divides
+ * by the union, cosine by the geometric mean of the sizes, overlap by
+ * the smaller size. */
+type SimilarityMetric = 'jaccard' | 'cosine' | 'overlap';
+interface NeighborhoodSimilarityOptions {
+  /** the normalization (default 'jaccard') */
+  metric?: SimilarityMetric;
+  /** compare out-neighborhoods instead of undirected ones */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) matmul beats the CPU's O(n² + Σ deg²) wedge walk. */
+  executor?: AlgoExecutor;
+}
+interface NeighborhoodSimilarityResult {
+  /** the two nodes' similarity in [0, 1], or undefined when either
+   * node is outside the collection */
+  similarity(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/page-rank.d.mts
+interface PageRankOptions {
+  dampingFactor?: number;
+  precision?: number;
+  iterations?: number;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto') */
+  executor?: AlgoExecutor;
+}
+interface PageRankResult {
+  rank(node: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/random-walk.d.mts
+interface RandomWalkWithRestartOptions {
+  /** the nodes the walk restarts at (required for the seed form) */
+  seeds?: Collection | null;
+  /** the restart probability c (default 0.15); must sit in (0, 1) */
+  restartProbability?: number;
+  /** iteration cap when the tolerance is never met (default 200) */
+  maxIterations?: number;
+  /** stop once the L1 step drops under `tolerance` (default 1e-6) —
+   * per column, for the proximity form */
+  tolerance?: number;
+  /** walk out-edges only */
+  directed?: boolean;
+  weight?: WeightFn;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * The seed form has no GPU path; the proximity form takes the GPU
+   * from `GPU_MIN_N` nodes at any density (72.6). */
+  executor?: AlgoExecutor;
+}
+interface RandomWalkWithRestartResult {
+  /** the node's stationary probability, or undefined outside the
+   * collection */
+  score(node: Collection): number | undefined;
+}
+interface RandomWalkWithRestartProximityResult {
+  /** the stationary probability of `to` for the walk restarting at
+   * `from`, or undefined when either node is outside the collection */
+  proximity(from: Collection, to: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/sim-rank.d.mts
+interface SimRankOptions {
+  /** the decay per neighborhood step (default 0.8); must sit in (0, 1) */
+  dampingFactor?: number;
+  /** iteration cap when the tolerance is never met (default 50) */
+  maxIterations?: number;
+  /** stop once max |Δs| ≤ tolerance (default 1e-4) */
+  tolerance?: number;
+  /** compare in-neighborhoods (the classic form) instead of undirected ones */
+  directed?: boolean;
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' takes the GPU from `GPU_MIN_N` nodes at any density
+   * (72.6: the products beat the per-pair CPU iteration everywhere). */
+  executor?: AlgoExecutor;
+}
+interface SimRankResult {
+  /** the pair's SimRank score in [0, 1], or undefined when either
+   * node is outside the collection */
+  similarity(a: Collection, b: Collection): number | undefined;
+}
+//#endregion
+//#region src/algorithms/triangle-counting.d.mts
+interface TriangleCountOptions {
+  /** where the run executes; see `AlgoExecutor` (default 'auto').
+   * 'auto' routes to the GPU only on graphs dense enough that the
+   * O(n³) matmul beats the CPU's O(Σ deg²) sparse walk. */
+  executor?: AlgoExecutor;
+}
+interface TriangleCountResult {
+  /** how many triangles pass through the node */
+  triangles(node: Collection): number | undefined;
+  /** 2T / (deg · (deg − 1)) — the local clustering coefficient */
+  clusteringCoefficient(node: Collection): number | undefined;
+  /** distinct triangles in the collection */
+  totalTriangles: number;
+  /** 3 · triangles / connected triples — the global coefficient */
+  transitivity: number;
+}
+//#endregion
 //#region src/algorithms/executor.d.mts
 /** Where an async algorithm runs: the reference CPU path, the WGSL
  * kernels, the worker pool (round 74), or (the default) whichever fits
@@ -3918,19 +4232,6 @@ interface KargerSteinResult {
   partition2: Collection;
 }
 //#endregion
-//#region src/algorithms/page-rank.d.mts
-interface PageRankOptions {
-  dampingFactor?: number;
-  precision?: number;
-  iterations?: number;
-  weight?: WeightFn;
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-interface PageRankResult {
-  rank(node: Collection): number | undefined;
-}
-//#endregion
 //#region src/algorithms/degree-centrality.d.mts
 interface DegreeCentralityOptions {
   root?: Collection | null;
@@ -3955,298 +4256,6 @@ interface DirectedDegreeCentralityNormalized {
   outdegree(node: Collection): number;
 }
 type DegreeCentralityNormalizedResult = UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
-//#endregion
-//#region src/algorithms/closeness-centrality.d.mts
-interface ClosenessCentralityOptions {
-  root?: Collection | null;
-  weight?: WeightFn;
-  directed?: boolean;
-  /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
-  harmonic?: boolean;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Read by the whole-collection `closenessCentralityNormalized` only —
-   * the single-root `closenessCentrality` is a cheap Dijkstra walk and
-   * stays synchronous on the CPU.  Unweighted runs walk a BFS per
-   * source on either executor (72.3); weighted runs relax
-   * Floyd–Warshall. */
-  executor?: AlgoExecutor;
-}
-interface ClosenessCentralityNormalizedResult {
-  closeness(node: Collection): number;
-}
-//#endregion
-//#region src/algorithms/betweenness-centrality.d.mts
-interface BetweennessCentralityOptions {
-  weight?: WeightFn | null;
-  directed?: boolean;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Weighted runs have no GPU path: 'auto' takes the worker pool
-   * (round 74) from `WORKERS_MIN_N` nodes and an explicit 'gpu'
-   * rejects.  Unweighted runs keep the GPU first under 'auto', then
-   * the pool where no adapter fits. */
-  executor?: AlgoExecutor;
-}
-interface BetweennessCentralityResult {
-  betweenness(node: Collection): number | undefined;
-  betweennessNormalized(node: Collection): number;
-  betweennessNormalised(node: Collection): number;
-}
-//#endregion
-//#region src/algorithms/clustering-distances.d.mts
-type DistanceMetricName = 'euclidean' | 'squaredEuclidean' | 'squared-euclidean' | 'squaredeuclidean' | 'manhattan' | 'max';
-/**
- * A user-supplied distance function.  With no attributes (length 0) it
- * receives the two operands directly; otherwise the per-dimension accessors.
- */
-type CustomDistanceFn = (...args: any[]) => number;
-type DistanceMetric = DistanceMetricName | CustomDistanceFn;
-//#endregion
-//#region src/algorithms/k-clustering.d.mts
-/** A node attribute accessor used as a clustering feature. */
-type KAttributeFn = (node: Collection) => number;
-type FeatureCentroid = number[];
-interface KClusteringOptions {
-  k?: number;
-  m?: number;
-  sensitivityThreshold?: number;
-  distance?: DistanceMetric;
-  maxIterations?: number;
-  attributes?: KAttributeFn[];
-  testMode?: boolean;
-  testCentroids?: number | FeatureCentroid[] | Collection[] | null;
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-interface FuzzyCMeansResult {
-  clusters: Collection[];
-  degreeOfMembership: number[][];
-}
-//#endregion
-//#region src/algorithms/hierarchical-clustering.d.mts
-type HierarchicalAttributeFn = (node: Collection) => number;
-interface HierarchicalClusteringOptions {
-  distance?: DistanceMetric;
-  /** linkage criterion: 'min' (single), 'max' (complete), 'mean', or per-pair */
-  linkage?: string;
-  mode?: 'threshold' | 'dendrogram';
-  threshold?: number;
-  addDendrogram?: boolean;
-  dendrogramDepth?: number;
-  attributes?: HierarchicalAttributeFn[];
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-//#endregion
-//#region src/algorithms/markov-clustering.d.mts
-/** A similarity function: maps an edge to a numeric contribution. */
-type MarkovAttributeFn = (edge: Collection) => number;
-interface MarkovClusteringOptions {
-  expandFactor?: number;
-  inflateFactor?: number;
-  multFactor?: number;
-  maxIterations?: number;
-  attributes?: MarkovAttributeFn[];
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-//#endregion
-//#region src/algorithms/affinity-propagation.d.mts
-type AffinityAttributeFn = (node: Collection) => number;
-type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
-interface AffinityPropagationOptions {
-  distance?: DistanceMetric;
-  preference?: AffinityPreference;
-  damping?: number;
-  maxIterations?: number;
-  minIterations?: number;
-  attributes?: AffinityAttributeFn[];
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-//#endregion
-//#region src/algorithms/triangle-counting.d.mts
-interface TriangleCountOptions {
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * 'auto' routes to the GPU only on graphs dense enough that the
-   * O(n³) matmul beats the CPU's O(Σ deg²) sparse walk. */
-  executor?: AlgoExecutor;
-}
-interface TriangleCountResult {
-  /** how many triangles pass through the node */
-  triangles(node: Collection): number | undefined;
-  /** 2T / (deg · (deg − 1)) — the local clustering coefficient */
-  clusteringCoefficient(node: Collection): number | undefined;
-  /** distinct triangles in the collection */
-  totalTriangles: number;
-  /** 3 · triangles / connected triples — the global coefficient */
-  transitivity: number;
-}
-//#endregion
-//#region src/algorithms/neighborhood-similarity.d.mts
-/** How a pair's shared-neighbor count is normalized: Jaccard divides
- * by the union, cosine by the geometric mean of the sizes, overlap by
- * the smaller size. */
-type SimilarityMetric = 'jaccard' | 'cosine' | 'overlap';
-interface NeighborhoodSimilarityOptions {
-  /** the normalization (default 'jaccard') */
-  metric?: SimilarityMetric;
-  /** compare out-neighborhoods instead of undirected ones */
-  directed?: boolean;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * 'auto' routes to the GPU only on graphs dense enough that the
-   * O(n³) matmul beats the CPU's O(n² + Σ deg²) wedge walk. */
-  executor?: AlgoExecutor;
-}
-interface NeighborhoodSimilarityResult {
-  /** the two nodes' similarity in [0, 1], or undefined when either
-   * node is outside the collection */
-  similarity(a: Collection, b: Collection): number | undefined;
-}
-//#endregion
-//#region src/algorithms/katz-centrality.d.mts
-interface KatzCentralityOptions {
-  /** the walk attenuation per step (default 0.1); must be positive,
-   * and under 1/λ_max of the adjacency for the iteration to converge */
-  alpha?: number;
-  /** the baseline every node starts each step with (default 1) */
-  beta?: number;
-  /** iteration cap when the tolerance is never met (default 200) */
-  maxIterations?: number;
-  /** stop once Σ|Δx| < n · tolerance (default 1e-6) */
-  tolerance?: number;
-  /** count incoming walks only */
-  directed?: boolean;
-  weight?: WeightFn;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
-   * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
-   * explicit 'gpu'. */
-  executor?: AlgoExecutor;
-}
-interface KatzCentralityResult {
-  /** the node's converged walk sum, or undefined outside the collection */
-  katz(node: Collection): number | undefined;
-  /** the same, normalized by the maximum */
-  katzNormalized(node: Collection): number;
-  /** British-spelling alias of `katzNormalized` */
-  katzNormalised(node: Collection): number;
-}
-//#endregion
-//#region src/algorithms/sim-rank.d.mts
-interface SimRankOptions {
-  /** the decay per neighborhood step (default 0.8); must sit in (0, 1) */
-  dampingFactor?: number;
-  /** iteration cap when the tolerance is never met (default 50) */
-  maxIterations?: number;
-  /** stop once max |Δs| ≤ tolerance (default 1e-4) */
-  tolerance?: number;
-  /** compare in-neighborhoods (the classic form) instead of undirected ones */
-  directed?: boolean;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * 'auto' takes the GPU from `GPU_MIN_N` nodes at any density
-   * (72.6: the products beat the per-pair CPU iteration everywhere). */
-  executor?: AlgoExecutor;
-}
-interface SimRankResult {
-  /** the pair's SimRank score in [0, 1], or undefined when either
-   * node is outside the collection */
-  similarity(a: Collection, b: Collection): number | undefined;
-}
-//#endregion
-//#region src/algorithms/random-walk.d.mts
-interface RandomWalkWithRestartOptions {
-  /** the nodes the walk restarts at (required for the seed form) */
-  seeds?: Collection | null;
-  /** the restart probability c (default 0.15); must sit in (0, 1) */
-  restartProbability?: number;
-  /** iteration cap when the tolerance is never met (default 200) */
-  maxIterations?: number;
-  /** stop once the L1 step drops under `tolerance` (default 1e-6) —
-   * per column, for the proximity form */
-  tolerance?: number;
-  /** walk out-edges only */
-  directed?: boolean;
-  weight?: WeightFn;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * The seed form has no GPU path; the proximity form takes the GPU
-   * from `GPU_MIN_N` nodes at any density (72.6). */
-  executor?: AlgoExecutor;
-}
-interface RandomWalkWithRestartResult {
-  /** the node's stationary probability, or undefined outside the
-   * collection */
-  score(node: Collection): number | undefined;
-}
-interface RandomWalkWithRestartProximityResult {
-  /** the stationary probability of `to` for the walk restarting at
-   * `from`, or undefined when either node is outside the collection */
-  proximity(from: Collection, to: Collection): number | undefined;
-}
-//#endregion
-//#region src/algorithms/heat-kernel.d.mts
-interface HeatDiffusionOptions {
-  /** the nodes the heat starts on (required for the seed form) */
-  seeds?: Collection | null;
-  /** how long the heat flows (default 0.1); must be positive */
-  time?: number;
-  weight?: WeightFn;
-  /** which Laplacian drives the diffusion (default 'combinatorial',
-   * L = D − A, heat-conserving); 'normalized' is I − D^{-½}AD^{-½},
-   * whose spectrum is bounded by 2 so the scaling exponent depends on
-   * `time` alone — heat is then not conserved (round 72.4) */
-  laplacian?: HeatLaplacian;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * The seed form has no GPU path; the kernel form takes the GPU from
-   * `GPU_MIN_N` nodes at any density (72.6). */
-  executor?: AlgoExecutor;
-}
-/** The Laplacian a heat run diffuses over. */
-type HeatLaplacian = 'combinatorial' | 'normalized';
-interface HeatDiffusionResult {
-  /** the node's share of the diffused heat, or undefined outside the
-   * collection */
-  score(node: Collection): number | undefined;
-}
-interface HeatKernelResult {
-  /** the heat at `to` after unit heat starts at `from` (symmetric),
-   * or undefined when either node is outside the collection */
-  heat(from: Collection, to: Collection): number | undefined;
-}
-//#endregion
-//#region src/algorithms/effective-resistance.d.mts
-interface EffectiveResistanceOptions {
-  weight?: WeightFn;
-  /** where the run executes; see `AlgoExecutor` (default 'auto') */
-  executor?: AlgoExecutor;
-}
-interface EffectiveResistanceResult {
-  /** the effective resistance between the nodes (Infinity across
-   * components), or undefined when either node is outside the
-   * collection */
-  resistance(a: Collection, b: Collection): number | undefined;
-  /** the expected round-trip steps of the random walk — the
-   * component volume times the resistance */
-  commuteTime(a: Collection, b: Collection): number | undefined;
-}
-//#endregion
-//#region src/algorithms/motif-census.d.mts
-/** The sixteen triad classes, in Holland–Leinhardt order. */
-declare const TRIAD_CLASSES: readonly ['003', '012', '102', '021D', '021U', '021C', '111D', '111U', '030T', '030C', '201', '120D', '120U', '120C', '210', '300'];
-type TriadClass = (typeof TRIAD_CLASSES)[number];
-interface MotifCensusOptions {
-  /** read edge direction (default true — the census is a directed
-   * notion; `false` reads every edge as mutual, so only 003/102/201/
-   * 300 can be non-zero) */
-  directed?: boolean;
-  /** where the run executes; see `AlgoExecutor` (default 'auto').
-   * 'auto' routes to the GPU only on graphs dense enough that the
-   * O(n³) trace products beat the CPU's O(Σ deg²) wedge walks. */
-  executor?: AlgoExecutor;
-}
-interface MotifCensusResult {
-  /** the sixteen counts; they sum to C(n, 3) */
-  counts: Record<TriadClass, number>;
-}
 //#endregion
 //#region src/event.d.mts
 /** The DOM event a gesture came from, when there was one. */
@@ -8673,8 +8682,10 @@ declare class Core {
    * @returns this
    * @throws if no container is given, if the instance was built directly
    *   rather than through the `cytoscape` factory (there is no renderer
-   *   to attach), or if WebGPU is unavailable — mounting is the one way a
-   *   headless instance can demand a GPU after construction
+   *   to attach), if it was built by `cytoscape/headless` or
+   *   `cytoscape/headless-gpu` (a build with no renderer — round 131), or
+   *   if WebGPU is unavailable — mounting is the one way a headless
+   *   instance can demand a GPU after construction
    */
   mount(container: HTMLElement): this;
   /**
@@ -8815,6 +8826,11 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Col
  * can be listening yet), runs `options.layout`, and attaches the renderer and
  * pointer handler when a container is given.
  *
+ * This is the full build (`cytoscape`).  Two slimmer entries carry the
+ * same core without the renderer (round 131): `cytoscape/headless` (no
+ * renderer, no GPU executors) and `cytoscape/headless-gpu` (the GPU
+ * algorithm lanes and a headless GPU force host, no renderer).
+ *
  * **Unknown options are ignored, deliberately** (decided 2026-08-04, fifth
  * design sitting): unlike an unknown sheet key, style property or query key,
  * a misspelled option does not throw, because strictness here resolves at the
@@ -8836,5 +8852,5 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

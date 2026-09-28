@@ -202,8 +202,8 @@ citing "item 12" must keep resolving to item 12.
 
 **As last swept** (2026-09-28, the eleventh design sitting), every open
 call in this section has been put to the maintainer one by one and
-answered — items 18, 21, 23, 27, 52–54, 61–63 and 65–71 each carry the
-call on the item, and the answers with their background are in
+answered — items 18, 21, 23, 27, 30–48, 50–54, 61–63 and 65–71 each
+carry the call on the item, and the answers with their background are in
 `plan/rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`.
 The sitting raised **item 72**, the arrow-shape review, which is open.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
@@ -578,6 +578,8 @@ directions".*
     no golden scene sets a non-default value.  Expect the number to
     be embarrassing; rounds 27/55/56 each found scenes measuring
     nothing, one property at a time.
+    **Call taken (2026-09-28, the eleventh sitting): before the SVG and
+    WebGL parity work**, tier 1 first.
 31. **Scripted gesture traces — the interactions get parity
     scenes** (raised 2026-08-19).  Goldens cover static frames;
     gestures are verified by Node specs plus a person driving
@@ -594,6 +596,8 @@ directions".*
     **First measurement**: the inventory — which gestures have any
     browser-level assertion today, and which have only headless
     synthetic-event coverage.
+    **Call taken (2026-09-28, the eleventh sitting): the inventory now,
+    the trace tier before the WebGL implementation.**
 32. **The benchmark coverage audit graduates** (raised 2026-08-19).
     `bench-coverage.mjs` stays report-only *deliberately* — it is
     heuristic where the gated three are not — so graduation is not
@@ -678,6 +682,8 @@ directions".*
        pay.
     4. **Gate order**: land 1 (an afternoon), then 2 (a day), then
        gate at zero; 3 is its own round with a plan file.
+    **Call taken (2026-09-28, the eleventh sitting): steps 1–2 as a
+    small task; the workloads profile during alpha.**
 33. **Mutation testing as the automated control** (raised
     2026-08-19).  The repo's most productive habit is the hand-made
     control: break the behaviour deliberately, watch the spec fail.
@@ -692,6 +698,8 @@ directions".*
     **First measurement**: mutation-survival rate on `src/style.mts`
     (the largest file, 7.9k lines) under `test:js` alone — the
     survivor list *is* the finding, whatever the tooling verdict.
+    **Call taken (2026-09-28, the eleventh sitting): a one-off probe on
+    the style engine**, tooling decided on the result.
 34. **A renderer soak tier** (raised 2026-08-19).  `test:soak`
     churns the model; nothing churns the GPU side for hours.  The
     round adds a browser soak: repeated add/remove/restyle/zoom
@@ -705,6 +713,8 @@ directions".*
     passes by doing nothing.
     **First measurement**: tracked allocation totals over 10k
     add/remove/restyle cycles at fixed graph size — flat or not.
+    **Call taken (2026-09-28, the eleventh sitting): built with items
+    35–36**, on the same allocation ledger.
 35. **The scale ceiling** (raised 2026-08-19).  The largest thing
     v4 has ever rendered is the 465k-edge `ndex-x-large`.  Nothing
     records where it actually breaks — 1M? 5M? — or *which*
@@ -772,6 +782,8 @@ directions".*
     the worker host declares a `maxSlots` ceiling per column and
     refuses growth past it with this item's message; the number it
     defaults to is the one this round measures.
+    **Call taken (2026-09-28, the eleventh sitting): before alpha, not
+    next, with item 36.**
 36. **The VRAM budget, and failing gracefully** (raised
     2026-08-19).  Device *loss* is tested; allocation *failure* is
     not — nothing defines what a `createBuffer` failure mid-session
@@ -842,6 +854,9 @@ directions".*
     first (the dominant term whenever present), then charts and
     images, then the gradient columns made lazy (32 B of 196 and of
     164, allocated for every scene and used by gradient fills alone).
+    **Call taken (2026-09-28, the eleventh sitting): before alpha;
+    growth past the device's limits makes `cy.add()` throw**, the store
+    unchanged; detection, then the degradation order.
 37. **Accessibility** (raised 2026-08-19).  A canvas renderer is
     invisible to assistive tech, and no scheduled round touches it.
     Scope, in priority order: keyboard navigation (a focus model —
@@ -857,6 +872,7 @@ directions".*
     **First measurement**: a screen-reader transcript over
     `debug/index.html` (predictably: silence), and an inventory of
     what Cytoscape Web built or skipped for a11y.
+    **Call taken (2026-09-28, the eleventh sitting): after 4.0.**
 38. **Label internationalization — CJK first** (raised 2026-08-19;
     **the maintainer's priority order: CJK is highest after
     Latin**).  The label pipeline shapes Latin-simple text: no CJK
@@ -875,6 +891,9 @@ directions".*
     **First measurement**: render a CJK-labelled fixture beside v3
     in the harness and catalogue what is wrong; count atlas pages
     consumed by ~500 distinct CJK glyphs.
+    **Call taken (2026-09-28, the eleventh sitting): CJK designed before
+    alpha and built during alpha; RTL/bidi after 4.0**, its dependency
+    call taken then.
 39. **Lasso selection + public spatial queries** (raised
     2026-08-19).  v3.30 added lasso; v4 has box selection only (no
     `lasso` anywhere in `src/`).  The columns are CPU-canonical and
@@ -887,6 +906,8 @@ directions".*
     **First measurement**: what `cull.mts`/`cpu-pick.mts` already
     provide toward polygon containment, and the cost of
     point-in-polygon over 100k nodes at a realistic vertex count.
+    **Call taken (2026-09-28, the eleventh sitting): in scope, after
+    alpha**, additive.
 40. **Compound drag-and-drop reparenting** (raised 2026-08-19).
     The `compound-drag-and-drop` extension is a standing ecosystem
     bolt-on, and v4 owns everything it needs: the hierarchy lives
@@ -900,6 +921,9 @@ directions".*
     **First measurement**: that enumeration, plus what drop-target
     resolve costs per pointermove at depth (it is a point query
     against parent boxes the hierarchy already maintains).
+    **Call taken (2026-09-28, the eleventh sitting): the full gesture in
+    core, after alpha**, its UX informed by the UTokyo Bubble Clusters
+    paper (EnrichmentMap's bubbles).
 41. **Undo, on the columnar store** (raised 2026-08-19).  Every
     editor app builds an undo stack over this library; `cy.batch()`
     exists but no history does.  The columnar store is uniquely
@@ -914,6 +938,9 @@ directions".*
     **First measurement**: snapshot cost — bytes and milliseconds —
     at 100k elements, and restore cost; that number decides the
     fork before any API is designed.
+    **Call taken (2026-09-28, the eleventh sitting): batch/transaction
+    events exposed for alpha, and the snapshot cost measured for
+    alpha**; a core undo stack is decided on that number.
 42. **Viewport constraints** (raised 2026-08-19).  Min/max zoom
     exist; pan is unbounded, and "keep the graph on screen" is a
     perennial app-level reimplementation (the #1905 family's other
@@ -927,6 +954,7 @@ directions".*
     **First measurement**: the closed-issue inventory of what was
     actually asked for, then the writer inventory — every code
     path that sets pan/zoom, to confirm one funnel exists.
+    **Call taken (2026-09-28, the eleventh sitting): after alpha.**
 43. **The wire format goes public** (raised 2026-08-19).  Round
     46.5's binary format is 2.7× smaller at rest than JSON and
     fuzz-hardened since 48.3, but it is an internal fixture
@@ -943,6 +971,11 @@ directions".*
     decoder's zero-copy views rest on is now written on
     `serializeElements` as the encoder's contract; going public
     inherits that sentence as a wire guarantee.
+    **Call taken (2026-09-28, the eleventh sitting): public but
+    experimental until 4.x** — no cross-version promise at 4.0.
+    (Correction to the entry: the format already has a public API —
+    `cy.serialize()`, `serializeElements`, `deserializeElements` — and a
+    magic/version header with presence flags.)
 44. **A v3→v4 codemod** (raised 2026-08-19).  `MIGRATING.md` is
     prose, but its property table is machine-checked
     (`test/modules/migration-guide.mjs`) — a codemod can be driven
@@ -956,6 +989,8 @@ directions".*
     **First measurement**: run the candidate transform over v3's
     own documentation snippets and one real app's source, and
     count clean conversions versus flags versus misses.
+    **Call taken (2026-09-28, the eleventh sitting): declined.**
+    Closed.
 45. **Typed element data** (raised 2026-08-19).  The shipped
     `d.ts` types `data()` as `any`-shaped; the ask is generics —
     `cytoscape<NodeData, EdgeData>( … )` — flowing through
@@ -970,6 +1005,8 @@ directions".*
     `npm run build:types` — if generics survive to
     `dist/cytoscape.d.ts` with hover docs intact, the round is
     real; if not, the round is first a build-pipeline round.
+    **Call taken (2026-09-28, the eleventh sitting): prototype, then
+    build, before alpha.**
 46. **Framework bindings, React first** (raised 2026-08-19).
     `react-cytoscapejs` is stale and every consumer rebuilds the
     same lifecycle glue.  An official wrapper owns: mount/destroy
@@ -982,6 +1019,9 @@ directions".*
     **First measurement**: what the stale wrapper gets wrong
     against v4's lifecycle, enumerated — destroy timing, resize,
     double-mount, update batching — as the requirements list.
+    **Call taken (2026-09-28, the eleventh sitting): after alpha, after
+    round 107's `patch()`**, with Vue, Solid, Svelte and others
+    considered.
 47. **A devtools panel** (raised 2026-08-19).  `debug/` already
     has the instruments — the stats overlay, frame timings
     (`gpu-timer.mts`), store counts — but they are welded to the
@@ -995,6 +1035,7 @@ directions".*
     the harness's instruments read public API versus reach into
     internals, since that boundary decides what the panel can be
     without growing the public surface.
+    **Call taken (2026-09-28, the eleventh sitting): during alpha.**
 48. **PDF export over the SVG serializer** (raised 2026-08-19).
     Round 77 builds the SVG serializer; EnrichmentMap web ships a
     pdf-export extension today, so the first consumer exists
@@ -1006,6 +1047,8 @@ directions".*
     **First measurement**: run 77's output through the
     svg2pdf-class candidates, rasterize both, and diff — the
     parity harness round 77.5 builds is reusable verbatim.
+    **Call taken (2026-09-28, the eleventh sitting): a documented SVG →
+    PDF recipe, no core PDF.**
 49. **The layout portfolio — one excellent layout per use case,
     layered/hierarchical first** (maintainer, 2026-08-19: v4
     should ship a *better* set of built-ins than v3 — one really
@@ -1064,6 +1107,8 @@ directions".*
     and flagship-app usage, map each against rounds 71–97 for
     absorption, and let the remainder *be* the port list — with
     the first port chosen for shape-coverage, not popularity.
+    **Call taken (2026-09-28, the eleventh sitting): all ports during
+    alpha.**
 
 51. **Round 86's worker-host deferrals** (logged 2026-08-26, from
     the round-86 landed record — surfaced here per the standing
@@ -1181,6 +1226,8 @@ directions".*
     1.75 s / 30 and 1.65 s / 30.  The rows now assert the ticks (a
     held thread warns) rather than the position spans they no longer
     carry.  Images and fonts stay open as recommended above.
+    **Call taken (2026-09-28, the eleventh sitting): images and fonts
+    both before alpha.**
 
 52. **The chain spec's intermittent failure, still unexplained**
     (logged 2026-08-26, round 109).  `test/force-layout.mjs`'s

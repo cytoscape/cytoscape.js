@@ -70,3 +70,57 @@ here.
   record.
 - **Item 71 — the eleven 1,000–1,600-line files: left as they are.**
   The item closes without a rule.
+
+### The logged ideas (items 30–51)
+
+- **Item 30 — golden coverage: the enumerator before the SVG and
+  WebGL parity work** (tier 1, the unexercised-property count, ahead
+  of rounds 77 and 73; the degrade control later).
+- **Item 31 — gesture traces: the inventory now, the trace tier
+  before the WebGL implementation**, so both renderers are held to it.
+- **Item 32 — the benchmark coverage audit: steps 1–2 as a small
+  task** (the missing algorithm and `reheat` rows, the audited
+  exemption table, the discriminating-row rule, then gate at zero);
+  **the workloads profile during alpha**.
+- **Item 33 — mutation testing: a one-off probe on the style engine**,
+  the survivors acted on, standing tooling decided on the result.
+- **Item 34 — the renderer soak: built with items 35–36**, on the same
+  allocation ledger.
+- **Items 35–36 — limits and allocation failure: before alpha, not
+  next.**  Growth past the device's limits makes **`cy.add()` throw**
+  (the `GpuUnfitError` shape), leaving the store unchanged; the
+  adapter's own limits are requested, failures surface as an
+  instance event, and the degradation order follows.
+- **Item 37 — accessibility: after 4.0.**
+- **Item 38 — international labels: CJK designed before alpha (the
+  shape of the font setting and its fallback chain) and built during
+  alpha; RTL/bidi after 4.0**, its shaping-dependency call taken when
+  it is scheduled.
+- **Item 39 — lasso and public spatial queries: in scope, after
+  alpha** (additive).
+- **Item 40 — compound drag-and-drop reparenting: the full gesture in
+  core, after alpha**, its UX informed by the UTokyo Bubble Clusters
+  paper (think EnrichmentMap's bubbles).
+- **Item 41 — undo: expose batch/transaction events for alpha, and
+  measure snapshot and restore cost for alpha.**  Whether core ships
+  an undo stack is decided on that measurement.
+- **Item 42 — viewport constraints: after alpha** (an additive
+  option).
+- **Item 43 — the wire format: public but experimental until 4.x.**
+  Its existing header (magic, version 4, presence flags) stays, and
+  no cross-version compatibility is promised at 4.0; the rounds that
+  want sections (81, 82, 83, 103) add them under that rule.
+- **Item 44 — the codemod: declined.**  `MIGRATING.md` is the aid.
+- **Item 45 — typed element data: the prototype, then the build,
+  before alpha.**
+- **Item 46 — framework bindings: after alpha, after round 107's
+  `patch()`**, with Vue, Solid, Svelte and other popular libraries
+  considered beside React.
+- **Item 47 — the devtools panel: during alpha.**
+- **Item 48 — PDF: a documented SVG → PDF recipe**, no core PDF; a
+  companion package only if asked.
+- **Item 50 — the v3 extension ports: all during alpha.**
+- **Item 51 — the worker host's images and fonts: both before
+  alpha**, images decoded in the worker, fonts from an app-provided
+  list registered from bytes, WebKit verified before the option is
+  documented as cross-engine.

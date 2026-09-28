@@ -1379,7 +1379,16 @@ width override is to be ported.  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
 the page sittings and AVSDF; a sheet diff for `cy.style()`, one column
 animation per animated layout and a worker lane for the k-clusterings
-are all due before alpha.
+are all due before alpha.  From the logged ideas, also before alpha:
+the device-limits round (where `cy.add()` throws past the GPU's limits)
+with a renderer soak, typed element data, batch events for undo plus a
+snapshot measurement, the worker host's images and fonts, and the CJK
+label design.  During alpha: the extension ports, a devtools panel and
+a workloads benchmark profile.  After alpha: lasso and spatial queries,
+compound drag-and-drop, viewport constraints and framework bindings;
+accessibility and RTL text after 4.0.  Declined: a v3→v4 codemod and
+a core PDF export (an SVG→PDF recipe instead).  The wire format stays
+public but experimental until 4.x.
 
 ## Not yet built
 

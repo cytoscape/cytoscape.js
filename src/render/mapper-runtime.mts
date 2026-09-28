@@ -5,7 +5,7 @@ import {
   TARGET_BINDINGS,
   MAX_PROGRAMS,
 } from './mapper-shaders.mjs';
-import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import type { GroupName, ColumnId } from '../contract.mjs';
 import type { DataStore } from '../store/data-store.mjs';
 import type {

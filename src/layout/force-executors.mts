@@ -3,7 +3,7 @@
 
 import { ForceSim } from './force-sim.mjs';
 import type { Core } from '../core.mjs';
-import type { ForceHostLike, ForceRuntimeLike } from '../render/gpu-force.mjs';
+import type { ForceHostLike, ForceRuntimeLike } from './force-host.mjs';
 import { acquireForceWorker } from './force-remote.mjs';
 import type { ForceWorker, RemoteSimRun } from './force-remote.mjs';
 import type { ForceSimInputs } from './force-sim.mjs';

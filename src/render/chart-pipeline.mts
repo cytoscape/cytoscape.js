@@ -15,7 +15,7 @@ custom-polygon clipping); group(1) is the culled visible list.
 
 import { CHART_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
-import { SHADER_STAGE } from './webgpu-constants.mjs';
+import { SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import { PREMULTIPLIED_BLEND, DEPTH_FORMAT } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';

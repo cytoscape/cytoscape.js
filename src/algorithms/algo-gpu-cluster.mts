@@ -22,7 +22,7 @@ assume floats are finite, so the kernel must not manufacture an Inf.
 */
 
 import type { Collection } from '../collection.mjs';
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {

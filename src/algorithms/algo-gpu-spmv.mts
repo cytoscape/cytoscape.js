@@ -43,7 +43,7 @@ readback, ~3.5 ms, not the kernel: see the round-72 record for why
 'auto' keeps both families on the CPU.
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import { getPipeline, groupFor, storageFrom } from './algo-gpu.mjs';
 import type { Dispatch } from './algo-gpu.mjs';

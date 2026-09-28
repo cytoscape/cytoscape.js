@@ -10,7 +10,7 @@ import type {
   ModelView,
   StoreDelta,
 } from '../contract.mjs';
-import { BUFFER_USAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE } from '../gpu/webgpu-constants.mjs';
 
 /*
 GPU storage-buffer mirror of the CPU-canonical columns.

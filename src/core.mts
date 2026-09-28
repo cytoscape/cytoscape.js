@@ -8,15 +8,15 @@ import { Viewport, type ZoomOptions, type Extent } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { Animation, AnimationManager } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
-import { CustomLayout } from './layout/contract.mjs';
-import { GridLayout } from './layout/grid.mjs';
-import { PresetLayout } from './layout/preset.mjs';
-import { CircleLayout } from './layout/circle.mjs';
-import { ConcentricLayout } from './layout/concentric.mjs';
-import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
-import { RandomLayout } from './layout/random.mjs';
-import { RadialLayout } from './layout/radial.mjs';
-import { PackLayout } from './layout/pack-layout.mjs';
+import type { CustomLayout } from './layout/contract.mjs';
+import type { GridLayout } from './layout/grid.mjs';
+import type { PresetLayout } from './layout/preset.mjs';
+import type { CircleLayout } from './layout/circle.mjs';
+import type { ConcentricLayout } from './layout/concentric.mjs';
+import type { BreadthFirstLayout } from './layout/breadthfirst.mjs';
+import type { RandomLayout } from './layout/random.mjs';
+import type { RadialLayout } from './layout/radial.mjs';
+import type { PackLayout } from './layout/pack-layout.mjs';
 
 export type Layout =
   | CustomLayout

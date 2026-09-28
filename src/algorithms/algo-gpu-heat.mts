@@ -10,7 +10,7 @@ squares the sum s times, where the CPU applies the identical operator
 encoded as one submission with one readback.
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {

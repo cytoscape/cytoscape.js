@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   ARROW_SHIFT_SRC_SHOWS_LINE,
   ARROW_SHIFT_TGT_SHOWS_LINE,

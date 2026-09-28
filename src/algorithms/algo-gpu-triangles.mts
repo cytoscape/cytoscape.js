@@ -15,7 +15,7 @@ node) far past the graphs this tier prices, and `executor: 'cpu'`
 remains the exact path.
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {

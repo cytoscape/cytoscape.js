@@ -16,7 +16,8 @@ always reported in *base-tier* SDF px regardless of tier, so layout, the
 shaping memo and the glyph-run math never see the raster resolution.
 */
 
-import { TEXTURE_USAGE } from './webgpu-constants.mjs';
+import { TEXTURE_USAGE } from '../gpu/webgpu-constants.mjs';
+import type { GlyphMetrics } from '../label-types.mjs';
 
 /** rasterized glyph size at the base tier; on-screen glyphs scale from
  * this via the SDF, and all metrics are reported in these units */
@@ -42,22 +43,7 @@ const ATLAS_SIZE = 1024;
 const ROW_HEIGHT = Math.ceil(SDF_FONT_SIZE * 1.4) + 2 * SDF_PAD;
 const INF = 1e20;
 
-/** How a glyph is placed: sizes/offsets in SDF px, uvs normalized. */
-export interface GlyphMetrics {
-  /** pen advance */
-  advance: number;
-  /** quad left offset from the pen position (includes atlas padding) */
-  planeX: number;
-  /** quad top offset from the baseline (negative above) */
-  planeY: number;
-  /** quad size; 0 ⇒ advance-only glyph (e.g. space), no quad */
-  w: number;
-  h: number;
-  u0: number;
-  v0: number;
-  u1: number;
-  v1: number;
-}
+export type { GlyphMetrics } from '../label-types.mjs';
 
 /**
  * Convert a rasterized alpha grid to SDF bytes (pure; exported for Node

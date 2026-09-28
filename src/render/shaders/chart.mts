@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import { SHAPE_MASK, SHAPE_SHIFT } from '../../contract.mjs';
 import { COMMON } from './common.mjs';
 import { SDF } from './sdf.mjs';

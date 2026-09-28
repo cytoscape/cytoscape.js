@@ -1074,3 +1074,11 @@ export interface Ref {
   slot: number;
   gen: number;
 }
+
+/**
+ * The edge namespace bit of a packed pick id (round 86.2): a pick answers
+ * `slot + 1`, with this bit set for an edge.  Co-signed here rather than in
+ * the renderer's picking module (131.1) because the core decodes pick ids
+ * (`core/export.mts`) and a headless build carries no renderer.
+ */
+export const EDGE_PICK_BIT = 0x80000000;

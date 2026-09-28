@@ -23,7 +23,7 @@ the working arrays and the per-batch loop here; what differs is what
 runs after the frontier empties.
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {
   getPipeline,

@@ -111,6 +111,8 @@ export const HISTORICAL_PATHS = {
     "another repo's file — the CX converter round 81 reverse-engineered the annotation dialect from; cited as a source, not pointed at",
   'test/layout.mjs':
     "the cyext scaffold template's own spec file (round 71) — a file of the *generated* extension package, not this repo's test/",
+  'src/render/wgsl.mts':
+    "round 52's record names the tag's home as it was; round 131.1 moved it to src/gpu/ with the rest of the device tier",
   'playwright-tests/quiet-reporter.js':
     "round 101's plan named .js; the round shipped .mjs (tsx treats a .js in this no-type package as CJS) and the record quotes both spellings",
 };

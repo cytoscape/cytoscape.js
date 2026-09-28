@@ -1,10 +1,10 @@
-import { wgsl } from './wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { ChannelWrite, WriteKind } from '../animation.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { EASING_KIND } from '../easing.mjs';
 import type { EasingProgram } from '../easing.mjs';
 import { OKLAB_TO_SRGB_WGSL } from './mapper-shaders.mjs';
-import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 
 /*
 GPU tween runtime: evaluates animations on-device so a running animation

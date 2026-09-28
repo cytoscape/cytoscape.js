@@ -5,7 +5,11 @@ import { DEPTH_FORMAT } from '../node-pipeline.mjs';
 import { CURVE_SEGS } from '../../curve-geometry.mjs';
 import { ExportPacker } from '../export-pack.mjs';
 import type { PackedExport } from '../export-pack.mjs';
-import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from '../webgpu-constants.mjs';
+import {
+  BUFFER_USAGE,
+  MAP_MODE,
+  TEXTURE_USAGE,
+} from '../../gpu/webgpu-constants.mjs';
 import type { ExportOptions } from '../../public-types.mjs';
 import { resolveExportView } from './export-view.mjs';
 import {

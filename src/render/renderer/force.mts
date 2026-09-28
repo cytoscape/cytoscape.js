@@ -1,8 +1,8 @@
 // The renderer's force-run driver and the LOD promotions (round 130
 // split).
 
-import { GpuForceRuntime } from '../gpu-force.mjs';
-import type { ForceInputs } from '../gpu-force.mjs';
+import { GpuForceRuntime } from '../../gpu/gpu-force.mjs';
+import type { ForceInputs } from '../../layout/force-host.mjs';
 import { GROUP_NODES, COL } from '../../contract.mjs';
 import type { Renderer } from '../renderer.mjs';
 

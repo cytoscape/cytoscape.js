@@ -1,8 +1,12 @@
 // Core's image export and pick decoding (round 130 split).
 
 import { Collection } from '../collection.mjs';
-import { GROUP_EDGES, GROUP_NODES, FLAG_ALIVE } from '../contract.mjs';
-import { EDGE_PICK_BIT } from '../render/picking.mjs';
+import {
+  EDGE_PICK_BIT,
+  GROUP_EDGES,
+  GROUP_NODES,
+  FLAG_ALIVE,
+} from '../contract.mjs';
 import type { GroupName } from '../contract.mjs';
 import type { ExportOptions } from '../public-types.mjs';
 import type { Core } from '../core.mjs';

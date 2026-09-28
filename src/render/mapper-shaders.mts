@@ -15,7 +15,7 @@ Bindings (@group(0)):
   5.. write targets, per group (colors as array<u32>, scalars f32)
 */
 
-import { wgsl } from './wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import { COL } from '../contract.mjs';
 import type { GroupName } from '../contract.mjs';
 

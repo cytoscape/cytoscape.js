@@ -27,7 +27,7 @@ import {
 } from './layout-mapping.mjs';
 import { resolveConstraints } from './force-constraints.mjs';
 import type { LayoutContext } from './contract.mjs';
-import type { ForceHostLike } from '../render/gpu-force.mjs';
+import type { ForceHostLike } from './force-host.mjs';
 import { projectConstraints } from './force-constraints.mjs';
 import { forceWorkerSupported } from './force-remote.mjs';
 import type { ForceSimInputs } from './force-sim.mjs';

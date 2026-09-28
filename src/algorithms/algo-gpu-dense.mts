@@ -29,7 +29,7 @@ few pieces defined here.  Two conventions every kernel follows:
   perf pass came from.
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 
 /** Workgroup edge for 2D matrix kernels (16×16 = 256 invocations). */
 export const TILE = 16;

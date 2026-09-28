@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   BORDER_STYLE_SHIFT,
   OUTLINE_STYLE_SHIFT,

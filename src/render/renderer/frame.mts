@@ -15,9 +15,9 @@ import { LabelLayer } from '../label-layer.mjs';
 import { MapperRuntime } from '../mapper-runtime.mjs';
 import { ImageArrays } from '../image-arrays.mjs';
 import { GpuTweenRuntime } from '../gpu-tween.mjs';
-import { nextBatch } from '../gpu-force.mjs';
+import { nextBatch } from '../../gpu/gpu-force.mjs';
 import { Upscaler } from '../upscale.mjs';
-import { BUFFER_USAGE } from '../webgpu-constants.mjs';
+import { BUFFER_USAGE } from '../../gpu/webgpu-constants.mjs';
 import { COL } from '../../contract.mjs';
 import {
   SETTLE_TO_MAX_MS,

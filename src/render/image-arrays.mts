@@ -27,7 +27,7 @@ point of the tier design: minification samples a coherent low mip
 instead of scattering across full-res texels.
 */
 
-import { wgsl } from './wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import {
   IMAGE_TIER_SIZES,
   IMAGE_KIND_SDF,
@@ -37,7 +37,7 @@ import {
 import type { ImageRegistry, ImageEntry } from '../image-registry.mjs';
 import { computeSdf } from './glyph-atlas.mjs';
 import type { SdfAlphaGrid } from './image-decoder.mjs';
-import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, TEXTURE_USAGE } from '../gpu/webgpu-constants.mjs';
 
 /** WebGPU base maxTextureArrayLayers */
 export const IMAGE_MAX_LAYERS = 256;

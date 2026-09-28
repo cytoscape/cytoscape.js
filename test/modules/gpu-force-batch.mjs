@@ -3,7 +3,7 @@ import {
   BATCH_FRAME_BUDGET_MS,
   MAX_BATCH,
   nextBatch,
-} from '../../src/render/gpu-force.mjs';
+} from '../../src/gpu/gpu-force.mjs';
 
 // Round 119: a force run nobody watches mid-run — `animate: false`, or
 // `animate: true`'s tween to the settle — is no longer paced by vsync

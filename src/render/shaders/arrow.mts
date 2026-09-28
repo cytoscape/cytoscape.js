@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import { ARROW_MAX_BACK, ARROW_MAX_FRONT } from '../../shape-points.mjs';
 import {
   ARROW_SHAPE_MASK,

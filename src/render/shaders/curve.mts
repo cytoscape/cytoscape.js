@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   AVOID_IMPOSSIBLE_BEZIER,
   AVOID_IMPOSSIBLE_BEZIER_L,

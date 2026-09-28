@@ -1,4 +1,4 @@
-import { BUFFER_USAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE } from '../gpu/webgpu-constants.mjs';
 
 /**
  * The shared per-instance quad index list: two triangles over quadCorner's

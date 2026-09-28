@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment

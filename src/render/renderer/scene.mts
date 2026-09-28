@@ -5,7 +5,7 @@ import { ColumnMirror } from '../column-mirror.mjs';
 import { CulledGroup } from '../cull.mjs';
 import { GLYPH_BYTES } from '../glyph-buffer.mjs';
 import type { GlyphBuffer } from '../glyph-buffer.mjs';
-import { BUFFER_USAGE } from '../webgpu-constants.mjs';
+import { BUFFER_USAGE } from '../../gpu/webgpu-constants.mjs';
 import { GROUP_EDGES, GROUP_NODES, COL } from '../../contract.mjs';
 import type { SceneCullGroups, Renderer } from '../renderer.mjs';
 import {

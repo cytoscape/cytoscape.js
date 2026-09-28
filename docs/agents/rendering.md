@@ -7,7 +7,7 @@ the fixtures need their own controls.
 
 ## WGSL ships minified
 
-- **The bundles ship minified WGSL, not the shader text as written** (round 52).  Multi-line WGSL literals carry the `wgsl` template tag (`src/render/wgsl.mts`; identity at runtime) and `scripts/wgsl-minify.mjs` strips comments/whitespace at build time with `${...}` kept byte-for-byte opaque — so when adding a shader, tag the literal, and never put an interpolation inside a WGSL comment (a build error; spell the name in prose).  The transform runs in dev builds too, deliberately: Playwright exercises the same transform that ships.
+- **The bundles ship minified WGSL, not the shader text as written** (round 52).  Multi-line WGSL literals carry the `wgsl` template tag (`src/gpu/wgsl.mts`; identity at runtime) and `scripts/wgsl-minify.mjs` strips comments/whitespace at build time with `${...}` kept byte-for-byte opaque — so when adding a shader, tag the literal, and never put an interpolation inside a WGSL comment (a build error; spell the name in prose).  The transform runs in dev builds too, deliberately: Playwright exercises the same transform that ships.
 
 ## `debug/` — the manual harness
 

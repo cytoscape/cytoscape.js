@@ -35,7 +35,7 @@ human wrote.  Three layers of defence, in order of strength:
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
 
-// the modules that carry tagged WGSL (see src/render/wgsl.mts); round
+// the modules that carry tagged WGSL (see src/gpu/wgsl.mts); round
 // 130 split `shaders.mts` into `src/render/shaders/`, one file per shader
 const WGSL_FILES = [
   'src/render/shaders/common.mts',
@@ -48,7 +48,7 @@ const WGSL_FILES = [
   'src/render/shaders/image.mts',
   'src/render/shaders/chart.mts',
   'src/render/cull.mts',
-  'src/render/gpu-force.mts',
+  'src/gpu/gpu-force.mts',
   'src/render/gpu-tween.mts',
   'src/render/mapper-shaders.mts',
   'src/render/image-arrays.mts',

@@ -1,6 +1,6 @@
 import { NODE_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
-import { SHADER_STAGE } from './webgpu-constants.mjs';
+import { SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';

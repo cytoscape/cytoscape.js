@@ -26,8 +26,7 @@ against `text-halign` before it gets here (v3's rule: a label hanging
 left of its node right-justifies, and vice versa).
 */
 
-import type { GlyphMetrics } from './render/glyph-atlas.mjs';
-import type { LaidGlyph } from './render/label-layout.mjs';
+import type { GlyphMetrics, LaidGlyph } from './label-types.mjs';
 
 export const WRAP_NONE = 0;
 export const WRAP_WRAP = 1;

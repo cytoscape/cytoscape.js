@@ -1,4 +1,4 @@
-import type { GlyphMetrics } from './glyph-atlas.mjs';
+import type { GlyphMetrics, LaidGlyph } from '../label-types.mjs';
 
 /*
 Pure single-line glyph layout (Node-testable with fake metrics): places
@@ -9,16 +9,7 @@ labels are a documented pass-1 constraint); glyphs missing from the atlas
 are skipped.
 */
 
-export interface LaidGlyph {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  u0: number;
-  v0: number;
-  u1: number;
-  v1: number;
-}
+export type { LaidGlyph } from '../label-types.mjs';
 
 /**
  * Lays out one line of text as glyph quads in SDF px.  Advances are

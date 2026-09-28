@@ -1,4 +1,4 @@
-import { BUFFER_USAGE, MAP_MODE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, MAP_MODE } from '../gpu/webgpu-constants.mjs';
 
 /*
 Measures real GPU execution time of the scene work (cull compute pass +

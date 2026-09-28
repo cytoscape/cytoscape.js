@@ -185,6 +185,58 @@ const allEdges = () => {
   return { outward, bare, internal };
 };
 
+/**
+ * The modules an entry reaches (round 131): every `import`/`export … from`
+ * edge from `entry`, followed transitively.  **Type imports count** — the
+ * walk has no type awareness by design, so a tier stays exact without a
+ * type checker in the loop: the types a lower tier needs live in the lower
+ * tier (131.1 moved `ForceHostLike` to `layout/force-host.mts`, the glyph
+ * types to `label-types.mts`, `EDGE_PICK_BIT` to `contract.mts`).  Returns
+ * a map from each reached file to the file that first imported it, so a
+ * failure prints the chain.
+ *
+ * @param {string} entry — repo-relative, e.g. 'src/headless.mts'
+ * @returns {Map<string, string | null>}
+ */
+const reach = (entry) => {
+  const start = join(ROOT, entry);
+  const seen = new Map([[start, null]]);
+  const queue = [start];
+
+  while (queue.length > 0) {
+    const file = queue.shift();
+    const src = stripComments(readFileSync(file, 'utf8'));
+
+    for (const m of src.matchAll(
+      /(?:from\s+|import\s+|import\s*\(\s*)'([^']+)'/g,
+    )) {
+      if (!m[1].startsWith('.')) {
+        continue;
+      }
+
+      const target = resolve(dirname(file), m[1]).replace(/\.mjs$/, '.mts');
+
+      if (!seen.has(target)) {
+        seen.set(target, file);
+        queue.push(target);
+      }
+    }
+  }
+
+  return seen;
+};
+
+/** The import chain from the entry down to `file`, for a failure message. */
+const chain = (seen, file) => {
+  const out = [];
+
+  for (let f = file; f != null; f = seen.get(f)) {
+    out.unshift(relative(SRC, f));
+  }
+
+  return out.join(' → ');
+};
+
 describe('import graph: what src reaches outside itself (round 41.3, 42)', function () {
   const { outward, bare, internal } = allEdges();
 
@@ -290,5 +342,43 @@ describe('import graph: what src reaches outside itself (round 41.3, 42)', funct
       expect(why, `${name} has no reason recorded`).to.be.a('string');
       expect(why.trim().length, `${name}'s reason is empty`).to.be.at.least(20);
     }
+  });
+});
+
+describe('import graph: the tiers (round 131)', function () {
+  /*
+  Round 100.1's capability ladder, shipped as entries by round 131: T0 the
+  headless core, T1 + workers, T2 + WebGPU, T3 + DOM/canvas.  A tier is
+  exact when walking every import from its entry reaches nothing of a
+  higher tier — then a bundler building that entry *cannot* carry the
+  higher tier, whatever it shakes.  The walk lands red before 131.1's
+  moves (the control): `core/export.mts` reached `render/picking.mts` for
+  the pick bit, `label-wrap.mts` the glyph atlas for two types, and the
+  force layout `render/gpu-force.mts` for the host types.
+  */
+
+  const FORBIDDEN = (tiers) => new RegExp(`^src/(?:${tiers.join('|')})`);
+
+  const offenders = (entry, forbidden) => {
+    const seen = reach(entry);
+
+    return {
+      seen,
+      bad: [...seen.keys()].filter((f) => forbidden.test(relative(ROOT, f))),
+    };
+  };
+
+  it('the core reaches nothing under render/ or interact/ (131.1)', function () {
+    const { seen, bad } = offenders(
+      'src/core.mts',
+      FORBIDDEN(['render/', 'interact/']),
+    );
+
+    expect(
+      bad.map((f) => chain(seen, f)),
+      'the core tier reaches the renderer tier',
+    ).to.deep.equal([]);
+    // the walk's own control: it followed the core's real graph
+    expect(seen.size, 'the walk touched too few modules').to.be.at.least(150);
   });
 });

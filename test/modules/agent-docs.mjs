@@ -70,7 +70,6 @@ function pathsIn(md) {
  * same spelling.
  */
 const EXEMPT = {
-  'src/gpu/': 'round 42 renamed it to src/ — quoted as the lesson',
   'typescript/tests/gpu.test-d.ts': 'round 42: a spelling the sweep missed',
   'test/modules/gpu-import-graph.mjs': 'round 42: a spelling the sweep missed',
   'test/gpu-': 'round 42: the grep pattern that did not match it',

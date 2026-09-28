@@ -1,4 +1,8 @@
-import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
+import {
+  BUFFER_USAGE,
+  MAP_MODE,
+  TEXTURE_USAGE,
+} from '../gpu/webgpu-constants.mjs';
 
 /*
 GPU picking against a small fixed tile.
@@ -38,7 +42,9 @@ export const PICK_TILE = 64;
 
 const RING = 3;
 
-export const EDGE_PICK_BIT = 0x80000000;
+// the edge namespace bit lives in the contract (131.1): the core decodes
+// pick ids without importing the renderer
+export { EDGE_PICK_BIT } from '../contract.mjs';
 
 interface RingSlot {
   buffer: GPUBuffer;

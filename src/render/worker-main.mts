@@ -6,7 +6,8 @@ import type {
   WorkerMessage,
 } from './worker-protocol.mjs';
 import type { RenderHost } from './host.mjs';
-import type { ForceInputs, GpuForceRuntime } from './gpu-force.mjs';
+import type { GpuForceRuntime } from '../gpu/gpu-force.mjs';
+import type { ForceInputs } from '../layout/force-host.mjs';
 
 /*
 The worker-side entry (round 86.3): the real `Renderer` running against

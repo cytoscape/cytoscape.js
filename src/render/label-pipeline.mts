@@ -1,6 +1,6 @@
 import { EDGE_LABEL_SHADER, LABEL_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
-import { SHADER_STAGE } from './webgpu-constants.mjs';
+import { SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';

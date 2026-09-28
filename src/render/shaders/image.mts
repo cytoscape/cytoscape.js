@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL,
   SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL,

@@ -1,5 +1,5 @@
 import { pickNodeTierAt, type NodePickTier } from './cpu-pick.mjs';
-import { EDGE_PICK_BIT } from './picking.mjs';
+import { EDGE_PICK_BIT } from '../contract.mjs';
 import { resolveExportView } from './renderer.mjs';
 import type { ExportedImage } from './renderer.mjs';
 import { buildBatch, collectTransfers } from './worker-protocol.mjs';
@@ -15,7 +15,7 @@ import type {
   ForceHostLike,
   ForceInputs,
   ForceRuntimeLike,
-} from './gpu-force.mjs';
+} from '../layout/force-host.mjs';
 import { SELF_URL } from '../util/self-url.mjs';
 import type { Core } from '../core.mjs';
 import type {

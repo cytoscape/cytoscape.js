@@ -1,6 +1,6 @@
-import { wgsl } from './wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import { COMMON, GLYPH_STRUCT } from './shaders.mjs';
-import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 
 /*
 GPU culling: per group (nodes, edges, glyphs) a compute pre-pass compacts

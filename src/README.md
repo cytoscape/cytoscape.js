@@ -1666,7 +1666,7 @@ round records carry the histories.
   pure component/seed machinery) always exists — headless instances,
   compound graphs, constrained runs (85.2) — and is what the Node
   specs pin.  On a flat rendered graph with a device, the **GPU
-  integrator** (`render/gpu-force.mts`) takes over **however the run
+  integrator** (`gpu/gpu-force.mts`) takes over **however the run
   is shown** (87.2 — executor choice is availability-driven, not
   presentation-driven): per iteration,
   grid build by counting sort → pyramid aggregate + per-level reduce
@@ -1883,7 +1883,7 @@ round records carry the histories.
   iterations per rendered frame, vsync-paced, plus the page's tween.
   Two changes: a **non-presenting run batches** — `animate: false`
   and `animate: true`'s tween are not watched mid-run, so the renderer
-  asks `nextBatch` (`render/gpu-force.mts`) each frame and the batch
+  asks `nextBatch` (`gpu/gpu-force.mts`) each frame and the batch
   doubles while the device keeps up, halves the frame after a scene
   pass was skipped under the frames-in-flight backpressure, within
   `[stepsPerFrame, 64]`; `animateLive` and `infinite` keep their
@@ -5082,7 +5082,7 @@ native WebGPU as a driver for the GPU *algorithm* executors is round
 ## Shipped shaders: WGSL minified at build time (round 52)
 
 The bundles do not ship the WGSL as written.  Every multi-line shader
-literal carries the `wgsl` template tag (`src/render/wgsl.mts` — an
+literal carries the `wgsl` template tag (`src/gpu/wgsl.mts` — an
 identity join at runtime, so tsx-driven tests and benchmarks through
 `src/` see the original text), and a build-time rolldown plugin
 (`scripts/wgsl-minify.mjs`, in every bundle config) strips comments,

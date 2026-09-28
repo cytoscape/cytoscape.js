@@ -9,7 +9,7 @@ every iteration encoded up front behind the converge flag, one
 readback (the round-9 discipline).
 */
 
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { SubgraphView } from './algo-shared.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {

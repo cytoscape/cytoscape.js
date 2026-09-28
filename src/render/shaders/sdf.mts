@@ -1,4 +1,4 @@
-import { wgsl } from '../wgsl.mjs';
+import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   ARROW_AXIAL_DEPTH,
   ARROW_COMPOUND_POINTS,

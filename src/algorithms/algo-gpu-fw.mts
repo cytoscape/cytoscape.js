@@ -33,7 +33,7 @@ stays CPU-side.
 */
 
 import type { Collection } from '../collection.mjs';
-import { wgsl } from '../render/wgsl.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
 import type { AlgoGpu } from './algo-gpu.mjs';
 import {
   assertFits,

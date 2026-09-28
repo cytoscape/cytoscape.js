@@ -20,7 +20,7 @@ failures fall back to the CPU, so a kernel defect can never be
 silently papered over by the router).
 */
 
-import { BUFFER_USAGE, MAP_MODE } from '../render/webgpu-constants.mjs';
+import { BUFFER_USAGE, MAP_MODE } from '../gpu/webgpu-constants.mjs';
 
 /** The shared per-device state every GPU algorithm run borrows. */
 export interface AlgoGpu {

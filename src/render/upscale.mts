@@ -1,5 +1,5 @@
-import { wgsl } from './wgsl.mjs';
-import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
+import { wgsl } from '../gpu/wgsl.mjs';
+import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 
 /*
 The renderScale upscale pass: when the renderer draws the scene at a

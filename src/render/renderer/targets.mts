@@ -2,7 +2,7 @@
 // split).
 
 import { DEPTH_FORMAT } from '../node-pipeline.mjs';
-import { TEXTURE_USAGE } from '../webgpu-constants.mjs';
+import { TEXTURE_USAGE } from '../../gpu/webgpu-constants.mjs';
 import {
   DEFAULT_EDGE_WIDTH_FLOOR,
   DEFAULT_NODE_LOD_PX,

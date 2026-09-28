@@ -308,3 +308,10 @@ fit affordance the spiral example should expose (checked in 71.6, not
 assumed); whether `extensions/` eventually gains the force layout as
 a second first-party package (out of scope, noted for round 51's
 triage); provenance on `cyext release`, parked for round 50.
+
+**Decided at the eleventh design sitting (2026-09-28):** no placeholder
+publish — the name waits for this round (`npm view cyext` still answered
+404 that day); the built-in layouts, `force` included, stay in core and
+never move to `extensions/` (bundle size is round 131's layout
+capability instead).  The `LayoutContext` fit affordance is checked in
+71.6 as planned, and provenance stays with round 50.

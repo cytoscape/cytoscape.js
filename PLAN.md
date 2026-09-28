@@ -205,7 +205,9 @@ call in this section has been put to the maintainer one by one and
 answered — items 18, 21, 23, 27, 30–48, 50–54, 61–63 and 65–71 each
 carry the call on the item, and the answers with their background are in
 `plan/rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`.
-The sitting raised **item 72**, the arrow-shape review, which is open.
+The sitting raised **items 72–74** — the arrow-shape review, chart
+kinds and their data capacity, and gradient stops from data — which
+are open.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1738,3 +1740,29 @@ directions".*
     the heads.  **First measurement**: the head gallery — every shape
     at three widths and both fills, v3 beside v4 — plus the usage of
     each shape in the flagship apps' sheets and v3's issue tracker.
+
+73. **Chart kinds and their data capacity** (raised by the maintainer
+    2026-09-28, the eleventh sitting, at round 80's slice cap).  The
+    cap is one case of a general limit: the chart record packs
+    `offset | count << 24`, so every kind carries at most 255 values,
+    and per-fragment cost differs by kind — the pie walks its slices
+    (O(n)), heat and bar index (O(1)), and a point-series kind (a
+    scatter plot may carry far more than 64 points) would want a
+    different draw altogether.  The call is a design sitting on which
+    chart kinds v4 will ever draw and what capacity the record gives
+    them — widening the count field if needed, a documented cap per
+    kind by its cost — before round 80 picks the pie cap.  Line and
+    scatter are logged, not declined.  **First measurement**: the
+    render-bench pair (25k charted nodes, 16 vs 64 slices) round 80.3
+    already specifies, plus the record-blob bytes per value.
+74. **Gradient stop lists from element data** (raised 2026-09-28, the
+    eleventh sitting, round 76's open question; **TBD** — the
+    maintainer asked for further consideration).  `background-fill` /
+    `line-fill` stop colours and positions are constants-only (≤ 5
+    stops, packed into the 32-byte gradient columns); a `{ data }`
+    passthrough would give each element its own gradient.  No app has
+    asked.  What to weigh: the gradient columns are per element
+    already, so storage does not change; the cost is the style path
+    (a per-element list parse and re-pack on data writes, as
+    `chart-values` pays) and the interaction with item 36's plan to
+    make the gradient columns lazy.

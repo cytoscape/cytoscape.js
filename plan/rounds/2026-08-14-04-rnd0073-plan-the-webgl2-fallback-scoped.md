@@ -233,3 +233,13 @@ software WebGPU adapter (the population the warm-up was for) is served
 by WebGL2 instead, where there is no compute stage to warm; item 18 is
 answered by that choice.  Mid arrows are filled only (item 21), so the
 fallback has no hollow mid-arrow case to port.
+
+**Decided at the eleventh design sitting (2026-09-28):** the fallback is
+**full parity at alpha** — everything the WebGPU renderer draws, drawn
+under WebGL2; the no-code scoping (73.1–73.3) runs **now, alongside SVG
+export (round 77)**, so its constraints reach the drawn-feature rounds
+(80–83, 88, 102, 104) before they are built, while the implementation
+still waits for the render contract to settle; the spikes run on the
+benchmark machine; the record lives on this file with a pointer from
+`src/README.md`.  The before/after-4.0 question is answered by
+`docs/feature-direction.md`: before alpha.

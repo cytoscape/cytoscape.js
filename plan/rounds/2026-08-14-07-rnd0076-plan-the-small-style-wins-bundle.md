@@ -163,3 +163,12 @@ API shape (unit suffix vs sheet flag) and the bb rule
 ever take the `{ data }` passthrough (declined by default — no
 named consumer); `text-border-style: double` behavior if v3's
 proves degenerate.
+
+**Decided at the eleventh design sitting (2026-09-28):** ledger 23 is
+**left as it is** (the 1.8% stays a recorded deviation; PLAN.md item 72,
+the arrow-shape review, was raised beside it), so 76.4 has nothing to
+repack; screen-space sizing (76.2) **folds into the semantic-zoom
+work**, its API shape and bounding-box rule decided there; `{ data }`
+for gradient stop lists is **still open** (PLAN.md item 74); if v3's
+`text-border-style: double` proves degenerate, v4 **matches it and
+records it**.

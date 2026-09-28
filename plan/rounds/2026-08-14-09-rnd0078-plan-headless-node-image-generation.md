@@ -132,3 +132,10 @@ answer is "no, use svg()", documented); the Dawn go/no-go
 criteria sign-off before 78.4 runs; whether the metrics option
 (78.2) is wanted even if the measurement says the estimate
 suffices.
+
+**Decided at the eleventh design sitting (2026-09-28):** resvg is a
+**documented recipe**, no dependency in any form; `cy.png()` **keeps
+throwing headless**, its message pointing at `svg()` plus resvg; the
+**Dawn/WebGPU-in-Node investigation (78.4) runs with this round, before
+alpha**, on the go/no-go criteria as written; the **`advanceOf` metrics
+option (78.2) is built regardless** of 78.1's measurement.

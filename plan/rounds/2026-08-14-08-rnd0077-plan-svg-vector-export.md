@@ -220,3 +220,10 @@ deviation (open call 21) — are drawn trimmed in SVG or kept
 deviation-identical; PDF stays out of scope (SVG is the input
 every PDF toolchain wants — say so in the docs and close #639's
 sibling asks by pointer).
+
+**Decided at the eleventh design sitting (2026-09-28):** `svg()` **works
+headless**, the label-width estimate documented until round 78; images
+are **embedded as data URIs by default**, with an option to pass the
+`href` through; mid arrows are filled only (PLAN.md item 21), so there
+is no hollow mid-arrow case; PDF is a documented SVG → PDF recipe (item
+48), not core.

@@ -309,3 +309,13 @@ the rendered-frame re-check plus documented ordering enough, or
 does a low-frequency provisional-state timer earn its keep?  (5)
 Confirming the two declines recorded here as decisions: no
 auto-resize opt-out option, and no debounce.
+
+**Decided at the eleventh design sitting (2026-09-28):** the sync pick
+is **`cy.nodeAt(x, y)`, with `cy.pickNode` as an alias**, and it
+**computes headless** (store columns and the viewport at dpr 1) rather
+than answering null; the wheel mode is **`'modifier-zoom'`**;
+wheel-panning emits **`'scrollpan'`**; `cy.viewportCounts()` resolves
+**null** headless (an honest "no renderer", as `cy.pick` and
+destroy/device-loss answer); the load-then-add font orphan is
+**documented only**, no timer; both 75.1 declines (no auto-resize
+opt-out, no debounce) are confirmed.

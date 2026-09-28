@@ -154,3 +154,10 @@ because #3487's consumers may ask); whether the schemas are
 submitted to SchemaStore once stable; whether the columnar form's
 schema ships in v1 of this or follows once the wire docs settle
 (79.1 drafts it; the maintainer can hold it back at review).
+
+**Decided at the eleventh design sitting (2026-09-28):** the `$id` base
+is **decided at round 46** with the docs site; the tests validate with
+**ajv** (a devDependency); **no runtime `validate()`**; the
+columnar/wire schema is **held until 4.x**, matching the wire format's
+experimental status (PLAN.md item 43); SchemaStore submission **after
+4.0**, once the schemas are stable.

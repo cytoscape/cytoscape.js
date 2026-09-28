@@ -124,3 +124,33 @@ here.
   alpha**, images decoded in the worker, fonts from an app-provided
   list registered from bytes, WebKit verified before the option is
   documented as cross-engine.
+
+### The planned rounds' open questions (rounds 71–80)
+
+Each round file carries its answers in a closing "Decided at the
+eleventh design sitting" paragraph; in brief:
+
+- **71 (cyext)**: no placeholder publish — the name waits for the
+  round; built-in layouts never leave core.
+- **73 (WebGL2)**: **full parity at alpha**; the no-code scoping runs
+  now, alongside SVG export, so its constraints reach the drawn-feature
+  rounds; spikes on the benchmark machine.
+- **75 (DX polish)**: `cy.nodeAt` with a `pickNode` alias, computed
+  headless; `'modifier-zoom'`; `'scrollpan'`; `viewportCounts()` null
+  headless (the maintainer weighed null, zeros and a geometric count);
+  the font orphan documented only; both resize declines confirmed.
+- **76 (style wins)**: screen-space sizing folds into semantic zoom;
+  gradient stops from data TBD (**item 74**); `text-border-style:
+  double` matches v3 if degenerate.
+- **77 (SVG)**: headless allowed with the estimate documented; images
+  embedded by default, `href` by option.
+- **78 (headless images)**: a resvg recipe; no headless `png()`; the
+  Dawn investigation with this round, before alpha; `advanceOf` built
+  regardless.
+- **79 (schemas)**: `$id` at round 46; ajv; no runtime `validate()`;
+  columnar schema held until 4.x; SchemaStore after 4.0.
+- **80 (charts)**: `chart-scale` one object; a default scale for heat
+  kinds; overflow warns once and truncates; the cap waits on a design
+  sitting on chart kinds and data capacity (**item 73**) — a scatter
+  plot may carry far more than 64 points; line and scatter logged,
+  not declined.

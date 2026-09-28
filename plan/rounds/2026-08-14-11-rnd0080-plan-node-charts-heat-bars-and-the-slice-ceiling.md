@@ -156,3 +156,14 @@ the `chart-scale` shape (one object vs three flat props); whether
 heat kinds throwing on a missing scale is right, or a default
 scheme + domain-from-extent is wanted (the fail-loudly reading
 says throw); and the declined line kind staying declined.
+
+**Decided at the eleventh design sitting (2026-09-28):** `chart-scale`
+is **one object**; a heat kind with no `chart-scale` takes a **default
+scale** (a default scheme, the domain from the values' extent) rather
+than throwing; a list over the cap **warns once and truncates**; the cap
+itself is **not chosen here** — the maintainer widened the question to
+the general data limit of charts (a scatter plot may carry far more than
+64 points), which a design sitting on chart kinds and capacity settles
+first (PLAN.md item 73); point-series kinds (line, scatter) are
+**logged, not declined**, and the capacity design must not foreclose
+them.

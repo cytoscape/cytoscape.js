@@ -1370,6 +1370,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | | |
 |---|---|
 | Arrow-shape review | Whether v3's twelve arrowheads consolidate (near-duplicate compound heads merged, `tee` sized to the edge width) before SVG export and the WebGL path each implement them |
+| Chart kinds and data capacity | Every chart kind shares a 255-value record limit; which kinds v4 will ever draw (a scatter plot may carry far more than 64 points) and the cap each gets is a design sitting before round 80 picks the pie cap |
+| Gradient stops from data | Whether gradient stop lists take per-element `{ data }` — left for further consideration |
 
 Decided at the eleventh design sitting (28 Sep), which put every open
 call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as

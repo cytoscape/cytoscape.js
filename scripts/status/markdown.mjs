@@ -182,13 +182,14 @@ export const PLANNED_PATHS = {
   'src/render/label-declutter.mts': 'planned by round 104 (label decluttering)',
   'benchmark/bundles.mjs':
     'planned by round 105 (parallel edges at GeneMANIA width)',
-  'src/store/patch.mts': 'planned by round 107 (id-keyed reconcile)',
   // round 101 (quiet verification) landed 2026-08-24: its three .mjs
   // entries left this list when the files began resolving, exactly the
   // lifecycle documented above; the planned-but-renamed .js spelling
   // moved to HISTORICAL_PATHS.
   // round 131 (use-case bundles) landed 2026-09-28: its nine entries left
   // this list as 131.2–131.6 made the files resolve
+  // round 107 (id-keyed reconcile) landed 2026-09-28: its
+  // src/store/patch.mts entry left this list when the file began resolving
 };
 
 /**

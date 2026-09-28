@@ -1715,6 +1715,20 @@ declare class IdMap {
    */
   code(id: string): number;
   /**
+   * `code()` for an id given as UTF-8 bytes (round 107): a packed
+   * payload's ids — the wire format's id section — resolve against the
+   * index without a string ever being decoded, which is what lets
+   * `cy.patch( buffer )` key a 100k-element payload on the probe table
+   * alone.
+   *
+   * @param bytes — the buffer holding the id's bytes
+   * @param lo — the id's first byte
+   * @param hi — one past its last byte
+   * @returns the packed code (group bit 1 = edges), or −1 when no
+   *   element holds the id
+   */
+  codeBytes(bytes: Uint8Array, lo: number, hi: number): number;
+  /**
    * Resolve an id to its group and slot.  Allocates a fresh result
    * object per hit but decodes no strings — the probe compares UTF-8
    * bytes in the blob against the encoded query.
@@ -1749,6 +1763,19 @@ declare class IdMap {
    * @throws if another element already holds this id
    */
   set(id: string, group: GroupName, slot: number): void;
+  /**
+   * `set()` for an id given as UTF-8 bytes (round 107): `cy.patch()`
+   * checks a packed payload's fresh ids for repeats in a scratch map of
+   * its own, without decoding them.
+   *
+   * @param bytes — the buffer holding the id's bytes
+   * @param lo — the id's first byte
+   * @param hi — one past its last byte
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @returns false, writing nothing, when the id is already bound
+   */
+  setBytes(bytes: Uint8Array, lo: number, hi: number, group: GroupName, slot: number): boolean;
   /**
    * Bulk registration for columnar ingest.  The packed form (the wire
    * format's id section) is one blob memcpy + per-id hash/probe — no JS
@@ -4257,6 +4284,68 @@ interface DirectedDegreeCentralityNormalized {
 }
 type DegreeCentralityNormalizedResult = UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
 //#endregion
+//#region src/columnar.d.mts
+/**
+ * Convert classic v3-style elements JSON into the columnar bulk-load
+ * form: typed-array columns with edge endpoints as node *indices*.
+ *
+ * This is the compatibility path for callers holding definition-form
+ * JSON; the columnar form is what the loader ingests fastest, since
+ * contiguous slot runs become memcpys and no per-element objects or
+ * per-edge id lookups are needed.  Exposed publicly as
+ * `cytoscape.toColumnarElements`.
+ *
+ * **The columnar form has no column for `locked`, `grabbable` or
+ * `pannable`**, so a def setting one of those converts without it.  The
+ * factory's own definition-form load does not go through this function
+ * for that reason — it uses the internal {@link buildColumnar}, which
+ * reports the deviations so it can write them after the ingest.
+ *
+ * @param defs — one element, an array, or `{ nodes, edges }`
+ * @returns the equivalent self-contained columnar payload
+ * @throws if an edge names a source or target that is not a node in the
+ *   same payload — columnar payloads must be self-contained
+ */
+declare const toColumnarElements: (defs: ElementsDefinition | ElementDefinition) => ColumnarElements;
+//#endregion
+//#region src/store/patch.d.mts
+/**
+ * How a patch treats the live elements its payload does not name:
+ * `'reconcile'` removes them (the payload is the new state), `'merge'`
+ * keeps them (the payload is a set of upserts).
+ */
+type PatchMode = 'reconcile' | 'merge';
+//#endregion
+//#region src/core/patch.d.mts
+/** Options for `cy.patch()`. */
+interface PatchOptions {
+  /**
+   * `'reconcile'` (the default): the payload is the new state, and a live
+   * element it does not name is removed.  `'merge'`: the payload is a set
+   * of upserts, and a live element it does not name is kept — a
+   * definition-form payload may then name kept nodes as endpoints and
+   * parents.
+   */
+  mode?: PatchMode;
+}
+/**
+ * What a patch did — returned by `cy.patch()` and carried by its `patch`
+ * event as `event.diff`.  An edge the payload rewired (the same id, a new
+ * source or target) is in both `removed` and `added`, since it was removed
+ * and re-added; an element is never in `updated` and either of the others.
+ */
+interface PatchDiff {
+  /** the elements the patch added, nodes before edges, in payload order */
+  added: Collection;
+  /** the elements it removed, cascades included (the incident edges and
+   * descendants of a removed node); removed elements keep their `id()`
+   * and `group()` */
+  removed: Collection;
+  /** the surviving elements it changed — data, position or parent —
+   * nodes before edges, in payload order */
+  updated: Collection;
+}
+//#endregion
 //#region src/event.d.mts
 /** The DOM event a gesture came from, when there was one. */
 type NativeEvent = globalThis.Event;
@@ -4283,6 +4372,8 @@ interface EventProps {
    * `layout.cancel()` or `cy.destroy()` rather than finished or
    * stopped (round 128) */
   cancelled?: boolean;
+  /** on `patch`: what the patch added, removed and updated (round 107) */
+  diff?: PatchDiff;
   timeStamp?: number;
 }
 /**
@@ -4308,6 +4399,8 @@ declare class Event {
   layout?: unknown;
   /** on `layoutstop`, whether the run was cancelled (round 128) */
   cancelled?: boolean;
+  /** on `patch`, what the patch added, removed and updated (round 107) */
+  diff?: PatchDiff;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
   /**
@@ -7903,6 +7996,68 @@ declare class Core {
    */
   remove(eles: Collection): Collection;
   /**
+   * Reconcile a fresh payload into the live graph **by id** (round 107):
+   * the payload is the next state of the *same* graph — the next query
+   * result, a server's refresh — and the patch computes what to add,
+   * remove and update, applies it as one batch, and returns what it did.
+   * Everything attached to a surviving element survives: selection,
+   * position (unless the payload moves it), bypasses, running
+   * animations, listeners, scratch.  The sheet, the viewport and
+   * graph-level `data()` are never touched — elements only.
+   *
+   * `json( obj )` restores a *serialized session* and is not in v4
+   * (`cy.json()` is export-only); `patch()` is not that.  It reconciles
+   * a data refresh, and it takes all three input forms — definition,
+   * columnar and wire — through the load path's one funnel.
+   *
+   * The rules, per payload element, keyed on its id:
+   * - **Survives** when the graph holds the id in the same group (and,
+   *   for an edge, the same source and target).  Its data record is
+   *   **replaced**, not deep-merged: a key the payload element lacks is
+   *   cleared, and a value compares structurally, so a fresh payload
+   *   equal to the state changes nothing.  Its position is written when
+   *   the payload carries one and kept when it does not — except that a
+   *   locked node (or every node, under `autolock`) holds its position
+   *   and a compound parent's derives from its children, as at load.
+   *   Its parent follows the payload (none means an orphan).  Its
+   *   selection and its `selectable`/`locked`/`grabbable`/`pannable`
+   *   flags are session state and are never read from the payload.
+   * - **Added** when the id is new, and when the payload element has no
+   *   id — exactly as `cy.add()` would add it, flags included.
+   * - **Removed and re-added** when an edge's source or target changed
+   *   identity (rewiring is not a patch), or when the id changed group.
+   * - **Removed** when the graph holds an id the payload does not name —
+   *   in `'reconcile'` mode, the default.  In `'merge'` mode it is kept,
+   *   and a definition-form payload may name kept nodes as endpoints and
+   *   parents.  Removal cascades as `remove()` does.
+   *
+   * Events: `remove`, `add`, `moveout` + `move` (a reparented survivor),
+   * `data` and `position` fire once per element, inside the batch and
+   * after every mutation has landed; then one core-level **`patch`**
+   * event carries the diff as `event.diff` — for an app that only wants
+   * the summary.  A patch whose payload equals the state fires no
+   * element event, writes nothing and returns an empty diff (its
+   * `patch` event still fires).
+   *
+   * **Cost**: at 100k elements and 90% id overlap a patch is 1.7–2.4×
+   * cheaper than destroy + recreate, and a payload equal to the state
+   * costs one scan (~20 ms).  **Below ~70% id overlap recreating is
+   * cheaper** (1.8× at 50%, 2.3× at 10%), since removals and adds run
+   * per element — reload a low-overlap refresh that has no state worth
+   * keeping.  `benchmark/patch.mjs` and "Patch" in `src/README.md` have
+   * the table.
+   *
+   * @param input — the payload, in definition, columnar or wire form
+   * @param options — `{ mode }`: `'reconcile'` (default) or `'merge'`
+   * @returns the diff: the `added`, `removed` and `updated` collections
+   * @throws before anything is mutated, if the payload names an id twice,
+   *   if an edge lacks a source or target or names one that is not a
+   *   node (in the payload, or — merge mode — in the graph), if a
+   *   column does not fit the payload's counts, or on an unknown option
+   *   or mode
+   */
+  patch(input: ElementsInput, options?: PatchOptions): PatchDiff;
+  /**
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
    *
@@ -8747,30 +8902,6 @@ declare class Core {
   _emitViewportEvents(types: string[]): void;
 }
 //#endregion
-//#region src/columnar.d.mts
-/**
- * Convert classic v3-style elements JSON into the columnar bulk-load
- * form: typed-array columns with edge endpoints as node *indices*.
- *
- * This is the compatibility path for callers holding definition-form
- * JSON; the columnar form is what the loader ingests fastest, since
- * contiguous slot runs become memcpys and no per-element objects or
- * per-edge id lookups are needed.  Exposed publicly as
- * `cytoscape.toColumnarElements`.
- *
- * **The columnar form has no column for `locked`, `grabbable` or
- * `pannable`**, so a def setting one of those converts without it.  The
- * factory's own definition-form load does not go through this function
- * for that reason — it uses the internal {@link buildColumnar}, which
- * reports the deviations so it can write them after the ingest.
- *
- * @param defs — one element, an array, or `{ nodes, edges }`
- * @returns the equivalent self-contained columnar payload
- * @throws if an edge names a source or target that is not a node in the
- *   same payload — columnar payloads must be self-contained
- */
-declare const toColumnarElements: (defs: ElementsDefinition | ElementDefinition) => ColumnarElements;
-//#endregion
 //#region src/wire.d.mts
 /**
  * Serialize elements (definition form or columnar form) into one
@@ -8835,4 +8966,4 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };

@@ -274,6 +274,16 @@ keeps `remove` handlers and predicates working. Re-adding from definitions
 you kept is the app's job — exported element JSON round-trips through
 `cy.add()`.
 
+If what you used `cy.json( obj )` for was **applying the next server
+response to the live graph**, v4 has a call for exactly that:
+`cy.patch( payload )` reconciles a fresh payload by id — adds what is new,
+removes what is gone (or keeps it, with `{ mode: 'merge' }`), replaces the
+data of what survives — in one batch, and returns `{ added, removed,
+updated }`. Selection, positions the payload does not carry, listeners,
+scratch and running animations survive on every element it keeps. It
+restores no session state: the viewport, the stylesheet and graph data are
+never touched.
+
 ---
 
 ## Selector recipes
@@ -640,6 +650,12 @@ instances are not emitters.
   little-endian `ArrayBuffer` that `options.elements` and `cy.add()` accept
   directly. On a 19.6k-node / 465k-edge graph that is 9.2 MB and ~5 ms
   against 28.6 MB and a ~100 ms JSON parse.
+- **`cy.patch( payload )` for data refreshes** (round 107) — replaces the
+  hand-written remove / add / `data()` diff an app runs on every re-query,
+  in any of the three input forms. At 100k elements and 90% id overlap it
+  is several times cheaper than destroy-and-recreate (see `src/README.md`
+  for the numbers and the overlap below which recreating wins), and a
+  payload equal to the state costs one scan and fires no element event.
 - **Data-driven layout mappings** (round 85.3, #1514). The five layout
   params that take per-element values accept serializable objects beside
   v3's function forms: `{ data, scale?, range?, invert?, default? }` on

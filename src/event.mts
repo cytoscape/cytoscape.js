@@ -1,6 +1,7 @@
 import type { Position } from './public-types.mjs';
 import type { Core } from './core.mjs';
 import type { Collection } from './collection.mjs';
+import type { PatchDiff } from './core/patch.mjs';
 
 /*
 v4's own event object (round 41.1), replacing the shared v3 `src/event.mts`.
@@ -64,6 +65,8 @@ export interface EventProps {
    * `layout.cancel()` or `cy.destroy()` rather than finished or
    * stopped (round 128) */
   cancelled?: boolean;
+  /** on `patch`: what the patch added, removed and updated (round 107) */
+  diff?: PatchDiff;
   timeStamp?: number;
 }
 
@@ -95,6 +98,8 @@ export class Event {
   layout?: unknown;
   /** on `layoutstop`, whether the run was cancelled (round 128) */
   cancelled?: boolean;
+  /** on `patch`, what the patch added, removed and updated (round 107) */
+  diff?: PatchDiff;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
 
@@ -127,6 +132,7 @@ export class Event {
     this.originalEvent = props.originalEvent;
     this.layout = props.layout;
     this.cancelled = props.cancelled;
+    this.diff = props.diff;
 
     // the rendered position follows from the model one and the viewport, so
     // an emitter only has to supply the model position it actually knows

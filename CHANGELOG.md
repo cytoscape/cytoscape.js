@@ -237,6 +237,14 @@ that compile and then behave differently.
   `cytoscape.serializeElements()` / `deserializeElements()`, both accepted
   directly by `options.elements` and `cy.add()`. Numeric columns deserialize
   as zero-copy views.
+- **`cy.patch( payload, { mode } )`** — an id-keyed reconcile of a fresh
+  payload (definition, columnar or wire form) into the live graph: adds,
+  removes (`'reconcile'`, the default) or keeps (`'merge'`) what the payload
+  does not name, replaces survivors' data, writes positions the payload
+  carries, re-adds rewired edges, and returns `{ added, removed, updated }`;
+  per-element events fire once each inside one batch, then one `patch`
+  event carries the diff. Survivors keep selection, scratch, listeners and
+  animations.
 - **Style transitions** (`transition-property`/`-duration`/`-delay`/
   `-timing-function`) and animation controls (`pause`/`resume`/`reverse`,
   read-only `progress`/`paused`).

@@ -75,6 +75,9 @@ const EXPECTED_EXPORTS = new Set([
   'MapperSpec',
   'PackedIds',
   'PackLayoutOptions', // round 123.1
+  'PatchDiff', // round 107: cy.patch()'s result and the patch event's diff
+  'PatchMode', // round 107
+  'PatchOptions', // round 107
   'PresetLayoutOptions',
   'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',

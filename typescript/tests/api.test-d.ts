@@ -20,6 +20,8 @@ import type {
   GridLayoutOptions,
   LayoutOptions,
   Mapper,
+  PatchDiff,
+  PatchOptions,
   Stylesheet,
   Position,
   RendererStats,
@@ -112,6 +114,25 @@ const wire: ArrayBuffer = cytoscape.serializeElements(columnar);
 
 cytoscape.deserializeElements(wire);
 cy.add(wire);
+
+// -- patch (round 107): every input form, the diff, and the summary event --
+
+const merge: PatchOptions = { mode: 'merge' };
+const diff: PatchDiff = cy.patch(elements);
+
+cy.patch(columnar, merge);
+cy.patch(wire, { mode: 'reconcile' });
+cy.on('patch', (evt: Event) => {
+  const summary: PatchDiff | undefined = evt.diff;
+
+  void summary;
+});
+
+const changed: Collection = diff.added.union(diff.removed).union(diff.updated);
+
+void changed;
+// @ts-expect-error a mode is 'reconcile' or 'merge'
+cy.patch(elements, { mode: 'upsert' });
 
 // -- queries: structured objects and predicates, never selector strings --
 

@@ -56,6 +56,8 @@ import * as exportImpl from './core/export.mjs';
 import * as graphDataImpl from './core/graph-data.mjs';
 import * as serializeImpl from './core/serialize.mjs';
 import * as lifecycleImpl from './core/lifecycle.mjs';
+import * as patchImpl from './core/patch.mjs';
+import type { PatchDiff, PatchOptions } from './core/patch.mjs';
 import type { CoreCaps } from './factory.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
@@ -641,6 +643,71 @@ export class Core {
    */
   remove(eles: Collection): Collection {
     return eles.remove();
+  }
+
+  /**
+   * Reconcile a fresh payload into the live graph **by id** (round 107):
+   * the payload is the next state of the *same* graph — the next query
+   * result, a server's refresh — and the patch computes what to add,
+   * remove and update, applies it as one batch, and returns what it did.
+   * Everything attached to a surviving element survives: selection,
+   * position (unless the payload moves it), bypasses, running
+   * animations, listeners, scratch.  The sheet, the viewport and
+   * graph-level `data()` are never touched — elements only.
+   *
+   * `json( obj )` restores a *serialized session* and is not in v4
+   * (`cy.json()` is export-only); `patch()` is not that.  It reconciles
+   * a data refresh, and it takes all three input forms — definition,
+   * columnar and wire — through the load path's one funnel.
+   *
+   * The rules, per payload element, keyed on its id:
+   * - **Survives** when the graph holds the id in the same group (and,
+   *   for an edge, the same source and target).  Its data record is
+   *   **replaced**, not deep-merged: a key the payload element lacks is
+   *   cleared, and a value compares structurally, so a fresh payload
+   *   equal to the state changes nothing.  Its position is written when
+   *   the payload carries one and kept when it does not — except that a
+   *   locked node (or every node, under `autolock`) holds its position
+   *   and a compound parent's derives from its children, as at load.
+   *   Its parent follows the payload (none means an orphan).  Its
+   *   selection and its `selectable`/`locked`/`grabbable`/`pannable`
+   *   flags are session state and are never read from the payload.
+   * - **Added** when the id is new, and when the payload element has no
+   *   id — exactly as `cy.add()` would add it, flags included.
+   * - **Removed and re-added** when an edge's source or target changed
+   *   identity (rewiring is not a patch), or when the id changed group.
+   * - **Removed** when the graph holds an id the payload does not name —
+   *   in `'reconcile'` mode, the default.  In `'merge'` mode it is kept,
+   *   and a definition-form payload may name kept nodes as endpoints and
+   *   parents.  Removal cascades as `remove()` does.
+   *
+   * Events: `remove`, `add`, `moveout` + `move` (a reparented survivor),
+   * `data` and `position` fire once per element, inside the batch and
+   * after every mutation has landed; then one core-level **`patch`**
+   * event carries the diff as `event.diff` — for an app that only wants
+   * the summary.  A patch whose payload equals the state fires no
+   * element event, writes nothing and returns an empty diff (its
+   * `patch` event still fires).
+   *
+   * **Cost**: at 100k elements and 90% id overlap a patch is 1.7–2.4×
+   * cheaper than destroy + recreate, and a payload equal to the state
+   * costs one scan (~20 ms).  **Below ~70% id overlap recreating is
+   * cheaper** (1.8× at 50%, 2.3× at 10%), since removals and adds run
+   * per element — reload a low-overlap refresh that has no state worth
+   * keeping.  `benchmark/patch.mjs` and "Patch" in `src/README.md` have
+   * the table.
+   *
+   * @param input — the payload, in definition, columnar or wire form
+   * @param options — `{ mode }`: `'reconcile'` (default) or `'merge'`
+   * @returns the diff: the `added`, `removed` and `updated` collections
+   * @throws before anything is mutated, if the payload names an id twice,
+   *   if an edge lacks a source or target or names one that is not a
+   *   node (in the payload, or — merge mode — in the graph), if a
+   *   column does not fit the payload's counts, or on an unknown option
+   *   or mode
+   */
+  patch(input: ElementsInput, options?: PatchOptions): PatchDiff {
+    return patchImpl.patch(this, input, options);
   }
 
   // -- collections --

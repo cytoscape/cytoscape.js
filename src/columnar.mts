@@ -270,9 +270,17 @@ export const buildColumnar = (
   };
 };
 
-/** Sidecar data() keys → sparse index-aligned columns (id/source/target
- * stay first-class; a node's parent is hierarchy, never sidecar). */
-const collectDataColumns = (
+/**
+ * Sidecar data() keys → sparse index-aligned columns (id/source/target
+ * stay first-class; a node's parent is hierarchy, never sidecar).  Shared
+ * with `cy.patch()`'s definition-form converter (round 107), so a key
+ * the load path keeps is exactly a key the reconcile compares.
+ *
+ * @param defs — one group's definitions
+ * @param skipParent — true for nodes, whose `parent` is hierarchy
+ * @returns the columns by key, or undefined when no def carries data
+ */
+export const collectDataColumns = (
   defs: ElementDefinition[],
   skipParent: boolean = false,
 ): Record<string, unknown[]> | undefined => {
@@ -318,7 +326,7 @@ const collectDataColumns = (
  * @param isEdge — edges default to pannable, nodes do not (v3's rule)
  * @returns the defs whose uncarryable flags the caller must write itself
  */
-const applySelectionColumns = (
+export const applySelectionColumns = (
   out: { count: number; selected?: Uint8Array; selectable?: Uint8Array },
   defs: ElementDefinition[],
   isEdge: boolean,

@@ -24,6 +24,31 @@ import type { Collection } from '../collection.mjs';
  */
 export function remove(self: Collection): Collection {
   const cy = self._cy;
+  const handles = _removeClosure(self);
+
+  for (const ele of handles) {
+    cy._emitOnEle('remove', ele);
+  }
+
+  const removed = self._spawn(handles.map((ele) => ele._refs[0]));
+
+  cy._maybeCompact(); // the auto dead-slot trigger's safe boundary (19.5)
+
+  return removed;
+}
+
+/**
+ * `remove()`'s store half, without its events or its compaction check
+ * (round 107: `cy.patch()` removes first and announces after every
+ * mutation of the patch has landed, so a listener never observes a
+ * half-applied payload).  The handles are interned before the store
+ * forgets the elements, so each keeps its `id()` and `group()`.
+ *
+ * @param self — the elements to remove
+ * @returns the handles actually removed — the closure, edges first
+ */
+export function _removeClosure(self: Collection): Collection[] {
+  const cy = self._cy;
   const store = self._store;
 
   // build the closure: requested live elements + their descendants
@@ -82,7 +107,7 @@ export function remove(self: Collection): Collection {
     (a, b) => store.depthOf(b._refs[0].slot) - store.depthOf(a._refs[0].slot),
   );
 
-  // edges first, then nodes; emit remove per element after the store mutation
+  // edges first, then nodes; the caller emits remove per element after
   for (const edge of edgeHandles) {
     store.removeEdge(edge._refs[0].slot);
   }
@@ -91,17 +116,7 @@ export function remove(self: Collection): Collection {
     store.removeNode(node._refs[0].slot);
   }
 
-  for (const ele of [...edgeHandles, ...nodeHandles]) {
-    cy._emitOnEle('remove', ele);
-  }
-
-  const removed = self._spawn(
-    [...edgeHandles, ...nodeHandles].map((ele) => ele._refs[0]),
-  );
-
-  cy._maybeCompact(); // the auto dead-slot trigger's safe boundary (19.5)
-
-  return removed;
+  return [...edgeHandles, ...nodeHandles];
 }
 
 /**

@@ -5010,6 +5010,116 @@ init 80 ms — down from 662 ms before the bulk path.  The wire form of the
 same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 90–113 ms parse + 27–48 ms convert.
 
+## Patch: an id-keyed reconcile of a fresh payload (round 107)
+
+`cy.json( obj )` stays export-only by decided design — restoring a
+*serialized session* needs the stored definitions the columnar model does
+not keep.  **`cy.patch( payload, { mode } )` is a different thing**: the
+payload is the next state of the *same* graph (the next query result, a
+server's refresh), and the patch reconciles it into the live instance by
+id — computes the adds, removes and updates, applies them as one batch,
+and returns `{ added, removed, updated }`.  Everything attached to a
+surviving element survives: selection, positions the payload does not
+move, bypasses (id-keyed), running animations, listeners, scratch.  The
+sheet, the viewport and graph-level `data()` are never touched (a wire
+buffer's graph data is ignored, as `cy.add()` ignores it).
+
+The rules, fixed at planning and decided at the eleventh sitting:
+
+- **Mode**: `'reconcile'` (default) removes every live element the
+  payload does not name; `'merge'` keeps it, and there a
+  definition-form payload may name kept nodes as endpoints and parents.
+- **Data** is *replaced* per element, not deep-merged: a key the payload
+  element lacks is cleared.  Values compare structurally, so a fresh
+  payload's objects equal to the stored ones are not a change.
+- **Positions**: present in the payload → written; absent → kept.  A
+  locked node (every node, under `autolock`) holds, as against
+  `position()`, and a compound parent's position derives from its
+  children, as at load.  No `keepPositions` option: the returned diff is
+  the app's policy hook (sitting 11).
+- **Parents** are structure, replaced like data: a survivor follows the
+  payload's parent, and none means an orphan.  A survivor whose old
+  parent is removed is detached first, so the cascade cannot take it.
+- **Endpoints**: an edge whose source or target changed identity is a
+  remove + add under its id — rewiring is not a patch.  An id that
+  changed group is the same.  Both appear in `removed` *and* `added`.
+- **Session state** — `selected`, `selectable`, `locked`, `grabbable`,
+  `pannable` — is never read from the payload for a survivor, only for an
+  added element, which loads exactly as `cy.add()` would load it.  (This
+  is also round 106's "a clone owns its state".)
+- **Events**: `remove`, `add`, `moveout` + `move`, `data` and `position`
+  once per element, inside the batch, after every mutation has landed —
+  a listener never sees a half-applied payload — then one core-level
+  `patch` event carrying the diff as `event.diff` (sitting 11: the
+  summary beside the per-element events).  An identity patch fires only
+  the summary.
+- **Validation before mutation**: a repeated id, an edge naming no node,
+  a column that does not fit its count, a corrupt packed id section, an
+  unknown option or mode — all throw from the planner, with the graph
+  untouched.
+
+**One funnel with round 66's load path.**  `src/store/patch.mts` is the
+planner: every input form arrives as the columnar form — the wire buffer
+deserialized, its packed ids resolved through `IdMap.codeBytes` against
+the probe table with no string decoded for a survivor (fresh ids are
+checked for repeats in a scratch `IdMap` through `setBytes`, bytes in);
+the definition form converted with the load path's own
+`collectDataColumns`, plus *reference* entries for the endpoints and
+parents a merge payload names without carrying.  Data compares **column
+against store** — a payload value reader against the `DataStore`'s
+per-key reader — with no per-element data object on either side.
+`src/core/patch.mts` applies the plan: detach, remove (`remove()`'s
+closure without its events, `_removeClosure`), add through the columnar
+store path (added edges index a slot table of their own, so they may
+join survivors), link parents, write, then announce.  The diff's
+collections are built before the outermost `endBatch()`, which may
+compact.
+
+**Measured** (`benchmark/patch.mjs`, built headless bundle, i9-9900K,
+Node 24.18, 100k elements — 25k nodes, 75k edges — median of 5; 10% of
+surviving nodes change a mapped value, 1% of surviving edges rewire):
+
+| overlap | recreate (defs) | recreate (wire) | app diff | patch (defs) | patch (columnar) | patch (wire) |
+|---:|---:|---:|---:|---:|---:|---:|
+| 90% | 209.9 | 167.4 | 265.6 | 124.3 | 86.5 | 96.2 |
+| 80% | 299.4 | 236.5 | 314.4 | 173.2 | 139.2 | 145.2 |
+| 70% | 206.4 | 161.2 | 369.2 | 222.0 | 194.2 | 197.9 |
+| 60% | 313.2 | 258.1 | 433.0 | 283.8 | 252.3 | 259.0 |
+| 50% | 206.9 | 168.1 | 498.4 | 335.3 | 308.5 | 310.6 |
+| 10% | 301.5 | 230.2 | 777.7 | 564.5 | 535.2 | 522.2 |
+
+(ms; the recreate rows are bimodal run to run — ~165 or ~240 ms from
+the wire — which is GC placement, not the payload.)  The identity patch
+— a payload equal to the state — costs **18–24 ms** at 100k, one scan.
+
+- **At the 90% headline row a patch is 1.7–2.4× cheaper than
+  destroy-and-recreate** and keeps every survivor's state, which
+  recreate does not; the app-side diff over the public API is *slower
+  than recreate at every overlap* (0.79× at 90%), which is why the
+  reconcile belongs in the library.
+- **The crossover is ~70% id overlap.**  At 70% the wire reload
+  already matches a patch, and **below it recreating is cheaper — 1.8×
+  at 50%, 2.3× at 10%**.  The patch's own work is small; what grows is
+  per-element store removal and adds into a populated graph (the free
+  list scatters slots, so the contiguous-run fast paths of a fresh load
+  do not apply).  A low-overlap refresh that has no state worth keeping
+  should reload.
+- **Following another instance** — `follower.patch( master.serialize() )`
+  after 1% of the master's nodes moved, the round-106 clone-sync burst:
+  serialize 0.29 / 2.1 / 24 ms and patch 0.26 / 1.8 / 23 ms at 1k / 10k /
+  100k elements.
+
+**Controls** (`test/patch.mjs`): the identity patch from each form (empty
+diff, zero element events, zero dirty spans, zero mapper spans) against
+the same payload with one value perturbed; the listener census (each
+event once, all inside the batch, the summary once after it) against a
+no-op payload; end-state equivalence — patch A→B leaves every column a
+fresh load of B has, id by id, endpoints as ids, selection masked — with
+its control, a B with one value moved, which the comparison must reject.
+Ten mutations of the implementation were run against the file; two
+first stayed green (a source-only rewire and a compound parent written
+after its children), and each gained the spec that now fails.
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its
@@ -6559,6 +6669,15 @@ unbuilt arrow `gap` for a day after **round 56 built it**, which is the
 failure mode the standing closing-sweep rule exists for and which found
 it here in round 57.4.*
 
+- **The low-overlap patch** (round 107): below ~70% id overlap a
+  `cy.patch()` costs more than destroy-and-recreate (2.3× at 10%),
+  because removals and adds run the per-element store paths — a
+  bulk removal (one adjacency rebuild, one id-blob pass) and a
+  contiguous re-add would move the crossover.  Not built: the headline
+  refresh is high-overlap, and the number is documented in "Patch"
+  above.  The live-following clone and its minimap proof, which the
+  round-107 plan said land with it, need `cy.clone()` and land with
+  round 106; `follower.patch( master.serialize() )` is already the loop.
 - ~~**Round 55's remainder — the arrow `gap`**~~ — **landed as round 56**
   (2026-08-07).  v3's `gap` and `spacing` both port, on the CPU and in
   generated WGSL; the three scenes that measured 3.5% / 11.8% / 26.7%

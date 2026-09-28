@@ -11,10 +11,14 @@ import type {
   AlgoRun,
   Core,
   HeadlessOptions,
+  PatchDiff,
 } from '../../build/dts/headless.js';
 // each declaration stands alone (no shared chunk), so each entry's `Core`
 // is its own type — a consumer imports the one from the entry it uses
-import type { Core as GpuCore } from '../../build/dts/headless-gpu.js';
+import type {
+  Core as GpuCore,
+  PatchDiff as GpuPatchDiff,
+} from '../../build/dts/headless-gpu.js';
 
 const options: HeadlessOptions = {
   elements: [{ data: { id: 'a' } }, { data: { id: 'b' } }],
@@ -48,3 +52,10 @@ headless({ pixelRatio: 2 });
 const buffer: ArrayBuffer = headless.serializeElements({ nodes: [] });
 
 void headlessGpu.deserializeElements(buffer);
+
+// round 107: patch ships on every entry, its types with it
+const patched: PatchDiff = cy.patch(buffer, { mode: 'merge' });
+const patchedGpu: GpuPatchDiff = cyGpu.patch(buffer);
+
+void patched;
+void patchedGpu;

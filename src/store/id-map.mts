@@ -120,6 +120,25 @@ export class IdMap {
   }
 
   /**
+   * `code()` for an id given as UTF-8 bytes (round 107): a packed
+   * payload's ids — the wire format's id section — resolve against the
+   * index without a string ever being decoded, which is what lets
+   * `cy.patch( buffer )` key a 100k-element payload on the probe table
+   * alone.
+   *
+   * @param bytes — the buffer holding the id's bytes
+   * @param lo — the id's first byte
+   * @param hi — one past its last byte
+   * @returns the packed code (group bit 1 = edges), or −1 when no
+   *   element holds the id
+   */
+  codeBytes(bytes: Uint8Array, lo: number, hi: number): number {
+    const entry = this.probe(fnv(bytes, lo, hi), bytes, lo, hi).found;
+
+    return entry === EMPTY ? -1 : entry - BASE;
+  }
+
+  /**
    * Resolve an id to its group and slot.  Allocates a fresh result
    * object per hit but decodes no strings — the probe compares UTF-8
    * bytes in the blob against the encoded query.
@@ -201,6 +220,41 @@ export class IdMap {
     const lo = this.append(this.scratch, 0, len);
 
     this.place(at, group, slot, lo, lo + len, h);
+  }
+
+  /**
+   * `set()` for an id given as UTF-8 bytes (round 107): `cy.patch()`
+   * checks a packed payload's fresh ids for repeats in a scratch map of
+   * its own, without decoding them.
+   *
+   * @param bytes — the buffer holding the id's bytes
+   * @param lo — the id's first byte
+   * @param hi — one past its last byte
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @returns false, writing nothing, when the id is already bound
+   */
+  setBytes(
+    bytes: Uint8Array,
+    lo: number,
+    hi: number,
+    group: GroupName,
+    slot: number,
+  ): boolean {
+    this.ensure(this._size + 1);
+
+    const h = fnv(bytes, lo, hi);
+    const { found, at } = this.probe(h, bytes, lo, hi);
+
+    if (found !== EMPTY) {
+      return false;
+    }
+
+    const start = this.append(bytes, lo, hi);
+
+    this.place(at, group, slot, start, start + (hi - lo), h);
+
+    return true;
   }
 
   /**

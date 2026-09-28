@@ -75,6 +75,29 @@ describe('gpu/store: id map', function () {
     expect(ids.size).to.equal(3);
   });
 
+  it('resolves and binds ids given as bytes (round 107: codeBytes, setBytes)', function () {
+    const ids = new IdMap();
+    const packed = packIds(['a', 'bé', 'ab']);
+    const at = (i) => [packed.blob, packed.offsets[i], packed.offsets[i + 1]];
+
+    ids.set('bé', 'nodes', 4);
+    ids.set('ab', 'edges', 2);
+
+    // the packed code: (slot << 1) | group bit, as code() answers
+    expect(ids.codeBytes(...at(1))).to.equal(ids.code('bé'));
+    expect(ids.codeBytes(...at(1))).to.equal(4 << 1);
+    expect(ids.codeBytes(...at(2))).to.equal((2 << 1) | 1);
+    expect(ids.codeBytes(...at(0))).to.equal(-1);
+
+    expect(ids.setBytes(...at(0), 'nodes', 7)).to.equal(true);
+    expect(ids.idAt('nodes', 7)).to.equal('a');
+    expect(ids.get('a')).to.deep.equal({ group: 'nodes', slot: 7 });
+    // a bound id writes nothing and answers false
+    expect(ids.setBytes(...at(2), 'nodes', 8)).to.equal(false);
+    expect(ids.idAt('nodes', 8)).to.equal(undefined);
+    expect(ids.size).to.equal(3);
+  });
+
   it('auto-generates on packed holes', function () {
     const ids = new IdMap();
     let n = 0;

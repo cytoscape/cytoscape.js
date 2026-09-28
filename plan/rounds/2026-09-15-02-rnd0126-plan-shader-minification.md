@@ -99,3 +99,14 @@ features before integration, and preserve or map host-visible shader names.
 Apply equivalent compressed-size measurements and browser/pixel-parity
 gates. This round records that tooling direction; implementing the WebGL
 fallback remains separate work.
+
+### 126.5 — carried in: the constants' bundle price (item 63)
+
+The eleventh design sitting (2026-09-28) folded PLAN.md item 63 into
+this round.  Round 127's constants cost +8.8 KB minified / +2.7 KB
+gzipped because the minifier keeps `.BACKGROUND_COLOR`-style member
+names.  If this round's build-time inlining finds a real transform
+(oxc/rolldown, not a regex) that can also inline `as const` members,
+apply it to `COL`, `PROP` and the reserved keys and measure the bundle
+before and after; otherwise the 2.7 KB is accepted and item 63 closes
+on that.

@@ -976,8 +976,9 @@ line does (the draw trim; it used to run node centre to node centre
 on the straight stream), and its **width formula diverges from v3's**
 — v3 strokes the edge underlay/overlay at `2 × padding` alone, so a
 padding under half the line width draws a halo narrower than the
-line; v4's `width + 2 × padding` always shows the halo.  PLAN.md
-ledger item 27 holds the call; the casing (`line-outline`) is
+line; v4's `width + 2 × padding` always shows the halo, and **is
+kept as a deliberate deviation** (PLAN.md item 27, decided at the
+eleventh design sitting, 2026-09-28); the casing (`line-outline`) is
 unaffected, both libraries agreeing on `width + outlineWidth`.
 
 Core theming (round 13 A2): the sheet takes an optional `core` group
@@ -5640,9 +5641,9 @@ fragment premium is **unmeasurable at scene level** on real hardware
     head does not hide the line, and that parity scene reads **0
     differing pixels**.
   - **Mid arrows are not covered at all**: they sit mid-line, where a
-    trim cannot reach.  PLAN.md's open call 21 carries the maintainer's
-    lean that `arrow-fill: hollow` may simply not be supported on mid
-    arrows.
+    trim cannot reach.  PLAN.md item 21 decided it (2026-09-28): mid
+    arrows are filled only, `mid-*-arrow-fill` is dropped, and
+    `mid-*-arrow-width` is to be implemented.
 - **A hollow head's back corners are radiused**, where canvas2d miters
   them: v4 strokes by offsetting a distance field, and that rounds a join
   by construction.  Same family as the butt-cap note the edge layers
@@ -6048,8 +6049,9 @@ fragment premium is **unmeasurable at scene level** on real hardware
   without a second pass — and its constants already live in
   `src/shape-points.mts`, verified against v3's own functions.  Mid
   arrows are deliberately out of that scope: they sit mid-line where a
-  trim cannot reach, and `arrow-fill: hollow` on a mid arrow may
-  simply never be supported (the mid fill/width props already throw).
+  trim cannot reach, and `arrow-fill: hollow` on a mid arrow is not
+  supported (decided 2026-09-28: the mid fill prop is dropped; the mid
+  width prop is planned).
 - **Gestures** (round 10 additions): the **cxttap family** — right
   button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
   plus `cxttap` when the press never moved; the browser context menu is

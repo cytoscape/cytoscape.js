@@ -23,7 +23,7 @@ A round can land with an item held open; the round file says which.
 
 ## The sections
 
-171 sections.
+172 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -198,3 +198,4 @@ A round can land with an item held open; the round file says which.
 | 169 | 130 | 2026-09-20 | landed | [The large files split: ten files, ten sub-rounds](rounds/2026-09-20-01-rnd0130-landed-the-large-files-split-ten-files-ten-sub-rounds.md) |
 | 170 | 131 | 2026-09-21 | plan | [Use-case bundles: `cytoscape/headless`, `cytoscape/headless-gpu`, and a shake-clean tree](rounds/2026-09-21-01-rnd0131-plan-use-case-bundles-headless-headless-gpu-and-a-shake-clean-tree.md) |
 | 171 | 132 | 2026-09-21 | landed | [The Features page says what its numbers mean](rounds/2026-09-21-02-rnd0132-landed-the-features-page-says-what-its-numbers-mean.md) |
+| 172 | — | 2026-09-28 | note | [The eleventh design sitting — the open calls, one by one](rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md) |

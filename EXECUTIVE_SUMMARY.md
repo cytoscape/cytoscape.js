@@ -1369,9 +1369,17 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| `arrow-scale` quantization | Stored at a 1/16 step, so `arrow-scale: 1.4` draws at 1.375. Fixing it spends six spare bits a seventeenth arrowhead shape also wants — one or the other |
-| Edge overlay band width | v3 draws the halo `2 × padding` wide (invisible at small paddings), v4 `width + 2 × padding` (always visible). Either resolution changes rendered output |
-| Hollow *mid* arrows | Still show the line through them: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
+| Arrow-shape review | Whether v3's twelve arrowheads consolidate (near-duplicate compound heads merged, `tee` sized to the edge width) before SVG export and the WebGL path each implement them |
+
+Decided at the eleventh design sitting (28 Sep), which put every open
+call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as
+a recorded deviation; the edge overlay/underlay band keeps v4's
+`width + 2 × padding`; mid arrows are filled only, and the mid-arrow
+width override is to be ported.  The layout option surface takes the
+bounding box as a hint by default, and goes into one layout round with
+the page sittings and AVSDF; a sheet diff for `cy.style()`, one column
+animation per animated layout and a worker lane for the k-clusterings
+are all due before alpha.
 
 ## Not yet built
 

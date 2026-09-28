@@ -225,3 +225,11 @@ no charts, images, ghosts at first) as a third positioning option;
 and the framework weights — reach versus two-renderer maintenance
 versus parity-suite cost — which are the maintainer's to set at the
 sitting that consumes this record.
+
+**Carried in (the eleventh design sitting, 2026-09-28):** ledger item
+18 — whether to warm the tween compute pipelines at init — is deferred
+to this round.  The capability selection 73 designs decides whether a
+software WebGPU adapter (the population the warm-up was for) is served
+by WebGL2 instead, where there is no compute stage to warm; item 18 is
+answered by that choice.  Mid arrows are filled only (item 21), so the
+fallback has no hollow mid-arrow case to port.

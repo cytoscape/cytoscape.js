@@ -200,7 +200,16 @@ had been taken and executed.  **Item numbers are stable identifiers and
 are never reused**, so the gaps below are deliberate: a round record
 citing "item 12" must keep resolving to item 12.
 
-**As last swept** (2026-09-17, round 127.6), the genuinely open questions
+**As last swept** (2026-09-28, the eleventh design sitting), every open
+call in this section has been put to the maintainer one by one and
+answered — items 18, 21, 23, 27, 52–54, 61–63 and 65–71 each carry the
+call on the item, and the answers with their background are in
+`plan/rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`.
+The sitting raised **item 72**, the arrow-shape review, which is open.
+Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
+sweep before it.
+
+**Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
 (2026-08-10) left open, none of which a round has taken since.  The
 2026-09-01 sweep added **item 54**, the benchmark rows the performance
@@ -296,6 +305,9 @@ docs checks), and each is left in place pending the call.
     round may spend the reserved span until this is answered — which is
     why round 56's own need for two flag bits was met from `edge.width`'s
     mirror lane instead, leaving all six bits of the real column intact.
+    **Call taken (2026-09-28, the eleventh sitting): leave it** — the
+    1.8% stays a recorded deviation and the span stays reserved.  The
+    sitting logged item 72, the arrow-shape review, beside it.
 
 27. **v4's edge underlay/overlay band is `width + 2 × padding` wide;
     v3's is `2 × padding`** (round 58, 2026-08-09).  Found by a parity
@@ -320,6 +332,9 @@ docs checks), and each is left in place pending the call.
     formula does.  Related recorded deviations, unchanged by this: v3
     rounds these strokes' caps where v4 butt-cuts, and v3's erase-only
     compositing where heads overlap.
+    **Call taken (2026-09-28, the eleventh sitting): keep v4's `width +
+    2 × padding`** as a deliberate deviation, documented in
+    `MIGRATING.md` and `features.csv`.
 
 ### New open calls (sixth sitting, 2026-08-06)
 
@@ -342,6 +357,9 @@ resolved by measurement and its entry has left.
     larger future direction to keep beside it: **a WebGL fallback
     renderer** may be worth considering for users whose platforms
     cannot support WebGPU at all — logged as a direction, not scoped.
+    **Deferred to round 73 (2026-09-28, the eleventh sitting)**: the
+    fallback's capability selection decides whether software WebGPU
+    adapters go to WebGL2, which has nothing to warm.
 19. **v3's derived parent box is 1 px larger per side than v4's** (round
     55, 2026-08-06).  Measured on a parent with two 30x30 ellipse
     children and padding 10: v4's box is the children's union plus
@@ -428,6 +446,10 @@ resolved by measurement and its entry has left.
     (no extra draw, but the edge vertex shader then needs the mid shape
     ids, which pushes toward the heavier trim carrier), or build the
     erase pass for that case alone.
+    **Call taken (2026-09-28, the eleventh sitting): `mid-*-arrow-fill`
+    excluded, `mid-*-arrow-width` to be implemented.**  Mid arrows stay
+    filled (additive later if asked); SVG export and the WebGL path draw
+    them filled.
 22. **`edgeHitsBox` keeps its straight-edge approximation** (round 55,
     2026-08-06).  Round 56 shortened the drawn line, so the comment
     claiming containment and box selection "agree about where the edge
@@ -1192,6 +1214,9 @@ directions".*
     scatter result itself has moved since round 109 (the layout
     rounds since) while the failure's shape has not: the seed's
     effect goes missing, the inputs do not.
+    **Taken as a task (2026-09-28, the eleventh sitting)**, not a call:
+    it goes with the layout round (items 61 and 62, the round-125 page
+    sittings).
 
 53. **The merged round branches** (logged 2026-08-26; raised by
     round 108, which carried it only in its own record).  Round
@@ -1208,6 +1233,8 @@ directions".*
     so this stays a call rather than a cleanup: `git branch -d` on
     those four names is the whole action, and the tips are written
     here so it is reversible from this file alone.
+    **Call taken (2026-09-28, the eleventh sitting): keep all** — the
+    eight merged local branches stay.  Closed.
 
 54. **The rows the performance review could not screen** (logged
     2026-09-01, round 113).  The review found no library regression
@@ -1240,6 +1267,9 @@ directions".*
     kernel.  Not a
     decision so much as a queue; it leaves this list when a round
     gives those rows bands.
+    **Taken (2026-09-28, the eleventh sitting)**: this list is the
+    checklist for the next performance review, and leaves the open
+    calls.
 55. **Round 114's layout follow-ups** (logged 2026-09-02; **the three
     calls taken by round 116, 2026-09-03**).  (a) Size-aware repulsion
     inside the force sim, CPU and WGSL — landed: under `avoidOverlap`
@@ -1460,6 +1490,11 @@ directions".*
     proposed surface applied to the audit's fixtures through
     `benchmark:layout-audit`, area and gap columns before and after,
     so the sitting decides on pictures and numbers.
+    **Call taken (2026-09-28, the eleventh sitting): the bounding box is
+    a hint by default**, with an explicit option for when it binds; the
+    gap and compacting spellings are decided on the option matrix.
+    Scheduled into the layout round with items 52 and 62 and the
+    round-125 page sittings.
 62. **AVSDF, reconsidered** (raised at round 125's first sitting pass,
     2026-09-15; declined by round 122 "until an app asks").  The
     crossing-minimised ring order.  125.5 measured the clustered
@@ -1470,6 +1505,8 @@ directions".*
     em-web's giant component under the id order, the `sort` order and
     an AVSDF order computed offline, before any spelling is designed
     (the natural one is a value of `sort`).
+    **Call taken (2026-09-28, the eleventh sitting): in the layout
+    round**, measured first; a `sort` value only if it clearly wins.
 63. **Round 127's bundle price, and whether to inline the tables**
     (logged 2026-09-15, round 127).  Spelling every column id, style
     property name and reserved data key once cost 1.0% of the minified
@@ -1483,6 +1520,9 @@ directions".*
     call**: accept, or schedule the inline as part of round 126's
     minification work, where a shader-string inliner is already on the
     table.
+    **Call taken (2026-09-28, the eleventh sitting): folded into round
+    126** — inline only through a real (non-regex) transform, otherwise
+    accept the 2.7 KB.
 64. **Group names as constants?** (logged 2026-09-15, round 127;
     **taken by round 127.6, 2026-09-17: yes** — the maintainer's one-
     line answer, and the gate's fourth rule went in the same sitting.)
@@ -1513,6 +1553,7 @@ directions".*
     at the bench sizes through the built bundle, and the max relative
     difference of the scores — expected 0 (the per-source dependency
     order is the heap's, unchanged) or f64 rounding.
+    **Call taken (2026-09-28, the eleventh sitting): go, a small task.**
 66. **Edge id registration is a third of a bulk load** (logged
     2026-09-18, from round 110.1's census).  A CPU profile of the
     wire-form init of ndex-x-large puts `registerBulk` →
@@ -1530,6 +1571,8 @@ directions".*
     `cy.getElementById` contract.  **First measurement**: init with
     ids pre-generated in the payload versus generated at ingest, to
     split the string cost from the interning cost.
+    **Call taken (2026-09-28, the eleventh sitting): measure, then the
+    numeric fast path**; lazy ids only if that is not enough.
 67. **A whole-sheet `cy.style()` re-apply re-derives and re-uploads
     every column** (logged 2026-09-18, from round 110.1's census).
     Sixty re-applies of a sheet whose only change was one node
@@ -1543,6 +1586,8 @@ directions".*
     number was taken.  **First measurement**: the same sixty applies
     with the diff simulated by hand (`cy.nodes().style(...)` of the
     one property), which is the target.
+    **Call taken (2026-09-28, the eleventh sitting): go, before alpha**,
+    keeping the bypass-clearing rule of a sheet replace.
 68. **The GPU tween sink starves the frame at tens of thousands of
     animations** (logged 2026-09-18, from item 51's measurement).  A
     layout with `animate: true` on ndex-x-large creates one position
@@ -1562,6 +1607,9 @@ directions".*
     frame count of the grid tween at 2k / 5k / 10k / 20k nodes on
     both hosts, which finds where the per-animation cost crosses the
     per-frame span cost.
+    **Call taken (2026-09-28, the eleventh sitting): go, before alpha**
+    — one column animation per layout; per-node observability during the
+    tween is settled with it.
 69. **The offload lane frees the kernel's share; the builders are
     still in-thread** (logged 2026-09-18, from round 129.4's offload
     rows).  Every offload family builds its snapshot on the calling
@@ -1582,6 +1630,8 @@ directions".*
     each family's call at 8k / 32k / 128k nodes on the sparse fixture,
     which says whether the builders or a worker-side build is the
     round.
+    **Call taken (2026-09-28, the eleventh sitting): one-pass
+    builders**, the build share measured first.
 70. **The k-clusterings and hierarchical clustering have no offload
     lane** (logged 2026-09-18, round 129.1's decision).  Their
     references call the distance per iteration through per-node
@@ -1599,6 +1649,9 @@ directions".*
     named-metric share of real calls (the GPU path already requires
     attributes and a named metric, so its parity suite is the
     fixture), and the in-thread run's length at 1k / 5k nodes.
+    **Call taken (2026-09-28, the eleventh sitting): build the lane
+    before alpha** — one named-metric kernel shared by the reference and
+    the workers.
 
 71. **Eleven source files still sit at 1,000–1,600 lines after round
     130** (logged 2026-09-20).  Round 130 split the ten largest — the
@@ -1620,3 +1673,21 @@ directions".*
     moving the docs off the class.  The round file lists the large
     non-`src/` files too (the two Playwright specs at 9,579 and 7,425
     lead).
+    **Call taken (2026-09-28, the eleventh sitting): leave them as they
+    are.**  Closed.
+
+72. **The arrow-shape review** (raised by the maintainer 2026-09-28,
+    the eleventh sitting, beside item 23's call).  v4 carries v3's
+    twelve heads (`none`, `triangle` with its `arrow` alias, `vee`,
+    `chevron`, `circle`, `square`, `diamond`, `tee`, and the compound
+    `triangle-tee`, `circle-triangle`, `triangle-cross`,
+    `triangle-backcurve`), and the vocabulary may consolidate: the
+    maintainer's examples are two near-duplicate compound heads
+    becoming one ("`triangle-tee` and triangle-line" — v4 has
+    `triangle-tee` and `triangle-cross`, no `triangle-line`) and `tee`
+    matching the edge width in v4, with other possibilities open.
+    Public style API, so it wants settling before alpha, and before
+    SVG export (round 77) and the WebGL path (round 73) each implement
+    the heads.  **First measurement**: the head gallery — every shape
+    at three widths and both fills, v3 beside v4 — plus the usage of
+    each shape in the flagship apps' sheets and v3's issue tracker.

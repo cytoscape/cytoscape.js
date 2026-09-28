@@ -315,7 +315,8 @@ ignores one silently.)*
 | `background-blacken` | **dropped.** Compute the shade in a colour mapper's range |
 | `bounds-expansion` | **dropped.** Bounds are computed correctly instead |
 | `outside-texture-bg-color/-opacity` | **dropped** with `textureOnViewport` |
-| `mid-source-arrow-fill/-width`, `mid-target-arrow-fill/-width` | **unsupported.** Mid arrows are always filled at standard width |
+| `mid-source-arrow-fill`, `mid-target-arrow-fill` | **dropped.** Mid arrows are always filled |
+| `mid-source-arrow-width`, `mid-target-arrow-width` | **not yet ported** — planned; mid arrows use the standard width until then |
 | `text-border-style` | **not yet ported** — see [Not ported](#not-ported); `border-style` and `outline-style` themselves work (round 38) |
 | `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction (the same butt-cut deviation the edge layers record); `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
 

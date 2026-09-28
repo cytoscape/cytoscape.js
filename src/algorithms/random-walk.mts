@@ -31,7 +31,7 @@ import { GPU_MIN_N, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
-import { rwrProximityGpu } from './algo-gpu-rwr.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { GROUP_NODES } from '../contract.mjs';
 
 export interface RandomWalkWithRestartOptions {
@@ -345,7 +345,7 @@ export const randomWalkWithRestartProximityAsync = (
     n,
     GPU_MIN_N,
     () => rwrProximity(view, options),
-    (ctx) => rwrProximityGpu(ctx, view, options),
+    gpuCall('rwr', view, options),
     undefined,
     {
       minN: RWR_WORKERS_MIN_N,

@@ -4,7 +4,7 @@ import type { WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { betweennessCentralityGpu } from './algo-gpu-brandes.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 
@@ -56,9 +56,7 @@ export const betweennessCentralityAsync = (
       ? BETWEENNESS_GPU_MIN_N_WITH_POOL
       : BETWEENNESS_GPU_MIN_N,
     () => betweennessCentrality(coll, options),
-    options.weight == null
-      ? (ctx) => betweennessCentralityGpu(ctx, coll, options)
-      : null,
+    options.weight == null ? gpuCall('betweenness', coll, options) : null,
     options.weight != null
       ? 'weighted betweennessCentrality has no GPU path — ' +
           "use executor 'cpu', 'workers' or 'auto'"

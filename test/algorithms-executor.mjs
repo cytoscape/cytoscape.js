@@ -9,6 +9,15 @@ import {
 } from '../src/algorithms/algo-gpu.mjs';
 import { runAlgo } from '../src/algorithms/executor.mjs';
 import { kMedoidsGpu } from '../src/algorithms/algo-gpu-cluster.mjs';
+import {
+  gpuCall,
+  gpuLane,
+  gpuRuntime,
+  NO_GPU_BUILD,
+  registerGpu,
+} from '../src/algorithms/gpu-registry.mjs';
+import { GPU_RUNTIME } from '../src/algorithms/gpu-lanes.mjs';
+import { pageRankGpu } from '../src/algorithms/algo-gpu-pagerank.mjs';
 
 // Round 65: the expensive whole-graph algorithms are async, with an
 // `executor` option ('cpu' | 'gpu' | 'auto').  These specs pin the
@@ -327,6 +336,139 @@ describe('gpu/algorithms: the executor contract', function () {
       );
 
       expect(err.message).to.match(/cannot exceed the number of nodes/);
+    });
+  });
+
+  describe('the GPU registry (131.2)', function () {
+    // The seam the headless build rides: an algorithm reaches its kernel
+    // only through the runtime an entry registered.  `src/index.mts`
+    // registers the full runtime at import, so this file starts with it;
+    // `registerGpu(null)` is the headless build's state.
+    var realDescriptor;
+
+    beforeEach(function () {
+      realDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+      _resetAlgoGpu();
+    });
+
+    afterEach(function () {
+      if (realDescriptor != null) {
+        Object.defineProperty(globalThis, 'navigator', realDescriptor);
+      } else {
+        delete globalThis.navigator;
+      }
+
+      registerGpu(GPU_RUNTIME);
+      _resetAlgoGpu();
+    });
+
+    // a working adapter whose device throws on first use: a run that
+    // reaches this device took the GPU lane, and says so by name
+    var touchyStub = () =>
+      Object.defineProperty(globalThis, 'navigator', {
+        value: {
+          gpu: {
+            requestAdapter: async () => ({
+              requestDevice: async () =>
+                new Proxy(
+                  { lost: new Promise(() => {}) },
+                  {
+                    get: (target, prop) => {
+                      if (prop in target || typeof prop === 'symbol') {
+                        return target[prop];
+                      }
+
+                      throw new Error(`device touched: ${String(prop)}`);
+                    },
+                  },
+                ),
+            }),
+          },
+        },
+        configurable: true,
+      });
+
+    it('the full entry registers every kernel', function () {
+      expect(gpuRuntime()).to.equal(GPU_RUNTIME);
+      expect(gpuLane('pageRank')).to.equal(pageRankGpu);
+      expect(Object.keys(GPU_RUNTIME.lanes)).to.have.lengthOf(19);
+      expect(gpuCall('pageRank', cy.elements(), {})).to.be.a('function');
+    });
+
+    it("control: on the full entry an explicit 'gpu' reaches the kernel through the registry", async function () {
+      touchyStub();
+
+      var err = await rejection(
+        cy.elements().pageRank({ executor: 'gpu', iterations: 5 }),
+      );
+
+      expect(err.message).to.match(/device touched/);
+    });
+
+    it('an algorithm runs whatever lane the registry holds', async function () {
+      var ctx = { device: {}, pipelines: new Map() };
+
+      registerGpu({
+        supported: () => true,
+        acquire: async () => ctx,
+        lanes: { ...GPU_RUNTIME.lanes, pageRank: async (c) => ({ via: c }) },
+      });
+
+      var ran = await cy.elements().pageRank({ executor: 'gpu' });
+
+      expect(ran.via).to.equal(ctx);
+    });
+
+    it("an empty registry rejects an explicit 'gpu' with the build's message", async function () {
+      registerGpu(null);
+      // a GPU the build cannot use: the message must name the build,
+      // not the environment
+      touchyStub();
+
+      var err = await rejection(
+        cy.elements().pageRank({ executor: 'gpu', iterations: 5 }),
+      );
+
+      expect(err.message).to.equal(NO_GPU_BUILD);
+      expect(err.message).to.contain("import 'cytoscape/headless-gpu'");
+    });
+
+    it("an empty registry's message wins over a family's no-path reason", async function () {
+      registerGpu(null);
+
+      // weighted betweenness has no GPU path in any build; the headless
+      // build must still say *why* it has none
+      var err = await rejection(
+        cy.elements().betweennessCentrality({
+          executor: 'gpu',
+          weight: () => 1,
+        }),
+      );
+
+      expect(err.message).to.equal(NO_GPU_BUILD);
+    });
+
+    it("an empty registry sends 'auto' to the CPU even with an adapter present", async function () {
+      registerGpu(null);
+      touchyStub();
+
+      expect(gpuCall('pageRank', cy.elements(), {})).to.equal(null);
+
+      // a closure handed in directly is not enough: the router asks the
+      // registry first
+      var ran = await runAlgo(
+        'auto',
+        10_000,
+        256,
+        () => 'cpu',
+        async () => 'gpu',
+      );
+
+      expect(ran).to.equal('cpu');
+
+      var ranks = await cy.elements().pageRank({ iterations: 5 });
+
+      expect(ranks.rank(cy.nodes()[0])).to.be.a('number');
     });
   });
 });

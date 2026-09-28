@@ -11,7 +11,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { floydWarshallGpu } from './algo-gpu-fw.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { floydWarshallKernel } from './algo-kernels.mjs';
 
 /**
@@ -68,7 +68,7 @@ export const floydWarshallAsync = (
     n,
     GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => floydWarshallGpu(ctx, coll, options),
+    gpuCall('floydWarshall', coll, options),
     undefined,
     null,
     lane,

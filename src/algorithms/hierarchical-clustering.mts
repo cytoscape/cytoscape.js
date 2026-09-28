@@ -7,7 +7,7 @@ import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { hierarchicalClusteringGpu } from './algo-gpu-cluster.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
 export type HierarchicalAttributeFn = (node: Collection) => number;
@@ -355,9 +355,7 @@ export const hierarchicalClusteringAsync = (
     n,
     Infinity,
     () => hierarchicalClustering(coll, options),
-    reason == null
-      ? (ctx) => hierarchicalClusteringGpu(ctx, coll, options)
-      : null,
+    reason == null ? gpuCall('hierarchical', coll, options) : null,
     reason ?? undefined,
   );
 };

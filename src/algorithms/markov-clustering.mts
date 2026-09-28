@@ -6,7 +6,7 @@ import type { SubgraphView } from './algo-shared.mjs';
 import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { markovClusteringGpu } from './algo-gpu-mcl.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 
 /**
  * The node count from which `'auto'` iterates MCL on one pool worker
@@ -76,7 +76,7 @@ export const markovClusteringAsync = (
     n,
     128,
     () => inThread(lane),
-    (ctx) => markovClusteringGpu(ctx, coll, options),
+    gpuCall('markov', coll, options),
     undefined,
     null,
     lane,

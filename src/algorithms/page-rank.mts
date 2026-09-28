@@ -4,7 +4,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { pageRankGpu } from './algo-gpu-pagerank.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 
 /**
  * The node count from which `'auto'` runs pageRank on one pool worker
@@ -74,7 +74,7 @@ export const pageRankAsync = (
     n,
     PAGE_RANK_GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => pageRankGpu(ctx, coll, options),
+    gpuCall('pageRank', coll, options),
     undefined,
     null,
     lane,

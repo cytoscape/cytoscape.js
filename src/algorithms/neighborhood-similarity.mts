@@ -27,7 +27,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { neighborhoodSimilarityGpu } from './algo-gpu-similarity.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { listsToCsr } from './algo-kernels.mjs';
 
 /**
@@ -242,7 +242,7 @@ export const neighborhoodSimilarityAsync = (
     n,
     dense ? GPU_MIN_N : Infinity,
     () => inThread(lane),
-    (ctx) => neighborhoodSimilarityGpu(ctx, view, hoods, metric, directed),
+    gpuCall('similarity', view, hoods, metric, directed),
     undefined,
     null,
     lane,

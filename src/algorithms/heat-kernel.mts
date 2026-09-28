@@ -45,7 +45,7 @@ import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { seedDistribution } from './random-walk.mjs';
-import { heatKernelGpu } from './algo-gpu-heat.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { GROUP_EDGES } from '../contract.mjs';
 
 /** Terms of the scaled Taylor series both executors sum: at operator
@@ -360,7 +360,7 @@ export const heatKernelAsync = (
     n,
     GPU_MIN_N,
     () => heatKernel(view, options),
-    (ctx) => heatKernelGpu(ctx, view, options),
+    gpuCall('heatKernel', view, options),
     undefined,
     {
       minN: HEAT_WORKERS_MIN_N,

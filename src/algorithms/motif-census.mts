@@ -36,7 +36,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { motifCensusGpu } from './algo-gpu-motifs.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { listsToCsr } from './algo-kernels.mjs';
 
 /**
@@ -346,7 +346,7 @@ export const motifCensusAsync = (
     n,
     dense ? GPU_MIN_N : Infinity,
     () => inThread(lane),
-    (ctx) => motifCensusGpu(ctx, structure),
+    gpuCall('motifCensus', structure),
     undefined,
     null,
     lane,

@@ -28,7 +28,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { simRankGpu } from './algo-gpu-simrank.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { listsToCsr } from './algo-kernels.mjs';
 
 /**
@@ -209,7 +209,7 @@ export const simRankAsync = (
     n,
     GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => simRankGpu(ctx, view, hoods, options),
+    gpuCall('simRank', view, hoods, options),
     undefined,
     null,
     lane,

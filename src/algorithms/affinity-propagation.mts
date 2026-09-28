@@ -7,7 +7,7 @@ import type { DistanceMetric } from './clustering-distances.mjs';
 import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { affinityPropagationGpu } from './algo-gpu-ap.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 
 /**
  * The node count from which `'auto'` passes AP's messages on one pool
@@ -171,7 +171,7 @@ export const affinityPropagationAsync = (
     n,
     256,
     () => inThread(lane),
-    (ctx) => affinityPropagationGpu(ctx, coll, options),
+    gpuCall('affinityPropagation', coll, options),
     undefined,
     null,
     lane,

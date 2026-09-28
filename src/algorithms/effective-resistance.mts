@@ -34,7 +34,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { effectiveResistanceGpu } from './algo-gpu-resistance.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { resistanceKernel } from './algo-kernels.mjs';
 
 /**
@@ -261,7 +261,7 @@ export const effectiveResistanceAsync = (
     n,
     GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => effectiveResistanceGpu(ctx, view, options),
+    gpuCall('effectiveResistance', view, options),
     undefined,
     null,
     lane,

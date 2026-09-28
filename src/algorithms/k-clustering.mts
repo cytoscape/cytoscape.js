@@ -8,7 +8,7 @@ import type { DistanceMetric } from './clustering-distances.mjs';
 import { resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { fuzzyCMeansGpu, kMeansGpu, kMedoidsGpu } from './algo-gpu-cluster.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 
 /** Why a feature-space run has no GPU path, when it doesn't. */
 const featureGpuReason = (options?: KClusteringOptions): string | null => {
@@ -407,7 +407,7 @@ export const kMeansAsync = (
     n,
     1024,
     () => kMeans(coll, options),
-    reason == null ? (ctx) => kMeansGpu(ctx, coll, options) : null,
+    reason == null ? gpuCall('kMeans', coll, options) : null,
     reason ?? undefined,
   );
 };
@@ -438,7 +438,7 @@ export const kMedoidsAsync = (
     n,
     256,
     () => kMedoids(coll, options),
-    reason == null ? (ctx) => kMedoidsGpu(ctx, coll, options) : null,
+    reason == null ? gpuCall('kMedoids', coll, options) : null,
     reason ?? undefined,
   );
 };
@@ -468,7 +468,7 @@ export const fuzzyCMeansAsync = (
     n,
     512,
     () => fuzzyCMeans(coll, options),
-    reason == null ? (ctx) => fuzzyCMeansGpu(ctx, coll, options) : null,
+    reason == null ? gpuCall('fuzzyCMeans', coll, options) : null,
     reason ?? undefined,
   );
 };

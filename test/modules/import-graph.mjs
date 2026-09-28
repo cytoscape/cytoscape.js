@@ -149,8 +149,12 @@ const allEdges = () => {
   for (const file of srcFiles()) {
     const src = stripComments(readFileSync(file, 'utf8'));
 
+    // a side-effect `import '…'` is matched only at a line's start
+    // (131.2): the headless build's rejection text names
+    // `import 'cytoscape/headless-gpu'` inside a string, which is not an
+    // edge
     for (const m of src.matchAll(
-      /(?:from\s+|import\s+|import\s*\(\s*)'([^']+)'/g,
+      /(?:from\s+|^\s*import\s+|import\s*\(\s*)'([^']+)'/gm,
     )) {
       const spec = m[1];
 
@@ -208,7 +212,7 @@ const reach = (entry) => {
     const src = stripComments(readFileSync(file, 'utf8'));
 
     for (const m of src.matchAll(
-      /(?:from\s+|import\s+|import\s*\(\s*)'([^']+)'/g,
+      /(?:from\s+|^\s*import\s+|import\s*\(\s*)'([^']+)'/gm,
     )) {
       if (!m[1].startsWith('.')) {
         continue;
@@ -368,10 +372,16 @@ describe('import graph: the tiers (round 131)', function () {
     };
   };
 
-  it('the core reaches nothing under render/ or interact/ (131.1)', function () {
+  it('the core reaches no renderer, pointer, device code or kernel (131.1, 131.2)', function () {
     const { seen, bad } = offenders(
       'src/core.mts',
-      FORBIDDEN(['render/', 'interact/']),
+      FORBIDDEN([
+        'render/',
+        'interact/',
+        'gpu/',
+        'algorithms/algo-gpu',
+        'algorithms/gpu-lanes',
+      ]),
     );
 
     expect(

@@ -8,7 +8,9 @@ where the maths runs:
   'cpu'  — the reference implementation, bit-reproducible, always
            available.  What headless Node always runs.
   'gpu'  — the WGSL kernels; rejects when WebGPU (or the algorithm's
-           GPU path) is unavailable rather than silently degrading.
+           GPU path) is unavailable rather than silently degrading, and
+           in a build that carries no kernels (`cytoscape/headless`,
+           round 131) with the build's own message.
   'workers' — (round 74) the per-source-parallel families behind a
            pool of plain workers: the same f64 arithmetic as 'cpu',
            partitioned by source range; rejects when the family has no
@@ -58,6 +60,13 @@ bits by construction.  An explicit `'workers'` on such a family runs
 the offload lane (a worker is the workers executor) rather than
 rejecting as it did through round 128.
 
+The kernels are reached through the GPU registry (round 131.2,
+`gpu-registry.mts`): a family hands `runAlgo` the closure `gpuCall`
+built from the registered runtime's lane, or null.  An entry that
+registers no runtime ships no kernel — the headless build — and `route()`
+asks the registry before anything else, so that build's explicit `'gpu'`
+names the build; `'auto'` there simply finds no GPU lane.
+
 Cancellation (round 128): every entry returns an `AlgoRun` — the
 promise plus `cancel()`.  The router polls the run's token after each
 await, so a cancel lands before the next lane starts: after the GPU or
@@ -67,12 +76,8 @@ work was submitted, the pool's in-flight ranges answer — and its value
 is discarded rather than decoded; see `cancel.mts`.
 */
 
-import {
-  acquireAlgoGpu,
-  algoGpuSupported,
-  GpuUnfitError,
-} from './algo-gpu.mjs';
-import type { AlgoGpu } from './algo-gpu.mjs';
+import { gpuRuntime, GpuUnfitError, NO_GPU_BUILD } from './gpu-registry.mjs';
+import type { AlgoGpu } from './gpu-registry.mjs';
 import { acquireAlgoWorkers, algoWorkersSupported } from './algo-workers.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { runKernelInThread } from './algo-kernels.mjs';
@@ -226,7 +231,8 @@ export const resolveExecutor = (
  *   be constructed
  * @returns the algorithm result, from whichever executor ran, as a
  *   promise carrying `cancel()` (round 128)
- * @throws if `executor: 'gpu'` is asked of an environment without
+ * @throws if `executor: 'gpu'` is asked of a build with no GPU
+ *   executors (`cytoscape/headless`), of an environment without
  *   WebGPU, or of an option combination with no GPU path; if
  *   `executor: 'workers'` is asked of a family with neither a workers
  *   lane nor an offload lane, or of an environment where no worker can
@@ -338,8 +344,17 @@ const route = async <T,>(
         };
   };
 
+  // the build's GPU runtime (131.2): null in `cytoscape/headless`, whose
+  // explicit 'gpu' gets the build's message before anything else is
+  // judged — never "no GPU path for these options"
+  const rt = gpuRuntime();
+
   if (executor === 'gpu') {
-    if (!algoGpuSupported()) {
+    if (rt == null) {
+      throw new Error(NO_GPU_BUILD);
+    }
+
+    if (!rt.supported()) {
       throw new Error(
         "executor 'gpu' requires WebGPU, which is unavailable in this " +
           "environment — use 'cpu' or 'auto'",
@@ -353,7 +368,7 @@ const route = async <T,>(
       );
     }
 
-    const ctx = await acquireAlgoGpu();
+    const ctx = await rt.acquire();
 
     throwIfCancelled(token);
 
@@ -376,14 +391,15 @@ const route = async <T,>(
 
   if (
     executor === 'auto' &&
+    rt != null &&
     gpu != null &&
     n >= minGpuN &&
-    algoGpuSupported()
+    rt.supported()
   ) {
     let ctx: AlgoGpu | null;
 
     try {
-      ctx = await acquireAlgoGpu();
+      ctx = await rt.acquire();
     } catch {
       ctx = null; // no adapter: 'auto' falls back to the reference path
     }

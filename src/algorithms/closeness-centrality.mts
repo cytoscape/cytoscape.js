@@ -7,10 +7,7 @@ import { GPU_MIN_N, inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
-import {
-  closenessCentralityNormalizedBfsGpu,
-  closenessCentralityNormalizedGpu,
-} from './algo-gpu-closeness.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { GROUP_NODES } from '../contract.mjs';
 import { brandesCsr } from './betweenness-centrality.mjs';
 import { FLOYD_WARSHALL_OFFLOAD_MIN_N } from './floyd-warshall.mjs';
@@ -151,8 +148,8 @@ export const closenessCentralityNormalizedAsync = (
       dense ? GPU_MIN_N : CLOSENESS_BFS_GPU_MIN_N,
       () => closenessCentralityNormalized(coll, options),
       veryDense
-        ? (ctx) => closenessCentralityNormalizedGpu(ctx, coll, options)
-        : (ctx) => closenessCentralityNormalizedBfsGpu(ctx, coll, options),
+        ? gpuCall('closenessDense', coll, options)
+        : gpuCall('closenessBfs', coll, options),
       undefined,
       {
         minN: CLOSENESS_WORKERS_MIN_N,
@@ -175,7 +172,7 @@ export const closenessCentralityNormalizedAsync = (
     n,
     GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => closenessCentralityNormalizedGpu(ctx, coll, options),
+    gpuCall('closenessDense', coll, options),
     undefined,
     null,
     lane,

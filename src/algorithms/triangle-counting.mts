@@ -24,7 +24,7 @@ import {
 } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { triangleCountGpu } from './algo-gpu-triangles.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 import { listsToCsr } from './algo-kernels.mjs';
 
 /**
@@ -199,7 +199,7 @@ export const triangleCountAsync = (
     n,
     dense ? GPU_MIN_N : Infinity,
     () => inThread(lane),
-    (ctx) => triangleCountGpu(ctx, view, adjacency),
+    gpuCall('triangles', view, adjacency),
     undefined,
     null,
     lane,

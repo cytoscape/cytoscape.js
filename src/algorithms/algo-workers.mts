@@ -16,7 +16,8 @@ demand it puts on every embedder) buys 0.1 ms per run and is declined.
 The worker entry travels as **source text, not a bundle chunk**: the
 pool stringifies `algoWorkerBody`, wraps it in an environment preamble
 and constructs Node workers with `eval: true` and browser workers from
-a Blob URL — so the five single-file bundles stay single-file and no
+a Blob URL — so every single-file bundle (five for the full entry, three
+per slim entry since round 131) stays single-file and no
 bundler is asked to know about a worker.  The preamble defines a no-op
 `__name` because tsx wraps closure creation in one (the AGENTS
 hot-path lesson); `test/modules/algo-worker-body.mjs` is the tripwire

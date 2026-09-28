@@ -18,6 +18,8 @@ import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { CancelledError } from './algorithms/cancel.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
+import { registerGpu } from './algorithms/gpu-registry.mjs';
+import { GPU_RUNTIME } from './algorithms/gpu-lanes.mjs';
 import type { CytoscapeOptions } from './public-types.mjs';
 
 export type * from './public-types.mjs';
@@ -138,6 +140,9 @@ export default function cytoscape(options: CytoscapeOptions = {}): Core {
 
   return cy;
 }
+
+// the GPU executors (131.2): the full entry carries every kernel
+registerGpu(GPU_RUNTIME);
 
 // exposed as properties (v3-style, like cytoscape.use) so the UMD global
 // stays a plain callable

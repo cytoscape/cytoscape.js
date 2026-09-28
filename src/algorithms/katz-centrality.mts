@@ -24,7 +24,7 @@ import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
-import { katzCentralityGpu } from './algo-gpu-katz.mjs';
+import { gpuCall } from './gpu-registry.mjs';
 
 /**
  * The node count from which `'auto'` runs Katz on one pool worker
@@ -135,7 +135,7 @@ export const katzCentralityAsync = (
     n,
     KATZ_GPU_MIN_N,
     () => inThread(lane),
-    (ctx) => katzCentralityGpu(ctx, coll, options),
+    gpuCall('katz', coll, options),
     undefined,
     null,
     lane,

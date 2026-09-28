@@ -22,12 +22,14 @@ silently papered over by the router).
 
 import { BUFFER_USAGE, MAP_MODE } from '../gpu/webgpu-constants.mjs';
 
-/** The shared per-device state every GPU algorithm run borrows. */
-export interface AlgoGpu {
-  device: GPUDevice;
-  /** compute pipelines keyed by kernel id, compiled once per device */
-  pipelines: Map<string, GPUComputePipeline>;
-}
+import { GpuUnfitError } from './gpu-registry.mjs';
+import type { AlgoGpu } from './gpu-registry.mjs';
+
+// the device state's type and the unfit class live in the GPU-free
+// registry (131.2), so the router needs no kernel module; re-exported
+// here for the kernels and the specs that have always imported them
+export { GpuUnfitError };
+export type { AlgoGpu };
 
 let cached: Promise<AlgoGpu> | null = null;
 
@@ -97,15 +99,6 @@ export const _resetAlgoGpu = (): void => {
 };
 
 // -- the kernel-runner helpers every GPU algorithm shares ------------------
-
-/**
- * Thrown by a GPU implementation whose input does not fit the device
- * (a dense matrix past the storage-binding limit, say).  `runAlgo`
- * treats it like an acquisition failure: under `'auto'` the run falls
- * back to the CPU reference, under an explicit `'gpu'` it propagates —
- * unlike every other kernel error, which always propagates.
- */
-export class GpuUnfitError extends Error {}
 
 /**
  * Assert a dense allocation fits the device's storage-binding limit.

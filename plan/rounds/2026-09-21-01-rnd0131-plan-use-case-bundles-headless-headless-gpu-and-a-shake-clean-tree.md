@@ -339,3 +339,9 @@ minified, and a `layouts` table would let T0 drop force and flow);
 and whether round 126's shader minification and item 63's constants
 price are the next levers on the *full* bundle, which this round leaves
 at its size.
+
+**Decided at the eleventh design sitting (2026-09-28):** **`./gpu` is
+removed before alpha** — v4 is unreleased and the alias is ambiguous
+beside `headless-gpu`; the composable factory is **not exposed at
+alpha**.  Layouts as a capability and the full-bundle levers (round 126,
+item 63) stay with the round.

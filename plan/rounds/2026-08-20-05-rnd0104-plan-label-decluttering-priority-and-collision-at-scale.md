@@ -63,3 +63,7 @@ the priority property should also drive the *fade* order at the
 LOD boundary (probably yes, and cheap, but it changes an
 existing behaviour).
 
+**Decided at the eleventh design sitting (2026-09-28):** decluttering is
+**off by default** (opt-in); **`label-priority` also drives the zoom
+fade order**.  Edge labels and the property names are settled in the
+round.

@@ -72,3 +72,8 @@ evolution) or stays app-side (the app slices its own subgraphs);
 minimum chunk granularity worth supporting before overhead eats
 the win.
 
+**Decided at the eleventh design sitting (2026-09-28):** the spelling is
+**`cy.load(asyncIterable)`**, returning a promise for completion;
+**`cy.ready` means the first chunk drawn**, with a separate signal for
+completion.  Chunking in the wire format rides item 43's experimental
+rule; granularity is measured in the round.

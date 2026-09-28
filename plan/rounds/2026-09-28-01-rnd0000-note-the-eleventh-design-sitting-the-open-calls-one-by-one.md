@@ -183,3 +183,25 @@ eleventh design sitting" paragraph; in brief:
 The maintainer then cut the sitting short of the remaining rounds'
 detail: questions for rounds that run after alpha are taken when those
 rounds open, not here.
+
+### The alpha questions that remained
+
+Resumed on the maintainer's instruction — alpha questions only:
+
+- **102 (transient emphasis)**: core API; store state versus renderer
+  overlay decided by the round's measurement.
+- **103 (progressive ingest)**: `cy.load(asyncIterable)`; `cy.ready`
+  is the first chunk drawn, completion signalled separately.
+- **104 (label decluttering)**: off by default; `label-priority`
+  drives the fade order too.
+- **105 (GeneMANIA)**: two fixtures — the website's default human
+  example query, and a human one-gene p53 query.
+- **107 (patch)**: `cy.patch()`, with one summary `patch` event.
+- **131 (bundles)**: `./gpu` removed before alpha; the composable
+  factory not exposed at alpha.
+- **Items 72 and 73**: short sittings before rounds 77 and 80, on a
+  head gallery and a capacity measurement prepared for them.
+
+That closes every open question the alpha gate depends on; what is
+left open (items 74, 81's group fidelity, 83's arrowheads) is additive
+or post-alpha.

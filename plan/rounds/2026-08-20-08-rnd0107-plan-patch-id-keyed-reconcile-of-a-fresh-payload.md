@@ -79,3 +79,8 @@ summary; whether the React wrapper (item 46) should be
 sequenced immediately after as its first consumer, which would
 validate the API before it hardens.
 
+**Decided at the eleventh design sitting (2026-09-28):** the name is
+**`cy.patch()`** (`merge` stays the mode name); patch emits **one
+summary `patch` event carrying the diff** beside the per-element events.
+No `keepPositions` class — the returned diff is the app's policy hook.
+The React wrapper follows after alpha (PLAN.md item 46).

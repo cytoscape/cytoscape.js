@@ -1740,6 +1740,8 @@ directions".*
     the heads.  **First measurement**: the head gallery — every shape
     at three widths and both fills, v3 beside v4 — plus the usage of
     each shape in the flagship apps' sheets and v3's issue tracker.
+    **Scheduled (2026-09-28, the eleventh sitting): a short sitting
+    before round 77**, on a head gallery prepared for it.
 
 73. **Chart kinds and their data capacity** (raised by the maintainer
     2026-09-28, the eleventh sitting, at round 80's slice cap).  The
@@ -1755,6 +1757,9 @@ directions".*
     scatter are logged, not declined.  **First measurement**: the
     render-bench pair (25k charted nodes, 16 vs 64 slices) round 80.3
     already specifies, plus the record-blob bytes per value.
+    **Scheduled (2026-09-28, the eleventh sitting): a short sitting
+    before round 80**, on the capacity measurement prepared for it.
+
 74. **Gradient stop lists from element data** (raised 2026-09-28, the
     eleventh sitting, round 76's open question; **TBD** — the
     maintainer asked for further consideration).  `background-fill` /

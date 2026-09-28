@@ -1457,3 +1457,10 @@ option controls the pass asked for, are still to come, and every
   an app supplies them — a constant per layout run, or a global seed
   on the instance — depends on the app's architecture; more
   consideration before a wider seed surface is designed.
+
+**Decided at the eleventh design sitting (2026-09-28):** the round-level
+questions above were answered by the round's own first sitting pass
+(sittings recorded on this file; an accepted default ships as accepted;
+125.8 signed off); the node-separation spelling moved to PLAN.md item
+61, which the eleventh sitting scheduled into one layout round with
+these page sittings.

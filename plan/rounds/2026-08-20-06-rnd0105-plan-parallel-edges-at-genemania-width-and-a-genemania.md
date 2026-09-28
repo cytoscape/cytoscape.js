@@ -55,3 +55,7 @@ reference sheet for the multi-edge idiom; whether haystack at
 width belongs in the sweep (v3's answer for this shape at scale)
 so the docs can recommend a mode by number.
 
+**Decided at the eleventh design sitting (2026-09-28):** **two canonical
+fixtures**: the human default/example query from the GeneMANIA website,
+and a human one-gene query for p53.  The dictionary-column sheet and the
+haystack sweep are settled in the round.

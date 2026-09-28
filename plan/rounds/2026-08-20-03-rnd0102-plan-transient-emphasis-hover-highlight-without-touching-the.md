@@ -77,3 +77,7 @@ highlight / spotlight — and whether `::dimmed` is derived or
 set; whether select gets the same treatment ("dim unselected")
 in the same round.
 
+**Decided at the eleventh design sitting (2026-09-28):** emphasis is
+**core API**; design (a) store state versus (b) renderer overlay is
+**decided on this round's measurements**.  Naming, a derived `::dimmed`
+and "dim unselected" are settled in the round.

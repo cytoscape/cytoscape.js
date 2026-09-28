@@ -28,6 +28,7 @@ import {
 import { resolveConstraints } from './force-constraints.mjs';
 import type { LayoutContext } from './contract.mjs';
 import type { ForceHostLike } from './force-host.mjs';
+import { NO_GPU_BUILD } from '../algorithms/gpu-registry.mjs';
 import { projectConstraints } from './force-constraints.mjs';
 import { forceWorkerSupported } from './force-remote.mjs';
 import type { ForceSimInputs } from './force-sim.mjs';
@@ -634,8 +635,13 @@ export function runOnce(
   ) {
     // both hosts answer the same three verbs (129.2): the same-thread
     // renderer runs the integrator itself, the worker host's proxy
-    // runs it in the worker and mirrors its state
-    const renderer = cy.renderer() as ForceHostLike | null;
+    // runs it in the worker and mirrors its state.  With no renderer,
+    // an explicit 'gpu' reaches the build's headless device host
+    // (131.4) — never 'auto', which stays off the device headless (the
+    // MIGRATING.md contract)
+    const renderer =
+      (cy.renderer() as ForceHostLike | null) ??
+      (executor === 'gpu' ? (cy._caps?.forceHost?.(cy) ?? null) : null);
 
     if (renderer != null && typeof renderer.startForce === 'function') {
       // the fixed grid frame for the whole run: the seed bounds grown
@@ -695,10 +701,19 @@ export function runOnce(
   }
 
   if (executor === 'gpu') {
+    // the prefix is the contract (test/force-worker.mjs); the rest says
+    // what this build could have hosted the run on (131.4)
+    const caps = cy._caps;
+
     throw new Error(
-      "force layout: executor 'gpu' needs the GPU integrator — a flat, " +
-        'unconstrained graph on a rendered instance with a WebGPU device ' +
-        "— use 'cpu', 'workers' or 'auto'",
+      "force layout: executor 'gpu' needs the GPU integrator — " +
+        (caps != null && !caps.gpu
+          ? NO_GPU_BUILD
+          : caps?.forceHost != null
+            ? 'a flat, unconstrained graph and a WebGPU device ' +
+              "— use 'cpu', 'workers' or 'auto'"
+            : 'a flat, unconstrained graph on a rendered instance with a ' +
+              "WebGPU device — use 'cpu', 'workers' or 'auto'"),
     );
   }
 

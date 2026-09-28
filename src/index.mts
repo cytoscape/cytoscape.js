@@ -20,6 +20,7 @@ import { CancelledError } from './algorithms/cancel.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
 import { registerGpu } from './algorithms/gpu-registry.mjs';
 import { GPU_RUNTIME } from './algorithms/gpu-lanes.mjs';
+import { headlessForceHost } from './gpu/headless-force-host.mjs';
 import { createCore, NO_RENDERER_BUILD, requireWebGpu } from './factory.mjs';
 import type { CoreCaps } from './factory.mjs';
 import type { CytoscapeOptions } from './public-types.mjs';
@@ -67,9 +68,10 @@ const attachRenderer = (
 const FULL: CoreCaps = {
   attach: attachRenderer,
   gpu: true,
-  // a rendered instance hosts the GPU force run itself; a headless one
-  // on the full build keeps 'auto' synchronous and has no device host
-  forceHost: null,
+  // a rendered instance hosts the GPU force run itself; an unmounted
+  // one hosts an explicit 'gpu' run on the compute device (131.4), as
+  // headless-gpu does — T3 carries T2
+  forceHost: headlessForceHost,
   noRendererMessage: NO_RENDERER_BUILD,
 };
 

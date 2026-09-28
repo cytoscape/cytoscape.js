@@ -426,6 +426,8 @@ describe('import graph: the tiers (round 131)', function () {
     const rel = new Set([...seen.keys()].map((f) => relative(ROOT, f)));
 
     expect(rel.has('src/algorithms/gpu-lanes.mts')).to.equal(true);
+    expect(rel.has('src/gpu/headless-force-host.mts')).to.equal(true);
+    expect(rel.has('src/gpu/gpu-force.mts')).to.equal(true);
     expect(seen.size, 'the walk touched too few modules').to.be.at.least(190);
   });
 

@@ -13,13 +13,14 @@ import type { BatchPending, Core } from '../core.mjs';
  * completed removal, the outermost endBatch: compact when a group's
  * dead slots exceed its live count (the round-11 waste-over-half
  * policy) past a floor that keeps small graphs from churning.  Defers
- * silently while batching or while a GPU force run owns positions.
+ * silently while batching or while a GPU force run owns positions (on
+ * the renderer, or on the headless host — 131.4).
  */
 export function _maybeCompact(core: Core): void {
   if (core._batchDepth > 0 || core._destroyed) {
     return;
   }
-  if (core._renderer?.forceActive()) {
+  if (core._renderer?.forceActive() || core._forceHost?.active()) {
     return;
   } // re-checked on the next boundary
 
@@ -50,9 +51,11 @@ export function _compact(core: Core): void {
     throw new Error('Can not compact inside a batch');
   }
 
-  if (core._renderer?.forceActive()) {
+  if (core._renderer?.forceActive() || core._forceHost?.active()) {
     // the sim owns node.position on-device (the 18.3 lease); moving
-    // slots under it would scatter the integrator's writes — defer
+    // slots under it would scatter the integrator's writes — defer.
+    // A headless device run (131.4) holds the same slot map in its
+    // inputs, and its settle writes through it
     console.warn('Deferring slot compaction: a GPU force layout is running');
 
     return;

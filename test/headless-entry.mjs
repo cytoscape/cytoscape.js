@@ -89,4 +89,20 @@ describe('cytoscape/headless (round 131)', function () {
 
     expect(ranks.rank(cy.$id('a'))).to.be.closeTo(0.5, 1e-9);
   });
+
+  it("an explicit force 'gpu' names the build", function () {
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+    });
+
+    expect(() => cy.layout({ name: 'force', executor: 'gpu' }).run()).to.throw(
+      "force layout: executor 'gpu' needs the GPU integrator — " + NO_GPU,
+    );
+    expect(cy._forceHost).to.equal(null);
+    cy.destroy();
+  });
 });

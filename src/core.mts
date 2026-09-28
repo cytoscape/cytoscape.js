@@ -134,6 +134,11 @@ export class Core {
    * null for a bare `new Core` — the factory seam's record
    * @internal */
   _caps: CoreCaps | null;
+  /** the headless GPU force host (131.4), made on first explicit
+   * `executor: 'gpu'` force run where no renderer is attached — the
+   * compaction guard asks it, as it asks the renderer
+   * @internal */
+  _forceHost: { active(): boolean } | null;
   /** @internal */
   _recoveringDevice: boolean;
   /** the zoom/pan state object — reach it through cy's own viewport
@@ -305,6 +310,7 @@ export class Core {
     this._pointer = null;
     this._attachFn = null;
     this._caps = null;
+    this._forceHost = null;
     this._recoveringDevice = false;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;

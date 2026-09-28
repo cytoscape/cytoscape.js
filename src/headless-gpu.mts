@@ -36,6 +36,7 @@ import type { CoreCaps } from './factory.mjs';
 import type { HeadlessOptions } from './public-types.mjs';
 import { registerGpu } from './algorithms/gpu-registry.mjs';
 import { GPU_RUNTIME } from './algorithms/gpu-lanes.mjs';
+import { headlessForceHost } from './gpu/headless-force-host.mjs';
 
 export type * from './public-exports.mjs';
 
@@ -43,7 +44,7 @@ export type * from './public-exports.mjs';
 const HEADLESS_GPU: CoreCaps = {
   attach: null,
   gpu: true,
-  forceHost: null,
+  forceHost: headlessForceHost,
   noRendererMessage: NO_RENDERER_BUILD,
 };
 

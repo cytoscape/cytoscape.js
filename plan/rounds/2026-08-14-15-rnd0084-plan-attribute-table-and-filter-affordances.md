@@ -167,3 +167,12 @@ whether `adjacentTo` ships nodes-only in v1 (edges' `incidentTo` twin
 deferred); whether the epoch is exposed raw or wrapped in a
 `changedSince( token )` shape; and coverage counter vs on-demand scan
 if the measurement lands near the line.
+
+**Decided at the eleventh design sitting (2026-09-28):** **measure
+first.**  The column view is a performance and change-tracking surface
+over what `ele.data()` loops already give, so before any API: price a
+100k-row grid pull, a sort and a distinct-values read through `data()`
+loops against a column read, and build only if the gap matters.  84.2's
+query additions (compiled conditions; `degree`/`adjacentTo` terms) are
+decided alongside that measurement.  The naming, event-payload, counter
+and `adjacentTo` questions wait on it.

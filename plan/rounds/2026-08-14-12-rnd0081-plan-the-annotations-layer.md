@@ -329,3 +329,15 @@ whether `line`/`arrow` annotations should later re-resolve
 attachment to live node positions (tracking endpoints), which
 would move them from sidecar-static toward store-coupled and
 deserves its own sitting.
+
+**Decided at the eleventh design sitting (2026-09-28):** annotations
+**count in `fit()` and `boundingBox()` by default**, with a flag to
+leave them out; insertion order only within a tier; an **experimental
+annotations section** in the wire format (PLAN.md item 43's rule).
+Interaction is wider than 81.4's minimal scope: the maintainer wants
+editing **more built in** — handles on annotations, and on nodes and
+edges too, and in-place label editing — so the handle/editing model is
+**designed before alpha and built after** (PLAN.md item 75), and
+annotations v1 must fit that design.  `GroupAnnotation` fidelity is
+**TBD**; line/arrow annotations that track live node positions get **a
+separate sitting**, decided with the editing design.

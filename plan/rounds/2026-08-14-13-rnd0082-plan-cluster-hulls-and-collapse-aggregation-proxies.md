@@ -276,3 +276,16 @@ round?  (4) Directed meta-edges: fold to one per unordered pair
 source: is the per-value map enough, or is a second data key
 (`labelBy`) wanted in v1?  (6) The SDF-blob concave hull: log as
 an extension candidate (cyext, round 71) or keep as core v2?
+
+**Decided at the eleventh design sitting (2026-09-28):** **split** —
+hulls first, collapse as the next round.  **A hull is a compound parent
+with a hull shape style** (for example `shape: 'convex-hull'`), not a
+separate `cy.hulls()` data-key overlay: picking, events, selection,
+labels (the parent's own `label`), collapse (whose proxy is the same
+parent) and item 40's drag-and-drop reparenting all come from the
+compound; membership is therefore a tree, and **overlapping membership
+is out of scope for 4.0**.  Collapsed state is **persisted** (`json()`
+and an experimental wire section); meta-edges are **one per pair**,
+directions folded.  The concave SDF-blob shape is **core, after the
+convex round**, behind its measurement.  The hull-pick and `labelBy`
+questions dissolve into the compound model.

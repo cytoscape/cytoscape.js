@@ -78,3 +78,7 @@ joins CI on a Deno runner or stays a recorded manual probe until
 GitHub's runners say what adapter they give it; the JSR memo's
 recommendation (leaning npm-only until someone asks).
 
+**Decided at the eleventh design sitting (2026-09-28):** **every Bun and
+Deno job gates**, the full-suite ones included; the Deno GPU parity
+subset stays **a recorded manual probe** until GitHub's runners show
+their adapter; the package **also publishes to JSR**.

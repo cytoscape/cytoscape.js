@@ -75,3 +75,8 @@ page in round 46 (recommended: README now, page at 46); whether
 React Native demand justifies a tracked example app (default no —
 wait for an issue with a real use case).
 
+**Decided at the eleventh design sitting (2026-09-28):** **workerd joins
+CI** as a gating smoke job if wrangler's local runtime is stable on
+runners (Tier 2 otherwise); the support matrix lives in `src/README.md`
+now and becomes a docs page at round 46; **no React Native example app**
+until a real use case asks.

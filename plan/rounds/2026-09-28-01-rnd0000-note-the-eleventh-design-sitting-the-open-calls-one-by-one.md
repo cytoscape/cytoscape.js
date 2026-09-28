@@ -154,3 +154,32 @@ eleventh design sitting" paragraph; in brief:
   sitting on chart kinds and data capacity (**item 73**) — a scatter
   plot may carry far more than 64 points; line and scatter logged,
   not declined.
+
+### The planned rounds' open questions (rounds 81–100)
+
+- **81 (annotations)**: in `fit()`/`boundingBox()` by default, a flag
+  to opt out; insertion order; an experimental wire section; editing
+  wanted more built in — annotation, node and edge handles, label
+  editing — designed before alpha, built after (**item 75**); group
+  fidelity TBD; tracking endpoints decided with item 75.
+- **82 (hulls and collapse)**: split; **a hull is a compound parent
+  with a hull shape style** (the maintainer's proposal, taken over a
+  separate data-key overlay) — so tree membership, and overlapping
+  membership out of scope for 4.0; collapse persisted; one meta-edge
+  per pair; the concave blob a core shape after the convex round.
+- **83 (edge bundling)**: promise plus stats; persistence benchmarked
+  both ways (preset, wire section); arrowheads TBD; `cy.bundleEdges()`
+  considered together with possible style properties.
+- **84 (tables and filters)**: measure first — the column view is a
+  performance and change-tracking shape over `ele.data()` loops, so
+  it is priced at 100k rows before any API; 84.2 decided with it.
+- **88 (edge-layer strokes)**: as planned, before the WebGL
+  implementation.
+- **99 (Bun and Deno)**: every job gates; the Deno GPU subset a manual
+  probe; also JSR.
+- **100 (runtimes)**: workerd in CI if stable; the matrix in
+  `src/README.md` now; no React Native app.
+
+The maintainer then cut the sitting short of the remaining rounds'
+detail: questions for rounds that run after alpha are taken when those
+rounds open, not here.

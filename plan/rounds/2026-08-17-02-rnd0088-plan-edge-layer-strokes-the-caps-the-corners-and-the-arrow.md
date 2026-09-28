@@ -156,3 +156,8 @@ machinery beyond the round caps (88.3 measures before building);
 whether the self-edge cap exception is worth a recorded note
 (recommended: one sentence in the README, no code).
 
+**Decided at the eleventh design sitting (2026-09-28):** **as planned,
+landing before the WebGL implementation** so the port copies the final
+strokes: 88.2's and 88.3's mechanisms chosen by measurement, self-loops
+rounded too with a one-sentence README note; 88.4 is already decided
+(PLAN.md item 27: keep `width + 2 × padding`).

@@ -205,9 +205,9 @@ call in this section has been put to the maintainer one by one and
 answered — items 18, 21, 23, 27, 30–48, 50–54, 61–63 and 65–71 each
 carry the call on the item, and the answers with their background are in
 `plan/rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`.
-The sitting raised **items 72–74** — the arrow-shape review, chart
-kinds and their data capacity, and gradient stops from data — which
-are open.
+The sitting raised **items 72–75** — the arrow-shape review, chart
+kinds and their data capacity, gradient stops from data, and built-in
+editing affordances — which are open.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1766,3 +1766,16 @@ directions".*
     (a per-element list parse and re-pack on data writes, as
     `chart-values` pays) and the interaction with item 36's plan to
     make the gradient columns lazy.
+75. **Built-in editing affordances** (raised by the maintainer
+    2026-09-28, the eleventh sitting, at round 81's interaction
+    scope).  Editing should be more built in: handles on annotations,
+    on nodes (resize) and on edges (bend points — v3's `edge-editing`
+    extension territory), and in-place label editing.  **Design before
+    alpha, build after**: the handle model, its events and gesture
+    ownership (the alpha gate's "resolve picking and gesture ownership
+    where it affects public events") settled first, so annotations v1
+    (round 81) and compound drag-and-drop (item 40) fit it.  Line/arrow
+    annotations that track live node positions are decided with it.
+    **First measurement**: the inventory of what `edge-editing`,
+    `node-resize` and the annotation editors in Cytoscape Web
+    implement, against what v4's pointer state machine already owns.

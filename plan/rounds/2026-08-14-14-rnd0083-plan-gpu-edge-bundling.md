@@ -205,3 +205,11 @@ heads fan at nodes — acceptable, or should v1 offer
 bundling belong partly in cyext (round 71) as the extension
 showcase instead of core — and if core, is the operation namespaced
 (`cy.bundleEdges`) or grouped under a future `cy.ops` tier?
+
+**Decided at the eleventh design sitting (2026-09-28):** progress is
+**the promise plus stats**; for persistence, **try both** the app-held
+preset and a wire-format section and **benchmark** them before choosing;
+arrowheads at bundle ends are **TBD**; the API **considers
+`cy.bundleEdges()` together with possible style properties** rather than
+ruling a style form out — the freshness objection above is the thing
+such a design has to answer.

@@ -20,6 +20,7 @@ import { IdMap } from '../src/store/id-map.mjs';
 import { Adjacency } from '../src/store/adjacency.mjs';
 import { CurveBlob } from '../src/store/curve-blob.mjs';
 import { DirtyTracker } from '../src/store/dirty.mjs';
+import { GraphStore } from '../src/store/graph-store.mjs';
 import { ImageRegistry } from '../src/image-registry.mjs';
 import { finishRun } from './bench-run.mjs';
 import { buildElements, makeGpu, N } from './graph.mjs';
@@ -205,6 +206,29 @@ if (has('dirty')) {
       }
 
       return do_not_optimize(tracker.take(N, 2 * N));
+    });
+  });
+
+  // The store-level drain (round 106.1): what the renderer's frame pays
+  // per take — flushDerived, the tracker's take and the four blob pools'
+  // takes — behind 64 position writes, at one consumer.  Landed before
+  // round 106's consumer cursors so the change has a before/after at one
+  // consumer; the gate is zero within noise.
+  const store = new GraphStore();
+
+  for (let k = 0; k < N; k++) {
+    store.addNode('n' + k, k, 0);
+  }
+
+  store.takeDelta();
+
+  group('dirty: store mark + takeDelta (one consumer)', () => {
+    bench('gpu', () => {
+      for (let k = 0; k < 64; k++) {
+        store.setPosition((k * 7) % N, k, i++ & 7);
+      }
+
+      return do_not_optimize(store.takeDelta());
     });
   });
 }

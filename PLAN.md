@@ -210,7 +210,12 @@ kinds and their data capacity, gradient stops from data, and built-in
 editing affordances — which are open.  Round 131 (the use-case
 bundles, landed the same day on the sitting's two calls for it) logged
 **items 76 and 77**: the force sim worker's bootstrap failing for the
-CJS bundles on Deno, and layouts as a capability.
+CJS bundles on Deno, and layouts as a capability.  Round 107
+(`cy.patch()`, the id-keyed reconcile, landed the same day on the
+sitting's call for it) raised no new item: its one open cost — below
+~70% id overlap a reload is cheaper — is a follow-up hook in
+`src/README.md`, and its minimap proof moves to round 106 with
+`cy.clone()`.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1032,7 +1037,8 @@ directions".*
     double-mount, update batching — as the requirements list.
     **Call taken (2026-09-28, the eleventh sitting): after alpha, after
     round 107's `patch()`**, with Vue, Solid, Svelte and others
-    considered.
+    considered.  `patch()` landed the same day (round 107), so the wrapper's
+    prop-diffing has its primitive.
 47. **A devtools panel** (raised 2026-08-19).  `debug/` already
     has the instruments — the stats overlay, frame timings
     (`gpu-timer.mts`), store counts — but they are welded to the

@@ -5,7 +5,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-28, after round 131 shipped builds for the
+- **Last updated**: 2026-09-28, after round 107 shipped `cy.patch()` —
+  a server's next query result reconciled into the live graph by id, in
+  one batch, keeping every survivor's selection, position and listeners
+  (1.7–2.4× cheaper than destroy-and-recreate at 100k elements and 90%
+  id overlap; a reload stays cheaper below ~70%).  Earlier the same day
+  round 131 shipped builds for the
   use case: `cytoscape/headless` (no renderer, no WebGPU code — 513 KiB
   minified against the full build's 872 KiB, gated under a
   1,000,000-byte edge budget, and run in a WinterTC-shaped isolate every
@@ -101,7 +106,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,860 unit · 813 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 2,899 unit · 813 module · 36 soak · 482 browser (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 335 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
@@ -1255,6 +1260,26 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **28 Sep** — data refreshes reconcile in place
+  - `cy.patch( payload )`: the next query result — definitions,
+    columnar or the binary wire form — reconciled by id in one batch:
+    what is new is added, what is gone removed (or kept, with
+    `{ mode: 'merge' }`), survivors' data replaced, a rewired edge
+    re-added; the call returns what it added, removed and updated, and
+    one `patch` event carries the same.
+  - Survivors keep selection, scratch, listeners, animations and every
+    position the payload does not carry; the viewport and stylesheet
+    are never touched.  A payload equal to the state costs one scan
+    (~20 ms at 100k) and fires nothing.
+  - Buys the server-driven apps (GeneMANIA re-query, Cytoscape Web
+    backend sync) a refresh without a reload, and the framework
+    wrappers their prop-diffing: at 90% overlap 1.7–2.4× cheaper than
+    destroy-and-recreate, where the diff an app writes over the public
+    API was slower than recreate at every overlap.  Below ~70% overlap a
+    reload is still cheaper, and the docs say so.
+  - The same loop keeps a second instance in step with a first
+    (`follower.patch( master.serialize() )`, ~47 ms a burst at 100k) —
+    what the planned `cy.clone()` minimap will run on.
 - **28 Sep** — builds for the use case
   - `cytoscape/headless`: the whole model, style engine, CPU algorithms,
     every layout and the worker pool, with no renderer and no WebGPU
@@ -1387,6 +1412,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   constraints and data-driven `minLength`/`edgeWeight`; node positions
   only, designed to pair with `curve-style: taxi` so edges keep
   routing themselves when nodes drag.
+- **`cy.json( obj )` stays export-only, and `cy.patch( payload )` covers
+  the refresh case** (28 Sep): an app that fed the next server response
+  back through `json()` reconciles it by id instead, keeping survivors'
+  state; restoring a saved session is still the app's `cy.add()`.
 - **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
   `mutableElements`, `onRender`/`offRender` and the jQuery-era
   `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener
@@ -1452,7 +1481,7 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Ecosystem rounds | Six plans serving the flagship apps, approved in direction and awaiting refinement: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, multiple views over one store (the minimap seam), and an id-keyed `patch()` reconcile for server-driven data refreshes.  Decided alongside: CX2 conversion stays extension territory, not core |
+| Ecosystem rounds | Five plans serving the flagship apps, approved in direction: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, parallel-edge scale plus a real GeneMANIA fixture, and N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap).  The sixth, the id-keyed `patch()` reconcile, landed 28 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured

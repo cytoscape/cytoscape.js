@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 108–124, 127–132 |
-| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–107, 125–126 |
+| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 107–124, 127–132 |
+| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102–106, 125–126 |
 
 ## The sections
 
@@ -168,7 +168,7 @@ A round can land with an item held open; the round file says which.
 | 139 | 104 | 2026-08-20 | plan | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-plan-label-decluttering-priority-and-collision-at-scale.md) |
 | 140 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |
 | 141 | 106 | 2026-08-20 | plan | [N viewers, by cloning](rounds/2026-08-20-07-rnd0106-plan-n-viewers-by-cloning.md) |
-| 142 | 107 | 2026-08-20 | plan | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-plan-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
+| 142 | 107 | 2026-08-20 | landed | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-landed-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
 | 143 | 108 | 2026-08-24 | landed | [Agent ergonomics: what the two agents load, search and trip over](rounds/2026-08-24-01-rnd0108-landed-agent-ergonomics-what-the-two-agents-load-search-and.md) |
 | 144 | 108.7 | 2026-08-24 | landed | [The record's filenames carry the round](rounds/2026-08-24-02-rnd0108.7-landed-the-record-s-filenames-carry-the-round.md) |
 | 145 | 108.8 | 2026-08-25 | landed | [`PLAN.md` stops summarising itself](rounds/2026-08-25-01-rnd0108.8-landed-plan-md-stops-summarising-itself.md) |

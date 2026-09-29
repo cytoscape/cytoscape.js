@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–144 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–145 |
 | planned | 49–51, 71, 77–78, 80–84, 99, 125, 137 |
 
 ## The sections
 
-185 sections.
+186 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -212,3 +212,4 @@ A round can land with an item held open; the round file says which.
 | 183 | 143 | 2026-09-29 | landed | [Ledger item 30, tier 2: the degrade control — what the goldens set and do not see](rounds/2026-09-29-10-rnd0143-landed-item-30-tier-2-the-degrade-control.md) |
 | 184 | 144 | 2026-09-29 | landed | [Ledger item 68: the layout tween is one column animation](rounds/2026-09-29-11-rnd0144-landed-item-68-the-layout-tween-is-one-column-animation.md) |
 | 185 | — | 2026-09-29 | note | [Items 72 and 73 prepared — the head gallery and the chart capacity measurement](rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md) |
+| 186 | 145 | 2026-09-29 | landed | [The record ref overflow guard: charts and images past 2^24 floats](rounds/2026-09-29-13-rnd0145-landed-the-record-ref-overflow-guard-charts-and-images-past-2-24-floats.md) |

@@ -296,11 +296,18 @@ mis-draws silently.
 - This is a task whatever the sitting decides: a guard that throws, or the
   packing change below.  It is recorded here and left unfixed, since this
   note changes no `src/`.
+- **Guarded by round 145 (2026-09-29)**, for both refs, the packing
+  unchanged: the store saturates an unaddressable offset and keeps the
+  count exact, readback reads the pool's own offset table, and a pool
+  past 2^24 floats degrades charts or images (round 138's order, one
+  `gpuerror`) rather than drawing a wrong record.  The custom-polygon
+  ref (`node.borderGeom[0]`) has the same exposure (the 1,048,577th
+  8-point polygon node) and is logged there as a follow-up.
 
 **Packing alternatives**, priced:
 
 - **(P1) Keep `offset | n << 24`.** Cap 255.  The pool and node ceiling above
-  apply.  Needs the overflow guard.
+  apply.  Needs the overflow guard (landed in round 145).
 - **(P2) The ref carries `offset + 1`, and n comes from the header.** The
   header's float 6 already holds n.
   - No count limit.

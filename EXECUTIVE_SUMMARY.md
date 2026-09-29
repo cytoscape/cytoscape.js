@@ -5,7 +5,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 105, parallel edges at
+- **Last updated**: 2026-09-29, after round 145, a correctness fix
+  item 73's chart measurement found: past about 305,000 nodes with
+  16-slice pie charts (or 350,000 with four background images each),
+  a chart's or image's stored reference silently overflowed, so the
+  node read back — and would have drawn — another node's slices or
+  images.  Readback is now exact at any size, and past that point the
+  renderer stops drawing charts (or images) and says so with one
+  `gpuerror` event, the same way it treats a chart store too large for
+  the GPU, rather than drawing the wrong thing.  How the reference is
+  laid out, which decides how far that point moves, is still the
+  chart sitting's call.  Custom-polygon node shapes have the same
+  limit at about a million nodes; it is logged, not yet fixed.
+  Earlier the same day round 105, parallel edges at
   GeneMANIA's width: the two GeneMANIA queries the design sitting chose
   (the site's own human example, and TP53) are fetched from
   genemania.org by a script and drawn in the debug page with the site's

@@ -2188,6 +2188,15 @@ directions".*
     the record's storage and the ref's node ceiling, and four numbered
     questions with recommendations in
     `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
+    **The overflow guard is in (round 145, 2026-09-29); the packing
+    call remains.**  The measurement's latent defect — a chart or image
+    pool past 2^24 floats ORing offset bits into the ref's count — is
+    guarded with the packing unchanged: the store saturates the offset
+    and keeps the count exact, readback reads the pool's table, and the
+    renderer degrades charts or images (round 138's order) rather than
+    draw a wrong record.  Question 4 (P1 with the guard, or P2) is still
+    the sitting's; the custom-polygon ref's same exposure is logged in
+    round 145's record.
 
 74. **Gradient stop lists from element data** (raised 2026-09-28, the
     eleventh sitting, round 76's open question; **TBD** — the

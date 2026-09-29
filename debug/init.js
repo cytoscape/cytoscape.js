@@ -117,6 +117,13 @@ const paramDefs = {
     default: 'false',
     control: '#binary-check',
   },
+  progressive: {
+    // round 103: load through cy.load() in this many chunks (0 = the
+    // factory's one-shot load) — nodes first, then the edges, so the
+    // first frame is the whole layout and the one fit is the final one
+    default: '0',
+    control: '#progressive-input',
+  },
   labelMinPx: {
     default: '0',
     control: '#label-min-input',
@@ -221,9 +228,21 @@ const paramDefs = {
       );
     }
 
+    // round 103: progressive ingest — only for a positioned network, since
+    // no layout may run while a load streams the graph in
+    const chunks = Math.max(0, Math.floor(Number(params.progressive)) || 0);
+    const progressive = chunks >= 2 && gpuElements.hasPositions;
+
+    if (chunks >= 2 && !progressive) {
+      console.log(
+        'progressive load skipped: this network is laid out at load, and ' +
+          'no layout may run while cy.load() streams the graph in',
+      );
+    }
+
     cy = cytoscape({
       container: $('#cytoscape'),
-      elements: elements,
+      elements: progressive ? undefined : elements,
       style: style,
       // a network with no positions is laid out at load; `def.layout` lets one
       // say how (the compound fixture needs v3's `cols: 3` to be readable)
@@ -242,6 +261,13 @@ const paramDefs = {
     });
 
     console.timeEnd('cytoscape init');
+
+    // the load's completion (or, one-shot, readiness) gates what needs
+    // the whole graph: the positions snapshot and a ?layout= run
+    const loaded = progressive
+      ? loadProgressively(cy, gpuElements, chunks)
+      : cy.ready;
+
     window.cy = cy;
     window.currentStyle = style;
     // the fixture's definition (120): the combo layout reads its
@@ -256,6 +282,14 @@ const paramDefs = {
     // keep their place, which is preset's own rule.
     window.initialPositions = layoutConfig.snapshotPositions(cy);
 
+    if (progressive) {
+      loaded
+        .then(() => {
+          window.initialPositions = layoutConfig.snapshotPositions(cy);
+        })
+        .catch(() => {});
+    }
+
     for (const fn of pending.splice(0)) {
       fn(cy);
     }
@@ -267,8 +301,9 @@ const paramDefs = {
       // the URL and the button spell one run — spiral included.  The
       // timing chain guards promise() — the discrete built-ins don't
       // have one (the lifecycle-unification hook), and the old
-      // unguarded chain threw uncaught on each.
-      cy.ready.then(() => {
+      // unguarded chain threw uncaught on each.  Round 103: after a
+      // progressive load's completion — a layout is refused mid-load.
+      loaded.then(() => {
         const layout = cy.layout(
           layoutConfig.layoutOptions(
             params.layout,
@@ -303,7 +338,11 @@ const paramDefs = {
     cy.ready
       .then(() => {
         console.log('webgpu ready');
-        cy.fit(undefined, 30);
+
+        // a progressive load fits once itself, to its first chunk
+        if (!progressive) {
+          cy.fit(undefined, 30);
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -328,6 +367,51 @@ const paramDefs = {
     });
 
     startStats();
+  }
+
+  /**
+   * Round 103: load through `cy.load()` — every node in the first chunk,
+   * the edges over the rest, each chunk a wire buffer carrying its cut
+   * edges as node references (or definitions, with ?binary=false) — and
+   * log the first-chunk and completion times.
+   */
+  function loadProgressively(cy, gpuElements, k) {
+    const nodes = gpuElements.nodes;
+    const edges = gpuElements.edges;
+    const per = Math.ceil(edges.length / (k - 1));
+    const defs = [{ nodes, edges: [] }];
+
+    for (let i = 0; i < edges.length; i += per) {
+      defs.push({ nodes: [], edges: edges.slice(i, i + per) });
+    }
+
+    const chunks =
+      params.binary === 'true'
+        ? defs.map((c) =>
+            cytoscape.serializeElements(
+              cytoscape.toColumnarElements(c, { refs: true }),
+            ),
+          )
+        : defs;
+    const t0 = performance.now();
+    const ms = () => (performance.now() - t0).toFixed(0) + ' ms';
+
+    cy.on('loadchunk', (e) =>
+      console.log(`progressive: chunk ${e.progress.chunks}/${k} in, ${ms()}`),
+    );
+    cy.ready.then(() => console.log(`progressive: first chunk drawn, ${ms()}`));
+
+    const done = cy.load(chunks, { padding: 30 });
+
+    done.then(
+      (p) =>
+        console.log(
+          `progressive: complete — ${p.nodes} nodes, ${p.edges} edges, ${ms()}`,
+        ),
+      (err) => console.error(err),
+    );
+
+    return done;
   }
 
   /** Remove the label channel from every group of a sheet. */

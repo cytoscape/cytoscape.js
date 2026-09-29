@@ -219,3 +219,11 @@ the doc gates (`plan-record`, `agent-docs`, `feature-inventory`,
 Chromium 20 passed and 1 skipped (the unsupported-platform test), on
 WebKit the mechanics test passed and the other 20 soft-skipped (no
 adapter); `npm run -s test:node:quiet` green (zero output).
+
+**Follow-up (2026-09-29).**  The fonts spec (four instances, 17.8 s
+serially on SwiftShader) and the two image specs (two instances plus
+the export pipelines, ~11 s) are budgeted with `test.slow()`: every
+instance is a fresh device paying its own ~4.1 s first-frame compile,
+and under a loaded `CI=1` runner the fonts spec met the 30 s default
+in 9 of 10 stressed runs and an image spec once in 20.  No assertion
+changed; 10/10 under `CI=1` and on the RX 580.

@@ -407,3 +407,11 @@ the worker host stays opt-in, and post-4.0.**  It is additive, its
 costs are real but small, and its benefit today is smoothness under
 main-thread saturation rather than a wholesale occupancy win —
 worth having, not worth changing what 4.0 is.
+
+**Follow-up (2026-09-29).**  "create/destroy cycles leave no stuck
+worker instance" timed out under load on `CI=1`: its four instances are
+four fresh devices, each compiling its first frame again (~4.1 s apiece
+on SwiftShader, nothing cached across devices), 17.7 s serially and
+past the 30 s default beside loaded neighbours (18 of 20 at
+`--repeat-each=10` with the heavy specs together).  A budget, not a
+race: the spec is `test.slow()`, 10/10 under `CI=1` and on the RX 580.

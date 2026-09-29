@@ -516,6 +516,11 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
     test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+    // four instances, each a fresh device that compiles its first frame's
+    // shaders again (nothing is cached across devices): ~4 s apiece on
+    // SwiftShader, 17.7 s serially, past the 30 s default when the
+    // runner's other workers load the same software rasterizer
+    test.slow();
 
     for (let i = 0; i < 3; i++) {
       await makeReadyCy(page, { ...SCENE, renderer: { worker: true } });
@@ -1074,6 +1079,11 @@ test.describe("the worker host's images and fonts (round 141)", () => {
     }, testInfo) => {
       test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
       test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+      // two fresh devices, each compiling its first frame, the image
+      // pipelines and the export's (see the create/destroy spec): ~11 s
+      // serially on SwiftShader, and it met the 30 s default once in 20
+      // under a runner loaded with its neighbours
+      test.slow();
 
       const first = [QUAD_PNG, RING_SVG, QUAD_PNG, null];
       // a restyle: n0 swaps to the SVG (sharing its entry), n1's SVG
@@ -1191,6 +1201,10 @@ test.describe("the worker host's images and fonts (round 141)", () => {
   }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
     test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+    // four instances, each a fresh device paying its own first-frame
+    // compile (see the create/destroy spec): 17.8 s serially on
+    // SwiftShader, past the 30 s default under a loaded runner
+    test.slow();
 
     // the same-thread reference: the face registered on the page
     await page.evaluate(async (url) => {

@@ -448,6 +448,7 @@ app trips on after everything else works.
 | Position precision | Float64 | **Float32** (~7 significant digits) |
 | `bezier` bundling | same | same — a *lone* edge under `curve-style: bezier` still renders straight; only parallel edges fan |
 | Colour animation | per-channel sRGB | **OKLab**, matching colour mappers |
+| Edge `overlay-padding` / `underlay-padding` | the band is `2 × padding` wide — a padding under half the line width draws a halo narrower than the line, i.e. hidden | **`width + 2 × padding`**, the edge's own extent plus the padding, as the node overlay reads it — so the halo always shows.  A deliberate deviation (PLAN.md item 27, kept at the eleventh design sitting); to match a v3 sheet's band, set v4's padding to v3's minus half the edge width.  The ends, corners and reach are v3's since round 88: round caps, round joins that blend once, and an overlay that reaches over a hollow head |
 | `border-style: double` under an edge | erases to the page (destination-out) | the stripe shows whatever the scene drew beneath the node — an edge passing under the border shows through the gap where v3 punches to the background |
 | `spring()` easing | `spring( tension, friction )` | **`spring( bounce )`** — one number; 0 is critically damped |
 | Custom easing functions | accepted | **throw.** A closure cannot cross to the GPU; `cubic-bezier()` and `linear()` cover any drawable curve |

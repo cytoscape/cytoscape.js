@@ -374,6 +374,15 @@ docs checks), and each is left in place pending the call.
     **Call taken (2026-09-28, the eleventh sitting): keep v4's `width +
     2 × padding`** as a deliberate deviation, documented in
     `MIGRATING.md` and `features.csv`.
+    **Closed by round 88.4 (2026-09-29)**: the deviation is recorded in
+    `src/README.md` (the edge-layer paragraph), `MIGRATING.md`
+    ("Behaviour to re-check", with the v3-matching padding recipe) and
+    `features.csv`'s two padding rows; round 88's close-up parity scenes
+    cancel the term (v4's padding is v3's minus half the width), so a
+    bound failure there means caps, joins or reach, never the formula.
+    The alternative — match v3 for pixel parity — stays one line in the
+    round's record; flipping it later is the `width +` term in
+    `engine-write.mts`'s layer width derivation.
 
 ### New open calls (sixth sitting, 2026-08-06)
 

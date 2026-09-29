@@ -5,7 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-28, after round 75 shipped the DX polish
+- **Last updated**: 2026-09-29, after round 88 made edge overlays and
+  underlays end, turn and reach as v3's — round caps on every stroke, a
+  translucent layer that blends once with a round join at every corner
+  instead of darkening its own folds, and an overlay whose cap reaches
+  over a hollow arrowhead — each measured against v3 live, and landed
+  before the WebGL path so it copies the final strokes.  Before it
+  round 75 shipped the DX polish
   bundle — a container resize now announces itself (`resize` fires
   without `cy.resize()`), a web font the labels do not use no longer
   re-lays every label while the ones they do use are caught in every
@@ -135,9 +141,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,024 unit · 1,029 module · 38 soak · 526 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,024 unit · 1,034 module · 38 soak · 531 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 343 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
@@ -1434,6 +1440,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     compute server with no browser in it.  Each build carries exactly
     its tier, walked by a spec, so a leak fails the build rather than
     the size.
+- **29 Sep** — edge overlays end, turn and reach as v3's
+  - Every overlay/underlay stroke ends in a round cap, as v3's (they
+    were cut square).
+  - A translucent overlay on a segments or taxi edge blends once at a
+    corner, with a round join, as v3's single stroked path does — it
+    used to darken each fold and spike at sharp corners.  Separate
+    edges still blend over each other.
+  - The overlay reaches over a hollow arrowhead exactly as far as v3's
+    (its path end plus its cap — measured, so no arrow-shaped pass);
+    the underlay stops flat where v3's head erase cuts it.
+  - The band stays `width + 2 × padding` wide, a documented deviation
+    with a recipe for matching a v3 sheet.
+  - Buys the look the maintainer saw was wrong, fixed before the WebGL
+    path has to copy it; a translucent *line* on a sharp route still
+    folds, logged for its own call.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1619,7 +1640,6 @@ round, and is regenerated rather than maintained:
 
 | | |
 |---|---|
-| Edge-layer polish | Stroke caps and corners, and arrowhead reach.  The third item of the group, pointer cursors, landed 27 Aug |
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  Still planned: the native Bun/Deno test runners measured and the install/publish story, then a scoping pass over other environments (React Native, Electron) |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |

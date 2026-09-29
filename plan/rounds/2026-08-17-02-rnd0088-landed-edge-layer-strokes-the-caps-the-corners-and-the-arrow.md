@@ -161,3 +161,154 @@ landing before the WebGL implementation** so the port copies the final
 strokes: 88.2's and 88.3's mechanisms chosen by measurement, self-loops
 rounded too with a one-sentence README note; 88.4 is already decided
 (PLAN.md item 27: keep `width + 2 × padding`).
+
+### The round, as carried out (2026-09-29)
+
+All four sub-rounds landed the same day, one commit each: 88.1
+`4a0c5f4a`, 88.2 `73818005`, 88.3 `418b3e5d`, 88.4 `87552aa6`; the
+close is the commit that renames this file.  The plan's file
+references were checked first against a tree seven rounds newer: the
+shaders had moved from `src/render/shaders.mts` into
+`src/render/shaders/edge.mts` (the round-130 split), the draw order
+into `src/render/renderer/scene.mts`, and the casing had become a
+paired per-edge draw (124.4) sharing the line's vertex functions — so
+every change here is confined to the layer entry points, and the
+casing and the line are untouched.  Measurements are SwiftShader (the
+visual project's pinned adapter) in Chromium; `npm run -s gpu` said
+HARDWARE (RX 580 reachable), which governs no number here.
+
+**The fixture rule, for all five new scenes** (`layerSheets` in
+`visual.spec.js`): v4's padding is v3's minus half the line width, so
+the two bands are the same width and item 27's formula is cancelled
+rather than absorbed (88.4's requirement).  Nodes are invisible where
+the band's ends are the scene.
+
+**88.1 — round caps.**  The straight quad reaches half the stroke
+width (+1 px margin) past each end and `fsEdgeLayer` shades the
+capsule about the span from `u` (device px along it) and `v`; the
+curved/route strip first did the same by pushing its end vertices out
+(replaced in 88.2).  Self edges round too — v3's butt exception for a
+self edge on its no-paths fallback is one README sentence, no code, as
+the sitting said.  A straight-triangle layer keeps its taper and flat
+base.  `parity-closeup-layer-caps` (straight, bezier, segments; a
+translucent overlay *and* underlay; zoom 3): **6.526%** before,
+**0.000%** after, **1.918%** with the capped quads kept and the capsule
+coverage switched off, and **4.980%** for the same control under
+88.2's geometry — bound 0.2%.  The straight layer pipeline split into
+an underlay and an overlay pipeline for 88.3.
+
+**88.2 — the joins, decided by measurement.**  The first join scenes
+were built in the purple the plan's scenes had used, and measured the
+candidates wrong: pixelmatch's 0.2 threshold cannot see a translucent
+stroke blended twice in most colours (0.5 -> 0.75 alpha of `#8e44ad`
+over white is a YIQ delta of 768 against 1409; `#2c3e50` 1222; black
+2054), so the geometry-only candidate *passed* (0.004%).  Rebuilt with
+a black 0.5 overlay:
+
+| candidate | joins | hairpins |
+| --- | --: | --: |
+| pre-88 (butt caps, mitred strip) | 2.566% | 3.101% |
+| 88.1 (round caps, mitred strip) | 1.223% | 2.596% |
+| equal-depth on the mitred strip | 0.392% | 0.894% |
+| capsule steps, no depth write | 3.459% | 2.149% |
+| capsule steps + equal-depth — **landed** | **0.010%** | **0.061%** |
+
+Equal-depth alone leaves the miter spikes where v3 rounds; the
+geometry alone doubles every joint it overlaps; the call went to both.
+The layer strip is now *capsule steps* (`curvedLayerAt`): each quad
+bounds its step widened by the half-width and reaching past each end
+only as far as that joint's round join needs (half-width ×
+sin(turn / 2)), with three distinct subdivision points either side as
+flat varyings, and `fsCurvedLayer` shades the distance to that
+neighbourhood.  The two layer pipelines write depth: each instance at
+its own depth, strictly decreasing in draw order, so a same-edge
+fragment fails `'less'` where an earlier quad drew while a later edge
+still blends over an earlier one — v3's per-stroke atomic compositing
+exactly.  The bands: underlay (0.9513, 0.999] above `EDGE_Z`, overlay
+(0.8923, 0.94] under it, both above `NODE_Z`, 200,000 instances each at
+four depth24 units apiece — `test/modules/edge-layer-depth.mjs` pins
+the four orderings (control: the underlay base moved under `EDGE_Z`
+fails two of five).  The depth rides a flat varying into
+`frag_depth`, so it is bit-identical per instance whatever the
+rasterizer interpolates.
+
+Three drafts failed a scene and are why the landed shape is what it
+is: quads reaching their full capsule at every joint shaded the fringe
+of short steps too light and, drawing first, kept it (the caps scene
+0.000% -> 0.239%, visible hatching); a neighbourhood of plain indices
+ended at a collapsed taxi leg (a dy = 0 taxi spends ~11 quads on its
+zero-length turn) and drew an arc seam in the `edge-layers` golden —
+the walk now skips zero-length steps and a zero-length quad draws
+nothing; and two points either side left seams where a tight
+self-loop's ends overlap — three points plus a *fringe* depth (a
+partially covered fragment writes half a step deeper, so it never
+blocks its own edge's body, which then blends over it once) reduced
+them to a couple of pixels.  Bounds: joins 0.1% (fails 88.1 12x,
+equal-depth-only 3.9x), hairpins 0.2% (equal-depth-only 4.5x).
+
+**88.3 — the reach, measured before building.**  A probe on
+`parity.html` (one straight edge at zoom 4, the centreline scanned for
+overlay ink; six head shapes × hollow/filled × three width/scale/
+padding configs) found v3's overlay reaching its `rs.allpts` end plus
+the padding at every hollow head — 3.88 model px past the path end at
+padding 4, 1.88 at padding 2 — and no further; at filled heads both
+libraries agree.  So no arrow-quad pass: the overlay spans the gap
+(`gapSpanW`, `arrowGapTrimOf`) with its cap.  The same probe on the
+underlay showed v3's head erase cutting it where the head begins — and
+88.1's round cap poking into the hollow head where v3 had erased it.
+So the underlay keeps the draw trim and a flat end at a head that
+shows the line (`LAYER_BUTT_WGSL`).  The two arrow scenes share one
+fixture (arrow-scale 2 hollow triangles, width 3, padding 4, one edge
+per family), over a no-layer floor of 0.124% (lines and curved hollow
+heads alone):
+
+| scene | pre-88 | 88.2 | landed |
+| --- | --: | --: | --: |
+| overlay | 5.060% | 3.126% | **0.124%** (the floor) |
+| underlay | 0.362% | 1.794% | **0.329%** |
+
+The underlay's residual is the trim approximating the erase (a cut
+square to the path; v3's follows the head's back edge).  Bounds 0.2%
+and 0.4%.
+
+**88.4 — item 27 closed** on the sitting's call: `width + 2 ×
+padding` kept, recorded in `src/README.md`, `MIGRATING.md` (with the
+v3-matching padding recipe) and `features.csv`.  The alternative —
+match v3's `2 × padding` for pixel parity — would be the `width +`
+term in `engine-write.mts`'s layer width derivation.
+
+**The page, opened** (a scripted Chromium on `debug/index.html`,
+`?network=edge-types` and `edge-arrows`, 1400×900, translucent
+overlay and underlay bypassed onto every edge, six selected), after
+88.1 and again after 88.2: the taxi corners' dark fold triangles are
+gone, every family ends round, and the lines, heads, nodes and labels
+draw over the layers as before — the depth write harmed nothing drawn
+after it; no console errors.
+
+**Goldens**: `edge-layers` regenerated twice (88.1: 160 px at the
+stroke ends; 88.2: 83 px — its self-loop's folded inner corners and
+seams gone), each looked at magnified before committing.  No other
+golden moved.
+
+**Browser runs**: the `visual` and `renderer` projects together, 332
+passed and 1 skipped (the renderer project's standing skip) at 88.3.
+The routing spec's compound scene is an `expectFail` marker, not a
+failure.
+
+**Recorded residuals** (README): a path coming back near itself from
+outside a step's neighbourhood can blend a fringe pixel under its body
+once more; more than 200,000 visible curved edges wrap a layer's depth
+band; the layer vertex stage now evaluates at least eight subdivision
+points per vertex for a *layer-enabled* curved edge (three before),
+disabled instances still collapsing on the first read — not
+benchmarked, since layers are a selection-sized population.
+
+**Logged**: **PLAN.md item 81** — the line's and casing's own strips
+keep the mitred quad-per-step shape, so a translucent *line* on a sharp
+route still folds and spikes (0.660% on a black 0.5 width-8 zigzag at
+zoom 3, spikes and folds together); the layer mechanism would carry
+over, at the price of re-deriving the early-z bands and dashes'
+longitudinal coordinate.
+
+**Deferred**: nothing of the plan.  The alternative for item 27 stays
+one line (above).

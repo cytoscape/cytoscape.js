@@ -244,7 +244,14 @@ filtered and belted the web-font re-raster, made collections iterable,
 and shipped `cy.nodeAt`, `wheelBehavior` with the page-scroll fix and
 `cy.viewportCounts()`; it logged **items 79 and 80**, two findings round
 79 recorded in passing (an undeclared force option, and an elements
-payload the factory and `cy.add()` disagree on).
+payload the factory and `cy.add()` disagree on).  Round 88 (the
+edge-layer strokes, landed 2026-09-29 on the sitting's call, before the
+WebGL implementation) gave the overlay/underlay round caps, round joins
+that blend once (capsule steps with per-edge depth, chosen over
+equal-depth alone by measurement) and v3's overlay reach over a hollow
+head (the gap span — measured, no arrow pass); it **closed item 27**
+and logged **item 81**, the same fold in a translucent line's own
+strip.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 

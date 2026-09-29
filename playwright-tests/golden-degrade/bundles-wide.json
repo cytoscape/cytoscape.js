@@ -1,0 +1,42 @@
+{
+  "golden": "bundles-wide",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 5424,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 17219,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 19334,
+      "elements": 4
+    },
+    "edges/control-point-step-size": {
+      "moved": 42187,
+      "elements": 48
+    },
+    "edges/curve-style": {
+      "moved": 25100,
+      "elements": 48
+    },
+    "edges/haystack-radius": {
+      "moved": 6600,
+      "elements": 48
+    },
+    "edges/line-color": {
+      "moved": 25105,
+      "elements": 48
+    },
+    "edges/line-opacity": {
+      "moved": 25108,
+      "elements": 48
+    },
+    "edges/width": {
+      "moved": 20512,
+      "elements": 48
+    }
+  }
+}

@@ -2101,6 +2101,99 @@ test.describe('WebGPU visual goldens', () => {
     );
   });
 
+  test('golden: GeneMANIA-width bundles, bezier and haystack (round 105)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // The multi-edge idiom at the width GeneMANIA draws it: one edge per
+    // network per gene pair, coloured by network type through an ordinal
+    // mapper over a string column (the store keeps it dictionary-encoded),
+    // widths mapped from a weight.  Two 24-wide bundles side by side —
+    // bezier with a tight step (so the fan fits the canvas) above, the
+    // GeneMANIA sheet's own haystack at radius 0.5 below — each member
+    // alternating direction, as GeneMANIA's do.  The haystack angles are
+    // hash-stable, so the scene is deterministic; v3's are Math.random(),
+    // which is why haystack has a golden here and no parity scene.
+    const types = ['coexp', 'coloc', 'gi', 'path', 'pi', 'predict', 'spd'];
+    const elements = [
+      { data: { id: 'a' }, position: { x: -150, y: -50 } },
+      { data: { id: 'b' }, position: { x: 150, y: -50 } },
+      { data: { id: 'c', hay: 1 }, position: { x: -150, y: 90 } },
+      { data: { id: 'd', hay: 1 }, position: { x: 150, y: 90 } },
+    ];
+
+    for (let i = 0; i < 24; i++) {
+      const group = types[i % types.length];
+      const w = ((i * 7) % 11) / 10;
+
+      elements.push(
+        {
+          data: {
+            id: 'ab' + i,
+            source: i & 1 ? 'b' : 'a',
+            target: i & 1 ? 'a' : 'b',
+            group,
+            w,
+            hay: 0,
+          },
+        },
+        {
+          data: {
+            id: 'cd' + i,
+            source: i & 1 ? 'd' : 'c',
+            target: i & 1 ? 'c' : 'd',
+            group,
+            w,
+            hay: 1,
+          },
+        },
+      );
+    }
+
+    await makeReadyCy(page, {
+      elements,
+      style: {
+        nodes: { width: 40, height: 40, 'background-color': '#555555' },
+        edges: {
+          'curve-style': {
+            case: [{ when: { data: 'hay', eq: 1 }, then: 'haystack' }],
+            else: 'bezier',
+          },
+          'haystack-radius': 0.5,
+          'control-point-step-size': 7,
+          width: { data: 'w', domain: [0, 1], range: [1.5, 5] },
+          'line-opacity': 0.6,
+          'line-color': {
+            data: 'group',
+            scale: 'ordinal',
+            domain: types,
+            range: [
+              '#d0b7d5',
+              '#a0b3dc',
+              '#90e190',
+              '#9bd8de',
+              '#eaa2a2',
+              '#f6c384',
+              '#dad4a2',
+            ],
+          },
+        },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'bundles-wide');
+    await checkGolden(
+      page,
+      'bundles-wide',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
+  });
+
   test('golden: straight-triangle edges (round 12c)', async ({
     page,
   }, testInfo) => {
@@ -4107,6 +4200,12 @@ test.describe('v3-vs-v4 render parity', () => {
    * construction, where canvas2d miters it — so v3's back corners come
    * to a point and v4's are radiused.  A recorded deviation.
    */
+  // round 105's wide-bundle pair: both measured **0 px** (0.000%) on
+  // 2026-09-29, v4's offsets being v3's formula verbatim.  Control: v4's
+  // step size 10% off moves them to 6.815% and 2.447% — so the bound is
+  // a margin over zero, not over a measured residue
+  const WIDE_BUNDLE_BOUND = { zoom1: 0.001, closeUp: 0.001 };
+
   const CLOSE_UP_BOUND = {
     gap: 0.003,
     heads: 0.002,
@@ -5578,6 +5677,87 @@ test.describe('v3-vs-v4 render parity', () => {
       elements,
       v3Style,
       v4Style,
+    );
+  });
+
+  /**
+   * Round 105: the bezier bundle at GeneMANIA width, for both parity
+   * tiers.  Built by the count-the-ends rule — more members, not fatter
+   * ones: the bundle offset formula's error, if any, grows with the
+   * member index, so the outer members of a 30-wide fan are where it
+   * would show.  Members alternate direction (GeneMANIA's bundles do,
+   * and v3's swapped-pair rule is the part of the formula a one-way
+   * bundle never exercises).  A tight step keeps the whole fan in frame.
+   */
+  const wideBundle = ({ members, half, step, width, nodeSize }) => {
+    const elements = [
+      { data: { id: 'a' }, position: { x: -half, y: 0 } },
+      { data: { id: 'b' }, position: { x: half, y: 0 } },
+    ];
+
+    for (let i = 0; i < members; i++) {
+      elements.push({
+        data: {
+          id: 'e' + i,
+          source: i & 1 ? 'b' : 'a',
+          target: i & 1 ? 'a' : 'b',
+        },
+      });
+    }
+
+    const edge = {
+      'curve-style': 'bezier',
+      'control-point-step-size': step,
+      width,
+      'line-color': '#7f8c8d',
+    };
+
+    return {
+      elements,
+      v3Style: [
+        {
+          selector: 'node',
+          style: {
+            width: nodeSize,
+            height: nodeSize,
+            shape: 'ellipse',
+            'background-color': '#c0392b',
+          },
+        },
+        { selector: 'edge', style: edge },
+      ],
+      v4Style: {
+        nodes: {
+          width: nodeSize,
+          height: nodeSize,
+          'background-color': '#c0392b',
+        },
+        edges: edge,
+      },
+    };
+  };
+
+  test('parity: a 30-wide bezier bundle (round 105)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const { elements, v3Style, v4Style } = wideBundle({
+      members: 30,
+      half: 160,
+      step: 9,
+      width: 3,
+      nodeSize: 30,
+    });
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-bundle-wide',
+      elements,
+      v3Style,
+      v4Style,
+      { bound: WIDE_BUNDLE_BOUND.zoom1 },
     );
   });
 
@@ -7566,6 +7746,34 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.curves },
+    );
+  });
+
+  test('parity close-up: a 30-wide bundle where its members converge (round 105)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the round-56 tier on the same fan, short and magnified: thirty
+    // members meet the node boundary within a few model px of each
+    // other, so each endpoint's intersection along its own control
+    // point's direction is the geometry on show
+    const { elements, v3Style, v4Style } = wideBundle({
+      members: 30,
+      half: 45,
+      step: 3,
+      width: 1.5,
+      nodeSize: 16,
+    });
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-bundle-wide',
+      elements,
+      v3Style,
+      v4Style,
+      { zoom: 3, minInk: 4000, bound: WIDE_BUNDLE_BOUND.closeUp },
     );
   });
 

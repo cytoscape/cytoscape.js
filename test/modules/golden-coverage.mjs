@@ -52,7 +52,7 @@ Tier 2 — the degrade control, which asks whether an exercised property
 moves any pixels — landed in round 143: every golden's exercised pairs
 reset to the default on the live scene, the moved pixels recorded in
 `playwright-tests/golden-degrade/`, read and pinned below.  At landing:
-530 pairs, 520 moving pixels, 3 decoration by design, 7 that no reset
+539 pairs (530 at round 143), 529 moving pixels, 3 decoration by design, 7 that no reset
 can move (a value derived from another property); 131 of the 140
 exercised group-properties move pixels in some golden.
 */
@@ -70,6 +70,11 @@ exercised group-properties move pixels in some golden.
 // in, nor a parent's auto-sized width and height (+5 unexercised, all
 // paintable: background-clip, -image-containment, -image-smoothing,
 // -offset-x, -repeat)
+// round 105: the bundles-wide golden maps edge width off the stroke's
+// 1/256 px grid, which read line-outline-width and the edge overlay/
+// underlay paddings back as noise — counted as set until the readers
+// subtracted the width on the same grid; with that fixed it adds no
+// newly exercised property, and the pins stand
 const PINNED = {
   universe: 216,
   unexercised: 76,
@@ -80,9 +85,12 @@ const PINNED = {
 };
 
 /** Tier 2's pinned counts (round 143), from the degrade records. */
+// round 105: bundles-wide +9 pairs, all nine moving — its line-opacity
+// reset moved nothing until an opacity bypass demoted the kernel-owned
+// colour it folds into (OPACITY_FOLDS)
 const PINNED_DEGRADE = {
-  pairs: 530,
-  moved: 520,
+  pairs: 539,
+  moved: 529,
   decoration: 3,
   unmoved: 7,
   exercised: 140,

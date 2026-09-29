@@ -94,6 +94,8 @@ const EXPECTED_EXPORTS = new Set([
   'NO_PARENT',
   'Position',
   'RendererStats',
+  'ViewportCounts', // round 75.6: cy.viewportCounts()'s result
+  'WheelBehavior', // round 75.5: the wheelBehavior option
 ]);
 
 /** Statics hung off the factory function (the UMD-friendly shape). */

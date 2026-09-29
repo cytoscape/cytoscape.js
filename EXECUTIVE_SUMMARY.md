@@ -5,7 +5,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-28, after round 103 shipped `cy.load()` —
+- **Last updated**: 2026-09-28, after round 133 made a stylesheet
+  replace a diff — `cy.style( sheet )` re-writes only what the new sheet
+  changed, so a style editor re-sending its whole sheet for one colour
+  pays 1.5 ms instead of 250 on the 465k-edge fixture, with the same
+  end state column for column.  Before it round 103 shipped `cy.load()` —
   a graph streamed in chunks shows a correct partial graph before the
   last byte: on the 465k-edge fixture over a 100 Mbit/s link the first
   frame comes 4.8–18× sooner and the whole graph 38% sooner than a
@@ -117,7 +121,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,962 unit · 816 module · 38 soak · 498 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 2,998 unit · 816 module · 38 soak · 498 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 340 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
@@ -1175,7 +1179,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     unmet — the census reads a fiftieth of it.
   - What the census found instead of copies: registering 465k
     generated edge ids is a third of a bulk load (item 66), and a
-    whole-sheet restyle re-derives every column (item 67).
+    whole-sheet restyle re-derives every column (item 67, made a diff
+    on 28 Sep).
 - **18 Sep** — three ledger items measured, none built
   - The scale ceiling has a number: 4,194,304 edges render and
     4,194,305 are blank, on any card — the edge gradient column at
@@ -1271,6 +1276,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **28 Sep** — a stylesheet edit costs what it changes
+  - `cy.style( sheet )` re-writes only the properties whose declaration
+    changed, per group, instead of every channel of every element: one
+    node colour changed on the 465k-edge fixture went from 250 ms and
+    60 MB of dirty columns to 1.5 ms and 0.08 MB; an unchanged sheet
+    costs 0.06 ms.  In the browser, sixty such edits went from 12 s and
+    1.8 GB of upload to the frame rate and 2.4 MB.
+  - Nothing a user can see changed: bypasses are still cleared by a
+    replace, an animated value is still reset by one, transitions still
+    fire, and every clause is pinned against the full pass, column for
+    column.  A property without a narrow writer (sizes, labels) still
+    re-applies its whole group.
+  - Buys Cytoscape Web's style editor — which re-sends its whole sheet
+    per edit — an edit inside a frame.
 - **28 Sep** — data refreshes reconcile in place
   - `cy.patch( payload )`: the next query result — definitions,
     columnar or the binary wire form — reconciled by id in one batch:
@@ -1501,10 +1520,10 @@ a recorded deviation; the edge overlay/underlay band keeps v4's
 `width + 2 × padding`; mid arrows are filled only, and the mid-arrow
 width override is to be ported.  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
-the page sittings and AVSDF; a sheet diff for `cy.style()`, one column
-animation per animated layout and a worker lane for the k-clusterings
-are all due before alpha.  From the logged ideas, also before alpha:
-the device-limits round (where `cy.add()` throws past the GPU's limits)
+the page sittings and AVSDF; one column animation per animated layout
+and a worker lane for the k-clusterings are due before alpha, and the
+sheet diff for `cy.style()` decided with them landed the same day.
+From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
 with a renderer soak, typed element data, batch events for undo plus a
 snapshot measurement, the worker host's images and fonts, and the CJK
 label design.  During alpha: the extension ports, a devtools panel and

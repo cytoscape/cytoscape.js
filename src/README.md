@@ -7103,6 +7103,19 @@ unbuilt arrow `gap` for a day after **round 56 built it**, which is the
 failure mode the standing closing-sweep rule exists for and which found
 it here in round 57.4.*
 
+- **The sheet diff's full-pass props** (round 133): a replace that
+  changes a prop without a round-61 narrow writer — `width`/`height`,
+  the label family, shapes, curve props, the edge `opacity`/
+  `line-opacity` fold cluster — still takes its whole group def through
+  the full pass (an edge `width` change on ndex-x-large: 235 ms, the
+  nodes skipped).  Narrow writers for the geometry cascade (size →
+  outer half, bounds, the curve records of incident edges) and for the
+  label sidecar would widen the diff; not built — the round's
+  measurement was the colour edit, which is what a style editor sends
+  most, and every new writer carries round 61's invariant (it writes
+  *every* column its prop affects) with a spec.  An animation also
+  sends its group through the full pass on the next replace, including
+  a finished transition, whose values already equal the sheet's.
 - **Progressive ingest** (round 103): a layout is refused while a load
   runs — the layout-after-complete convention is "await the load"; a
   queued layout (`layout.run()` deferring to the load's end) is the

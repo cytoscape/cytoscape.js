@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 103, 106–124, 127–132 |
+| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 103, 106–124, 127–133 |
 | planned | 49–51, 71, 73, 75–84, 88, 99–100, 102, 104–105, 125–126 |
 
 ## The sections
 
-172 sections.
+173 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -199,3 +199,4 @@ A round can land with an item held open; the round file says which.
 | 170 | 131 | 2026-09-21 | landed | [Use-case bundles: `cytoscape/headless`, `cytoscape/headless-gpu`, and a shake-clean tree](rounds/2026-09-21-01-rnd0131-landed-use-case-bundles-headless-headless-gpu-and-a-shake-clean-tree.md) |
 | 171 | 132 | 2026-09-21 | landed | [The Features page says what its numbers mean](rounds/2026-09-21-02-rnd0132-landed-the-features-page-says-what-its-numbers-mean.md) |
 | 172 | — | 2026-09-28 | note | [The eleventh design sitting — the open calls, one by one](rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md) |
+| 173 | 133 | 2026-09-28 | landed | [The whole-sheet re-apply becomes a sheet diff](rounds/2026-09-28-02-rnd0133-landed-the-whole-sheet-re-apply-becomes-a-sheet-diff.md) |

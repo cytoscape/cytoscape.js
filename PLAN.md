@@ -226,7 +226,11 @@ monolithic load — nearly all of it cut edges as definitions — and so
 added node references to the columnar and wire forms (item 43's first
 section under its experimental rule); it raised no new item, and its
 open ends (a queued layout, references in `patch()`'s merge mode) are
-follow-up hooks in `src/README.md`.
+follow-up hooks in `src/README.md`.  Round 133 (landed the same day on
+the sitting's call) took **item 67** and closed it: a whole-sheet
+`cy.style()` replace is a sheet diff, with the bypass-clearing rule kept
+and the full-pass props left as a follow-up hook; it raised no new
+item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1672,6 +1676,20 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): go, before alpha**,
     keeping the bypass-clearing rule of a sheet replace.  It is an
     alpha round because Cytoscape Web depends on it.
+    **Closed by round 133 (2026-09-28).**  The first measurement ran as
+    asked — headless, the full re-apply 250.9 ms and 59.55 MB of dirty
+    columns per apply, the hand diff 70.7 ms and 0.08 MB — and the diff
+    beat the target: 1.53 ms and 0.08 MB (an identical sheet 0.06 ms;
+    one edge `line-color` 35.5 ms).  In the browser the census row's
+    60 replaces went from 12.0 s and 1.79 GB of upload to the frame
+    rate and 2.4 MB.  A replace re-writes only the props whose
+    declaration changed, per group def, through round 61's narrow
+    writers; every bypassed slot takes the full write (the rule is
+    kept), and a prop with no narrow writer — size, labels, the edge
+    opacity fold — still takes its def through the full pass, which is
+    the follow-up hook it leaves.  End-state equivalence with the full
+    pass is pinned by `test/sheet-diff.mjs`, with a control per clause.
+    Closed.
 68. **The GPU tween sink starves the frame at tens of thousands of
     animations** (logged 2026-09-18, from item 51's measurement).  A
     layout with `animate: true` on ndex-x-large creates one position

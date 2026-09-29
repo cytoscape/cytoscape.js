@@ -319,3 +319,146 @@ wheel-panning emits **`'scrollpan'`**; `cy.viewportCounts()` resolves
 destroy/device-loss answer); the load-then-add font orphan is
 **documented only**, no timer; both 75.1 declines (no auto-resize
 opt-out, no debounce) are confirmed.
+
+### The round, as carried out (2026-09-28)
+
+Landed the same day as the eleventh sitting, on its calls: `cy.nodeAt`
+with `cy.pickNode` as an alias, computed headless; `'modifier-zoom'`;
+`'scrollpan'`; `viewportCounts()` null headless; the font orphan
+documented, no timer; no auto-resize opt-out and no debounce.  Built
+against the tree as it stands, not as the plan knew it: the renderer
+reaches the model only through the round-86 `RenderHost` (so the
+observer emits through `host.emitResize()`, not `cy.resize()`), the
+worker proxy (86.3) mirrors every renderer surface, the round-131 tiers
+forbid the core from reaching `src/render/`, and round 79's options
+schema is gated both ways against `CytoscapeOptions`.  Every plan line
+reference was re-read; the files had moved under round 130's split
+(`renderer/lifecycle.mts`, `renderer/frame.mts`, `pointer-handlers.mts`,
+`core/elements.mts`, `core/export.mts`).
+
+| # | Commit | What landed |
+| --- | --- | --- |
+| 75.1 | `d17dc272` | the observer emits `'resize'` (`observedResize`, both hosts); the two declines recorded |
+| 75.2 | `51fb0653` | the filtered `loadingdone`, the provisional atlas and its `fonts.ready` belt, the load-then-add watch |
+| 75.3 | `aec3368d` | `Collection[Symbol.iterator]`; `cy.add()` of any iterable of definitions |
+| 75.4 | `9b091e49` | `cy.nodeAt` / `cy.pickNode`; `src/render/cpu-pick.mts` → `src/cpu-pick.mts` |
+| 75.5 | `4f02fd55` | `wheelBehavior`, `scrollpan`, and `preventDefault()` only on a wheel the canvas acts on |
+| 75.6 | `a33ca0d5` | `cy.viewportCounts()`, through both hosts |
+| 75.7 | this commit | the close |
+
+**Measured, and what it decided** (Chromium 149.0.7827.55 via Playwright, this
+machine: the harness flags reach the AMD RX 580 — `npm run gpu`:
+HARDWARE — and the debug-page drive reported adapter vendor `amd`):
+
+- *The FontFaceSet's answers* (a probe page, 2026-09-28):
+  `document.fonts.check()` is **true** for a family the set does not
+  hold at all, before and after `face.load()`; `loadingdone` reports a
+  face's `family` **quoted** (`"Late Font"`); adding an already-loaded
+  face fires **no** event.  So the plan's orphan mechanism — mark the
+  atlas provisional while `check()` is false, re-check per frame — could
+  never see the load-then-add order: `check()` says true throughout.
+  The orphan is caught by a different tell, the set's size, diffed on
+  each rendered frame against the faces already seen; the provisional
+  flag stays for the case it does fit (glyphs rastered while a face the
+  set holds is still loading).  The family filter normalizes quotes
+  because of the second finding.
+- *The ready belt needs the check after the label pass*: the first run
+  of the at-rest spec failed — the frame that rastered the glyphs was
+  the last frame, so a check *before* the label pass never saw the atlas
+  provisional and never armed `document.fonts.ready`.  Moved after it.
+- *`STORAGE | INDIRECT | COPY_SRC`* is valid under Dawn: every
+  renderer-project spec asserts an empty WebGPU validation-error log,
+  and the counts specs ran green under it.  The plan's to-verify is
+  closed for Dawn; WebKit's Metal backend is untested here (Linux WebKit
+  has no WebGPU).
+- *Stale indirect args are real*: `CulledGroup.encode()` returns early
+  at a zero high-water, and the parent stream is not encoded at all
+  once the last parent is gone — its args keep the old count.  The
+  plan did not name this; `CulledGroup.encodes` is compared across the
+  cull pass and an undispatched group reads 0, and the spec that
+  flattens the last parent reads 8 nodes for 7 without it.
+
+**Calls taken in-round, and why:**
+
+- *75.1*: the observer emits only when the canvas's CSS box changed
+  (compared before and after `resize()`), which is what keeps it to one
+  event per change — no event for the initial observation, none for a
+  change a manual `cy.resize()` already applied.
+- *75.2*: no public re-raster call (the plan's "escape hatch
+  question"): any redraw runs the check, which the README says.
+- *75.3*: `cy.add( collection )` throws — iterability would otherwise
+  have turned v3's restore idiom from a `TypeError` into a garbage add.
+  One new throw site, spec'd, the gate at zero.  `options.elements` is
+  unchanged (the JSON-shaped payload its schema describes), and
+  `cy.load()` keeps reading an iterable as chunks.
+- *75.4*: the CPU pick moved below the renderer tier (`src/cpu-pick.mts`,
+  with `DEFAULT_HIDE_PX`/`DEFAULT_NODE_LOD_PX` beside it) because the
+  import-graph spec forbids the core from reaching `src/render/`.  The
+  renderer's `pickNodeSync` no longer waits for the device — the scan
+  reads only the store and the viewport — so `cy.nodeAt` answers right
+  after construction; the pointer's pan-vs-grab gains the same.
+- *75.5*: meta counts as ctrl in both `'pan'` and `'modifier-zoom'`
+  (the macOS spelling of the zoom modifier); `'pan'` scales a
+  line-mode delta by 33 px as the zoom path does and a page-mode delta
+  by the viewport height; the zoom path's delta handling is unchanged.
+- *75.6*: a request on a scene at rest draws one full frame; the plan's
+  cheaper counts-only frame was not needed and is a follow-up hook.  The
+  worker proxy forwards the request to its engine (`counts` /
+  `countsresult`), so the method is on `RendererLike` for both hosts.
+
+**Controls, each run and each red**: 75.1 the observer without its emit;
+75.2 the filter forced false (the round-10 late-font spec times out),
+forced true (the unrelated-font spec re-shapes), the size watch off (the
+orphan spec), the ready belt off (the at-rest spec); 75.3 an iterator
+yielding the members reversed; 75.4 cpu-pick's shape test swapped for
+the bounding box (the slanted-outline spec — the round-27 lesson); 75.5
+`preventDefault()` moved back first (three browser specs), the
+`'pan'`/`'modifier-zoom'` branches swapped (the Node table and both mode
+specs), and the option left out of the options schema (the schema gate);
+75.6 the args read at offset 0 (both count specs, 7/3 read as 12/198)
+and every group treated as dispatched.
+
+**The page, opened** (a scripted Chromium on `debug/index.html
+?network=v3-default`, 1400×900): `cy.nodeAt` over node `a` answered `a`;
+`cy.viewportCounts()` answered all 10 nodes and 23 edges in view; the
+new `wheelBehavior` select set `'pan'`, and a wheel logged `scrollpan`;
+under `'modifier-zoom'` a plain wheel did nothing to the graph; shrinking
+the container by 200 px logged `resize` with no `cy.resize()` call, the
+canvas followed to 850 device px, and the counts fell to 9 nodes as one
+left the view.  The screenshot showed the graph redrawn at the new
+width, letterboxed, nothing stretched.
+
+**Browser runs at the close**: the `renderer` project 197 passed, 1
+skipped (its standing skip), 36.9 s; the `visual` project 130 of 130 —
+every golden exact and every parity scene inside its bound, 2.3 min —
+so nothing here moved a pixel, as the plan expected.  The
+`renderer-webkit` project was not run: Linux WebKit has no WebGPU, and
+its specs soft-skip.
+
+**Deferred**: the viewport counts' mask form (the visible list as a
+Collection, with a compaction-order contract) and a counts-only frame —
+both follow-up hooks in `src/README.md`; the iterator ships as
+declaration hover text, since the docs generator lists identifier
+members only; the font at-rest residual, documented per the sitting.
+
+**Logged in passing**, from round 79's findings, as new ledger items:
+**79** — the force layout reads an undeclared `tidyComponents`
+(`ForceRunOptions` declares it; the public `ForceLayoutOptions` does
+not); **80** — `options.elements: { nodes: {} }` loads an empty graph
+while `cy.add()` of the same object throws (`nodeDefs is not
+iterable`), both reproduced on this tree.
+
+**The gates at the close**: `npm run -s test:node:quiet` green — zero
+bytes (3,024 unit and 1,029 module tests; 526 browser tests listed
+across the Playwright projects — this round's 14 browser specs, listed
+in both the `renderer` and `renderer-webkit` projects, are 28 of them);
+`test:throws` at zero; JSDoc 100%
+on all three gated tags (377 public members; `@throws` 12/12, `@param`
+219/219, `@returns` 268/268); the generated API at 343 documented
+members; plan-record, agent-docs, feature-inventory, status-features
+and migration-guide green.  One red found at the close and fixed in it:
+75.4's README note quoted the pick's old path, which the status site's
+documented-path gate reads as a dead link — `src/render/cpu-pick.mts`
+joins `HISTORICAL_PATHS` (round 97's record and rounds 76/81's plans
+quote it as it was), the round-131.1 `wgsl.mts` precedent.
+

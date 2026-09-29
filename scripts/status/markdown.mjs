@@ -113,6 +113,8 @@ export const HISTORICAL_PATHS = {
     "the cyext scaffold template's own spec file (round 71) — a file of the *generated* extension package, not this repo's test/",
   'src/render/wgsl.mts':
     "round 52's record names the tag's home as it was; round 131.1 moved it to src/gpu/ with the rest of the device tier",
+  'src/render/cpu-pick.mts':
+    "the CPU node pick's home until round 75.4 moved it below the renderer tier (src/cpu-pick.mts) for the headless cy.nodeAt; round 97's record and 76/81's plans quote it as it was",
   'playwright-tests/quiet-reporter.js':
     "round 101's plan named .js; the round shipped .mjs (tsx treats a .js in this no-type package as CJS) and the record quotes both spellings",
 };

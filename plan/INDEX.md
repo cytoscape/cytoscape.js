@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 79, 85–87, 89–98, 101, 103, 106–124, 127–133 |
-| planned | 49–51, 71, 73, 75–78, 80–84, 88, 99–100, 102, 104–105, 125–126 |
+| landed | 7–48, 52–70, 72, 74–75, 79, 85–87, 89–98, 101, 103, 106–124, 127–133 |
+| planned | 49–51, 71, 73, 76–78, 80–84, 88, 99–100, 102, 104–105, 125–126 |
 
 ## The sections
 
@@ -133,7 +133,7 @@ A round can land with an item held open; the round file says which.
 | 104 | 72 | 2026-08-14 | landed | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-landed-the-algorithm-perf-follow-ups-gathered.md) |
 | 105 | 73 | 2026-08-14 | plan | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md) |
 | 106 | 74 | 2026-08-14 | landed | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-landed-the-worker-pool-cpu-executor.md) |
-| 107 | 75 | 2026-08-14 | plan | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-plan-the-dx-polish-bundle.md) |
+| 107 | 75 | 2026-08-14 | landed | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-landed-the-dx-polish-bundle.md) |
 | 108 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
 | 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
 | 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |

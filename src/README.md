@@ -639,6 +639,16 @@ pass's, column for column.  On ndex-x-large a one-constant change went
 from 250 ms and 59.6 MB of dirty columns to 1.5 ms and 0.08 MB; see
 "Sheet replacement is a diff" below.
 
+Round 75 (2026-09-28, the DX polish bundle, on the eleventh sitting's
+calls) made six small things true: the container observer emits
+`resize`, the web-font re-raster is filtered and catches every loading
+order but one documented residual, collections are iterable and
+`cy.add()` takes iterables, `cy.nodeAt()` (alias `cy.pickNode`) is the
+public sync node pick — computed headless — `wheelBehavior` chooses what
+a wheel does and an inert wheel scrolls the page again, and
+`cy.viewportCounts()` reads the cull's visible counts back.  See "The DX
+polish bundle (round 75)" below.
+
 ## API scope (pass 1)
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,

@@ -235,7 +235,16 @@ sitting's calls — ajv in the tests only, no runtime `validate()`, the
 `$id` base left to round 46, the columnar schema held until 4.x,
 SchemaStore after 4.0) shipped element, stylesheet, layout and options
 schemas as `cytoscape/schemas/*.json`, gated both ways against the
-running library; it raised no new item.
+running library; it raised no new item.  Round 75 (the DX polish bundle,
+landed the same day on the sitting's calls — `cy.nodeAt` with a
+`pickNode` alias, computed headless; `'modifier-zoom'`; `'scrollpan'`;
+`viewportCounts()` null headless; the font orphan documented; both
+resize declines confirmed) made the container observer emit `resize`,
+filtered and belted the web-font re-raster, made collections iterable,
+and shipped `cy.nodeAt`, `wheelBehavior` with the page-scroll fix and
+`cy.viewportCounts()`; it logged **items 79 and 80**, two findings round
+79 recorded in passing (an undeclared force option, and an elements
+payload the factory and `cy.add()` disagree on).
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -937,8 +946,8 @@ directions".*
     a polygon-containment query is an extension of what exists, not
     a new index.  Pair it with the API it implies: public spatial
     queries — nearest node, k-nearest, elements-in-polygon —
-    beside round 75.4's public sync pick, since every app that
-    wants lasso wants those next.
+    beside round 75.4's public sync pick (`cy.nodeAt`), since every
+    app that wants lasso wants those next.
     **First measurement**: what `cull.mts`/`cpu-pick.mts` already
     provide toward polygon containment, and the cost of
     point-in-polygon over 100k nodes at a realistic vertex count.
@@ -1883,3 +1892,26 @@ directions".*
     round that makes it adds the listener-census spec (each of `pan`,
     `zoom`, `viewport` once per tick) with the current code as its
     control.
+79. **The force layout reads an undeclared `tidyComponents`** (found
+    2026-09-28 by round 79's schemas gate, logged by round 75).
+    `force-run.mts` honours `options.tidyComponents !== false` (round
+    120's canonical small-component shapes), and the internal
+    `ForceRunOptions` declares it, but the public `ForceLayoutOptions`
+    does not — so TypeScript rejects an option the layout reads, the
+    layout-options schema accepts it only because it is open, and the
+    debug page's options table cannot list it.  The call: declare it
+    (documented, default true) or retire the escape hatch.  **First
+    measurement**: whether any spec, benchmark or flagship-app sheet sets
+    it `false`.
+80. **`options.elements: { nodes: {} }` loads an empty graph; `cy.add()`
+    of the same object throws** (found 2026-09-28 by round 79's schemas
+    gate, logged by round 75; reproduced on round 75's tree: the factory
+    constructs with 0 nodes, `cy.add( { nodes: {} } )` throws
+    `nodeDefs is not iterable`).  The bulk path converts through
+    `buildColumnar` before `partitionDefs`' iteration can fail, so a
+    malformed `{ nodes, edges }` passes silently at construction and
+    loudly afterwards.  The schema follows the declared array.  The fix
+    is a shape guard on `{ nodes, edges }` that both paths share, with a
+    throw spec for each.  **First measurement**: none needed — two
+    reproductions and the guard's placement (the one shared partition
+    step).

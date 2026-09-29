@@ -2,6 +2,7 @@ import { ColumnMirror } from './column-mirror.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import type { EmphasisVeil } from './emphasis-veil.mjs';
 import type { EmphasisTier } from './renderer/emphasis.mjs';
+import type { LabelGateBuffer } from './renderer/declutter.mjs';
 import { NodeLayerPipeline } from './node-layer-pipeline.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
@@ -321,6 +322,19 @@ export class Renderer {
   emphasisFrameData: Float32Array = new Float32Array(20);
   /** @internal */
   emphasisVeil: EmphasisVeil | null = null;
+  /** the node label gate the glyph cull and the node label shader read
+   * (round 104): one f32 per node slot, built on the first frame
+   * @internal */
+  labelGate: LabelGateBuffer | null = null;
+  /** node positions, flags or capacity changed since the last declutter
+   * pass (round 104) @internal */
+  declutterInputsDirty = false;
+  /** node flags changed since the last declutter pass @internal */
+  declutterFlagsDirty = false;
+  /** the declutter mode the last pass ran under @internal */
+  declutterMode = -1;
+  /** the view the last `cull` pass decided @internal */
+  declutterViewKey = '';
 
   /**
    * Creates and mounts the canvas, subscribes to store invalidation,

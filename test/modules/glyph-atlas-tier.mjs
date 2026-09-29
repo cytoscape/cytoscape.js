@@ -9,6 +9,7 @@ import {
 import { LabelLayer, LABEL_PROMOTE_PX } from '../../src/render/label-layer.mjs';
 import { GLYPH_WORDS } from '../../src/render/glyph-buffer.mjs';
 import { WRAP_NONE } from '../../src/label-wrap.mjs';
+import { nodeLabelRect } from '../../src/render/label-declutter.mjs';
 
 /*
 Round 94: the zoom-tiered glyph atlas.  The base tier rasters at 32 px
@@ -295,6 +296,7 @@ const entry = (fontSize) => ({
   lineHeight: 1.2,
   overflowWrap: 0,
   justification: 1,
+  priority: 0,
 });
 
 describe('label tier promotion meter (round 94)', () => {
@@ -399,3 +401,64 @@ const captureRun = (layer) => {
 
   return { count, x, w, h };
 };
+
+// Round 104: the label layer is where the declutter pass's inputs come
+// from — each rebuilt node run records its rect (the laid block, placed
+// as the glyphs are), its tallest quad's LOD height and its priority,
+// and a cleared label leaves the pass.
+describe('the label layer records what the declutter pass reads (round 104)', () => {
+  let store, layer;
+
+  beforeEach(() => {
+    globalThis.OffscreenCanvas = FakeOffscreenCanvas;
+    store = makeStore(
+      new Map([
+        [0, { ...entry(14), priority: 3, anchorY: 9, valignShift: -1 }],
+        [1, { ...entry(20), priority: -1 }],
+      ]),
+    );
+    store.setLabelDims = (slot, group, w, h) => {
+      store.dims = { ...(store.dims ?? {}), [slot]: { w, h } };
+    };
+    layer = new LabelLayer(makeDevice(), store);
+    layer.process();
+  });
+
+  afterEach(() => {
+    delete globalThis.OffscreenCanvas;
+  });
+
+  it('records each node label with its rect, LOD height and priority', () => {
+    const d = layer.declutter;
+    const rec = d['rec'];
+
+    expect(d.count()).to.equal(2);
+    expect(layer.takeNodeLabelsTouched()).to.be.true;
+    expect(layer.takeNodeLabelsTouched()).to.be.false;
+
+    for (const slot of [0, 1]) {
+      const e = store.labelAt(slot, 'nodes');
+      const want = nodeLabelRect(e, store.dims[slot].w, store.dims[slot].h);
+
+      expect(Array.from(rec.subarray(slot * 6, slot * 6 + 4))).to.deep.equal(
+        Array.from(Float32Array.from(want)),
+      );
+      // the tallest quad of the run: the SDF cell, a little over the em
+      expect(rec[slot * 6 + 4]).to.be.within(e.fontSize, e.fontSize * 2);
+    }
+
+    // the priorities rank: slot 0 (3) above slot 1 (-1)
+    expect(d.rankOf(0)).to.equal(1);
+    expect(d.rankOf(1)).to.equal(0);
+  });
+
+  it('forgets a node label that is cleared', () => {
+    store.labelAt = (slot, group) =>
+      group === 'nodes' && slot === 0 ? entry(14) : undefined;
+    store.takeLabelDirty = (group) => (group === 'nodes' ? [0, 1] : []);
+    layer.process();
+
+    expect(layer.declutter.count()).to.equal(1);
+    expect(layer.takeNodeLabelsTouched()).to.be.true;
+  });
+});

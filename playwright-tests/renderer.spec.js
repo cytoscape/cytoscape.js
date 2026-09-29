@@ -1425,6 +1425,486 @@ test.describe('WebGPU renderer', () => {
     expect(red(off.a)).toBe(true);
   });
 
+  // -- round 104: label decluttering ----------------------------------------
+
+  /** Pixels of a page region matching `pred( r, g, b )`. */
+  const countInRegion = async (page, x, y, w, h, pred) => {
+    const data = decodePng(
+      await page.screenshot({
+        clip: { x: Math.round(x), y: Math.round(y), width: w, height: h },
+      }),
+    ).data;
+    let n = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      if (pred(data[i], data[i + 1], data[i + 2])) {
+        n++;
+      }
+    }
+
+    return n;
+  };
+  const isRed = (r, g, b) => r > 150 && g < 110 && b < 110;
+  const isBlue = (r, g, b) => b > 150 && r < 110 && g < 110;
+  const isInk = (r, g, b) => r < 160 && g < 160 && b < 160;
+
+  /** Apply a sheet change (or any cy call) and wait for a presented frame. */
+  const settle = async (page, fn, arg) => {
+    await page.evaluate(
+      async ({ src, arg }) => {
+        const cy = window.cy;
+
+        // eslint-disable-next-line no-new-func
+        new Function('cy', 'arg', src)(cy, arg);
+        await new Promise((resolve) => {
+          cy.one('render', () => resolve());
+          cy.panBy({ x: 1, y: 0 });
+          cy.panBy({ x: -1, y: 0 });
+        });
+      },
+      { src: `(${fn})(cy, arg)`, arg },
+    );
+    await waitFrames(page);
+  };
+
+  // two labels on one spot: red text on node r, blue on node b, ranked by
+  // data( p ); the nodes themselves are invisible, so every coloured
+  // pixel in the region is label ink
+  const PAIR = (decl = 'cull', extraNodes = {}) => ({
+    elements: [
+      { data: { id: 'r', p: 5 }, position: { x: 0, y: 0 } },
+      { data: { id: 'b', p: 1 }, position: { x: 4, y: 3 } },
+    ],
+    style: {
+      core: { 'label-declutter': decl },
+      nodes: {
+        label: 'WWWWW',
+        width: 1,
+        height: 1,
+        'background-opacity': 0,
+        'text-valign': 'center',
+        'font-size': 24,
+        color: {
+          case: [{ when: { data: 'id', eq: 'r' }, then: 'red' }],
+          else: 'blue',
+        },
+        'label-priority': { data: 'p' },
+        ...extraNodes,
+      },
+    },
+    zoom: 1,
+  });
+
+  test('label declutter: the higher label-priority wins its space, and swapping the two swaps the winner (round 104)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    await makeReadyCy(page, PAIR());
+
+    const c = await centerPan(page);
+
+    await waitFrames(page);
+
+    const read = async () => ({
+      red: await countInRegion(page, c.x - 60, c.y - 20, 120, 40, isRed),
+      blue: await countInRegion(page, c.x - 60, c.y - 20, 120, 40, isBlue),
+    });
+    const culled = await read();
+
+    expect(
+      culled.red,
+      `the winner draws: ${JSON.stringify(culled)}`,
+    ).toBeGreaterThan(40);
+    expect(culled.blue, 'the loser is hidden, not faded').toBe(0);
+
+    // swap the priorities: the winner swaps
+    await settle(page, (cy) => {
+      cy.$id('r').data('p', 1);
+      cy.$id('b').data('p', 5);
+    });
+
+    const swapped = await read();
+
+    expect(swapped.blue, `swapped: ${JSON.stringify(swapped)}`).toBeGreaterThan(
+      40,
+    );
+    expect(swapped.red).toBe(0);
+
+    // the emphasized set ranks above every priority (round 102's
+    // follow-up): emphasize the low-priority label and it wins
+    await settle(page, (cy) => cy.emphasize(cy.$id('r')));
+
+    const emphasized = await read();
+
+    expect(
+      emphasized.red,
+      `emphasized: ${JSON.stringify(emphasized)}`,
+    ).toBeGreaterThan(40);
+    expect(emphasized.blue).toBe(0);
+
+    await settle(page, (cy) => cy.unemphasize());
+
+    // an export draws the screen's decision
+    const exported = await page.evaluate(async (p) => {
+      const img = new Image();
+
+      img.src = await window.cy.png({ bg: '#fff' });
+      await img.decode();
+
+      const canvas = document.createElement('canvas');
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(img, 0, 0);
+
+      const d = ctx.getImageData(p.x - 60, p.y - 20, 120, 40).data;
+      let red = 0;
+      let blue = 0;
+
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 150 && d[i + 1] < 110 && d[i + 2] < 110) red++;
+        if (d[i + 2] > 150 && d[i] < 110 && d[i + 1] < 110) blue++;
+      }
+
+      return { red, blue };
+    }, c);
+
+    expect(exported.red, `export: ${JSON.stringify(exported)}`).toBe(0);
+    expect(exported.blue).toBeGreaterThan(40);
+
+    // a full export declutters its own view: with the pair panned far off
+    // screen the screen's pass decided neither label (undecided never
+    // draws), and the figure still shows the winner
+    await settle(page, (cy) => cy.pan({ x: -5000, y: -5000 }));
+
+    const full = await page.evaluate(async () => {
+      const img = new Image();
+
+      img.src = await window.cy.png({ bg: '#fff', full: true });
+      await img.decode();
+
+      const canvas = document.createElement('canvas');
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(img, 0, 0);
+
+      const d = ctx.getImageData(0, 0, img.width, img.height).data;
+      let red = 0;
+      let blue = 0;
+
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 150 && d[i + 1] < 110 && d[i + 2] < 110) red++;
+        if (d[i + 2] > 150 && d[i] < 110 && d[i + 1] < 110) blue++;
+      }
+
+      return { red, blue };
+    });
+
+    expect(full.blue, `full export: ${JSON.stringify(full)}`).toBeGreaterThan(
+      40,
+    );
+    expect(full.red).toBe(0);
+    await settle(page, (cy, p) => cy.pan(p), c);
+
+    // the control: with the cull off both labels draw on the one spot
+    await settle(page, (cy) =>
+      cy.style({
+        ...cy._styleEngine.sheet,
+        core: { 'label-declutter': 'none' },
+      }),
+    );
+
+    const both = await read();
+
+    expect(both.red, `none: ${JSON.stringify(both)}`).toBeGreaterThan(40);
+    expect(both.blue).toBeGreaterThan(40);
+  });
+
+  test('label declutter: a dense pile culls to non-overlapping winners, and with the cull off the overlap count jumps (round 104)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const elements = [];
+
+    for (let i = 0; i < 40; i++) {
+      elements.push({
+        data: { id: `n${i}`, p: (i * 7) % 40 },
+        position: { x: (i % 8) * 34 - 120, y: Math.floor(i / 8) * 14 - 30 },
+      });
+    }
+
+    await makeReadyCy(page, {
+      elements,
+      style: {
+        core: { 'label-declutter': 'cull' },
+        nodes: {
+          label: 'data(id)',
+          width: 2,
+          height: 2,
+          'background-opacity': 0,
+          'text-valign': 'center',
+          'font-size': 16,
+          color: 'black',
+          'label-priority': { data: 'p' },
+        },
+      },
+      zoom: 1,
+    });
+
+    const c = await centerPan(page);
+
+    await waitFrames(page);
+
+    // the census, in the page: which labels the renderer drew, and how
+    // many of them overlap another (their label boxes, from the model)
+    const census = () =>
+      page.evaluate(() => {
+        const cy = window.cy;
+        const d = cy._renderer.labelLayer.declutter;
+        const drawn = cy
+          .nodes()
+          .filter((n) => d.drawn(cy._store.lookup(n.id()).slot));
+        const boxes = drawn.map((n) => n.boundingBox());
+        let overlapping = 0;
+
+        boxes.forEach((a, i) => {
+          if (
+            boxes.some(
+              (b, j) =>
+                j !== i &&
+                a.x1 < b.x2 &&
+                b.x1 < a.x2 &&
+                a.y1 < b.y2 &&
+                b.y1 < a.y2,
+            )
+          ) {
+            overlapping++;
+          }
+        });
+
+        return {
+          drawn: drawn.length,
+          overlapping,
+          top: drawn.some((n) => n.data('p') === 39),
+          stats: d.stats,
+        };
+      });
+
+    const culled = await census();
+    const culledInk = await countInRegion(
+      page,
+      c.x - 150,
+      c.y - 45,
+      300,
+      90,
+      isInk,
+    );
+
+    expect(culled.drawn, JSON.stringify(culled)).toBeGreaterThan(5);
+    expect(culled.drawn).toBeLessThan(40);
+    expect(culled.overlapping, 'the winners do not overlap').toBe(0);
+    expect(culled.top, 'the top priority always wins its space').toBe(true);
+
+    await settle(page, (cy) =>
+      cy.style({
+        ...cy._styleEngine.sheet,
+        core: { 'label-declutter': 'none' },
+      }),
+    );
+
+    const all = await census();
+    const allInk = await countInRegion(
+      page,
+      c.x - 150,
+      c.y - 45,
+      300,
+      90,
+      isInk,
+    );
+
+    expect(all.drawn, JSON.stringify(all)).toBe(40);
+    expect(
+      all.overlapping,
+      'the census re-run: the pile overlaps',
+    ).toBeGreaterThan(20);
+    // and the GPU honoured the gate: the culled frame drew less ink
+    expect(culledInk, `ink culled ${culledInk} vs all ${allInk}`).toBeLessThan(
+      allInk * 0.8,
+    );
+  });
+
+  test('label declutter: cull decides membership, fade decides alpha — a half-faded label still claims (round 104)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the top-priority label is small (red, 10 px), the other large
+    // (blue, 40 px): zoomed out, the red one reaches its fade band while
+    // the blue one is still whole
+    await makeReadyCy(
+      page,
+      PAIR('cull', {
+        'font-size': {
+          case: [{ when: { data: 'id', eq: 'r' }, then: 10 }],
+          else: 40,
+        },
+        label: 'WW',
+      }),
+    );
+
+    const c = await centerPan(page);
+
+    await waitFrames(page);
+
+    // the zooms at which the red label's tallest glyph is 4.5 displayed
+    // px (mid-band: labelFade = 0.5) and 2.4 px (past the band: gone),
+    // from the height the label layer recorded
+    const zooms = await page.evaluate(() => {
+      const cy = window.cy;
+      const d = cy._renderer.labelLayer.declutter;
+      const slot = cy._store.lookup('r').slot;
+      // the record's fifth word is the run's LOD height, model px
+      const lodH = d.rec[slot * 6 + 4];
+      const dpr = cy._renderer.dpr;
+
+      return { half: 4.5 / (lodH * dpr), gone: 2.4 / (lodH * dpr) };
+    });
+    const at = async (zoom) => {
+      await settle(
+        page,
+        (cy, arg) => {
+          cy.zoom(arg.zoom);
+          cy.pan(arg.pan);
+        },
+        { zoom, pan: c },
+      );
+
+      return {
+        red: await countInRegion(
+          page,
+          c.x - 40,
+          c.y - 20,
+          80,
+          40,
+          (r, g, b) => r > g + 40 && r > b + 40,
+        ),
+        blue: await countInRegion(
+          page,
+          c.x - 40,
+          c.y - 20,
+          80,
+          40,
+          (r, g, b) => b > r + 40 && b > g + 40,
+        ),
+        drawn: await page.evaluate(() => {
+          const cy = window.cy;
+          const d = cy._renderer.labelLayer.declutter;
+
+          return ['r', 'b'].filter((id) => d.drawn(cy._store.lookup(id).slot));
+        }),
+      };
+    };
+
+    const half = await at(zooms.half);
+
+    expect(half.drawn, JSON.stringify(half)).toEqual(['r']);
+    expect(half.red, 'the half-faded winner draws, faintly').toBeGreaterThan(0);
+    expect(half.blue, 'and still holds its space: the loser is hidden').toBe(0);
+
+    const gone = await at(zooms.gone);
+
+    expect(gone.drawn, JSON.stringify(gone)).toEqual(['b']);
+    expect(gone.red, 'faded to nothing, it draws nothing').toBe(0);
+    expect(
+      gone.blue,
+      'and claims nothing: the other label draws',
+    ).toBeGreaterThan(0);
+  });
+
+  test('label-priority drives the fade order: the lowest-ranked label fades first (round 104)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // two labels side by side, no declutter: only the fade order acts
+    await makeReadyCy(page, {
+      ...PAIR('none'),
+      elements: [
+        { data: { id: 'r', p: 5 }, position: { x: -60, y: 0 } },
+        { data: { id: 'b', p: 1 }, position: { x: 60, y: 0 } },
+      ],
+    });
+
+    const c = await centerPan(page);
+
+    await waitFrames(page);
+
+    // the zoom at which the tallest glyph is 7.5 displayed px: past the
+    // top rank's band (full at 6), a quarter into the lowest rank's
+    // (6..12, doubled)
+    const zoom = await page.evaluate(() => {
+      const cy = window.cy;
+      const d = cy._renderer.labelLayer.declutter;
+      const lodH = d.rec[cy._store.lookup('r').slot * 6 + 4];
+
+      return 7.5 / (lodH * cy._renderer.dpr);
+    });
+    const read = async () => {
+      await settle(
+        page,
+        (cy, arg) => {
+          cy.zoom(arg.zoom);
+          cy.pan(arg.pan);
+        },
+        { zoom, pan: c },
+      );
+
+      return {
+        red: await countInRegion(
+          page,
+          c.x - 80,
+          c.y - 20,
+          80,
+          40,
+          (r, g, b) => r > g + 60 && r > b + 60,
+        ),
+        blue: await countInRegion(
+          page,
+          c.x,
+          c.y - 20,
+          80,
+          40,
+          (r, g, b) => b > r + 60 && b > g + 60,
+        ),
+      };
+    };
+
+    const ordered = await read();
+
+    expect(ordered.red, JSON.stringify(ordered)).toBeGreaterThan(20);
+    expect(
+      ordered.blue,
+      `the lower rank is fading: ${JSON.stringify(ordered)}`,
+    ).toBeLessThan(ordered.red * 0.5);
+
+    // the control: equal priorities rank equal, and fade together
+    await settle(page, (cy) => cy.$id('b').data('p', 5));
+
+    const equal = await read();
+
+    expect(equal.blue, JSON.stringify(equal)).toBeGreaterThan(equal.red * 0.7);
+    expect(equal.blue).toBeLessThan(equal.red * 1.4);
+  });
+
   test('device loss auto-recovers: devicelost, rebuild, devicerestored (round 10)', async ({
     page,
   }) => {

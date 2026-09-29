@@ -8,6 +8,7 @@ import type { GlyphBuffer } from '../glyph-buffer.mjs';
 import { BUFFER_USAGE } from '../../gpu/webgpu-constants.mjs';
 import { GROUP_EDGES, GROUP_NODES, COL } from '../../contract.mjs';
 import type { SceneCullGroups, Renderer } from '../renderer.mjs';
+import { labelGate } from './declutter.mjs';
 import {
   images,
   charts,
@@ -330,6 +331,7 @@ export function drawScene(
         labels.atlas,
         cull.glyph,
         phase,
+        labelGate(rd),
       );
     }
 
@@ -532,6 +534,7 @@ export function encodeCulls(
 
   if (groups.glyph != null && labelLayer != null) {
     const glyphs = labelLayer.glyphs;
+    const gate = labelGate(rd);
 
     groups.glyph.ensure(
       uniform,
@@ -540,8 +543,9 @@ export function encodeCulls(
         glyphs.buffer(),
         mirror.buffer(COL.NODE_POSITION),
         mirror.buffer(COL.NODE_FLAGS),
+        gate.buffer, // round 104: the declutter gate
       ],
-      `${mv}:${glyphs.version}`,
+      `${mv}:${glyphs.version}:${gate.version}`,
     );
   }
 

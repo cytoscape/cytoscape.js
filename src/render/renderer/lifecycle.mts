@@ -89,6 +89,7 @@ export function destroy(rd: Renderer): void {
   rd.emphasisTier?.uniform.destroy();
   rd.exportEmphasisTier?.uniform.destroy();
   rd.emphasisVeil?.destroy();
+  rd.labelGate?.buffer.destroy();
   rd.exportPacker = null; // its pipeline dies with the device below
   rd.device?.destroy();
 

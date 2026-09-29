@@ -694,6 +694,42 @@ export class LabelDeclutter {
     return this.finish(stats, t0);
   }
 
+  /**
+   * One pass for another view — an export's figure — without disturbing
+   * this state: seeded with the current winners (so the figure agrees
+   * with the screen where they overlap), its result returned and the
+   * winners, the gate and the stats put back.
+   *
+   * @param mode — DECLUTTER_NONE or DECLUTTER_CULL
+   * @param view — the other view
+   * @param positions — the node.position column
+   * @param flags — the node.flags column
+   * @returns that view's gate, a copy
+   */
+  runDetached(
+    mode: number,
+    view: DeclutterView,
+    positions: Float32Array,
+    flags: Uint32Array,
+  ): Float32Array {
+    const won = this.won.slice();
+    const gate = this.gate.slice();
+    const { gateLo, gateHi, stats, passes } = this;
+
+    this.run(mode, view, positions, flags);
+
+    const out = this.gate.slice();
+
+    this.won = won;
+    this.gate = gate;
+    this.gateLo = gateLo;
+    this.gateHi = gateHi;
+    this.stats = stats;
+    this.passes = passes;
+
+    return out;
+  }
+
   /** Settle one candidate: its gate (`k` when shown), its incumbency,
    * the counts. */
   private place(

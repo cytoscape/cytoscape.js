@@ -4371,9 +4371,126 @@ scalar that never crossed makes it fail).
 
 Follow-up hooks, not built: a dim *colour* (the veil composites toward
 the background; a tint would need a second constant); an `emphasize`
-event; a transition on the dim (it switches in one frame); and round
-104's label decluttering, which should treat the emphasized set's labels
-as top priority.
+event; and a transition on the dim (it switches in one frame).  Round
+104's label decluttering, logged here as the fourth, took it: the
+emphasized set's labels claim their space first and fade last.
+
+## Label decluttering (round 104)
+
+At fit zoom on a large graph the label layer is soup — round 104's
+census: ndex-x-large draws all 19,607 labels at fit with its
+`min-zoomed-font-size` floor removed and 99.4% of them overlap another;
+with the floor, 14,092 at 2× fit and every one overlaps — which is why
+apps hide labels wholesale.  Two props address it, both v4 additions
+with no v3 counterpart:
+
+```js
+style: {
+  core: { 'label-declutter': 'cull' },           // default 'none'
+  nodes: { 'label-priority': { data: 'score', fallback: 0 } },
+}
+```
+
+- **`label-priority`** — a node prop, any number, mapper-able (a data
+  score, a degree the app writes into data, or a constant per group).
+  Higher ranks first.  It orders two things: the declutter's claims,
+  and — the eleventh sitting's call — **the zoom fade**: a label's
+  fade band is `labelFadePx` scaled by k = 1 + (1 − rank), rank in
+  [0, 1] with ties sharing one (1 − the fraction of labels strictly
+  above it), so as the zoom falls the lowest-ranked labels fade first,
+  over [F, 2F] displayed px, and the top rank keeps today's [F/2, F].
+  With no priority declared every label ranks top and draws exactly as
+  before.
+- **`label-declutter: cull`** — a core prop (default `none`: the
+  sitting's call, off and opt-in).  A screen-space occupancy pass over
+  the labels the GPU would draw, highest priority first: a label claims
+  the cells of a 4 CSS px grid its rect covers, and a label that would
+  land on a claimed cell is **culled** — hidden, never half-faded.
+
+**Edge labels do not join, this round** (the plan's lean, taken): they
+overlap worst, but their rects move with routing, and the edge glyph
+cull is already at the eight-storage-buffer budget with no slot for the
+gate.  `label-priority` is therefore node-only and the edges group
+rejects it; node labels ignore edge labels when they claim.
+
+**How the renderer does it** (`src/render/label-declutter.mts`, the
+pass; `src/render/renderer/declutter.mts`, the frame glue).  The label
+layer records, as it rebuilds each node label run, the label's rect
+(`nodeLabelRect`: the laid block placed as the glyphs are, grown by the
+outline or a visible background's padding, a rotated label's bound
+turned about its anchor), its tallest glyph's LOD height, its
+`min-zoomed-font-size` floor and its priority.  The pass writes one
+f32 per node slot into a storage buffer — the **gate**: 0 culled, else
+the label's fade scale k — which the glyph cull and the node label
+shader read beside the glyph (one binding each; the gate is 1
+everywhere until a pass writes otherwise, so an unprioritized,
+undecluttered graph draws bit-identically, and every golden stayed
+exact).  Three properties are designed in, each from the round's
+measurement (`benchmark/label-declutter.mjs`):
+
+- **The grid is anchored in model space**: cell edges at multiples of
+  the cell size in model px from the origin.  Labels are model-space,
+  so overlap itself is pan-invariant, and with the grid anchored too a
+  pan re-decides nothing — a screen-anchored grid strobed 27,349 times
+  over a 60-frame slow pan on ndex-x-large; this one, 0.  Zoom
+  re-quantizes, which is the point: zoomed in, the cells are fine
+  against the labels and more of them fit.
+- **Membership is the pre-fade set.**  A candidate is a label the GPU
+  would draw: its node shown, above its floor and `labelMinPx`, fade >
+  0 on its own band, inside the viewport plus a 128 CSS px margin.  A
+  half-faded candidate claims as a whole one; a label faded to nothing
+  claims nothing.  The cull decides membership, the fade decides alpha.
+  A label outside the decided region is undecided, and undecided never
+  draws, so a stale gate cannot draw soup.
+- **Hysteresis**, in two halves.  A label the last pass showed (an
+  incumbent) keeps its claim until a challenger outranks it by 0.1 in
+  rank, and tests its rect *inset by one cell* while stamping all of
+  it, so a zoom's re-quantization cannot make two incumbents collide.
+  The rank margin alone cut a slow zoom's strobes (a label flipping
+  back) from 36,703 to 21,095; the inset to 439; both, 142 (em-web:
+  227 → 0).  The price is a band: an incumbent may keep up to one cell
+  of overlap before it yields.  A second pass at the same view is a
+  fixed point.
+
+The emphasized set (round 102) ranks above every priority and fades on
+the top band — the hover's labels are the ones it is about.  Ties break
+by slot.  The whole state is renderer-local by contract: never stored,
+never serialized, never read back through the public API (a label's box
+stays in `boundingBox()` and in a `text-events` pick either way).
+
+**When it runs, and what it costs.**  Under `none` the gate is the fade
+order alone, so a pass runs only when a node label run or a node flag
+changes (O(labels), no grid).  Under `cull` it runs on every drawn frame
+whose inputs changed — the viewport, a label, a node position or flag,
+the mode — before the frame's culls read the gate; only the changed
+span of the gate is uploaded.  Measured headless at 19,607 labels: 1.66
+ms a pass, 0.05–0.2 ms on em-web; in the browser (Chromium, the dev UMD,
+i9-9900K / RX 580) 1.6–2.0 ms median a frame through a pan on
+ndex-x-large, 0.1 ms on em-web.  The sort the plan suspected is paid
+only when a priority or the labelled set changes (3.8 ms at 19.6k); a
+pass walks the prebuilt order and merges incumbents and challengers
+linearly.  So the pass is CPU-only; a GPU variant was the plan's
+fallback if this missed budget, and it did not.  Positions a GPU lease
+owns (a position tween, a presenting force run) are stale on the CPU,
+so through such a run the pass holds its last decision, and re-decides
+on the frame the columns land.  An export declutters its own view (the
+figure's region at the figure's LOD scale, on the screen's grid, seeded
+with the screen's winners) so a `png()` of the viewport shows what the
+screen shows and a full export extends the decision to the rest of the
+graph; the screen's state is untouched.
+
+The cell size is the measured knee: 8 px tripled the *false culls* (a
+culled label touching no shown one) on ndex-x-large at fit, 992 →
+2,853; 2 px halved them for 14% more time and four times the cells a
+zoomed-in label stamps.
+
+Follow-up hooks, not built: edge labels in the pass (a gate slot for
+the edge glyph cull, and rects that follow routing); a per-element
+opt-out (a label that neither claims nor yields); padding between
+labels as a prop; and the census's other reading — at fit the page
+sheets draw no labels at all, so what apps want there is the
+top-ranked few, which the fade order gives only as far as the band
+reaches.
 
 ## Background images (round 15, landing)
 
@@ -6923,6 +7040,10 @@ fragment premium is **unmeasurable at scene level** on real hardware
   zero point are culled in compute, not drawn at zero alpha); the optional
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph
   height is below it — too small to read anyway (default 0 = off).
+  Since round 104 a node label's `label-priority` orders the fade (the
+  lowest rank fades first, over up to twice the band) and the core
+  `label-declutter: cull` hides overlapped labels — "Label decluttering
+  (round 104)" above.
 - **Edge `line-style`** (round 10): `solid` (default) | `dashed` |
   `dotted`, in model px so dashes zoom with content, drawn as an
   AA'd mask in the edge fragment stage.  Since round 13 B3 dashed

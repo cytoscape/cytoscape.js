@@ -36,6 +36,7 @@ import {
   emphasisActive,
   prepareEmphasis,
 } from './emphasis.mjs';
+import { noteDeclutterDelta, updateDeclutter } from './declutter.mjs';
 import {
   ensureSceneTarget,
   ensureDepthTarget,
@@ -266,6 +267,7 @@ export function frameBody(rd: Renderer): void {
     }
 
     mirror.sync(delta);
+    noteDeclutterDelta(rd, delta); // round 104: what the pass re-reads
   }
 
   // unconditional: a sheet change reconfigures on the next frame even
@@ -363,6 +365,8 @@ export function frameBody(rd: Renderer): void {
   ) {
     rd.needsRedraw = false;
     writeFrameUniform(rd);
+    // round 104: decide the node labels before the culls read the gate
+    updateDeclutter(rd);
 
     const encoder = device.createCommandEncoder({ label: 'cy-gpu:frame' });
     // the non-presenting force batch rd frame carries, for its

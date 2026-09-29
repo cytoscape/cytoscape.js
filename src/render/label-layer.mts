@@ -10,6 +10,7 @@ import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { RenderStoreView } from './host.mjs';
 import type { LabelStream } from '../contract.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
+import { LabelDeclutter, nodeLabelRect } from './label-declutter.mjs';
 
 /**
  * The zoom-tier promotion threshold (round 94), displayed device px of
@@ -39,6 +40,9 @@ export class LabelLayer {
   sourceGlyphs: GlyphBuffer;
   /** the target end-label stream (round 13 D4), keyed by edge slot */
   targetGlyphs: GlyphBuffer;
+  /** the node labels' rects, priorities and declutter gate (round 104),
+   * recorded here as each run is rebuilt */
+  declutter = new LabelDeclutter();
 
   private store: RenderStoreView;
   /** the shaping memo (16.3): line breaking is zoom-invariant (labels
@@ -58,6 +62,11 @@ export class LabelLayer {
    * renderer to re-check the promotion meter, so a graph built while
    * already zoomed in promotes on arrival (the 15.6 fresh-upload rule) */
   private maxFontRose = false;
+  /** set when a process() pass rebuilt or cleared any node label run
+   * (round 104): the declutter pass re-runs on it */
+  private nodeLabelsTouched = false;
+  /** scratch for the declutter rect */
+  private rect: [number, number, number, number] = [0, 0, 0, 0];
 
   /**
    * Creates the atlas and all four glyph streams.  Nothing is laid out
@@ -161,11 +170,23 @@ export class LabelLayer {
     );
   }
 
+  /** Returns-and-clears "a node label run changed" (round 104): the
+   * declutter pass re-ranks and re-decides on it. */
+  takeNodeLabelsTouched(): boolean {
+    const touched = this.nodeLabelsTouched;
+
+    this.nodeLabelsTouched = false;
+
+    return touched;
+  }
+
   /** Slot compaction (19.4): every glyph instance's owner word went
    * stale — drop all runs; the store marked every label dirty, so the
    * next process() rebuilds them against the new slots.  The shaping
    * memo survives (it keys on text/wrap params, not slots). */
   onCompacted(): void {
+    this.declutter.clearAll();
+    this.nodeLabelsTouched = true;
     this.glyphs.clear();
     this.edgeGlyphs.clear();
     this.sourceGlyphs.clear();
@@ -197,12 +218,21 @@ export class LabelLayer {
 
   private processGroup(group: LabelStream, glyphs: GlyphBuffer): void {
     const dirty = this.store.takeLabelDirty(group);
+    const nodes = group === GROUP_NODES;
+
+    if (nodes && dirty.length > 0) {
+      this.nodeLabelsTouched = true;
+    }
 
     for (const slot of dirty) {
       const entry = this.store.labelAt(slot, group);
 
       if (entry == null) {
         glyphs.set(slot, null);
+
+        if (nodes) {
+          this.declutter.clearLabel(slot);
+        }
 
         continue;
       }
@@ -258,6 +288,10 @@ export class LabelLayer {
 
       if (laid.length === 0) {
         glyphs.set(slot, null);
+
+        if (nodes) {
+          this.declutter.clearLabel(slot);
+        }
 
         continue;
       }
@@ -337,8 +371,17 @@ export class LabelLayer {
         at += GLYPH_WORDS;
       }
 
+      // the run's LOD height for the declutter pass (round 104): the
+      // tallest quad's, which is the one that fades last — the
+      // background's block height when there is one
+      let lodH = hasBg ? blockH * scale : 0;
+
       for (let i = 0; i < laid.length; i++) {
         const g = laid[i];
+
+        if (g.h * scale > lodH) {
+          lodH = g.h * scale;
+        }
 
         u32[at] = owner;
         u32[at + 1] = entry.color;
@@ -359,6 +402,26 @@ export class LabelLayer {
       }
 
       glyphs.set(slot, u32);
+
+      if (nodes) {
+        const r = nodeLabelRect(
+          entry,
+          blockW * scale,
+          blockH * scale,
+          this.rect,
+        );
+
+        this.declutter.setLabel(
+          slot,
+          r[0],
+          r[1],
+          r[2],
+          r[3],
+          lodH,
+          zoomDprMin,
+          entry.priority,
+        );
+      }
     }
 
     glyphs.sync();

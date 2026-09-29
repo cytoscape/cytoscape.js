@@ -7,6 +7,7 @@ import type { CulledGroup } from './cull.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
 import type { GlyphAtlas } from './glyph-atlas.mjs';
 import { COL } from '../contract.mjs';
+import type { LabelGateBuffer } from './renderer/declutter.mjs';
 
 /** Which of the round-95 label phases a draw encodes. */
 export type LabelPhase = 'fill' | 'outline';
@@ -79,8 +80,9 @@ export class LabelPipeline {
     // vertex-stage budget (node geometry rides the fused outerGeom
     // column since round 58, which is what freed the widths slot)
     // node labels add the element opacity column (115.6), so a dimmed
-    // node dims its label on-GPU — 3 storage buffers
-    const storageCount = this.edge ? 7 : 3;
+    // node dims its label on-GPU, and the declutter gate (round 104),
+    // whose fade scale bands each label's fade — 4 storage buffers
+    const storageCount = this.edge ? 7 : 4;
 
     this.bindLayout = device.createBindGroupLayout({
       label: `cy-gpu:${variant}-label-bind-layout`,
@@ -147,11 +149,13 @@ export class LabelPipeline {
     glyphs: GlyphBuffer,
     mirror: ColumnMirror,
     atlas: GlyphAtlas,
+    gate: LabelGateBuffer | null,
   ): GPUBindGroup {
     // the atlas generation joins the key (round 94): a tier promotion
     // replaces the texture object, and a cached group would keep the
-    // destroyed one bound
-    const key = `${mirror.version}:${glyphs.version}:${atlas.generation}`;
+    // destroyed one bound; so does the gate's (round 104), reallocated
+    // with the node capacity
+    const key = `${mirror.version}:${glyphs.version}:${atlas.generation}:${gate?.version ?? 0}`;
     let perUniform = this.bindGroups.get(uniform);
 
     if (perUniform == null) {
@@ -179,6 +183,7 @@ export class LabelPipeline {
           glyphs.buffer(),
           mirror.buffer(COL.NODE_POSITION),
           mirror.buffer(COL.NODE_OPACITY),
+          (gate as LabelGateBuffer).buffer,
         ];
 
     const group = device.createBindGroup({
@@ -228,6 +233,8 @@ export class LabelPipeline {
    * @param cull — the culled group whose visible list and indirect args
    * this draw uses
    * @param phase — which round-95 phase to encode (default `'fill'`)
+   * @param gate — the node label gate (round 104; the node variant
+   * binds it, the edge variant takes null)
    */
   draw(
     pass: GPURenderPassEncoder,
@@ -238,6 +245,7 @@ export class LabelPipeline {
     atlas: GlyphAtlas,
     cull: CulledGroup,
     phase: LabelPhase = 'fill',
+    gate: LabelGateBuffer | null = null,
   ): void {
     if (glyphs.highWater === 0) {
       return;
@@ -254,7 +262,7 @@ export class LabelPipeline {
     );
     pass.setBindGroup(
       0,
-      this.ensureBindGroup(device, uniform, glyphs, mirror, atlas),
+      this.ensureBindGroup(device, uniform, glyphs, mirror, atlas, gate),
     );
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');

@@ -33,6 +33,7 @@ import {
   prepareEmphasis,
 } from './emphasis.mjs';
 import { promoteVectors } from './force.mjs';
+import { applyExportGate } from './declutter.mjs';
 
 /**
  * Render the scene into an offscreen texture at the requested viewport
@@ -192,6 +193,9 @@ export function writeExportUniform(rd: Renderer, view: ExportView): void {
 export function renderExport(rd: Renderer, job: ExportJob): void {
   const device = rd.device as GPUDevice;
   const { wPx, hPx, bg } = job.view;
+  // round 104: the figure declutters its own view; the screen's gate
+  // goes back after the submit (or on a failure before it)
+  let restoreGate: (() => void) | null = null;
 
   try {
     writeExportUniform(rd, job.view);
@@ -244,6 +248,8 @@ export function renderExport(rd: Renderer, job: ExportJob): void {
     });
 
     const encoder = device.createCommandEncoder({ label: 'cy-gpu:export' });
+
+    restoreGate = applyExportGate(rd, job.view);
 
     encodeCulls(
       rd,
@@ -307,9 +313,12 @@ export function renderExport(rd: Renderer, job: ExportJob): void {
     const packed = rd.exportPacker.encode(encoder, texture, wPx, hPx);
 
     device.queue.submit([encoder.finish()]);
+    restoreGate?.();
+    restoreGate = null;
 
     void readbackExport(rd, job, packed, texture, depth);
   } catch (err) {
+    restoreGate?.();
     job.reject(err as Error);
   }
 }

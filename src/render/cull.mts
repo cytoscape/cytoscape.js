@@ -44,7 +44,7 @@ const INPUT_COUNTS: Record<CullKind, number> = {
   node: 5,
   edge: 5,
   curvedEdge: 5,
-  glyph: 3,
+  glyph: 4,
   edgeGlyph: 5,
   ghost: 5,
   nodeLayer: 4,
@@ -380,15 +380,24 @@ ${GLYPH_STRUCT}
 @group(0) @binding(2) var<storage, read> glyphs: array<Glyph>;
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
-@group(0) @binding(5) var<storage, read_write> wgCounts: array<u32>;
-@group(0) @binding(6) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(7) var<storage, read_write> visible: array<u32>;
+@group(0) @binding(5) var<storage, read> labelGate: array<f32>;
+@group(0) @binding(6) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(7) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(8) var<storage, read_write> visible: array<u32>;
 
 fn isVisible(slot: u32) -> bool {
   let g = glyphs[slot];
 
   if (g.nodeSlot == DEAD_GLYPH) { return false; }
   if ((nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
+
+  // round 104: the node label gate — 0 culled by the declutter pass,
+  // else the label's fade scale (its priority's place in the fade
+  // order; 1 for the top rank and for every label of an unprioritized
+  // graph, which is today's band exactly)
+  let gate = labelGate[g.nodeSlot];
+
+  if (gate <= 0.0) { return false; }
   if (!emphasisKeeps(frame.emphasisPass, nodeFlags[g.nodeSlot])) { return false; }
 
   // per-element floor (D2): min-zoomed-font-size baked as a zoomDpr
@@ -400,7 +409,7 @@ fn isVisible(slot: u32) -> bool {
   // hard minimum: below this the text is too small to read, don't draw it
   if (heightPx < frame.labelMinPx) { return false; }
 
-  if (labelFade(heightPx, frame.labelFadePx) <= 0.001) { return false; }
+  if (labelFade(heightPx, frame.labelFadePx * gate) <= 0.001) { return false; }
 
   let sizePx = g.size * frame.zoomDpr;
   let anchorPx = modelToPx(frame, nodePositions[g.nodeSlot]);

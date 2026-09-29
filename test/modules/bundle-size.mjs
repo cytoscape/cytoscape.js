@@ -23,9 +23,9 @@ Two limits per artifact:
   entry would add tens of kilobytes at once.  A round that grows a slim
   build on purpose raises its row here, consciously, with the reason.
 
-The full build is recorded, not gated (its levers — round 126's shader
-minification, item 63's constants price — are other rounds'):
-at landing `cytoscape.esm.min.mjs` was 893,415 bytes, 251,250 gzipped.
+The full build is recorded, not gated: at landing
+`cytoscape.esm.min.mjs` was 893,415 bytes, 251,250 gzipped; at round
+126, 959,490 / 273,959.
 
 Measured at landing (2026-09-28, Node 24, rolldown 1.1.5):
 
@@ -44,6 +44,27 @@ build: +1,939 gzip bytes on `cytoscape-headless.esm.mjs` (449,366 ->
 451,305), on a row the rounds since landing had already brought to
 within 0.4% of its ceiling.  The minified rows still clear theirs
 (569,228 / 177,157).
+
+**Re-measured, round 126 (2026-09-29, Node 24.18, rolldown 1.1.5), and
+left where they are.**  The rounds since landing grew every slim build
+8–9% (rounds 132–141), so the gzip rows stood 0.2–1.4% under
+their ceilings — `cytoscape-headless.esm.min.mjs` at 177,594 of 178,000.
+Round 126's build transforms (the constant tables inlined, PLAN.md item
+63; shader constants spliced; floats shortened) took back 8.8–9.1 KB
+raw and 3.2–3.3 KB gzipped per minified artifact:
+
+  cytoscape-headless.esm.min.mjs       562,015 / 174,366  (was 570,845 / 177,594)
+  cytoscape-headless.esm.mjs         1,647,619 / 445,183  (was 1,670,830 / 452,900)
+  cytoscape-headless.cjs.js          1,647,558 / 445,172  (was 1,670,769 / 452,893)
+  cytoscape-headless-gpu.esm.min.mjs   641,040 / 193,039  (was 650,114 / 196,295)
+  cytoscape-headless-gpu.esm.mjs     1,800,111 / 481,610  (was 1,824,074 / 489,564)
+  cytoscape-headless-gpu.cjs.js      1,800,050 / 481,598  (was 1,824,013 / 489,551)
+
+Landing's rule (size + ~10%) applied to these would *raise* every row
+by 14–130 KB, so no row moves: the ceilings stay the tighter gate, with
+1.9–3.6% of headroom where there was 0.2–2.2%.  Against round 131's
+targets: headless 562,015 against 540 KB (4.1% over), headless-gpu
+641,040 against 600 KB (6.8% over).
 
 Needs the built bundles (`test:modules` builds first).
 */

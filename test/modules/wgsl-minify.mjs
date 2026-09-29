@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -30,40 +30,59 @@ human wrote.  Three layers of defence, in order of strength:
 3. The `visual` Playwright project diffs the rendered pixels of the
    built bundle against exact goldens — the only gate that proves the
    *browser* still compiles and draws the same image (52.2).
+
+Round 126 found layer 2 auditing 15 of the 32 tagged files — the list
+was written by hand in round 52 and every GPU algorithm kernel since had
+landed outside it, reading as clean.  The list is now the tree's own
+(every `.mts` naming the tag), with its size pinned.  The round also
+shortened float literals (`1.0` -> `1.`), so the audit compares a float
+token by its value rather than its spelling, and added the `glsl` tag
+for the WebGL2 renderer (round 137), whose lexical rules differ in the
+two places pinned below: block comments do not nest, and a directive
+keeps its line.
 */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..', '..');
 
-// the modules that carry tagged WGSL (see src/gpu/wgsl.mts); round
-// 130 split `shaders.mts` into `src/render/shaders/`, one file per shader
-const WGSL_FILES = [
-  'src/render/shaders/common.mts',
-  'src/render/shaders/curve.mts',
-  'src/render/shaders/sdf.mts',
-  'src/render/shaders/node.mts',
-  'src/render/shaders/edge.mts',
-  'src/render/shaders/arrow.mts',
-  'src/render/shaders/label.mts',
-  'src/render/shaders/image.mts',
-  'src/render/shaders/chart.mts',
-  'src/render/cull.mts',
-  'src/gpu/gpu-force.mts',
-  'src/render/gpu-tween.mts',
-  'src/render/mapper-shaders.mts',
-  'src/render/image-arrays.mts',
-  'src/render/upscale.mts',
-];
+/** Every `.mts` under src/ that names a shader tag, from the root. */
+const taggedFiles = (dir = join(root, 'src'), out = []) => {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+
+    if (statSync(p).isDirectory()) {
+      taggedFiles(p, out);
+    } else if (
+      name.endsWith('.mts') &&
+      /\b(wgsl|glsl)`/.test(readFileSync(p, 'utf8'))
+    ) {
+      out.push(relative(root, p));
+    }
+  }
+
+  return out;
+};
+
+// the modules that carry tagged WGSL (see src/gpu/wgsl.mts), found by
+// scanning — 32 at round 126, when the hand-kept list held 15
+const WGSL_FILES = taggedFiles();
 
 // An independent WGSL tokenizer for the audit: strips comments with
 // regexes (the real sources use no nested block comments) and splits on
-// a coarse token pattern.  Deliberately shares nothing with the
-// transform's implementation.
+// a coarse token pattern.  A decimal float token compares by its value
+// (`1.0` and `1.` are one literal).  Deliberately shares nothing with
+// the transform's implementation.
 const tokenize = (text) =>
-  text
-    .replace(/\/\/[^\n]*/g, ' ')
-    .replace(/\/\*[^]*?\*\//g, ' ')
-    .match(/[A-Za-z_][A-Za-z0-9_]*|[0-9][0-9A-Za-z_.]*|\S/g) ?? [];
+  (
+    text
+      .replace(/\/\/[^\n]*/g, ' ')
+      .replace(/\/\*[^]*?\*\//g, ' ')
+      .match(/[A-Za-z_][A-Za-z0-9_]*|\.?[0-9][0-9A-Za-z_.]*|\S/g) ?? []
+  ).map((tok) => {
+    const m = /^(\d*\.\d*)([eE]?[fh]?)$/.exec(tok);
+
+    return m ? `float:${Number(m[1])}${m[2]}` : tok;
+  });
 
 describe('wgsl-minify (round 52)', () => {
   describe('minifyWgslTemplate', () => {
@@ -165,6 +184,82 @@ describe('wgsl-minify (round 52)', () => {
         minifyWgslTemplate(['let a = 1u; /* gap is ', ' px */']),
       ).to.throw(/unterminated WGSL block comment/);
     });
+
+    it('shortens float literals without changing their value (126)', () => {
+      const [out] = minifyWgslTemplate([
+        'let a = vec4f(1.0, 0.50, 10.0, 0.0); let b = 2.0e3 + 1.0f + .250;',
+      ]);
+
+      expect(out).to.equal('let a=vec4f(1.,.5,10.,0.);let b=2.e3+1.f+.25;');
+    });
+
+    it('leaves integers, hex, identifiers and suffixes other than f/h alone', () => {
+      const [out] = minifyWgslTemplate([
+        'let a = 10u + 100 + 0x1F + 0i; let v = vec4f(); let w = v.x0;',
+      ]);
+
+      expect(out).to.equal('let a=10u+100+0x1F+0i;let v=vec4f();let w=v.x0;');
+    });
+
+    it('never shortens a float that touches an interpolation', () => {
+      // `${n}.50` and `2.50${k}` continue a number the build cannot see
+      const out = minifyWgslTemplate(['let a = ', '.50 + 2.50', ';']);
+
+      expect(out).to.deep.equal(['let a= ', '.50+2.50', ';']);
+    });
+  });
+
+  describe('minifyWgslTemplate, GLSL ES 3.00 (126, for round 137)', () => {
+    const SRC =
+      '\n  #version 300 es\n' +
+      'precision highp float; // default\n' +
+      '#define SCALE(x) ((x) * 2.0)\n' +
+      '#define ONE (1.0)\n' +
+      '/* a /* not nested */ out vec4 color;\n' +
+      'void main() {\n  color = vec4(SCALE(ONE));\n}\n';
+
+    it('keeps each directive on its own line, spacing inside it kept', () => {
+      const [out] = minifyWgslTemplate([SRC], 'fixture', 'glsl');
+
+      expect(out).to.equal(
+        '\n#version 300 es\n' +
+          'precision highp float;\n' +
+          '#define SCALE(x) ((x) * 2.)\n' +
+          '#define ONE (1.)\n' +
+          'out vec4 color;void main(){color=vec4(SCALE(ONE));} ',
+      );
+    });
+
+    it('CONTROL: under WGSL rules the same text is not valid GLSL', () => {
+      // WGSL's nested comments swallow the declaration after `/* a /*`,
+      // and its collapse joins the directives into one line
+      expect(() => minifyWgslTemplate([SRC], 'fixture', 'wgsl')).to.throw(
+        /unterminated WGSL block comment/,
+      );
+      const [flat] = minifyWgslTemplate(
+        [SRC.replace('/* a /* not nested */', '')],
+        'fixture',
+        'wgsl',
+      );
+
+      expect(flat).to.not.include('\n');
+    });
+
+    it('an interpolation inside a directive keeps the directive open', () => {
+      const out = minifyWgslTemplate(
+        ['#define N ', '\nfloat a[N];'],
+        'fixture',
+        'glsl',
+      );
+
+      expect(out).to.deep.equal(['#define N ', '\nfloat a[N];']);
+    });
+
+    it('throws on an interpolation inside a GLSL comment', () => {
+      expect(() =>
+        minifyWgslTemplate(['float a; // see ', '\n'], 'fixture', 'glsl'),
+      ).to.throw(/interpolation inside a WGSL comment/);
+    });
   });
 
   describe('transformWgslTags', () => {
@@ -207,6 +302,17 @@ describe('wgsl-minify (round 52)', () => {
       expect(out).to.not.include('// note');
     });
 
+    it('minifies a glsl-tagged literal under GLSL rules and drops the tag', () => {
+      const out = transformWgslTags(
+        'const S = glsl`#version 300 es\nprecision highp float;\n`;',
+        't.mts',
+      );
+
+      expect(out).to.equal(
+        'const S = `#version 300 es\nprecision highp float; `;',
+      );
+    });
+
     it('is the identity on a module with no tag', () => {
       const mod = 'export const x = 1;\n';
 
@@ -233,10 +339,12 @@ describe('wgsl-minify (round 52)', () => {
         });
       }
 
-      // the audit is only as good as its enumeration: the tag count is
-      // pinned so a scanner that silently stops matching fails here
-      // rather than reading as "all clean" over nothing
-      expect(literals).to.be.at.least(45);
+      // the audit is only as good as its enumeration: the file and tag
+      // counts are pinned so a scanner that silently stops matching fails
+      // here rather than reading as "all clean" over nothing
+      expect(WGSL_FILES).to.have.length.of.at.least(32);
+      expect(WGSL_FILES).to.include('src/algorithms/algo-gpu-cluster.mts');
+      expect(literals).to.be.at.least(110);
     });
 
     it('minification pays: at least a third of the tagged text is removed', () => {

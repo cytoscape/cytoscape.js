@@ -23,7 +23,9 @@ change.  So the round opens once these have landed, and not before:
   `docs/feature-direction.md` asks be defined once, and 77 is where that
   vocabulary is first written down outside WGSL;
 - **126** (shader minification), whose transform this round extends to
-  the GLSL literals;
+  the GLSL literals — **landed 2026-09-29**: `scripts/wgsl-minify.mjs`
+  already minifies a `glsl`-tagged literal under GLSL ES 3.00's lexical
+  rules (see item 8);
 - **item 31's trace tier** (the gesture traces, called "before the WebGL
   implementation") and **item 30's tier 2** (the degrade control), so
   both renderers are held to the same inventories from the first commit;
@@ -98,7 +100,16 @@ first, this round after.
    Firefox, Safari or Android — 0 there, with the stall-ratio fallback).
 8. **Shaders are hand-ported GLSL ES 3.00 twins**, family by family, in
    `src/render/gl/shaders/` mirroring `src/render/shaders/`, each literal
-   tagged for round 126's minifier.  A build-time WGSL→GLSL translator is
+   tagged for round 126's minifier.  Round 126 built that half: the
+   `glsl` tag is minified with block comments non-nesting and each
+   preprocessor line kept on its own line, spaces inside it kept
+   (specced in `test/modules/wgsl-minify.mjs`); the tag function itself
+   — an identity join like `src/gpu/wgsl.mts`'s — is this round's to
+   add with its first literal.  126.4's glslx direction did not survive
+   measurement: glslx 0.4.5 rejects uniform blocks, `switch` and
+   `uintBitsToFloat`, and renames a uniform struct's members even in
+   `internal-only` mode, which `getUniformLocation` reads by name.
+   Re-evaluate it only if the ported shaders avoid all four.  A build-time WGSL→GLSL translator is
    not taken: the WGSL reads storage buffers, which GLSL ES 3.00 does
    not have, so a translation would still need the data-layer rewrite
    by hand, and a new build tool needs a reason `AGENTS.md` rule 7 would

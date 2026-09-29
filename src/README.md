@@ -6702,11 +6702,42 @@ The rules a shader author needs:
   collapsed one-line text; error positions are less readable in
   `debug/`, which is the accepted price of testing what ships.
 
+**Round 126 (2026-09-29) measured the next step and took the parts that
+pay.**  A WGSL-aware minifier (identifier renaming, dead-code removal)
+needs a complete module; expanding each of the 23 complete shaders into
+one — the only form miniray or wgslender accept — duplicates the shared
+fragments this representation ships once, and the full minified bundle
+grew +49,960 bytes raw / +12,752 gzipped under the best configuration
+(wgslender 1.4.1 with its compression-friendly ordering; +61 KB / +36 KB
+under its defaults).  Renaming only function locals, fragments kept
+shared, cut the corpus 11% raw and *grew* it 10% gzipped.  So the
+round-52 representation stays, and gains:
+
+- **Float literals shortened** where the value cannot change — `1.0`
+  -> `1.`, `0.50` -> `.5`, `2.0e3` -> `2.e3`; integers, hex and any
+  number touching an interpolation are copied as written.  −1.1 KB raw
+  on the full minified bundle.
+- **Shader constants spliced at build time.**  `scripts/const-inline.mjs`
+  (above, the vocabularies) also replaces an interpolation that is one
+  identifier naming a module-level number — `${WG}`, `${SHAPE_SHIFT}u` —
+  with `String(value)`, exactly what the runtime join produced, so the
+  minifier sees text there and collapses around it.  324 sites in the
+  full build.  `test/modules/const-inline.mjs` evaluates every inlined
+  shader module and compares its exported strings with the original's.
+- **A `glsl` tag**, minified under GLSL ES 3.00's lexical rules (block
+  comments do not nest; a preprocessor line keeps its newline and its
+  inner spaces), ready for the WebGL2 renderer (round 137).  glslx,
+  which round 126's plan named for that renderer, rejects uniform
+  blocks, `switch` and `uintBitsToFloat` and renames uniform-struct
+  members, so it was not taken.
+
 Verification is layered (`test/modules/wgsl-minify.mjs`): unit specs pin
 the contract with the plan's own control (a transform that does *not*
 treat `${}` as opaque must mangle the fixture, and does); a token-stream
-audit runs all 49 tagged literals through an independent tokenizer and
-requires the identical WGSL token sequence after minification; a bundle
+audit runs all 110 tagged literals — the 32 files found by scanning the
+tree, where a hand-kept list had covered 15 until round 126 — through
+an independent tokenizer and requires the identical WGSL token sequence
+after minification (a float compared by value); a bundle
 spec asserts the built outputs carry the shaders comment-free and
 tag-free; and the `visual` project's exact goldens (round 57.1e — zero
 differing pixels) plus the live parity scenes are the gate that the

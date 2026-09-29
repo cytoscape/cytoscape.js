@@ -7070,6 +7070,52 @@ storage binding), emit `gpuerror` from its own allocation checks
 ledger with the same labels so the soak runs unchanged, and degrade in
 the same order.
 
+### The record ref's reach (round 145)
+
+`node.chartRef` and `node.imageRef` pack `offset | count << 24`, so they
+address the first 2^24 floats of their pool (`REF_OFFSET_FLOATS`, 64
+MiB).  Until round 145 nothing checked it: a record appended past that
+ORed its offset's high bits into the count, and both readback and the
+draw read a wrong-length record from the wrong place.  Item 73's
+measurement found it; at the style layer's caps it is reached by the
+305,042nd node charted with 16 slices, or the 349,527th with four
+images, both well inside the 16,776,960-slot ceiling.  The packing is
+unchanged (item 73's sitting decides it); the guard, following round
+138's rule that charts and images degrade rather than refuse:
+
+- **The store never corrupts a ref.**  `packRecordRef` saturates an
+  unaddressable offset at `0xffffff` and keeps the count exact, so a
+  compaction's relocation — which reads the count back out of the ref —
+  writes an exact ref once the record moves back under the reach.
+  Readback (`chartAt`, `nodeImagesAt`, so `style('chart-values')` and
+  `style('background-image')`) takes the offset from the pool's own
+  table, and is exact on either side of the boundary, headless included.
+- **The renderer degrades the feature.**  Once the chart or image pool's
+  used length passes 2^24 floats, the mirror stands a placeholder in, as
+  for a pool past the binding, and the renderer stops drawing that
+  feature for its life with one `gpuerror` (`kind: 'unfit'`, the blob's
+  label, `degraded: 'charts'` or `'images'`, a message naming the 24-bit
+  reach).  No saturated ref is ever drawn.  The check is conservative by
+  at most one record (the one straddling the boundary is still
+  addressable).  The worker host runs the same mirror, so the same rule
+  holds there; its demand meter skips degraded images, since the
+  worker's pool mirror decodes from the ref's field.
+- **Why degrade, not refuse:** round 138's pre-flight holds only the
+  columns a group cannot draw without, and charts and images are the
+  degradation order's second step — `cy.add()` refusing a graph because
+  its pies no longer fit would be the throw-over-a-feature round 138
+  declined.
+- **Not guarded: the custom-polygon pool**, whose ref in
+  `node.borderGeom[0]` has the same packing.  A polygon is the node's
+  shape, not a feature it can draw without, so it has no degradation
+  step; it is reached at ~1M nodes with 8-point custom polygons.
+  Recorded in round 145 as a follow-up.
+
+Specs: `test/record-ref.mjs` at the real boundary (the store, the
+mirror, and both through the public API) and `limits.spec.js`'s "record
+ref's reach" block on both hosts, which draws two pies just inside the
+reach and none once one record is past it.
+
 ## First-frame cost: deferred pipelines (round 53)
 
 The renderer builds its *feature* pipelines on the first frame that draws

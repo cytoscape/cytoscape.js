@@ -1,7 +1,12 @@
 // GraphStore's image, chart and polygon records and the renderer's
 // delta read (round 130 split).
 
-import { COL, CHART_HEADER } from '../../contract.mjs';
+import {
+  COL,
+  CHART_HEADER,
+  REF_OFFSET_FLOATS,
+  REF_OFFSET_MASK,
+} from '../../contract.mjs';
 import type { StoreDelta } from '../../contract.mjs';
 import { IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../../image-registry.mjs';
 import type { ImageRegistry } from '../../image-registry.mjs';
@@ -12,6 +17,28 @@ import type {
   NodeImageRecord,
   GraphStore,
 } from '../graph-store.mjs';
+
+/**
+ * Pack a chart or image record ref, `offset | count << 24` (round 145).
+ * An offset past the field's reach (`REF_OFFSET_FLOATS`) saturates at
+ * `REF_OFFSET_MASK` rather than spilling into the count — before, it
+ * ORed its high bits into the count, so readback and the draw read a
+ * wrong-length record from the wrong place.  The count stays exact (a
+ * compaction's relocation reads it back out of the ref); readback takes
+ * the offset from the pool's own table; and the renderer degrades the
+ * feature while the pool is past the reach, so a saturated ref is never
+ * drawn.  No record can legitimately sit at the saturated offset: every
+ * chart and image record is longer than one float.
+ *
+ * @param offset — the record's offset in its pool, in floats
+ * @param count — slices or images, 1..255
+ * @returns the ref word
+ */
+export function packRecordRef(offset: number, count: number): number {
+  const field = offset < REF_OFFSET_FLOATS ? offset : REF_OFFSET_MASK;
+
+  return (field | (count << 24)) >>> 0;
+}
 
 /**
  * Store a node's background-image records (round 15.2), or null to
@@ -51,7 +78,7 @@ export function setNodeImages(
 
   if (oldRef !== 0) {
     const pool = gs.imagePool.data();
-    const off = oldRef & 0xffffff;
+    const off = gs.imagePool.offsetOf(slot);
     const count = oldRef >>> 24;
 
     for (let i = 0; i < count; i++) {
@@ -102,7 +129,7 @@ export function setNodeImages(
     }
 
     const offset = gs.imagePool.write(slot, values);
-    const ref = (offset | (specs.length << 24)) >>> 0;
+    const ref = packRecordRef(offset, specs.length);
 
     if (refs[slot] !== ref) {
       refs[slot] = ref;
@@ -182,7 +209,7 @@ export function setChart(
   }
 
   const offset = gs.chartPool.write(slot, record);
-  const ref = (offset | (n << 24)) >>> 0;
+  const ref = packRecordRef(offset, n);
 
   if (refs[slot] !== ref) {
     refs[slot] = ref;
@@ -213,7 +240,9 @@ export function chartAt(
   }
 
   const pool = gs.chartPool.data();
-  const off = ref & 0xffffff;
+  // the pool's own offset, not the ref's field: exact past the ref's
+  // reach too (round 145)
+  const off = gs.chartPool.offsetOf(slot);
   const n = ref >>> 24;
   const values: number[] = [];
   const colors: [number, number, number, number][] = [];
@@ -255,6 +284,7 @@ export function nodeImagesAt(
     (gs.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot],
     gs.imagePool.data(),
     gs.images,
+    gs.imagePool.offsetOf(slot),
   );
 }
 
@@ -266,18 +296,23 @@ export function nodeImagesAt(
  * @param ref — the node's `NODE_IMAGE_REF` (offset | count << 24), 0 for none
  * @param pool — the image record pool
  * @param registry — resolves entry ids to urls
+ * @param offset — the record's offset from the pool's own table, when
+ *   the caller has it (the canonical store: exact past the ref's 24-bit
+ *   reach, round 145); omitted, the ref's field (the worker's mirror,
+ *   whose renderer degrades images before a saturated ref matters)
  * @returns the records in paint order, or null when imageless
  */
 export function decodeNodeImages(
   ref: number,
   pool: Float32Array,
   registry: ImageRegistry,
+  offset?: number,
 ): NodeImageRecord[] | null {
   if (ref === 0) {
     return null;
   }
 
-  const off = ref & 0xffffff;
+  const off = offset ?? ref & REF_OFFSET_MASK;
   const count = ref >>> 24;
   const out: NodeImageRecord[] = [];
 

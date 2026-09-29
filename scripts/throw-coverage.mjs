@@ -91,7 +91,7 @@ export const UNREACHABLE = {
     'constructs the Renderer synchronously, whose ctor calls init() ' +
     'whose first statement reads navigator.gpu again — nothing can run ' +
     'between the two, so no caller can pass one and fail the other',
-  'src/render/column-mirror.mts:280':
+  'src/render/column-mirror.mts:299':
     'column spec/group mismatch — an internal invariant; every caller ' +
     'passes a ColumnId the mirror was built from, and no public input ' +
     'chooses the id',

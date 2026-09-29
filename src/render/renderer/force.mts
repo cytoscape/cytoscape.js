@@ -98,7 +98,10 @@ export function promoteVectors(
 ): void {
   const store = rd.store;
 
-  if (store.imageCount() === 0) {
+  // round 145: nothing draws images once they degrade — and a worker
+  // host's mirror decodes a ref past its 24-bit reach from the
+  // saturated field, so it must not be read for demand either
+  if (store.imageCount() === 0 || rd.degraded.has('images')) {
     return;
   }
 

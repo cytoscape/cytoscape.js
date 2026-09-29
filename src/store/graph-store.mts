@@ -488,18 +488,17 @@ export class GraphStore implements ModelView {
     // 15.2: the image-record pool; a relocation rewrites node.imageRef
     this.imagePool = new CurveBlob((slot, offset) => {
       const refs = this.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array;
-      const count = refs[slot] >>> 24;
 
-      refs[slot] = (offset | (count << 24)) >>> 0;
+      // the count field is exact even past the ref's reach (round 145)
+      refs[slot] = imagesImpl.packRecordRef(offset, refs[slot] >>> 24);
       this.dirty.mark(COL.NODE_IMAGE_REF, slot);
     });
 
     // round 23: the chart-record pool; a relocation rewrites node.chartRef
     this.chartPool = new CurveBlob((slot, offset) => {
       const refs = this.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
-      const n = refs[slot] >>> 24;
 
-      refs[slot] = (offset | (n << 24)) >>> 0;
+      refs[slot] = imagesImpl.packRecordRef(offset, refs[slot] >>> 24);
       this.dirty.mark(COL.NODE_CHART_REF, slot);
     });
 

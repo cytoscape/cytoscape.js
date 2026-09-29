@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { decodePng } from './lib/image-diff.mjs';
 
 /*
 Device limits and allocation failure (round 138, PLAN.md items 35–36),
@@ -571,3 +572,216 @@ test.describe('the worker host reports its device too (round 138)', () => {
     expect(out.liveBytes).toBeGreaterThan(0);
   });
 });
+
+/*
+Round 145: the record ref's reach.  `node.chartRef`/`node.imageRef`
+pack `offset | count << 24`; a pool past 2^24 floats cannot be
+referenced, so the feature degrades like a declined allocation (round
+138's order).  The real boundary, no instrument: records of 254 values
+(769 floats) put the 21,818th charted node past it, 254 images (3,048
+floats) the 5,506th imaged node.  The records are written through the
+store's own writers (the style layer caps at 16 slices and 4 images,
+which would take 305k nodes); everything but two nodes sits off-screen.
+*/
+
+const REF_FLOATS = 2 ** 24;
+const CHART_FLOATS = 7 + 254 * 3;
+const IMAGE_FLOATS = 254 * 12;
+
+/** Nodes `from`..`to` - 1 off-screen, with a 254-value red pie each. */
+const addCharts = (page, from, to) =>
+  page.evaluate(
+    ({ from, to }) => {
+      const cy = window.cy;
+      const els = [];
+
+      for (let i = from; i < to; i++) {
+        els.push({ data: { id: 'n' + i }, position: { x: 1e5, y: i } });
+      }
+
+      cy.add(els);
+
+      const rec = {
+        kind: 1,
+        size: 1,
+        hole: 0,
+        startAngle: 0,
+        direction: 0,
+        opacity: 1,
+        values: new Array(254).fill(1 / 254),
+        colors: new Array(254).fill([255, 0, 0, 255]),
+      };
+
+      for (let i = from; i < to; i++) {
+        cy._store.setChart(cy._store.lookup('n' + i).slot, rec);
+      }
+    },
+    { from, to },
+  );
+
+/** Pixels of the export that are the pies' red. */
+const redPixels = async (page) => {
+  const png = decodePng(await page.evaluate(() => window.cy.png()));
+  let red = 0;
+
+  for (let i = 0; i < png.data.length; i += 4) {
+    if (png.data[i] > 200 && png.data[i + 1] < 60 && png.data[i + 2] < 60) {
+      red++;
+    }
+  }
+
+  return red;
+};
+
+for (const worker of [false, true]) {
+  const host = worker ? 'the worker host' : 'the main-thread host';
+
+  test.describe(`the record ref's reach, ${host} (round 145)`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto(PAGE);
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      if (worker) {
+        const supported = await page.evaluate(
+          () =>
+            typeof OffscreenCanvas !== 'undefined' &&
+            HTMLCanvasElement.prototype.transferControlToOffscreen != null,
+        );
+
+        test.skip(!supported, 'no OffscreenCanvas workers here');
+      }
+    });
+
+    test('a chart pool past 2^24 floats degrades charts: reported once, no chart drawn', async ({
+      page,
+    }) => {
+      test.setTimeout(120_000);
+
+      // the last node inside the reach and the first past it
+      const inside = Math.floor(REF_FLOATS / CHART_FLOATS);
+
+      expect(inside * CHART_FLOATS).toBeLessThanOrEqual(REF_FLOATS);
+
+      await page.evaluate(async (worker) => {
+        window.__gpuerrors = [];
+
+        const cy = window.makeCy({
+          elements: [],
+          style: { nodes: { width: 40, height: 40 } },
+          ...(worker ? { renderer: { worker: true } } : {}),
+        });
+
+        cy.on('gpuerror', (e, info) => window.__gpuerrors.push(info));
+        await cy.ready;
+        cy.zoom(1);
+        cy.pan({ x: 100, y: 100 });
+      }, worker);
+
+      await addCharts(page, 0, inside);
+      // two on screen: the first record, and the last inside the reach
+      await page.evaluate((last) => {
+        window.cy.$id('n0').position({ x: 0, y: 0 });
+        window.cy.$id('n' + last).position({ x: 60, y: 0 });
+      }, inside - 1);
+      await drawFrames(page, 5);
+
+      const before = await redPixels(page);
+      const quiet = await page.evaluate(() => window.__gpuerrors);
+
+      // the control inside the spec: at the reach, both pies draw
+      expect(quiet).toEqual([]);
+      expect(before).toBeGreaterThan(1000);
+
+      // one record more, and the next is past the reach
+      await addCharts(page, inside, inside + 2);
+      await page.evaluate((n) => {
+        window.cy.$id('n' + n).position({ x: 120, y: 0 });
+      }, inside + 1);
+      await drawFrames(page, 10);
+
+      const after = await redPixels(page);
+      const errors = await page.evaluate(() => window.__gpuerrors);
+
+      expect(errors.map((e) => [e.kind, e.label, e.degraded])).toEqual([
+        ['unfit', 'cy-gpu:chart-blob', 'charts'],
+      ]);
+      expect(errors[0].message).toMatch(/past the 16777216 floats .* 24-bit/);
+      // nothing draws a ref the field could not hold
+      expect(after).toBe(0);
+
+      if (!worker) {
+        const s = await stats(page);
+
+        expect(s.degraded).toEqual(['charts']);
+        expect(s.errors).toBe(0);
+      }
+    });
+
+    test('an image pool past 2^24 floats degrades images, once', async ({
+      page,
+    }) => {
+      test.setTimeout(120_000);
+
+      const n = Math.floor(REF_FLOATS / IMAGE_FLOATS) + 2;
+
+      await page.evaluate(
+        async ({ worker, n }) => {
+          window.__gpuerrors = [];
+
+          const els = [];
+
+          for (let i = 0; i < n; i++) {
+            els.push({ data: { id: 'n' + i }, position: { x: 1e5, y: i } });
+          }
+
+          const cy = window.makeCy({
+            elements: els,
+            ...(worker ? { renderer: { worker: true } } : {}),
+          });
+
+          cy.on('gpuerror', (e, info) => window.__gpuerrors.push(info));
+          await cy.ready;
+
+          const spec = {
+            url:
+              'data:image/png;base64,' +
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8Dw' +
+              'HwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+            sdf: false,
+            crossOrigin: 'anonymous',
+            fit: 0,
+            repeat: 0,
+            clip: 0,
+            containment: 0,
+            smoothing: true,
+            opacity: 1,
+            posX: { v: 50, pct: true },
+            posY: { v: 50, pct: true },
+            offX: { v: 0, pct: false },
+            offY: { v: 0, pct: false },
+            w: { mode: 0, v: 0 },
+            h: { mode: 0, v: 0 },
+            tint: [0, 0, 0, 0],
+          };
+          const specs = new Array(254).fill(spec);
+
+          for (let i = 0; i < n; i++) {
+            cy._store.setNodeImages(cy._store.lookup('n' + i).slot, specs);
+          }
+        },
+        { worker, n },
+      );
+      await drawFrames(page, 10);
+
+      const errors = await page.evaluate(() => window.__gpuerrors);
+
+      expect(errors.map((e) => [e.kind, e.label, e.degraded])).toEqual([
+        ['unfit', 'cy-gpu:image-blob', 'images'],
+      ]);
+
+      if (!worker) {
+        expect((await stats(page)).degraded).toEqual(['images']);
+      }
+    });
+  });
+}

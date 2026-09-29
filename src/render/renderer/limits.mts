@@ -4,7 +4,11 @@
 // does not fit the device or the device refuses it.
 
 import { GpuUnfitError } from '../../algorithms/gpu-registry.mjs';
-import { GROUP_EDGES, GROUP_NODES } from '../../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  REF_OFFSET_FLOATS,
+} from '../../contract.mjs';
 import type { GroupName } from '../../contract.mjs';
 import {
   bindableBytes,
@@ -180,16 +184,19 @@ export function onGpuError(rd: Renderer, info: GpuErrorInfo): void {
 
 /**
  * The mirror declined a blob or a gradient column as larger than the
- * device can bind: degrade its feature.
+ * device can bind — or, round 145, a chart or image pool as past what a
+ * node's 24-bit record ref can address: degrade its feature.
  *
  * @param rd — the renderer
  * @param label — the declined buffer's label
  * @param bytes — what it would have needed
+ * @param floats — set for the ref's reach: the pool's used floats
  */
 export function onMirrorUnfit(
   rd: Renderer,
   label: string,
   bytes: number,
+  floats?: number,
 ): void {
   const limit = rd.device == null ? 0 : bindableBytes(readLimits(rd.device));
 
@@ -198,8 +205,12 @@ export function onMirrorUnfit(
     label,
     bytes,
     message:
-      `${label}: a ${bytes}-byte buffer would exceed this device's ` +
-      `${limit}-byte binding limit`,
+      floats != null
+        ? `${label}: a ${floats}-float record pool is past the ` +
+          `${REF_OFFSET_FLOATS} floats a node's 24-bit record ref can ` +
+          `address`
+        : `${label}: a ${bytes}-byte buffer would exceed this device's ` +
+          `${limit}-byte binding limit`,
   });
 }
 

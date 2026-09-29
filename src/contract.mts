@@ -326,6 +326,18 @@ export const CHART_STRIPES = 2;
 export const CHART_HEADER = 7;
 /** slice cap (v3's numbered-prop N; longer value lists truncate) */
 export const CHART_MAX_SLICES = 16;
+/**
+ * Floats a record ref's 24-bit offset field can address (round 145):
+ * `node.chartRef` and `node.imageRef` pack `offset | count << 24`, so a
+ * record at or past this offset cannot be referenced.  The store never
+ * lets such an offset reach the count field, and the renderer degrades
+ * the feature (charts, images) while its pool is past this — round
+ * 138's order.  The packing itself is PLAN.md item 73's call.
+ */
+export const REF_OFFSET_FLOATS = 0x1000000;
+/** The largest offset the field holds (the saturated value a ref past
+ * the reach carries). */
+export const REF_OFFSET_MASK = 0xffffff;
 
 // -- edge curve kinds (rounds 12a/12b; stored in edge.curveParams[3]) --
 
@@ -655,6 +667,7 @@ export const COL = {
    * setNodeImages): registry entry id, packed mode flags, opacity,
    * position/offset/size values with unit bits, and the sdf tint.
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
+   * An offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */
   NODE_IMAGE_REF: 'node.imageRef',
   /**
@@ -662,7 +675,8 @@ export const COL = {
    * chart blob | slice count << 24 (0 = no chart).  The record is
    * CHART_HEADER floats (kind, size, hole, startAngle, direction,
    * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
-   * paint, like images: nothing in bb, cull-extent or CPU-pick.
+   * paint, like images: nothing in bb, cull-extent or CPU-pick.  An
+   * offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */
   NODE_CHART_REF: 'node.chartRef',
   EDGE_ENDPOINTS: 'edge.endpoints', // Uint32Array(2·cap), source,target node *slots*

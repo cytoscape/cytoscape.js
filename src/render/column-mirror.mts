@@ -3,6 +3,7 @@ import {
   GROUP_NODES,
   COL,
   COLUMN_SPECS,
+  REF_OFFSET_FLOATS,
   columnSpec,
 } from '../contract.mjs';
 import type {
@@ -41,9 +42,21 @@ Round 138 (PLAN.md item 36, the degradation order's third step):
   (the device's bindable size), a blob (curve, image, chart) or a
   gradient column that would outgrow it is replaced by a placeholder and
   reported through `onUnfit`; its later spans are skipped.  The poly
-  blob holds one entry per distinct custom polygon, not per element, and
-  is not gated.  The group columns proper never reach this: the model
-  refuses the add first (`core/gpu-fit.mts`).
+  blob is not gated: a custom polygon is the node's shape, with nothing
+  to degrade to.  (It holds one record per polygon-shaped node — round
+  145 corrected an older note here that said per distinct polygon.)
+  The group columns proper never reach this: the model refuses the add
+  first (`core/gpu-fit.mts`).
+- **A chart or image pool past the record ref's reach is declined the
+  same way** (round 145).  `node.chartRef` and `node.imageRef` pack
+  `offset | count << 24`, so a record past 2^24 floats
+  (`REF_OFFSET_FLOATS`) cannot be referenced: the store saturates its
+  offset field, and the mirror, once the pool's used length passes the
+  reach, stands the placeholder in and reports it with `floats` — the
+  feature degrades rather than drawing a record from the wrong place.
+  Conservative by at most one record (the one straddling the boundary is
+  still addressable).  The check runs wherever the length can move —
+  a resize and a span.
 */
 
 /** The subset of GPUDevice the mirror needs (kept narrow for mock-based unit tests). */
@@ -74,6 +87,9 @@ export interface MirrorUnfit {
   label: string;
   /** the bytes it would have needed */
   bytes: number;
+  /** set when the pool is past the record ref's 24-bit reach rather
+   * than the binding (round 145): its used length, in floats */
+  floats?: number;
 }
 
 /** Limits and callbacks the renderer hands the mirror (round 138). */
@@ -112,6 +128,9 @@ const anyGradient = (
 };
 
 const BLOB_KINDS: readonly BlobKind[] = ['curve', 'poly', 'image', 'chart'];
+
+/** The blobs whose records a node ref addresses in 24 bits (round 145). */
+const REF_KINDS: ReadonlySet<BlobKind> = new Set(['image', 'chart']);
 
 export class ColumnMirror {
   /** bumps whenever buffers are reallocated ⇒ bind groups must be rebuilt */
@@ -450,6 +469,10 @@ export class ColumnMirror {
         continue; // a placeholder: nothing past its one word to write
       }
 
+      if (this.pastRefReach(kind)) {
+        continue;
+      }
+
       const data = this.blobData(kind);
       const byteStart = span.start * 4;
       const byteLength = (span.end - span.start) * 4;
@@ -534,6 +557,49 @@ export class ColumnMirror {
           : this.view.chartBlob();
   }
 
+  /** A blob's used length in floats. */
+  private blobLength(kind: BlobKind): number {
+    return kind === 'curve'
+      ? this.view.curveBlobLength()
+      : kind === 'poly'
+        ? this.view.polyBlobLength()
+        : kind === 'image'
+          ? this.view.imageBlobLength()
+          : this.view.chartBlobLength();
+  }
+
+  /**
+   * Round 145: a chart or image pool whose used length is past what the
+   * ref's 24-bit offset addresses is declined — a placeholder stands in
+   * and the renderer degrades the feature, once.
+   *
+   * @returns true when the blob is (now) declined
+   */
+  private pastRefReach(kind: BlobKind): boolean {
+    const label = blobLabel(kind);
+
+    if (this.unfit.has(label)) {
+      return true;
+    }
+
+    const floats = this.blobLength(kind);
+
+    if (!REF_KINDS.has(kind) || floats <= REF_OFFSET_FLOATS) {
+      return false;
+    }
+
+    this.unfit.add(label);
+    this.replaceBlob(kind, this.placeholder(label, 4));
+    this.version++;
+    this.onUnfit?.({
+      label,
+      bytes: this.blobData(kind).byteLength,
+      floats,
+    });
+
+    return true;
+  }
+
   /** A small zeroed buffer standing in for one that does not exist. */
   private placeholder(label: string, bytes: number): GPUBuffer {
     return this.device.createBuffer({
@@ -586,6 +652,10 @@ export class ColumnMirror {
     }
 
     this.unfit.delete(label);
+
+    if (this.pastRefReach(kind)) {
+      return;
+    }
 
     const buffer = this.device.createBuffer({
       label,

@@ -4,6 +4,7 @@
 //   npm run build
 //   node --expose-gc benchmark/progressive.mjs                 # ndex-x-large, k = 1..100
 //   node --expose-gc benchmark/progressive.mjs --k 10 --repeat 5
+//   node --expose-gc benchmark/progressive.mjs --section load  # the cy.load() rows only
 //   node --expose-gc benchmark/progressive.mjs --src           # through src/ (tsx)
 //
 // The fixture is ndex-x-large (19,607 nodes / 464,657 edges, preset
@@ -63,6 +64,8 @@ const REPEAT = Number(opt('--repeat', 3));
 const KS = opt('--k', '2,5,10,20,50,100').split(',').map(Number);
 const FROM_SRC = args.includes('--src');
 const ONLY = opt('--only', null);
+// 'baseline' (103.1's zero-format rows), 'load' (cy.load(), 103.3), or both
+const SECTION = opt('--section', 'all');
 const bundle = resolve(ROOT, 'build/cytoscape-headless.esm.mjs');
 
 if (!FROM_SRC && !existsSync(bundle)) {
@@ -274,7 +277,7 @@ console.log(
 );
 
 const rows = [];
-const run = (name, fn) => {
+const run = async (name, fn) => {
   if (ONLY != null && !name.includes(ONLY)) {
     return;
   }
@@ -282,7 +285,7 @@ const run = (name, fn) => {
   const samples = [];
 
   for (let r = 0; r < REPEAT; r++) {
-    const res = fn();
+    const res = await fn();
 
     check(res.cy, name);
     res.cy.destroy();
@@ -312,28 +315,88 @@ const run = (name, fn) => {
   );
 };
 
-run('monolithic (defs)', () => monolithic('defs'));
-run('monolithic (wire)', () => monolithic('wire'));
+/**
+ * 103.3: the same chunks through `cy.load()`.  `form` is 'defs' (each
+ * chunk its nodes, internal and cut edges as definitions — the load
+ * converts them with node references) or 'wire' (each chunk serialized
+ * with its cut edges as `refs`, built app-side before the timed region,
+ * as a server would).  `first` is the first `loadchunk`, the headless
+ * stand-in for the first frame; `total` is the promise.
+ */
+async function progressiveLoad(chunks, form) {
+  const payloads = chunks.map((c) => {
+    const defs = {
+      nodes: c.nodes.map(cloneDef),
+      edges: [...c.internal, ...c.cut].map(cloneDef),
+    };
 
-for (const k of KS) {
+    return form === 'wire'
+      ? cytoscape.serializeElements(
+          cytoscape.toColumnarElements(defs, { refs: true }),
+        )
+      : defs;
+  });
+
+  gc?.();
+
+  const t0 = now();
+  const cy = cytoscape({ style: STYLE });
+  let first = null;
+
+  cy.one('loadchunk', () => {
+    first = now() - t0;
+  });
+  await cy.load(payloads);
+  cy._store.flushDerived();
+
+  return { cy, first, total: now() - t0 };
+}
+
+if (SECTION !== 'load' || ONLY != null) {
+  await run('monolithic (defs)', () => monolithic('defs'));
+  await run('monolithic (wire)', () => monolithic('wire'));
+}
+
+for (const k of SECTION === 'load' ? [] : KS) {
   const vc = vertexClosed(k);
   const cutCount = vc.reduce((n, c) => n + c.cut.length, 0);
 
-  run(`vertex-closed k=${k}, defs`, () => ({
+  await run(`vertex-closed k=${k}, defs`, () => ({
     ...chunkedLoad(vc, 'defs'),
     cut: cutCount,
   }));
-  run(`vertex-closed k=${k}, columnar + cut defs`, () => ({
+  await run(`vertex-closed k=${k}, columnar + cut defs`, () => ({
     ...chunkedLoad(vc, 'columnar'),
     cut: cutCount,
   }));
 
   const nf = nodesFirst(k);
 
-  run(`nodes first k=${k}, edge defs`, () => ({
+  await run(`nodes first k=${k}, edge defs`, () => ({
     ...chunkedLoad(nf, 'defs'),
     cut: EDGES.length,
   }));
+}
+
+if (typeof cytoscape({}).load !== 'function') {
+  console.log('\n(this bundle has no cy.load() — the 103.3 rows are skipped)');
+} else {
+  for (const k of SECTION === 'baseline' ? [] : [1, ...KS]) {
+    const vc = vertexClosed(k);
+    const nf = nodesFirst(k);
+
+    await run(`cy.load() k=${k}, vertex-closed defs`, () =>
+      progressiveLoad(vc, 'defs'),
+    );
+    await run(`cy.load() k=${k}, vertex-closed wire + refs`, () =>
+      progressiveLoad(vc, 'wire'),
+    );
+    if (k > 1) {
+      await run(`cy.load() k=${k}, nodes first wire + refs`, () =>
+        progressiveLoad(nf, 'wire'),
+      );
+    }
+  }
 }
 
 const base = rows.find((r) => r.name === 'monolithic (defs)')?.total;

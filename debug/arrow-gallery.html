@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <!--
+    The arrow-head gallery (PLAN.md item 72, prepared 2026-09-29 for the
+    arrow-shape sitting): every head v4 draws, v3's canvas renderer beside
+    v4's WebGPU renderer on the same model, at three edge widths and two
+    arrow-scales, with source, mid-target and target heads on each edge.
+
+    Needs both UMD bundles: `npm run build` (v4) and `cd v3 && npm run
+    build:umd` (or any v3 build that writes v3/build/cytoscape.umd.js).
+    Served by `npm run watch` at http://localhost:3333/debug/arrow-gallery.html.
+
+    Both UMD bundles export the global `cytoscape`, so v3's is captured under
+    its own name before v4's script overwrites it — as playwright-page/
+    parity.html does.
+    -->
+    <script src="../v3/build/cytoscape.umd.js"></script>
+    <script>window.cytoscapeV3 = window.cytoscape;</script>
+    <script src="../build/cytoscape.umd.js"></script>
+
+    <style>
+      body { font: 13px helvetica, arial, sans-serif; margin: 0; }
+      #bar { position: absolute; left: 0; right: 0; top: 0; height: 64px; padding: 4px 8px; box-sizing: border-box; background: #eee; border-bottom: 1px solid #bbb; line-height: 1.6; }
+      #bar label { margin-right: 1em; white-space: nowrap; }
+      #bar .note { color: #555; font-size: 12px; }
+      .pane { position: absolute; top: 64px; bottom: 0; background: white; }
+      .pane .tag { position: absolute; left: 6px; top: 4px; z-index: 2; font: bold 12px monospace; background: rgba(255, 255, 255, 0.85); padding: 1px 4px; pointer-events: none; }
+      .pane .cy { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+      .side #p3 { left: 0; width: calc(50% - 1px); }
+      .side #p4 { left: calc(50% + 1px); right: 0; }
+      .stack #p3 { left: 0; right: 0; bottom: calc(50% - 31px); }
+      .stack #p4 { left: 0; right: 0; top: calc(50% + 33px); }
+      #divider { position: absolute; background: #888; }
+      .side #divider { top: 64px; bottom: 0; left: calc(50% - 1px); width: 2px; }
+      .stack #divider { left: 0; right: 0; top: calc(50% + 31px); height: 2px; }
+    </style>
+
+    <title>Cytoscape.js — arrow-head gallery, v3 beside v4</title>
+  </head>
+
+  <body class="side">
+    <div id="bar">
+      <label>Focus
+        <select id="focus"></select>
+      </label>
+      <label>Ends
+        <select id="fill">
+          <option value="filled">filled</option>
+          <option value="hollow">hollow (source + target; mid stays filled)</option>
+        </select>
+      </label>
+      <label>Line opacity
+        <select id="line-opacity">
+          <option value="1">1</option>
+          <option value="0.5">0.5 (shows the line under the head)</option>
+        </select>
+      </label>
+      <label>Head colour
+        <select id="head-colour">
+          <option value="contrast">contrasting</option>
+          <option value="same">same as the line</option>
+        </select>
+      </label>
+      <label>Layout
+        <select id="layout">
+          <option value="side">side by side</option>
+          <option value="stack">stacked</option>
+        </select>
+      </label>
+      <a href="index.html">back to the harness</a>
+      <br/>
+      <span class="note">Columns: edge width × arrow-scale.  Each edge carries a source, a mid-target and a
+        target head of the row's shape.  Pan and zoom are synced; scroll to zoom.  The translucent red
+        bar just past each tee-like target head is exactly the edge's width: compare the head's bar with it.</span>
+    </div>
+
+    <div id="p3" class="pane"><div class="tag">v3 (canvas)</div><div id="cy3" class="cy"></div></div>
+    <div id="divider"></div>
+    <div id="p4" class="pane"><div class="tag">v4 (WebGPU)</div><div id="cy4" class="cy"></div></div>
+
+    <script>
+      (function(){
+        // Rows are ordered so the near-duplicates sit next to each other.
+        var SHAPES = [
+          'triangle', 'triangle-backcurve', 'vee', 'chevron',
+          'triangle-tee', 'triangle-cross', 'tee', 'square',
+          'diamond', 'circle', 'circle-triangle'
+        ];
+        var WIDTHS = [ 1, 4, 12 ];
+        var SCALES = [ 1, 2 ];
+
+        // v3's arrow size (edge-arrows.mts getArrowWidth): both renderers
+        // size every head from it, so it sets the cell geometry
+        var arrowSize = function( w, s ){
+          return Math.max( Math.pow( w * 13.37, 0.9 ), 29 ) * s;
+        };
+
+        var COLS = [];
+        SCALES.forEach(function( s ){
+          WIDTHS.forEach(function( w ){
+            COLS.push({ w: w, s: s, size: arrowSize( w, s ) });
+          });
+        });
+
+        var LABEL_W = 170;
+        var HEADER_H = 60;
+        var ROW_H = Math.ceil( 0.36 * COLS.reduce(function( m, c ){ return Math.max( m, c.size ); }, 0 ) ) + 40;
+
+        var x = LABEL_W;
+        COLS.forEach(function( c, i ){
+          c.i = i;
+          c.x = x;
+          c.cellW = Math.round( 140 + 2.4 * c.size );
+          x += c.cellW;
+        });
+
+        // one model, two spellings: v3 styles by class selectors, v4 (which
+        // has no classes and no selector strings) reads every per-element
+        // value through `{ data }` passthroughs, so every node carries them
+        var node = function( id, pos, row, col, d ){
+          return { group: 'nodes', position: pos, data: Object.assign( {
+            id: id, row: row, col: col, label: '', w: 12, h: 12,
+            bg: '#c9ccd1', bo: 1, halign: 'center'
+          }, d ) };
+        };
+
+        var elements = function(){
+          var els = [];
+
+          COLS.forEach(function( c ){
+            els.push( node( 'h' + c.i, { x: c.x + c.cellW / 2, y: HEADER_H / 2 }, -1, c.i,
+              { label: 'width ' + c.w + ' · scale ' + c.s, w: 1, h: 1, bo: 0 } ) );
+          });
+
+          SHAPES.forEach(function( shape, r ){
+            var y = HEADER_H + r * ROW_H + ROW_H / 2;
+
+            els.push( node( 'r' + r, { x: 10, y: y }, r, -1,
+              { label: shape, w: 1, h: 1, bo: 0, halign: 'right' } ) );
+
+            COLS.forEach(function( c ){
+              var id = 'e' + r + '_' + c.i;
+
+              els.push( node( id + 's', { x: c.x + 24, y: y }, r, c.i ) );
+              els.push( node( id + 't', { x: c.x + c.cellW - 24, y: y }, r, c.i ) );
+              els.push({ group: 'edges', data: { id: id, source: id + 's', target: id + 't',
+                row: r, col: c.i, shape: shape, w: c.w, s: c.s } });
+
+              // the tee's question — is its bar as thick as the edge? — made
+              // visible: a translucent red bar exactly the edge's width and
+              // the head's lateral extent, just past the target node, so the
+              // head's bar and the guide stand side by side at one height
+              if( shape === 'tee' || shape === 'triangle-tee' || shape === 'triangle-cross' ){
+                els.push( node( id + 'g', { x: c.x + c.cellW - 24 + 6 + 4 + c.w / 2, y: y }, r, c.i,
+                  { w: c.w, h: Math.max( 0.3 * c.size, 6 ), bg: '#d9534f', bo: 0.6 } ) );
+              }
+            });
+          });
+
+          return els;
+        };
+
+        var edgeStyle = function( opts, data ){
+          var line = '#8a9099';
+          var head = opts.headColour === 'same' ? line : '#1d4f91';
+
+          return {
+            'curve-style': 'straight',
+            'width': data( 'w' ),
+            'arrow-scale': data( 's' ),
+            'line-color': line,
+            'line-opacity': opts.lineOpacity,
+            'source-arrow-shape': data( 'shape' ),
+            'target-arrow-shape': data( 'shape' ),
+            'mid-target-arrow-shape': data( 'shape' ),
+            'source-arrow-color': head,
+            'target-arrow-color': head,
+            'mid-target-arrow-color': head,
+            'source-arrow-fill': opts.fill,
+            'target-arrow-fill': opts.fill
+          };
+        };
+
+        var nodeStyle = function( data ){
+          return {
+            'shape': 'rectangle', 'border-width': 0,
+            'width': data( 'w' ), 'height': data( 'h' ),
+            'background-color': data( 'bg' ), 'background-opacity': data( 'bo' ),
+            'label': data( 'label' ), 'font-size': 14, 'color': '#222',
+            'text-valign': 'center', 'text-halign': data( 'halign' )
+          };
+        };
+
+        var sheet3 = function( opts ){
+          var data = function( k ){ return 'data(' + k + ')'; };
+
+          return [
+            { selector: 'node', style: nodeStyle( data ) },
+            { selector: 'edge', style: edgeStyle( opts, data ) }
+          ];
+        };
+
+        var sheet4 = function( opts ){
+          var data = function( k ){ return { data: k }; };
+
+          return { nodes: nodeStyle( data ), edges: edgeStyle( opts, data ) };
+        };
+
+        var opts = { fill: 'filled', lineOpacity: 1, headColour: 'contrast' };
+
+        var common = function( container, sheet ){
+          return {
+            container: container,
+            elements: elements(),
+            style: sheet( opts ),
+            layout: { name: 'preset' },
+            autoungrabify: true,
+            boxSelectionEnabled: false
+          };
+        };
+
+        var cy3 = window.cy3 = cytoscapeV3( common( document.getElementById( 'cy3' ), sheet3 ) );
+        var cy4 = window.cy4 = cytoscape( common( document.getElementById( 'cy4' ), sheet4 ) );
+
+        // the two panes share one viewport: either one drives the other
+        var syncing = false;
+        var follow = function( from, to ){
+          from.on( 'viewport', function(){
+            if( syncing ){ return; }
+
+            syncing = true;
+            to.viewport({ zoom: from.zoom(), pan: from.pan() });
+            syncing = false;
+          } );
+        };
+
+        follow( cy3, cy4 );
+        follow( cy4, cy3 );
+
+        // foci are predicates over (row, col) — v4 has no selector strings
+        var TT = SHAPES.indexOf( 'triangle-tee' );
+        var TEE = SHAPES.indexOf( 'tee' );
+        var FOCI = [ { key: 'all', label: 'everything', has: function(){ return true; } } ];
+
+        COLS.forEach(function( c ){
+          FOCI.push({ key: 'col-' + c.i, label: 'column: width ' + c.w + ' · scale ' + c.s,
+            has: function( r, k ){ return k === c.i; } });
+        });
+
+        SHAPES.forEach(function( shape, r ){
+          FOCI.push({ key: 'row-' + r, label: 'row: ' + shape, has: function( q ){ return q === r; } });
+        });
+
+        FOCI.push({ key: 'dups', label: 'near-duplicates: triangle-tee / triangle-cross / tee',
+          has: function( r ){ return r >= TT && r <= TEE; } });
+        FOCI.push({ key: 'dups-thin', label: 'near-duplicates at width 1 and 4, scale 1',
+          has: function( r, k ){ return r >= TT && r <= TEE && k <= 1; } });
+
+        var focusSelect = document.getElementById( 'focus' );
+
+        FOCI.forEach(function( f ){
+          var o = document.createElement( 'option' );
+          o.value = f.key;
+          o.textContent = f.label;
+          focusSelect.appendChild( o );
+        });
+
+        var focus = function( key ){
+          var f = FOCI.filter(function( g ){ return g.key === key; })[0] || FOCI[0];
+
+          focusSelect.value = f.key;
+          // v4 drives; the listener copies its viewport onto v3
+          cy4.fit( cy4.nodes().filter(function( n ){ return f.has( n.data( 'row' ), n.data( 'col' ) ); }), 20 );
+        };
+
+        var setOptions = function( next ){
+          Object.assign( opts, next );
+          document.getElementById( 'fill' ).value = opts.fill;
+          document.getElementById( 'line-opacity' ).value = String( opts.lineOpacity );
+          document.getElementById( 'head-colour' ).value = opts.headColour;
+          cy3.style( sheet3( opts ) );
+          cy4.style( sheet4( opts ) );
+        };
+
+        var setLayout = function( mode ){
+          document.body.className = mode;
+          document.getElementById( 'layout' ).value = mode;
+          cy3.resize();
+          cy4.resize();
+          focus( focusSelect.value );
+        };
+
+        focusSelect.addEventListener( 'change', function(){ focus( focusSelect.value ); } );
+        document.getElementById( 'fill' ).addEventListener( 'change', function( e ){ setOptions({ fill: e.target.value }); } );
+        document.getElementById( 'line-opacity' ).addEventListener( 'change', function( e ){ setOptions({ lineOpacity: Number( e.target.value ) }); } );
+        document.getElementById( 'head-colour' ).addEventListener( 'change', function( e ){ setOptions({ headColour: e.target.value }); } );
+        document.getElementById( 'layout' ).addEventListener( 'change', function( e ){ setLayout( e.target.value ); } );
+
+        // for scripted screenshots (the record's pictures were taken this way)
+        window.gallery = {
+          ready: cy4.ready.then(function(){ focus( 'all' ); }),
+          focus: focus,
+          setOptions: setOptions,
+          setLayout: setLayout,
+          shapes: SHAPES,
+          columns: COLS
+        };
+      })();
+    </script>
+  </body>
+
+</html>

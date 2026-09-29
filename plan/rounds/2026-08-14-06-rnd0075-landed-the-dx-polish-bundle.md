@@ -462,3 +462,13 @@ documented-path gate reads as a dead link — `src/render/cpu-pick.mts`
 joins `HISTORICAL_PATHS` (round 97's record and rounds 76/81's plans
 quote it as it was), the round-131.1 `wgsl.mts` precedent.
 
+
+**Follow-up (2026-09-29).**  Both 75.1 observer specs (same-thread, and
+"round 75 through the worker") failed every time under `CI=1`: the
+spec helper `makeReadyCy` resolved at the first `'render'` — a submit —
+while the device was still compiling that frame's shaders (~4.1 s on
+SwiftShader), and in that stall the page gets no rendering update, so
+the ResizeObserver could not deliver inside the 3 s window.  Not a
+`src/` bug; the helper now awaits `cy.viewportCounts()` and a rAF (the
+device has run a later frame), 10/10 under `CI=1` and on the RX 580 —
+`docs/agents/testing.md`.

@@ -42,7 +42,20 @@ const hasWorkerCanvas = async (page) => {
   );
 };
 
-/** Make the instance, await readiness and one presented frame. */
+/**
+ * Make the instance, await readiness and one presented frame.
+ *
+ * `'render'` fires when a frame is *submitted*, not when the device has run
+ * it.  The first frame is where Dawn compiles the node and cull shaders, and
+ * on the SwiftShader adapter CI pins that holds the GPU process for ~4 s
+ * (0.35 s on the RX 580; longer under parallel load) — during which the page
+ * gets no rendering update at all: no rAF, no ResizeObserver delivery, no
+ * placeholder commit, and a tween's wall clock runs on without a frame.  A
+ * spec whose window opened at `'render'` spent that window in the stall.
+ * `viewportCounts()` resolves from a readback of a later frame, so the
+ * device has finished the first one; the rAF after it is a rendering update
+ * that ran past the stall.
+ */
 const makeReadyCy = async (page, options) => {
   await page.evaluate(async (options) => {
     const cy = window.makeCy(options);
@@ -55,6 +68,10 @@ const makeReadyCy = async (page, options) => {
       cy.panBy({ x: 1, y: 0 });
       cy.panBy({ x: -1, y: 0 });
     });
+
+    // …and wait for the device to have run it (see above)
+    await cy.viewportCounts();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
   }, options);
 };
 

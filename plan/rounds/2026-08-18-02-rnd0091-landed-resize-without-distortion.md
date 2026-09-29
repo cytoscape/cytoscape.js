@@ -195,3 +195,10 @@ steady at ~0.5 ms CPU / 0.5 ms GPU, and no device errors; the
 offscreen scene/depth targets rebuild per size change as before, and
 the goldens and parity scenes moved by nothing (the steady state was
 already correct, and stayed so).
+
+**Follow-up (2026-09-29).**  "resize crosses to the worker" failed
+about half its runs under `CI=1`: its placeholder-size poll opened while
+the worker's first frame still held the GPU process (~4.1 s of shader
+compile on SwiftShader, no placeholder commit meanwhile).  Fixed in the
+spec helper, not `src/` — `makeReadyCy` now waits for the device to run
+a frame (round 75's follow-up; `docs/agents/testing.md`).

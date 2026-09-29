@@ -159,3 +159,14 @@ scatter, then the grid).
 **Deferred, recorded**: paint tweens on the worker host stay CPU-side
 (the sink could take them; unmeasured, not this item).  No new ledger
 item.
+
+**Follow-up (2026-09-29).**  The both-hosts tween spec was flaky under
+`CI=1` (6 of 10 failed at `--repeat-each=5`): `makeReadyCy` resolved
+at the first frame's submit, the device then compiled for ~4 s on
+SwiftShader with no frame drawn, and the 6 s linear tween's wall clock
+ran through it — under load the first frame after the stall was past
+the end, so the tween registered and settled in one tick and the
+ledger poll never saw its row.  The tween's wall-clock semantics are
+right; the helper now waits for the device to have run a frame
+(round 75's follow-up; `docs/agents/testing.md`), 20/20 under `CI=1`
+and on the RX 580.

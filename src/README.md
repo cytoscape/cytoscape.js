@@ -6535,6 +6535,116 @@ cannot force a collection is a flake generator.
   at `>=`, the guard deleted) each fail exactly the assertion written
   for them.  Round 48 is complete.
 
+## Device limits, the degradation order and the renderer soak (round 138)
+
+PLAN.md items 34–36, built together on one instrument.  Until round 138
+no device requested a limit, so every instance ran under WebGPU's
+*default* limits — a 128 MiB storage binding — and a store whose widest
+column outgrew it (4,194,305 slots of the 32-byte gradient column)
+produced an invalid bind group and a frame rejected at `queue.submit`,
+every frame, with nothing but a devtools line to say so; an allocation
+the device refused did the same (item 36 measured 26 uncaptured errors in
+30 frames and nothing else).  The eleventh sitting's calls: request the
+adapter's limits, make growth past them **throw from `cy.add()` with the
+store unchanged**, surface allocation failures as an instance event, and
+degrade in item 36's order.
+
+- **Every device requests its adapter's own limits**
+  (`src/device-fit.mts`, `adapterBufferLimits`): `maxBufferSize`,
+  `maxStorageBufferBindingSize` and `maxComputeWorkgroupsPerDimension`, at
+  the adapter's values — the renderer's device (`initGpuContext`, which
+  both hosts share) and the algorithm device (`acquireAlgoGpu`, which the
+  headless GPU force host borrows too).  On the RX 580 that moves the
+  storage binding from 128 MiB to 4 GiB − 4.
+- **The pre-flight is model-side.**  Once the mirror exists the renderer
+  reports a `DeviceFit` to the core (`RenderHost.reportDeviceFit`; the
+  worker host posts it) — the three limits and, per group, the widest
+  column it cannot draw without (16 bytes a slot in both groups:
+  `node.outerGeom` and its peers, `edge.dashPattern` /
+  `edge.curveParams`).  `cy.add()`, `cy.load()` and `cy.patch()` run
+  `core/gpu-fit.mts` before the first slot is taken: the capacity the
+  table would grow to (`ColumnTable.growthFor` — the free list first,
+  then the ×2 growth `reserve` takes; a patch's own removals counted as
+  freed) times that width against the bindable size, and the high water
+  against one dispatch's reach (`maxComputeWorkgroupsPerDimension × 256`,
+  the width of every per-slot kernel).  Past either it throws
+  **`GpuUnfitError`** — the algorithm executors' "does not fit the device"
+  class, now public as `cytoscape.GpuUnfitError` with `name` set — naming
+  the group, the column, the bytes and the limit, and ending "nothing was
+  added"; the store, the ids and the events are untouched.  Headless there
+  is nothing to check.  A graph built headless and then mounted on a
+  device too small for it reaches the same check in the renderer's init,
+  and `cy.ready` rejects with the same error.
+- **Detection: the allocation ledger** (`src/gpu/gpu-ledger.mts`).  WebGPU
+  has no memory meter, so the renderer counts for itself: its device's
+  `createBuffer` / `createTexture` are wrapped (own properties on that one
+  device, nothing global patched) and so is every returned object's
+  `destroy`; the ledger keeps live bytes, peak, counts and cumulative
+  allocations by label, and holds no reference to what it counts.
+  `cy.stats().gpu` is its snapshot (`GpuMemoryStats`), which the worker
+  host carries on its frame messages.  Every allocation is bracketed by an
+  `out-of-memory` and a `validation` error scope, and an
+  `uncapturederror` listener catches the rest; both surface as the
+  core's **`gpuerror`** event, `cy.on( 'gpuerror', ( evt, info ) => … )`
+  with `info` a `GpuErrorInfo` — `kind` (`'out-of-memory'`,
+  `'validation'`, `'internal'`, or `'unfit'` for a buffer the renderer
+  declined), the device's message, and for an allocation the label and
+  the bytes.  An uncaptured message fires once however many frames repeat
+  it; `stats().gpu.errors` counts them all.  The browser's own console
+  line is left alone — loud stays loud.
+- **Degradation, in item 36's order.**  What cannot fit or failed to
+  allocate stops drawing, once, with a `gpuerror` carrying `degraded`,
+  and the frame stays valid:
+  1. **labels** (`'labels'`) — the glyph streams are capped at the
+     bindable size over 64 bytes and the cull's reach; a stream that
+     outgrows it stops uploading and every label pass stands down (runs
+     are still built: the laid dimensions the model reads come from the
+     same pass);
+  2. **charts and images** (`'charts'`, `'images'`) — a blob past the
+     bindable size is replaced by a four-byte placeholder, so every bind
+     group holding it stays valid, and its pass is skipped; the curve
+     route blob follows the same rule (`'curves'`);
+  3. **gradients** (`'gradients'`) — the gradient columns are **lazy**:
+     a one-record placeholder of zeros (meta 0 = solid) until some slot's
+     meta names a gradient, then allocated at capacity; a group that
+     outgrows its gradient column keeps growing and its gradients draw
+     solid.  Allocated for every scene before, they were 32 of the 196
+     bytes a node slot costs and 32 of an edge's 164 — the widest column
+     in both groups, and the one that set the old ceiling.
+
+  A refused allocation of a degradable buffer takes the same path when
+  the error scope reports it (a frame or two after, since scopes resolve
+  asynchronously; those frames are rejected, the ones after are not).  A
+  refused **core column** has nothing to degrade to: the scene holds its
+  last frame (`'frames'`), a pending pick or count answers null and an
+  export rejects, until a re-mount.
+- **The renderer soak** (item 34) is the ledger under churn:
+  `playwright-tests/lib/renderer-soak.mjs` removes and re-adds nodes and
+  edges at a fixed size, writes a mapped value and a bypass, and sets a
+  new zoom per cycle, sampling the ledger per block after draining the
+  queue.  `playwright-tests/soak.spec.js` runs it at CI size — its first
+  spec the probe's own control, a buffer leaked per cycle that must show
+  **to the byte** — plus five device-loss recoveries, each of which must
+  rebuild exactly the first renderer's ledger with the lost one closed and
+  no listener gained; `benchmark/scale-ceiling.mjs --soak` is the
+  hardware run.  The verdict is exact equality over the second half of the
+  samples, since a pool may settle at a high water once (the glyph
+  streams double as tombstones accumulate).  The soak pins the render
+  scale: the adaptive scale reallocates the scene and depth targets at
+  whatever scale load drives, which moved them mid-run on SwiftShader.
+  **What it found:** the label shaping memo (round 16.3) was an unbounded
+  `Map` only a font change cleared, so churned labels grew the reachable
+  heap ~15 KB a cycle, linearly; it is two generations of 4,096 now
+  (`src/render/shape-memo.mts`).
+
+What round 137's WebGL2 renderer inherits from this contract, recorded in
+its plan: report a `DeviceFit` from the WebGL2 context's limits (the
+texture-and-buffer limits its storage emulation binds, in place of the
+storage binding), emit `gpuerror` from its own allocation checks
+(`gl.getError()` after a large `bufferData` is its error scope), keep a
+ledger with the same labels so the soak runs unchanged, and degrade in
+the same order.
+
 ## First-frame cost: deferred pipelines (round 53)
 
 The renderer builds its *feature* pipelines on the first frame that draws

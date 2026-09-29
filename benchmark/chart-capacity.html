@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title>cytoscape.js chart capacity measurement page</title>
+  </head>
+
+  <body>
+    <p>Driven by <code>benchmark/chart-capacity.mjs</code> (PLAN.md item 73); nothing to see here.</p>
+
+    <script>
+      // In-page half of the chart capacity measurement: a bare WebGPU
+      // harness that binds exactly what the chart pass binds (the round-23
+      // layout: frame uniform, positions, sizes, opacities, borderGeom,
+      // borderWidths, chartRefs, chartBlob, polyBlob; the visible list in
+      // group 1) and times one render pass with timestamp-query.
+      ( function(){
+        var W = 2560, H = 1600;
+        var WARM = 5, TIMED = 25;
+        var device, timestamps;
+
+        var init = async function(){
+          var adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+          timestamps = adapter.features.has( 'timestamp-query' );
+          device = await adapter.requestDevice({
+            requiredFeatures: timestamps ? [ 'timestamp-query' ] : [],
+            requiredLimits: {
+              maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+              maxBufferSize: adapter.limits.maxBufferSize
+            }
+          });
+
+          return {
+            vendor: adapter.info.vendor, architecture: adapter.info.architecture,
+            description: adapter.info.description, timestamps: timestamps,
+            maxBinding: adapter.limits.maxStorageBufferBindingSize
+          };
+        };
+
+        var buf = function( data, usage ){
+          var b = device.createBuffer({ size: Math.max( 16, Math.ceil( data.byteLength / 4 ) * 4 ), usage: usage | GPUBufferUsage.COPY_DST });
+          device.queue.writeBuffer( b, 0, data );
+          return b;
+        };
+
+        // deterministic colours and points (a seeded LCG), so every run
+        // prices the same scene
+        var seed = 1;
+        var rnd = function(){ seed = ( seed * 1664525 + 1013904223 ) >>> 0; return seed / 4294967296; };
+
+        var run = async function( a ){
+          try {
+            return await runInner( a );
+          } catch( e ){
+            return { error: String( e && e.message || e ) };
+          }
+        };
+
+        var runInner = async function( a ){
+          seed = 1;
+          var nodes = a.nodes, n = a.n, hdr = a.header;
+          var cols = Math.floor( W / ( a.px * 1.05 ) );
+          var pitch = W / cols;
+          var rows = Math.ceil( nodes / cols );
+
+          if( rows * pitch > H * 1.0001 ){
+            pitch = Math.min( pitch, H / rows );
+          }
+
+          var pos = new Float32Array( nodes * 2 ), size = new Float32Array( nodes * 2 );
+          var op = new Float32Array( nodes ), geom = new Uint32Array( nodes * 4 ), bw = new Float32Array( nodes );
+          var refs = new Uint32Array( nodes ), vis = new Uint32Array( nodes );
+          var rec = hdr + 3 * n;
+          var blobF = new Float32Array( nodes * rec );
+          var blobU = new Uint32Array( blobF.buffer );
+
+          for( var i = 0; i < nodes; i++ ){
+            pos[ 2 * i ] = ( i % cols + 0.5 ) * pitch;
+            pos[ 2 * i + 1 ] = ( Math.floor( i / cols ) + 0.5 ) * pitch;
+            size[ 2 * i ] = size[ 2 * i + 1 ] = a.px;
+            op[ i ] = 1;
+            geom[ 4 * i + 1 ] = a.shapeBits;
+            vis[ i ] = i;
+
+            var off = i * rec;
+
+            refs[ i ] = a.packed ? ( ( off | ( n << 24 ) ) >>> 0 ) : off + 1;
+            blobF[ off ] = a.kind;
+            blobF[ off + 1 ] = 1;        // size
+            blobF[ off + 2 ] = 0;        // hole
+            blobF[ off + 3 ] = 0;        // start angle
+            blobF[ off + 4 ] = a.horizontal ? 1 : 0;
+            blobF[ off + 5 ] = 1;        // opacity
+            blobF[ off + 6 ] = n;
+
+            for( var k = 0; k < n; k++ ){
+              var b = off + hdr + 3 * k;
+              var r = Math.floor( rnd() * 255 ), g = Math.floor( rnd() * 255 ), bl = Math.floor( rnd() * 255 );
+
+              if( a.points ){
+                // (x, y, rgba8 as u32 bits): written through the u32 view,
+                // so no float canonicalisation touches the colour
+                blobF[ b ] = k / Math.max( 1, n - 1 );
+                blobF[ b + 1 ] = 0.5 + 0.4 * Math.sin( k * 0.37 ) * rnd();
+                blobU[ b + 2 ] = ( r | g << 8 | bl << 16 | 255 << 24 ) >>> 0;
+              } else {
+                // a full chart: equal fractions (every fragment walks all n),
+                // colours as the shipped record packs them
+                blobF[ b ] = a.kind === 2 && a.horizontal ? 0.2 + 0.8 * rnd() : a.cumulative ? ( k + 1 ) / n : 1 / n;
+                blobF[ b + 1 ] = r + g * 256;
+                blobF[ b + 2 ] = bl + 255 * 256;
+              }
+            }
+          }
+
+          var frame = new Float32Array( 20 );
+          frame[ 0 ] = W; frame[ 1 ] = H; frame[ 4 ] = 1;  // viewport, pan 0, zoomDpr 1
+          frame[ 15 ] = 8;                                 // imageMinPx, the renderer's floor
+
+          var U = GPUBufferUsage;
+          var uniform = buf( frame, U.UNIFORM );
+          var bufs = {
+            pos: buf( pos, U.STORAGE ), size: buf( size, U.STORAGE ), op: buf( op, U.STORAGE ),
+            geom: buf( geom, U.STORAGE ), bw: buf( bw, U.STORAGE ), refs: buf( refs, U.STORAGE ),
+            blob: buf( blobF, U.STORAGE ), poly: buf( new Float32Array( 4 ), U.STORAGE ),
+            vis: buf( vis, U.STORAGE )
+          };
+
+          var module = device.createShaderModule({ code: a.wgsl });
+          var info = await module.getCompilationInfo();
+          var errs = info.messages.filter(function( m ){ return m.type === 'error'; });
+
+          if( errs.length > 0 ){
+            throw new Error( 'WGSL: ' + errs.map(function( m ){ return m.lineNum + ': ' + m.message; }).join( '; ' ) );
+          }
+
+          var target = device.createTexture({ size: [ W, H ], format: 'rgba8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+          var blend = { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+            alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } };
+
+          device.pushErrorScope( 'validation' );
+
+          var pipeline = device.createRenderPipeline({
+            layout: 'auto',
+            vertex: { module: module, entryPoint: a.instanced ? 'vsPoint' : 'vsChart',
+              constants: a.instanced ? { PER_NODE: n } : {} },
+            fragment: { module: module, entryPoint: a.instanced ? 'fsPoint' : 'fsChart',
+              targets: [ { format: 'rgba8unorm', blend: blend } ] },
+            primitive: { topology: 'triangle-list' }
+          });
+
+          var entries0 = a.instanced
+            ? [ uniform, bufs.pos, bufs.size, bufs.refs, bufs.blob ]
+            : [ uniform, bufs.pos, bufs.size, bufs.op, bufs.geom, bufs.bw, bufs.refs, bufs.blob, bufs.poly ];
+          var g0 = device.createBindGroup({ layout: pipeline.getBindGroupLayout( 0 ),
+            entries: entries0.map(function( b, i ){ return { binding: i, resource: { buffer: b } }; }) });
+          var g1 = device.createBindGroup({ layout: pipeline.getBindGroupLayout( 1 ),
+            entries: [ { binding: 0, resource: { buffer: bufs.vis } } ] });
+          var index = buf( new Uint16Array( [ 0, 1, 2, 2, 1, 3, 0, 0 ] ), U.INDEX );
+          var instances = a.instanced ? nodes * n : nodes;
+
+          var qs = timestamps ? device.createQuerySet({ type: 'timestamp', count: 2 * TIMED }) : null;
+          var resolveBuf = timestamps ? device.createBuffer({ size: 16 * TIMED, usage: U.QUERY_RESOLVE | U.COPY_SRC }) : null;
+          var readTs = timestamps ? device.createBuffer({ size: 16 * TIMED, usage: U.COPY_DST | U.MAP_READ }) : null;
+          var wall = [];
+
+          for( var p = 0; p < WARM + TIMED; p++ ){
+            var enc = device.createCommandEncoder();
+            var t = p - WARM;
+            var desc = { colorAttachments: [ { view: target.createView(), loadOp: 'clear', storeOp: 'store',
+              clearValue: { r: 0, g: 0, b: 0, a: 0 } } ] };
+
+            if( qs && t >= 0 ){
+              desc.timestampWrites = { querySet: qs, beginningOfPassWriteIndex: 2 * t, endOfPassWriteIndex: 2 * t + 1 };
+            }
+
+            var pass = enc.beginRenderPass( desc );
+            pass.setPipeline( pipeline );
+            pass.setBindGroup( 0, g0 );
+            pass.setBindGroup( 1, g1 );
+            pass.setIndexBuffer( index, 'uint16' );
+            pass.drawIndexed( 6, instances );
+            pass.end();
+
+            var t0 = performance.now();
+            device.queue.submit( [ enc.finish() ] );
+            await device.queue.onSubmittedWorkDone();
+            if( t >= 0 ){ wall.push( performance.now() - t0 ); }
+          }
+
+          var verr = await device.popErrorScope();
+
+          if( verr ){ throw new Error( 'validation: ' + verr.message ); }
+
+          var samples = wall;
+
+          if( qs ){
+            var e2 = device.createCommandEncoder();
+            e2.resolveQuerySet( qs, 0, 2 * TIMED, resolveBuf, 0 );
+            e2.copyBufferToBuffer( resolveBuf, 0, readTs, 0, 16 * TIMED );
+            device.queue.submit( [ e2.finish() ] );
+            await readTs.mapAsync( GPUMapMode.READ );
+            var ts = new BigUint64Array( readTs.getMappedRange().slice( 0 ) );
+            readTs.unmap();
+            samples = [];
+            for( var s = 0; s < TIMED; s++ ){ samples.push( Number( ts[ 2 * s + 1 ] - ts[ 2 * s ] ) / 1e6 ); }
+          }
+
+          // coverage: read the target back once
+          var rowBytes = W * 4;
+          var rb = device.createBuffer({ size: rowBytes * H, usage: U.COPY_DST | U.MAP_READ });
+          var e3 = device.createCommandEncoder();
+          e3.copyTextureToBuffer( { texture: target }, { buffer: rb, bytesPerRow: rowBytes }, [ W, H ] );
+          device.queue.submit( [ e3.finish() ] );
+          await rb.mapAsync( GPUMapMode.READ );
+          var px = new Uint8Array( rb.getMappedRange() );
+          // ink: an FNV-1a hash of the drawn pixels, so an alternative
+          // search can be held to drawing exactly what the shipped walk draws
+          var hit = 0, ink = 0x811c9dc5;
+          for( var q = 0; q < px.length; q += 4 ){
+            if( px[ q + 3 ] > 0 ){ hit++; }
+            ink = Math.imul( ink ^ ( px[ q ] | px[ q + 1 ] << 8 | px[ q + 2 ] << 16 | px[ q + 3 ] << 24 ), 16777619 );
+          }
+          rb.unmap();
+
+          samples.sort(function( x, y ){ return x - y; });
+
+          var blobBytes = blobF.byteLength;
+
+          [ uniform, index, rb ].concat( Object.values( bufs ) ).forEach(function( b ){ b.destroy(); });
+          target.destroy();
+          if( qs ){ qs.destroy(); resolveBuf.destroy(); readTs.destroy(); }
+
+          return {
+            ms: samples[ Math.floor( samples.length / 2 ) ],
+            min: samples[ 0 ],
+            max: samples[ samples.length - 1 ],
+            covered: hit / ( W * H ),
+            ink: ink,
+            instances: instances,
+            blobBytes: blobBytes,
+            timer: timestamps ? 'timestamp-query' : 'wall'
+          };
+        };
+
+        window.capacity = { init: init, run: run };
+      })();
+    </script>
+  </body>
+
+</html>

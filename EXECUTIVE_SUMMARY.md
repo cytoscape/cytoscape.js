@@ -5,7 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 104 made dense labels
+- **Last updated**: 2026-09-29, after round 134 moved the attribute
+  clusterings off the calling thread — `kMeans`, `kMedoids`,
+  `fuzzyCMeans` and `hierarchicalClustering` with a named metric run on
+  one worker under `'workers'` and, above a measured size, `'auto'`,
+  answering the same clusters bit for bit; their in-thread reference
+  runs the same kernel and got 3–10× faster (k-medoids at 5,120 points
+  3.0 s → 0.31 s).  Earlier the same day round 104 made dense labels
   legible — `label-declutter: 'cull'` hides each node label that would
   overlap a higher-`label-priority` one, so the 465k-edge fixture's
   19,607 labels at fit (99.4% of them overlapping) become 1,545 that do
@@ -156,7 +162,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Automated tests | 3,058 unit · 1,061 module · 38 soak · 544 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
+| Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step) |
@@ -1497,6 +1503,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     465k-edge fixture's labels at fit, 99.4% overlapping, become 1,545
     that do not, for 1.6–2.0 ms a frame.  Edge labels are not
     decluttered yet.
+- **29 Sep** — the attribute clusterings leave the calling thread
+  - `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering`
+    with a named metric run on one pool worker under `'workers'` (which
+    rejected them before) and under `'auto'` from a measured size
+    (512–4,096 points), in Node and in the browser, in every build that
+    carries workers; `cancel()` works as for the other offloaded runs.
+  - The in-thread reference runs the same kernel, so the worker answers
+    its bits — and the reference answers exactly what it answered
+    before, every cluster and membership at 1k and 5k points, while
+    running 3–10× faster (k-medoids at 5,120 points 3.0 s → 0.31 s).
+  - A custom distance function is called inside the loop, so it keeps
+    running on the calling thread; `'workers'` says so when asked.
+  - Buys a page that clusters thousands of points without freezing,
+    and a faster answer where it does not offload.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1654,8 +1674,8 @@ a recorded deviation; the edge overlay/underlay band keeps v4's
 width override is to be ported.  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
 the page sittings and AVSDF; one column animation per animated layout
-and a worker lane for the k-clusterings are due before alpha, and the
-sheet diff for `cy.style()` decided with them landed the same day, as
+is due before alpha; the worker lane for the k-clusterings landed 29 Sep,
+and the sheet diff for `cy.style()` landed the day of the sitting, as
 did the official JSON schemas on the sitting's terms: ajv in the tests
 only and no runtime `validate()`, the `$id` base left to the
 documentation site, the columnar form's schema held until 4.x and
@@ -1703,8 +1723,8 @@ round, and is regenerated rather than maintained:
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured
-  18 Sep), the offload families' in-thread builders and the k-clusterings'
-  missing lane (items 69 and 70, 18 Sep), and a fresh idea-ledger sweep of
+  18 Sep), the offload families' in-thread builders (item 69, 18 Sep), and
+  a fresh idea-ledger sweep of
   ~20 further candidates awaiting scheduling.
 
 ## How this project works

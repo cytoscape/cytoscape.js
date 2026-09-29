@@ -269,6 +269,11 @@ re-decides nothing), hysteresis in a rank margin and a one-cell inset
 (a slow zoom's strobes 36,703 → 142), 1.66 ms a pass at 19.6k labels,
 CPU-only; edge labels stay out, a follow-up hook; it took round 102's
 last hook (the emphasized set ranks first) and raised no new item.
+Round 134 (landed 2026-09-29 on the sitting's call) took **item 70** and
+closed it: the k-clusterings and hierarchical clustering run one
+named-metric kernel shared by the in-thread reference and the offload
+lane's worker, bit-neutral against the pre-round reference, the closure
+path kept for custom metrics; it raised no new item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1805,6 +1810,21 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): build the lane
     before alpha** — one named-metric kernel shared by the reference and
     the workers.
+    **Closed by round 134 (2026-09-29).**  The first measurement: 77 of
+    the tree's 83 call sites name or default the metric (the six
+    custom ones are specs of the custom-function feature), and the
+    in-thread runs at 1k / 5k read 11 / 45 ms (k-means), 49 / 2,980
+    (k-medoids), 45 / 207 (fuzzy c-means), 26 / 646 (hierarchical).
+    `kClusteringKernel` and `hierarchicalKernel`
+    (`algo-kernels-cluster.mts`) run over attribute vectors evaluated
+    once on the calling thread; the reference runs them for a named
+    metric, the closure path keeps a custom function and a per-pair
+    linkage in-thread, and an explicit `'workers'` rejects those with
+    the reason.  The reference's change is bit-neutral — every digest
+    at 1k / 5k identical to the pre-round bundle, and a `===` spec of
+    the kernel against the closure path under the same metric as a
+    function — and 3–10× faster in-thread.  Crossovers: fuzzy c-means
+    and hierarchical 512, k-medoids 768, k-means 4096.  Closed.
 
 71. **Eleven source files still sit at 1,000–1,600 lines after round
     130** (logged 2026-09-20).  Round 130 split the ten largest — the

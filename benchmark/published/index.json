@@ -1,6 +1,24 @@
 {
   "runs": [
     {
+      "file": "results-algworkers-2026-09-29T07-42-58-861Z.json",
+      "date": "2026-09-29T07:42:58.861Z",
+      "commit": "5662d8d4",
+      "commitSubject": "benchmark(134.2): the offload tier prices the four feature-space clusterers",
+      "branch": "v4",
+      "profile": "algorithms-workers",
+      "suiteFilter": null,
+      "dirty": false,
+      "concurrency": 1,
+      "totalMs": 267804,
+      "node": "v24.18.0",
+      "fingerprint": "5cf3f79c",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 62,
+      "note": "Round 134: the offload tier gains kMeans, kMedoids, fuzzyCMeans and hierarchicalClustering (ledger item 70); the whole profile re-run at the new fingerprint."
+    },
+    {
       "file": "results-algworkers-2026-09-18T18-49-35-964Z.json",
       "date": "2026-09-18T18:49:35.964Z",
       "commit": "116f6857",

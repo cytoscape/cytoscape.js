@@ -31,7 +31,7 @@ elesfn.renderedBoundingBox = function( options ){
 elesfn.actualLabelBoundingBox = function( options ) {
   let ele = this[0];
 
-  if( !ele ){ return null; }
+  if( !ele || !ele.cy().styleEnabled() ){ return null; }
 
   let label = (options && options.label) || 'main';
   let prefix = label === 'main' ? undefined : label; // 'source' | 'target' | undefined

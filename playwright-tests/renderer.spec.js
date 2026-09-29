@@ -675,4 +675,92 @@ test.describe('Renderer', () => {
 
   }); // with layout
 
+  test.describe('spatial queries', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.elements().remove();
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: { 'width': 50, 'height': 50 }
+          }
+        ]).update();
+
+        cy.add([
+          { data: { id: 'a' }, position: { x: 100, y: 100 } },
+          { data: { id: 'b' }, position: { x: 300, y: 100 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]);
+      });
+    });
+
+    test('hit() finds the node under a point and misses a point outside it', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+
+        return {
+          onNode: cy.$('#a').hit({ x: 100, y: 100 }).map(ele => ele.id()),
+          offNode: cy.$('#a').hit({ x: 1000, y: 1000 }).map(ele => ele.id())
+        };
+      });
+
+      expect(result.onNode).toEqual(['a']);
+      expect(result.offNode).toEqual([]);
+    }); // hit() finds the node under a point and misses a point outside it
+
+    test('withinBox() returns nodes overlapping the box and excludes ones outside it', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+
+        return {
+          overlapping: cy.nodes().withinBox({ x1: 50, y1: 50, x2: 150, y2: 150 }).map(ele => ele.id()),
+          empty: cy.nodes().withinBox({ x1: 1000, y1: 1000, x2: 1100, y2: 1100 }).map(ele => ele.id())
+        };
+      });
+
+      expect(result.overlapping).toEqual(['a']);
+      expect(result.empty).toEqual([]);
+    }); // withinBox() returns nodes overlapping the box and excludes ones outside it
+
+    test('withinBox() normalizes a reverse-dragged box', async ({ page }) => {
+      const ids = await page.evaluate(() => {
+        const cy = window.cy;
+
+        // corners given bottom-right to top-left, as a reverse drag would produce
+        return cy.nodes().withinBox({ x1: 150, y1: 150, x2: 50, y2: 50 }).map(ele => ele.id());
+      });
+
+      expect(ids).toEqual(['a']);
+    }); // withinBox() normalizes a reverse-dragged box
+
+    test('polygonIntersection() matches a node whose body intersects the polygon', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+        const nearPolygon = [
+          { x: 50, y: 50 },
+          { x: 150, y: 50 },
+          { x: 150, y: 150 },
+          { x: 50, y: 150 }
+        ];
+        const farPolygon = [
+          { x: 1000, y: 1000 },
+          { x: 1100, y: 1000 },
+          { x: 1100, y: 1100 },
+          { x: 1000, y: 1100 }
+        ];
+
+        return {
+          overlapping: cy.nodes().polygonIntersection(nearPolygon).map(ele => ele.id()),
+          empty: cy.nodes().polygonIntersection(farPolygon).map(ele => ele.id())
+        };
+      });
+
+      expect(result.overlapping).toEqual(['a']);
+      expect(result.empty).toEqual([]);
+    }); // polygonIntersection() matches a node whose body intersects the polygon
+  }); // spatial queries
+
 }); // renderer

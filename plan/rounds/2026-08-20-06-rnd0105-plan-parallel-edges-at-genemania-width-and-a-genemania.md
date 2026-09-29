@@ -59,3 +59,17 @@ so the docs can recommend a mode by number.
 fixtures**: the human default/example query from the GeneMANIA website,
 and a human one-gene query for p53.  The dictionary-column sheet and the
 haystack sweep are settled in the round.
+
+**Carried in from round 73 (2026-09-29), the WebGL2 constraints.**  The
+WebGL2 renderer (round 137) is full parity at alpha and is built after
+this round, so what this round draws must port without a redesign: (1)
+nothing drawn depends on a compute pass without a CPU path — what the
+renderer reads is CPU-canonical or CPU-derivable; (2) a new pipeline's
+cull predicate is a pure function of the pulled columns and the frame
+uniform, so it can move into the vertex stage, and no draw count exists
+only on the GPU; (3) no storage writes from a draw, no atomics in the
+draw path, no dual-source blending, subgroups or f16 in a drawn shader;
+(4) per-instance data stays within 16 vertex-stage bindings; (5) the
+feature lands with a golden that sets its properties, or the parity
+project cannot see it.  The reasons and the measurements are in round
+73's record.

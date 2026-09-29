@@ -35,6 +35,33 @@ describe('gpu/style-getters', function () {
   });
 
   describe('style()', function () {
+    it("reads a custom polygon's corner-radius as the sheet's, not its point-record ref (round 143)", function () {
+      const poly = cytoscape({
+        elements: [{ data: { id: 'p' } }, { data: { id: 'q' } }],
+        style: {
+          nodes: {
+            shape: 'polygon',
+            'shape-polygon-points': [-1, -1, 1, -1, 0, 1],
+          },
+        },
+      });
+
+      // the radius word carries the polygon's record ref; it read back
+      // as 196608.0234375
+      expect(poly.$id('p').style('corner-radius')).to.equal('auto');
+
+      poly.style({
+        nodes: {
+          shape: 'polygon',
+          'shape-polygon-points': [-1, -1, 1, -1, 0, 1],
+          'corner-radius': 6,
+        },
+      });
+      expect(poly.$id('q').style('corner-radius')).to.equal(6);
+
+      poly.destroy();
+    });
+
     it('reads node props', function () {
       var a = cy.$id('a');
 

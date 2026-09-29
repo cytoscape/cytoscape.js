@@ -5840,6 +5840,63 @@ test.describe('WebGPU renderer', () => {
     ]);
   });
 
+  test('a bypass on a kernel-mapped colour after the first frame reaches the screen (round 143)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // the degrade control's find: once the eval kernel owned the mapped
+    // fill, a bypass demoted the channel and re-derived its bytes on the
+    // CPU — but the mirror had skipped those spans as kernel-owned, and
+    // nothing re-uploaded the column when ownership cleared, so the node
+    // kept drawing (and, until the repack, reading) its mapped colour
+    await makeReadyCy(page, {
+      elements: [{ data: { id: 'a', w: 0 }, position: { x: 0, y: 0 } }],
+      style: {
+        nodes: {
+          width: 100,
+          height: 100,
+          shape: 'rectangle',
+          'background-color': {
+            data: 'w',
+            domain: [0, 1],
+            range: ['#0000ff', '#00ff00'],
+          },
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page, 5);
+    expect((await pixelAt(page, center.x, center.y))[2]).toBeGreaterThan(200);
+
+    const read = await page.evaluate(() => {
+      window.cy.$id('a').style('background-color', 'rgb(255,0,0)');
+
+      return window.cy.$id('a').style('background-color');
+    });
+
+    expect(read).toBe('rgb(255,0,0)');
+
+    await expect
+      .poll(async () => (await pixelAt(page, center.x, center.y)).join(), {
+        timeout: 10_000,
+      })
+      .toBe('255,0,0,255');
+
+    // and the mapper takes the channel back when the bypass goes
+    await page.evaluate(() =>
+      window.cy.$id('a').removeStyle('background-color'),
+    );
+    await expect
+      .poll(async () => (await pixelAt(page, center.x, center.y))[2], {
+        timeout: 10_000,
+      })
+      .toBeGreaterThan(200);
+  });
+
   test('a paint tween outranks the mapper, and the mapper reclaims the channel on settle', async ({
     page,
   }) => {

@@ -101,12 +101,24 @@ export function readProp(
   // evaluate the shared IR lazily (same math the kernel runs, ±1/byte).
   // Arrow getters need the fold: stored alpha = colorAlpha × opacity,
   // either of which may be kernel-owned.
+  //
+  // A bypassed channel is not the kernel's, whatever the ownership set
+  // says: the first bypass demotes it and re-derives every slot's stored
+  // bytes on the CPU at once, but ownership only clears when the runtime
+  // repacks on the next frame — and until then this path re-evaluated
+  // the mapper and read the bypass back as the mapped value (round 143,
+  // found by the golden degrade control)
   const owned = engine.gpuOwnedProps[ref.group];
+  const bypassed = (p: string): boolean =>
+    (engine.bypassPropCounts.get(p) ?? 0) > 0;
 
   if (ref.group === GROUP_EDGES && plan.arrowColorProp != null) {
     const colorProp = plan.arrowColorProp;
 
-    if (owned.has(colorProp) || owned.has(PROP.OPACITY)) {
+    if (
+      (owned.has(colorProp) || owned.has(PROP.OPACITY)) &&
+      !bypassed(colorProp)
+    ) {
       const [r, g, b, a] = foldedArrow(engine, ref, colorProp);
 
       return prop.endsWith('-shape')
@@ -115,7 +127,7 @@ export function readProp(
           : 'none'
         : formatRgba(r, g, b, a);
     }
-  } else if (owned.has(prop)) {
+  } else if (owned.has(prop) && !bypassed(prop)) {
     const def = engine.defFor(ref);
     const bm = def.mappers.find((bm) => bm.m.prop === prop);
 

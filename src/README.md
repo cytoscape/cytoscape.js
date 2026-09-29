@@ -1039,6 +1039,23 @@ bypass demotes its GPU mapper eval while one exists (count-gated,
 reversible), and the set path measures 2× *faster* than v3's through
 the built bundles.
 
+**The demotion reaches the screen since round 143.**  The golden
+degrade control (item 30's tier 2) bypassed the `mapped-colors` scene's
+viridis fill after its first frame and moved no pixel: the first bypass
+re-derived every slot's bytes on the CPU while the kernel still owned
+the column, the mirror skipped those spans as kernel-owned, and when the
+runtime's repack cleared the ownership on the next frame nothing
+re-uploaded the column — the node drew its mapped colour for good, and
+until the repack `style()` read the mapped value too.  A column leaving
+kernel ownership is now re-uploaded whole from the CPU truth
+(`ColumnMirror.setGpuOwned`), and a bypassed channel reads its stored
+bytes, never the mapper's lazy evaluation.  The same pass found two
+readback slips: a rotation-only label change (a bypass, a data write, a
+sheet swap) was dropped by the label record's no-op check, which
+compared every field but the angle; and a custom polygon's
+`corner-radius` read its point-record ref (`196608.0234375`) as a
+radius — it now reads the sheet's.
+
 One consequence worth naming (round 96): for the **list-valued curve
 props** — `control-point-distances`/`-weights`,
 `segment-distances`/`-weights`/`-radii`, which take constants only and

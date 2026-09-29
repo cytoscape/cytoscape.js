@@ -345,6 +345,63 @@ describe('per-element bypasses (round 63)', function () {
       cy.destroy();
     });
 
+    it('a rotation-only change reaches the label (round 143)', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'a', r: 0.5 } }],
+        style: { nodes: { label: 'x', 'text-rotation': { data: 'r' } } },
+      });
+      const a = cy.$id('a');
+
+      expect(a.style('text-rotation')).to.equal(0.5);
+
+      // the label record's no-op check compared every field but the
+      // angle, so each of these was dropped
+      a.style('text-rotation', 0.25);
+      expect(a.style('text-rotation')).to.equal(0.25);
+
+      a.removeStyle('text-rotation');
+      expect(a.style('text-rotation')).to.equal(0.5);
+
+      a.data('r', 1);
+      expect(a.style('text-rotation')).to.equal(1);
+
+      cy.destroy();
+    });
+
+    it('reads a bypass back on a kernel-owned channel before the runtime repacks (round 143)', function () {
+      const cy = cytoscape({
+        elements: [{ data: { id: 'a', v: 0 } }, { data: { id: 'b', v: 1 } }],
+        style: {
+          nodes: {
+            'background-color': {
+              data: 'v',
+              domain: [0, 1],
+              range: ['#000000', '#ffffff'],
+            },
+          },
+        },
+      });
+
+      // what the mounted renderer's mapper runtime does after the first
+      // frame: the kernel owns the channel, and reads evaluate the mapper
+      cy.style().setGpuOwned('nodes', ['background-color']);
+      expect(cy.$id('a').style('background-color')).to.equal('rgb(0,0,0)');
+
+      // the bypass must win at once, not after the next frame's repack
+      // (the read had re-evaluated the mapper and answered black)
+      cy.$id('a').style('background-color', '#ff0000');
+      expect(cy.$id('a').style('background-color')).to.equal(RED);
+      expect(cy.$id('b').style('background-color')).to.equal(
+        'rgb(255,255,255)',
+      );
+
+      // and the mapper's value returns with the bypass removed
+      cy.$id('a').removeStyle('background-color');
+      expect(cy.$id('a').style('background-color')).to.equal('rgb(0,0,0)');
+
+      cy.destroy();
+    });
+
     it('bypass-free instances take no bypass branch in the write funnel', function () {
       const cy = cytoscape({ elements: ELEMENTS });
       const engine = cy.style();

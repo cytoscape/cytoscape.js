@@ -93,6 +93,10 @@ export function setLabel(
       prev.valignShift === entry.valignShift &&
       prev.endOffset === entry.endOffset &&
       prev.rotate === entry.rotate &&
+      // round 143: the angle too — without it a rotation-only change (a
+      // bypass, a data write under a mapper, a sheet swap) left the old
+      // angle drawn and read back; the golden degrade control found it
+      prev.rotation === entry.rotation &&
       prev.wrap === entry.wrap &&
       prev.maxWidth === entry.maxWidth &&
       prev.lineHeight === entry.lineHeight &&

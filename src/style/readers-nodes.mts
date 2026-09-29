@@ -9,6 +9,7 @@ import {
   BORDER_STYLE_SHIFT,
   OUTLINE_STYLE_SHIFT,
   STROKE_STYLE_MASK,
+  SHAPE_POLYGON_CUSTOM,
 } from '../contract.mjs';
 import { PROP } from '../style-props.mjs';
 import { formatRgba, SHAPE_NAMES } from './tables.mjs';
@@ -32,7 +33,18 @@ defineReader([PROP.BORDER_WIDTH], (store, slot) =>
   readScalar(store, slot, COL.NODE_BORDER_WIDTH),
 );
 
-defineReader([PROP.CORNER_RADIUS], (store, slot) => {
+defineReader([PROP.CORNER_RADIUS], (store, slot, ref, engine) => {
+  // a custom polygon keeps its point-record ref in the radius word (C3:
+  // the radius means nothing for one), so the word is not a radius:
+  // answer the sheet's.  Before round 143 this read the ref as a radius
+  // — `196608.0234375` — which the golden degrade control found as a
+  // property no reset could move (the `shape-polygon` golden "set" it)
+  if (readScalar(store, slot, COL.NODE_SHAPE) === SHAPE_POLYGON_CUSTOM) {
+    const c = engine.defFor(ref).computed.cornerRadius;
+
+    return c < 0 ? 'auto' : c;
+  }
+
   const r = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4];
 
   return r === 0xffffffff ? 'auto' : r / 256;

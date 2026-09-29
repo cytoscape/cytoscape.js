@@ -182,9 +182,58 @@ export class ColumnMirror {
    * skip them, so CPU-side fallback writes never clobber evaluated bytes.
    * realloc() still uploads the CPU base in full — the caller schedules a
    * full re-eval for owned columns whenever a group resizes.
+   *
+   * A column that *leaves* ownership is re-uploaded whole from the
+   * CPU-canonical view (round 143).  While the kernel owned it, every
+   * CPU span written to it was skipped — including the whole-group
+   * re-derivation that demoting a channel runs (a first bypass on a
+   * mapped colour, a data column promoted to mixed) — so the buffer
+   * still held the kernel's last bytes, and a bypassed element drew its
+   * mapped value while `style()` read the bypass.  Found by the golden
+   * degrade control: a bypass on the `mapped-colors` scene's viridis
+   * fill moved no pixel.
    */
   setGpuOwned(ids: Iterable<ColumnId>): void {
-    this.gpuOwned = new Set(ids);
+    const next = new Set(ids);
+
+    for (const id of this.gpuOwned) {
+      if (!next.has(id) && !this.tweenOwned.has(id)) {
+        this.uploadWhole(id);
+      }
+    }
+
+    this.gpuOwned = next;
+  }
+
+  /** Write a column's whole CPU backing array to its buffer. */
+  private uploadWhole(id: ColumnId): void {
+    if (this.destroyed || this.unfit.has(`cy-gpu:${id}`)) {
+      return;
+    }
+
+    if (LAZY.has(id) && !this.materialised.has(id)) {
+      return; // a placeholder holds no slots
+    }
+
+    const spec = columnSpec(id);
+    const arr = this.view.column(id);
+    const byteLength = Math.min(
+      arr.byteLength,
+      this.capacities[spec.group] * spec.bytesPerSlot,
+    );
+
+    if (byteLength <= 0) {
+      return;
+    }
+
+    this.device.queue.writeBuffer(
+      this.buffer(id),
+      0,
+      arr.buffer,
+      arr.byteOffset,
+      byteLength,
+    );
+    this.uploadedBytes += byteLength;
   }
 
   /**

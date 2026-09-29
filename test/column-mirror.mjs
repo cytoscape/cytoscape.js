@@ -141,6 +141,30 @@ describe('gpu/render: ColumnMirror', function () {
     ).to.be.true;
   });
 
+  it('re-uploads a column whole when it leaves GPU ownership (round 143)', function () {
+    mirror.setGpuOwned(['node.fillColor']);
+    store.setColor('node.fillColor', 0, 1, 2, 3, 4);
+    mirror.sync(store.takeDelta()); // the owned span is skipped
+
+    mock.writes.length = 0;
+    mirror.setGpuOwned([]);
+
+    // the kernel's bytes were what the buffer held; the CPU truth,
+    // skipped while owned, goes up in one write from offset 0
+    const bps = columnSpec('node.fillColor').bytesPerSlot;
+
+    expect(mock.writes).to.have.length(1);
+    expect(mock.writes[0].buffer).to.equal(mirror.buffer('node.fillColor'));
+    expect(mock.writes[0].bufferOffset).to.equal(0);
+    expect(mock.writes[0].size).to.equal(store.capacity('nodes') * bps);
+
+    // a column that stays owned, or was never owned, is not re-uploaded
+    mirror.setGpuOwned(['node.fillColor']);
+    mock.writes.length = 0;
+    mirror.setGpuOwned(['node.fillColor']);
+    expect(mock.writes).to.have.length(0);
+  });
+
   it('uploads coalesced spans as one write', function () {
     mock.writes.length = 0;
 

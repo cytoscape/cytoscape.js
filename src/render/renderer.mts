@@ -23,6 +23,7 @@ import type { ForceInputs } from '../layout/force-host.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { ExportPacker } from './export-pack.mjs';
+import type { GpuLedger } from '../gpu/gpu-ledger.mjs';
 import type { RenderHost, RenderStoreView } from './host.mjs';
 import type {
   ExportOptions,
@@ -333,6 +334,16 @@ export class Renderer {
   declutterFlagsDirty = false;
   /** the declutter mode the last pass ran under @internal */
   declutterMode = -1;
+  /** the device's allocation ledger (round 138): every buffer and
+   * texture counted, every refusal and uncaptured error reported
+   * @internal */
+  ledger: GpuLedger | null = null;
+  /** what the renderer stopped drawing because its buffer did not fit
+   * or failed to allocate (round 138): `'labels'`, `'charts'`,
+   * `'images'`, `'curves'`, `'gradients'`, `'frames'` — for the
+   * renderer's life; a re-mount starts clean
+   * @internal */
+  degraded: Set<string> = new Set();
   /** the view the last `cull` pass decided @internal */
   declutterViewKey = '';
 

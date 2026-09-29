@@ -131,6 +131,8 @@ export function runRenderWorker(
           // re-resolves the ratio and emits on the core itself (91.2)
           emitResize: () => {},
           emitError: (message) => post({ kind: 'error', message }),
+          emitGpuError: (info) => post({ kind: 'gpuerror', info }),
+          reportDeviceFit: (fit) => post({ kind: 'devicefit', fit }),
           gpuMappers: null,
           createImageDecoder: () => null,
         };

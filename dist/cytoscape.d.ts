@@ -1644,6 +1644,68 @@ interface RendererStats {
    * label in use displays taller than ~40 device px.  Promotion is
    * one-way for the renderer's lifetime. */
   glyphAtlasTier: number;
+  /** the renderer's own GPU allocation ledger (round 138) — see
+   * {@link GpuMemoryStats} */
+  gpu: GpuMemoryStats;
+}
+/**
+ * The renderer's allocation ledger (round 138): every buffer and
+ * texture its device creates, counted at creation and at `destroy()`.
+ * WebGPU exposes no memory meter, so these are the renderer's own
+ * figures — requested bytes, not what the driver commits — and a figure
+ * that trends upward across a session at a fixed graph size is a leak.
+ * All zero before `ready`.
+ */
+interface GpuMemoryStats {
+  /** bytes allocated and not yet destroyed */
+  liveBytes: number;
+  /** the most `liveBytes` has been */
+  peakBytes: number;
+  /** live buffers */
+  buffers: number;
+  /** live textures */
+  textures: number;
+  /** buffers and textures created, cumulative (reallocations included) */
+  allocations: number;
+  /** allocations the device refused — out of memory or invalid —
+   * cumulative; each also fired a `gpuerror` event */
+  allocationFailures: number;
+  /** uncaptured device errors, cumulative (a `gpuerror` fires for the
+   * first of each distinct message) */
+  errors: number;
+  /** live bytes and counts by allocation label (`'cy-gpu:node.position'`,
+   * `'cy-gpu:glyphs'`, …) */
+  byLabel: Record<string, {
+    bytes: number;
+    count: number;
+  }>;
+}
+/**
+ * The payload of the core's `gpuerror` event (round 138):
+ * `cy.on( 'gpuerror', ( evt, info ) => … )`.  Fired when the renderer's
+ * device refused an allocation, reported an error nothing else caught,
+ * or when the renderer stopped drawing a feature because its buffer
+ * would not fit the device — the degradation order: labels first, then
+ * charts and images, then gradients.
+ */
+interface GpuErrorInfo {
+  /**
+   * `'out-of-memory'` / `'validation'` / `'internal'` — the device's
+   * own error class; `'unfit'` — a buffer the renderer declined to
+   * allocate because it would exceed the device's limits
+   */
+  kind: 'out-of-memory' | 'validation' | 'internal' | 'unfit';
+  /** the device's message, or the renderer's for `'unfit'` */
+  message: string;
+  /** the allocation's label, when an allocation failed or was declined
+   * (a mirror column reads `'cy-gpu:<column id>'`) */
+  label?: string;
+  /** the bytes the allocation asked for */
+  bytes?: number;
+  /** what the renderer stopped drawing in response: `'labels'`,
+   * `'charts'`, `'images'`, `'curves'`, `'gradients'`, or `'frames'`
+   * (a core column failed: the scene holds its last frame) */
+  degraded?: string;
 }
 /**
  * How the box-selection gesture decides what the band caught (round
@@ -9718,5 +9780,5 @@ declare namespace cytoscape {
   export { GpuUnfitError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };
 export as namespace cytoscape;

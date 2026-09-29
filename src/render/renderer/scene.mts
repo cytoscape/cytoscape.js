@@ -40,7 +40,8 @@ export function drawScene(
   const store = rd.store;
   // the curved stream draws nothing until some edge has curved, so its
   // two pipelines stay uncompiled until then (see "deferred pipelines")
-  const curved = store.hasCurvedEdges();
+  // (round 138: nor while the curve blob is degraded)
+  const curved = store.hasCurvedEdges() && !rd.degraded.has('curves');
   const curvedEdges = curved ? curvedEdgesImpl(rd) : null;
   const curvedArrows = curved ? curvedArrowsImpl(rd) : null;
 
@@ -67,7 +68,11 @@ export function drawScene(
     );
 
     // parent background images ride their bodies' tier (v3's layering)
-    if (store.imageCount() > 0 && rd.imageArrays != null) {
+    if (
+      store.imageCount() > 0 &&
+      rd.imageArrays != null &&
+      !rd.degraded.has('images')
+    ) {
       images(rd)?.draw(
         pass,
         device,
@@ -80,7 +85,7 @@ export function drawScene(
     }
 
     // parent charts over their images (round 23; v3's pie order)
-    if (store.chartCount() > 0) {
+    if (store.chartCount() > 0 && !rd.degraded.has('charts')) {
       charts(rd)?.draw(
         pass,
         device,
@@ -259,7 +264,11 @@ export function drawScene(
 
   // leaf background images composite right over their bodies (15.3),
   // under overlays and labels; zero-cost while no node styles one
-  if (store.imageCount() > 0 && rd.imageArrays != null) {
+  if (
+    store.imageCount() > 0 &&
+    rd.imageArrays != null &&
+    !rd.degraded.has('images')
+  ) {
     images(rd)?.draw(
       pass,
       device,
@@ -272,7 +281,7 @@ export function drawScene(
   }
 
   // leaf charts over their images (round 23), under overlays/labels
-  if (store.chartCount() > 0) {
+  if (store.chartCount() > 0 && !rd.degraded.has('charts')) {
     charts(rd)?.draw(
       pass,
       device,
@@ -297,7 +306,8 @@ export function drawScene(
 
   // an unlabelled graph rasters no glyph, so neither label pipeline is
   // built until some stream has one (see "deferred pipelines")
-  const labels = rd.labelLayer;
+  // round 138: labels are the degradation order's first step
+  const labels = rd.degraded.has('labels') ? null : rd.labelLayer;
 
   if (labels == null) {
     return;
@@ -395,7 +405,7 @@ export function encodeCulls(
 ): void {
   const mirror = rd.mirror as ColumnMirror;
   const store = rd.store;
-  const labelLayer = rd.labelLayer;
+  const labelLayer = rd.degraded.has('labels') ? null : rd.labelLayer;
   const mv = `${mirror.version}`;
 
   groups.node?.ensure(

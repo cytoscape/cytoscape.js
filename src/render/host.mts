@@ -6,7 +6,8 @@ import type {
 } from '../store/graph-store.mjs';
 import type { StyleEngine } from '../style.mjs';
 import type { GpuTweenSink } from '../animation.mjs';
-import type { Position } from '../public-types.mjs';
+import type { GpuErrorInfo, Position } from '../public-types.mjs';
+import type { DeviceFit } from '../device-fit.mjs';
 import type { LabelStream } from '../contract.mjs';
 import type { Core } from '../core.mjs';
 import type { ImageDecoder } from '../image-registry.mjs';
@@ -147,6 +148,13 @@ export interface RenderHost {
   emitResize(): void;
   /** a fatal renderer error with no better channel (the 'error' event) */
   emitError(message: string): void;
+  /** a refused allocation, an uncaptured device error or a degraded
+   * feature (round 138): the core's `gpuerror` event */
+  emitGpuError(info: GpuErrorInfo): void;
+  /** the device's limits and the widest column each group cannot draw
+   * without (round 138), reported once the mirror exists: the model's
+   * add paths refuse growth past them */
+  reportDeviceFit(fit: DeviceFit): void;
   /**
    * The GPU style-mapper seam: present on the same-thread host, where
    * the mapper runtime reads compiled paint programs and the user-data
@@ -188,6 +196,10 @@ export function coreRenderHost(
     emitRender: () => cy._frameDrawn(),
     emitResize: () => cy.emit('resize'),
     emitError: (message) => cy.emit({ type: 'error' }, [message]),
+    emitGpuError: (info) => cy.emit({ type: 'gpuerror' }, [info]),
+    reportDeviceFit: (fit) => {
+      cy._gpuFit = fit;
+    },
     gpuMappers: { store: cy._store, styleEngine: cy._styleEngine },
     createImageDecoder,
   };

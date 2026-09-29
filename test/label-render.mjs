@@ -221,6 +221,60 @@ describe('gpu/labels: render pieces', function () {
       expect(mock.writes[0].size).to.equal(6 * GLYPH_WORDS * 4);
     });
 
+    it('stops at maxSlots: no growth past it, CPU or GPU, and says what it needed (round 138)', async function () {
+      buffer.maxSlots = 16;
+
+      buffer.set(0, glyphWords(10, 1)); // cap 8 -> 16: fits
+      buffer.sync();
+
+      expect(buffer.unfitBytes).to.equal(0);
+      expect(buffer.buffer().size).to.equal(16 * GLYPH_WORDS * 4);
+
+      buffer.set(1, glyphWords(10, 2)); // needs 20 > 16 slots: refused
+
+      expect(buffer.unfitBytes).to.equal(32 * GLYPH_WORDS * 4);
+      expect(buffer.highWater).to.equal(10); // the run was not kept
+
+      var created = mock.created.length;
+
+      buffer.sync();
+
+      expect(mock.created.length).to.equal(created); // no realloc
+      expect(buffer.buffer().size).to.equal(16 * GLYPH_WORDS * 4);
+
+      // released (the renderer degraded labels): the buffer goes, behind
+      // the submitted work, and nothing is kept or written after
+      var big = buffer.buffer();
+
+      buffer.release();
+
+      expect(buffer.highWater).to.equal(0);
+      expect(buffer.buffer().size).to.equal(GLYPH_WORDS * 4);
+      expect(big.destroyed).to.equal(false);
+      mock.flushWorkDone();
+      await Promise.resolve();
+      expect(big.destroyed).to.equal(true);
+
+      mock.writes.length = 0;
+      buffer.set(2, glyphWords(1, 3));
+      buffer.sync();
+
+      expect(buffer.highWater).to.equal(0);
+      expect(mock.writes).to.have.length(0);
+    });
+
+    it('grows its last step to maxSlots itself, not past it (round 138)', function () {
+      buffer.maxSlots = 20; // not a power of two: the dispatch reach
+
+      buffer.set(0, glyphWords(10, 1)); // 8 -> 16
+      buffer.set(1, glyphWords(10, 2)); // 20 fits: 16 -> 20, not 32
+      buffer.sync();
+
+      expect(buffer.unfitBytes).to.equal(0);
+      expect(buffer.highWater).to.equal(20);
+      expect(buffer.buffer().size).to.equal(20 * GLYPH_WORDS * 4);
+    });
+
     it('clears runs with null', function () {
       buffer.set(0, glyphWords(3, 7));
       buffer.set(0, null);

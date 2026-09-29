@@ -419,7 +419,7 @@ the `cxt*` family), the viewport gestures (`dragpan`, `scrollzoom`,
 `layoutstart`/`layoutready`/`layoutstop`, `patch`,
 `loadstart`/`loadchunk`/`loadready`/`loadstop`, `render`, `destroy`, `error`,
 `mouseover`/`mouseout`, `box`/`boxstart`/`boxend`/`boxselect`,
-`devicelost`/`devicerestored`, `move`/`moveout`).
+`devicelost`/`devicerestored`, `gpuerror`, `move`/`moveout`).
 
 **Dropped names register and then never fire, silently.** This is the porting
 hazard worth reading twice:
@@ -484,6 +484,7 @@ app trips on after everything else works.
 | `:selected` / `:parent:selected` | default-sheet blocks any later block beats | the same rule, as a `{ when: { selected: true } }` condition in v4's default stylesheet — so naming `background-color` yourself still replaces it, exactly as in v3 |
 | Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 | The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `closenessCentralityNormalized`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
+| A graph larger than the GPU can hold | grows until the browser runs out of memory | **`cy.add()` throws `cytoscape.GpuUnfitError`** (round 138) when the mounted renderer's device could not bind or dispatch over the grown tables — before anything is added, so the graph is unchanged; `cy.load()` and `cy.patch()` refuse the same way, and `cy.ready` rejects with it for a graph built headless and mounted on a device too small for it.  A buffer the device refuses, or one the renderer declines, fires **`gpuerror`** and degrades — labels first, then charts and images, then gradients — rather than blanking the canvas |
 | Cancelling a whole-graph algorithm | not possible — the call blocks | the promise carries **`cancel()`** (round 128): a pending run rejects with `cytoscape.CancelledError` (`error.name === 'CancelledError'`) and answers `true` once; a run that has already completed — every `'cpu'` run has, inside the call — answers `false` and its result stands |
 | `layout.stop()` | ends the run where it is, keeping the positions | **unchanged** — and **`layout.cancel()`** (round 128) is the other ending: the run is abandoned, a tween under way is dropped where it is, the nodes go back to where `run()` found them, the viewport is left alone, `layoutstop` still fires with `cancelled: true`, and `layout.promise()` rejects with `CancelledError`.  `cy.destroy()` cancels every run still open the same way |
 | Container resize | call `cy.resize()` after resizing the container | **automatic** (round 75.1): a `ResizeObserver` re-measures and emits `resize` once per change, so the call is only needed where no observer can see the change; an existing call is harmless (the observer finds the size applied and emits nothing more) |

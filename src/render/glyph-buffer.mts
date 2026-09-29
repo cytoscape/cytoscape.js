@@ -95,6 +95,17 @@ export class GlyphBuffer {
   highWater: number;
   /** total bytes uploaded via writeBuffer (stats) */
   uploadedBytes: number;
+  /**
+   * The most glyph slots the GPU buffer may grow to (round 138): the
+   * device's bindable size over 64 bytes, and the cull's dispatch
+   * reach.  Growth past it is declined — the buffer keeps its old
+   * size, and {@link unfitBytes} says what was asked for.
+   */
+  maxSlots = Infinity;
+  /** the bytes a declined growth would have needed; 0 while it fits */
+  unfitBytes = 0;
+  /** the renderer stopped drawing labels (round 138): sync is a no-op */
+  disabled = false;
 
   private device: MirrorDevice;
   private cap: number;
@@ -189,6 +200,10 @@ export class GlyphBuffer {
    * interleaved GLYPH_WORDS-per-glyph data (f32 fields bit-cast into u32).
    */
   set(nodeSlot: number, glyphWords: Uint32Array | null): void {
+    if (this.disabled) {
+      return; // round 138: nothing draws, so nothing is kept either
+    }
+
     const old = this.ranges.get(nodeSlot);
 
     // round 25.5: a same-count replacement — the steady state of a
@@ -230,7 +245,10 @@ export class GlyphBuffer {
 
       const outlined = countOutlined(glyphWords);
 
-      this.ensureCapacity(this.highWater + count);
+      if (!this.ensureCapacity(this.highWater + count)) {
+        return; // past maxSlots: the run is not kept (unfitBytes says so)
+      }
+
       this.words.set(glyphWords, this.highWater * GLYPH_WORDS);
       this.ranges.set(nodeSlot, { start: this.highWater, count, outlined });
       this.markDirty(this.highWater, this.highWater + count);
@@ -245,7 +263,15 @@ export class GlyphBuffer {
 
   /** Upload pending changes; no-op when clean. */
   sync(): void {
-    if (this.destroyed) {
+    if (this.destroyed || this.disabled) {
+      return;
+    }
+
+    if (this.gpuCap !== this.cap && this.cap > this.maxSlots) {
+      // round 138: past the device's limits — no realloc, no upload
+      // into a buffer too small for it; the renderer degrades labels
+      this.unfitBytes = this.cap * GLYPH_BYTES;
+
       return;
     }
 
@@ -298,6 +324,33 @@ export class GlyphBuffer {
   }
 
   /**
+   * Stop the stream for good (round 138: the renderer degraded labels):
+   * the runs, the CPU words and the GPU buffer go — the buffer behind
+   * the submitted work that may still bind it, replaced by a one-glyph
+   * one — and every later set() and sync() is a no-op.  A stream that
+   * reached the device's ceiling held a gigabyte on each side.
+   */
+  release(): void {
+    if (this.disabled) {
+      return;
+    }
+
+    const old = this.gpu;
+
+    this.disabled = true;
+    this.ranges.clear();
+    this.outlinedTotal = 0;
+    this.garbage = 0;
+    this.highWater = 0;
+    this.cap = 1;
+    this.words = new Uint32Array(GLYPH_WORDS);
+    this.gpu = this.createGpuBuffer(1);
+    this.gpuCap = 1;
+    this.version++;
+    this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
+  }
+
+  /**
    * Destroys the GPU buffer immediately and latches sync() to a no-op.
    * Unlike the deferred destroy on realloc this does not wait on
    * submitted work, so the caller must already have stopped encoding
@@ -313,9 +366,14 @@ export class GlyphBuffer {
     this.dirtyEnd = Math.max(this.dirtyEnd, end);
   }
 
-  private ensureCapacity(needed: number): void {
+  /** Grow the CPU words to hold `needed` glyphs; false — and nothing
+   * grown — when that capacity is past `maxSlots` (round 138: the CPU
+   * array stops where the GPU buffer must, or a stream the device cannot
+   * bind would still grow the heap — 2.5M labelled nodes failed a 2 GiB
+   * ArrayBuffer allocation inside the frame before this cap). */
+  private ensureCapacity(needed: number): boolean {
     if (needed <= this.cap) {
-      return;
+      return true;
     }
 
     let cap = this.cap;
@@ -324,12 +382,24 @@ export class GlyphBuffer {
       cap *= 2;
     }
 
+    if (cap > this.maxSlots && needed <= this.maxSlots) {
+      cap = this.maxSlots; // the last growth stops at the ceiling itself
+    }
+
+    if (cap > this.maxSlots) {
+      this.unfitBytes = Math.max(this.unfitBytes, cap * GLYPH_BYTES);
+
+      return false;
+    }
+
     const grown = new Uint32Array(cap * GLYPH_WORDS);
 
     grown.set(this.words);
     this.words = grown;
     this.cap = cap;
     // the GPU-side realloc + full re-upload happens on the next sync()
+
+    return true;
   }
 
   private compact(): void {

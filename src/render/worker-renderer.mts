@@ -4,6 +4,7 @@ import {
   pickNodeTierAt,
   type NodePickTier,
 } from '../cpu-pick.mjs';
+import { emptyGpuStats } from '../gpu/gpu-ledger.mjs';
 import { EDGE_PICK_BIT } from '../contract.mjs';
 import { resolveExportView } from './renderer.mjs';
 import type { ExportedImage } from './renderer.mjs';
@@ -338,6 +339,7 @@ export class WorkerRenderer implements ForceHostLike {
       labelShapeHits: 0,
       labelShapeMisses: 0,
       glyphAtlasTier: 1,
+      gpu: emptyGpuStats(),
     };
 
     const doc = container.ownerDocument as Document;
@@ -955,6 +957,17 @@ export class WorkerRenderer implements ForceHostLike {
 
       case 'error': {
         this.cy.emit({ type: 'error' }, [msg.message]);
+        break;
+      }
+
+      case 'gpuerror': {
+        this.cy.emit({ type: 'gpuerror' }, [msg.info]);
+        break;
+      }
+
+      case 'devicefit': {
+        // round 138: the model's add paths check the worker's device
+        this.cy._gpuFit = msg.fit;
         break;
       }
 

@@ -1,6 +1,7 @@
 import {
   GROUP_EDGES,
   GROUP_NODES,
+  COL,
   COLUMN_SPECS,
   columnSpec,
 } from '../contract.mjs';
@@ -10,6 +11,7 @@ import type {
   ModelView,
   StoreDelta,
 } from '../contract.mjs';
+import type { WidestColumn } from '../device-fit.mjs';
 import { BUFFER_USAGE } from '../gpu/webgpu-constants.mjs';
 
 /*
@@ -22,6 +24,26 @@ GPU storage-buffer mirror of the CPU-canonical columns.
   destroy() is deferred behind queue.onSubmittedWorkDone() so in-flight
   frames keep their bindings valid.  `version` bumps so pipelines rebuild
   their bind groups lazily.
+
+Round 138 (PLAN.md item 36, the degradation order's third step):
+
+- **The gradient columns are lazy.**  `node.gradient` and `edge.gradient`
+  are 32 bytes a slot — the widest column in both groups, allocated for
+  every scene and read by gradient fills alone.  Until some slot's meta
+  word names a gradient, each is a one-record placeholder of zeros (meta
+  0 = solid; a storage read past a binding's end returns a value inside
+  it or zero, so every slot reads solid); the first span, realloc or
+  construction that carries a gradient allocates it at capacity.  The
+  group's widest column then drops from 32 to 16 bytes, which halves
+  the per-slot byte ceiling's bite and saves 32 of 196 (node) and 164
+  (edge) bytes a slot.
+- **A buffer that would not fit is not created.**  With `maxBytes` set
+  (the device's bindable size), a blob (curve, image, chart) or a
+  gradient column that would outgrow it is replaced by a placeholder and
+  reported through `onUnfit`; its later spans are skipped.  The poly
+  blob holds one entry per distinct custom polygon, not per element, and
+  is not gated.  The group columns proper never reach this: the model
+  refuses the add first (`core/gpu-fit.mts`).
 */
 
 /** The subset of GPUDevice the mirror needs (kept narrow for mock-based unit tests). */
@@ -43,6 +65,54 @@ export interface MirrorDevice {
   };
 }
 
+/** The four blobs, by the label suffix their buffers carry. */
+export type BlobKind = 'curve' | 'poly' | 'image' | 'chart';
+
+/** What the mirror declined to allocate, for the renderer to degrade. */
+export interface MirrorUnfit {
+  /** the buffer's label (`'cy-gpu:chart-blob'`, `'cy-gpu:node.gradient'`) */
+  label: string;
+  /** the bytes it would have needed */
+  bytes: number;
+}
+
+/** Limits and callbacks the renderer hands the mirror (round 138). */
+export interface MirrorFitOptions {
+  /** the largest buffer the device can bind whole; Infinity = unchecked */
+  maxBytes?: number;
+  /** a blob or gradient column would not fit and was not allocated */
+  onUnfit?: (unfit: MirrorUnfit) => void;
+}
+
+/** The lazily-allocated columns (round 138). */
+const LAZY: ReadonlySet<ColumnId> = new Set([
+  COL.NODE_GRADIENT,
+  COL.EDGE_GRADIENT,
+]);
+
+/** Words per gradient record; word 0 is the meta (kind in bits 0..1). */
+const GRADIENT_WORDS = 8;
+
+/**
+ * Whether any gradient record in `[start, end)` names a gradient (a
+ * non-zero kind in its meta word).
+ */
+const anyGradient = (
+  words: Uint32Array,
+  start: number,
+  end: number,
+): boolean => {
+  for (let slot = start; slot < end; slot++) {
+    if ((words[slot * GRADIENT_WORDS] & 3) !== 0) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const BLOB_KINDS: readonly BlobKind[] = ['curve', 'poly', 'image', 'chart'];
+
 export class ColumnMirror {
   /** bumps whenever buffers are reallocated ⇒ bind groups must be rebuilt */
   version: number;
@@ -56,25 +126,34 @@ export class ColumnMirror {
   private destroyed: boolean;
   private gpuOwned: ReadonlySet<ColumnId>;
   private tweenOwned: ReadonlySet<ColumnId>;
-  /** the curve param blob's mirror (12b); same span/realloc rules */
-  private blob: GPUBuffer;
-  private blobCapacity: number;
-  private poly!: GPUBuffer;
-  private image!: GPUBuffer;
-  private chart!: GPUBuffer;
+  /** the four blob buffers (curve 12b, poly 13 C3, image 15.3, chart 23) */
+  private blobs: Map<BlobKind, GPUBuffer>;
+  /** lazy columns allocated at capacity (the rest are placeholders) */
+  private materialised: Set<ColumnId>;
+  /** buffers declined as too large, by label: their spans are skipped */
+  private unfit: Set<string>;
+  private maxBytes: number;
+  private onUnfit: ((unfit: MirrorUnfit) => void) | null;
 
   /**
    * Allocates a buffer per column at the view's current capacity and
    * uploads every backing array in full, so the mirror is coherent with
    * the view the moment the constructor returns — no initial sync() is
    * needed.  The four blobs (curve, poly, image, chart) are allocated
-   * the same way.
+   * the same way.  A lazy gradient column starts as a placeholder unless
+   * the view already carries a gradient.
    *
    * @param device — the device (or narrow mock) that owns every buffer
    * @param view — the CPU-canonical columns this mirror shadows; held by
    * reference, so later capacity growth is picked up by sync()
+   * @param fit — the device's bindable size and the unfit callback
+   *   (round 138); omitted, nothing is checked
    */
-  constructor(device: MirrorDevice, view: ModelView) {
+  constructor(
+    device: MirrorDevice,
+    view: ModelView,
+    fit: MirrorFitOptions = {},
+  ) {
     this.device = device;
     this.view = view;
     this.version = 0;
@@ -84,11 +163,15 @@ export class ColumnMirror {
     this.destroyed = false;
     this.gpuOwned = new Set();
     this.tweenOwned = new Set();
-    this.blobCapacity = 0;
-    this.blob = this.reallocBlob();
-    this.poly = this.reallocPolyBlob();
-    this.image = this.reallocImageBlob();
-    this.chart = this.reallocChartBlob();
+    this.blobs = new Map();
+    this.materialised = new Set();
+    this.unfit = new Set();
+    this.maxBytes = fit.maxBytes ?? Infinity;
+    this.onUnfit = fit.onUnfit ?? null;
+
+    for (const kind of BLOB_KINDS) {
+      this.reallocBlob(kind);
+    }
 
     this.realloc(GROUP_NODES);
     this.realloc(GROUP_EDGES);
@@ -135,22 +218,80 @@ export class ColumnMirror {
 
   /** The curve param blob's storage buffer (12b route families). */
   blobBuffer(): GPUBuffer {
-    return this.blob;
+    return this.blobs.get('curve') as GPUBuffer;
   }
 
   /** The custom-polygon point blob's storage buffer (round 13 C3). */
   polyBlobBuffer(): GPUBuffer {
-    return this.poly;
+    return this.blobs.get('poly') as GPUBuffer;
   }
 
   /** The background-image record blob's storage buffer (round 15.3). */
   imageBlobBuffer(): GPUBuffer {
-    return this.image;
+    return this.blobs.get('image') as GPUBuffer;
   }
 
   /** The chart record blob's storage buffer (round 23). */
   chartBlobBuffer(): GPUBuffer {
-    return this.chart;
+    return this.blobs.get('chart') as GPUBuffer;
+  }
+
+  /**
+   * The widest column a group cannot draw without (round 138) — what
+   * the model's add pre-flight multiplies the capacity by.  The lazy
+   * gradient columns do not count: a group that outgrows its gradient
+   * column keeps growing, and its gradients degrade to solid fills.
+   *
+   * @param group — `'nodes'` or `'edges'`
+   * @returns the column and its bytes per slot
+   */
+  widest(group: GroupName): WidestColumn {
+    return essentialWidest(group);
+  }
+
+  /**
+   * Whether a lazy column is allocated at capacity (round 138).
+   *
+   * @param id — a lazy column (`node.gradient`, `edge.gradient`)
+   * @returns true once some slot carried a gradient and the column fit
+   */
+  isMaterialised(id: ColumnId): boolean {
+    return this.materialised.has(id);
+  }
+
+  /**
+   * Swap a buffer that failed to allocate for a placeholder (round 138):
+   * the device refused it (out of memory), so every bind group holding
+   * it would be invalid and every frame rejected.  A blob or a lazy
+   * column becomes a one-record buffer of zeros and stops taking spans;
+   * `version` bumps so the bind groups rebuild on the valid buffer.
+   *
+   * @param label — the failed allocation's label
+   * @returns true when the label names a buffer this mirror can drop
+   */
+  dropFailed(label: string): boolean {
+    for (const kind of BLOB_KINDS) {
+      if (label === blobLabel(kind)) {
+        this.unfit.add(label);
+        this.replaceBlob(kind, this.placeholder(label, 4));
+        this.version++;
+
+        return true;
+      }
+    }
+
+    for (const id of LAZY) {
+      if (label === `cy-gpu:${id}`) {
+        this.unfit.add(label);
+        this.materialised.delete(id);
+        this.swapColumn(id, this.placeholder(label, GRADIENT_WORDS * 4));
+        this.version++;
+
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /** Apply a StoreDelta: reallocate resized groups, upload dirty spans for the rest. */
@@ -179,6 +320,23 @@ export class ColumnMirror {
         continue;
       } // owned on-GPU
 
+      if (LAZY.has(span.column) && !this.materialised.has(span.column)) {
+        // a placeholder takes no spans; a span that brings the first
+        // gradient allocates the column in full (which uploads it)
+        if (
+          !this.unfit.has(`cy-gpu:${span.column}`) &&
+          anyGradient(
+            this.view.column(span.column) as Uint32Array,
+            span.start,
+            span.end,
+          )
+        ) {
+          this.materialise(span.column);
+        }
+
+        continue;
+      }
+
       const arr = this.view.column(span.column);
       const byteStart = span.start * spec.bytesPerSlot;
       const byteLength = (span.end - span.start) * spec.bytesPerSlot;
@@ -194,80 +352,39 @@ export class ColumnMirror {
       this.uploadedBytes += byteLength;
     }
 
-    if (delta.curveBlob != null) {
-      if (delta.curveBlob.resized) {
-        this.blob = this.reallocBlob();
-      } else {
-        const data = this.view.curveBlob();
-        const byteStart = delta.curveBlob.start * 4;
-        const byteLength = (delta.curveBlob.end - delta.curveBlob.start) * 4;
+    const blobSpans: [BlobKind, StoreDelta['curveBlob']][] = [
+      ['curve', delta.curveBlob],
+      ['poly', delta.polyBlob],
+      ['image', delta.imageBlob],
+      ['chart', delta.chartBlob],
+    ];
 
-        this.device.queue.writeBuffer(
-          this.blob,
-          byteStart,
-          data.buffer,
-          data.byteOffset + byteStart,
-          byteLength,
-        );
-        this.uploadedBytes += byteLength;
+    for (const [kind, span] of blobSpans) {
+      if (span == null) {
+        continue;
       }
-    }
 
-    if (delta.polyBlob != null) {
-      if (delta.polyBlob.resized) {
-        this.poly = this.reallocPolyBlob();
-      } else {
-        const data = this.view.polyBlob();
-        const byteStart = delta.polyBlob.start * 4;
-        const byteLength = (delta.polyBlob.end - delta.polyBlob.start) * 4;
-
-        this.device.queue.writeBuffer(
-          this.poly,
-          byteStart,
-          data.buffer,
-          data.byteOffset + byteStart,
-          byteLength,
-        );
-        this.uploadedBytes += byteLength;
+      if (span.resized) {
+        this.reallocBlob(kind);
+        continue;
       }
-    }
 
-    if (delta.imageBlob != null) {
-      if (delta.imageBlob.resized) {
-        this.image = this.reallocImageBlob();
-      } else {
-        const data = this.view.imageBlob();
-        const byteStart = delta.imageBlob.start * 4;
-        const byteLength = (delta.imageBlob.end - delta.imageBlob.start) * 4;
-
-        this.device.queue.writeBuffer(
-          this.image,
-          byteStart,
-          data.buffer,
-          data.byteOffset + byteStart,
-          byteLength,
-        );
-        this.uploadedBytes += byteLength;
+      if (this.unfit.has(blobLabel(kind))) {
+        continue; // a placeholder: nothing past its one word to write
       }
-    }
 
-    if (delta.chartBlob != null) {
-      if (delta.chartBlob.resized) {
-        this.chart = this.reallocChartBlob();
-      } else {
-        const data = this.view.chartBlob();
-        const byteStart = delta.chartBlob.start * 4;
-        const byteLength = (delta.chartBlob.end - delta.chartBlob.start) * 4;
+      const data = this.blobData(kind);
+      const byteStart = span.start * 4;
+      const byteLength = (span.end - span.start) * 4;
 
-        this.device.queue.writeBuffer(
-          this.chart,
-          byteStart,
-          data.buffer,
-          data.byteOffset + byteStart,
-          byteLength,
-        );
-        this.uploadedBytes += byteLength;
-      }
+      this.device.queue.writeBuffer(
+        this.blobs.get(kind) as GPUBuffer,
+        byteStart,
+        data.buffer,
+        data.byteOffset + byteStart,
+        byteLength,
+      );
+      this.uploadedBytes += byteLength;
     }
   }
 
@@ -285,20 +402,81 @@ export class ColumnMirror {
     }
 
     this.buffers.clear();
-    this.blob.destroy();
-    this.poly.destroy();
-    this.image.destroy();
-    this.chart.destroy();
+
+    for (const buffer of this.blobs.values()) {
+      buffer.destroy();
+    }
+
+    this.blobs.clear();
   }
 
-  /** (Re)allocate the blob mirror at the pool's backing capacity and
-   * upload it in full; bumps version so bind groups rebuild. */
-  private reallocBlob(): GPUBuffer {
-    const data = this.view.curveBlob();
-    const old = this.blobCapacity > 0 || this.blob != null ? this.blob : null;
+  /** A blob's CPU backing array. */
+  private blobData(kind: BlobKind): Float32Array {
+    return kind === 'curve'
+      ? this.view.curveBlob()
+      : kind === 'poly'
+        ? this.view.polyBlob()
+        : kind === 'image'
+          ? this.view.imageBlob()
+          : this.view.chartBlob();
+  }
+
+  /** A small zeroed buffer standing in for one that does not exist. */
+  private placeholder(label: string, bytes: number): GPUBuffer {
+    return this.device.createBuffer({
+      label,
+      size: bytes,
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
+    });
+  }
+
+  /** Install a blob buffer, destroying the one it replaces behind the
+   * submitted work that may still bind it. */
+  private replaceBlob(kind: BlobKind, buffer: GPUBuffer): void {
+    const old = this.blobs.get(kind);
+
+    this.blobs.set(kind, buffer);
+
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
+    }
+  }
+
+  /** Install a column buffer, the same way. */
+  private swapColumn(id: ColumnId, buffer: GPUBuffer): void {
+    const old = this.buffers.get(id);
+
+    this.buffers.set(id, buffer);
+
+    if (old != null) {
+      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
+    }
+  }
+
+  /** (Re)allocate a blob at its pool's backing capacity and upload it in
+   * full — or, past the device's bindable size, stand a placeholder in
+   * and report it.  Bumps version so bind groups rebuild. */
+  private reallocBlob(kind: BlobKind): void {
+    const data = this.blobData(kind);
+    const label = blobLabel(kind);
+    const size = Math.max(data.byteLength, 4);
+
+    if (kind !== 'poly' && size > this.maxBytes) {
+      if (!this.unfit.has(label)) {
+        this.unfit.add(label);
+        this.replaceBlob(kind, this.placeholder(label, 4));
+        this.version++;
+        this.onUnfit?.({ label, bytes: size });
+      }
+
+      return;
+    }
+
+    this.unfit.delete(label);
+
     const buffer = this.device.createBuffer({
-      label: 'cy-gpu:curve-blob',
-      size: Math.max(data.byteLength, 4),
+      label,
+      size,
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
     });
 
@@ -313,112 +491,93 @@ export class ColumnMirror {
       this.uploadedBytes += data.byteLength;
     }
 
-    this.blobCapacity = data.length;
+    this.replaceBlob(kind, buffer);
     this.version++;
-
-    if (old != null) {
-      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
-    }
-
-    return buffer;
   }
 
-  /** The C3 poly blob's realloc twin. */
-  private reallocPolyBlob(): GPUBuffer {
-    const data = this.view.polyBlob();
-    const old = this.poly;
-    const buffer = this.device.createBuffer({
-      label: 'cy-gpu:poly-blob',
-      size: Math.max(data.byteLength, 4),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
-    });
+  /** Allocate a lazy column at capacity (its first gradient arrived),
+   * or report it unfit. */
+  private materialise(id: ColumnId): void {
+    const spec = columnSpec(id);
+    const size = this.view.capacity(spec.group) * spec.bytesPerSlot;
+    const label = `cy-gpu:${id}`;
 
-    if (data.byteLength > 0) {
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        data.buffer,
-        data.byteOffset,
-        data.byteLength,
-      );
-      this.uploadedBytes += data.byteLength;
+    if (size > this.maxBytes) {
+      this.unfit.add(label);
+      this.onUnfit?.({ label, bytes: size });
+
+      return;
     }
 
+    this.materialised.add(id);
+    this.swapColumn(id, this.columnBuffer(spec.id, spec.group));
     this.version++;
-
-    if (old != null) {
-      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
-    }
-
-    return buffer;
   }
 
-  /** The round-23 chart blob's realloc twin. */
-  private reallocChartBlob(): GPUBuffer {
-    const data = this.view.chartBlob();
-    const old = this.chart;
+  /** A column's buffer at its group's capacity, uploaded in full. */
+  private columnBuffer(id: ColumnId, group: GroupName): GPUBuffer {
+    const spec = columnSpec(id);
+    const cap = this.view.capacity(group);
     const buffer = this.device.createBuffer({
-      label: 'cy-gpu:chart-blob',
-      size: Math.max(data.byteLength, 4),
+      label: `cy-gpu:${spec.id}`,
+      size: Math.max(cap * spec.bytesPerSlot, 4),
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
     });
+    // full upload of the backing array (byte-identical, sized to capacity)
+    const arr = this.view.column(spec.id);
 
-    if (data.byteLength > 0) {
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        data.buffer,
-        data.byteOffset,
-        data.byteLength,
-      );
-      this.uploadedBytes += data.byteLength;
-    }
-
-    this.version++;
-
-    if (old != null) {
-      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
-    }
-
-    return buffer;
-  }
-
-  /** The 15.3 image blob's realloc twin. */
-  private reallocImageBlob(): GPUBuffer {
-    const data = this.view.imageBlob();
-    const old = this.image;
-    const buffer = this.device.createBuffer({
-      label: 'cy-gpu:image-blob',
-      size: Math.max(data.byteLength, 4),
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
-    });
-
-    if (data.byteLength > 0) {
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        data.buffer,
-        data.byteOffset,
-        data.byteLength,
-      );
-      this.uploadedBytes += data.byteLength;
-    }
-
-    this.version++;
-
-    if (old != null) {
-      this.device.queue.onSubmittedWorkDone().then(() => old.destroy());
-    }
+    this.device.queue.writeBuffer(
+      buffer,
+      0,
+      arr.buffer,
+      arr.byteOffset,
+      arr.byteLength,
+    );
+    this.uploadedBytes += arr.byteLength;
 
     return buffer;
   }
 
   private realloc(group: GroupName): void {
-    const cap = this.view.capacity(group);
     const olds: GPUBuffer[] = [];
+    const cap = this.view.capacity(group);
 
     for (const spec of COLUMN_SPECS) {
       if (spec.group !== group) {
+        continue;
+      }
+
+      if (LAZY.has(spec.id) && !this.materialised.has(spec.id)) {
+        if (!this.buffers.has(spec.id)) {
+          this.buffers.set(
+            spec.id,
+            this.placeholder(`cy-gpu:${spec.id}`, spec.bytesPerSlot),
+          );
+        }
+
+        // a gradient already in the backing array (a graph built, or
+        // re-mounted, with one) allocates the column now
+        if (
+          !this.unfit.has(`cy-gpu:${spec.id}`) &&
+          anyGradient(this.view.column(spec.id) as Uint32Array, 0, cap)
+        ) {
+          this.materialise(spec.id);
+        }
+
+        continue;
+      }
+
+      if (LAZY.has(spec.id) && cap * spec.bytesPerSlot > this.maxBytes) {
+        // a materialised gradient column the group outgrew: back to the
+        // placeholder, reported — the model's pre-flight holds only the
+        // columns a group cannot draw without, so the graph grows on
+        // and its gradients degrade to solid fills
+        const label = `cy-gpu:${spec.id}`;
+
+        this.materialised.delete(spec.id);
+        this.unfit.add(label);
+        this.swapColumn(spec.id, this.placeholder(label, spec.bytesPerSlot));
+        this.onUnfit?.({ label, bytes: cap * spec.bytesPerSlot });
         continue;
       }
 
@@ -428,26 +587,7 @@ export class ColumnMirror {
         olds.push(old);
       }
 
-      const size = Math.max(cap * spec.bytesPerSlot, 4);
-      const buffer = this.device.createBuffer({
-        label: `cy-gpu:${spec.id}`,
-        size,
-        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
-      });
-
-      // full upload of the backing array (byte-identical, sized to capacity)
-      const arr = this.view.column(spec.id);
-
-      this.device.queue.writeBuffer(
-        buffer,
-        0,
-        arr.buffer,
-        arr.byteOffset,
-        arr.byteLength,
-      );
-      this.uploadedBytes += arr.byteLength;
-
-      this.buffers.set(spec.id, buffer);
+      this.buffers.set(spec.id, this.columnBuffer(spec.id, group));
     }
 
     this.capacities[group] = cap;
@@ -463,3 +603,31 @@ export class ColumnMirror {
     }
   }
 }
+
+/** A blob buffer's label. */
+const blobLabel = (kind: BlobKind): string => `cy-gpu:${kind}-blob`;
+
+/**
+ * The widest column a group cannot draw without (round 138): every
+ * contract column but the lazy gradients.  16 bytes a slot in both
+ * groups (`node.outerGeom` and its peers; `edge.dashPattern`,
+ * `edge.curveParams`).
+ *
+ * @param group — `'nodes'` or `'edges'`
+ * @returns the column and its bytes per slot
+ */
+export const essentialWidest = (group: GroupName): WidestColumn => {
+  let widest: WidestColumn = { column: '', bytes: 0 };
+
+  for (const spec of COLUMN_SPECS) {
+    if (
+      spec.group === group &&
+      !LAZY.has(spec.id) &&
+      spec.bytesPerSlot > widest.bytes
+    ) {
+      widest = { column: spec.id, bytes: spec.bytesPerSlot };
+    }
+  }
+
+  return widest;
+};

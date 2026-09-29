@@ -94,6 +94,46 @@ export class LabelLayer {
     this.targetGlyphs = new GlyphBuffer(device);
   }
 
+  /** the four glyph streams */
+  private streams(): GlyphBuffer[] {
+    return [this.glyphs, this.edgeGlyphs, this.sourceGlyphs, this.targetGlyphs];
+  }
+
+  /**
+   * Cap every glyph stream's growth at `slots` (round 138): the
+   * device's bindable size over 64 bytes, and the cull's dispatch reach.
+   *
+   * @param slots — the most glyph instances one stream may hold
+   */
+  setMaxGlyphs(slots: number): void {
+    for (const stream of this.streams()) {
+      stream.maxSlots = slots;
+    }
+  }
+
+  /**
+   * The bytes the largest declined glyph growth asked for (round 138),
+   * or 0 while every stream fits.
+   *
+   * @returns bytes
+   */
+  unfitBytes(): number {
+    return Math.max(...this.streams().map((stream) => stream.unfitBytes));
+  }
+
+  /**
+   * Stop the glyph streams (round 138, the degradation order's first
+   * step): the renderer has stopped drawing labels, so every stream
+   * releases its runs and its buffers and keeps nothing more.  The
+   * label pass itself still runs — the laid dimensions the model reads
+   * come from it.
+   */
+  disable(): void {
+    for (const stream of this.streams()) {
+      stream.release();
+    }
+  }
+
   /** live glyph instances across all four streams (stats) */
   count(): number {
     return (

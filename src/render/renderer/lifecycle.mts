@@ -5,6 +5,7 @@ import type { RendererStats } from '../../public-types.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../../contract.mjs';
 import type { Renderer } from '../renderer.mjs';
 import * as countsImpl from './counts.mjs';
+import { emptyGpuStats } from '../../gpu/gpu-ledger.mjs';
 
 /**
  * Tear the renderer down: unsubscribe every listener and timer, reject
@@ -166,6 +167,8 @@ export function stats(rd: Renderer): RendererStats {
     labelShapeHits: rd.labelLayer?.memoHits ?? 0,
     labelShapeMisses: rd.labelLayer?.memoMisses ?? 0,
     glyphAtlasTier: rd.labelLayer?.atlas.tier ?? 1,
+    // round 138: the renderer's own allocation ledger
+    gpu: rd.ledger?.snapshot() ?? emptyGpuStats(),
   };
 }
 

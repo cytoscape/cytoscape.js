@@ -3,6 +3,16 @@
 // in ../renderer.mts for the surface.
 
 import { initGpuContext } from '../../gpu-context.mjs';
+import { bindableBytes } from '../../device-fit.mjs';
+import { GpuLedger } from '../../gpu/gpu-ledger.mjs';
+import {
+  checkLabelFit,
+  deviceFit,
+  maxGlyphs,
+  onGpuError,
+  onMirrorUnfit,
+  preflight,
+} from './limits.mjs';
 import { ColumnMirror } from '../column-mirror.mjs';
 import { CulledGroup, CullKernels } from '../cull.mjs';
 import { NodePipeline } from '../node-pipeline.mjs';
@@ -45,12 +55,15 @@ import {
 
 /** Acquire the device and build the pipelines, the mirror, the cull kernels and the label layer; resolves `ready`, or rejects when no adapter is reachable. */
 export async function init(rd: Renderer): Promise<void> {
+  // set when the pre-flight refuses the graph: that device's loss is
+  // ours, not an external one to recover from
+  let refused = false;
   const { device, context, format } = await initGpuContext(
     rd.canvas,
     (info) => {
       // our own teardown destroys the device after flagging `destroyed`;
       // anything else is a real external loss
-      if (rd.destroyed) {
+      if (rd.destroyed || refused) {
         return;
       }
 
@@ -70,6 +83,21 @@ export async function init(rd: Renderer): Promise<void> {
     return;
   }
 
+  // round 138: the ledger wraps the device before its first allocation,
+  // so every buffer and texture after this line is counted — and the
+  // graph is checked against the device before the mirror is sized to it
+  const fit = deviceFit(device);
+
+  try {
+    preflight(rd, fit);
+  } catch (err) {
+    refused = true;
+    device.destroy();
+
+    throw err;
+  }
+
+  rd.ledger = new GpuLedger(device, (info) => onGpuError(rd, info));
   rd.device = device;
   rd.context = context;
   rd.uniform = device.createBuffer({
@@ -85,8 +113,13 @@ export async function init(rd: Renderer): Promise<void> {
   // whose result is discarded here (the 12a init-order lesson, which
   // round 14.9 re-hit for the hierarchy flush)
   rd.store.flushDerived();
-  rd.mirror = new ColumnMirror(device, rd.store);
+  rd.mirror = new ColumnMirror(device, rd.store, {
+    maxBytes: bindableBytes(fit.limits),
+    onUnfit: (unfit) => onMirrorUnfit(rd, unfit.label, unfit.bytes),
+  });
   rd.store.takeDelta();
+  // the model's add paths refuse growth past this from here on
+  rd.host.reportDeviceFit(fit);
 
   // the CPU-applied base is current at init, so pre-ready data spans are
   // covered too; the runtime's first update() configures + fully
@@ -171,6 +204,7 @@ export async function init(rd: Renderer): Promise<void> {
   rd.edgePipeline = new EdgePipeline(device, format, kernels.visibleLayout);
   rd.arrowPipeline = new ArrowPipeline(device, format, kernels.visibleLayout);
   rd.labelLayer = new LabelLayer(device, rd.store);
+  rd.labelLayer.setMaxGlyphs(maxGlyphs(fit.limits));
   rd.picking = new Picking(device);
   rd.upscaler = rd.scaleCtl.min < 1 ? new Upscaler(device, format) : null;
   rd.gpuTimer = GpuTimer.isSupported(device) ? new GpuTimer(device) : null;
@@ -196,6 +230,27 @@ export function frameBody(rd: Renderer): void {
     return;
   }
   if (rd.canvas.width === 0 || rd.canvas.height === 0) {
+    return;
+  }
+
+  if (rd.degraded.has('frames')) {
+    // round 138: a core column's buffer failed to allocate, so every
+    // frame binding it would be rejected — the scene holds its last
+    // frame; the model's changes are taken, not uploaded, and an
+    // export cannot draw
+    if (rd.store.hasDirty()) {
+      rd.store.takeDelta();
+    }
+
+    for (const job of rd.pendingExports.splice(0)) {
+      job.reject(
+        new Error(
+          'Cannot export an image: a renderer buffer failed to allocate ' +
+            '(see the gpuerror event)',
+        ),
+      );
+    }
+
     return;
   }
 
@@ -284,6 +339,7 @@ export function frameBody(rd: Renderer): void {
   }
 
   rd.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
+  checkLabelFit(rd); // round 138: a stream past the device drops labels
 
   // web fonts the loadingdone listener cannot see (75.2): a provisional
   // atlas whose font settled, or a face added already loaded.  After

@@ -207,7 +207,7 @@ export function drawPickPasses(
     true,
   );
 
-  if (store.hasCurvedEdges()) {
+  if (store.hasCurvedEdges() && !rd.degraded.has('curves')) {
     curvedEdgesImpl(rd)?.draw(
       pass,
       device,
@@ -241,7 +241,7 @@ export function drawPickPasses(
       true,
     );
 
-    if (store.hasCurvedEdges()) {
+    if (store.hasCurvedEdges() && !rd.degraded.has('curves')) {
       curvedArrowsImpl(rd)?.drawMid(
         pass,
         device,

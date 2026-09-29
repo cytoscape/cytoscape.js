@@ -24,6 +24,21 @@ that compile and then behave differently.
 
 ### Added
 
+- **Device limits, `GpuUnfitError` and `gpuerror`** (round 138, PLAN.md
+  items 34–36).  Every device requests its adapter's own buffer and
+  dispatch limits (the default 128 MiB storage binding blanked every
+  frame past 4,194,304 elements).  `cy.add()`, `cy.load()` and
+  `cy.patch()` throw **`cytoscape.GpuUnfitError`** — before anything is
+  added — when the grown tables would not fit the mounted device, and
+  `cy.ready` rejects with it for a graph mounted on a device too small
+  for it.  A refused allocation, an uncaptured device error or a
+  degraded feature fires the new **`gpuerror`** event; the renderer
+  degrades labels first, then charts and images, then gradients (whose
+  columns are now allocated only once a gradient is used — 32 bytes a
+  slot saved on every other scene).  **`cy.stats().gpu`** is the
+  renderer's own allocation ledger: live bytes, peak, counts and
+  failures by label.  A browser soak over that ledger found the label
+  shaping memo unbounded under label churn; it is bounded now.
 - **`cy.viewportCounts()`** (round 75.6, #2283): the visible node and
   edge counts of the next drawn frame, read back from the GPU cull —
   after the viewport test, `visibility` and level of detail.  Async;

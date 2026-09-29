@@ -967,6 +967,67 @@ export interface RendererStats {
    * label in use displays taller than ~40 device px.  Promotion is
    * one-way for the renderer's lifetime. */
   glyphAtlasTier: number;
+  /** the renderer's own GPU allocation ledger (round 138) — see
+   * {@link GpuMemoryStats} */
+  gpu: GpuMemoryStats;
+}
+
+/**
+ * The renderer's allocation ledger (round 138): every buffer and
+ * texture its device creates, counted at creation and at `destroy()`.
+ * WebGPU exposes no memory meter, so these are the renderer's own
+ * figures — requested bytes, not what the driver commits — and a figure
+ * that trends upward across a session at a fixed graph size is a leak.
+ * All zero before `ready`.
+ */
+export interface GpuMemoryStats {
+  /** bytes allocated and not yet destroyed */
+  liveBytes: number;
+  /** the most `liveBytes` has been */
+  peakBytes: number;
+  /** live buffers */
+  buffers: number;
+  /** live textures */
+  textures: number;
+  /** buffers and textures created, cumulative (reallocations included) */
+  allocations: number;
+  /** allocations the device refused — out of memory or invalid —
+   * cumulative; each also fired a `gpuerror` event */
+  allocationFailures: number;
+  /** uncaptured device errors, cumulative (a `gpuerror` fires for the
+   * first of each distinct message) */
+  errors: number;
+  /** live bytes and counts by allocation label (`'cy-gpu:node.position'`,
+   * `'cy-gpu:glyphs'`, …) */
+  byLabel: Record<string, { bytes: number; count: number }>;
+}
+
+/**
+ * The payload of the core's `gpuerror` event (round 138):
+ * `cy.on( 'gpuerror', ( evt, info ) => … )`.  Fired when the renderer's
+ * device refused an allocation, reported an error nothing else caught,
+ * or when the renderer stopped drawing a feature because its buffer
+ * would not fit the device — the degradation order: labels first, then
+ * charts and images, then gradients.
+ */
+export interface GpuErrorInfo {
+  /**
+   * `'out-of-memory'` / `'validation'` / `'internal'` — the device's
+   * own error class; `'unfit'` — a buffer the renderer declined to
+   * allocate because it would exceed the device's limits
+   */
+  kind: 'out-of-memory' | 'validation' | 'internal' | 'unfit';
+  /** the device's message, or the renderer's for `'unfit'` */
+  message: string;
+  /** the allocation's label, when an allocation failed or was declined
+   * (a mirror column reads `'cy-gpu:<column id>'`) */
+  label?: string;
+  /** the bytes the allocation asked for */
+  bytes?: number;
+  /** what the renderer stopped drawing in response: `'labels'`,
+   * `'charts'`, `'images'`, `'curves'`, `'gradients'`, or `'frames'`
+   * (a core column failed: the scene holds its last frame) */
+  degraded?: string;
 }
 
 /**

@@ -9,10 +9,12 @@ import type {
 import type { GraphStore } from '../store/graph-store.mjs';
 import type {
   RendererOptions,
+  GpuErrorInfo,
   RendererStats,
   ViewportCounts,
 } from '../public-types.mjs';
 import type { ExportView } from './renderer.mjs';
+import type { DeviceFit } from '../device-fit.mjs';
 import type { ArrowEndFlags } from './host.mjs';
 import type { ForceParams } from '../layout/force-sim.mjs';
 
@@ -230,6 +232,9 @@ export type WorkerMessage =
   | { kind: 'labeldims'; dims: [LabelStream, number, number, number][] }
   | { kind: 'devicelost'; message: string }
   | { kind: 'error'; message: string }
+  // round 138: the ledger's reports and the device's fit, for the core
+  | { kind: 'gpuerror'; info: GpuErrorInfo }
+  | { kind: 'devicefit'; fit: DeviceFit }
   // a force run's state, posted when it changes (129.2): `started`
   // false means the engine could not open the run
   | {

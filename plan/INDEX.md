@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74–75, 79, 85–98, 101, 103, 106–124, 127–133 |
-| planned | 49–51, 71, 73, 76–78, 80–84, 99–100, 102, 104–105, 125–126 |
+| landed | 7–48, 52–70, 72, 74–75, 79, 85–98, 101–103, 106–124, 127–133 |
+| planned | 49–51, 71, 73, 76–78, 80–84, 99–100, 104–105, 125–126 |
 
 ## The sections
 
@@ -163,7 +163,7 @@ A round can land with an item held open; the round file says which.
 | 134 | 100 | 2026-08-19 | plan | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-plan-the-runtime-horizon-which-other-javascript-environments.md) |
 | 135 | 101 | 2026-08-20 | landed | [Quiet verification: the scripts agents run print only failures](rounds/2026-08-20-01-rnd0101-landed-quiet-verification-the-scripts-agents-run-print-only.md) |
 | 136 | 102–107 | 2026-08-20 | note | [The ecosystem rounds](rounds/2026-08-20-02-rnd0102_0107-note-the-ecosystem-rounds.md) |
-| 137 | 102 | 2026-08-20 | plan | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-plan-transient-emphasis-hover-highlight-without-touching-the.md) |
+| 137 | 102 | 2026-08-20 | landed | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-landed-transient-emphasis-hover-highlight-without-touching-the.md) |
 | 138 | 103 | 2026-08-20 | landed | [Progressive ingest: a first frame before the last byte](rounds/2026-08-20-04-rnd0103-landed-progressive-ingest-a-first-frame-before-the-last-byte.md) |
 | 139 | 104 | 2026-08-20 | plan | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-plan-label-decluttering-priority-and-collision-at-scale.md) |
 | 140 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |

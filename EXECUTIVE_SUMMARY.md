@@ -5,7 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 88 made edge overlays and
+- **Last updated**: 2026-09-29, after round 102 made the hover
+  highlight one call — `cy.emphasize( node.closedNeighborhood() )` dims
+  everything else and draws the neighbourhood above it, at 0.42 ms per
+  hover change at a 733-degree hub on the 465k-edge fixture, where
+  the per-element opacity spelling apps wrote took 2.9 s; the
+  emphasized set is a state the sheet can style, and the dim is the
+  renderer's (+0.64 ms of GPU a frame).  Earlier the same day round 88 made edge overlays and
   underlays end, turn and reach as v3's — round caps on every stroke, a
   translucent layer that blends once with a round join at every corner
   instead of darkening its own folds, and an overlay whose cap reaches
@@ -141,9 +147,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,024 unit · 1,034 module · 38 soak · 531 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
-| Documented API | 343 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 49 goldens compared **exactly** — zero differing pixels · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Automated tests | 3,044 unit · 1,035 module · 38 soak · 536 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Visual regression | 50 goldens compared **exactly** — zero differing pixels · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
@@ -1455,6 +1461,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys the look the maintainer saw was wrong, fixed before the WebGL
     path has to copy it; a translucent *line* on a sharp route still
     folds, logged for its own call.
+- **29 Sep** — the hover highlight is one call
+  - `cy.emphasize( eles )` emphasizes exactly those elements and dims
+    the rest; `cy.unemphasize()` ends it.  A hover handler is one line
+    per event.
+  - The emphasized set is a state the sheet styles (`{ when: {
+    emphasized: true } }`) and a query finds; the rest is dimmed by the
+    renderer as one composite at the core `dim-opacity`, with the set
+    drawn above it — an emphasized edge is never hidden under a dimmed
+    node.  Exports draw it; a clone does not share it.
+  - Buys the gesture every flagship app implements at any graph size:
+    0.015 ms per hover change at a typical node and 0.42 ms at a
+    733-degree hub on the 465k-edge fixture, against 2.9 s for the
+    per-element opacity spelling and 1.1 s for a dim that is a style
+    state — the measurement that decided the design.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1579,6 +1599,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   exported images or kept a second instance in step by hand; a v4 clone
   with `follow` is a full instance that stays current by itself, with
   its own sheet and its own selection.
+- **The hover highlight is `cy.emphasize()`** (29 Sep): v3 apps added a
+  class to everything outside the hovered neighbourhood and removed it
+  on leave — a write per element per hover; v4 emphasizes the set and
+  the renderer dims the rest, and `style()` on a dimmed element reads
+  its own values.
 - **The round-90 API review** (24 Aug): `forceRender`, `batchData`,
   `mutableElements`, `onRender`/`offRender` and the jQuery-era
   `bind`/`unbind`/`listen`/`unlisten` aliases are gone; listener
@@ -1647,7 +1672,7 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a small style-wins bundle.  The DX polish bundle landed 28 Sep |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Ecosystem rounds | Three plans serving the flagship apps, approved in direction: transient hover emphasis without per-mousemove restyles, priority-driven label decluttering, and parallel-edge scale plus a real GeneMANIA fixture.  The other three landed 28 Sep: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap), and progressive loading (`cy.load()`, a first frame before the last byte).  Decided alongside: CX2 conversion stays extension territory, not core |
+| Ecosystem rounds | Two plans serving the flagship apps, approved in direction: priority-driven label decluttering, and parallel-edge scale plus a real GeneMANIA fixture.  The other four landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured

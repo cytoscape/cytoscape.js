@@ -251,7 +251,15 @@ that blend once (capsule steps with per-edge depth, chosen over
 equal-depth alone by measurement) and v3's overlay reach over a hollow
 head (the gap span — measured, no arrow pass); it **closed item 27**
 and logged **item 81**, the same fold in a translucent line's own
-strip.
+strip.  Round 102 (transient emphasis, landed 2026-09-29 on the
+sitting's calls — core API, the design by measurement) measured the
+app spelling at 2.9 s per hover change on ndex-x-large and a dim that
+is a style state at 1.1 s (the O(V) toggle), so it shipped
+`cy.emphasize()` / `cy.unemphasize()`: the emphasized set a styleable
+state, the rest dimmed by the renderer as a two-tier composite at the
+core `dim-opacity` (0.42 ms per change at the 733-degree hub, +0.64 ms
+of GPU per frame); it took item 55's measurement note and raised no new
+item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1407,7 +1415,11 @@ directions".*
     the "app spelling today" (a per-element opacity bypass or `hide()`
     over everything outside the closed neighbourhood), timed in the
     console per hover change — the numbers on em-web and ndex-large
-    belong in 102's first measurement when that round opens.
+    belong in 102's first measurement when that round opens.  **Taken
+    by round 102 (2026-09-29)**: on ndex-x-large the bypass costs 2.9 s
+    and `hide()` 164 ms per hover change (`benchmark/emphasis.mjs`),
+    which is why the dim became the renderer's; the panel now offers
+    `cy.emphasize()` beside them, ungated by size.
 56. **Size-aware repulsion's convergence price** (logged 2026-09-03,
     round 116; **taken by round 117, 2026-09-04: the sim half is
     opt-in**, `avoidOverlapInSim`).  The contact term kept every pile

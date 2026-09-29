@@ -317,7 +317,14 @@ batch, `batchend` last, after a patch's summary — and measured the
 snapshot price at 100k (`cy.serialize()` 27 ms and 3.07 MB a step,
 `cy.patch()` back 18–31 ms); item 41 stays open for the stack, and the
 round logged **item 84**, that call put to the maintainer with the
-numbers.  Item 63 is carried
+numbers.  Round 140 (landed 2026-09-29 on the sitting's call for
+**item 45**) measured that the declaration roll-up keeps generics and
+their hover docs in all three shipped declarations, then built
+`cytoscape<NodeData, EdgeData>( … )` through `data()`, the collections,
+events, payloads, queries and the sheet's field references, untyped
+exactly as before without a generic; item 45 is closed, and it raised no
+new item — the algorithm and layout callbacks are a deferral in its
+record.  Item 63 is carried
 by round 126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
@@ -1206,6 +1213,20 @@ directions".*
     real; if not, the round is first a build-pipeline round.
     **Call taken (2026-09-28, the eleventh sitting): prototype, then
     build, before alpha.**
+    **Closed by round 140 (2026-09-29)**: the prototype measured that
+    rolldown-plugin-dts keeps the generics, their defaults and each
+    overload's hover doc in all three shipped declarations (no pipeline
+    fix needed), and the build landed — `data()`, group-aware
+    collections, events, add/patch/load/clone payloads, queries and
+    mapper fields typed; with no generic every type is the untyped one
+    (the existing type tests unchanged; never inferred, by `NoInfer`).
+    Measured in-round: testing the collection's own shape for `any`
+    made a node collection unassignable to a mixed one (a conditional's
+    check position measures invariant), so the untyped test reads the
+    instance's shapes and a mixed collection reads only shared fields.
+    Stops: columnar/wire payloads, the `'data(name)'` string, condition
+    values; algorithm and layout callbacks deferred.  The record:
+    `plan/rounds/2026-09-29-07-rnd0140-landed-item-45-typed-element-data.md`.
 46. **Framework bindings, React first** (raised 2026-08-19).
     `react-cytoscapejs` is stale and every consumer rebuilds the
     same lifecycle glue.  An official wrapper owns: mount/destroy

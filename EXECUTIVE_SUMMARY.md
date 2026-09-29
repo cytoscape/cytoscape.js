@@ -5,7 +5,16 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 139 gave apps the hooks
+- **Last updated**: 2026-09-29, after round 140 typed element data: an
+  app that names its node and edge data shapes —
+  `cytoscape<Gene, Link>( … )` — gets `cy.nodes().data( 'weight' )` read
+  as a number, a misspelt field in `data()`, an element definition, a
+  query or a stylesheet mapper rejected by the compiler, and collections
+  that know which group they hold; events and the add/patch/load/clone
+  payloads carry the same shapes.  An app that names none sees exactly
+  the types it saw before.  The declaration build was measured first
+  and keeps the generics and their hover docs in all three shipped
+  declarations.  Earlier the same day round 139 gave apps the hooks
   for undo and priced the obvious undo: every outermost batch — and so
   every `cy.batch()` and `cy.patch()` — is now bracketed by
   `batchstart` and `batchend` events, so an app snapshots the graph as
@@ -215,7 +224,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | | |
 |---|---|
 | Automated tests | 3,148 unit · 1,096 module · 38 soak · 574 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
-| Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
@@ -1620,6 +1629,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     at 100k elements: 27 ms and 3 MB per transaction, 18–31 ms to undo,
     whatever the edit.  v4 ships no undo stack itself; that call is open
     with the numbers.
+- **29 Sep** — application data gets types
+  - `cytoscape<NodeData, EdgeData>( … )` types an instance by the app's
+    data shapes: `data()` takes only their keys and reads their field
+    types (or `undefined`, since a read can miss); `cy.nodes()`,
+    `source()`, `children()` read the node shape and `edges()`,
+    `connectedEdges()` the edge shape; a mixed collection reads the
+    fields both share.  Events, `add`/`patch`/`load`/`clone` payloads,
+    queries and mapper fields in the stylesheet are checked against the
+    same shapes, so a misspelt field is a compile error.
+  - Without the generics nothing changes: every type is the untyped one,
+    and they are never inferred from the elements passed in.
+  - Stops short of the binary and columnar payloads (untyped by
+    nature), the `'data(name)'` label string and the algorithm and
+    layout callbacks, which are deferred.
+  - Buys a TypeScript app its data model checked end to end, at no cost
+    to one that does not use it (type-checking the source: 0.49 → 0.50 s).
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1787,7 +1812,7 @@ only and no runtime `validate()`, the `$id` base left to the
 documentation site, the columnar form's schema held until 4.x and
 SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
-with a renderer soak — landed 29 Sep — typed element data, batch events for undo plus a
+with a renderer soak — landed 29 Sep — typed element data — landed 29 Sep — batch events for undo plus a
 snapshot measurement — landed 29 Sep, the stack itself left open above
 — the worker host's images and fonts, and the CJK
 label design.  During alpha: the extension ports, a devtools panel and

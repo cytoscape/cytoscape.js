@@ -1,0 +1,30 @@
+{
+  "golden": "selection-overridden",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(1,105,217)",
+      "rgb(142,68,173)",
+      "rgb(230,126,34)"
+    ],
+    "border-color": [
+      "rgb(149,165,166)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "60"
+    ],
+    "width": [
+      "60"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

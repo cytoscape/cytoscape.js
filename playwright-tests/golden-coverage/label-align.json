@@ -1,0 +1,57 @@
+{
+  "golden": "label-align",
+  "elements": {
+    "nodes": 9,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "border-color": [
+      "rgb(178,190,195)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "label": [
+      "lbl"
+    ],
+    "text-background-color": [
+      "rgb(255,234,167)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "1"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-halign": [
+      "left",
+      "right"
+    ],
+    "text-valign": [
+      "center",
+      "top"
+    ],
+    "width": [
+      "46"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

@@ -1,0 +1,52 @@
+{
+  "golden": "mid-arrows",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 5
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(127,140,141)"
+    ],
+    "height": [
+      "26"
+    ],
+    "width": [
+      "26"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "bezier",
+      "haystack",
+      "taxi"
+    ],
+    "haystack-radius": [
+      "0.800000011920929"
+    ],
+    "line-color": [
+      "rgb(189,195,199)"
+    ],
+    "mid-source-arrow-color": [
+      "rgb(22,160,133)"
+    ],
+    "mid-source-arrow-shape": [
+      "circle"
+    ],
+    "mid-target-arrow-color": [
+      "rgb(142,68,173)"
+    ],
+    "mid-target-arrow-shape": [
+      "triangle"
+    ],
+    "taxi-turn": [
+      "40"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "core": {}
+}

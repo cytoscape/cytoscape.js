@@ -1,0 +1,50 @@
+{
+  "golden": "arrow-scalars",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(44,62,80)"
+    ],
+    "height": [
+      "22"
+    ],
+    "width": [
+      "22"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "arrow-scale": [
+      "2"
+    ],
+    "line-color": [
+      "rgb(149,165,166)"
+    ],
+    "source-arrow-color": [
+      "rgb(22,160,133)"
+    ],
+    "source-arrow-fill": [
+      "hollow"
+    ],
+    "source-arrow-shape": [
+      "circle"
+    ],
+    "target-arrow-color": [
+      "rgb(192,57,43)"
+    ],
+    "target-arrow-fill": [
+      "hollow"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "width": [
+      "5"
+    ]
+  },
+  "core": {}
+}

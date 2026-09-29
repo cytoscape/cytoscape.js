@@ -1,0 +1,47 @@
+{
+  "golden": "nodes-edges-arrows",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(192,57,43)",
+      "rgb(39,174,96)",
+      "rgb(41,128,185)"
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "height": [
+      "40"
+    ],
+    "opacity": [
+      "0.4000000059604645"
+    ],
+    "shape": [
+      "rectangle",
+      "round-rectangle"
+    ],
+    "width": [
+      "50"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "target-arrow-color": [
+      "rgb(142,68,173)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {}
+}

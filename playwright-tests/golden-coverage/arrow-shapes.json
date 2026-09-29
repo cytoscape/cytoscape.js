@@ -1,0 +1,51 @@
+{
+  "golden": "arrow-shapes",
+  "elements": {
+    "nodes": 22,
+    "parents": 0,
+    "edges": 12
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(149,165,166)"
+    ],
+    "height": [
+      "14"
+    ],
+    "width": [
+      "14"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "source-arrow-color": [
+      "rgb(192,57,43)"
+    ],
+    "source-arrow-shape": [
+      "chevron"
+    ],
+    "target-arrow-color": [
+      "rgb(142,68,173)"
+    ],
+    "target-arrow-shape": [
+      "chevron",
+      "circle",
+      "circle-triangle",
+      "diamond",
+      "square",
+      "tee",
+      "triangle",
+      "triangle-backcurve",
+      "triangle-cross",
+      "triangle-tee",
+      "vee"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "core": {}
+}

@@ -1,0 +1,62 @@
+{
+  "golden": "charts-pie-stripes",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "border-color": [
+      "rgb(45,52,54)"
+    ],
+    "border-width": [
+      "4"
+    ],
+    "chart": [
+      "pie",
+      "stripes"
+    ],
+    "chart-colors": [
+      "rgb(31,119,180) rgb(255,127,14)",
+      "rgb(31,119,180) rgb(255,127,14) rgb(44,160,44)",
+      "rgb(31,119,180) rgb(255,127,14) rgb(44,160,44) rgb(214,39,40)"
+    ],
+    "chart-direction": [
+      "horizontal"
+    ],
+    "chart-hole": [
+      "0.5"
+    ],
+    "chart-size": [
+      "0.6"
+    ],
+    "chart-start-angle": [
+      "0.7853981852531433"
+    ],
+    "chart-values": [
+      "0.2 0.2 0.2 0.4",
+      "0.25 0.25",
+      "0.3 0.3 0.4",
+      "0.4 0.3 0.2 0.1",
+      "0.5 0.3 0.2",
+      "0.6 0.4"
+    ],
+    "height": [
+      "60",
+      "80"
+    ],
+    "shape": [
+      "rectangle",
+      "round-rectangle"
+    ],
+    "width": [
+      "80"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

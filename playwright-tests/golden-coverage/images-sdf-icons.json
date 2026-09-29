@@ -1,0 +1,44 @@
+{
+  "golden": "images-sdf-icons",
+  "elements": {
+    "nodes": 2,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(245,246,250)"
+    ],
+    "background-fit": [
+      "contain"
+    ],
+    "background-image": [
+      "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'32'%20height%3D'32'%3E%3Cpath%20d%3D'M16%2029%20C2%2018%202%208%209%205%20C13%203%2016%206%2016%209%20C16%206%2019%203%2023%205%20C30%208%2030%2018%2016%2029Z'%2F%3E%3C%2Fsvg%3E"
+    ],
+    "background-image-color": [
+      "rgb(0,184,148)",
+      "rgb(214,48,49)"
+    ],
+    "background-image-type": [
+      "sdf-icon"
+    ],
+    "border-color": [
+      "rgb(127,140,141)"
+    ],
+    "border-width": [
+      "1.5"
+    ],
+    "height": [
+      "40"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "width": [
+      "40"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

@@ -1,0 +1,38 @@
+{
+  "golden": "straight-triangle",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(142,68,173)"
+    ],
+    "height": [
+      "26"
+    ],
+    "width": [
+      "26"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "straight-triangle"
+    ],
+    "line-color": [
+      "rgb(149,165,166)"
+    ],
+    "target-arrow-color": [
+      "rgb(44,62,80)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "width": [
+      "14"
+    ]
+  },
+  "core": {}
+}

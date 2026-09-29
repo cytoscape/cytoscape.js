@@ -1,0 +1,73 @@
+{
+  "golden": "border-styles",
+  "elements": {
+    "nodes": 40,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(253,246,227)"
+    ],
+    "border-color": [
+      "rgb(26,82,118)"
+    ],
+    "border-dash-pattern": [
+      "7 3"
+    ],
+    "border-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "border-width": [
+      "5"
+    ],
+    "ghost": [
+      "yes"
+    ],
+    "ghost-offset-x": [
+      "9"
+    ],
+    "ghost-offset-y": [
+      "7"
+    ],
+    "ghost-opacity": [
+      "0.5"
+    ],
+    "height": [
+      "42"
+    ],
+    "outline-color": [
+      "rgb(125,60,152)"
+    ],
+    "outline-offset": [
+      "3"
+    ],
+    "outline-opacity": [
+      "1"
+    ],
+    "outline-style": [
+      "dashed",
+      "dotted"
+    ],
+    "outline-width": [
+      "5"
+    ],
+    "shape": [
+      "barrel",
+      "cut-rectangle",
+      "hexagon",
+      "rectangle",
+      "round-hexagon",
+      "round-rectangle",
+      "star"
+    ],
+    "width": [
+      "50"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

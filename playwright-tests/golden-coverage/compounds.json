@@ -1,0 +1,58 @@
+{
+  "golden": "compounds",
+  "elements": {
+    "nodes": 3,
+    "parents": 3,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)",
+      "rgb(225,112,85)"
+    ],
+    "border-color": [
+      "rgb(45,52,54)",
+      "rgb(9,132,227)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "106",
+      "132",
+      "56"
+    ],
+    "width": [
+      "146",
+      "172",
+      "40",
+      "66"
+    ]
+  },
+  "parents": {
+    "padding": [
+      "12"
+    ],
+    "padding-bottom": [
+      "12"
+    ],
+    "padding-left": [
+      "12"
+    ],
+    "padding-right": [
+      "12"
+    ],
+    "padding-top": [
+      "12"
+    ]
+  },
+  "edges": {
+    "line-color": [
+      "rgb(108,92,231)"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "core": {}
+}

@@ -1,0 +1,42 @@
+{
+  "golden": "segments-families",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(230,126,34)"
+    ],
+    "height": [
+      "24"
+    ],
+    "width": [
+      "24"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "round-segments",
+      "segments"
+    ],
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "line-style": [
+      "dashed"
+    ],
+    "segment-distances": [
+      "40 -40"
+    ],
+    "segment-radii": [
+      "18"
+    ],
+    "segment-weights": [
+      "0.3 0.7"
+    ]
+  },
+  "core": {}
+}

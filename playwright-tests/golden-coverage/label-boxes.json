@@ -1,0 +1,54 @@
+{
+  "golden": "label-boxes",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(41,128,185)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "18"
+    ],
+    "height": [
+      "24"
+    ],
+    "label": [
+      "MIXED CASE",
+      "Mixed Case"
+    ],
+    "text-background-color": [
+      "rgb(241,196,15)",
+      "rgba(241,196,15,0)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "4"
+    ],
+    "text-background-shape": [
+      "round-rectangle"
+    ],
+    "text-border-color": [
+      "rgb(192,57,43)"
+    ],
+    "text-border-opacity": [
+      "1"
+    ],
+    "text-border-width": [
+      "2"
+    ],
+    "width": [
+      "24"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

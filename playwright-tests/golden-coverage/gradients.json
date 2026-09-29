@@ -1,0 +1,53 @@
+{
+  "golden": "gradients",
+  "elements": {
+    "nodes": 7,
+    "parents": 0,
+    "edges": 2
+  },
+  "nodes": {
+    "background-fill": [
+      "linear-gradient",
+      "radial-gradient"
+    ],
+    "background-gradient-direction": [
+      "to-bottom-right",
+      "to-right",
+      "to-top"
+    ],
+    "background-gradient-stop-colors": [
+      "rgb(231,76,60) rgb(241,196,15) rgb(46,204,113)"
+    ],
+    "background-gradient-stop-positions": [
+      "0% 50% 100%"
+    ],
+    "height": [
+      "52"
+    ],
+    "shape": [
+      "rectangle"
+    ],
+    "width": [
+      "64"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "bezier"
+    ],
+    "line-fill": [
+      "linear-gradient"
+    ],
+    "line-gradient-stop-colors": [
+      "rgb(142,68,173) rgb(52,152,219) rgb(22,160,133)"
+    ],
+    "line-gradient-stop-positions": [
+      "0% 50% 100%"
+    ],
+    "width": [
+      "8"
+    ]
+  },
+  "core": {}
+}

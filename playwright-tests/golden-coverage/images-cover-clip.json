@@ -1,0 +1,34 @@
+{
+  "golden": "images-cover-clip",
+  "elements": {
+    "nodes": 2,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(236,240,241)"
+    ],
+    "background-fit": [
+      "cover"
+    ],
+    "background-image": [
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg=="
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "4"
+    ],
+    "height": [
+      "56"
+    ],
+    "width": [
+      "70"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

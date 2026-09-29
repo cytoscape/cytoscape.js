@@ -1,0 +1,55 @@
+{
+  "golden": "label-visuals",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "color": [
+      "rgb(255,255,255)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "label": [
+      "boxed",
+      "outlined",
+      "shifted"
+    ],
+    "text-background-color": [
+      "rgb(44,62,80)",
+      "rgba(44,62,80,0)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "3"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-margin-x": [
+      "30"
+    ],
+    "text-margin-y": [
+      "-60"
+    ],
+    "text-outline-color": [
+      "rgb(192,57,43)"
+    ],
+    "text-outline-width": [
+      "3"
+    ],
+    "width": [
+      "40"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

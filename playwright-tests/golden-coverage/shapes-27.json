@@ -1,0 +1,37 @@
+{
+  "golden": "shapes-27",
+  "elements": {
+    "nodes": 5,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(52,152,219)"
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "height": [
+      "24",
+      "40",
+      "60"
+    ],
+    "shape": [
+      "concave-hexagon",
+      "cut-rectangle",
+      "right-rhomboid"
+    ],
+    "width": [
+      "150",
+      "24",
+      "60"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

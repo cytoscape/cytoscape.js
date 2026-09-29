@@ -1,0 +1,44 @@
+{
+  "golden": "labels-zoom-closeup",
+  "elements": {
+    "nodes": 2,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(178,190,195)"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "height": [
+      "4"
+    ],
+    "label": [
+      "Regime gap 25",
+      "Weight kg query"
+    ],
+    "text-background-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

@@ -1,0 +1,44 @@
+{
+  "golden": "ghost",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(192,57,43)"
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "4"
+    ],
+    "ghost": [
+      "yes"
+    ],
+    "ghost-offset-x": [
+      "24"
+    ],
+    "ghost-offset-y": [
+      "18"
+    ],
+    "ghost-opacity": [
+      "0.44999998807907104"
+    ],
+    "height": [
+      "36"
+    ],
+    "shape": [
+      "diamond",
+      "rectangle"
+    ],
+    "width": [
+      "44"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

@@ -1,0 +1,59 @@
+{
+  "golden": "edge-label-autorotate",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(178,190,195)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "height": [
+      "16"
+    ],
+    "width": [
+      "16"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "label": [
+      "down",
+      "downhill",
+      "uphill"
+    ],
+    "line-color": [
+      "rgb(178,190,195)"
+    ],
+    "text-background-color": [
+      "rgb(255,234,167)",
+      "rgba(255,234,167,0)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "2"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-rotation": [
+      "autorotate"
+    ],
+    "width": [
+      "2"
+    ]
+  },
+  "core": {}
+}

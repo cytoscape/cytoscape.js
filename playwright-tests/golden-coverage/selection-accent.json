@@ -1,0 +1,36 @@
+{
+  "golden": "selection-accent",
+  "elements": {
+    "nodes": 5,
+    "parents": 2,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(1,105,217)",
+      "rgb(204,225,249)"
+    ],
+    "border-color": [
+      "rgb(149,165,166)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "60",
+      "82"
+    ],
+    "width": [
+      "192",
+      "60",
+      "82"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "width": [
+      "2"
+    ]
+  },
+  "core": {}
+}

@@ -1,0 +1,23 @@
+{
+  "golden": "far-zoom-lod",
+  "elements": {
+    "nodes": 600,
+    "parents": 0,
+    "edges": 580
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(52,73,94)"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "width": [
+      "2"
+    ]
+  },
+  "core": {}
+}

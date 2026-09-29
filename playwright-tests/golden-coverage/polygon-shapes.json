@@ -1,0 +1,42 @@
+{
+  "golden": "polygon-shapes",
+  "elements": {
+    "nodes": 11,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(52,152,219)"
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "height": [
+      "34",
+      "50"
+    ],
+    "shape": [
+      "diamond",
+      "heptagon",
+      "hexagon",
+      "octagon",
+      "pentagon",
+      "rhomboid",
+      "star",
+      "tag",
+      "triangle",
+      "vee"
+    ],
+    "width": [
+      "130",
+      "50"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

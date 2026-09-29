@@ -1,0 +1,45 @@
+{
+  "golden": "node-layers",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(41,128,185)"
+    ],
+    "height": [
+      "36"
+    ],
+    "overlay-color": [
+      "rgba(231,76,60,0)",
+      "rgba(231,76,60,0.4)"
+    ],
+    "overlay-opacity": [
+      "0.4"
+    ],
+    "overlay-padding": [
+      "8"
+    ],
+    "overlay-shape": [
+      "ellipse"
+    ],
+    "underlay-color": [
+      "rgba(39,174,96,0)",
+      "rgba(39,174,96,0.8)"
+    ],
+    "underlay-opacity": [
+      "0.8"
+    ],
+    "underlay-padding": [
+      "14"
+    ],
+    "width": [
+      "44"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

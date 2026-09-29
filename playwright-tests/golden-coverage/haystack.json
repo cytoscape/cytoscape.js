@@ -1,0 +1,32 @@
+{
+  "golden": "haystack",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 8
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(41,128,185)"
+    ],
+    "height": [
+      "50"
+    ],
+    "width": [
+      "50"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "haystack"
+    ],
+    "haystack-radius": [
+      "0.8999999761581421"
+    ],
+    "line-color": [
+      "rgb(231,76,60)"
+    ]
+  },
+  "core": {}
+}

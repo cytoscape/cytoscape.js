@@ -1,0 +1,37 @@
+{
+  "golden": "self-loops",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 6
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(52,152,219)"
+    ],
+    "height": [
+      "26"
+    ],
+    "width": [
+      "26"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "bezier"
+    ],
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "loop-direction": [
+      "-45",
+      "90"
+    ],
+    "loop-sweep": [
+      "-150",
+      "-90"
+    ]
+  },
+  "core": {}
+}

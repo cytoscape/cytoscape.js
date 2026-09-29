@@ -1,0 +1,40 @@
+{
+  "golden": "compound-loops",
+  "elements": {
+    "nodes": 2,
+    "parents": 2,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)",
+      "rgb(225,112,85)"
+    ],
+    "border-color": [
+      "rgb(45,52,54)",
+      "rgb(9,132,227)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "102",
+      "124"
+    ],
+    "width": [
+      "162",
+      "184",
+      "40"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(108,92,231)"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "core": {}
+}

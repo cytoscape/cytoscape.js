@@ -6,6 +6,12 @@ import {
   writeDiffArtifacts,
   compareToGolden,
 } from './lib/image-diff.mjs';
+import {
+  collectStyleCoverage,
+  compareToCoverage,
+  COMPOUND_PROPS,
+  MAX_VALUES,
+} from './lib/style-coverage.mjs';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -25,6 +31,9 @@ Visual regression specs for the WebGPU prototype, in two families:
   edge differences the SDF pipeline shrinks but cannot erase.  If CI
   proves the tolerance insufficient, per-platform golden suffixes are
   the escape hatch.
+  Each golden also writes the style properties its scene exercises to
+  playwright-tests/golden-coverage/<name>.json (round 135) and is held to
+  it the same way; UPDATE_GOLDEN_COVERAGE=1 rewrites only those records.
 
 - **v3-vs-v4 parity**: the same fixture rendered by the classic canvas
   renderer and the GPU prototype in the same run, diffed with a tolerance
@@ -177,13 +186,25 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page, 2);
   };
 
-  const checkGolden = (name, uri, testInfo, opts = {}) => {
+  const checkGolden = async (page, name, uri, testInfo, opts = {}) => {
     // throws with diff artifacts on mismatch; writes the golden under
     // UPDATE_GOLDENS=1
     compareToGolden(name, decodePng(uri), {
       artifactsDir: testInfo.outputPath(''),
       ...opts,
     });
+
+    // round 135: the style properties this scene exercises, held to
+    // playwright-tests/golden-coverage/<name>.json the way the PNG is
+    // held to its golden — the record the golden-coverage enumerator
+    // (scripts/golden-coverage.mjs) counts from
+    compareToCoverage(
+      name,
+      await page.evaluate(collectStyleCoverage, {
+        compound: COMPOUND_PROPS,
+        maxValues: MAX_VALUES,
+      }),
+    );
   };
 
   test('golden: nodes, borders, opacity, edges, arrows', async ({
@@ -239,7 +260,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'nodes-edges-arrows');
-    checkGolden(
+    await checkGolden(
+      page,
       'nodes-edges-arrows',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -290,7 +312,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'selection-accent');
-    checkGolden(
+    await checkGolden(
+      page,
       'selection-accent',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -357,7 +380,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'selection-overridden');
-    checkGolden(
+    await checkGolden(
+      page,
       'selection-overridden',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -428,7 +452,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'polygon-shapes');
-    checkGolden(
+    await checkGolden(
+      page,
       'polygon-shapes',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -514,7 +539,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'shapes-27');
-    checkGolden('shapes-27', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'shapes-27',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: the round-corner shape family (round 27.4)', async ({
@@ -576,7 +606,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'shapes-27-round');
-    checkGolden(
+    await checkGolden(
+      page,
       'shapes-27-round',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -689,7 +720,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'arrow-shapes');
-    checkGolden(
+    await checkGolden(
+      page,
       'arrow-shapes',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -778,7 +810,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'arrow-gap');
-    checkGolden('arrow-gap', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'arrow-gap',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: edge line styles (solid, dashed, dotted)', async ({
@@ -831,7 +868,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'line-styles');
-    checkGolden('line-styles', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'line-styles',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: border and outline styles, every shape tier (round 38)', async ({
@@ -952,7 +994,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'border-styles');
-    checkGolden(
+    await checkGolden(
+      page,
       'border-styles',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1021,7 +1064,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'mapped-colors');
-    checkGolden(
+    await checkGolden(
+      page,
       'mapped-colors',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1076,7 +1120,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'far-zoom-lod');
-    checkGolden(
+    await checkGolden(
+      page,
       'far-zoom-lod',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1128,7 +1173,8 @@ test.describe('WebGPU visual goldens', () => {
     // looser bound than geometry goldens: the OS text rasterizer under the
     // atlas differs per platform (see the header comment)
     await expectGraphFits(page, 'labels-open-sans');
-    checkGolden(
+    await checkGolden(
+      page,
       'labels-open-sans',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1202,7 +1248,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'edge-labels');
-    checkGolden('edge-labels', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'edge-labels',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: edge label autorotate (angles + the flip rule)', async ({
@@ -1276,7 +1327,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'edge-label-autorotate');
-    checkGolden(
+    await checkGolden(
+      page,
       'edge-label-autorotate',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1327,7 +1379,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'bezier-bundles');
-    checkGolden(
+    await checkGolden(
+      page,
       'bezier-bundles',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1379,7 +1432,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'self-loops');
-    checkGolden('self-loops', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'self-loops',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: curved-edge arrowheads on end tangents (round 12a)', async ({
@@ -1421,7 +1479,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'curved-arrows');
-    checkGolden(
+    await checkGolden(
+      page,
       'curved-arrows',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1515,7 +1574,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'curved-edge-labels');
-    checkGolden(
+    await checkGolden(
+      page,
       'curved-edge-labels',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1565,7 +1625,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'unbundled-bezier');
-    checkGolden(
+    await checkGolden(
+      page,
       'unbundled-bezier',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1621,7 +1682,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'segments-families');
-    checkGolden(
+    await checkGolden(
+      page,
       'segments-families',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1702,7 +1764,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'taxi-families');
-    checkGolden(
+    await checkGolden(
+      page,
       'taxi-families',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1767,7 +1830,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-visuals');
-    checkGolden(
+    await checkGolden(
+      page,
       'label-visuals',
       await exportPng(page, { bg: '#888' }),
       testInfo,
@@ -1846,7 +1910,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-outline-words');
-    checkGolden(
+    await checkGolden(
+      page,
       'label-outline-words',
       await exportPng(page, { bg: '#888' }),
       testInfo,
@@ -1894,7 +1959,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-outline-closeup');
-    checkGolden(
+    await checkGolden(
+      page,
       'label-outline-closeup',
       await exportPng(page, { bg: '#888' }),
       testInfo,
@@ -1954,7 +2020,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'labels-zoom-closeup');
-    checkGolden(
+    await checkGolden(
+      page,
       'labels-zoom-closeup',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -1997,7 +2064,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'haystack');
-    checkGolden('haystack', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'haystack',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: straight-triangle edges (round 12c)', async ({
@@ -2040,7 +2112,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'straight-triangle');
-    checkGolden(
+    await checkGolden(
+      page,
       'straight-triangle',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2106,7 +2179,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'manual-endpoints');
-    checkGolden(
+    await checkGolden(
+      page,
       'manual-endpoints',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2144,7 +2218,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'ghost');
-    checkGolden('ghost', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'ghost',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: overlay and underlay layers (round 13 A2)', async ({
@@ -2186,7 +2265,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'node-layers');
-    checkGolden('node-layers', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'node-layers',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: the emphasis tiers — the rest dimmed, the set raised (round 102)', async ({
@@ -2276,7 +2360,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'emphasis-tiers');
-    checkGolden(
+    await checkGolden(
+      page,
       'emphasis-tiers',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2326,7 +2411,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'edge-layers');
-    checkGolden('edge-layers', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'edge-layers',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: label boxes — transform, borders, round shape (round 13 B6)', async ({
@@ -2386,7 +2476,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-boxes');
-    checkGolden('label-boxes', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'label-boxes',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: arrow scalars — scale, hollow, stroke widths (round 13 B7)', async ({
@@ -2446,7 +2541,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'arrow-scalars');
-    checkGolden(
+    await checkGolden(
+      page,
       'arrow-scalars',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2504,7 +2600,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'mid-arrows');
-    checkGolden('mid-arrows', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'mid-arrows',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: gradient fills — directions, radial, curved lines (round 13 C2)', async ({
@@ -2573,7 +2674,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'gradients');
-    checkGolden('gradients', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'gradients',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: custom polygons — convex, concave, bordered, anisotropic (round 13 C3)', async ({
@@ -2625,7 +2731,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'shape-polygon');
-    checkGolden(
+    await checkGolden(
+      page,
       'shape-polygon',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2677,7 +2784,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'labels-bold-italic');
-    checkGolden(
+    await checkGolden(
+      page,
       'labels-bold-italic',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2754,7 +2862,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'label-align');
-    checkGolden('label-align', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'label-align',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: source/target labels along straight, bezier, taxi and loop edges (round 13 D4)', async ({
@@ -2839,7 +2952,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'end-labels');
-    checkGolden('end-labels', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'end-labels',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: compound parents — nesting, padding, borders (round 14.9)', async ({
@@ -2883,7 +3001,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'compounds');
-    checkGolden('compounds', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'compounds',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: compound loop edges (round 14.10)', async ({
@@ -2925,7 +3048,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'compound-loops');
-    checkGolden(
+    await checkGolden(
+      page,
       'compound-loops',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -2996,7 +3120,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitForImages(page);
 
     await expectGraphFits(page, 'images-basic');
-    checkGolden(
+    await checkGolden(
+      page,
       'images-basic',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -3036,7 +3161,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitForImages(page);
 
     await expectGraphFits(page, 'images-cover-clip');
-    checkGolden(
+    await checkGolden(
+      page,
       'images-cover-clip',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -3087,7 +3213,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitForImages(page);
 
     await expectGraphFits(page, 'images-multi');
-    checkGolden(
+    await checkGolden(
+      page,
       'images-multi',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -3139,7 +3266,8 @@ test.describe('WebGPU visual goldens', () => {
     // svg rasterization + the EDT ride the browser raster stack, so the
     // golden carries the label-family tolerance
     await expectGraphFits(page, 'images-sdf-icons');
-    checkGolden(
+    await checkGolden(
+      page,
       'images-sdf-icons',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -3405,7 +3533,12 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'labels-wrap');
-    checkGolden('labels-wrap', await exportPng(page, { bg: '#fff' }), testInfo);
+    await checkGolden(
+      page,
+      'labels-wrap',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
   });
 
   test('golden: wrapped edge labels rotate as a block (round 16.3)', async ({
@@ -3440,7 +3573,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'labels-wrap-edge');
-    checkGolden(
+    await checkGolden(
+      page,
       'labels-wrap-edge',
       await exportPng(page, { bg: '#fff' }),
       testInfo,
@@ -3542,7 +3676,8 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page);
 
     await expectGraphFits(page, 'charts-pie-stripes');
-    checkGolden(
+    await checkGolden(
+      page,
       'charts-pie-stripes',
       await exportPng(page, { bg: '#fff' }),
       testInfo,

@@ -1,0 +1,44 @@
+{
+  "golden": "shapes-27-round",
+  "elements": {
+    "nodes": 10,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(39,174,96)"
+    ],
+    "border-color": [
+      "rgb(20,90,50)"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "corner-radius": [
+      "12"
+    ],
+    "height": [
+      "44",
+      "60"
+    ],
+    "shape": [
+      "barrel",
+      "bottom-round-rectangle",
+      "round-diamond",
+      "round-heptagon",
+      "round-hexagon",
+      "round-octagon",
+      "round-pentagon",
+      "round-tag",
+      "round-triangle"
+    ],
+    "width": [
+      "160",
+      "60"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

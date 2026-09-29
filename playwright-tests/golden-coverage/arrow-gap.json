@@ -1,0 +1,56 @@
+{
+  "golden": "arrow-gap",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(192,57,43)"
+    ],
+    "height": [
+      "16"
+    ],
+    "width": [
+      "16"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "arrow-scale": [
+      "2.375"
+    ],
+    "line-color": [
+      "rgb(44,62,80)",
+      "rgba(44,62,80,0.451)"
+    ],
+    "line-opacity": [
+      "0.451"
+    ],
+    "source-arrow-color": [
+      "rgb(44,62,80)",
+      "rgba(44,62,80,0.451)"
+    ],
+    "source-arrow-fill": [
+      "hollow"
+    ],
+    "source-arrow-shape": [
+      "triangle"
+    ],
+    "target-arrow-color": [
+      "rgb(44,62,80)",
+      "rgba(44,62,80,0.451)"
+    ],
+    "target-arrow-fill": [
+      "hollow"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "width": [
+      "4"
+    ]
+  },
+  "core": {}
+}

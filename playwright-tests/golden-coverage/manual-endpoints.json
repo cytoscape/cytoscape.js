@@ -1,0 +1,53 @@
+{
+  "golden": "manual-endpoints",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(39,174,96)"
+    ],
+    "height": [
+      "28"
+    ],
+    "width": [
+      "28"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "control-point-distances": [
+      "45"
+    ],
+    "curve-style": [
+      "unbundled-bezier"
+    ],
+    "edge-distances": [
+      "endpoints"
+    ],
+    "line-color": [
+      "rgb(211,84,0)"
+    ],
+    "source-distance-from-node": [
+      "8"
+    ],
+    "source-endpoint": [
+      "18 30"
+    ],
+    "target-arrow-color": [
+      "rgb(44,62,80)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-endpoint": [
+      "3.9269908169872414rad"
+    ],
+    "width": [
+      "5"
+    ]
+  },
+  "core": {}
+}

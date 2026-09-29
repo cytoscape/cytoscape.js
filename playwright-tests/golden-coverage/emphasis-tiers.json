@@ -1,0 +1,78 @@
+{
+  "golden": "emphasis-tiers",
+  "elements": {
+    "nodes": 8,
+    "parents": 1,
+    "edges": 6
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(192,57,43)",
+      "rgb(41,128,185)"
+    ],
+    "border-color": [
+      "rgb(44,62,80)"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "height": [
+      "44",
+      "67"
+    ],
+    "label": [
+      "block",
+      "hub",
+      "n1",
+      "n2",
+      "n3",
+      "x",
+      "y",
+      "z"
+    ],
+    "opacity": [
+      "0.5"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-background-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "127",
+      "44"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(22,160,133)"
+    ],
+    "target-arrow-color": [
+      "rgb(22,160,133)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "width": [
+      "8"
+    ]
+  },
+  "core": {}
+}

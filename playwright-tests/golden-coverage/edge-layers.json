@@ -1,0 +1,45 @@
+{
+  "golden": "edge-layers",
+  "elements": {
+    "nodes": 5,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(142,68,173)"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "bezier",
+      "taxi"
+    ],
+    "line-color": [
+      "rgb(44,62,80)"
+    ],
+    "overlay-color": [
+      "rgba(230,126,34,0.451)"
+    ],
+    "overlay-opacity": [
+      "0.45098039215686275"
+    ],
+    "overlay-padding": [
+      "5"
+    ],
+    "taxi-turn": [
+      "30"
+    ],
+    "underlay-color": [
+      "rgba(22,160,133,0.902)"
+    ],
+    "underlay-opacity": [
+      "0.9019607843137255"
+    ],
+    "width": [
+      "5"
+    ]
+  },
+  "core": {}
+}

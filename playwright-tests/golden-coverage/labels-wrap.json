@@ -1,0 +1,59 @@
+{
+  "golden": "labels-wrap",
+  "elements": {
+    "nodes": 5,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "border-color": [
+      "rgb(99,110,114)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "label": [
+      "wrapping label text here"
+    ],
+    "line-height": [
+      "1.2"
+    ],
+    "shape": [
+      "rectangle"
+    ],
+    "text-background-color": [
+      "rgb(255,234,167)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "2"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-max-width": [
+      "70"
+    ],
+    "text-wrap": [
+      "ellipsis",
+      "wrap"
+    ],
+    "width": [
+      "50"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

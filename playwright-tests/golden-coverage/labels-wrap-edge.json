@@ -1,0 +1,56 @@
+{
+  "golden": "labels-wrap-edge",
+  "elements": {
+    "nodes": 2,
+    "parents": 0,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(178,190,195)"
+    ],
+    "height": [
+      "24"
+    ],
+    "width": [
+      "24"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "label": [
+      "two line\nedge label"
+    ],
+    "line-color": [
+      "rgb(99,110,114)"
+    ],
+    "text-background-color": [
+      "rgb(223,230,233)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "2"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-rotation": [
+      "autorotate"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "2"
+    ]
+  },
+  "core": {}
+}

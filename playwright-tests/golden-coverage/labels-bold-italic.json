@@ -1,0 +1,52 @@
+{
+  "golden": "labels-bold-italic",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "border-color": [
+      "rgb(178,190,195)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "font-style": [
+      "italic"
+    ],
+    "font-weight": [
+      "bold"
+    ],
+    "label": [
+      "Alpha 1",
+      "beta-2",
+      "the quick brown fox",
+      "weighty words"
+    ],
+    "text-background-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "width": [
+      "40"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

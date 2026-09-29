@@ -1,0 +1,55 @@
+{
+  "golden": "label-outline-words",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(223,230,233)"
+    ],
+    "color": [
+      "rgb(45,52,54)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "height": [
+      "20"
+    ],
+    "label": [
+      "Notch Watch Vans",
+      "Wavelength Boxed",
+      "Wavelength Wavelength"
+    ],
+    "text-background-color": [
+      "rgb(255,234,167)",
+      "rgba(255,234,167,0)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "2"
+    ],
+    "text-border-color": [
+      "rgba(0,0,0,0)"
+    ],
+    "text-outline-color": [
+      "rgb(255,255,255)"
+    ],
+    "text-outline-width": [
+      "2"
+    ],
+    "text-rotation": [
+      "0.663"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {}
+}

@@ -1,0 +1,32 @@
+{
+  "golden": "bezier-bundles",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 8
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(52,152,219)"
+    ],
+    "height": [
+      "24"
+    ],
+    "width": [
+      "24"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "bezier"
+    ],
+    "line-color": [
+      "rgb(127,140,141)"
+    ],
+    "line-style": [
+      "dashed"
+    ]
+  },
+  "core": {}
+}

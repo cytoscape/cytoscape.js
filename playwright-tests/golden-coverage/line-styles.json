@@ -1,0 +1,33 @@
+{
+  "golden": "line-styles",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(127,140,141)"
+    ],
+    "height": [
+      "16"
+    ],
+    "width": [
+      "16"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(44,62,80)"
+    ],
+    "line-style": [
+      "dashed",
+      "dotted"
+    ],
+    "width": [
+      "6"
+    ]
+  },
+  "core": {}
+}

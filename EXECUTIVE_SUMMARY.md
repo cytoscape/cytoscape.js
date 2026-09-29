@@ -5,7 +5,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 138 took v4 to the GPU's
+- **Last updated**: 2026-09-29, after round 139 gave apps the hooks
+  for undo and priced the obvious undo: every outermost batch — and so
+  every `cy.batch()` and `cy.patch()` — is now bracketed by
+  `batchstart` and `batchend` events, so an app snapshots the graph as
+  a transaction starts and restores it with `cy.patch()`.  At 100k
+  elements that costs 27 ms and 3 MB per transaction and 18–31 ms to
+  undo; whether core ships an undo stack of its own — and if so a
+  snapshot or an inverse-operation log — is now an open decision with
+  those numbers.  Earlier the same day round 138 took v4 to the GPU's
   own limits and made running past them loud but survivable: every
   device now asks for what its adapter offers, so on the benchmark
   machine's RX 580 a graph renders to 16,776,960 nodes or edges per
@@ -206,10 +214,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,139 unit · 1,096 module · 38 soak · 574 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,148 unit · 1,096 module · 38 soak · 574 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
+| Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
 | Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
@@ -1600,6 +1608,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     found a label cache that grew without end — now bounded.
   - Buys a large-graph app a known ceiling, an error it can catch, and
     a picture that degrades instead of vanishing.
+- **29 Sep** — transactions an undo stack can hook
+  - `batchstart` and `batchend` fire on the core around every outermost
+    batch — `cy.batch()`, a `startBatch()`/`endBatch()` pair, every
+    `cy.patch()`: `batchstart` before the first change, `batchend` last,
+    after the style catches up and after a patch's own `patch` event.
+    Nested batches fire nothing; a batch that throws still ends in
+    `batchend` (there is no rollback).
+  - Buys an editor app its undo in four lines — snapshot with
+    `cy.serialize()` at `batchstart`, restore with `cy.patch()` — priced
+    at 100k elements: 27 ms and 3 MB per transaction, 18–31 ms to undo,
+    whatever the edit.  v4 ships no undo stack itself; that call is open
+    with the numbers.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1751,6 +1771,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Layouts as a capability | Every build carries every layout (~118 KB minified); whether a headless build registers only the layouts it names, as it does the GPU executors |
 | Workers inside workers | A graph model hosted in a browser worker gets no worker pool (it asks for a page); whether to open the pool to worker hosts or state the limit |
 | Firefox in CI | Firefox runs the model tier (measured 29 Sep) but has no CI project; whether to add one for the model-tier specs now or wait for the WebGL2 renderer |
+| A core undo stack | Apps can snapshot at `batchstart` and undo with `cy.patch()` (27 ms and 3 MB per transaction at 100k, 18–31 ms to undo); whether core ships a stack — none, an inverse-operation log (µs per change, but every mutation must record its inverse), or snapshots (which core could take faster but not restore faster) — PLAN.md item 84 |
 
 Decided at the eleventh design sitting (28 Sep), which put every open
 call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as
@@ -1767,7 +1788,8 @@ documentation site, the columnar form's schema held until 4.x and
 SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
 with a renderer soak — landed 29 Sep — typed element data, batch events for undo plus a
-snapshot measurement, the worker host's images and fonts, and the CJK
+snapshot measurement — landed 29 Sep, the stack itself left open above
+— the worker host's images and fonts, and the CJK
 label design.  During alpha: the extension ports, a devtools panel and
 a workloads benchmark profile.  After alpha: lasso and spatial queries,
 compound drag-and-drop, viewport constraints and framework bindings;

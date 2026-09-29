@@ -310,7 +310,14 @@ allocations and fires `gpuerror`, degrades labels, then charts and
 images, then gradients (lazy now), and a browser soak over its ledger
 ran 10,000 cycles flat and found the label shaping memo unbounded; it
 raised no new item, logging the two-dimensional dispatch and a catch
-around the frame loop as follow-ups in its record.  Item 63 is carried
+around the frame loop as follow-ups in its record.  Round 139 (landed
+2026-09-29 on the sitting's call for **item 41**'s alpha part) exposed
+the transaction events — `batchstart` / `batchend` around the outermost
+batch, `batchend` last, after a patch's summary — and measured the
+snapshot price at 100k (`cy.serialize()` 27 ms and 3.07 MB a step,
+`cy.patch()` back 18–31 ms); item 41 stays open for the stack, and the
+round logged **item 84**, that call put to the maintainer with the
+numbers.  Item 63 is carried
 by round 126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
@@ -1119,6 +1126,17 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): batch/transaction
     events exposed for alpha, and the snapshot cost measured for
     alpha**; a core undo stack is decided on that number.
+    **Alpha part landed by round 139 (2026-09-29)**: `batchstart` /
+    `batchend` on the core around the outermost batch — `batchstart`
+    before the first mutation, `batchend` last, after the flush and
+    after a `patch` summary; no diff, no rollback.  **First
+    measurement** (100k elements, i9-9900K): `cy.serialize()` 27 ms and
+    3.07 MB a snapshot, `cy.patch()` back 18–31 ms whatever the edit;
+    the core's model columns copy in ~1 ms (2.57 MB) but a restore
+    rebuilds what a patch rebuilds; an inverse log records a data or
+    position op in ≤0.2 µs and a node removal in ~15 µs.  The stack
+    itself is the maintainer's call, **item 84**.  The record:
+    `plan/rounds/2026-09-29-06-rnd0139-landed-item-41-undo-the-transaction-events-and-the-snapshot-price.md`.
 42. **Viewport constraints** (raised 2026-08-19).  Min/max zoom
     exist; pan is unbounded, and "keep the graph on screen" is a
     perennial app-level reimplementation (the #1905 family's other
@@ -2113,3 +2131,23 @@ directions".*
     137's WebGL2 renderer gives it something to draw with.  **The
     call**: add a `headless-firefox` project for those specs now, or
     wait for 137 and add the renderer project whole.
+84. **A core undo stack: the call on round 139's number** (logged
+    2026-09-29 by round 139, item 41's decision).  v4 now brackets
+    every outermost batch with `batchstart` / `batchend`, so an app's
+    snapshot undo is four lines — `cy.serialize()` pushed at
+    `batchstart`, `cy.patch()` to undo.  At 100k elements (i9-9900K,
+    `benchmark/undo-cost.mjs`) that costs **27 ms and 3.07 MB per
+    transaction** (every one, a single data write included; ~150 MB for
+    50 steps) and **18–31 ms to restore** whatever the edit.  A core
+    snapshot stack could take the snapshot ~25× faster (the model
+    columns: ~1 ms, 2.57 MB) but not restore faster — a restore
+    rebuilds the id map, adjacency, hierarchy and style, which is what
+    the patch's 18–31 ms already is.  An inverse-operation log is
+    orders of magnitude cheaper per transaction (≤0.2 µs per data or
+    position op, ~15 µs per node removal) and costs completeness
+    instead: every mutator must record its inverse, and the element
+    events carry no old value today.  **The call**: (a) no core stack —
+    the events and the documented recipe are v4's undo; (b) a core
+    inverse log, old values on the mutation path and an audit that
+    every mutator records one; or (c) a core snapshot stack, which the
+    number does not favour.

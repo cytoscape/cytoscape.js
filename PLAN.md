@@ -279,7 +279,13 @@ first halves of **items 30 and 31**, which stay open for their later
 tiers: 135 counts the style properties no golden sets (75 of 212,
 pinned) ahead of the SVG and WebGL parity work, and 136 inventories the
 gestures (30; 3 with no coverage at either tier) for the trace tier
-before the WebGL implementation; neither raised a new item.
+before the WebGL implementation; neither raised a new item.  Round 142
+(landed the same day on the sitting's call) built that trace tier and
+**closed item 31**: ten scripted traces replayed on every v4 host and on
+v3, compared as numbers against checked-in records, the WebGL2 backend
+one host entry away; it fixed four gesture bugs the traces pinned and
+logged **items 88 and 89** (the event orders and targets v3 differs on,
+and the edge press that starts on the core).
 Round 73 (the WebGL2 fallback, scoped; landed 2026-09-29 on the
 sitting's calls — full parity at alpha, the scoping now, the spikes on
 the benchmark machine) wrote the feasibility record and planned the
@@ -780,8 +786,8 @@ directions".*
     synthetic-event coverage.
     **Call taken (2026-09-28, the eleventh sitting): the inventory now,
     the trace tier before the WebGL implementation.**
-    **The inventory landed by round 136 (2026-09-29); the item stays
-    open for the trace tier.**  `playwright-tests/lib/gesture-inventory.mjs`
+    **The inventory landed by round 136 (2026-09-29).**
+    `playwright-tests/lib/gesture-inventory.mjs`
     lists 30 gestures with their gating options, events in order, end
     state and covering specs, held to the tree by
     `test/modules/gesture-inventory.mjs` (every cited title exists,
@@ -790,7 +796,27 @@ directions".*
     touch), 3 none** (pointer-leave, the additive tap, every gesture on
     the worker host).  It names the traces the tier replays and their
     end-state fields; v4 has no grab-and-throw, so that trace pins the
-    absence.  Open: the trace tier.
+    absence.
+    **Closed by round 142 (2026-09-29): the trace tier.**  Ten scripted
+    traces (`playwright-tests/lib/gesture-traces.mjs` — the nine plus
+    `pointer-leave`) replay through `lib/trace-replay.mjs` on
+    `parity.html` and are snapshotted per phase — positions, selection,
+    viewport, grabbed and hovered sets, the normalized event log — and
+    `gestures.spec.js` holds every v4 host (same-thread, worker; the
+    WebGL2 backend is one `HOSTS` entry) to one checked-in record per
+    trace, and replays the mouse traces on v3 with every difference a
+    keyed, asserted `V3_DIVERGENCES` entry.  Determinism is a delivery
+    handshake per pointer step, not a sleep (80/80 at
+    `--repeat-each=4`; the file in 31 s).  Of round 136's six
+    behaviours four were bugs and are fixed — a second finger's
+    takeover now frees the grab (and the whole drag set's flags), a
+    right release emits no `tapend` and ends on its press target,
+    `dragpan` and `pinchzoom` need both toggles — plus one the v3
+    replay found (`tapunselect` on every tap-deselected element); the
+    shift box, tap-after-taphold and `scrollzoom` at the clamp are v3's
+    and kept.  The inventory reads **30 of 30 with a browser-level
+    assertion**.  Logged: **item 88** (the orders and targets v3
+    differs on) and **item 89** (an edge press starts on the core).
 32. **The benchmark coverage audit graduates** (raised 2026-08-19).
     `bench-coverage.mjs` stays report-only *deliberately* — it is
     heuristic where the gated three are not — so graduation is not

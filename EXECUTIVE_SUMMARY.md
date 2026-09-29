@@ -5,7 +5,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 76, the small style wins:
+- **Last updated**: 2026-09-29, after round 142, the gesture traces:
+  ten scripted gestures — drags, box selection, the wheel in each mode,
+  pinches, right clicks, taps with and without modifiers, one-finger
+  touch, leaving the canvas — now replay in a real browser on both
+  WebGPU hosts (the page's thread and the worker) and on v3, and are
+  compared as numbers: where every node ends up, what is selected, the
+  pan and zoom, and every event in order.  The WebGL2 renderer runs the
+  same scripts by adding one line.  They fixed four gesture bugs — a
+  second finger taking over a drag now releases it properly, a right
+  click no longer ends with a stray `tapend`, `dragpan` and `pinchzoom`
+  no longer report a pan or zoom the settings refused, and
+  `tapunselect` fires for everything a tap deselects, as in v3 — and
+  measured, against v3, the event orders and targets that still differ,
+  now open decisions.  Every one of the 30 inventoried gestures has a
+  browser-level check.  Earlier the same day round 76, the small style wins:
   label boxes take v3's `text-border-style` — dashed, dotted and double
   borders, on node and edge labels — drawn along v3's own stroke path,
   and the box border now straddles the box edge as v3's does (it had
@@ -93,8 +107,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   and 75 of the 212 properties are set by no golden (56 of them
   drawable; the count is gated, so a new golden lowers it on purpose),
   and the gestures are inventoried with the specs that hold them — 30,
-  of which 26 have a browser-level assertion and 3 (leaving the canvas,
-  the additive tap, anything on the worker renderer) have none.
+  of which 26 had a browser-level assertion and 3 (leaving the canvas,
+  the additive tap, anything on the worker renderer) none, until the
+  traces covered them the same day.
   Earlier the same day round 134 moved the attribute
   clusterings off the calling thread — `kMeans`, `kMedoids`,
   `fuzzyCMeans` and `hierarchicalClustering` with a named metric run on
@@ -1707,6 +1722,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - `mid-*-arrow-width` is accepted and read back and draws nothing, as
     in v3 for a filled head.  Gradients, already shipped as v3's props,
     cost about 1% of GPU frame time across a 25k-node scene.
+- **29 Sep** — the gestures replayed, against v3 too
+  - Ten scripted gesture traces replay in a real browser on every v4
+    renderer host and on v3, compared as numbers — positions, the
+    selection, pan and zoom, the events in order — against a checked-in
+    record per trace.  The WebGL2 renderer is one more host entry.
+  - Fixed: a second finger taking over a drag now frees it (it had left
+    the nodes flagged as grabbed, with no `free`); a right click ends
+    without a stray `tapend`; `dragpan` and `pinchzoom` no longer fire
+    when the settings refused the pan or zoom; `tapunselect` fires for
+    everything a tap deselects, as v3's does.
+  - Measured against v3 and left open: the order of the release events,
+    which element an edge press starts on, a drag from a locked node
+    (v4 pans, v3 does nothing), and v3's slower first wheel ticks.
+  - All 30 inventoried gestures now have a browser-level check (26
+    before), leaving the canvas, the additive tap and the worker host
+    among them.
 - **29 Sep** — smaller bundles, the same pixels
   - The constant tables no longer ship: the build writes each
     `COL.…`/`PROP.…` back as its string, and shader constants and
@@ -1873,6 +1904,8 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Workers inside workers | A graph model hosted in a browser worker gets no worker pool (it asks for a page); whether to open the pool to worker hosts or state the limit |
 | Firefox in CI | Firefox runs the model tier (measured 29 Sep) but has no CI project; whether to add one for the model-tier specs now or wait for the WebGL2 renderer |
 | Label box differences from v3 | v4 draws no label border without a background, keeps its own round-box radius, and does not round a label's measured width up as v3 does; which to match — PLAN.md item 87 |
+| Gesture events against v3 | The traces measured where v4's gesture events differ from v3's: the release order (v3 taps before it frees), v3's any-target double tap, a shift press that grabs in v3, `tapend` at the release point in v3, a drag from a locked node (v4 pans), v3's device-adaptive wheel rate, and the touch fingers a pinch consumes; which to match — PLAN.md item 88 |
+| An edge press's first events | An edge press starts on the core in v4 (`tapstart` there; the edge takes the release and the tap once the GPU pick answers), and a right press never takes an edge; v3 targets the edge from the press.  A synchronous edge hit test for the press, or a deferred `tapstart` — PLAN.md item 89 |
 | A core undo stack | Apps can snapshot at `batchstart` and undo with `cy.patch()` (27 ms and 3 MB per transaction at 100k, 18–31 ms to undo); whether core ships a stack — none, an inverse-operation log (µs per change, but every mutation must record its inverse), or snapshots (which core could take faster but not restore faster) — PLAN.md item 84 |
 
 Decided at the eleventh design sitting (28 Sep), which put every open

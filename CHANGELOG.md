@@ -24,6 +24,13 @@ that compile and then behave differently.
 
 ### Added
 
+- **`mid-source-arrow-width` / `mid-target-arrow-width`** (round 76, PLAN.md
+  item 21's width half).  v3's hollow-stroke width for the mid heads —
+  a number, `'match-line'` or a percent of the edge width, constants-only
+  like the end widths — accepted, bypassable and read back resolved
+  against the edge width.  Mid heads are always filled, and v3 reads a
+  head's width only to stroke a hollow one, so it draws nothing in either
+  library.
 - **Transaction events: `batchstart` and `batchend`** (round 139, PLAN.md
   item 41).  The outermost `startBatch()`/`endBatch()` pair — and so
   `cy.batch()` and every `cy.patch()` — is bracketed on the core:
@@ -758,8 +765,8 @@ that compile and then behave differently.
   `box-selection`, `box-select-labels`, `edge-text-rotation`, the
   `min-*-bias-*` quartet, the singular `control-point-distance`/
   `segment-distance`/`segment-weight`/`segment-radius` spellings, the
-  `mid-*-arrow-fill`/`-width` pairs, and the numbered `pie-N-*`/`stripe-N-*`
-  families. The no-dash shape spellings (`roundrectangle`, `cutrectangle`,
+  `mid-*-arrow-fill` pair (mid heads are always filled), and the numbered
+  `pie-N-*`/`stripe-N-*` families. The no-dash shape spellings (`roundrectangle`, `cutrectangle`,
   `concavehexagon`) throw in all three enums that took them.
 - **The `cose` layout** — not ported; `force` is v4's answer.
 - **The extension registry** — no `cytoscape.use()`; extensions are imports.
@@ -791,5 +798,7 @@ One is worth naming here because it is visible in ordinary styling: v3 makes
 a hollow or translucent arrowhead read as one shape with its edge by erasing
 the head's footprint from the canvas, and v4 shortens the line instead — no
 extra pass, and the same pixels wherever the head covers the line. It does
-not reach **mid arrows**, which sit mid-line, so `arrow-fill: hollow` on a
-`mid-source`/`mid-target` head still shows the line through it.
+not reach **mid arrows**, which sit mid-line, so v4 draws mid heads filled
+only: `mid-*-arrow-fill` is not accepted, and `mid-*-arrow-width` — the
+hollow stroke width — reads back but draws nothing, as it does in v3 on a
+filled head.

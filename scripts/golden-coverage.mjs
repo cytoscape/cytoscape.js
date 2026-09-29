@@ -86,6 +86,10 @@ export const NO_STATIC_PIXELS = {
     'gesture chrome — drawn only during a box-selection drag',
   'background-image-crossorigin':
     'a fetch mode — the goldens load same-origin images, where it moves nothing',
+  'mid-source-arrow-width':
+    'a hollow stroke width — mid heads are always filled (PLAN.md item 21), and v3 also strokes only a hollow head',
+  'mid-target-arrow-width':
+    'a hollow stroke width — mid heads are always filled (PLAN.md item 21), and v3 also strokes only a hollow head',
 };
 
 /**

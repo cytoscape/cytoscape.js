@@ -36,7 +36,7 @@ import {
   ARROW_ENUM,
   COMPOUND_ARROWS,
 } from './tables.mjs';
-import { gradientStops } from './parse.mjs';
+import { gradientStops, resolveArrowWidth } from './parse.mjs';
 import { EMPTY_END_TEXTS } from './sheet.mjs';
 import type { StateWriter } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
@@ -253,6 +253,9 @@ export function writeEdgeUnderlay(
   );
 }
 
+/** The narrow writer of a prop with nothing stored (round 76). */
+const NO_WRITE: StateWriter = () => {};
+
 /**
  * The narrow writer for one normalized prop, or null when the prop has
  * cross-channel consequences the writers above cannot carry — geometry
@@ -299,6 +302,11 @@ export function fastStateWriter(
       return (slot, c) => writeEdgeMidSourceArrowColor(engine, slot, c);
     case PROP.MID_TARGET_ARROW_COLOR:
       return (slot, c) => writeEdgeMidTargetArrowColor(engine, slot, c);
+    // round 76: no column to write — the reader resolves the def's
+    // record, which the sheet diff has already replaced
+    case PROP.MID_SOURCE_ARROW_WIDTH:
+    case PROP.MID_TARGET_ARROW_WIDTH:
+      return NO_WRITE;
     case PROP.OVERLAY_COLOR:
     case PROP.OVERLAY_OPACITY:
     case PROP.OVERLAY_PADDING:
@@ -520,17 +528,11 @@ export function writeEdgeColumns(
   writeEdgeMidSourceArrowColor(engine, slot, computed);
   writeEdgeMidTargetArrowColor(engine, slot, computed);
 
-  const resolveAw = (
-    aw: number | 'match-line' | { percent: number },
-  ): number =>
-    aw === 'match-line'
-      ? computed.width
-      : typeof aw === 'number'
-        ? aw
-        : aw.percent * computed.width;
-
-  const srcAw = resolveAw(computed.sourceArrowWidth);
-  const tgtAw = resolveAw(computed.targetArrowWidth);
+  // round 76: the mid widths are not stored — mid heads are always
+  // filled, so nothing draws them; readback resolves them from the
+  // record (see the mid-arrow-width reader)
+  const srcAw = resolveArrowWidth(computed.sourceArrowWidth, computed.width);
+  const tgtAw = resolveArrowWidth(computed.targetArrowWidth, computed.width);
 
   store.setPair(COL.EDGE_ARROW_WIDTHS, slot, srcAw, tgtAw);
   // 56: a hollow head's stroke straddles its outline, so the ink

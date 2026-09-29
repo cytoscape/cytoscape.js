@@ -12,7 +12,11 @@ import {
 } from '../contract.mjs';
 import { PROP } from '../style-props.mjs';
 import { curveExtrasFor, formatRgba, ARROW_NAMES } from './tables.mjs';
-import { ARROW_FILL_NAMES, LINE_CAP_NAMES } from './parse.mjs';
+import {
+  ARROW_FILL_NAMES,
+  LINE_CAP_NAMES,
+  resolveArrowWidth,
+} from './parse.mjs';
 import {
   LINE_STYLE_NAMES,
   CURVE_STYLE_NAMES,
@@ -215,6 +219,34 @@ defineReader(
   [PROP.TARGET_ARROW_WIDTH],
   (store, slot) =>
     (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2 + 1],
+);
+
+// round 76: the mid widths have no column — mid heads are always
+// filled, so nothing draws them (v3 reads a head's width only to
+// stroke a hollow one).  They are constants-only like the end widths,
+// so the def's record patched by the slot's bypass is the whole truth,
+// resolved against the stored width exactly as the end widths are at
+// write (a width tween moves 'match-line' and percents with it).
+defineReader(
+  [PROP.MID_SOURCE_ARROW_WIDTH, PROP.MID_TARGET_ARROW_WIDTH],
+  (store, slot, ref, engine, prop) => {
+    const field =
+      prop === PROP.MID_SOURCE_ARROW_WIDTH
+        ? 'midSourceArrowWidth'
+        : 'midTargetArrowWidth';
+    let aw = engine.defFor(ref).computed[field];
+    const patch = engine.bypassPatch(ref);
+
+    if (patch != null) {
+      for (const [f, v] of patch) {
+        if (f === field) {
+          aw = v as typeof aw;
+        }
+      }
+    }
+
+    return resolveArrowWidth(aw, readScalar(store, slot, COL.EDGE_WIDTH));
+  },
 );
 
 defineReader(

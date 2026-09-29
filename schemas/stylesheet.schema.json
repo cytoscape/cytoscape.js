@@ -281,11 +281,17 @@
         "mid-source-arrow-shape": {
           "$ref": "#/$defs/props/mid-source-arrow-shape"
         },
+        "mid-source-arrow-width": {
+          "$ref": "#/$defs/props/mid-source-arrow-width"
+        },
         "mid-target-arrow-color": {
           "$ref": "#/$defs/props/mid-target-arrow-color"
         },
         "mid-target-arrow-shape": {
           "$ref": "#/$defs/props/mid-target-arrow-shape"
+        },
+        "mid-target-arrow-width": {
+          "$ref": "#/$defs/props/mid-target-arrow-width"
         },
         "min-zoomed-font-size": {
           "anyOf": [
@@ -676,11 +682,17 @@
         "midSourceArrowShape": {
           "$ref": "#/$defs/nodeProps/properties/mid-source-arrow-shape"
         },
+        "midSourceArrowWidth": {
+          "$ref": "#/$defs/nodeProps/properties/mid-source-arrow-width"
+        },
         "midTargetArrowColor": {
           "$ref": "#/$defs/nodeProps/properties/mid-target-arrow-color"
         },
         "midTargetArrowShape": {
           "$ref": "#/$defs/nodeProps/properties/mid-target-arrow-shape"
+        },
+        "midTargetArrowWidth": {
+          "$ref": "#/$defs/nodeProps/properties/mid-target-arrow-width"
         },
         "minZoomedFontSize": {
           "$ref": "#/$defs/nodeProps/properties/min-zoomed-font-size"
@@ -991,6 +1003,9 @@
             { "$ref": "#/$defs/mapper" }
           ]
         },
+        "mid-source-arrow-width": {
+          "$ref": "#/$defs/props/mid-source-arrow-width"
+        },
         "mid-target-arrow-color": {
           "anyOf": [
             { "$ref": "#/$defs/props/mid-target-arrow-color" },
@@ -1002,6 +1017,9 @@
             { "$ref": "#/$defs/props/mid-target-arrow-shape" },
             { "$ref": "#/$defs/mapper" }
           ]
+        },
+        "mid-target-arrow-width": {
+          "$ref": "#/$defs/props/mid-target-arrow-width"
         },
         "min-zoomed-font-size": {
           "anyOf": [
@@ -1418,11 +1436,17 @@
         "midSourceArrowShape": {
           "$ref": "#/$defs/edges/properties/mid-source-arrow-shape"
         },
+        "midSourceArrowWidth": {
+          "$ref": "#/$defs/edges/properties/mid-source-arrow-width"
+        },
         "midTargetArrowColor": {
           "$ref": "#/$defs/edges/properties/mid-target-arrow-color"
         },
         "midTargetArrowShape": {
           "$ref": "#/$defs/edges/properties/mid-target-arrow-shape"
+        },
+        "midTargetArrowWidth": {
+          "$ref": "#/$defs/edges/properties/mid-target-arrow-width"
         },
         "minZoomedFontSize": {
           "$ref": "#/$defs/edges/properties/min-zoomed-font-size"
@@ -2667,6 +2691,10 @@
         "$ref": "#/$defs/keywords/arrowShape",
         "examples": ["none"]
       },
+      "mid-source-arrow-width": {
+        "$ref": "#/$defs/kinds/arrowWidth",
+        "examples": ["match-line"]
+      },
       "mid-target-arrow-color": {
         "$ref": "#/$defs/kinds/color",
         "examples": ["#999"]
@@ -2674,6 +2702,10 @@
       "mid-target-arrow-shape": {
         "$ref": "#/$defs/keywords/arrowShape",
         "examples": ["none"]
+      },
+      "mid-target-arrow-width": {
+        "$ref": "#/$defs/kinds/arrowWidth",
+        "examples": ["match-line"]
       },
       "min-height": { "$ref": "#/$defs/kinds/compoundSize", "examples": [0] },
       "min-width": { "$ref": "#/$defs/kinds/compoundSize", "examples": [0] },

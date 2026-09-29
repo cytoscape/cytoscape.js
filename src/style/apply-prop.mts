@@ -529,6 +529,12 @@ export const applyProp = (
     case PROP.TARGET_ARROW_WIDTH:
       computed.targetArrowWidth = parseArrowWidth(prop, value);
       break;
+    case PROP.MID_SOURCE_ARROW_WIDTH:
+      computed.midSourceArrowWidth = parseArrowWidth(prop, value);
+      break;
+    case PROP.MID_TARGET_ARROW_WIDTH:
+      computed.midTargetArrowWidth = parseArrowWidth(prop, value);
+      break;
     case PROP.TARGET_ARROW_COLOR:
       computed.targetArrowColor = parseColor(prop, value);
       break;

@@ -3,6 +3,7 @@ import type { ColumnId, Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import { formatRgba } from './tables.mjs';
 import type { GroupDef } from './sheet.mjs';
+import type { BypassPatch } from './apply-prop.mjs';
 
 // Round 34.5: the column readers `readProp` dispatches through.  These
 // were five closures built *inside* `readProp`, so every style getter
@@ -127,6 +128,9 @@ export interface ReadContext {
   readonly store: GraphStore;
   readonly defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
   defFor(ref: Ref): GroupDef;
+  /** the slot's per-element bypass, or null (round 76: a prop with no
+   * column reads its value from the def, patched by this) */
+  bypassPatch(ref: Ref): BypassPatch | null;
   labelChannels(ref: Ref): { fontSize: number; color: string };
   readImageProp(slot: number, prop: string): string | number;
 }

@@ -7455,8 +7455,9 @@ fragment premium is **unmeasurable at scene level** on real hardware
     differing pixels**.
   - **Mid arrows are not covered at all**: they sit mid-line, where a
     trim cannot reach.  PLAN.md item 21 decided it (2026-09-28): mid
-    arrows are filled only, `mid-*-arrow-fill` is dropped, and
-    `mid-*-arrow-width` is to be implemented.
+    arrows are filled only and `mid-*-arrow-fill` is dropped;
+    `mid-*-arrow-width` landed in round 76 (readback only — see the C1
+    passage below).
 - **A hollow head's back corners are radiused**, where canvas2d miters
   them: v4 strokes by offsetting a distance field, and that rounds a join
   by construction.  It is the whole of the close-up hollow parity scene's 0.898%
@@ -7839,8 +7840,16 @@ fragment premium is **unmeasurable at scene level** on real hardware
   C1 added `mid-source/mid-target-arrow-shape`/`-color`: mid arrows
   anchor at the curve/route midpoint on the midpoint tangent
   (mid-source pointing backward), follow drags/layouts/tweens
-  on-GPU, and are always filled at the standard width (the mid
-  fill/width props are unsupported — a recorded scope note).
+  on-GPU, and are always filled (`mid-*-arrow-fill` is dropped —
+  PLAN.md item 21).  Round 76 added `mid-source/mid-target-arrow-width`
+  on the item's call: v3's hollow-stroke width, parsed like the end
+  widths (a number, `'match-line'` or a percent; constants-only),
+  bypassable and read back resolved against the edge width.  It draws
+  nothing — v3 reads a head's width only to stroke a hollow one, and a
+  mid head is never hollow — so it takes **no column**: the reader
+  resolves the def's record patched by the slot's bypass
+  (`ReadContext.bypassPatch`), and its sheet-diff writer is a no-op
+  (the narrow path, since nothing is stored to re-derive).
   `source/target-arrow-color` as before (v3-like `#999`
   default).  One quad per visible edge per enabled end, reusing the
   edge cull stream; the tip sits on the endpoint node's boundary
@@ -7874,7 +7883,7 @@ fragment premium is **unmeasurable at scene level** on real hardware
   arrows are deliberately out of that scope: they sit mid-line where a
   trim cannot reach, and `arrow-fill: hollow` on a mid arrow is not
   supported (decided 2026-09-28: the mid fill prop is dropped; the mid
-  width prop is planned).
+  width prop landed in round 76, readback only).
 - **Gestures** (round 10 additions): the **cxttap family** — right
   button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
   plus `cxttap` when the press never moved; the browser context menu is

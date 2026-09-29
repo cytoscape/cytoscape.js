@@ -227,6 +227,14 @@ interface EdgeComputed {
    * at write against the edge width) */
   sourceArrowWidth: number | 'match-line' | { percent: number };
   targetArrowWidth: number | 'match-line' | { percent: number };
+  /** mid-source/-target-arrow-width (round 76): v3's hollow-stroke
+   * width for the mid heads.  Mid heads are always filled (PLAN.md item
+   * 21), and v3 reads the width only when it strokes a hollow head, so
+   * it draws nothing in either library — accepted, bypassable and read
+   * back (resolved against the edge width, as the end widths are), never
+   * stored in a column */
+  midSourceArrowWidth: number | 'match-line' | { percent: number };
+  midTargetArrowWidth: number | 'match-line' | { percent: number };
   // edge labels (round 10): anchored at the edge midpoint on-GPU
   label: string;
   labelKey: string | null;
@@ -452,6 +460,8 @@ export const EDGE_DEFAULTS: EdgeComputed = {
   targetArrowFill: 0,
   sourceArrowWidth: 1, // v3's default arrow-width
   targetArrowWidth: 1,
+  midSourceArrowWidth: 1,
+  midTargetArrowWidth: 1,
   targetArrowShape: 'none',
   targetArrowColor: [153, 153, 153, 255],
   label: '',

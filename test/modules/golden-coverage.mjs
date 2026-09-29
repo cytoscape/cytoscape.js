@@ -47,13 +47,15 @@ moves any pixels — is later, by the eleventh sitting's call.
 */
 
 /** The pinned counts; change them only with the capture that moves them. */
+// round 76: mid-*-arrow-width arrive (+2 universe, both no-static —
+// mid heads are always filled — and +2 inert on nodes)
 const PINNED = {
-  universe: 212,
-  unexercised: 75,
+  universe: 214,
+  unexercised: 77,
   paintable: 56,
-  noStatic: 19,
+  noStatic: 21,
   keywordGaps: 67,
-  inert: 45,
+  inert: 47,
 };
 
 describe('golden coverage: the enumerator (round 135)', function () {

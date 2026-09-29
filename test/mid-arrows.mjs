@@ -82,6 +82,83 @@ describe('gpu/mid-arrows (round 13 C1)', function () {
     expect(cy._store.midArrowCount()).to.equal(1);
   });
 
+  // round 76 (PLAN.md item 21's width half): v3's hollow-stroke width
+  // for the mid heads.  Mid heads are always filled, and v3 reads the
+  // width only to stroke a hollow head, so it draws nothing in either
+  // library — what ports is the property: parse, bypass, readback.
+  describe('mid-source/-target-arrow-width (round 76)', function () {
+    it('reads back v3 default 1 and resolves match-line and % against the width', function () {
+      cy = makeCy({
+        width: 4,
+        'mid-source-arrow-width': 'match-line',
+        'mid-target-arrow-width': '50%',
+      });
+
+      var e = cy.$id('e');
+
+      expect(makeCy({}).$id('e').style('mid-source-arrow-width')).to.equal(1);
+      expect(e.style('mid-source-arrow-width')).to.equal(4);
+      expect(e.style('mid-target-arrow-width')).to.equal(2);
+      expect(e.style('midTargetArrowWidth')).to.equal(2);
+
+      // a width change moves the relative forms with it, as the end
+      // widths move at write
+      e.style('width', 10);
+
+      expect(e.style('mid-source-arrow-width')).to.equal(10);
+      expect(e.style('mid-target-arrow-width')).to.equal(5);
+    });
+
+    it('a bypass wins over the sheet, and a sheet replace clears it', function () {
+      cy = makeCy({ 'mid-source-arrow-width': 3 });
+
+      var e = cy.$id('e');
+
+      e.style('mid-source-arrow-width', 7);
+
+      expect(e.style('mid-source-arrow-width')).to.equal(7);
+      // the other mid is untouched by the patch
+      expect(e.style('mid-target-arrow-width')).to.equal(1);
+
+      // round 133's sheet diff takes the narrow (no-op) writer for a
+      // mid-width-only change; readback follows the new sheet
+      cy.style({ edges: { 'mid-source-arrow-width': 2 } });
+
+      expect(e.style('mid-source-arrow-width')).to.equal(2);
+    });
+
+    it('is constants-only and non-negative, like the end widths', function () {
+      expect(() =>
+        makeCy({ 'mid-source-arrow-width': { data: 'w' } }),
+      ).to.throw(/does not support mappers/);
+      expect(() => makeCy({ 'mid-target-arrow-width': -1 })).to.throw(
+        /may not be negative/,
+      );
+    });
+
+    it('stores nothing: the mid heads draw the same bytes at any width', function () {
+      var a = makeCy({ 'mid-target-arrow-shape': 'triangle' });
+      var b = makeCy({
+        'mid-target-arrow-shape': 'triangle',
+        'mid-target-arrow-width': 9,
+      });
+
+      for (var id of [
+        'edge.arrowShapes',
+        'edge.arrowWidths',
+        'edge.midTargetArrow',
+        'edge.width',
+      ]) {
+        expect(Array.from(b._store.column(id)), id).to.deep.equal(
+          Array.from(a._store.column(id)),
+        );
+      }
+
+      a.destroy();
+      b.destroy();
+    });
+  });
+
   afterEach(function () {
     if (cy != null) {
       cy.destroy();

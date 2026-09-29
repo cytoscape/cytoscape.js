@@ -119,8 +119,10 @@ export const PROP = {
 
   MID_SOURCE_ARROW_COLOR: 'mid-source-arrow-color',
   MID_SOURCE_ARROW_SHAPE: 'mid-source-arrow-shape',
+  MID_SOURCE_ARROW_WIDTH: 'mid-source-arrow-width',
   MID_TARGET_ARROW_COLOR: 'mid-target-arrow-color',
   MID_TARGET_ARROW_SHAPE: 'mid-target-arrow-shape',
+  MID_TARGET_ARROW_WIDTH: 'mid-target-arrow-width',
 
   MIN_HEIGHT: 'min-height',
   MIN_WIDTH: 'min-width',

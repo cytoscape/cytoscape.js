@@ -353,9 +353,9 @@ you can style on, you can query for. `:visible`, `:hidden`, `:transparent`,
 ## Style properties that moved
 
 v3 registers **291** property names (properties plus aliases). v4 accepts
-**161** of them — 7 only in the `core` group — and rejects **130**. Of the
+**163** of them — 7 only in the `core` group — and rejects **128**. Of the
 rejections, 96 are v3's numbered `pie-N-*` / `stripe-N-*` props, which became
-one `chart` family. The remaining 34 are the table below.
+one `chart` family. The remaining 32 are the table below.
 
 *(Measured against both libraries, not transcribed. A rejected property name
 throws at `cy.style()` with "The style property 'x' is unsupported"; v4 never
@@ -380,7 +380,6 @@ ignores one silently.)*
 | `bounds-expansion` | **dropped.** Bounds are computed correctly instead |
 | `outside-texture-bg-color/-opacity` | **dropped** with `textureOnViewport` |
 | `mid-source-arrow-fill`, `mid-target-arrow-fill` | **dropped.** Mid arrows are always filled |
-| `mid-source-arrow-width`, `mid-target-arrow-width` | **not yet ported** — planned; mid arrows use the standard width until then |
 | `text-border-style` | **not yet ported** — see [Not ported](#not-ported); `border-style` and `outline-style` themselves work (round 38) |
 | `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction; `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
 

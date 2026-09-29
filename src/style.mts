@@ -314,6 +314,8 @@ export class StyleEngine {
     // hand every reader the previous sheet's computed values.
     const ctx = {
       defFor: (ref: Ref) => this.defFor(ref),
+      bypassPatch: (ref: Ref) =>
+        engineBypass.bypassPatchAt(this, ref.group, ref.slot),
       labelChannels: (ref: Ref) => this.labelChannels(ref),
       readImageProp: (slot: number, prop: string) =>
         this.readImageProp(slot, prop),

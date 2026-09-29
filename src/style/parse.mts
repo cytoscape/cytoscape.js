@@ -194,6 +194,24 @@ export const parseArrowWidth = (
   return parseNonNegative(prop, value);
 };
 
+/**
+ * A parsed arrow width in model px: 'match-line' is the edge width and
+ * a percent scales it — v3's drawArrowhead rule.
+ *
+ * @param aw — the parsed width (`parseArrowWidth`'s result)
+ * @param width — the edge's resolved width, model px
+ * @returns the stroke width, model px
+ */
+export const resolveArrowWidth = (
+  aw: number | 'match-line' | { percent: number },
+  width: number,
+): number =>
+  aw === 'match-line'
+    ? width
+    : typeof aw === 'number'
+      ? aw
+      : aw.percent * width;
+
 export const LINE_CAPS: Record<string, number> = {
   butt: 0,
   round: 1,

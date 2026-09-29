@@ -9,7 +9,21 @@
 //   node benchmark/worker-host-deferrals.mjs            # all three
 //   node benchmark/worker-host-deferrals.mjs --images   # one of images /
 //                                                       #   tweens / fonts
+//   node benchmark/worker-host-deferrals.mjs --image-hosts  # round 141
 //   node benchmark/worker-host-deferrals.mjs --allow-software
+//
+// `--image-hosts` (round 141, after the build-out; not in the default
+// set) prices what the worker host's decodes moved off the main thread:
+// one style apply that acquires 1,000 distinct rasters, then the main
+// thread's rAF ticks, worst gap and long tasks until the frames stop,
+// on both hosts; the lifecycle ops the batches carried (the registry's
+// journal, wrapped); and a short fresh-url churn on both hosts, which
+// is the attribution row — its per-restyle cost is the style engine's
+// and equal on both hosts (round 141 found the spike's "6.5 ms of
+// decode per fresh entry" was that).  Its rows assert one create per
+// load and one create + free per restyle on the worker host, no
+// main-side decode there, and every decode landing on the same-thread
+// host.
 //
 // Images run on the same-thread host only — the worker host zeroes the
 // image count (its recorded fallback) — with the registry's own
@@ -40,7 +54,7 @@ import { chromium, webkit } from '@playwright/test';
 const DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(DIR, '..');
 const args = process.argv.slice(2);
-const only = ['--images', '--tweens', '--fonts'].filter((a) =>
+const only = ['--images', '--tweens', '--fonts', '--image-hosts'].filter((a) =>
   args.includes(a),
 );
 const modes =
@@ -590,6 +604,229 @@ if (modes.includes('images')) {
   );
   out.warnings.push(...out.images.warnings);
   delete out.images.warnings;
+  await browser.close();
+}
+
+// -- image hosts (round 141): the fresh-url churn on both hosts ------------
+if (modes.includes('image-hosts')) {
+  const { browser, page } = await openChromium();
+
+  out.adapter ??= await adapterName(page);
+  refuseSoftware(out.adapter);
+  out.imageHosts = await page.evaluate(
+    async ({ INSTRUMENTS, FRAMES }) => {
+      const warnings = [];
+      const env = new Function(
+        'FRAMES',
+        INSTRUMENTS +
+          '; return { now, snap, delta, raf, nextRender, container };',
+      )(FRAMES);
+      const { now, snap, delta, raf, nextRender, container } = env;
+      const rasterUrl = (i) => {
+        const c = document.createElement('canvas');
+
+        c.width = 64;
+        c.height = 64;
+
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = `hsl(${(i * 37) % 360} 70% 50%)`;
+        ctx.beginPath();
+        ctx.arc(32, 32, 20 + (i % 10), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.font = '10px monospace';
+        ctx.fillText(String(i), 2, 12);
+
+        return c.toDataURL('image/png');
+      };
+      const NODES = 1000;
+      const CHURN_FRAMES = 20;
+      const PER = 50;
+      const rows = {};
+
+      // two passes, alternating hosts; the first is a warm-up (the JIT
+      // and the GPU pipelines), and the rows are the second pass's
+      let pass = 0;
+
+      for (const host of ['same-thread', 'worker', 'same-thread', 'worker']) {
+        pass++;
+
+        const urls = Array.from(
+          { length: NODES + CHURN_FRAMES * PER },
+          (_, i) => rasterUrl(pass * 10000 + i),
+        );
+        const elements = [];
+
+        for (let i = 0; i < NODES; i++) {
+          elements.push({
+            data: { id: 'f' + i, img: urls[i] },
+            position: { x: (i % 50) * 40, y: Math.floor(i / 50) * 40 },
+          });
+        }
+
+        // mounted imageless, so the one style apply below acquires every
+        // entry and every decode + upload follows it
+        const cy = cytoscape({
+          container,
+          elements,
+          style: { nodes: { width: 30, height: 30 } },
+          renderer: host === 'worker' ? { worker: true } : undefined,
+        });
+        const reg = cy._store.images;
+        const ops = { create: 0, free: 0, batches: 0 };
+        const take = reg.takeJournal.bind(reg);
+
+        reg.takeJournal = () => {
+          const out = take();
+
+          if (out.length > 0) {
+            ops.batches++;
+          }
+
+          for (const op of out) {
+            ops[op.op]++;
+          }
+
+          return out;
+        };
+
+        await cy.ready;
+        await nextRender(cy);
+        await new Promise((r) => setTimeout(r, 300));
+
+        // -- load: 1,000 distinct 64 px rasters in one style apply ------
+        // main-thread occupancy from the apply until the frames stop
+        // (the worker host's decodes have no main-side signal, so both
+        // hosts settle on "no render for 750 ms"): rAF ticks, the worst
+        // gap between them, and long tasks
+        let longMs = 0;
+        let longCount = 0;
+        const observer = new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) {
+            longMs += e.duration;
+            longCount++;
+          }
+        });
+
+        observer.observe({ type: 'longtask' });
+
+        let lastRender = now();
+        let renders = 0;
+        const onRender = () => {
+          lastRender = now();
+          renders++;
+        };
+
+        cy.on('render', onRender);
+
+        const s0 = snap();
+        const t0 = now();
+
+        cy.style({
+          nodes: { width: 30, height: 30, 'background-image': { data: 'img' } },
+        });
+
+        const applyMs = now() - t0;
+        let ticks = 0;
+        let maxGap = 0;
+        let prev = now();
+
+        while (now() - lastRender < 750 && now() - t0 < 20000) {
+          await raf();
+
+          const n = now();
+
+          maxGap = Math.max(maxGap, n - prev);
+          prev = n;
+          ticks++;
+        }
+
+        const settledMs = lastRender - t0;
+
+        cy.off('render', onRender);
+        await new Promise((r) => setTimeout(r, 50));
+        observer.disconnect();
+
+        const d = delta(s0, snap());
+        const loadCreates = ops.create;
+        const loadPending = reg.pendingCount();
+        const loadLive = reg.liveCount();
+
+        // -- attribution: the fresh-url churn, both hosts ---------------
+        const nodes = cy.nodes();
+        let next = NODES;
+        const c0 = now();
+
+        for (let f = 0; f < CHURN_FRAMES; f++) {
+          for (let k = 0; k < PER; k++) {
+            nodes[(f * PER + k) % NODES].data('img', urls[next++]);
+          }
+
+          await raf();
+        }
+
+        const churnMs = now() - c0;
+
+        if (pass <= 2) {
+          cy.destroy();
+          continue; // the warm-up pass
+        }
+
+        rows[host] = {
+          load: {
+            distinctUrls: NODES,
+            styleApplyMs: +applyMs.toFixed(1),
+            settledMs: +settledMs.toFixed(0),
+            renders,
+            rafTicks: ticks,
+            maxRafGapMs: +maxGap.toFixed(1),
+            longTasks: longCount,
+            longTaskMs: +longMs.toFixed(0),
+            mainSidePending: loadPending,
+            journalCreates: loadCreates,
+            postCalls: d.postCalls,
+            postMs: d.postMs,
+          },
+          freshChurn: {
+            restyles: CHURN_FRAMES * PER,
+            meanFrameMs: +(churnMs / CHURN_FRAMES).toFixed(1),
+            msPerRestyle: +(churnMs / (CHURN_FRAMES * PER)).toFixed(2),
+            journalCreates: ops.create - loadCreates,
+            journalFrees: ops.free,
+          },
+        };
+
+        if (host === 'worker') {
+          if (
+            ops.create !== NODES + CHURN_FRAMES * PER ||
+            ops.free !== CHURN_FRAMES * PER
+          ) {
+            warnings.push(
+              `image hosts: ${ops.create} creates / ${ops.free} frees crossed for ${NODES} loads + ${CHURN_FRAMES * PER} restyles`,
+            );
+          }
+
+          if (loadPending !== loadLive) {
+            warnings.push(
+              'image hosts: the main thread decoded under the worker host',
+            );
+          }
+        } else if (loadPending !== 0) {
+          warnings.push(
+            `image hosts: ${loadPending} entries still pending after the same-thread load`,
+          );
+        }
+
+        cy.destroy();
+      }
+
+      return { ...rows, warnings };
+    },
+    { INSTRUMENTS, FRAMES },
+  );
+  out.warnings.push(...out.imageHosts.warnings);
+  delete out.imageHosts.warnings;
   await browser.close();
 }
 

@@ -78,6 +78,8 @@ const EXPECTED_EXPORTS = new Set([
   'PatchDiff', // round 107: cy.patch()'s result and the patch event's diff
   'PatchMode', // round 107
   'PatchOptions', // round 107
+  'CloneOptions', // round 106: cy.clone()'s options
+  'FollowOptions', // round 106: how a following clone keeps up
   'PresetLayoutOptions',
   'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',

@@ -289,6 +289,22 @@ export class GraphStore implements ModelView {
    */
   structureEpoch = 0;
 
+  /**
+   * Monotonic counter of reparentings (round 106): bumped by every
+   * `setParent` that changed a node's parent — the one structural change
+   * `structureEpoch` does not count.  A following clone's trigger reads
+   * it.  Treat as read-only outside the store.
+   */
+  hierarchyEpoch = 0;
+  /**
+   * Monotonic counter of position writes (round 106): bumped by every
+   * explicit write to the position column — `setPosition(s)` and the
+   * offsets — and never by a compound parent's derived bounds, so a
+   * restyle that resizes children does not read as a move.  A following
+   * clone's trigger reads it.  Treat as read-only outside the store.
+   */
+  positionEpoch = 0;
+
   /** Told when structureEpoch moves (round 62.5b) — the core nulls its
    * whole-graph collection cache here, so the memo-hit read needs no
    * epoch compare at all. */

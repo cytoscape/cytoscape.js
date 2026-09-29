@@ -5195,6 +5195,78 @@ now uses `segments` edges.  The soak tier's isolation suite adds dispose
 mid-stream (the peer unaffected) and destroy with a live consumer (no
 throw, no dangling callback — red with the destroy hook removed).
 
+### `cy.clone( options )` and `follow` (106.3)
+
+`cy.clone()` serializes this instance and builds a new one from the
+buffer, **through the same entry** (`core._caps` into the factory's
+`createCore`), so a clone of a `cytoscape/headless` instance has no
+renderer either.  What each source form carries of an element, measured
+by `test/clone.mjs`'s carriage spec rather than asserted:
+
+| | ids, data, positions, parents, endpoints | `selected` / `selectable` | `locked` / `grabbable` / `pannable` | bypasses |
+| --- | :-: | :-: | :-: | :-: |
+| wire (`serialize()`) — the fast path | yes | yes | **no** | no (the sheet's) |
+| `json()` element form — definition speed | yes | yes | yes | no (the sheet's) |
+| `cy.clone()` | yes | yes | yes — copied slot for slot after the wire load | yes, in the carried sheet |
+
+Beside the elements a clone carries graph `data()` (the wire), the sheet
+as `style().json()` exports it (bypasses included, copied so the engines
+share no object), the viewport (zoom, pan, limits), the gating flags and
+every interaction setting a setter can change (read through the getters,
+so a post-construction change is carried), and the construction options
+minus `elements`, `container` and `layout`.  `options` overrides any of
+it; a `style` replaces the whole sheet, bypasses included — the minimap
+case.  Not carried, by design: scratch, listeners, running animations and
+layouts, and the transient hover / active / grabbed bits.  A clone's
+`options()` reads back the merged options without the buffer, so a clone
+of a large graph does not retain its payload.
+
+**`follow: true | { throttle }`** registers a consumer (106.2) on the
+source and syncs by `patch( clone, source.serialize() )` — round 107's
+loop, specced and priced there.  The rules:
+
+- **A sync runs only after a change the payload carries**: the store's
+  `structureEpoch` (adds, removes, compaction), `hierarchyEpoch` (new:
+  every effective `setParent`), `positionEpoch` (new: every explicit
+  position write, never a compound parent's derived bounds), an
+  `edge.endpoints` span, a resize, or `dataWritten`.  A restyle, a
+  bypass, a hover or a selection on the source costs the clone nothing.
+  The epochs, not the position span, because a restyle that resizes a
+  compound's children moves the parent's *derived* position and marks the
+  same span a drag does — the first version keyed on the span and synced
+  on a restyle, which the "owns its state" spec caught.
+- **Throttle**: the wake is the consumer's microtask; a sync then waits
+  `max( throttle, lastSyncCost )` after the previous one (default 50 ms),
+  so a burst coalesces into one sync and following never takes more than
+  half the main thread however large the graph.  `throttle: 0` syncs on
+  the next macrotask.
+- **The clone owns its state** — the replan's second call: patch never
+  reads selection or flags for a survivor, so selection in one view is
+  not selection in the other; linked brushing is app wiring.  An element
+  a sync *adds* starts as a clone's elements start: the lock / grab / pan
+  bits are copied from the source by id, since the wire lacks them.
+- **Positions are the source's**: a sync writes through the clone's locks
+  and `autolock` (an internal flag on the applier; `cy.patch()` itself
+  still holds locked nodes) — a minimap is typically `autolock`ed and must
+  still follow.  Compound parents stay derived.
+- **Elements only**: the clone's sheet, viewport, bypasses and graph data
+  are never synced, and its own element edits are reconciled away at the
+  next sync.
+- **Lifetime**: a follow link is on both cores' `_follows`; `destroy()` of
+  either stops it (the timer cleared, the consumer disposed).
+
+Controls (`test/clone.mjs`): equivalence — every element `json()` and
+every `COLUMN_SPECS` column id by id — against a source changed after the
+clone, which both comparisons reject; the carriage table; the follow of
+adds, removes, moves, mapped and unwatched data writes, a reparent, a
+rewire and a parent's removal, columns compared after each sync; the
+state-ownership spec with its control (a data write does sync); lock
+bypass; burst coalescing and the throttle; both destroy orders.  Eight
+mutations were run against the file — no `positionEpoch`, no
+`dataWritten`, no `hierarchyEpoch`, no relevance filter at all, no
+carried flags on a sync's adds, no lock bypass, no destroy hook, no
+one-shot flag carriage — and each fails at least one spec.
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its

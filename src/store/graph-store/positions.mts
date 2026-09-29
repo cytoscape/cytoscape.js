@@ -52,6 +52,7 @@ export function setPosition(
   pos[slot * 2 + 1] = y;
   gs.geoEpoch++;
 
+  gs.positionEpoch++;
   gs.dirty.mark(COL.NODE_POSITION, slot);
 }
 
@@ -90,6 +91,7 @@ export function setPositions(
   }
 
   gs.geoEpoch++;
+  gs.positionEpoch++;
   gs.dirty.mark(COL.NODE_POSITION, min, max + 1);
 }
 
@@ -142,6 +144,7 @@ export function setPositionsConst(
   }
 
   gs.geoEpoch++;
+  gs.positionEpoch++;
   gs.dirty.mark(COL.NODE_POSITION, min, max + 1);
 }
 
@@ -213,5 +216,6 @@ export function shiftPositions(
   }
 
   gs.geoEpoch++;
+  gs.positionEpoch++;
   gs.dirty.mark(COL.NODE_POSITION, min, max + 1);
 }

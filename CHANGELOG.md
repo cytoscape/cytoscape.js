@@ -245,6 +245,14 @@ that compile and then behave differently.
   per-element events fire once each inside one batch, then one `patch`
   event carries the diff. Survivors keep selection, scratch, listeners and
   animations.
+- **`cy.clone( options )`** (round 106) — a second view of a graph is a
+  second instance: a copy built from the wire format, carrying elements,
+  data, positions, hierarchy, selection and the lock/grab/pan flags, the
+  sheet with its bypasses, the viewport and the interaction settings, with
+  `options` over any of it (a `container`, the minimap's own `style`).
+  `follow: true | { throttle }` keeps it current by a throttled
+  `clone.patch( cy.serialize() )`, driven by a new dirty-stream consumer on
+  the source; the clone owns its selection, hover, sheet and viewport.
 - **Style transitions** (`transition-property`/`-duration`/`-delay`/
   `-timing-function`) and animation controls (`pause`/`resume`/`reverse`,
   read-only `progress`/`paused`).

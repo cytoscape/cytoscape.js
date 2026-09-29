@@ -218,12 +218,21 @@ function writeData(core: Core, group: GroupName, plan: PatchPlan): number[] {
   return written;
 }
 
-/** Write the survivors' positions a position write may move; answer the slots moved. */
-function writePositions(core: Core, plan: PatchPlan): number[] {
+/**
+ * Write the survivors' positions a position write may move; answer the
+ * slots moved.  A follow sync (round 106) writes through the follower's
+ * locks: the source owns the positions, and a minimap under `autolock`
+ * must still follow.
+ */
+function writePositions(
+  core: Core,
+  plan: PatchPlan,
+  follow: boolean,
+): number[] {
   const { slots, xy } = plan.moves;
 
   // autolock holds every node, as it does against position()
-  if (slots.length === 0 || core.autolock() === true) {
+  if (slots.length === 0 || (core.autolock() === true && !follow)) {
     return [];
   }
 
@@ -236,7 +245,10 @@ function writePositions(core: Core, plan: PatchPlan): number[] {
     // a locked node holds its position against every API-tier write;
     // a compound parent's position is derived from its children, as at
     // load
-    if ((flags[slots[j]] & (FLAG_LOCKED | FLAG_PARENT)) !== 0) {
+    if (
+      (flags[slots[j]] & (follow ? FLAG_PARENT : FLAG_LOCKED | FLAG_PARENT)) !==
+      0
+    ) {
       continue;
     }
 
@@ -256,12 +268,15 @@ function writePositions(core: Core, plan: PatchPlan): number[] {
  * @param core — the core to patch
  * @param input — the payload, in definition, columnar or wire form
  * @param options — the mode
+ * @param follow — a follow sync (round 106): positions write through the
+ *   follower's locks
  * @returns the diff
  */
 export function patch(
   core: Core,
   input: ElementsInput,
   options?: PatchOptions,
+  follow: boolean = false,
 ): PatchDiff {
   const mode = _patchMode(options);
   const payload = _patchPayload(input);
@@ -315,7 +330,7 @@ export function patch(
     // 4. survivor writes
     const dataNodes = writeData(core, GROUP_NODES, plan);
     const dataEdges = writeData(core, GROUP_EDGES, plan);
-    const moved = writePositions(core, plan);
+    const moved = writePositions(core, plan, follow);
     const reparented = survivorParents.map((p) => plan.nodeSlots[p.at]);
 
     // the diff's collections are built while the slots are still the

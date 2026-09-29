@@ -58,6 +58,8 @@ import * as serializeImpl from './core/serialize.mjs';
 import * as lifecycleImpl from './core/lifecycle.mjs';
 import * as patchImpl from './core/patch.mjs';
 import type { PatchDiff, PatchOptions } from './core/patch.mjs';
+import * as cloneImpl from './core/clone.mjs';
+import type { CloneOptions } from './core/clone.mjs';
 import type { CoreCaps } from './factory.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
@@ -163,7 +165,9 @@ export class Core {
   };
   /** @internal */
   _container: HTMLElement | null;
-  private _options: CytoscapeOptions;
+  /** the options it was built with (a clone's: the merged ones, no buffer)
+   * @internal */
+  _options: CytoscapeOptions;
   private _headlessWidth: number;
   private _headlessHeight: number;
   /** @internal */
@@ -225,6 +229,10 @@ export class Core {
    * running before the renderer goes.
    */
   _inflight: Set<{ cancel(): unknown }>;
+  /** the follow links (round 106) this instance is either end of —
+   * `destroy()` stops them
+   * @internal */
+  _follows: Set<{ stop(): void }>;
   /** the open layout run per layout object (round 128), for `cancel()` */
   _layoutRuns: Map<object, LayoutRun>;
 
@@ -344,6 +352,7 @@ export class Core {
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
     this._inflight = new Set();
+    this._follows = new Set();
     this._layoutRuns = new Map();
     this._batchPending = null;
 
@@ -2083,6 +2092,59 @@ export class Core {
    */
   json(flat?: boolean): Record<string, unknown> {
     return serializeImpl.json(this, flat);
+  }
+
+  /**
+   * Make an independent instance holding a copy of this graph (round 106)
+   * — the way to show one graph in two places, e.g. a minimap beside the
+   * main view.  A second view is a second instance, never a second
+   * renderer over one model: each clone has its own sheet, viewport,
+   * selection, hover, listeners and `png()`.
+   *
+   * What is carried: every element through the wire format — ids, data,
+   * positions, parents, endpoints, `selected`/`selectable` — plus each
+   * element's `locked`/`grabbable`/`pannable` flags, graph-level `data()`,
+   * the stylesheet with its bypasses, the viewport (zoom, pan, limits),
+   * the gating flags and interaction settings, and the options this
+   * instance was built with.  `options` overrides any of it: a
+   * `container` for the clone (never carried; one container, one
+   * renderer), a `style` (the minimap's simplified sheet — which replaces
+   * the bypasses too), a `zoom` or `pan`, a `layout` to run on the copy.
+   * What is not carried, by design: scratch, running animations and
+   * layouts, listeners, and the transient hover/active/grabbed state.
+   *
+   * `follow` keeps the clone current: each sync is `clone.patch(
+   * this.serialize() )`, driven by a dirty-stream consumer on this
+   * instance and throttled (`{ throttle }` ms, default 50, and never more
+   * often than the last sync took).  A sync runs only after a change the
+   * payload carries — an add, remove, move, data write or reparent; a
+   * restyle, hover or selection here costs the clone nothing.  The clone
+   * **owns its state**: patch never reads selection or flags for a
+   * surviving element, so selecting in one view does not select in the
+   * other (linked brushing is app wiring over the two instances' events).
+   * Positions are this instance's to set: a sync moves a clone's node
+   * even where the clone locks it (`autolock`, a locked node).  Its own
+   * edits to elements are reconciled away at the next sync; its sheet,
+   * viewport, bypasses and graph data are never touched.  Following stops
+   * when either instance is destroyed.
+   *
+   * Cost: a clone is one `serialize()` plus a load from the wire (~2x
+   * the memory: the model is duplicated); a follow sync is one serialize
+   * plus one patch — ~2 ms at 10k elements, ~50 ms at 100k — so a
+   * follower lags by a burst, not a frame, on a large graph.
+   * `benchmark/clone.mjs` and "N viewers" in `src/README.md` have the
+   * numbers.
+   *
+   * @param options — construction options over the carried ones, plus
+   *   `follow` (`true` or `{ throttle }`)
+   * @returns the new instance, built by the same entry as this one
+   * @throws if `options` carries `elements` (a clone's elements are this
+   *   instance's), on a malformed `follow`, and wherever construction
+   *   throws — a `container` in a build with no renderer, or without
+   *   WebGPU
+   */
+  clone(options?: CloneOptions): Core {
+    return cloneImpl.clone(this, options);
   }
 
   /**

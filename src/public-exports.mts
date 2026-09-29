@@ -11,6 +11,8 @@ export type { Core } from './core.mjs';
 export type { Collection } from './collection.mjs';
 // round 107: `cy.patch()`'s option and result shapes
 export type { PatchDiff, PatchMode, PatchOptions } from './core/patch.mjs';
+// round 106: `cy.clone()`'s options, and how a following clone keeps up
+export type { CloneOptions, FollowOptions } from './core/clone.mjs';
 // round 41: v4's own event object, so a handler's parameter has a real type
 // and `event.target` is no longer `unknown`
 export type { Event, EventProps, EventTarget } from './event.mjs';

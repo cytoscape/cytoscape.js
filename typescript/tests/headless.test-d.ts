@@ -59,3 +59,10 @@ const patchedGpu: GpuPatchDiff = cyGpu.patch(buffer);
 
 void patched;
 void patchedGpu;
+
+// round 106: clone ships on every entry, and answers the entry's own Core
+const copy: Core = cy.clone({ follow: { throttle: 0 } });
+const copyGpu: GpuCore = cyGpu.clone();
+
+void copy;
+void copyGpu;

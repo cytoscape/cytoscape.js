@@ -656,6 +656,13 @@ instances are not emitters.
   is several times cheaper than destroy-and-recreate (see `src/README.md`
   for the numbers and the overlap below which recreating wins), and a
   payload equal to the state costs one scan and fires no element event.
+- **`cy.clone( { container, style, follow: true } )` for a second view**
+  (round 106) — a minimap, an overview, a side-by-side comparison. v3
+  apps drew a navigator from exported images or ran a second instance
+  kept in sync by hand; a v4 clone is a full instance of its own (its own
+  sheet, viewport, selection and events) that `follow` keeps current by a
+  throttled id-keyed patch. Selection is deliberately not synced — link
+  the two instances' events if the app wants linked brushing.
 - **Data-driven layout mappings** (round 85.3, #1514). The five layout
   params that take per-element values accept serializable objects beside
   v3's function forms: `{ data, scale?, range?, invert?, default? }` on

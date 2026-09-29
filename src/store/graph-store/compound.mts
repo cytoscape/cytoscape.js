@@ -324,6 +324,8 @@ export function setParent(
     return;
   } // no-op or cycle drop
 
+  gs.hierarchyEpoch++;
+
   // the moved subtree's ancestor-derived state re-resolves against the
   // new chain (round 14.4): effective visibility and the opacity fold
   refreshEffectiveVisibility(gs, slot);

@@ -242,6 +242,12 @@ export function destroy(core: Core): Core {
   }
 
   core._inflight.clear();
+
+  // a follow link (round 106) ends with either instance
+  for (const link of [...core._follows]) {
+    link.stop();
+  }
+
   core.emit('destroy');
   core._emitter.removeAllListeners();
 

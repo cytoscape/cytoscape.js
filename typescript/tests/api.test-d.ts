@@ -22,6 +22,8 @@ import type {
   Mapper,
   PatchDiff,
   PatchOptions,
+  CloneOptions,
+  FollowOptions,
   Stylesheet,
   Position,
   RendererStats,
@@ -133,6 +135,24 @@ const changed: Collection = diff.added.union(diff.removed).union(diff.updated);
 void changed;
 // @ts-expect-error a mode is 'reconcile' or 'merge'
 cy.patch(elements, { mode: 'upsert' });
+
+// -- clone (round 106): a second instance, optionally following --
+
+const follow: FollowOptions = { throttle: 100 };
+const cloneOptions: CloneOptions = {
+  style: { nodes: { width: 4 } },
+  zoom: 0.5,
+  follow,
+};
+const mini: Core = cy.clone(cloneOptions);
+
+cy.clone({ follow: true });
+cy.clone();
+mini.destroy();
+// @ts-expect-error a clone's elements are its source's
+cy.clone({ elements: [] });
+// @ts-expect-error follow is a boolean or { throttle }
+cy.clone({ follow: 'always' });
 
 // -- queries: structured objects and predicates, never selector strings --
 

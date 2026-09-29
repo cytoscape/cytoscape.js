@@ -393,10 +393,12 @@ interface DirtySpan {
   end: number;
 }
 /**
- * What changed since the last `takeDelta()`.  One coalesced span per column
- * at most; when a group's capacity grew, `resized` is set and the renderer
- * must reallocate that group's buffers and do a full re-upload (spans for
- * that group may be ignored in that case).
+ * What changed since the last `takeDelta()` — or, for a registered
+ * {@link DeltaConsumer}, since that consumer's last `take()`.  One
+ * coalesced span per column at most; when a group's capacity grew,
+ * `resized` is set and the renderer must reallocate that group's buffers
+ * and do a full re-upload (spans for that group may be ignored in that
+ * case).
  */
 interface StoreDelta {
   resized: {
@@ -435,6 +437,49 @@ interface StoreDelta {
     start: number;
     end: number;
   };
+  /**
+   * Set only on a registered consumer's delta (round 106): an element
+   * `data()` write landed that no column span records — a key no mapper
+   * watches, which the renderer has no reason to see.  A reader that
+   * mirrors the model (a following clone) needs it; the primary
+   * consumer's delta never carries it, and the store records it at all
+   * only while a consumer is registered.
+   */
+  dataWritten?: boolean;
+}
+/**
+ * A registered reader of the dirty stream (round 106): a second consumer
+ * beside the renderer's frame, with its own cursor.  The store's
+ * `takeDelta()` / `hasDirty()` / `onInvalidate()` are the *primary*
+ * cursor, which is never disposed; `registerConsumer()` hands out the
+ * others.  Draining is **drain-and-republish**: the mutation paths
+ * (`mark` / `markResized` / `touch`) write one live state exactly as they
+ * did with one consumer, and whichever consumer takes first drains it and
+ * folds it into every other consumer's pending buffer — so fan-out costs
+ * at the drain rate, not the mutation rate, and no consumer can starve
+ * another.  A consumer registered late starts with a full sync (both
+ * groups `resized`, every blob resized), since it saw none of the history.
+ */
+interface DeltaConsumer {
+  /**
+   * This consumer's delta since its last take, cleared — spans, resize
+   * flags, blob ranges, and `dataWritten`.  Flushes the store's lazy
+   * derivations first, as `takeDelta()` does.
+   */
+  take(): StoreDelta;
+  /** Whether this consumer has anything to take. */
+  hasDirty(): boolean;
+  /**
+   * `cb` fires on a microtask once per burst of mutations in which this
+   * consumer has something to take — another consumer draining
+   * synchronously does not cancel it.  Returns an unsubscribe function.
+   */
+  onInvalidate(cb: () => void): () => void;
+  /**
+   * Unregister: drop the pending state and the callbacks.  Idempotent;
+   * the other consumers are unaffected.
+   */
+  dispose(): void;
 }
 /** Label sidecar streams: main node/edge labels plus the edge
  * source/target end-label streams (round 13 D4). */
@@ -526,9 +571,14 @@ interface ModelView {
   highWater(group: GroupName): number;
   column(id: ColumnId): ColumnArray;
   hasDirty(): boolean;
-  /** Returns the accumulated delta and clears it. */
+  /**
+   * Returns the accumulated delta and clears it — the *primary* consumer's
+   * cursor (the renderer's frame).  Any other reader registers its own
+   * {@link DeltaConsumer} (round 106) rather than calling this, which
+   * would starve the renderer.
+   */
   takeDelta(): StoreDelta;
-  /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
+  /** `cb` fires at most once per microtask when the model becomes dirty for the primary consumer; returns an unsubscribe fn. */
   onInvalidate(cb: () => void): () => void;
   /** The 12b curve param blob backing the params-column headers; the
    * renderer mirrors [0, curveBlobLength()) into a storage buffer. */
@@ -2065,18 +2115,68 @@ declare class DataStore {
 //#endregion
 //#region src/store/dirty.d.mts
 /**
+ * One reader's cursor over a {@link DirtyTracker} (round 106): its
+ * pending state (what peers drained on its behalf) and its invalidation
+ * callbacks.  The tracker's own `take()`/`hasDirty()`/`onInvalidate()`
+ * are the primary cursor's; `registerCursor()` makes the others.
+ */
+declare class DirtyCursor {
+  private readonly tracker;
+  readonly primary: boolean;
+  /**
+   * @param tracker — the tracker this cursor reads
+   * @param primary — whether this is the tracker's own (renderer) cursor,
+   *   which never sees `dataWritten` and is never disposed
+   */
+  constructor(tracker: DirtyTracker, primary: boolean);
+  /**
+   * This cursor's delta, cleared: its pending state plus the live state,
+   * which is folded into every other cursor's pending on the way.
+   *
+   * @param nodeHighWater — the node table's current high water mark
+   * @param edgeHighWater — the edge table's current high water mark
+   * @returns the spans, resize flags and high water marks
+   */
+  take(nodeHighWater: number, edgeHighWater: number): StoreDelta;
+  /** Whether this cursor has anything to take. */
+  hasDirty(): boolean;
+  /**
+   * Subscribe to this cursor's invalidation (see the tracker's).
+   *
+   * @param cb — run on the microtask after a burst this cursor must see
+   * @returns an unsubscribe function
+   */
+  onInvalidate(cb: () => void): () => void;
+  /** Unregister (idempotent): pending state and callbacks are dropped. */
+  dispose(): void;
+}
+/**
  * Tracks one coalesced `[min, end)` dirty span per column per frame, plus a
  * per-group `resized` flag (capacity growth ⇒ the renderer reallocates the
  * group's buffers and re-uploads in full).  `take()` returns-and-clears.
  * Invalidation callbacks fire at most once per microtask so a burst of
  * mutations schedules a single frame.
+ *
+ * Since round 106 the tracker has **consumer cursors**: `take()`,
+ * `hasDirty()` and `onInvalidate()` are the primary cursor's (the
+ * renderer's frame), and `registerCursor()` adds readers that cannot
+ * starve it or each other.  The mutation half (`mark` / `markResized` /
+ * `touch`) is unchanged — it writes one live state — and the fan-out
+ * happens at drain time (drain-and-republish): the first cursor to take
+ * drains the live state and folds it into every other cursor's pending
+ * buffer.  With no extra cursor registered, `take()` is the one-consumer
+ * code it always was.
  */
 declare class DirtyTracker {
   private spans;
   private resized;
-  private cbs;
   private scheduled;
   private touched;
+  /** an unwatched data write since the last drain (round 106) */
+  private dataWritten;
+  private readonly primary;
+  /** the registered cursors beyond the primary */
+  private extras;
   /** Starts clean: no spans, neither group resized, no subscribers. */
   constructor();
   /**
@@ -2106,13 +2206,21 @@ declare class DirtyTracker {
    * @param group — the group whose capacity changed
    */
   markResized(group: GroupName): void;
-  /** Whether anything is pending — spans, a resize, or a bare touch(). */
+  /**
+   * Record an element data write that marks no column (round 106) — for
+   * the registered cursors only, as `StoreDelta.dataWritten`; the primary
+   * never sees it.  A no-op, scheduling nothing, while no cursor beyond
+   * the primary is registered, so a data write costs what it did.
+   */
+  markData(): void;
+  /** Whether anything is pending for the primary cursor — spans, a resize, or a bare touch(). */
   hasDirty(): boolean;
   /**
-   * Return the accumulated delta and reset to clean, all at once — there
-   * is exactly one consumer (the renderer's frame), and a second call
-   * before the next mutation yields an empty delta.  Draining is what
-   * makes the accumulated spans safe to widen: nothing outlives a frame.
+   * The primary cursor's take: return the accumulated delta and reset to
+   * clean, all at once.  A second call before the next mutation yields an
+   * empty delta.  Draining is what makes the accumulated spans safe to
+   * widen: nothing outlives a frame.  Any other reader registers its own
+   * cursor instead ({@link registerCursor}).
    *
    * @param nodeHighWater — the node table's current high water mark
    * @param edgeHighWater — the edge table's current high water mark
@@ -2120,16 +2228,29 @@ declare class DirtyTracker {
    */
   take(nodeHighWater: number, edgeHighWater: number): StoreDelta;
   /**
-   * Subscribe to invalidation.  Callbacks fire on a microtask, once per
-   * burst of mutations, and are skipped entirely when the state was
-   * already drained synchronously — so a caller that mutates and then
-   * renders in the same task never schedules a redundant frame.
+   * Subscribe to the primary cursor's invalidation.  Callbacks fire on a
+   * microtask, once per burst of mutations, and are skipped entirely
+   * when the state was already drained synchronously — so a caller that
+   * mutates and then renders in the same task never schedules a
+   * redundant frame.
    *
    * @param cb — run when the tracker goes from clean to dirty
    * @returns an unsubscribe function (safe to call from within `cb`;
    *   the callback list is snapshotted before dispatch)
    */
   onInvalidate(cb: () => void): () => void;
+  /**
+   * Register another reader (round 106).  It starts with a full sync —
+   * both groups `resized`, `touched` and `dataWritten` — since it saw
+   * none of the history, and its first wake is scheduled now.
+   *
+   * @returns the new cursor; `dispose()` it when done
+   */
+  registerCursor(): DirtyCursor;
+  /** How many cursors beyond the primary are registered. */
+  cursorCount(): number;
+  /** Dispose every registered cursor (the owner is going away). */
+  releaseAll(): void;
   private schedule;
 }
 //#endregion
@@ -2551,6 +2672,44 @@ interface CurveRoute {
   segEnd: Uint8Array;
 }
 //#endregion
+//#region src/store/graph-store/consumers.d.mts
+/** A registered store consumer (see `DeltaConsumer` in the contract). */
+declare class StoreConsumer implements DeltaConsumer {
+  private readonly gs;
+  private readonly cursor;
+  private disposed;
+  /**
+   * @param gs — the store read
+   * @param cursor — the tracker cursor carrying the column half
+   */
+  constructor(gs: GraphStore, cursor: DirtyCursor);
+  /**
+   * This consumer's delta, cleared: derivations flushed first, then the
+   * column spans and the blob ranges, each folded for the peers.
+   *
+   * @returns the delta; an empty one once disposed
+   */
+  take(): StoreDelta;
+  /**
+   * This consumer's watched-key data-write spans, cleared (the renderer's
+   * `takeMapperSpans()` channel, per consumer).
+   *
+   * @returns the spans; empty once disposed
+   */
+  takeMapperSpans(): MapperSpan[];
+  /** Whether this consumer has anything to take. */
+  hasDirty(): boolean;
+  /**
+   * Subscribe to this consumer's invalidation.
+   *
+   * @param cb — run on the microtask after a burst this consumer must see
+   * @returns an unsubscribe function
+   */
+  onInvalidate(cb: () => void): () => void;
+  /** Unregister (idempotent); the other consumers are unaffected. */
+  dispose(): void;
+}
+//#endregion
 //#region src/store/graph-store.d.mts
 interface BgLen {
   v: number;
@@ -2662,6 +2821,21 @@ declare class GraphStore implements ModelView {
    * that consult it).  Treat as read-only outside the store.
    */
   structureEpoch: number;
+  /**
+   * Monotonic counter of reparentings (round 106): bumped by every
+   * `setParent` that changed a node's parent — the one structural change
+   * `structureEpoch` does not count.  A following clone's trigger reads
+   * it.  Treat as read-only outside the store.
+   */
+  hierarchyEpoch: number;
+  /**
+   * Monotonic counter of position writes (round 106): bumped by every
+   * explicit write to the position column — `setPosition(s)` and the
+   * offsets — and never by a compound parent's derived bounds, so a
+   * restyle that resizes children does not read as a move.  A following
+   * clone's trigger reads it.  Treat as read-only outside the store.
+   */
+  positionEpoch: number;
   /** Told when structureEpoch moves (round 62.5b) — the core nulls its
    * whole-graph collection cache here, so the memo-hit read needs no
    * epoch compare at all. */
@@ -2718,13 +2892,27 @@ declare class GraphStore implements ModelView {
    * Drain the frame's pending writes: flushes the lazy derivations
    * first (so parent auto-bounds and curve params land as ordinary
    * column spans inside this delta), then takes the column spans and
-   * each blob pool's dirty range.  Destructive — the trackers are
-   * cleared, so exactly one consumer (the renderer) may call it.
+   * each blob pool's dirty range.  Destructive — this is the *primary*
+   * consumer's cursor (the renderer's frame); any other reader registers
+   * its own with {@link registerConsumer} (round 106).
    *
    * @returns the delta, with the four blob ranges attached only when
    * that pool actually changed
    */
   takeDelta(): StoreDelta;
+  /**
+   * Register a second reader of the dirty stream (round 106) — a
+   * following clone's trigger, a devtools observer.  Drain-and-republish:
+   * whichever consumer takes first folds the drained spans, blob ranges
+   * and mapper spans into every other consumer's pending state, so no
+   * reader starves another and the mutation paths are unchanged.  The
+   * consumer starts with a full sync.
+   *
+   * @returns the consumer; `dispose()` it when done
+   */
+  registerConsumer(): StoreConsumer;
+  /** Dispose every registered consumer (the owning core is being destroyed). */
+  disposeConsumers(): void;
   /** The 12b curve param pool's backing array (the renderer's upload
    * source); reallocated on growth, so re-read it every frame. */
   curveBlob(): Float32Array;
@@ -7727,6 +7915,28 @@ declare class LayoutRun {
   private unregister;
 }
 //#endregion
+//#region src/core/clone.d.mts
+/** How a following clone keeps up (round 106). */
+interface FollowOptions {
+  /**
+   * The least time, in ms, between two syncs (default 50).  A sync also
+   * waits at least as long as the previous one took, so following never
+   * holds more than half of the main thread however large the graph.
+   * `0` syncs on the first macrotask after a burst of changes.
+   */
+  throttle?: number;
+}
+/** Options for `cy.clone()` (round 106). */
+interface CloneOptions extends Omit<CytoscapeOptions, 'elements'> {
+  /**
+   * Keep the clone current: `true`, or `{ throttle }`.  Each sync is
+   * `clone.patch( source.serialize() )` — the source's elements, data,
+   * positions and hierarchy; never its sheet, viewport, selection or
+   * graph-level data.  Stops when either instance is destroyed.
+   */
+  follow?: boolean | FollowOptions;
+}
+//#endregion
 //#region src/core.d.mts
 type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout | RadialLayout | PackLayout;
 /** What the core needs from the renderer (wired by the factory), plus the
@@ -7776,7 +7986,6 @@ declare class Core {
     nodes: (Collection | undefined)[];
     edges: (Collection | undefined)[];
   };
-  private _options;
   private _headlessWidth;
   private _headlessHeight;
   private _scratch;
@@ -8824,6 +9033,56 @@ declare class Core {
    */
   json(flat?: boolean): Record<string, unknown>;
   /**
+   * Make an independent instance holding a copy of this graph (round 106)
+   * — the way to show one graph in two places, e.g. a minimap beside the
+   * main view.  A second view is a second instance, never a second
+   * renderer over one model: each clone has its own sheet, viewport,
+   * selection, hover, listeners and `png()`.
+   *
+   * What is carried: every element through the wire format — ids, data,
+   * positions, parents, endpoints, `selected`/`selectable` — plus each
+   * element's `locked`/`grabbable`/`pannable` flags, graph-level `data()`,
+   * the stylesheet with its bypasses, the viewport (zoom, pan, limits),
+   * the gating flags and interaction settings, and the options this
+   * instance was built with.  `options` overrides any of it: a
+   * `container` for the clone (never carried; one container, one
+   * renderer), a `style` (the minimap's simplified sheet — which replaces
+   * the bypasses too), a `zoom` or `pan`, a `layout` to run on the copy.
+   * What is not carried, by design: scratch, running animations and
+   * layouts, listeners, and the transient hover/active/grabbed state.
+   *
+   * `follow` keeps the clone current: each sync is `clone.patch(
+   * this.serialize() )`, driven by a dirty-stream consumer on this
+   * instance and throttled (`{ throttle }` ms, default 50, and never more
+   * often than the last sync took).  A sync runs only after a change the
+   * payload carries — an add, remove, move, data write or reparent; a
+   * restyle, hover or selection here costs the clone nothing.  The clone
+   * **owns its state**: patch never reads selection or flags for a
+   * surviving element, so selecting in one view does not select in the
+   * other (linked brushing is app wiring over the two instances' events).
+   * Positions are this instance's to set: a sync moves a clone's node
+   * even where the clone locks it (`autolock`, a locked node).  Its own
+   * edits to elements are reconciled away at the next sync; its sheet,
+   * viewport, bypasses and graph data are never touched.  Following stops
+   * when either instance is destroyed.
+   *
+   * Cost: a clone is one `serialize()` plus a load from the wire (~2x
+   * the memory: the model is duplicated); a follow sync is one serialize
+   * plus one patch — ~2 ms at 10k elements, ~50 ms at 100k — so a
+   * follower lags by a burst, not a frame, on a large graph.
+   * `benchmark/clone.mjs` and "N viewers" in `src/README.md` have the
+   * numbers.
+   *
+   * @param options — construction options over the carried ones, plus
+   *   `follow` (`true` or `{ throttle }`)
+   * @returns the new instance, built by the same entry as this one
+   * @throws if `options` carries `elements` (a clone's elements are this
+   *   instance's), on a malformed `follow`, and wherever construction
+   *   throws — a `container` in a build with no renderer, or without
+   *   WebGPU
+   */
+  clone(options?: CloneOptions): Core;
+  /**
    * Detach the renderer: the instance becomes headless (the model is
    * CPU-canonical, so nothing is lost).  No-op when already headless.
    */
@@ -8983,5 +9242,5 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

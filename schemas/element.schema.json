@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placeholder.invalid/cytoscape/schemas/element.schema.json",
+  "$comment": "The $id base (https://placeholder.invalid/cytoscape/schemas/) is a placeholder: round 46, the documentation site, decides where the schemas are served. Schemas reference each other by relative filename, so only the base changes then.",
+  "title": "Cytoscape.js element definition",
+  "description": "One element in the definition form (v3-style JSON), as accepted by `cytoscape( { elements } )`, `cy.add()`, `cy.patch()` and each chunk of `cy.load()`, and as written by `ele.json()`. Describes cytoscape 4.0.0-unstable. The group is inferred from `data.source` and `data.target` when omitted; an explicit `group` must be 'nodes' or 'edges', and an explicit edge must name both endpoints. Keys the library does not read (v3's `classes` and `scratch`, `ele.json()`'s `removed`) are ignored, not refused, so the schema leaves the object open. What stays the library's job: unique ids, endpoints and parents that name existing nodes.",
+  "type": "object",
+  "properties": {
+    "group": {
+      "description": "'nodes' or 'edges'. Inferred when omitted: an element whose data names both a source and a target is an edge, anything else a node.",
+      "enum": ["nodes", "edges"]
+    },
+    "data": { "$ref": "#/$defs/data" },
+    "position": {
+      "description": "Nodes only: the model position. A compound parent's position derives from its children.",
+      "$ref": "#/$defs/position"
+    },
+    "selected": { "type": "boolean" },
+    "selectable": { "type": "boolean" },
+    "grabbable": { "type": "boolean" },
+    "locked": { "type": "boolean" },
+    "pannable": {
+      "description": "Dragging this element pans the graph instead (default: true for edges, false for nodes).",
+      "type": "boolean"
+    }
+  },
+  "if": {
+    "required": ["group"],
+    "properties": { "group": { "const": "edges" } }
+  },
+  "then": {
+    "required": ["data"],
+    "properties": { "data": { "$ref": "#/$defs/edgeData" } }
+  },
+  "$defs": {
+    "data": {
+      "description": "The element's data. `id` is the element's id (generated when omitted); `source` and `target` are an edge's endpoints; `parent` is a node's compound parent. Any other key lands in the `data()` sidecar.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "source": {
+          "description": "Edges only: the source node's id.",
+          "type": "string"
+        },
+        "target": {
+          "description": "Edges only: the target node's id.",
+          "type": "string"
+        },
+        "parent": {
+          "description": "Nodes only: the compound parent's id (a number is coerced to a string id, as in v3).",
+          "type": ["string", "number"]
+        }
+      }
+    },
+    "edgeData": {
+      "description": "An edge's data: both endpoints are required.",
+      "type": "object",
+      "required": ["source", "target"],
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    }
+  }
+}

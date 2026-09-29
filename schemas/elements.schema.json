@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placeholder.invalid/cytoscape/schemas/elements.schema.json",
+  "$comment": "The $id base is a placeholder until round 46 (the documentation site); see element.schema.json.",
+  "title": "Cytoscape.js elements",
+  "description": "The `elements` input in the definition form, in each of the three shapes the library accepts: an array of element definitions, a `{ nodes, edges }` map, or a single definition. In the map form the bucket decides the group, so every definition in `edges` must name a source and a target. The columnar bulk form and the binary wire form are not JSON documents and have no schema here; the columnar form's schema is held until 4.x, with the wire format's experimental status.",
+  "anyOf": [
+    {
+      "type": "array",
+      "items": { "$ref": "element.schema.json" }
+    },
+    { "$ref": "#/$defs/map" },
+    {
+      "not": { "$ref": "#/$defs/mapShape" },
+      "$ref": "element.schema.json"
+    }
+  ],
+  "$defs": {
+    "mapShape": {
+      "type": "object",
+      "anyOf": [{ "required": ["nodes"] }, { "required": ["edges"] }]
+    },
+    "map": {
+      "description": "The `{ nodes, edges }` map (v3's `cy.json().elements`). Either key may be omitted.",
+      "$ref": "#/$defs/mapShape",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "element.schema.json" }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "element.schema.json",
+            "required": ["data"],
+            "properties": {
+              "data": { "$ref": "element.schema.json#/$defs/edgeData" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -376,7 +376,10 @@ defineReader(
 
       const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
 
-      return Math.max(0, erec[1] / 256 - width) / 2;
+      // the stroke is stored rounded to 1/256 px, so subtract the width
+      // on the same grid: a width off it (a mapped 1.85) otherwise reads
+      // back a padding of 10.00039 for a 10 (round 105's golden found it)
+      return Math.max(0, erec[1] - Math.round(width * 256)) / 512;
     }
 
     const id = prop.startsWith('overlay')

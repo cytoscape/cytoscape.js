@@ -5909,6 +5909,67 @@ test.describe('WebGPU renderer', () => {
       .toBeGreaterThan(200);
   });
 
+  test('a channel-opacity bypass over a kernel-mapped colour reaches the screen (round 105)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // round 105's degrade control found it on the GeneMANIA idiom: an
+    // ordinal line-color is kernel-owned, and the kernel folds the
+    // sheet's *constant* line-opacity into its alpha — so a per-edge
+    // line-opacity bypass (a highlight) neither drew nor read back until
+    // the opacity's first bypass demoted the colour it folds into
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e', source: 'a', target: 'b', t: 'x' } },
+      ],
+      style: {
+        nodes: { width: 10, height: 10 },
+        edges: {
+          width: 30,
+          'line-opacity': 0.2,
+          'line-color': {
+            data: 't',
+            scale: 'ordinal',
+            domain: ['x', 'y'],
+            range: ['#0000ff', '#00ff00'],
+          },
+        },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page, 5);
+    // 20% blue over white
+    expect((await pixelAt(page, center.x, center.y))[0]).toBeGreaterThan(150);
+
+    const read = await page.evaluate(() => {
+      window.cy.$id('e').style('line-opacity', 1);
+
+      return window.cy.$id('e').style('line-color');
+    });
+
+    expect(read).toBe('rgb(0,0,255)');
+
+    await expect
+      .poll(async () => (await pixelAt(page, center.x, center.y)).join(), {
+        timeout: 10_000,
+      })
+      .toBe('0,0,255,255');
+
+    // and the kernel takes the colour back when the bypass goes
+    await page.evaluate(() => window.cy.$id('e').removeStyle('line-opacity'));
+    await expect
+      .poll(async () => (await pixelAt(page, center.x, center.y))[0], {
+        timeout: 10_000,
+      })
+      .toBeGreaterThan(150);
+  });
+
   test('a paint tween outranks the mapper, and the mapper reclaims the channel on settle', async ({
     page,
   }) => {

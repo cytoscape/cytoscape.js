@@ -279,6 +279,22 @@ export function setSheet(
 }
 
 /**
+ * The channel opacities folded into a colour's stored alpha (B1), by
+ * the colours they fold into (round 105): while the opacity varies per
+ * element — mapped, or bypassed on some element — the kernel cannot
+ * own the colour, since it folds one constant for every slot.
+ */
+export const OPACITY_FOLDS: Readonly<Record<string, readonly string[]>> = {
+  [PROP.BACKGROUND_OPACITY]: [PROP.BACKGROUND_COLOR],
+  [PROP.BORDER_OPACITY]: [PROP.BORDER_COLOR],
+  [PROP.LINE_OPACITY]: [
+    PROP.LINE_COLOR,
+    PROP.SOURCE_ARROW_COLOR,
+    PROP.TARGET_ARROW_COLOR,
+  ],
+};
+
+/**
  * Paint-channel mappers with resolved fallbacks (the runtime's pack
  * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
  * the shape gates the stored arrow alpha, and splitting that fold
@@ -314,14 +330,21 @@ export function paintInputs(
   const computed = def.computed;
   const mapped = (prop: string): boolean =>
     def.mappers.some((bm) => bm.m.prop === prop);
+  // round 105: a channel opacity *bypassed* on some element varies per
+  // element exactly as a mapped one does, so it demotes its colour too.
+  // Without this, `edge.style('line-opacity', 1)` over an ordinal
+  // `line-color` (the GeneMANIA sheet's highlight) read back and drew
+  // the sheet's folded 0.6 — the kernel kept folding the constant
+  const varies = (prop: string): boolean =>
+    mapped(prop) || (engine.bypassPropCounts.get(prop) ?? 0) > 0;
   const demoted = new Set<string>();
 
   if (group === GROUP_NODES) {
-    if (mapped(PROP.BACKGROUND_OPACITY)) {
+    if (varies(PROP.BACKGROUND_OPACITY)) {
       demoted.add(PROP.BACKGROUND_COLOR);
     }
 
-    if (mapped(PROP.BORDER_OPACITY)) {
+    if (varies(PROP.BORDER_OPACITY)) {
       demoted.add(PROP.BORDER_COLOR);
     }
 
@@ -339,7 +362,7 @@ export function paintInputs(
       }
     }
   } else {
-    if (mapped(PROP.LINE_OPACITY)) {
+    if (varies(PROP.LINE_OPACITY)) {
       demoted.add(PROP.LINE_COLOR);
       demoted.add(PROP.SOURCE_ARROW_COLOR);
       demoted.add(PROP.TARGET_ARROW_COLOR);

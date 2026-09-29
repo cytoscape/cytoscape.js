@@ -10,6 +10,7 @@ import { captureBypassPatch } from './apply-prop.mjs';
 import type { BypassPatch } from './apply-prop.mjs';
 import type { StyleEngine } from '../style.mjs';
 import { applyBulk } from './engine-apply.mjs';
+import { OPACITY_FOLDS } from './engine-sheet.mjs';
 
 /** Validate a sheet's `bypasses` section into installable entries —
  * called before any engine state mutates, so a bad section throws
@@ -275,9 +276,15 @@ export function setBypass(
   // must become CPU-derived, which one whole-group apply does (paid
   // once per 0→1 transition of a kernel-owned prop; never headless,
   // where nothing is kernel-owned)
+  // (round 105: a channel opacity counts too — its first bypass demotes
+  // the kernel-owned colour it folds into, OPACITY_FOLDS)
+  const owned = engine.gpuOwnedProps[ref.group];
+
   if (
     countsMoved &&
-    Object.keys(raw).some((p) => engine.gpuOwnedProps[ref.group].has(p))
+    Object.keys(raw).some(
+      (p) => owned.has(p) || (OPACITY_FOLDS[p] ?? []).some((c) => owned.has(c)),
+    )
   ) {
     applyBulk(engine, ref.group, engine.store.slotsOrdered(ref.group));
   } else {

@@ -1060,6 +1060,21 @@ compared every field but the angle; and a custom polygon's
 `corner-radius` read its point-record ref (`196608.0234375`) as a
 radius — it now reads the sheet's.
 
+**A channel-opacity bypass demotes the colour it folds into** (round
+105, found by the same control on the GeneMANIA-width golden).  The
+kernel folds a *constant* channel opacity into a mapped colour's alpha
+(66.3's `alphaMul`), so an ordinal `line-color` under a sheet
+`line-opacity: 0.6` stayed kernel-owned when one edge took a
+`line-opacity: 1` bypass — the GeneMANIA highlight — and that edge
+neither drew nor read back its new opacity.  A bypass on a folded
+opacity (`OPACITY_FOLDS`: background, border and line opacity, by the
+colours they fold into) now demotes those colours exactly as a mapped
+opacity does, and the readback treats the colour as bypassed.  The same
+golden found a readback slip in the edge layers: their strokes are
+stored on a 1/256 px grid, and a mapped width off the grid (1.85) read
+`overlay-padding` back as 10.00039 and an unset `line-outline-width` as
+0.00078; the readers now subtract the width on the same grid.
+
 One consequence worth naming (round 96): for the **list-valued curve
 props** — `control-point-distances`/`-weights`,
 `segment-distances`/`-weights`/`-radii`, which take constants only and

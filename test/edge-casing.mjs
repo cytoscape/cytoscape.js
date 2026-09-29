@@ -88,6 +88,41 @@ describe('gpu/edge-casing (round 13 B4)', function () {
     expect(cy._store.casingCount()).to.equal(1);
   });
 
+  it('reads the derived pads back exactly when the width is off the 1/256 grid (round 105)', function () {
+    // the layer strokes are stored as round(stroke × 256); a width such as
+    // 1.85 is not on that grid, and subtracting the raw width read the
+    // defaults back as noise (overlay-padding 10.00039, line-outline-width
+    // 0.00078) — which counted two never-set properties as set in the
+    // golden-coverage capture
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: 100, y: 0 } },
+        { data: { id: 'e1', source: 'a', target: 'b', w: 0.35 } },
+        { data: { id: 'e2', source: 'b', target: 'a', w: 0.35, o: 1 } },
+      ],
+      style: {
+        edges: {
+          width: { data: 'w', domain: [0, 1], range: [1.5, 2.5] },
+          'line-outline-width': {
+            case: [{ when: { data: 'o', eq: 1 }, then: 3 }],
+            else: 0,
+          },
+          'underlay-padding': 4,
+        },
+      },
+    });
+
+    var e1 = cy.$id('e1');
+    var e2 = cy.$id('e2');
+
+    expect(e1.style('width')).to.be.closeTo(1.85, 1e-6);
+    expect(e1.style('line-outline-width')).to.equal(0);
+    expect(e1.style('overlay-padding')).to.equal(10);
+    expect(e1.style('underlay-padding')).to.equal(4);
+    expect(e2.style('line-outline-width')).to.equal(3);
+  });
+
   afterEach(function () {
     if (cy != null) {
       cy.destroy();

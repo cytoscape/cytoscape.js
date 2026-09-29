@@ -18,6 +18,7 @@ import {
   IMAGE_TYPE_NAMES,
 } from './parse.mjs';
 import { normalizeProp } from './normalize.mjs';
+import { OPACITY_FOLDS } from './engine-sheet.mjs';
 import { applyProp, assertGroupProp } from './apply-prop.mjs';
 import {
   constOpacityFor,
@@ -109,8 +110,16 @@ export function readProp(
   // the mapper and read the bypass back as the mapped value (round 143,
   // found by the golden degrade control)
   const owned = engine.gpuOwnedProps[ref.group];
+  // round 105: so is a colour whose channel opacity carries a bypass
+  // (OPACITY_FOLDS) — the kernel folds one constant opacity, so its
+  // re-evaluation would read the sheet's alpha back over the bypass
   const bypassed = (p: string): boolean =>
-    (engine.bypassPropCounts.get(p) ?? 0) > 0;
+    (engine.bypassPropCounts.get(p) ?? 0) > 0 ||
+    Object.keys(OPACITY_FOLDS).some(
+      (o) =>
+        OPACITY_FOLDS[o].includes(p) &&
+        (engine.bypassPropCounts.get(o) ?? 0) > 0,
+    );
 
   if (ref.group === GROUP_EDGES && plan.arrowColorProp != null) {
     const colorProp = plan.arrowColorProp;

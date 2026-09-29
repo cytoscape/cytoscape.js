@@ -157,7 +157,9 @@ defineReader([PROP.LINE_OUTLINE_WIDTH], (store, slot) => {
   const rec = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2 + 1];
   const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
 
-  return rec === 0 ? 0 : Math.max(0, rec / 256 - width);
+  // on the stroke's 1/256 px grid (round 105): a width off the grid
+  // otherwise read back an outline of 0.00078 for none
+  return rec === 0 ? 0 : Math.max(0, rec - Math.round(width * 256)) / 256;
 });
 
 defineReader([PROP.LINE_OUTLINE_COLOR], (store, slot) => {

@@ -9,6 +9,7 @@ import {
   SCHEMA_DIALECT,
   SCHEMA_DIR,
   debugNetworks,
+  loadDebugGlobal,
   describeErrors,
   loadSchemas,
   makeValidator,
@@ -392,6 +393,672 @@ describe('schemas: elements (79.1)', () => {
           { group: 'edges', data: { id: 'e', source: 'a' } },
         ]).valid,
       ).to.equal(true);
+    });
+  });
+});
+
+// -- the stylesheet (79.2) --
+
+const SHEET = byFile.get('stylesheet.schema.json');
+const GROUP_BLOCKS = {
+  nodes: SHEET.$defs.nodeProps,
+  edges: SHEET.$defs.edges,
+  parents: {
+    properties: {
+      ...SHEET.$defs.nodeProps.properties,
+      ...SHEET.$defs.parents.properties,
+    },
+  },
+  core: SHEET.$defs.core,
+};
+const SHEET_GROUPS = Object.keys(GROUP_BLOCKS);
+
+/** The kebab-case names a group block enumerates (camelCase aliases aside). */
+const kebabNames = (block) =>
+  Object.keys(block.properties)
+    .filter((k) => !/[A-Z]/.test(k))
+    .sort();
+
+/** Whether the compiler takes `{ [group]: { [prop]: value } }`. */
+const compileError = (cy, group, prop, value) => {
+  try {
+    cy.style({ [group]: { [prop]: value } });
+
+    return null;
+  } catch (e) {
+    return e;
+  }
+};
+
+/**
+ * The compiler's *name-level* refusals: an unknown property, a property of
+ * the other group or of the parents group, one the prototype does not
+ * support at all.  Each is raised before the value is parsed, so it says
+ * the name is not accepted whatever the value — a value error does not.
+ */
+const NAME_LEVEL =
+  /style property '[^']+' (is unsupported|belongs to the parents group)|' is an? (edge|node) style property|is not supported in the GPU prototype/;
+
+/** The example values a prop's schema carries (its `examples`). */
+const examplesOf = (schema, prop) => schema.$defs.props[prop]?.examples ?? [];
+
+/**
+ * Direction (a) and (b) of the name gate, per group, as discrepancy lists
+ * (empty when the schema and the compiler agree) — pure over the schema so
+ * the controls can run it against a mutated copy.
+ *
+ * (a) every name the schema enumerates compiles, with every example the
+ *     schema gives for it;
+ * (b) every name in the engine's vocabulary (`PROP`) the schema leaves out
+ *     of a group is refused there by name.
+ */
+const nameGate = (cy, schema, PROP) => {
+  const blocks = {
+    nodes: schema.$defs.nodeProps,
+    edges: schema.$defs.edges,
+    parents: {
+      properties: {
+        ...schema.$defs.nodeProps.properties,
+        ...schema.$defs.parents.properties,
+      },
+    },
+    core: schema.$defs.core,
+  };
+  const vocabulary = new Set(Object.values(PROP));
+  const unknown = [];
+  const refused = [];
+  const accepted = [];
+
+  for (const [group, block] of Object.entries(blocks)) {
+    const names = new Set(kebabNames(block));
+
+    for (const name of names) {
+      if (!vocabulary.has(name)) {
+        unknown.push(`${group}: ${name}`);
+      }
+
+      const examples = examplesOf(schema, name);
+
+      if (examples.length === 0) {
+        refused.push(`${group}: ${name} (no example to compile)`);
+      }
+
+      for (const value of examples) {
+        const err = compileError(cy, group, name, value);
+
+        if (err != null) {
+          refused.push(`${group}: ${name} = ${JSON.stringify(value)}`);
+        }
+      }
+    }
+
+    for (const name of vocabulary) {
+      if (names.has(name)) continue;
+
+      const value = examplesOf(schema, name)[0] ?? 1;
+      const err = compileError(cy, group, name, value);
+
+      if (err == null || !NAME_LEVEL.test(err.message)) {
+        accepted.push(
+          `${group}: ${name}` +
+            (err == null ? ' compiles' : ` (a value error: ${err.message})`),
+        );
+      }
+    }
+  }
+
+  return { unknown, refused, accepted };
+};
+
+/** How a group entry takes mappers: 'mapper', 'passthrough' or null. */
+const mapperKind = (entry) => {
+  const refs = (entry.anyOf ?? []).map((e) => e.$ref);
+
+  if (refs.includes('#/$defs/mapper')) return 'mapper';
+  if (refs.includes('#/$defs/passthroughMapper')) return 'passthrough';
+
+  return null;
+};
+
+/** How the compiler takes mappers on a (group, prop). */
+const compilerMapperKind = (cy, schema, group, prop) => {
+  const example = examplesOf(schema, prop).find(
+    (v) => typeof v === 'string' || typeof v === 'number',
+  );
+  // a conditional counts when any plausible output compiles: the example
+  // itself may be a keyword no mapper outputs ('auto' for a radius)
+  const thens = [example ?? 1, 1, 'red'];
+  const passthrough = compileError(cy, group, prop, { data: 'x' }) == null;
+  const conditional = thens.some(
+    (then) =>
+      compileError(cy, group, prop, {
+        case: [{ when: { data: 'x', eq: 1 }, then }],
+        else: then,
+      }) == null,
+  );
+
+  if (passthrough && conditional) return 'mapper';
+  if (passthrough) return 'passthrough';
+  if (conditional) return 'case only (no schema form)';
+
+  return null;
+};
+
+describe('schemas: the stylesheet (79.2)', () => {
+  let cy;
+  let PROP;
+  let tables;
+
+  before(async () => {
+    cy = cytoscape({ elements: [] });
+    ({ PROP } = await import('../../src/style-props.mjs'));
+
+    const [styleTables, parse, parseEdge, sheet, easing, schemes, normalize] =
+      await Promise.all([
+        import('../../src/style/tables.mjs'),
+        import('../../src/style/parse.mjs'),
+        import('../../src/style/parse-edge.mjs'),
+        import('../../src/style/sheet.mjs'),
+        import('../../src/easing.mjs'),
+        import('../../src/style-schemes.mjs'),
+        import('../../src/style/normalize.mjs'),
+      ]);
+
+    tables = {
+      styleTables,
+      parse,
+      parseEdge,
+      sheet,
+      easing,
+      schemes,
+      normalize,
+    };
+  });
+
+  after(() => cy.destroy());
+
+  it('has the sheet keys of the Stylesheet declaration and of the compiler', () => {
+    const keys = schemaMembers(SHEET);
+
+    expect(keys).to.deep.equal(declaredMembers('Stylesheet'));
+    expect(keys).to.deep.equal([...tables.sheet.SHEET_KEYS].sort());
+    expect(SHEET.additionalProperties).to.equal(false);
+  });
+
+  it('enumerates a non-trivial vocabulary per group', () => {
+    // the guard for every sweep below: an empty block agrees with nothing
+    expect(kebabNames(GROUP_BLOCKS.nodes).length).to.be.greaterThan(100);
+    expect(kebabNames(GROUP_BLOCKS.edges).length).to.be.greaterThan(100);
+    expect(kebabNames(GROUP_BLOCKS.core).length).to.equal(7);
+  });
+
+  it('(a) every property it enumerates compiles in that group, with every example it gives', () => {
+    const { unknown, refused } = nameGate(cy, SHEET, PROP);
+
+    expect(unknown, 'not in the engine vocabulary (PROP)').to.deep.equal([]);
+    expect(refused, 'refused by the compiler').to.deep.equal([]);
+  });
+
+  it('(b) every property the compiler accepts is enumerated, group by group', () => {
+    // PROP is the engine's own census (round 127: every name the style
+    // engine accepts, spelled once), so a round that adds a property adds
+    // it there — and this goes red until the schema has it too
+    const { accepted } = nameGate(cy, SHEET, PROP);
+
+    expect(accepted, 'accepted but not in the schema').to.deep.equal([]);
+  });
+
+  it('takes a mapper exactly where the compiler does', () => {
+    const wrong = [];
+
+    for (const group of ['nodes', 'edges', 'parents']) {
+      const block = GROUP_BLOCKS[group];
+
+      for (const prop of kebabNames(block)) {
+        const schemaSays = mapperKind(block.properties[prop]);
+        const compilerSays = compilerMapperKind(cy, SHEET, group, prop);
+
+        if (schemaSays !== compilerSays) {
+          wrong.push(
+            `${group}: ${prop} schema ${schemaSays}, compiler ${compilerSays}`,
+          );
+        }
+      }
+    }
+
+    expect(wrong).to.deep.equal([]);
+  });
+
+  it('spells every property in camelCase too, as the same entry', () => {
+    const { normalizeProp } = tables.normalize;
+
+    for (const [group, block] of Object.entries({
+      nodes: SHEET.$defs.nodeProps,
+      edges: SHEET.$defs.edges,
+      parents: SHEET.$defs.parents,
+      core: SHEET.$defs.core,
+    })) {
+      const all = Object.keys(block.properties);
+      const kebab = all.filter((k) => !/[A-Z]/.test(k));
+      const camel = all.filter((k) => /[A-Z]/.test(k));
+
+      for (const name of camel) {
+        const target = normalizeProp(name);
+
+        expect(kebab, `${group}: ${name} aliases nothing`).to.include(target);
+        expect(block.properties[name].$ref, `${group}: ${name}`).to.match(
+          new RegExp(`/properties/${target}$`),
+        );
+      }
+
+      const hyphenated = kebab.filter((k) => k.includes('-'));
+
+      expect(camel.length, `${group}: a camelCase alias is missing`).to.equal(
+        hyphenated.length,
+      );
+    }
+  });
+
+  it("pins its keyword sets to the engine's own tables", () => {
+    const { styleTables, parse, parseEdge, sheet, easing, schemes } = tables;
+    const keys = (t) => Object.keys(t).sort();
+    const expected = {
+      shape: keys(styleTables.SHAPES),
+      arrowShape: keys(styleTables.ARROW_ENUM),
+      curveStyle: keys(parseEdge.CURVE_STYLES),
+      lineStyle: keys(parseEdge.LINE_STYLES),
+      strokeStyle: keys(parse.STROKE_STYLES),
+      textWrap: keys(parse.TEXT_WRAPS),
+      overflowWrap: keys(parse.OFLOW_WRAPS),
+      justification: keys(parse.JUSTIFICATIONS),
+      textTransform: keys(parse.TEXT_TRANSFORMS),
+      textBackgroundShape: keys(parse.TEXT_BG_SHAPES),
+      arrowFill: keys(parse.ARROW_FILLS),
+      lineCap: keys(parse.LINE_CAPS),
+      fill: keys(parse.FILL_KINDS),
+      gradientDirection: keys(parse.GRADIENT_DIRECTIONS),
+      borderPosition: keys(parse.BORDER_POSITIONS),
+      halign: keys(parse.HALIGNS),
+      valign: keys(parse.VALIGNS),
+      edgeDistances: keys(parseEdge.EDGE_DISTANCES),
+      taxiDirection: keys(parseEdge.TAXI_DIRECTIONS),
+      taxiTrack: keys(parseEdge.TAXI_TRACKS),
+      radiusType: Object.values(parseEdge.RADIUS_TYPE_NAMES).sort(),
+      backgroundFit: keys(parse.BG_FITS),
+      backgroundRepeat: keys(parse.BG_REPEATS),
+      backgroundClip: keys(parse.BG_CLIPS),
+      backgroundImageContainment: keys(parse.BG_CONTAINMENTS),
+      backgroundImageType: keys(parse.IMAGE_TYPES),
+      backgroundImageCrossorigin: [...parse.BG_CROSSORIGINS].sort(),
+      paddingRelativeTo: [...sheet.PADDING_RELATIVE_TO].sort(),
+      easing: [...easing.EASING_NAMES].sort(),
+      scheme: keys(schemes.SCHEMES),
+    };
+
+    for (const [name, want] of Object.entries(expected)) {
+      const def = SHEET.$defs.keywords[name];
+
+      expect(def, `keywords/${name}`).to.not.equal(undefined);
+      expect([...def.enum].sort(), `keywords/${name}`).to.deep.equal(want);
+    }
+  });
+
+  it('every keyword it lists compiles, for a property that takes it', () => {
+    // the keyword sets with no exported engine table (layer shapes,
+    // visibility, chart kinds, …) are held here instead; the ones inside a
+    // value kind name their property explicitly
+    const VIA = {
+      endpointKeyword: ['edges', 'source-endpoint'],
+      fontWeightKeyword: ['nodes', 'font-weight'],
+      radiusType: ['edges', 'radius-type'],
+      easing: ['nodes', 'transition-timing-function'],
+      scheme: ['nodes', 'chart-colors'],
+      backgroundImageCrossorigin: ['nodes', 'background-image-crossorigin'],
+    };
+    const refersTo = (node, target) =>
+      JSON.stringify(node).includes(`"#/$defs/keywords/${target}"`);
+    const failures = [];
+
+    for (const [name, def] of Object.entries(SHEET.$defs.keywords)) {
+      let via = VIA[name];
+
+      if (via == null) {
+        const prop = Object.keys(SHEET.$defs.props).find((p) =>
+          refersTo(SHEET.$defs.props[p], name),
+        );
+        const group = SHEET_GROUPS.find((g) =>
+          kebabNames(GROUP_BLOCKS[g]).includes(prop),
+        );
+
+        via = [group, prop];
+      }
+
+      expect(via[1], `keywords/${name} is used by no property`).to.be.a(
+        'string',
+      );
+
+      for (const word of def.enum) {
+        if (compileError(cy, via[0], via[1], word) != null) {
+          failures.push(`${via[0]}: ${via[1]} = ${word}`);
+        }
+      }
+    }
+
+    expect(failures).to.deep.equal([]);
+  });
+
+  it('every example validates against its own group', () => {
+    for (const group of SHEET_GROUPS) {
+      for (const prop of kebabNames(GROUP_BLOCKS[group])) {
+        for (const value of examplesOf(SHEET, prop)) {
+          expectValid(
+            'stylesheet.schema.json',
+            { [group]: { [prop]: value } },
+            `${group}: ${prop}`,
+          );
+        }
+      }
+    }
+  });
+
+  it('names the members of Mapper, CaseMapper, CaseClause and Condition', () => {
+    const { $defs } = SHEET;
+
+    expect(schemaMembers($defs.scaleMapper)).to.deep.equal(
+      declaredMembers('Mapper'),
+    );
+    expect(schemaMembers($defs.caseMapper)).to.deep.equal(
+      declaredMembers('CaseMapper'),
+    );
+    expect(schemaMembers($defs.caseClause)).to.deep.equal(
+      declaredMembers('CaseClause'),
+    );
+    expect(
+      [
+        ...schemaMembers($defs.dataCondition),
+        ...schemaMembers($defs.stateCondition),
+      ].sort(),
+    ).to.deep.equal(declaredMembers('Condition'));
+  });
+
+  it("takes the declaration's scale and interpolation names", () => {
+    const literals = (type, member) => {
+      const { checker } = declarations();
+      const symbol = checker.getPropertyOfType(declaredType(type), member);
+      const t = checker.getNonNullableType(checker.getTypeOfSymbol(symbol));
+
+      return (t.isUnion() ? t.types : [t]).map((x) => x.value).sort();
+    };
+    const { properties } = SHEET.$defs.scaleMapper;
+
+    expect([...properties.scale.enum].sort()).to.deep.equal(
+      literals('Mapper', 'scale'),
+    );
+    expect([...properties.interpolate.enum].sort()).to.deep.equal(
+      literals('Mapper', 'interpolate'),
+    );
+  });
+
+  describe('accepts every hand-authored sheet in debug/styles.js', () => {
+    const styles = loadDebugGlobal('styles');
+
+    it('has sheets to check', () => {
+      expect(styles.kinds.length).to.be.at.least(2);
+      expect(NETWORKS.length).to.be.at.least(10);
+    });
+
+    for (const { id, def, elements } of NETWORKS) {
+      it(id, () => {
+        for (const kind of styles.kinds) {
+          expectValid(
+            'stylesheet.schema.json',
+            styles.sheet(kind, id, elements, def),
+            `${id}/${kind}`,
+          );
+        }
+      });
+    }
+  });
+
+  it("accepts v4's default sheet blocks", () => {
+    const { NODE_DEFAULT_BLOCK, EDGE_DEFAULT_BLOCK, PARENT_CHANNEL_OVERLAY } =
+      tables.sheet;
+
+    expectValid(
+      'stylesheet.schema.json',
+      {
+        nodes: NODE_DEFAULT_BLOCK,
+        edges: EDGE_DEFAULT_BLOCK,
+        parents: PARENT_CHANNEL_OVERLAY,
+      },
+      'the default sheet',
+    );
+  });
+
+  it("accepts cy.json()'s style back", () => {
+    const styles = loadDebugGlobal('styles');
+
+    for (const { id, def, elements } of NETWORKS) {
+      if (elements.nodes.length + elements.edges.length > 20000) continue;
+
+      const cy2 = cytoscape({
+        elements,
+        style: styles.sheet('production', id, elements, def),
+      });
+
+      try {
+        cy2.nodes().first().style('width', 40); // a bypass section too
+        expectValid(
+          'stylesheet.schema.json',
+          cy2.json().style,
+          `${id}: cy.json().style`,
+        );
+      } finally {
+        cy2.destroy();
+      }
+    }
+  });
+
+  it("names none of the migration guide's rejected v3 properties", () => {
+    const guide = readFileSync(join(ROOT, 'MIGRATING.md'), 'utf8');
+    const start = guide.indexOf('## Style properties that moved');
+    const rows = guide
+      .slice(start, guide.indexOf('\n## ', start + 1))
+      .split('\n')
+      .filter((l) => l.startsWith('| `'));
+    const names = rows.flatMap((row) =>
+      [...row.split('|')[1].matchAll(/`([^`]+)`/g)]
+        .map((m) => m[1])
+        .filter((n) => /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(n)),
+    );
+    const everywhere = new Set(
+      SHEET_GROUPS.flatMap((g) => kebabNames(GROUP_BLOCKS[g])),
+    );
+
+    expect(names.length).to.be.greaterThan(15);
+
+    for (const name of names) {
+      expect(everywhere.has(name), `${name} is in the schema`).to.equal(false);
+    }
+  });
+
+  describe('agrees with the library where the library is strict', () => {
+    const when = (cond) => ({ case: [{ when: cond, then: 'red' }] });
+    const rows = [
+      ['a constant', { nodes: { 'background-color': 'red' } }],
+      ['camelCase', { nodes: { backgroundColor: 'red', textValign: 'top' } }],
+      ['a scale mapper', { nodes: { width: { data: 'w', range: [10, 50] } } }],
+      [
+        'a scheme range',
+        { nodes: { 'background-color': { data: 'w', range: 'viridis' } } },
+      ],
+      [
+        'a case mapper',
+        { edges: { 'line-color': when({ data: 't', eq: 'a' }) } },
+      ],
+      [
+        'an AND of a state and a data condition',
+        {
+          nodes: {
+            'background-color': when([
+              { selected: true },
+              { data: 'x', gt: 1 },
+            ]),
+          },
+        },
+      ],
+      ['the label passthrough', { nodes: { label: { data: 'name' } } }],
+      [
+        'a bypass',
+        { bypasses: { a: { width: 5, 'background-color': 'red' } } },
+      ],
+      ['core props', { core: { 'selection-box-color': '#ddd' } }],
+      ['compound props', { parents: { padding: '10%', 'min-width': 20 } }],
+      ['an unknown sheet key', { node: {} }],
+      ['an unknown property', { nodes: { 'background-blacken': 0.5 } }],
+      ['an edge property on nodes', { nodes: { 'curve-style': 'bezier' } }],
+      ['a node property on edges', { edges: { 'text-halign': 'left' } }],
+      ['a compound property on nodes', { nodes: { padding: 10 } }],
+      [
+        'a mapper on a constant-only channel',
+        { nodes: { 'arrow-scale': { data: 'x', range: [1, 2] } } },
+      ],
+      [
+        'a mapper on a core prop',
+        { core: { 'selection-box-color': { data: 'x' } } },
+      ],
+      [
+        'a mapper on a compound prop',
+        { parents: { padding: { data: 'x', range: [1, 2] } } },
+      ],
+      [
+        'a mapper on a global font prop',
+        { nodes: { 'font-family': { data: 'x' } } },
+      ],
+      ['a scaled label', { nodes: { label: { data: 'x', range: [1, 2] } } }],
+      ['a bypass mapper', { bypasses: { a: { width: { data: 'x' } } } }],
+      ['a bypassed font', { bypasses: { a: { 'font-family': 'serif' } } }],
+      [
+        'a bypass mixing node-only and edge-only props',
+        { bypasses: { a: { 'text-halign': 'left', 'source-label': 'x' } } },
+      ],
+      [
+        'a data condition with two comparisons',
+        { nodes: { 'background-color': when({ data: 'x', eq: 1, gt: 0 }) } },
+      ],
+      [
+        'a data condition with none',
+        { nodes: { 'background-color': when({ data: 'x' }) } },
+      ],
+      [
+        'a structural condition beside data',
+        { nodes: { 'background-color': when({ data: 'x', parent: true }) } },
+      ],
+      [
+        'a state condition that is not a boolean',
+        { nodes: { 'background-color': when({ selected: 'yes' }) } },
+      ],
+      ['an empty case list', { nodes: { 'background-color': { case: [] } } }],
+      [
+        'a clause without then',
+        {
+          nodes: {
+            'background-color': { case: [{ when: { data: 'x', eq: 1 } }] },
+          },
+        },
+      ],
+      [
+        'an unknown scale',
+        { nodes: { width: { data: 'x', scale: 'nope', range: [1, 2] } } },
+      ],
+      ['an empty data key', { nodes: { width: { data: '', range: [1, 2] } } }],
+      [
+        "'in' with no values",
+        { nodes: { 'background-color': when({ data: 'x', in: [] }) } },
+      ],
+      ['a keyword outside its set', { nodes: { shape: 'roundrectangle' } }],
+      ['an opacity out of range', { nodes: { 'background-opacity': 2 } }],
+      [
+        'a negative transition duration',
+        { nodes: { 'transition-duration': -1 } },
+      ],
+      [
+        'an unknown easing',
+        { nodes: { 'transition-timing-function': 'wobble' } },
+      ],
+      [
+        "compound sizing 'include'",
+        { parents: { 'compound-sizing-wrt-labels': 'include' } },
+      ],
+      ['a string min-width', { parents: { 'min-width': '10px' } }],
+      ['a v3 selector array', [{ selector: 'node', style: {} }]],
+    ];
+
+    const libraryAccepts = (sheet) => {
+      const c = cytoscape({ elements: [] });
+
+      try {
+        c.style(sheet);
+
+        return true;
+      } catch {
+        return false;
+      } finally {
+        c.destroy();
+      }
+    };
+
+    for (const [what, sheet] of rows) {
+      it(what, () => {
+        const lib = libraryAccepts(sheet);
+
+        expect(
+          accepts('stylesheet.schema.json', sheet),
+          `${what}: the library ${lib ? 'accepts' : 'rejects'} it`,
+        ).to.equal(lib);
+      });
+    }
+
+    it('rejects on both sides for most rows (the table is not all green)', () => {
+      expect(rows.filter(([, s]) => !libraryAccepts(s)).length).to.be.at.least(
+        25,
+      );
+    });
+  });
+
+  describe('controls', () => {
+    it('a fake property added to the schema fails (a)', () => {
+      const mutated = structuredClone(SHEET);
+
+      mutated.$defs.nodeProps.properties['background-blacken'] = {
+        $ref: '#/$defs/props/background-blacken',
+      };
+      mutated.$defs.props['background-blacken'] = { examples: [0.5] };
+
+      const { unknown, refused } = nameGate(cy, mutated, PROP);
+
+      expect(unknown).to.include('nodes: background-blacken');
+      expect(refused).to.include('nodes: background-blacken = 0.5');
+    });
+
+    it('a real property removed from the schema fails (b)', () => {
+      const mutated = structuredClone(SHEET);
+
+      delete mutated.$defs.edges.properties['taxi-turn'];
+
+      const { accepted } = nameGate(cy, mutated, PROP);
+
+      expect(accepted).to.deep.equal(['edges: taxi-turn compiles']);
+    });
+
+    it('a mapper allowance dropped from an entry is caught', () => {
+      const entry = GROUP_BLOCKS.nodes.properties['background-color'];
+
+      expect(mapperKind(entry)).to.equal('mapper');
+      expect(mapperKind({ $ref: entry.anyOf[0].$ref })).to.equal(null);
+      expect(
+        compilerMapperKind(cy, SHEET, 'nodes', 'background-color'),
+      ).to.equal('mapper');
     });
   });
 });

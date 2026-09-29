@@ -1,0 +1,2943 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placeholder.invalid/cytoscape/schemas/stylesheet.schema.json",
+  "$comment": "The $id base is a placeholder until round 46 (the documentation site); see element.schema.json.",
+  "title": "Cytoscape.js stylesheet",
+  "description": "The v4 stylesheet, as accepted by `cytoscape( { style } )` and `cy.style( sheet )` and written by `cy.json().style`: one props object per group — no selectors, no style functions. A prop value is a constant or, where the channel is data-driven, a mapper object (a `{ data }` scale or a `{ case }` conditional); both are plain JSON, which is what lets this schema exist at all. Prop names are kebab-case or camelCase. The schema enumerates, per group, exactly the properties the style compiler accepts, and which of them take mappers; it checks value shapes where that is cheap (keywords, ranges, number-or-string forms). **It is not the authority on deep value validity**: a CSS colour, a scheme name's case, a data key's existence and a mapper's domain are judged when the sheet compiles, so a sheet that validates here can still be refused there — the library's error is the answer.",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "description": "Props for every node (a compound parent also takes `parents` on top).",
+      "$ref": "#/$defs/nodes"
+    },
+    "edges": { "description": "Props for every edge.", "$ref": "#/$defs/edges" },
+    "parents": {
+      "description": "Compound parents: node props on top of the nodes block and v3's `:parent` defaults, plus the compound props (padding, min sizes), which take constants only.",
+      "$ref": "#/$defs/parents"
+    },
+    "core": {
+      "description": "Viewport-level theming — the selection box and the background-grab indicator. Constants only.",
+      "$ref": "#/$defs/core"
+    },
+    "bypasses": {
+      "description": "Per-element bypasses: id → props. A bypass beats everything, may name an id that does not exist yet, and takes constants only; an entry's props must all be valid for nodes or all for edges, and the global font props and the transition config are not bypassable.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/bypass" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nodeProps": {
+      "$comment": "The node props, open: `nodes` closes it, `parents` extends it.",
+      "type": "object",
+      "properties": {
+        "arrow-scale": { "$ref": "#/$defs/props/arrow-scale" },
+        "background-clip": { "$ref": "#/$defs/props/background-clip" },
+        "background-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-fill": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-fill" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-fit": { "$ref": "#/$defs/props/background-fit" },
+        "background-gradient-direction": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-gradient-direction" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-gradient-stop-colors": {
+          "$ref": "#/$defs/props/background-gradient-stop-colors"
+        },
+        "background-gradient-stop-positions": {
+          "$ref": "#/$defs/props/background-gradient-stop-positions"
+        },
+        "background-height": { "$ref": "#/$defs/props/background-height" },
+        "background-image": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-image" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-image-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-image-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-image-containment": {
+          "$ref": "#/$defs/props/background-image-containment"
+        },
+        "background-image-crossorigin": {
+          "$ref": "#/$defs/props/background-image-crossorigin"
+        },
+        "background-image-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-image-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-image-smoothing": {
+          "$ref": "#/$defs/props/background-image-smoothing"
+        },
+        "background-image-type": {
+          "$ref": "#/$defs/props/background-image-type"
+        },
+        "background-offset-x": { "$ref": "#/$defs/props/background-offset-x" },
+        "background-offset-y": { "$ref": "#/$defs/props/background-offset-y" },
+        "background-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/background-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-position-x": {
+          "$ref": "#/$defs/props/background-position-x"
+        },
+        "background-position-y": {
+          "$ref": "#/$defs/props/background-position-y"
+        },
+        "background-repeat": { "$ref": "#/$defs/props/background-repeat" },
+        "background-width": { "$ref": "#/$defs/props/background-width" },
+        "border-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "border-dash-offset": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-dash-offset" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "border-dash-pattern": { "$ref": "#/$defs/props/border-dash-pattern" },
+        "border-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "border-position": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-position" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "border-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "border-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/border-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-colors": { "$ref": "#/$defs/props/chart-colors" },
+        "chart-direction": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-direction" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-hole": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-hole" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-start-angle": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-start-angle" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "chart-values": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/chart-values" },
+            { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "corner-radius": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/corner-radius" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "events": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/events" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "font-family": { "$ref": "#/$defs/props/font-family" },
+        "font-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/font-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "font-style": { "$ref": "#/$defs/props/font-style" },
+        "font-weight": { "$ref": "#/$defs/props/font-weight" },
+        "ghost": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/ghost" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "ghost-offset-x": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/ghost-offset-x" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "ghost-offset-y": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/ghost-offset-y" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "ghost-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/ghost-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "height": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/height" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "label": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/label" },
+            { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "line-cap": { "$ref": "#/$defs/props/line-cap" },
+        "line-color": { "$ref": "#/$defs/props/line-color" },
+        "line-dash-offset": { "$ref": "#/$defs/props/line-dash-offset" },
+        "line-dash-pattern": { "$ref": "#/$defs/props/line-dash-pattern" },
+        "line-fill": { "$ref": "#/$defs/props/line-fill" },
+        "line-gradient-stop-colors": {
+          "$ref": "#/$defs/props/line-gradient-stop-colors"
+        },
+        "line-gradient-stop-positions": {
+          "$ref": "#/$defs/props/line-gradient-stop-positions"
+        },
+        "line-height": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-height" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-opacity": { "$ref": "#/$defs/props/line-opacity" },
+        "line-outline-color": { "$ref": "#/$defs/props/line-outline-color" },
+        "line-outline-width": { "$ref": "#/$defs/props/line-outline-width" },
+        "line-style": { "$ref": "#/$defs/props/line-style" },
+        "mid-source-arrow-color": {
+          "$ref": "#/$defs/props/mid-source-arrow-color"
+        },
+        "mid-source-arrow-shape": {
+          "$ref": "#/$defs/props/mid-source-arrow-shape"
+        },
+        "mid-target-arrow-color": {
+          "$ref": "#/$defs/props/mid-target-arrow-color"
+        },
+        "mid-target-arrow-shape": {
+          "$ref": "#/$defs/props/mid-target-arrow-shape"
+        },
+        "min-zoomed-font-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/min-zoomed-font-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/outline-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-offset": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/outline-offset" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/outline-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/outline-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/outline-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-corner-radius": {
+          "$ref": "#/$defs/props/overlay-corner-radius"
+        },
+        "overlay-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-shape": { "$ref": "#/$defs/props/overlay-shape" },
+        "shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "shape-polygon-points": { "$ref": "#/$defs/props/shape-polygon-points" },
+        "source-arrow-color": { "$ref": "#/$defs/props/source-arrow-color" },
+        "source-arrow-fill": { "$ref": "#/$defs/props/source-arrow-fill" },
+        "source-arrow-shape": { "$ref": "#/$defs/props/source-arrow-shape" },
+        "source-arrow-width": { "$ref": "#/$defs/props/source-arrow-width" },
+        "target-arrow-color": { "$ref": "#/$defs/props/target-arrow-color" },
+        "target-arrow-fill": { "$ref": "#/$defs/props/target-arrow-fill" },
+        "target-arrow-shape": { "$ref": "#/$defs/props/target-arrow-shape" },
+        "target-arrow-width": { "$ref": "#/$defs/props/target-arrow-width" },
+        "text-background-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-events": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-events" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-halign": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-halign" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-justification": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-justification" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-margin-x": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-margin-x" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-margin-y": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-margin-y" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-max-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-max-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-overflow-wrap": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-overflow-wrap" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-rotation": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-rotation" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-transform": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-transform" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-valign": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-valign" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-wrap": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-wrap" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "transition-delay": { "$ref": "#/$defs/props/transition-delay" },
+        "transition-duration": { "$ref": "#/$defs/props/transition-duration" },
+        "transition-property": { "$ref": "#/$defs/props/transition-property" },
+        "transition-timing-function": {
+          "$ref": "#/$defs/props/transition-timing-function"
+        },
+        "underlay-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "underlay-corner-radius": {
+          "$ref": "#/$defs/props/underlay-corner-radius"
+        },
+        "underlay-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "underlay-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "underlay-shape": { "$ref": "#/$defs/props/underlay-shape" },
+        "visibility": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/visibility" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "arrowScale": { "$ref": "#/$defs/nodeProps/properties/arrow-scale" },
+        "backgroundClip": {
+          "$ref": "#/$defs/nodeProps/properties/background-clip"
+        },
+        "backgroundColor": {
+          "$ref": "#/$defs/nodeProps/properties/background-color"
+        },
+        "backgroundFill": {
+          "$ref": "#/$defs/nodeProps/properties/background-fill"
+        },
+        "backgroundFit": {
+          "$ref": "#/$defs/nodeProps/properties/background-fit"
+        },
+        "backgroundGradientDirection": {
+          "$ref": "#/$defs/nodeProps/properties/background-gradient-direction"
+        },
+        "backgroundGradientStopColors": {
+          "$ref": "#/$defs/nodeProps/properties/background-gradient-stop-colors"
+        },
+        "backgroundGradientStopPositions": {
+          "$ref": "#/$defs/nodeProps/properties/background-gradient-stop-positions"
+        },
+        "backgroundHeight": {
+          "$ref": "#/$defs/nodeProps/properties/background-height"
+        },
+        "backgroundImage": {
+          "$ref": "#/$defs/nodeProps/properties/background-image"
+        },
+        "backgroundImageColor": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-color"
+        },
+        "backgroundImageContainment": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-containment"
+        },
+        "backgroundImageCrossorigin": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-crossorigin"
+        },
+        "backgroundImageOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-opacity"
+        },
+        "backgroundImageSmoothing": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-smoothing"
+        },
+        "backgroundImageType": {
+          "$ref": "#/$defs/nodeProps/properties/background-image-type"
+        },
+        "backgroundOffsetX": {
+          "$ref": "#/$defs/nodeProps/properties/background-offset-x"
+        },
+        "backgroundOffsetY": {
+          "$ref": "#/$defs/nodeProps/properties/background-offset-y"
+        },
+        "backgroundOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/background-opacity"
+        },
+        "backgroundPositionX": {
+          "$ref": "#/$defs/nodeProps/properties/background-position-x"
+        },
+        "backgroundPositionY": {
+          "$ref": "#/$defs/nodeProps/properties/background-position-y"
+        },
+        "backgroundRepeat": {
+          "$ref": "#/$defs/nodeProps/properties/background-repeat"
+        },
+        "backgroundWidth": {
+          "$ref": "#/$defs/nodeProps/properties/background-width"
+        },
+        "borderColor": { "$ref": "#/$defs/nodeProps/properties/border-color" },
+        "borderDashOffset": {
+          "$ref": "#/$defs/nodeProps/properties/border-dash-offset"
+        },
+        "borderDashPattern": {
+          "$ref": "#/$defs/nodeProps/properties/border-dash-pattern"
+        },
+        "borderOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/border-opacity"
+        },
+        "borderPosition": {
+          "$ref": "#/$defs/nodeProps/properties/border-position"
+        },
+        "borderStyle": { "$ref": "#/$defs/nodeProps/properties/border-style" },
+        "borderWidth": { "$ref": "#/$defs/nodeProps/properties/border-width" },
+        "chartColors": { "$ref": "#/$defs/nodeProps/properties/chart-colors" },
+        "chartDirection": {
+          "$ref": "#/$defs/nodeProps/properties/chart-direction"
+        },
+        "chartHole": { "$ref": "#/$defs/nodeProps/properties/chart-hole" },
+        "chartOpacity": { "$ref": "#/$defs/nodeProps/properties/chart-opacity" },
+        "chartSize": { "$ref": "#/$defs/nodeProps/properties/chart-size" },
+        "chartStartAngle": {
+          "$ref": "#/$defs/nodeProps/properties/chart-start-angle"
+        },
+        "chartValues": { "$ref": "#/$defs/nodeProps/properties/chart-values" },
+        "cornerRadius": { "$ref": "#/$defs/nodeProps/properties/corner-radius" },
+        "fontFamily": { "$ref": "#/$defs/nodeProps/properties/font-family" },
+        "fontSize": { "$ref": "#/$defs/nodeProps/properties/font-size" },
+        "fontStyle": { "$ref": "#/$defs/nodeProps/properties/font-style" },
+        "fontWeight": { "$ref": "#/$defs/nodeProps/properties/font-weight" },
+        "ghostOffsetX": {
+          "$ref": "#/$defs/nodeProps/properties/ghost-offset-x"
+        },
+        "ghostOffsetY": {
+          "$ref": "#/$defs/nodeProps/properties/ghost-offset-y"
+        },
+        "ghostOpacity": { "$ref": "#/$defs/nodeProps/properties/ghost-opacity" },
+        "lineCap": { "$ref": "#/$defs/nodeProps/properties/line-cap" },
+        "lineColor": { "$ref": "#/$defs/nodeProps/properties/line-color" },
+        "lineDashOffset": {
+          "$ref": "#/$defs/nodeProps/properties/line-dash-offset"
+        },
+        "lineDashPattern": {
+          "$ref": "#/$defs/nodeProps/properties/line-dash-pattern"
+        },
+        "lineFill": { "$ref": "#/$defs/nodeProps/properties/line-fill" },
+        "lineGradientStopColors": {
+          "$ref": "#/$defs/nodeProps/properties/line-gradient-stop-colors"
+        },
+        "lineGradientStopPositions": {
+          "$ref": "#/$defs/nodeProps/properties/line-gradient-stop-positions"
+        },
+        "lineHeight": { "$ref": "#/$defs/nodeProps/properties/line-height" },
+        "lineOpacity": { "$ref": "#/$defs/nodeProps/properties/line-opacity" },
+        "lineOutlineColor": {
+          "$ref": "#/$defs/nodeProps/properties/line-outline-color"
+        },
+        "lineOutlineWidth": {
+          "$ref": "#/$defs/nodeProps/properties/line-outline-width"
+        },
+        "lineStyle": { "$ref": "#/$defs/nodeProps/properties/line-style" },
+        "midSourceArrowColor": {
+          "$ref": "#/$defs/nodeProps/properties/mid-source-arrow-color"
+        },
+        "midSourceArrowShape": {
+          "$ref": "#/$defs/nodeProps/properties/mid-source-arrow-shape"
+        },
+        "midTargetArrowColor": {
+          "$ref": "#/$defs/nodeProps/properties/mid-target-arrow-color"
+        },
+        "midTargetArrowShape": {
+          "$ref": "#/$defs/nodeProps/properties/mid-target-arrow-shape"
+        },
+        "minZoomedFontSize": {
+          "$ref": "#/$defs/nodeProps/properties/min-zoomed-font-size"
+        },
+        "outlineColor": { "$ref": "#/$defs/nodeProps/properties/outline-color" },
+        "outlineOffset": {
+          "$ref": "#/$defs/nodeProps/properties/outline-offset"
+        },
+        "outlineOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/outline-opacity"
+        },
+        "outlineStyle": { "$ref": "#/$defs/nodeProps/properties/outline-style" },
+        "outlineWidth": { "$ref": "#/$defs/nodeProps/properties/outline-width" },
+        "overlayColor": { "$ref": "#/$defs/nodeProps/properties/overlay-color" },
+        "overlayCornerRadius": {
+          "$ref": "#/$defs/nodeProps/properties/overlay-corner-radius"
+        },
+        "overlayOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/overlay-opacity"
+        },
+        "overlayPadding": {
+          "$ref": "#/$defs/nodeProps/properties/overlay-padding"
+        },
+        "overlayShape": { "$ref": "#/$defs/nodeProps/properties/overlay-shape" },
+        "shapePolygonPoints": {
+          "$ref": "#/$defs/nodeProps/properties/shape-polygon-points"
+        },
+        "sourceArrowColor": {
+          "$ref": "#/$defs/nodeProps/properties/source-arrow-color"
+        },
+        "sourceArrowFill": {
+          "$ref": "#/$defs/nodeProps/properties/source-arrow-fill"
+        },
+        "sourceArrowShape": {
+          "$ref": "#/$defs/nodeProps/properties/source-arrow-shape"
+        },
+        "sourceArrowWidth": {
+          "$ref": "#/$defs/nodeProps/properties/source-arrow-width"
+        },
+        "targetArrowColor": {
+          "$ref": "#/$defs/nodeProps/properties/target-arrow-color"
+        },
+        "targetArrowFill": {
+          "$ref": "#/$defs/nodeProps/properties/target-arrow-fill"
+        },
+        "targetArrowShape": {
+          "$ref": "#/$defs/nodeProps/properties/target-arrow-shape"
+        },
+        "targetArrowWidth": {
+          "$ref": "#/$defs/nodeProps/properties/target-arrow-width"
+        },
+        "textBackgroundColor": {
+          "$ref": "#/$defs/nodeProps/properties/text-background-color"
+        },
+        "textBackgroundOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/text-background-opacity"
+        },
+        "textBackgroundPadding": {
+          "$ref": "#/$defs/nodeProps/properties/text-background-padding"
+        },
+        "textBackgroundShape": {
+          "$ref": "#/$defs/nodeProps/properties/text-background-shape"
+        },
+        "textBorderColor": {
+          "$ref": "#/$defs/nodeProps/properties/text-border-color"
+        },
+        "textBorderOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/text-border-opacity"
+        },
+        "textBorderWidth": {
+          "$ref": "#/$defs/nodeProps/properties/text-border-width"
+        },
+        "textEvents": { "$ref": "#/$defs/nodeProps/properties/text-events" },
+        "textHalign": { "$ref": "#/$defs/nodeProps/properties/text-halign" },
+        "textJustification": {
+          "$ref": "#/$defs/nodeProps/properties/text-justification"
+        },
+        "textMarginX": { "$ref": "#/$defs/nodeProps/properties/text-margin-x" },
+        "textMarginY": { "$ref": "#/$defs/nodeProps/properties/text-margin-y" },
+        "textMaxWidth": {
+          "$ref": "#/$defs/nodeProps/properties/text-max-width"
+        },
+        "textOpacity": { "$ref": "#/$defs/nodeProps/properties/text-opacity" },
+        "textOutlineColor": {
+          "$ref": "#/$defs/nodeProps/properties/text-outline-color"
+        },
+        "textOutlineOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/text-outline-opacity"
+        },
+        "textOutlineWidth": {
+          "$ref": "#/$defs/nodeProps/properties/text-outline-width"
+        },
+        "textOverflowWrap": {
+          "$ref": "#/$defs/nodeProps/properties/text-overflow-wrap"
+        },
+        "textRotation": { "$ref": "#/$defs/nodeProps/properties/text-rotation" },
+        "textTransform": {
+          "$ref": "#/$defs/nodeProps/properties/text-transform"
+        },
+        "textValign": { "$ref": "#/$defs/nodeProps/properties/text-valign" },
+        "textWrap": { "$ref": "#/$defs/nodeProps/properties/text-wrap" },
+        "transitionDelay": {
+          "$ref": "#/$defs/nodeProps/properties/transition-delay"
+        },
+        "transitionDuration": {
+          "$ref": "#/$defs/nodeProps/properties/transition-duration"
+        },
+        "transitionProperty": {
+          "$ref": "#/$defs/nodeProps/properties/transition-property"
+        },
+        "transitionTimingFunction": {
+          "$ref": "#/$defs/nodeProps/properties/transition-timing-function"
+        },
+        "underlayColor": {
+          "$ref": "#/$defs/nodeProps/properties/underlay-color"
+        },
+        "underlayCornerRadius": {
+          "$ref": "#/$defs/nodeProps/properties/underlay-corner-radius"
+        },
+        "underlayOpacity": {
+          "$ref": "#/$defs/nodeProps/properties/underlay-opacity"
+        },
+        "underlayPadding": {
+          "$ref": "#/$defs/nodeProps/properties/underlay-padding"
+        },
+        "underlayShape": {
+          "$ref": "#/$defs/nodeProps/properties/underlay-shape"
+        }
+      }
+    },
+    "nodes": {
+      "type": "object",
+      "$ref": "#/$defs/nodeProps",
+      "unevaluatedProperties": false
+    },
+    "edges": {
+      "type": "object",
+      "properties": {
+        "arrow-scale": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/arrow-scale" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "background-color": { "$ref": "#/$defs/props/background-color" },
+        "background-fill": { "$ref": "#/$defs/props/background-fill" },
+        "background-gradient-direction": {
+          "$ref": "#/$defs/props/background-gradient-direction"
+        },
+        "background-gradient-stop-colors": {
+          "$ref": "#/$defs/props/background-gradient-stop-colors"
+        },
+        "background-gradient-stop-positions": {
+          "$ref": "#/$defs/props/background-gradient-stop-positions"
+        },
+        "background-opacity": { "$ref": "#/$defs/props/background-opacity" },
+        "border-color": { "$ref": "#/$defs/props/border-color" },
+        "border-dash-offset": { "$ref": "#/$defs/props/border-dash-offset" },
+        "border-dash-pattern": { "$ref": "#/$defs/props/border-dash-pattern" },
+        "border-opacity": { "$ref": "#/$defs/props/border-opacity" },
+        "border-position": { "$ref": "#/$defs/props/border-position" },
+        "border-style": { "$ref": "#/$defs/props/border-style" },
+        "border-width": { "$ref": "#/$defs/props/border-width" },
+        "color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "control-point-distances": {
+          "$ref": "#/$defs/props/control-point-distances"
+        },
+        "control-point-step-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/control-point-step-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "control-point-weight": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/control-point-weight" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "control-point-weights": {
+          "$ref": "#/$defs/props/control-point-weights"
+        },
+        "corner-radius": { "$ref": "#/$defs/props/corner-radius" },
+        "curve-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/curve-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "edge-distances": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/edge-distances" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "events": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/events" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "font-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/font-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "haystack-radius": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/haystack-radius" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "height": { "$ref": "#/$defs/props/height" },
+        "label": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/label" },
+            { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "line-cap": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-cap" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-dash-offset": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-dash-offset" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-dash-pattern": { "$ref": "#/$defs/props/line-dash-pattern" },
+        "line-fill": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-fill" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-gradient-stop-colors": {
+          "$ref": "#/$defs/props/line-gradient-stop-colors"
+        },
+        "line-gradient-stop-positions": {
+          "$ref": "#/$defs/props/line-gradient-stop-positions"
+        },
+        "line-height": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-height" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-outline-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-outline-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-outline-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-outline-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "line-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/line-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "loop-direction": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/loop-direction" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "loop-sweep": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/loop-sweep" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "mid-source-arrow-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/mid-source-arrow-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "mid-source-arrow-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/mid-source-arrow-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "mid-target-arrow-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/mid-target-arrow-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "mid-target-arrow-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/mid-target-arrow-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "min-zoomed-font-size": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/min-zoomed-font-size" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "outline-color": { "$ref": "#/$defs/props/outline-color" },
+        "outline-offset": { "$ref": "#/$defs/props/outline-offset" },
+        "outline-opacity": { "$ref": "#/$defs/props/outline-opacity" },
+        "outline-style": { "$ref": "#/$defs/props/outline-style" },
+        "outline-width": { "$ref": "#/$defs/props/outline-width" },
+        "overlay-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "overlay-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/overlay-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "radius-type": { "$ref": "#/$defs/props/radius-type" },
+        "segment-distances": { "$ref": "#/$defs/props/segment-distances" },
+        "segment-radii": { "$ref": "#/$defs/props/segment-radii" },
+        "segment-weights": { "$ref": "#/$defs/props/segment-weights" },
+        "shape": { "$ref": "#/$defs/props/shape" },
+        "source-arrow-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-arrow-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-arrow-fill": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-arrow-fill" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-arrow-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-arrow-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-arrow-width": { "$ref": "#/$defs/props/source-arrow-width" },
+        "source-distance-from-node": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-distance-from-node" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-endpoint": { "$ref": "#/$defs/props/source-endpoint" },
+        "source-label": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-label" },
+            { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "source-text-margin-x": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-text-margin-x" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-text-margin-y": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-text-margin-y" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-text-offset": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-text-offset" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "source-text-rotation": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/source-text-rotation" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-arrow-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-arrow-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-arrow-fill": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-arrow-fill" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-arrow-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-arrow-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-arrow-width": { "$ref": "#/$defs/props/target-arrow-width" },
+        "target-distance-from-node": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-distance-from-node" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-endpoint": { "$ref": "#/$defs/props/target-endpoint" },
+        "target-label": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-label" },
+            { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "target-text-margin-x": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-text-margin-x" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-text-margin-y": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-text-margin-y" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-text-offset": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-text-offset" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "target-text-rotation": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/target-text-rotation" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-direction": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-direction" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-radius": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-radius" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-track": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-track" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-track-spacing": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-track-spacing" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-turn": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-turn" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "taxi-turn-min-distance": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/taxi-turn-min-distance" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-background-shape": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-background-shape" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-border-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-justification": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-justification" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-margin-x": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-margin-x" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-margin-y": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-margin-y" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-max-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-max-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-outline-width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-outline-width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-overflow-wrap": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-overflow-wrap" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-rotation": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-rotation" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-transform": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-transform" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "text-wrap": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-wrap" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "transition-delay": { "$ref": "#/$defs/props/transition-delay" },
+        "transition-duration": { "$ref": "#/$defs/props/transition-duration" },
+        "transition-property": { "$ref": "#/$defs/props/transition-property" },
+        "transition-timing-function": {
+          "$ref": "#/$defs/props/transition-timing-function"
+        },
+        "underlay-color": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-color" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "underlay-opacity": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-opacity" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "underlay-padding": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/underlay-padding" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "visibility": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/visibility" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "width": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/width" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
+        "arrowScale": { "$ref": "#/$defs/edges/properties/arrow-scale" },
+        "backgroundColor": {
+          "$ref": "#/$defs/edges/properties/background-color"
+        },
+        "backgroundFill": { "$ref": "#/$defs/edges/properties/background-fill" },
+        "backgroundGradientDirection": {
+          "$ref": "#/$defs/edges/properties/background-gradient-direction"
+        },
+        "backgroundGradientStopColors": {
+          "$ref": "#/$defs/edges/properties/background-gradient-stop-colors"
+        },
+        "backgroundGradientStopPositions": {
+          "$ref": "#/$defs/edges/properties/background-gradient-stop-positions"
+        },
+        "backgroundOpacity": {
+          "$ref": "#/$defs/edges/properties/background-opacity"
+        },
+        "borderColor": { "$ref": "#/$defs/edges/properties/border-color" },
+        "borderDashOffset": {
+          "$ref": "#/$defs/edges/properties/border-dash-offset"
+        },
+        "borderDashPattern": {
+          "$ref": "#/$defs/edges/properties/border-dash-pattern"
+        },
+        "borderOpacity": { "$ref": "#/$defs/edges/properties/border-opacity" },
+        "borderPosition": { "$ref": "#/$defs/edges/properties/border-position" },
+        "borderStyle": { "$ref": "#/$defs/edges/properties/border-style" },
+        "borderWidth": { "$ref": "#/$defs/edges/properties/border-width" },
+        "controlPointDistances": {
+          "$ref": "#/$defs/edges/properties/control-point-distances"
+        },
+        "controlPointStepSize": {
+          "$ref": "#/$defs/edges/properties/control-point-step-size"
+        },
+        "controlPointWeight": {
+          "$ref": "#/$defs/edges/properties/control-point-weight"
+        },
+        "controlPointWeights": {
+          "$ref": "#/$defs/edges/properties/control-point-weights"
+        },
+        "cornerRadius": { "$ref": "#/$defs/edges/properties/corner-radius" },
+        "curveStyle": { "$ref": "#/$defs/edges/properties/curve-style" },
+        "edgeDistances": { "$ref": "#/$defs/edges/properties/edge-distances" },
+        "fontSize": { "$ref": "#/$defs/edges/properties/font-size" },
+        "haystackRadius": { "$ref": "#/$defs/edges/properties/haystack-radius" },
+        "lineCap": { "$ref": "#/$defs/edges/properties/line-cap" },
+        "lineColor": { "$ref": "#/$defs/edges/properties/line-color" },
+        "lineDashOffset": {
+          "$ref": "#/$defs/edges/properties/line-dash-offset"
+        },
+        "lineDashPattern": {
+          "$ref": "#/$defs/edges/properties/line-dash-pattern"
+        },
+        "lineFill": { "$ref": "#/$defs/edges/properties/line-fill" },
+        "lineGradientStopColors": {
+          "$ref": "#/$defs/edges/properties/line-gradient-stop-colors"
+        },
+        "lineGradientStopPositions": {
+          "$ref": "#/$defs/edges/properties/line-gradient-stop-positions"
+        },
+        "lineHeight": { "$ref": "#/$defs/edges/properties/line-height" },
+        "lineOpacity": { "$ref": "#/$defs/edges/properties/line-opacity" },
+        "lineOutlineColor": {
+          "$ref": "#/$defs/edges/properties/line-outline-color"
+        },
+        "lineOutlineWidth": {
+          "$ref": "#/$defs/edges/properties/line-outline-width"
+        },
+        "lineStyle": { "$ref": "#/$defs/edges/properties/line-style" },
+        "loopDirection": { "$ref": "#/$defs/edges/properties/loop-direction" },
+        "loopSweep": { "$ref": "#/$defs/edges/properties/loop-sweep" },
+        "midSourceArrowColor": {
+          "$ref": "#/$defs/edges/properties/mid-source-arrow-color"
+        },
+        "midSourceArrowShape": {
+          "$ref": "#/$defs/edges/properties/mid-source-arrow-shape"
+        },
+        "midTargetArrowColor": {
+          "$ref": "#/$defs/edges/properties/mid-target-arrow-color"
+        },
+        "midTargetArrowShape": {
+          "$ref": "#/$defs/edges/properties/mid-target-arrow-shape"
+        },
+        "minZoomedFontSize": {
+          "$ref": "#/$defs/edges/properties/min-zoomed-font-size"
+        },
+        "outlineColor": { "$ref": "#/$defs/edges/properties/outline-color" },
+        "outlineOffset": { "$ref": "#/$defs/edges/properties/outline-offset" },
+        "outlineOpacity": { "$ref": "#/$defs/edges/properties/outline-opacity" },
+        "outlineStyle": { "$ref": "#/$defs/edges/properties/outline-style" },
+        "outlineWidth": { "$ref": "#/$defs/edges/properties/outline-width" },
+        "overlayColor": { "$ref": "#/$defs/edges/properties/overlay-color" },
+        "overlayOpacity": { "$ref": "#/$defs/edges/properties/overlay-opacity" },
+        "overlayPadding": { "$ref": "#/$defs/edges/properties/overlay-padding" },
+        "radiusType": { "$ref": "#/$defs/edges/properties/radius-type" },
+        "segmentDistances": {
+          "$ref": "#/$defs/edges/properties/segment-distances"
+        },
+        "segmentRadii": { "$ref": "#/$defs/edges/properties/segment-radii" },
+        "segmentWeights": { "$ref": "#/$defs/edges/properties/segment-weights" },
+        "sourceArrowColor": {
+          "$ref": "#/$defs/edges/properties/source-arrow-color"
+        },
+        "sourceArrowFill": {
+          "$ref": "#/$defs/edges/properties/source-arrow-fill"
+        },
+        "sourceArrowShape": {
+          "$ref": "#/$defs/edges/properties/source-arrow-shape"
+        },
+        "sourceArrowWidth": {
+          "$ref": "#/$defs/edges/properties/source-arrow-width"
+        },
+        "sourceDistanceFromNode": {
+          "$ref": "#/$defs/edges/properties/source-distance-from-node"
+        },
+        "sourceEndpoint": { "$ref": "#/$defs/edges/properties/source-endpoint" },
+        "sourceLabel": { "$ref": "#/$defs/edges/properties/source-label" },
+        "sourceTextMarginX": {
+          "$ref": "#/$defs/edges/properties/source-text-margin-x"
+        },
+        "sourceTextMarginY": {
+          "$ref": "#/$defs/edges/properties/source-text-margin-y"
+        },
+        "sourceTextOffset": {
+          "$ref": "#/$defs/edges/properties/source-text-offset"
+        },
+        "sourceTextRotation": {
+          "$ref": "#/$defs/edges/properties/source-text-rotation"
+        },
+        "targetArrowColor": {
+          "$ref": "#/$defs/edges/properties/target-arrow-color"
+        },
+        "targetArrowFill": {
+          "$ref": "#/$defs/edges/properties/target-arrow-fill"
+        },
+        "targetArrowShape": {
+          "$ref": "#/$defs/edges/properties/target-arrow-shape"
+        },
+        "targetArrowWidth": {
+          "$ref": "#/$defs/edges/properties/target-arrow-width"
+        },
+        "targetDistanceFromNode": {
+          "$ref": "#/$defs/edges/properties/target-distance-from-node"
+        },
+        "targetEndpoint": { "$ref": "#/$defs/edges/properties/target-endpoint" },
+        "targetLabel": { "$ref": "#/$defs/edges/properties/target-label" },
+        "targetTextMarginX": {
+          "$ref": "#/$defs/edges/properties/target-text-margin-x"
+        },
+        "targetTextMarginY": {
+          "$ref": "#/$defs/edges/properties/target-text-margin-y"
+        },
+        "targetTextOffset": {
+          "$ref": "#/$defs/edges/properties/target-text-offset"
+        },
+        "targetTextRotation": {
+          "$ref": "#/$defs/edges/properties/target-text-rotation"
+        },
+        "taxiDirection": { "$ref": "#/$defs/edges/properties/taxi-direction" },
+        "taxiRadius": { "$ref": "#/$defs/edges/properties/taxi-radius" },
+        "taxiTrack": { "$ref": "#/$defs/edges/properties/taxi-track" },
+        "taxiTrackSpacing": {
+          "$ref": "#/$defs/edges/properties/taxi-track-spacing"
+        },
+        "taxiTurn": { "$ref": "#/$defs/edges/properties/taxi-turn" },
+        "taxiTurnMinDistance": {
+          "$ref": "#/$defs/edges/properties/taxi-turn-min-distance"
+        },
+        "textBackgroundColor": {
+          "$ref": "#/$defs/edges/properties/text-background-color"
+        },
+        "textBackgroundOpacity": {
+          "$ref": "#/$defs/edges/properties/text-background-opacity"
+        },
+        "textBackgroundPadding": {
+          "$ref": "#/$defs/edges/properties/text-background-padding"
+        },
+        "textBackgroundShape": {
+          "$ref": "#/$defs/edges/properties/text-background-shape"
+        },
+        "textBorderColor": {
+          "$ref": "#/$defs/edges/properties/text-border-color"
+        },
+        "textBorderOpacity": {
+          "$ref": "#/$defs/edges/properties/text-border-opacity"
+        },
+        "textBorderWidth": {
+          "$ref": "#/$defs/edges/properties/text-border-width"
+        },
+        "textJustification": {
+          "$ref": "#/$defs/edges/properties/text-justification"
+        },
+        "textMarginX": { "$ref": "#/$defs/edges/properties/text-margin-x" },
+        "textMarginY": { "$ref": "#/$defs/edges/properties/text-margin-y" },
+        "textMaxWidth": { "$ref": "#/$defs/edges/properties/text-max-width" },
+        "textOpacity": { "$ref": "#/$defs/edges/properties/text-opacity" },
+        "textOutlineColor": {
+          "$ref": "#/$defs/edges/properties/text-outline-color"
+        },
+        "textOutlineOpacity": {
+          "$ref": "#/$defs/edges/properties/text-outline-opacity"
+        },
+        "textOutlineWidth": {
+          "$ref": "#/$defs/edges/properties/text-outline-width"
+        },
+        "textOverflowWrap": {
+          "$ref": "#/$defs/edges/properties/text-overflow-wrap"
+        },
+        "textRotation": { "$ref": "#/$defs/edges/properties/text-rotation" },
+        "textTransform": { "$ref": "#/$defs/edges/properties/text-transform" },
+        "textWrap": { "$ref": "#/$defs/edges/properties/text-wrap" },
+        "transitionDelay": {
+          "$ref": "#/$defs/edges/properties/transition-delay"
+        },
+        "transitionDuration": {
+          "$ref": "#/$defs/edges/properties/transition-duration"
+        },
+        "transitionProperty": {
+          "$ref": "#/$defs/edges/properties/transition-property"
+        },
+        "transitionTimingFunction": {
+          "$ref": "#/$defs/edges/properties/transition-timing-function"
+        },
+        "underlayColor": { "$ref": "#/$defs/edges/properties/underlay-color" },
+        "underlayOpacity": {
+          "$ref": "#/$defs/edges/properties/underlay-opacity"
+        },
+        "underlayPadding": {
+          "$ref": "#/$defs/edges/properties/underlay-padding"
+        }
+      },
+      "additionalProperties": false
+    },
+    "parents": {
+      "type": "object",
+      "$ref": "#/$defs/nodeProps",
+      "properties": {
+        "compound-sizing-wrt-labels": {
+          "$ref": "#/$defs/props/compound-sizing-wrt-labels"
+        },
+        "min-height": { "$ref": "#/$defs/props/min-height" },
+        "min-width": { "$ref": "#/$defs/props/min-width" },
+        "padding": { "$ref": "#/$defs/props/padding" },
+        "padding-bottom": { "$ref": "#/$defs/props/padding-bottom" },
+        "padding-left": { "$ref": "#/$defs/props/padding-left" },
+        "padding-relative-to": { "$ref": "#/$defs/props/padding-relative-to" },
+        "padding-right": { "$ref": "#/$defs/props/padding-right" },
+        "padding-top": { "$ref": "#/$defs/props/padding-top" },
+        "compoundSizingWrtLabels": {
+          "$ref": "#/$defs/parents/properties/compound-sizing-wrt-labels"
+        },
+        "minHeight": { "$ref": "#/$defs/parents/properties/min-height" },
+        "minWidth": { "$ref": "#/$defs/parents/properties/min-width" },
+        "paddingBottom": { "$ref": "#/$defs/parents/properties/padding-bottom" },
+        "paddingLeft": { "$ref": "#/$defs/parents/properties/padding-left" },
+        "paddingRelativeTo": {
+          "$ref": "#/$defs/parents/properties/padding-relative-to"
+        },
+        "paddingRight": { "$ref": "#/$defs/parents/properties/padding-right" },
+        "paddingTop": { "$ref": "#/$defs/parents/properties/padding-top" }
+      },
+      "unevaluatedProperties": false
+    },
+    "core": {
+      "type": "object",
+      "properties": {
+        "active-bg-color": { "$ref": "#/$defs/props/active-bg-color" },
+        "active-bg-opacity": { "$ref": "#/$defs/props/active-bg-opacity" },
+        "active-bg-size": { "$ref": "#/$defs/props/active-bg-size" },
+        "selection-box-border-color": {
+          "$ref": "#/$defs/props/selection-box-border-color"
+        },
+        "selection-box-border-width": {
+          "$ref": "#/$defs/props/selection-box-border-width"
+        },
+        "selection-box-color": { "$ref": "#/$defs/props/selection-box-color" },
+        "selection-box-opacity": {
+          "$ref": "#/$defs/props/selection-box-opacity"
+        },
+        "activeBgColor": { "$ref": "#/$defs/core/properties/active-bg-color" },
+        "activeBgOpacity": {
+          "$ref": "#/$defs/core/properties/active-bg-opacity"
+        },
+        "activeBgSize": { "$ref": "#/$defs/core/properties/active-bg-size" },
+        "selectionBoxBorderColor": {
+          "$ref": "#/$defs/core/properties/selection-box-border-color"
+        },
+        "selectionBoxBorderWidth": {
+          "$ref": "#/$defs/core/properties/selection-box-border-width"
+        },
+        "selectionBoxColor": {
+          "$ref": "#/$defs/core/properties/selection-box-color"
+        },
+        "selectionBoxOpacity": {
+          "$ref": "#/$defs/core/properties/selection-box-opacity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bypass": {
+      "description": "One bypass entry: constants only, all valid for nodes or all for edges.",
+      "type": "object",
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "font-family",
+            "fontFamily",
+            "font-style",
+            "fontStyle",
+            "font-weight",
+            "fontWeight",
+            "transition-property",
+            "transitionProperty",
+            "transition-duration",
+            "transitionDuration",
+            "transition-delay",
+            "transitionDelay",
+            "transition-timing-function",
+            "transitionTimingFunction"
+          ]
+        }
+      },
+      "additionalProperties": { "not": { "type": "object" } },
+      "anyOf": [{ "$ref": "#/$defs/nodes" }, { "$ref": "#/$defs/edges" }]
+    },
+    "mapper": {
+      "description": "A data-driven value: a scale mapper or a case conditional.",
+      "anyOf": [
+        { "$ref": "#/$defs/scaleMapper" },
+        { "$ref": "#/$defs/caseMapper" }
+      ]
+    },
+    "passthroughMapper": {
+      "description": "`{ data: key }` alone — the datum is the value ('id' reads the element's id). The label family and chart-values take only this form.",
+      "$ref": "#/$defs/scaleMapper",
+      "not": {
+        "anyOf": [
+          { "required": ["scale"] },
+          { "required": ["domain"] },
+          { "required": ["range"] }
+        ]
+      }
+    },
+    "scaleMapper": {
+      "description": "A data-driven scale: `{ data: key }` alone passes the datum through; adding `range` (and usually `domain`) scales it. Missing or unmappable data resolves to `fallback`, else the channel default. Keys the compiler does not read are ignored.",
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "description": "The data() key to read ('id' reads the element's id).",
+          "type": "string",
+          "minLength": 1
+        },
+        "scale": {
+          "description": "'linear' (default), 'log', 'sqrt', 'pow', 'symlog' (continuous); 'diverging' (a [min, mid, max] domain); 'ordinal', 'threshold', 'quantize'.",
+          "enum": [
+            "linear",
+            "log",
+            "sqrt",
+            "pow",
+            "symlog",
+            "diverging",
+            "ordinal",
+            "threshold",
+            "quantize"
+          ]
+        },
+        "domain": {
+          "description": "Ascending numeric stops (categories for 'ordinal'); 'auto' or omitted tracks the live data extent.",
+          "anyOf": [
+            { "const": "auto" },
+            { "type": "array", "items": { "type": ["string", "number"] } }
+          ]
+        },
+        "range": {
+          "description": "Output stops (numbers, colours or keywords), or a named colour scheme.",
+          "anyOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": ["string", "number"] }
+            },
+            { "$ref": "#/$defs/keywords/scheme" }
+          ]
+        },
+        "clamp": {
+          "description": "Clamp the input to the domain (default true).",
+          "type": "boolean"
+        },
+        "exponent": {
+          "description": "'pow' only (default 2).",
+          "type": "number"
+        },
+        "base": { "description": "'log' only (default 10).", "type": "number" },
+        "constant": {
+          "description": "'symlog' linear-region constant (default 1).",
+          "type": "number"
+        },
+        "interpolate": {
+          "description": "Colour interpolation space (default 'oklab').",
+          "enum": ["oklab", "srgb"]
+        },
+        "bins": {
+          "description": "Bin count when a quantize range is a scheme name.",
+          "type": "number"
+        },
+        "fallback": {
+          "description": "The value for missing or unmappable data (default: the channel default).",
+          "type": ["string", "number"]
+        }
+      }
+    },
+    "caseMapper": {
+      "description": "A conditional: the first clause whose `when` holds supplies the value, else `else` (or the channel default).",
+      "type": "object",
+      "required": ["case"],
+      "properties": {
+        "case": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/caseClause" }
+        },
+        "else": { "type": ["string", "number"] },
+        "fallback": {
+          "description": "The value for missing or unmappable data (default: `else`, then the channel default).",
+          "type": ["string", "number"]
+        }
+      }
+    },
+    "caseClause": {
+      "description": "`when` (a condition, or an array of them AND-ed together) → `then`.",
+      "type": "object",
+      "required": ["when", "then"],
+      "properties": {
+        "when": {
+          "anyOf": [
+            { "$ref": "#/$defs/condition" },
+            { "type": "array", "items": { "$ref": "#/$defs/condition" } }
+          ]
+        },
+        "then": { "type": ["string", "number"] }
+      }
+    },
+    "condition": {
+      "description": "A data condition (`data` plus exactly one comparison), or a structural/state condition standing alone. Missing data fails every comparison.",
+      "anyOf": [
+        { "$ref": "#/$defs/dataCondition" },
+        { "$ref": "#/$defs/stateCondition" }
+      ]
+    },
+    "dataCondition": {
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "description": "The data key to compare ('id' reads the element's id).",
+          "type": "string"
+        },
+        "eq": { "type": ["string", "number", "boolean"] },
+        "ne": { "type": ["string", "number", "boolean"] },
+        "lt": { "type": "number" },
+        "lte": { "type": "number" },
+        "gt": { "type": "number" },
+        "gte": { "type": "number" },
+        "in": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": ["string", "number", "boolean"] }
+        }
+      },
+      "oneOf": [
+        { "required": ["eq"] },
+        { "required": ["ne"] },
+        { "required": ["lt"] },
+        { "required": ["lte"] },
+        { "required": ["gt"] },
+        { "required": ["gte"] },
+        { "required": ["in"] }
+      ],
+      "not": {
+        "anyOf": [
+          { "required": ["parent"] },
+          { "required": ["childless"] },
+          { "required": ["child"] },
+          { "required": ["orphan"] },
+          { "required": ["selected"] },
+          { "required": ["selectable"] },
+          { "required": ["locked"] },
+          { "required": ["grabbed"] },
+          { "required": ["grabbable"] },
+          { "required": ["active"] },
+          { "required": ["hovered"] }
+        ]
+      }
+    },
+    "stateCondition": {
+      "description": "Structural (nodes only: `parent`, `childless`, `child`, `orphan`) or state (`selected`, `selectable`, `locked`, `grabbed`, `grabbable`, `active`, `hovered`) — each a boolean, one per condition; AND them through the `when` array.",
+      "type": "object",
+      "properties": {
+        "parent": { "type": "boolean" },
+        "childless": { "type": "boolean" },
+        "child": { "type": "boolean" },
+        "orphan": { "type": "boolean" },
+        "selected": { "type": "boolean" },
+        "selectable": { "type": "boolean" },
+        "locked": { "type": "boolean" },
+        "grabbed": { "type": "boolean" },
+        "grabbable": { "type": "boolean" },
+        "active": { "type": "boolean" },
+        "hovered": { "type": "boolean" }
+      },
+      "not": { "required": ["data"] },
+      "oneOf": [
+        { "required": ["parent"] },
+        { "required": ["childless"] },
+        { "required": ["child"] },
+        { "required": ["orphan"] },
+        { "required": ["selected"] },
+        { "required": ["selectable"] },
+        { "required": ["locked"] },
+        { "required": ["grabbed"] },
+        { "required": ["grabbable"] },
+        { "required": ["active"] },
+        { "required": ["hovered"] }
+      ]
+    },
+    "kinds": {
+      "color": {
+        "description": "A CSS colour: a name, #rgb/#rrggbb(aa), rgb()/rgba() or hsl()/hsla(). The library parses it; the schema checks only that it is a string.",
+        "type": "string",
+        "minLength": 1
+      },
+      "number": {
+        "description": "A number, or a string that begins with one ('10px' reads as 10).",
+        "anyOf": [
+          { "type": "number" },
+          {
+            "type": "string",
+            "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?"
+          }
+        ]
+      },
+      "nonNegative": {
+        "description": "A number >= 0, or a string that begins with one.",
+        "anyOf": [
+          { "type": "number", "minimum": 0 },
+          { "type": "string", "pattern": "^\\s*\\+?(\\d+\\.?\\d*|\\.\\d+)" }
+        ]
+      },
+      "zeroOne": {
+        "description": "A number in [0, 1] (a numeric string is read the same way).",
+        "anyOf": [
+          { "type": "number", "minimum": 0, "maximum": 1 },
+          {
+            "type": "string",
+            "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?"
+          }
+        ]
+      },
+      "fraction": {
+        "description": "A number in [0, 1].",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "positive": {
+        "description": "A number > 0.",
+        "type": "number",
+        "exclusiveMinimum": 0
+      },
+      "yesNo": {
+        "description": "'yes' or 'no' (booleans are accepted too).",
+        "anyOf": [{ "type": "boolean" }, { "enum": ["yes", "no"] }]
+      },
+      "angle": {
+        "description": "An angle: a number of radians, or a string with a 'deg' or 'rad' unit.",
+        "anyOf": [
+          { "type": "number" },
+          {
+            "type": "string",
+            "pattern": "^\\s*-?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d+)?(deg|rad)?\\s*$"
+          }
+        ]
+      },
+      "numberList": {
+        "description": "Numbers: one number, an array of numbers, or a whitespace-separated string ('10 -10').",
+        "anyOf": [
+          { "type": "number" },
+          { "type": "string" },
+          { "type": "array", "items": { "$ref": "#/$defs/kinds/number" } }
+        ]
+      },
+      "colorList": {
+        "description": "Colours: an array of colour strings, or a whitespace-separated string.",
+        "anyOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/kinds/color" }
+          }
+        ]
+      },
+      "percentList": {
+        "description": "Stop positions in percent: an array of numbers or 'N%' strings, or a whitespace-separated string ('0% 50% 100%').",
+        "anyOf": [
+          { "type": "number" },
+          { "type": "string" },
+          { "type": "array", "items": { "type": ["number", "string"] } }
+        ]
+      },
+      "label": {
+        "description": "Label text: a constant (numbers are stringified), or the 'data(key)' string, which reads the element's data (the `{ data: key }` passthrough mapper is the object spelling).",
+        "type": ["string", "number"]
+      },
+      "textRotation": {
+        "description": "'none', 'autorotate' (edges only: the label follows the edge), or a number of radians.",
+        "anyOf": [{ "enum": ["none", "autorotate"] }, { "type": "number" }]
+      },
+      "layerRadius": {
+        "description": "A corner radius: a number >= 0, or 'auto'.",
+        "anyOf": [{ "const": "auto" }, { "$ref": "#/$defs/kinds/nonNegative" }]
+      },
+      "arrowWidth": {
+        "description": "An arrow width: a px number >= 0, 'match-line', or a percent of the edge width ('50%').",
+        "anyOf": [
+          { "const": "match-line" },
+          { "type": "string", "pattern": "^\\s*-?(\\d+\\.?\\d*|\\.\\d+)%\\s*$" },
+          { "$ref": "#/$defs/kinds/nonNegative" }
+        ]
+      },
+      "endpoint": {
+        "description": "An edge endpoint: a keyword, an 'x y' point (each part a number with an optional '%' or 'px'), an angle ('90deg', or a number of radians), or the point as a two-entry array. The '-or-label' keywords are not supported.",
+        "anyOf": [
+          { "type": "number" },
+          { "$ref": "#/$defs/keywords/endpointKeyword" },
+          {
+            "type": "string",
+            "not": {
+              "enum": ["outside-to-node-or-label", "outside-to-line-or-label"]
+            }
+          },
+          {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": ["number", "string"] }
+          }
+        ]
+      },
+      "taxiTurn": {
+        "description": "Where a taxi edge turns: px from the source (negative: from the target), a percent string ('50%'), or 'auto' (the track pass assigns the turn).",
+        "anyOf": [
+          { "type": "number" },
+          { "const": "auto" },
+          { "type": "string", "pattern": "^\\s*-?(\\d+\\.?\\d*|\\.\\d+)%\\s*$" },
+          {
+            "type": "string",
+            "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?"
+          }
+        ]
+      },
+      "radiusType": {
+        "description": "One keyword, or one per segment point (an array or a whitespace-separated string).",
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/radiusType" },
+          { "type": "string" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/radiusType" }
+          }
+        ]
+      },
+      "fontFamily": {
+        "description": "A font family list. Global: one font for every label (the glyph atlas holds one), so constants only.",
+        "type": "string",
+        "minLength": 1
+      },
+      "fontWeight": {
+        "description": "A weight keyword, or 100..900 in hundreds (number or string).",
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/fontWeightKeyword" },
+          { "enum": [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+          {
+            "enum": [
+              "100",
+              "200",
+              "300",
+              "400",
+              "500",
+              "600",
+              "700",
+              "800",
+              "900"
+            ]
+          }
+        ]
+      },
+      "backgroundLength": {
+        "description": "Per background image: a px number or an 'N%' / 'Npx' string, or an array of them (one per image, the last repeating).",
+        "anyOf": [
+          {
+            "anyOf": [
+              { "type": "number" },
+              {
+                "type": "string",
+                "pattern": "^\\s*-?(\\d+\\.?\\d*|\\.\\d+)\\s*(%|px)\\s*$"
+              }
+            ]
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "anyOf": [
+                { "type": "number" },
+                {
+                  "type": "string",
+                  "pattern": "^\\s*-?(\\d+\\.?\\d*|\\.\\d+)\\s*(%|px)\\s*$"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "backgroundSize": {
+        "description": "Per background image: 'auto', a px number or an 'N%' / 'Npx' string, or an array of them.",
+        "anyOf": [
+          {
+            "anyOf": [
+              { "const": "auto" },
+              { "type": "number", "minimum": 0 },
+              {
+                "type": "string",
+                "pattern": "^\\s*(\\d+\\.?\\d*|\\.\\d+)\\s*(%|px)\\s*$"
+              }
+            ]
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "anyOf": [
+                { "const": "auto" },
+                { "type": "number", "minimum": 0 },
+                {
+                  "type": "string",
+                  "pattern": "^\\s*(\\d+\\.?\\d*|\\.\\d+)\\s*(%|px)\\s*$"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "backgroundImageOpacity": {
+        "description": "Per background image: an opacity in [0, 1], or an array of them.",
+        "anyOf": [
+          { "$ref": "#/$defs/kinds/zeroOne" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/kinds/zeroOne" }
+          }
+        ]
+      },
+      "backgroundImageSmoothing": {
+        "description": "Per background image: 'yes' or 'no', or an array of them.",
+        "anyOf": [
+          { "$ref": "#/$defs/kinds/yesNo" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/kinds/yesNo" }
+          }
+        ]
+      },
+      "urls": {
+        "description": "Background images: 'none', a URL (optionally wrapped in url(...)), or an array of them (a recorded cap of four).",
+        "anyOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" } }
+        ]
+      },
+      "backgroundImageCrossorigin": {
+        "description": "'anonymous', 'use-credentials' or 'null'.",
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundImageCrossorigin" },
+          { "type": "null" }
+        ]
+      },
+      "chartValues": {
+        "description": "The slice values: non-negative numbers, as an array or a whitespace-separated string. Map them per element with the `{ data: key }` passthrough (the datum is an array).",
+        "anyOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "anyOf": [
+                { "type": "number", "minimum": 0 },
+                { "type": "string" }
+              ]
+            }
+          }
+        ]
+      },
+      "chartColors": {
+        "description": "The slice colours: a named colour scheme, or colours (an array, or a whitespace-separated string).",
+        "anyOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/kinds/color" }
+          }
+        ]
+      },
+      "chartFraction": {
+        "description": "A fraction in [0, 1], or an 'N%' string.",
+        "anyOf": [
+          { "type": "number", "minimum": 0, "maximum": 1 },
+          {
+            "type": "string",
+            "pattern": "^\\s*(\\d+\\.?\\d*|\\.\\d+)\\s*%\\s*$"
+          }
+        ]
+      },
+      "easing": {
+        "description": "An easing: a named curve, or cubic-bezier(), linear() or spring(). Functions are not accepted (the GPU runs the curve).",
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/easing" },
+          {
+            "type": "string",
+            "pattern": "^\\s*(cubic-bezier|linear|spring)\\s*\\(.*\\)\\s*$"
+          }
+        ]
+      },
+      "transitionProperty": {
+        "description": "The props that transition when the sheet changes them: 'none', or this group's own prop names (an array, or a whitespace-separated string). Constants only.",
+        "anyOf": [
+          { "const": "none" },
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" } }
+        ]
+      },
+      "milliseconds": {
+        "description": "A non-negative number of milliseconds. Constants only.",
+        "type": "number",
+        "minimum": 0
+      },
+      "compoundPadding": {
+        "description": "A compound parent's padding: a px number >= 0, or an 'N%' string resolved per padding-relative-to. Constants only.",
+        "anyOf": [
+          { "type": "number", "minimum": 0 },
+          { "type": "string", "pattern": "^\\s*([\\d.]+)\\s*%\\s*$" }
+        ]
+      },
+      "compoundSize": {
+        "description": "A non-negative number of px. Constants only.",
+        "type": "number",
+        "minimum": 0
+      },
+      "compoundSizingWrtLabels": {
+        "description": "'exclude' — the only value: compound auto-sizing reads the children's bodies, not their labels.",
+        "const": "exclude"
+      }
+    },
+    "keywords": {
+      "shape": {
+        "enum": [
+          "ellipse",
+          "circle",
+          "rectangle",
+          "square",
+          "round-rectangle",
+          "triangle",
+          "pentagon",
+          "hexagon",
+          "heptagon",
+          "octagon",
+          "diamond",
+          "rhomboid",
+          "vee",
+          "star",
+          "tag",
+          "polygon",
+          "right-rhomboid",
+          "concave-hexagon",
+          "cut-rectangle",
+          "round-triangle",
+          "round-diamond",
+          "round-pentagon",
+          "round-hexagon",
+          "round-heptagon",
+          "round-octagon",
+          "round-tag",
+          "bottom-round-rectangle",
+          "barrel"
+        ]
+      },
+      "arrowShape": {
+        "enum": [
+          "none",
+          "triangle",
+          "arrow",
+          "vee",
+          "chevron",
+          "circle",
+          "square",
+          "diamond",
+          "tee",
+          "triangle-tee",
+          "circle-triangle",
+          "triangle-cross",
+          "triangle-backcurve"
+        ]
+      },
+      "curveStyle": {
+        "enum": [
+          "straight",
+          "bezier",
+          "unbundled-bezier",
+          "segments",
+          "round-segments",
+          "taxi",
+          "round-taxi",
+          "haystack",
+          "straight-triangle"
+        ]
+      },
+      "lineStyle": { "enum": ["solid", "dashed", "dotted"] },
+      "strokeStyle": { "enum": ["solid", "dashed", "dotted", "double"] },
+      "textWrap": { "enum": ["none", "wrap", "ellipsis"] },
+      "overflowWrap": { "enum": ["whitespace", "anywhere"] },
+      "justification": { "enum": ["auto", "left", "center", "right"] },
+      "textTransform": { "enum": ["none", "uppercase", "lowercase"] },
+      "textBackgroundShape": { "enum": ["rectangle", "round-rectangle"] },
+      "arrowFill": { "enum": ["filled", "hollow"] },
+      "lineCap": { "enum": ["butt", "round", "square"] },
+      "fill": { "enum": ["solid", "linear-gradient", "radial-gradient"] },
+      "gradientDirection": {
+        "enum": [
+          "to-bottom",
+          "to-top",
+          "to-left",
+          "to-right",
+          "to-bottom-right",
+          "to-bottom-left",
+          "to-top-right",
+          "to-top-left"
+        ]
+      },
+      "borderPosition": { "enum": ["center", "inside", "outside"] },
+      "halign": { "enum": ["left", "center", "right"] },
+      "valign": { "enum": ["top", "center", "bottom"] },
+      "edgeDistances": {
+        "enum": ["intersection", "node-position", "endpoints"]
+      },
+      "taxiDirection": {
+        "enum": [
+          "auto",
+          "vertical",
+          "horizontal",
+          "upward",
+          "downward",
+          "leftward",
+          "rightward"
+        ]
+      },
+      "taxiTrack": { "enum": ["source", "target", "family"] },
+      "radiusType": { "enum": ["arc-radius", "influence-radius"] },
+      "endpointKeyword": {
+        "enum": ["outside-to-node", "inside-to-node", "outside-to-line"]
+      },
+      "layerShape": { "enum": ["round-rectangle", "ellipse"] },
+      "visibility": { "enum": ["visible", "hidden"] },
+      "chartKind": { "enum": ["none", "pie", "stripes"] },
+      "chartDirection": { "enum": ["vertical", "horizontal"] },
+      "fontStyle": { "enum": ["normal", "italic", "oblique"] },
+      "fontWeightKeyword": { "enum": ["normal", "bold", "bolder", "lighter"] },
+      "backgroundFit": { "enum": ["none", "contain", "cover"] },
+      "backgroundRepeat": {
+        "enum": ["no-repeat", "repeat-x", "repeat-y", "repeat"]
+      },
+      "backgroundClip": { "enum": ["none", "node"] },
+      "backgroundImageContainment": { "enum": ["inside", "over"] },
+      "backgroundImageType": { "enum": ["auto", "sdf-icon"] },
+      "backgroundImageCrossorigin": {
+        "enum": ["anonymous", "use-credentials", "null"]
+      },
+      "paddingRelativeTo": {
+        "enum": ["width", "height", "average", "min", "max"]
+      },
+      "easing": {
+        "enum": [
+          "linear",
+          "ease",
+          "ease-in",
+          "ease-out",
+          "ease-in-out",
+          "ease-in-sine",
+          "ease-out-sine",
+          "ease-in-out-sine",
+          "ease-in-quad",
+          "ease-out-quad",
+          "ease-in-out-quad",
+          "ease-in-cubic",
+          "ease-out-cubic",
+          "ease-in-out-cubic",
+          "ease-in-quart",
+          "ease-out-quart",
+          "ease-in-out-quart",
+          "ease-in-quint",
+          "ease-out-quint",
+          "ease-in-out-quint",
+          "ease-in-expo",
+          "ease-out-expo",
+          "ease-in-out-expo",
+          "ease-in-circ",
+          "ease-out-circ",
+          "ease-in-out-circ"
+        ]
+      },
+      "scheme": {
+        "enum": [
+          "viridis",
+          "plasma",
+          "magma",
+          "inferno",
+          "blues",
+          "greens",
+          "oranges",
+          "purples",
+          "rdbu",
+          "brbg",
+          "rdylgn",
+          "category10",
+          "dark2"
+        ]
+      }
+    },
+    "props": {
+      "active-bg-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["black"]
+      },
+      "active-bg-opacity": {
+        "$ref": "#/$defs/kinds/zeroOne",
+        "examples": [0.15]
+      },
+      "active-bg-size": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [30]
+      },
+      "arrow-scale": { "$ref": "#/$defs/kinds/positive", "examples": [1] },
+      "background-clip": {
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundClip" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/backgroundClip" }
+          }
+        ],
+        "examples": ["node"]
+      },
+      "background-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#999"]
+      },
+      "background-fill": {
+        "$ref": "#/$defs/keywords/fill",
+        "examples": ["solid"]
+      },
+      "background-fit": {
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundFit" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/backgroundFit" }
+          }
+        ],
+        "examples": ["contain"]
+      },
+      "background-gradient-direction": {
+        "$ref": "#/$defs/keywords/gradientDirection",
+        "examples": ["to-bottom"]
+      },
+      "background-gradient-stop-colors": {
+        "$ref": "#/$defs/kinds/colorList",
+        "examples": ["cyan magenta yellow"]
+      },
+      "background-gradient-stop-positions": {
+        "$ref": "#/$defs/kinds/percentList",
+        "examples": ["0% 50% 100%"]
+      },
+      "background-height": {
+        "$ref": "#/$defs/kinds/backgroundSize",
+        "examples": ["auto"]
+      },
+      "background-image": { "$ref": "#/$defs/kinds/urls", "examples": ["none"] },
+      "background-image-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["black"]
+      },
+      "background-image-containment": {
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundImageContainment" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/backgroundImageContainment" }
+          }
+        ],
+        "examples": ["inside"]
+      },
+      "background-image-crossorigin": {
+        "$ref": "#/$defs/kinds/backgroundImageCrossorigin",
+        "examples": ["anonymous"]
+      },
+      "background-image-opacity": {
+        "$ref": "#/$defs/kinds/backgroundImageOpacity",
+        "examples": [1]
+      },
+      "background-image-smoothing": {
+        "$ref": "#/$defs/kinds/backgroundImageSmoothing",
+        "examples": ["yes"]
+      },
+      "background-image-type": {
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundImageType" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/backgroundImageType" }
+          }
+        ],
+        "examples": ["auto"]
+      },
+      "background-offset-x": {
+        "$ref": "#/$defs/kinds/backgroundLength",
+        "examples": [0]
+      },
+      "background-offset-y": {
+        "$ref": "#/$defs/kinds/backgroundLength",
+        "examples": [0]
+      },
+      "background-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "background-position-x": {
+        "$ref": "#/$defs/kinds/backgroundLength",
+        "examples": ["50%"]
+      },
+      "background-position-y": {
+        "$ref": "#/$defs/kinds/backgroundLength",
+        "examples": ["50%"]
+      },
+      "background-repeat": {
+        "anyOf": [
+          { "$ref": "#/$defs/keywords/backgroundRepeat" },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/keywords/backgroundRepeat" }
+          }
+        ],
+        "examples": ["no-repeat"]
+      },
+      "background-width": {
+        "$ref": "#/$defs/kinds/backgroundSize",
+        "examples": ["auto"]
+      },
+      "border-color": { "$ref": "#/$defs/kinds/color", "examples": ["#000"] },
+      "border-dash-offset": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "border-dash-pattern": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[4, 2]]
+      },
+      "border-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "border-position": {
+        "$ref": "#/$defs/keywords/borderPosition",
+        "examples": ["center"]
+      },
+      "border-style": {
+        "$ref": "#/$defs/keywords/strokeStyle",
+        "examples": ["solid"]
+      },
+      "border-width": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "chart": { "$ref": "#/$defs/keywords/chartKind", "examples": ["none"] },
+      "chart-colors": {
+        "$ref": "#/$defs/kinds/chartColors",
+        "examples": ["category10"]
+      },
+      "chart-direction": {
+        "$ref": "#/$defs/keywords/chartDirection",
+        "examples": ["vertical"]
+      },
+      "chart-hole": { "$ref": "#/$defs/kinds/chartFraction", "examples": [0] },
+      "chart-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "chart-size": { "$ref": "#/$defs/kinds/chartFraction", "examples": [1] },
+      "chart-start-angle": { "$ref": "#/$defs/kinds/angle", "examples": [0] },
+      "chart-values": {
+        "$ref": "#/$defs/kinds/chartValues",
+        "examples": [[1, 2, 3]]
+      },
+      "color": { "$ref": "#/$defs/kinds/color", "examples": ["#000"] },
+      "compound-sizing-wrt-labels": {
+        "$ref": "#/$defs/kinds/compoundSizingWrtLabels",
+        "examples": ["exclude"]
+      },
+      "control-point-distances": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[20, -20]]
+      },
+      "control-point-step-size": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [40]
+      },
+      "control-point-weight": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0.5]
+      },
+      "control-point-weights": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[0.5]]
+      },
+      "corner-radius": {
+        "$ref": "#/$defs/kinds/layerRadius",
+        "examples": ["auto"]
+      },
+      "curve-style": {
+        "$ref": "#/$defs/keywords/curveStyle",
+        "examples": ["bezier"]
+      },
+      "edge-distances": {
+        "$ref": "#/$defs/keywords/edgeDistances",
+        "examples": ["intersection"]
+      },
+      "events": { "$ref": "#/$defs/kinds/yesNo", "examples": ["yes"] },
+      "font-family": {
+        "$ref": "#/$defs/kinds/fontFamily",
+        "examples": ["Helvetica Neue, Helvetica, sans-serif"]
+      },
+      "font-size": { "$ref": "#/$defs/kinds/number", "examples": [16] },
+      "font-style": {
+        "$ref": "#/$defs/keywords/fontStyle",
+        "examples": ["normal"]
+      },
+      "font-weight": {
+        "$ref": "#/$defs/kinds/fontWeight",
+        "examples": ["normal"]
+      },
+      "ghost": { "$ref": "#/$defs/kinds/yesNo", "examples": ["no"] },
+      "ghost-offset-x": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "ghost-offset-y": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "ghost-opacity": { "$ref": "#/$defs/kinds/fraction", "examples": [0] },
+      "haystack-radius": { "$ref": "#/$defs/kinds/fraction", "examples": [0] },
+      "height": { "$ref": "#/$defs/kinds/number", "examples": [30] },
+      "label": { "$ref": "#/$defs/kinds/label", "examples": ["data(name)"] },
+      "line-cap": { "$ref": "#/$defs/keywords/lineCap", "examples": ["butt"] },
+      "line-color": { "$ref": "#/$defs/kinds/color", "examples": ["#999"] },
+      "line-dash-offset": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "line-dash-pattern": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[6, 3]]
+      },
+      "line-fill": { "$ref": "#/$defs/keywords/fill", "examples": ["solid"] },
+      "line-gradient-stop-colors": {
+        "$ref": "#/$defs/kinds/colorList",
+        "examples": [["#999", "#333"]]
+      },
+      "line-gradient-stop-positions": {
+        "$ref": "#/$defs/kinds/percentList",
+        "examples": [[0, 100]]
+      },
+      "line-height": { "$ref": "#/$defs/kinds/nonNegative", "examples": [1] },
+      "line-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "line-outline-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#000"]
+      },
+      "line-outline-width": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "line-style": {
+        "$ref": "#/$defs/keywords/lineStyle",
+        "examples": ["solid"]
+      },
+      "loop-direction": {
+        "$ref": "#/$defs/kinds/angle",
+        "examples": ["-45deg"]
+      },
+      "loop-sweep": { "$ref": "#/$defs/kinds/angle", "examples": ["-90deg"] },
+      "mid-source-arrow-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#999"]
+      },
+      "mid-source-arrow-shape": {
+        "$ref": "#/$defs/keywords/arrowShape",
+        "examples": ["none"]
+      },
+      "mid-target-arrow-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#999"]
+      },
+      "mid-target-arrow-shape": {
+        "$ref": "#/$defs/keywords/arrowShape",
+        "examples": ["none"]
+      },
+      "min-height": { "$ref": "#/$defs/kinds/compoundSize", "examples": [0] },
+      "min-width": { "$ref": "#/$defs/kinds/compoundSize", "examples": [0] },
+      "min-zoomed-font-size": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "opacity": { "$ref": "#/$defs/kinds/number", "examples": [1] },
+      "outline-color": { "$ref": "#/$defs/kinds/color", "examples": ["#999"] },
+      "outline-offset": { "$ref": "#/$defs/kinds/nonNegative", "examples": [0] },
+      "outline-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "outline-style": {
+        "$ref": "#/$defs/keywords/strokeStyle",
+        "examples": ["solid"]
+      },
+      "outline-width": { "$ref": "#/$defs/kinds/nonNegative", "examples": [0] },
+      "overlay-color": { "$ref": "#/$defs/kinds/color", "examples": ["#000"] },
+      "overlay-corner-radius": {
+        "$ref": "#/$defs/kinds/layerRadius",
+        "examples": ["auto"]
+      },
+      "overlay-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [0] },
+      "overlay-padding": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [10]
+      },
+      "overlay-shape": {
+        "$ref": "#/$defs/keywords/layerShape",
+        "examples": ["round-rectangle"]
+      },
+      "padding": { "$ref": "#/$defs/kinds/compoundPadding", "examples": [10] },
+      "padding-bottom": {
+        "$ref": "#/$defs/kinds/compoundPadding",
+        "examples": [10]
+      },
+      "padding-left": {
+        "$ref": "#/$defs/kinds/compoundPadding",
+        "examples": [10]
+      },
+      "padding-relative-to": {
+        "$ref": "#/$defs/keywords/paddingRelativeTo",
+        "examples": ["width"]
+      },
+      "padding-right": {
+        "$ref": "#/$defs/kinds/compoundPadding",
+        "examples": [10]
+      },
+      "padding-top": {
+        "$ref": "#/$defs/kinds/compoundPadding",
+        "examples": [10]
+      },
+      "radius-type": {
+        "$ref": "#/$defs/kinds/radiusType",
+        "examples": ["arc-radius"]
+      },
+      "segment-distances": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[20]]
+      },
+      "segment-radii": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[15]]
+      },
+      "segment-weights": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": [[0.5]]
+      },
+      "selection-box-border-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#aaa"]
+      },
+      "selection-box-border-width": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [1]
+      },
+      "selection-box-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#ddd"]
+      },
+      "selection-box-opacity": {
+        "$ref": "#/$defs/kinds/zeroOne",
+        "examples": [0.65]
+      },
+      "shape": { "$ref": "#/$defs/keywords/shape", "examples": ["ellipse"] },
+      "shape-polygon-points": {
+        "$ref": "#/$defs/kinds/numberList",
+        "examples": ["-1 -1 1 -1 0 1"]
+      },
+      "source-arrow-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#999"]
+      },
+      "source-arrow-fill": {
+        "$ref": "#/$defs/keywords/arrowFill",
+        "examples": ["filled"]
+      },
+      "source-arrow-shape": {
+        "$ref": "#/$defs/keywords/arrowShape",
+        "examples": ["none"]
+      },
+      "source-arrow-width": {
+        "$ref": "#/$defs/kinds/arrowWidth",
+        "examples": ["match-line"]
+      },
+      "source-distance-from-node": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "source-endpoint": {
+        "$ref": "#/$defs/kinds/endpoint",
+        "examples": ["outside-to-node"]
+      },
+      "source-label": {
+        "$ref": "#/$defs/kinds/label",
+        "examples": ["data(sourceName)"]
+      },
+      "source-text-margin-x": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
+      "source-text-margin-y": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
+      "source-text-offset": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "source-text-rotation": {
+        "$ref": "#/$defs/kinds/textRotation",
+        "examples": ["none"]
+      },
+      "target-arrow-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#999"]
+      },
+      "target-arrow-fill": {
+        "$ref": "#/$defs/keywords/arrowFill",
+        "examples": ["filled"]
+      },
+      "target-arrow-shape": {
+        "$ref": "#/$defs/keywords/arrowShape",
+        "examples": ["triangle"]
+      },
+      "target-arrow-width": {
+        "$ref": "#/$defs/kinds/arrowWidth",
+        "examples": ["match-line"]
+      },
+      "target-distance-from-node": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "target-endpoint": {
+        "$ref": "#/$defs/kinds/endpoint",
+        "examples": ["outside-to-node"]
+      },
+      "target-label": {
+        "$ref": "#/$defs/kinds/label",
+        "examples": ["data(targetName)"]
+      },
+      "target-text-margin-x": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
+      "target-text-margin-y": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
+      "target-text-offset": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "target-text-rotation": {
+        "$ref": "#/$defs/kinds/textRotation",
+        "examples": ["none"]
+      },
+      "taxi-direction": {
+        "$ref": "#/$defs/keywords/taxiDirection",
+        "examples": ["auto"]
+      },
+      "taxi-radius": { "$ref": "#/$defs/kinds/number", "examples": [5] },
+      "taxi-track": {
+        "$ref": "#/$defs/keywords/taxiTrack",
+        "examples": ["source"]
+      },
+      "taxi-track-spacing": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [10]
+      },
+      "taxi-turn": { "$ref": "#/$defs/kinds/taxiTurn", "examples": ["50%"] },
+      "taxi-turn-min-distance": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [10]
+      },
+      "text-background-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#000"]
+      },
+      "text-background-opacity": {
+        "$ref": "#/$defs/kinds/zeroOne",
+        "examples": [0]
+      },
+      "text-background-padding": {
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
+      "text-background-shape": {
+        "$ref": "#/$defs/keywords/textBackgroundShape",
+        "examples": ["rectangle"]
+      },
+      "text-border-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#000"]
+      },
+      "text-border-opacity": {
+        "$ref": "#/$defs/kinds/zeroOne",
+        "examples": [0]
+      },
+      "text-border-width": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [0]
+      },
+      "text-events": { "$ref": "#/$defs/kinds/yesNo", "examples": ["no"] },
+      "text-halign": {
+        "$ref": "#/$defs/keywords/halign",
+        "examples": ["center"]
+      },
+      "text-justification": {
+        "$ref": "#/$defs/keywords/justification",
+        "examples": ["auto"]
+      },
+      "text-margin-x": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "text-margin-y": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "text-max-width": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [200]
+      },
+      "text-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [1] },
+      "text-outline-color": {
+        "$ref": "#/$defs/kinds/color",
+        "examples": ["#000"]
+      },
+      "text-outline-opacity": {
+        "$ref": "#/$defs/kinds/zeroOne",
+        "examples": [1]
+      },
+      "text-outline-width": { "$ref": "#/$defs/kinds/number", "examples": [0] },
+      "text-overflow-wrap": {
+        "$ref": "#/$defs/keywords/overflowWrap",
+        "examples": ["whitespace"]
+      },
+      "text-rotation": {
+        "$ref": "#/$defs/kinds/textRotation",
+        "examples": ["none"]
+      },
+      "text-transform": {
+        "$ref": "#/$defs/keywords/textTransform",
+        "examples": ["none"]
+      },
+      "text-valign": { "$ref": "#/$defs/keywords/valign", "examples": ["top"] },
+      "text-wrap": { "$ref": "#/$defs/keywords/textWrap", "examples": ["none"] },
+      "transition-delay": {
+        "$ref": "#/$defs/kinds/milliseconds",
+        "examples": [0]
+      },
+      "transition-duration": {
+        "$ref": "#/$defs/kinds/milliseconds",
+        "examples": [250]
+      },
+      "transition-property": {
+        "$ref": "#/$defs/kinds/transitionProperty",
+        "examples": ["none"]
+      },
+      "transition-timing-function": {
+        "$ref": "#/$defs/kinds/easing",
+        "examples": ["linear"]
+      },
+      "underlay-color": { "$ref": "#/$defs/kinds/color", "examples": ["#000"] },
+      "underlay-corner-radius": {
+        "$ref": "#/$defs/kinds/layerRadius",
+        "examples": ["auto"]
+      },
+      "underlay-opacity": { "$ref": "#/$defs/kinds/zeroOne", "examples": [0] },
+      "underlay-padding": {
+        "$ref": "#/$defs/kinds/nonNegative",
+        "examples": [10]
+      },
+      "underlay-shape": {
+        "$ref": "#/$defs/keywords/layerShape",
+        "examples": ["round-rectangle"]
+      },
+      "visibility": {
+        "$ref": "#/$defs/keywords/visibility",
+        "examples": ["visible"]
+      },
+      "width": { "$ref": "#/$defs/kinds/number", "examples": [30] }
+    }
+  }
+}

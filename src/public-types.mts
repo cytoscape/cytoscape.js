@@ -209,20 +209,21 @@ export interface Mapper {
 
 /**
  * A condition over one data key: exactly one comparison operator.  String
- * data supports `eq`/`ne`/`in`; numeric data supports all.  Missing data
- * fails every comparison (so an unset key never matches).
+ * and boolean data support `eq`/`ne`/`in` (strict equality); numeric data
+ * supports all.  Missing data fails every comparison (so an unset key
+ * never matches).
  */
 export interface Condition {
   /** the data key to compare ('id' reads the first-class id); omitted
    * for the structural forms below */
   data?: string;
-  eq?: string | number;
-  ne?: string | number;
+  eq?: string | number | boolean;
+  ne?: string | number | boolean;
   lt?: number;
   lte?: number;
   gt?: number;
   gte?: number;
-  in?: (string | number)[];
+  in?: (string | number | boolean)[];
   /** structural (round 14.7, nodes only): the element has >= 1 child.
    * A structural condition stands alone — AND it with data conditions
    * via the `when` array form. */

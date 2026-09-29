@@ -185,7 +185,7 @@ function ingestChunk(
   store.beginBulkLoad();
 
   try {
-    slots = _addColumnar(core, elements, nodeFlags, edgeFlags);
+    slots = _addColumnar(core, elements, nodeFlags, edgeFlags, 'cy.load()');
   } finally {
     store.endBulkLoad(fresh || slots == null ? undefined : slots.edgeSlots);
   }

@@ -104,6 +104,7 @@ const EXPECTED_STATICS = [
   'serializeElements',
   'deserializeElements',
   'CancelledError', // round 128
+  'GpuUnfitError', // round 138
 ];
 
 /**

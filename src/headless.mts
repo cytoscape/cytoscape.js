@@ -30,6 +30,7 @@ import {
 } from './algorithms/algo-workers.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { CancelledError } from './algorithms/cancel.mjs';
+import { GpuUnfitError } from './algorithms/gpu-registry.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
 import { createCore, NO_RENDERER_BUILD } from './factory.mjs';
 import type { CoreCaps } from './factory.mjs';
@@ -70,6 +71,9 @@ cytoscape.toColumnarElements = toColumnarElements;
 cytoscape.serializeElements = serializeElements;
 cytoscape.deserializeElements = deserializeElements;
 cytoscape.CancelledError = CancelledError;
+// the device-fit class (round 138): `cy.add()` past the mounted device's
+// limits, and a GPU algorithm whose input does not fit, throw it
+cytoscape.GpuUnfitError = GpuUnfitError;
 // the worker machinery's hooks (129.3, 74.2, 74.5), underscored and
 // assigned through a cast as in the full entry: the force sim worker's
 // spawn bootstrap loads *this* bundle inside the worker and calls its

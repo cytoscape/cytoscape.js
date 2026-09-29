@@ -44,6 +44,7 @@ describe('cytoscape/headless (round 131)', function () {
     expect(cytoscape.deserializeElements).to.be.a('function');
     expect(cytoscape.toColumnarElements).to.be.a('function');
     expect(cytoscape.CancelledError).to.be.a('function');
+    expect(cytoscape.GpuUnfitError).to.be.a('function');
     expect(cytoscape.__runForceSimWorker__).to.be.a('function');
     expect(cytoscape.__algoWorkerSource__).to.be.a('function');
     expect(cytoscape.__runRenderWorker__).to.equal(undefined);

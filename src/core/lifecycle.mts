@@ -159,6 +159,7 @@ export function unmount(core: Core): Core {
   core._pointer = null;
   core._renderer?.destroy();
   core._renderer = null;
+  core._gpuFit = null; // headless: no device to outgrow (round 138)
   core._container = null;
   core._readyResolved = true; // headless is ready by definition
   core.ready = Promise.resolve(core);

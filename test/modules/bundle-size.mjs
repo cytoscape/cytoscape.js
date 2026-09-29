@@ -36,6 +36,15 @@ Measured at landing (2026-09-28, Node 24, rolldown 1.1.5):
   cytoscape-headless-gpu.esm.mjs     1,682,446 / 445,803
   cytoscape-headless-gpu.cjs.js      1,682,385 / 445,789
 
+**Raised, round 138:** the two unminified headless rows' gzip ceiling,
+451,000 -> 456,000.  The device pre-flight is model-side by design —
+`cy.add()` throws before the store changes — so `core/gpu-fit.mts`,
+`device-fit.mts` and `GpuUnfitError` as a factory static ship in every
+build: +1,939 gzip bytes on `cytoscape-headless.esm.mjs` (449,366 ->
+451,305), on a row the rounds since landing had already brought to
+within 0.4% of its ceiling.  The minified rows still clear theirs
+(569,228 / 177,157).
+
 Needs the built bundles (`test:modules` builds first).
 */
 
@@ -47,8 +56,9 @@ export const EDGE_BUDGET = 1_000_000;
 /** Per-artifact ceilings, raw and gzip: landing size + ~10%. */
 export const RATCHET = {
   'cytoscape-headless.esm.min.mjs': { raw: 578_000, gzip: 178_000 },
-  'cytoscape-headless.esm.mjs': { raw: 1_683_000, gzip: 451_000 },
-  'cytoscape-headless.cjs.js': { raw: 1_683_000, gzip: 451_000 },
+  // round 138: gzip 451,000 -> 456,000 (see the header)
+  'cytoscape-headless.esm.mjs': { raw: 1_683_000, gzip: 456_000 },
+  'cytoscape-headless.cjs.js': { raw: 1_683_000, gzip: 456_000 },
   'cytoscape-headless-gpu.esm.min.mjs': { raw: 665_000, gzip: 199_000 },
   'cytoscape-headless-gpu.esm.mjs': { raw: 1_851_000, gzip: 491_000 },
   'cytoscape-headless-gpu.cjs.js': { raw: 1_851_000, gzip: 491_000 },

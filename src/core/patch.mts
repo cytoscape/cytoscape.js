@@ -27,6 +27,7 @@ import type { FlagOverride } from '../columnar.mjs';
 import type { Core } from '../core.mjs';
 import { _applyStyle } from './batching.mjs';
 import { _applyFlagOverrides, _newId } from './elements.mjs';
+import { _assertGpuFit } from './gpu-fit.mjs';
 
 export type { PatchMode } from '../store/patch.mjs';
 
@@ -294,6 +295,18 @@ export function patch(
   // everything that can throw on the payload throws here, before any
   // mutation
   const plan = planPatch(core._store, payload, mode);
+
+  // round 138: the device pre-flight, net of the plan's own removals
+  // (their slots are freed before the adds take slots)
+  _assertGpuFit(
+    core,
+    'cy.patch()',
+    plan.addNodes.length,
+    plan.addEdges.length,
+    plan.removeNodes.length,
+    plan.removeEdges.length,
+  );
+
   const store = core._store;
   const survivorParents = plan.parents.filter((p) => plan.nodeSlots[p.at] >= 0);
   let diff: PatchDiff;

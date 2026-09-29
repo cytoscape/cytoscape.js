@@ -589,6 +589,13 @@ describe('algorithms: the workers executor (round 74)', function () {
           value: {
             gpu: {
               requestAdapter: async () => ({
+                // the adapter's own limits, requested at device creation
+                // (round 138)
+                limits: {
+                  maxBufferSize: 268435456,
+                  maxStorageBufferBindingSize: 134217728,
+                  maxComputeWorkgroupsPerDimension: 65535,
+                },
                 requestDevice: async () => ({ lost: new Promise(() => {}) }),
               }),
             },

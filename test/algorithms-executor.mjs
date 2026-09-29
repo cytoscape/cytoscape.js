@@ -21,6 +21,16 @@ import {
 import { GPU_RUNTIME } from '../src/algorithms/gpu-lanes.mjs';
 import { pageRankGpu } from '../src/algorithms/algo-gpu-pagerank.mjs';
 
+/** a fake adapter's own limits, which the device is requested with
+ * (round 138): the spec's base values */
+const ADAPTER_LIMITS = {
+  limits: {
+    maxBufferSize: 268435456,
+    maxStorageBufferBindingSize: 134217728,
+    maxComputeWorkgroupsPerDimension: 65535,
+  },
+};
+
 // Round 65: the expensive whole-graph algorithms are async, with an
 // `executor` option ('cpu' | 'gpu' | 'auto').  These specs pin the
 // routing contract in Node — where WebGPU never exists — plus the
@@ -221,6 +231,7 @@ describe('gpu/algorithms: the executor contract', function () {
     var workingStub = () =>
       stubNavigator({
         requestAdapter: async () => ({
+          ...ADAPTER_LIMITS,
           requestDevice: async () => ({ lost: new Promise(() => {}) }),
         }),
       });
@@ -393,6 +404,7 @@ describe('gpu/algorithms: the executor contract', function () {
         value: {
           gpu: {
             requestAdapter: async () => ({
+              ...ADAPTER_LIMITS,
               requestDevice: async () =>
                 new Proxy(
                   { lost: new Promise(() => {}) },

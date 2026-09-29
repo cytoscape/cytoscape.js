@@ -23,6 +23,7 @@ silently papered over by the router).
 import { BUFFER_USAGE, MAP_MODE } from '../gpu/webgpu-constants.mjs';
 
 import { GpuUnfitError } from './gpu-registry.mjs';
+import { adapterBufferLimits } from '../device-fit.mjs';
 import type { AlgoGpu } from './gpu-registry.mjs';
 
 // the device state's type and the unfit class live in the GPU-free
@@ -75,7 +76,12 @@ export const acquireAlgoGpu = (): Promise<AlgoGpu> => {
         );
       }
 
-      const device = await adapter.requestDevice();
+      // the adapter's own buffer limits (round 138), as the renderer
+      // requests: `assertFits` then refuses only what the card cannot
+      // bind, not what the spec's default device could not
+      const device = await adapter.requestDevice({
+        requiredLimits: adapterBufferLimits(adapter),
+      });
 
       device.lost.then(() => {
         cached = null;

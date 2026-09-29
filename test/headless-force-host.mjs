@@ -419,13 +419,24 @@ describe('gpu/force: an explicit executor gpu on cytoscape/headless-gpu (131.4)'
     return els;
   };
 
+  // an adapter's own limits, which the device is requested with
+  // (round 138): the fake answers the spec's base values
+  const ADAPTER_LIMITS = {
+    maxBufferSize: 268435456,
+    maxStorageBufferBindingSize: 134217728,
+    maxComputeWorkgroupsPerDimension: 65535,
+  };
+
   it('runs on the compute device and settles through the layout', async function () {
     const device = fakeDevice();
 
     Object.defineProperty(globalThis, 'navigator', {
       value: {
         gpu: {
-          requestAdapter: async () => ({ requestDevice: async () => device }),
+          requestAdapter: async () => ({
+            limits: ADAPTER_LIMITS,
+            requestDevice: async () => device,
+          }),
         },
       },
       configurable: true,
@@ -465,7 +476,10 @@ describe('gpu/force: an explicit executor gpu on cytoscape/headless-gpu (131.4)'
     Object.defineProperty(globalThis, 'navigator', {
       value: {
         gpu: {
-          requestAdapter: async () => ({ requestDevice: async () => device }),
+          requestAdapter: async () => ({
+            limits: ADAPTER_LIMITS,
+            requestDevice: async () => device,
+          }),
         },
       },
       configurable: true,

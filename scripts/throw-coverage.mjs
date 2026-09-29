@@ -85,7 +85,7 @@ export const UNREACHABLE = {
   // reachable and now have specs in the `webgpu` project; these three
   // are not, and saying so is better than a spec that fakes its
   // precondition.
-  'src/gpu-context.mts:38':
+  'src/gpu-context.mts:44':
     "shadowed: the full build's attach (index.mts, through factory.mts's " +
     'requireWebGpu) checks navigator.gpu and then ' +
     'constructs the Renderer synchronously, whose ctor calls init() ' +

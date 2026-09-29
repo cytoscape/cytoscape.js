@@ -4,6 +4,7 @@ import { hasListeners, makeCoreEmitter } from './events.mjs';
 import type { ElePredicate, Qualifier } from './events.mjs';
 import { Event } from './event.mjs';
 import type { Query } from './matcher.mjs';
+import type { DeviceFit } from './device-fit.mjs';
 import { Viewport, type ZoomOptions, type Extent } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { Animation, AnimationManager } from './animation.mjs';
@@ -158,6 +159,11 @@ export class Core {
   _forceHost: { active(): boolean } | null;
   /** @internal */
   _recoveringDevice: boolean;
+  /** the mounted renderer's device limits and widest columns (round
+   * 138), reported once its device is in hand; null headless and
+   * before readiness — the add paths' pre-flight reads it
+   * @internal */
+  _gpuFit: DeviceFit | null;
   /** the zoom/pan state object — reach it through cy's own viewport
    * surface
    * @internal */
@@ -357,6 +363,7 @@ export class Core {
     this._caps = null;
     this._forceHost = null;
     this._recoveringDevice = false;
+    this._gpuFit = null;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
     this._options = options;

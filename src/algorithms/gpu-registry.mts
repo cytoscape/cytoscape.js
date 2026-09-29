@@ -81,15 +81,37 @@ export interface AlgoGpu {
 }
 
 /**
- * Thrown by a GPU implementation whose input does not fit the device
- * (a dense matrix past the storage-binding limit, say).  `runAlgo`
- * treats it like an acquisition failure: under `'auto'` the run falls
- * back to the CPU reference, under an explicit `'gpu'` it propagates —
- * unlike every other kernel error, which always propagates.  Defined
- * here, not beside the kernels, so the router's `instanceof` needs no
- * kernel module; `algo-gpu.mts` re-exports it.
+ * Thrown when something does not fit the GPU device's limits.  Two
+ * places throw it:
+ *
+ * - **`cy.add()`, `cy.load()` and `cy.patch()`** (round 138), with a
+ *   renderer mounted, when the elements would grow a table past what
+ *   the device can bind (its storage binding or buffer limit over the
+ *   widest per-element column) or dispatch over — thrown before
+ *   anything is added, so the graph is unchanged.  `cy.ready` rejects
+ *   with it when a graph built headless is mounted on a device too small
+ *   for it.
+ * - **a GPU algorithm** whose input does not fit (a dense matrix past
+ *   the storage-binding limit, say): under `executor: 'auto'` the run
+ *   falls back to the CPU reference, under an explicit `'gpu'` the
+ *   promise rejects with it — unlike every other kernel error, which
+ *   always propagates.
+ *
+ * A factory static (`cytoscape.GpuUnfitError`) so a `catch` can test
+ * `instanceof`; `error.name` is `'GpuUnfitError'` for a check without
+ * the class.  Defined here, not beside the kernels, so the router's
+ * `instanceof` needs no kernel module; `algo-gpu.mts` re-exports it.
  */
-export class GpuUnfitError extends Error {}
+export class GpuUnfitError extends Error {
+  /**
+   * @param message — what did not fit, the byte or slot count and the
+   *   device's limit
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = 'GpuUnfitError';
+  }
+}
 
 /** The rejection an explicit `executor: 'gpu'` gets from a build that
  * registered no GPU runtime (`cytoscape/headless`). */

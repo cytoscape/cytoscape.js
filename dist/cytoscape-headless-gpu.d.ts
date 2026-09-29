@@ -696,6 +696,21 @@ declare class ColumnTable {
   /** Free a slot for reuse; bumps its generation so outstanding refs go stale. */
   freeSlot(slot: number): void;
   /**
+   * What adding `adding` slots would do to the table, without doing it
+   * (round 138's device pre-flight): freed slots are reused first, then
+   * a fresh run at the high water, and the capacity follows the ×2
+   * growth `reserve` takes.
+   *
+   * @param adding — slots the add would allocate
+   * @param freeing — slots a removal ahead of the add would free first
+   *   (a `cy.patch()` removes before it adds)
+   * @returns the high water and the capacity after the add
+   */
+  growthFor(adding: number, freeing?: number): {
+    highWater: number;
+    capacity: number;
+  };
+  /**
    * Grow capacity to at least `minCap` slots, staying on the ×2 growth
    * curve — one realloc up front instead of a doubling cascade during a
    * bulk add.  Returns whether the table grew (the caller marks resized).
@@ -4495,6 +4510,37 @@ interface TriangleCountResult {
   totalTriangles: number;
   /** 3 · triangles / connected triples — the global coefficient */
   transitivity: number;
+}
+//#endregion
+//#region src/algorithms/gpu-registry.d.mts
+/**
+ * Thrown when something does not fit the GPU device's limits.  Two
+ * places throw it:
+ *
+ * - **`cy.add()`, `cy.load()` and `cy.patch()`** (round 138), with a
+ *   renderer mounted, when the elements would grow a table past what
+ *   the device can bind (its storage binding or buffer limit over the
+ *   widest per-element column) or dispatch over — thrown before
+ *   anything is added, so the graph is unchanged.  `cy.ready` rejects
+ *   with it when a graph built headless is mounted on a device too small
+ *   for it.
+ * - **a GPU algorithm** whose input does not fit (a dense matrix past
+ *   the storage-binding limit, say): under `executor: 'auto'` the run
+ *   falls back to the CPU reference, under an explicit `'gpu'` the
+ *   promise rejects with it — unlike every other kernel error, which
+ *   always propagates.
+ *
+ * A factory static (`cytoscape.GpuUnfitError`) so a `catch` can test
+ * `instanceof`; `error.name` is `'GpuUnfitError'` for a check without
+ * the class.  Defined here, not beside the kernels, so the router's
+ * `instanceof` needs no kernel module; `algo-gpu.mts` re-exports it.
+ */
+declare class GpuUnfitError extends Error {
+  /**
+   * @param message — what did not fit, the byte or slot count and the
+   *   device's limit
+   */
+  constructor(message: string);
 }
 //#endregion
 //#region src/algorithms/executor.d.mts
@@ -9652,6 +9698,7 @@ declare namespace cytoscape {
   export { serializeElements };
   export { deserializeElements };
   export { CancelledError };
+  export { GpuUnfitError };
 }
 //#endregion
 export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };

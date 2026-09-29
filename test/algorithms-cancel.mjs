@@ -79,7 +79,15 @@ const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 /** a fake `navigator.gpu` whose adapter resolves after `delayMs` */
 const stubGpu = (delayMs) => {
   const device = { lost: new Promise(() => {}), limits: {} };
-  const adapter = { requestDevice: async () => device };
+  // the adapter's own limits, requested at device creation (round 138)
+  const adapter = {
+    limits: {
+      maxBufferSize: 268435456,
+      maxStorageBufferBindingSize: 134217728,
+      maxComputeWorkgroupsPerDimension: 65535,
+    },
+    requestDevice: async () => device,
+  };
   const gpu = {
     requestAdapter: () =>
       new Promise((resolve) => setTimeout(() => resolve(adapter), delayMs)),

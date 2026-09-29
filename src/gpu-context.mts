@@ -10,6 +10,8 @@ teardown (renderer.destroy() flags itself first) from an external loss,
 which the core recovers from by re-mounting (round 10).
 */
 
+import { adapterBufferLimits } from './device-fit.mjs';
+
 export interface GpuContext {
   device: GPUDevice;
   context: GPUCanvasContext;
@@ -19,7 +21,11 @@ export interface GpuContext {
 /**
  * Acquire a device and configure the canvas for presentation.  Requests
  * `timestamp-query` when the adapter offers it, so `stats()` can report
- * real GPU frame times; its absence is not an error.
+ * real GPU frame times; its absence is not an error.  Requests the
+ * adapter's own buffer and dispatch limits (round 138) — the default
+ * device's 128 MiB storage binding blanked every frame past 4,194,304
+ * elements — so the renderer's ceiling is the card's, and the model's
+ * `cy.add()` pre-flight reads the same numbers.
  *
  * @param canvas — the canvas to configure with the preferred format
  * @param onLost — called for *every* device loss, reason 'destroyed'
@@ -56,7 +62,10 @@ export const initGpuContext = async (
     ? ['timestamp-query']
     : [];
 
-  const device = await adapter.requestDevice({ requiredFeatures });
+  const device = await adapter.requestDevice({
+    requiredFeatures,
+    requiredLimits: adapterBufferLimits(adapter),
+  });
 
   device.lost.then((info) => {
     onLost(info);

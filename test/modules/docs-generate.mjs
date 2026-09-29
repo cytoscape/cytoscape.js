@@ -172,6 +172,7 @@ describe('docs generator: factoryStatics', () => {
 
     expect([...statics].sort()).to.deep.equal([
       'CancelledError', // round 128: the cancellation class, for instanceof
+      'GpuUnfitError', // round 138: the device-fit class, for instanceof
       'deserializeElements',
       'serializeElements',
       'toColumnarElements',

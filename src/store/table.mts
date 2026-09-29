@@ -173,6 +173,32 @@ export class ColumnTable {
   }
 
   /**
+   * What adding `adding` slots would do to the table, without doing it
+   * (round 138's device pre-flight): freed slots are reused first, then
+   * a fresh run at the high water, and the capacity follows the ×2
+   * growth `reserve` takes.
+   *
+   * @param adding — slots the add would allocate
+   * @param freeing — slots a removal ahead of the add would free first
+   *   (a `cy.patch()` removes before it adds)
+   * @returns the high water and the capacity after the add
+   */
+  growthFor(
+    adding: number,
+    freeing: number = 0,
+  ): { highWater: number; capacity: number } {
+    const highWater =
+      this.highWater + Math.max(0, adding - this.free.length - freeing);
+    let capacity = this.cap;
+
+    while (capacity < highWater) {
+      capacity *= 2;
+    }
+
+    return { highWater, capacity };
+  }
+
+  /**
    * Grow capacity to at least `minCap` slots, staying on the ×2 growth
    * curve — one realloc up front instead of a doubling cascade during a
    * bulk add.  Returns whether the table grew (the caller marks resized).

@@ -18,7 +18,7 @@ import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { CancelledError } from './algorithms/cancel.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
-import { registerGpu } from './algorithms/gpu-registry.mjs';
+import { GpuUnfitError, registerGpu } from './algorithms/gpu-registry.mjs';
 import { GPU_RUNTIME } from './algorithms/gpu-lanes.mjs';
 import { headlessForceHost } from './gpu/headless-force-host.mjs';
 import { createCore, NO_RENDERER_BUILD, requireWebGpu } from './factory.mjs';
@@ -128,6 +128,9 @@ cytoscape.deserializeElements = deserializeElements;
 // `.catch` that wants `instanceof` needs the value, and the UMD global
 // has no named exports to carry it
 cytoscape.CancelledError = CancelledError;
+// the device-fit class (round 138): `cy.add()` past the mounted device's
+// limits, and a GPU algorithm whose input does not fit, throw it
+cytoscape.GpuUnfitError = GpuUnfitError;
 // the worker-side entry (round 86.3): the proxy's spawn bootstrap loads
 // this same bundle inside a worker and calls it.  Underscored because it
 // is the machinery's own hook, not API — and assigned through a cast so

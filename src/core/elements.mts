@@ -30,6 +30,7 @@ import type {
 } from '../public-types.mjs';
 import type { Core } from '../core.mjs';
 import { _applyStyle } from './batching.mjs';
+import { _assertGpuFit } from './gpu-fit.mjs';
 
 /**
  * Add elements to the graph and return them as a collection.
@@ -220,10 +221,20 @@ export function _addColumnar(
   elements: ColumnarElements,
   nodeFlags?: FlagOverride[],
   edgeFlags?: FlagOverride[],
+  what: string = 'cy.add()',
 ): {
   nodeSlots: Uint32Array;
   edgeSlots: Uint32Array;
 } {
+  // round 138: refuse growth the mounted device cannot hold, before
+  // anything is added
+  _assertGpuFit(
+    core,
+    what,
+    elements.nodes?.count ?? 0,
+    elements.edges?.count ?? 0,
+  );
+
   const newId = (): string => _newId(core);
   // round 103: node references resolve before anything is added, so a
   // chunk naming a node the graph does not hold fails whole
@@ -413,6 +424,8 @@ export function _addDefs(
 export function _addPartition(core: Core, part: PartitionedDefs): Ref[] {
   const { nodes: nodeDefs, edges: edgeDefs } = part;
 
+  // round 138: the device pre-flight, before the first slot is taken
+  _assertGpuFit(core, 'cy.add()', nodeDefs.length, edgeDefs.length);
   core._store.reserve(nodeDefs.length, edgeDefs.length);
 
   const refs: Ref[] = [];

@@ -688,12 +688,21 @@ export class CustomLayout {
 
   /**
    * Ask the layout to stop early, by calling the impl's optional
-   * `stop()`.  An impl without one simply runs to completion.
+   * `stop()`.  An impl without one simply runs to completion.  Once the
+   * impl has settled and only its finisher tween is in flight (round
+   * 144), the tween stops where it got to and `layoutstop` fires now,
+   * as a built-in's `stop()` does.
    *
    * @returns this layout, for chaining
    */
   stop(): this {
     this.impl.stop?.();
+
+    const run = layoutRunOf(this.cy, this);
+
+    if (run != null && run.implSettled && run.anis.length > 0) {
+      run.halt();
+    }
 
     return this;
   }

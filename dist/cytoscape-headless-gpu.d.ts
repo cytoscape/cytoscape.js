@@ -4276,6 +4276,10 @@ interface AnimateOptions {
  */
 declare class AnimationManager {
   private running;
+  /** every running element animation, once each (round 144: the tick
+   * walks animations, not refs — a layout tween is one animation over
+   * the whole scope, and a per-ref walk was O(nodes) a frame) */
+  private all;
   private viewportRunning;
   private onTick;
   private ticking;
@@ -4331,6 +4335,18 @@ declare class AnimationManager {
    * @param jumpToEnd — apply each animation's final frame first
    */
   stop(refs: Ref[], jumpToEnd: boolean): void;
+  /** Per running animation, the packed refs of `refs` it covers. */
+  private touching;
+  /**
+   * Detach `keys` from one animation (round 144): the entries freeze
+   * (or land, with `jumpToEnd`), the device stops writing them, and a
+   * ref with nothing left moving leaves the running set — so
+   * `animated()` reads false for it and it can be grabbed.  An
+   * animation left with nothing to move finishes.
+   */
+  private detachFrom;
+  /** Drop one ref's entry for `ani` from the running map. */
+  private removeKey;
   /**
    * Stop one animation.  A GPU-driven one settles instead of plain-stopping:
    * its columns are leased to the device, so it has to write the value it
@@ -5819,11 +5835,14 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * Get or set the first element's model-space position (nodes only).
    *
    * Reading a **compound parent** settles pending auto-bounds first, so
-   * the derived centre is current.  Reading a node whose position is
-   * under a GPU-owned tween (an offloaded position animation or a live
-   * force layout) reports the stale mirror until the tween settles — the
-   * motion-staleness rule; geometry channels like `width()` do *not*
-   * behave this way.
+   * the derived centre is current.  Reading a node under an offloaded
+   * position animation — an animated layout's tween included — reports
+   * the value the last frame drew (round 144; v3's answer, and the CPU
+   * path's), though the CPU column holds the start until the tween
+   * settles, so column scans (bounding boxes, box selection) read that.
+   * Under a live GPU force layout it reports the stale column until the
+   * run settles — the motion-staleness rule; geometry channels like
+   * `width()` never go stale.
    *
    * @param dim — `'x'` or `'y'` to read/write one axis, or a
    *   `{ x, y }` object to write both; omit to read the pair
@@ -6544,7 +6563,11 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    */
   locked(): boolean;
   /**
-   * Lock these elements against movement.
+   * Lock these elements against movement.  A node locked mid-tween holds
+   * where its position tween got to (round 144, as v3's animation step
+   * skips a locked node); the rest of the animation — other nodes, and
+   * this node's paint channels — runs on, and unlocking does not resume
+   * it.
    *
    * @returns this collection, for chaining
    */
@@ -7985,7 +8008,10 @@ declare class CustomLayout {
   promise(): Promise<void>;
   /**
    * Ask the layout to stop early, by calling the impl's optional
-   * `stop()`.  An impl without one simply runs to completion.
+   * `stop()`.  An impl without one simply runs to completion.  Once the
+   * impl has settled and only its finisher tween is in flight (round
+   * 144), the tween stops where it got to and `layoutstop` fires now,
+   * as a built-in's `stop()` does.
    *
    * @returns this layout, for chaining
    */
@@ -8053,6 +8079,17 @@ declare class GridLayout {
    */
   run(): this;
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left
@@ -8114,6 +8151,17 @@ declare class PresetLayout {
    */
   run(): this;
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left
@@ -8163,6 +8211,17 @@ declare class CircleLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
   /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
@@ -8216,6 +8275,17 @@ declare class ConcentricLayout {
    */
   run(): this;
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left
@@ -8268,6 +8338,17 @@ declare class BreadthFirstLayout {
    * @returns this layout, for chaining
    */
   run(): this;
+  /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
   /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
@@ -8328,6 +8409,17 @@ declare class RandomLayout {
    */
   run(): this;
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left
@@ -8377,6 +8469,17 @@ declare class RadialLayout {
    *   that could mean anything here
    */
   run(): this;
+  /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
   /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
@@ -8435,6 +8538,17 @@ declare class PackLayout {
    */
   run(): this;
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this;
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left
@@ -8491,6 +8605,14 @@ declare class LayoutRun {
    *   snapshot, fire `layoutstop` with `cancelled: true`
    */
   close(cancelled: boolean): void;
+  /**
+   * `layout.stop()` mid-tween (round 144): the finisher's tweens stop
+   * where they got to, and the run closes now with its ordinary
+   * `layoutstop` — v3's stop, which emits it on the spot.  The tweens'
+   * promises resolve afterwards; the finisher sees the run closed and
+   * fires nothing more.  A closed run is unchanged.
+   */
+  halt(): void;
   /** Put the scope's leaves back where `run()` found them. */
   private restore;
   private unregister;
@@ -9550,7 +9672,9 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   removeScratch(names?: string): this;
   /**
    * Get or set whether every node is locked (immovable) regardless of its
-   * own `locked` flag — the graph-wide override.
+   * own `locked` flag — the graph-wide override.  Turned on mid-tween,
+   * every running position tween holds where it got to (round 144),
+   * as a node locked mid-tween does.
    *
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting

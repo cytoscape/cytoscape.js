@@ -321,10 +321,12 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
 
     // a reparented node's structural case conditions ({ child: ... } /
     // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7),
-    // and any live GPU tween settles to the CPU first — the moved slots
-    // now sit under CPU-side derivations (auto-bounds, folds; 14.11)
+    // and any live GPU tween leaves the device first — the moved slots
+    // now sit under CPU-side derivations (auto-bounds, folds; 14.11).
+    // Round 144: demoted, not settled, so a layout tween runs on to its
+    // targets on the CPU rather than stopping where the reparent found it
     this._store.onReparented = (slot) => {
-      this._animations.settleGpuAll();
+      this._animations.demoteGpuAll();
       this._styleEngine.refreshMapped(
         GROUP_NODES,
         [slot],
@@ -1939,7 +1941,9 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
 
   /**
    * Get or set whether every node is locked (immovable) regardless of its
-   * own `locked` flag — the graph-wide override.
+   * own `locked` flag — the graph-wide override.  Turned on mid-tween,
+   * every running position tween holds where it got to (round 144),
+   * as a node locked mid-tween does.
    *
    * @param bool — the new setting; omit to read
    * @returns the current setting when reading, this core when setting
@@ -1947,6 +1951,10 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   autolock(bool?: boolean): boolean | this {
     if (bool === undefined) {
       return this._autolock;
+    }
+
+    if (bool === true && this._autolock !== true) {
+      this._animations.lockRefs(null);
     }
 
     this._autolock = bool;

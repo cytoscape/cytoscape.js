@@ -3194,9 +3194,13 @@ each is deliberate, not a pass-1 deferral:
     `border-width` at 0), as v3 does via each property's `min`/`max`, and
     color bytes clamp on pack.
   - **Transient lease**: a tweened column is GPU-owned while the tween
-    runs (the mirror skips its CPU uploads), so sync reads are a stale
-    mirror during the animation — `position()`/pick/extent for position,
-    `style('background-color')` for paint.  On completion *or* stop the
+    runs (the mirror skips its CPU uploads), so the CPU column is stale
+    during the animation — pick/extent/box selection for position,
+    `style('background-color')` for paint.  **`position()` is the
+    exception since round 144**: it reads the value the last frame drew
+    (the tween evaluated at the manager's last tick), v3's answer and
+    the CPU path's, so a per-node read agrees on every host; the column
+    scans still read the start until the settle.  On completion *or* stop the
     CPU settles the value it reached and reclaims ownership; the settle's
     write dirties the column, which is already the mapper's re-evaluation
     trigger, so a mapped channel reclaims itself with no extra machinery.
@@ -3206,6 +3210,37 @@ each is deliberate, not a pass-1 deferral:
 
     The renderer drives the frame clock while
     animations are active (the manager cedes its auto-loop).
+  - **An animated layout's tween is one column animation** (round 144,
+    PLAN.md item 68).  The finisher (`layoutPositions` under
+    `animate: true`) builds `Animation.column`: every animated node's
+    start and target in one position write — one capture, one CPU loop
+    a tick, and one GPU registration and upload — where it built one
+    animation per node, and at 20k nodes the same-thread host drew two
+    frames in a one-second tween (each animation re-uploading its
+    params every frame).  Its nodes stay individually addressable
+    (`perRef`): `node.stop()` (and `jumpToEnd`), a new animation over
+    the node's position, `lock()`, `cy.autolock( true )`, `remove()`
+    and `cy.patch()` **detach** that node — it holds where it got to
+    (or lands), both executors skip its entry (the CPU apply's `off`
+    mask, the kernel through the sink's `detach`), the ref leaves the
+    running set so `animated()` reads false and it can be grabbed —
+    and the rest run on.  Every other multi-element animation keeps
+    round 21's whole-animation rule for a stop or an eviction; a
+    removal detaches from any animation, so a GPU batch never writes a
+    slot the next `add()` reuses.  `layoutready` fires in `run()` and
+    `layoutstop` when the tween ends, as before; the eight discrete
+    built-ins gained `layout.stop()` (the tween stops where it stands,
+    `layoutstop` fires on the spot, once, uncancelled — v3's), and a
+    custom layout's `stop()` does the same once only its finisher tween
+    is in flight.  Three defects the contract specs found on the way:
+    a handle's `stop()` went round the manager, so a GPU-driven tween
+    stopped by handle — `layout.cancel()` mid-tween on the same-thread
+    host — left its batch registered and the column leased for good;
+    `settleGpuAll` settled without releasing either; and a reparent
+    mid-tween (14.11) now *demotes* the device's tweens to the CPU
+    rather than settling them, so the tween runs on to its targets.
+    Pinned in `test/layout-tween.mjs` on both executors (the CPU path
+    and a mock sink).
   - **Colors tween in OKLab**, matching what color mappers already do by
     default — one perceptual color model across the library rather than a
     mapper/animation split.  Endpoints are converted on the CPU and packed

@@ -284,6 +284,19 @@ opt out of). The v3 `step` callback is out too: use `cy.on( 'render', … )`
 plus promises.
 `stop()` lost its `clearQueue` argument — it is `stop( jumpToEnd )` now.
 
+`eles.animate()` is **one** animation over the elements, where v3 made one
+per element: `node.stop()` on one of them stops the whole animation, and so
+does an overlapping animation started on one of them.  An animated layout's
+tween is the exception (round 144): it is one animation too — one GPU
+registration for the whole layout — but its nodes stay individually
+addressable as v3's per-node tweens were.  `node.stop()`, a new position
+animation on the node, `lock()` and `remove()` detach that node alone and the
+rest of the tween runs on.  Two answers differ from v3: a node locked
+mid-tween holds where it got to and `unlock()` does not resume it (v3's step
+skips a locked node and picks the tween up again on unlock), and a node
+mid-tween cannot be grabbed (v3 let the drag and the tween fight over it) —
+stop it first.
+
 ### 5. Removed elements are terminally dead
 
 `remove()` tombstones the slot, bumps its generation and returns it to the
@@ -493,7 +506,7 @@ app trips on after everything else works.
 | The expensive whole-graph algorithms | synchronous | **async** — `pageRank`, `floydWarshall`, `betweennessCentrality`, `closenessCentralityNormalized`, `markovClustering`, `affinityPropagation`, `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering` return promises; `await` the call, then use the result exactly as in v3 |
 | A graph larger than the GPU can hold | grows until the browser runs out of memory | **`cy.add()` throws `cytoscape.GpuUnfitError`** (round 138) when the mounted renderer's device could not bind or dispatch over the grown tables — before anything is added, so the graph is unchanged; `cy.load()` and `cy.patch()` refuse the same way, and `cy.ready` rejects with it for a graph built headless and mounted on a device too small for it.  A buffer the device refuses, or one the renderer declines, fires **`gpuerror`** and degrades — labels first, then charts and images, then gradients — rather than blanking the canvas |
 | Cancelling a whole-graph algorithm | not possible — the call blocks | the promise carries **`cancel()`** (round 128): a pending run rejects with `cytoscape.CancelledError` (`error.name === 'CancelledError'`) and answers `true` once; a run that has already completed — every `'cpu'` run has, inside the call — answers `false` and its result stands |
-| `layout.stop()` | ends the run where it is, keeping the positions | **unchanged** — and **`layout.cancel()`** (round 128) is the other ending: the run is abandoned, a tween under way is dropped where it is, the nodes go back to where `run()` found them, the viewport is left alone, `layoutstop` still fires with `cancelled: true`, and `layout.promise()` rejects with `CancelledError`.  `cy.destroy()` cancels every run still open the same way |
+| `layout.stop()` | ends the run where it is, keeping the positions | **unchanged** (the eight discrete built-ins lacked it until round 144; an `animate: true` tween stops where it stands and `layoutstop` fires on the spot, as in v3) — and **`layout.cancel()`** (round 128) is the other ending: the run is abandoned, a tween under way is dropped where it is, the nodes go back to where `run()` found them, the viewport is left alone, `layoutstop` still fires with `cancelled: true`, and `layout.promise()` rejects with `CancelledError`.  `cy.destroy()` cancels every run still open the same way |
 | Container resize | call `cy.resize()` after resizing the container | **automatic** (round 75.1): a `ResizeObserver` re-measures and emits `resize` once per change, so the call is only needed where no observer can see the change; an existing call is harmless (the observer finds the size applied and emits nothing more) |
 | A wheel over a canvas that will not zoom | the page scrolls (v3 prevents default only when panning and zooming are both enabled) | **the same since round 75.5** — v4 until then swallowed every wheel over the canvas, even with `userZoomingEnabled( false )`.  v4 prevents default only on a wheel it acts on, and `wheelBehavior` (`'zoom'`, `'pan'`, `'modifier-zoom'`) says which wheels those are: `'modifier-zoom'` is the embedded-map idiom — the page scrolls past the graph and ctrl/meta-wheel (or a trackpad pinch) zooms |
 | Gesture event details | an edge press emits `tapstart` on the edge; a right press can target an edge; a release emits `tap` and the selection events before `freeon`, `free`, `dragfreeon`, `dragfree`; `dbltap` fires on any second tap inside the debounce window; `tapend` goes to the element under the release point; a shift/ctrl/meta press on a node grabs it; a drag from a locked node does nothing; the first wheel ticks zoom slowly while v3 samples the device | an edge press starts on the core (`pointerdown`, `tapstart`) and the edge takes the release and the tap once the GPU pick answers; a right press targets a node or the core; a release frees first (`free`, `freeon`, `dragfree`, `dragfreeon`), then taps; `dbltap` needs the same target; `tapend` goes to the pressed element; a multiple-select-key press boxes and grabs nothing; a drag from a locked node **pans**; every wheel tick zooms by the same factor.  Measured by round 142's gesture traces, replayed on both libraries; the orders and the edge press are open calls (PLAN.md items 88 and 89) |

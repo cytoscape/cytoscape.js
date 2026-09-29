@@ -145,16 +145,25 @@ export function capture(anim: Animation): void {
 
   if (anim.position != null && !anim.lockAll) {
     // locked nodes hold their place (114.3): the filter covers the
-    // CPU write and the GPU tween batches built from it alike
-    const refs = anim.refs.filter(
-      (r) =>
+    // CPU write and the GPU tween batches built from it alike.  The
+    // index into `refs` rides along for a column animation's per-node
+    // targets (round 144)
+    const at: number[] = [];
+
+    for (let k = 0; k < anim.refs.length; k++) {
+      const r = anim.refs[k];
+
+      if (
         r.group === GROUP_NODES &&
         anim.store.isCurrent(r) &&
-        !anim.store.hasFlag(GROUP_NODES, r.slot, FLAG_LOCKED),
-    );
+        !anim.store.hasFlag(GROUP_NODES, r.slot, FLAG_LOCKED)
+      ) {
+        at.push(k);
+      }
+    }
 
-    if (refs.length > 0) {
-      anim.writes.push(positionWrite(anim, refs));
+    if (at.length > 0) {
+      anim.writes.push(positionWrite(anim, at));
     }
   }
 
@@ -168,10 +177,20 @@ export function capture(anim: Animation): void {
   }
 }
 
-/** The position channel write: the from-positions of the refs and the target position. */
-export function positionWrite(anim: Animation, refs: Ref[]): ChannelWrite {
+/**
+ * The position channel write: the from-positions of the refs and the
+ * target — the one `position` every ref shares, or, for a column
+ * animation (round 144, the layout tween), each ref's own entry of
+ * `columnTo`.
+ *
+ * @param anim — the animation being captured
+ * @param at — the indices into `anim.refs` that take part
+ */
+export function positionWrite(anim: Animation, at: number[]): ChannelWrite {
   const pos = anim.store.column(COL.NODE_POSITION) as Float32Array;
+  const refs = at.map((k) => anim.refs[k]);
   const write = blankWrite(COL.NODE_POSITION, 'position', true, refs);
+  const to = anim.columnTo;
 
   for (let i = 0; i < refs.length; i++) {
     const x = pos[refs[i].slot * 2];
@@ -179,8 +198,14 @@ export function positionWrite(anim: Animation, refs: Ref[]): ChannelWrite {
 
     write.data[i * 4] = x;
     write.data[i * 4 + 1] = y;
-    write.data[i * 4 + 2] = anim.position?.x ?? x;
-    write.data[i * 4 + 3] = anim.position?.y ?? y;
+
+    if (to != null) {
+      write.data[i * 4 + 2] = to[at[i] * 2];
+      write.data[i * 4 + 3] = to[at[i] * 2 + 1];
+    } else {
+      write.data[i * 4 + 2] = anim.position?.x ?? x;
+      write.data[i * 4 + 3] = anim.position?.y ?? y;
+    }
   }
 
   return write;

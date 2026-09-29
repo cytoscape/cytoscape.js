@@ -203,6 +203,12 @@ export interface ChannelWrite {
    * geometry-tier (never GPU-registered) and route through the store's
    * cascading lane writer. */
   lane?: number;
+  /** round 144: entries detached mid-flight (1), parallel to `refs` —
+   * an element stopped, locked or removed while the rest of the
+   * animation runs on.  Both executors skip them: the CPU apply and,
+   * through the sink's `detach`, the kernel.  Absent until the first
+   * detach. */
+  off?: Uint8Array;
 }
 
 /** Linear interpolation from `a` to `b` at `t`. */

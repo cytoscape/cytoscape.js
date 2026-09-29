@@ -1162,11 +1162,14 @@ export class Collection<
    * Get or set the first element's model-space position (nodes only).
    *
    * Reading a **compound parent** settles pending auto-bounds first, so
-   * the derived centre is current.  Reading a node whose position is
-   * under a GPU-owned tween (an offloaded position animation or a live
-   * force layout) reports the stale mirror until the tween settles — the
-   * motion-staleness rule; geometry channels like `width()` do *not*
-   * behave this way.
+   * the derived centre is current.  Reading a node under an offloaded
+   * position animation — an animated layout's tween included — reports
+   * the value the last frame drew (round 144; v3's answer, and the CPU
+   * path's), though the CPU column holds the start until the tween
+   * settles, so column scans (bounding boxes, box selection) read that.
+   * Under a live GPU force layout it reports the stale column until the
+   * run settles — the motion-staleness rule; geometry channels like
+   * `width()` never go stale.
    *
    * @param dim — `'x'` or `'y'` to read/write one axis, or a
    *   `{ x, y }` object to write both; omit to read the pair
@@ -2351,12 +2354,19 @@ export class Collection<
   }
 
   /**
-   * Lock these elements against movement.
+   * Lock these elements against movement.  A node locked mid-tween holds
+   * where its position tween got to (round 144, as v3's animation step
+   * skips a locked node); the rest of the animation — other nodes, and
+   * this node's paint channels — runs on, and unlocking does not resume
+   * it.
    *
    * @returns this collection, for chaining
    */
   lock(): this {
-    return stateImpl._setBit(this, FLAG_LOCKED, true) as this;
+    stateImpl._setBit(this, FLAG_LOCKED, true);
+    this._cy._animations.lockRefs(this._liveRefs());
+
+    return this;
   }
 
   /**

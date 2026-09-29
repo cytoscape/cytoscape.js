@@ -165,6 +165,22 @@ export class CircleLayout {
   }
 
   /**
+   * End a run still in flight where it stands (round 144) — the tween
+   * an `animate: true` run started stops where it got to, the positions
+   * it reached stay, and `layoutstop` fires now, once, without the
+   * `cancelled` flag (v3's `layout.stop()`).  A run that has already
+   * finished is unchanged.
+   *
+   * @returns this layout, for chaining
+   * @see cancel to put the nodes back instead
+   */
+  stop(): this {
+    layoutRunOf(this.cy, this)?.halt();
+
+    return this;
+  }
+
+  /**
    * Abandon a run still in flight (round 128) — the tween a
    * `animate: true` run started is dropped where it is, the scope's
    * nodes go back to where `run()` found them, the viewport is left

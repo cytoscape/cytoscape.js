@@ -58,11 +58,13 @@ export class AnimationHandleImpl implements AnimationHandle {
     return this.ani.promise();
   }
 
-  /** Stop in place, or at the targets with `jumpToEnd`.
+  /** Stop in place, or at the targets with `jumpToEnd` — the whole
+   * animation, whatever elements it spans.  Through the manager, so a
+   * GPU-driven one releases its batch (round 144).
    *
    * @param jumpToEnd — apply the final values instead of freezing */
   stop(jumpToEnd = false): void {
-    this.ani.stop(jumpToEnd);
+    this.mgr.stopAni(this.ani, jumpToEnd);
   }
 
   /** The completion promise.

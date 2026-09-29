@@ -4,6 +4,7 @@
 import { GROUP_EDGES, GROUP_NODES, COL, FLAG_PARENT } from '../contract.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { TWEEN_COL, lerp, clampTo, STRIDE, mixOklab } from './channels.mjs';
+import type { ChannelWrite } from './channels.mjs';
 import type { Animation } from './animation.mjs';
 
 /**
@@ -29,73 +30,37 @@ export function apply(anim: Animation, e: number): void {
   markStyleTouched(anim);
 
   for (const w of anim.writes) {
-    for (let i = 0; i < w.refs.length; i++) {
-      const slot = w.slots[i];
+    const off = w.off;
 
-      if (!store.isCurrent(w.refs[i])) {
+    // the layout tween's one write (round 144) runs this loop over every
+    // node of the scope each CPU tick, so position keeps a tight loop
+    if (w.kind === 'position') {
+      const d = w.data;
+
+      for (let i = 0; i < w.refs.length; i++) {
+        if ((off != null && off[i] !== 0) || !store.isCurrent(w.refs[i])) {
+          continue;
+        }
+
+        const j = i * 4;
+
+        store.setPosition(
+          w.slots[i],
+          d[j] + (d[j + 2] - d[j]) * e,
+          d[j + 1] + (d[j + 3] - d[j + 1]) * e,
+        );
+      }
+
+      continue;
+    }
+
+    for (let i = 0; i < w.refs.length; i++) {
+      // a detached entry (round 144) holds where it was left
+      if (off != null && off[i] !== 0) {
         continue;
       }
 
-      switch (w.kind) {
-        case 'position':
-          store.setPosition(
-            slot,
-            lerp(w.data[i * 4], w.data[i * 4 + 2], e),
-            lerp(w.data[i * 4 + 1], w.data[i * 4 + 3], e),
-          );
-          break;
-        case 'scalar':
-          store.setScalar(
-            w.column as ColumnId,
-            slot,
-            clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
-          );
-          break;
-        case 'color': {
-          const [r, g, b, a] = mixOklab(w.data, i * 8, e);
-
-          store.setColor(w.column as ColumnId, slot, r, g, b, a);
-          break;
-        }
-        case 'lane':
-          // a mid-tween leaf→parent flip hands the slot to auto-bounds
-          // rather than fighting the derivation (round 25.1)
-          if (
-            w.column === COL.NODE_SIZE &&
-            (store.flags(GROUP_NODES, slot) & FLAG_PARENT) !== 0
-          ) {
-            break;
-          }
-
-          store.setLane(
-            w.column as ColumnId,
-            slot,
-            w.lane as number,
-            clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
-          );
-          break;
-        case 'padding':
-          // parents only — a mid-tween parent→leaf flip drops the slot
-          if ((store.flags(GROUP_NODES, slot) & FLAG_PARENT) === 0) {
-            break;
-          }
-
-          store.updateCompoundStyle(slot, {
-            padding: clampTo(
-              lerp(w.data[i * 2], w.data[i * 2 + 1], e),
-              w.min,
-              w.max,
-            ),
-          });
-          break;
-        case 'fontSize':
-          store.setLabelFontSize(
-            slot,
-            w.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES,
-            clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
-          );
-          break;
-      }
+      writeEntry(anim, w, i, e);
     }
   }
 
@@ -110,6 +75,86 @@ export function apply(anim: Animation, e: number): void {
     if (anim.zoom != null && anim.fromZoom != null) {
       anim.viewport.setZoom(lerp(anim.fromZoom, anim.zoom, e));
     }
+  }
+}
+
+/**
+ * Write one entry of one captured channel at the eased progress `e` —
+ * the body of `apply`, and how a detached entry (round 144) is frozen
+ * at the value it reached.
+ */
+export function writeEntry(
+  anim: Animation,
+  w: ChannelWrite,
+  i: number,
+  e: number,
+): void {
+  const store = anim.store;
+  const slot = w.slots[i];
+
+  if (!store.isCurrent(w.refs[i])) {
+    return;
+  }
+
+  switch (w.kind) {
+    case 'position':
+      store.setPosition(
+        slot,
+        lerp(w.data[i * 4], w.data[i * 4 + 2], e),
+        lerp(w.data[i * 4 + 1], w.data[i * 4 + 3], e),
+      );
+      break;
+    case 'scalar':
+      store.setScalar(
+        w.column as ColumnId,
+        slot,
+        clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+      );
+      break;
+    case 'color': {
+      const [r, g, b, a] = mixOklab(w.data, i * 8, e);
+
+      store.setColor(w.column as ColumnId, slot, r, g, b, a);
+      break;
+    }
+    case 'lane':
+      // a mid-tween leaf→parent flip hands the slot to auto-bounds
+      // rather than fighting the derivation (round 25.1)
+      if (
+        w.column === COL.NODE_SIZE &&
+        (store.flags(GROUP_NODES, slot) & FLAG_PARENT) !== 0
+      ) {
+        break;
+      }
+
+      store.setLane(
+        w.column as ColumnId,
+        slot,
+        w.lane as number,
+        clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+      );
+      break;
+    case 'padding':
+      // parents only — a mid-tween parent→leaf flip drops the slot
+      if ((store.flags(GROUP_NODES, slot) & FLAG_PARENT) === 0) {
+        break;
+      }
+
+      store.updateCompoundStyle(slot, {
+        padding: clampTo(
+          lerp(w.data[i * 2], w.data[i * 2 + 1], e),
+          w.min,
+          w.max,
+        ),
+      });
+      break;
+    case 'fontSize':
+      store.setLabelFontSize(
+        slot,
+        w.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES,
+        clampTo(lerp(w.data[i * 2], w.data[i * 2 + 1], e), w.min, w.max),
+      );
+      break;
   }
 }
 

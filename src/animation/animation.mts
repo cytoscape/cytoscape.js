@@ -156,6 +156,24 @@ export class Animation {
   /** round 24.1: a transition built from pre-resolved ChannelWrites —
    * capture is a no-op and eligibility/columns derive from the writes */
   private preset = false;
+  /**
+   * Round 144: a column animation's per-node targets, `(x, y)` per
+   * entry of `refs` — the layout tween, one animation over the scope
+   * rather than one per node.  Null for every other animation.
+   * @internal
+   */
+  columnTo: Float32Array | null = null;
+  /**
+   * Round 144: the elements stay individually addressable — stopping,
+   * evicting, locking or removing one of them detaches it and the rest
+   * run on.  Set on a column animation, which stands for v3's one
+   * animation per node; any other animation over many elements keeps
+   * round 21's whole-animation rule for a stop or an eviction.
+   * @internal
+   */
+  perRef = false;
+  /** packed ref → entry index, per write, built on the first lookup */
+  private entryIndex: Map<number, number>[] | null = null;
   /** round 24.3: paused state — values hold, the promise stays pending */
   private _paused = false;
   private pausedAt: number | null = null;
@@ -191,6 +209,39 @@ export class Animation {
     ani.writes = writes;
     ani.captured = true;
     ani.preset = true;
+
+    return ani;
+  }
+
+  /**
+   * A column animation (round 144): every node of `refs` tweens its
+   * position to its own target, as one animation — one capture, one
+   * CPU loop per tick, and one GPU registration and upload where the
+   * renderer offers a sink.  The layout finisher's tween under
+   * `animate: true`.  Its nodes stay individually addressable
+   * (`perRef`): `node.stop()`, an overlapping animation, `lock()` and
+   * `remove()` detach one node and the rest run on.
+   *
+   * @param store — the store whose position column the tween writes
+   * @param refs — the nodes, parallel to `to`
+   * @param to — the target positions, `(x, y)` per ref
+   * @param opts — `duration`, `easing`, `delay`, `complete`
+   * @returns the animation, not yet started
+   * @internal
+   */
+  static column(
+    store: GraphStore,
+    refs: Ref[],
+    to: Float32Array,
+    opts: { duration?: number; easing?: string; delay?: number },
+  ): Animation {
+    const ani = new Animation(store, null, refs, false, opts);
+
+    // a non-null target marks the position channel: the per-node
+    // targets themselves come from columnTo at capture
+    ani.position = {};
+    ani.columnTo = to;
+    ani.perRef = true;
 
     return ani;
   }
@@ -362,6 +413,8 @@ export class Animation {
     for (const ref of this.refs) {
       store.isCurrent(ref);
     }
+
+    this.entryIndex = null; // keyed by the pre-move identities
 
     for (const w of this.writes) {
       for (let i = 0; i < w.refs.length; i++) {
@@ -768,6 +821,208 @@ export class Animation {
     this.apply(this.easing(t));
   }
 
+  // -- per-element detach (round 144) --
+
+  /**
+   * The entry of `ref` in write `w`, or -1.  The index is built once per
+   * write on the first lookup (a column animation's write spans the
+   * whole scope, so a scan per lookup would be O(n) per `position()`).
+   *
+   * @param w — the index of the write in `writes`
+   * @param key — the packed ref
+   * @internal
+   */
+  entryOf(w: number, key: number): number {
+    if (this.entryIndex == null) {
+      this.entryIndex = [];
+    }
+
+    let index = this.entryIndex[w];
+
+    if (index == null) {
+      index = new Map();
+
+      const refs = this.writes[w].refs;
+
+      for (let i = 0; i < refs.length; i++) {
+        index.set(packRefKey(refs[i]), i);
+      }
+
+      this.entryIndex[w] = index;
+    }
+
+    return index.get(key) ?? -1;
+  }
+
+  /**
+   * The eased progress at `now`, on this animation's clock.
+   *
+   * @param now — the shared clock in ms
+   * @internal
+   */
+  easedAt(now: number): number {
+    const t =
+      this.duration === 0
+        ? 1
+        : clamp01((now - (this.startTime ?? now)) / this.duration);
+
+    return this.easing(t);
+  }
+
+  /**
+   * Detach elements from this animation mid-flight (round 144): each
+   * one's entries freeze where they got to — or land on the target with
+   * `jumpToEnd` — and both executors skip them from then on; the rest of
+   * the animation runs on.  A GPU-driven entry's value is written onto
+   * the CPU column here, evaluated at the last frame's clock, since the
+   * device held it.  Capture runs first when it has not, so an element
+   * detached before the first frame holds where it stands.
+   *
+   * @param keys — the packed refs to detach
+   * @param jumpToEnd — land each detached entry on its target
+   * @param positionOnly — detach the position channel only (a node
+   *   locked mid-tween holds its place; its paint tweens run on)
+   * @returns per write, the entry indices newly detached — what the GPU
+   *   sink has to stop writing
+   * @internal
+   */
+  detach(
+    keys: ReadonlySet<number>,
+    jumpToEnd: boolean,
+    positionOnly: boolean,
+  ): { column: string; indices: number[] }[] {
+    const out: { column: string; indices: number[] }[] = [];
+
+    if (this._done) {
+      return out;
+    }
+
+    if (!this.captured) {
+      this.capture();
+    }
+
+    const e = jumpToEnd ? 1 : this.gpuDriven ? this.easedAt(this.lastNow) : -1;
+
+    for (let w = 0; w < this.writes.length; w++) {
+      const write = this.writes[w];
+
+      if (positionOnly && write.kind !== 'position') {
+        continue;
+      }
+
+      const indices: number[] = [];
+
+      for (const key of keys) {
+        const i = this.entryOf(w, key);
+
+        if (i < 0 || (write.off != null && write.off[i] !== 0)) {
+          continue;
+        }
+
+        // a CPU-driven entry already holds its last tick's value; one
+        // not yet started holds its start, unless it jumps to the end
+        if (e >= 0 && (this.started || jumpToEnd)) {
+          applyImpl.writeEntry(this, write, i, e);
+        }
+
+        (write.off ??= new Uint8Array(write.refs.length))[i] = 1;
+        indices.push(i);
+      }
+
+      if (indices.length > 0) {
+        out.push({ column: write.column, indices });
+      }
+    }
+
+    return out;
+  }
+
+  /**
+   * Whether every entry of every write has been detached — nothing is
+   * left for the animation to move (a bare delay never is).
+   *
+   * @internal
+   */
+  get allDetached(): boolean {
+    if (this.writes.length === 0) {
+      return false;
+    }
+
+    for (const w of this.writes) {
+      if (w.off == null) {
+        return false;
+      }
+
+      for (let i = 0; i < w.off.length; i++) {
+        if (w.off[i] === 0) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Whether `key` still has an entry this animation moves.
+   *
+   * @param key — the packed ref
+   * @internal
+   */
+  moves(key: number): boolean {
+    if (!this.captured) {
+      return true;
+    }
+
+    for (let w = 0; w < this.writes.length; w++) {
+      const i = this.entryOf(w, key);
+
+      if (
+        i >= 0 &&
+        (this.writes[w].off == null || this.writes[w].off![i] === 0)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * The position a GPU-driven tween has drawn `key` at, as of the last
+   * frame's clock — what `position()` reads while the device holds the
+   * column (round 144), since the CPU column is not written until the
+   * settle.  Null when the node has no live entry here.
+   *
+   * @param key — the packed ref
+   * @internal
+   */
+  leasedPosition(key: number): { x: number; y: number } | null {
+    for (let w = 0; w < this.writes.length; w++) {
+      const write = this.writes[w];
+
+      if (write.kind !== 'position') {
+        continue;
+      }
+
+      const i = this.entryOf(w, key);
+
+      if (i < 0 || (write.off != null && write.off[i] !== 0)) {
+        return null;
+      }
+
+      const e = this.easedAt(this.lastNow);
+      const d = write.data;
+
+      return {
+        x: d[i * 4] + (d[i * 4 + 2] - d[i * 4]) * e,
+        y: d[i * 4 + 1] + (d[i * 4 + 3] - d[i * 4 + 1]) * e,
+      };
+    }
+
+    return null;
+  }
+
   // -- internals --
 
   /**
@@ -791,3 +1046,7 @@ export class Animation {
     applyImpl.finish(this);
   }
 }
+
+/** A ref packed into one number (the collection layer's `packRef`). */
+const packRefKey = (r: Ref): number =>
+  (r.group === GROUP_NODES ? 0 : 0x10000000000000) + r.slot * 0x1000000 + r.gen;

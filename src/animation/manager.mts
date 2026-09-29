@@ -2,7 +2,7 @@
 // registry and the GPU driver fleet.
 
 import type { EasingProgram } from '../easing.mjs';
-import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
+import { COL, GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { ChannelWrite } from './channels.mjs';
@@ -19,6 +19,14 @@ export interface GpuTweenSink {
     easing: EasingProgram,
   ): void;
   unregister(id: number): void;
+  /**
+   * Round 144: stop writing some entries of a registered batch — the
+   * elements detached mid-flight (stopped, evicted, locked, removed)
+   * while the rest of the animation runs on.  The CPU column already
+   * holds each one's frozen value.  A sink without it has the
+   * animation demoted to the CPU path instead.
+   */
+  detach?(id: number, column: string, indices: readonly number[]): void;
 }
 
 /**
@@ -34,6 +42,10 @@ export interface GpuTweenSink {
  */
 export class AnimationManager {
   private running = new Map<number, Animation[]>(); // packed ref → running set
+  /** every running element animation, once each (round 144: the tick
+   * walks animations, not refs — a layout tween is one animation over
+   * the whole scope, and a per-ref walk was O(nodes) a frame) */
+  private all = new Set<Animation>();
   private viewportRunning: Animation[] = [];
   private onTick: () => void;
   private ticking = false;
@@ -69,11 +81,14 @@ export class AnimationManager {
    *
    * @param sink — the renderer's tween sink; the manager cedes its
    *   auto-loop to the render loop while it is attached
+   * @param drives — false when the sink is a remote one (the worker
+   *   host, round 144): its device evaluates the tweens, but the frames
+   *   are drawn on another thread, so the manager keeps its own clock
    * @internal
    */
-  attachDriver(sink: GpuTweenSink): void {
+  attachDriver(sink: GpuTweenSink, drives = true): void {
     this.sink = sink;
-    this.driven = true;
+    this.driven = drives;
   }
 
   /**
@@ -87,14 +102,18 @@ export class AnimationManager {
     this.driven = false;
   }
 
-  /** Settle every GPU-driven animation onto the CPU columns.  Round
-   * 14.11: a reparent mid-flight moves the tweened slots under the
-   * auto-bounds/fold derivations, which read the CPU columns — the
-   * store's reparent hook settles active leases before they go stale.
+  /** Settle every GPU-driven animation onto the CPU columns and finish
+   * it — the renderer going away.  (Round 14.11's reparent hook called
+   * this too; since round 144 a reparent demotes instead, so the tweens
+   * run on under the CPU-side derivations rather than stopping.)
    * @internal */
   settleGpuAll(): void {
     for (const ani of this.allRunning()) {
       if (ani.gpuId != null) {
+        // released first (round 144): a settled animation left its batch
+        // registered, the column leased and the kernel writing it
+        this.sink?.unregister(ani.gpuId);
+        ani.gpuId = null;
         ani.settleGpu(now());
       }
     }
@@ -103,15 +122,7 @@ export class AnimationManager {
   /** Every distinct running element animation (one entry per animation,
    * however many refs it spans). */
   private allRunning(): Set<Animation> {
-    const seen = new Set<Animation>();
-
-    for (const arr of this.running.values()) {
-      for (const ani of arr) {
-        seen.add(ani);
-      }
-    }
-
-    return seen;
+    return new Set(this.all);
   }
 
   /**
@@ -147,16 +158,12 @@ export class AnimationManager {
    */
   onCompacted(store: GraphStore): void {
     const next = new Map<number, Animation[]>();
-    const repaired = new Set<Animation>();
+
+    for (const ani of this.all) {
+      ani.repairRefs(store);
+    }
 
     for (const [key, arr] of this.running) {
-      for (const ani of arr) {
-        if (!repaired.has(ani)) {
-          repaired.add(ani);
-          ani.repairRefs(store);
-        }
-      }
-
       const isEdge = key >= 0x10000000000000;
       const rem = isEdge ? key - 0x10000000000000 : key;
       const ref: Ref = {
@@ -194,36 +201,66 @@ export class AnimationManager {
     } else {
       const cols = ani.touchedColumns();
       // allocated only when a running overlap actually exists — the
-      // common case (nothing running on these refs) allocates nothing
-      let evicted: Set<Animation> | null = null;
+      // common case (nothing running on these refs) allocates nothing.
+      // Per other animation, the refs it shares with this one: a
+      // column animation gives up just those (round 144), any other is
+      // stopped whole (round 21)
+      let evicted: Map<Animation, Set<number>> | null = null;
+      let overlaps: Map<Animation, boolean> | null = null;
 
       for (const ref of ani.refs) {
-        const arr = this.running.get(packRef(ref));
+        const key = packRef(ref);
+        const arr = this.running.get(key);
 
         if (arr == null) {
           continue;
         }
 
         for (const other of arr) {
-          if (evicted != null && evicted.has(other)) {
-            continue;
+          overlaps ??= new Map();
+
+          let hit = overlaps.get(other);
+
+          if (hit == null) {
+            hit = false;
+
+            for (const col of other.touchedColumns()) {
+              if (cols.has(col)) {
+                hit = true;
+                break;
+              }
+            }
+
+            overlaps.set(other, hit);
           }
 
-          for (const col of other.touchedColumns()) {
-            if (cols.has(col)) {
-              (evicted ??= new Set()).add(other);
-              break;
+          if (hit) {
+            evicted ??= new Map();
+
+            let keys = evicted.get(other);
+
+            if (keys == null) {
+              keys = new Set();
+              evicted.set(other, keys);
             }
+
+            keys.add(key);
           }
         }
       }
 
       if (evicted != null) {
-        for (const other of evicted) {
-          this.stopOne(other, false);
-          this.remove(other);
+        for (const [other, keys] of evicted) {
+          if (other.perRef) {
+            this.detachFrom(other, keys, false, false);
+          } else {
+            this.stopOne(other, false);
+            this.remove(other);
+          }
         }
       }
+
+      this.all.add(ani);
 
       for (const ref of ani.refs) {
         const key = packRef(ref);
@@ -246,6 +283,8 @@ export class AnimationManager {
 
   /** Drop an animation from every ref's running set. */
   private remove(ani: Animation): void {
+    this.all.delete(ani);
+
     for (const ref of ani.refs) {
       const key = packRef(ref);
       const arr = this.running.get(key);
@@ -272,7 +311,7 @@ export class AnimationManager {
    *   this holds
    */
   active(): boolean {
-    return this.viewportRunning.length > 0 || this.running.size > 0;
+    return this.viewportRunning.length > 0 || this.all.size > 0;
   }
 
   /**
@@ -313,24 +352,210 @@ export class AnimationManager {
    * @param jumpToEnd — apply each animation's final frame first
    */
   stop(refs: Ref[], jumpToEnd: boolean): void {
-    const toStop = new Set<Animation>();
+    for (const [ani, keys] of this.touching(refs)) {
+      // a column animation lets go of just these elements (round 144);
+      // any other stops whole, as round 21 made it
+      if (ani.perRef) {
+        this.detachFrom(ani, keys, jumpToEnd, false);
+      } else {
+        this.stopOne(ani, jumpToEnd);
+        this.remove(ani);
+      }
+    }
+  }
+
+  /**
+   * Stop one animation whole — a handle's `stop()`.  Through the manager
+   * rather than on the animation, so a GPU-driven one releases its
+   * batch (round 144: a handle stopped under a sink used to leave the
+   * batch registered, the column leased and the kernel writing it, for
+   * good — `layout.cancel()` mid-tween on the same-thread host).
+   *
+   * @param ani — the animation to stop
+   * @param jumpToEnd — land on the targets instead of freezing
+   * @internal
+   */
+  stopAni(ani: Animation, jumpToEnd: boolean): void {
+    if (ani.done) {
+      return;
+    }
+
+    this.stopOne(ani, jumpToEnd);
+    this.remove(ani);
+  }
+
+  /**
+   * Elements leaving the graph (round 144): each is detached from every
+   * animation that moves it, before the store frees its slot — a GPU
+   * batch would otherwise go on writing a slot the next `add()` reuses.
+   * An animation left with nothing to move finishes (its promise
+   * resolves); the rest run on.
+   *
+   * @param refs — the elements about to be removed (still current)
+   * @internal
+   */
+  dropRefs(refs: readonly Ref[]): void {
+    if (this.running.size === 0) {
+      return;
+    }
+
+    for (const [ani, keys] of this.touching(refs)) {
+      this.detachFrom(ani, keys, false, false);
+    }
+  }
+
+  /**
+   * Nodes locked mid-flight (round 144; 114.3 at capture): each holds
+   * where its position tween got to, as v3's step skips a locked node —
+   * the rest of the animation, and the node's paint channels, run on.
+   * With no refs, every running position tween (`cy.autolock( true )`).
+   *
+   * @param refs — the nodes just locked, or null for every node
+   * @internal
+   */
+  lockRefs(refs: readonly Ref[] | null): void {
+    if (this.running.size === 0) {
+      return;
+    }
+
+    const touching =
+      refs == null
+        ? new Map(
+            [...this.all]
+              .filter((a) => a.touchedColumns().has(COL.NODE_POSITION))
+              .map((a) => [a, new Set(a.refs.map(packRef))]),
+          )
+        : this.touching(refs);
+
+    for (const [ani, keys] of touching) {
+      if (ani.touchedColumns().has(COL.NODE_POSITION)) {
+        this.detachFrom(ani, keys, false, true);
+      }
+    }
+  }
+
+  /** Per running animation, the packed refs of `refs` it covers. */
+  private touching(refs: readonly Ref[]): Map<Animation, Set<number>> {
+    const out = new Map<Animation, Set<number>>();
 
     for (const ref of refs) {
-      const arr = this.running.get(packRef(ref));
+      const key = packRef(ref);
+      const arr = this.running.get(key);
 
       if (arr == null) {
         continue;
       }
 
       for (const ani of arr) {
-        toStop.add(ani);
+        let keys = out.get(ani);
+
+        if (keys == null) {
+          keys = new Set();
+          out.set(ani, keys);
+        }
+
+        keys.add(key);
       }
     }
 
-    for (const ani of toStop) {
-      this.stopOne(ani, jumpToEnd);
+    return out;
+  }
+
+  /**
+   * Detach `keys` from one animation (round 144): the entries freeze
+   * (or land, with `jumpToEnd`), the device stops writing them, and a
+   * ref with nothing left moving leaves the running set — so
+   * `animated()` reads false for it and it can be grabbed.  An
+   * animation left with nothing to move finishes.
+   */
+  private detachFrom(
+    ani: Animation,
+    keys: ReadonlySet<number>,
+    jumpToEnd: boolean,
+    positionOnly: boolean,
+  ): void {
+    const detached = ani.detach(keys, jumpToEnd, positionOnly);
+
+    if (ani.allDetached) {
+      if (ani.gpuId != null) {
+        this.sink?.unregister(ani.gpuId);
+        ani.gpuId = null;
+        ani.gpuDriven = false;
+      }
+
+      ani.stop(false); // every value already stands where it froze
       this.remove(ani);
+
+      return;
     }
+
+    if (ani.gpuId != null && detached.length > 0) {
+      const sink = this.sink as GpuTweenSink;
+
+      if (sink.detach != null) {
+        for (const d of detached) {
+          sink.detach(ani.gpuId, d.column, d.indices);
+        }
+      } else {
+        // a sink that cannot detach: the rest of the run goes CPU
+        sink.unregister(ani.gpuId);
+        ani.demoteGpu(ani.lastNow);
+      }
+    }
+
+    for (const key of keys) {
+      if (!ani.moves(key)) {
+        this.removeKey(key, ani);
+      }
+    }
+  }
+
+  /** Drop one ref's entry for `ani` from the running map. */
+  private removeKey(key: number, ani: Animation): void {
+    const arr = this.running.get(key);
+
+    if (arr == null) {
+      return;
+    }
+
+    const filtered = arr.filter((a) => a !== ani);
+
+    if (filtered.length === 0) {
+      this.running.delete(key);
+    } else {
+      this.running.set(key, filtered);
+    }
+  }
+
+  /**
+   * The position a GPU-driven tween has drawn this node at, as of the
+   * last frame (round 144) — what `position()` reads while the device
+   * holds the column, where the CPU column still carries the start.
+   *
+   * @param ref — the node
+   * @returns the tweened position, or null when no device-held tween
+   *   moves it (the column is then current)
+   * @internal
+   */
+  leasedPosition(ref: Ref): { x: number; y: number } | null {
+    const key = packRef(ref);
+    const arr = this.running.get(key);
+
+    if (arr == null) {
+      return null;
+    }
+
+    for (const ani of arr) {
+      if (ani.gpuId != null) {
+        const p = ani.leasedPosition(key);
+
+        if (p != null) {
+          return p;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -347,7 +572,9 @@ export class AnimationManager {
 
     this.sink?.unregister(ani.gpuId);
     ani.gpuId = null;
-    ani.settleGpu(jumpToEnd ? ani.startMs + ani.durationMs : now());
+    // frozen at the last frame's clock (round 144), which is what was
+    // drawn and what position() read — the CPU path freezes there too
+    ani.settleGpu(jumpToEnd ? ani.startMs + ani.durationMs : ani.lastNow);
   }
 
   /**
@@ -456,22 +683,17 @@ export class AnimationManager {
    * @internal
    */
   tick(now: number): boolean {
-    const advanced = new Set<Animation>();
+    let finished: Animation[] | null = null;
 
-    for (const [key, arr] of this.running) {
-      for (const ani of arr) {
-        if (!advanced.has(ani)) {
-          advanced.add(ani);
-          this.advanceOne(ani, now);
-        }
+    for (const ani of this.all) {
+      if (this.advanceOne(ani, now)) {
+        (finished ??= []).push(ani);
       }
+    }
 
-      const alive = arr.filter((a) => !a.done);
-
-      if (alive.length === 0) {
-        this.running.delete(key);
-      } else if (alive.length !== arr.length) {
-        this.running.set(key, alive);
+    if (finished != null) {
+      for (const ani of finished) {
+        this.remove(ani);
       }
     }
 

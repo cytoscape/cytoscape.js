@@ -151,6 +151,31 @@ export class LayoutRun {
     this.onClose?.(cancelled);
   }
 
+  /**
+   * `layout.stop()` mid-tween (round 144): the finisher's tweens stop
+   * where they got to, and the run closes now with its ordinary
+   * `layoutstop` — v3's stop, which emits it on the spot.  The tweens'
+   * promises resolve afterwards; the finisher sees the run closed and
+   * fires nothing more.  A closed run is unchanged.
+   */
+  halt(): void {
+    if (this.closed) {
+      return;
+    }
+
+    const anis = this.anis;
+
+    this.anis = [];
+
+    for (const ani of anis) {
+      ani.stop(false);
+    }
+
+    this.stop?.();
+    this.cy.emit({ type: 'layoutstop', layout: this.layout });
+    this.close(false);
+  }
+
   /** Put the scope's leaves back where `run()` found them. */
   private restore(): void {
     const store = this.cy._store;

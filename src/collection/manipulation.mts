@@ -107,6 +107,13 @@ export function _removeClosure(self: Collection): Collection[] {
     (a, b) => store.depthOf(b._refs[0].slot) - store.depthOf(a._refs[0].slot),
   );
 
+  // round 144: out of every running animation first, while the refs
+  // are still current — a GPU batch would go on writing a freed slot
+  // that the next add() reuses
+  cy._animations.dropRefs(
+    [...edgeHandles, ...nodeHandles].map((ele) => ele._refs[0]),
+  );
+
   // edges first, then nodes; the caller emits remove per element after
   for (const edge of edgeHandles) {
     store.removeEdge(edge._refs[0].slot);

@@ -2,7 +2,9 @@
 // `layoutPositions`.
 
 import { GROUP_NODES } from '../contract.mjs';
+import { Animation, AnimationHandleImpl } from '../animation.mjs';
 import type { AnimationHandle } from '../animation.mjs';
+import type { Ref } from '../contract.mjs';
 import type { Position } from '../types.mjs';
 import type { LayoutBaseOptions } from '../public-types.mjs';
 import { layoutRunOf } from '../layout/run-state.mjs';
@@ -168,6 +170,13 @@ export function layoutPositions(
 
   if (options.animate) {
     const anis: AnimationHandle[] = [];
+    // round 144 (PLAN.md item 68): the tween is one column animation —
+    // every animated node's target in one array, one capture, one CPU
+    // loop a tick and one GPU registration — where it was one animation
+    // per node, which at 20k nodes starved the frame.  Its nodes stay
+    // individually addressable (Animation.column)
+    const refs: Ref[] = [];
+    const to: number[] = [];
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
@@ -176,16 +185,21 @@ export function layoutPositions(
         options.animateFilter == null || options.animateFilter(node, i);
 
       if (animateNode) {
-        anis.push(
-          node.animation({
-            position: newPos,
-            duration: options.animationDuration ?? 500,
-            easing: options.animationEasing,
-          }),
-        );
+        refs.push(node._refs[0]);
+        to.push(newPos.x, newPos.y);
       } else {
         node.position(newPos);
       }
+    }
+
+    if (refs.length > 0) {
+      const ani = Animation.column(cy._store, refs, Float32Array.from(to), {
+        duration: options.animationDuration ?? 500,
+        easing: options.animationEasing,
+      });
+
+      ani.lockAll = cy.autolock() === true;
+      anis.push(new AnimationHandleImpl(cy._animations, ani));
     }
 
     // the viewport animates alongside the nodes: a fit targets the box at
@@ -230,8 +244,9 @@ export function layoutPositions(
 
     Promise.all(anis.map((ani) => ani.promise())).then(() => {
       // a cancelled run closed its own lifecycle when the tweens
-      // were dropped; nothing more fires here
-      if (run?.cancelled === true) {
+      // were dropped, and a stopped one (round 144) when they were
+      // halted; nothing more fires here
+      if (run?.cancelled === true || run?.closed === true) {
         return;
       }
 

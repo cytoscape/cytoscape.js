@@ -29,6 +29,19 @@ export function _positionImpl(
       store.flushDerived();
     }
 
+    // a GPU-held tween (round 144): the CPU column keeps the start until
+    // the settle, so read the value the last frame drew — v3's answer,
+    // and the one the CPU path (the worker host's before 144) gives
+    const mgr = self._cy._animations;
+
+    if (mgr.anyRunning()) {
+      const leased = mgr.leasedPosition(ref);
+
+      if (leased != null) {
+        return typeof dim === 'string' ? leased[dim as 'x' | 'y'] : leased;
+      }
+    }
+
     // the hot cache (round 62.5): no Map hop at all on the array the
     // most-read accessor in the API reads
     const xy = store.nodePositions();

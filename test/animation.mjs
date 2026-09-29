@@ -883,10 +883,15 @@ describe('gpu/animation', function () {
         'node.position',
       ]);
 
-      // mid-flight the device owns both columns: CPU reads stay at the start
+      // mid-flight the device owns both columns: the CPU columns stay at
+      // the start until the settle ...
       cy._animations.tick(50);
-      expect(cy.$id('a').position('x')).to.equal(0);
+      expect(cy._store.column('node.position')[0]).to.equal(0);
       expect(fill(cy)).to.deep.equal([153, 153, 153, 255]); // still #999
+      // ... while position() reads the value the last frame drew (round
+      // 144 — v3's answer, and the CPU path's)
+      expect(cy.$id('a').position('x')).to.equal(50);
+      expect(cy.$id('a').position()).to.deep.equal({ x: 50, y: 0 });
     });
 
     it('settles the exact final value on the CPU when it completes', function () {

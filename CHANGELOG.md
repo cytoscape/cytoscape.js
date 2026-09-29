@@ -24,6 +24,12 @@ that compile and then behave differently.
 
 ### Added
 
+- **Iterable collections** (round 75.3): `for (const ele of eles)`,
+  spread and `Array.from( eles )` yield the interned length-1 handles
+  in collection order, and `cy.add()` takes any iterable of element
+  definitions (a generator, a `Set`); a wire buffer's typed-array view
+  still decodes as a wire payload.  `cy.add( collection )` throws —
+  v4 restores no removed element.
 - **Use-case builds: `cytoscape/headless` and `cytoscape/headless-gpu`**
   (round 131).  `cytoscape/headless` is the whole model, style engine,
   CPU algorithms, every layout and the worker pool with no renderer and

@@ -55,7 +55,14 @@ const DTS = readFileSync(join(ROOT, 'dist/cytoscape.d.ts'), 'utf8');
 function dtsMembers(className) {
   // round 90: a documented class can ship under another name —
   // AnimationHandleImpl ships as the AnimationHandle interface
-  const header = DTS_NAMES[className] ?? `declare class ${className} {`;
+  // round 75.3: a class may implement an interface (Collection is
+  // `implements Iterable<Collection>`), so the header ends at its brace
+  const header =
+    DTS_NAMES[className] ??
+    DTS.match(
+      new RegExp(`declare class ${className}(?: implements [^{\\n]+)? \\{`),
+    )?.[0] ??
+    `declare class ${className} {`;
   const start = DTS.indexOf(header);
 
   expect(start, `no ${header.trim()} in the shipped d.ts`).to.be.greaterThan(

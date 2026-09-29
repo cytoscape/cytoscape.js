@@ -141,7 +141,7 @@ export type { EleFilterFn, ElePositionFn } from './collection/shared.mjs';
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-export class Collection {
+export class Collection implements Iterable<Collection> {
   [index: number]: Collection;
 
   // -- basics --
@@ -555,6 +555,22 @@ export class Collection {
   }
 
   declare each: this['forEach'];
+
+  /**
+   * Iterate the members (round 75.3): one interned length-1 handle per
+   * element, in collection order — so `for (const ele of eles)`, spread
+   * and `Array.from( eles )` work, and `[ ...eles ][ 0 ] === eles[ 0 ]`
+   * (the handles are the same objects indexing returns).  Like every
+   * collection, the iteration sees the members the collection was made
+   * with: a member removed since yields as its stale handle, exactly as
+   * `forEach` passes it.  v3's collections were not iterable; this is
+   * a v4 addition.
+   *
+   * @returns an iterator over the members' handles
+   */
+  [Symbol.iterator](): IterableIterator<Collection> {
+    return iterationImpl._arr(this)[Symbol.iterator]();
+  }
 
   /**
    * The elements as a plain array of length-1 collections.

@@ -4905,7 +4905,7 @@ type FilterLike = Query | EleFilterFn;
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-declare class Collection {
+declare class Collection implements Iterable<Collection> {
   [index: number]: Collection;
   /** How many elements this collection holds. */
   length: number;
@@ -5088,6 +5088,19 @@ declare class Collection {
    */
   forEach(fn: (ele: Collection, i: number, eles: Collection) => void | false, thisArg?: unknown): this;
   each: this['forEach'];
+  /**
+   * Iterate the members (round 75.3): one interned length-1 handle per
+   * element, in collection order — so `for (const ele of eles)`, spread
+   * and `Array.from( eles )` work, and `[ ...eles ][ 0 ] === eles[ 0 ]`
+   * (the handles are the same objects indexing returns).  Like every
+   * collection, the iteration sees the members the collection was made
+   * with: a member removed since yields as its stale handle, exactly as
+   * `forEach` passes it.  v3's collections were not iterable; this is
+   * a v4 addition.
+   *
+   * @returns an iterator over the members' handles
+   */
+  [Symbol.iterator](): IterableIterator<Collection>;
   /**
    * The elements as a plain array of length-1 collections.
    *
@@ -8291,10 +8304,21 @@ declare class Core {
    * it explicitly with `cy.data( deserializeElements( buf ).data )` if
    * that is what you want.
    *
-   * @param input — elements in definition, columnar or wire form
+   * **Any iterable of element definitions** is accepted too (round
+   * 75.3) — a generator, a `Set`, a `Map`'s `values()` — and is read
+   * once into an array, then added exactly as that array would be.  A
+   * wire buffer's typed-array view is iterable as well, and is decoded
+   * as a wire payload, never walked as definitions.
+   *
+   * @param input — elements in definition, columnar or wire form, or an
+   *   iterable of element definitions
    * @returns a collection of the added elements
+   * @throws if `input` is a collection: v4 does not restore removed
+   *   elements (MIGRATING.md, "Removed elements are terminally dead") —
+   *   add the definitions you kept, e.g. from `eles.jsons()` taken
+   *   before the removal
    */
-  add(input: ElementsInput): Collection;
+  add(input: ElementsInput | Iterable<ElementDefinition>): Collection;
   /**
    * Bulk load path (the factory's `options.elements`): adds without
    * materializing per-element handles or a return collection — on a

@@ -2320,6 +2320,26 @@ before it was built.
   filter forced true: the unrelated-font spec re-shapes; size watch
   off: the orphan spec; ready belt off: the at-rest spec) — and by
   `test/modules/font-watch.mjs`.
+- **Iterable collections (75.3).**  `Collection.prototype[
+  Symbol.iterator ]` yields the interned singleton handles off the
+  cached dense array (`_arr()`), so `[ ...eles ][ 0 ] === eles[ 0 ]` and
+  `for..of`, spread and `Array.from` see exactly what indexing and
+  `forEach` see — including a member removed since, as its stale handle.
+  The declaration says `Collection implements Iterable<Collection>`.
+  `cy.add()` takes any iterable of definitions, read once with
+  `Array.from` (`_definitionsOf` in `src/core/elements.mts`); the branch
+  sits **after** the wire check because a typed-array view is iterable
+  too, and it only takes non-array objects, so arrays, `{ nodes, edges
+  }`, a single definition and the columnar form pass through as before
+  and a bare string reaches the definition path's own errors.  One new
+  throw, spec'd: `cy.add( collection )` — which iteration would
+  otherwise have turned from a `TypeError` into a garbage add — names
+  the v4 way (keep the definitions; v4 restores no removed element).
+  `options.elements` is unchanged (it stays the JSON-shaped payload the
+  options schema describes), and `cy.load()` keeps reading an iterable
+  as *chunks*, not definitions.  The docs generator lists identifier
+  members only, so the iterator ships as declaration hover text rather
+  than an API-reference entry.
 
 ## Design decisions (v4 API direction)
 

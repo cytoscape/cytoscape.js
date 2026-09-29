@@ -39,6 +39,7 @@ import type {
   BoxSelectionMode,
   CursorMap,
   CytoscapeOptions,
+  ElementDefinition,
   ElementsInput,
   ExportOptions,
   LayoutOptions,
@@ -639,10 +640,21 @@ export class Core {
    * it explicitly with `cy.data( deserializeElements( buf ).data )` if
    * that is what you want.
    *
-   * @param input — elements in definition, columnar or wire form
+   * **Any iterable of element definitions** is accepted too (round
+   * 75.3) — a generator, a `Set`, a `Map`'s `values()` — and is read
+   * once into an array, then added exactly as that array would be.  A
+   * wire buffer's typed-array view is iterable as well, and is decoded
+   * as a wire payload, never walked as definitions.
+   *
+   * @param input — elements in definition, columnar or wire form, or an
+   *   iterable of element definitions
    * @returns a collection of the added elements
+   * @throws if `input` is a collection: v4 does not restore removed
+   *   elements (MIGRATING.md, "Removed elements are terminally dead") —
+   *   add the definitions you kept, e.g. from `eles.jsons()` taken
+   *   before the removal
    */
-  add(input: ElementsInput): Collection {
+  add(input: ElementsInput | Iterable<ElementDefinition>): Collection {
     return elementsImpl.add(this, input);
   }
 

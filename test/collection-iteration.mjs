@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
+import { serializeElements } from '../src/wire.mjs';
 
 describe('gpu/collection: iteration', function () {
   var cy;
@@ -114,5 +115,103 @@ describe('gpu/collection: iteration', function () {
     var doubled = cy.$id('a').union(cy.$id('a'));
 
     expect(doubled).to.have.length(1);
+  });
+});
+
+// Round 75.3: collections are iterable, and cy.add() takes iterables of
+// definitions.  The order assertion is the control's target: an iterator
+// yielding the members reversed fails 'iterates in collection order'.
+describe('gpu/collection: the iteration protocol (round 75.3)', function () {
+  var cy;
+
+  beforeEach(function () {
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+    });
+  });
+
+  it('iterates in collection order with for..of', function () {
+    var ids = [];
+
+    for (var ele of cy.elements()) {
+      ids.push(ele.id());
+    }
+
+    expect(ids).to.deep.equal(['a', 'b', 'c', 'ab']);
+  });
+
+  it('yields the interned handles indexing returns', function () {
+    var nodes = cy.nodes();
+    var spread = [...nodes];
+
+    expect(spread).to.have.length(3);
+    expect(spread[0]).to.equal(nodes[0]);
+    expect(spread[2]).to.equal(cy.$id('c')[0]);
+    expect(Array.from(nodes)[1]).to.equal(nodes[1]);
+    // a singleton yields itself
+    expect([...cy.$id('b')][0]).to.equal(cy.$id('b'));
+  });
+
+  it('iterates an empty collection as nothing', function () {
+    expect([...cy.collection()]).to.deep.equal([]);
+    expect([...cy.nodes().filter(() => false)]).to.have.length(0);
+  });
+
+  it('sees the members the collection was made with, removed ones as stale handles', function () {
+    var nodes = cy.nodes();
+
+    cy.$id('b').remove();
+
+    var seen = [...nodes];
+
+    expect(seen.map((n) => n.id())).to.deep.equal(['a', 'b', 'c']);
+    expect(seen[1].removed()).to.equal(true);
+    // and forEach agrees
+    var viaEach = [];
+
+    nodes.forEach((n) => viaEach.push(n));
+    expect(viaEach).to.deep.equal(seen);
+  });
+
+  it('cy.add() takes a generator of definitions', function () {
+    function* defs() {
+      yield { data: { id: 'x' } };
+      yield { data: { id: 'y' } };
+      yield { data: { id: 'xy', source: 'x', target: 'y' } };
+    }
+
+    var added = cy.add(defs());
+
+    expect(added.map((e) => e.id())).to.deep.equal(['x', 'y', 'xy']);
+    expect(cy.$id('xy').source().id()).to.equal('x');
+  });
+
+  it("cy.add() takes a Set and a Map's values()", function () {
+    cy.add(new Set([{ data: { id: 's1' } }, { data: { id: 's2' } }]));
+    cy.add(new Map([['m', { data: { id: 'm1' } }]]).values());
+
+    expect(cy.$id('s2').length).to.equal(1);
+    expect(cy.$id('m1').length).to.equal(1);
+  });
+
+  it('cy.add() of a wire buffer as a Uint8Array still decodes, not walked as definitions', function () {
+    var buffer = serializeElements([
+      { data: { id: 'w1' } },
+      { data: { id: 'w2' } },
+    ]);
+    var added = cy.add(new Uint8Array(buffer));
+
+    expect(added.map((e) => e.id())).to.deep.equal(['w1', 'w2']);
+  });
+
+  it('cy.add() of a collection throws, naming the v4 way', function () {
+    expect(() => cy.add(cy.nodes())).to.throw(
+      /does not take a collection.*jsons\(\)/,
+    );
   });
 });

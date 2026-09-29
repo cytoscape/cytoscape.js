@@ -15,6 +15,7 @@ import type {
   Core,
   CursorMap,
   Event,
+  ElementDefinition,
   ElementsDefinition,
   ExportOptions,
   GridLayoutOptions,
@@ -119,6 +120,24 @@ const wire: ArrayBuffer = cytoscape.serializeElements(columnar);
 
 cytoscape.deserializeElements(wire);
 cy.add(wire);
+
+// -- iteration (round 75.3): collections are iterable; add takes iterables --
+
+for (const ele of cy.nodes()) {
+  const id: string | undefined = ele.id();
+
+  void id;
+}
+
+const spread: Collection[] = [...cy.elements()];
+
+void spread;
+cy.add(new Set<ElementDefinition>([{ data: { id: 'it' } }]));
+cy.add(
+  (function* () {
+    yield { data: { id: 'gen' } };
+  })(),
+);
 
 // -- patch (round 107): every input form, the diff, and the summary event --
 

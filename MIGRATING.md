@@ -687,6 +687,12 @@ instances are not emitters.
   first selector block, and a v3 property v4 dropped fails by name, so
   validating a store of saved sheets finds the ones still to port without
   loading any of them.
+- **Iteration** (round 75.3).  Collections are iterable — `for..of`,
+  spread and `Array.from( eles )` — and `cy.add()` takes any iterable of
+  definitions, so a generator can feed it directly.  v3's collections
+  were not iterable either; this is new surface, not a parity fix.
+  `cy.add( eles )`, v3's restore idiom, throws (see "Removed elements are
+  terminally dead").
 - **Mapper domains.** An explicit `domain` keeps a data write O(changed);
   `'auto'` is a live extent and pays O(n) only when a write actually moves it.
   Pin `domain` when a stream grows its own extent.

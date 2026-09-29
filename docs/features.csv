@@ -93,7 +93,7 @@ Category,Feature,Status,Comments,Reference
 "API","ctx.width","Implemented","The viewport width in CSS px — what a layout sizing itself to the screen should use. Headless instances report the configured headless width, so a layout still works without a DOM.","src/layout/contract.mts:302"
 "API","cy.$","Implemented","Alias of cy.filter. Filter the whole graph. Identical to elements( query ), kept for symmetry with eles.filter().","src/core.mts:933"
 "API","cy.$id","Implemented","Alias of cy.getElementById. Look up one element by id through the O(1) id index.","src/core.mts:861"
-"API","cy.add","Implemented","Add elements to the graph and return them as a collection.","src/core.mts:607"
+"API","cy.add","Implemented","Add elements to the graph and return them as a collection. Definition, columnar or wire form, or (round 75.3) any iterable of definitions; a collection throws, since removed elements are not restorable.","src/core.mts:657"
 "API","cy.addListener","Implemented","Alias of cy.on. Listen for events on the core.","src/core.mts:1066"
 "API","cy.animate","Implemented","Animate the viewport (pan/zoom) over duration ms. Element animation is on the collection (eles.animate). Tweens are CPU-canonical; a data write / manual pan mid-animation is not prevented but will be overwritten by the next tick.","src/core.mts:1307"
 "API","cy.animated","Implemented","True while the viewport is animating.","src/core/viewport.mts:98"

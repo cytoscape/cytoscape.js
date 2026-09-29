@@ -54,8 +54,13 @@ import { _applyStyle } from './batching.mjs';
  * @param input — elements in definition, columnar or wire form
  * @returns a collection of the added elements
  */
-export function add(core: Core, input: ElementsInput): Collection {
-  const defs = isSerializedElements(input) ? deserializeElements(input) : input;
+export function add(
+  core: Core,
+  input: ElementsInput | Iterable<ElementDefinition>,
+): Collection {
+  const defs = isSerializedElements(input)
+    ? deserializeElements(input)
+    : _definitionsOf(input);
   const refs = isColumnarElements(defs)
     ? _columnarRefs(core, _addColumnar(core, defs))
     : _addDefs(core, defs);
@@ -68,6 +73,41 @@ export function add(core: Core, input: ElementsInput): Collection {
   }
 
   return added;
+}
+
+/**
+ * A generic iterable of definitions, read into an array (round 75.3).
+ * Runs *after* the wire check — a typed-array view is iterable and must
+ * decode, never walk — and passes arrays, `{ nodes, edges }`, a single
+ * definition and the columnar form through untouched (none of them is
+ * a non-array iterable).  A string is not an object, so it falls through
+ * to the definition path's own errors as before.
+ *
+ * @param input — anything `cy.add()` was handed that is not a wire buffer
+ * @returns the input, or its members as an array
+ * @throws if the input is a collection (v4 restores no removed element)
+ */
+export function _definitionsOf(
+  input: ElementsInput | Iterable<ElementDefinition>,
+): ElementsDefinition | ElementDefinition | ColumnarElements {
+  if (input instanceof Collection) {
+    throw new Error(
+      'cy.add() does not take a collection: v4 does not restore removed ' +
+        'elements — add the definitions you kept (eles.jsons() before ' +
+        'the removal)',
+    );
+  }
+
+  if (
+    input != null &&
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    typeof (input as Partial<Iterable<unknown>>)[Symbol.iterator] === 'function'
+  ) {
+    return Array.from(input as Iterable<ElementDefinition>);
+  }
+
+  return input as ElementsDefinition | ElementDefinition | ColumnarElements;
 }
 
 /**

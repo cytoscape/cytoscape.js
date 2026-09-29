@@ -298,7 +298,11 @@ describe('the development record', () => {
     ).to.equal('landed');
     expect(
       states.get(104),
-      'the label-decluttering round is scoped, not built',
+      'the label-decluttering round landed (2026-09-29)',
+    ).to.equal('landed');
+    expect(
+      states.get(105),
+      'the GeneMANIA parallel-edge round is scoped, not built',
     ).to.equal('planned');
     expect(
       [...states.values()].every((v) => v === 'landed' || v === 'planned'),

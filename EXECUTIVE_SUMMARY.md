@@ -5,7 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 102 made the hover
+- **Last updated**: 2026-09-29, after round 104 made dense labels
+  legible — `label-declutter: 'cull'` hides each node label that would
+  overlap a higher-`label-priority` one, so the 465k-edge fixture's
+  19,607 labels at fit (99.4% of them overlapping) become 1,545 that do
+  not, for ~2 ms a frame, and a pan re-decides nothing; the priority
+  also orders the zoom fade, lowest first.  Earlier the same day round
+  102 made the hover
   highlight one call — `cy.emphasize( node.closedNeighborhood() )` dims
   everything else and draws the neighbourhood above it, at 0.42 ms per
   hover change at a 733-degree hub on the 465k-edge fixture, where
@@ -147,7 +153,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,044 unit · 1,035 module · 38 soak · 536 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,058 unit · 1,061 module · 38 soak · 544 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
@@ -1475,6 +1481,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     733-degree hub on the 465k-edge fixture, against 2.9 s for the
     per-element opacity spelling and 1.1 s for a dim that is a style
     state — the measurement that decided the design.
+- **29 Sep** — dense labels declutter
+  - `label-declutter: 'cull'` (a core prop, off by default) hides each
+    node label that would overlap a higher-ranked one — hidden, never
+    half-faded; `label-priority` (any number, mapped from data) is the
+    rank, and the hovered set ranks above all.
+  - The priority also orders the zoom fade: zooming out takes the
+    lowest-ranked labels away first.  A graph with no priority draws
+    exactly as before.
+  - The decision is stable: a pan re-decides nothing, and a zoom does
+    not strobe winners (142 labels flipping back over a 60-frame zoom on
+    the 19,607-label fixture, from 36,703 without the hysteresis).
+    Exports declutter their own view.
+  - Buys labels on at scale — the reason apps hide them wholesale: the
+    465k-edge fixture's labels at fit, 99.4% overlapping, become 1,545
+    that do not, for 1.6–2.0 ms a frame.  Edge labels are not
+    decluttered yet.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1599,6 +1621,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   exported images or kept a second instance in step by hand; a v4 clone
   with `follow` is a full instance that stays current by itself, with
   its own sheet and its own selection.
+- **Dense labels can declutter** (29 Sep): v3 apps hid labels wholesale
+  below a zoom or kept the few that mattered by hand; v4's
+  `label-declutter: 'cull'` keeps the highest-`label-priority` label
+  wherever two would overlap, and the priority orders the fade.  Off by
+  default, so a ported sheet draws what it drew.
 - **The hover highlight is `cy.emphasize()`** (29 Sep): v3 apps added a
   class to everything outside the hovered neighbourhood and removed it
   on leave — a write per element per hover; v4 emphasizes the set and
@@ -1672,7 +1699,7 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a small style-wins bundle.  The DX polish bundle landed 28 Sep |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Ecosystem rounds | Two plans serving the flagship apps, approved in direction: priority-driven label decluttering, and parallel-edge scale plus a real GeneMANIA fixture.  The other four landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
+| Ecosystem rounds | One plan serving the flagship apps, approved in direction: parallel-edge scale plus a real GeneMANIA fixture.  The other five landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) and priority-driven label decluttering (`label-declutter`, `label-priority`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured

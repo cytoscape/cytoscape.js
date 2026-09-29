@@ -298,6 +298,16 @@ that compile and then behave differently.
   it — O(set) per change (0.42 ms at a 733-degree hub on a 484k-element
   graph, against 2.9 s for the per-element opacity spelling).  Not
   serialized, not shared by `clone()`; `png()`/`jpg()` draw it.
+- **Label decluttering** (round 104) — the core `label-declutter: 'cull'`
+  (default `'none'`) hides each node label that would overlap a
+  higher-`label-priority` one: a renderer-local claim over a grid anchored
+  in model space, so a pan re-decides nothing, with hysteresis so a zoom
+  does not strobe the winners (ndex-x-large: 19,607 labels at fit, 99.4%
+  overlapping, culled to 1,545 with none overlapping, ~2 ms a frame).
+  `label-priority` (a node prop, mapper-able, default 0) also orders the
+  zoom fade — the lowest rank fades first — and the emphasized set ranks
+  above all.  `png()`/`jpg()` declutter their own view.  Edge labels do not
+  join the pass.
 - **Style transitions** (`transition-property`/`-duration`/`-delay`/
   `-timing-function`) and animation controls (`pause`/`resume`/`reverse`,
   read-only `progress`/`paused`).

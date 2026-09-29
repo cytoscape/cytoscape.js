@@ -259,7 +259,16 @@ is a style state at 1.1 s (the O(V) toggle), so it shipped
 state, the rest dimmed by the renderer as a two-tier composite at the
 core `dim-opacity` (0.42 ms per change at the 733-degree hub, +0.64 ms
 of GPU per frame); it took item 55's measurement note and raised no new
-item.
+item.  Round 104 (label decluttering, landed 2026-09-29 on the
+sitting's calls — off by default, `label-priority` ordering the fade
+too) measured the soup first (ndex-x-large: 19,607 labels at fit with
+its floor off, 99.4% overlapping) and shipped the core
+`label-declutter: 'cull'` and the node prop `label-priority`: a
+renderer-local claim over a grid anchored in model space (a pan
+re-decides nothing), hysteresis in a rank margin and a one-cell inset
+(a slow zoom's strobes 36,703 → 142), 1.66 ms a pass at 19.6k labels,
+CPU-only; edge labels stay out, a follow-up hook; it took round 102's
+last hook (the emphasized set ranks first) and raised no new item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 

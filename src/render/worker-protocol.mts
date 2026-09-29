@@ -17,6 +17,8 @@ import type { ExportView } from './renderer.mjs';
 import type { DeviceFit } from '../device-fit.mjs';
 import type { ArrowEndFlags } from './host.mjs';
 import type { ForceParams } from '../layout/force-sim.mjs';
+import type { ImageLifecycleOp } from '../image-registry.mjs';
+import type { DecodedImage } from '../image-registry.mjs';
 
 /*
 The worker-renderer message contract (round 86.1, written before the
@@ -132,6 +134,25 @@ export interface StoreBatch {
   labelFontStyle: string;
   labelFontWeight: string;
   viewport: WireViewport;
+  /**
+   * The image registry's lifecycle since the last batch (round 141):
+   * the worker's registry replays the ops by id and decodes there.
+   * `reset` (the full transfer) replaces the mirror's entry set.
+   */
+  images: { reset: boolean; ops: ImageLifecycleOp[] };
+}
+
+/**
+ * A vector raster the worker asks of the main thread (round 141): SVG
+ * decodes only through an `<img>`, which a worker does not have.  The
+ * worker fetched the source; the blob crosses, the raster comes back
+ * transferred.
+ */
+export interface WireRasterRequest {
+  id: number;
+  blob: Blob;
+  targetPx: number;
+  sdf: boolean;
 }
 
 /**
@@ -210,7 +231,14 @@ export type MainMessage =
   | { kind: 'forceupdate'; id: number; update: WireForceUpdate }
   | { kind: 'forcewake' }
   | { kind: 'forceread'; id: number }
-  | { kind: 'forcefinish'; id: number };
+  | { kind: 'forcefinish'; id: number }
+  // a vector raster's answer (round 141), the raster transferred
+  | {
+      kind: 'rasterresult';
+      id: number;
+      image: DecodedImage | null;
+      message: string | null;
+    };
 
 /** Worker → main messages. */
 export type WorkerMessage =
@@ -245,7 +273,9 @@ export type WorkerMessage =
       idle: boolean;
     }
   // the readback (transferred), or null when the run is gone
-  | { kind: 'forcepositions'; id: number; positions: ArrayBuffer | null };
+  | { kind: 'forcepositions'; id: number; positions: ArrayBuffer | null }
+  // a vector raster the worker cannot do itself (round 141)
+  | { kind: 'raster'; request: WireRasterRequest };
 
 /** The four label streams, in the order batches drain them. */
 export const LABEL_STREAMS: readonly LabelStream[] = [
@@ -483,6 +513,9 @@ export function buildBatch(
     labelFontStyle: store.labelFontStyle,
     labelFontWeight: store.labelFontWeight,
     viewport,
+    images: full
+      ? { reset: true, ops: store.images.snapshotOps() }
+      : { reset: false, ops: store.images.takeJournal() },
   };
 }
 

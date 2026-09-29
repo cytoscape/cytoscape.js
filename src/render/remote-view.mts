@@ -1,4 +1,4 @@
-import { GROUP_EDGES, GROUP_NODES, COLUMN_SPECS } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COLUMN_SPECS, COL } from '../contract.mjs';
 import type {
   ColumnArray,
   ColumnId,
@@ -10,6 +10,7 @@ import type {
 } from '../contract.mjs';
 import { DirtyTracker } from '../store/dirty.mjs';
 import { ImageRegistry } from '../image-registry.mjs';
+import { decodeNodeImages } from '../store/graph-store/images.mjs';
 import type { NodeImageRecord } from '../store/graph-store.mjs';
 import type { MapperSpan } from '../store/graph-store.mjs';
 import { LABEL_STREAMS, SPEC_BY_ID } from './worker-protocol.mjs';
@@ -77,8 +78,9 @@ export class RemoteModelView implements RenderStoreView {
   labelFontStyle = 'normal';
   /** the label CSS font-weight, mirrored from the canonical store */
   labelFontWeight = 'normal';
-  /** an empty registry: pass 1 does not decode images in the worker,
-   * and the proxy forces the image count to zero (recorded deferral) */
+  /** the mirror of the canonical registry (round 141): entries arrive
+   * by id as the batches' lifecycle ops, and decode here — the renderer
+   * attaches the worker's decoder at init */
   images = new ImageRegistry();
 
   private columns = new Map<ColumnId, ColumnArray>();
@@ -138,6 +140,10 @@ export class RemoteModelView implements RenderStoreView {
       this.labels.set(stream, new Map());
       this.labelDirty.set(stream, new Set());
     }
+
+    // a decode landing (or an entry freeing) redraws, as on the
+    // canonical store
+    this.images.onChange = () => this.tracker.touch();
   }
 
   /**
@@ -188,6 +194,20 @@ export class RemoteModelView implements RenderStoreView {
     applyBlob(this.blobs.poly, batch.blobs.poly);
     applyBlob(this.blobs.image, batch.blobs.image);
     applyBlob(this.blobs.chart, batch.blobs.chart);
+
+    // the registry's lifecycle, replayed by id (round 141) — before the
+    // frame that reads the records naming those ids
+    if (batch.images.reset) {
+      this.images.dropAll();
+    }
+
+    for (const op of batch.images.ops) {
+      if (op.op === 'create') {
+        this.images.adopt(op);
+      } else {
+        this.images.drop(op.id);
+      }
+    }
 
     for (const { stream, slot, entry } of batch.labels) {
       const map = this.labels.get(stream) as Map<number, LabelEntry>;
@@ -474,7 +494,7 @@ export class RemoteModelView implements RenderStoreView {
     return this.counts.charts;
   }
 
-  /** @returns the image-styled node count (always 0 in pass 1) */
+  /** @returns the image-styled node count */
   imageCount(): number {
     return this.counts.images;
   }
@@ -485,12 +505,18 @@ export class RemoteModelView implements RenderStoreView {
   }
 
   /**
-   * Image records are not mirrored (pass 1 has no worker images).
+   * A node's image records, decoded from the mirrored ref column and
+   * image pool (round 141) — what the vector promotion meter reads.
    *
-   * @returns null always
+   * @param slot — the node slot
+   * @returns the records in paint order, or null when imageless
    */
-  nodeImagesAt(): NodeImageRecord[] | null {
-    return null;
+  nodeImagesAt(slot: number): NodeImageRecord[] | null {
+    return decodeNodeImages(
+      (this.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot] ?? 0,
+      this.blobs.image.pool,
+      this.images,
+    );
   }
 
   /** Mark every labelled slot dirty (label-layer construction/compaction). */

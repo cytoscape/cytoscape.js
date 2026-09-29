@@ -322,4 +322,188 @@ describe('gpu/render: image registry (round 15.1)', function () {
     reg.release(id);
     expect(changes).to.be.greaterThan(before);
   });
+
+  // round 141: the worker host mirrors the registry — the canonical side
+  // journals entry lifecycle, the worker's side replays it by id
+  describe('the lifecycle journal and its mirror (round 141)', function () {
+    it('records nothing until journaling starts', function () {
+      const reg = new ImageRegistry();
+
+      reg.release(reg.acquire('a.png', IMAGE_KIND_AUTO));
+      expect(reg.takeJournal()).to.deep.equal([]);
+    });
+
+    it('journals creates and frees in order, with the dedup key', function () {
+      const reg = new ImageRegistry();
+
+      reg.setJournal(true);
+
+      const a = reg.acquire('a.png', IMAGE_KIND_AUTO);
+      const b = reg.acquire('b.svg', IMAGE_KIND_SDF, 'use-credentials');
+
+      reg.acquire('a.png', IMAGE_KIND_AUTO); // a shared ref: no op
+      expect(reg.takeJournal()).to.deep.equal([
+        {
+          op: 'create',
+          id: a,
+          url: 'a.png',
+          kind: IMAGE_KIND_AUTO,
+          crossOrigin: 'anonymous',
+        },
+        {
+          op: 'create',
+          id: b,
+          url: 'b.svg',
+          kind: IMAGE_KIND_SDF,
+          crossOrigin: 'use-credentials',
+        },
+      ]);
+
+      reg.release(a); // one ref left: no op
+      reg.release(a);
+      expect(reg.takeJournal()).to.deep.equal([{ op: 'free', id: a }]);
+      expect(reg.takeJournal()).to.deep.equal([]);
+    });
+
+    it('cancels a create freed before the take, and orders a recycled id', function () {
+      const reg = new ImageRegistry();
+
+      reg.setJournal(true);
+
+      const old = reg.acquire('old.png', IMAGE_KIND_AUTO);
+
+      reg.takeJournal(); // the mirror has `old`
+
+      // created and freed between takes: never crosses at all
+      reg.release(reg.acquire('brief.png', IMAGE_KIND_AUTO));
+      // an entry the mirror holds, freed, and its id recycled
+      reg.release(old);
+
+      const reused = reg.acquire('new.png', IMAGE_KIND_AUTO);
+
+      expect(reused).to.equal(old);
+      expect(reg.takeJournal()).to.deep.equal([
+        { op: 'free', id: old },
+        {
+          op: 'create',
+          id: old,
+          url: 'new.png',
+          kind: IMAGE_KIND_AUTO,
+          crossOrigin: 'anonymous',
+        },
+      ]);
+    });
+
+    it('snapshots every live entry, subsuming the journal', function () {
+      const reg = new ImageRegistry();
+
+      reg.setJournal(true);
+
+      const a = reg.acquire('a.png', IMAGE_KIND_AUTO);
+      const b = reg.acquire('b.png', IMAGE_KIND_AUTO);
+
+      reg.release(a);
+      expect(reg.snapshotOps().map((op) => op.id)).to.deep.equal([b]);
+      expect(reg.takeJournal()).to.deep.equal([]);
+    });
+
+    it('a mirror replaying the journal holds the same entries by id, and decodes them', async function () {
+      const canonical = new ImageRegistry();
+      const mirror = new ImageRegistry();
+      const decoder = fakeDecoder();
+      const calls = decoder.calls;
+
+      mirror.setDecoder(decoder);
+      canonical.setJournal(true);
+
+      // a deterministic churn: acquires, shared refs, frees and recycles
+      const held = [];
+      let seed = 7;
+      const rand = (n) => {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+
+        return seed % n;
+      };
+
+      for (let round = 0; round < 20; round++) {
+        for (let i = 0; i < 6; i++) {
+          if (held.length > 0 && rand(3) === 0) {
+            canonical.release(held.splice(rand(held.length), 1)[0]);
+          } else {
+            held.push(canonical.acquire(`u${rand(12)}.png`, IMAGE_KIND_AUTO));
+          }
+        }
+
+        for (const op of canonical.takeJournal()) {
+          if (op.op === 'create') {
+            mirror.adopt(op);
+          } else {
+            mirror.drop(op.id);
+          }
+        }
+      }
+
+      expect(mirror.liveCount()).to.equal(canonical.liveCount());
+
+      for (const id of new Set(held)) {
+        expect(mirror.get(id)?.url, `entry ${id}`).to.equal(
+          canonical.get(id)?.url,
+        );
+      }
+
+      await tick();
+      expect(calls.length).to.be.above(0);
+
+      for (const id of new Set(held)) {
+        expect(mirror.get(id).status).to.equal(IMAGE_READY);
+      }
+
+      // the canonical side never decodes: it has no decoder
+      expect(canonical.pendingCount()).to.equal(canonical.liveCount());
+    });
+
+    it('control: a mirror missing one op is provably wrong', function () {
+      const canonical = new ImageRegistry();
+      const mirror = new ImageRegistry();
+
+      canonical.setJournal(true);
+
+      const a = canonical.acquire('a.png', IMAGE_KIND_AUTO);
+
+      canonical.takeJournal().forEach((op) => mirror.adopt(op));
+      canonical.release(a);
+      canonical.acquire('b.png', IMAGE_KIND_AUTO); // recycles a's id
+
+      const ops = canonical.takeJournal().filter((op) => op.op !== 'create');
+
+      ops.forEach((op) => mirror.drop(op.id));
+      expect(mirror.get(a)).to.equal(null);
+      expect(canonical.get(a)?.url).to.equal('b.png');
+    });
+
+    it('drop queues the freed id and discards a decode landing after it', async function () {
+      const mirror = new ImageRegistry();
+      let resolve;
+
+      mirror.setDecoder(
+        () =>
+          new Promise((r) => {
+            resolve = r;
+          }),
+      );
+      mirror.adopt({
+        id: 4,
+        url: 'x.png',
+        kind: IMAGE_KIND_AUTO,
+        crossOrigin: 'anonymous',
+      });
+      mirror.drop(4);
+      expect(mirror.takeFreed()).to.deep.equal([4]);
+
+      resolve({ data: {}, width: 8, height: 8, vector: false });
+      await tick();
+      expect(mirror.takeReady()).to.deep.equal([]);
+      expect(mirror.get(4)).to.equal(null);
+    });
+  });
 });

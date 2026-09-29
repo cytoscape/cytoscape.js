@@ -222,6 +222,70 @@ describe('the worker-renderer protocol (round 86.3)', () => {
     cy.destroy();
   });
 
+  // round 141: background images cross — the registry's lifecycle rides
+  // the batch, and the mirror's records resolve to the same entries
+  it('mirrors background images: the records and the registry, by id (round 141)', () => {
+    const cy = makeCy();
+    const remote = new RemoteModelView(() => {});
+    const state = { parentOrderRef: null };
+    const expectImagesEqual = () => {
+      for (const node of cy.nodes()) {
+        const slot = cy._store.lookup(node.id()).slot;
+        const canonical = cy._store.nodeImagesAt(slot);
+
+        expect(remote.nodeImagesAt(slot), node.id()).to.deep.equal(canonical);
+
+        for (const rec of canonical ?? []) {
+          expect(remote.images.get(rec.entryId)?.url).to.equal(rec.url);
+        }
+      }
+
+      expect(remote.images.liveCount()).to.equal(cy._store.images.liveCount());
+      expect(remote.imageCount()).to.equal(cy._store.imageCount());
+    };
+
+    cy._store.images.setJournal(true); // what the proxy does at mount
+    cy.$id('a').style('background-image', 'a.png');
+    cy.$id('c').style('background-image', 'c.svg');
+    remote.applyBatch(drain(cy, state, true));
+    expect(remote.imageCount()).to.equal(2);
+    expectImagesEqual();
+
+    // a restyle frees one entry and creates another, recycling its id
+    cy.$id('a').style('background-image', 'a2.png');
+    cy.$id('b').style('background-image', 'c.svg'); // shares c's entry
+    remote.applyBatch(drain(cy, state));
+    expectImagesEqual();
+
+    cy.$id('c').removeStyle('background-image');
+    cy.$id('b').removeStyle('background-image');
+    remote.applyBatch(drain(cy, state));
+    expectImagesEqual();
+    expect(remote.images.liveCount()).to.equal(1);
+    cy.destroy();
+  });
+
+  it('control: an image batch with its lifecycle stripped leaves the mirror wrong (round 141)', () => {
+    const cy = makeCy();
+    const remote = new RemoteModelView(() => {});
+    const state = { parentOrderRef: null };
+
+    cy._store.images.setJournal(true);
+    remote.applyBatch(drain(cy, state, true));
+    cy.$id('a').style('background-image', 'a.png');
+
+    const batch = drain(cy, state);
+
+    expect(batch.images.ops).to.have.length(1);
+    remote.applyBatch({ ...batch, images: { reset: false, ops: [] } });
+
+    const slot = cy._store.lookup('a').slot;
+
+    expect(remote.nodeImagesAt(slot)[0].url).to.equal('');
+    expect(cy._store.nodeImagesAt(slot)[0].url).to.equal('a.png');
+    cy.destroy();
+  });
+
   it('rejects a worker mount loudly where Worker/OffscreenCanvas are missing', () => {
     // Node has neither; the mount must throw its clear message rather
     // than fall back to the main thread silently

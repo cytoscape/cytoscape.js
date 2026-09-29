@@ -4,6 +4,7 @@
 import { COL, CHART_HEADER } from '../../contract.mjs';
 import type { StoreDelta } from '../../contract.mjs';
 import { IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../../image-registry.mjs';
+import type { ImageRegistry } from '../../image-registry.mjs';
 import { IMG_STRIDE } from '../graph-store.mjs';
 import { takeBlobs } from './consumers.mjs';
 import type {
@@ -250,13 +251,32 @@ export function nodeImagesAt(
   gs: GraphStore,
   slot: number,
 ): NodeImageRecord[] | null {
-  const ref = (gs.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot];
+  return decodeNodeImages(
+    (gs.nodes.column(COL.NODE_IMAGE_REF) as Uint32Array)[slot],
+    gs.imagePool.data(),
+    gs.images,
+  );
+}
 
+/**
+ * Decode one node's image records from its `NODE_IMAGE_REF` word and the
+ * image pool — shared by the canonical store and the worker host's
+ * mirror (round 141), which holds the same two things as copies.
+ *
+ * @param ref — the node's `NODE_IMAGE_REF` (offset | count << 24), 0 for none
+ * @param pool — the image record pool
+ * @param registry — resolves entry ids to urls
+ * @returns the records in paint order, or null when imageless
+ */
+export function decodeNodeImages(
+  ref: number,
+  pool: Float32Array,
+  registry: ImageRegistry,
+): NodeImageRecord[] | null {
   if (ref === 0) {
     return null;
   }
 
-  const pool = gs.imagePool.data();
   const off = ref & 0xffffff;
   const count = ref >>> 24;
   const out: NodeImageRecord[] = [];
@@ -271,7 +291,7 @@ export function nodeImagesAt(
 
     out.push({
       entryId,
-      url: gs.images.get(entryId)?.url ?? '',
+      url: registry.get(entryId)?.url ?? '',
       fit: flags & 3,
       repeat: (flags >> 2) & 3,
       clip: (flags >> 4) & 1,

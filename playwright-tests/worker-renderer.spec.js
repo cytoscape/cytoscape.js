@@ -154,7 +154,13 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     });
 
     if (mismatched !== 0) {
-      writeDiffArtifacts(testInfo, 'worker-vs-main', worker, mainThread, diff);
+      writeDiffArtifacts(
+        testInfo.outputPath(''),
+        'worker-vs-main',
+        worker,
+        mainThread,
+        diff,
+      );
     }
 
     expect(mismatched).toBe(0);
@@ -208,7 +214,7 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
 
     if (mismatched !== 0) {
       writeDiffArtifacts(
-        testInfo,
+        testInfo.outputPath(''),
         'emphasis-worker-vs-main',
         worker.image,
         main.image,
@@ -260,7 +266,7 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
 
     if (cmp.mismatched !== 0) {
       writeDiffArtifacts(
-        testInfo,
+        testInfo.outputPath(''),
         'worker-mutated-vs-main',
         after,
         mainThread,
@@ -956,6 +962,186 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
         result.ticks,
         `${result.ticks} timer ticks over ${result.wallMs.toFixed(0)} ms`,
       ).toBeGreaterThan(Math.max(4, result.wallMs / 20));
+      await destroyCy(page);
+    });
+  }
+});
+
+/*
+Round 141 (ledger item 51): the worker host's background images and
+label fonts.  Images decode in the worker (raster sources there, SVG on
+the main thread, which has the `<img>` it needs), and the parity
+statement is 86.3's: the same scene through both hosts, exact-zero.
+Fonts come from the app's `renderer.fonts` list, registered from bytes
+in the worker; with the same face registered on the page for the
+same-thread host, the labelled scene is held to the same exact tier.
+
+The mechanics test at the end needs no adapter, so it is the one that
+runs on WebKit here (Playwright's Linux WebKit has no WebGPU, and the
+host itself soft-skips there): it is the "WebKit verified" half of the
+eleventh sitting's call, for everything the host does in a worker short
+of the GPU.
+*/
+
+const QUAD_PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg==';
+const RING_SVG =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">' +
+      '<circle cx="16" cy="16" r="11" fill="none" stroke="#27a" stroke-width="5"/>' +
+      '<rect x="13" y="2" width="6" height="28" fill="#a72"/></svg>',
+  );
+const OPEN_SANS =
+  '../node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2';
+
+const imageScene = (type, imgs) => ({
+  elements: imgs.map((img, i) => ({
+    data: { id: `n${i}`, img },
+    position: { x: -90 + i * 60, y: 0 },
+  })),
+  style: {
+    nodes: {
+      width: 50,
+      height: 50,
+      shape: 'round-rectangle',
+      'background-color': '#e4e4e4',
+      'border-width': 2,
+      'border-color': '#333',
+      'background-image': { data: 'img' },
+      'background-fit': 'contain',
+      ...(type === 'sdf-icon'
+        ? {
+            'background-image-type': 'sdf-icon',
+            'background-image-color': '#c33',
+          }
+        : {}),
+    },
+  },
+  zoom: 1.5,
+  pan: { x: 200, y: 150 },
+});
+
+/** Export until two consecutive exports agree and `done` holds (the
+ * worker's decodes land asynchronously, with no main-side signal). */
+const settledExport = async (page, done = () => true) => {
+  let last = null;
+
+  for (let i = 0; i < 60; i++) {
+    const png = decodePng(await exportPng(page));
+
+    if (
+      last != null &&
+      diffPngs(png, last, { threshold: 0 }).mismatched === 0 &&
+      done(png)
+    ) {
+      return png;
+    }
+
+    last = png;
+    await page.waitForTimeout(100);
+  }
+
+  return last;
+};
+
+test.describe("the worker host's images and fonts (round 141)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 400, height: 300 });
+    await page.goto(PAGE);
+  });
+
+  for (const type of ['auto', 'sdf-icon']) {
+    test(`background images decode in the worker (${type}): raster and SVG, exactly the same-thread pixels, through a restyle`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+      test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+      const first = [QUAD_PNG, RING_SVG, QUAD_PNG, null];
+      // a restyle: n0 swaps to the SVG (sharing its entry), n1's SVG
+      // entry survives through n0, n2 frees the PNG and n3 takes it —
+      // frees, shared refs and a recycled id all cross
+      const restyle = async () => {
+        await page.evaluate(
+          async ([png, svg]) => {
+            const cy = window.cy;
+
+            cy.batch(() => {
+              cy.$id('n0').data('img', svg);
+              cy.$id('n2').data('img', null);
+              cy.$id('n3').data('img', png);
+            });
+            await new Promise((resolve) => cy.one('render', resolve));
+          },
+          [QUAD_PNG, RING_SVG],
+        );
+      };
+
+      // the same-thread reference, both phases
+      await makeReadyCy(page, imageScene(type, first));
+      await page.waitForFunction(
+        () => window.cy._store.images.pendingCount() === 0,
+      );
+
+      const mainFirst = await settledExport(page);
+
+      await restyle();
+      await page.waitForFunction(
+        () => window.cy._store.images.pendingCount() === 0,
+      );
+
+      const mainSecond = await settledExport(page);
+
+      await destroyCy(page);
+
+      // the worker host
+      await makeReadyCy(page, {
+        ...imageScene(type, first),
+        renderer: { worker: true },
+      });
+
+      const same = (ref) => (png) =>
+        diffPngs(png, ref, { threshold: 0 }).mismatched === 0;
+      const workerFirst = await settledExport(page, same(mainFirst));
+
+      // the main thread decoded nothing: its registry has no decoder
+      // under the worker host, so every entry there stays pending
+      const mainSide = await page.evaluate(() => ({
+        live: window.cy._store.images.liveCount(),
+        pending: window.cy._store.images.pendingCount(),
+      }));
+
+      expect(mainSide.live).toBe(2);
+      expect(mainSide.pending).toBe(2);
+
+      await restyle();
+
+      const workerSecond = await settledExport(page, same(mainSecond));
+
+      for (const [name, worker, main] of [
+        ['first', workerFirst, mainFirst],
+        ['restyled', workerSecond, mainSecond],
+      ]) {
+        const { mismatched, diff } = diffPngs(worker, main, { threshold: 0 });
+
+        if (mismatched !== 0) {
+          writeDiffArtifacts(
+            testInfo.outputPath(''),
+            `images-${type}-${name}`,
+            worker,
+            main,
+            diff,
+          );
+        }
+
+        expect(mismatched, `${name} phase`).toBe(0);
+      }
+
+      // control: the images are in the frame (the restyle moved pixels)
+      expect(
+        diffPngs(workerFirst, workerSecond, { threshold: 0 }).mismatched,
+      ).toBeGreaterThan(200);
       await destroyCy(page);
     });
   }

@@ -23,6 +23,8 @@ import type {
   ForceRuntimeLike,
 } from '../layout/force-host.mjs';
 import { SELF_URL } from '../util/self-url.mjs';
+import { rasterVectorInPage } from './image-decoder.mjs';
+import type { DecodedImage } from '../image-registry.mjs';
 import type { Core } from '../core.mjs';
 import type {
   ExportOptions,
@@ -62,6 +64,13 @@ What stays on this thread, and why:
 - **Export view resolution** (container CSS size + model bounds), via
   `resolveExportView`; the worker validates against the device and
   renders.
+- **The canonical image registry** (round 141, closing item 51's
+  images): style application acquires and releases entries here, and
+  the registry journals each create and free; the batch carries the
+  journal and the worker's registry replays it by id and decodes — the
+  fetch and `createImageBitmap` run in the worker.  SVG sources are the
+  exception: they need an `<img>`, so the worker sends the fetched blob
+  back here and takes the raster (`rasterVectorInPage`) transferred.
 
 Per-batch traffic is `buildBatch`'s drain of the store's own delta —
 priced by the 86.1 gate at 0.035 ms/frame for the worst case at
@@ -280,7 +289,6 @@ export class WorkerRenderer implements ForceHostLike {
       reject: (err: Error) => void;
     }
   >();
-  private imagesWarned = false;
   /** the worker acknowledged its device (the `ready` message) */
   private isReady = false;
   /** the force run open in the worker (129.2), or null */
@@ -343,7 +351,6 @@ export class WorkerRenderer implements ForceHostLike {
     };
 
     const doc = container.ownerDocument as Document;
-
     // fixed-px CSS rather than `100%`, as the same-thread renderer
     // (91.1): a worker frame is always at least a message late behind a
     // layout change, and a wrongly-*sized* canvas letterboxes where a
@@ -389,6 +396,10 @@ export class WorkerRenderer implements ForceHostLike {
     this.worker.onerror = (e: ErrorEvent) => {
       readyReject(new Error(`The render worker failed to start: ${e.message}`));
     };
+
+    // the registry journals entry lifecycle for the mirror from here
+    // on; the full batch below carries every live entry (round 141)
+    cy._store.images.setJournal(true);
 
     const batch = this.makeBatch(true);
 
@@ -779,6 +790,7 @@ export class WorkerRenderer implements ForceHostLike {
     this.resizeObserver?.disconnect();
     this.offDprChange?.();
     this.offInvalidate();
+    this.cy._store.images.setJournal(false);
     this.cy.off('viewport', this.onViewport);
     this.cy._animations.detachDriver();
 
@@ -825,7 +837,8 @@ export class WorkerRenderer implements ForceHostLike {
   private makeBatch(full: boolean): StoreBatch {
     const cy = this.cy;
     const pan = cy._viewport.pan();
-    const batch = buildBatch(
+
+    return buildBatch(
       cy._store,
       {
         ends: cy._styleEngine.arrowEnds,
@@ -835,22 +848,44 @@ export class WorkerRenderer implements ForceHostLike {
       this.batchState,
       full,
     );
+  }
 
-    // pass-1 deferral, loud once: background images do not decode in
-    // the worker, so their draw passes are gated off by a zero count
-    if (batch.counts.images > 0) {
-      batch.counts.images = 0;
+  /**
+   * Raster a vector source for the worker (round 141): it fetched the
+   * SVG but has no `<img>` to draw it through.  The raster (an
+   * ImageBitmap, or the sdf alpha grid) goes back transferred; a failure
+   * goes back as a message, and the worker's registry warns once per url
+   * as for any failed decode.
+   */
+  private rasterForWorker(
+    id: number,
+    blob: Blob,
+    targetPx: number,
+    sdf: boolean,
+  ): void {
+    rasterVectorInPage(blob, targetPx, sdf).then(
+      (image: DecodedImage) => {
+        const data = image.data as
+          | ImageBitmap
+          | { alpha: Uint8ClampedArray }
+          | null;
+        const transfer: Transferable[] =
+          typeof ImageBitmap !== 'undefined' && data instanceof ImageBitmap
+            ? [data]
+            : data != null && 'alpha' in data
+              ? [data.alpha.buffer as ArrayBuffer]
+              : [];
 
-      if (!this.imagesWarned) {
-        this.imagesWarned = true;
-        cy.emit({ type: 'error' }, [
-          'renderer.worker does not support background images yet; ' +
-            'they are not drawn (round 86.3 pass 1)',
-        ]);
-      }
-    }
-
-    return batch;
+        this.post({ kind: 'rasterresult', id, image, message: null }, transfer);
+      },
+      (err: unknown) =>
+        this.post({
+          kind: 'rasterresult',
+          id,
+          image: null,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    );
   }
 
   private scheduleBatch(): void {
@@ -982,6 +1017,13 @@ export class WorkerRenderer implements ForceHostLike {
         if (this.forceRun?.id === msg.id) {
           this.forceRun._onPositions(msg.positions);
         }
+        break;
+      }
+
+      case 'raster': {
+        const r = msg.request;
+
+        this.rasterForWorker(r.id, r.blob, r.targetPx, r.sdf);
         break;
       }
     }

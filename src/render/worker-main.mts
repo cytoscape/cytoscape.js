@@ -8,6 +8,9 @@ import type {
 import type { RenderHost } from './host.mjs';
 import type { GpuForceRuntime } from '../gpu/gpu-force.mjs';
 import type { ForceInputs } from '../layout/force-host.mjs';
+import { createBrowserImageDecoder } from './image-decoder.mjs';
+import type { VectorRasterizer } from './image-decoder.mjs';
+import type { DecodedImage } from '../image-registry.mjs';
 
 /*
 The worker-side entry (round 86.3): the real `Renderer` running against
@@ -78,6 +81,22 @@ export function runRenderWorker(
     scope.postMessage(msg, transfer);
   };
 
+  // vector rasters the main thread does for us (round 141): SVG needs an
+  // <img>, which a worker lacks; the fetched blob crosses, the raster
+  // comes back transferred
+  let nextRasterId = 1;
+  const pendingRasters = new Map<
+    number,
+    { resolve: (image: DecodedImage) => void; reject: (err: Error) => void }
+  >();
+  const rasterViaMain: VectorRasterizer = (blob, targetPx, sdf) =>
+    new Promise<DecodedImage>((resolve, reject) => {
+      const id = nextRasterId++;
+
+      pendingRasters.set(id, { resolve, reject });
+      post({ kind: 'raster', request: { id, blob, targetPx, sdf } });
+    });
+
   scope.onmessage = (e: MessageEvent) => {
     const msg = e.data as MainMessage;
 
@@ -134,7 +153,10 @@ export function runRenderWorker(
           emitGpuError: (info) => post({ kind: 'gpuerror', info }),
           reportDeviceFit: (fit) => post({ kind: 'devicefit', fit }),
           gpuMappers: null,
-          createImageDecoder: () => null,
+          // round 141: raster sources fetch and decode here, off the
+          // main thread; vectors raster main-side (rasterViaMain)
+          createImageDecoder: () =>
+            createBrowserImageDecoder(undefined, rasterViaMain),
         };
 
         engine = new Renderer(
@@ -149,6 +171,7 @@ export function runRenderWorker(
         );
         engine.onDeviceLost = (message) =>
           post({ kind: 'devicelost', message });
+
         engine.ready.then(
           () => post({ kind: 'ready' }),
           (err: Error) => post({ kind: 'initerror', message: err.message }),
@@ -364,8 +387,29 @@ export function runRenderWorker(
         break;
       }
 
+      case 'rasterresult': {
+        const job = pendingRasters.get(msg.id);
+
+        pendingRasters.delete(msg.id);
+
+        if (job != null) {
+          if (msg.image != null) {
+            job.resolve(msg.image);
+          } else {
+            job.reject(new Error(msg.message ?? 'The vector raster failed'));
+          }
+        }
+        break;
+      }
+
       case 'destroy': {
         closeForce();
+
+        for (const job of pendingRasters.values()) {
+          job.reject(new Error('The renderer was destroyed'));
+        }
+
+        pendingRasters.clear();
         engine?.destroy();
         engine = null;
         view = null;

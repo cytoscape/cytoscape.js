@@ -18,6 +18,15 @@ warns once per url and renders imageless — no per-element error state
 (recorded).  A decode that resolves after its entry was freed is dropped
 by object identity, so recycled ids can never receive stale rasters.
 
+The worker host mirrors the registry across the thread boundary (round
+141): the canonical registry on the main thread acquires and releases —
+style application runs there — and journals each entry's creation and
+freeing (`setJournal` / `takeJournal`, or `snapshotOps` for the full
+transfer); the worker's registry replays those ops by id (`adopt` /
+`drop`) and owns the decoder, so decodes run where the rasters are
+uploaded and no raster crosses back.  Entry ids agree on both sides
+because only the canonical side allocates them.
+
 Vector sources (SVG) re-raster losslessly: `promote(id, demandPx)`
 re-decodes a vector entry at the smallest tier covering the on-screen
 demand (the 15.6 zoom-promotion meter calls this; exports call it at
@@ -81,7 +90,29 @@ export interface ImageEntry {
   rasterPx: number;
 }
 
+/**
+ * One entry lifecycle event, as the worker host carries it across the
+ * boundary (round 141): an entry created at an id, or the entry at an id
+ * freed.  Replayed in order by {@link ImageRegistry.adopt} /
+ * {@link ImageRegistry.drop}.
+ */
+export type ImageLifecycleOp =
+  | {
+      op: 'create';
+      id: number;
+      url: string;
+      kind: number;
+      crossOrigin: string;
+    }
+  | { op: 'free'; id: number };
+
 export class ImageRegistry {
+  /** the lifecycle journal while a worker host mirrors this registry
+   * (round 141), else null — nothing is recorded */
+  private journal: ImageLifecycleOp[] | null = null;
+  /** journaled creates not yet taken, by id: a free of one of these
+   * cancels the create instead of journaling a free */
+  private journalCreates = new Map<number, ImageLifecycleOp>();
   private entries: (ImageEntry | null)[] = [];
   private freeIds: number[] = [];
   private byKey = new Map<string, number>();
@@ -168,6 +199,13 @@ export class ImageRegistry {
     this.entries[id] = entry;
     this.byKey.set(key, id);
 
+    if (this.journal != null) {
+      const op: ImageLifecycleOp = { op: 'create', id, url, kind, crossOrigin };
+
+      this.journal.push(op);
+      this.journalCreates.set(id, op);
+    }
+
     // a url that already failed once stays failed: warn-once, no re-kick
     if (this.warned.has(url)) {
       entry.status = IMAGE_FAILED;
@@ -201,7 +239,170 @@ export class ImageRegistry {
     this.entries[id] = null;
     this.freeIds.push(id);
     this.freedQueue.push(id);
+    this.journalFree(id);
     this.onChange?.();
+  }
+
+  /**
+   * Journal a free: an entry created and freed between two takes never
+   * crosses at all (its create is cancelled in place), anything older
+   * crosses as a free.
+   */
+  private journalFree(id: number): void {
+    if (this.journal == null) {
+      return;
+    }
+
+    const create = this.journalCreates.get(id);
+
+    if (create != null) {
+      this.journalCreates.delete(id);
+
+      const at = this.journal.lastIndexOf(create);
+
+      if (at >= 0) {
+        this.journal.splice(at, 1);
+      }
+
+      return;
+    }
+
+    this.journal.push({ op: 'free', id });
+  }
+
+  /**
+   * Start or stop journaling entry lifecycle for a worker-host mirror
+   * (round 141).  Starting clears any old journal; stopping drops it.
+   * The journal's consumer is the registry's one lifecycle consumer on
+   * this thread, so taking it also clears the ready and freed queues
+   * (no renderer drains them here).
+   *
+   * @param on — journal from now on, or stop
+   */
+  setJournal(on: boolean): void {
+    this.journal = on ? [] : null;
+    this.journalCreates.clear();
+  }
+
+  /**
+   * The lifecycle ops since the last take (or since journaling started),
+   * in order; clears the journal and the ready / freed queues.
+   *
+   * @returns the ops, empty when nothing changed or journaling is off
+   */
+  takeJournal(): ImageLifecycleOp[] {
+    this.readyQueue = [];
+    this.freedQueue = [];
+
+    if (this.journal == null || this.journal.length === 0) {
+      return [];
+    }
+
+    const out = this.journal;
+
+    this.journal = [];
+    this.journalCreates.clear();
+
+    return out;
+  }
+
+  /**
+   * Every live entry as a create op, in id order — the full transfer a
+   * mirror starts from.  Clears the journal (the snapshot subsumes it).
+   *
+   * @returns one create per live entry
+   */
+  snapshotOps(): ImageLifecycleOp[] {
+    const out: ImageLifecycleOp[] = [];
+
+    for (const entry of this.entries) {
+      if (entry != null) {
+        out.push({
+          op: 'create',
+          id: entry.id,
+          url: entry.url,
+          kind: entry.kind,
+          crossOrigin: entry.crossOrigin,
+        });
+      }
+    }
+
+    this.takeJournal();
+
+    return out;
+  }
+
+  /**
+   * Mirror side (round 141): create the entry the canonical registry
+   * created, at its id, and kick its decode (or fail it straight away
+   * for a url that already failed here).  An entry already at that id
+   * is dropped first.  The mirror never allocates ids itself.
+   *
+   * @param op — the canonical side's create
+   */
+  adopt(op: {
+    id: number;
+    url: string;
+    kind: number;
+    crossOrigin: string;
+  }): void {
+    if (this.entries[op.id] != null) {
+      this.drop(op.id);
+    }
+
+    const entry: ImageEntry = {
+      id: op.id,
+      url: op.url,
+      kind: op.kind,
+      crossOrigin: op.crossOrigin,
+      refCount: 1,
+      status: IMAGE_PENDING,
+      data: null,
+      width: 0,
+      height: 0,
+      vector: false,
+      tier: -1,
+      rasterPx: 0,
+    };
+
+    this.entries[op.id] = entry;
+    this.byKey.set(`${op.kind}|${op.crossOrigin}|${op.url}`, op.id);
+
+    if (this.warned.has(op.url)) {
+      entry.status = IMAGE_FAILED;
+    } else {
+      this.kick(entry);
+    }
+
+    this.onChange?.();
+  }
+
+  /**
+   * Mirror side (round 141): free the entry the canonical registry
+   * freed, whatever its count — queued for `takeFreed()` so the renderer
+   * reclaims its layer.  A decode in flight for it is dropped on landing,
+   * as for any freed entry.  No-op for an empty id.
+   *
+   * @param id — the freed id
+   */
+  drop(id: number): void {
+    const entry = this.entries[id];
+
+    if (entry == null) {
+      return;
+    }
+
+    this.byKey.delete(`${entry.kind}|${entry.crossOrigin}|${entry.url}`);
+    this.entries[id] = null;
+    this.freedQueue.push(id);
+    this.onChange?.();
+  }
+
+  /** Mirror side: drop every entry (a full transfer replaces the set). */
+  dropAll(): void {
+    for (let id = 0; id < this.entries.length; id++) {
+      this.drop(id);
+    }
   }
 
   /**

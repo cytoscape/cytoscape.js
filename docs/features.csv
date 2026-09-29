@@ -710,6 +710,8 @@ Category,Feature,Status,Comments,Reference
 "Style","haystack-radius","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","height","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","label","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
+"Style","label-declutter","Partial","Core prop (round 104): 'none' (default) or 'cull'. Accepted and carried to the renderer as a store scalar; the renderer's occupancy pass lands in 104.3. Constants only.","src/style/tables.mts"
+"Style","label-priority","Partial","Node prop (round 104): any number, mapper-able (data( score ), or a per-group constant); default 0. Carried on the label entry; the renderer's use of it lands in 104.3. Rejected on edges: edge labels do not join the declutter pass.","src/style/tables.mts"
 "Style","line-cap","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","line-color","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","line-dash-offset","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"

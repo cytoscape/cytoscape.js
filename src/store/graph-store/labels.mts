@@ -96,7 +96,8 @@ export function setLabel(
       prev.maxWidth === entry.maxWidth &&
       prev.lineHeight === entry.lineHeight &&
       prev.overflowWrap === entry.overflowWrap &&
-      prev.justification === entry.justification
+      prev.justification === entry.justification &&
+      prev.priority === entry.priority
     ) {
       return;
     }

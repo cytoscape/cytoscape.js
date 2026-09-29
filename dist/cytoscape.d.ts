@@ -560,6 +560,11 @@ interface LabelEntry {
   /** text-justification, resolved (auto folds against text-halign at
    * style write — v3's rule): 0 left, 1 center, 2 right */
   justification: number;
+  /** label-priority (round 104; node labels, 0 on the edge streams):
+   * the renderer ranks node labels by it — the declutter pass's claim
+   * order and the zoom fade's order.  Renderer input only: nothing in
+   * the model reads it. */
+  priority: number;
 }
 /**
  * The renderer's view of the model: CPU-canonical typed-array columns plus
@@ -1022,7 +1027,11 @@ interface Stylesheet {
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
    * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`
-   * (the background-grab indicator circle).  v3's core-selector props.
+   * (the background-grab indicator circle) — v3's core-selector props —
+   * plus two v4 additions: `dim-opacity` (round 102, the rest of the
+   * graph while `cy.emphasize()` is set) and `label-declutter` (round
+   * 104: `'none'`, the default, or `'cull'` — hide each node label that
+   * would overlap a higher-`label-priority` one).
    */
   core?: StyleProps;
   /**
@@ -3486,6 +3495,12 @@ declare class GraphStore implements ModelView {
    * one of the scalars a worker renderer receives with every batch.
    */
   emphasisDim(): number;
+  /**
+   * The core `label-declutter` mode (round 104): LABEL_DECLUTTER_NONE
+   * or LABEL_DECLUTTER_CULL.  A frame scalar, like `emphasisDim()`, so
+   * a worker renderer receives it with every batch.
+   */
+  labelDeclutter(): number;
   /** Raise the monotone hollow-stroke maximum (the style layer's
    * report, after 'match-line' and percent forms are resolved). */
   noteArrowWidth(width: number): void;

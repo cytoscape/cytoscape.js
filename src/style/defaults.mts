@@ -78,6 +78,9 @@ export interface NodeComputed {
   /** min-zoomed-font-size (round 13 D2): hide the label when
    * font-size x zoom x dpr drops below this (device px; 0 = off) */
   minZoomedFontSize: number;
+  /** label-priority (round 104): the node label's rank key — higher
+   * claims first under `label-declutter: cull` and fades last */
+  labelPriority: number;
   /** text-halign (round 13 D3): 0 left, 1 center, 2 right */
   textHalign: number;
   /** text-valign (D3): 0 top, 1 center, 2 bottom.  v4's default is
@@ -350,6 +353,7 @@ export const NODE_DEFAULTS: NodeComputed = {
   textMarginX: 0,
   textMarginY: 0,
   minZoomedFontSize: 0, // as v3: no floor
+  labelPriority: 0, // round 104: every label ranks equal (top)
   textHalign: 1, // center, as v3
   textValign: 2, // bottom — v4's round-10 default (v3: top; recorded)
   cornerRadius: -1, // 'auto'

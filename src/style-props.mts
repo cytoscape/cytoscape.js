@@ -98,6 +98,8 @@ export const PROP = {
   HEIGHT: 'height',
 
   LABEL: 'label',
+  LABEL_DECLUTTER: 'label-declutter',
+  LABEL_PRIORITY: 'label-priority',
 
   LINE_CAP: 'line-cap',
   LINE_COLOR: 'line-color',

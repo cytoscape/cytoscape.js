@@ -39,6 +39,8 @@ import {
   SHAPE_TRIANGLE,
   SHAPE_VEE,
   DIM_OPACITY_DEFAULT,
+  LABEL_DECLUTTER_CULL,
+  LABEL_DECLUTTER_NONE,
 } from '../contract.mjs';
 import { resolveScheme, hexToRgb } from '../style-schemes.mjs';
 import { isMapperSpec } from '../style-scales.mjs';
@@ -266,6 +268,7 @@ export const NODE_READ: ReadonlySet<string> = new Set([
   PROP.TEXT_MARGIN_X,
   PROP.TEXT_MARGIN_Y,
   PROP.MIN_ZOOMED_FONT_SIZE,
+  PROP.LABEL_PRIORITY,
   PROP.TEXT_ROTATION,
   PROP.TEXT_HALIGN,
   PROP.TEXT_VALIGN,
@@ -433,6 +436,9 @@ export interface CoreStyle {
   /** round 102: the opacity the rest of the graph composites at while
    * an emphasis is set (`cy.emphasize()`) */
   dimOpacity: number;
+  /** round 104: the node label occupancy pass — LABEL_DECLUTTER_NONE
+   * (`none`, the default) or LABEL_DECLUTTER_CULL (`cull`) */
+  labelDeclutter: number;
 }
 
 export const CORE_DEFAULTS: CoreStyle = {
@@ -444,6 +450,22 @@ export const CORE_DEFAULTS: CoreStyle = {
   activeBgOpacity: 0.15,
   activeBgSize: 30,
   dimOpacity: DIM_OPACITY_DEFAULT,
+  labelDeclutter: LABEL_DECLUTTER_NONE,
+};
+
+/** `label-declutter` (round 104): 'none' or 'cull'. */
+const parseDeclutter = (value: unknown): number => {
+  if (value === 'none') {
+    return LABEL_DECLUTTER_NONE;
+  }
+
+  if (value === 'cull') {
+    return LABEL_DECLUTTER_CULL;
+  }
+
+  throw new Error(
+    `Invalid label-declutter '${String(value)}': expected 'none' or 'cull'`,
+  );
 };
 
 /** The `core` block of a sheet resolved over `CORE_DEFAULTS`; throws on an unknown key or an unparsable colour. */
@@ -489,6 +511,9 @@ export const resolveCoreProps = (props: StyleProps | undefined): CoreStyle => {
       case PROP.DIM_OPACITY:
         out.dimOpacity = parseZeroOne(prop, value);
         break;
+      case PROP.LABEL_DECLUTTER:
+        out.labelDeclutter = parseDeclutter(value);
+        break;
       default:
         throw new Error(
           `The core style property '${prop}' is unsupported in the GPU prototype`,
@@ -521,12 +546,14 @@ export const END_LABEL_PROPS: ReadonlySet<string> = new Set([
 ]);
 
 /** further node-only props (C3/D3; text-events since 20.3 — edge
- * labels are never pickable in v4): rejected on the edges group */
+ * labels are never pickable in v4; label-priority since 104 — edge
+ * labels do not join the declutter pass): rejected on the edges group */
 export const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set([
   PROP.SHAPE_POLYGON_POINTS,
   PROP.TEXT_HALIGN,
   PROP.TEXT_VALIGN,
   PROP.TEXT_EVENTS,
+  PROP.LABEL_PRIORITY,
 ]);
 
 /** ghost props are node-only (round 13 A1). */

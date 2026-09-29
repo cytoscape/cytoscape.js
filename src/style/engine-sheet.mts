@@ -83,6 +83,8 @@ export function setSheet(
   // the one core prop the renderer reads (round 102): it travels as a
   // store scalar, so a worker renderer receives it with the rest
   engine.store.setDimOpacity(engine.coreStyle.dimOpacity);
+  // and round 104's declutter mode, the same way
+  engine.store.setLabelDeclutter(engine.coreStyle.labelDeclutter);
 
   // the parents group (round 14.6): channel props overlay the nodes
   // block under v3's :parent defaults; the compound props split out

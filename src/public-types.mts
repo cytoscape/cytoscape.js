@@ -338,7 +338,11 @@ export interface Stylesheet {
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
    * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`
-   * (the background-grab indicator circle).  v3's core-selector props.
+   * (the background-grab indicator circle) — v3's core-selector props —
+   * plus two v4 additions: `dim-opacity` (round 102, the rest of the
+   * graph while `cy.emphasize()` is set) and `label-declutter` (round
+   * 104: `'none'`, the default, or `'cull'` — hide each node label that
+   * would overlap a higher-`label-priority` one).
    */
   core?: StyleProps;
   /**

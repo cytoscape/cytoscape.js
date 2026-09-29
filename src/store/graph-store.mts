@@ -17,6 +17,7 @@ import {
   columnSpec,
   columnSpecsForGroup,
   DIM_OPACITY_DEFAULT,
+  LABEL_DECLUTTER_NONE,
   FLAG_VISIBLE,
 } from '../contract.mjs';
 import type {
@@ -268,6 +269,8 @@ export class GraphStore implements ModelView {
   emphasisOn = false;
   /** the sheet's core `dim-opacity` (round 102) @internal */
   dimOpacityV: number = DIM_OPACITY_DEFAULT;
+  /** the core `label-declutter` mode (round 104) @internal */
+  labelDeclutterV: number = LABEL_DECLUTTER_NONE;
   /** the primary consumer's folded blob ranges and mapper spans — what
    * another consumer drained on the renderer's behalf (round 106)
    * @internal */
@@ -1581,6 +1584,30 @@ export class GraphStore implements ModelView {
       if (this.emphasisOn) {
         this.dirty.touch();
       }
+    }
+  }
+
+  /**
+   * The core `label-declutter` mode (round 104): LABEL_DECLUTTER_NONE
+   * or LABEL_DECLUTTER_CULL.  A frame scalar, like `emphasisDim()`, so
+   * a worker renderer receives it with every batch.
+   */
+  labelDeclutter(): number {
+    return this.labelDeclutterV;
+  }
+
+  /**
+   * The sheet's `label-declutter` (written by the StyleEngine on every
+   * sheet install); a change schedules a frame, since it marks no
+   * column.
+   *
+   * @param mode — LABEL_DECLUTTER_NONE or LABEL_DECLUTTER_CULL
+   * @internal
+   */
+  setLabelDeclutter(mode: number): void {
+    if (mode !== this.labelDeclutterV) {
+      this.labelDeclutterV = mode;
+      this.dirty.touch();
     }
   }
 

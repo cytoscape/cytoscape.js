@@ -155,12 +155,14 @@ void emphasizedSet;
 cy.unemphasize();
 cytoscape({
   style: {
-    core: { 'dim-opacity': 0.2 },
+    core: { 'dim-opacity': 0.2, 'label-declutter': 'cull' },
     nodes: {
       'border-width': {
         case: [{ when: { emphasized: true }, then: 2 }],
         else: 0,
       },
+      // round 104: a node label's rank, mapped from data
+      'label-priority': { data: 'score', fallback: 0 },
     },
   },
 });

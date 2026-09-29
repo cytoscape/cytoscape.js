@@ -129,6 +129,14 @@ export const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.minZoomedFontSize,
   },
+  [PROP.LABEL_PRIORITY]: {
+    kind: 'number',
+    groups: [GROUP_NODES],
+    set: (c, v) => {
+      c.labelPriority = v as number;
+    },
+    default: () => NODE_DEFAULTS.labelPriority,
+  },
   [PROP.TEXT_HALIGN]: {
     kind: 'enum',
     groups: [GROUP_NODES],

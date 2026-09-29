@@ -73,6 +73,8 @@ export interface RenderStoreView extends ModelView {
   /** the emphasis composite (round 102): the dim opacity while an
    * emphasis is set, -1 while none is */
   emphasisDim(): number;
+  /** the core `label-declutter` mode (round 104): 0 none, 1 cull */
+  labelDeclutter(): number;
 
   // -- draw-gating counts: a zero skips the feature's whole pass --
   parentCount(): number;

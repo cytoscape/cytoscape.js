@@ -933,6 +933,7 @@ export function writeLabel(
           marginX: computed.textMarginX,
           marginY: computed.textMarginY,
           endOffset: 0,
+          priority: group === GROUP_NODES ? nc.labelPriority : 0,
           rotate:
             group === GROUP_EDGES &&
             Number.isNaN((computed as Computed).textRotation),
@@ -968,6 +969,7 @@ export function writeLabel(
               marginX: src ? ec.sourceTextMarginX : ec.targetTextMarginX,
               marginY,
               endOffset: src ? ec.sourceTextOffset : ec.targetTextOffset,
+              priority: 0,
               rotate: Number.isNaN(
                 src ? ec.sourceTextRotation : ec.targetTextRotation,
               ),

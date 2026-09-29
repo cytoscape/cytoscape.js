@@ -590,7 +590,7 @@ describe('schemas: the stylesheet (79.2)', () => {
     // the guard for every sweep below: an empty block agrees with nothing
     expect(kebabNames(GROUP_BLOCKS.nodes).length).to.be.greaterThan(100);
     expect(kebabNames(GROUP_BLOCKS.edges).length).to.be.greaterThan(100);
-    expect(kebabNames(GROUP_BLOCKS.core).length).to.equal(8);
+    expect(kebabNames(GROUP_BLOCKS.core).length).to.equal(9);
   });
 
   it('(a) every property it enumerates compiles in that group, with every example it gives', () => {

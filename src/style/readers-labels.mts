@@ -114,6 +114,14 @@ defineReader([PROP.MIN_ZOOMED_FONT_SIZE], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.minZoomedFontSize;
 });
 
+defineReader([PROP.LABEL_PRIORITY], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, GROUP_NODES);
+
+  return entry != null
+    ? entry.priority
+    : engine.defs.nodes.computed.labelPriority;
+});
+
 defineReader([PROP.TEXT_HALIGN], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, GROUP_NODES);
 

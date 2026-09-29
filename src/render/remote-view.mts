@@ -101,6 +101,7 @@ export class RemoteModelView implements RenderStoreView {
     arrowScaleMax: 0,
     arrowWidthMax: 0,
     emphasisDim: -1,
+    labelDeclutter: 0,
   };
   private counts: StoreBatch['counts'] = {
     nodes: 0,
@@ -421,6 +422,11 @@ export class RemoteModelView implements RenderStoreView {
   /** @returns the emphasis composite: the dim opacity while an emphasis is set, -1 otherwise (round 102) */
   emphasisDim(): number {
     return this.scalars.emphasisDim;
+  }
+
+  /** @returns the core `label-declutter` mode: 0 none, 1 cull (round 104) */
+  labelDeclutter(): number {
+    return this.scalars.labelDeclutter;
   }
 
   /** @returns the compound parent count */

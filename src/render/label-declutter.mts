@@ -1,4 +1,10 @@
-import { FLAG_ALIVE, FLAG_DRAWN, FLAG_EMPHASIZED } from '../contract.mjs';
+import {
+  FLAG_ALIVE,
+  FLAG_DRAWN,
+  FLAG_EMPHASIZED,
+  LABEL_DECLUTTER_CULL,
+  LABEL_DECLUTTER_NONE,
+} from '../contract.mjs';
 import type { LabelEntry } from '../contract.mjs';
 
 /*
@@ -51,9 +57,9 @@ read back through the public API.
 */
 
 /** `label-declutter: none` — every label draws (the default). */
-export const DECLUTTER_NONE = 0;
+export const DECLUTTER_NONE = LABEL_DECLUTTER_NONE;
 /** `label-declutter: cull` — the occupancy pass decides membership. */
-export const DECLUTTER_CULL = 1;
+export const DECLUTTER_CULL = LABEL_DECLUTTER_CULL;
 
 /** The occupancy grid's cell edge, CSS px.  Measured in round 104.1
  * (benchmark/label-declutter.mjs): 4 px is the knee — at 8 px the

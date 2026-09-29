@@ -155,6 +155,13 @@ export const FLAG_EMPHASIZED = 524288;
  * graph composites at while an emphasis is set. */
 export const DIM_OPACITY_DEFAULT = 0.15;
 
+/** The core `label-declutter` modes (round 104), as the store scalar
+ * the renderer reads: `none` (the default) draws every label; `cull`
+ * runs the renderer's occupancy pass over the node labels. */
+export const LABEL_DECLUTTER_NONE = 0;
+/** `label-declutter: cull` (round 104). */
+export const LABEL_DECLUTTER_CULL = 1;
+
 /**
  * The styleable states: the reserved case-condition key each flag
  * answers.  This is the whole binding between a bit and the stylesheet —
@@ -1083,6 +1090,11 @@ export interface LabelEntry {
   /** text-justification, resolved (auto folds against text-halign at
    * style write — v3's rule): 0 left, 1 center, 2 right */
   justification: number;
+  /** label-priority (round 104; node labels, 0 on the edge streams):
+   * the renderer ranks node labels by it — the declutter pass's claim
+   * order and the zoom fade's order.  Renderer input only: nothing in
+   * the model reads it. */
+  priority: number;
 }
 
 // -- the read surface the renderer consumes --

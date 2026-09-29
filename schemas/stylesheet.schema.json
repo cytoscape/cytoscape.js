@@ -16,7 +16,7 @@
       "$ref": "#/$defs/parents"
     },
     "core": {
-      "description": "Viewport-level theming — the selection box and the background-grab indicator. Constants only.",
+      "description": "Viewport-level theming — the selection box, the background-grab indicator, the emphasis dim and the label declutter mode. Constants only.",
       "$ref": "#/$defs/core"
     },
     "bypasses": {
@@ -246,6 +246,12 @@
           "anyOf": [
             { "$ref": "#/$defs/props/label" },
             { "$ref": "#/$defs/passthroughMapper" }
+          ]
+        },
+        "label-priority": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/label-priority" },
+            { "$ref": "#/$defs/mapper" }
           ]
         },
         "line-cap": { "$ref": "#/$defs/props/line-cap" },
@@ -637,6 +643,9 @@
           "$ref": "#/$defs/nodeProps/properties/ghost-offset-y"
         },
         "ghostOpacity": { "$ref": "#/$defs/nodeProps/properties/ghost-opacity" },
+        "labelPriority": {
+          "$ref": "#/$defs/nodeProps/properties/label-priority"
+        },
         "lineCap": { "$ref": "#/$defs/nodeProps/properties/line-cap" },
         "lineColor": { "$ref": "#/$defs/nodeProps/properties/line-color" },
         "lineDashOffset": {
@@ -1602,6 +1611,7 @@
         "active-bg-opacity": { "$ref": "#/$defs/props/active-bg-opacity" },
         "active-bg-size": { "$ref": "#/$defs/props/active-bg-size" },
         "dim-opacity": { "$ref": "#/$defs/props/dim-opacity" },
+        "label-declutter": { "$ref": "#/$defs/props/label-declutter" },
         "selection-box-border-color": {
           "$ref": "#/$defs/props/selection-box-border-color"
         },
@@ -1618,6 +1628,9 @@
         },
         "activeBgSize": { "$ref": "#/$defs/core/properties/active-bg-size" },
         "dimOpacity": { "$ref": "#/$defs/core/properties/dim-opacity" },
+        "labelDeclutter": {
+          "$ref": "#/$defs/core/properties/label-declutter"
+        },
         "selectionBoxBorderColor": {
           "$ref": "#/$defs/core/properties/selection-box-border-color"
         },
@@ -2601,6 +2614,16 @@
       "haystack-radius": { "$ref": "#/$defs/kinds/fraction", "examples": [0] },
       "height": { "$ref": "#/$defs/kinds/number", "examples": [30] },
       "label": { "$ref": "#/$defs/kinds/label", "examples": ["data(name)"] },
+      "label-declutter": {
+        "description": "Round 104: 'cull' runs the renderer's occupancy pass over the node labels — a label that would overlap a higher-priority one is hidden; 'none' draws every label.",
+        "enum": ["none", "cull"],
+        "examples": ["none"]
+      },
+      "label-priority": {
+        "description": "Round 104: a node label's rank — higher claims its space first under the core label-declutter: cull, and fades last as the zoom falls. Any number; equal priorities (the default 0) rank equal.",
+        "$ref": "#/$defs/kinds/number",
+        "examples": [0]
+      },
       "line-cap": { "$ref": "#/$defs/keywords/lineCap", "examples": ["butt"] },
       "line-color": { "$ref": "#/$defs/kinds/color", "examples": ["#999"] },
       "line-dash-offset": { "$ref": "#/$defs/kinds/number", "examples": [0] },

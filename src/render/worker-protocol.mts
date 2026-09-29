@@ -72,6 +72,8 @@ export interface WireScalars {
   arrowWidthMax: number;
   /** the emphasis composite (round 102): dim opacity, or -1 for none */
   emphasisDim: number;
+  /** the core `label-declutter` mode (round 104): 0 none, 1 cull */
+  labelDeclutter: number;
 }
 
 /** The draw-gating counts the frame reads; a zero skips a whole pass. */
@@ -454,6 +456,7 @@ export function buildBatch(
       arrowScaleMax: store.arrowScaleMax(),
       arrowWidthMax: store.arrowWidthMax(),
       emphasisDim: store.emphasisDim(),
+      labelDeclutter: store.labelDeclutter(),
     },
     counts: {
       nodes: store.count(GROUP_NODES),

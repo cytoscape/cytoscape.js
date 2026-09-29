@@ -129,6 +129,9 @@ export const applyProp = (
     case PROP.MIN_ZOOMED_FONT_SIZE:
       computed.minZoomedFontSize = parseNonNegative(prop, value);
       break;
+    case PROP.LABEL_PRIORITY:
+      computed.labelPriority = parseNumber(prop, value);
+      break;
     case PROP.TEXT_HALIGN:
       computed.textHalign = parseAlign(prop, value, HALIGNS);
       break;

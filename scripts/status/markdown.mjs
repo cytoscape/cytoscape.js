@@ -179,8 +179,9 @@ export const PLANNED_PATHS = {
   // round 98 (the cross-runtime smoke tier) landed 2026-08-28: its
   // test/runtimes/smoke.mjs entry left this list when the file began
   // resolving — the documented lifecycle, same as round 101's below.
-  // rounds 102–107 — the ecosystem rounds
-  'src/render/label-declutter.mts': 'planned by round 104 (label decluttering)',
+  // rounds 102–107 — the ecosystem rounds (round 104 landed 2026-09-29:
+  // its src/render/label-declutter.mts entry left this list when 104.1
+  // made the file resolve)
   'benchmark/bundles.mjs':
     'planned by round 105 (parallel edges at GeneMANIA width)',
   // round 101 (quiet verification) landed 2026-08-24: its three .mjs

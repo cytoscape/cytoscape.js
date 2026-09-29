@@ -4484,6 +4484,11 @@ culled label touching no shown one) on ndex-x-large at fit, 992 →
 2,853; 2 px halved them for 14% more time and four times the cells a
 zoomed-in label stamps.
 
+The debug page carries both knobs (Labels → *Declutter*, and *Label
+priority: degree*, which writes each node's degree into its data before
+load and maps it — `?network=ndex-x-large&declutter=true&labelPriority=degree`
+is the soup, decluttered).
+
 Follow-up hooks, not built: edge labels in the pass (a gate slot for
 the edge glyph cull, and rects that follow routing); a per-element
 opt-out (a label that neither claims nor yields); padding between

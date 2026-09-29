@@ -1039,6 +1039,31 @@ var fixtures = (function () {
     };
   }
 
+  /**
+   * Round 104: every node's degree written into its data as `_degree`
+   * (loops count twice, as `degree()` counts them), so the page's
+   * "label priority: degree" can map it — the rank read from the graph.
+   * Returns a copy; the input is untouched.
+   */
+  function withDegree(gpuElements) {
+    var deg = {};
+    var i, e;
+
+    for (i = 0; i < gpuElements.edges.length; i++) {
+      e = gpuElements.edges[i].data;
+      deg[e.source] = (deg[e.source] || 0) + 1;
+      deg[e.target] = (deg[e.target] || 0) + 1;
+    }
+
+    return Object.assign({}, gpuElements, {
+      nodes: gpuElements.nodes.map(function (n) {
+        return Object.assign({}, n, {
+          data: Object.assign({}, n.data, { _degree: deg[n.data.id] || 0 }),
+        });
+      }),
+    });
+  }
+
   /** Apply a network's `derive`, if it declares one. */
   function derive(name, gpuElements) {
     var fn = name != null ? derivations[name] : null;
@@ -1051,6 +1076,7 @@ var fixtures = (function () {
     fromColumnar: fromColumnar,
     deriveLabel: deriveLabel,
     derive: derive,
+    withDegree: withDegree,
     generate: generate,
   };
 })();

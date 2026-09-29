@@ -128,6 +128,19 @@ const paramDefs = {
     default: '0',
     control: '#label-min-input',
   },
+  declutter: {
+    // round 104: the core label-declutter — 'cull' hides each node label
+    // that would overlap a higher-priority one
+    default: 'false',
+    control: '#declutter-check',
+  },
+  labelPriority: {
+    // round 104: what ranks the labels — 'none' (all equal), or 'degree'
+    // (written into data before load, then mapped: the GeneMANIA shape,
+    // importance from the graph); it also orders the zoom fade
+    default: 'none',
+    control: '#label-priority-select',
+  },
   renderScaleMin: {
     default: '0.5',
     control: '#render-scale-min-input',
@@ -196,6 +209,24 @@ const paramDefs = {
       // no longer *replaces* the mapping with data(id), which is what made
       // "labels on" show UUIDs on em-web and SUIDs on the NDEx sets
       style = stripLabels(style);
+    }
+
+    if (params.declutter === 'true') {
+      style = {
+        ...style,
+        core: { ...style.core, 'label-declutter': 'cull' },
+      };
+    }
+
+    if (params.labelPriority === 'degree') {
+      gpuElements = fixtures.withDegree(gpuElements);
+      style = {
+        ...style,
+        nodes: {
+          ...style.nodes,
+          'label-priority': { data: '_degree', fallback: 0 },
+        },
+      };
     }
 
     if (params.arrows === 'true') {

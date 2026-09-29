@@ -123,6 +123,35 @@ describe('debug harness (round 43)', function () {
     }
   });
 
+  describe('the label priority by degree (round 104)', function () {
+    it("writes each node's degree as the data the priority maps", function () {
+      const def = networks['v3-default'];
+      const elements = fixtures.withDegree(elementsFor('v3-default', def));
+      const sheet = styles.sheet('production', 'v3-default', elements, def);
+      const cy = cytoscape({
+        elements: { nodes: elements.nodes, edges: elements.edges },
+        style: {
+          ...sheet,
+          core: { ...sheet.core, 'label-declutter': 'cull' },
+          nodes: {
+            ...sheet.nodes,
+            'label-priority': { data: '_degree', fallback: 0 },
+          },
+        },
+      });
+
+      // the page's spelling agrees with the library's own degree(), loops
+      // counted twice — and ranks something: the degrees are not all equal
+      const degrees = cy.nodes().map((n) => n.degree());
+
+      cy.nodes().forEach((n) => {
+        expect(n.style('label-priority'), n.id()).to.equal(n.degree());
+      });
+      expect(new Set(degrees).size).to.be.greaterThan(1);
+      cy.destroy();
+    });
+  });
+
   describe('long labels wrap (round 114)', function () {
     /* A sheet is written against its fixture's data, and the label text is
        part of that data: reactome's pathway names run to 91 characters and

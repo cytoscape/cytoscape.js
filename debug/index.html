@@ -321,6 +321,18 @@
         <div>
           <label>Min label size (px, 0 = off): <input id="label-min-input" type="number" step="1" min="0" /></label>
         </div>
+        <div>
+          <input type="checkbox" id="declutter-check" />
+          <label for="declutter-check">Declutter: hide overlapped labels <em>(label-declutter: cull)</em></label>
+        </div>
+        <div>
+          <label>Label priority <em>(label-priority; also the fade order)</em>:
+            <select id="label-priority-select">
+              <option value="none">none (all equal)</option>
+              <option value="degree">degree</option>
+            </select>
+          </label>
+        </div>
 
         <h2>Loading</h2>
         <div>

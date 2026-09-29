@@ -2407,10 +2407,23 @@ declare class CurveIndex {
    * reads geometry.
    */
   beginBulk(): void;
-  /** Leave a bulk load and mark what it implies: every pair the map
+  /**
+   * Leave a bulk load and mark what it implies: every pair the map
    * holds (it is only built at all once something styles bezier or a
-   * compound relation appears) and every loop list. */
-  endBulk(): void;
+   * compound relation appears) and every loop list.
+   *
+   * **A window over a subset** (round 103, a later chunk of `cy.load()`
+   * into a populated graph) passes the edges it added, and marks only
+   * their pairs — the union of the marks their own adds and style
+   * applies would have made.  With no pair map a non-loop mark derives
+   * nothing (`derivePair` answers at once), so none is made: that is
+   * the whole saving, one float-keyed `Set` insert per edge on a
+   * straight-edged graph (~100 ms over ndex-x-large's 465k edges).
+   *
+   * @param edgeSlots — the window's own edges, for a subset window; omit
+   *   for a whole-graph load
+   */
+  endBulk(edgeSlots?: ArrayLike<number>): void;
   /**
    * Store an edge's styled curve record (the StyleEngine's write path).
    * A changed record marks the edge's pair for re-derivation; a bezier
@@ -3169,8 +3182,13 @@ declare class GraphStore implements ModelView {
    * for what may not happen inside the window.
    */
   beginBulkLoad(): void;
-  /** Close a bulk-load window and mark the derivations it implies. */
-  endBulkLoad(): void;
+  /**
+   * Close a bulk-load window and mark the derivations it implies.
+   *
+   * @param edgeSlots — for a window over a subset (round 103: a later
+   *   chunk of `cy.load()`), the edges it added; omit for a whole load
+   */
+  endBulkLoad(edgeSlots?: ArrayLike<number>): void;
   /**
    * Copy every style-owned edge column from the run's first slot across
    * the rest of it (round 67.2), and mark each column's span once.
@@ -4575,6 +4593,46 @@ interface PatchDiff {
   updated: Collection;
 }
 //#endregion
+//#region src/core/load.d.mts
+/** Options for `cy.load()` (round 103). */
+interface LoadOptions {
+  /**
+   * Fit the viewport **once**, to the first chunk, and then hold it —
+   * a load never re-fits per chunk, so the screen does not jump as the
+   * graph fills in.  Default: true for an initial load (one that starts
+   * on an instance holding no elements), false for a load into a
+   * populated graph.
+   */
+  fit?: boolean;
+  /** the rendered-space padding of that fit, in px (default 0, as `cy.fit()`) */
+  padding?: number;
+}
+/** How far a load has got: the chunks ingested and the elements they added. */
+interface LoadProgress {
+  /** chunks ingested so far (1 on the first `loadchunk`) */
+  chunks: number;
+  /** nodes added by this load so far */
+  nodes: number;
+  /** edges added by this load so far */
+  edges: number;
+}
+/**
+ * The promise `cy.load()` returns: it resolves with the final
+ * {@link LoadProgress} once the source is exhausted and the last chunk is
+ * in, and carries `cancel()` (the round-128 contract).
+ */
+type LoadRun = Promise<LoadProgress> & {
+  /**
+   * Stop pulling chunks: the promise rejects with a `CancelledError`, the
+   * source's iterator is closed (`return()`), `loadstop` fires with
+   * `cancelled: true`, and every chunk already ingested stays.
+   *
+   * @returns true when the load was still running and is now cancelled;
+   *   false when it had already settled
+   */
+  cancel(): boolean;
+};
+//#endregion
 //#region src/event.d.mts
 /** The DOM event a gesture came from, when there was one. */
 type NativeEvent = globalThis.Event;
@@ -4599,10 +4657,14 @@ interface EventProps {
   layout?: unknown;
   /** on `layoutstop`: true when the run was abandoned by
    * `layout.cancel()` or `cy.destroy()` rather than finished or
-   * stopped (round 128) */
+   * stopped (round 128); on `loadstop`, when the load was cancelled
+   * (round 103) */
   cancelled?: boolean;
   /** on `patch`: what the patch added, removed and updated (round 107) */
   diff?: PatchDiff;
+  /** on `loadstart`/`loadchunk`/`loadready`/`loadstop`: how far the
+   * load has got (round 103) */
+  progress?: LoadProgress;
   timeStamp?: number;
 }
 /**
@@ -4626,10 +4688,14 @@ declare class Event {
   originalEvent?: NativeEvent;
   /** the layout instance, on the layout lifecycle events */
   layout?: unknown;
-  /** on `layoutstop`, whether the run was cancelled (round 128) */
+  /** on `layoutstop`, whether the run was cancelled (round 128); on
+   * `loadstop`, whether the load was (round 103) */
   cancelled?: boolean;
   /** on `patch`, what the patch added, removed and updated (round 107) */
   diff?: PatchDiff;
+  /** on the load lifecycle events, the chunks and elements so far
+   * (round 103) */
+  progress?: LoadProgress;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
   /**
@@ -8018,9 +8084,14 @@ declare class Core {
   } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ((container: HTMLElement) => void) | null;
-  /** resolves once the render pipeline is usable (immediately when headless) */
+  /**
+   * Resolves once the render pipeline is usable (immediately when
+   * headless) — and, under an initial `cy.load()`, once its **first
+   * chunk is drawn** (round 103; headless, once it is in the model).
+   * Rejects when no adapter can be had.
+   */
   ready: Promise<Core>;
-  /** true once the render pipeline is usable (immediately when headless) */
+  /** true once `ready` has resolved (immediately when headless) */
   _readyResolved: boolean;
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
   _pool: {
@@ -8307,6 +8378,66 @@ declare class Core {
    *   or mode
    */
   patch(input: ElementsInput, options?: PatchOptions): PatchDiff;
+  /**
+   * **Progressive ingest** (round 103): load the graph chunk by chunk from
+   * an async iterable — a streamed response, a server's pages — and show
+   * a correct partial graph before the last byte arrives.  Each chunk is
+   * any input form (definition, columnar or wire); a chunk may name nodes
+   * an earlier chunk loaded — by id in the definition form, and through
+   * node references (`refs`) in the columnar and wire forms, which is
+   * what keeps a chunk's cut edges as cheap as its own.  A plain
+   * iterable (an array of chunks) works too.
+   *
+   * Every chunk lands through the bulk load path — one bulk style pass,
+   * no per-element handle — and the renderer gets a turn between chunks,
+   * even when the source hands them over synchronously; the second chunk
+   * is not asked for until the first is drawn.  **Every element
+   * drawn is correct; completeness arrives** — a frame may show some of
+   * the graph, never a wrong piece of it.
+   *
+   * **An initial load** — one that starts on an instance holding no
+   * elements, the streamed counterpart of `options.elements` — holds
+   * **`cy.ready` until its first chunk is drawn** (headless: until it is
+   * in the model), fits the viewport **once** to that chunk and then
+   * holds it (never a re-fit per chunk; `fit: false` keeps the viewport
+   * as it is), and applies the graph-level `data()` a wire chunk carries.
+   * The load re-points `cy.ready`, so read it after calling `load()` — a
+   * reference taken before resolves on the renderer alone.
+   * A load into a populated graph is a streamed `cy.add()`: `cy.ready`,
+   * the viewport and `data()` are left alone.  Positions are the
+   * payload's (the preset case both flagship apps stream); a layout
+   * cannot start while a load runs — run it once the promise resolves.
+   *
+   * Events: `loadstart`; `loadchunk` after each chunk (with `add` per
+   * element while anyone listens for it, as the bulk path emits them);
+   * `loadready` once the first chunk is drawn; `loadstop` when the load
+   * ends — completed, failed or cancelled (`event.cancelled`).  Each
+   * carries `event.progress`: `{ chunks, nodes, edges }` so far.
+   *
+   * **Completion is the returned promise**, resolving with the final
+   * progress; it carries `cancel()` (round 128's contract): cancelling
+   * stops pulling chunks, closes the source's iterator, keeps what has
+   * landed, and rejects with a `CancelledError`.  `cy.destroy()` cancels
+   * a running load.  A chunk that fails to ingest rejects the load; the
+   * chunks before it stay, and a node reference that names no node fails
+   * its chunk before anything of it is added.
+   *
+   * **Cost** (`benchmark/progressive.mjs`, ndex-x-large, 19.6k nodes /
+   * 465k edges): see "Progressive ingest" in `src/README.md` for the
+   * first-chunk and total times by chunk count and form.
+   *
+   * @param source — an async iterable (or iterable) of chunks, each a
+   *   definition, columnar or wire payload
+   * @param options — `{ fit, padding }`: fit once to the first chunk
+   *   (default: on for an initial load), and that fit's padding
+   * @returns the load's completion: a promise of the final
+   *   `{ chunks, nodes, edges }`, with `cancel()`
+   * @throws synchronously, when `source` is not an (async) iterable of
+   *   chunks (a single payload is refused — pass `[ payload ]`), on an
+   *   unknown option, while another load is running on this instance, or
+   *   on a destroyed instance
+   */
+  load(source: AsyncIterable<ElementsInput> | Iterable<ElementsInput>, options?: LoadOptions): LoadRun;
   /**
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
@@ -9270,4 +9401,4 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, cytoscape as default };

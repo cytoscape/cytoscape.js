@@ -58,7 +58,11 @@ const attachRenderer = (
   cy._pointer = new PointerHandler(cy, renderer);
   cy._renderer = renderer;
   cy.ready = renderer.ready.then(() => {
-    cy._readyResolved = true;
+    // an initial `cy.load()` holds readiness until its first chunk is
+    // drawn (round 103) — it flips the flag itself then
+    if (!cy._readyHeld) {
+      cy._readyResolved = true;
+    }
 
     return cy;
   });

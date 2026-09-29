@@ -842,7 +842,8 @@ export class WorkerRenderer implements ForceHostLike {
 
       case 'frame': {
         this.lastStats = msg.stats;
-        this.cy.emit('render');
+        // round 103: through the core, which wakes `_nextFrame()` first
+        this.cy._frameDrawn();
         break;
       }
 

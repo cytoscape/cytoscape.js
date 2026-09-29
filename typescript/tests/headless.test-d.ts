@@ -66,3 +66,10 @@ const copyGpu: GpuCore = cyGpu.clone();
 
 void copy;
 void copyGpu;
+
+// round 103: load ships on every entry, its types with it
+const loading: Promise<{ chunks: number }> = cy.load([buffer]);
+const loadingGpu = cyGpu.load([buffer], { fit: false });
+
+void loading;
+void loadingGpu.cancel;

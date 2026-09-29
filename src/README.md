@@ -5031,6 +5031,126 @@ the version stays 4, by the eleventh sitting's rule for the format
 (public but **experimental until 4.x**: sections are new flag bits, no
 cross-version promise at 4.0).
 
+## Progressive ingest: a first frame before the last byte (round 103)
+
+`cy.load( source, { fit, padding } )` loads a graph chunk by chunk from an
+async iterable — a streamed response, a server's pages, or a plain array
+of chunks — and shows a correct partial graph before the last byte
+arrives.  Decided at the eleventh sitting: the explicit method (not an
+options-form iterable), `cy.ready` meaning **the first chunk drawn**, and
+completion signalled separately — here, the returned promise.
+
+The contract:
+
+- **Chunks** are any input form.  A later chunk names an earlier chunk's
+  nodes by id in the definition form, and through **node references**
+  (`refs`, see "Loading") in the columnar and wire forms — so the order
+  rule is the obvious one: a node before its edges and its children.
+  Every chunk takes the bulk path: a definition chunk is converted with
+  references (`buildColumnar( …, 'refs' )`), ingested columnar with one
+  bulk style pass and no per-element handle; `add` fires per element only
+  while someone listens, as the factory's bulk path does.
+- **The renderer gets a turn between chunks** — one macrotask
+  (`MessageChannel` in a page, a timer elsewhere), so a synchronous
+  source cannot starve it — and **the second chunk is not asked for until
+  the first is drawn**, so the first frame never waits on later chunks'
+  ingest.
+- **An initial load** — one that starts on an instance with no elements,
+  the streamed counterpart of `options.elements` — holds `cy.ready` (and
+  `isReady()`) until its first chunk is drawn (headless: until it is in
+  the model), **fits the viewport once**, to the first chunk, and then
+  holds it — never a re-fit per chunk, so the screen does not jump —
+  and applies a wire chunk's graph-level `data()`.  A load into a
+  populated graph is a streamed `cy.add()`: `cy.ready`, the viewport and
+  `data()` are left alone, and `fit` defaults off.  The load re-points
+  `cy.ready`, so read it after calling `load()`.
+- **Events**: `loadstart`, `loadchunk` per chunk, `loadready` once the
+  first chunk is drawn, `loadstop` when the load ends — completed,
+  failed or cancelled (`event.cancelled`) — each with `event.progress`
+  (`{ chunks, nodes, edges }` so far); `loadready` always precedes
+  `loadstop`.
+- **Completion** is the promise, resolving with the final progress and
+  carrying `cancel()` (round 128's contract): cancelling stops pulling,
+  closes the source's iterator, keeps what landed and rejects with
+  `CancelledError`; `cy.destroy()` cancels a running load.  A chunk that
+  fails rejects the load, the chunks before it stay, and a reference
+  naming no node fails its chunk before anything of it is added.
+- **Positions are the payload's** — the preset case both flagship apps
+  stream.  A layout started while a load runs **throws** (the plan's
+  recommended "refuse": it would lay out a moving target); run it once
+  the promise resolves.  One load at a time per instance.
+- **What is guaranteed**: every element drawn is correct — its data,
+  style and position are the ones the finished load will have — and
+  completeness arrives; the chunked end state is columns-equal to the
+  monolithic load of the same payload (`test/load.mjs`, from every form
+  and both chunk shapes, with its control).
+
+**Measured** (i9-9900K, Node 24.18, AMD RX 580 via Chromium/Vulkan,
+ndex-x-large with the harness's production sheet, 19,607 nodes /
+464,657 edges).  Headless, through the built bundle
+(`benchmark/progressive.mjs`, median of 3) — the baseline first, then
+the round:
+
+| | first chunk | total | vs monolithic |
+|---|---:|---:|---:|
+| monolithic, definitions / wire | 575 / 428 | 575 / 428 | 1 |
+| 103.1: factory + `cy.add()` per chunk, k = 10, cut edges as definitions | 13 | 1,734–1,849 | 3.0–3.2× |
+| `cy.load()`, k = 10, definition chunks | 13 | 671 | 1.21× (of 556) |
+| `cy.load()`, k = 10, wire chunks with refs | 12 | 523 | 1.27× (of 413) |
+| `cy.load()`, k = 100, wire chunks with refs | 2 | 665 | 1.61× |
+
+In the browser, each scene in a fresh process, wire payloads cut in the
+page before t0 (`benchmark/progressive-browser.mjs`, median of 5; the
+link rows median of 3) — "first" is the first frame carrying elements,
+"whole" the first frame of the whole graph:
+
+| link | scene | first | whole |
+|---|---|---:|---:|
+| none | monolithic | 902 | 902 |
+| none | nodes first, k = 10 | 515 | 1,122 |
+| none | vertex-closed, k = 10 | 374 | 1,107 |
+| 100 Mbit/s | monolithic | 1,960 | 1,960 |
+| 100 Mbit/s | nodes first, k = 10 | 406 | 1,214 |
+| 100 Mbit/s | vertex-closed, k = 10 | 110 | 1,210 |
+| 20 Mbit/s | monolithic | 6,176 | 6,176 |
+| 20 Mbit/s | nodes first, k = 10 | 470 | 5,928 |
+| 20 Mbit/s | vertex-closed, k = 10 | 350 | 5,667 |
+
+- **With the whole payload in hand** the first frame comes 1.8–2.4×
+  sooner and the whole graph ~23% later: the ingest churn (~100 ms
+  headless) plus nine partial frames.  **Over a link the load wins
+  both**: at 100 Mbit/s the first frame is 4.8–18× sooner and the whole
+  graph 38% sooner, because the ingest and the device's acquisition
+  overlap the transfer; at 20 Mbit/s the first frame is 13–18× sooner.
+  The nodes-first shape's final frame is **pixel-identical** to the
+  monolithic load's (0 differing of 1,024,000).
+- **Granularity**: a chunk costs ~1.5 ms of fixed overhead headless
+  (k = 10 → 100 adds 142 ms at this size) plus a frame in a page; 5–20
+  chunks is the useful range, and the first chunk small.  Node
+  references cost bytes (each chunk repeats the ids its cut edges name:
+  +6% vertex-closed and +12% nodes first at k = 10, +19% nodes first at
+  k = 20) — which is why the 20 Mbit/s nodes-first load finishes only 4%
+  ahead of the monolithic one.
+- **Where the churn went**: the 103.1 baseline's 3× was the cut edges as
+  definitions (0.9–1.5 s); references took it to 1.2–1.3×.  The curve
+  index's per-edge pair marks (~100 ms at this size) are gone for later
+  chunks — a chunk closes the round-67 bulk window over its own edges
+  (`CurveIndex.endBulk( edgeSlots )`), marking nothing where no pair map
+  exists, which is where a mark derives nothing.  The curve flush a frame
+  runs is 7–13 ms.  **The renderer's reallocation cadence is not the
+  cost**: the ×2 growth reallocates the column mirror 95 times over a
+  nodes-first k = 10 load (38 for the monolithic one), and pre-sizing the
+  store (`--reserve`, the probe) brought that to 38 and changed the
+  total by nothing while making the first frame slower (654 against 289
+  ms) — the first frame then uploads full-capacity buffers.  So there is
+  no size hint.
+- **First-frame pacing**: pulling chunks greedily put the first frame
+  anywhere between 279 and 638 ms depending on k (it lands behind
+  whichever chunk is being ingested when the device arrives); waiting for
+  the first frame before the second chunk made it steady — nodes first
+  501–518 ms at k = 5, 10 and 20, vertex-closed 101–409 ms — for the
+  same total (−1% to +7%), and it is the rule now.
+
 ## Patch: an id-keyed reconcile of a fresh payload (round 107)
 
 `cy.json( obj )` stays export-only by decided design — restoring a
@@ -6893,6 +7013,14 @@ unbuilt arrow `gap` for a day after **round 56 built it**, which is the
 failure mode the standing closing-sweep rule exists for and which found
 it here in round 57.4.*
 
+- **Progressive ingest** (round 103): a layout is refused while a load
+  runs — the layout-after-complete convention is "await the load"; a
+  queued layout (`layout.run()` deferring to the load's end) is the
+  alternative the plan named, not built.  `cy.patch()` refuses node
+  references, even in `'merge'` mode, where they would mean what the
+  definition form's references mean there.  Chunk-per-chunk cost is
+  ~1.2–1.3× a monolithic ingest on ndex-x-large; the rest is per-chunk
+  style application and adjacency overlay into a populated graph.
 - **The low-overlap patch** (round 107): below ~70% id overlap a
   `cy.patch()` costs more than destroy-and-recreate (2.3× at 10%),
   because removals and adds run the per-element store paths — a

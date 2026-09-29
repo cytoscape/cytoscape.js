@@ -24,6 +24,9 @@ import type {
   PatchOptions,
   CloneOptions,
   FollowOptions,
+  LoadOptions,
+  LoadProgress,
+  LoadRun,
   Stylesheet,
   Position,
   RendererStats,
@@ -153,6 +156,38 @@ mini.destroy();
 cy.clone({ elements: [] });
 // @ts-expect-error follow is a boolean or { throttle }
 cy.clone({ follow: 'always' });
+
+// -- load (round 103): chunks from an async iterable, node references --
+
+async function* chunks(): AsyncGenerator<ColumnarElements | ArrayBuffer> {
+  yield cytoscape.toColumnarElements(elements);
+  yield cytoscape.serializeElements(
+    cytoscape.toColumnarElements(
+      [{ data: { id: 'ca', source: 'c', target: 'a' } }, { data: { id: 'c' } }],
+      { refs: true },
+    ),
+  );
+}
+
+const loadOptions: LoadOptions = { fit: true, padding: 20 };
+const loadRun: LoadRun = cy.load(chunks(), loadOptions);
+const loadCancelled: boolean = loadRun.cancel();
+
+cy.load([elements, wire]).then((done: LoadProgress) => {
+  const counts: number = done.chunks + done.nodes + done.edges;
+
+  void counts;
+});
+cy.on('loadchunk', (evt: Event) => {
+  const seen: LoadProgress | undefined = evt.progress;
+
+  void seen;
+});
+void loadCancelled;
+// @ts-expect-error a load takes an iterable of chunks, not one payload
+cy.load(elements);
+// @ts-expect-error fit is a boolean
+cy.load([], { fit: 'once' });
 
 // -- queries: structured objects and predicates, never selector strings --
 

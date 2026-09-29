@@ -2,6 +2,7 @@ import type { Position } from './public-types.mjs';
 import type { Core } from './core.mjs';
 import type { Collection } from './collection.mjs';
 import type { PatchDiff } from './core/patch.mjs';
+import type { LoadProgress } from './core/load.mjs';
 
 /*
 v4's own event object (round 41.1), replacing the shared v3 `src/event.mts`.
@@ -63,10 +64,14 @@ export interface EventProps {
   layout?: unknown;
   /** on `layoutstop`: true when the run was abandoned by
    * `layout.cancel()` or `cy.destroy()` rather than finished or
-   * stopped (round 128) */
+   * stopped (round 128); on `loadstop`, when the load was cancelled
+   * (round 103) */
   cancelled?: boolean;
   /** on `patch`: what the patch added, removed and updated (round 107) */
   diff?: PatchDiff;
+  /** on `loadstart`/`loadchunk`/`loadready`/`loadstop`: how far the
+   * load has got (round 103) */
+  progress?: LoadProgress;
   timeStamp?: number;
 }
 
@@ -96,10 +101,14 @@ export class Event {
   originalEvent?: NativeEvent;
   /** the layout instance, on the layout lifecycle events */
   layout?: unknown;
-  /** on `layoutstop`, whether the run was cancelled (round 128) */
+  /** on `layoutstop`, whether the run was cancelled (round 128); on
+   * `loadstop`, whether the load was (round 103) */
   cancelled?: boolean;
   /** on `patch`, what the patch added, removed and updated (round 107) */
   diff?: PatchDiff;
+  /** on the load lifecycle events, the chunks and elements so far
+   * (round 103) */
+  progress?: LoadProgress;
   /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
 
@@ -133,6 +142,7 @@ export class Event {
     this.layout = props.layout;
     this.cancelled = props.cancelled;
     this.diff = props.diff;
+    this.progress = props.progress;
 
     // the rendered position follows from the model one and the viewport, so
     // an emitter only has to supply the model position it actually knows

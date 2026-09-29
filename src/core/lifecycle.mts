@@ -162,6 +162,9 @@ export function unmount(core: Core): Core {
   core._container = null;
   core._readyResolved = true; // headless is ready by definition
   core.ready = Promise.resolve(core);
+  // no frame will follow: a load waiting to see its first chunk drawn
+  // (round 103) sees it "drawn" now, as headless does
+  core._wakeFrameWaiters();
 
   return core;
 }
@@ -258,6 +261,8 @@ export function destroy(core: Core): Core {
     core._renderer.destroy();
     core._renderer = null;
   }
+
+  core._wakeFrameWaiters();
 
   // the dirty-stream consumers beyond the renderer (round 106): none may
   // be woken by a mutation that lands after the instance is gone

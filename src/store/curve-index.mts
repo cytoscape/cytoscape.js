@@ -458,15 +458,48 @@ export class CurveIndex {
     this.bulk = true;
   }
 
-  /** Leave a bulk load and mark what it implies: every pair the map
+  /**
+   * Leave a bulk load and mark what it implies: every pair the map
    * holds (it is only built at all once something styles bezier or a
-   * compound relation appears) and every loop list. */
-  endBulk(): void {
+   * compound relation appears) and every loop list.
+   *
+   * **A window over a subset** (round 103, a later chunk of `cy.load()`
+   * into a populated graph) passes the edges it added, and marks only
+   * their pairs — the union of the marks their own adds and style
+   * applies would have made.  With no pair map a non-loop mark derives
+   * nothing (`derivePair` answers at once), so none is made: that is
+   * the whole saving, one float-keyed `Set` insert per edge on a
+   * straight-edged graph (~100 ms over ndex-x-large's 465k edges).
+   *
+   * @param edgeSlots — the window's own edges, for a subset window; omit
+   *   for a whole-graph load
+   */
+  endBulk(edgeSlots?: ArrayLike<number>): void {
     if (!this.bulk) {
       return;
     }
 
     this.bulk = false;
+
+    if (edgeSlots != null) {
+      const endpoints = this.host.endpoints();
+
+      for (let i = 0; i < edgeSlots.length; i++) {
+        const slot = edgeSlots[i];
+        const source = endpoints[slot * 2];
+        const target = endpoints[slot * 2 + 1];
+
+        if (source === target || this.pairs != null) {
+          this.pending.add(pairKey(source, target));
+        }
+      }
+
+      if (this.pending.size > 0) {
+        this.host.schedule();
+      }
+
+      return;
+    }
 
     if (this.pairs != null) {
       for (const key of this.pairs.keys()) {

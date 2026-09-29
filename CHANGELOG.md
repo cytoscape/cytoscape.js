@@ -237,6 +237,16 @@ that compile and then behave differently.
   `cytoscape.serializeElements()` / `deserializeElements()`, both accepted
   directly by `options.elements` and `cy.add()`. Numeric columns deserialize
   as zero-copy views.
+- **`cy.load( asyncIterable, { fit, padding } )`** (round 103) —
+  progressive ingest: the graph arrives chunk by chunk (any input form per
+  chunk; later chunks name earlier nodes by id or through node
+  references), every chunk takes the bulk path, and the renderer draws
+  between chunks, so a correct partial graph is on screen before the last
+  byte.  An initial load holds `cy.ready` until its first chunk is drawn,
+  fits once to it and then holds the viewport.  `loadstart` /
+  `loadchunk` / `loadready` / `loadstop` carry `event.progress`; the
+  returned promise is completion and carries `cancel()`; `cy.destroy()`
+  cancels a running load; a layout started mid-load throws.
 - **Node references in the columnar and wire forms** (round 103): a
   payload's `refs` names nodes already in the graph, indexed past its own
   nodes, so a chunk's cut edges travel columnar instead of as definitions

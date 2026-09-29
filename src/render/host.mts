@@ -178,7 +178,8 @@ export function coreRenderHost(
 
       return () => cy.off('viewport', cb);
     },
-    emitRender: () => cy.emit('render'),
+    // round 103: through the core, which wakes `_nextFrame()` first
+    emitRender: () => cy._frameDrawn(),
     emitResize: () => cy.emit('resize'),
     emitError: (message) => cy.emit({ type: 'error' }, [message]),
     gpuMappers: { store: cy._store, styleEngine: cy._styleEngine },

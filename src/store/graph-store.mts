@@ -998,9 +998,14 @@ export class GraphStore implements ModelView {
     this.curves.beginBulk();
   }
 
-  /** Close a bulk-load window and mark the derivations it implies. */
-  endBulkLoad(): void {
-    this.curves.endBulk();
+  /**
+   * Close a bulk-load window and mark the derivations it implies.
+   *
+   * @param edgeSlots — for a window over a subset (round 103: a later
+   *   chunk of `cy.load()`), the edges it added; omit for a whole load
+   */
+  endBulkLoad(edgeSlots?: ArrayLike<number>): void {
+    this.curves.endBulk(edgeSlots);
   }
 
   /**

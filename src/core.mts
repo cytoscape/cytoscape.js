@@ -60,6 +60,8 @@ import * as patchImpl from './core/patch.mjs';
 import type { PatchDiff, PatchOptions } from './core/patch.mjs';
 import * as cloneImpl from './core/clone.mjs';
 import type { CloneOptions } from './core/clone.mjs';
+import * as loadImpl from './core/load.mjs';
+import type { LoadOptions, LoadRun, LoadState } from './core/load.mjs';
 import type { CoreCaps } from './factory.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
@@ -152,11 +154,28 @@ export class Core {
 
   // -- lifecycle --
 
-  /** resolves once the render pipeline is usable (immediately when headless) */
+  /**
+   * Resolves once the render pipeline is usable (immediately when
+   * headless) — and, under an initial `cy.load()`, once its **first
+   * chunk is drawn** (round 103; headless, once it is in the model).
+   * Rejects when no adapter can be had.
+   */
   ready: Promise<Core>;
 
-  /** true once the render pipeline is usable (immediately when headless) */
+  /** true once `ready` has resolved (immediately when headless) */
   _readyResolved: boolean;
+  /** an initial `cy.load()` holds `ready` until its first chunk is
+   * drawn (round 103): the renderer's own readiness must not flip
+   * `_readyResolved` meanwhile
+   * @internal */
+  _readyHeld: boolean;
+  /** the load in flight (round 103), or null
+   * @internal */
+  _load: LoadState | null;
+  /** resolved at the next drawn frame, or at once where none will come
+   * (round 103: "the first chunk drawn")
+   * @internal */
+  _frameWaiters: (() => void)[];
 
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
   _pool: {
@@ -384,6 +403,9 @@ export class Core {
       this.tapholdDuration(options.tapholdDuration);
     }
     this._readyResolved = this._container == null; // headless is ready immediately
+    this._readyHeld = false;
+    this._load = null;
+    this._frameWaiters = [];
     this._viewport = new Viewport(this, {
       zoom: options.zoom,
       pan: options.pan,
@@ -717,6 +739,118 @@ export class Core {
    */
   patch(input: ElementsInput, options?: PatchOptions): PatchDiff {
     return patchImpl.patch(this, input, options);
+  }
+
+  /**
+   * **Progressive ingest** (round 103): load the graph chunk by chunk from
+   * an async iterable — a streamed response, a server's pages — and show
+   * a correct partial graph before the last byte arrives.  Each chunk is
+   * any input form (definition, columnar or wire); a chunk may name nodes
+   * an earlier chunk loaded — by id in the definition form, and through
+   * node references (`refs`) in the columnar and wire forms, which is
+   * what keeps a chunk's cut edges as cheap as its own.  A plain
+   * iterable (an array of chunks) works too.
+   *
+   * Every chunk lands through the bulk load path — one bulk style pass,
+   * no per-element handle — and the renderer gets a turn between chunks,
+   * even when the source hands them over synchronously; the second chunk
+   * is not asked for until the first is drawn.  **Every element
+   * drawn is correct; completeness arrives** — a frame may show some of
+   * the graph, never a wrong piece of it.
+   *
+   * **An initial load** — one that starts on an instance holding no
+   * elements, the streamed counterpart of `options.elements` — holds
+   * **`cy.ready` until its first chunk is drawn** (headless: until it is
+   * in the model), fits the viewport **once** to that chunk and then
+   * holds it (never a re-fit per chunk; `fit: false` keeps the viewport
+   * as it is), and applies the graph-level `data()` a wire chunk carries.
+   * The load re-points `cy.ready`, so read it after calling `load()` — a
+   * reference taken before resolves on the renderer alone.
+   * A load into a populated graph is a streamed `cy.add()`: `cy.ready`,
+   * the viewport and `data()` are left alone.  Positions are the
+   * payload's (the preset case both flagship apps stream); a layout
+   * cannot start while a load runs — run it once the promise resolves.
+   *
+   * Events: `loadstart`; `loadchunk` after each chunk (with `add` per
+   * element while anyone listens for it, as the bulk path emits them);
+   * `loadready` once the first chunk is drawn; `loadstop` when the load
+   * ends — completed, failed or cancelled (`event.cancelled`).  Each
+   * carries `event.progress`: `{ chunks, nodes, edges }` so far.
+   *
+   * **Completion is the returned promise**, resolving with the final
+   * progress; it carries `cancel()` (round 128's contract): cancelling
+   * stops pulling chunks, closes the source's iterator, keeps what has
+   * landed, and rejects with a `CancelledError`.  `cy.destroy()` cancels
+   * a running load.  A chunk that fails to ingest rejects the load; the
+   * chunks before it stay, and a node reference that names no node fails
+   * its chunk before anything of it is added.
+   *
+   * **Cost** (`benchmark/progressive.mjs`, ndex-x-large, 19.6k nodes /
+   * 465k edges): see "Progressive ingest" in `src/README.md` for the
+   * first-chunk and total times by chunk count and form.
+   *
+   * @param source — an async iterable (or iterable) of chunks, each a
+   *   definition, columnar or wire payload
+   * @param options — `{ fit, padding }`: fit once to the first chunk
+   *   (default: on for an initial load), and that fit's padding
+   * @returns the load's completion: a promise of the final
+   *   `{ chunks, nodes, edges }`, with `cancel()`
+   * @throws synchronously, when `source` is not an (async) iterable of
+   *   chunks (a single payload is refused — pass `[ payload ]`), on an
+   *   unknown option, while another load is running on this instance, or
+   *   on a destroyed instance
+   */
+  load(
+    source: AsyncIterable<ElementsInput> | Iterable<ElementsInput>,
+    options?: LoadOptions,
+  ): LoadRun {
+    return loadImpl.load(this, source, options);
+  }
+
+  /**
+   * A promise of the next drawn frame — or of nothing, at once, where no
+   * frame will come (headless, unmounted, destroyed).
+   *
+   * @returns resolves after the next frame is drawn
+   * @internal
+   */
+  _nextFrame(): Promise<void> {
+    if (this._renderer == null || this._destroyed) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      this._frameWaiters.push(resolve);
+    });
+  }
+
+  /**
+   * A frame was drawn: wake `_nextFrame()`'s waiters, then emit `render`.
+   * The render host calls this rather than emitting directly.
+   *
+   * @internal
+   */
+  _frameDrawn(): void {
+    this._wakeFrameWaiters();
+    this.emit('render');
+  }
+
+  /**
+   * Resolve every `_nextFrame()` waiter — at a drawn frame, and when the
+   * renderer goes (unmount, destroy), since no frame will follow.
+   *
+   * @internal
+   */
+  _wakeFrameWaiters(): void {
+    if (this._frameWaiters.length > 0) {
+      const waiters = this._frameWaiters;
+
+      this._frameWaiters = [];
+
+      for (const wake of waiters) {
+        wake();
+      }
+    }
   }
 
   // -- collections --

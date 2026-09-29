@@ -197,7 +197,19 @@ export const openLayoutRun = (
   eles: Collection | undefined,
   stop: (() => void) | undefined,
   cancelNow: () => void,
-): LayoutRun => new LayoutRun(cy, layout, eles, stop, cancelNow);
+): LayoutRun => {
+  // round 103: a layout started mid-stream would lay out a moving target
+  // — the chunks still to come are not in its scope — so it is refused,
+  // loudly, rather than run on a partial graph
+  if (cy._load != null) {
+    throw new Error(
+      'A layout cannot run while cy.load() is streaming the graph in — ' +
+        'run it once the load resolves ( await cy.load( source ) )',
+    );
+  }
+
+  return new LayoutRun(cy, layout, eles, stop, cancelNow);
+};
 
 /**
  * The run a layout object has open, if any.

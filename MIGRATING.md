@@ -392,7 +392,8 @@ the `cxt*` family), the viewport gestures (`dragpan`, `scrollzoom`,
 `pinchzoom`), the official pointer family (`pointerdown`/`pointermove`/
 `pointerup`/`pointercancel`/`pointerover`/`pointerout`), and the model events
 (`add`, `remove`, `data`, `position`, `select`, `unselect`, `style`,
-`layoutstart`/`layoutready`/`layoutstop`, `render`, `destroy`, `error`,
+`layoutstart`/`layoutready`/`layoutstop`, `patch`,
+`loadstart`/`loadchunk`/`loadready`/`loadstop`, `render`, `destroy`, `error`,
 `mouseover`/`mouseout`, `box`/`boxstart`/`boxend`/`boxselect`,
 `devicelost`/`devicerestored`, `move`/`moveout`).
 

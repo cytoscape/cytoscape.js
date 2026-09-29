@@ -241,3 +241,15 @@ and the executive summary.
 - **Browser reach goes stale fastest.**  Round 73's table is dated
   2026-09-29; 137.1 re-fetches it before the selection rule's
   documentation is written.
+
+**Carried in from round 105 (2026-09-29): the pick pass has a depth
+target.**  Edge picks now resolve nearest-wins, as v3's
+`findNearestElement` does: every pick fragment (straight, curved, arrow
+and mid-arrow twins) writes its distance from its own centreline — an
+arrowhead its SDF distance, 0 inside — over `PICK_DEPTH_SPAN` as depth,
+into a tile-sized `depth32float` attachment tested `less-equal`
+(`src/render/picking.mts`, `PICK_OUT_WGSL`).  The WebGL2 pick needs the
+same: a depth renderbuffer on the pick FBO and `gl_FragDepth` in the
+pick fragment shaders.  `playwright-tests/bundles.spec.js` is the spec
+it has to pass; a backend that keeps last-draw-wins fails it with 122
+of 273 probes.

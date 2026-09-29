@@ -303,3 +303,16 @@ draw path, no dual-source blending, subgroups or f16 in a drawn shader;
 feature lands with a golden that sets its properties, or the parity
 project cannot see it.  The reasons and the measurements are in round
 73's record.
+
+**Carried in from round 105 (2026-09-29), the bundle-LOD question,
+priced.**  Round 105 asked whether wide parallel-edge bundles deserve
+LOD aggregation (one representative edge per bundle below a zoom
+threshold) and measured that they do not, on width grounds:
+`benchmark/bundles.mjs` on the RX 580 at 32,768 edges puts v4's device
+frame at 8.36 / 8.35 / 8.31 ms for bezier bundles of width 2 / 8 / 32
+and 1.04 / 0.90 / 0.82 ms for haystack, ingest and derivation likewise
+flat; at GeneMANIA's scale (768 edges) the frame is under 0.5 ms of
+device time.  The cost that exists is the curve style (bezier ~9×
+haystack), which a proxy tier would not remove.  So if this round's
+meta-edges ever extend to parallel bundles, the reason is legibility,
+not frame cost — the numbers are in round 105's record.

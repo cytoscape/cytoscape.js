@@ -181,9 +181,8 @@ export const PLANNED_PATHS = {
   // resolving — the documented lifecycle, same as round 101's below.
   // rounds 102–107 — the ecosystem rounds (round 104 landed 2026-09-29:
   // its src/render/label-declutter.mts entry left this list when 104.1
-  // made the file resolve)
-  'benchmark/bundles.mjs':
-    'planned by round 105 (parallel edges at GeneMANIA width)',
+  // made the file resolve; round 105 the same day: its
+  // benchmark/bundles.mjs entry left when 105.1 made it resolve)
   // round 101 (quiet verification) landed 2026-08-24: its three .mjs
   // entries left this list when the files began resolving, exactly the
   // lifecycle documented above; the planned-but-renamed .js spelling

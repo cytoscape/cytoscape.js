@@ -5,8 +5,23 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 144, animated layouts at
-  scale: a layout with `animate: true` now moves its nodes as one
+- **Last updated**: 2026-09-29, after round 105, parallel edges at
+  GeneMANIA's width: the two GeneMANIA queries the design sitting chose
+  (the site's own human example, and TP53) are fetched from
+  genemania.org by a script and drawn in the debug page with the site's
+  own style — but not committed or hosted, because GeneMANIA grants no
+  licence to redistribute its data.  Measured with v3 beside, bundle
+  width costs v4 nothing: loading, routing, drawing and picking are flat
+  from 2 to 32 edges per pair at 32,768 edges, where v3's load grows
+  from 1.6 s to 2.3 s; what costs is the curve style (curved bundles
+  about 9× straight haystack lines on the GPU), so haystack is the
+  recommendation at scale and no bundle simplification was built.  A
+  30-wide curved bundle matches v3's drawing to the pixel.  Two fixes
+  users would meet: pointing at an edge inside a wide bundle picked a
+  neighbour near the bundle's ends (it now picks the nearest, as v3
+  does), and raising one edge's opacity over a data-mapped colour — the
+  GeneMANIA highlight — did not draw.  Earlier the same day round 144,
+  animated layouts at scale: a layout with `animate: true` now moves its nodes as one
   animation instead of one per node, so a 20,000-node grid tween draws
   62 frames in its second where it drew 2 (5,000 nodes already drew
   only 2), and under `renderer: { worker: true }` the tween runs on the
@@ -290,10 +305,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,200 unit · 1,147 module · 38 soak · 622 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,201 unit · 1,176 module · 38 soak · 630 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 51 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 54 live v3-vs-v4 pixel-parity scenes, 15 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
+| Visual regression | 52 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 56 live v3-vs-v4 pixel-parity scenes, 16 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Benchmarks | 30 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Three builds as of 29 Sep, minified / gzipped: `cytoscape` 937 / 268 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 549 / 170 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 626 / 189 KiB, against a 600 KB target. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time, and the spelled-once constants are inlined back to literals |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
@@ -1641,6 +1656,24 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     465k-edge fixture's labels at fit, 99.4% overlapping, become 1,545
     that do not, for 1.6–2.0 ms a frame.  Edge labels are not
     decluttered yet.
+- **29 Sep** — GeneMANIA-width bundles, measured and fixed
+  - The two GeneMANIA queries the design sitting chose are fetched from
+    genemania.org by `node debug/genemania.mjs` and drawn in the debug
+    page with the web app's own style — per-network-type colour as one
+    mapper over a string column.  Not committed or hosted: GeneMANIA
+    grants no licence to redistribute its data.
+  - Bundle width costs nothing measurable, 2 to 32 edges per pair at
+    32,768 edges — load, routing, frame and pick all flat (v3's load
+    grows 1.6 s → 2.3 s); curved bundles cost ~9× haystack lines on the
+    GPU, so haystack is the recommendation at scale.  A 30-wide curved
+    bundle draws as v3's to the pixel, at zoom 1 and close up.
+  - Fixed: inside a wide bundle a pointer picked a neighbour of the edge
+    under it near the bundle's ends; edges now pick nearest-first, as in
+    v3.  Raising one edge's opacity over a data-mapped colour (the
+    GeneMANIA highlight) now draws and reads back.
+  - That lands the last of the six ecosystem rounds planned on 20 Aug
+    for the flagship apps; CX2 conversion, decided alongside them,
+    stays extension territory, not core.
 - **29 Sep** — the attribute clusterings leave the calling thread
   - `kMeans`, `kMedoids`, `fuzzyCMeans` and `hierarchicalClustering`
     with a named metric run on one pool worker under `'workers'` (which
@@ -2025,7 +2058,6 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case).  The DX polish bundle landed 28 Sep, the small style-wins bundle (`text-border-style`, the gradient price) 29 Sep |
 | WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
-| Ecosystem rounds | One plan serving the flagship apps, approved in direction: parallel-edge scale plus a real GeneMANIA fixture.  The other five landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) and priority-driven label decluttering (`label-declutter`, `label-priority`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured

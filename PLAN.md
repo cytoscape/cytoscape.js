@@ -269,6 +269,18 @@ re-decides nothing), hysteresis in a rank margin and a one-cell inset
 (a slow zoom's strobes 36,703 → 142), 1.66 ms a pass at 19.6k labels,
 CPU-only; edge labels stay out, a follow-up hook; it took round 102's
 last hook (the emphasized set ranks first) and raised no new item.
+Round 105 (parallel edges at GeneMANIA width, landed 2026-09-29 on the
+sitting's calls — two fixtures, per-type colour through a dictionary
+column, haystack in the sweep) fetched both queries from genemania.org
+but commits only the query definitions and the converter, since
+GeneMANIA grants no licence to redistribute its data; its sweep found
+bundle width costs v4 nothing measurable (the curve style is the cost:
+bezier ~9× haystack on the device), so no bundle LOD was built and the
+number went to round 82; it made edge picks nearest-wins as v3's are
+(inside a 30-wide bundle the pick had answered a neighbour), and its
+golden's degrade control found and fixed a channel-opacity bypass over a
+kernel-owned colour that never reached the screen; it raised no new
+item.
 Round 134 (landed 2026-09-29 on the sitting's call) took **item 70** and
 closed it: the k-clusterings and hierarchical clustering run one
 named-metric kernel shared by the in-thread reference and the offload

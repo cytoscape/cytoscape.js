@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–104, 106–124, 126–136, 138–144 |
-| planned | 49–51, 71, 77–78, 80–84, 99, 105, 125, 137 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–144 |
+| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137 |
 
 ## The sections
 
@@ -166,7 +166,7 @@ A round can land with an item held open; the round file says which.
 | 137 | 102 | 2026-08-20 | landed | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-landed-transient-emphasis-hover-highlight-without-touching-the.md) |
 | 138 | 103 | 2026-08-20 | landed | [Progressive ingest: a first frame before the last byte](rounds/2026-08-20-04-rnd0103-landed-progressive-ingest-a-first-frame-before-the-last-byte.md) |
 | 139 | 104 | 2026-08-20 | landed | [Label decluttering: priority and collision at scale](rounds/2026-08-20-05-rnd0104-landed-label-decluttering-priority-and-collision-at-scale.md) |
-| 140 | 105 | 2026-08-20 | plan | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-plan-parallel-edges-at-genemania-width-and-a-genemania.md) |
+| 140 | 105 | 2026-08-20 | landed | [Parallel edges at GeneMANIA width, and a GeneMANIA fixture](rounds/2026-08-20-06-rnd0105-landed-parallel-edges-at-genemania-width-and-a-genemania.md) |
 | 141 | 106 | 2026-08-20 | landed | [N viewers, by cloning](rounds/2026-08-20-07-rnd0106-landed-n-viewers-by-cloning.md) |
 | 142 | 107 | 2026-08-20 | landed | [Patch: id-keyed reconcile of a fresh payload](rounds/2026-08-20-08-rnd0107-landed-patch-id-keyed-reconcile-of-a-fresh-payload.md) |
 | 143 | 108 | 2026-08-24 | landed | [Agent ergonomics: what the two agents load, search and trip over](rounds/2026-08-24-01-rnd0108-landed-agent-ergonomics-what-the-two-agents-load-search-and.md) |

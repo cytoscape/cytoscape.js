@@ -3763,6 +3763,8 @@ test.describe('v3-vs-v4 render parity', () => {
     layerCaps: 0.002,
     layerJoins: 0.001,
     layerHairpins: 0.002,
+    layerArrows: 0.002,
+    layerUnderArrows: 0.004,
   };
 
   let deviceErrors = [];
@@ -7406,7 +7408,7 @@ test.describe('v3-vs-v4 render parity', () => {
     //     88.1 round caps, mitred strip                1.223%
     //     equal-depth on the mitred strip              0.392%
     //     capsule steps, no depth write                3.459%
-    //     capsule steps + equal-depth (landed)         0.012%
+    //     capsule steps + equal-depth (landed)         0.010%
     //
     // The miter spikes are what equal-depth alone leaves, and every
     // joint's overlap is what the capsule steps alone double — so the
@@ -7469,7 +7471,7 @@ test.describe('v3-vs-v4 render parity', () => {
 
     // Measured 2026-09-29 (SwiftShader): pre-88 3.101%, 88.1 2.596%,
     // equal-depth on the mitred strip 0.894%, capsule steps with no depth
-    // write 2.149%, capsule steps + equal-depth (landed) **0.071%** — the
+    // write 2.149%, capsule steps + equal-depth (landed) **0.061%** — the
     // residual is the *line's* own miter spikes, not the layer.  The
     // bound fails the equal-depth-only candidate by 4.5x.
     //
@@ -7504,6 +7506,106 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 3.5, minInk: 4000, bound: CLOSE_UP_BOUND.layerHairpins },
+    );
+  });
+
+  /*
+   * Round 88.3's two arrow scenes share one fixture: large hollow heads
+   * and a small padding — the configuration where the cap cannot reach
+   * the tip, so any reach past the cap is in frame (hollow per round 56:
+   * a filled head paints the difference over) — on one edge per family
+   * (straight, bezier, route), since the reach is per end and each
+   * family spans its own way.
+   *
+   * What decided the reach was measured first, through parity.html
+   * rather than read off v3's source: along the centreline of one edge
+   * at zoom 4, v3's *overlay* reaches its rs.allpts end (the
+   * gap-shortened path) plus the padding — the round cap — at every
+   * hollow head tried (triangle, vee, backcurve, circle, square; 3.88
+   * model px past the path end at padding 4, 1.88 at padding 2) and
+   * nothing further: no arrow-shaped reach, so no arrow-quad pass.  Its
+   * *underlay* stops where the head begins, cut by the head's erase.
+   *
+   * Measured 2026-09-29 (SwiftShader), with the no-layer floor (the
+   * lines and heads alone, curved hollow heads included) at 0.124%:
+   *
+   *     scene        pre-88   88.2 (caps, draw trim)   landed
+   *     overlay      5.060%   3.126%                   0.124%
+   *     underlay     0.362%   1.794%                   0.329%
+   *
+   * The overlay spans the gap (arrowGapTrimOf / gapSpanW) and meets the
+   * floor exactly.  The underlay keeps the draw trim and a flat end at a
+   * head that shows the line (LAYER_BUTT_WGSL) — 88.1's round cap poked
+   * into the hollow head where v3 erased it, which is what 88.2's
+   * 1.794% is; its residual past the floor is the trim approximating
+   * the erase (a cut square to the path, where v3's follows the head's
+   * back edge).  Both bounds fail 88.2 (15x and 4.5x).
+   */
+  const layerArrowScene = async (page, testInfo, name, layers, bound) => {
+    const { v3Style, v4Style } = layerSheets(
+      { width: 16, height: 16, 'background-color': '#c0392b' },
+      {
+        width: 3,
+        'arrow-scale': 2,
+        'line-color': '#2c3e50',
+        'source-arrow-shape': 'triangle',
+        'target-arrow-shape': 'triangle',
+        'source-arrow-color': '#2c3e50',
+        'target-arrow-color': '#2c3e50',
+        'source-arrow-fill': 'hollow',
+        'target-arrow-fill': 'hollow',
+        'control-point-distances': 6,
+        'control-point-weights': 0.5,
+        'segment-distances': '4 -4',
+        'segment-weights': '0.3 0.7',
+      },
+      layers,
+    );
+    const kinds = { e1: 'unbundled-bezier', e2: 'segments' };
+    const elements = closeUpElements({ chord: 70, rows: [-25, 0, 25] }).map(
+      (el) =>
+        kinds[el.data.id] == null
+          ? el
+          : { data: { ...el.data, kind: kinds[el.data.id] } },
+    );
+
+    await runParity(page, testInfo, name, elements, v3Style, v4Style, {
+      zoom: 4,
+      minInk: 4000,
+      bound,
+    });
+  };
+
+  test('parity close-up: the overlay reaches over a hollow head (round 88)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3 strokes the overlay after the arrows, along its gap-shortened
+    // path, and nothing erases it: its round cap is what paints over
+    // the head
+    await layerArrowScene(
+      page,
+      testInfo,
+      'parity-closeup-layer-arrows',
+      { overlay: { color: '#e67e22', opacity: 0.5, padding: 4 } },
+      CLOSE_UP_BOUND.layerArrows,
+    );
+  });
+
+  test('parity close-up: the underlay stops where the head erase cuts it (round 88)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3 strokes the underlay before the arrows, and each head's erase
+    // cuts it where the head begins
+    await layerArrowScene(
+      page,
+      testInfo,
+      'parity-closeup-layer-underarrows',
+      { underlay: { color: '#e67e22', opacity: 0.5, padding: 4 } },
+      CLOSE_UP_BOUND.layerUnderArrows,
     );
   });
 

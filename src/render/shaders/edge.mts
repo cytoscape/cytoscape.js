@@ -7,10 +7,32 @@ import { COMMON, BOUNDARY_WGSL, DASH_WGSL } from './common.mjs';
 import { CURVE_WGSL, ROUTE_WGSL } from './curve.mjs';
 import { ARROW_GAP_WGSL } from './sdf.mjs';
 
+// Which ends of an *underlay* keep a flat end (round 88.3): v3 strokes
+// the underlay before the heads, then erases each head's footprint out
+// of the canvas — so at a head that shows the line (hollow, or
+// translucent) the underlay is cut flat where the head begins, and a
+// round cap there would poke into the hollow head where v3 shows the
+// background.  v4's draw trim already ends the underlay at that cut, so
+// such an end keeps its butt.  At an opaque filled head the head covers
+// the cap exactly as v3's erase-then-fill does, and with no head the
+// end is v3's round cap.  Bit 0 the source end, bit 1 the target.
+const LAYER_BUTT_WGSL = wgsl`
+fn layerButtEnds(w: vec2f) -> u32 {
+  let word = arrowWordOf(w);
+  let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
+  let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
+  let src = select(0u, 1u, srcShows && srcShapeOf(word) != 0u);
+  let tgt = select(0u, 2u, tgtShows && tgtShapeOf(word) != 0u);
+
+  return src | tgt;
+}
+`;
+
 export const EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
+${LAYER_BUTT_WGSL}
 ${DASH_WGSL}
 
 // flags columns are not bound here: the cull pass already dropped dead or
@@ -412,9 +434,15 @@ fn layerVertex(slot: u32, vi: u32, spanTrim: bool) -> EdgeVSOut {
   let dir = ab / len;
   let n = vec2f(-dir.y, dir.x);
   let s = corner.y * (halfW + 1.0);
-  // the cap's reach past each end (none on a triangle's taper)
-  let cap = select(widthPx * 0.5 + 1.0, 0.0, isTriangle);
-  let along = corner.x * cap;
+  // the cap's reach past each end: none on a triangle's taper, none at
+  // an underlay end a head's erase cuts flat (LAYER_BUTT_WGSL)
+  var butt = 0u;
+
+  if (spanTrim && params.w != 6.0) { butt = layerButtEnds(widths[slot]); }
+  if (isTriangle) { butt = 3u; }
+
+  let cap = widthPx * 0.5 + 1.0;
+  let along = select(select(cap, 0.0, (butt & 2u) != 0u), -select(cap, 0.0, (butt & 1u) != 0u), corner.x < 0.0);
 
   out.position = vec4f(pxToClip(frame, mix(a, b, t) + dir * along + n * s), EDGE_Z, 1.0);
   out.v = s;
@@ -435,15 +463,16 @@ fn vsEdgeUnderlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u
 
 @vertex
 fn vsEdgeOverlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
-  return layerVertex(visible[ii], vi, true); // 88.3 measures before the gap span
+  return layerVertex(visible[ii], vi, false);
 }
 
 @fragment
 fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
   let c = unpack4x8unorm(edgeLayer[in.instance].x);
   // capsule distance about the span: the perpendicular offset inside
-  // it, the distance to the nearer end past it (a straight-triangle's
-  // taper has no cap, and its quad does not reach past the span)
+  // it, the distance to the nearer end past it (a flat end — a
+  // straight-triangle's taper, an underlay end a head's erase cuts —
+  // has no quad past the span, so nothing there to shade)
   var d = abs(in.v);
 
   if (in.kind != 7.0) {
@@ -476,6 +505,7 @@ export const CURVED_EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${ARROW_GAP_WGSL}
+${LAYER_BUTT_WGSL}
 ${CURVE_WGSL}
 ${ROUTE_WGSL}
 ${DASH_WGSL}
@@ -819,7 +849,7 @@ fn layerPointAt(isBez: bool, g: CurveGeom, route: ptr<function, Route>, idx: u32
   return modelToPx(frame, routeVertexW(route, idx));
 }
 
-fn curvedLayerAt(ii: u32, vi: u32, zBase: f32) -> CurvedLayerOut {
+fn curvedLayerAt(ii: u32, vi: u32, zBase: f32, gapSpan: bool) -> CurvedLayerOut {
   var out: CurvedLayerOut;
   let slot = visible[ii];
   let rec = edgeLayer[slot];
@@ -834,13 +864,15 @@ fn curvedLayerAt(ii: u32, vi: u32, zBase: f32) -> CurvedLayerOut {
   let corner = quadCorner(vi & 3u);
   let ends = endpoints[slot];
   let params = curveParams[slot];
-  // Round 58: the layer stroke hugs the drawn line — the same draw trim
-  // the line's strip spans.  The node geometry comes from the fused
-  // nodeOuterGeom column, whose freed binding is what lets this stage
-  // reach widths at all.
+  // Round 58: the underlay hugs the drawn line — the same draw trim the
+  // line's strip spans, since v3's head erase reaches a layer drawn
+  // before the heads.  The overlay draws after them and nothing erases
+  // it, so it spans v3's gap-shortened path instead (round 88.3).  The
+  // node geometry comes from the fused nodeOuterGeom column, whose
+  // freed binding is what lets this stage reach widths at all.
   let ga = nodeOuterGeom[ends.x];
   let gb = nodeOuterGeom[ends.y];
-  let trim = arrowTrimOf(widths[slot]);
+  let trim = select(arrowTrimOf(widths[slot]), arrowGapTrimOf(widths[slot]), gapSpan);
   let isBez = params.w <= 2.0 || params.w == 16.0;
   var g: CurveGeom;
   var route: Route;
@@ -930,8 +962,17 @@ fn curvedLayerAt(ii: u32, vi: u32, zBase: f32) -> CurvedLayerOut {
   let dir = select(vec2f(1.0, 0.0), ab / max(l, 1e-6), l >= 1e-3);
   let n = vec2f(-dir.y, dir.x);
   let reach = halfW + 1.0;
-  let back = joinReach(q[3] - q[2], ab, reach);
-  let fwd = joinReach(ab, q[5] - q[4], reach);
+  var back = joinReach(q[3] - q[2], ab, reach);
+  var fwd = joinReach(ab, q[5] - q[4], reach);
+
+  // an underlay end a head's erase cuts flat keeps its butt
+  // (LAYER_BUTT_WGSL): at the path's own end, the quad stops there
+  if (!gapSpan) {
+    let butt = layerButtEnds(widths[slot]);
+
+    if ((butt & 1u) != 0u && length(q[3] - q[2]) < 1e-3) { back = 0.0; }
+    if ((butt & 2u) != 0u && length(q[5] - q[4]) < 1e-3) { fwd = 0.0; }
+  }
   let along = select(fwd, -back, corner.x < 0.0);
   let px = mix(a, b, (corner.x + 1.0) * 0.5) + dir * along + n * (corner.y * reach);
 
@@ -949,12 +990,12 @@ fn curvedLayerAt(ii: u32, vi: u32, zBase: f32) -> CurvedLayerOut {
 
 @vertex
 fn vsCurvedUnderlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedLayerOut {
-  return curvedLayerAt(ii, vi, LAYER_Z_UNDERLAY);
+  return curvedLayerAt(ii, vi, LAYER_Z_UNDERLAY, false);
 }
 
 @vertex
 fn vsCurvedOverlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedLayerOut {
-  return curvedLayerAt(ii, vi, LAYER_Z_OVERLAY);
+  return curvedLayerAt(ii, vi, LAYER_Z_OVERLAY, true);
 }
 
 // The curved vertex at one slot over the *fused* node geometry

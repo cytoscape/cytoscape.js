@@ -411,6 +411,16 @@ that compile and then behave differently.
 
 ### Changed
 
+- **Edge overlay and underlay strokes end, turn and reach as v3's**
+  (round 88).  Every layer stroke ends in a round cap (they were cut
+  square); on the curved and route families a translucent layer blends
+  once at a corner, with a round join, where it used to darken each
+  fold and spike at sharp corners; and the overlay spans the path's
+  gap-shortened end, so its cap paints over a hollow head as v3's does
+  (the underlay keeps a flat end at a hollow or translucent head, where
+  v3's head erase cuts it).  Anyone styling edge overlays sees rounder
+  ends and cleaner corners; the band width stays `width + 2 × padding`
+  (a documented deviation — see MIGRATING.md).
 - **One worker for the algorithms the pool cannot partition** (round
   129.1).  `pageRank`, `katzCentrality`, `floydWarshall`, weighted
   `closenessCentralityNormalized`, `triangleCount`,

@@ -1026,9 +1026,22 @@ so two layer strokes that far apart in the list lose their blend
 where they cross.  The line and the casing keep their mitred strips —
 a translucent *line* on a sharp route still folds (PLAN.md item 81).
 `overlay-shape`/`-corner-radius` stay node-only.  Two more things about that stroke, both found by
-round 58's parity scenes: since round 58 it stops where the drawn
-line does (the draw trim; it used to run node centre to node centre
-on the straight stream), and its **width formula diverges from v3's**
+round 58's parity scenes: since round 58 the underlay stops where the
+drawn line does (the draw trim; it used to run node centre to node
+centre on the straight stream) — and **since round 88.3 the overlay
+does not**: v3 strokes the overlay after the heads along its
+gap-shortened path, nothing erases it, and its round cap is what
+paints over a head.  Measured through `parity.html` before building
+anything: v3's overlay reaches its `rs.allpts` end plus the padding at
+every hollow head tried, and no further, so v4's overlay spans the gap
+(`gapSpanW` / `arrowGapTrimOf`) with its round cap and needs no
+arrow-shaped pass (the hollow-head close-up scene meets its no-layer
+floor, 0.124%, from 5.060% before the round).  The underlay keeps the
+draw trim because v3's head erase *does* reach it, and at a head that
+shows the line (hollow or translucent) keeps a **flat end** there
+(`LAYER_BUTT_WGSL`) — a round cap would poke into the hollow head
+where v3 has erased it (1.794% on that scene with the cap, 0.329%
+without, over the same floor).  The width formula is the other: it **diverges from v3's**
 — v3 strokes the edge underlay/overlay at `2 × padding` alone, so a
 padding under half the line width draws a halo narrower than the
 line; v4's `width + 2 × padding` always shows the halo, and **is
@@ -6604,10 +6617,12 @@ fragment premium is **unmeasurable at scene level** on real hardware
   residual — the same scene with `arrow-fill: filled` reads 0.000%.
 - **The arrow trim reaches every consumer since round 58** (2026-08-09,
   closing PLAN.md's open call 24), under one rule: *ink hugs the draw
-  trim; anchors sit at the gap trim.*  The layer strokes
-  (overlay/underlay/casing, both streams) follow the drawn line's own
-  `drawnSpanW` — v3 strokes its casing along the shortened path and its
-  head erase reaches the layers too — while edge-label anchors and mid
+  trim; anchors sit at the gap trim.*  The layer strokes drawn before
+  the heads (underlay and casing, both streams) follow the drawn line's
+  own `drawnSpanW` — v3 strokes its casing along the shortened path and
+  its head erase reaches them too; the overlay, drawn after the heads
+  and erased by nothing, spans the gap since round 88.3 — while
+  edge-label anchors and mid
   arrows use `arrowGapTrimOf`, the WGSL twin of `arrowTrimAt`, so they
   land exactly where `midpoint()` answers.  The straight mid anchor is
   v3's four-point mean (line ends + arrow points), not the centre

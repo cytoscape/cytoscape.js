@@ -82,7 +82,7 @@ export const INTERNAL_RE = /@internal\b/;
 // exported class was invisible to every audit. Round 45 found six of them on
 // `Event` alone — the object handed to every handler a consumer writes.
 const MEMBER_RE =
-  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\??\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
+  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\??\s*(?:<(?:[^<>]|<(?:[^<>]|<[^<>]*>)*>)*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
 /**
@@ -165,14 +165,38 @@ function declHead(lines, i) {
 // the first cut of the @returns audit did to `Animation.lastNow`, reporting
 // its return type as the prose of the doc comment below it.
 const CALL_MEMBER_RE =
-  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\(/;
+  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<(?:[^<>]|<(?:[^<>]|<[^<>]*>)*>)*>)?\s*\(/;
 
 // An overload *signature*: a call signature terminated by `;` rather than a
 // body. The implementation signature that follows a run of these is not
 // separately documentable — TypeScript hides it from callers — so it is
 // skipped rather than counted as a miss.
 const OVERLOAD_SIG_RE =
-  /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
+  /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<(?:[^<>]|<(?:[^<>]|<[^<>]*>)*>)*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
+
+/**
+ * Whether the member declared at line `i` is an overload signature, read
+ * from its *joined* signature (round 140).  Line-at-a-time, a wrapped
+ * overload — `on(\n events,\n predicate,\n callback,\n): this;`, which
+ * the formatter produces as soon as the parameter types grow generic
+ * arguments — reads as the implementation signature and is skipped, so
+ * its doc block drops out of every audit and the generator's formats.
+ * The type-parameter pattern above also admits one nested level and
+ * defaults (`<K extends DataKey<Data>>`) for the same reason.
+ *
+ * @param {string[]} lines — the file's lines
+ * @param {number} i — index of the declaration line
+ * @returns {boolean} true for an overload signature
+ */
+const isOverloadSig = (lines, i) =>
+  OVERLOAD_SIG_RE.test(lines[i]) ||
+  (lines[i].includes('(') &&
+    OVERLOAD_SIG_RE.test(
+      lines
+        .slice(i, signatureEnd(lines, i) + 1)
+        .map((l, k) => (k === 0 ? l : l.trim()))
+        .join(' '),
+    ));
 
 // The section banner that groups a class body, e.g. `// -- viewport --`.
 // Round 26 chose these over a bespoke `@section` tag precisely because they
@@ -336,7 +360,7 @@ export function auditFile(file) {
 
     if (!currentClass || !exported) continue;
 
-    const sig = line.match(OVERLOAD_SIG_RE);
+    const sig = isOverloadSig(lines, i);
     const m = line.match(MEMBER_RE);
 
     if (!m) continue;
@@ -572,7 +596,7 @@ export function auditParamTags(file) {
     }
     if (!currentClass || !exported) continue;
 
-    const sig = line.match(OVERLOAD_SIG_RE);
+    const sig = isOverloadSig(lines, i);
     const m = line.match(CALL_MEMBER_RE);
 
     if (!m) continue;
@@ -845,7 +869,7 @@ export function auditReturnTags(file) {
       currentClass = null;
       name = fn[1] ?? fn[2];
     } else if (currentClass && exported) {
-      const sig = line.match(OVERLOAD_SIG_RE);
+      const sig = isOverloadSig(lines, i);
       const m = line.match(CALL_MEMBER_RE);
 
       if (!m) continue;

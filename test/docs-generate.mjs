@@ -80,8 +80,10 @@ function dtsMembers(className) {
 
     if (line === '}') break;
 
+    // round 140: type parameters may nest and take defaults
+    // (`union<OtherData = Data>(`, `data<K extends DataKey<Data>>(`)
     const m = line.match(
-      /^ {2}(?:(private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:abstract\s+)?([A-Za-z_$][\w$]*)\??\s*(?:<[^>=]*>)?\s*[(:]/,
+      /^ {2}(?:(private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:abstract\s+)?([A-Za-z_$][\w$]*)\??\s*(?:<(?:[^<>]|<(?:[^<>]|<[^<>]*>)*>)*>)?\s*[(:]/,
     );
 
     if (!m) continue;

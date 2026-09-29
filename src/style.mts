@@ -3,7 +3,8 @@ import * as engineRead from './style/engine-read.mjs';
 import * as engineWrite from './style/engine-write.mjs';
 import * as engineBypass from './style/engine-bypass.mjs';
 import * as engineSheet from './style/engine-sheet.mjs';
-import * as engineRefresh from './style/engine-refresh.mjs'; /*
+import * as engineRefresh from './style/engine-refresh.mjs';
+import * as engineDiff from './style/engine-diff.mjs'; /*
 StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors, no
 style functions.  Each key is a props object whose values are constants
 or mapper objects; all per-element variation is declarative (style-
@@ -52,6 +53,7 @@ import type { BypassPatch } from './style/apply-prop.mjs';
 import type { TxnCapture } from './style/compile.mjs';
 import { PARENT_CHANNEL_OVERLAY } from './style/sheet.mjs';
 import type { GroupDef } from './style/sheet.mjs';
+import type { PendingSheet } from './style/engine-diff.mjs';
 import type { ReadContext, PropReader } from './style/readers.mjs';
 // the property readers register themselves into PROP_READERS at module
 // evaluation (35.2), so the three reader modules are imported for that
@@ -147,6 +149,24 @@ export class StyleEngine {
 
   /** Round 24.1: the open transition capture (one per group-def pass). @internal */
   txn: TxnCapture | null = null;
+
+  // -- the sheet diff (round 133) --
+
+  /**
+   * Whether a sheet replace re-applies as a diff (round 133).  Internal:
+   * false restores the whole-sheet pass, which is what the equivalence
+   * specs and `benchmark/sheet-diff.mjs` compare the diff against.
+   * @internal
+   */
+  sheetDiff = true;
+
+  /**
+   * The sheet changes the columns do not reflect yet — set by
+   * `setSheet`, consumed by `applySheet` (at once, or at the outermost
+   * `endBatch()`).
+   * @internal
+   */
+  pendingSheet: PendingSheet | null = null;
 
   // -- per-element bypasses (round 63) --
 
@@ -313,6 +333,9 @@ export class StyleEngine {
     // coincidence.  There is one path now, and "no stylesheet" is the
     // empty stylesheet.
     this.defs = null as never;
+    // (this leaves a pending change with nothing to diff against, so
+    // the first sheet applied is a whole-sheet pass — the store may
+    // already hold elements no sheet has styled; round 133)
     this.setSheet({}, false);
 
     // a mixed column can't evaluate in the kernel: demote its group's
@@ -345,7 +368,9 @@ export class StyleEngine {
 
   /**
    * Replace the stylesheet and re-apply it to every live element,
-   * mapped channels included.
+   * mapped channels included — as a diff against the installed sheet
+   * (round 133): only the channels whose declaration changed are
+   * re-written, with the end state a whole-sheet re-apply leaves.
    *
    * The sheet is a plain `{ nodes, edges, parents, core }` object of
    * prop objects — no selector blocks, no style functions.  The
@@ -511,8 +536,27 @@ export class StyleEngine {
    * @internal
    */
   applyAll(): void {
+    // every channel of every element re-derives from the sheet, so any
+    // animated stored truth is overwritten (round 133's flag)
+    this.store.styleTouched.nodes = false;
+    this.store.styleTouched.edges = false;
     this.applyBulk(GROUP_NODES, this.store.slotsOrdered(GROUP_NODES));
     this.applyBulk(GROUP_EDGES, this.store.slotsOrdered(GROUP_EDGES));
+  }
+
+  /**
+   * Apply the pending sheet change (round 133): only the channels whose
+   * declaration changed, per group def, with the end state the
+   * whole-sheet pass leaves — see `src/style/engine-diff.mts`.
+   *
+   * @param unstyled — elements added since the last apply and not yet
+   *   styled (a batch's deferred additions); they take the full write
+   * @returns true when every live slot took the full pass, so deferred
+   *   per-slot work (a batch's data refreshes) is subsumed
+   * @internal
+   */
+  applySheet(unstyled: readonly Ref[] = []): boolean {
+    return engineDiff.applySheet(this, unstyled);
   }
 
   /**

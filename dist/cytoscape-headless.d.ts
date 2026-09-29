@@ -7176,7 +7176,9 @@ declare class StyleEngine {
   constructor(store: GraphStore);
   /**
    * Replace the stylesheet and re-apply it to every live element,
-   * mapped channels included.
+   * mapped channels included — as a diff against the installed sheet
+   * (round 133): only the channels whose declaration changed are
+   * re-written, with the end state a whole-sheet re-apply leaves.
    *
    * The sheet is a plain `{ nodes, edges, parents, core }` object of
    * prop objects — no selector blocks, no style functions.  The
@@ -8222,8 +8224,11 @@ declare class Core {
    * one bulk pass — filtered to elements still live, so adding and
    * removing within the same batch costs nothing — and the automatic
    * slot-compaction trigger gets its boundary check.  A sheet change
-   * during the batch subsumes the per-element work: one `applyAll()`
-   * covers every live element.
+   * during the batch applies once, as a diff against the sheet the
+   * columns were derived under (round 133); it writes the batch's
+   * additions in full, and the deferred data refreshes run after it
+   * unless the diff fell back to the whole-sheet pass, which subsumes
+   * them.
    *
    * Unbalanced calls are a no-op rather than an error, matching v3.
    *

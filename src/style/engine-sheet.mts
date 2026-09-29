@@ -29,10 +29,13 @@ import type { GroupDef } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
 import { resolveConst } from './engine-read.mjs';
 import { validateBypasses, installBypasses } from './engine-bypass.mjs';
+import { captureBefore, declOf, noteSheetChange } from './engine-diff.mjs';
 
 /**
  * Replace the stylesheet and re-apply it to every live element,
- * mapped channels included.
+ * mapped channels included — as a diff against the installed sheet
+ * (round 133): only the channels whose declaration changed are
+ * re-written, with the end state a whole-sheet re-apply leaves.
  *
  * The sheet is a plain `{ nodes, edges, parents, core }` object of
  * prop objects — no selector blocks, no style functions.  The
@@ -73,6 +76,8 @@ export function setSheet(
   // round 63.2: validate the bypasses section before any engine state
   // mutates, so a bad entry throws with nothing half-applied
   const bypassEntries = validateBypasses(engine, sheet.bypasses);
+  // round 133: what the diff compares the new sheet against
+  const before = captureBefore(engine);
 
   engine.coreStyle = resolveCoreProps(sheet.core);
 
@@ -136,6 +141,7 @@ export function setSheet(
       mappers,
       deps,
       transition,
+      decl: declOf(channels),
       partition: partitionOf(mappers),
     };
   };
@@ -258,8 +264,12 @@ export function setSheet(
 
   engine.paintVersion++;
 
+  // round 133: the change is owed to the columns until the next apply —
+  // now, or at the outermost endBatch() when the core deferred it
+  noteSheetChange(engine, before);
+
   if (apply) {
-    engine.applyAll();
+    engine.applySheet();
   }
 }
 

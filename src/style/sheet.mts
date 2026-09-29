@@ -17,6 +17,15 @@ export interface GroupDef {
   /** the group's transition config (round 24.1) */
   transition: TransitionSpec;
   /**
+   * The channel declarations this def compiled from (round 133):
+   * normalized prop → a snapshot of the declared value, last
+   * declaration winning as it does in `resolveConst`.  The sheet diff
+   * compares two of these per prop; the snapshot is a copy, so a sheet
+   * object mutated in place and passed to `cy.style()` again still
+   * diffs against what was actually installed.
+   */
+  decl: ReadonlyMap<string, unknown>;
+  /**
    * The flag-partition fast path (round 57.1).  Non-null when *every*
    * mapper in the group is a `case` over state conditions alone —
    * `{ selected: true }`, `{ active: true }` and the rest — which is

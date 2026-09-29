@@ -529,39 +529,51 @@ export function applyBulk(
     }
 
     if (parents.length > 0) {
-      const def = engine.defs.parents;
-      // padding transitions (25.4): the compound-style write sits
-      // outside the write() funnel, so it takes its own capture.
-      // The styled marks are read before the channel pass marks
-      // fresh slots (instant-on-add must hold for padding too).
-      const txn = openTxn(engine, GROUP_NODES, def);
-      const styledBefore =
-        txn != null && txn.padding
-          ? parents.map((slot) => engine.wasStyled(GROUP_NODES, slot))
-          : null;
-
-      try {
-        // the inner openTxn no-ops while engine capture is open, so
-        // the channel diffs land in the same preset animation
-        applyGroupDef(engine, GROUP_NODES, def, parents);
-
-        for (let i = 0; i < parents.length; i++) {
-          applyCompoundStyle(
-            engine,
-            txn,
-            parents[i],
-            styledBefore == null ? false : styledBefore[i],
-          );
-        }
-      } finally {
-        closeTxn(engine, txn);
-      }
+      applyParents(engine, parents);
     }
 
     return;
   }
 
   applyGroupDef(engine, group, engine.defs[group], slots);
+}
+
+/**
+ * Apply the parents overlay def to compound-parent slots: the channel
+ * pass, then each parent's compound-style write, inside one padding
+ * transition capture (round 25.4).  `applyBulk`'s parents half, shared
+ * with the sheet diff's full fallback (round 133).
+ *
+ * @param parents — live parent-node slots
+ */
+export function applyParents(engine: StyleEngine, parents: number[]): void {
+  const def = engine.defs.parents;
+  // padding transitions (25.4): the compound-style write sits
+  // outside the write() funnel, so it takes its own capture.
+  // The styled marks are read before the channel pass marks
+  // fresh slots (instant-on-add must hold for padding too).
+  const txn = openTxn(engine, GROUP_NODES, def);
+  const styledBefore =
+    txn != null && txn.padding
+      ? parents.map((slot) => engine.wasStyled(GROUP_NODES, slot))
+      : null;
+
+  try {
+    // the inner openTxn no-ops while engine capture is open, so
+    // the channel diffs land in the same preset animation
+    applyGroupDef(engine, GROUP_NODES, def, parents);
+
+    for (let i = 0; i < parents.length; i++) {
+      applyCompoundStyle(
+        engine,
+        txn,
+        parents[i],
+        styledBefore == null ? false : styledBefore[i],
+      );
+    }
+  } finally {
+    closeTxn(engine, txn);
+  }
 }
 
 /**

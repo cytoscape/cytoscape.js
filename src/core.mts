@@ -110,7 +110,7 @@ export interface AllCache {
 
 /** Style work deferred by an open batch (flushed once at the outermost endBatch). */
 export interface BatchPending {
-  /** the sheet changed during the batch: one applyAll() subsumes the per-slot work */
+  /** the sheet changed during the batch: one diffed apply at the outermost endBatch (round 133) */
   sheet: boolean;
   /** freshly-added elements awaiting their first style apply */
   style: Ref[];
@@ -551,8 +551,11 @@ export class Core {
    * one bulk pass — filtered to elements still live, so adding and
    * removing within the same batch costs nothing — and the automatic
    * slot-compaction trigger gets its boundary check.  A sheet change
-   * during the batch subsumes the per-element work: one `applyAll()`
-   * covers every live element.
+   * during the batch applies once, as a diff against the sheet the
+   * columns were derived under (round 133); it writes the batch's
+   * additions in full, and the deferred data refreshes run after it
+   * unless the diff fell back to the whole-sheet pass, which subsumes
+   * them.
    *
    * Unbalanced calls are a no-op rather than an error, matching v3.
    *

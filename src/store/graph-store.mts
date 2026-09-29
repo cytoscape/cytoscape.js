@@ -304,6 +304,18 @@ export class GraphStore implements ModelView {
    * clone's trigger reads it.  Treat as read-only outside the store.
    */
   positionEpoch = 0;
+  /**
+   * Whether an animation has written a style channel of the group since
+   * the last whole-group style apply (round 133).  An animation writes
+   * the columns directly, so its values are stored truth the sheet did
+   * not derive; a whole-sheet re-apply overwrites them, and the sheet
+   * diff — which skips what the sheet did not change — must therefore
+   * take the full pass for a touched group to keep that behaviour.  Set
+   * by the animation apply (and a GPU tween's registration), cleared by
+   * the style engine's whole-group passes.
+   * @internal
+   */
+  styleTouched: Record<GroupName, boolean> = { nodes: false, edges: false };
 
   /** Told when structureEpoch moves (round 62.5b) — the core nulls its
    * whole-graph collection cache here, so the memo-hit read needs no

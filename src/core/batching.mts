@@ -148,8 +148,11 @@ export function startBatch(core: Core): Core {
  * one bulk pass — filtered to elements still live, so adding and
  * removing within the same batch costs nothing — and the automatic
  * slot-compaction trigger gets its boundary check.  A sheet change
- * during the batch subsumes the per-element work: one `applyAll()`
- * covers every live element.
+ * during the batch applies once, as a diff against the sheet the
+ * columns were derived under (round 133); it writes the batch's
+ * additions in full, and the deferred data refreshes run after it
+ * unless the diff fell back to the whole-sheet pass, which subsumes
+ * them.
  *
  * Unbalanced calls are a no-op rather than an error, matching v3.
  *
@@ -170,27 +173,33 @@ export function endBatch(core: Core): Core {
 
   core._batchPending = null;
 
-  if (pending.sheet) {
-    core._styleEngine.applyAll(); // covers every live element, so the per-slot work is subsumed
-    core._maybeCompact();
-
-    return core;
-  }
-
   const store = core._store;
-  const nodeSlots: number[] = [];
-  const edgeSlots: number[] = [];
 
-  for (const ref of pending.style) {
-    if (!store.isCurrent(ref)) {
-      continue;
-    } // added then removed within the batch
+  if (pending.sheet) {
+    // round 133: the sheet diff.  A whole-sheet pass covers every live
+    // element, so the per-slot work is subsumed; a diff writes the
+    // batch's unstyled additions in full itself, but the data writes
+    // deferred here still owe their mapped channels a refresh
+    if (core._styleEngine.applySheet(pending.style)) {
+      core._maybeCompact();
 
-    (ref.group === GROUP_NODES ? nodeSlots : edgeSlots).push(ref.slot);
+      return core;
+    }
+  } else {
+    const nodeSlots: number[] = [];
+    const edgeSlots: number[] = [];
+
+    for (const ref of pending.style) {
+      if (!store.isCurrent(ref)) {
+        continue;
+      } // added then removed within the batch
+
+      (ref.group === GROUP_NODES ? nodeSlots : edgeSlots).push(ref.slot);
+    }
+
+    core._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
+    core._styleEngine.applyBulk(GROUP_EDGES, edgeSlots);
   }
-
-  core._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
-  core._styleEngine.applyBulk(GROUP_EDGES, edgeSlots);
 
   const mappedNodes: number[] = [];
   const mappedEdges: number[] = [];

@@ -631,6 +631,14 @@ line-keyed gates (`throw-coverage`'s tables and fixtures,
 the before/after sizes; PLAN.md item 71 lists the eleven files that
 still sit between 1,000 and 1,600 lines, for the maintainer's call.
 
+Round 133 (2026-09-28, ledger item 67 — an alpha round, because
+Cytoscape Web depends on it) made a whole-sheet `cy.style( sheet )`
+re-apply a **sheet diff**: only the channels whose declaration changed
+are re-written, per group def, and the end state is the whole-sheet
+pass's, column for column.  On ndex-x-large a one-constant change went
+from 250 ms and 59.6 MB of dirty columns to 1.5 ms and 0.08 MB; see
+"Sheet replacement is a diff" below.
+
 ## API scope (pass 1)
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
@@ -874,7 +882,8 @@ below.
 Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
 `cy.batch(fn)`) defers *style application* — the first apply of
 elements added inside the batch, sheet re-application (`cy.style(sheet)`
-compiles and validates immediately, applies at the flush), and
+compiles and validates immediately, applies at the flush — as one diff
+against the sheet the columns were derived under, round 133), and
 data-mapped label refresh — into one bulk pass at the outermost
 `endBatch`, filtered to still-live elements.  Events keep firing during
 the batch, and style-derived reads (`width()`, `label()`, `style()`)
@@ -921,7 +930,9 @@ through `cy.json()`, which is better than v3, whose export drops
 bypasses); and a full `cy.style( sheet )` **replaces** the section
 like any other, with spreading the exported sheet as the keep-them
 idiom (a v3 difference, recorded: v3's bypasses live on elements and
-survive sheet swaps).  Implementation: an overlay merged at the write
+survive sheet swaps; round 133's sheet diff keeps this rule — every
+slot bypassed under the old sheet or the new takes the full write).
+Implementation: an overlay merged at the write
 funnel — bypass-free graphs pay one count load (measured unchanged),
 apply and select punch-outs are O(bypassed), a channel carrying a
 bypass demotes its GPU mapper eval while one exists (count-gated,
@@ -5464,6 +5475,85 @@ own viewport, the main view's red one, the clone's node moving after a
 move on the main view, and a selection that stays in the view it was made
 in — and times out with the position trigger removed.
 
+## Sheet replacement is a diff (round 133, item 67)
+
+`cy.style( sheet )` replaces the stylesheet, and until round 133 it
+re-applied the new one to every channel of every element — on
+ndex-x-large (19,607 nodes, 464,657 edges) **250 ms and 59.6 MB of
+dirty columns** for a sheet whose only change was one node
+`background-color` constant.  An app that re-sends its whole sheet on
+every edit — Cytoscape Web's style editor does — paid that per
+keystroke.  The replace is now a **diff**: each group def (`nodes`,
+`edges`, and the `parents` overlay) keeps a snapshot of the
+declarations it compiled from, and a replace re-writes only the props
+whose declaration differs, through the round-61 narrow channel writers
+(`fastStateWriter` — fill, border, opacity, the layer records, line
+and arrow colours).  Each slot's writers read its own resolved record
+(the partition cache, the constants, or a per-slot mapper evaluation),
+so a fold partner that is mapped — a data-driven `background-opacity`
+beside a changed `background-color` — folds exactly as the full pass
+folds it.  Behaviour is unchanged; this is a performance change.
+
+**The contract is end-state equivalence**: after any sequence of
+operations, the columns, the blob pools and every element's read-back
+style equal what the whole-sheet pass leaves.  So everything that pass
+re-derived for a reason other than the sheet's own text is kept:
+
+- **A prop with no narrow writer** — geometry, labels, charts, images,
+  the edge-opacity fold cluster, `width` — sends its def through the
+  full pass (the other defs still diff: an edge `width` change leaves
+  the nodes alone).
+- **The bypass-clearing rule** of a sheet replace (round 63): the
+  `bypasses` section is whole-replaced, so every slot bypassed under
+  the old sheet *or* the new takes the full write — a cleared bypass
+  returns its slot to the sheet, a new one merges.
+- **Animated stored truth**: an animation writes columns directly, and
+  the full pass overwrote its values; a group an animation has written
+  since its last whole-group pass (`store.styleTouched`) takes the full
+  pass.  A live `transition-*` spec on the def, an open transition
+  capture and a demoted group do too.
+- **Kernel-owned channels** have stale stored bytes (the GPU eval
+  owns them), so they count as changed and re-derive on the CPU.
+- **A live auto-domain extent** that moved since the columns were
+  derived (an element holding the maximum was removed) counts its prop
+  as changed.
+- **A batch** accumulates every sheet set inside it: the diff is
+  against the sheet the columns were derived under, not the previous
+  call's, and an element restyled under an intermediate sheet is
+  covered by the union.  The batch's additions take the full write and
+  its deferred data refreshes still run after the diff (the whole-sheet
+  pass used to subsume both).
+- **A sheet object mutated in place** and set again diffs against the
+  snapshot of what was installed, not against itself.
+
+Measured through the built bundle on ndex-x-large, headless, 60
+replaces per row (`benchmark/sheet-diff.mjs`, i9-9900K, Node 24.18):
+
+| replace | ms per replace | dirty per replace |
+| --- | --: | --: |
+| the whole-sheet pass, before (any change) | 250 | 59.6 MB |
+| the item's target: the one change by hand, `cy.nodes().style(...)` | 71 | 0.08 MB |
+| **diff**: one node `background-color` constant | **1.5** | 0.08 MB |
+| diff: an identical sheet | 0.06 | 0 |
+| diff: a node colour constant ↔ `case` mapper | 2.5 | 0.08 MB |
+| diff: one edge `line-color` constant (464,657 narrow writes) | 36 | 1.9 MB |
+| diff: an edge `width` (no narrow writer — edges full, nodes skipped) | 235 | 59.5 MB |
+
+In Chromium on the hardware adapter (`benchmark/copy-census.mjs`, the
+round-110 restyle row: 60 replaces, one per frame), the same-thread
+host uploaded **1.79 GB in 658 ms before and 2.4 MB in 0.6 ms after**,
+and the 60 replaces took 12.0 s of wall clock before and 1.0 s — the
+frame rate — after; the worker host posted 3.57 GB before and 4.7 MB
+after.
+
+`cy.style().update()` (re-snapshot the live extents) is still the
+whole-sheet pass, and so is the first sheet an instance applies.  The
+diff can be switched off per instance with the internal
+`_styleEngine.sheetDiff = false`, which is what `test/sheet-diff.mjs`
+compares it against: every narrow-writer prop, each clause above, and
+sixty alternating replaces, with a control per clause recorded in the
+round.
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its
@@ -5992,7 +6082,7 @@ but one, and the floor is WebGPU's, not v4's.**
 | first frame's full-state upload | 95 MB through 54 `writeBuffer`s | 62 ms one-shot | at the floor: `writeBuffer` 33.6 ms vs `mappedAtCreation` 32.1 vs a JS memcpy 37.5 for the same bytes |
 | per-frame upload, every node moved every frame | one position column, 153 KB | 0.012 ms/frame | at the floor |
 | worker host, the same writer | one 153 KB batch per frame, transferred | 0.018 ms/frame | 86.1's copy design holds at 1/50th of its 1 ms trigger; the SAB tier stays designed-not-built |
-| whole-sheet `cy.style()` re-apply | every column re-derived, 60 MB | 22 ms of a 198 ms apply | the dirty-span floor for a full re-apply — the apply is the cost (item 67) |
+| whole-sheet `cy.style()` re-apply | every column re-derived, 60 MB | 22 ms of a 198 ms apply | the dirty-span floor for a full re-apply — the apply is the cost (item 67) — **round 133 made it a diff**: one fill column, 39 KB and 0.01 ms of upload per apply |
 | export readback loop | row un-pad + swizzle + un-premultiply in JS | 81 ms at 4k, 332 at 8k | **moved to the device (110.4)**: 12 and 52 ms |
 | `png()`'s canvas hop | `putImageData` | 2.6 ms at 4k | at the floor; the PNG encoder (177 ms) is not a copy |
 

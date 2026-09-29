@@ -6,9 +6,27 @@ import type { ColumnId } from '../contract.mjs';
 import { TWEEN_COL, lerp, clampTo, STRIDE, mixOklab } from './channels.mjs';
 import type { Animation } from './animation.mjs';
 
+/**
+ * Mark the groups whose style channels this animation writes as holding
+ * stored truth the sheet did not derive (round 133: the sheet diff takes
+ * the full pass for such a group, as a whole-sheet re-apply always did).
+ * Per write, not per element — a flag store per column per tick.
+ */
+export function markStyleTouched(anim: Animation): void {
+  const touched = anim.store.styleTouched;
+
+  for (const w of anim.writes) {
+    if (w.kind !== 'position' && w.refs.length > 0) {
+      touched[w.refs[0].group] = true;
+    }
+  }
+}
+
 /** Write every captured channel at the eased progress `t` (and the viewport, when the animation pans or zooms). */
 export function apply(anim: Animation, e: number): void {
   const store = anim.store;
+
+  markStyleTouched(anim);
 
   for (const w of anim.writes) {
     for (let i = 0; i < w.refs.length; i++) {

@@ -358,6 +358,10 @@ describe('gpu/style: the bulk edge apply (round 67.2)', function () {
 
       const before = a._styleEngine._bulkRuns;
 
+      // the whole-sheet pass: since round 133 re-setting an identical
+      // sheet is an empty diff, which is not the route under test
+      a._styleEngine.sheetDiff = false;
+      b._styleEngine.sheetDiff = false;
       a.style(sheet);
       b.style(sheet);
 

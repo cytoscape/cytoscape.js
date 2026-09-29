@@ -7,6 +7,7 @@ import type { Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { ChannelWrite } from './channels.mjs';
 import { Animation } from './animation.mjs';
+import { markStyleTouched } from './apply.mjs';
 
 /** The renderer's GPU tween executor, seen by the manager. */
 export interface GpuTweenSink {
@@ -510,6 +511,9 @@ export class AnimationManager {
 
         ani.gpuId = ++this.gpuCounter;
         ani.gpuDriven = true;
+        // the CPU columns are not written until the settle, but the
+        // drawn values already left the sheet's (round 133)
+        markStyleTouched(ani);
         this.sink.register(
           ani.gpuId,
           writes,

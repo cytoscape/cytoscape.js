@@ -215,7 +215,11 @@ CJS bundles on Deno, and layouts as a capability.  Round 107
 sitting's call for it) raised no new item: its one open cost — below
 ~70% id overlap a reload is cheaper — is a follow-up hook in
 `src/README.md`, and its minimap proof moves to round 106 with
-`cy.clone()`.
+`cy.clone()`.  Round 106 (N viewers by cloning, landed the same day)
+built it: consumer cursors on the dirty stream, `cy.clone()` with
+`follow`, and the minimap in `debug/`; it raised **item 78**, the
+viewport animation's double `viewport` event its plan had logged as a
+drive-by.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -1053,6 +1057,9 @@ directions".*
     internals, since that boundary decides what the panel can be
     without growing the public surface.
     **Call taken (2026-09-28, the eleventh sitting): during alpha.**
+    Round 106 built the store/dirty-tracking tap the panel needs: a
+    second reader registers its own cursor with
+    `GraphStore.registerConsumer()` and cannot starve the renderer.
 48. **PDF export over the SVG serializer** (raised 2026-08-19).
     Round 77 builds the SVG serializer; EnrichmentMap web ships a
     pdf-export extension today, so the first consumer exists
@@ -1125,7 +1132,9 @@ directions".*
     absorption, and let the remainder *be* the port list — with
     the first port chosen for shape-coverage, not popularity.
     **Call taken (2026-09-28, the eleventh sitting): all ports during
-    alpha.**
+    alpha.**  For navigator the primitive exists since round 106: a
+    following `cy.clone()` with its own sheet, proved as `debug/`'s
+    minimap.
 
 51. **Round 86's worker-host deferrals** (logged 2026-08-26, from
     the round-86 landed record — surfaced here per the standing
@@ -1831,3 +1840,13 @@ directions".*
     rounds.  **First measurement**: the minified bytes per layout in
     the headless build, and which layouts the flagship apps' headless
     paths call.
+78. **Viewport animations emit `viewport` twice per tick** (logged by
+    round 106's plan as a drive-by, raised to the ledger at its close
+    so it is findable).  `_afterAnimationTick` (`src/core/viewport.mts`)
+    passes `['pan', 'zoom', 'viewport']` to `Core._emitViewportEvents`,
+    which appends `'viewport'` itself, so every animated pan/zoom tick
+    fires `viewport` twice — round 106's minimap redraws its extent
+    rectangle twice per tick, harmlessly.  The fix is one word; the
+    round that makes it adds the listener-census spec (each of `pan`,
+    `zoom`, `viewport` once per tick) with the current code as its
+    control.

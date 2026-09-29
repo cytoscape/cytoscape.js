@@ -6878,9 +6878,18 @@ it here in round 57.4.*
   bulk removal (one adjacency rebuild, one id-blob pass) and a
   contiguous re-add would move the crossover.  Not built: the headline
   refresh is high-overlap, and the number is documented in "Patch"
-  above.  The live-following clone and its minimap proof, which the
-  round-107 plan said land with it, need `cy.clone()` and land with
-  round 106; `follower.patch( master.serialize() )` is already the loop.
+  above.  (The live-following clone and its minimap proof, which the
+  round-107 plan said land with it, landed with round 106 on that loop.)
+- **What a following clone does not do** (round 106): it syncs per
+  burst, not per frame — ~50 ms a sync at 100k elements, so a minimap
+  lags a drag on a large graph by a sync; it shares no view state (an
+  opt-in selection or viewport sync waits for an app that proves the
+  need — `docs/features.csv`'s linked-view row); it duplicates the
+  model (~50 MB per 100k elements); and a clone of a worker-hosted
+  instance (`renderer: { worker: true }`) carries that option into an
+  untested combination.
+  Same-frame fidelity would need the shared-store design the round-106
+  plan records as the fallback.
 - ~~**Round 55's remainder — the arrow `gap`**~~ — **landed as round 56**
   (2026-08-07).  v3's `gap` and `spacing` both port, on the CPU and in
   generated WGSL; the three scenes that measured 3.5% / 11.8% / 26.7%

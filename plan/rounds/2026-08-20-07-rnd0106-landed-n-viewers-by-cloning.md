@@ -163,3 +163,136 @@ resolves to a cursor registration: layer 1 *is* the tap.
   instance); and the three single-callback store slots
   (`onStructureChange`, `images.onChange`, `onDictRemap`) are wired
   only by the core and the store themselves — never hazards.
+
+### The round, as carried out (2026-09-28)
+
+Landed the same day as round 107, on the replan of 2026-08-27 (the
+eleventh sitting took no call on this round; the replan's two calls — clone +
+reconcile, and a clone owns its state — stand).  Round 107 had built the
+reconcile early and handed back the follow layer and the minimap proof,
+so all four layers landed here.  Measured on the i9-9900K (16 threads,
+63 GiB), Node 24.18.
+
+| # | Commit | What landed |
+| --- | --- | --- |
+| 106.1 | `55015206` | `benchmark/store.mjs`: the store-level drain at one consumer, before any cursor code |
+| 106.2 | `ad19d577` | consumer cursors: `DeltaConsumer` in `src/contract.mts` first, `DirtyCursor` in `src/store/dirty.mts`, `GraphStore.registerConsumer()` in `src/store/graph-store/consumers.mts`, `StoreDelta.dataWritten`, destroy disposes; `test/dirty-consumers.mjs`, the soak isolation specs |
+| 106.3 | `09928678` | `cy.clone( options )` with `follow` (`src/core/clone.mts`), the store's `hierarchyEpoch` / `positionEpoch`, the applier's follow flag, `CloneOptions` / `FollowOptions` on every entry; `test/clone.mjs`, the docs |
+| 106.4 | `24c576a1` | `benchmark/clone.mjs`: clone, follow burst, memory at three scales and the ndex shape |
+| 106.5 | `3bac47fb` | the minimap proof in `debug/`, its module spec and a two-canvas browser spec |
+| 106.6 | this commit | the close |
+
+**Layer 1 — consumer cursors, measured before and after.**  The rows
+landed first (106.1).  Drain-and-republish: `mark` / `markResized` /
+`touch` are byte-identical (one live state); the first consumer to take
+drains it and folds it into every other consumer's pending buffer — the
+column spans in the tracker, the four blob ranges and the mapper spans in
+the store.  With no consumer registered the take is the pre-106 code.
+Late registration is full-sync; the microtask bail is per cursor.  Before
+→ after (tsx, N = 2,000): `mark` 13.1–13.2 → 13.1–13.2 ns contiguous,
+18.1–18.5 → 18.0–18.1 ns scattered; the tracker's take 832–866 → 807–824
+ns; the store drain at one consumer, five interleaved before/after
+process pairs, 1.42 → 1.48 µs median, pairwise −11% to +4% inside the
+row's own 1.25–1.77 µs spread — **zero within noise**, the plan's gate.
+A second consumer adds ~0.3–0.4 µs per drain.
+
+**Layer 2 — `cy.clone()`, and the carriage table the plan asked to
+measure** (a spec, `test/clone.mjs`): the wire form carries ids, data,
+positions, parents, endpoints and `selected` / `selectable`, and **not**
+`locked` / `grabbable` / `pannable`; the `json()` element form carries all
+of them; bypasses ride neither (they are the sheet's).  A clone is the
+wire plus the three flags copied slot for slot, plus the sheet with its
+bypasses, graph data, viewport, gating flags and interaction settings.
+
+**Layers 3–4 — follow and the minimap.**  `follow: true | { throttle }`
+registers a consumer on the source and syncs by `patch( clone,
+source.serialize() )`, the loop 107 specced.  The minimap
+(`debug/minimap.js`, `?minimap=true`) is a following clone with its own
+sheet, driven on em-web through the hardware adapter: 57 ms to clone, one
+sync (`~40`) for 40 moved nodes, the extent rectangle and tap-to-centre
+working.
+
+**Measurements** (`benchmark/clone.mjs`, built headless bundle, median of
+5, a forced GC before each timed region):
+
+| scale | elements | clone ms | serialize ms | load from wire ms | follow burst ms | restyle syncs | clone memory MB |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1k | 1,000 | 4.6 | 0.4 | 3.7 | 2.3 | 0 | 0.5 |
+| 10k | 10,000 | 30.4 | 2.5 | 20.6 | 8.0 | 0 | 4.4 |
+| 100k | 100,000 | 248.4 | 25.2 | 184.4 | 50.9 | 0 | 49.8 |
+| ndex-x-large shape | 484,600 | 1,089 | 79.3 | 795 | 202.5 | 0 | 113.5 |
+
+The duplicated memory re-stated as measured: **113.5 MB at the
+ndex-x-large shape** against the replan's 80–90 MB computed from
+`COLUMN_SPECS` (the id index, adjacency, data columns, labels and style
+state are not columns); ~0.5 KB per element at 1k–100k with labels.  The
+reconcile burst at the three scales: 2.3 / 8.0 / 50.9 ms from the
+source's write to the clone's `patch` event (107's two calls alone:
+0.55 / 3.9 / 47 ms).  A clone is a serialize plus a load plus ~20 ms of
+flag carry at 485k (profiled through `src/`); the clone column runs above
+the sum of its halves by an amount that moved with the order the regions
+ran in — GC placement, which the forced GCs narrowed and did not remove.
+
+**Calls taken in-round** (none reopens the replan):
+
+- *The follow trigger keys on store epochs, not on the position span.*
+  A restyle that resizes a compound's children moves the parent's derived
+  position and marks the span a drag marks; the first version synced on a
+  restyle, which the state-ownership spec caught.  `hierarchyEpoch` (every
+  effective `setParent`) and `positionEpoch` (every explicit position
+  write) were added to the store; the trigger is structure, hierarchy,
+  position epochs, an endpoints span, a resize, or `dataWritten`.
+- *`StoreDelta.dataWritten`*: an unwatched data write marks no column, so
+  a mirror would miss it.  `setData` reports it through `markData()`,
+  which is a no-op while no consumer is registered and never reaches the
+  renderer's cursor.
+- *A sync writes positions through the clone's locks* (an internal flag on
+  the applier; `cy.patch()` itself still holds locked nodes): the source
+  owns positions, and a minimap is `autolock`ed.
+- *A sync's added elements take the source's lock / grab / pan bits* by
+  id, as a one-shot clone's do, since the wire lacks them; survivors' flags
+  stay the clone's.
+- *The throttle waits `max( throttle, lastSyncCost )`* (default 50 ms), so
+  following never holds more than half the main thread.
+- *One public member* (`cy.clone`) plus two option types; the follow has
+  no handle — it ends with either instance.  The consumer API stays
+  internal (`GraphStore.registerConsumer`), the devtools panel's tap when
+  item 47 is built.
+- *Settings are carried through the getters*, so a setter called after
+  construction reaches the clone; `options.style` replaces the sheet and
+  its bypasses together.
+
+**Controls.**  The plan's cursor control (two raw `takeDelta()` calls —
+the second starves) is the first spec; the two-consumer different-cadence
+convergence (byte mirrors of every column and the curve blob, equal to
+the store after a seeded 400-step mix) carries its own control.  Four
+mutations of the cursors each fail a spec — the blob fold **only after**
+the mix moved from bezier to segments edges, because a bundled-bezier
+fixture never writes the curve blob (a finding, now a comment in the
+spec).  Soak isolation: dispose mid-stream leaves the peer whole; destroy
+with a live consumer neither throws nor fires (red without the destroy
+hook).  Clone equivalence by element `json()` and by every column,
+against a source changed after the clone.  Eight mutations of the clone
+and follow code each fail at least one spec; the browser spec times out
+with the position trigger removed.
+
+**Deferred, with reasons.**  Flag-bit syncing (linked brushing) and
+shared-store views stay out of scope, as the replan recorded.  Worker-host
+clones are untested: a clone of an instance built with `renderer: {
+worker: true }` carries that option, and nothing here exercises it.  The
+drive-by finding stays open — viewport animations still emit `viewport`
+twice per tick (`_afterAnimationTick` passes `'viewport'` to
+`_emitViewportEvents`, which appends it again); the minimap's rectangle
+redraws twice per animated tick, harmlessly.  It is PLAN.md item 78 now,
+so it is findable.
+
+**Bundles**: +8.6 KB minified on each build (full 905,382 → 914,031;
+headless 537,210 → 545,849; headless-gpu 616,323 → 624,962), +2.6 KB
+gzipped; inside the round-131 ratchet.
+
+`npm run -s test:node:quiet` green at close: 2,924 unit tests (+25: ten in
+`test/dirty-consumers.mjs`, fifteen in `test/clone.mjs`), 816 module (+3,
+`test/modules/minimap.mjs`), 38 soak (+2); the type tests and the
+declaration surface audit (61 type exports) green.  The renderer
+Playwright project is green with the new two-canvas spec (496 browser
+tests listed across the projects).

@@ -119,9 +119,11 @@ requirement to finish every feature in the inventory.
   consumer dependencies.
 - **Graph updates, table access and state ownership:** define progressive
   ingestion, ID-keyed reconciliation, column views and filters, including
-  batching, event ordering and visibility of partial results. Settle how viewer
-  cloning isolates or shares graph and view state, and whether undo requires
-  transaction hooks in the core before those boundaries solidify.
+  batching, event ordering and visibility of partial results. Viewer cloning
+  (round 106) isolates view state — a clone owns its selection, hover, sheet
+  and viewport and follows elements only; settle whether any view state should
+  be shareable by opt-in, and whether undo requires transaction hooks in the
+  core before those boundaries solidify.
 - **Public API, types and data contracts:** resolve remaining compatibility and
   replacement decisions; define application-data typing and element, style and
   layout schemas. Bring declarations, reference documentation and migration

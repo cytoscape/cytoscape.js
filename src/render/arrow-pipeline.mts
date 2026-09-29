@@ -1,4 +1,5 @@
 import { ARROW_SHADER } from './shaders.mjs';
+import { PICK_DEPTH_STENCIL } from './picking.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
@@ -172,7 +173,8 @@ export class ArrowPipeline {
     });
 
     // the pick twins (57.10): same vertex shaders, id-writing fragment,
-    // r32uint target, no depth — the pick pass has no depth attachment
+    // r32uint target, and (round 105) the pick depth: the head writes its
+    // SDF distance, so a nearer stroke beats it and its interior beats all
     this.pickPipeline = device.createRenderPipeline({
       label: 'cy-gpu:arrow-pick-pipeline',
       layout,
@@ -183,6 +185,7 @@ export class ArrowPipeline {
         targets: [{ format: 'r32uint' }],
       },
       primitive: { topology: 'triangle-list' },
+      depthStencil: PICK_DEPTH_STENCIL, // round 105: nearest-wins
     });
 
     this.midPickPipeline = device.createRenderPipeline({
@@ -195,6 +198,7 @@ export class ArrowPipeline {
         targets: [{ format: 'r32uint' }],
       },
       primitive: { topology: 'triangle-list' },
+      depthStencil: PICK_DEPTH_STENCIL, // round 105: nearest-wins
     });
 
     this.bindGroups = new Map();

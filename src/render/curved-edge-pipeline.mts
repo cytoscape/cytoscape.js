@@ -1,4 +1,5 @@
 import { CURVED_EDGE_SHADER } from './shaders.mjs';
+import { PICK_DEPTH_STENCIL } from './picking.mjs';
 import { createQuadStripIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
@@ -252,6 +253,7 @@ export class CurvedEdgePipeline {
         targets: [{ format: 'r32uint' }],
       },
       primitive: { topology: 'triangle-list' },
+      depthStencil: PICK_DEPTH_STENCIL, // round 105: nearest-wins
     });
 
     // the layer strokes (round 88.2): capsule steps that overlap at every

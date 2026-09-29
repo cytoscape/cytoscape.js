@@ -158,6 +158,7 @@ export function drawPickPasses(
   rd: Renderer,
   encoder: GPUCommandEncoder,
   targetView: GPUTextureView,
+  depthView: GPUTextureView,
 ): void {
   const device = rd.device;
   const mirror = rd.mirror;
@@ -178,15 +179,25 @@ export function drawPickPasses(
         storeOp: 'store',
       },
     ],
+    // round 105: nearest-wins — each fragment's distance from its own
+    // centreline, tested less-equal (picking.mts, PICK_DEPTH_STENCIL)
+    depthStencilAttachment: {
+      view: depthView,
+      depthClearValue: 1,
+      depthLoadOp: 'clear',
+      depthStoreOp: 'discard',
+    },
   });
 
   const store = rd.store;
 
   // edges and their arrowheads; node picks are answered synchronously
   // on the CPU.  Arrows (57.10) write the same id as their edge's
-  // line, so the draw order within the tile cannot matter — what they
-  // add is coverage: the head's area (hollow included), which since
-  // round 56's trim is exactly where the line no longer reaches.
+  // line; what they add is coverage: the head's area (hollow included),
+  // which since round 56's trim is exactly where the line no longer
+  // reaches.  The draw order decides only ties (round 105's depth test
+  // decides the rest), so a curved edge no longer beats a nearer
+  // straight one just by drawing later.
   rd.edgePipeline?.draw(
     pass,
     device,

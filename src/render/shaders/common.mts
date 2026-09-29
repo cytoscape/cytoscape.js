@@ -145,6 +145,32 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
  * pass; matches GlyphBuffer's CPU layout (16 words / 64 bytes per glyph). */
+/**
+ * The pick fragments' output (round 105): the id, and the fragment's
+ * distance from its own stroke's centreline as depth, so the pick
+ * pass's less-equal depth test resolves nearest-wins, as v3's
+ * `findNearestElement` does.  Device px over PICK_DEPTH_SPAN — far past
+ * any stroke half-width plus the 24 px touch halo, and depth32float
+ * keeps sub-pixel steps at that scale.  Only the edge and arrow modules
+ * carry it: a builtin output means nothing to the cull kernels'
+ * compute modules.
+ */
+export const PICK_OUT_WGSL = wgsl`
+const PICK_DEPTH_SPAN: f32 = 16384.0;
+
+struct PickOut {
+  @location(0) id: u32,
+  @builtin(frag_depth) depth: f32,
+}
+
+fn pickOut(id: u32, dist: f32) -> PickOut {
+  var o: PickOut;
+  o.id = id;
+  o.depth = clamp(dist / PICK_DEPTH_SPAN, 0.0, 1.0);
+  return o;
+}
+`;
+
 export const GLYPH_STRUCT = wgsl`
 struct Glyph {
   nodeSlot: u32,     // owner word: 0xffffffff = dead (tombstoned run); else

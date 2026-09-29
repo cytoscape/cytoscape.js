@@ -40,6 +40,29 @@ a full-frame render.
 /** pick tile size, device px; the cursor sits at the center texel */
 export const PICK_TILE = 64;
 
+/**
+ * Round 105: the pick pass resolves **nearest-wins**, as v3's
+ * `findNearestElement` does.  With the 57.9 halos a pixel inside a wide
+ * bundle is covered by several members' grown strokes, and the r32uint
+ * target alone kept whichever drew last — so near a bundle's ends, where
+ * its members converge, pointing at one edge's stroke answered a
+ * neighbour's (measured on a 30-wide bundle: 55 of 182 transect points).
+ * Each pick fragment now writes its distance from its own centreline
+ * (device px, over {@link PICK_DEPTH_SPAN}) as depth into this tile-sized
+ * depth target, tested 'less-equal': the nearest stroke wins, and a tie —
+ * coincident geometry — keeps the later draw, v3's topmost.  Arrowheads
+ * write their SDF distance, 0 inside the head.  Depth writes and a depth
+ * test only, so the WebGL2 port keeps it (`gl_FragDepth`).
+ */
+export const PICK_DEPTH_FORMAT: GPUTextureFormat = 'depth32float';
+
+/** The depth state every pick pipeline carries (round 105). */
+export const PICK_DEPTH_STENCIL: GPUDepthStencilState = {
+  format: PICK_DEPTH_FORMAT,
+  depthWriteEnabled: true,
+  depthCompare: 'less-equal',
+};
+
 const RING = 3;
 
 // the edge namespace bit lives in the contract (131.1): the core decodes
@@ -83,6 +106,9 @@ export class Picking {
 
   private texture: GPUTexture;
   private view: GPUTextureView;
+  /** nearest-wins depth (round 105), cleared each pick pass */
+  private depthTexture: GPUTexture;
+  private depthTextureView: GPUTextureView;
   private ring: RingSlot[];
   private pending: PendingRequest | null;
   private cacheTile: Uint32Array | null;
@@ -119,6 +145,13 @@ export class Picking {
       usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.COPY_SRC,
     });
     this.view = this.texture.createView();
+    this.depthTexture = device.createTexture({
+      label: 'cy-gpu:pick-depth',
+      size: { width: PICK_TILE, height: PICK_TILE },
+      format: PICK_DEPTH_FORMAT,
+      usage: TEXTURE_USAGE.RENDER_ATTACHMENT,
+    });
+    this.depthTextureView = this.depthTexture.createView();
 
     this.ring = Array.from({ length: RING }, (_, i) => ({
       buffer: device.createBuffer({
@@ -160,6 +193,12 @@ export class Picking {
    * object's lifetime.  Clear it each pick — id 0 means background. */
   targetView(): GPUTextureView {
     return this.view;
+  }
+
+  /** The pick pass's depth attachment (round 105): each fragment's
+   * distance from its own centreline, so the nearest stroke wins. */
+  depthView(): GPUTextureView {
+    return this.depthTextureView;
   }
 
   /** Whether a request is waiting to be encoded.  The frame loop keeps
@@ -312,6 +351,7 @@ export class Picking {
     }
 
     this.texture.destroy();
+    this.depthTexture.destroy();
 
     for (const slot of this.ring) {
       slot.buffer.destroy();

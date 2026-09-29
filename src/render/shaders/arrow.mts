@@ -10,13 +10,14 @@ import {
   ARROW_SHIFT_SOURCE,
   ARROW_SHIFT_TARGET,
 } from '../../contract.mjs';
-import { COMMON, BOUNDARY_WGSL } from './common.mjs';
+import { COMMON, BOUNDARY_WGSL, PICK_OUT_WGSL } from './common.mjs';
 import { CURVE_WGSL, ROUTE_WGSL } from './curve.mjs';
 import { ARROW_POLY, ARROW_GAP_WGSL } from './sdf.mjs';
 
 export const ARROW_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
+${PICK_OUT_WGSL}
 ${ARROW_GAP_WGSL}
 
 // One arrowhead quad per visible edge, per end: reuses the edge cull
@@ -246,7 +247,7 @@ ${ARROW_POLY.cases}
 // hollow heads too — grown by the hit halo.  No-arrow ends already
 // collapsed in the VS (c.a == 0), so no alpha test is needed here.
 @fragment
-fn fsArrowPick(in: ArrowVSOut) -> @location(0) u32 {
+fn fsArrowPick(in: ArrowVSOut) -> PickOut {
   let pair = arrowShapes[in.slot];
   let shape = endShapeOf(pair, end.endId);
   let p = in.p;
@@ -263,7 +264,9 @@ ${ARROW_POLY.cases}
     discard;
   }
 
-  return (in.slot + 1u) | 0x80000000u; // the owning edge's pick id
+  // the owning edge's pick id; the head's SDF distance (0 inside)
+  // resolves nearest-wins against lines (round 105)
+  return pickOut((in.slot + 1u) | 0x80000000u, max(sd, 0.0));
 }
 
 // Mid arrows (C1): tip at the edge midpoint (the haystack offset
@@ -372,6 +375,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 export const CURVED_ARROW_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
+${PICK_OUT_WGSL}
 ${ARROW_GAP_WGSL}
 ${CURVE_WGSL}
 ${ROUTE_WGSL}
@@ -602,7 +606,7 @@ ${ARROW_POLY.cases}
 // (the colors live in the fragment stage), so they are dropped by the
 // alpha test the scene FS gets for free.
 @fragment
-fn fsArrowPick(in: ArrowVSOut) -> @location(0) u32 {
+fn fsArrowPick(in: ArrowVSOut) -> PickOut {
   if (unpack4x8unorm(arrows[in.slot]).a == 0.0) {
     discard;
   }
@@ -623,7 +627,9 @@ ${ARROW_POLY.cases}
     discard;
   }
 
-  return (in.slot + 1u) | 0x80000000u; // the owning edge's pick id
+  // the owning edge's pick id; the head's SDF distance (0 inside)
+  // resolves nearest-wins against lines (round 105)
+  return pickOut((in.slot + 1u) | 0x80000000u, max(sd, 0.0));
 }
 
 // Mid arrows on curved edges (C1): tip at the curve/route midpoint,

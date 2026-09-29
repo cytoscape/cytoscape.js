@@ -189,10 +189,13 @@ export default defineConfig({
      * numerically through their public accessors.  It carries no
      * `hasAdapter` skip, deliberately, so it keeps running on machines
      * where the golden and parity halves cannot.
+     *
+     * `bundles.spec.js` (round 105) joins for the same page: which member
+     * of a 30-wide bundle a pointer resolves to, in both libraries.
      */
     {
       name: 'visual',
-      testMatch: /(visual|routing|gestures)\.spec\.js/,
+      testMatch: /(visual|routing|gestures|bundles)\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',

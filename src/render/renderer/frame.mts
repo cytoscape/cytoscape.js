@@ -401,7 +401,12 @@ export function frameBody(rd: Renderer): void {
         rd.pickCull,
         false,
       );
-      drawPickPasses(rd, pickEncoder, picking.targetView());
+      drawPickPasses(
+        rd,
+        pickEncoder,
+        picking.targetView(),
+        picking.depthView(),
+      );
 
       const copy = picking.encodeCopy(pickEncoder);
 

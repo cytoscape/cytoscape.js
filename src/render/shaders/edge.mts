@@ -3,7 +3,7 @@ import {
   ARROW_SHIFT_SRC_SHOWS_LINE,
   ARROW_SHIFT_TGT_SHOWS_LINE,
 } from '../../contract.mjs';
-import { COMMON, BOUNDARY_WGSL, DASH_WGSL } from './common.mjs';
+import { COMMON, BOUNDARY_WGSL, DASH_WGSL, PICK_OUT_WGSL } from './common.mjs';
 import { CURVE_WGSL, ROUTE_WGSL } from './curve.mjs';
 import { ARROW_GAP_WGSL } from './sdf.mjs';
 
@@ -31,6 +31,7 @@ fn layerButtEnds(w: vec2f) -> u32 {
 export const EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
+${PICK_OUT_WGSL}
 ${ARROW_GAP_WGSL}
 ${LAYER_BUTT_WGSL}
 ${DASH_WGSL}
@@ -351,13 +352,15 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
 }
 
 @fragment
-fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
+fn fsEdgePick(in: EdgeVSOut) -> PickOut {
   // v3's edgeThreshold (57.9): a hit counts within pickPadPx of the stroke
   if (abs(in.v) > in.halfWidth + frame.pickPadPx) {
     discard;
   }
 
-  return (in.instance + 1u) | 0x80000000u; // high bit marks edges
+  // high bit marks edges; the centreline distance resolves nearest-wins
+  // (round 105) — v3 compares the same distance
+  return pickOut((in.instance + 1u) | 0x80000000u, abs(in.v));
 }
 
 // Overlay/underlay strokes (round 13 A2): the edge geometry re-extruded
@@ -504,6 +507,7 @@ fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
 export const CURVED_EDGE_SHADER = wgsl`
 ${COMMON}
 ${BOUNDARY_WGSL}
+${PICK_OUT_WGSL}
 ${ARROW_GAP_WGSL}
 ${LAYER_BUTT_WGSL}
 ${CURVE_WGSL}
@@ -764,13 +768,15 @@ fn fsCurvedCased(in: CurvedVSOut) -> @location(0) vec4f {
 }
 
 @fragment
-fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
+fn fsCurvedEdgePick(in: CurvedVSOut) -> PickOut {
   // v3's edgeThreshold (57.9): a hit counts within pickPadPx of the stroke
   if (abs(in.v) > in.halfWidth + frame.pickPadPx) {
     discard;
   }
 
-  return (in.instance + 1u) | 0x80000000u; // high bit marks edges
+  // high bit marks edges; the centreline distance resolves nearest-wins
+  // (round 105) — v3 compares the same distance
+  return pickOut((in.instance + 1u) | 0x80000000u, abs(in.v));
 }
 
 // Curved overlay/underlay strokes (round 13 A2; rebuilt in round 88).

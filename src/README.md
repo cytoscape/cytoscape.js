@@ -2351,6 +2351,23 @@ calls made deliberately rather than by accretion:
   halo.  `cy.pick` stays **exact** deliberately: the halo belongs to
   the gesture, not the API — exact still includes an arrowhead's
   interior, which is a place, not a halo.
+
+  **Among edges the pick resolves nearest-wins** (round 105), as v3's
+  `findNearestElement` does: each pick fragment writes its distance
+  from its own centreline (an arrowhead its SDF distance, 0 inside) as
+  depth into a tile-sized `depth32float` target tested `less-equal`, so
+  the nearest stroke wins and a tie — coincident geometry — keeps the
+  later draw, v3's topmost.  Before it the r32uint tile kept whichever
+  grown stroke drew last, so inside a wide bundle (GeneMANIA's 20–30
+  parallel edges), where several members' halos cover each point,
+  pointing at one member's stroke near the bundle's ends answered a
+  neighbour: 55 of 182 transect points on a 30-wide bundle disagreed
+  with v3, one 0.49 px from the centreline of the edge it missed; now
+  every probe off the analytic tolerance band agrees
+  (`playwright-tests/bundles.spec.js`).  It also retires a draw-order
+  artefact: straight edges drew before curved ones in the pick pass,
+  so a curved edge beat a nearer straight one.  WebGL2 ports it as
+  `gl_FragDepth` and a depth test — no storage writes, no atomics.
 - **Extensions are direct objects — no registry.**  No
   `cytoscape.use`, no string registration, no global state: an
   extension layout is an import passed straight to

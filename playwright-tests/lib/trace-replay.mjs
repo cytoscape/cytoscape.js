@@ -365,6 +365,38 @@ export const replay = async (page, trace, host) => {
           cy[name](value);
         }
       }, step.set);
+    } else if (step.tween != null) {
+      // round 144: an animated layout's tween over these nodes, targets
+      // where they stand — they are tweening, and move nowhere, so the
+      // phase is as deterministic as any other
+      await quiesce(page);
+      await page.evaluate((ids) => {
+        const { cy } = window.__tr;
+        const positions = {};
+        let eles = cy.collection();
+
+        for (const id of ids) {
+          eles = eles.union(cy.$id(id));
+          positions[id] = { ...cy.$id(id).position() };
+        }
+
+        eles
+          .layout({
+            name: 'preset',
+            positions,
+            animate: true,
+            animationDuration: 1e7,
+            fit: false,
+          })
+          .run();
+      }, step.tween);
+    } else if (step.stop != null) {
+      await quiesce(page);
+      await page.evaluate((ids) => {
+        for (const id of ids) {
+          window.__tr.cy.$id(id).stop();
+        }
+      }, step.stop);
     } else if (step.viewport != null) {
       await quiesce(page);
       await page.evaluate((v) => window.__tr.cy.viewport(v), step.viewport);

@@ -94,7 +94,7 @@ export const TRACES = {
   'drag-pan': {
     input: 'real',
     endState: ['viewport', 'positions', 'events'],
-    what: 'press the background (and a locked node), drag, release',
+    what: 'press the background (and a locked node, and a node mid-tween, then stopped), drag, release',
   },
   'touch-tap-drag': {
     input: 'synthetic',
@@ -524,9 +524,7 @@ export const GESTURES = [
         'driven',
       ],
     ],
-    gaps: [
-      'a drag under autolock, of a panified node, or of an animating node',
-    ],
+    gaps: ['a drag under autolock or of a panified node'],
     trace: 'drag',
   },
   {
@@ -622,7 +620,7 @@ export const GESTURES = [
       ],
       [
         'playwright-tests/gestures.spec.js',
-        'trace drag-pan: background, a locked node, and panning off',
+        'trace drag-pan: background, a locked node, panning off, and a node mid-tween',
         'real',
       ],
     ],
@@ -633,9 +631,7 @@ export const GESTURES = [
         'driven',
       ],
     ],
-    gaps: [
-      'the pan under autolock, autoungrabify, a panified node or an animating node',
-    ],
+    gaps: ['the pan under autolock, autoungrabify or a panified node'],
     trace: 'drag-pan',
   },
   {
@@ -668,7 +664,7 @@ export const GESTURES = [
       ],
       [
         'playwright-tests/gestures.spec.js',
-        'trace drag-pan: background, a locked node, and panning off',
+        'trace drag-pan: background, a locked node, panning off, and a node mid-tween',
         'real',
       ],
     ],
@@ -702,7 +698,7 @@ export const GESTURES = [
       ],
       [
         'playwright-tests/gestures.spec.js',
-        'trace drag-pan: background, a locked node, and panning off',
+        'trace drag-pan: background, a locked node, panning off, and a node mid-tween',
         'real',
       ],
     ],

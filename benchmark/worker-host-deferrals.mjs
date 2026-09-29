@@ -44,6 +44,10 @@
 // must equal its restyled-node count, the worker tween row must post a
 // position span per drawn frame, the font row must move the advance —
 // anything else prints as a warning rather than a number believed.
+// Since round 144 the layout tween rows assert the opposite on the
+// worker host — one registration and the settle, not a span a frame
+// (the tween evaluates on the worker's device); the paint row still
+// crosses as spans.
 
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
@@ -934,6 +938,19 @@ if (modes.includes('tweens')) {
             );
           }
 
+          // round 144: a layout tween registers once with the worker's
+          // device and crosses its settle as one span — a position
+          // column a frame here means the remote sink is not attached
+          if (opts.expectOneUpload && host === 'worker') {
+            const columns = traffic / nodeBytes;
+
+            if (columns > 2) {
+              warnings.push(
+                `${host} ${name}: ${columns.toFixed(1)} position columns posted, expected the registration and the settle`,
+              );
+            }
+          }
+
           if (opts.expectTicks && timerTicks < wallMs / 20) {
             warnings.push(
               `${host} ${name}: ${timerTicks} timer ticks over ${wallMs.toFixed(0)} ms — the main thread was held`,
@@ -941,9 +958,9 @@ if (modes.includes('tweens')) {
           }
         };
 
-        // 1. a layout tween: every node's position over 1 s (the
-        //    finisher's per-node animations — GPU-eligible on the
-        //    same-thread host, CPU spans on the worker host)
+        // 1. a layout tween: every node's position over 1 s (one
+        //    column animation since round 144, on the device on both
+        //    hosts — the worker host's through its remote sink)
         const layoutTween = (name) => async () => {
           const stopped = cy.promiseOn('layoutstop');
 
@@ -957,10 +974,10 @@ if (modes.includes('tweens')) {
         };
 
         await row('layout tween (grid)', layoutTween('grid'), {
-          expectSpans: true,
+          expectOneUpload: true,
         });
         await row('layout tween (circle)', layoutTween('circle'), {
-          expectSpans: true,
+          expectOneUpload: true,
         });
 
         // 2. a paint tween: every node's opacity over 1 s

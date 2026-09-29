@@ -139,6 +139,9 @@ export const v3Scene = (scene) => ({
  * - `{ set: { option: value } }` — call `cy[option](value)` between
  *   gestures (the log is quiesced first)
  * - `{ viewport: { zoom, pan } }` — reset the viewport by API
+ * - `{ tween: [ids] }` — run an animated layout over those nodes whose
+ *   targets are where they stand (round 144): they tween, going nowhere
+ * - `{ stop: [ids] }` — `node.stop()` each (out of the tween)
  * - `{ wait: ms }` — let frames run (the throw trace's after-release)
  * - `{ mark: 'name' }` — snapshot the end-state fields; the events field
  *   of a snapshot holds the phase since the previous mark
@@ -333,7 +336,7 @@ export const SCRIPTS = {
     ],
   },
   'drag-pan': {
-    v3: true,
+    v3: 'panning-off',
     steps: [
       // a background drag pans
       { hover: [50, 260], expect: null },
@@ -352,6 +355,23 @@ export const SCRIPTS = {
       { hover: [30, 30], expect: null },
       { down: 'left' },
       { drag: [80, 80], steps: 4 },
+      { up: 'left' },
+      { mark: 'panning-off' },
+      // round 144: a node in an animated layout's tween cannot drag —
+      // the press pans, as on a locked node — and once stopped out of
+      // the tween it drags (v3 lets the drag and the tween fight, so
+      // v3 stops at the mark above)
+      { set: { panningEnabled: true } },
+      { tween: ['b'] },
+      { hover: [240, 110], expect: 'b' },
+      { down: 'left' },
+      { drag: [270, 140], steps: 4 },
+      { up: 'left' },
+      { mark: 'tweening' },
+      { stop: ['b'] },
+      { hover: [270, 140], expect: 'b' },
+      { down: 'left' },
+      { drag: [250, 170], steps: 4 },
       { up: 'left' },
     ],
   },
@@ -691,7 +711,7 @@ export const V3_DIVERGENCES = {
   'drag-pan/locked/viewport': LOCKED_PRESS,
   'drag-pan/locked/events':
     "v3's tapend goes to the element under the release point (here the background: the pointer left d); v4's to the pressed element",
-  'drag-pan/end/viewport': `${LOCKED_PRESS} (carried from the locked phase)`,
+  'drag-pan/panning-off/viewport': `${LOCKED_PRESS} (carried from the locked phase)`,
   'tap-select/single/events': `${RELEASE_ORDER}; ${DBLTAP}`,
   'tap-select/modifiers/events': `${SHIFT_PRESS}; ${DBLTAP}`,
   'tap-select/additive/events': `${EDGE_PRESS}; ${DBLTAP}`,

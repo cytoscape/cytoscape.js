@@ -51,6 +51,8 @@ const STEP_KEYS = [
   'touches',
   'set',
   'viewport',
+  'tween',
+  'stop',
   'wait',
   'mark',
 ];

@@ -188,7 +188,7 @@ for (const host of HOSTS) {
       await checkV4(page, 'tap-select', host);
     });
 
-    test('trace drag-pan: background, a locked node, and panning off', async ({
+    test('trace drag-pan: background, a locked node, panning off, and a node mid-tween', async ({
       page,
     }) => {
       await checkV4(page, 'drag-pan', host);

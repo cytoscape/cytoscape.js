@@ -83,7 +83,7 @@
         "tapend:d"
       ]
     },
-    "end": {
+    "panning-off": {
       "viewport": {
         "zoom": 1,
         "pan": {
@@ -122,6 +122,96 @@
         "~pointermove:cy tapdrag:cy",
         "pointerup:cy",
         "tapend:cy"
+      ]
+    },
+    "tweening": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 270,
+          "y": 190
+        }
+      },
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "events": [
+        "~pointermove:cy",
+        "mouseover:b",
+        "pointerover:b",
+        "pointerdown:b",
+        "tapstart:b",
+        "~pointermove:b tapdrag:b",
+        "tapdragover:b",
+        "~dragpan:cy pan:cy pointermove:b tapdrag:b viewport:cy",
+        "pointerup:b",
+        "tapend:b"
+      ]
+    },
+    "end": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 270,
+          "y": 190
+        }
+      },
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": -20,
+          "y": -20
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "events": [
+        "~pointermove:b",
+        "grabon:b",
+        "grab:b",
+        "pointerdown:b",
+        "tapstart:b",
+        "~pointermove:b tapdrag:b",
+        "tapdragover:b",
+        "~drag:b pointermove:b position:b tapdrag:b",
+        "pointerup:b",
+        "tapend:b",
+        "free:b",
+        "freeon:b",
+        "dragfree:b",
+        "dragfreeon:b"
       ]
     }
   }

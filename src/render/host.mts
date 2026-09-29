@@ -104,9 +104,10 @@ export interface RenderStoreView extends ModelView {
 /**
  * The animation clock surface: the renderer ticks CPU animations on its
  * frame clock and offers its GPU tween runtime as the sink.  The worker
- * host stubs all four — the animation manager keeps its own main-side
- * rAF loop and every tween takes the CPU path (its column writes cross
- * as ordinary spans).
+ * host's engine keeps the runtime for the tween messages (round 144)
+ * and reports it active while a batch is registered; the animation
+ * manager keeps its own main-side rAF loop, and paint tweens take the
+ * CPU path there (their column writes cross as ordinary spans).
  */
 export interface AnimationClock {
   /** advance CPU tweens; register/settle GPU tweens against the sink */

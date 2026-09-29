@@ -202,6 +202,26 @@ export type WireForceUpdate =
   | { op: 'pinned'; i: number; pinned: boolean }
   | { op: 'reheat'; alpha: number | undefined };
 
+/**
+ * One GPU tween channel across the boundary (round 144): the device
+ * half of a `ChannelWrite` — the slots (a detached entry already the
+ * sentinel) and the packed endpoints, copied, so the main side keeps
+ * its own for the settle.
+ */
+export interface WireTweenWrite {
+  column: ColumnId;
+  kind: 'position' | 'scalar' | 'color';
+  slots: ArrayBuffer;
+  data: ArrayBuffer;
+}
+
+/** The device half of an `EasingProgram` — what the kernels read. */
+export interface WireEasing {
+  kind: number;
+  bezier: [number, number, number, number] | null;
+  points: ArrayBuffer | null;
+}
+
 /** Main → worker messages. */
 export type MainMessage =
   | {
@@ -246,6 +266,22 @@ export type MainMessage =
   | { kind: 'forcewake' }
   | { kind: 'forceread'; id: number }
   | { kind: 'forcefinish'; id: number }
+  // the GPU tween sink across the boundary (round 144): the main
+  // thread's animation manager keeps the clock and the CPU reference;
+  // the worker's tween runtime evaluates the batch on its device.
+  // `startEpoch` is the batch's start on the shared epoch clock
+  // (`performance.timeOrigin + start`), since the two threads'
+  // `performance.now()` origins differ
+  | {
+      kind: 'tweenregister';
+      id: number;
+      writes: WireTweenWrite[];
+      startEpoch: number;
+      duration: number;
+      easing: WireEasing;
+    }
+  | { kind: 'tweenunregister'; id: number }
+  | { kind: 'tweendetach'; id: number; column: string; indices: number[] }
   // a vector raster's answer (round 141), the raster transferred
   | {
       kind: 'rasterresult';

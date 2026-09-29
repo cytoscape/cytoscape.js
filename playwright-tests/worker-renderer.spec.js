@@ -1425,3 +1425,210 @@ test.describe("the worker host's images and fonts (round 141)", () => {
     expect(result.png).toEqual([16, 16]);
   });
 });
+
+test.describe("an animated layout's tween on both hosts (round 144)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 400, height: 300 });
+    await page.goto(PAGE);
+  });
+
+  /** The export's RGBA at a model position (null off the image). */
+  const pixelAt = (png, cy, model) => {
+    const sx = png.width / cy.width;
+    const x = Math.round((model.x * cy.zoom + cy.pan.x) * sx);
+    const y = Math.round((model.y * cy.zoom + cy.pan.y) * sx);
+    const i = (y * png.width + x) * 4;
+
+    return [png.data[i], png.data[i + 1], png.data[i + 2], png.data[i + 3]];
+  };
+  const isNode = (px) => px[0] > 180 && px[1] < 90 && px[3] > 200;
+
+  for (const host of ['same-thread', 'worker']) {
+    test(`one batch on the device; a stopped node and a node outside the tween draw where position() reads (${host})`, async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+      test.skip(
+        host === 'worker' && !(await hasWorkerCanvas(page)),
+        'no OffscreenCanvas workers',
+      );
+
+      // count what crosses to the worker: tween messages, and the bytes
+      // of node.position spans in batches
+      await page.evaluate(() => {
+        const census = {
+          tweenregister: 0,
+          tweenunregister: 0,
+          tweendetach: 0,
+          positionSpanBytes: 0,
+        };
+        const post = Worker.prototype.postMessage;
+
+        window.census = census;
+        Worker.prototype.postMessage = function (msg, transfer) {
+          if (msg != null && msg.kind in census) {
+            census[msg.kind]++;
+          }
+
+          if (msg?.kind === 'batch') {
+            for (const span of msg.batch.spans) {
+              if (span.column === 'node.position') {
+                census.positionSpanBytes += span.bytes.byteLength;
+              }
+            }
+          }
+
+          return post.call(this, msg, transfer);
+        };
+      });
+
+      await makeReadyCy(page, {
+        elements: [
+          { data: { id: 'a' }, position: { x: -150, y: 0 } },
+          { data: { id: 'b' }, position: { x: -150, y: 60 } },
+          { data: { id: 'c' }, position: { x: -150, y: -60 } },
+          { data: { id: 'd' }, position: { x: 0, y: 110 } },
+        ],
+        style: {
+          nodes: { width: 24, height: 24, 'background-color': '#e22' },
+        },
+        zoom: 1,
+        pan: { x: 200, y: 150 },
+        renderer: host === 'worker' ? { worker: true } : undefined,
+      });
+
+      const view = await page.evaluate(() => ({
+        width: window.cy.width(),
+        zoom: window.cy.zoom(),
+        pan: window.cy.pan(),
+      }));
+
+      // a slow linear tween of the scope a, b, c — d is outside it
+      await page.evaluate(() => {
+        const cy = window.cy;
+
+        window.log = [];
+        cy.on('layoutready layoutstop', (e) => window.log.push(e.type));
+        window.layout = cy
+          .$id('a')
+          .union(cy.$id('b'))
+          .union(cy.$id('c'))
+          .layout({
+            name: 'preset',
+            positions: {
+              a: { x: 150, y: 0 },
+              b: { x: 150, y: 60 },
+              c: { x: 150, y: -60 },
+            },
+            animate: true,
+            animationDuration: 6000,
+            animationEasing: 'linear',
+            fit: false,
+          });
+        window.layout.run();
+      });
+
+      // mid-flight, polled: position() moves (the lease read, round 144)
+      await expect
+        .poll(() => page.evaluate(() => window.cy.$id('a').position('x')), {
+          timeout: 15000,
+        })
+        .toBeGreaterThan(-140);
+
+      // one batch on the device: the ledger's pooled tween row
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                window.cy.stats().gpu.byLabel[
+                  'cy-gpu:tween-slots:node.position'
+                ]?.count ?? 0,
+            ),
+          { timeout: 10000 },
+        )
+        .toBe(1);
+
+      // stop b where it is; move d, which the tween does not own
+      const frozen = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.$id('b').stop();
+        cy.$id('d').position({ x: -100, y: 110 });
+
+        return { ...cy.$id('b').position() };
+      });
+
+      // let the tween run on well past a node's width (50 px/s): a
+      // stopped node the device still moved would leave its place.  A
+      // wait, not a poll — what is asserted is that nothing moves
+      await page.waitForTimeout(800);
+
+      const snap = await page.evaluate(async () => {
+        const png = await window.cy.png();
+
+        return {
+          png,
+          a: { ...window.cy.$id('a').position() },
+          b: { ...window.cy.$id('b').position() },
+        };
+      });
+      const png = decodePng(snap.png);
+
+      expect(snap.b.x).toBeCloseTo(frozen.x, 3); // b holds
+      expect(snap.a.x).toBeGreaterThan(frozen.x); // a ran on
+      expect(
+        isNode(pixelAt(png, view, frozen)),
+        'b drawn where it stopped',
+      ).toBe(true);
+      expect(
+        isNode(pixelAt(png, view, { x: -100, y: 110 })),
+        'd drawn where it was moved mid-tween',
+      ).toBe(true);
+      expect(
+        isNode(pixelAt(png, view, { x: 0, y: 110 })),
+        'd not left at its old place',
+      ).toBe(false);
+      // a moves ~50 px/s; the export trails the read by a frame or two
+      expect(
+        isNode(pixelAt(png, view, snap.a)),
+        'a drawn where position() reads',
+      ).toBe(true);
+
+      // the tween stopped: layoutstop once, and the batch freed
+      await page.evaluate(() => window.layout.stop());
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              () =>
+                window.cy.stats().gpu.byLabel[
+                  'cy-gpu:tween-slots:node.position'
+                ]?.count ?? 0,
+            ),
+          { timeout: 10000 },
+        )
+        .toBe(0);
+
+      const out = await page.evaluate(() => ({
+        log: window.log,
+        census: window.census,
+        n: window.cy.nodes().length,
+      }));
+
+      expect(out.log).toEqual(['layoutready', 'layoutstop']);
+
+      if (host === 'worker') {
+        // one registration, one detach (b), one release — and no
+        // position span per frame: d's move and b's and the settle's
+        // frozen values are all that crossed
+        expect(out.census.tweenregister).toBe(1);
+        expect(out.census.tweendetach).toBe(1);
+        expect(out.census.tweenunregister).toBe(1);
+        expect(out.census.positionSpanBytes).toBeLessThan(out.n * 8 * 4);
+      }
+
+      await destroyCy(page);
+    });
+  }
+});

@@ -27,6 +27,12 @@ export interface GpuTweenSink {
    * animation demoted to the CPU path instead.
    */
   detach?(id: number, column: string, indices: readonly number[]): void;
+  /**
+   * Round 144: the sink takes position tweens only — the worker host's
+   * remote sink, which item 68 built for the layout tween; paint tweens
+   * there keep the CPU path and cross as spans.
+   */
+  positionOnly?: boolean;
 }
 
 /**
@@ -720,7 +726,11 @@ export class AnimationManager {
       return false;
     } // frozen — and never (re-)registered on the GPU
 
-    if (this.sink != null && ani.gpuEligible) {
+    if (
+      this.sink != null &&
+      ani.gpuEligible &&
+      (this.sink.positionOnly !== true || ani.positionOnly)
+    ) {
       if (ani.gpuId == null) {
         ani.schedule(now);
 

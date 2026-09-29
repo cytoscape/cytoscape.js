@@ -6,6 +6,10 @@ import {
 } from '../cpu-pick.mjs';
 import { emptyGpuStats } from '../gpu/gpu-ledger.mjs';
 import { EDGE_PICK_BIT } from '../contract.mjs';
+import type { ColumnId } from '../contract.mjs';
+import type { ChannelWrite, GpuTweenSink } from '../animation.mjs';
+import type { EasingProgram } from '../easing.mjs';
+import { TWEEN_DETACHED } from './gpu-tween.mjs';
 import { resolveExportView } from './renderer.mjs';
 import type { ExportedImage } from './renderer.mjs';
 import { buildBatch, collectTransfers } from './worker-protocol.mjs';
@@ -13,6 +17,7 @@ import type {
   BatchBuilderState,
   MainMessage,
   StoreBatch,
+  WireTweenWrite,
   WireForceInputs,
   WireForceUpdate,
   WorkerMessage,
@@ -48,9 +53,15 @@ What stays on this thread, and why:
   canonical columns via `pickNodeAt` — current, never mirrored-stale.
 - **The canvas element.**  It stays in the DOM receiving pointer
   events; only its rendering control transfers.
-- **The animation clock.**  The manager keeps its own rAF loop (the
-  sink-less path it always had); CPU tween writes cross as ordinary
-  spans.  GPU tweens are a pass-1 deferral still.
+- **The animation clock, and a remote tween sink** (round 144, PLAN.md
+  item 68).  The manager keeps its own rAF loop and the CPU reference;
+  a position tween registers once with the worker's tween runtime
+  (`RemoteTweenSink` — one message carrying the slots and endpoints,
+  its start on the epoch clock) and the worker's device evaluates it
+  every frame, where the CPU tick used to post a position span per
+  frame (8.75 MB over a one-second 20k-node layout tween).  The settle
+  crosses as the one span it writes.  Paint tweens keep the CPU path
+  here (the sink is position-only).
 - **The force integrator runs in the worker** (129.2, closing item 51's
   first deferral): `startForce` answers a `RemoteForceRuntime` at once
   and posts the run's inputs as one cloned message; the worker's
@@ -127,6 +138,112 @@ const spawnRenderWorker = (): Worker => {
     URL.createObjectURL(new Blob([src], { type: 'text/javascript' })),
   );
 };
+
+/**
+ * The worker host's GPU tween sink (round 144): the animation manager
+ * on this thread registers, detaches and releases batches as it does
+ * with the same-thread renderer's runtime, and each verb crosses as one
+ * message to the worker's runtime.  Position-only — the layout tween is
+ * what item 68 priced.  The slots and endpoints are copied (the main
+ * side settles from its own), a detached entry already the sentinel.
+ */
+class RemoteTweenSink implements GpuTweenSink {
+  readonly positionOnly = true;
+  private readonly send: (msg: MainMessage, transfer?: Transferable[]) => void;
+
+  /** @param send — posts to the worker (a no-op once destroyed) */
+  constructor(send: (msg: MainMessage, transfer?: Transferable[]) => void) {
+    this.send = send;
+  }
+
+  /**
+   * Post a batch: its writes, its start on the epoch clock, its easing.
+   *
+   * @param id — the batch id
+   * @param writes — the animation's captured channels
+   * @param start — the start on this thread's `performance.now()` clock
+   * @param duration — ms
+   * @param easing — the compiled easing
+   */
+  register(
+    id: number,
+    writes: readonly ChannelWrite[],
+    start: number,
+    duration: number,
+    easing: EasingProgram,
+  ): void {
+    const wire: WireTweenWrite[] = [];
+    const transfer: ArrayBuffer[] = [];
+
+    for (const w of writes) {
+      if (
+        w.slots.length === 0 ||
+        (w.kind !== 'position' && w.kind !== 'scalar' && w.kind !== 'color')
+      ) {
+        continue;
+      }
+
+      const slots = Uint32Array.from(w.slots);
+      const data = Float32Array.from(w.data);
+
+      if (w.off != null) {
+        for (let i = 0; i < slots.length; i++) {
+          if (w.off[i] !== 0) {
+            slots[i] = TWEEN_DETACHED;
+          }
+        }
+      }
+
+      wire.push({
+        column: w.column as ColumnId,
+        kind: w.kind,
+        slots: slots.buffer,
+        data: data.buffer,
+      });
+      transfer.push(slots.buffer, data.buffer);
+    }
+
+    const points =
+      easing.points == null ? null : Float32Array.from(easing.points).buffer;
+
+    if (points != null) {
+      transfer.push(points);
+    }
+
+    this.send(
+      {
+        kind: 'tweenregister',
+        id,
+        writes: wire,
+        startEpoch: performance.timeOrigin + start,
+        duration,
+        easing: {
+          kind: easing.kind,
+          bezier:
+            easing.bezier == null
+              ? null
+              : ([...easing.bezier] as [number, number, number, number]),
+          points,
+        },
+      },
+      transfer,
+    );
+  }
+
+  /** @param id — the batch to release */
+  unregister(id: number): void {
+    this.send({ kind: 'tweenunregister', id });
+  }
+
+  /**
+   * @param id — the batch
+   * @param column — the channel's column
+   * @param indices — the entries to stop writing
+   */
+  detach(id: number, column: string, indices: readonly number[]): void {
+    this.send({ kind: 'tweendetach', id, column, indices: [...indices] });
+  }
+}
 
 /**
  * A force run in the worker, as the layout drives it from this thread
@@ -439,6 +556,12 @@ export class WorkerRenderer implements ForceHostLike {
     );
 
     this.offInvalidate = cy._store.onInvalidate(() => this.scheduleBatch());
+    // position tweens evaluate on the worker's device (round 144); the
+    // manager keeps its own clock (drives: false)
+    cy._animations.attachDriver(
+      new RemoteTweenSink((msg, transfer) => this.post(msg, transfer)),
+      false,
+    );
     this.onViewport = () => {
       const pan = cy._viewport.pan();
 

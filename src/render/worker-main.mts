@@ -12,6 +12,10 @@ import { createBrowserImageDecoder } from './image-decoder.mjs';
 import type { VectorRasterizer } from './image-decoder.mjs';
 import type { DecodedImage } from '../image-registry.mjs';
 import { registerWorkerFonts } from './worker-fonts.mjs';
+import { TWEEN_DETACHED } from './gpu-tween.mjs';
+import type { GpuTweenRuntime } from './gpu-tween.mjs';
+import type { ChannelWrite } from '../animation.mjs';
+import type { EasingProgram } from '../easing.mjs';
 
 /*
 The worker-side entry (round 86.3): the real `Renderer` running against
@@ -71,6 +75,51 @@ export function runRenderWorker(
       post({ kind: 'forcestate', id, started: true, converged, idle });
     }
   };
+  // the GPU tween runtime the engine attaches (round 144), and the
+  // registrations that arrived before it did (the device comes up
+  // asynchronously after init)
+  let tweens: GpuTweenRuntime | null = null;
+  const pendingTweens = new Map<
+    number,
+    MainMessage & { kind: 'tweenregister' }
+  >();
+
+  const registerTween = (
+    runtime: GpuTweenRuntime,
+    msg: MainMessage & { kind: 'tweenregister' },
+  ): void => {
+    const writes: ChannelWrite[] = msg.writes.map((w) => {
+      const slots = new Uint32Array(w.slots);
+
+      return {
+        column: w.column,
+        kind: w.kind,
+        paint: w.kind !== 'position',
+        refs: [],
+        slots,
+        data: new Float32Array(w.data),
+        min: -Infinity,
+        max: Infinity,
+      };
+    });
+    const easing: EasingProgram = {
+      kind: msg.easing.kind,
+      bezier: msg.easing.bezier,
+      points:
+        msg.easing.points == null ? null : new Float32Array(msg.easing.points),
+      durationScale: 1,
+      fn: (t) => t, // the kernels never call it
+    };
+
+    runtime.register(
+      msg.id,
+      writes,
+      msg.startEpoch - performance.timeOrigin,
+      msg.duration,
+      easing,
+    );
+    engine?.requestRender();
+  };
   const viewport: WireViewport = { panX: 0, panY: 0, zoom: 1 };
   const viewportCbs: (() => void)[] = [];
   let arrows = {
@@ -119,13 +168,24 @@ export function runRenderWorker(
             zoom: () => viewport.zoom,
           },
           animations: {
-            // the animation manager keeps its own main-side clock: CPU
-            // tween writes cross as ordinary spans, and no GPU sink
-            // exists on this side (the recorded pass-1 deferral)
+            // the animation manager keeps its own main-side clock; a
+            // position tween reaches this side's runtime through the
+            // tween messages (round 144), and a registered batch keeps
+            // the frame loop running until the main side releases it
             tick: () => {},
-            active: () => false,
-            attachDriver: () => {},
-            detachDriver: () => {},
+            active: () => tweens?.active() ?? false,
+            attachDriver: (sink) => {
+              tweens = sink as GpuTweenRuntime;
+
+              for (const pending of pendingTweens.values()) {
+                registerTween(tweens, pending);
+              }
+
+              pendingTweens.clear();
+            },
+            detachDriver: () => {
+              tweens = null;
+            },
           },
           arrowEnds: () => arrows.ends,
           midArrowEnds: () => arrows.mid,
@@ -397,6 +457,44 @@ export function runRenderWorker(
           closeForce();
           engine?.finishForce();
         }
+        break;
+      }
+
+      case 'tweenregister': {
+        if (tweens == null) {
+          pendingTweens.set(msg.id, msg);
+        } else {
+          registerTween(tweens, msg);
+        }
+        break;
+      }
+
+      case 'tweenunregister': {
+        pendingTweens.delete(msg.id);
+        tweens?.unregister(msg.id);
+        engine?.requestRender();
+        break;
+      }
+
+      case 'tweendetach': {
+        const pending = pendingTweens.get(msg.id);
+
+        if (pending != null) {
+          // not on the device yet: detach in the wire copy
+          const w = pending.writes.find((x) => x.column === msg.column);
+
+          if (w != null) {
+            const slots = new Uint32Array(w.slots);
+
+            for (const i of msg.indices) {
+              slots[i] = TWEEN_DETACHED;
+            }
+          }
+        } else {
+          tweens?.detach(msg.id, msg.column, msg.indices);
+        }
+
+        engine?.requestRender();
         break;
       }
 

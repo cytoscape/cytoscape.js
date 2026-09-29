@@ -7200,10 +7200,27 @@ verifies is every worker mechanism short of the GPU (bytes faces reach
 OffscreenCanvas text advance for advance, the epoch re-resolves, raster
 blobs decode, SVG blobs are refused) — the adapter-free mechanics spec.
 
-What stays main-side by design: CPU tweens cross as ordinary spans (the
-animation manager keeps its own rAF clock; item 51 priced them at
-0.013–0.052 ms per post, 1/20th–1/50th of the 1 ms trigger, and the GPU
-tween sink's own cost is item 68's).
+**Position tweens evaluate on the worker's device** (round 144, PLAN.md
+item 68).  The animation manager keeps its own rAF clock and the CPU
+reference main-side, and attaches a *remote* tween sink
+(`RemoteTweenSink`, `drives: false`): a position tween — an animated
+layout's column tween above all — registers with the worker's tween
+runtime in one message (the slots and endpoints copied and transferred,
+its start on the epoch clock, `performance.timeOrigin + start`, since
+the threads' `performance.now()` origins differ), a detach and the
+release are one message each, and the settle crosses as the one span it
+writes.  Before, the CPU tick posted a position span per frame: 8.75 MB
+over a one-second 20k-node grid tween, 23–66 ms rAF gaps.  The main-side
+columns are leased as on the same-thread host, so `position()` reads the
+tween's value and the column scans (and the sync CPU node pick) read
+the start until the settle.  A registration that arrives before the
+worker's device is up waits for the runtime to attach.  Paint tweens
+keep the CPU path here (the sink is `positionOnly`) and cross as
+ordinary spans; item 51 priced those at 0.013–0.052 ms per post,
+1/20th–1/50th of the 1 ms trigger.  Specs: the both-hosts tween spec in
+`playwright-tests/worker-renderer.spec.js` (one registration, one
+detach, one release, no per-frame position span; a stopped node and a
+node outside the tween draw where `position()` reads).
 
 ## Cancellation (round 128)
 

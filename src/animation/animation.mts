@@ -714,6 +714,19 @@ export class Animation {
   }
 
   /**
+   * Whether the position channel is all this animation writes — what a
+   * position-only sink (the worker host's, round 144) takes.
+   *
+   * @returns true for a pure position tween
+   * @internal
+   */
+  get positionOnly(): boolean {
+    const cols = this.touchedColumns();
+
+    return cols.size === 1 && cols.has(COL.NODE_POSITION);
+  }
+
+  /**
    * Resolve this animation into per-column GPU batches, capturing start
    * values.  Sets the start clock so CPU settle and GPU evaluation share
    * it.

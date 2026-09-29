@@ -186,3 +186,122 @@ draw path, no dual-source blending, subgroups or f16 in a drawn shader;
 feature lands with a golden that sets its properties, or the parity
 project cannot see it.  The reasons and the measurements are in round
 73's record.
+
+### The round, as carried out (2026-09-29)
+
+| # | Commit | What landed |
+| --- | --- | --- |
+| 76.5 | `f60b7e26` | `mid-source/-target-arrow-width` (PLAN.md item 21's width half): parsed like the end widths, bypassable, read back resolved against the edge width; no column |
+| 76.3 | `33908c5a` | `text-border-style` on node and edge label boxes; the band re-centred on the box edge; the close-up parity scene and the `label-border-styles` golden |
+| 76.1 | `d5a25db9` | the gradient render-bench pair, and the docs that close #2091/#3407/#2207 |
+| 76.2 | — | folded into the semantic-zoom work (the sitting); nothing lands |
+| 76.4 | — | ledger 23 left as it is (the sitting); nothing to repack |
+
+**The plan's file references, re-checked first.**  Many rounds had
+moved the code: the label shader is `src/render/shaders/label.mts`
+(not `shaders.mts:4411`), the solid quad is written in
+`src/render/label-layer.mts` (not `glyph-buffer.mts:219`), the style
+engine's parse/read/write sides are `src/style/*`.  The `uv1.y`
+**to-verify** resolved as the plan hoped: the solid quad wrote `-1`
+there and the VS only fed it to the atlas uv the solid branch never
+samples, so the style id rides it and the 64-byte glyph record did not
+grow (no size cost to measure).  Round 80 has not landed, so its 80.3
+scene could not be batched with 76.1's; the renderer harness
+fingerprint moves once, here.
+
+**76.5 — the mid width, and what it is.**  Read from v3's
+`drawArrowhead`/`drawArrowShape`: `*-arrow-width` is the stroke width
+of a *hollow* head (`context.lineWidth` is set only for fill
+`hollow`/`both`).  A filled head never reads it, and item 21's call
+keeps mid heads filled — so in both libraries it draws nothing.  The
+round therefore ported the property, not a picture: constants-only
+like the end widths, read back resolved against the stored edge width,
+bypassable.  It takes no column (a column that nothing draws would
+cost 8 bytes an edge on the GPU); the reader resolves the def's record
+patched by the slot's bypass — `ReadContext.bypassPatch` is new for it,
+and the control (patch ignored) fails the bypass spec.  **Sheet diff
+(round 133): narrow**, with a no-op writer — nothing is stored to
+re-derive.  Golden coverage classifies both as no-static-pixels and
+the round's golden sets them anyway.
+
+**76.3 — `text-border-style`.**  Dash constants read from v3's
+`drawText`: dotted `[1, 1]`, dashed `[4, 2]`, model px; `double` sets
+`lineWidth = width / 4`, strokes the box path, then strokes again inset
+by `width / 2`.  That `double` is not degenerate (unlike v3's outline
+double) — two quarter-width lines with the fill between — and v4
+matches it exactly as drawn, the sitting's rule either way.  The dash
+coordinate follows v3's path: `rect` from the top-left corner,
+clockwise; `roundRect` from one radius along the top edge (easy tier,
+no polygon case).  Derivatives: none inside the branch (analytic AA in
+device px), so nothing needed hoisting.  **Sheet diff: full pass** (a
+label prop; labels have no narrow writer).
+
+*Found and fixed in-round:* B6 drew the text border as a band
+*inward* from the padded box, where v3 strokes the box's path and the
+band straddles it — invisible until a parity scene existed (B6 had
+none, "label parity excluded by design").  The quad now grows by half
+the width per side, the FS insets by the same half, under the same
+condition; the `label-boxes` golden moved 1.27% of its pixels, all on
+the three bordered boxes, regenerated deliberately after reading the
+diff.
+
+*Measured:* the close-up parity scene (zoom 3, four rectangle boxes,
+text inked in the fill colour) reads **0.384%** against v3, and
+**7.509%** with v4 drawing every box solid (the control); bound 0.6%.
+Its first two versions read 2.99% / 4.54% with controls at 3.73% /
+7.53% — not separable enough.  The diff showed why: v3's box was 0.67
+model px wider, and the probe found v3 **rounds a label's measured
+width up** (`calculateLabelDimensions`: 'MM' at 8 px, v3 14 against
+v4 13.33), which drifted the dash phase by half a dotted period on the
+right and bottom sides.  A label of integral width ('M' at 6 px, 4.998)
+removed it.  The residue left is the four corners (canvas joins dash
+ends through a corner; v4 splits the band on the diagonal) — recorded.
+
+*Recorded deviations of the label box* (MIGRATING's re-check table,
+and PLAN.md item 87): v4 draws the box only when
+`text-background-opacity` > 0, where v3 strokes a border-only box; v4
+keeps its auto round-rectangle radius where v3's `roundRect` uses 2 px;
+v4 does not round the text width up.
+
+*Coverage:* Node specs for parse, mapper, bypass, readback and the
+throw (`test/label-box.mjs`), and the quad's growth and `uv1.y` with a
+control (`test/modules/glyph-atlas-tier.mjs`); the
+`label-border-styles` golden — every style on both box shapes and on
+edge labels, with the mid heads and their widths.  Golden coverage:
+universe 212 → 216, unexercised 75 → **71** (paintable 56 → 52), keyword
+gaps 67 → 66.  No bench row, as planned: a dash-gated label-box
+fragment is a smaller frame share than the hexagon-border pair that
+measured unmeasurable.  The page: the debug harness's labels network
+drawn with all four styles on rotated, multiline and autorotated
+labels.  WebGL2 (round 73's constraints): no compute input, no new
+binding, no storage write; the style is a CPU-written instance field.
+
+*Also found:* `text-transform` reads back from the def alone, so a
+mapped or bypassed value reads the sheet's constant while the drawn
+text is transformed (which is also why golden coverage lists its
+keywords as never shown although `label-boxes` draws uppercase) —
+logged as PLAN.md item 86.
+
+**76.1 — gradients, the stale item closed.**  The premise is
+corrected in the tenth sitting's line: v3 has had `background-fill` /
+`line-fill` since 3.6/3.7 and v4 shipped them in round 13 C2, with the
+`gradients` golden and a live parity scene.  The missing measurement
+is now a render-bench pair (`gen-25k-fills-solid` / `-gradient`, one
+geometry and one set of stop lists, only the fill kind differs).  On
+the i9-9900K + RX 580 (`npm run gpu`: HARDWARE), render scale pinned
+1, device p50 over two runs: fit-all 3.70 → 3.74 ms, zoomed-in 4.78 →
+4.83, far-zoom 0.686 → 0.707, with labels 3.97 → 3.99 and 5.19 → 5.22
+— **+0.7% to +3%**, ≈0.04 ms a frame; wall rows on the vsync floor.
+The border pair's precedent (unmeasurable at scene level) nearly held:
+measurable, negligible.  v3 on the pair goes 632 → 1171 ms a fit-all
+frame.  No close-up scene, as planned: a gradient error is a ramp, not
+a boundary effect.  MIGRATING and CHANGELOG close the three issues
+against the shipped surface.
+
+**Deferred:** nothing of this round's scope.  76.2 and 76.4 were
+decided away by the sitting; gradient stops from data stay item 74.
+
+**Gates at close:** `npm run -s test:node:quiet` green (zero output);
+`test:types:run` and `test:types:surface:run` green; the `visual`
+project 138/138 (every golden exact, every parity scene in bound) and
+`renderer` 224 passed, 1 skipped.

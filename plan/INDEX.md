@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 126–136, 138–141 |
-| planned | 49–51, 71, 76–78, 80–84, 99, 105, 125, 137 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–104, 106–124, 126–136, 138–141 |
+| planned | 49–51, 71, 77–78, 80–84, 99, 105, 125, 137 |
 
 ## The sections
 
@@ -134,7 +134,7 @@ A round can land with an item held open; the round file says which.
 | 105 | 73 | 2026-08-14 | landed | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md) |
 | 106 | 74 | 2026-08-14 | landed | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-landed-the-worker-pool-cpu-executor.md) |
 | 107 | 75 | 2026-08-14 | landed | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-landed-the-dx-polish-bundle.md) |
-| 108 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
+| 108 | 76 | 2026-08-14 | landed | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-landed-the-small-style-wins-bundle.md) |
 | 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
 | 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
 | 111 | 79 | 2026-08-14 | landed | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-landed-official-json-schemas.md) |

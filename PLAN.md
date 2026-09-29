@@ -344,8 +344,16 @@ instead: the constant tables inlined at build time (**item 63
 closed**), numeric shader constants spliced, float literals shortened
 and a `glsl` tag for round 137; the full minified ESM is 10,306 bytes
 smaller (3,606 gzipped), and `headless-gpu` stands at 641,040 bytes
-against its 600 KB target.  It raised no new item.  What follows is the
-sweep before it.
+against its 600 KB target.  It raised no new item.  Round 76 (the small
+style wins, landed 2026-09-29 on the sitting's calls — screen-space
+sizing folded into semantic zoom, ledger 23 left, `double` matched as
+v3 draws it) shipped `text-border-style` on the label box, re-centred
+the box's border on its edge as v3 strokes it (0.384% live parity at
+zoom 3, 7.5% with the style ignored), carried in **item 21**'s width
+half and **closed item 21**, and priced the gradient path (+0.7–3%
+device time at 25k × 50k); it logged **items 86 and 87** — the
+`text-transform` readback, and the label box's remaining v3
+deviations.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -445,7 +453,9 @@ docs checks), and each is left in place pending the call.
     mirror lane instead, leaving all six bits of the real column intact.
     **Call taken (2026-09-28, the eleventh sitting): leave it** — the
     1.8% stays a recorded deviation and the span stays reserved.  The
-    sitting logged item 72, the arrow-shape review, beside it.
+    sitting logged item 72, the arrow-shape review, beside it.  Round
+    76 (landed 2026-09-29), whose 76.4 had put this on the table,
+    repacked nothing.
 
 27. **v4's edge underlay/overlay band is `width + 2 × padding` wide;
     v3's is `2 × padding`** (round 58, 2026-08-09).  Found by a parity
@@ -606,6 +616,11 @@ resolved by measurement and its entry has left.
     excluded, `mid-*-arrow-width` to be implemented.**  Mid arrows stay
     filled (additive later if asked); SVG export and the WebGL path draw
     them filled.
+    **Done 2026-09-29 (round 76.5).**  v3 reads an arrow's width only to
+    stroke a *hollow* head, so on an always-filled mid head it draws
+    nothing in either library: the width ports as a property — parsed
+    like the end widths, bypassable, read back resolved against the
+    edge width — with no column.  The item is closed.
 22. **`edgeHitsBox` keeps its straight-edge approximation** (round 55,
     2026-08-06).  Round 56 shortened the drawn line, so the comment
     claiming containment and box selection "agree about where the edge
@@ -2240,3 +2255,24 @@ directions".*
     the distinct-value count (a partition rebuilt per write?), then the
     fix and a row that holds a 4k-distinct write near the shared-url
     cost.
+86. **`text-transform` reads back from the sheet, not the element**
+    (logged 2026-09-29 by round 76).  Its reader takes the def's
+    constant alone (`src/style/readers-labels.mts`), so a mapped or
+    bypassed `text-transform` reads the sheet's value — `'none'` under a
+    `case` mapper — while the drawn text is transformed; golden coverage
+    inherits it (the `label-boxes` golden draws uppercase and the report
+    lists the keyword as never shown).  The label entry stores the
+    transformed text, not the transform.  **The fix**: carry the id on
+    the entry as `bgShape` and (76.3) `bgBorderStyle` are, and read it
+    there; a spec for the mapped and bypassed cases.
+87. **The label box's remaining v3 deviations** (logged 2026-09-29 by
+    round 76.3's parity scene).  (a) v4 draws the box only when
+    `text-background-opacity` > 0, where v3 also strokes a border-only
+    box; (b) a `round-rectangle` box keeps v4's auto radius (min(w, h)
+    / 4, at most 8 px) where v3's `roundRect` uses 2 px; (c) v3 rounds a
+    label's measured width up (`calculateLabelDimensions`), so its box
+    can be up to 1 model px wider.  All three are in the migration
+    guide's re-check table.  (a) is a cheap fix — the quad condition
+    plus the three places the label bounds read the padding; (b) and
+    (c) change every round box and every label's width.  **The call**:
+    which of the three to match.

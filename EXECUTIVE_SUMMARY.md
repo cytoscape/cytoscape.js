@@ -5,8 +5,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 126 made the bundles
-  smaller without touching what they draw: the column and style
+- **Last updated**: 2026-09-29, after round 76, the small style wins:
+  label boxes take v3's `text-border-style` — dashed, dotted and double
+  borders, on node and edge labels — drawn along v3's own stroke path,
+  and the box border now straddles the box edge as v3's does (it had
+  been drawn inside); against v3 live at 3× zoom the boxes differ by
+  0.4% of the frame, against 7.5% with the style ignored.  v3's
+  `mid-*-arrow-width` is accepted and read back; it draws nothing,
+  because mid arrows stay filled and v3 uses the width only for a hollow
+  head.  Gradients were already v3's props and already shipped; they
+  are now priced — a whole scene of gradient fills costs about 1% more
+  GPU time than solid ones.  Earlier the same day round 126 made the
+  bundles smaller without touching what they draw: the column and style
   property names that were spelled once as constants now ship as plain
   strings again, their tables gone from the download, and shader
   numbers are shortened — the full minified build is 10 KB smaller,
@@ -242,9 +252,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 |---|---|
 | Automated tests | 3,155 unit · 1,124 module · 38 soak · 586 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 51 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 145 of 216 are set by some golden, and the 71 no golden sets are counted and gated · 54 live v3-vs-v4 pixel-parity scenes, 15 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
-| Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
+| Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Three builds as of 29 Sep, minified / gzipped: `cytoscape` 937 / 268 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 549 / 170 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 626 / 189 KiB, against a 600 KB target. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time, and the spelled-once constants are inlined back to literals |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
@@ -1683,6 +1693,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Also found: a data write to a key a string style maps grows faster
     than linearly with the number of distinct values (33 ms a write at
     4,000 distinct image urls); logged.
+- **29 Sep** — label boxes dash, as v3's
+  - `text-border-style` (solid, dashed, dotted, double) on node and
+    edge label boxes, mapper-capable, with v3's dash lengths laid along
+    v3's own stroke path.  0.4% from v3 live at 3× zoom; 7.5% with the
+    style ignored.
+  - The box border now straddles the box edge, as v3 strokes it; it had
+    been drawn inside the box since the label boxes landed, which no
+    comparison had looked at until this one.
+  - Three smaller label-box differences from v3 are recorded for a
+    decision: v4 draws no border without a background, keeps its own
+    rounded-corner radius, and does not round a label's width up.
+  - `mid-*-arrow-width` is accepted and read back and draws nothing, as
+    in v3 for a filled head.  Gradients, already shipped as v3's props,
+    cost about 1% of GPU frame time across a 25k-node scene.
 - **29 Sep** — smaller bundles, the same pixels
   - The constant tables no longer ship: the build writes each
     `COL.…`/`PROP.…` back as its string, and shader constants and
@@ -1848,13 +1872,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Layouts as a capability | Every build carries every layout (~118 KB minified); whether a headless build registers only the layouts it names, as it does the GPU executors |
 | Workers inside workers | A graph model hosted in a browser worker gets no worker pool (it asks for a page); whether to open the pool to worker hosts or state the limit |
 | Firefox in CI | Firefox runs the model tier (measured 29 Sep) but has no CI project; whether to add one for the model-tier specs now or wait for the WebGL2 renderer |
+| Label box differences from v3 | v4 draws no label border without a background, keeps its own round-box radius, and does not round a label's measured width up as v3 does; which to match — PLAN.md item 87 |
 | A core undo stack | Apps can snapshot at `batchstart` and undo with `cy.patch()` (27 ms and 3 MB per transaction at 100k, 18–31 ms to undo); whether core ships a stack — none, an inverse-operation log (µs per change, but every mutation must record its inverse), or snapshots (which core could take faster but not restore faster) — PLAN.md item 84 |
 
 Decided at the eleventh design sitting (28 Sep), which put every open
 call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as
 a recorded deviation; the edge overlay/underlay band keeps v4's
 `width + 2 × padding`; mid arrows are filled only, and the mid-arrow
-width override is to be ported.  The layout option surface takes the
+width override is ported (29 Sep — read back only: it draws nothing on
+a filled head, in v3 either).  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
 the page sittings and AVSDF; one column animation per animated layout
 is due before alpha; the worker lane for the k-clusterings landed 29 Sep,
@@ -1902,7 +1928,7 @@ round, and is regenerated rather than maintained:
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
-| App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a small style-wins bundle.  The DX polish bundle landed 28 Sep |
+| App affordances | Attribute-table and filter fast paths (the Cytoscape Web case).  The DX polish bundle landed 28 Sep, the small style-wins bundle (`text-border-style`, the gradient price) 29 Sep |
 | WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
 | Ecosystem rounds | One plan serving the flagship apps, approved in direction: parallel-edge scale plus a real GeneMANIA fixture.  The other five landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) and priority-driven label decluttering (`label-declutter`, `label-priority`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 

@@ -948,4 +948,4 @@ Category,Feature,Status,Comments,Reference
 "Styling","Declarative mappers","Implemented","Data mappings, scales and state conditions compile into the style engine.","src/style.mts"
 "Styling","Node charts","Implemented","Pie and stripe charts through the chart property family.","src/style.mts"
 "Styling","Per-element bypasses","Implemented","Id-keyed constants with v3 method sugar, serialized as part of the stylesheet.","MIGRATING.md"
-"Styling","Screen-space sizing investigation","Planned","Scoped design investigation; viewport-fixed labels remain excluded from current support. Folded into the semantic-zoom work (eleventh design sitting, 2026-09-28); the API shape and the bounding-box rule are decided there.","plan/rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md"
+"Styling","Screen-space sizing investigation","Planned","Scoped design investigation; viewport-fixed labels remain excluded from current support. Folded into the semantic-zoom work (eleventh design sitting, 2026-09-28); the API shape and the bounding-box rule are decided there.","plan/rounds/2026-08-14-07-rnd0076-landed-the-small-style-wins-bundle.md"

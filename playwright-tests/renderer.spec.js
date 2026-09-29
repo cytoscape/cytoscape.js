@@ -9849,5 +9849,196 @@ test.describe('WebGPU renderer', () => {
       ).toBe(0);
       expect(await canvasSize(page)).toEqual(before);
     });
+
+    const OPEN_SANS_URL = `url('../node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2') format('woff2')`;
+
+    /** A one-label scene in the given font list. */
+    const labelGraph = (fontFamily) => ({
+      elements: [{ data: { id: 'a' }, position: { x: 0, y: 0 } }],
+      style: {
+        nodes: {
+          width: 40,
+          height: 40,
+          'background-color': '#ddd',
+          label: 'Wide Label',
+          'font-size': 20,
+          color: '#000',
+          'font-family': fontFamily,
+        },
+      },
+      zoom: 1,
+    });
+
+    /** The shaping memo's miss counter: a re-raster clears the memo, so
+     * the next label pass re-shapes every label and this moves. */
+    const shapeMisses = (page) =>
+      page.evaluate(() => window.cy.stats().labelShapeMisses);
+
+    test('75.2: a web font the atlas does not name loads without a re-raster', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await page.evaluate(() => document.fonts.load(`32px 'Open Sans'`));
+      await makeReadyCy(page, labelGraph(`'Open Sans', sans-serif`));
+      await waitFrames(page);
+
+      const before = await shapeMisses(page);
+      const families = await page.evaluate(async (url) => {
+        const seen = [];
+        const done = new Promise((resolve) =>
+          document.fonts.addEventListener(
+            'loadingdone',
+            (e) => {
+              seen.push(...e.fontfaces.map((f) => f.family));
+              resolve();
+            },
+            { once: true },
+          ),
+        );
+        const face = new FontFace('Unrelated Icons', url);
+
+        document.fonts.add(face);
+        await document.fonts.load(`32px 'Unrelated Icons'`);
+        await done;
+
+        return seen;
+      }, OPEN_SANS_URL);
+
+      // the precondition: the event fired, naming the other face
+      expect(families.join()).toContain('Unrelated Icons');
+
+      // any redraw would run the label pass; a re-raster would re-shape
+      await page.evaluate(() => {
+        window.cy.panBy({ x: 1, y: 0 });
+        window.cy.panBy({ x: -1, y: 0 });
+      });
+      await waitFrames(page);
+
+      expect(await shapeMisses(page)).toBe(before);
+    });
+
+    test('75.2: a face loaded before it was added re-rasters on the next rendered frame', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, labelGraph(`'Orphan Font', sans-serif`));
+      await centerPan(page);
+      await waitFrames(page);
+
+      const shot = async () =>
+        decodePng(await page.evaluate(() => window.cy.png({ bg: '#fff' })));
+      const before = await shot();
+      const missesBefore = await shapeMisses(page);
+
+      // the orphan order: load() first, add() after — no loadingdone fires
+      const events = await page.evaluate(async (url) => {
+        let n = 0;
+        const count = () => n++;
+
+        document.fonts.addEventListener('loadingdone', count);
+
+        const face = new FontFace('Orphan Font', url);
+
+        await face.load();
+        document.fonts.add(face);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        document.fonts.removeEventListener('loadingdone', count);
+
+        // any redraw — here a viewport nudge — runs the font check
+        window.cy.panBy({ x: 1, y: 0 });
+        window.cy.panBy({ x: -1, y: 0 });
+
+        return n;
+      }, OPEN_SANS_URL);
+
+      // the precondition that makes this the orphan case
+      expect(events).toBe(0);
+
+      await waitFrames(page);
+      await waitFrames(page);
+
+      expect(await shapeMisses(page)).toBeGreaterThan(missesBefore);
+
+      const after = await shot();
+      const { ratio } = diffPngs(after, before, { threshold: 0.1 });
+
+      // fallback glyphs gave way to Open Sans's
+      expect(ratio).toBeGreaterThan(0.0005);
+    });
+
+    test('75.2: an atlas rastered mid-load re-rasters on document.fonts.ready, at rest, without the event', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      // hold the face's bytes back so the atlas rasters while it loads
+      let release;
+      const held = new Promise((resolve) => (release = resolve));
+
+      await page.route('**/slow-font.woff2', async (route) => {
+        await held;
+        await route.fulfill({
+          path: 'node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2',
+          contentType: 'font/woff2',
+        });
+      });
+
+      await page.evaluate(() => {
+        const face = new FontFace(
+          'Slow Font',
+          `url('../slow-font.woff2') format('woff2')`,
+        );
+
+        document.fonts.add(face);
+        window.slowFace = face;
+        void face.load().catch(() => {});
+      });
+
+      await makeReadyCy(page, labelGraph(`'Slow Font', sans-serif`));
+
+      const state = await page.evaluate(() => {
+        const rd = window.cy.renderer();
+
+        // isolate the belt: the loadingdone path would also re-raster
+        document.fonts.removeEventListener(
+          'loadingdone',
+          rd.onFontsLoadingDone,
+        );
+
+        return {
+          loading: !document.fonts.check(`32px 'Slow Font'`),
+          provisional: rd.labelLayer.atlas.provisional,
+        };
+      });
+
+      expect(state).toEqual({ loading: true, provisional: true });
+
+      const missesBefore = await shapeMisses(page);
+
+      release();
+
+      // no viewport change, no style write: only the belt can redraw
+      const redrew = await page.evaluate(async () => {
+        await window.slowFace.loaded;
+
+        return await Promise.race([
+          new Promise((resolve) =>
+            window.cy.one('render', () => resolve(true)),
+          ),
+          new Promise((resolve) => setTimeout(() => resolve(false), 3000)),
+        ]);
+      });
+
+      expect(redrew, 'the ready belt redrew').toBe(true);
+      await waitFrames(page);
+      expect(
+        await page.evaluate(
+          () => window.cy.renderer().labelLayer.atlas.provisional,
+        ),
+      ).toBe(false);
+      expect(await shapeMisses(page)).toBeGreaterThan(missesBefore);
+    });
   });
 });

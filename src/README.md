@@ -2291,6 +2291,35 @@ before it was built.
   per frame and `applySize` is cheap.  `cy.resize()` stays for what an
   observer cannot see.  Pinned by the renderer project's "75.1" specs,
   with the disconnected observer as the control.
+- **Web fonts, the edge cases (75.2, #3408).**  Round 10's `loadingdone`
+  re-raster stays the main path, with three changes
+  (`src/render/font-watch.mts` holds the pure halves,
+  `src/render/renderer/fonts.mts` the wiring).  **It is filtered**: only
+  a loaded face whose family the atlas's `font-family` list names
+  re-rasters — normalized for case, whitespace and quotes, since
+  Chromium reports the family quoted (`"Late Font"`) — so an icon font
+  loading elsewhere on the page no longer re-lays every label; an event
+  with no readable face list re-rasters as before.  **The atlas marks
+  itself provisional** when it rasters a glyph while
+  `document.fonts.check()` says the font is still loading, and a
+  provisional atlas re-rasters when the font settles — checked on each
+  rendered frame and, once per episode, on `document.fonts.ready`, so
+  it lands on a page at rest too.  **The load-then-add order** —
+  `face.load()` *before* `document.fonts.add( face )` — fires no event,
+  and `check()` answers true for a family the set does not hold (both
+  measured in Chromium), so nothing marks the atlas; the renderer
+  watches the set's size instead, and on a rendered frame after it
+  moves, a new *loaded* face the atlas names re-rasters.  **The
+  residual is documented, not timed** (the eleventh sitting): a page
+  fully at rest keeps the fallback glyphs of a face added after it
+  loaded until anything redraws.  Add the face to `document.fonts`
+  before loading it, and the event path covers it.  There is no public
+  re-raster call: any redraw (a viewport nudge, a style write) runs
+  the check.  Pinned by the four 75.2 browser specs — each failed its
+  control (filter forced false: the round-10 late-font spec times out;
+  filter forced true: the unrelated-font spec re-shapes; size watch
+  off: the orphan spec; ready belt off: the at-rest spec) — and by
+  `test/modules/font-watch.mjs`.
 
 ## Design decisions (v4 API direction)
 
@@ -3136,7 +3165,10 @@ each is deliberate, not a pass-1 deferral:
   10) the renderer listens for the font set's `loadingdone` event and
   re-rasters the atlas + rebuilds every glyph run when a web font
   finishes loading, so late-loading fonts self-correct.  Specs still
-  pre-load to keep goldens deterministic.
+  pre-load to keep goldens deterministic.  Round 75.2 narrowed and
+  belted it — see "The DX polish bundle (round 75)": only a face the
+  atlas font names re-rasters, and the load-then-add order is caught on
+  the next rendered frame.
 - **Edge labels: built (round 10, pass 1)** — exactly the committed
   shape: a second glyph stream parallel to the node one (own instance
   buffer, own cull group, own draw call, shared atlas); edge glyphs

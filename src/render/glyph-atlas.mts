@@ -18,6 +18,7 @@ shaping memo and the glyph-run math never see the raster resolution.
 
 import { TEXTURE_USAGE } from '../gpu/webgpu-constants.mjs';
 import type { GlyphMetrics } from '../label-types.mjs';
+import { fontSettled } from './font-watch.mjs';
 
 /** rasterized glyph size at the base tier; on-screen glyphs scale from
  * this via the SDF, and all metrics are reported in these units */
@@ -183,6 +184,11 @@ export class GlyphAtlas {
   /** bumped whenever `texture` is replaced (tier growth), so cached
    * bind groups holding a view of the old texture rebuild */
   generation: number;
+  /** some cached glyph was rastered while the page's FontFaceSet said a
+   * face of the atlas font was still loading (round 75.2) — so it may be
+   * the fallback face's.  The renderer re-rasters once the set says the
+   * font is settled; every reset clears it. */
+  provisional = false;
 
   private device: GPUDevice;
   private canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -350,6 +356,7 @@ export class GlyphAtlas {
     this.penX = 0;
     this.penY = 0;
     this.full = false;
+    this.provisional = false;
 
     const m = this.ctx.measureText('Mg');
 
@@ -372,7 +379,19 @@ export class GlyphAtlas {
     return built;
   }
 
+  /** The CSS `font` the atlas rasters with, at the base size — what
+   * `document.fonts.check()` is asked about (the size cannot matter). */
+  fontString(): string {
+    return `${this.fontStyle} ${this.fontWeight} ${SDF_FONT_SIZE}px ${this.fontFamily}`;
+  }
+
   private build(ch: string): GlyphMetrics | null {
+    // a glyph rastered while its face is still loading is the fallback
+    // face's: mark the atlas so the renderer re-rasters on settling
+    if (!this.provisional && !fontSettled(this.fontString())) {
+      this.provisional = true;
+    }
+
     const ctx = this.ctx;
     const tier = this.tier;
     const measured = ctx.measureText(ch);

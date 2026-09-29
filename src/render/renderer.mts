@@ -34,6 +34,7 @@ import * as exportImpl from './renderer/export.mjs';
 import * as forceImpl from './renderer/force.mjs';
 import * as targetsImpl from './renderer/targets.mjs';
 import * as lifecycleImpl from './renderer/lifecycle.mjs';
+import * as fontsImpl from './renderer/fonts.mjs';
 export { resolveExportView } from './renderer/export-view.mjs';
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -241,8 +242,15 @@ export class Renderer {
   seenCompactEpoch = 0;
   /** @internal */
   labelLayer: LabelLayer | null;
-  /** @internal */
-  onFontsLoadingDone: (() => void) | null = null;
+  /** the filtered `loadingdone` listener (round 75.2) @internal */
+  onFontsLoadingDone: ((e: Event) => void) | null = null;
+  /** the FontFaceSet's size at the last font check (75.2) @internal */
+  fontSetSize = 0;
+  /** the faces the font checks have accounted for (75.2) @internal */
+  seenFaces: WeakSet<FontFace> = new WeakSet();
+  /** a `document.fonts.ready` belt is armed for a provisional atlas
+   * (75.2) @internal */
+  fontsReadyArmed = false;
   /** wired by the factory: an external device loss hands recovery to the core */
   onDeviceLost: ((message: string) => void) | null = null;
   /** @internal */
@@ -367,22 +375,10 @@ export class Renderer {
     this.exportFrameData = new Float32Array(20);
     this.exportCull = null;
 
-    // re-raster glyph runs when web fonts finish loading: glyphs cached
-    // before a FontFace resolves were rasterized from the fallback face
-    if (
-      typeof document !== 'undefined' &&
-      document.fonts?.addEventListener != null
-    ) {
-      this.onFontsLoadingDone = () => {
-        if (this.destroyed || this.labelLayer == null) {
-          return;
-        }
-
-        this.labelLayer.reraster();
-        this.requestRender();
-      };
-      document.fonts.addEventListener('loadingdone', this.onFontsLoadingDone);
-    }
+    // re-raster glyph runs when a web font the atlas names finishes
+    // loading: glyphs cached before its FontFace resolved were rastered
+    // from the fallback face (round 10; filtered and belted in 75.2)
+    fontsImpl.watchFonts(this);
 
     if (offscreen != null) {
       // worker mount: the canvas came transferred and pre-sized; the

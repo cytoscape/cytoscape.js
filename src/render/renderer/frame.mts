@@ -29,6 +29,7 @@ import type { Renderer } from '../renderer.mjs';
 import { drawScene, encodeCulls } from './scene.mjs';
 import { drawPickPasses, writePickUniform } from './pick.mjs';
 import { renderExport } from './export.mjs';
+import { checkFonts } from './fonts.mjs';
 import {
   ensureSceneTarget,
   ensureDepthTarget,
@@ -275,6 +276,12 @@ export function frameBody(rd: Renderer): void {
   }
 
   rd.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
+
+  // web fonts the loadingdone listener cannot see (75.2): a provisional
+  // atlas whose font settled, or a face added already loaded.  After
+  // the label pass, so an atlas that pass just made provisional arms
+  // its ready belt now — the frame that rastered may be the last one
+  checkFonts(rd);
 
   // a graph built while already zoomed in promotes its labels on
   // arrival (round 94, the 15.6 fresh-upload rule): construction sets

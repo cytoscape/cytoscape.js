@@ -5,8 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-28, after round 133 made a stylesheet
-  replace a diff — `cy.style( sheet )` re-writes only what the new sheet
+- **Last updated**: 2026-09-28, after round 79 shipped the official
+  JSON schemas — element definitions, the stylesheet, layout options
+  and the factory's options as `cytoscape/schemas/*.json`, the
+  stylesheet's listing every property the compiler accepts per group,
+  and all five held to the running library by a gate that goes red when
+  a round adds a style property or an option without them.  Before it
+  round 133 made a stylesheet replace a diff — `cy.style( sheet )` re-writes only what the new sheet
   changed, so a style editor re-sending its whole sheet for one colour
   pays 1.5 ms instead of 250 on the 465k-edge fixture, with the same
   end state column for column.  Before it round 103 shipped `cy.load()` —
@@ -121,7 +126,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,998 unit · 816 module · 38 soak · 498 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 2,998 unit · 1,021 module · 38 soak · 498 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 340 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
@@ -1276,6 +1281,24 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     and headless Chromium issues no animation frames while nothing
     draws, so main-thread availability is measured by a timer where a
     run draws nothing.
+- **28 Sep** — the data formats get official schemas
+  - JSON Schema documents for what v4 takes as JSON — element
+    definitions, the stylesheet, layout options, the factory's options
+    — ship in the package as `cytoscape/schemas/*.json`, for editors,
+    CI steps and stored-document checks (issue #3487).
+  - The stylesheet schema is the one worth having: per group, every one
+    of the ~120 properties the compiler accepts, which take mappers,
+    and the keyword sets — possible at all because v4's sheet has no
+    functions.  A v3 sheet fails it at its first selector block, so a
+    store of saved sheets can be triaged without loading any.
+  - Hand-written and gated both ways: every property the schema names
+    compiles, every property the engine knows is in the schema, every
+    option name matches the declaration, and the debug harness's
+    networks, sheets and layout runs validate — 157 documents.  A pass
+    means well-formed, not loadable; colours and data keys stay the
+    library's to judge, and the schemas say so.
+  - The fixtures found the declaration short: conditions compare
+    booleans (`eq: true`), which the runtime always did.
 - **28 Sep** — a stylesheet edit costs what it changes
   - `cy.style( sheet )` re-writes only the properties whose declaration
     changed, per group, instead of every channel of every element: one
@@ -1522,7 +1545,11 @@ width override is to be ported.  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
 the page sittings and AVSDF; one column animation per animated layout
 and a worker lane for the k-clusterings are due before alpha, and the
-sheet diff for `cy.style()` decided with them landed the same day.
+sheet diff for `cy.style()` decided with them landed the same day, as
+did the official JSON schemas on the sitting's terms: ajv in the tests
+only and no runtime `validate()`, the `$id` base left to the
+documentation site, the columnar form's schema held until 4.x and
+SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
 with a renderer soak, typed element data, batch events for undo plus a
 snapshot measurement, the worker host's images and fonts, and the CJK
@@ -1559,7 +1586,7 @@ round, and is regenerated rather than maintained:
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  Still planned: the native Bun/Deno test runners measured and the install/publish story, then a scoping pass over other environments (React Native, Electron) |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
-| Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement); official JSON schemas for the public data formats |
+| Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |

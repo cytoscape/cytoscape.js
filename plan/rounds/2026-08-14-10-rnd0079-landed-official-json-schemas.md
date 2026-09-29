@@ -161,3 +161,129 @@ is **decided at round 46** with the docs site; the tests validate with
 columnar/wire schema is **held until 4.x**, matching the wire format's
 experimental status (PLAN.md item 43); SchemaStore submission **after
 4.0**, once the schemas are stable.
+
+### The round, as carried out (2026-09-28)
+
+Landed the same day as the eleventh sitting, on its calls: ajv as the
+validator (a devDependency), no runtime `validate()`, the `$id` base
+left to round 46, the columnar schema held until 4.x, SchemaStore
+after 4.0.  Built against the surface as it stands now, not as the plan
+knew it: ten built-in layouts (not seven — radial, pack and flow landed
+since), `cy.patch()` and `cy.load()` taking the definition form the
+element schemas describe, the round-131 `exports` map, and the
+round-133 sheet diff (which changes nothing a sheet may say).
+
+| # | Commit | What landed |
+| --- | --- | --- |
+| 79.1 | `444759da` | `schemas/element.schema.json`, `schemas/elements.schema.json`, `scripts/schemas.mjs` (the harness and `SCHEMA_BASE`), `test/modules/schemas.mjs`, ajv |
+| 79.2 | `c62fe61c` | `schemas/stylesheet.schema.json` and its two-way gate; `Condition.eq`/`ne`/`in` declared with booleans |
+| 79.3 | `b0405c3e` | `schemas/layout-options.schema.json`, `schemas/cytoscape-options.schema.json`; `cy.layout()`'s JSDoc names the ten built-ins |
+| 79.4 | `e0812c94` | the `./schemas/*.json` export and its packaging specs, the status site's schemas page, the docs |
+| 79.5 | this commit | the close |
+
+**What the schemas are.**  Five draft 2020-12 documents under
+`schemas/`, shipped and exported as `cytoscape/schemas/*.json`, each
+`$id` under the placeholder `https://placeholder.invalid/cytoscape/
+schemas/` (a reserved `.invalid` host; decided in one place,
+`SCHEMA_BASE` in `scripts/schemas.mjs`, with every cross-reference
+relative so round 46 rewrites only the `$id`s, which the gate checks).
+The element pair covers the three shapes `partitionDefs` takes; the
+stylesheet enumerates per group what the compiler accepts — 122 node,
+116 edge, the nodes' plus 9 compound for parents, 7 core — each with
+its camelCase alias and its mapper allowance (a scale or case, the
+`{ data }` passthrough only, or constants), plus the mapper DSL
+schematized; layouts are an `anyOf` over the ten names and the `impl`
+escape; the envelope composes the three.  The stylesheet's first draft
+was written by a scratch script from the live compiler's per-group
+acceptance and a hand table of value kinds (in the session's
+scratchpad, not committed — the committed JSON is the maintained
+document, and the gate is what keeps it true).
+
+**The gate** (`test/modules/schemas.mjs`, 202 specs; the header states
+the direction):
+
+- *Accept what the library accepts*: all 20 debug networks in the three
+  element shapes, every sheet in `debug/styles.js` (production and
+  default, per network), v4's default sheet blocks, `cy.json()`'s
+  elements, style and whole export for every network under 20k
+  elements, the harness's layout runs (every page layout but the spiral
+  extension, three UI states, JSON round-tripped) and the options
+  panel's defaults.  The same run, `validationRun()`, is what the status
+  page shows: 157 documents, all valid.
+- *Reject what it rejects where it is strict*: paired probes run one
+  payload through the library and the schema and require the same
+  answer — 13 element rows (5 refusals: `inferGroup`'s group throw, an
+  explicit edge or an edge-bucket entry without endpoints), 39
+  stylesheet rows (29 refusals: sheet keys, unknown and wrong-group
+  props, mappers where the channel is constant-only, bypass rules, the
+  condition and case shape rules, keyword and range violations, a v3
+  selector array), 20 layout rows (14 refusals) and 5 envelope rows.
+- *Names held to the declaration*: every schema's property names equal
+  the members `src/public-types.mts` declares, read through the
+  TypeScript checker (so `extends` and pack's `Omit` resolve); every
+  keyword enum with a declared literal union equals it (the scale and
+  interpolation names, eight layout keywords, two envelope ones).
+- *The stylesheet, both ways against the engine*: (a) every name the
+  schema enumerates is in `PROP` and compiles in its group with every
+  `examples` value the schema carries; (b) every `PROP` name the schema
+  leaves out of a group is refused there **by name** (unknown, other
+  group, parents group, unsupported — messages raised before the value
+  is parsed, so the value cannot mask them).  Mapper allowance is
+  compared per (group, prop) with the compiler; the keyword sets are
+  pinned to the engine's tables (`SHAPES`, `CURVE_STYLES`,
+  `EASING_NAMES`, `SCHEMES`, … — thirty sets) and every keyword listed
+  compiles; no property in MIGRATING.md's rejected table is in the
+  schema.
+
+**Controls, run deliberately on the files**: stripping the element
+schema's edge rule and group enum — six red; dropping the edge-bucket
+rule — its probe red; a fake `background-blacken` added to nodes and
+`taxi-turn` removed from edges — (a), (b) and eleven fixture specs red;
+the pack branch, flow's `nodeSep`, a force executor keyword and the
+envelope's `tapholdDuration` removed (and the envelope closed) — nine
+red.  Eight controls also run as specs against mutated copies.  The
+packaging specs ran before the manifest edit: the export spec failed
+and `import.meta.resolve()` answered ERR_PACKAGE_PATH_NOT_EXPORTED.
+
+**Calls taken in-round, and why.**
+
+- *Open where the runtime ignores, closed where it throws.*  Probed
+  first: all ten layouts run with an unknown key, the factory ignores
+  unknown options (the fifth sitting's decision), element definitions
+  and mapper objects ignore unknown keys — so those schemas are open,
+  and the probes are specs, so a runtime that turns strict goes red and
+  the schema tightens with it.  The sheet's keys, a group's property
+  names and bypass entries throw, so those are closed.
+- *The declaration governs coercions.*  The library takes a numeric id,
+  `selected: 'yes'`, `width: [1]`; the schemas describe the declared
+  forms, and the gate's header says why (a coercion is not a promise).
+- *The fixtures outrank the declaration where the runtime agrees with
+  them.*  `debug/styles.js`'s edge-arrows sheet compares a boolean datum
+  (`eq: true`); the runtime has always compared by strict equality, so
+  `Condition` now declares `string | number | boolean` for
+  `eq`/`ne`/`in` — a documentation widening, the three declarations
+  regenerated.
+- *Hand-written, plus a draft script.*  The plan rejected generation
+  from types; the stylesheet's 2,900 lines were drafted once by probing
+  the compiler, then committed as the document.  A future property is
+  added by hand in two lines (the group entry and its value kind), and
+  the gate names what is missing.
+- *ajv's strict mode, minus its two style lints.*  `strictTypes` and
+  `strictRequired` reject ordinary `$ref`/`anyOf` composition; the
+  keyword check that catches a misspelled keyword stays on.
+- *Scheme names are the canonical lowercase spelling.*  The library
+  resolves them case-insensitively; JSON Schema has no case-insensitive
+  enum, and the enum is pinned to `SCHEMES` — a recorded narrowing.
+
+**Deferred, on the sitting's calls**: the columnar schema (4.x, with
+the wire format's experimental status — not drafted), the real `$id`
+base (round 46), SchemaStore (after 4.0), a runtime `validate()`
+(declined).  **Found in passing**: `cy.layout()`'s JSDoc listed seven
+built-ins (fixed); force reads an undeclared `tidyComponents` (the
+schema, open, accepts it; left undeclared); `options.elements` with
+`{ nodes: {} }` loads an empty graph while `cy.add()` throws on it (the
+schema follows the declared array).
+
+`npm run -s test:node:quiet` green (zero bytes; 2,998 unit and 1,021
+module tests); plan-record, agent-docs, feature-inventory,
+status-features and migration-guide green.

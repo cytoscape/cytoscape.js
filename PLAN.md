@@ -230,7 +230,12 @@ follow-up hooks in `src/README.md`.  Round 133 (landed the same day on
 the sitting's call) took **item 67** and closed it: a whole-sheet
 `cy.style()` replace is a sheet diff, with the bypass-clearing rule kept
 and the full-pass props left as a follow-up hook; it raised no new
-item.
+item.  Round 79 (the official JSON schemas, landed the same day on the
+sitting's calls — ajv in the tests only, no runtime `validate()`, the
+`$id` base left to round 46, the columnar schema held until 4.x,
+SchemaStore after 4.0) shipped element, stylesheet, layout and options
+schemas as `cytoscape/schemas/*.json`, gated both ways against the
+running library; it raised no new item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 

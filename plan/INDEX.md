@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74, 85–87, 89–98, 101, 103, 106–124, 127–133 |
-| planned | 49–51, 71, 73, 75–84, 88, 99–100, 102, 104–105, 125–126 |
+| landed | 7–48, 52–70, 72, 74, 79, 85–87, 89–98, 101, 103, 106–124, 127–133 |
+| planned | 49–51, 71, 73, 75–78, 80–84, 88, 99–100, 102, 104–105, 125–126 |
 
 ## The sections
 
@@ -137,7 +137,7 @@ A round can land with an item held open; the round file says which.
 | 108 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
 | 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
 | 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
-| 111 | 79 | 2026-08-14 | plan | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-plan-official-json-schemas.md) |
+| 111 | 79 | 2026-08-14 | landed | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-landed-official-json-schemas.md) |
 | 112 | 80 | 2026-08-14 | plan | [Node charts: heat, bars, and the slice ceiling](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
 | 113 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
 | 114 | 82 | 2026-08-14 | plan | [Cluster hulls and collapse/aggregation proxies](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |

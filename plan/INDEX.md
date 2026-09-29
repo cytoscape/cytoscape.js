@@ -23,7 +23,7 @@ A round can land with an item held open; the round file says which.
 
 ## The sections
 
-184 sections.
+185 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -211,3 +211,4 @@ A round can land with an item held open; the round file says which.
 | 182 | 142 | 2026-09-29 | landed | [Ledger item 31, the trace tier: the gestures replayed, compared as numbers](rounds/2026-09-29-09-rnd0142-landed-item-31-the-gesture-trace-tier.md) |
 | 183 | 143 | 2026-09-29 | landed | [Ledger item 30, tier 2: the degrade control — what the goldens set and do not see](rounds/2026-09-29-10-rnd0143-landed-item-30-tier-2-the-degrade-control.md) |
 | 184 | 144 | 2026-09-29 | landed | [Ledger item 68: the layout tween is one column animation](rounds/2026-09-29-11-rnd0144-landed-item-68-the-layout-tween-is-one-column-animation.md) |
+| 185 | — | 2026-09-29 | note | [Items 72 and 73 prepared — the head gallery and the chart capacity measurement](rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md) |

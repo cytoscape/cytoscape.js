@@ -2161,6 +2161,11 @@ directions".*
     each shape in the flagship apps' sheets and v3's issue tracker.
     **Scheduled (2026-09-28, the eleventh sitting): a short sitting
     before round 77**, on a head gallery prepared for it.
+    **Prepared (2026-09-29), awaiting the sitting**: the gallery
+    (`debug/arrow-gallery.html`, v3 beside v4, pictures in
+    `plan/pictures/item-72-arrow-gallery/`), the usage census and five
+    numbered questions with recommendations in
+    `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
 
 73. **Chart kinds and their data capacity** (raised by the maintainer
     2026-09-28, the eleventh sitting, at round 80's slice cap).  The
@@ -2178,6 +2183,11 @@ directions".*
     already specifies, plus the record-blob bytes per value.
     **Scheduled (2026-09-28, the eleventh sitting): a short sitting
     before round 80**, on the capacity measurement prepared for it.
+    **Prepared (2026-09-29), awaiting the sitting**: per-fragment cost by
+    kind at n = 1…4096 on the RX 580 (`benchmark/chart-capacity.mjs`),
+    the record's storage and the ref's node ceiling, and four numbered
+    questions with recommendations in
+    `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
 
 74. **Gradient stop lists from element data** (raised 2026-09-28, the
     eleventh sitting, round 76's open question; **TBD** — the

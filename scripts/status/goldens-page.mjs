@@ -25,11 +25,14 @@ import { copy } from './plan.mjs';
  * quietly missing three quarters of its captions.
  *
  * Nesting is one level deep in that file: every `test(` becomes the current
- * title and every `checkGolden(` after it claims that title.
+ * title and every `checkGolden(` after it claims that title.  Since round
+ * 135 the call takes the page first (`checkGolden( page, '<name>', … )`, so
+ * it can capture the scene's style coverage); both spellings match.
  */
 export function goldenTitles(specSource) {
   const titles = new Map();
-  const re = /^[ \t]*test\(\s*'((?:[^'\\]|\\.)*)'|checkGolden\(\s*'([^']+)'/gm;
+  const re =
+    /^[ \t]*test\(\s*'((?:[^'\\]|\\.)*)'|checkGolden\(\s*(?:page\s*,\s*)?'([^']+)'/gm;
   let current = null;
   let m;
 

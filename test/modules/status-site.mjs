@@ -890,6 +890,23 @@ describe('status site: the goldens gallery', function () {
       'golden: arrowhead shapes (round 10)',
     );
   });
+
+  it('reads the page-first call round 135 introduced, wrapped as the formatter wraps it', function () {
+    const titles = goldenTitles(
+      [
+        "  test('golden: self-loops (round 12a)', async ({ page }, testInfo) => {",
+        '    await checkGolden(',
+        '      page,',
+        "      'self-loops',",
+        '      await exportPng(page),',
+        '      testInfo,',
+        '    );',
+        '  });',
+      ].join('\n'),
+    );
+
+    expect(titles.get('self-loops')).to.equal('golden: self-loops (round 12a)');
+  });
 });
 
 describe('executePlan (round 60.3 — the writing half, previously uncovered)', () => {

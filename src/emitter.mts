@@ -1,5 +1,6 @@
 import { Event } from './event.mjs';
 import type { EventProps } from './event.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 
 /*
 v4's emitter (round 41.2), replacing the shared v3 emitter (now
@@ -36,9 +37,12 @@ removing before the callback runs, and a handler returning `false` meaning
 
 /** An event handler.  `this` is the callback context the emitter's options
  * choose — the core, or the phase element during compound bubbling. */
-export type EventHandler = (
+export type EventHandler<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> = (
   this: unknown,
-  event: Event,
+  event: Event<NodeData, EdgeData>,
   ...extraParams: unknown[]
 ) => unknown;
 

@@ -659,6 +659,15 @@ gradients instead of blanking the canvas; and soaks the GPU side over
 the ledger, which found the label shaping memo unbounded.  See "Device
 limits, the degradation order and the renderer soak" below.
 
+Round 140 (2026-09-29, PLAN.md item 45, on the eleventh sitting's call)
+typed element data: `cytoscape<NodeData, EdgeData>( … )` flows the
+application's data shapes through `data()`, the collections, events,
+the add/patch/load/clone payloads, queries and the stylesheet's mapper
+fields, and with no generic every type is exactly the untyped one.  The
+prototype measured first that the declaration roll-up keeps generics and
+their hover docs in all three shipped declarations.  See "Typed element
+data" below.
+
 ## API scope (pass 1)
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
@@ -6351,6 +6360,109 @@ it does not name is unimportable however the file ships).  It
 deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
+
+## Typed element data (round 140, item 45)
+
+`cytoscape<NodeData, EdgeData>( … )` (and the two slim entries' factories)
+types an instance by the application's node and edge data shapes:
+
+```ts
+interface Gene { weight: number; label: string }
+interface Link { kind: 'activation' | 'inhibition' }
+
+const cy = cytoscape<Gene, Link>({
+  elements: { nodes: [{ data: { id: 'g', weight: 1, label: 'G' } }] },
+  style: { nodes: { width: { data: 'weight', range: [10, 60] } } },
+});
+
+cy.nodes().data('weight'); // number | undefined
+cy.nodes().connectedEdges().data('kind'); // 'activation' | 'inhibition' | undefined
+cy.nodes().data('kind'); // error: not a node field
+```
+
+What the shapes reach:
+
+- **`data()`** — four overloads (whole object, one key, key + value,
+  patch) plus a first-class one (`'id'`, `'source'`, `'target'`,
+  `'parent'`, read-only).  A read answers the field's type *or
+  `undefined`*, since a read can miss (an empty collection), as `id()`
+  already says.
+- **Collections and handles** — `Collection<NodeData, EdgeData, Data>`
+  knows its group: `nodes()`, `source()`, `children()`, `roots()` … read
+  `NodeData`; `edges()`, `connectedEdges()`, `edgesWith()` … read
+  `EdgeData`; set operations, `filter`, `first`, iteration and callbacks
+  keep the collection's own shape; `neighborhood()`, `union()` of two
+  groups and the other mixed results read the union, whose keys are the
+  fields the two share — narrow with `nodes()`/`edges()` to read the
+  rest.  A narrowed collection widens to the mixed one and to the plain
+  `Collection`, so a helper typed against either takes it.
+- **Events** — `Event<NodeData, EdgeData>`: the handler's `target`,
+  `cy` and a `patch` event's `diff` carry the shapes; predicates and
+  `promiseOn` too.
+- **Payloads** — `add()`, `patch()` (and its `PatchDiff`), `load()`'s
+  chunks, `clone()`'s options and the constructor's `elements`: a
+  definition's `data` is the shape plus the first-class fields, so a
+  misspelt or mistyped field is an excess-property error.
+- **Field references** — a mapper's `data`, a `case` condition's `data`
+  (per group: `nodes`/`parents` from `NodeData`, `edges` from
+  `EdgeData`) and a query's `data` keys.
+
+**The untyped rule.**  Every parameter defaults to `Untyped` (`any`,
+meaning "no generic given"), and each position maps it back to its
+pre-140 type, so the plain `Core` and `Collection` *are* the untyped
+instantiations: `data()` reads `unknown`, any key is accepted, a mapper's
+field is any string.  The existing type tests pass unchanged, and the new
+`typescript/tests/typed-data.test-d.ts` asserts the untyped types by
+*equality*.  The factory's `options` take `NoInfer`, so the generics are
+never inferred from the elements — without that, a plain
+`cytoscape({ elements })` typed itself from its first node (measured:
+the untyped half of the type tests went red).  `NodeData` alone types the nodes and leaves
+the edges' keys open (`EdgeData` defaults to `Record<string, unknown>`).
+The one visible difference untyped is hover text: `cy.nodes()` shows
+`Collection<any, any, any>`, which is the same type as `Collection`.
+
+**Why the untyped test reads the instance, not the collection.**  A
+class's type parameter measured through a conditional type's check
+position is invariant, so testing `Data` for `any` inside `Collection`
+made `const m: Collection<N, E> = cy.nodes()` an error through every
+`data()` overload.  `IfTyped<NodeData, EdgeData, …>` tests the
+instance's shapes, which a narrow and a wide collection share, and
+`Data` appears only as `keyof Data`, `Data[K]` and `Partial<Data>`,
+which measure covariant (`src/data-typing.mts`).  The same variance is
+why a collection's own subset members (`filter`, `is`, `allAre`, the
+traversal criteria) key their queries on both shapes rather than the
+narrowed one; the core's `nodes( query )`/`edges( query )` key theirs
+per group.
+
+**Where it stops, and why.**
+- *The columnar and wire payloads* stay untyped: an `ArrayBuffer`
+  carries no type, and `ColumnarElements`' `data` columns are keyed at
+  run time.  `toColumnarElements( defs )` accepts typed definitions.
+- *The `'data(name)'` label string* — a style value is any string (a
+  colour, a keyword), so its field cannot be checked; the `{ data }`
+  mapper is the typed form.
+- *A condition's value* (`eq`, `gt`, `in`) is not correlated with its
+  field's type — it would need a distributive union over the shape's
+  keys per condition, for little.
+- *The algorithms and layouts* — their callbacks (`weight`, `attributes`,
+  a layout's `sort`) and results (`pathTo()`, `components` of a search)
+  take and return plain `Collection`s.  Typing them threads the generics
+  through some thirty option and result types in `algorithms/` and
+  `layout/` for callbacks whose element is almost always read by one
+  key; deferred, not declined.  The clustering results
+  (`kMeans`, `markovClustering`, …) are typed — node collections.
+- *`json()`/`jsons()`* stay `Record<string, unknown>`: they are an
+  export format.
+- *`isNode()` does not narrow* — it answers for the first element, so a
+  type predicate would lie about a mixed collection.
+
+**Measured** (round 140, i9-9900K, TypeScript 7.0.2, non-incremental,
+three runs): `tsc --noEmit` over `src/` 0.49 s / ~197 MB before, 0.50 s
+/ ~209 MB after; the type tests 0.46 s / ~108 MB before, 0.48 s /
+~119 MB after (with the new file).  `test/types-surface.mjs` gates the
+roll-up: each of the three declarations must answer a typed
+`data( key )` with the field's type and that overload's hover doc,
+through the language service.
 
 ## JSON schemas (round 79, #3487)
 

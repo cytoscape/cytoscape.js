@@ -13,6 +13,20 @@ that never names a generic sees today's types, and the plain spellings
 is assignable to them, and every internal helper that takes or returns a
 bare `Collection` keeps working unchanged.
 
+**Why the test is on the instance's shapes, not the collection's.**  A
+`Collection<NodeData, EdgeData, Data>` narrows `Data` to one group
+(`cy.nodes()` is `Collection<N, E, N>`) and must still widen to the mixed
+`Collection<N, E>` — a helper written against the mixed type has to take
+a node collection.  TypeScript measures a class's type parameters for
+variance, and a parameter that appears in a conditional type's *check*
+position measures invariant, so `IsUntyped<Data>` anywhere in the class
+would make that widening an error.  The collection's members therefore
+ask `IfTyped<NodeData, EdgeData, …>` — which never varies between a
+narrow and a wide collection of one instance — and use `Data` only in
+plain positions (`keyof Data`, `Data[K]`, `Partial<Data>`), which measure
+covariant.  Measured in round 140: with the check on `Data`, `const m:
+Collection<N, E> = cy.nodes()` failed through every `data()` overload.
+
 Types only; nothing here exists at run time.
 */
 
@@ -34,43 +48,33 @@ export type Untyped = any;
 export type IsUntyped<T> = 0 extends 1 & T ? true : false;
 
 /**
- * What `data()` reads as a whole object: the application's shape, or
- * `unknown` untyped (today's return).
+ * The default `EdgeData` given the `NodeData`: untyped when the nodes are
+ * (no generic at all), and a free-form record when only the nodes were
+ * typed — so `cytoscape<MyNode>()` types its nodes and leaves its edges'
+ * keys open, rather than an untyped edge shape turning the whole instance
+ * untyped (see {@link IfTyped}).
  */
-export type DataOf<D> = IsUntyped<D> extends true ? unknown : D;
+export type DefaultEdgeData<NodeData> =
+  IsUntyped<NodeData> extends true ? Untyped : Record<string, unknown>;
 
 /**
- * The keys a field reference may name: the shape's string keys plus the
- * first-class `'id'` (and, for edges, `'source'`/`'target'`; for nodes
- * `'parent'` — synthesized on read).  Untyped: any string.
+ * `T` for a typed instance, `U` (the pre-140 type) for an untyped one.
+ * The test is on the instance's shapes — both of them, so an instance
+ * whose `NodeData` is `any` is untyped whatever its `EdgeData`.
  */
-export type DataKey<D> =
-  IsUntyped<D> extends true
-    ? string
-    : (D extends unknown ? keyof D & string : never) | FirstClassKey;
+export type IfTyped<NodeData, EdgeData, T, U> =
+  IsUntyped<NodeData | EdgeData> extends true ? U : T;
 
 /** The first-class keys every element answers, synthesized on read. */
 export type FirstClassKey = 'id' | 'source' | 'target' | 'parent';
 
 /**
- * The value `data( key )` reads for key `K`: the shape's field type (a
- * union across a mixed collection's shapes), `string` for the first-class
- * `'id'`, and `unknown` untyped.  A read can always miss — an empty
- * collection or a stale handle answers `undefined` — so the field type
- * is widened with it, as today's `unknown` already was.
+ * The keys a field reference in a sheet or a query may name: the shape's
+ * string keys (either shape's, for a union) plus the first-class ones.
+ * Untyped: any string.  Used by the declarative forms only, which are not
+ * narrowed per collection, so testing `Data` itself is safe here.
  */
-export type DataValue<D, K> =
-  IsUntyped<D> extends true
-    ? unknown
-    : K extends FirstClassKey
-      ? string | undefined
-      :
-          | (D extends unknown ? (K extends keyof D ? D[K] : never) : never)
-          | undefined;
-
-/**
- * A `data( patch )` write: some of the shape's fields, or any record of
- * keys untyped (today's parameter).
- */
-export type DataPatch<D> =
-  IsUntyped<D> extends true ? Record<string, unknown> : Partial<D>;
+export type DataKey<Data> =
+  IsUntyped<Data> extends true
+    ? string
+    : (Data extends unknown ? keyof Data & string : never) | FirstClassKey;

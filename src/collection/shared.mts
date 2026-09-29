@@ -9,19 +9,53 @@ import type { Position } from '../types.mjs';
 import type { Core } from '../core.mjs';
 import { PROP } from '../style-props.mjs';
 import type { Collection } from '../collection.mjs';
+import type { DefaultEdgeData, Untyped } from '../data-typing.mjs';
 
-export type EleFilterFn = (
-  ele: Collection,
-  i: number,
-  eles: Collection,
-) => boolean;
-export type ElePositionFn = (
-  ele: Collection,
-  i: number,
-) => Position | false | undefined;
+/** A per-element predicate; typed by the collection it filters (round
+ * 140), untyped by default. */
+export type EleFilterFn<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+  Data = NodeData | EdgeData,
+> = {
+  // method syntax, so the parameters compare bivariantly: a collection
+  // narrowed to one group must still widen to the mixed one (round 140)
+  bivarianceHack(
+    ele: Collection<NodeData, EdgeData, Data>,
+    i: number,
+    eles: Collection<NodeData, EdgeData, Data>,
+  ): boolean;
+}['bivarianceHack'];
+/** A per-element position function (`positions( fn )`); typed as
+ * {@link EleFilterFn} is. */
+export type ElePositionFn<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+  Data = NodeData | EdgeData,
+> = {
+  // method syntax for bivariance, as EleFilterFn
+  bivarianceHack(
+    ele: Collection<NodeData, EdgeData, Data>,
+    i: number,
+  ): Position | false | undefined;
+}['bivarianceHack'];
 
-/** A subset criterion: a structured query or a per-element predicate. */
-export type FilterLike = Query | EleFilterFn;
+/**
+ * A subset criterion: a structured query or a per-element predicate —
+ * both typed by the elements they test (round 140), untyped by default.
+ *
+ * `QueryData` is the shape the query's keys come from, `Data` unless
+ * given.  A collection's own subset members (`filter`, `is`, `allAre`)
+ * pass both shapes: `Query<D>` is invariant in `D` (its keys are a
+ * `keyof`), so keying it on the collection's narrowed `Data` would stop
+ * a node collection widening to a mixed one.
+ */
+export type FilterLike<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+  Data = NodeData | EdgeData,
+  QueryData = Data,
+> = Query<QueryData> | EleFilterFn<NodeData, EdgeData, Data>;
 
 // Pack a ref into a single safe integer (group in bit 52, slot in bits 24..51,
 // gen in bits 0..23) for set membership. Avoids the per-element string

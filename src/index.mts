@@ -1,5 +1,5 @@
 import type { Core } from './core.mjs';
-import type { Untyped } from './data-typing.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
@@ -107,14 +107,27 @@ const FULL: CoreCaps = {
  * true }` against {@link CytoscapeOptions}, and v4 does not replicate at
  * runtime what the build already checks.
  *
+ * **Typed element data** (round 140): `cytoscape<NodeData, EdgeData>( … )`
+ * types the instance by the application's node and edge data shapes.
+ * `data()` then takes only their keys and reads their field types; the
+ * collections know their group (`cy.nodes()` reads `NodeData`,
+ * `connectedEdges()` reads `EdgeData`); events, `add`/`patch`/`load`/
+ * `clone` payloads, queries and the stylesheet's mapper fields are checked
+ * against the same shapes.  Give `NodeData` alone to leave the edges'
+ * keys open.  The generics are never inferred from `options` — without
+ * them every type is exactly the untyped one.
+ *
  * @param options — the instance options; every field is optional, and an
  *   omitted `container` is what selects headless mode
  * @returns the new core, usable synchronously — reads and writes do not wait
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-export default function cytoscape<NodeData = Untyped, EdgeData = Untyped>(
-  options: CytoscapeOptions = {},
+export default function cytoscape<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+>(
+  options: CytoscapeOptions<NoInfer<NodeData>, NoInfer<EdgeData>> = {},
 ): Core<NodeData, EdgeData> {
   return createCore(options, FULL);
 }

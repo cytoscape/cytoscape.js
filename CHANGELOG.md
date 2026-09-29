@@ -387,6 +387,11 @@ that compile and then behave differently.
   default.
 - **TypeScript declarations** built from the source JSDoc, so the API
   documentation is hover text in an editor.
+- **Typed element data** (round 140): `cytoscape<NodeData, EdgeData>( … )`
+  types `data()` reads and writes, group-aware collections (`cy.nodes()`
+  reads `NodeData`), events, the `add`/`patch`/`load`/`clone` payloads,
+  queries and the stylesheet's mapper fields.  Without the generics every
+  type is the untyped one.
 - **GPU executors for the expensive whole-graph algorithms** (round 65).
   `markovClustering`, `affinityPropagation`, `pageRank`,
   `floydWarshall`, `betweennessCentrality`, `kMeans`, `kMedoids`,

@@ -6,6 +6,7 @@ import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { Collection } from './collection.mjs';
 import type { Core } from './core.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 
 /*
 A single core emitter (v4's own since round 41.2 — it reused v3's
@@ -49,8 +50,12 @@ v4's emitter instead of v3's.  What went with v3's emitter is its
 namespace parsing — see `emitter.mts`.
 */
 
-/** A delegation predicate over an element event target. */
-export type ElePredicate = (ele: Collection) => boolean;
+/** A delegation predicate over an element event target; typed by the
+ * instance's data shapes (round 140), untyped by default. */
+export type ElePredicate<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> = (ele: Collection<NodeData, EdgeData>) => boolean;
 
 /** What a listener is restricted to: a single element ref, or a predicate. */
 export interface Qualifier {

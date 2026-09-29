@@ -1,5 +1,5 @@
 import { GraphStore } from './store/graph-store.mjs';
-import type { Untyped } from './data-typing.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 import { Collection } from './collection.mjs';
 import { hasListeners, makeCoreEmitter } from './events.mjs';
 import type { ElePredicate, Qualifier } from './events.mjs';
@@ -51,7 +51,7 @@ import type {
   ViewportCounts,
   WheelBehavior,
 } from './public-types.mjs';
-import type { EleFilterFn } from './collection.mjs';
+import type { EleFilterFn, FilterLike } from './collection.mjs';
 import * as batchingImpl from './core/batching.mjs';
 import * as elementsImpl from './core/elements.mjs';
 import * as queryImpl from './core/query.mjs';
@@ -140,7 +140,7 @@ export interface BatchPending {
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-export class Core<NodeData = Untyped, EdgeData = Untyped> {
+export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   _store: GraphStore;
   _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
@@ -178,7 +178,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * chunk is drawn** (round 103; headless, once it is in the model).
    * Rejects when no adapter can be had.
    */
-  ready: Promise<Core>;
+  ready: Promise<Core<NodeData, EdgeData>>;
 
   /** true once `ready` has resolved (immediately when headless) */
   _readyResolved: boolean;
@@ -470,7 +470,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @throws if the sheet references an unknown property or an invalid
    *   value
    */
-  style(sheet?: Stylesheet): StyleEngine {
+  style(sheet?: Stylesheet<NodeData, EdgeData>): StyleEngine {
     if (sheet != null) {
       if (this._batchPending != null) {
         // compile (and validate) now; apply once at the outermost endBatch
@@ -705,7 +705,11 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   add the definitions you kept, e.g. from `eles.jsons()` taken
    *   before the removal
    */
-  add(input: ElementsInput | Iterable<ElementDefinition>): Collection {
+  add(
+    input:
+      | ElementsInput<NodeData, EdgeData>
+      | Iterable<ElementDefinition<NodeData | EdgeData>>,
+  ): Collection<NodeData, EdgeData> {
     return elementsImpl.add(this, input);
   }
 
@@ -740,7 +744,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param eles — the elements to remove
    * @returns the removed elements
    */
-  remove(eles: Collection): Collection {
+  remove<Data>(
+    eles: Collection<NodeData, EdgeData, Data>,
+  ): Collection<NodeData, EdgeData, Data> {
     return eles.remove();
   }
 
@@ -808,7 +814,10 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   column does not fit the payload's counts, or on an unknown option
    *   or mode
    */
-  patch(input: ElementsInput, options?: PatchOptions): PatchDiff {
+  patch(
+    input: ElementsInput<NodeData, EdgeData>,
+    options?: PatchOptions,
+  ): PatchDiff<NodeData, EdgeData> {
     return patchImpl.patch(this, input, options);
   }
 
@@ -872,7 +881,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   on a destroyed instance
    */
   load(
-    source: AsyncIterable<ElementsInput> | Iterable<ElementsInput>,
+    source:
+      | AsyncIterable<ElementsInput<NodeData, EdgeData>>
+      | Iterable<ElementsInput<NodeData, EdgeData>>,
     options?: LoadOptions,
   ): LoadRun {
     return loadImpl.load(this, source, options);
@@ -942,7 +953,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @throws if called with any argument — v3's building forms are not
    *   ported; the message names the replacements
    */
-  collection(): Collection {
+  collection(): Collection<NodeData, EdgeData> {
     if (arguments.length > 0) {
       throw new Error(
         'cy.collection() takes no arguments in v4 — it is the empty ' +
@@ -993,7 +1004,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   omit for everything
    * @returns the matching elements
    */
-  elements(query?: Query | EleFilterFn): Collection {
+  elements(
+    query?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return query === undefined
       ? (this._allEles ?? this._allOf(null))
       : this._query(query, null);
@@ -1007,7 +1020,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
    */
-  nodes(query?: Query | EleFilterFn): Collection {
+  nodes(
+    query?: FilterLike<NodeData, EdgeData, NodeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return query === undefined
       ? this._allOf(GROUP_NODES)
       : this._query(query, GROUP_NODES);
@@ -1021,7 +1036,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
    */
-  edges(query?: Query | EleFilterFn): Collection {
+  edges(
+    query?: FilterLike<NodeData, EdgeData, EdgeData>,
+  ): Collection<NodeData, EdgeData, EdgeData> {
     return query === undefined
       ? this._allOf(GROUP_EDGES)
       : this._query(query, GROUP_EDGES);
@@ -1034,7 +1051,9 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching elements
    */
-  filter(query: Query | EleFilterFn): Collection {
+  filter(
+    query: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return this._query(query, null);
   }
 
@@ -1106,7 +1125,12 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param y2 — that corner's model y
    * @returns the contained elements
    */
-  elementsInBox(x1: number, y1: number, x2: number, y2: number): Collection {
+  elementsInBox(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ): Collection<NodeData, EdgeData> {
     return new Collection(
       this,
       this._store.refsInBox(x1, y1, x2, y2, this._boxSelectionIncludesLabels),
@@ -1225,7 +1249,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
-  on(events: string, callback: EventHandler): this;
+  on(events: string, callback: EventHandler<NodeData, EdgeData>): this;
   /**
    * Listen with predicate delegation: the handler runs only for events
    * whose target satisfies `predicate`.
@@ -1236,7 +1260,11 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  on(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  on(
+    events: string,
+    predicate: ElePredicate<NodeData, EdgeData>,
+    callback: EventHandler<NodeData, EdgeData>,
+  ): this;
   on(
     events: string,
     predicateOrCb?: ElePredicate | EventHandler,
@@ -1257,7 +1285,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  one(events: string, callback: EventHandler): this;
+  one(events: string, callback: EventHandler<NodeData, EdgeData>): this;
   /**
    * Like `on()` with delegation, but the handler runs at most once.
    *
@@ -1266,7 +1294,11 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  one(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  one(
+    events: string,
+    predicate: ElePredicate<NodeData, EdgeData>,
+    callback: EventHandler<NodeData, EdgeData>,
+  ): this;
   one(
     events: string,
     predicateOrCb?: ElePredicate | EventHandler,
@@ -1290,7 +1322,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  off(events: string, callback?: EventHandler): this;
+  off(events: string, callback?: EventHandler<NodeData, EdgeData>): this;
   /**
    * Remove a delegated handler.  The predicate must be the *same
    * function object* it was registered with — predicates compare by
@@ -1301,7 +1333,11 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler to remove
    * @returns this core, for chaining
    */
-  off(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  off(
+    events: string,
+    predicate: ElePredicate<NodeData, EdgeData>,
+    callback: EventHandler<NodeData, EdgeData>,
+  ): this;
   off(
     events: string,
     predicateOrCb?: ElePredicate | EventHandler,
@@ -1355,7 +1391,10 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn(events: string, predicate?: ElePredicate): Promise<Event> {
+  promiseOn(
+    events: string,
+    predicate?: ElePredicate<NodeData, EdgeData>,
+  ): Promise<Event<NodeData, EdgeData>> {
     return new Promise((resolve) => {
       if (predicate != null) {
         this.one(events, predicate, (event) => resolve(event));
@@ -1656,7 +1695,10 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  async pick(x: number, y: number): Promise<Collection | null> {
+  async pick(
+    x: number,
+    y: number,
+  ): Promise<Collection<NodeData, EdgeData> | null> {
     return this._renderer != null
       ? this._decodePick(await this._renderer.pick(x, y))
       : null;
@@ -1691,7 +1733,10 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   only, or a destroyed instance)
    * @see Core#pick for edges and the full draw-order answer
    */
-  nodeAt(x: number, y: number): Collection | null {
+  nodeAt(
+    x: number,
+    y: number,
+  ): Collection<NodeData, EdgeData, NodeData> | null {
     return exportImpl.nodeAt(this, x, y);
   }
 
@@ -2415,7 +2460,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   copy and not a defaults-resolved view, so an option the caller
    *   omitted reads back absent rather than as the default in force
    */
-  options(): CytoscapeOptions {
+  options(): CytoscapeOptions<NodeData, EdgeData> {
     return this._options;
   }
 
@@ -2511,7 +2556,7 @@ export class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   throws — a `container` in a build with no renderer, or without
    *   WebGPU
    */
-  clone(options?: CloneOptions): Core {
+  clone(options?: CloneOptions<NodeData, EdgeData>): Core<NodeData, EdgeData> {
     return cloneImpl.clone(this, options);
   }
 

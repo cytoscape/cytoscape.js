@@ -25,6 +25,7 @@ import {
 import type { PatchMode, PatchPayload, PatchPlan } from '../store/patch.mjs';
 import type { FlagOverride } from '../columnar.mjs';
 import type { Core } from '../core.mjs';
+import type { DefaultEdgeData, Untyped } from '../data-typing.mjs';
 import { _applyStyle, endBatch } from './batching.mjs';
 import { _applyFlagOverrides, _newId } from './elements.mjs';
 import { _assertGpuFit } from './gpu-fit.mjs';
@@ -49,16 +50,19 @@ export interface PatchOptions {
  * source or target) is in both `removed` and `added`, since it was removed
  * and re-added; an element is never in `updated` and either of the others.
  */
-export interface PatchDiff {
+export interface PatchDiff<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> {
   /** the elements the patch added, nodes before edges, in payload order */
-  added: Collection;
+  added: Collection<NodeData, EdgeData>;
   /** the elements it removed, cascades included (the incident edges and
    * descendants of a removed node); removed elements keep their `id()`
    * and `group()` */
-  removed: Collection;
+  removed: Collection<NodeData, EdgeData>;
   /** the surviving elements it changed — data, position or parent —
    * nodes before edges, in payload order */
-  updated: Collection;
+  updated: Collection<NodeData, EdgeData>;
 }
 
 const MODES: readonly PatchMode[] = ['reconcile', 'merge'];

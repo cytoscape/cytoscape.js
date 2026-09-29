@@ -25,10 +25,9 @@ import { refQualifier } from './events.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
 import type {
-  DataKey,
-  DataOf,
-  DataPatch,
-  DataValue,
+  DefaultEdgeData,
+  FirstClassKey,
+  IfTyped,
   Untyped,
 } from './data-typing.mjs';
 import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
@@ -141,7 +140,11 @@ import * as traversalImpl from './collection/traversal.mjs';
 import * as hierarchyImpl from './collection/hierarchy.mjs';
 import * as layoutImpl from './collection/layout.mjs';
 import * as degreeImpl from './collection/degree.mjs';
-export type { EleFilterFn, ElePositionFn } from './collection/shared.mjs';
+export type {
+  EleFilterFn,
+  ElePositionFn,
+  FilterLike,
+} from './collection/shared.mjs';
 /**
  * A v3-style collection over the columnar store: an element is a length-1
  * collection, interned per live slot so `eles[0]`, `forEach` args and
@@ -151,7 +154,7 @@ export type { EleFilterFn, ElePositionFn } from './collection/shared.mjs';
  */
 export class Collection<
   NodeData = Untyped,
-  EdgeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
   Data = NodeData | EdgeData,
 > implements Iterable<Collection<NodeData, EdgeData, Data>> {
   [index: number]: Collection<NodeData, EdgeData, Data>;
@@ -423,7 +426,7 @@ export class Collection<
    *   span two cores, so this is also the identity a set operation
    *   against a foreign collection would violate
    */
-  cy(): Core {
+  cy(): Core<NodeData, EdgeData> {
     return this._cy;
   }
 
@@ -446,7 +449,7 @@ export class Collection<
    *   element type, so this narrows rather than unwraps
    * @internal
    */
-  element(): Collection {
+  element(): Collection<NodeData, EdgeData, Data> {
     return this.eq(0);
   }
 
@@ -462,7 +465,7 @@ export class Collection<
    * @throws if called with any argument (v3's building forms are not
    *   ported; the message names the replacements)
    */
-  collection(): Collection {
+  collection(): Collection<NodeData, EdgeData, Data> {
     if (arguments.length > 0) {
       throw new Error(
         'collection() takes no arguments in v4 — it is the empty ' +
@@ -560,7 +563,11 @@ export class Collection<
    * @returns this collection, for chaining
    */
   forEach(
-    fn: (ele: Collection, i: number, eles: Collection) => void | false,
+    fn: (
+      ele: Collection<NodeData, EdgeData, Data>,
+      i: number,
+      eles: Collection<NodeData, EdgeData, Data>,
+    ) => void | false,
     thisArg?: unknown,
   ): this {
     return iterationImpl.forEach(this, fn, thisArg) as this;
@@ -580,7 +587,7 @@ export class Collection<
    *
    * @returns an iterator over the members' handles
    */
-  [Symbol.iterator](): IterableIterator<Collection> {
+  [Symbol.iterator](): IterableIterator<Collection<NodeData, EdgeData, Data>> {
     return iterationImpl._arr(this)[Symbol.iterator]();
   }
 
@@ -589,7 +596,7 @@ export class Collection<
    *
    * @returns a new array of the members
    */
-  toArray(): Collection[] {
+  toArray(): Collection<NodeData, EdgeData, Data>[] {
     // a fresh copy each call — callers sort and splice what they get —
     // over the cached dense array (round 62.5)
     return this._arr().slice();
@@ -603,7 +610,10 @@ export class Collection<
    * @param end — last index, exclusive
    * @returns the sub-range as a new collection
    */
-  slice(start: number = 0, end: number = this.length): Collection {
+  slice(
+    start: number = 0,
+    end: number = this.length,
+  ): Collection<NodeData, EdgeData, Data> {
     return iterationImpl.slice(this, start, end);
   }
 
@@ -616,7 +626,12 @@ export class Collection<
    *   non-function is ignored and returns this collection unchanged
    * @returns a new, sorted collection
    */
-  sort(sortFn: (a: Collection, b: Collection) => number): Collection {
+  sort(
+    sortFn: (
+      a: Collection<NodeData, EdgeData, Data>,
+      b: Collection<NodeData, EdgeData, Data>,
+    ) => number,
+  ): Collection<NodeData, EdgeData, Data> {
     return iterationImpl.sort(this, sortFn);
   }
 
@@ -626,7 +641,7 @@ export class Collection<
    * @param i — the index
    * @returns that element, or an empty collection when out of range
    */
-  eq(i: number): Collection {
+  eq(i: number): Collection<NodeData, EdgeData, Data> {
     return this[i] ?? this._spawn([]);
   }
 
@@ -635,7 +650,7 @@ export class Collection<
    *
    * @returns the first element, or an empty collection
    */
-  first(): Collection {
+  first(): Collection<NodeData, EdgeData, Data> {
     return this.eq(0);
   }
 
@@ -644,7 +659,7 @@ export class Collection<
    *
    * @returns the last element, or an empty collection
    */
-  last(): Collection {
+  last(): Collection<NodeData, EdgeData, Data> {
     return this.eq(this.length - 1);
   }
 
@@ -656,7 +671,11 @@ export class Collection<
    * @returns an array of the results
    */
   map<T>(
-    fn: (ele: Collection, i: number, eles: Collection) => T,
+    fn: (
+      ele: Collection<NodeData, EdgeData, Data>,
+      i: number,
+      eles: Collection<NodeData, EdgeData, Data>,
+    ) => T,
     thisArg?: unknown,
   ): T[] {
     return iterationImpl.map(this, fn, thisArg);
@@ -669,7 +688,7 @@ export class Collection<
    * @param thisArg — optional receiver for the callback
    * @returns true when at least one element matches
    */
-  some(fn: EleFilterFn, thisArg?: unknown): boolean {
+  some(fn: EleFilterFn<NodeData, EdgeData, Data>, thisArg?: unknown): boolean {
     return iterationImpl.some(this, fn, thisArg);
   }
 
@@ -681,7 +700,7 @@ export class Collection<
    * @param thisArg — optional receiver for the callback
    * @returns true when all elements match
    */
-  every(fn: EleFilterFn, thisArg?: unknown): boolean {
+  every(fn: EleFilterFn<NodeData, EdgeData, Data>, thisArg?: unknown): boolean {
     return iterationImpl.every(this, fn, thisArg);
   }
 
@@ -860,7 +879,9 @@ export class Collection<
    *   predicate (there are no selector strings in v4)
    * @returns true when all elements match
    */
-  allAre(criterion: FilterLike): boolean {
+  allAre(
+    criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>,
+  ): boolean {
     if (typeof criterion === 'function') {
       return this.every(criterion);
     }
@@ -877,7 +898,9 @@ export class Collection<
    *   predicate
    * @returns true when at least one element matches
    */
-  is(criterion: FilterLike): boolean {
+  is(
+    criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>,
+  ): boolean {
     if (typeof criterion === 'function') {
       return this.some(criterion);
     }
@@ -895,7 +918,9 @@ export class Collection<
    * @param other — the collection to add
    * @returns a new collection holding both sets
    */
-  union(other: Collection): Collection {
+  union<OtherData = Data>(
+    other: Collection<NodeData, EdgeData, OtherData>,
+  ): Collection<NodeData, EdgeData, Data | OtherData> {
     assertCollection(other, 'union', this._cy);
 
     return this._spawn([...this._refs, ...other._refs]);
@@ -912,7 +937,7 @@ export class Collection<
    * @param other — the collection to subtract
    * @returns a new collection
    */
-  difference(other: Collection): Collection {
+  difference(other: Collection): Collection<NodeData, EdgeData, Data> {
     assertCollection(other, 'difference', this._cy);
 
     const keys = other._keySet();
@@ -933,7 +958,7 @@ export class Collection<
    * @param other — the collection to intersect with
    * @returns a new collection
    */
-  intersection(other: Collection): Collection {
+  intersection(other: Collection): Collection<NodeData, EdgeData, Data> {
     assertCollection(other, 'intersection', this._cy);
 
     const keys = other._keySet();
@@ -952,7 +977,9 @@ export class Collection<
    * @param other — the other collection
    * @returns a new collection
    */
-  symmetricDifference(other: Collection): Collection {
+  symmetricDifference<OtherData = Data>(
+    other: Collection<NodeData, EdgeData, OtherData>,
+  ): Collection<NodeData, EdgeData, Data | OtherData> {
     return filteringImpl.symmetricDifference(this, other);
   }
 
@@ -975,7 +1002,10 @@ export class Collection<
    * @throws if a query object carries an unknown key — a typo must not
    *   silently match everything
    */
-  filter(criterion: FilterLike, thisArg?: unknown): Collection {
+  filter(
+    criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>,
+    thisArg?: unknown,
+  ): Collection<NodeData, EdgeData, Data> {
     return filteringImpl.filter(this, criterion, thisArg);
   }
 
@@ -985,7 +1015,9 @@ export class Collection<
    * @param criterion — a query object or predicate; omit for all nodes
    * @returns a new collection of nodes
    */
-  nodes(criterion?: FilterLike): Collection {
+  nodes(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     const nodes = this._spawnUnique(
       this._refs.filter((ref) => ref.group === GROUP_NODES),
     );
@@ -999,7 +1031,9 @@ export class Collection<
    * @param criterion — a query object or predicate; omit for all edges
    * @returns a new collection of edges
    */
-  edges(criterion?: FilterLike): Collection {
+  edges(
+    criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, EdgeData> {
     const edges = this._spawnUnique(
       this._refs.filter((ref) => ref.group === GROUP_EDGES),
     );
@@ -1014,7 +1048,7 @@ export class Collection<
    * @param id — the element id
    * @returns a collection of one element, or an empty collection
    */
-  getElementById(id: string): Collection {
+  getElementById(id: string): Collection<NodeData, EdgeData, Data> {
     for (let i = 0; i < this.length; i++) {
       if (this[i]._id === id) {
         return this[i];
@@ -1027,7 +1061,10 @@ export class Collection<
   /** Split into { nodes, edges }.
    *
    * @internal */
-  byGroup(): { nodes: Collection; edges: Collection } {
+  byGroup(): {
+    nodes: Collection<NodeData, EdgeData, NodeData>;
+    edges: Collection<NodeData, EdgeData, EdgeData>;
+  } {
     return { nodes: this.nodes(), edges: this.edges() };
   }
 
@@ -1038,7 +1075,7 @@ export class Collection<
    *   enclosing collection — which is what the `absolute` in the name is
    *   distinguishing
    */
-  absoluteComplement(): Collection {
+  absoluteComplement(): Collection<NodeData, EdgeData> {
     return this._cy.elements().difference(this);
   }
 
@@ -1051,10 +1088,12 @@ export class Collection<
    * @param other — the collection to compare with
    * @returns `{ left: only in this, right: only in other, both: in both }`
    */
-  diff(other: Collection): {
-    left: Collection;
-    right: Collection;
-    both: Collection;
+  diff<OtherData = Data>(
+    other: Collection<NodeData, EdgeData, OtherData>,
+  ): {
+    left: Collection<NodeData, EdgeData, Data>;
+    right: Collection<NodeData, EdgeData, OtherData>;
+    both: Collection<NodeData, EdgeData, Data>;
   } {
     return filteringImpl.diff(this, other);
   }
@@ -1068,7 +1107,12 @@ export class Collection<
    * @returns the final accumulator
    */
   reduce<T>(
-    fn: (acc: T, ele: Collection, i: number, eles: Collection) => T,
+    fn: (
+      acc: T,
+      ele: Collection<NodeData, EdgeData, Data>,
+      i: number,
+      eles: Collection<NodeData, EdgeData, Data>,
+    ) => T,
     initial: T,
   ): T {
     return filteringImpl.reduce(this, fn, initial);
@@ -1083,9 +1127,13 @@ export class Collection<
    *   when the collection is empty
    */
   max(
-    valFn: (ele: Collection, i: number, eles: Collection) => number,
+    valFn: (
+      ele: Collection<NodeData, EdgeData, Data>,
+      i: number,
+      eles: Collection<NodeData, EdgeData, Data>,
+    ) => number,
     thisArg?: unknown,
-  ): { value: number; ele: Collection | undefined } {
+  ): { value: number; ele: Collection<NodeData, EdgeData, Data> | undefined } {
     return filteringImpl._extremum(this, valFn, thisArg, 1);
   }
 
@@ -1098,9 +1146,13 @@ export class Collection<
    *   when the collection is empty
    */
   min(
-    valFn: (ele: Collection, i: number, eles: Collection) => number,
+    valFn: (
+      ele: Collection<NodeData, EdgeData, Data>,
+      i: number,
+      eles: Collection<NodeData, EdgeData, Data>,
+    ) => number,
     thisArg?: unknown,
-  ): { value: number; ele: Collection | undefined } {
+  ): { value: number; ele: Collection<NodeData, EdgeData, Data> | undefined } {
     return filteringImpl._extremum(this, valFn, thisArg, -1);
   }
 
@@ -1169,7 +1221,7 @@ export class Collection<
    *   `( ele, i ) => ( { x, y } )`
    * @returns this collection, for chaining
    */
-  positions(pos: Position | ElePositionFn): this {
+  positions(pos: Position | ElePositionFn<NodeData, EdgeData, Data>): this {
     return this._positions(pos, false);
   }
 
@@ -1180,7 +1232,9 @@ export class Collection<
    * @returns this collection, for chaining
    * @internal
    */
-  silentPositions(pos: Position | ElePositionFn): this {
+  silentPositions(
+    pos: Position | ElePositionFn<NodeData, EdgeData, Data>,
+  ): this {
     return this._positions(pos, true);
   }
 
@@ -1407,26 +1461,41 @@ export class Collection<
    *
    * **Typed** (round 140) when the instance was made with
    * `cytoscape<NodeData, EdgeData>( … )`: a key must name a field of the
-   * collection's shape (or a first-class one), and the read answers that
-   * field's type.  Untyped, every form keeps its pre-140 type — any key,
-   * an `unknown` read.
+   * collection's shape (or a first-class one), the read answers that
+   * field's type, and a write takes it.  A mixed collection's shape is
+   * the union, whose keys are the fields the two share.  Untyped, every
+   * form keeps its pre-140 type — any key, an `unknown` read.
    *
-   * @param key — omit it (read the first element's whole object), a key
-   *   (read it), or an object of keys to merge (write)
-   * @param value — with a string key: the value to write; omitting it
-   *   reads the key, and an explicit `undefined` clears it
-   * @returns the read value, or this collection when writing
+   * With no argument, reads the first element's whole object.
+   *
+   * @returns the first element's data — the collection's shape when
+   *   typed — or undefined when the collection is empty
    */
-  data(): DataOf<Data>;
+  data(): IfTyped<NodeData, EdgeData, Data | undefined, unknown>;
+  /**
+   * Read a first-class field of the first element (see the whole-object
+   * form): `'id'`, `'source'`/`'target'` on an edge, `'parent'` on a
+   * child node.
+   *
+   * @param key — the first-class field to read
+   * @returns the id it holds, or undefined when there is none or the
+   *   collection is empty
+   */
+  data(
+    key: FirstClassKey,
+  ): IfTyped<NodeData, EdgeData, string | undefined, unknown>;
   /**
    * Read one data key of the first element (see the whole-object form).
    *
-   * @param key — the key to read; `'id'` (and `'source'`/`'target'` on
-   *   edges, `'parent'` on nodes) read the first-class fields
+   * @param key — the key to read; typed, one of the collection's fields
+   *   (a mixed collection's *common* fields — narrow it with `nodes()` or
+   *   `edges()` to read the rest)
    * @returns the value, or undefined when the key is unset or the
    *   collection is empty
    */
-  data<K extends DataKey<Data>>(key: K): DataValue<Data, K>;
+  data<K extends keyof Data & string>(
+    key: K,
+  ): IfTyped<NodeData, EdgeData, Data[K] | undefined, unknown>;
   /**
    * Write one data key on every element (see the whole-object form).
    *
@@ -1434,9 +1503,12 @@ export class Collection<
    * @param value — the value; an explicit `undefined` clears the key
    * @returns this collection, for chaining
    * @throws when `key` is `'id'`, or `'source'`/`'target'` on an edge —
-   *   first-class fields are immutable
+   *   first-class fields are immutable (typed, not a key it accepts)
    */
-  data<K extends DataKey<Data>>(key: K, value: DataValue<Data, K>): this;
+  data<K extends keyof Data & string>(
+    key: K,
+    value: IfTyped<NodeData, EdgeData, Data[K], unknown>,
+  ): this;
   /**
    * Merge keys into every element's data (see the whole-object form).
    *
@@ -1445,7 +1517,9 @@ export class Collection<
    * @throws when the patch names `'id'`, or `'source'`/`'target'` on an
    *   edge — first-class fields are immutable
    */
-  data(patch: DataPatch<Data>): this;
+  data(
+    patch: IfTyped<NodeData, EdgeData, Partial<Data>, Record<string, unknown>>,
+  ): this;
   data(key?: string | Record<string, unknown>, value?: unknown): unknown {
     // arity via arguments.length, not a rest array — the rest form
     // allocated per call on the hottest read path (round 62.6)
@@ -2406,7 +2480,7 @@ export class Collection<
    *   returned refs are dead by construction (v4 removals are terminal),
    *   so only their cached `id()`/`group()` still read
    */
-  remove(): Collection {
+  remove(): Collection<NodeData, EdgeData, Data> {
     return manipulationImpl.remove(this);
   }
 
@@ -2439,7 +2513,7 @@ export class Collection<
    *
    * @returns the source node, or an empty collection for a non-edge
    */
-  source(): Collection {
+  source(): Collection<NodeData, EdgeData, NodeData> {
     return traversalImpl._endpoint(this, 0);
   }
 
@@ -2448,7 +2522,7 @@ export class Collection<
    *
    * @returns the target node, or an empty collection for a non-edge
    */
-  target(): Collection {
+  target(): Collection<NodeData, EdgeData, NodeData> {
     return traversalImpl._endpoint(this, 1);
   }
 
@@ -2457,7 +2531,7 @@ export class Collection<
    *
    * @returns the source nodes
    */
-  sources(): Collection {
+  sources(): Collection<NodeData, EdgeData, NodeData> {
     return traversalImpl._endpoints(this, 0);
   }
 
@@ -2466,7 +2540,7 @@ export class Collection<
    *
    * @returns the target nodes
    */
-  targets(): Collection {
+  targets(): Collection<NodeData, EdgeData, NodeData> {
     return traversalImpl._endpoints(this, 1);
   }
 
@@ -2479,7 +2553,9 @@ export class Collection<
    *   the result
    * @returns the incident edges
    */
-  connectedEdges(criterion?: FilterLike): Collection {
+  connectedEdges(
+    criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, EdgeData> {
     return traversalImpl.connectedEdges(this, criterion);
   }
 
@@ -2490,7 +2566,9 @@ export class Collection<
    *   the result
    * @returns the endpoint nodes
    */
-  connectedNodes(criterion?: FilterLike): Collection {
+  connectedNodes(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return traversalImpl.connectedNodes(this, criterion);
   }
 
@@ -2503,7 +2581,9 @@ export class Collection<
    *   the result
    * @returns the outgoing edges and their target nodes
    */
-  outgoers(criterion?: FilterLike): Collection {
+  outgoers(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return traversalImpl._goers(this, 'out', criterion);
   }
 
@@ -2516,7 +2596,9 @@ export class Collection<
    *   the result
    * @returns the incoming edges and their source nodes
    */
-  incomers(criterion?: FilterLike): Collection {
+  incomers(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return traversalImpl._goers(this, 'in', criterion);
   }
 
@@ -2530,7 +2612,9 @@ export class Collection<
    * @returns the neighbouring edges and nodes
    * @see Collection#closedNeighborhood to include these nodes
    */
-  neighborhood(criterion?: FilterLike): Collection {
+  neighborhood(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return traversalImpl.neighborhood(this, criterion);
   }
 
@@ -2543,7 +2627,9 @@ export class Collection<
    *   the result
    * @returns the closed neighbourhood
    */
-  closedNeighborhood(criterion?: FilterLike): Collection {
+  closedNeighborhood(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     const eles = this.neighborhood().union(this.nodes());
 
     return criterion == null ? eles : eles.filter(criterion);
@@ -2558,7 +2644,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the immediate parents
    */
-  parent(criterion?: FilterLike): Collection {
+  parent(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl.parent(this, criterion);
   }
 
@@ -2569,7 +2657,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the ancestors, nearest first
    */
-  parents(criterion?: FilterLike): Collection {
+  parents(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl.parents(this, criterion);
   }
 
@@ -2581,7 +2671,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the children
    */
-  children(criterion?: FilterLike): Collection {
+  children(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl.children(this, criterion);
   }
 
@@ -2592,7 +2684,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the descendants
    */
-  descendants(criterion?: FilterLike): Collection {
+  descendants(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl.descendants(this, criterion);
   }
 
@@ -2603,7 +2697,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the siblings
    */
-  siblings(criterion?: FilterLike): Collection {
+  siblings(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     const eles = this.parent().children().difference(this);
 
     return criterion == null ? eles : eles.filter(criterion);
@@ -2615,7 +2711,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the parentless nodes
    */
-  orphans(criterion?: FilterLike): Collection {
+  orphans(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl._byParentedness(this, false, criterion);
   }
 
@@ -2625,7 +2723,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the parented nodes
    */
-  nonorphans(criterion?: FilterLike): Collection {
+  nonorphans(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl._byParentedness(this, true, criterion);
   }
 
@@ -2636,7 +2736,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the shared ancestors, closest first
    */
-  commonAncestors(criterion?: FilterLike): Collection {
+  commonAncestors(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl.commonAncestors(this, criterion);
   }
 
@@ -2706,7 +2808,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the source nodes
    */
-  roots(criterion?: FilterLike): Collection {
+  roots(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl._dagExtremity(this, 'in', criterion);
   }
 
@@ -2716,7 +2820,9 @@ export class Collection<
    *   the result, exactly as `filter()` takes it
    * @returns the sink nodes
    */
-  leaves(criterion?: FilterLike): Collection {
+  leaves(
+    criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, NodeData> {
     return hierarchyImpl._dagExtremity(this, 'out', criterion);
   }
 
@@ -2729,7 +2835,9 @@ export class Collection<
    *   the result
    * @returns the reachable edges and nodes
    */
-  successors(criterion?: FilterLike): Collection {
+  successors(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return hierarchyImpl._dagAllHops(this, 'out', criterion);
   }
 
@@ -2741,7 +2849,9 @@ export class Collection<
    *   the result
    * @returns the edges and nodes of the backward closure
    */
-  predecessors(criterion?: FilterLike): Collection {
+  predecessors(
+    criterion?: FilterLike<NodeData, EdgeData>,
+  ): Collection<NodeData, EdgeData> {
     return hierarchyImpl._dagAllHops(this, 'in', criterion);
   }
 
@@ -2755,7 +2865,7 @@ export class Collection<
    *   selector string)
    * @returns the connecting edges
    */
-  edgesWith(others: Collection): Collection {
+  edgesWith(others: Collection): Collection<NodeData, EdgeData, EdgeData> {
     assertCollection(others, 'edgesWith', this._cy);
 
     return traversalImpl._edgesWith(this, others, false);
@@ -2768,7 +2878,7 @@ export class Collection<
    * @param others — the target-side nodes
    * @returns the directed connecting edges
    */
-  edgesTo(others: Collection): Collection {
+  edgesTo(others: Collection): Collection<NodeData, EdgeData, EdgeData> {
     assertCollection(others, 'edgesTo', this._cy);
 
     return traversalImpl._edgesWith(this, others, true);
@@ -2783,7 +2893,9 @@ export class Collection<
    *   the result
    * @returns the parallel edges
    */
-  parallelEdges(criterion?: FilterLike): Collection {
+  parallelEdges(
+    criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, EdgeData> {
     return traversalImpl._parallelEdges(this, false, criterion);
   }
 
@@ -2795,7 +2907,9 @@ export class Collection<
    *   the result
    * @returns the codirected edges
    */
-  codirectedEdges(criterion?: FilterLike): Collection {
+  codirectedEdges(
+    criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>,
+  ): Collection<NodeData, EdgeData, EdgeData> {
     return traversalImpl._parallelEdges(this, true, criterion);
   }
 
@@ -2809,7 +2923,7 @@ export class Collection<
    * @param root — restricts the seed nodes; omit to seed from every node
    * @returns one collection per component
    */
-  components(root?: Collection | null): Collection[] {
+  components(root?: Collection | null): Collection<NodeData, EdgeData>[] {
     return traversalImpl.components(this, root);
   }
 
@@ -2822,7 +2936,7 @@ export class Collection<
    *   over the whole graph rather than within this collection; an empty
    *   collection when this one is empty
    */
-  component(): Collection {
+  component(): Collection<NodeData, EdgeData> {
     if (this._first() == null) {
       return this._spawn([]);
     }
@@ -2842,7 +2956,11 @@ export class Collection<
    * @returns the hypothetical box, in model coordinates
    * @internal
    */
-  boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
+  boundingBoxAt(
+    fn:
+      | Position
+      | ((node: Collection<NodeData, EdgeData, Data>, i: number) => Position),
+  ): {
     x1: number;
     y1: number;
     x2: number;
@@ -2890,7 +3008,7 @@ export class Collection<
   layoutPositions(
     layout: object,
     options: LayoutBaseOptions,
-    fn: (node: Collection, i: number) => Position,
+    fn: (node: Collection<NodeData, EdgeData, Data>, i: number) => Position,
   ): this {
     return layoutImpl.layoutPositions(this, layout, options, fn) as this;
   }
@@ -2996,7 +3114,7 @@ export class Collection<
    * @param weight — `( edge ) => number`; defaults to unit weights
    * @returns the spanning forest's nodes and edges
    */
-  kruskal(weight?: WeightFn): Collection {
+  kruskal(weight?: WeightFn): Collection<NodeData, EdgeData> {
     return kruskalImpl(this, weight);
   }
 
@@ -3424,7 +3542,9 @@ export class Collection<
    *   unavailable in this environment, or `executor: 'workers'` is
    *   given a custom `distance` function
    */
-  kMeans(options?: KClusteringOptions): AlgoRun<Collection[]> {
+  kMeans(
+    options?: KClusteringOptions,
+  ): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]> {
     return this._cy._trackRun(kMeansImpl(this, options));
   }
 
@@ -3441,7 +3561,9 @@ export class Collection<
    *   unavailable, if `executor: 'workers'` is given a custom
    *   `distance` function, or if `k` exceeds the node count
    */
-  kMedoids(options?: KClusteringOptions): AlgoRun<Collection[]> {
+  kMedoids(
+    options?: KClusteringOptions,
+  ): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]> {
     return this._cy._trackRun(kMedoidsImpl(this, options));
   }
 
@@ -3485,7 +3607,7 @@ export class Collection<
    */
   hierarchicalClustering(
     options?: HierarchicalClusteringOptions,
-  ): AlgoRun<Collection[]> {
+  ): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]> {
     return this._cy._trackRun(hierarchicalClusteringImpl(this, options));
   }
 
@@ -3507,7 +3629,9 @@ export class Collection<
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  markovClustering(options?: MarkovClusteringOptions): AlgoRun<Collection[]> {
+  markovClustering(
+    options?: MarkovClusteringOptions,
+  ): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]> {
     return this._cy._trackRun(markovClusteringImpl(this, options));
   }
 
@@ -3531,7 +3655,7 @@ export class Collection<
    */
   affinityPropagation(
     options?: AffinityPropagationOptions,
-  ): AlgoRun<Collection[]> {
+  ): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]> {
     return this._cy._trackRun(affinityPropagationImpl(this, options));
   }
 
@@ -3686,7 +3810,7 @@ export class Collection<
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  on(events: string, callback?: EventHandler): this {
+  on(events: string, callback?: EventHandler<NodeData, EdgeData>): this {
     for (const ref of this._refs) {
       this._cy._emitter.on(events, refQualifier(ref), callback);
     }
@@ -3703,7 +3827,7 @@ export class Collection<
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  one(events: string, callback?: EventHandler): this {
+  one(events: string, callback?: EventHandler<NodeData, EdgeData>): this {
     for (const ref of this._refs) {
       this._cy._emitter.one(events, refQualifier(ref), callback);
     }
@@ -3721,7 +3845,7 @@ export class Collection<
    *   handler these elements have for `events`
    * @returns this collection, for chaining
    */
-  off(events: string, callback?: EventHandler): this {
+  off(events: string, callback?: EventHandler<NodeData, EdgeData>): this {
     for (const ref of this._refs) {
       this._cy._emitter.off(events, refQualifier(ref), callback);
     }
@@ -3762,7 +3886,7 @@ export class Collection<
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn(events: string): Promise<Event> {
+  promiseOn(events: string): Promise<Event<NodeData, EdgeData>> {
     return new Promise((resolve) => {
       this.one(events, (event) => resolve(event));
     });

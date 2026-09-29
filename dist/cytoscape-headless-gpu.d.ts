@@ -741,6 +741,45 @@ interface Position {
   y: number;
 }
 //#endregion
+//#region src/data-typing.d.mts
+/**
+ * The default of every data type parameter: "no generic was given".  It
+ * is `any` so that the untyped instantiations (`Core`, `Collection`) and
+ * the typed ones assign to each other both ways — the store's internals
+ * build bare collections and hand them out through typed signatures —
+ * and the helpers below turn it back into each position's pre-140 type,
+ * so no untyped read ever surfaces as `any`.
+ */
+type Untyped = any;
+/**
+ * True when `T` is `any` — the untyped default (a generic was not given).
+ * `0 extends 1 & T` holds for `any` alone.
+ */
+type IsUntyped<T> = 0 extends 1 & T ? true : false;
+/**
+ * The default `EdgeData` given the `NodeData`: untyped when the nodes are
+ * (no generic at all), and a free-form record when only the nodes were
+ * typed — so `cytoscape<MyNode>()` types its nodes and leaves its edges'
+ * keys open, rather than an untyped edge shape turning the whole instance
+ * untyped (see {@link IfTyped}).
+ */
+type DefaultEdgeData<NodeData> = IsUntyped<NodeData> extends true ? Untyped : Record<string, unknown>;
+/**
+ * `T` for a typed instance, `U` (the pre-140 type) for an untyped one.
+ * The test is on the instance's shapes — both of them, so an instance
+ * whose `NodeData` is `any` is untyped whatever its `EdgeData`.
+ */
+type IfTyped<NodeData, EdgeData, T, U> = IsUntyped<NodeData | EdgeData> extends true ? U : T;
+/** The first-class keys every element answers, synthesized on read. */
+type FirstClassKey = 'id' | 'source' | 'target' | 'parent';
+/**
+ * The keys a field reference in a sheet or a query may name: the shape's
+ * string keys (either shape's, for a union) plus the first-class ones.
+ * Untyped: any string.  Used by the declarative forms only, which are not
+ * narrowed per collection, so testing `Data` itself is safe here.
+ */
+type DataKey<Data> = IsUntyped<Data> extends true ? string : (Data extends unknown ? keyof Data & string : never) | FirstClassKey;
+//#endregion
 //#region src/public-types.d.mts
 interface ElementData {
   id?: string;
@@ -754,10 +793,35 @@ interface ElementData {
   /** anything else lands in the data() sidecar */
   [key: string]: unknown;
 }
-interface ElementDefinition {
+/**
+ * The first-class fields a definition's `data` may carry beside the
+ * application's own (round 140): the typed counterpart of
+ * {@link ElementData}'s named members, without its index signature.
+ */
+interface ElementFields {
+  id?: string;
+  /** edges only; required for edges */
+  source?: string;
+  /** edges only; required for edges */
+  target?: string;
+  /** nodes only: the parent node's id */
+  parent?: string | number;
+}
+/**
+ * A definition's `data`: {@link ElementData} untyped (any key), and the
+ * application's shape plus the first-class fields typed (round 140) — so
+ * a misspelt key is an excess-property error.
+ */
+type DefinitionData<Data = Untyped> = IsUntyped<Data> extends true ? ElementData : Data & ElementFields;
+/**
+ * One element, v3-style.  Typed by `Data` (round 140) — the node or edge
+ * shape given to `cytoscape<NodeData, EdgeData>( … )` — and untyped by
+ * default.
+ */
+interface ElementDefinition<Data = Untyped> {
   /** inferred from `data.source`/`data.target` when omitted */
   group?: GroupName;
-  data?: ElementData;
+  data?: DefinitionData<Data>;
   /** nodes only */
   position?: Position;
   selected?: boolean;
@@ -767,9 +831,14 @@ interface ElementDefinition {
   /** dragging this element pans the graph instead (default: true for edges, false for nodes) */
   pannable?: boolean;
 }
-type ElementsDefinition = ElementDefinition[] | {
-  nodes?: ElementDefinition[];
-  edges?: ElementDefinition[];
+/**
+ * Many elements: a flat array (each def's group inferred), or the
+ * `{ nodes, edges }` map, whose buckets are typed by the node and edge
+ * shapes respectively (round 140).
+ */
+type ElementsDefinition<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = ElementDefinition<NodeData | EdgeData>[] | {
+  nodes?: ElementDefinition<NodeData>[];
+  edges?: ElementDefinition<EdgeData>[];
 };
 /**
  * Ids as bytes: one UTF-8 blob + prefix byte offsets (length count + 1).
@@ -877,7 +946,7 @@ interface ColumnarElements {
  * `cytoscape.serializeElements` (one little-endian ArrayBuffer +
  * header — fetch it as binary and pass it straight in; no JSON parse).
  */
-type ElementsInput = ElementsDefinition | ElementDefinition | ColumnarElements | ArrayBuffer | ArrayBufferView;
+type ElementsInput<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = ElementsDefinition<NodeData, EdgeData> | ElementDefinition<NodeData | EdgeData> | ColumnarElements | ArrayBuffer | ArrayBufferView;
 /**
  * A data-driven style mapping: a plain serializable object appearing as a
  * prop value in the sheet.  `{ data: key }` alone is a passthrough (the
@@ -894,9 +963,10 @@ type ElementsInput = ElementsDefinition | ElementDefinition | ColumnarElements |
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
  * `fallback`, else the channel default.
  */
-interface Mapper {
-  /** data() sidecar key to read */
-  data: string;
+interface Mapper<Data = Untyped> {
+  /** data() sidecar key to read — typed (round 140), one of the group's
+   * fields */
+  data: DataKey<Data>;
   scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog' | 'diverging' | 'ordinal' | 'threshold' | 'quantize';
   /** ascending numeric stops (categories for 'ordinal'); 'auto'/omitted = live data extent */
   domain?: (string | number)[] | 'auto';
@@ -923,10 +993,11 @@ interface Mapper {
  * supports all.  Missing data fails every comparison (so an unset key
  * never matches).
  */
-interface Condition {
+interface Condition<Data = Untyped> {
   /** the data key to compare ('id' reads the first-class id); omitted
-   * for the structural forms below */
-  data?: string;
+   * for the structural forms below.  Typed (round 140), one of the
+   * group's fields */
+  data?: DataKey<Data>;
   eq?: string | number | boolean;
   ne?: string | number | boolean;
   lt?: number;
@@ -981,8 +1052,8 @@ interface Condition {
   emphasized?: boolean;
 }
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
-interface CaseClause {
-  when: Condition | Condition[];
+interface CaseClause<Data = Untyped> {
+  when: Condition<Data> | Condition<Data>[];
   then: string | number;
 }
 /**
@@ -992,16 +1063,16 @@ interface CaseClause {
  * replacement for `(ele) => cond ? a : b` style functions, and the
  * natural form for typed edges (`type == 'activation' → ...`).
  */
-interface CaseMapper {
-  case: CaseClause[];
+interface CaseMapper<Data = Untyped> {
+  case: CaseClause<Data>[];
   else?: string | number;
   /** value for missing/unmappable data (defaults to `else` then the channel default) */
   fallback?: string | number;
 }
 /** Any data-driven style value: a scale mapper or a conditional. */
-type MapperSpec = Mapper | CaseMapper;
+type MapperSpec<Data = Untyped> = Mapper<Data> | CaseMapper<Data>;
 /** A style prop value: a constant, or a mapper object. */
-type StylePropValue = string | number | MapperSpec;
+type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
 /**
  * Style props for one element or group; names are kebab-case or
  * camelCase.  Values are constants, scale mappers ({@link Mapper}), or
@@ -1013,7 +1084,7 @@ type StylePropValue = string | number | MapperSpec;
  * props: line-color, width, opacity, source/target-arrow-shape and
  * -color.
  */
-type StyleProps = Record<string, StylePropValue>;
+type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key
  * is a props object whose values are constants or mapper objects; all
@@ -1023,9 +1094,11 @@ type StyleProps = Record<string, StylePropValue>;
  * Everything stays fresh automatically: a data write re-derives the
  * mapped channels of the affected elements (gated on the mapped keys).
  */
-interface Stylesheet {
-  nodes?: StyleProps;
-  edges?: StyleProps;
+interface Stylesheet<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
+  /** node props; typed (round 140), a mapper's field is a node field */
+  nodes?: StyleProps<NodeData>;
+  /** edge props; typed (round 140), a mapper's field is an edge field */
+  edges?: StyleProps<EdgeData>;
   /**
    * Compound-parent overlay (round 14.6): node props that apply to
    * parent nodes on top of the nodes group and v3's `:parent` defaults
@@ -1037,7 +1110,7 @@ interface Stylesheet {
    * their labels — public bb/fit include labels since round 16.4,
    * the auto-bounds derivation deliberately does not).
    */
-  parents?: StyleProps;
+  parents?: StyleProps<NodeData>;
   /**
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
@@ -1787,15 +1860,17 @@ interface CursorMap {
   /** an active box-selection press (default `'crosshair'`) */
   box: string;
 }
-interface CytoscapeOptions {
+interface CytoscapeOptions<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
    * synchronously if `navigator.gpu` is missing.  When omitted, the instance
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: ElementsInput;
-  style?: Stylesheet;
+  /** the initial elements — typed by the instance's shapes (round 140) */
+  elements?: ElementsInput<NodeData, EdgeData>;
+  /** the stylesheet — its field references typed likewise (round 140) */
+  style?: Stylesheet<NodeData, EdgeData>;
   layout?: LayoutOptions;
   zoom?: number;
   pan?: Position;
@@ -1870,7 +1945,7 @@ interface CytoscapeOptions {
  * (TypeScript's excess-property check) and, at run time, a `container`
  * throws `this build has no renderer — import 'cytoscape'`.
  */
-type HeadlessOptions = Omit<CytoscapeOptions, 'container' | 'renderer' | 'pixelRatio' | 'pointerCursors' | 'wheelSensitivity' | 'wheelBehavior' | 'desktopTapThreshold' | 'touchTapThreshold' | 'tapholdDuration' | 'multiClickDebounceTime' | 'boxSelectionEnabled' | 'boxSelectionIncludesLabels' | 'boxSelectionMode' | 'userPanningEnabled' | 'userZoomingEnabled'>;
+type HeadlessOptions<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = Omit<CytoscapeOptions<NodeData, EdgeData>, 'container' | 'renderer' | 'pixelRatio' | 'pointerCursors' | 'wheelSensitivity' | 'wheelBehavior' | 'desktopTapThreshold' | 'touchTapThreshold' | 'tapholdDuration' | 'multiClickDebounceTime' | 'boxSelectionEnabled' | 'boxSelectionIncludesLabels' | 'boxSelectionMode' | 'userPanningEnabled' | 'userZoomingEnabled'>;
 //#endregion
 //#region src/store/id-map.d.mts
 interface IdEntry {
@@ -4017,48 +4092,6 @@ declare class GraphStore implements ModelView {
   };
 }
 //#endregion
-//#region src/data-typing.d.mts
-/**
- * The default of every data type parameter: "no generic was given".  It
- * is `any` so that the untyped instantiations (`Core`, `Collection`) and
- * the typed ones assign to each other both ways — the store's internals
- * build bare collections and hand them out through typed signatures —
- * and the helpers below turn it back into each position's pre-140 type,
- * so no untyped read ever surfaces as `any`.
- */
-type Untyped = any;
-/**
- * True when `T` is `any` — the untyped default (a generic was not given).
- * `0 extends 1 & T` holds for `any` alone.
- */
-type IsUntyped<T> = 0 extends 1 & T ? true : false;
-/**
- * What `data()` reads as a whole object: the application's shape, or
- * `unknown` untyped (today's return).
- */
-type DataOf<D> = IsUntyped<D> extends true ? unknown : D;
-/**
- * The keys a field reference may name: the shape's string keys plus the
- * first-class `'id'` (and, for edges, `'source'`/`'target'`; for nodes
- * `'parent'` — synthesized on read).  Untyped: any string.
- */
-type DataKey<D> = IsUntyped<D> extends true ? string : (D extends unknown ? keyof D & string : never) | FirstClassKey;
-/** The first-class keys every element answers, synthesized on read. */
-type FirstClassKey = 'id' | 'source' | 'target' | 'parent';
-/**
- * The value `data( key )` reads for key `K`: the shape's field type (a
- * union across a mixed collection's shapes), `string` for the first-class
- * `'id'`, and `unknown` untyped.  A read can always miss — an empty
- * collection or a stale handle answers `undefined` — so the field type
- * is widened with it, as today's `unknown` already was.
- */
-type DataValue<D, K> = IsUntyped<D> extends true ? unknown : K extends FirstClassKey ? string | undefined : (D extends unknown ? (K extends keyof D ? D[K] : never) : never) | undefined;
-/**
- * A `data( patch )` write: some of the shape's fields, or any record of
- * keys untyped (today's parameter).
- */
-type DataPatch<D> = IsUntyped<D> extends true ? Record<string, unknown> : Partial<D>;
-//#endregion
 //#region src/animation/animation.d.mts
 /** Options accepted by animate()/animation(). */
 interface AnimateOptions {
@@ -4795,16 +4828,16 @@ interface PatchOptions {
  * source or target) is in both `removed` and `added`, since it was removed
  * and re-added; an element is never in `updated` and either of the others.
  */
-interface PatchDiff {
+interface PatchDiff<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   /** the elements the patch added, nodes before edges, in payload order */
-  added: Collection;
+  added: Collection<NodeData, EdgeData>;
   /** the elements it removed, cascades included (the incident edges and
    * descendants of a removed node); removed elements keep their `id()`
    * and `group()` */
-  removed: Collection;
+  removed: Collection<NodeData, EdgeData>;
   /** the surviving elements it changed — data, position or parent —
    * nodes before edges, in payload order */
-  updated: Collection;
+  updated: Collection<NodeData, EdgeData>;
 }
 //#endregion
 //#region src/core/load.d.mts
@@ -4853,9 +4886,10 @@ type NativeEvent = globalThis.Event;
 /**
  * What an event can target: the core for core-level events (viewport
  * gestures, `layoutstart`, graph `data`), or a one-element collection for
- * element events.
+ * element events.  Typed by the instance's data shapes (round 140),
+ * untyped by default.
  */
-type EventTarget = Core | Collection;
+type EventTarget<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = Core<NodeData, EdgeData> | Collection<NodeData, EdgeData>;
 /** The fields an emit may carry. */
 interface EventProps {
   type?: string;
@@ -4887,13 +4921,13 @@ interface EventProps {
  *
  * @see Core#on for what a name may be, and which names never fire
  */
-declare class Event {
+declare class Event<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
   /** the core for core-level events, the element for element events */
-  target?: EventTarget;
+  target?: EventTarget<NodeData, EdgeData>;
   /** the core the event was raised on */
-  cy?: Core;
+  cy?: Core<NodeData, EdgeData>;
   /** model-space position, on pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` and the viewport */
@@ -4906,7 +4940,7 @@ declare class Event {
    * `loadstop`, whether the load was (round 103) */
   cancelled?: boolean;
   /** on `patch`, what the patch added, removed and updated (round 107) */
-  diff?: PatchDiff;
+  diff?: PatchDiff<NodeData, EdgeData>;
   /** on the load lifecycle events, the chunks and elements so far
    * (round 103) */
   progress?: LoadProgress;
@@ -4957,7 +4991,7 @@ declare class Event {
 //#region src/emitter.d.mts
 /** An event handler.  `this` is the callback context the emitter's options
  * choose — the core, or the phase element during compound bubbling. */
-type EventHandler = (this: unknown, event: Event, ...extraParams: unknown[]) => unknown;
+type EventHandler<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = (this: unknown, event: Event<NodeData, EdgeData>, ...extraParams: unknown[]) => unknown;
 /** A registered listener. */
 interface Listener<TQualifier = unknown> {
   /** the event type, matched whole (no namespace splitting) */
@@ -5073,7 +5107,7 @@ interface DataCondition {
  * paired selectors collapse: `{ selected: false }` is `:unselected`,
  * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
  */
-interface Query {
+interface Query<Data = Untyped> {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
@@ -5103,15 +5137,37 @@ interface Query {
   /** structural (nodes only): has no parent — v3's `:orphan`, and
    * exactly `{ child: false }` */
   orphan?: boolean;
-  /** data-sidecar conditions per key; a bare value means equality */
-  data?: Record<string, DataCondition | string | number | boolean | null>;
+  /** data-sidecar conditions per key; a bare value means equality.
+   * Typed (round 140), the keys are the queried elements' fields. */
+  data?: QueryData<Data>;
 }
+/** A query's `data` block: any key untyped, the shape's keys typed. */
+type QueryData<Data> = IsUntyped<Data> extends true ? Record<string, QueryValue> : { [K in DataKey<Data>]?: QueryValue; };
+/** One key's query: a condition, or a bare value meaning equality. */
+type QueryValue = DataCondition | string | number | boolean | null;
 //#endregion
 //#region src/collection/shared.d.mts
-type EleFilterFn = (ele: Collection, i: number, eles: Collection) => boolean;
-type ElePositionFn = (ele: Collection, i: number) => Position | false | undefined;
-/** A subset criterion: a structured query or a per-element predicate. */
-type FilterLike = Query | EleFilterFn;
+/** A per-element predicate; typed by the collection it filters (round
+ * 140), untyped by default. */
+type EleFilterFn<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>, Data = NodeData | EdgeData> = {
+  bivarianceHack(ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>): boolean;
+}['bivarianceHack'];
+/** A per-element position function (`positions( fn )`); typed as
+ * {@link EleFilterFn} is. */
+type ElePositionFn<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>, Data = NodeData | EdgeData> = {
+  bivarianceHack(ele: Collection<NodeData, EdgeData, Data>, i: number): Position | false | undefined;
+}['bivarianceHack'];
+/**
+ * A subset criterion: a structured query or a per-element predicate —
+ * both typed by the elements they test (round 140), untyped by default.
+ *
+ * `QueryData` is the shape the query's keys come from, `Data` unless
+ * given.  A collection's own subset members (`filter`, `is`, `allAre`)
+ * pass both shapes: `Query<D>` is invariant in `D` (its keys are a
+ * `keyof`), so keying it on the collection's narrowed `Data` would stop
+ * a node collection widening to a mixed one.
+ */
+type FilterLike<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>, Data = NodeData | EdgeData, QueryData = Data> = Query<QueryData> | EleFilterFn<NodeData, EdgeData, Data>;
 //#endregion
 //#region src/collection.d.mts
 /**
@@ -5121,7 +5177,7 @@ type FilterLike = Query | EleFilterFn;
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData | EdgeData> implements Iterable<Collection<NodeData, EdgeData, Data>> {
+declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>, Data = NodeData | EdgeData> implements Iterable<Collection<NodeData, EdgeData, Data>> {
   [index: number]: Collection<NodeData, EdgeData, Data>;
   /** How many elements this collection holds. */
   length: number;
@@ -5227,7 +5283,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   span two cores, so this is also the identity a set operation
    *   against a foreign collection would violate
    */
-  cy(): Core;
+  cy(): Core<NodeData, EdgeData>;
   /**
    * An empty collection in the same core.
    *
@@ -5240,7 +5296,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @throws if called with any argument (v3's building forms are not
    *   ported; the message names the replacements)
    */
-  collection(): Collection;
+  collection(): Collection<NodeData, EdgeData, Data>;
   /**
    * Whether this collection contains an element with the given id.
    *
@@ -5302,7 +5358,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param thisArg — optional receiver for the callback
    * @returns this collection, for chaining
    */
-  forEach(fn: (ele: Collection, i: number, eles: Collection) => void | false, thisArg?: unknown): this;
+  forEach(fn: (ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>) => void | false, thisArg?: unknown): this;
   each: this['forEach'];
   /**
    * Iterate the members (round 75.3): one interned length-1 handle per
@@ -5316,13 +5372,13 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *
    * @returns an iterator over the members' handles
    */
-  [Symbol.iterator](): IterableIterator<Collection>;
+  [Symbol.iterator](): IterableIterator<Collection<NodeData, EdgeData, Data>>;
   /**
    * The elements as a plain array of length-1 collections.
    *
    * @returns a new array of the members
    */
-  toArray(): Collection[];
+  toArray(): Collection<NodeData, EdgeData, Data>[];
   /**
    * A sub-range of the collection, with `Array#slice` semantics
    * (negative indices count from the end).
@@ -5331,7 +5387,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param end — last index, exclusive
    * @returns the sub-range as a new collection
    */
-  slice(start?: number, end?: number): Collection;
+  slice(start?: number, end?: number): Collection<NodeData, EdgeData, Data>;
   /**
    * A copy sorted by a comparator.  Note that sort order is a property
    * of the *collection*, not of drawing: v4 draw order is structural and
@@ -5341,26 +5397,26 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   non-function is ignored and returns this collection unchanged
    * @returns a new, sorted collection
    */
-  sort(sortFn: (a: Collection, b: Collection) => number): Collection;
+  sort(sortFn: (a: Collection<NodeData, EdgeData, Data>, b: Collection<NodeData, EdgeData, Data>) => number): Collection<NodeData, EdgeData, Data>;
   /**
    * The element at an index, as a length-1 collection.
    *
    * @param i — the index
    * @returns that element, or an empty collection when out of range
    */
-  eq(i: number): Collection;
+  eq(i: number): Collection<NodeData, EdgeData, Data>;
   /**
    * The first element, as a length-1 collection.
    *
    * @returns the first element, or an empty collection
    */
-  first(): Collection;
+  first(): Collection<NodeData, EdgeData, Data>;
   /**
    * The last element, as a length-1 collection.
    *
    * @returns the last element, or an empty collection
    */
-  last(): Collection;
+  last(): Collection<NodeData, EdgeData, Data>;
   /**
    * Map each element through `fn` into a plain array.
    *
@@ -5368,7 +5424,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param thisArg — optional receiver for the callback
    * @returns an array of the results
    */
-  map<T>(fn: (ele: Collection, i: number, eles: Collection) => T, thisArg?: unknown): T[];
+  map<T>(fn: (ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>) => T, thisArg?: unknown): T[];
   /**
    * Whether any element satisfies the predicate.  Short-circuits.
    *
@@ -5376,7 +5432,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param thisArg — optional receiver for the callback
    * @returns true when at least one element matches
    */
-  some(fn: EleFilterFn, thisArg?: unknown): boolean;
+  some(fn: EleFilterFn<NodeData, EdgeData, Data>, thisArg?: unknown): boolean;
   /**
    * Whether every element satisfies the predicate.  Short-circuits, and
    * is vacuously true for an empty collection.
@@ -5385,7 +5441,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param thisArg — optional receiver for the callback
    * @returns true when all elements match
    */
-  every(fn: EleFilterFn, thisArg?: unknown): boolean;
+  every(fn: EleFilterFn<NodeData, EdgeData, Data>, thisArg?: unknown): boolean;
   /**
    * The first element's id.  Cached on the handle, so it stays readable
    * after the element is removed.
@@ -5496,7 +5552,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   predicate (there are no selector strings in v4)
    * @returns true when all elements match
    */
-  allAre(criterion: FilterLike): boolean;
+  allAre(criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>): boolean;
   /**
    * Whether any element matches the criterion.
    *
@@ -5504,14 +5560,14 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   predicate
    * @returns true when at least one element matches
    */
-  is(criterion: FilterLike): boolean;
+  is(criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>): boolean;
   /**
    * The union of the two collections, deduped.
    *
    * @param other — the collection to add
    * @returns a new collection holding both sets
    */
-  union(other: Collection): Collection;
+  union<OtherData = Data>(other: Collection<NodeData, EdgeData, OtherData>): Collection<NodeData, EdgeData, Data | OtherData>;
   u: this['union'];
   or: this['union'];
   add: this['union'];
@@ -5522,7 +5578,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param other — the collection to subtract
    * @returns a new collection
    */
-  difference(other: Collection): Collection;
+  difference(other: Collection): Collection<NodeData, EdgeData, Data>;
   not: this['difference'];
   subtract: this['difference'];
   unmerge: this['difference'];
@@ -5533,7 +5589,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param other — the collection to intersect with
    * @returns a new collection
    */
-  intersection(other: Collection): Collection;
+  intersection(other: Collection): Collection<NodeData, EdgeData, Data>;
   intersect: this['intersection'];
   and: this['intersection'];
   /**
@@ -5542,7 +5598,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param other — the other collection
    * @returns a new collection
    */
-  symmetricDifference(other: Collection): Collection;
+  symmetricDifference<OtherData = Data>(other: Collection<NodeData, EdgeData, OtherData>): Collection<NodeData, EdgeData, Data | OtherData>;
   symdiff: this['symmetricDifference'];
   xor: this['symmetricDifference'];
   /**
@@ -5561,21 +5617,21 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @throws if a query object carries an unknown key — a typo must not
    *   silently match everything
    */
-  filter(criterion: FilterLike, thisArg?: unknown): Collection;
+  filter(criterion: FilterLike<NodeData, EdgeData, Data, NodeData | EdgeData>, thisArg?: unknown): Collection<NodeData, EdgeData, Data>;
   /**
    * The nodes in this collection, optionally filtered.
    *
    * @param criterion — a query object or predicate; omit for all nodes
    * @returns a new collection of nodes
    */
-  nodes(criterion?: FilterLike): Collection;
+  nodes(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The edges in this collection, optionally filtered.
    *
    * @param criterion — a query object or predicate; omit for all edges
    * @returns a new collection of edges
    */
-  edges(criterion?: FilterLike): Collection;
+  edges(criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * Find a member by id.  This is a linear scan of the collection; use
    * `cy.$id( id )` for the O(1) whole-graph index.
@@ -5583,7 +5639,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param id — the element id
    * @returns a collection of one element, or an empty collection
    */
-  getElementById(id: string): Collection;
+  getElementById(id: string): Collection<NodeData, EdgeData, Data>;
   /**
    * All elements of the graph not in this collection.
    *
@@ -5591,7 +5647,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   enclosing collection — which is what the `absolute` in the name is
    *   distinguishing
    */
-  absoluteComplement(): Collection;
+  absoluteComplement(): Collection<NodeData, EdgeData>;
   complement: this['absoluteComplement'];
   abscomp: this['absoluteComplement'];
   /**
@@ -5600,10 +5656,10 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param other — the collection to compare with
    * @returns `{ left: only in this, right: only in other, both: in both }`
    */
-  diff(other: Collection): {
-    left: Collection;
-    right: Collection;
-    both: Collection;
+  diff<OtherData = Data>(other: Collection<NodeData, EdgeData, OtherData>): {
+    left: Collection<NodeData, EdgeData, Data>;
+    right: Collection<NodeData, EdgeData, OtherData>;
+    both: Collection<NodeData, EdgeData, Data>;
   };
   /**
    * Fold the collection into a single value.
@@ -5613,7 +5669,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   `Array#reduce`)
    * @returns the final accumulator
    */
-  reduce<T>(fn: (acc: T, ele: Collection, i: number, eles: Collection) => T, initial: T): T;
+  reduce<T>(fn: (acc: T, ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>) => T, initial: T): T;
   /**
    * The element maximizing `valFn`, with its value.
    *
@@ -5622,9 +5678,9 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @returns `{ value, ele }`, or `{ value: -Infinity, ele: undefined }`
    *   when the collection is empty
    */
-  max(valFn: (ele: Collection, i: number, eles: Collection) => number, thisArg?: unknown): {
+  max(valFn: (ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>) => number, thisArg?: unknown): {
     value: number;
-    ele: Collection | undefined;
+    ele: Collection<NodeData, EdgeData, Data> | undefined;
   };
   /**
    * The element minimizing `valFn`, with its value.
@@ -5634,9 +5690,9 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @returns `{ value, ele }`, or `{ value: Infinity, ele: undefined }`
    *   when the collection is empty
    */
-  min(valFn: (ele: Collection, i: number, eles: Collection) => number, thisArg?: unknown): {
+  min(valFn: (ele: Collection<NodeData, EdgeData, Data>, i: number, eles: Collection<NodeData, EdgeData, Data>) => number, thisArg?: unknown): {
     value: number;
-    ele: Collection | undefined;
+    ele: Collection<NodeData, EdgeData, Data> | undefined;
   };
   /**
    * Get or set the first element's model-space position (nodes only).
@@ -5664,7 +5720,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   `( ele, i ) => ( { x, y } )`
    * @returns this collection, for chaining
    */
-  positions(pos: Position | ElePositionFn): this;
+  positions(pos: Position | ElePositionFn<NodeData, EdgeData, Data>): this;
   modelPositions: this['positions'];
   points: this['positions'];
   /**
@@ -5817,26 +5873,37 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *
    * **Typed** (round 140) when the instance was made with
    * `cytoscape<NodeData, EdgeData>( … )`: a key must name a field of the
-   * collection's shape (or a first-class one), and the read answers that
-   * field's type.  Untyped, every form keeps its pre-140 type — any key,
-   * an `unknown` read.
+   * collection's shape (or a first-class one), the read answers that
+   * field's type, and a write takes it.  A mixed collection's shape is
+   * the union, whose keys are the fields the two share.  Untyped, every
+   * form keeps its pre-140 type — any key, an `unknown` read.
    *
-   * @param key — omit it (read the first element's whole object), a key
-   *   (read it), or an object of keys to merge (write)
-   * @param value — with a string key: the value to write; omitting it
-   *   reads the key, and an explicit `undefined` clears it
-   * @returns the read value, or this collection when writing
+   * With no argument, reads the first element's whole object.
+   *
+   * @returns the first element's data — the collection's shape when
+   *   typed — or undefined when the collection is empty
    */
-  data(): DataOf<Data>;
+  data(): IfTyped<NodeData, EdgeData, Data | undefined, unknown>;
+  /**
+   * Read a first-class field of the first element (see the whole-object
+   * form): `'id'`, `'source'`/`'target'` on an edge, `'parent'` on a
+   * child node.
+   *
+   * @param key — the first-class field to read
+   * @returns the id it holds, or undefined when there is none or the
+   *   collection is empty
+   */
+  data(key: FirstClassKey): IfTyped<NodeData, EdgeData, string | undefined, unknown>;
   /**
    * Read one data key of the first element (see the whole-object form).
    *
-   * @param key — the key to read; `'id'` (and `'source'`/`'target'` on
-   *   edges, `'parent'` on nodes) read the first-class fields
+   * @param key — the key to read; typed, one of the collection's fields
+   *   (a mixed collection's *common* fields — narrow it with `nodes()` or
+   *   `edges()` to read the rest)
    * @returns the value, or undefined when the key is unset or the
    *   collection is empty
    */
-  data<K extends DataKey<Data>>(key: K): DataValue<Data, K>;
+  data<K extends keyof Data & string>(key: K): IfTyped<NodeData, EdgeData, Data[K] | undefined, unknown>;
   /**
    * Write one data key on every element (see the whole-object form).
    *
@@ -5844,9 +5911,9 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param value — the value; an explicit `undefined` clears the key
    * @returns this collection, for chaining
    * @throws when `key` is `'id'`, or `'source'`/`'target'` on an edge —
-   *   first-class fields are immutable
+   *   first-class fields are immutable (typed, not a key it accepts)
    */
-  data<K extends DataKey<Data>>(key: K, value: DataValue<Data, K>): this;
+  data<K extends keyof Data & string>(key: K, value: IfTyped<NodeData, EdgeData, Data[K], unknown>): this;
   /**
    * Merge keys into every element's data (see the whole-object form).
    *
@@ -5855,7 +5922,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @throws when the patch names `'id'`, or `'source'`/`'target'` on an
    *   edge — first-class fields are immutable
    */
-  data(patch: DataPatch<Data>): this;
+  data(patch: IfTyped<NodeData, EdgeData, Partial<Data>, Record<string, unknown>>): this;
   /**
    * Remove sidecar data keys.
    *
@@ -6415,7 +6482,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   returned refs are dead by construction (v4 removals are terminal),
    *   so only their cached `id()`/`group()` still read
    */
-  remove(): Collection;
+  remove(): Collection<NodeData, EdgeData, Data>;
   /**
    * Move elements in place, keeping slot, id and data: `{ parent }`
    * re-parents nodes (null orphans them; the compound move, round 14.2 —
@@ -6440,25 +6507,25 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *
    * @returns the source node, or an empty collection for a non-edge
    */
-  source(): Collection;
+  source(): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The target node of the first edge.
    *
    * @returns the target node, or an empty collection for a non-edge
    */
-  target(): Collection;
+  target(): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The source nodes of every edge in the collection, deduped.
    *
    * @returns the source nodes
    */
-  sources(): Collection;
+  sources(): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The target nodes of every edge in the collection, deduped.
    *
    * @returns the target nodes
    */
-  targets(): Collection;
+  targets(): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Every edge incident on the nodes in this collection, deduped —
    * answered off the CSR adjacency index, so it is O(incident edges)
@@ -6468,7 +6535,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the incident edges
    */
-  connectedEdges(criterion?: FilterLike): Collection;
+  connectedEdges(criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * The endpoint nodes of every edge in this collection, deduped.
    *
@@ -6476,7 +6543,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the endpoint nodes
    */
-  connectedNodes(criterion?: FilterLike): Collection;
+  connectedNodes(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The immediate outgoing neighbourhood: the edges leaving these nodes
    * plus the nodes they point at.  One hop only — use `successors()` for
@@ -6486,7 +6553,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the outgoing edges and their target nodes
    */
-  outgoers(criterion?: FilterLike): Collection;
+  outgoers(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /**
    * The immediate incoming neighbourhood: the edges arriving at these
    * nodes plus the nodes they come from.  One hop only — use
@@ -6496,7 +6563,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the incoming edges and their source nodes
    */
-  incomers(criterion?: FilterLike): Collection;
+  incomers(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /**
    * The *open* neighbourhood: the incident edges and the nodes on their
    * far ends, ignoring edge direction, excluding the collection's own
@@ -6507,7 +6574,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @returns the neighbouring edges and nodes
    * @see Collection#closedNeighborhood to include these nodes
    */
-  neighborhood(criterion?: FilterLike): Collection;
+  neighborhood(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   openNeighborhood: this['neighborhood'];
   /**
    * The open neighbourhood plus this collection's own nodes.
@@ -6516,7 +6583,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the closed neighbourhood
    */
-  closedNeighborhood(criterion?: FilterLike): Collection;
+  closedNeighborhood(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /** Immediate parents of every node in the collection (unique).  v4
    * always returns a proper collection — v3's single-element raw-ref
    * shortcut (which also ignored the selector argument) is not ported.   *
@@ -6524,7 +6591,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the immediate parents
    */
-  parent(criterion?: FilterLike): Collection;
+  parent(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * All ancestors, level by level: every nearest parent first, then the
    * grandparents, and so on (v3's iterated-parent() order).   *
@@ -6532,7 +6599,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the ancestors, nearest first
    */
-  parents(criterion?: FilterLike): Collection;
+  parents(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   ancestors: this['parents'];
   /**
    * Direct children of every node, in link order per parent.   *
@@ -6540,7 +6607,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the children
    */
-  children(criterion?: FilterLike): Collection;
+  children(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The subtree below every node in pre-order, excluding the nodes
    * themselves.   *
@@ -6548,7 +6615,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the descendants
    */
-  descendants(criterion?: FilterLike): Collection;
+  descendants(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Nodes sharing a parent with the collection's nodes, excluding them;
    * orphans are nobody's siblings (v3).   *
@@ -6556,21 +6623,21 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the siblings
    */
-  siblings(criterion?: FilterLike): Collection;
+  siblings(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The collection's nodes without a parent.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the parentless nodes
    */
-  orphans(criterion?: FilterLike): Collection;
+  orphans(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The collection's nodes that have a parent.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the parented nodes
    */
-  nonorphans(criterion?: FilterLike): Collection;
+  nonorphans(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Ancestors common to every element, closest first (an edge in the
    * collection has no ancestors, so it empties the result — v3).   *
@@ -6578,7 +6645,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the shared ancestors, closest first
    */
-  commonAncestors(criterion?: FilterLike): Collection;
+  commonAncestors(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Whether the first element is a node with at least one child.
    *
@@ -6613,14 +6680,14 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result, exactly as `filter()` takes it
    * @returns the source nodes
    */
-  roots(criterion?: FilterLike): Collection;
+  roots(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Collection nodes with no non-loop outgoing edge.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the sink nodes
    */
-  leaves(criterion?: FilterLike): Collection;
+  leaves(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Everything reachable by following outgoing edges, transitively — the
    * edges and nodes of the forward closure, excluding these nodes
@@ -6630,7 +6697,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the reachable edges and nodes
    */
-  successors(criterion?: FilterLike): Collection;
+  successors(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /**
    * Everything that reaches these nodes by following incoming edges,
    * transitively.
@@ -6639,7 +6706,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the edges and nodes of the backward closure
    */
-  predecessors(criterion?: FilterLike): Collection;
+  predecessors(criterion?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /**
    * The edges connecting this collection's nodes with `others`, in
    * either direction.
@@ -6648,7 +6715,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   selector string)
    * @returns the connecting edges
    */
-  edgesWith(others: Collection): Collection;
+  edgesWith(others: Collection): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * The edges running *from* this collection's nodes *to* `others` —
    * `edgesWith()` restricted by direction.
@@ -6656,7 +6723,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param others — the target-side nodes
    * @returns the directed connecting edges
    */
-  edgesTo(others: Collection): Collection;
+  edgesTo(others: Collection): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * The edges sharing endpoints with these edges, in either direction —
    * including each edge itself.  These are the edges a bezier bundle
@@ -6666,7 +6733,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the parallel edges
    */
-  parallelEdges(criterion?: FilterLike): Collection;
+  parallelEdges(criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * The parallel edges pointing the same way — same source and same
    * target — including each edge itself.
@@ -6675,7 +6742,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   the result
    * @returns the codirected edges
    */
-  codirectedEdges(criterion?: FilterLike): Collection;
+  codirectedEdges(criterion?: FilterLike<NodeData, EdgeData, EdgeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * Connected components within this collection (undirected), each as a
    * collection of the reached nodes plus the collection's edges internal
@@ -6684,7 +6751,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param root — restricts the seed nodes; omit to seed from every node
    * @returns one collection per component
    */
-  components(root?: Collection | null): Collection[];
+  components(root?: Collection | null): Collection<NodeData, EdgeData>[];
   componentsOf: this['components'];
   /**
    * The whole-graph connected component containing the first element.
@@ -6693,7 +6760,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   over the whole graph rather than within this collection; an empty
    *   collection when this one is empty
    */
-  component(): Collection;
+  component(): Collection<NodeData, EdgeData>;
   /**
    * Node dimensions for layout spacing, as v3's layoutDimensions — the
    * body, plus the label box under `nodeDimensionsIncludeLabels: true`
@@ -6725,7 +6792,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   node; parents are excluded (auto-bounds derive them)
    * @returns this collection, for chaining
    */
-  layoutPositions(layout: object, options: LayoutBaseOptions, fn: (node: Collection, i: number) => Position): this;
+  layoutPositions(layout: object, options: LayoutBaseOptions, fn: (node: Collection<NodeData, EdgeData, Data>, i: number) => Position): this;
   /**
    * A layout scoped to this collection.
    *
@@ -6801,7 +6868,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param weight — `( edge ) => number`; defaults to unit weights
    * @returns the spanning forest's nodes and edges
    */
-  kruskal(weight?: WeightFn): Collection;
+  kruskal(weight?: WeightFn): Collection<NodeData, EdgeData>;
   /**
    * Tarjan's strongly connected components.  Implemented iteratively, so
    * deep graphs cannot overflow the JS stack.
@@ -7143,7 +7210,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   unavailable in this environment, or `executor: 'workers'` is
    *   given a custom `distance` function
    */
-  kMeans(options?: KClusteringOptions): AlgoRun<Collection[]>;
+  kMeans(options?: KClusteringOptions): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]>;
   /**
    * k-medoids clustering — like k-means, but cluster centres are actual
    * elements, which makes it robust to outliers.  Async, with the same
@@ -7157,7 +7224,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   unavailable, if `executor: 'workers'` is given a custom
    *   `distance` function, or if `k` exceeds the node count
    */
-  kMedoids(options?: KClusteringOptions): AlgoRun<Collection[]>;
+  kMedoids(options?: KClusteringOptions): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]>;
   /**
    * Fuzzy c-means clustering: each element gets a degree of membership
    * in every cluster rather than one hard assignment.  Async, with the
@@ -7192,7 +7259,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   unavailable in this environment, or `executor: 'workers'` is
    *   given a custom `distance` function or a per-pair linkage
    */
-  hierarchicalClustering(options?: HierarchicalClusteringOptions): AlgoRun<Collection[]>;
+  hierarchicalClustering(options?: HierarchicalClusteringOptions): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]>;
   hca: this['hierarchicalClustering'];
   /**
    * Markov clustering (MCL) — flow simulation over the graph, so unlike
@@ -7210,7 +7277,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable in this environment
    */
-  markovClustering(options?: MarkovClusteringOptions): AlgoRun<Collection[]>;
+  markovClustering(options?: MarkovClusteringOptions): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]>;
   mcl: this['markovClustering'];
   /**
    * Affinity propagation, which picks exemplars by message passing and
@@ -7228,7 +7295,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
    *   unavailable, or if `damping`/`preference` are invalid
    */
-  affinityPropagation(options?: AffinityPropagationOptions): AlgoRun<Collection[]>;
+  affinityPropagation(options?: AffinityPropagationOptions): AlgoRun<Collection<NodeData, EdgeData, NodeData>[]>;
   ap: this['affinityPropagation'];
   /**
    * The **first** element's total degree, in + out, answered in O(1) off
@@ -7328,7 +7395,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  on(events: string, callback?: EventHandler): this;
+  on(events: string, callback?: EventHandler<NodeData, EdgeData>): this;
   addListener: this['on'];
   /**
    * Like `on()`, but each element's handler runs at most once.
@@ -7337,7 +7404,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param callback — the handler
    * @returns this collection, for chaining
    */
-  one(events: string, callback?: EventHandler): this;
+  one(events: string, callback?: EventHandler<NodeData, EdgeData>): this;
   once: this['one'];
   /**
    * Stop listening on each element of this collection.
@@ -7347,7 +7414,7 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    *   handler these elements have for `events`
    * @returns this collection, for chaining
    */
-  off(events: string, callback?: EventHandler): this;
+  off(events: string, callback?: EventHandler<NodeData, EdgeData>): this;
   removeListener: this['off'];
   /**
    * Emit an event on each element, bubbling through compound ancestors
@@ -7367,13 +7434,14 @@ declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn(events: string): Promise<Event>;
+  promiseOn(events: string): Promise<Event<NodeData, EdgeData>>;
   pon: this['promiseOn'];
 }
 //#endregion
 //#region src/events.d.mts
-/** A delegation predicate over an element event target. */
-type ElePredicate = (ele: Collection) => boolean;
+/** A delegation predicate over an element event target; typed by the
+ * instance's data shapes (round 140), untyped by default. */
+type ElePredicate<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = (ele: Collection<NodeData, EdgeData>) => boolean;
 /** What a listener is restricted to: a single element ref, or a predicate. */
 interface Qualifier {
   key?: string;
@@ -8319,7 +8387,7 @@ interface FollowOptions {
   throttle?: number;
 }
 /** Options for `cy.clone()` (round 106). */
-interface CloneOptions extends Omit<CytoscapeOptions, 'elements'> {
+interface CloneOptions<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> extends Omit<CytoscapeOptions<NodeData, EdgeData>, 'elements'> {
   /**
    * Keep the clone current: `true`, or `{ throttle }`.  Each sync is
    * `clone.patch( source.serialize() )` — the source's elements, data,
@@ -8364,7 +8432,7 @@ interface RendererLike {
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-declare class Core<NodeData = Untyped, EdgeData = Untyped> {
+declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   _store: GraphStore;
   _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
@@ -8382,7 +8450,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * chunk is drawn** (round 103; headless, once it is in the model).
    * Rejects when no adapter can be had.
    */
-  ready: Promise<Core>;
+  ready: Promise<Core<NodeData, EdgeData>>;
   /** true once `ready` has resolved (immediately when headless) */
   _readyResolved: boolean;
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
@@ -8458,7 +8526,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @throws if the sheet references an unknown property or an invalid
    *   value
    */
-  style(sheet?: Stylesheet): StyleEngine;
+  style(sheet?: Stylesheet<NodeData, EdgeData>): StyleEngine;
   /**
    * Slot-moving compaction, explicit form (round 19.5): move live
    * elements down to a dense slot prefix so `highWater`, column capacity
@@ -8612,7 +8680,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   add the definitions you kept, e.g. from `eles.jsons()` taken
    *   before the removal
    */
-  add(input: ElementsInput | Iterable<ElementDefinition>): Collection;
+  add(input: ElementsInput<NodeData, EdgeData> | Iterable<ElementDefinition<NodeData | EdgeData>>): Collection<NodeData, EdgeData>;
   /**
    * Bulk load path (the factory's `options.elements`): adds without
    * materializing per-element handles or a return collection — on a
@@ -8641,7 +8709,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param eles — the elements to remove
    * @returns the removed elements
    */
-  remove(eles: Collection): Collection;
+  remove<Data>(eles: Collection<NodeData, EdgeData, Data>): Collection<NodeData, EdgeData, Data>;
   /**
    * Reconcile a fresh payload into the live graph **by id** (round 107):
    * the payload is the next state of the *same* graph — the next query
@@ -8706,7 +8774,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   column does not fit the payload's counts, or on an unknown option
    *   or mode
    */
-  patch(input: ElementsInput, options?: PatchOptions): PatchDiff;
+  patch(input: ElementsInput<NodeData, EdgeData>, options?: PatchOptions): PatchDiff<NodeData, EdgeData>;
   /**
    * **Progressive ingest** (round 103): load the graph chunk by chunk from
    * an async iterable — a streamed response, a server's pages — and show
@@ -8766,7 +8834,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   unknown option, while another load is running on this instance, or
    *   on a destroyed instance
    */
-  load(source: AsyncIterable<ElementsInput> | Iterable<ElementsInput>, options?: LoadOptions): LoadRun;
+  load(source: AsyncIterable<ElementsInput<NodeData, EdgeData>> | Iterable<ElementsInput<NodeData, EdgeData>>, options?: LoadOptions): LoadRun;
   /**
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
@@ -8783,7 +8851,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @throws if called with any argument — v3's building forms are not
    *   ported; the message names the replacements
    */
-  collection(): Collection;
+  collection(): Collection<NodeData, EdgeData>;
   /**
    * Look up one element by id through the O(1) id index.
    *
@@ -8813,7 +8881,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   omit for everything
    * @returns the matching elements
    */
-  elements(query?: Query | EleFilterFn): Collection;
+  elements(query?: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   /**
    * The graph's nodes, optionally filtered.  Same query forms as
    * `elements()`, restricted to the node group — and, with no query,
@@ -8822,7 +8890,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
    */
-  nodes(query?: Query | EleFilterFn): Collection;
+  nodes(query?: FilterLike<NodeData, EdgeData, NodeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * The graph's edges, optionally filtered.  Same query forms as
    * `elements()`, restricted to the edge group — and, with no query,
@@ -8831,7 +8899,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
    */
-  edges(query?: Query | EleFilterFn): Collection;
+  edges(query?: FilterLike<NodeData, EdgeData, EdgeData>): Collection<NodeData, EdgeData, EdgeData>;
   /**
    * Filter the whole graph.  Identical to `elements( query )`, kept for
    * symmetry with `eles.filter()`.
@@ -8839,7 +8907,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching elements
    */
-  filter(query: Query | EleFilterFn): Collection;
+  filter(query: FilterLike<NodeData, EdgeData>): Collection<NodeData, EdgeData>;
   $: this['filter'];
   /**
    * Live, visible elements contained in the model-coordinate box (corners
@@ -8862,7 +8930,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param y2 — that corner's model y
    * @returns the contained elements
    */
-  elementsInBox(x1: number, y1: number, x2: number, y2: number): Collection;
+  elementsInBox(x1: number, y1: number, x2: number, y2: number): Collection<NodeData, EdgeData>;
   /**
    * The *gesture's* box query: `elementsInBox` with this instance's
    * `boxSelectionMode` applied (round 39.1).  Internal because the mode
@@ -8952,7 +9020,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
-  on(events: string, callback: EventHandler): this;
+  on(events: string, callback: EventHandler<NodeData, EdgeData>): this;
   /**
    * Listen with predicate delegation: the handler runs only for events
    * whose target satisfies `predicate`.
@@ -8963,7 +9031,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  on(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  on(events: string, predicate: ElePredicate<NodeData, EdgeData>, callback: EventHandler<NodeData, EdgeData>): this;
   addListener: this['on'];
   /**
    * Like `on()`, but the handler runs at most once and then removes
@@ -8975,7 +9043,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  one(events: string, callback: EventHandler): this;
+  one(events: string, callback: EventHandler<NodeData, EdgeData>): this;
   /**
    * Like `on()` with delegation, but the handler runs at most once.
    *
@@ -8984,7 +9052,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler
    * @returns this core, for chaining
    */
-  one(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  one(events: string, predicate: ElePredicate<NodeData, EdgeData>, callback: EventHandler<NodeData, EdgeData>): this;
   once: this['one'];
   /**
    * Stop listening.  Removing a delegated handler takes the same
@@ -8999,7 +9067,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
-  off(events: string, callback?: EventHandler): this;
+  off(events: string, callback?: EventHandler<NodeData, EdgeData>): this;
   /**
    * Remove a delegated handler.  The predicate must be the *same
    * function object* it was registered with — predicates compare by
@@ -9010,7 +9078,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param callback — the handler to remove
    * @returns this core, for chaining
    */
-  off(events: string, predicate: ElePredicate, callback: EventHandler): this;
+  off(events: string, predicate: ElePredicate<NodeData, EdgeData>, callback: EventHandler<NodeData, EdgeData>): this;
   removeListener: this['off'];
   /**
    * Remove every listener on the core, including element-bound and
@@ -9044,7 +9112,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn(events: string, predicate?: ElePredicate): Promise<Event>;
+  promiseOn(events: string, predicate?: ElePredicate<NodeData, EdgeData>): Promise<Event<NodeData, EdgeData>>;
   pon: this['promiseOn'];
   /**
    * Get the zoom level, or set it.  Setting is a no-op while
@@ -9218,7 +9286,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  pick(x: number, y: number): Promise<Collection | null>;
+  pick(x: number, y: number): Promise<Collection<NodeData, EdgeData> | null>;
   /**
    * The node at a rendered (CSS px) position, synchronously — or null
    * (round 75.4, #1209).  The sync half of the pick pair: `cy.pick()`
@@ -9248,7 +9316,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   only, or a destroyed instance)
    * @see Core#pick for edges and the full draw-order answer
    */
-  nodeAt(x: number, y: number): Collection | null;
+  nodeAt(x: number, y: number): Collection<NodeData, EdgeData, NodeData> | null;
   pickNode: this['nodeAt'];
   /**
    * How many nodes and edges the renderer draws — the visible counts of
@@ -9624,7 +9692,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   copy and not a defaults-resolved view, so an option the caller
    *   omitted reads back absent rather than as the default in force
    */
-  options(): CytoscapeOptions;
+  options(): CytoscapeOptions<NodeData, EdgeData>;
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
@@ -9711,7 +9779,7 @@ declare class Core<NodeData = Untyped, EdgeData = Untyped> {
    *   throws — a `container` in a build with no renderer, or without
    *   WebGPU
    */
-  clone(options?: CloneOptions): Core;
+  clone(options?: CloneOptions<NodeData, EdgeData>): Core<NodeData, EdgeData>;
   /**
    * Detach the renderer: the instance becomes headless (the model is
    * CPU-canonical, so nothing is lost).  No-op when already headless.
@@ -9843,14 +9911,15 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Col
  *
  * The factory ingests `options.elements` through the bulk path and runs
  * `options.layout`, exactly as the full build's does.  Unknown options are
- * ignored, as there (the type rejects them).
+ * ignored, as there (the type rejects them), and the generics type the
+ * element data as there (round 140).
  *
  * @param options — the instance options, without the renderer- and
  *   pointer-only fields ({@link HeadlessOptions})
  * @returns the new core
  * @throws when a `container` is given — this build has no renderer
  */
-declare function cytoscape<NodeData = Untyped, EdgeData = Untyped>(options?: HeadlessOptions): Core<NodeData, EdgeData>;
+declare function cytoscape<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>>(options?: HeadlessOptions<NoInfer<NodeData>, NoInfer<EdgeData>>): Core<NodeData, EdgeData>;
 declare namespace cytoscape {
   export { toColumnarElements };
   export { serializeElements };
@@ -9859,4 +9928,4 @@ declare namespace cytoscape {
   export { GpuUnfitError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };

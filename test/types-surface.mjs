@@ -57,9 +57,11 @@ const EXPECTED_EXPORTS = new Set([
   'LayoutContext',
   'LayoutImpl',
   'DataColumn',
+  'DefinitionData', // round 140: a definition's data, typed or not
   'DictColumn',
   'ElementData',
   'ElementDefinition',
+  'ElementFields', // round 140: the first-class fields beside a typed shape
   'ElementsDefinition',
   'ElementsInput',
   'ExportOptions',
@@ -259,7 +261,7 @@ for (const name of ['headless', 'headless-gpu']) {
   // round 140: the factory is generic over the application's data shapes,
   // and the parameters must survive the roll-up into each declaration
   if (
-    !/declare function cytoscape<NodeData = Untyped, EdgeData = Untyped>\(options\?: HeadlessOptions(?:<NodeData, EdgeData>)?\): Core<NodeData, EdgeData>;/.test(
+    !/declare function cytoscape<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>>\(options\?: HeadlessOptions<NoInfer<NodeData>, NoInfer<EdgeData>>\): Core<NodeData, EdgeData>;/.test(
       slim,
     )
   ) {
@@ -278,6 +280,88 @@ for (const name of ['headless', 'headless-gpu']) {
 
   if (/^import /m.test(slim)) {
     fail(`cytoscape-${name}.d.ts imports a chunk; it must stand alone`);
+  }
+}
+
+// -- 7. typed element data survives, with its hover text (round 140) --
+//
+// PLAN.md item 45's measurement, kept as a gate: generic parameters are
+// what a declaration bundler is likeliest to flatten, and a flattened one
+// fails nothing in the type tests' *untyped* half.  So each shipped
+// declaration gets a consumer program through the language service — the
+// thing an editor asks — and must answer a typed `data( key )` read with
+// the field's type, show that overload's own doc block on hover, and keep
+// the untyped read `unknown`.
+
+const HOVER_PROBE = (specifier) => `import cytoscape from '${specifier}';
+interface N { weight: number; label: string }
+interface E { kind: 'a' | 'b' }
+const cy = cytoscape<N, E>();
+const typedRead = cy.nodes().data('weight');
+const edgeRead = cy.edges().data('kind');
+const untypedRead = cytoscape().nodes().data('weight');
+`;
+
+for (const name of [
+  'cytoscape',
+  'cytoscape-headless',
+  'cytoscape-headless-gpu',
+]) {
+  const dts = new URL(`../dist/${name}.d.ts`, import.meta.url).pathname;
+  const file = new URL('../build/types-probe.ts', import.meta.url).pathname;
+  const text = HOVER_PROBE(dts.replace(/\.d\.ts$/, '.js'));
+  const readFile = (f) => (f === file ? text : fs.readFileSync(f, 'utf8'));
+  const service = ts.createLanguageService({
+    getScriptFileNames: () => [file],
+    getScriptVersion: () => '1',
+    getScriptSnapshot: (f) =>
+      f === file || fs.existsSync(f)
+        ? ts.ScriptSnapshot.fromString(readFile(f))
+        : undefined,
+    getCurrentDirectory: () => process.cwd(),
+    getCompilationSettings: () => ({
+      strict: true,
+      noEmit: true,
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      lib: ['lib.es2020.d.ts', 'lib.dom.d.ts'],
+      types: [],
+    }),
+    getDefaultLibFileName: (o) => ts.getDefaultLibFilePath(o),
+    fileExists: (f) => f === file || fs.existsSync(f),
+    readFile,
+  });
+  const diagnostics = service.getSemanticDiagnostics(file);
+
+  for (const d of diagnostics) {
+    fail(
+      `${name}.d.ts typed-data probe: ` +
+        ts.flattenDiagnosticMessageText(d.messageText, ' '),
+    );
+  }
+
+  const hover = (needle, offset = 0) =>
+    service.getQuickInfoAtPosition(file, text.indexOf(needle) + offset);
+  const typeOf = (needle) =>
+    ts.displayPartsToString(hover(needle)?.displayParts);
+
+  if (!typeOf('typedRead =').endsWith('typedRead: number | undefined')) {
+    fail(`${name}.d.ts: a typed data( key ) read lost its field type`);
+  }
+  if (!typeOf('edgeRead =').endsWith('edgeRead: "a" | "b" | undefined')) {
+    fail(`${name}.d.ts: an edge collection lost the edge shape`);
+  }
+  if (!typeOf('untypedRead =').endsWith('untypedRead: unknown')) {
+    fail(`${name}.d.ts: the untyped data( key ) read is no longer unknown`);
+  }
+
+  const docs = ts.displayPartsToString(
+    hover("data('weight')", 1)?.documentation,
+  );
+
+  if (!/Read one data key/.test(docs)) {
+    fail(`${name}.d.ts: the typed data( key ) overload lost its hover doc`);
   }
 }
 

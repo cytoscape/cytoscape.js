@@ -3,6 +3,7 @@ import type { Core } from './core.mjs';
 import type { Collection } from './collection.mjs';
 import type { PatchDiff } from './core/patch.mjs';
 import type { LoadProgress } from './core/load.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 
 /*
 v4's own event object (round 41.1), replacing the shared v3 `src/event.mts`.
@@ -45,9 +46,13 @@ type NativeEvent = globalThis.Event;
 /**
  * What an event can target: the core for core-level events (viewport
  * gestures, `layoutstart`, graph `data`), or a one-element collection for
- * element events.
+ * element events.  Typed by the instance's data shapes (round 140),
+ * untyped by default.
  */
-export type EventTarget = Core | Collection;
+export type EventTarget<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> = Core<NodeData, EdgeData> | Collection<NodeData, EdgeData>;
 
 /** The fields an emit may carry. */
 export interface EventProps {
@@ -84,15 +89,15 @@ const returnTrue = (): boolean => true;
  *
  * @see Core#on for what a name may be, and which names never fire
  */
-export class Event {
+export class Event<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   // -- what happened --
 
   /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
   /** the core for core-level events, the element for element events */
-  target?: EventTarget;
+  target?: EventTarget<NodeData, EdgeData>;
   /** the core the event was raised on */
-  cy?: Core;
+  cy?: Core<NodeData, EdgeData>;
   /** model-space position, on pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` and the viewport */
@@ -105,7 +110,7 @@ export class Event {
    * `loadstop`, whether the load was (round 103) */
   cancelled?: boolean;
   /** on `patch`, what the patch added, removed and updated (round 107) */
-  diff?: PatchDiff;
+  diff?: PatchDiff<NodeData, EdgeData>;
   /** on the load lifecycle events, the chunks and elements so far
    * (round 103) */
   progress?: LoadProgress;

@@ -16,6 +16,7 @@ import { createCore, NO_RENDERER_BUILD } from '../factory.mjs';
 import type { CoreCaps } from '../factory.mjs';
 import type { CytoscapeOptions, Stylesheet } from '../public-types.mjs';
 import type { Core } from '../core.mjs';
+import type { DefaultEdgeData, Untyped } from '../data-typing.mjs';
 import type { Collection } from '../collection.mjs';
 import { patch as patchImpl } from './patch.mjs';
 
@@ -31,7 +32,10 @@ export interface FollowOptions {
 }
 
 /** Options for `cy.clone()` (round 106). */
-export interface CloneOptions extends Omit<CytoscapeOptions, 'elements'> {
+export interface CloneOptions<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> extends Omit<CytoscapeOptions<NodeData, EdgeData>, 'elements'> {
   /**
    * Keep the clone current: `true`, or `{ throttle }`.  Each sync is
    * `clone.patch( source.serialize() )` — the source's elements, data,

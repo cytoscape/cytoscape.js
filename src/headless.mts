@@ -18,7 +18,7 @@ kernel or `gpu-lanes.mts` is reachable.
 */
 
 import type { Core } from './core.mjs';
-import type { Untyped } from './data-typing.mjs';
+import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 import { runForceSimWorker } from './layout/force-worker.mjs';
 import {
   _forceWorkerStats,
@@ -55,15 +55,19 @@ const HEADLESS: CoreCaps = {
  *
  * The factory ingests `options.elements` through the bulk path and runs
  * `options.layout`, exactly as the full build's does.  Unknown options are
- * ignored, as there (the type rejects them).
+ * ignored, as there (the type rejects them), and the generics type the
+ * element data as there (round 140).
  *
  * @param options — the instance options, without the renderer- and
  *   pointer-only fields ({@link HeadlessOptions})
  * @returns the new core
  * @throws when a `container` is given — this build has no renderer
  */
-export default function cytoscape<NodeData = Untyped, EdgeData = Untyped>(
-  options: HeadlessOptions = {},
+export default function cytoscape<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+>(
+  options: HeadlessOptions<NoInfer<NodeData>, NoInfer<EdgeData>> = {},
 ): Core<NodeData, EdgeData> {
   return createCore(options, HEADLESS);
 }

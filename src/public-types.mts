@@ -4,6 +4,12 @@ Public option/type surface of the GPU prototype entry point.
 
 import type { Position } from './types.mjs';
 import type { GroupName } from './contract.mjs';
+import type {
+  DataKey,
+  DefaultEdgeData,
+  IsUntyped,
+  Untyped,
+} from './data-typing.mjs';
 
 export type { Position };
 
@@ -20,10 +26,38 @@ export interface ElementData {
   [key: string]: unknown;
 }
 
-export interface ElementDefinition {
+/**
+ * The first-class fields a definition's `data` may carry beside the
+ * application's own (round 140): the typed counterpart of
+ * {@link ElementData}'s named members, without its index signature.
+ */
+export interface ElementFields {
+  id?: string;
+  /** edges only; required for edges */
+  source?: string;
+  /** edges only; required for edges */
+  target?: string;
+  /** nodes only: the parent node's id */
+  parent?: string | number;
+}
+
+/**
+ * A definition's `data`: {@link ElementData} untyped (any key), and the
+ * application's shape plus the first-class fields typed (round 140) — so
+ * a misspelt key is an excess-property error.
+ */
+export type DefinitionData<Data = Untyped> =
+  IsUntyped<Data> extends true ? ElementData : Data & ElementFields;
+
+/**
+ * One element, v3-style.  Typed by `Data` (round 140) — the node or edge
+ * shape given to `cytoscape<NodeData, EdgeData>( … )` — and untyped by
+ * default.
+ */
+export interface ElementDefinition<Data = Untyped> {
   /** inferred from `data.source`/`data.target` when omitted */
   group?: GroupName;
-  data?: ElementData;
+  data?: DefinitionData<Data>;
   /** nodes only */
   position?: Position;
   selected?: boolean;
@@ -34,9 +68,20 @@ export interface ElementDefinition {
   pannable?: boolean;
 }
 
-export type ElementsDefinition =
-  | ElementDefinition[]
-  | { nodes?: ElementDefinition[]; edges?: ElementDefinition[] };
+/**
+ * Many elements: a flat array (each def's group inferred), or the
+ * `{ nodes, edges }` map, whose buckets are typed by the node and edge
+ * shapes respectively (round 140).
+ */
+export type ElementsDefinition<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> =
+  | ElementDefinition<NodeData | EdgeData>[]
+  | {
+      nodes?: ElementDefinition<NodeData>[];
+      edges?: ElementDefinition<EdgeData>[];
+    };
 
 /**
  * Ids as bytes: one UTF-8 blob + prefix byte offsets (length count + 1).
@@ -151,9 +196,12 @@ export interface ColumnarElements {
  * `cytoscape.serializeElements` (one little-endian ArrayBuffer +
  * header — fetch it as binary and pass it straight in; no JSON parse).
  */
-export type ElementsInput =
-  | ElementsDefinition
-  | ElementDefinition
+export type ElementsInput<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> =
+  | ElementsDefinition<NodeData, EdgeData>
+  | ElementDefinition<NodeData | EdgeData>
   | ColumnarElements
   | ArrayBuffer
   | ArrayBufferView;
@@ -174,9 +222,10 @@ export type ElementsInput =
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
  * `fallback`, else the channel default.
  */
-export interface Mapper {
-  /** data() sidecar key to read */
-  data: string;
+export interface Mapper<Data = Untyped> {
+  /** data() sidecar key to read — typed (round 140), one of the group's
+   * fields */
+  data: DataKey<Data>;
   scale?:
     | 'linear'
     | 'log'
@@ -213,10 +262,11 @@ export interface Mapper {
  * supports all.  Missing data fails every comparison (so an unset key
  * never matches).
  */
-export interface Condition {
+export interface Condition<Data = Untyped> {
   /** the data key to compare ('id' reads the first-class id); omitted
-   * for the structural forms below */
-  data?: string;
+   * for the structural forms below.  Typed (round 140), one of the
+   * group's fields */
+  data?: DataKey<Data>;
   eq?: string | number | boolean;
   ne?: string | number | boolean;
   lt?: number;
@@ -272,8 +322,8 @@ export interface Condition {
 }
 
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
-export interface CaseClause {
-  when: Condition | Condition[];
+export interface CaseClause<Data = Untyped> {
+  when: Condition<Data> | Condition<Data>[];
   then: string | number;
 }
 
@@ -284,18 +334,18 @@ export interface CaseClause {
  * replacement for `(ele) => cond ? a : b` style functions, and the
  * natural form for typed edges (`type == 'activation' → ...`).
  */
-export interface CaseMapper {
-  case: CaseClause[];
+export interface CaseMapper<Data = Untyped> {
+  case: CaseClause<Data>[];
   else?: string | number;
   /** value for missing/unmappable data (defaults to `else` then the channel default) */
   fallback?: string | number;
 }
 
 /** Any data-driven style value: a scale mapper or a conditional. */
-export type MapperSpec = Mapper | CaseMapper;
+export type MapperSpec<Data = Untyped> = Mapper<Data> | CaseMapper<Data>;
 
 /** A style prop value: a constant, or a mapper object. */
-export type StylePropValue = string | number | MapperSpec;
+export type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
 
 /**
  * Style props for one element or group; names are kebab-case or
@@ -308,7 +358,7 @@ export type StylePropValue = string | number | MapperSpec;
  * props: line-color, width, opacity, source/target-arrow-shape and
  * -color.
  */
-export type StyleProps = Record<string, StylePropValue>;
+export type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
 
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key
@@ -319,9 +369,14 @@ export type StyleProps = Record<string, StylePropValue>;
  * Everything stays fresh automatically: a data write re-derives the
  * mapped channels of the affected elements (gated on the mapped keys).
  */
-export interface Stylesheet {
-  nodes?: StyleProps;
-  edges?: StyleProps;
+export interface Stylesheet<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> {
+  /** node props; typed (round 140), a mapper's field is a node field */
+  nodes?: StyleProps<NodeData>;
+  /** edge props; typed (round 140), a mapper's field is an edge field */
+  edges?: StyleProps<EdgeData>;
   /**
    * Compound-parent overlay (round 14.6): node props that apply to
    * parent nodes on top of the nodes group and v3's `:parent` defaults
@@ -333,7 +388,7 @@ export interface Stylesheet {
    * their labels — public bb/fit include labels since round 16.4,
    * the auto-bounds derivation deliberately does not).
    */
-  parents?: StyleProps;
+  parents?: StyleProps<NodeData>;
   /**
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
@@ -1115,15 +1170,20 @@ export interface CursorMap {
   box: string;
 }
 
-export interface CytoscapeOptions {
+export interface CytoscapeOptions<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
    * synchronously if `navigator.gpu` is missing.  When omitted, the instance
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: ElementsInput;
-  style?: Stylesheet;
+  /** the initial elements — typed by the instance's shapes (round 140) */
+  elements?: ElementsInput<NodeData, EdgeData>;
+  /** the stylesheet — its field references typed likewise (round 140) */
+  style?: Stylesheet<NodeData, EdgeData>;
   layout?: LayoutOptions;
   zoom?: number;
   pan?: Position;
@@ -1199,8 +1259,11 @@ export interface CytoscapeOptions {
  * (TypeScript's excess-property check) and, at run time, a `container`
  * throws `this build has no renderer — import 'cytoscape'`.
  */
-export type HeadlessOptions = Omit<
-  CytoscapeOptions,
+export type HeadlessOptions<
+  NodeData = Untyped,
+  EdgeData = DefaultEdgeData<NodeData>,
+> = Omit<
+  CytoscapeOptions<NodeData, EdgeData>,
   | 'container'
   | 'renderer'
   | 'pixelRatio'

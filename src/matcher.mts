@@ -7,6 +7,7 @@ import {
   testCondition,
 } from './style-scales.mjs';
 import type { CompiledCondition } from './style-scales.mjs';
+import type { DataKey, IsUntyped, Untyped } from './data-typing.mjs';
 
 /*
 The matcher IR: structured element queries over the columnar model.
@@ -46,7 +47,7 @@ export interface DataCondition {
  * paired selectors collapse: `{ selected: false }` is `:unselected`,
  * `{ grabbed: false }` is `:free`, `{ parent: false }` is `:childless`.
  */
-export interface Query {
+export interface Query<Data = Untyped> {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
@@ -76,9 +77,19 @@ export interface Query {
   /** structural (nodes only): has no parent — v3's `:orphan`, and
    * exactly `{ child: false }` */
   orphan?: boolean;
-  /** data-sidecar conditions per key; a bare value means equality */
-  data?: Record<string, DataCondition | string | number | boolean | null>;
+  /** data-sidecar conditions per key; a bare value means equality.
+   * Typed (round 140), the keys are the queried elements' fields. */
+  data?: QueryData<Data>;
 }
+
+/** A query's `data` block: any key untyped, the shape's keys typed. */
+export type QueryData<Data> =
+  IsUntyped<Data> extends true
+    ? Record<string, QueryValue>
+    : { [K in DataKey<Data>]?: QueryValue };
+
+/** One key's query: a condition, or a bare value meaning equality. */
+export type QueryValue = DataCondition | string | number | boolean | null;
 
 /** A flags-column test: a slot matches when (flags & mask) === want. */
 export interface FlagTest {

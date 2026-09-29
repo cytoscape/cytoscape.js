@@ -162,6 +162,20 @@ export function planDebug({ root, networks, wireEnabled = true }) {
       ? def.url.replace(/^\.\.\//, '')
       : `debug/${def.url}`;
 
+    // round 105: a fetched fixture (GeneMANIA) may not be redistributed, so
+    // the hosted preview never carries it — not even from a checkout that
+    // has fetched a copy, which is exactly when shipping it would happen
+    if (def.fetch != null) {
+      ops.push(
+        omit(
+          jsonTo,
+          `not redistributable — fetched per checkout (${def.fetch})`,
+        ),
+      );
+      dropped.push(id);
+      continue;
+    }
+
     // a fixture two networks share is planned once but named by both
     if (byPath.has(from)) {
       const already = byPath.get(from);

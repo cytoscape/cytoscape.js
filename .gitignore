@@ -33,3 +33,7 @@ playwright/.cache/
 
 # the status site build output (root only — `scripts/status/` is source)
 /status
+
+# round 105: the GeneMANIA fixtures are fetched by `node debug/genemania.mjs`
+# and never committed — GeneMANIA grants no licence to redistribute its data
+/debug/network-genemania-*.json

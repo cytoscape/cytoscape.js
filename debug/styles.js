@@ -455,6 +455,113 @@ var styles = (function () {
     };
   }
 
+  // Round 105: the genemania.org result style, ported from the web app's
+  // `cyStylesheet` (genemania.org/js-build/all.min.js, webapp 3.6.0) — the
+  // reference sheet for the multi-edge idiom.  GeneMANIA draws one edge per
+  // interaction per network, so a gene pair carries a bundle of up to ~30
+  // parallel edges, coloured by network type.
+  //
+  // The app spells the colour as one `edge[group = "coexp"]` selector block
+  // per network type, twelve of them.  Here it is one `ordinal` mapper over
+  // the `group` string column — which the store keeps dictionary-encoded
+  // (a handful of distinct codes over every edge), so the mapper is a
+  // lookup table the GPU kernel indexes rather than twelve selector passes.
+  //
+  // Same channels, same numbers: node size maps normScore to 20..60, edge
+  // width maps absoluteWeightPercent to 1.5..16, haystack edges at radius
+  // 0.5 and 40% opacity (the app's whole-element `opacity`, spelt here as
+  // `line-opacity` so selection can lift it), white labels outlined in the
+  // body colour.  Query genes wear the app's diagonal hatching (the app
+  // uses its own SVG; this is a hand-drawn equivalent).
+  var GENEMANIA_TYPES = [
+    ['coexp', '#d0b7d5'], // co-expression
+    ['coloc', '#a0b3dc'], // co-localization
+    ['gi', '#90e190'], // genetic interactions
+    ['path', '#9bd8de'], // pathway
+    ['pi', '#eaa2a2'], // physical interactions
+    ['predict', '#f6c384'], // predicted
+    ['spd', '#dad4a2'], // shared protein domains
+    ['spd_attr', '#d0d0d0'],
+    ['reg', '#d0d0d0'],
+    ['reg_attr', '#d0d0d0'],
+    ['user', '#f0ec86'],
+    ['other', '#bbbbbb'],
+  ];
+  var GENEMANIA_HATCH =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
+        '<g stroke="#fff" stroke-opacity="0.22" stroke-width="3">' +
+        '<line x1="-10" y1="30" x2="30" y2="-10"/>' +
+        '<line x1="-10" y1="55" x2="55" y2="-10"/>' +
+        '<line x1="-10" y1="80" x2="80" y2="-10"/>' +
+        '<line x1="-10" y1="105" x2="105" y2="-10"/>' +
+        '<line x1="15" y1="110" x2="110" y2="15"/>' +
+        '<line x1="40" y1="110" x2="110" y2="40"/>' +
+        '<line x1="65" y1="110" x2="110" y2="65"/>' +
+        '</g></svg>',
+    );
+
+  function genemania(elements, def) {
+    var body = onSelected('#77828c', '#555555');
+
+    return {
+      nodes: Object.assign(
+        {
+          width: { data: 'normScore', domain: [0, 1], range: [20, 60] },
+          height: { data: 'normScore', domain: [0, 1], range: [20, 60] },
+          'background-color': body,
+          'background-image': {
+            case: [{ when: { data: 'query', eq: 1 }, then: GENEMANIA_HATCH }],
+            else: 'none',
+          },
+          'background-fit': 'contain',
+          // the app's `node:selected`: a translucent 6px halo in the
+          // selection-box blue, and a lighter body
+          'border-width': onSelected(6, 0),
+          'border-color': '#aad8ff',
+          'border-opacity': 0.5,
+          'font-size': 12,
+          color: '#fff',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'text-outline-width': 1.75,
+          'text-outline-color': body,
+          'overlay-padding': 6,
+        },
+        label(def),
+      ),
+      edges: {
+        'curve-style': 'haystack',
+        'haystack-radius': 0.5,
+        'line-color': {
+          data: 'group',
+          scale: 'ordinal',
+          domain: GENEMANIA_TYPES.map(function (t) {
+            return t[0];
+          }),
+          range: GENEMANIA_TYPES.map(function (t) {
+            return t[1];
+          }),
+          fallback: '#bbbbbb',
+        },
+        // the colour is data-mapped, so selection lifts the opacity and
+        // lays a blue underlay under the edge (round 57.11)
+        'line-opacity': onSelected(0.9, 0.4),
+        'underlay-color': SELECT_BLUE,
+        'underlay-opacity': onSelected(0.35, 0),
+        'underlay-padding': 2,
+        width: {
+          data: 'absoluteWeightPercent',
+          domain: [0, 1],
+          range: [1.5, 16],
+          fallback: 1.5,
+        },
+        'overlay-padding': 3,
+      },
+    };
+  }
+
   // The generated scenes get a sheet too — an unlabelled scatter demos nothing
   // but fill rate.  `id` is a string, so the colour mapper keys off the degree
   // the generator writes instead.
@@ -1074,6 +1181,8 @@ var styles = (function () {
     'greek-gods': greekGods,
     'npm-deps': workflowDag,
     reactome: workflowDag,
+    'genemania-default': genemania,
+    'genemania-tp53': genemania,
   };
 
   return {

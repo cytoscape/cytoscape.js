@@ -553,10 +553,14 @@ shader over every allocated slot.
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
 - Manual testing: `npm run watch` → http://localhost:3333/.  The harness
-  (round 43) offers **fourteen networks** — six from real exports (four
-  fixtures shared with v3's WebGL harness under `v3/debug/webgl/`, the
-  465k-edge `ndex-x-large` local to `debug/`, and a clustered variant
-  derived from em-web in-page) and eight built in-page — each with a
+  (round 43) offers **twenty-one networks** — eight from real exports
+  checked in (four fixtures shared with v3's WebGL harness under
+  `v3/debug/webgl/`, the 465k-edge `ndex-x-large`, round 112's
+  `npm-deps` and `reactome` local to `debug/`, and a clustered variant
+  derived from em-web in-page), two real GeneMANIA results **fetched per
+  checkout** (round 105: `node debug/genemania.mjs` — GeneMANIA grants no
+  licence to redistribute its data, so the files are gitignored and the
+  status site never ships them) and eleven built in-page — each with a
   hand-authored v4 stylesheet, plus sections for
   the viewport, layouts, the core toggles, query-object selection, an
   event log and add/remove.

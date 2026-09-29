@@ -1,9 +1,12 @@
 import { expect } from 'chai';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
 import cytoscape from '../../src/index.mjs';
+import { convert } from '../../debug/genemania.mjs';
+import { shapeSample } from './fixtures/genemania-shape.mjs';
 
 /*
 Round 43: the debug harness, checked from Node.
@@ -68,7 +71,14 @@ const elementsFor = (id, def) => {
     return fixtures.generate(def.generated, '200x400');
   }
 
-  const json = JSON.parse(readFileSync(fixturePath(def.url), 'utf8'));
+  // round 105: a fetched fixture is absent from a fresh checkout (and from
+  // CI) by design, so its sheet compiles against the converter's output over
+  // the payload's shape instead — and against the real file where one has
+  // been fetched
+  const json =
+    def.fetch != null && !existsSync(fixturePath(def.url))
+      ? convert(shapeSample())
+      : JSON.parse(readFileSync(fixturePath(def.url), 'utf8'));
 
   return fixtures.derive(def.derive, fixtures.toGpuElements(json.elements));
 };
@@ -85,6 +95,29 @@ describe('debug harness (round 43)', function () {
   describe('every fixture resolves', function () {
     for (const [id, def] of entries) {
       if (def.generated) {
+        continue;
+      }
+
+      if (def.fetch != null) {
+        // round 105: not committed (GeneMANIA grants no licence to
+        // redistribute), so what must exist is the command that fetches it,
+        // and the file must be one git will never pick up
+        it(`${id} -> ${def.url} (fetched by \`${def.fetch}\`)`, function () {
+          const script = def.fetch.replace(/^node /, '');
+
+          expect(existsSync(resolve(DEBUG, '..', script))).to.equal(true);
+          // check-ignore exits 1 (and execFileSync throws) when the path
+          // is not ignored
+          expect(
+            () =>
+              execFileSync('git', ['check-ignore', '-q', `debug/${def.url}`], {
+                cwd: resolve(DEBUG, '..'),
+                stdio: 'ignore',
+              }),
+            `debug/${def.url} is not gitignored`,
+          ).to.not.throw();
+        });
+
         continue;
       }
 
@@ -444,6 +477,24 @@ describe('debug harness (round 43)', function () {
       expect(text).to.contain('v3/debug/webgl/');
       expect(text).to.contain('npm run watch');
       expect(text).to.not.contain('.cyge');
+    });
+
+    it('a 404 on a fetched fixture names the command that fetches it', function () {
+      // round 105: the GeneMANIA fixtures are gitignored, so a fresh checkout
+      // 404s on them until someone runs the fetch — the hint must say so
+      // rather than send them to v3/debug/webgl/
+      const text = describeLoadFailure({
+        phase: 'http',
+        networkID: 'genemania-tp53',
+        url: 'network-genemania-tp53.json',
+        isWire: false,
+        protocol: 'http:',
+        error: new Error('404 Not Found'),
+        fetch: networks['genemania-tp53'].fetch,
+      });
+
+      expect(text).to.contain('node debug/genemania.mjs');
+      expect(text).to.not.contain('v3/debug/webgl/');
     });
 
     it('every phase carries the error and names the network', function () {

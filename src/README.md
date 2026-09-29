@@ -5304,6 +5304,25 @@ and after one clone:
   main thread.
 - **A restyle costs the follower nothing** at every scale (zero syncs).
 
+### The minimap proof (106.5)
+
+`debug/`'s View section has a **Minimap** box (`?minimap=true`):
+`debug/minimap.js` clones the main view into a 240 × 180 container with
+its own sheet (40 px dots, 4 px straight hairlines, no labels or arrows),
+`follow`, `autolock`, `autoungrabify`, `autounselectify` and no user
+pan, zoom or box selection; it refits on each `patch` event, draws
+`cy.extent()` as a rectangle in its rendered px, and a tap centres the
+main view there.  Driven on em-web (569 nodes, 6,899 edges) through the
+harness's hardware adapter: the clone took 57 ms, moving 40 nodes on the
+main view produced one sync (`~40`, nothing added or removed), and zooming
+the main view moved only the rectangle.  The pure half is
+`test/modules/minimap.mjs` (headless, against the library); the renderer
+project's "a following clone renders its own sheet in its own container"
+spec checks two live canvases on one page — the clone's lime node at its
+own viewport, the main view's red one, the clone's node moving after a
+move on the main view, and a selection that stays in the view it was made
+in — and times out with the position trigger removed.
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its

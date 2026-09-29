@@ -1173,6 +1173,103 @@ test.describe('WebGPU renderer', () => {
     expect(dark).toBeGreaterThan(50);
   });
 
+  test('a following clone renders its own sheet in its own container (round 106)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    await makeReadyCy(page, RED_NODE_GRAPH);
+
+    const center = await centerPan(page);
+
+    // a second container over the main canvas's top-left corner: the
+    // clone has its own renderer there, its own sheet and its own viewport
+    await page.evaluate(async () => {
+      const box = document.createElement('div');
+
+      Object.assign(box.style, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        width: '200px',
+        height: '150px',
+        background: 'white',
+        zIndex: '5',
+      });
+      document.body.appendChild(box);
+
+      const mini = window.cy.clone({
+        container: box,
+        style: {
+          nodes: {
+            'background-color': 'lime',
+            width: 40,
+            height: 40,
+            shape: 'rectangle',
+          },
+        },
+        zoom: 1,
+        pan: { x: 100, y: 75 },
+        follow: { throttle: 0 },
+      });
+
+      window.mini = mini;
+      await mini.ready;
+      await new Promise((resolve) => {
+        mini.one('render', () => resolve());
+        mini.panBy({ x: 1, y: 0 });
+        mini.panBy({ x: -1, y: 0 });
+      });
+    });
+    await waitFrames(page);
+
+    const lime = (px) => px[1] > 200 && px[0] < 60 && px[2] < 60;
+    const red = (px) => px[0] > 200 && px[1] < 60 && px[2] < 60;
+    const white = (px) => px[0] > 240 && px[1] > 240 && px[2] > 240;
+
+    expect(
+      lime(await pixelAt(page, 100, 75)),
+      'the clone draws its sheet',
+    ).toBe(true);
+    expect(red(await pixelAt(page, center.x, center.y))).toBe(true);
+
+    // follow: the main view's move reaches the clone's canvas
+    await page.evaluate(async () => {
+      const synced = new Promise((resolve) =>
+        window.mini.one('patch', resolve),
+      );
+
+      window.cy.$id('a').position({ x: 60, y: 0 });
+      await synced;
+      await new Promise((resolve) => {
+        window.mini.one('render', () => resolve());
+        window.mini.panBy({ x: 1, y: 0 });
+        window.mini.panBy({ x: -1, y: 0 });
+      });
+    });
+    await waitFrames(page);
+
+    expect(lime(await pixelAt(page, 160, 75)), 'the clone followed').toBe(true);
+    expect(white(await pixelAt(page, 100, 75))).toBe(true);
+    expect(red(await pixelAt(page, center.x + 60, center.y))).toBe(true);
+
+    // a clone owns its state: a selection there is not one here
+    const selected = await page.evaluate(() => {
+      window.mini.$id('a').select();
+
+      const both = [
+        window.mini.$id('a').selected(),
+        window.cy.$id('a').selected(),
+      ];
+
+      window.mini.destroy();
+
+      return both;
+    });
+
+    expect(selected).toEqual([true, false]);
+  });
+
   test('device loss auto-recovers: devicelost, rebuild, devicerestored (round 10)', async ({
     page,
   }) => {

@@ -23,6 +23,7 @@
   <body>
       <div id="cytoscape"></div>
       <div id="bb"></div>
+      <div id="minimap"><div id="minimap-cy"></div><div id="minimap-view"></div></div>
       <div id="stats"></div>
 
       <div id="commands-show-area">
@@ -84,6 +85,9 @@
         <br/>
         <button id="unmount-button">Unmount</button>
         <button id="mount-button">Mount</button>
+        <label><input id="minimap-toggle" type="checkbox" /> Minimap</label>
+        <small>(a following <code>cy.clone()</code> with its own sheet — round 106)</small>
+        <br/>
         <div id="pan">Pan: 0</div>
         <div id="zoom">Zoom: 1</div>
 
@@ -337,6 +341,7 @@
       <script src="spiral-layout.js"></script>
       <script src="init.js"></script>
       <script src="view.js"></script>
+      <script src="minimap.js"></script>
       <script src="layout.js"></script>
       <script src="hover.js"></script>
       <script src="query.js"></script>

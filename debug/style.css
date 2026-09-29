@@ -26,3 +26,9 @@ body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin
 .event-filters label { white-space: nowrap; }
 #event-log { height: 12em; overflow: auto; background: rgba(255, 255, 255, 0.8); border: 1px solid #bbb; font: 10px/1.35 monospace; padding: 0.25em; margin-top: 0.25em; white-space: pre; }
 .event-row { white-space: pre; }
+
+/* the minimap (round 106): a following cy.clone() in its own container */
+#minimap { position: absolute; right: 19.25em; bottom: 0.5em; width: 240px; height: 180px; z-index: 3; display: none; background: rgba(255, 255, 255, 0.92); border: 1px solid #999; border-radius: 4px; overflow: hidden; }
+.commands-hidden #minimap { right: 0.5em; }
+#minimap-cy { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+#minimap-view { position: absolute; outline: 2px solid rgba(220, 60, 60, 0.85); background: rgba(220, 60, 60, 0.08); pointer-events: none; z-index: 1; }

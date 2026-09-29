@@ -4,6 +4,7 @@ import {
   SDF_RADIUS,
   SDF_TIER_MAX,
 } from './glyph-atlas.mjs';
+import { GenerationalMemo } from './shape-memo.mjs';
 import { layoutLabelBlock, WRAP_NONE } from '../label-wrap.mjs';
 import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
@@ -22,6 +23,10 @@ import { LabelDeclutter, nodeLabelRect } from './label-declutter.mjs';
  * close-up goldens at zoom 4.
  */
 export const LABEL_PROMOTE_PX = 40;
+
+/** laid blocks per shaping-memo generation (round 138): at most twice
+ * this many are held, ~0.7 KB each at eight glyphs */
+export const SHAPE_MEMO_GENERATION = 4096;
 
 /**
  * Consumes the model's label-dirty channel each frame: lays out changed
@@ -47,8 +52,10 @@ export class LabelLayer {
   private store: RenderStoreView;
   /** the shaping memo (16.3): line breaking is zoom-invariant (labels
    * are model-space), so identical (text, wrap params) pairs share one
-   * laid block; the cache clears with the atlas face. */
-  private shapeMemo = new Map<string, LaidBlock>();
+   * laid block; the cache clears with the atlas face.  Bounded since
+   * round 138 (two generations of SHAPE_MEMO_GENERATION) — unbounded,
+   * a session churning labels grew it by every text it ever saw. */
+  private shapeMemo = new GenerationalMemo<LaidBlock>(SHAPE_MEMO_GENERATION);
   private memoFont = '';
   /** shaping-memo hits since construction (stats) */
   memoHits = 0;

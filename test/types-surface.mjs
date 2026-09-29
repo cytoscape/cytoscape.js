@@ -256,12 +256,16 @@ for (const name of ['headless', 'headless-gpu']) {
     fail(`cytoscape-${name}.d.ts names a UMD global; only the full entry may`);
   }
 
+  // round 140: the factory is generic over the application's data shapes,
+  // and the parameters must survive the roll-up into each declaration
   if (
-    !/declare function cytoscape\(options\?: HeadlessOptions\): Core;/.test(
+    !/declare function cytoscape<NodeData = Untyped, EdgeData = Untyped>\(options\?: HeadlessOptions(?:<NodeData, EdgeData>)?\): Core<NodeData, EdgeData>;/.test(
       slim,
     )
   ) {
-    fail(`cytoscape-${name}.d.ts: the factory does not take HeadlessOptions`);
+    fail(
+      `cytoscape-${name}.d.ts: the factory does not take HeadlessOptions generically`,
+    );
   }
 
   for (const n of exported) {

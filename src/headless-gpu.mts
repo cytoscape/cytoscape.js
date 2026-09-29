@@ -18,6 +18,7 @@ walks this file's imports and fails if anything under `render/` or
 */
 
 import type { Core } from './core.mjs';
+import type { Untyped } from './data-typing.mjs';
 import { runForceSimWorker } from './layout/force-worker.mjs';
 import {
   _forceWorkerStats,
@@ -64,7 +65,9 @@ const HEADLESS_GPU: CoreCaps = {
  * @returns the new core
  * @throws when a `container` is given — this build has no renderer
  */
-export default function cytoscape(options: HeadlessOptions = {}): Core {
+export default function cytoscape<NodeData = Untyped, EdgeData = Untyped>(
+  options: HeadlessOptions = {},
+): Core<NodeData, EdgeData> {
   return createCore(options, HEADLESS_GPU);
 }
 

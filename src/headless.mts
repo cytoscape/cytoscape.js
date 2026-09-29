@@ -18,6 +18,7 @@ kernel or `gpu-lanes.mts` is reachable.
 */
 
 import type { Core } from './core.mjs';
+import type { Untyped } from './data-typing.mjs';
 import { runForceSimWorker } from './layout/force-worker.mjs';
 import {
   _forceWorkerStats,
@@ -61,7 +62,9 @@ const HEADLESS: CoreCaps = {
  * @returns the new core
  * @throws when a `container` is given — this build has no renderer
  */
-export default function cytoscape(options: HeadlessOptions = {}): Core {
+export default function cytoscape<NodeData = Untyped, EdgeData = Untyped>(
+  options: HeadlessOptions = {},
+): Core<NodeData, EdgeData> {
   return createCore(options, HEADLESS);
 }
 

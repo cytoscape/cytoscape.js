@@ -56,11 +56,14 @@ function dtsMembers(className) {
   // round 90: a documented class can ship under another name —
   // AnimationHandleImpl ships as the AnimationHandle interface
   // round 75.3: a class may implement an interface (Collection is
-  // `implements Iterable<Collection>`), so the header ends at its brace
+  // `implements Iterable<Collection>`), so the header ends at its brace;
+  // round 140: and may take type parameters (`Core<NodeData = Untyped, …>`)
   const header =
     DTS_NAMES[className] ??
     DTS.match(
-      new RegExp(`declare class ${className}(?: implements [^{\\n]+)? \\{`),
+      new RegExp(
+        `declare class ${className}(?:<[^{\\n]+?>)?(?: implements [^{\\n]+)? \\{`,
+      ),
     )?.[0] ??
     `declare class ${className} {`;
   const start = DTS.indexOf(header);
@@ -246,7 +249,8 @@ describe('the docs generator', () => {
       const names = factory.sections.flatMap((c) => c.fns.map((f) => f.name));
 
       expect(names).to.include('cytoscape');
-      expect(DTS).to.match(/declare function cytoscape\(/);
+      // round 140: the factory is generic (`cytoscape<NodeData, EdgeData>`)
+      expect(DTS).to.match(/declare function cytoscape[(<]/);
 
       const statics = dtsFactoryStatics();
       const documented = new Set(

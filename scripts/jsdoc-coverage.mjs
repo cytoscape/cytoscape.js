@@ -85,6 +85,21 @@ const MEMBER_RE =
   /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\??\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
+/**
+ * The line that opens a class body, given its header at `i`.  A generic
+ * class's type-parameter list can wrap (round 140: `Collection<NodeData =
+ * Untyped, …>` is past the print width), and its `NodeData = Untyped,`
+ * lines match MEMBER_RE at class indentation — so every walk skips the
+ * header to its `{` before reading members.
+ */
+const classHeaderEnd = (lines, i) => {
+  let k = i;
+
+  while (k < lines.length - 1 && !/\{\s*$/.test(lines[k])) k++;
+
+  return k;
+};
+
 // The @param audit reads its argument list from the *joined* signature
 // (`signatureOf` + `argListOf`) rather than from the declaration line, so
 // CALL_MEMBER_RE below is all the line itself has to match.
@@ -296,6 +311,7 @@ export function auditFile(file) {
     if (cls) {
       currentClass = cls[2];
       exported = Boolean(cls[1]);
+      i = classHeaderEnd(lines, i);
       banner = null;
       overloaded = new Set();
       continue;
@@ -460,6 +476,7 @@ export function auditThrowTags(file) {
     if (cls) {
       currentClass = cls[2];
       exported = Boolean(cls[1]);
+      i = classHeaderEnd(lines, i);
       continue;
     }
     if (!fn && TOP_LEVEL_RE.test(line)) {
@@ -544,6 +561,7 @@ export function auditParamTags(file) {
     if (cls) {
       currentClass = cls[2];
       exported = Boolean(cls[1]);
+      i = classHeaderEnd(lines, i);
       overloaded = new Set();
       continue;
     }
@@ -811,6 +829,7 @@ export function auditReturnTags(file) {
     if (cls) {
       currentClass = cls[2];
       exported = Boolean(cls[1]);
+      i = classHeaderEnd(lines, i);
       overloaded = new Set();
       continue;
     }

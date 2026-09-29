@@ -1,4 +1,5 @@
 import type { Core } from './core.mjs';
+import type { Untyped } from './data-typing.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { coreRenderHost } from './render/host.mjs';
 import { createBrowserImageDecoder } from './render/image-decoder.mjs';
@@ -112,7 +113,9 @@ const FULL: CoreCaps = {
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-export default function cytoscape(options: CytoscapeOptions = {}): Core {
+export default function cytoscape<NodeData = Untyped, EdgeData = Untyped>(
+  options: CytoscapeOptions = {},
+): Core<NodeData, EdgeData> {
   return createCore(options, FULL);
 }
 

@@ -4017,6 +4017,48 @@ declare class GraphStore implements ModelView {
   };
 }
 //#endregion
+//#region src/data-typing.d.mts
+/**
+ * The default of every data type parameter: "no generic was given".  It
+ * is `any` so that the untyped instantiations (`Core`, `Collection`) and
+ * the typed ones assign to each other both ways — the store's internals
+ * build bare collections and hand them out through typed signatures —
+ * and the helpers below turn it back into each position's pre-140 type,
+ * so no untyped read ever surfaces as `any`.
+ */
+type Untyped = any;
+/**
+ * True when `T` is `any` — the untyped default (a generic was not given).
+ * `0 extends 1 & T` holds for `any` alone.
+ */
+type IsUntyped<T> = 0 extends 1 & T ? true : false;
+/**
+ * What `data()` reads as a whole object: the application's shape, or
+ * `unknown` untyped (today's return).
+ */
+type DataOf<D> = IsUntyped<D> extends true ? unknown : D;
+/**
+ * The keys a field reference may name: the shape's string keys plus the
+ * first-class `'id'` (and, for edges, `'source'`/`'target'`; for nodes
+ * `'parent'` — synthesized on read).  Untyped: any string.
+ */
+type DataKey<D> = IsUntyped<D> extends true ? string : (D extends unknown ? keyof D & string : never) | FirstClassKey;
+/** The first-class keys every element answers, synthesized on read. */
+type FirstClassKey = 'id' | 'source' | 'target' | 'parent';
+/**
+ * The value `data( key )` reads for key `K`: the shape's field type (a
+ * union across a mixed collection's shapes), `string` for the first-class
+ * `'id'`, and `unknown` untyped.  A read can always miss — an empty
+ * collection or a stale handle answers `undefined` — so the field type
+ * is widened with it, as today's `unknown` already was.
+ */
+type DataValue<D, K> = IsUntyped<D> extends true ? unknown : K extends FirstClassKey ? string | undefined : (D extends unknown ? (K extends keyof D ? D[K] : never) : never) | undefined;
+/**
+ * A `data( patch )` write: some of the shape's fields, or any record of
+ * keys untyped (today's parameter).
+ */
+type DataPatch<D> = IsUntyped<D> extends true ? Record<string, unknown> : Partial<D>;
+//#endregion
 //#region src/animation/animation.d.mts
 /** Options accepted by animate()/animation(). */
 interface AnimateOptions {
@@ -5079,8 +5121,8 @@ type FilterLike = Query | EleFilterFn;
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-declare class Collection implements Iterable<Collection> {
-  [index: number]: Collection;
+declare class Collection<NodeData = Untyped, EdgeData = Untyped, Data = NodeData | EdgeData> implements Iterable<Collection<NodeData, EdgeData, Data>> {
+  [index: number]: Collection<NodeData, EdgeData, Data>;
   /** How many elements this collection holds. */
   length: number;
   _cy: Core;
@@ -5773,13 +5815,47 @@ declare class Collection implements Iterable<Collection> {
    * (v3 hands out its live internal object here, where mutation
    * corrupts the actual store — v4's exposure is strictly narrower).
    *
+   * **Typed** (round 140) when the instance was made with
+   * `cytoscape<NodeData, EdgeData>( … )`: a key must name a field of the
+   * collection's shape (or a first-class one), and the read answers that
+   * field's type.  Untyped, every form keeps its pre-140 type — any key,
+   * an `unknown` read.
+   *
    * @param key — omit it (read the first element's whole object), a key
    *   (read it), or an object of keys to merge (write)
    * @param value — with a string key: the value to write; omitting it
    *   reads the key, and an explicit `undefined` clears it
    * @returns the read value, or this collection when writing
    */
-  data(key?: string | Record<string, unknown>, value?: unknown): unknown;
+  data(): DataOf<Data>;
+  /**
+   * Read one data key of the first element (see the whole-object form).
+   *
+   * @param key — the key to read; `'id'` (and `'source'`/`'target'` on
+   *   edges, `'parent'` on nodes) read the first-class fields
+   * @returns the value, or undefined when the key is unset or the
+   *   collection is empty
+   */
+  data<K extends DataKey<Data>>(key: K): DataValue<Data, K>;
+  /**
+   * Write one data key on every element (see the whole-object form).
+   *
+   * @param key — the key to write
+   * @param value — the value; an explicit `undefined` clears the key
+   * @returns this collection, for chaining
+   * @throws when `key` is `'id'`, or `'source'`/`'target'` on an edge —
+   *   first-class fields are immutable
+   */
+  data<K extends DataKey<Data>>(key: K, value: DataValue<Data, K>): this;
+  /**
+   * Merge keys into every element's data (see the whole-object form).
+   *
+   * @param patch — the keys to write
+   * @returns this collection, for chaining
+   * @throws when the patch names `'id'`, or `'source'`/`'target'` on an
+   *   edge — first-class fields are immutable
+   */
+  data(patch: DataPatch<Data>): this;
   /**
    * Remove sidecar data keys.
    *
@@ -8288,7 +8364,7 @@ interface RendererLike {
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-declare class Core {
+declare class Core<NodeData = Untyped, EdgeData = Untyped> {
   _store: GraphStore;
   _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
@@ -8715,7 +8791,7 @@ declare class Core {
    * @returns a collection of one element, or an empty collection when no
    *   element has that id
    */
-  getElementById(id: string): Collection;
+  getElementById(id: string): Collection<NodeData, EdgeData>;
   /**
    * All elements, optionally filtered — nodes (in insertion order) then
    * edges.
@@ -9791,7 +9867,7 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Col
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-declare function cytoscape(options?: CytoscapeOptions): Core;
+declare function cytoscape<NodeData = Untyped, EdgeData = Untyped>(options?: CytoscapeOptions): Core<NodeData, EdgeData>;
 declare namespace cytoscape {
   export { toColumnarElements };
   export { serializeElements };

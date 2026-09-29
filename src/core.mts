@@ -1,4 +1,5 @@
 import { GraphStore } from './store/graph-store.mjs';
+import type { Untyped } from './data-typing.mjs';
 import { Collection } from './collection.mjs';
 import { hasListeners, makeCoreEmitter } from './events.mjs';
 import type { ElePredicate, Qualifier } from './events.mjs';
@@ -139,7 +140,7 @@ export interface BatchPending {
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-export class Core {
+export class Core<NodeData = Untyped, EdgeData = Untyped> {
   _store: GraphStore;
   _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
@@ -961,7 +962,7 @@ export class Core {
    * @returns a collection of one element, or an empty collection when no
    *   element has that id
    */
-  getElementById(id: string): Collection {
+  getElementById(id: string): Collection<NodeData, EdgeData> {
     // the packed-code lookup (round 62.3): no IdEntry, no Ref — the
     // probe answers an integer and the pool answers the handle
     const code = this._store.lookupCode(id);

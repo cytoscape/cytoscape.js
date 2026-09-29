@@ -24,6 +24,13 @@ import { compileQuery, planMatchesRef } from './matcher.mjs';
 import { refQualifier } from './events.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
+import type {
+  DataKey,
+  DataOf,
+  DataPatch,
+  DataValue,
+  Untyped,
+} from './data-typing.mjs';
 import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
 import {
   search as searchImpl,
@@ -142,8 +149,12 @@ export type { EleFilterFn, ElePositionFn } from './collection/shared.mjs';
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-export class Collection implements Iterable<Collection> {
-  [index: number]: Collection;
+export class Collection<
+  NodeData = Untyped,
+  EdgeData = Untyped,
+  Data = NodeData | EdgeData,
+> implements Iterable<Collection<NodeData, EdgeData, Data>> {
+  [index: number]: Collection<NodeData, EdgeData, Data>;
 
   // -- basics --
 
@@ -1394,12 +1405,47 @@ export class Collection implements Iterable<Collection> {
    * (v3 hands out its live internal object here, where mutation
    * corrupts the actual store — v4's exposure is strictly narrower).
    *
+   * **Typed** (round 140) when the instance was made with
+   * `cytoscape<NodeData, EdgeData>( … )`: a key must name a field of the
+   * collection's shape (or a first-class one), and the read answers that
+   * field's type.  Untyped, every form keeps its pre-140 type — any key,
+   * an `unknown` read.
+   *
    * @param key — omit it (read the first element's whole object), a key
    *   (read it), or an object of keys to merge (write)
    * @param value — with a string key: the value to write; omitting it
    *   reads the key, and an explicit `undefined` clears it
    * @returns the read value, or this collection when writing
    */
+  data(): DataOf<Data>;
+  /**
+   * Read one data key of the first element (see the whole-object form).
+   *
+   * @param key — the key to read; `'id'` (and `'source'`/`'target'` on
+   *   edges, `'parent'` on nodes) read the first-class fields
+   * @returns the value, or undefined when the key is unset or the
+   *   collection is empty
+   */
+  data<K extends DataKey<Data>>(key: K): DataValue<Data, K>;
+  /**
+   * Write one data key on every element (see the whole-object form).
+   *
+   * @param key — the key to write
+   * @param value — the value; an explicit `undefined` clears the key
+   * @returns this collection, for chaining
+   * @throws when `key` is `'id'`, or `'source'`/`'target'` on an edge —
+   *   first-class fields are immutable
+   */
+  data<K extends DataKey<Data>>(key: K, value: DataValue<Data, K>): this;
+  /**
+   * Merge keys into every element's data (see the whole-object form).
+   *
+   * @param patch — the keys to write
+   * @returns this collection, for chaining
+   * @throws when the patch names `'id'`, or `'source'`/`'target'` on an
+   *   edge — first-class fields are immutable
+   */
+  data(patch: DataPatch<Data>): this;
   data(key?: string | Record<string, unknown>, value?: unknown): unknown {
     // arity via arguments.length, not a rest array — the rest form
     // allocated per call on the hottest read path (round 62.6)

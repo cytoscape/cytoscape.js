@@ -379,6 +379,16 @@ that compile and then behave differently.
   scaling exponent depends on `time` alone, at the price of heat
   conservation).
 
+- **Official JSON schemas** (round 79, #3487): draft 2020-12 documents
+  for element definitions, the stylesheet, layout options and the
+  factory's options, shipped as `cytoscape/schemas/*.json`.  The
+  stylesheet schema enumerates every property the style compiler accepts
+  per group and whether it takes a mapper; all five are gated against
+  the running library.  A pass means well-formed, not guaranteed to load
+  — colour strings, data keys and mapper domains are judged when the
+  sheet compiles.  The `$id` base is a placeholder until the
+  documentation site; there is no runtime `validate()`.
+
 ### Changed
 
 - **One worker for the algorithms the pool cannot partition** (round

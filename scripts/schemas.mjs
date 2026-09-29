@@ -133,3 +133,128 @@ export function* debugNetworks() {
     yield { id, def, elements };
   }
 }
+
+/** The harness UI states each page layout's options are built in. */
+export const LAYOUT_UI_STATES = [
+  {},
+  { animate: true, avoidOverlap: true, pack: true, spacing: 1.5 },
+  { signKey: 'score', seed: '7', tidy: false },
+];
+
+/**
+ * Every fixture document a schema must accept, as `{ file, what, doc }`:
+ * each debug network's elements and first node/edge definition, its
+ * hand-authored sheets, the whole options document the page would store,
+ * and every layout run the page makes (JSON round-tripped — the document
+ * a stored configuration would be) plus the options panel's defaults.
+ * The gate asserts every one validates; the status page reports the run.
+ *
+ * @param networks — the debug networks, if already loaded
+ */
+export function* fixtureDocuments(networks = [...debugNetworks()]) {
+  const styles = loadDebugGlobal('styles');
+  const layoutConfig = loadDebugGlobal('layout-config');
+  const panel = loadDebugGlobal('layout-options');
+
+  for (const { id, def, elements } of networks) {
+    yield {
+      file: 'elements.schema.json',
+      what: `${id}: elements`,
+      doc: elements,
+    };
+    yield {
+      file: 'element.schema.json',
+      what: `${id}: a node`,
+      doc: elements.nodes[0],
+    };
+
+    if (elements.edges.length > 0) {
+      yield {
+        file: 'element.schema.json',
+        what: `${id}: an edge`,
+        doc: elements.edges[0],
+      };
+    }
+
+    for (const kind of styles.kinds) {
+      yield {
+        file: 'stylesheet.schema.json',
+        what: `${id}: the ${kind} sheet`,
+        doc: styles.sheet(kind, id, elements, def),
+      };
+    }
+
+    yield {
+      file: 'cytoscape-options.schema.json',
+      what: `${id}: the page's options`,
+      doc: {
+        elements,
+        style: styles.sheet('production', id, elements, def),
+        layout: { name: 'preset' },
+      },
+    };
+  }
+
+  // the spiral entry is the extension example: its `impl` is code
+  const names = Object.keys(layoutConfig.EDGE_STYLE).filter(
+    (n) => n !== 'spiral',
+  );
+
+  for (const name of names) {
+    for (const ui of LAYOUT_UI_STATES) {
+      yield {
+        file: 'layout-options.schema.json',
+        what: `${name} ${JSON.stringify(ui)}`,
+        doc: JSON.parse(JSON.stringify(layoutConfig.layoutOptions(name, ui))),
+      };
+    }
+
+    const layoutName = layoutConfig.layoutOptions(name, {}).name;
+    const defaults = { name: layoutName };
+
+    for (const spec of panel.specsFor(layoutName)) {
+      if (spec.def !== undefined) defaults[spec.key] = spec.def;
+    }
+
+    yield {
+      file: 'layout-options.schema.json',
+      what: `${name}: the options panel's defaults`,
+      doc: defaults,
+    };
+  }
+}
+
+/**
+ * Validate every fixture document; the summary the status page shows.
+ *
+ * @returns `{ perSchema: Map<file, { documents, failures }>, total,
+ *   failures }` — each failure `{ file, what, errors }`
+ */
+export const validationRun = (
+  schemas = loadSchemas(),
+  networks = undefined,
+) => {
+  const { validate } = makeValidator(schemas);
+  const perSchema = new Map(
+    schemas.map(({ file }) => [file, { documents: 0, failures: [] }]),
+  );
+  const failures = [];
+  let total = 0;
+
+  for (const { file, what, doc } of fixtureDocuments(networks)) {
+    const { valid, errors } = validate(file, doc);
+    const entry = perSchema.get(file);
+
+    entry.documents++;
+    total++;
+
+    if (!valid) {
+      const failure = { file, what, errors: describeErrors(errors) };
+
+      entry.failures.push(failure);
+      failures.push(failure);
+    }
+  }
+
+  return { perSchema, total, failures };
+};

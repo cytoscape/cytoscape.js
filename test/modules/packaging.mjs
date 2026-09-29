@@ -53,6 +53,7 @@ function manifestPaths() {
   add(pkg.jsdelivr);
 
   // exports targets are './'-relative; every condition of every subpath
+  // but the schemas', which are source files, not build output (round 79)
   const walk = (node) => {
     if (typeof node === 'string') {
       add(node.replace(/^\.\//, ''));
@@ -63,7 +64,11 @@ function manifestPaths() {
     }
   };
 
-  walk(pkg.exports);
+  walk(
+    Object.fromEntries(
+      Object.entries(pkg.exports).filter(([k]) => !k.startsWith('./schemas/')),
+    ),
+  );
 
   return out;
 }
@@ -214,6 +219,24 @@ describe('packaging: the tarball', () => {
     ]);
   });
 
+  it('ships the JSON schemas, and nothing else from schemas/ (round 79)', () => {
+    // `.npmignore` is a denylist, so the directory ships by default; what
+    // this pins is that it keeps shipping, whole and unpadded — a consumer
+    // validating a document against `cytoscape/schemas/…` needs every file
+    // the schemas reference by relative name
+    const onDisk = readdirSync(join(ROOT, 'schemas'))
+      .map((f) => `schemas/${f}`)
+      .sort();
+    const shipped = files.filter((f) => f.startsWith('schemas/')).sort();
+
+    expect(onDisk.length).to.be.at.least(5);
+    expect(shipped).to.deep.equal(onDisk);
+
+    for (const f of shipped) {
+      expect(f).to.match(/^schemas\/[a-z-]+\.schema\.json$/);
+    }
+  });
+
   it("does not exclude dist/, so a release build's bundles ship", () => {
     // The declaration proves it positively (it is committed and packed), but
     // assert the rule too: an `.npmignore` line for `dist` would silently
@@ -230,7 +253,7 @@ describe('packaging: the tarball', () => {
 });
 
 describe('packaging: the manifest resolves to build output', () => {
-  it('names only paths under dist/', () => {
+  it('names only paths under dist/, the schemas subpath aside', () => {
     const paths = manifestPaths();
 
     expect(paths.size).to.be.greaterThan(5);
@@ -382,6 +405,23 @@ describe('packaging: the exports map', () => {
     expect(`./${pkg.main}`).to.equal(root.require);
     expect(`./${pkg.module}`).to.equal(root.import);
     expect(`./${pkg.types}`).to.equal(root.types);
+  });
+
+  it('exports the JSON schemas by subpath (round 79)', () => {
+    // with an `exports` map, a subpath it does not name cannot be imported
+    // at all — `cytoscape/schemas/element.schema.json` would be
+    // ERR_PACKAGE_PATH_NOT_EXPORTED however the file ships.  Resolved
+    // through the package's self-reference, which applies `exports` exactly
+    // as a consumer's resolver does.
+    expect(pkg.exports['./schemas/*.json']).to.deep.equal({
+      default: './schemas/*.json',
+    });
+
+    for (const f of readdirSync(join(ROOT, 'schemas'))) {
+      const url = import.meta.resolve(`cytoscape/schemas/${f}`);
+
+      expect(fileURLToPath(url), f).to.equal(join(ROOT, 'schemas', f));
+    }
   });
 
   it('ships no ./gpu alias (removed before alpha, round 131)', () => {

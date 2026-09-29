@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -152,6 +152,27 @@ describe('status site: the plan', function () {
     expect(written.has('index.html')).to.equal(true);
     expect(written.has('version.json')).to.equal(true);
     expect(written.has('_headers')).to.equal(true);
+  });
+
+  it('publishes the JSON schemas page, each schema, and a clean fixture run (round 79)', function () {
+    const written = new Set(plan.ops.map((op) => op.to));
+    const schemas = readdirSync(join(ROOT, 'schemas'));
+    const part = plan.parts.find((p) => p.id === 'schemas');
+    const html = plan.ops.find((op) => op.to === 'schemas.html').text;
+
+    expect(schemas.length).to.be.at.least(5);
+    expect(part.available).to.equal(true);
+    expect(part.badges[0]).to.equal(`${schemas.length} schemas`);
+    // a fixture the gate rejects surfaces as a count on the card and a
+    // build warning, never as a silently shorter table
+    expect(part.badges[1]).to.match(/^\d{3,} fixtures$/);
+    expect(plan.warnings.filter((w) => w.startsWith('schemas:'))).to.eql([]);
+
+    for (const f of schemas) {
+      expect(written.has(`schemas/${f}`), f).to.equal(true);
+      expect(html, f).to.include(`id="${f}"`);
+      expect(html, f).to.include(`href="schemas/${f}"`);
+    }
   });
 });
 

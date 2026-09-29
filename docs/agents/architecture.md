@@ -31,6 +31,10 @@ routes, these files explain.
   - `src/math.mts`, `src/types.mts`, `src/util/`: v4's own copies of the generic helpers it used to import from v3 (round 42).  `src/math.mts` is deliberately *lean* — the functions v4 calls, not v3's 1500-line geometry module.
   - The `gpu-` prefix survives only where it names the *device* half against a CPU counterpart: `gpu-context.mts`, `src/gpu/gpu-force.mts`, `src/render/gpu-tween.mts`, `src/render/gpu-timer.mts`.  (`gpu-types.mts` was **not** such a case — it holds the public option surface — and became `public-types.mts` in round 42.6.)
 
+## `schemas/` — the shipped JSON schemas
+
+- `schemas/`: the official JSON Schema (draft 2020-12) documents (round 79, #3487) — element, elements, stylesheet, layout options and the options envelope — shipped in the package and exported as `cytoscape/schemas/*.json`.  Hand-written, not generated: `test/modules/schemas.mjs` holds them to the running library (the stylesheet both ways against `PROP` and the compiler, every schema's names against `src/public-types.mts` through the TypeScript checker, paired probes where the library is strict), and `scripts/schemas.mjs` is the shared harness — the placeholder `$id` base (`SCHEMA_BASE`, finalized by round 46), the ajv loader (a devDependency; there is no runtime `validate()`) and the fixture run the status site's schemas page shows.  A round that adds a style property, a layout option or a factory option adds it to the schema, or that spec is red.
+
 ## `test/`
 
 - `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under `--expose-gc`.  `test/runtimes/` holds the round-98 cross-runtime smoke — one framework-free file the `test:runtimes:node`/`test:runtimes:bun`/`test:runtimes:deno` scripts run over the built bundles; see `docs/agents/testing.md`.

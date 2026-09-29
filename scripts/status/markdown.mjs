@@ -145,8 +145,7 @@ export const PLANNED_PATHS = {
     'planned by round 77 (SVG vector export)',
   'test/svg-export-headless.mjs':
     'planned by round 78 (headless Node image generation)',
-  // round 79 — official JSON schemas
-  'test/modules/schemas.mjs': 'planned by round 79 (official JSON schemas)',
+  // round 79's entry left on 2026-09-28, the day it landed
   // round 81 — the annotations layer
   'src/store/annotation-table.mts':
     'planned by round 81 (the annotations layer)',

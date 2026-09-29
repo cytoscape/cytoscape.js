@@ -102,6 +102,9 @@
     },
     "./dist/cytoscape-headless-gpu.cjs.js": {
       "require": "./dist/cytoscape-headless-gpu.cjs.js"
+    },
+    "./schemas/*.json": {
+      "default": "./schemas/*.json"
     }
   },
   "unpkg": "dist/cytoscape.min.js",

@@ -5701,8 +5701,11 @@ alias of the full entry that round 42.3 kept for v3's users: beside
 `./headless-gpu` it read as "the GPU build" while resolving to
 everything, and v4 is unreleased (the eleventh design sitting).  The tarball is those bundles, the
 declaration, `src/` (source-map resolution, as v3 ships it), the README
-and the licence, plus `MIGRATING.md` and `CHANGELOG.md` — 106 files
-today, before a release build populates `dist/`.
+and the licence, plus `MIGRATING.md` and `CHANGELOG.md`, and — since
+round 79 — the JSON schemas under `schemas/`, exported by subpath
+(`./schemas/*.json`, so `cytoscape/schemas/stylesheet.schema.json`
+resolves; see "JSON schemas") — 287 files today, before a release build
+populates `dist/`.
 
 `dist/` holds only the committed declaration in a checkout, and that is
 the inherited convention rather than a gap: v3 tracks all six of its
@@ -5727,9 +5730,75 @@ later one is silently dead); `import`/`require`/`types` point at
 `./gpu` is gone; each slim entry maps to its own declaration and
 bundles; exactly one shipped declaration names the UMD global; and the
 package declares `sideEffects: false` while its own build keeps every
-source module (round 131).  It deliberately does not
+source module (round 131); every schema ships and resolves through the
+`./schemas/*.json` export (round 79 — with an `exports` map, a subpath
+it does not name is unimportable however the file ships).  It
+deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
+
+## JSON schemas (round 79, #3487)
+
+v4 ships JSON Schema (draft 2020-12) documents for the formats it takes
+as JSON, in the package under `schemas/`:
+
+| Schema | Describes |
+|---|---|
+| `element.schema.json` | one element definition (`options.elements`, `cy.add()`, `cy.patch()`, a `cy.load()` chunk, `ele.json()`) |
+| `elements.schema.json` | the `elements` input: an array, a `{ nodes, edges }` map, or one definition |
+| `stylesheet.schema.json` | the v4 sheet: per group, every property the compiler accepts, and whether it takes a mapper |
+| `layout-options.schema.json` | `cy.layout()` options: one branch per built-in, by `name`, plus the `impl` escape |
+| `cytoscape-options.schema.json` | the factory's options (and `cy.json()`'s export), composing the three above |
+
+A consumer resolves them from the package — `import schema from
+'cytoscape/schemas/stylesheet.schema.json' with { type: 'json' }` — and
+validates with any draft 2020-12 validator; they reference each other by
+relative filename, so a validator needs all five loaded.
+
+**The contract.**  A schema pass means the document is *well-formed*:
+the right keys, per group the property names the compiler knows,
+mappers only where the channel takes them, keywords from the engine's
+own sets, the number-or-string and percent forms.  It does **not** mean
+the document loads.  What stays the library's job: whether a colour
+string parses, a scheme name's case, whether a data key exists, a
+mapper's domain against its scale, unique ids, endpoints and parents
+that name real nodes, a `transition-property` listing the group's own
+props.  The library's error is the answer there, and the schemas say so
+in their own descriptions.  Where the runtime *ignores* unknown keys —
+element definitions, mapper objects, layout options, the factory's
+options (the fifth sitting's decision) — the schemas stay open; where it
+throws — the sheet's keys, a group's property names, a bypass entry —
+they are closed.  Where the runtime coerces a form the declaration does
+not name (a string where the type says number, a numeric id), the
+declaration is the contract and the schema follows it.
+
+**Hand-written, and gated.**  The types are vacuous exactly where a
+schema is valuable (`StyleProps` is `Record<string, StylePropValue>`),
+so the schemas are hand-maintained documents rather than generated ones,
+and `test/modules/schemas.mjs` holds them to the running library:
+every debug network's elements, every sheet in `debug/styles.js`, every
+layout run the harness makes and `cy.json()`'s output validate; paired
+probes run one payload through the library and the schema and require
+the same answer where the library is strict; property names are held to
+the declaration through the TypeScript checker; and the stylesheet is
+gated **both ways** against the style engine — every property the schema
+enumerates compiles in its group with the examples it carries, and every
+name in `PROP` (the engine's census) the schema leaves out of a group is
+refused there by name.  **A round that adds a style property, a layout
+option or a factory option must add it to the schema**, or that spec is
+red.  The status site's schemas page shows each document beside the same
+fixture run (`scripts/schemas.mjs`, shared).
+
+**Decided at the eleventh sitting.**  The `$id` base is a placeholder —
+`https://placeholder.invalid/cytoscape/schemas/`, `SCHEMA_BASE` in
+`scripts/schemas.mjs`, the one place it is decided — until round 46 (the
+documentation site) says where the schemas are served.  The validator
+is ajv, a devDependency only: there is no runtime `cytoscape.validate()`,
+which would drag a validator into the bundle.  The columnar form's
+schema is held until 4.x with the wire format's experimental status (the
+wire format is binary; no JSON Schema applies).  SchemaStore submission
+waits for 4.0, once the schemas are stable; until then they version with
+the package.
 
 ## Runtimes: Bun and Deno run the package (round 98)
 

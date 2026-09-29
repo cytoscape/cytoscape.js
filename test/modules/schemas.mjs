@@ -13,6 +13,7 @@ import {
   describeErrors,
   loadSchemas,
   makeValidator,
+  validationRun,
 } from '../../scripts/schemas.mjs';
 
 /*
@@ -1539,5 +1540,19 @@ describe('schemas: the options envelope (79.3)', () => {
         ).to.equal(lib);
       });
     }
+  });
+});
+
+describe('schemas: the fixture run the status page reports (79.4)', () => {
+  it('validates every fixture document, every schema exercised, none failing', () => {
+    const run = validationRun(SCHEMAS, NETWORKS);
+
+    expect(run.total).to.be.at.least(100);
+
+    for (const { file } of SCHEMAS) {
+      expect(run.perSchema.get(file).documents, file).to.be.at.least(10);
+    }
+
+    expect(run.failures).to.deep.equal([]);
   });
 });

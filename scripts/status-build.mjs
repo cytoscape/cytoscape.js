@@ -14,7 +14,8 @@
 //
 // Options:
 //   --out <dir>           output root                              [status]
-//   --skip <a,b,...>      parts to skip: debug, benchmark, docs, api, goldens
+//   --skip <a,b,...>      parts to skip: debug, benchmark, docs, api, goldens,
+//                         schemas
 //   --no-gzip             skip bundle gzip measurement (the only slow step)
 //   --no-wire             ship fixtures as JSON instead of the binary wire form
 //   --strict              exit 1 if any part is unavailable
@@ -44,6 +45,7 @@ import { planDebug, write, copy, PAGES_MAX_BYTES } from './status/plan.mjs';
 import { encodeFixture } from './status/wire-fixtures.mjs';
 import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
+import { planSchemas, SCHEMAS_CSS } from './status/schemas-page.mjs';
 import { planBenchmarks, BENCH_CSS } from './status/bench-pages.mjs';
 import { indexPage, INDEX_CSS } from './status/index-page.mjs';
 import { readInventory, checkCoverage } from './status/feature-inventory.mjs';
@@ -388,6 +390,45 @@ export function buildPlan({
             `${bench.count} run${bench.count === 1 ? '' : 's'}`,
             bench.age,
           ].filter((v) => v != null)
+        : [],
+    });
+  }
+
+  // -- the JSON schemas (round 79.4) --
+  if (!skip.has('schemas')) {
+    const schemas = planSchemas({ root });
+
+    ops.push(...schemas.ops);
+    ops.push(
+      write(
+        'schemas.html',
+        page({
+          title: 'JSON schemas — cytoscape.js v4',
+          body: schemas.html,
+          state,
+        }).replace('</style>', `${SCHEMAS_CSS}</style>`),
+      ),
+    );
+
+    warnings.push(
+      ...schemas.failures.map(
+        (f) => `schemas: ${f.file} rejects ${f.what}: ${f.errors}`,
+      ),
+    );
+
+    parts.push({
+      id: 'schemas',
+      title: 'JSON schemas',
+      href: '/schemas.html',
+      blurb:
+        'The element, stylesheet and layout schemas the package ships, beside the fixtures they were run against.',
+      available: schemas.available,
+      reason: schemas.reason,
+      badges: schemas.available
+        ? [
+            `${schemas.count} schemas`,
+            `${schemas.documents} fixtures${schemas.failures.length > 0 ? `, ${schemas.failures.length} invalid` : ''}`,
+          ]
         : [],
     });
   }

@@ -680,6 +680,12 @@ instances are not emitters.
   and `taxi-track-spacing` the distance between lines.  Pair it with a
   background-coloured `line-outline-*` casing: v4 draws the casing per
   edge in v3's order, so a crossing reads as a gap.
+- **The JSON schemas** (round 79) — `cytoscape/schemas/*.json`, for a
+  stored sheet, layout configuration or graph document: point an editor
+  or a CI step at them.  A v3 sheet fails `stylesheet.schema.json` on its
+  first selector block, and a v3 property v4 dropped fails by name, so
+  validating a store of saved sheets finds the ones still to port without
+  loading any of them.
 - **Mapper domains.** An explicit `domain` keeps a data write O(changed);
   `'auto'` is a live extent and pays O(n) only when a write actually moves it.
   Pin `domain` when a stream grows its own extent.

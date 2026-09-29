@@ -36,6 +36,9 @@ deleting a word of them.
   unless the task says v3; see `v3/AGENTS.md`.
 - Nothing under `src/` imports outside `src/`, and a spec enforces that
   (`test/modules/import-graph.mjs`).
+- **`schemas/` holds the shipped JSON schemas** (round 79), hand-written
+  and gated both ways by `test/modules/schemas.mjs`: a new style
+  property, layout option or factory option goes into its schema too.
 - **`src/README.md` is v4's maintained scope / deviations / design
   decisions doc**, and **`PLAN.md` plus `plan/` is the
   development record** — start there, not with v3's site.  The record is

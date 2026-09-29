@@ -117,9 +117,11 @@ requirement to finish every feature in the inventory.
   copy census and representative application workloads to validate transfer
   costs, memory limits and graceful failure before these contracts become
   consumer dependencies.
-- **Graph updates, table access and state ownership:** define progressive
-  ingestion, ID-keyed reconciliation, column views and filters, including
-  batching, event ordering and visibility of partial results. Viewer cloning
+- **Graph updates, table access and state ownership:** define column views
+  and filters, including batching and event ordering. Progressive ingestion
+  (round 103: `cy.load()`, `cy.ready` as the first chunk drawn, every drawn
+  element correct and completeness arriving) and ID-keyed reconciliation
+  (round 107: `cy.patch()`) are settled. Viewer cloning
   (round 106) isolates view state — a clone owns its selection, hover, sheet
   and viewport and follows elements only; settle whether any view state should
   be shareable by opt-in, and whether undo requires transaction hooks in the

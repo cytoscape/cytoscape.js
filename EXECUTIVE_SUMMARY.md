@@ -5,7 +5,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-28, after round 106 shipped `cy.clone()` —
+- **Last updated**: 2026-09-28, after round 103 shipped `cy.load()` —
+  a graph streamed in chunks shows a correct partial graph before the
+  last byte: on the 465k-edge fixture over a 100 Mbit/s link the first
+  frame comes 4.8–18× sooner and the whole graph 38% sooner than a
+  one-shot load, and `cy.ready` now means the first chunk drawn.
+  Before it round 106 shipped `cy.clone()` —
   a second view of a graph (a minimap, an overview) is a second
   instance with its own sheet, viewport and selection, and `follow`
   keeps it current by a throttled `patch()` (~50 ms a sync at 100k
@@ -112,12 +117,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 2,924 unit · 816 module · 38 soak · 496 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
-| Documented API | 335 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
+| Automated tests | 2,962 unit · 816 module · 38 soak · 498 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Documented API | 340 members over 46 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 49 goldens compared **exactly** — zero differing pixels · 48 live v3-vs-v4 pixel-parity scenes, 9 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | Three builds as of 28 Sep (after rounds 107 and 106), minified / gzipped: `cytoscape` 893 / 252 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 533 / 164 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 610 / 183 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
+| Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step) |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
@@ -1309,6 +1314,27 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     alternative — N renderers over one store — is kept as the fallback
     design: it needed six drain-once channels, three singleton leases and
     the hover flags made view-aware.
+- **28 Sep** — a first frame before the last byte
+  - `cy.load( asyncIterable )`: the graph arrives chunk by chunk — a
+    streamed response, a server's pages — in any input form, and the
+    renderer draws between chunks.  Every element drawn is correct;
+    completeness arrives.  `cy.ready` now means the first chunk drawn;
+    the returned promise is completion, with `cancel()`; the viewport
+    fits once to the first chunk and then holds; a layout waits for the
+    load.
+  - Measured first: chunking with the existing API cost 3× a one-shot
+    load, nearly all of it the edges between chunks, which could only
+    travel as slow per-element definitions.  So the columnar and binary
+    forms gained **node references** — a chunk names nodes an earlier
+    chunk loaded, each id resolved once — the wire format's first new
+    section under its experimental rule.  A 10-chunk load now costs
+    1.2–1.3× a one-shot one.
+  - On the 465k-edge fixture and a real GPU: with the payload in hand
+    the first frame is 1.8–2.4× sooner and the whole graph ~23% later;
+    over a 100 Mbit/s link the first frame is 4.8–18× sooner and the
+    whole graph 38% sooner, since ingest overlaps the transfer; at
+    20 Mbit/s the first frame arrives in under half a second against
+    six.  The final frame is pixel-identical to the one-shot load's.
 - **28 Sep** — builds for the use case
   - `cytoscape/headless`: the whole model, style engine, CPU algorithms,
     every layout and the worker pool, with no renderer and no WebGPU
@@ -1445,6 +1471,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   the refresh case** (28 Sep): an app that fed the next server response
   back through `json()` reconciles it by id instead, keeping survivors'
   state; restoring a saved session is still the app's `cy.add()`.
+- **Streaming a large graph in** (28 Sep): v3 apps showed nothing until
+  the whole payload had arrived and been parsed; `cy.load()` takes the
+  chunks as they come, and `cy.ready` resolves when the first is on
+  screen.
 - **A minimap is a `cy.clone()`** (28 Sep): v3 apps drew a navigator from
   exported images or kept a second instance in step by hand; a v4 clone
   with `follow` is a full instance that stays current by itself, with
@@ -1514,7 +1544,7 @@ round, and is regenerated rather than maintained:
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a DX polish bundle; a small style-wins bundle |
 | WebGL2 fallback | Scoped: what a browser without WebGPU gets |
-| Ecosystem rounds | Four plans serving the flagship apps, approved in direction: transient hover emphasis without per-mousemove restyles, progressive chunked loading (a first frame before the last byte), priority-driven label decluttering, and parallel-edge scale plus a real GeneMANIA fixture.  The other two landed 28 Sep: the id-keyed `patch()` reconcile, and N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap).  Decided alongside: CX2 conversion stays extension territory, not core |
+| Ecosystem rounds | Three plans serving the flagship apps, approved in direction: transient hover emphasis without per-mousemove restyles, priority-driven label decluttering, and parallel-edge scale plus a real GeneMANIA fixture.  The other three landed 28 Sep: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap), and progressive loading (`cy.load()`, a first frame before the last byte).  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation
   files, the Brandes reference's data layout (2.5× on one thread, measured

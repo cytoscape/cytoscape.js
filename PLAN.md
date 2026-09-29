@@ -219,7 +219,14 @@ sitting's call for it) raised no new item: its one open cost — below
 built it: consumer cursors on the dirty stream, `cy.clone()` with
 `follow`, and the minimap in `debug/`; it raised **item 78**, the
 viewport animation's double `viewport` event its plan had logged as a
-drive-by.
+drive-by.  Round 103 (progressive ingest, landed the same day on the
+sitting's calls) built `cy.load( asyncIterable )` with `cy.ready` as the
+first chunk drawn, after measuring the zero-format baseline at 3× a
+monolithic load — nearly all of it cut edges as definitions — and so
+added node references to the columnar and wire forms (item 43's first
+section under its experimental rule); it raised no new item, and its
+open ends (a queued layout, references in `patch()`'s merge mode) are
+follow-up hooks in `src/README.md`.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -996,6 +1003,9 @@ directions".*
     (Correction to the entry: the format already has a public API —
     `cy.serialize()`, `serializeElements`, `deserializeElements` — and a
     magic/version header with presence flags.)
+    Round 103 added the first section under that rule: node references
+    (flag bit 2048, a trailing u32 count + packed ids), the version
+    still 4.
 44. **A v3→v4 codemod** (raised 2026-08-19).  `MIGRATING.md` is
     prose, but its property table is machine-checked
     (`test/modules/migration-guide.mjs`) — a codemod can be driven

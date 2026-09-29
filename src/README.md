@@ -5267,6 +5267,43 @@ mutations were run against the file — no `positionEpoch`, no
 carried flags on a sync's adds, no lock bypass, no destroy hook, no
 one-shot flag carriage — and each fails at least one spec.
 
+### Measured (106.4)
+
+`benchmark/clone.mjs` (built headless bundle, i9-9900K, Node 24.18,
+`--expose-gc`, median of 5; a mapped sheet with labels; each timed region
+after a forced GC).  The follow burst is 1% of the nodes moved, timed
+from the last write to the clone's `patch` event; "restyle syncs" is the
+control — a sheet change on the source, which must cost the clone
+nothing.  Memory is `heapUsed + arrayBuffers` after a forced GC, before
+and after one clone:
+
+| scale | elements | clone ms | serialize ms | load from wire ms | follow burst ms | restyle syncs | clone memory MB | wire MB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1k | 1,000 | 4.6 | 0.4 | 3.7 | 2.3 | 0 | 0.5 | <0.1 |
+| 10k | 10,000 | 30.4 | 2.5 | 20.6 | 8.0 | 0 | 4.4 | 0.3 |
+| 100k | 100,000 | 248.4 | 25.2 | 184.4 | 50.9 | 0 | 49.8 | 3.0 |
+| ndex-x-large shape (19.6k nodes, 465k edges) | 484,600 | 1,089 | 79.3 | 795 | 202.5 | 0 | 113.5 | 13.5 |
+
+- **A clone is a serialize plus a load**: profiled through `src/` at the
+  ndex shape, 85 ms + 1.17 s + **~20 ms** for the lock/grab/pan carry (two
+  `slotsOrdered` walks).  The clone column runs above the sum of its halves
+  by 7–300 ms run to run, and which of the three pays the most moved with
+  the order they ran in (the serialize read 292 ms when it ran first) —
+  GC placement at this heap size, not the clone's own work.
+- **The duplicated memory, measured**: ~0.5 KB per element at 1k–100k
+  (49.8 MB per 100k — nodes carry labels here), and **113.5 MB at the
+  ndex-x-large shape**, against the plan's 80–90 MB computed from
+  `COLUMN_SPECS` alone — the difference is what the columns do not count:
+  the id index, adjacency, the data columns, the label sidecar and the
+  style engine's per-slot state.
+- **The follow burst**: ~2 / 8 / 51 / 203 ms at 1k / 10k / 100k / 485k.
+  Round 107 priced the loop's two calls at 0.29 + 0.26, 2.1 + 1.8 and
+  24 + 23 ms; the rest is the wake, the macrotask hop and the event.  With
+  the throttle's `max( throttle, lastCost )` a minimap following a drag on
+  a 100k graph refreshes every ~50–100 ms and holds at most half the
+  main thread.
+- **A restyle costs the follower nothing** at every scale (zero syncs).
+
 ## Builds: the entries and what each carries (round 131)
 
 The package ships **three entries**, each a single-file bundle with its

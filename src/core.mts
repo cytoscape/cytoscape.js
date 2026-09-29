@@ -2128,10 +2128,12 @@ export class Core {
    * viewport, bypasses and graph data are never touched.  Following stops
    * when either instance is destroyed.
    *
-   * Cost: a clone is one `serialize()` plus a load from the wire (~2x
-   * the memory: the model is duplicated); a follow sync is one serialize
-   * plus one patch — ~2 ms at 10k elements, ~50 ms at 100k — so a
-   * follower lags by a burst, not a frame, on a large graph.
+   * Cost: a clone is one `serialize()` plus a load from the wire — ~25
+   * ms at 10k elements, ~230 ms at 100k — and duplicates the model (~50
+   * MB per 100k elements); a follow sync is one serialize plus one
+   * patch — ~8 ms at 10k elements, ~50 ms at 100k from the source's
+   * write to the clone's `patch` event — so a follower lags by a burst,
+   * not a frame, on a large graph.
    * `benchmark/clone.mjs` and "N viewers" in `src/README.md` have the
    * numbers.
    *

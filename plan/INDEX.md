@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136, 138–140 |
+| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136, 138–141 |
 | planned | 49–51, 71, 76–78, 80–84, 99, 105, 125–126, 137 |
 
 ## The sections
 
-180 sections.
+181 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -207,3 +207,4 @@ A round can land with an item held open; the round file says which.
 | 178 | 138 | 2026-09-29 | landed | [Ledger items 34–36: device limits, the degradation order and the renderer soak](rounds/2026-09-29-05-rnd0138-landed-items-34-36-device-limits-the-degradation-order-and-the-renderer-soak.md) |
 | 179 | 139 | 2026-09-29 | landed | [Ledger item 41, the alpha part: the transaction events and the snapshot price](rounds/2026-09-29-06-rnd0139-landed-item-41-undo-the-transaction-events-and-the-snapshot-price.md) |
 | 180 | 140 | 2026-09-29 | landed | [Ledger item 45: typed element data](rounds/2026-09-29-07-rnd0140-landed-item-45-typed-element-data.md) |
+| 181 | 141 | 2026-09-29 | landed | [Ledger item 51: the worker host's images and fonts](rounds/2026-09-29-08-rnd0141-landed-item-51-the-worker-hosts-images-and-fonts.md) |

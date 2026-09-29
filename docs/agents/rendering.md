@@ -46,6 +46,10 @@ the fixtures need their own controls.
   Goldens stay pinned to SwiftShader regardless — the verdict governs
   benchmarks and hardware-only work, not the visual suite.
 
+## A worker canvas remembers the first face it found
+
+- **In Chromium, a font description resolved before its face registered stays on the fallback in that worker — on every canvas, for good.**  Round 141 measured it: set `ctx.font = '32px "F", sans-serif'` in a worker before `F` is in `self.fonts`, register `F` (from bytes or a url), and every later `ctx.font` of the same *description* — fresh canvases, whitespace variants, after `fonts.ready` — still measures the fallback; a different size, weight or family list re-resolves.  WebKit re-resolves.  The 2026-09-18 spike read this as "url faces never reach OffscreenCanvas": its url face was measured while still in flight.  Two rules from it: a worker font probe must never measure the family before registering it (use a *different* family for the control), and anything that re-rasters after a late face must change the description — the glyph atlas's font epoch appends an inert, never-registered family (`GlyphAtlas.reraster(true)`).  `playwright-tests/worker-renderer.spec.js`'s mechanics test pins both engines' behaviour with no adapter needed, so it runs on WebKit here too.
+
 ## A columnar payload can lose a whole column silently
 
 - **A columnar payload can lose a whole column silently, and the page still looks plausible.**  Round 46.5 re-encoded the harness fixtures into the binary wire format, and the first reader treated a *dictionary* column (`{ dict, indices }`, 1-based, 0 = absent) as a plain array — so every string column in every fixture came back `undefined`.  The graph still rendered: right node count, right edges, right positions, no labels and no categorical colours.  Nothing throws on that.  When a format has more than one column encoding, the spec has to assert **each column still carries values after the round trip**, not that the payload parsed; the control (read the dict as an array) must fail on every fixture.

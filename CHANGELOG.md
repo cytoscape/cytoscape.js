@@ -514,6 +514,16 @@ that compile and then behave differently.
   it ran the CPU simulation synchronously on the main thread before.
   Measured on a 19.6k-node, 465k-edge graph: 12.8 s with the main
   thread held became 1.4 s with it ticking.
+- **Background images and label fonts in the worker host** (round
+  141).  Under `renderer: { worker: true }` background images draw —
+  decoded in the worker (SVG sources raster on the main thread, which
+  has the `<img>` they need) — where they were not drawn before, and
+  the new `renderer.fonts` option lists the faces the sheet names
+  (`{ family, source: url | bytes, style?, weight?, stretch?,
+  unicodeRange? }`), registered from their bytes in the worker, since a
+  worker does not inherit the page's `@font-face` rules.  Verified end
+  to end in Chromium; WebKit's worker font and image mechanics are
+  verified, its worker-side WebGPU is not.
 - **Image export converts on the device** (round 110.4).  The export
   target's premultiplied pixels are un-premultiplied, swizzled and
   row-compacted by a compute pass, so the readback maps final bytes

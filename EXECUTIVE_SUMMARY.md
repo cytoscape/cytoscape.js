@@ -5,7 +5,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 140 typed element data: an
+- **Last updated**: 2026-09-29, after round 141 finished the worker
+  host: under `renderer: { worker: true }` background images now draw —
+  decoded in the worker, so a style change that brings in 1,000 new
+  images costs the page 5 ms instead of a 124–142 ms stall — and labels
+  use the fonts the app lists in `renderer.fonts`, since a worker does
+  not see the page's `@font-face` rules; both match the main-thread
+  renderer pixel for pixel.  It is verified end to end in Chromium;
+  WebKit here has no WebGPU, so there it verifies the worker-side
+  mechanics only.  Earlier the same day round 140 typed element data: an
   app that names its node and edge data shapes —
   `cytoscape<Gene, Link>( … )` — gets `cy.nodes().data( 'weight' )` read
   as a number, a misspelt field in `data()`, an element definition, a
@@ -180,7 +188,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   allocation failure was silent validation errors and a blank frame —
   both built on 29 Sep; and the worker host's deferrals are priced —
   the force one closed by round 129 the same evening, images and
-  fonts still open.  The day
+  fonts on 29 Sep.  The day
   before,
   round 127 gave every string vocabulary one declaration, and the
   layout quality audit was carried out, one sub-round per layout,
@@ -223,7 +231,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,148 unit · 1,096 module · 38 soak · 574 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,155 unit · 1,103 module · 38 soak · 586 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
@@ -446,7 +454,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     canvas element and the animation clock stay main-side.  Worker-vs-main
     exports diff exact-zero on the pinned adapter.  Pass-1 deferrals
     recorded: worker background images, GPU tweens/force across the
-    boundary, page @font-face labels.
+    boundary, page @font-face labels — the force layout moved into the
+    worker on 18 Sep, images and fonts on 29 Sep, and tweens stay on
+    the CPU path, which was measured as costing nearly nothing.
   - Measured (86.4): under a saturated main loop the worker host painted
     **236 of 240 frames against same-thread's 120** at equal main-thread
     busyness; costs are ~0.7 ms/frame of batch traffic and +0.6 ms pick
@@ -1303,11 +1313,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     trivial (a position column per frame at 13–52 µs), but the force
     layout under it runs on the CPU and freezes the page for 12.8 s
     where the GPU integrator takes 1.7 — the worst deferral, first to
-    build.  Images cost the main thread 6.5 ms of decode each, the
-    case for worker-side decode; a font loaded in a worker from a URL
-    reports loaded and never applies to its canvas, while the same
-    bytes registered from a buffer apply exactly — the build-out is
-    bytes, not URLs.  Found beside them: a per-node layout tween on
+    build.  Images were priced at 6.5 ms of main-thread decode each —
+    re-measured on 29 Sep as the stylesheet's data write, not the
+    decode; worker-side decode still saves a 124–142 ms stall per
+    1,000 new images.  A font loaded in a worker from a URL seemed never
+    to apply to its canvas while the same bytes from a buffer applied —
+    on 29 Sep that turned out to be measuring order (Chromium keeps a
+    font it resolved before the face arrived); bytes stayed the design.
+    Found beside them: a per-node layout tween on
     the same-thread host drew six frames in 1.5 s (item 68).
 - **18 Sep** — cancellation: the execution model gets an off switch
   - Every async algorithm returns its promise with `cancel()` on it.
@@ -1645,6 +1658,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     layout callbacks, which are deferred.
   - Buys a TypeScript app its data model checked end to end, at no cost
     to one that does not use it (type-checking the source: 0.49 → 0.50 s).
+- **29 Sep** — the worker host draws images and the app's fonts
+  - Background images draw under `renderer: { worker: true }`, decoded
+    in the worker: a style change bringing in 1,000 new images costs the
+    page 5 ms instead of a 124–142 ms stall.  SVG images still raster on
+    the page, which has the `<img>` they need.
+  - `renderer.fonts` lists the faces the stylesheet names (a url or the
+    bytes); the worker loads them itself, since the page's `@font-face`
+    rules do not reach it.  Labels draw at once and switch to the face
+    when it arrives, as on the main thread.
+  - Both match the main-thread renderer pixel for pixel.  Verified end
+    to end in Chromium; WebKit's worker mechanics are verified, its
+    worker-side WebGPU is not.
+  - Also found: a data write to a key a string style maps grows faster
+    than linearly with the number of distinct values (33 ms a write at
+    4,000 distinct image urls); logged.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1814,7 +1842,7 @@ SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
 with a renderer soak — landed 29 Sep — typed element data — landed 29 Sep — batch events for undo plus a
 snapshot measurement — landed 29 Sep, the stack itself left open above
-— the worker host's images and fonts, and the CJK
+— the worker host's images and fonts — landed 29 Sep — and the CJK
 label design.  During alpha: the extension ports, a devtools panel and
 a workloads benchmark profile.  After alpha: lasso and spatial queries,
 compound drag-and-drop, viewport constraints and framework bindings;

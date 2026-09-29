@@ -7047,10 +7047,48 @@ ticks over the run; the same-thread host reads 1.75 s / 30 ticks), the
 streaming run from 11.5 s to 1.4 s / 38 ticks.  The first ~300 ms of a
 run on either host are the force pipelines' compile stall.
 
-Pass-1 deferrals still open, recorded in the round record: background
-images are not drawn under the worker host (loud one-time error
-event); GPU tweens and the page's @font-face labels take their
-CPU/fallback paths (the animation manager keeps its own rAF clock).
+**Background images decode in the worker** (round 141, closing item
+51's images).  The canonical `ImageRegistry` stays main-side — style
+application acquires and releases there — and journals each entry's
+create and free while a worker host mirrors it; the batch carries the
+journal (`StoreBatch.images`, the full set on the init transfer), and
+the worker's registry replays it by id (`adopt` / `drop`), owns the
+decoder and runs it there: `fetch` + `createImageBitmap` off the main
+thread, the vector promotion meter over the mirrored records.  SVG is
+the exception: it needs an `<img>`, and `createImageBitmap` refuses SVG
+blobs in a worker in Chromium and WebKit alike, so the worker sends the
+fetched blob back and the proxy rasters it (`rasterVectorInPage`,
+transferred).  Worker-vs-main exports with raster and SVG images, auto
+and sdf-icon, through a restyle that frees, shares and recycles
+entries, diff exact-zero.  Measured (`benchmark/worker-host-deferrals.mjs
+--image-hosts`, RX 580): a style apply acquiring 1,000 distinct rasters
+is one 124–142 ms long task same-thread (issuing the fetches and
+decodes: ~44 + ~52 ms) and 5 ms under the worker host, one 3 ms batch
+post of 1,000 create ops.
+
+**Label fonts come from `renderer.fonts`** (round 141, closing item
+51's fonts).  A worker's FontFaceSet starts empty, so the app lists the
+faces its sheet names — `{ family, source: url | bytes, style?, weight?,
+stretch?, unicodeRange? }` — and the worker fetches each, builds the
+`FontFace` from its bytes, loads it and adds it to `self.fonts`
+(`src/render/worker-fonts.mts`).  Round 75's semantics hold: labels draw
+at once in the fallback, and a landed face re-rasters them only when the
+atlas font names it; a face that fails emits one `error` event.
+Chromium's worker canvas keeps a font description it resolved before
+the face existed on the fallback for good, so that re-raster runs on a
+fresh description (the atlas's font epoch, an inert trailing family) —
+see `docs/agents/rendering.md`.  Listed and late faces diff exact-zero
+against the same-thread host with the same page face.  **Engines**: the
+worker host is verified end to end in Chromium; Playwright's Linux
+WebKit has no WebGPU, so the host soft-skips there, and what WebKit
+verifies is every worker mechanism short of the GPU (bytes faces reach
+OffscreenCanvas text advance for advance, the epoch re-resolves, raster
+blobs decode, SVG blobs are refused) — the adapter-free mechanics spec.
+
+What stays main-side by design: CPU tweens cross as ordinary spans (the
+animation manager keeps its own rAF clock; item 51 priced them at
+0.013–0.052 ms per post, 1/20th–1/50th of the 1 ms trigger, and the GPU
+tween sink's own cost is item 68's).
 
 ## Cancellation (round 128)
 

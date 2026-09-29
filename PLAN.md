@@ -324,7 +324,18 @@ their hover docs in all three shipped declarations, then built
 events, payloads, queries and the sheet's field references, untyped
 exactly as before without a generic; item 45 is closed, and it raised no
 new item — the algorithm and layout callbacks are a deferral in its
-record.  Item 63 is carried
+record.  Round 141 (landed 2026-09-29 on the sitting's call for
+**item 51**) built the worker host's last two deferrals: background
+images decode in the worker (the registry mirrored by id, SVG rastered
+main-side; a 1,000-raster style apply went from a 124–142 ms long task
+to 5 ms) and label fonts come from `renderer.fonts`, registered from
+bytes in the worker, exact-zero against the same-thread host — and
+found why the spike's url faces "never applied" (Chromium's worker
+canvas keeps a description resolved before its face on the fallback,
+which the atlas's font epoch now escapes).  WebKit here has no WebGPU,
+so it verifies the worker mechanics, not the host.  Item 51 is closed;
+the round logged **item 85**, the superlinear data-mapped string write
+the spike had priced as decode.  Item 63 is carried
 by round 126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
@@ -1454,6 +1465,27 @@ directions".*
     carry.  Images and fonts stay open as recommended above.
     **Call taken (2026-09-28, the eleventh sitting): images and fonts
     both before alpha.**
+    **Closed by round 141 (2026-09-29)**: images decode in the worker —
+    the canonical registry journals each entry's create and free, the
+    batch carries the ops and the worker's registry replays them by id
+    and decodes (`fetch` + `createImageBitmap` there; SVG, which no
+    engine decodes in a worker, rasters main-side and crosses back
+    transferred); a style apply acquiring 1,000 distinct rasters went
+    from one 124–142 ms main-thread long task to 5 ms.  Fonts:
+    `renderer.fonts` (`{ family, source: url | bytes, …descriptors }`)
+    registered from bytes in the worker, round 75's semantics (fallback
+    at once, a re-raster when a face the atlas names lands).  Both
+    exact-zero against the same-thread host.  Re-measured in-round: the
+    url dead end was order, not the source form — a Chromium worker
+    canvas keeps a font description resolved before its face on the
+    fallback, so a late face re-rasters on a fresh description (the
+    atlas's font epoch); and the images' "6.5 ms of decode per fresh
+    entry" was the style engine's data-mapped write (item 85).  WebKit
+    26.5 launches here but has no WebGPU: it verifies the worker
+    mechanics (bytes faces, raster decode), not the host, and the
+    option is documented that way.  Tweens stay on the CPU path by the
+    item's own measurement.  The record:
+    `plan/rounds/2026-09-29-08-rnd0141-landed-item-51-the-worker-hosts-images-and-fonts.md`.
 
 52. **The chain spec's intermittent failure, still unexplained**
     (logged 2026-08-26, round 109).  `test/force-layout.mjs`'s
@@ -2172,3 +2204,19 @@ directions".*
     inverse log, old values on the mutation path and an audit that
     every mutator records one; or (c) a core snapshot stack, which the
     number does not favour.
+85. **A data write to a string-mapped style key is superlinear in the
+    distinct values** (logged 2026-09-29 by round 141, from item 51's
+    re-measurement).  Headless, no renderer: `node.data( 'img', url )`
+    where the sheet maps `background-image` from `img` costs **0.19 /
+    2.4 / 33 ms** per write at 250 / 1,000 / 4,000 distinct urls (one
+    shared url: 0.04 ms); a `background-color` mapper over distinct
+    strings 0.27 / 0.83 / 4.1 ms.  The profile sits in the style
+    engine's partitioned re-apply (`applyPartitioned`,
+    `applyBulkEdges`, `writeLabel`, `markPair`), not in the image
+    registry — the spike had priced the same cost as 6.5 ms of decode
+    per fresh url, and it is equal on both hosts
+    (`benchmark/worker-host-deferrals.mjs --image-hosts`, the churn
+    row).  **First measurement**: where the per-write work scales with
+    the distinct-value count (a partition rebuilt per write?), then the
+    fix and a row that holds a 4k-distinct write near the shared-url
+    cost.

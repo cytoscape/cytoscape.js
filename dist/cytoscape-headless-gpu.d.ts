@@ -1628,6 +1628,23 @@ interface RendererStats {
  */
 type BoxSelectionMode = 'contain' | 'overlap';
 /**
+ * What a wheel over the canvas does (round 75.5, the #1905/#3287
+ * family).  The trackpad pinch arrives as a ctrl+wheel, so every mode
+ * keeps pinch-zoom:
+ *
+ * - `'zoom'` (the default, v3's): the wheel zooms about the cursor.
+ * - `'pan'`: the wheel pans by its delta (gated by `panningEnabled` and
+ *   `userPanningEnabled`, emitting `scrollpan`); a ctrl- or meta-wheel —
+ *   the pinch — still zooms.
+ * - `'modifier-zoom'`: the plain wheel is **not consumed** — the page
+ *   scrolls past the graph, the embedded-map idiom — and a ctrl- or
+ *   meta-wheel zooms.
+ *
+ * Whatever the mode, the library calls `preventDefault()` only on a
+ * wheel it acts on, so a wheel the settings leave inert scrolls the page.
+ */
+type WheelBehavior = 'zoom' | 'pan' | 'modifier-zoom';
+/**
  * What the pointer is doing and what it is over, as the cursor map reads
  * it (round 89.1).  `gesture` is the press mode the interaction layer
  * decided at pointerdown — a press outranks hover, so a drag that
@@ -1712,6 +1729,10 @@ interface CytoscapeOptions {
    * once — a sensitivity tuned to one mouse/OS zooms unnaturally on
    * others).  Round 20.1. */
   wheelSensitivity?: number;
+  /** what a wheel does: 'zoom' (default, v3's), 'pan' (ctrl/meta — the
+   * pinch — still zooms) or 'modifier-zoom' (only a ctrl/meta wheel
+   * zooms; a plain wheel scrolls the page).  Round 75.5. */
+  wheelBehavior?: WheelBehavior;
   /** css px a mouse/pen press may move and still count as a tap
    * (default 4, as v3).  Round 20.1. */
   desktopTapThreshold?: number;
@@ -1744,7 +1765,7 @@ interface CytoscapeOptions {
  * (TypeScript's excess-property check) and, at run time, a `container`
  * throws `this build has no renderer — import 'cytoscape'`.
  */
-type HeadlessOptions = Omit<CytoscapeOptions, 'container' | 'renderer' | 'pixelRatio' | 'pointerCursors' | 'wheelSensitivity' | 'desktopTapThreshold' | 'touchTapThreshold' | 'tapholdDuration' | 'multiClickDebounceTime' | 'boxSelectionEnabled' | 'boxSelectionIncludesLabels' | 'boxSelectionMode' | 'userPanningEnabled' | 'userZoomingEnabled'>;
+type HeadlessOptions = Omit<CytoscapeOptions, 'container' | 'renderer' | 'pixelRatio' | 'pointerCursors' | 'wheelSensitivity' | 'wheelBehavior' | 'desktopTapThreshold' | 'touchTapThreshold' | 'tapholdDuration' | 'multiClickDebounceTime' | 'boxSelectionEnabled' | 'boxSelectionIncludesLabels' | 'boxSelectionMode' | 'userPanningEnabled' | 'userZoomingEnabled'>;
 //#endregion
 //#region src/store/id-map.d.mts
 interface IdEntry {
@@ -8127,6 +8148,7 @@ declare class Core {
   /** round 20.1: the interaction option quartet (v3 defaults) */
   private _wheelSensitivity;
   private _wheelSensitivityWarned;
+  private _wheelBehavior;
   private _desktopTapThreshold;
   private _touchTapThreshold;
   private _tapholdDuration;
@@ -9152,6 +9174,22 @@ declare class Core {
    */
   wheelSensitivity(mult?: number): number | this;
   /**
+   * What a wheel over the canvas does (round 75.5): `'zoom'` (the
+   * default, v3's) zooms about the cursor; `'pan'` pans by the wheel's
+   * delta and emits `scrollpan`, while a ctrl- or meta-wheel — the
+   * encoding a trackpad pinch arrives in — still zooms; `'modifier-zoom'`
+   * leaves the plain wheel to the page (it scrolls past the graph) and
+   * zooms only on a ctrl- or meta-wheel.  Every mode honours the toggles
+   * (`userZoomingEnabled` gates a zoom, `userPanningEnabled` a pan), and
+   * a wheel the settings leave inert is **not** `preventDefault()`ed, so
+   * the page scrolls — v3's contract, restored in the same round.
+   *
+   * @param mode — the behaviour to set; omit to read it
+   * @returns the behaviour, or this when setting
+   * @throws if `mode` is not 'zoom', 'pan' or 'modifier-zoom'
+   */
+  wheelBehavior(mode?: WheelBehavior): WheelBehavior | this;
+  /**
    * Css px a mouse/pen press may move and still count as a tap (v3 parity;
    * default 4).
    *
@@ -9482,4 +9520,4 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type WheelBehavior, cytoscape as default };

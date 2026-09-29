@@ -24,6 +24,12 @@ that compile and then behave differently.
 
 ### Added
 
+- **`wheelBehavior`** (option and `cy.wheelBehavior()`, round 75.5):
+  `'zoom'` (default), `'pan'` (the wheel pans and emits the new
+  `scrollpan`; a ctrl/meta wheel — the trackpad pinch — still zooms) or
+  `'modifier-zoom'` (the plain wheel scrolls the page; ctrl/meta zooms).
+  And a fix: the canvas prevents default only on a wheel it acts on, so
+  a zoom-disabled canvas lets the page scroll again, as v3 did.
 - **`cy.nodeAt( x, y )`** (alias `cy.pickNode`, round 75.4, #1209): the
   node at a rendered point, synchronously — the CPU pick the pointer's
   pan-vs-grab already trusted, public beside the async `cy.pick()`.

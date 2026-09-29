@@ -24,8 +24,10 @@ import * as pointerHoverImpl from './pointer-hover.mjs';
 /*
 Pointer/wheel interaction over the WebGPU canvas:
 
-- wheel: zoom about the cursor (through the core API, so zoom/viewport
-  events fire)
+- wheel: zoom about the cursor, or pan by the delta, per
+  `cy.wheelBehavior()` (round 75.5), through the core API so the
+  zoom/pan/viewport events fire; a wheel the settings leave inert is not
+  preventDefault()ed, so the page scrolls
 - drag on background: pan
 - continuous throttled hover picking (latest-wins) drives the HOVERED flag
   plus mouseover/mouseout events

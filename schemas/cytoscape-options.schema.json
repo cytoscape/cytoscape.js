@@ -68,6 +68,10 @@
       "description": "The wheel-zoom rate multiplier (default 1).",
       "type": "number"
     },
+    "wheelBehavior": {
+      "description": "What a wheel does: 'zoom' (default), 'pan' (a ctrl/meta wheel still zooms) or 'modifier-zoom' (only a ctrl/meta wheel zooms; a plain wheel scrolls the page).",
+      "enum": ["zoom", "pan", "modifier-zoom"]
+    },
     "desktopTapThreshold": {
       "description": "Px a mouse press may move and still tap (default 4).",
       "type": "number"

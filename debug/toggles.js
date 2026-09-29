@@ -144,6 +144,11 @@
     (cy) => cy.boxSelectionMode(),
     (cy, v) => cy.boxSelectionMode(v),
   );
+  selectControl(
+    '#wheel-behavior-select',
+    (cy) => cy.wheelBehavior(),
+    (cy, v) => cy.wheelBehavior(v),
+  );
 
   const numberControl = (sel, get, set) => {
     const el = $(sel);

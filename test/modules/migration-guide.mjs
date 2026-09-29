@@ -221,6 +221,24 @@ describe('the migration guide: behavioural claims', () => {
     }
   });
 
+  it('still leaves an inert wheel to the page, as the table says (round 75.5)', async () => {
+    // "A wheel over a canvas that will not zoom" row: the decision the
+    // wheel handler's preventDefault follows, read through the same
+    // function the handler calls
+    const { wheelAction } =
+      await import('../../src/interact/pointer-handlers.mjs');
+    const plain = { ctrlKey: false, metaKey: false };
+
+    expect(cy.wheelBehavior()).to.equal('zoom');
+    cy.userZoomingEnabled(false);
+    expect(wheelAction(cy, plain)).to.equal(null);
+    cy.userZoomingEnabled(true);
+    cy.wheelBehavior('modifier-zoom');
+    expect(wheelAction(cy, plain)).to.equal(null);
+    expect(wheelAction(cy, { ctrlKey: true, metaKey: false })).to.equal('zoom');
+    cy.wheelBehavior('zoom');
+  });
+
   it('still has no classes; cy.$ returned in round 64 as a filter alias', () => {
     expect(cy.$).to.equal(cy.filter);
 

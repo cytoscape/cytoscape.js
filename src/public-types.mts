@@ -973,6 +973,24 @@ export interface RendererStats {
 export type BoxSelectionMode = 'contain' | 'overlap';
 
 /**
+ * What a wheel over the canvas does (round 75.5, the #1905/#3287
+ * family).  The trackpad pinch arrives as a ctrl+wheel, so every mode
+ * keeps pinch-zoom:
+ *
+ * - `'zoom'` (the default, v3's): the wheel zooms about the cursor.
+ * - `'pan'`: the wheel pans by its delta (gated by `panningEnabled` and
+ *   `userPanningEnabled`, emitting `scrollpan`); a ctrl- or meta-wheel —
+ *   the pinch — still zooms.
+ * - `'modifier-zoom'`: the plain wheel is **not consumed** — the page
+ *   scrolls past the graph, the embedded-map idiom — and a ctrl- or
+ *   meta-wheel zooms.
+ *
+ * Whatever the mode, the library calls `preventDefault()` only on a
+ * wheel it acts on, so a wheel the settings leave inert scrolls the page.
+ */
+export type WheelBehavior = 'zoom' | 'pan' | 'modifier-zoom';
+
+/**
  * What the pointer is doing and what it is over, as the cursor map reads
  * it (round 89.1).  `gesture` is the press mode the interaction layer
  * decided at pointerdown — a press outranks hover, so a drag that
@@ -1059,6 +1077,10 @@ export interface CytoscapeOptions {
    * once — a sensitivity tuned to one mouse/OS zooms unnaturally on
    * others).  Round 20.1. */
   wheelSensitivity?: number;
+  /** what a wheel does: 'zoom' (default, v3's), 'pan' (ctrl/meta — the
+   * pinch — still zooms) or 'modifier-zoom' (only a ctrl/meta wheel
+   * zooms; a plain wheel scrolls the page).  Round 75.5. */
+  wheelBehavior?: WheelBehavior;
   /** css px a mouse/pen press may move and still count as a tap
    * (default 4, as v3).  Round 20.1. */
   desktopTapThreshold?: number;
@@ -1099,6 +1121,7 @@ export type HeadlessOptions = Omit<
   | 'pixelRatio'
   | 'pointerCursors'
   | 'wheelSensitivity'
+  | 'wheelBehavior'
   | 'desktopTapThreshold'
   | 'touchTapThreshold'
   | 'tapholdDuration'

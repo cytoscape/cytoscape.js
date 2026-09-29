@@ -46,6 +46,7 @@ import type {
   Stylesheet,
   Position,
   RendererStats,
+  WheelBehavior,
 } from './public-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 import * as batchingImpl from './core/batching.mjs';
@@ -231,6 +232,7 @@ export class Core {
   /** round 20.1: the interaction option quartet (v3 defaults) */
   private _wheelSensitivity: number;
   private _wheelSensitivityWarned: boolean;
+  private _wheelBehavior: WheelBehavior;
   private _desktopTapThreshold: number;
   private _touchTapThreshold: number;
   private _tapholdDuration: number;
@@ -371,6 +373,7 @@ export class Core {
     this._multiClickDebounceTime = 250; // v3's default
     this._wheelSensitivity = 1; // v3's default (a multiplier on the zoom rate)
     this._wheelSensitivityWarned = false;
+    this._wheelBehavior = 'zoom'; // v3's (and v4's until round 75.5)
     this._desktopTapThreshold = 4; // v3's defaults: css px of movement
     this._touchTapThreshold = 8; // before a press stops being a tap
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
@@ -394,6 +397,10 @@ export class Core {
 
     if (options.wheelSensitivity != null) {
       this.wheelSensitivity(options.wheelSensitivity);
+    }
+
+    if (options.wheelBehavior != null) {
+      this.wheelBehavior(options.wheelBehavior);
     }
 
     if (options.desktopTapThreshold != null) {
@@ -2070,6 +2077,37 @@ export class Core {
     }
 
     this._wheelSensitivity = mult;
+
+    return this;
+  }
+
+  /**
+   * What a wheel over the canvas does (round 75.5): `'zoom'` (the
+   * default, v3's) zooms about the cursor; `'pan'` pans by the wheel's
+   * delta and emits `scrollpan`, while a ctrl- or meta-wheel — the
+   * encoding a trackpad pinch arrives in — still zooms; `'modifier-zoom'`
+   * leaves the plain wheel to the page (it scrolls past the graph) and
+   * zooms only on a ctrl- or meta-wheel.  Every mode honours the toggles
+   * (`userZoomingEnabled` gates a zoom, `userPanningEnabled` a pan), and
+   * a wheel the settings leave inert is **not** `preventDefault()`ed, so
+   * the page scrolls — v3's contract, restored in the same round.
+   *
+   * @param mode — the behaviour to set; omit to read it
+   * @returns the behaviour, or this when setting
+   * @throws if `mode` is not 'zoom', 'pan' or 'modifier-zoom'
+   */
+  wheelBehavior(mode?: WheelBehavior): WheelBehavior | this {
+    if (mode === undefined) {
+      return this._wheelBehavior;
+    }
+
+    if (mode !== 'zoom' && mode !== 'pan' && mode !== 'modifier-zoom') {
+      throw new Error(
+        `Invalid wheel behavior '${String(mode)}'; use 'zoom', 'pan' or 'modifier-zoom'`,
+      );
+    }
+
+    this._wheelBehavior = mode;
 
     return this;
   }

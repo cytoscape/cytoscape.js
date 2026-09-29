@@ -147,6 +147,7 @@ function liveOptions(core: Core): CytoscapeOptions {
     touchTapThreshold: core.touchTapThreshold() as number,
     tapholdDuration: core.tapholdDuration() as number,
     wheelSensitivity: core.wheelSensitivity() as number,
+    wheelBehavior: core.wheelBehavior() as CytoscapeOptions['wheelBehavior'],
     pointerCursors: core.pointerCursors() as CytoscapeOptions['pointerCursors'],
   };
 }

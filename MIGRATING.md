@@ -389,7 +389,7 @@ Also renamed or re-scoped without being rejected:
 device-normalized family (`tapstart`, `tapdrag`, `tapend`, `tap`, `taphold`,
 `dbltap`, `onetap`, `tapselect`/`tapunselect`, `tapdragover`/`tapdragout`,
 the `cxt*` family), the viewport gestures (`dragpan`, `scrollzoom`,
-`pinchzoom`), the official pointer family (`pointerdown`/`pointermove`/
+`pinchzoom`, and `scrollpan` under `wheelBehavior: 'pan'`), the official pointer family (`pointerdown`/`pointermove`/
 `pointerup`/`pointercancel`/`pointerover`/`pointerout`), and the model events
 (`add`, `remove`, `data`, `position`, `select`, `unselect`, `style`,
 `layoutstart`/`layoutready`/`layoutstop`, `patch`,
@@ -462,6 +462,7 @@ app trips on after everything else works.
 | Cancelling a whole-graph algorithm | not possible — the call blocks | the promise carries **`cancel()`** (round 128): a pending run rejects with `cytoscape.CancelledError` (`error.name === 'CancelledError'`) and answers `true` once; a run that has already completed — every `'cpu'` run has, inside the call — answers `false` and its result stands |
 | `layout.stop()` | ends the run where it is, keeping the positions | **unchanged** — and **`layout.cancel()`** (round 128) is the other ending: the run is abandoned, a tween under way is dropped where it is, the nodes go back to where `run()` found them, the viewport is left alone, `layoutstop` still fires with `cancelled: true`, and `layout.promise()` rejects with `CancelledError`.  `cy.destroy()` cancels every run still open the same way |
 | Container resize | call `cy.resize()` after resizing the container | **automatic** (round 75.1): a `ResizeObserver` re-measures and emits `resize` once per change, so the call is only needed where no observer can see the change; an existing call is harmless (the observer finds the size applied and emits nothing more) |
+| A wheel over a canvas that will not zoom | the page scrolls (v3 prevents default only when panning and zooming are both enabled) | **the same since round 75.5** — v4 until then swallowed every wheel over the canvas, even with `userZoomingEnabled( false )`.  v4 prevents default only on a wheel it acts on, and `wheelBehavior` (`'zoom'`, `'pan'`, `'modifier-zoom'`) says which wheels those are: `'modifier-zoom'` is the embedded-map idiom — the page scrolls past the graph and ctrl/meta-wheel (or a trackpad pinch) zooms |
 | Pointer cursors | none — v3 set no CSS cursor at all, and apps wrote `container.style.cursor` from `mouseover`/`mouseout` | **the canvas writes them** (`grab`/`grabbing`, `pointer`, `crosshair`).  Idle over background stays `''`, so the v3 recipe still shows through where v4 is silent; an app whose own cursor code now fights the defaults passes `pointerCursors: false` |
 | `force` with `animate: false` on a rendered flat graph | synchronous — positions readable on the next line | **async** — the run settles at `layoutstop` / `promise()`; executor choice is availability-driven (headless runs stay synchronous) |
 | `force` on a rendered compound or constrained graph, or a rendered page without a WebGPU adapter | synchronous | **async** since round 129.3 — the CPU simulation runs on a worker under the default `executor: 'auto'`, so the main thread stays free; read positions at `layoutstop` / `promise()`, or say `executor: 'cpu'` for the in-thread run (bit-identical positions either way) |
@@ -552,7 +553,7 @@ Dropped, and therefore ignored: `hideEdgesOnViewport`, `textureOnViewport`,
 culling and the adaptive render scale solve without degrading output.
 
 New, and worth setting: `boxSelectionMode`, `boxSelectionIncludesLabels`,
-`wheelSensitivity`, `desktopTapThreshold`, `touchTapThreshold`,
+`wheelSensitivity`, `wheelBehavior`, `desktopTapThreshold`, `touchTapThreshold`,
 `tapholdDuration`, `multiClickDebounceTime`, `pixelRatio`, `pointerCursors`,
 and the `renderer` block (`renderScaleMin`/`renderScaleMax`, `labelMinPx`,
 `imageMinPx`, `imageMaxSize`).

@@ -33,17 +33,58 @@ import {
 import { boxUpdate, boxEnd } from './pointer-box.mjs';
 import { dragHoverPick, hoverPick, setPressed } from './pointer-hover.mjs';
 
-/** The wheel handler: zoom about the cursor (or pan on a trackpad), throttled by the wheel rate, with hover suppressed until the wheel settles. */
-export function onWheel(ph: PointerHandler, e: WheelEvent): void {
-  e.preventDefault();
+/**
+ * What a wheel event will do under the instance's settings (round 75.5),
+ * or null when it does nothing — in which case the handler leaves it to
+ * the page (no `preventDefault()`, so the page scrolls).  A ctrl- or
+ * meta-wheel (the encoding a trackpad pinch arrives in) zooms in every
+ * mode; the plain wheel zooms under 'zoom', pans under 'pan' and is the
+ * page's under 'modifier-zoom'.  Each action is gated by the toggles that
+ * would refuse it anyway (`zoomingEnabled`/`userZoomingEnabled`,
+ * `panningEnabled`/`userPanningEnabled`), which is what restores v3's
+ * "a zoom-disabled canvas lets the page scroll".
+ *
+ * @param cy — the instance whose settings decide
+ * @param e — the wheel event (only its modifier keys are read)
+ * @returns 'zoom', 'pan' or null
+ */
+export function wheelAction(
+  cy: PointerHandler['cy'],
+  e: Pick<WheelEvent, 'ctrlKey' | 'metaKey'>,
+): 'zoom' | 'pan' | null {
+  const mode = cy.wheelBehavior();
+  const zoomKey = e.ctrlKey || e.metaKey;
+  const action: 'zoom' | 'pan' | null =
+    mode === 'zoom' || zoomKey ? 'zoom' : mode === 'pan' ? 'pan' : null;
 
-  if (ph.cy.userZoomingEnabled() !== true) {
-    return;
+  if (action === 'zoom') {
+    return cy.zoomingEnabled() === true && cy.userZoomingEnabled() === true
+      ? 'zoom'
+      : null;
   }
+
+  if (action === 'pan') {
+    return cy.panningEnabled() === true && cy.userPanningEnabled() === true
+      ? 'pan'
+      : null;
+  }
+
+  return null;
+}
+
+/** The wheel handler: zoom about the cursor or pan by the delta, per `wheelBehavior` (round 75.5), throttled by the wheel rate, with hover suppressed until the wheel settles — and the event left to the page when the settings make it inert. */
+export function onWheel(ph: PointerHandler, e: WheelEvent): void {
+  const action = wheelAction(ph.cy, e);
+
+  if (action == null) {
+    return; // not ours: the page scrolls (v3's contract, round 75.5)
+  }
+
+  e.preventDefault();
 
   const pos = ph.eventPos(e);
 
-  // a wheel zoom is a viewport-only gesture: no mouseover/tap semantics
+  // a wheel gesture is viewport-only: no mouseover/tap semantics
   // apply mid-gesture, so hover picking pauses (no pick passes at all)
   // until the wheel settles, then re-picks under the cursor once
   ph.wheelingUntil = performance.now() + WHEEL_SETTLE_MS;
@@ -57,6 +98,27 @@ export function onWheel(ph: PointerHandler, e: WheelEvent): void {
     ph.wheelingUntil = 0; // reopen hover before the settle re-pick
     hoverPick(ph, pos);
   }, WHEEL_SETTLE_MS);
+
+  if (action === 'pan') {
+    // lines -> px-ish; a page is the viewport's height
+    const unit =
+      e.deltaMode === 1
+        ? 33
+        : e.deltaMode === 2
+          ? (ph.cy.height() as number)
+          : 1;
+
+    ph.cy.panBy({ x: -e.deltaX * unit, y: -e.deltaY * unit });
+
+    // the viewport-gesture vocabulary (17.4; scrollpan joined in 75.5)
+    ph.cy.emit({
+      type: 'scrollpan',
+      position: ph.cy._viewport.renderedToModel(pos),
+      originalEvent: ph.domEvent ?? undefined,
+    });
+
+    return;
+  }
 
   const zoom = ph.cy.zoom() as number;
   const dy = e.deltaY * (e.deltaMode === 1 ? 33 : 1); // lines -> px-ish

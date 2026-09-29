@@ -63,6 +63,7 @@
       'fit',
       'dragpan',
       'scrollzoom',
+      'scrollpan',
       'pinchzoom',
       'resize',
     ],

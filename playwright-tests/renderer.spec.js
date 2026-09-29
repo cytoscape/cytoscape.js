@@ -10111,5 +10111,142 @@ test.describe('WebGPU renderer', () => {
         alias: null,
       });
     });
+
+    /** Make the page scroll (the container stays a viewport-sized box at
+     * the top), wheel once over the canvas centre, and report what moved:
+     * the page's scroll, the zoom, the pan, and the viewport-gesture
+     * events.  Polls for the scroll rather than sleeping to it. */
+    const wheelOnce = async (page, { key = null, dy = 200 } = {}) => {
+      await page.evaluate(() => {
+        document.body.style.height = '4000px';
+        window.scrollTo(0, 0);
+        window.wheelEvents = [];
+
+        if (window.wheelListening !== window.cy) {
+          window.wheelListening = window.cy; // once per instance
+
+          for (const type of ['scrollzoom', 'scrollpan']) {
+            window.cy.on(type, () => window.wheelEvents.push(type));
+          }
+        }
+      });
+
+      const before = await page.evaluate(() => ({
+        zoom: window.cy.zoom(),
+        pan: { ...window.cy.pan() },
+      }));
+
+      await page.mouse.move(400, 300);
+
+      if (key != null) {
+        await page.keyboard.down(key);
+      }
+
+      await page.mouse.wheel(0, dy);
+
+      if (key != null) {
+        await page.keyboard.up(key);
+      }
+
+      // a scroll the canvas left to the page lands asynchronously; give
+      // it the chance to, then read everything at once
+      await expect
+        .poll(() => page.evaluate(() => window.scrollY), { timeout: 1500 })
+        .toBeGreaterThan(0)
+        .catch(() => {});
+
+      return await page.evaluate((before) => {
+        const pan = window.cy.pan();
+
+        return {
+          scrolled: window.scrollY > 0,
+          zoomed: window.cy.zoom() !== before.zoom,
+          panned: pan.x !== before.pan.x || pan.y !== before.pan.y,
+          panDy: pan.y - before.pan.y,
+          events: window.wheelEvents,
+        };
+      }, before);
+    };
+
+    test('75.5: a zoom-disabled canvas lets the page scroll (v3 contract restored)', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, { ...RED_NODE_GRAPH, userZoomingEnabled: false });
+
+      const r = await wheelOnce(page);
+
+      expect(r).toMatchObject({ scrolled: true, zoomed: false, events: [] });
+    });
+
+    test("75.5: wheelBehavior 'zoom' (the default) zooms and keeps the page still", async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, RED_NODE_GRAPH);
+
+      const r = await wheelOnce(page);
+
+      expect(r).toMatchObject({
+        scrolled: false,
+        zoomed: true,
+        events: ['scrollzoom'],
+      });
+    });
+
+    test("75.5: wheelBehavior 'modifier-zoom' leaves the plain wheel to the page and zooms on ctrl", async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, {
+        ...RED_NODE_GRAPH,
+        wheelBehavior: 'modifier-zoom',
+      });
+
+      expect(await wheelOnce(page)).toMatchObject({
+        scrolled: true,
+        zoomed: false,
+        panned: false,
+        events: [],
+      });
+      expect(await wheelOnce(page, { key: 'Control' })).toMatchObject({
+        scrolled: false,
+        zoomed: true,
+        events: ['scrollzoom'],
+      });
+    });
+
+    test("75.5: wheelBehavior 'pan' pans by the delta and emits scrollpan; ctrl (the pinch) still zooms", async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, RED_NODE_GRAPH);
+      await page.evaluate(() => window.cy.wheelBehavior('pan')); // live
+
+      expect(await wheelOnce(page)).toMatchObject({
+        scrolled: false,
+        zoomed: false,
+        panned: true,
+        panDy: -200,
+        events: ['scrollpan'],
+      });
+      expect(await wheelOnce(page, { key: 'Control' })).toMatchObject({
+        scrolled: false,
+        zoomed: true,
+        events: ['scrollzoom'],
+      });
+
+      // with user panning off, the plain wheel is the page's again
+      await page.evaluate(() => window.cy.userPanningEnabled(false));
+      expect(await wheelOnce(page)).toMatchObject({
+        scrolled: true,
+        panned: false,
+        events: [],
+      });
+    });
   });
 });

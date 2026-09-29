@@ -2100,8 +2100,8 @@ calls made deliberately rather than by accretion:
   companion), the device-normalized family (`tapstart`, `tapdrag`
   while pressed, `tapend`, `tapselect`/`tapunselect`,
   `tapdragover`/`tapdragout`, `cxtdragover`/`cxtdragout`), the
-  viewport gestures (`dragpan`, `scrollzoom`, `pinchzoom` — core
-  level, with positions), and the **official pointer family**
+  viewport gestures (`dragpan`, `scrollzoom`, `pinchzoom`, and since
+  round 75.5 `scrollpan` — core level, with positions), and the **official pointer family**
   (`pointerdown`/`pointermove`/`pointerup`/`pointercancel`/
   `pointerover`/`pointerout`) — the events the interaction layer
   itself consumes, so touch rides the same paths by construction.
@@ -2359,6 +2359,34 @@ before it was built.
   bounding box, the round-27 control) and the renderer project's 75.4
   spec (a hit, the topmost of an overlap agreeing with `cy.pick`, a
   mid-edge point that only `cy.pick` answers, background).
+- **Wheel behaviour, scoped to two changes (75.5, #1905/#3287).**  Both
+  inside the 41.5 settlement (options are the mechanism; the library
+  only ever prevents default on events it consumes).  **The fix**: v4's
+  `onWheel` called `preventDefault()` unconditionally, before the
+  `userZoomingEnabled` check, so a zoom-disabled canvas swallowed page
+  scroll; it now asks `wheelAction()` (`src/interact/pointer-handlers.mts`,
+  pure and spec'd) first and leaves an inert wheel to the page — v3's
+  contract.  **The option**: `wheelBehavior: 'zoom' | 'pan' |
+  'modifier-zoom'` with its runtime accessor, `'zoom'` the default.
+  `'pan'` pans by the wheel's delta (gated by `panningEnabled` and
+  `userPanningEnabled`) and emits **`scrollpan`**, which joins the 17.4
+  vocabulary (the eleventh sitting's call); `'modifier-zoom'` (the
+  sitting's name, over `'ctrl-zoom'`) leaves the plain wheel to the page
+  — the embedded-map idiom — and zooms on a ctrl or meta wheel.  A
+  trackpad pinch arrives as a ctrl+wheel, so every mode keeps pinch-zoom.
+  **Excluded, named**: a wheel-pan speed multiplier, axis swap or
+  inversion, configurable modifier keys, touch remapping, any
+  preventable-gesture mechanism (41.5, permanently), and a
+  drag-from-element panning toggle — already expressible with the
+  per-element `pannable`/`panify()`, `autoungrabify` and the default
+  that a press on an undraggable node pans.  Specs: the accessor and the
+  decision table in `test/interaction-options.mjs` (control: the
+  pan/modifier branches swapped), the migration guide's claim in
+  `test/modules/migration-guide.mjs`, and four renderer-project specs on
+  a scrollable page (controls: `preventDefault()` moved back first fails
+  the zoom-disabled, `'modifier-zoom'` and `'pan'` specs; the swapped
+  branches fail the two mode specs).  The debug harness has a
+  `wheelBehavior` select and logs `scrollpan`.
 
 ## Design decisions (v4 API direction)
 

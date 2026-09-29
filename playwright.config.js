@@ -192,7 +192,7 @@ export default defineConfig({
      */
     {
       name: 'visual',
-      testMatch: /(visual|routing)\.spec\.js/,
+      testMatch: /(visual|routing|gestures)\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',

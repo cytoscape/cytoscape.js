@@ -26,6 +26,13 @@ consequence through the public API (`ele.emit('grab')`, `position()`,
 is `'api'` has no headless *gesture* coverage.
 
 Read from the sources and the specs on 2026-09-29, at round 134's head.
+Round 142 built the trace tier (`gesture-traces.mjs`, `trace-replay.mjs`,
+`gestures.spec.js`): the traces below are scripts there, a tenth
+(`pointer-leave`) joined them, and each row the traces reach cites them.
+
+The event-name scanner the gate uses lives here too (`scanEvents`, at
+the end), so the trace tier's recorded vocabulary is held to the same
+scan without importing a spec file.
 */
 
 /** The end-state fields a trace can diff numerically (routing.spec.js's method, not pixels). */
@@ -34,6 +41,7 @@ export const END_STATE = [
   'selection', // the selected ids
   'viewport', // pan and zoom
   'grabbed', // the grabbed ids (empty at rest)
+  'hovered', // the hovered ids (round 142: the pointer-leave trace)
   'events', // the ordered public events, type + target id
 ];
 
@@ -92,6 +100,13 @@ export const TRACES = {
     input: 'synthetic',
     endState: ['positions', 'selection', 'viewport', 'events'],
     what: 'one touch pointer: tap a node, drag a node, pan the background',
+  },
+  'pointer-leave': {
+    input: 'real',
+    endState: ['hovered', 'events'],
+    what:
+      'hover a node, then leave the canvas (round 142: the tenth trace, for ' +
+      'the one row the nine did not reach)',
   },
 };
 
@@ -153,11 +168,16 @@ export const GESTURES = [
     events: ['mouseout', 'pointerout'],
     state: ['the hovered flag'],
     src: ['src/interact/pointer.mts'],
-    browser: [],
+    browser: [
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace pointer-leave: leaving the canvas ends the hover',
+        'real',
+      ],
+    ],
     headless: [],
-    gaps: ['all of it'],
-    trace: null,
-    noTrace: 'transient, no end state beyond the hover flag',
+    gaps: [],
+    trace: 'pointer-leave',
   },
   {
     id: 'tap-select',
@@ -208,6 +228,11 @@ export const GESTURES = [
         "text-events: 'yes' makes the label box tap the node (round 20.3)",
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -230,6 +255,11 @@ export const GESTURES = [
       [
         'playwright-tests/renderer.spec.js',
         'tapselect/tapunselect + hover-during-drag events (round 17.3)',
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
         'real',
       ],
     ],
@@ -268,6 +298,11 @@ export const GESTURES = [
         "visibility: 'hidden' blanks pixels but keeps space (round 22)",
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
     ],
     headless: [],
     gaps: [],
@@ -280,9 +315,15 @@ export const GESTURES = [
     events: ['tap', 'select', 'tapselect'],
     state: ['selection (the others kept)'],
     src: ['src/interact/pointer-press.mts', 'src/interact/pointer.mts'],
-    browser: [],
+    browser: [
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
+    ],
     headless: [],
-    gaps: ['all of it: no spec holds that the others stay selected'],
+    gaps: ['meta as the key'],
     trace: 'tap-select',
   },
   {
@@ -298,13 +339,14 @@ export const GESTURES = [
         'gesture parity: cxttap family, dbltap, taphold (round 10)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
     ],
     headless: [],
-    gaps: [
-      'onetap (subscribed, never asserted)',
-      'background dbltap',
-      'the debounce window',
-    ],
+    gaps: ['onetap (subscribed, never asserted)', 'the debounce window'],
     trace: 'tap-select',
   },
   {
@@ -325,6 +367,11 @@ export const GESTURES = [
         'interaction options: wheelSensitivity, desktopTapThreshold, tapholdDuration (round 20.1)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -334,9 +381,7 @@ export const GESTURES = [
       ],
     ],
     gaps: ['a taphold cancelled by movement', 'a background or edge taphold'],
-    trace: null,
-    noTrace:
-      'timer-driven: its end state is one event, which the specs already assert',
+    trace: 'tap-select',
   },
   {
     id: 'press-active',
@@ -466,6 +511,11 @@ export const GESTURES = [
         'interaction options: wheelSensitivity, desktopTapThreshold, tapholdDuration (round 20.1)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag: a node drag, then a selected node drags the selection',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -499,6 +549,11 @@ export const GESTURES = [
       [
         'playwright-tests/renderer.spec.js',
         'dragging a parent moves its subtree; a selected parent+child pair moves once (round 14.11)',
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag: a node drag, then a selected node drags the selection',
         'real',
       ],
     ],
@@ -565,6 +620,11 @@ export const GESTURES = [
         'a node the drag predicate refuses hovers as pointer',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag-pan: background, a locked node, and panning off',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -606,6 +666,11 @@ export const GESTURES = [
         'a press says grabbing and mirrors onto the document',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag-pan: background, a locked node, and panning off',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -614,7 +679,7 @@ export const GESTURES = [
         'driven',
       ],
     ],
-    gaps: ['dragpan with panningEnabled false (it fires though nothing moves)'],
+    gaps: [],
     trace: 'drag-pan',
   },
   {
@@ -630,11 +695,19 @@ export const GESTURES = [
         'tapselect/tapunselect + hover-during-drag events (round 17.3)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag: a node drag, then a selected node drags the selection',
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag-pan: background, a locked node, and panning off',
+        'real',
+      ],
     ],
     headless: [],
-    gaps: [
-      'tapdragover / tapdragout during a grab or a pan (the spec presses in box mode)',
-    ],
+    gaps: [],
     trace: 'drag',
   },
   {
@@ -681,6 +754,11 @@ export const GESTURES = [
         'a multiple-select-key drag says crosshair and restores at boxend',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace box-select: a shift box adds, a panning-off box replaces',
+        'real',
+      ],
     ],
     headless: [
       ['test/box-select.mjs', 'takes a node the band merely touches', 'api'],
@@ -691,7 +769,6 @@ export const GESTURES = [
       ],
     ],
     gaps: [
-      'a replacing box (panning off, no key) and its selection result',
       'a box under autounselectify',
       'boxSelectionIncludesLabels through the gesture',
       'ctrl or meta as the box key',
@@ -728,9 +805,14 @@ export const GESTURES = [
         'tapselect/tapunselect + hover-during-drag events (round 17.3)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace cxt-press: a right click, a right drag, a right click on an edge',
+        'real',
+      ],
     ],
     headless: [],
-    gaps: ['the contextmenu suppression', 'an edge under a right press'],
+    gaps: ['the contextmenu suppression'],
     trace: 'cxt-press',
   },
   {
@@ -767,6 +849,11 @@ export const GESTURES = [
         'interaction options: wheelSensitivity, desktopTapThreshold, tapholdDuration (round 20.1)',
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace wheel-zoom: each wheelBehavior, the modifiers and the clamp',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -780,10 +867,7 @@ export const GESTURES = [
         'api',
       ],
     ],
-    gaps: [
-      'deltaMode line and page',
-      'the zoom clamp (scrollzoom fires though the zoom did not change)',
-    ],
+    gaps: ['deltaMode line and page'],
     trace: 'wheel-zoom',
   },
   {
@@ -799,6 +883,11 @@ export const GESTURES = [
         "75.5: wheelBehavior 'pan' pans by the delta and emits scrollpan; ctrl (the pinch) still zooms",
         'real',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace wheel-zoom: each wheelBehavior, the modifiers and the clamp',
+        'real',
+      ],
     ],
     headless: [
       [
@@ -807,7 +896,7 @@ export const GESTURES = [
         'api',
       ],
     ],
-    gaps: ['a horizontal deltaX', 'deltaMode line and page'],
+    gaps: ['deltaMode line and page'],
     trace: 'wheel-zoom',
   },
   {
@@ -822,6 +911,11 @@ export const GESTURES = [
       [
         'playwright-tests/renderer.spec.js',
         "75.5: wheelBehavior 'modifier-zoom' leaves the plain wheel to the page and zooms on ctrl",
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace wheel-zoom: each wheelBehavior, the modifiers and the clamp',
         'real',
       ],
     ],
@@ -878,11 +972,17 @@ export const GESTURES = [
       'src/interact/pointer-handlers.mts',
       'src/interact/pointer-touch.mts',
     ],
-    browser: [],
+    browser: [
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace touch-tap-drag: one finger taps, drags a node and pans',
+        'synthetic',
+      ],
+    ],
     headless: [
       ['test/pointer-cursors.mjs', 'leaves a touch gesture alone', 'driven'],
     ],
-    gaps: ['every one-finger gesture, at every tier'],
+    gaps: ['a one-finger hold (taphold)', 'the touch hit pads'],
     trace: 'touch-tap-drag',
   },
   {
@@ -909,13 +1009,16 @@ export const GESTURES = [
         'viewport gesture events: dragpan, scrollzoom, pinchzoom (round 17.4)',
         'synthetic',
       ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace pinch: a spread, a pinch over a grab, a pinch with zooming off',
+        'synthetic',
+      ],
     ],
     headless: [],
     gaps: [
       'a pinch with userZoomingEnabled false',
-      'the pinch translation (its pan)',
       'a third finger during a pinch',
-      'a second finger landing on a grabbed node (the grab is dropped with no free)',
     ],
     trace: 'pinch',
   },
@@ -1065,10 +1168,31 @@ export const GESTURES = [
     events: ['as the same-thread host: one PointerHandler serves both'],
     state: ['as the same-thread host'],
     src: ['src/interact/pointer.mts', 'src/render/worker-renderer.mts'],
-    browser: [],
+    browser: [
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace drag: a node drag, then a selected node drags the selection',
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace tap-select: single, additive by key and by selectionType, edge, background, dbltap',
+        'real',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace touch-tap-drag: one finger taps, drags a node and pans',
+        'synthetic',
+      ],
+      [
+        'playwright-tests/gestures.spec.js',
+        'trace pinch: a spread, a pinch over a grab, a pinch with zooming off',
+        'synthetic',
+      ],
+    ],
     headless: [],
     gaps: [
-      'every gesture: the worker spec covers the pick seam only (node sync, edge async, background), never a pointer',
+      'the untraced rows (hover, the cursors, the press overlay, a live force drag): the ten traces replay on this host, the rest do not',
     ],
     trace: 'drag',
   },
@@ -1092,4 +1216,39 @@ export const NOT_GESTURES = {
     'src/ listens for no key events; modifiers are read off pointer and wheel events',
   'v3-names':
     'vmouse*, mousedown, click and touchstart never fire in v4 (src/README.md); mouseover / mouseout do',
+};
+
+/**
+ * The event names a source emits, by the call shapes src/interact uses:
+ * `emitGesture` / `emitModelGesture` / `emitDragState` / `_emitOnEle`
+ * with a literal first argument, `emit({ type: '…' })`, and the
+ * drag-hover composition `prefix + 'over'` over the `prefix` union.
+ */
+export const scanEvents = (text) => {
+  const names = new Set();
+  const flat = text.replace(/\s+/g, ' ');
+
+  for (const m of flat.matchAll(
+    /\b(?:emitGesture|emitModelGesture|emitDragState|_emitOnEle)\( ?'([a-z]+)'/g,
+  )) {
+    names.add(m[1]);
+  }
+
+  for (const m of flat.matchAll(/\bemit\(\{ ?type: ?'([a-z]+)'/g)) {
+    names.add(m[1]);
+  }
+
+  const prefixes = /\bprefix: ((?:'[a-z]+'(?: ?\| ?)?)+)/.exec(flat);
+
+  if (prefixes != null) {
+    const heads = [...prefixes[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+
+    for (const m of flat.matchAll(/_emitOnEle\( ?prefix \+ '([a-z]+)'/g)) {
+      for (const head of heads) {
+        names.add(head + m[1]);
+      }
+    }
+  }
+
+  return names;
 };

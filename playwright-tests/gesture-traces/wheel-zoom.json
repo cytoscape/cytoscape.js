@@ -1,0 +1,71 @@
+{
+  "trace": "wheel-zoom",
+  "phases": {
+    "zoom-mode": {
+      "viewport": {
+        "zoom": 1.584893,
+        "pan": {
+          "x": 144.643602,
+          "y": 238.291485
+        }
+      },
+      "events": [
+        "~pointermove:cy",
+        "mouseover:b",
+        "pointerover:b",
+        "~pointermove:b scrollzoom:cy viewport:cy zoom:cy",
+        "mouseout:b",
+        "pointerout:b",
+        "~scrollzoom:cy viewport:cy zoom:cy"
+      ]
+    },
+    "pan-mode": {
+      "viewport": {
+        "zoom": 1.995262,
+        "pan": {
+          "x": 118.792219,
+          "y": 157.135073
+        }
+      },
+      "events": [
+        "~pan:cy scrollpan:cy scrollzoom:cy viewport:cy zoom:cy"
+      ]
+    },
+    "modifier-zoom": {
+      "viewport": {
+        "zoom": 3.162278,
+        "pan": {
+          "x": 159.028319,
+          "y": 96.970078
+        }
+      },
+      "events": [
+        "~scrollzoom:cy viewport:cy zoom:cy"
+      ]
+    },
+    "at-the-clamp": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "~pan:cy viewport:cy zoom:cy"
+      ]
+    },
+    "end": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "~scrollzoom:cy"
+      ]
+    }
+  }
+}

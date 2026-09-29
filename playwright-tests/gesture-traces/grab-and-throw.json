@@ -1,0 +1,52 @@
+{
+  "trace": "grab-and-throw",
+  "phases": {
+    "end": {
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 60,
+          "y": 10
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "~pointermove:cy",
+        "mouseover:b",
+        "pointerover:b",
+        "grabon:b",
+        "grab:b",
+        "pointerdown:b",
+        "tapstart:b",
+        "~drag:b pointermove:b position:b tapdrag:b",
+        "pointerup:b",
+        "tapend:b",
+        "free:b",
+        "freeon:b",
+        "dragfree:b",
+        "dragfreeon:b"
+      ]
+    }
+  }
+}

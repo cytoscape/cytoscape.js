@@ -1,0 +1,63 @@
+{
+  "trace": "box-select",
+  "phases": {
+    "shift": {
+      "selection": [
+        "a",
+        "ab",
+        "b",
+        "e"
+      ],
+      "events": [
+        "~pointermove:cy",
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~pointermove:cy tapdrag:cy",
+        "boxstart:cy",
+        "~pointermove:cy tapdrag:cy",
+        "tapdragover:b",
+        "~pointermove:cy tapdrag:cy",
+        "tapdragout:b",
+        "pointerup:cy",
+        "tapend:cy",
+        "boxend:cy",
+        "box:a",
+        "box:b",
+        "box:ab",
+        "select:a",
+        "select:b",
+        "select:ab",
+        "boxselect:a",
+        "boxselect:b",
+        "boxselect:ab"
+      ]
+    },
+    "end": {
+      "selection": [
+        "c"
+      ],
+      "events": [
+        "~pointermove:cy",
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~pointermove:cy tapdrag:cy",
+        "boxstart:cy",
+        "~pointermove:cy tapdrag:cy",
+        "tapdragover:c",
+        "~pointermove:cy tapdrag:cy",
+        "tapdragout:c",
+        "~pointermove:cy tapdrag:cy",
+        "pointerup:cy",
+        "tapend:cy",
+        "boxend:cy",
+        "box:c",
+        "unselect:a",
+        "unselect:b",
+        "unselect:e",
+        "unselect:ab",
+        "select:c",
+        "boxselect:c"
+      ]
+    }
+  }
+}

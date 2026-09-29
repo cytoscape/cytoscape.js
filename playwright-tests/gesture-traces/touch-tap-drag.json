@@ -1,0 +1,142 @@
+{
+  "trace": "touch-tap-drag",
+  "phases": {
+    "tap": {
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "selection": [
+        "a"
+      ],
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "grabon:a",
+        "grab:a",
+        "pointerdown:a",
+        "tapstart:a",
+        "pointerup:a",
+        "tapend:a",
+        "free:a",
+        "freeon:a",
+        "tap:a",
+        "select:a",
+        "tapselect:a"
+      ]
+    },
+    "drag": {
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 30,
+          "y": 10
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "selection": [
+        "a"
+      ],
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "grabon:b",
+        "grab:b",
+        "pointerdown:b",
+        "tapstart:b",
+        "~pointermove:b tapdrag:b",
+        "tapdragover:b",
+        "~drag:b pointermove:b position:b tapdrag:b",
+        "pointerup:b",
+        "tapend:b",
+        "free:b",
+        "freeon:b",
+        "dragfree:b",
+        "dragfreeon:b"
+      ]
+    },
+    "end": {
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 30,
+          "y": 10
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "selection": [
+        "a"
+      ],
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 240,
+          "y": 170
+        }
+      },
+      "events": [
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~dragpan:cy pan:cy pointermove:cy tapdrag:cy viewport:cy",
+        "pointerup:cy",
+        "tapend:cy"
+      ]
+    }
+  }
+}

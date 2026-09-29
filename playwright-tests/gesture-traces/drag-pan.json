@@ -1,0 +1,128 @@
+{
+  "trace": "drag-pan",
+  "phases": {
+    "background": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 260,
+          "y": 180
+        }
+      },
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "events": [
+        "~pointermove:cy",
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~dragpan:cy pan:cy pointermove:cy tapdrag:cy viewport:cy",
+        "pointerup:cy",
+        "tapend:cy"
+      ]
+    },
+    "locked": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 240,
+          "y": 160
+        }
+      },
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "events": [
+        "~pointermove:cy",
+        "mouseover:d",
+        "pointerover:d",
+        "pointerdown:d",
+        "tapstart:d",
+        "~pointermove:d tapdrag:d",
+        "tapdragover:d",
+        "~dragpan:cy pan:cy pointermove:d tapdrag:d viewport:cy",
+        "pointerup:d",
+        "tapend:d"
+      ]
+    },
+    "end": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 240,
+          "y": 160
+        }
+      },
+      "positions": {
+        "a": {
+          "x": -100,
+          "y": -50
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "events": [
+        "~pointermove:d",
+        "mouseout:d",
+        "pointerout:d",
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~dragpan:cy pointermove:cy tapdrag:cy",
+        "pointerup:cy",
+        "tapend:cy"
+      ]
+    }
+  }
+}

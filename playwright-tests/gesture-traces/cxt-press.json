@@ -1,0 +1,49 @@
+{
+  "trace": "cxt-press",
+  "phases": {
+    "click": {
+      "events": [
+        "~pointermove:cy",
+        "mouseover:a",
+        "pointerover:a",
+        "pointerdown:a",
+        "cxttapstart:a",
+        "pointerup:a",
+        "tapend:a",
+        "cxttapend:a",
+        "cxttap:a"
+      ]
+    },
+    "drag": {
+      "events": [
+        "pointerdown:a",
+        "cxttapstart:a",
+        "~cxtdrag:a pointermove:a tapdrag:a",
+        "cxtdragover:a",
+        "~cxtdrag:a pointermove:a tapdrag:a",
+        "cxtdragout:a",
+        "~cxtdrag:a pointermove:a tapdrag:a",
+        "cxtdragover:b",
+        "~cxtdrag:a pointermove:a tapdrag:a",
+        "pointerup:a",
+        "tapend:a",
+        "cxttapend:a"
+      ]
+    },
+    "end": {
+      "events": [
+        "~pointermove:a",
+        "mouseout:a",
+        "pointerout:a",
+        "mouseover:ab",
+        "pointerover:ab",
+        "pointerdown:cy",
+        "cxttapstart:cy",
+        "pointerup:ab",
+        "tapend:ab",
+        "cxttapend:cy",
+        "cxttap:cy"
+      ]
+    }
+  }
+}

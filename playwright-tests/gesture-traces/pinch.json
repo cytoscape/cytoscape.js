@@ -1,0 +1,51 @@
+{
+  "trace": "pinch",
+  "phases": {
+    "spread": {
+      "viewport": {
+        "zoom": 1.416667,
+        "pan": {
+          "x": 209.072537,
+          "y": 159.479167
+        }
+      },
+      "events": [
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~pan:cy pinchzoom:cy pointermove:cy viewport:cy zoom:cy"
+      ]
+    },
+    "over-a-grab": {
+      "viewport": {
+        "zoom": 1.166667,
+        "pan": {
+          "x": 196.680987,
+          "y": 158.333333
+        }
+      },
+      "events": [
+        "~pan:cy viewport:cy zoom:cy",
+        "grabon:a",
+        "grab:a",
+        "pointerdown:a",
+        "tapstart:a",
+        "~pan:cy pinchzoom:cy pointermove:cy viewport:cy zoom:cy"
+      ]
+    },
+    "end": {
+      "viewport": {
+        "zoom": 1,
+        "pan": {
+          "x": 200,
+          "y": 150
+        }
+      },
+      "events": [
+        "~pan:cy viewport:cy zoom:cy",
+        "pointerdown:cy",
+        "tapstart:cy",
+        "~pan:cy pinchzoom:cy pointermove:cy viewport:cy"
+      ]
+    }
+  }
+}

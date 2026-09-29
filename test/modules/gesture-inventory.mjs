@@ -7,6 +7,7 @@ import {
   GESTURES,
   NOT_GESTURES,
   TRACES,
+  scanEvents,
 } from '../../playwright-tests/lib/gesture-inventory.mjs';
 
 /*
@@ -28,14 +29,17 @@ this file makes each claim checkable:
 
 Measured at landing (2026-09-29): 30 gestures — 26 with browser
 coverage, 1 with headless (driven) coverage only, 3 with none; 40 event
-names emitted from src/interact/, every one inventoried.
+names emitted from src/interact/, every one inventoried.  Round 142's
+trace tier (`playwright-tests/gestures.spec.js`) reached the four: the
+pointer leaving the canvas, the additive tap, one-finger touch and every
+traced gesture on the worker host — 30 of 30 with browser coverage.
 */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const INTERACT = join(ROOT, 'src', 'interact');
 
 /** The pinned tallies; move them only with the edit that moves them. */
-const PINNED = { gestures: 30, browser: 26, headlessOnly: 1, none: 3 };
+const PINNED = { gestures: 30, browser: 30, headlessOnly: 0, none: 0 };
 
 /** Is `title` a string literal passed to test( or it( in `text`? */
 const citesTitle = (text, title) => {
@@ -50,41 +54,6 @@ const citesTitle = (text, title) => {
       `\\b(?:test|it)(?:\\.only|\\.skip)?\\(\\s*${lit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
     ).test(text),
   );
-};
-
-/**
- * The event names a source emits, by the call shapes src/interact uses:
- * `emitGesture` / `emitModelGesture` / `emitDragState` / `_emitOnEle`
- * with a literal first argument, `emit({ type: '…' })`, and the
- * drag-hover composition `prefix + 'over'` over the `prefix` union.
- */
-export const scanEvents = (text) => {
-  const names = new Set();
-  const flat = text.replace(/\s+/g, ' ');
-
-  for (const m of flat.matchAll(
-    /\b(?:emitGesture|emitModelGesture|emitDragState|_emitOnEle)\( ?'([a-z]+)'/g,
-  )) {
-    names.add(m[1]);
-  }
-
-  for (const m of flat.matchAll(/\bemit\(\{ ?type: ?'([a-z]+)'/g)) {
-    names.add(m[1]);
-  }
-
-  const prefixes = /\bprefix: ((?:'[a-z]+'(?: ?\| ?)?)+)/.exec(flat);
-
-  if (prefixes != null) {
-    const heads = [...prefixes[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
-
-    for (const m of flat.matchAll(/_emitOnEle\( ?prefix \+ '([a-z]+)'/g)) {
-      for (const head of heads) {
-        names.add(head + m[1]);
-      }
-    }
-  }
-
-  return names;
 };
 
 const interactEvents = () => {

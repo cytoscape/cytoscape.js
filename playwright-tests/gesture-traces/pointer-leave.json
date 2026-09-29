@@ -1,0 +1,15 @@
+{
+  "trace": "pointer-leave",
+  "phases": {
+    "end": {
+      "hovered": [],
+      "events": [
+        "~pointermove:cy",
+        "mouseover:a",
+        "pointerover:a",
+        "mouseout:a",
+        "pointerout:a"
+      ]
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "trace": "drag",
+  "phases": {
+    "node": {
+      "positions": {
+        "a": {
+          "x": -70,
+          "y": 10
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 100,
+          "y": -50
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 100,
+          "y": 60
+        }
+      },
+      "grabbed": [],
+      "events": [
+        "~pointermove:cy",
+        "mouseover:a",
+        "pointerover:a",
+        "grabon:a",
+        "grab:a",
+        "pointerdown:a",
+        "tapstart:a",
+        "~pointermove:a tapdrag:a",
+        "tapdragover:a",
+        "~drag:a pointermove:a position:a tapdrag:a",
+        "pointerup:a",
+        "tapend:a",
+        "free:a",
+        "freeon:a",
+        "dragfree:a",
+        "dragfreeon:a"
+      ]
+    },
+    "end": {
+      "positions": {
+        "a": {
+          "x": -70,
+          "y": 10
+        },
+        "b": {
+          "x": 0,
+          "y": -50
+        },
+        "c": {
+          "x": 120,
+          "y": -20
+        },
+        "d": {
+          "x": -100,
+          "y": 60
+        },
+        "e": {
+          "x": 120,
+          "y": 90
+        }
+      },
+      "grabbed": [],
+      "events": [
+        "~pointermove:a",
+        "mouseout:a",
+        "pointerout:a",
+        "mouseover:c",
+        "pointerover:c",
+        "grabon:c",
+        "grab:c",
+        "grab:e",
+        "pointerdown:c",
+        "tapstart:c",
+        "~pointermove:c tapdrag:c",
+        "tapdragover:c",
+        "~drag:c drag:e pointermove:c position:c position:e tapdrag:c",
+        "pointerup:c",
+        "tapend:c",
+        "free:c",
+        "free:e",
+        "freeon:c",
+        "dragfree:c",
+        "dragfree:e",
+        "dragfreeon:c"
+      ]
+    }
+  }
+}

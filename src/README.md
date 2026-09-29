@@ -2270,6 +2270,28 @@ no app expectation exists.  A `progress` cursor for long synchronous work
 was **declined**: 87.2 removed the largest sync stall, and a cursor that
 says "wait" is the wrong fix for work that should not block.
 
+## The DX polish bundle (round 75)
+
+Six small developer-experience items, each re-verified against the code
+before it was built.
+
+- **Container auto-resize (75.1, #2401).**  The renderer has observed its
+  container with a `ResizeObserver` since the round-42 restructure — the
+  observer arrived unrecorded, and no spec exercised it until this round.
+  Its callback (`observedResize` in `src/render/renderer/lifecycle.mts`,
+  mirrored on the worker proxy) re-measures through `resize()`, the path
+  `cy.resize()` takes, and emits the core's `'resize'` event when the
+  canvas's CSS box changed: once per real change, never for the initial
+  observation, and not again for a change a manual `cy.resize()` already
+  applied.  It cannot feed itself — `applySize` writes the canvas, which
+  is absolutely positioned and never changes the container's box.  Two
+  declines are recorded as decisions (the eleventh sitting confirmed
+  both): **no option to turn the observer off** — the observer is the v4
+  contract — and **no debounce**, since ResizeObserver already batches
+  per frame and `applySize` is cheap.  `cy.resize()` stays for what an
+  observer cannot see.  Pinned by the renderer project's "75.1" specs,
+  with the disconnected observer as the control.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

@@ -434,9 +434,13 @@ export class Renderer {
       this.schedule();
     });
 
+    // container auto-resize (#2401): the observer re-measures through
+    // the same path as `cy.resize()` and emits the core's 'resize' when
+    // the box changed (round 75.1) — the initial observation, and one
+    // after a manual `cy.resize()` already applied the size, emit nothing
     this.resizeObserver =
       this.container != null && typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => this.resize())
+        ? new ResizeObserver(() => lifecycleImpl.observedResize(this))
         : null;
 
     if (this.container != null) {
@@ -461,11 +465,11 @@ export class Renderer {
 
   /**
    * Resize the canvas to the container and redraw — synchronously
-   * (91.1).  Wired to a ResizeObserver on the container, so callers only
-   * need this when the size changes without one firing (no
-   * ResizeObserver, or a device-pixel ratio change).  The scene and
-   * depth targets are not reallocated here — the frame notices the new
-   * size and rebuilds them.
+   * (91.1).  Wired to a ResizeObserver on the container, which also
+   * emits the core's `'resize'` event when the box changed (round 75.1),
+   * so callers only need this when the size changes without one firing
+   * (no ResizeObserver).  The scene and depth targets are not
+   * reallocated here — the frame notices the new size and rebuilds them.
    *
    * The frame is drawn inside this call rather than scheduled because
    * ResizeObserver callbacks run *after* this rendering update's rAF and

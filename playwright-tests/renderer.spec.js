@@ -9744,4 +9744,110 @@ test.describe('WebGPU renderer', () => {
       );
     });
   });
+
+  test.describe('round 75: the DX polish bundle', () => {
+    /** Resolve with how many 'resize' events fired while `act` ran and
+     * the next `settleMs` passed — a count, so one change emitting twice
+     * is as visible as a change emitting nothing. */
+    const resizesDuring = async (page, act, settleMs = 600) => {
+      return await page.evaluate(
+        async ({ act, settleMs }) => {
+          let n = 0;
+          const cy = window.cy;
+          const onResize = () => n++;
+
+          cy.on('resize', onResize);
+          // eslint-disable-next-line no-new-func -- the act is a spec-authored snippet
+          new Function('cy', act)(cy);
+          await new Promise((resolve) => setTimeout(resolve, settleMs));
+          cy.off('resize', onResize);
+
+          return n;
+        },
+        { act, settleMs },
+      );
+    };
+
+    const canvasSize = (page) =>
+      page.evaluate(() => {
+        const canvas = document.querySelector('#cytoscape canvas');
+
+        return { w: canvas.width, h: canvas.height };
+      });
+
+    test('75.1: a container resize re-sizes the canvas and emits resize once, with no cy.resize()', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, RED_NODE_GRAPH);
+
+      // construction's own observation found the box the ctor applied
+      expect(await resizesDuring(page, '')).toBe(0);
+
+      const fired = await page.evaluate(async () => {
+        const dpr = window.devicePixelRatio;
+        const event = new Promise((resolve) =>
+          window.cy.one('resize', () => resolve(true)),
+        );
+
+        document.getElementById('cytoscape').style.width = '400px';
+
+        return {
+          fired: await Promise.race([
+            event,
+            new Promise((resolve) => setTimeout(() => resolve(false), 3000)),
+          ]),
+          dpr,
+        };
+      });
+
+      expect(fired.fired, "the observer's resize event").toBe(true);
+      expect(await canvasSize(page)).toEqual({
+        w: Math.round(400 * fired.dpr),
+        h: Math.round(600 * fired.dpr),
+      });
+
+      // one change, one emit — and no feedback from the canvas's own sizing
+      expect(
+        await resizesDuring(
+          page,
+          "document.getElementById('cytoscape').style.height = '300px';",
+        ),
+      ).toBe(1);
+      expect(await canvasSize(page)).toEqual({
+        w: Math.round(400 * fired.dpr),
+        h: Math.round(300 * fired.dpr),
+      });
+
+      // v3's habit — resize the container, then call cy.resize() — still
+      // emits exactly once: the observer finds the box already applied
+      expect(
+        await resizesDuring(
+          page,
+          "document.getElementById('cytoscape').style.width = '500px'; cy.resize();",
+        ),
+      ).toBe(1);
+      expect((await canvasSize(page)).w).toBe(Math.round(500 * fired.dpr));
+    });
+
+    test('75.1 control: with the observer disconnected, a container resize emits nothing and sizes nothing', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, RED_NODE_GRAPH);
+
+      const before = await canvasSize(page);
+
+      expect(
+        await resizesDuring(
+          page,
+          "cy.renderer().resizeObserver.disconnect(); document.getElementById('cytoscape').style.width = '400px';",
+          1000,
+        ),
+      ).toBe(0);
+      expect(await canvasSize(page)).toEqual(before);
+    });
+  });
 });

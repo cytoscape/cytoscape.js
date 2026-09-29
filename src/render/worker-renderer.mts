@@ -407,9 +407,11 @@ export class WorkerRenderer implements ForceHostLike {
     };
     cy.on('viewport', this.onViewport);
 
+    // container auto-resize (round 75.1): as on the same-thread path,
+    // the observer emits the core's 'resize' when the box changed
     this.resizeObserver =
       typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => this.resize())
+        ? new ResizeObserver(() => this.observedResize())
         : null;
     this.resizeObserver?.observe(container);
     this.armDprListener();
@@ -451,6 +453,23 @@ export class WorkerRenderer implements ForceHostLike {
       height: Math.max(1, Math.round(cssH * this.dpr)),
       dpr: this.dpr,
     });
+  }
+
+  /**
+   * The container observer's callback (round 75.1): re-measure, and
+   * emit the core's `'resize'` when the canvas's CSS box changed — the
+   * same one-emit-per-change rule as the same-thread renderer's
+   * `observedResize`.
+   */
+  private observedResize(): void {
+    const style = this.canvas.style;
+    const before = `${style.width}x${style.height}`;
+
+    this.resize();
+
+    if (!this.destroyed && `${style.width}x${style.height}` !== before) {
+      this.cy.emit('resize');
+    }
   }
 
   /**

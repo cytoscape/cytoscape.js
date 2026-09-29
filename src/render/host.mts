@@ -137,7 +137,8 @@ export interface RenderHost {
   /** a frame was drawn (the core's 'render' event) */
   emitRender(): void;
   /** the viewport re-measured without `cy.resize()` — a device-pixel-
-   * ratio change re-rasterized (the core's 'resize' event, 91.2) */
+   * ratio change re-rasterized (91.2), or the container observer saw
+   * the box change (75.1): the core's 'resize' event */
   emitResize(): void;
   /** a fatal renderer error with no better channel (the 'error' event) */
   emitError(message: string): void;

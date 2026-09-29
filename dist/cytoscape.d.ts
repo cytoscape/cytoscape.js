@@ -8861,7 +8861,19 @@ declare class Core {
    *   instance
    */
   stats(): RendererStats | null;
-  /** Re-measure the container and redraw (no-op when headless). */
+  /**
+   * Re-measure the container, redraw and emit `'resize'` (the redraw is
+   * a no-op when headless; the event still fires).
+   *
+   * **Rarely needed in v4** (round 75.1): a `ResizeObserver` on the
+   * container re-measures on every size change and emits `'resize'`
+   * itself — once per change, and not again for a change this call
+   * already applied — so v3's "call `cy.resize()` after resizing the
+   * container" is automatic.  Call it where no observer exists or none
+   * can see the change.
+   *
+   * @returns this core
+   */
   resize(): this;
   invalidateSize: this['resize'];
   /**

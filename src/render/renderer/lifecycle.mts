@@ -163,11 +163,11 @@ export function stats(rd: Renderer): RendererStats {
 
 /**
  * Resize the canvas to the container and redraw — synchronously
- * (91.1).  Wired to a ResizeObserver on the container, so callers only
- * need this when the size changes without one firing (no
- * ResizeObserver, or a device-pixel ratio change).  The scene and
- * depth targets are not reallocated here — the frame notices the new
- * size and rebuilds them.
+ * (91.1).  Wired to a ResizeObserver on the container, which also
+ * emits the core's `'resize'` event when the box changed (round 75.1),
+ * so callers only need this when the size changes without one firing
+ * (no ResizeObserver).  The scene and depth targets are not
+ * reallocated here — the frame notices the new size and rebuilds them.
  *
  * The frame is drawn inside this call rather than scheduled because
  * ResizeObserver callbacks run *after* this rendering update's rAF and
@@ -191,5 +191,33 @@ export function resize(rd: Renderer): void {
     rd.frame();
   } else {
     rd.schedule();
+  }
+}
+
+/**
+ * The container observer's callback (round 75.1, #2401): re-measure
+ * through {@link resize} — the path `cy.resize()` takes — and emit the
+ * core's `'resize'` event when the canvas's CSS box actually changed.
+ *
+ * The comparison is against the box `applySize` last wrote, which is
+ * what keeps this to one emit per real change: the observer's initial
+ * observation (at `observe()`) finds the box the constructor applied,
+ * and an observation that follows a manual `cy.resize()` finds the box
+ * that call applied and already announced.  It cannot feed itself:
+ * `applySize` writes the *canvas*, whose box never changes the
+ * container's (the canvas is absolutely positioned inside it).
+ */
+export function observedResize(rd: Renderer): void {
+  if (rd.destroyed || !(rd.canvas instanceof HTMLCanvasElement)) {
+    return;
+  }
+
+  const style = rd.canvas.style;
+  const before = `${style.width}x${style.height}`;
+
+  rd.resize();
+
+  if (!rd.destroyed && `${style.width}x${style.height}` !== before) {
+    rd.host.emitResize();
   }
 }

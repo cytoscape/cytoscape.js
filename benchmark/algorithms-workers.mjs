@@ -49,6 +49,10 @@
 // not add an offload fails the cell).  `--tier pool|offload|all` picks
 // the tier (default all); the offload crossovers (`offloadMinN`, one per
 // family) are stamped from `--tier offload --sizes …` at the small end.
+// Round 134 (ledger item 70) adds the feature-space clusterers — kMeans,
+// kMedoids, fuzzyCMeans, hierarchicalClustering — to the offload tier,
+// on the `algorithms-gpu` suite's feature fixture (seeded points, two
+// attributes) with that suite's options, at the item's 1k / 5k scales.
 //
 // Needs the built bundles (`npm run build`).
 
@@ -154,6 +158,27 @@ function fixture(n, dense = false) {
 }
 
 const weight = (e) => e.data('w');
+
+/* The feature-space clusterers' fixture (round 134): the
+ * `algorithms-gpu` suite's seeded points — no edges, two attributes —
+ * so a row here and the GPU sweep's price the same input. */
+function points(n) {
+  let seed = 42;
+  const rand = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+
+    return seed / 0x7fffffff;
+  };
+  const els = [];
+
+  for (let i = 0; i < n; i++) {
+    els.push({ data: { id: 'n' + i, a: rand() * 40, b: rand() * 10 } });
+  }
+
+  return els;
+}
+
+const featureAttributes = [(n) => n.data('a'), (n) => n.data('b')];
 
 /* Each family: one call per timing; op() returns something the harness
  * consumes so the call cannot be dead-code-eliminated. */
@@ -325,6 +350,77 @@ const OFFLOAD_FAMILIES = [
         })
         .then((clusters) => clusters.length),
   },
+  // round 134: the named-metric clusterers, the GPU sweep's options (the
+  // test centres fixed, so every sample runs the same iterations;
+  // fuzzy c-means has no test mode and seeds its memberships randomly)
+  {
+    key: 'kMeans',
+    sizes: [1024, 2048, 5120],
+    points: true,
+    op: (cy, executor) =>
+      cy
+        .nodes()
+        .kMeans({
+          executor,
+          k: 8,
+          maxIterations: 10,
+          attributes: featureAttributes,
+          testMode: true,
+          testCentroids: Array.from({ length: 8 }, (_, c) => [c * 5, c % 3]),
+        })
+        .then((clusters) => clusters.length),
+  },
+  {
+    key: 'kMedoids',
+    sizes: [1024, 2048, 5120],
+    points: true,
+    op: (cy, executor) => {
+      const nodes = cy.nodes();
+
+      return nodes
+        .kMedoids({
+          executor,
+          k: 8,
+          maxIterations: 10,
+          attributes: featureAttributes,
+          testMode: true,
+          testCentroids: Array.from(
+            { length: 8 },
+            (_, c) => nodes[Math.floor((c * nodes.length) / 8)],
+          ),
+        })
+        .then((clusters) => clusters.length);
+    },
+  },
+  {
+    key: 'fuzzyCMeans',
+    sizes: [1024, 2048, 5120],
+    points: true,
+    op: (cy, executor) =>
+      cy
+        .nodes()
+        .fuzzyCMeans({
+          executor,
+          k: 8,
+          maxIterations: 10,
+          attributes: featureAttributes,
+        })
+        .then((r) => r.clusters.length),
+  },
+  {
+    key: 'hierarchicalClustering',
+    sizes: [1024, 2048, 5120],
+    points: true,
+    op: (cy, executor) =>
+      cy
+        .nodes()
+        .hierarchicalClustering({
+          executor,
+          attributes: featureAttributes,
+          threshold: 0.75,
+        })
+        .then((clusters) => clusters.length),
+  },
 ];
 
 const offloadFamilies =
@@ -435,7 +531,10 @@ async function runCell(family, n) {
  * REPS samples of each executor with the thread's held time beside
  * each, every sample asserting where it ran. */
 async function runOffloadCell(family, n) {
-  const cy = cytoscape({ headless: true, elements: fixture(n) });
+  const cy = cytoscape({
+    headless: true,
+    elements: family.points === true ? points(n) : fixture(n),
+  });
 
   try {
     resetPool();

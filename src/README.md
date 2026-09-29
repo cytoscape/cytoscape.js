@@ -6332,7 +6332,101 @@ native WebGPU driving the GPU *algorithm* executors and the force
 integrator is round 131's `test:runtimes:deno:gpu` on
 `cytoscape/headless-gpu` (discharging 99.2); edge isolates are round
 131's `cytoscape/headless`, gated in a `node:vm` isolate every run and on
-`workerd` — see "Builds" above.
+`workerd` — see "Builds" above.  Every other environment, and what each
+one gets, is the matrix below.
+
+## Supported environments (round 100)
+
+The answer to "does it run on X", per environment: which capability
+tier it reaches, how that is known, and what is not promised.  This is
+the alpha gate's "decide supported browser and headless capabilities"
+(`docs/feature-direction.md`) stated as a contract; it moves to the
+documentation site at round 46.  The full measurements, with versions
+and the machine, are round 100's record
+(`plan/rounds/2026-08-19-04-rnd0100-landed-the-runtime-horizon-which-other-javascript-environments.md`).
+
+**The capability ladder** — what each tier actually needs, so an
+environment is judged against requirements:
+
+| Tier | What it is | What it needs |
+| --- | --- | --- |
+| **T0** headless core | store, wire, style, collections, every layout, the CPU algorithms, events, `json()` | ES2022 (classes with private fields, `async`), typed arrays, `TextEncoder` with `encodeInto`, `TextDecoder`, `queueMicrotask` — the WinterTC baseline.  `TextDecoder`/`TextEncoder` are constructed **at module evaluation** (`store/id-map.mts`, every id goes through them), so an engine without them cannot even load the bundle.  The smoke needs no timers: QuickJS-ng and GraalJS have no `setTimeout` and pass. |
+| **T1** + workers | the algorithm pool (`executor: 'workers'`, and `'auto'`'s lane) and the force sim worker | Node's `worker_threads` (Node, Bun, Deno), or a browser **page** with `Worker`, `Blob` and `URL.createObjectURL` |
+| **T2** + WebGPU compute | the GPU algorithm lanes and the headless force integrator (`cytoscape/headless-gpu`, or the full entry) | `navigator.gpu` and an adapter; no canvas, no DOM |
+| **T3** + rendering | the renderer, pointer, image export | a browser (or browser shell) page with WebGPU; WebGL2 at round 137 |
+
+**The support tiers.**  **Tier 1 — CI-gated**: a job fails when it
+breaks.  **Tier 2 — expected to work**: measured at least once, the
+WinterTC-shaped or browser-shaped environments; the smoke is re-run
+against them **at release time** (the round-51 bake is the first
+occasion), and that cadence is the ceiling of the promise — a Tier-2 row
+can be stale between releases.  **Tier 3 — not supported**: recorded
+with the failing assertion named, so the answer is a link, not a shrug;
+where named shims make it run, the shims are stated, and that is still
+not a support claim.
+
+| Environment | T0 | T1 | T2 | T3 | How it is known | Tier |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Node ≥ 24** | yes | yes (`worker_threads`) | no — no `navigator.gpu`; `'gpu'` rejects, `'auto'` stays on the CPU | no | `ci-node`: the whole Node tier from source, and the smoke over all nine bundles | **1** |
+| **Bun ≥ 1.4** | yes | yes — measured (1.4.2: an 8-worker pool, closeness bit-identical to `'cpu'`; the sim worker spawned) | no | no | `ci-bun` (1.4.0 floor + latest) runs the smoke: T0 gated, T1 measured only | **1** (T0), 2 (T1) |
+| **Deno ≥ 2.9** | yes | yes — measured (2.9.6, as Bun), **except the CJS bundles' sim worker** (item 76; the ESM is fine) | yes, `cytoscape/headless-gpu` — local only (2.9.6, RX 580 via wgpu/Vulkan, round 131) | no | `ci-deno` (2.9.6 floor + latest) runs the smoke; its GPU step is `continue-on-error`, a manual probe until runners show an adapter (the eleventh sitting) | **1** (T0), 2 (T1, T2) |
+| **Cloudflare Workers** (workerd) | yes, `cytoscape/headless` | no — no `Worker`; `'auto'` runs in-thread, asserted | no | no | the isolate smoke every Node-tier run; `ci-workerd` on the real runtime | **1** |
+| **Vercel Edge** and other V8-isolate edges | expected: the same WinterTC surface, no `eval`/`new Function` (the bundles contain neither) | no | no | no | not run on Vercel; the isolate smoke is its shape.  Vercel now recommends Node functions over Edge, and Next.js 16.3 drops `runtime = 'edge'` — the Node row covers that path | 2 |
+| **Chromium, WebKit** — a page | yes | yes (Blob workers) | where WebGPU exists | where WebGPU exists — round 73's reach table (`plan/rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md`); WebGL2 for the rest is round 137 | `ci-browser`: `renderer` (Chromium, SwiftShader) and `renderer-webkit` — the renderer, GPU-algorithm, workers and load specs; GPU specs soft-skip without an adapter | **1** |
+| **Chromium, WebKit** — dedicated, shared and service workers | yes | **no** — the pool and the sim worker require a `document` (item 82); `'auto'` answers on the worker's own thread | not measured | no (the worker-hosted renderer is a page's `renderer: { worker: true }`, round 86) | `contexts.spec.js` in both projects | **1** (T0) |
+| **Firefox** — page and workers | yes (151, page and all three worker kinds) | yes in a page, as above in workers | where WebGPU exists (Windows 141+, Apple Silicon 145+; **not Linux**) | same | measured locally this round; **no CI project** (item 83) | 2 |
+| **Worklets** (Audio; Paint not measured) | **no** — module evaluation fails: Chromium 149 and Firefox 151 have no `TextDecoder` there, WebKit 26.5 no `queueMicrotask` | no | no | no | measured this round | 3 |
+| **Electron** | main process: yes (it is Node) | yes, main process | renderer: as Chromium, with the app's own switches | renderer: yes where an adapter is found — on Linux the app must opt in (below) | Electron 44.4.5 (Chromium 152, Node 24.21): the smoke on all nine bundles as Node, the pool in the main process, a mounted graph that picks and exports in a renderer | 2 |
+| **Tauri** + a Node sidecar | the sidecar is the Node row | the sidecar's | the webview's | the webview's: WebView2 (Chromium) on Windows, WKWebView (Safari 26+) on macOS; WebKitGTK on Linux not measured | not run — composed from its parts, no claim of its own | 2 (by parts) |
+| **React Native** (Hermes) | **only with a `TextDecoder` polyfill** — bare it fails `Property 'TextDecoder' doesn't exist` at module evaluation | no `Worker` | no | no | the Hermes React Native 0.87.1 pins (built from `hermes-v250829098.0.17`) with React Native's own `queueMicrotask`/`performance` installed: 56 assertions with the polyfill.  Hermes 0.13 (the last standalone release) cannot parse the bundle (`async`, class expressions), and React Native's Babel preset no longer lowers classes | 3 |
+| **QuickJS-ng**, **GraalJS** | **only with shims** — bare, both fail `TextDecoder is not defined`; with a UTF-8 codec (and `queueMicrotask` on GraalJS's plain launcher) both pass | no | no | no | `test/runtimes/engines.mjs`, run at landing (QuickJS-ng 0.17.0, GraalJS 25.4.4.1.1) | 3 |
+
+What the rows mean in practice:
+
+- **At the edge the budget is CPU, not bytes.**  Measured on workerd
+  (2026-09-28 build, the i9-9900K, per request, median of 15, the no-op
+  request subtracted; wall time of a CPU-bound request): the reactome
+  fixture (227 nodes / 245 edges) ingests in 1.6 ms, lays out with
+  `flow` in 5.6 ms and with `force` in 30 ms, and takes `pageRank` plus
+  betweenness in 6.1 ms; npm-deps (439 / 510) takes 1.9, 23, 83 and 12
+  ms, and the whole request (ingest, force, both metrics, `json()`) 92
+  ms, against Node's 84 for the same work (the layouts within ~6% of
+  Node's; the metrics the outlier, 12.0 against 5.3 ms).  So Cloudflare's
+  **free plan's 10 ms CPU limit** fits ingest, metrics and `json()` of a
+  few-hundred-node graph but **not a force layout**; the paid plan's 30 s
+  default fits all of it by a wide margin.  The
+  headless bundle (567,858 bytes minified) is far inside Cloudflare's
+  published 64 MiB script limit and Vercel's 1 MB-gzipped Hobby limit;
+  `test/modules/bundle-size.mjs`'s 1,000,000-byte budget stays the gate.
+- **Electron on Linux: WebGPU is the app's decision.**  Out of the box
+  (Wayland) the renderer finds no adapter and `cytoscape()` rejects with
+  the named message; with `--use-angle=vulkan --enable-features=Vulkan`
+  (under X11 — Electron refuses Vulkan on Wayland) it gets the hardware
+  adapter, and `--enable-unsafe-webgpu` alone gets SwiftShader.  An
+  Electron app can set these itself (`app.commandLine.appendSwitch`
+  before `ready`); a web page cannot, which is round 73's Linux gap.
+- **A model hosted in a worker gets T0 and no pool.**  The page-less
+  contexts run everything on their own thread — already off the main
+  thread, so the loss is parallelism, not responsiveness.  Opening the
+  pool to them is item 82 (the `document` test protects Bun and Deno,
+  which have `Worker` and `Blob` but must take the `worker_threads`
+  path).
+- **React Native gets the model, not a view**: T0 with one polyfill, no
+  workers, no rendering.  There is no example app until a real use case
+  asks (the eleventh sitting).
+- **Not promised anywhere**: a canvas renderer (excluded — see the
+  features inventory), rendering outside a browser or browser shell,
+  GPU compute in a page-less worker (unmeasured), and any Tier-2 row
+  between releases.
+
+**Keeping it true.**  Tier 1 rows are CI's.  Tier 2 and 3 rows are
+re-measured at release time: `node test/runtimes/engines.mjs --qjs=…
+--hermes=… --graaljs=…` for the engines, the Electron and Firefox
+checks as the round-100 record describes them.  A row changes tier by
+measurement, and the reason goes in the round that moves it.  Round 99
+(Bun and Deno first-class — the native test runners, the install story,
+JSR) has not run: its rows here are the round-98 smoke's, and it will
+raise them.
 
 ## Shipped shaders: WGSL minified at build time (round 52)
 

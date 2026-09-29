@@ -288,8 +288,18 @@ measured free, the compute cull replaced by a vertex-stage collapse
 (+0.03–0.33 ms of GPU, no CPU walk), the pick readback no slower than
 WebGPU's, and the reach gap fetched (WebGL2 96.4%, WebGPU 85.7% full,
 concentrated in Linux, Firefox off Windows and older Safari).  It
-**closed item 18** and raised no new item.  Item 63 is carried by round
-126.  What follows is the sweep before it.
+**closed item 18** and raised no new item.  Round 100 (the runtime
+horizon, landed 2026-09-29 on the sitting's calls — workerd in CI, which
+round 131 had already done; the matrix in `src/README.md` now; no React
+Native example app) ran the smoke's checks through every candidate and
+wrote the support matrix: Tier 1 CI-gated, Tier 2 re-run at release,
+Tier 3 recorded with the failing assertion named.  It made the
+page-less browser workers a CI gate (`contexts.spec.js`), measured the
+edge's CPU budget on real fixtures (a force layout does not fit the
+free plan's 10 ms), and found React Native's Hermes, QuickJS-ng and
+GraalJS each one `TextDecoder` short of the headless core; it logged
+**items 82 and 83** — the worker pool refusing a page-less host, and
+Firefox's missing CI project.  Item 63 is carried by round 126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -2034,3 +2044,32 @@ directions".*
     carry), or record it as a deviation.  **First measurement**: split
     the 0.660% into spikes and folds (an opaque line isolates the
     spikes).
+
+82. **The worker pool and the force sim worker refuse a page-less
+    browser host** (logged 2026-09-29 by round 100).  Both
+    `browserWorkers()` tests (`algorithms/algo-workers.mts:204-220`,
+    `layout/force-remote.mts:133-148`) require `document != null`, so a
+    model hosted in a dedicated, shared or service worker gets T0 and no
+    T1: measured on Chromium 149, Firefox 151 and WebKit 26.5, where a
+    dedicated worker has `Worker`, `Blob` and `URL.createObjectURL` and
+    still gets "executor 'workers' requires worker threads … a browser
+    page with Worker and Blob"; `'auto'` answers on the worker's own
+    thread (`contexts.spec.js` asserts the values, not the lane).  The
+    check is not arbitrary: Bun and Deno also have `Worker`, `Blob` and
+    `createObjectURL`, and must take the `worker_threads` path (Deno
+    accepts module workers only), so a `WorkerGlobalScope` test has to
+    come after `nodeThreads()` in both files, with specs on each host.
+    The loss is parallelism, not responsiveness — the model is already
+    off the main thread.  **The call**: open the pool to worker hosts
+    (nested workers exist in all three engines), or state the limit in
+    the matrix as it stands.
+83. **Firefox has no CI project** (logged 2026-09-29 by round 100).
+    `ci-browser` runs Chromium and WebKit; Firefox is in no Playwright
+    project, so the matrix's Firefox row is Tier 2 on one local run
+    (151: the page and all three worker kinds pass the smoke's checks,
+    the page's pool too).  Firefox has no WebGPU on Linux (round 73's
+    reach table), so on a hosted runner its project could only hold the
+    model tier — `algorithms-workers`, `load`, `contexts` — until round
+    137's WebGL2 renderer gives it something to draw with.  **The
+    call**: add a `headless-firefox` project for those specs now, or
+    wait for 137 and add the renderer project whole.

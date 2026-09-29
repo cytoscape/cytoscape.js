@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–75, 79, 85–98, 101–104, 106–124, 127–136 |
-| planned | 49–51, 71, 76–78, 80–84, 99–100, 105, 125–126, 137 |
+| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136 |
+| planned | 49–51, 71, 76–78, 80–84, 99, 105, 125–126, 137 |
 
 ## The sections
 
@@ -160,7 +160,7 @@ A round can land with an item held open; the round file says which.
 | 131 | 98–100 | 2026-08-19 | note | [The runtime rounds](rounds/2026-08-19-01-rnd0098_0100-note-the-runtime-rounds.md) |
 | 132 | 98 | 2026-08-19 | landed | [Bun and Deno run the package: the contract pinned and smoked](rounds/2026-08-19-02-rnd0098-landed-bun-and-deno-run-the-package-the-contract-pinned-and.md) |
 | 133 | 99 | 2026-08-19 | plan | [Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story](rounds/2026-08-19-03-rnd0099-plan-bun-and-deno-first-class-the-native-runners-measured-s.md) |
-| 134 | 100 | 2026-08-19 | plan | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-plan-the-runtime-horizon-which-other-javascript-environments.md) |
+| 134 | 100 | 2026-08-19 | landed | [The runtime horizon: which other JavaScript environments are worth supporting](rounds/2026-08-19-04-rnd0100-landed-the-runtime-horizon-which-other-javascript-environments.md) |
 | 135 | 101 | 2026-08-20 | landed | [Quiet verification: the scripts agents run print only failures](rounds/2026-08-20-01-rnd0101-landed-quiet-verification-the-scripts-agents-run-print-only.md) |
 | 136 | 102–107 | 2026-08-20 | note | [The ecosystem rounds](rounds/2026-08-20-02-rnd0102_0107-note-the-ecosystem-rounds.md) |
 | 137 | 102 | 2026-08-20 | landed | [Transient emphasis: hover highlight without touching the sheet](rounds/2026-08-20-03-rnd0102-landed-transient-emphasis-hover-highlight-without-touching-the.md) |

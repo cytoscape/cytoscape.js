@@ -2340,6 +2340,25 @@ before it was built.
   as *chunks*, not definitions.  The docs generator lists identifier
   members only, so the iterator ships as declaration hover text rather
   than an API-reference entry.
+- **The public sync node pick (75.4, #1209): `cy.nodeAt( x, y )`, alias
+  `cy.pickNode`** (the eleventh sitting's names).  The pick pair mirrors
+  how interaction itself picks: pan-vs-grab must answer in the same
+  microtask, and edges genuinely need the GPU tile — so `cy.nodeAt` is
+  the CPU half (`pickNodeSync`, now on `RendererLike`) and `cy.pick` the
+  whole leaf > edge > parent answer.  Exact like `cy.pick` (the 57.9
+  halos stay the gesture's), nodes only, `Collection | null`.  **It
+  computes headless** rather than answering null: `src/render/cpu-pick.mts`
+  moved to `src/cpu-pick.mts`, below the renderer tier, with the
+  renderer's default `hidePx`/`nodeLodPx` beside it (`renderer.mts`
+  re-exports them), so the core runs the same scan from the store and
+  the viewport at dpr 1 — the answer a default renderer gives at dpr 1.
+  With a renderer mounted it is the renderer's own pick (its dpr and
+  thresholds), which no longer waits for the device: the scan reads
+  only the store and the viewport.  Specs: `test/node-at.mjs` (headless;
+  its slanted-outline spec failed with the shape test swapped for the
+  bounding box, the round-27 control) and the renderer project's 75.4
+  spec (a hit, the topmost of an overlap agreeing with `cy.pick`, a
+  mid-edge point that only `cy.pick` answers, background).
 
 ## Design decisions (v4 API direction)
 

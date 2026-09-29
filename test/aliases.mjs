@@ -40,6 +40,7 @@ const CORE_ALIASES = [
   ['pon', 'promiseOn'],
   ['centre', 'center'],
   ['invalidateSize', 'resize'],
+  ['pickNode', 'nodeAt'], // round 75.4: the sitting kept the working name as an alias
   ['jpeg', 'jpg'],
   ['attr', 'data'],
   ['removeAttr', 'removeData'],

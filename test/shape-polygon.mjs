@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 import { GraphStore } from '../src/store/graph-store.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 import { SHAPE_POLYGON_CUSTOM } from '../src/contract.mjs';
 
 // round 13 C3: shape: 'polygon' + shape-polygon-points — per-element

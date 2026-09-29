@@ -711,6 +711,13 @@ instances are not emitters.
   contract.  v3 ordered the same three by `z-index`/`z-compound-depth`,
   neither of which v4 has, so an app that relied on a deeply nested v3
   parent out-ranking a shallower edge will now get the edge.
+- **`cy.nodeAt( x, y )`** (alias `cy.pickNode`, round 75.4) — the node
+  under a rendered point, answered synchronously on the CPU, where
+  `cy.pick()` is async because an edge hit is a GPU question.  v3 never
+  had a public form (#1209); apps reached into the renderer's
+  `findNearestElement`.  Nodes only, exact (no halo), the same
+  leaf-over-parent order as `pick`; headless it computes from the
+  viewport at a device-pixel ratio of 1 rather than answering null.
 
 ---
 

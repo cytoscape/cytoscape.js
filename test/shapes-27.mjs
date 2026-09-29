@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 import {
   POLYGON_POINTS,
   ROUND_POLYGON_SOURCE,

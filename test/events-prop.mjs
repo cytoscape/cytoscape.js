@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 import { GraphStore } from '../src/store/graph-store.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 import { FLAG_NO_EVENTS, SHAPE_CIRCLE } from '../src/contract.mjs';
 
 // Round 20.2: the 'events' style prop — v3's pointer transparency.

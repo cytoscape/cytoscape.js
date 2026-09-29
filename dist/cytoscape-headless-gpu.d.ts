@@ -8070,6 +8070,10 @@ interface RendererLike {
    * the edge namespace bit for edges), or null for background — decoded
    * and re-validated by {@link Core._decodePick} (round 86.2) */
   pick(x: number, y: number): Promise<number | null>;
+  /** the synchronous CPU node pick at a rendered point: the node's slot,
+   * or null — what the pointer's pan-vs-grab uses, public as
+   * {@link Core.nodeAt} (round 75.4) */
+  pickNodeSync(x: number, y: number, padPx?: number): number | null;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
@@ -8852,7 +8856,8 @@ declare class Core {
   reset(): this;
   /**
    * Async GPU pick at a rendered (CSS px) position; resolves with the
-   * element under the point or null (always null when headless).
+   * element under the point or null (always null when headless — the
+   * sync, node-only `cy.nodeAt()` computes headless).
    *
    * Exact: a hit is a point on the drawn element.  The pointer gestures
    * additionally apply v3's hit halos (8 rendered px around edges for a
@@ -8875,6 +8880,37 @@ declare class Core {
    * @returns the element under the point, or null
    */
   pick(x: number, y: number): Promise<Collection | null>;
+  /**
+   * The node at a rendered (CSS px) position, synchronously — or null
+   * (round 75.4, #1209).  The sync half of the pick pair: `cy.pick()`
+   * is async because an edge hit is a GPU question, while a node hit is
+   * answered on the CPU from the canonical columns, in the same
+   * microtask — the pick the pointer's own pan-vs-grab decision trusts.
+   *
+   * **Nodes only, and exact.**  Edges never answer here — ask
+   * `cy.pick()`, which resolves the whole leaf > edge > parent order —
+   * so over a node that an edge crosses, `nodeAt` answers the node where
+   * `pick` may answer the edge only when the node is a compound parent
+   * (parents draw under edges; a leaf draws over them and both agree).
+   * Among nodes the topmost drawn wins, leaves over parents, as in
+   * `cy.pick()`.  No hit halo: the gestures' 2/8 px node halos (57.9)
+   * belong to the gesture, not the API.  What is not drawn is not
+   * picked — `visibility: hidden`, a hidden (`hide()`) node, and a node
+   * smaller than the renderer's `hidePx` at the current zoom.
+   *
+   * **Headless, it computes** (the eleventh sitting) from the store and
+   * the viewport at a device-pixel ratio of 1 with the renderer's
+   * default thresholds, so a test or a server-side hit test gets the
+   * answer a default renderer would give at dpr 1.
+   *
+   * @param x — rendered (CSS px) x, relative to the container
+   * @param y — rendered (CSS px) y
+   * @returns the node under the point, or null (background, an edge
+   *   only, or a destroyed instance)
+   * @see Core#pick for edges and the full draw-order answer
+   */
+  nodeAt(x: number, y: number): Collection | null;
+  pickNode: this['nodeAt'];
   /**
    * The renderer's frame statistics, or null when headless.  The snapshot
    * carries the frame timings, cache hit rates and pass counters — note

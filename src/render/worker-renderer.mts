@@ -1,4 +1,9 @@
-import { pickNodeTierAt, type NodePickTier } from './cpu-pick.mjs';
+import {
+  DEFAULT_HIDE_PX,
+  DEFAULT_NODE_LOD_PX,
+  pickNodeTierAt,
+  type NodePickTier,
+} from '../cpu-pick.mjs';
 import { EDGE_PICK_BIT } from '../contract.mjs';
 import { resolveExportView } from './renderer.mjs';
 import type { ExportedImage } from './renderer.mjs';
@@ -60,9 +65,6 @@ Per-batch traffic is `buildBatch`'s drain of the store's own delta —
 priced by the 86.1 gate at 0.035 ms/frame for the worst case at
 harness scale, buffers transferred.
 */
-
-const DEFAULT_NODE_LOD_PX = 3;
-const DEFAULT_HIDE_PX = 1;
 
 /** the artifact's URL, captured at evaluation (shared with the force
  * sim worker since 129.3: `src/util/self-url.mts`) */

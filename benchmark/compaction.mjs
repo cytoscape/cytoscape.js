@@ -23,7 +23,7 @@
 import { bench, group, summary, do_not_optimize } from 'mitata';
 import { finishRun } from './bench-run.mjs';
 import { buildElements, makeGpu, N } from './graph.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 import { columnSpecsForGroup } from '../src/contract.mjs';
 
 const KEEP_EVERY = 10;

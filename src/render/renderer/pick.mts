@@ -1,7 +1,7 @@
 // The renderer's picking (round 130 split): the GPU pick passes and the
 // CPU tiers.
 
-import { pickNodeTierAt, type NodePickTier } from '../cpu-pick.mjs';
+import { pickNodeTierAt, type NodePickTier } from '../../cpu-pick.mjs';
 import { PICK_TILE } from '../picking.mjs';
 import { GROUP_EDGES } from '../../contract.mjs';
 import {

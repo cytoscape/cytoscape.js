@@ -25,13 +25,13 @@ import {
   SHAPE_ROUND_RECTANGLE,
   SHAPE_ROUND_TAG,
   SHAPE_ROUND_TRIANGLE,
-} from '../contract.mjs';
-import type { ModelView } from '../contract.mjs';
+} from './contract.mjs';
+import type { ModelView } from './contract.mjs';
 import {
   POLYGON_POINTS,
   ROUND_POLYGON_SOURCE,
   insideUnitPolygon,
-} from '../shape-points.mjs';
+} from './shape-points.mjs';
 
 /*
 Synchronous CPU node picking.
@@ -54,6 +54,15 @@ A uniform spatial grid is the follow-up if node counts grow ~10×.
 // round 22: picking is a draw-tier consumer — `visibility: 'hidden'`
 // elements neither render nor pick, so the mask is ALIVE|DRAWN
 const SHOWN = FLAG_ALIVE | FLAG_DRAWN;
+
+/** The renderer's default node LOD threshold, device px (the
+ * `renderer.nodeLodPx` option): below it a node draws — and picks — as
+ * a plain disc.  Here rather than in the renderer so the core's
+ * headless `cy.nodeAt()` shares it (round 75.4). */
+export const DEFAULT_NODE_LOD_PX = 3;
+/** The renderer's default hide threshold, device px (the
+ * `renderer.hidePx` option): the smallest a node is drawn — and picked. */
+export const DEFAULT_HIDE_PX = 1;
 
 /** device-px view state, mirroring writePickUniform */
 export interface CpuPickFrame {

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 
 // Round 20.3: 'text-events' — with 'yes' a node's label box is part of
 // the node for picking (the exact laid block at its D3 anchor).  Node

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { GraphStore } from '../src/store/graph-store.mjs';
-import { pickNodeAt, pickNodeTierAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt, pickNodeTierAt } from '../src/cpu-pick.mjs';
 import {
   FLAG_NO_EVENTS,
   FLAG_VISIBLE,

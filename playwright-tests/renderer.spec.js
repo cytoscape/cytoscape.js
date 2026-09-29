@@ -10040,5 +10040,76 @@ test.describe('WebGPU renderer', () => {
       ).toBe(false);
       expect(await shapeMisses(page)).toBeGreaterThan(missesBefore);
     });
+
+    test('75.4: cy.nodeAt answers nodes synchronously and agrees with cy.pick; an edge answers only through cy.pick', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeReadyCy(page, {
+        elements: [
+          { data: { id: 'a' }, position: { x: -100, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          // added after a, so it draws over a where they overlap
+          { data: { id: 'c' }, position: { x: -80, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ],
+        style: {
+          nodes: { width: 40, height: 40, 'background-color': '#48c' },
+          edges: { width: 10, 'line-color': '#c84' },
+        },
+        zoom: 1,
+      });
+
+      const o = await centerPan(page);
+
+      await waitFrames(page);
+
+      const both = (mx, my) =>
+        page.evaluate(
+          async ({ x, y }) => {
+            const sync = window.cy.nodeAt(x, y);
+            const isPromise = sync != null && typeof sync.then === 'function';
+            const picked = await window.cy.pick(x, y);
+
+            return {
+              nodeAt: sync?.id() ?? null,
+              isPromise,
+              pick: picked?.id() ?? null,
+              alias: window.cy.pickNode(x, y)?.id() ?? null,
+            };
+          },
+          { x: o.x + mx, y: o.y + my },
+        );
+
+      // a hit, answered in the same call
+      expect(await both(-112, 0)).toEqual({
+        nodeAt: 'a',
+        isPromise: false,
+        pick: 'a',
+        alias: 'a',
+      });
+      // the topmost of two overlapping nodes, as cy.pick answers it
+      expect(await both(-90, 0)).toEqual({
+        nodeAt: 'c',
+        isPromise: false,
+        pick: 'c',
+        alias: 'c',
+      });
+      // mid-edge: nodes only here — the edge is cy.pick's
+      expect(await both(0, 0)).toEqual({
+        nodeAt: null,
+        isPromise: false,
+        pick: 'ab',
+        alias: null,
+      });
+      // background
+      expect(await both(0, 100)).toEqual({
+        nodeAt: null,
+        isPromise: false,
+        pick: null,
+        alias: null,
+      });
+    });
   });
 });

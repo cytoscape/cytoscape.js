@@ -27,7 +27,7 @@
 import { bench, group, summary, do_not_optimize } from 'mitata';
 import cytoscape from '../src/index.mjs';
 import { CURVE_CMPD } from '../src/contract.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, N } from './graph.mjs';
 

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
-import { pickNodeAt } from '../src/render/cpu-pick.mjs';
+import { pickNodeAt } from '../src/cpu-pick.mjs';
 
 // Round 22: the display/visibility split.  show()/hide() stays the
 // structural display tier (no space); the 'visibility' style prop is

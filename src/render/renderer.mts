@@ -99,8 +99,10 @@ export interface SceneCullGroups {
 }
 
 export const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
-export const DEFAULT_NODE_LOD_PX = 3;
-export const DEFAULT_HIDE_PX = 1;
+// the two draw-tier thresholds the CPU node pick shares with the draw
+// live beside it, so the core's headless `cy.nodeAt()` reads the same
+// defaults without reaching the renderer tier (round 75.4)
+export { DEFAULT_NODE_LOD_PX, DEFAULT_HIDE_PX } from '../cpu-pick.mjs';
 export const DEFAULT_LABEL_FADE_PX = 6;
 export const DEFAULT_IMAGE_MIN_PX = 8;
 export const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
@@ -587,14 +589,16 @@ export class Renderer {
    * Synchronous CPU node pick at a rendered (CSS px) position — exact and
    * current (no in-flight staleness).  Answers the node's slot; wrapping
    * it into a Collection is the caller's job (round 86.2).  Edges are not
-   * considered; they resolve through the async `pick()`.
+   * considered; they resolve through the async `pick()`.  It reads only
+   * the store and the viewport, so it answers before the device is
+   * ready too (round 75.4: the public `cy.nodeAt()` stands on it).
    *
    * @param padPx — hit halo in CSS px (57.9): v3's nodeThreshold,
    *   inflating every node's tested size by the halo on each side;
    *   0 (the default) picks exactly what is drawn
    */
   pickNodeSync(x: number, y: number, padPx: number = 0): number | null {
-    if (this.destroyed || !this.isReady) {
+    if (this.destroyed) {
       return null;
     }
 

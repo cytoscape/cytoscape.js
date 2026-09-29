@@ -24,6 +24,10 @@ that compile and then behave differently.
 
 ### Added
 
+- **`cy.nodeAt( x, y )`** (alias `cy.pickNode`, round 75.4, #1209): the
+  node at a rendered point, synchronously — the CPU pick the pointer's
+  pan-vs-grab already trusted, public beside the async `cy.pick()`.
+  Nodes only and exact; headless it computes from the viewport at dpr 1.
 - **Iterable collections** (round 75.3): `for (const ele of eles)`,
   spread and `Array.from( eles )` yield the interned length-1 handles
   in collection order, and `cy.add()` takes any iterable of element

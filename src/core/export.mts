@@ -10,6 +10,11 @@ import {
 import type { GroupName } from '../contract.mjs';
 import type { ExportOptions } from '../public-types.mjs';
 import type { Core } from '../core.mjs';
+import {
+  DEFAULT_HIDE_PX,
+  DEFAULT_NODE_LOD_PX,
+  pickNodeTierAt,
+} from '../cpu-pick.mjs';
 
 /** Render the graph to a PNG or JPEG through the renderer's export path, resolving the export view (full graph or viewport, scale, background) first. */
 export async function _exportImage(
@@ -97,4 +102,46 @@ export function _decodePick(core: Core, id: number | null): Collection | null {
   }
 
   return core._ele(group, slot);
+}
+
+/**
+ * The synchronous node pick behind `cy.nodeAt()` (round 75.4): the
+ * renderer's CPU pick when one is mounted (its device-pixel ratio and
+ * thresholds), otherwise the same scan computed from the store and the
+ * viewport at dpr 1 with the renderer's default thresholds.
+ *
+ * @param x — rendered (CSS px) x
+ * @param y — rendered (CSS px) y
+ * @returns the node under the point, or null
+ */
+export function nodeAt(core: Core, x: number, y: number): Collection | null {
+  if (core._destroyed) {
+    return null;
+  }
+
+  let slot: number | null;
+
+  if (core._renderer != null) {
+    slot = core._renderer.pickNodeSync(x, y);
+  } else {
+    const viewport = core._viewport;
+    const pan = viewport.pan();
+
+    core._store.flushDerived(); // parent geometry is derived (14.9)
+    slot =
+      pickNodeTierAt(
+        core._store,
+        {
+          panXPx: pan.x,
+          panYPx: pan.y,
+          zoomDpr: viewport.zoom(),
+          hidePx: DEFAULT_HIDE_PX,
+          nodeLodPx: DEFAULT_NODE_LOD_PX,
+        },
+        x,
+        y,
+      )?.slot ?? null;
+  }
+
+  return slot == null ? null : core._ele(GROUP_NODES, slot);
 }

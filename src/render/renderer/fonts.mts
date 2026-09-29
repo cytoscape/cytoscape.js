@@ -130,6 +130,34 @@ export function checkFonts(rd: Renderer): void {
 }
 
 /**
+ * Faces the worker host registered in its worker (round 141) — the
+ * listed `renderer.fonts`, each added to the worker's FontFaceSet once
+ * loaded from its bytes.  The same filter as the page's `loadingdone`
+ * (a face the atlas font does not name costs nothing), and a re-raster
+ * on a fresh font description, since Chromium's worker canvas keeps a
+ * description it resolved before the face existed on the fallback.
+ * Before the label layer exists nothing has rastered, so nothing is
+ * stale.
+ *
+ * @param faces — the landed faces (their family names are read)
+ */
+export function facesLanded(
+  rd: Renderer,
+  faces: readonly { family: string }[],
+): void {
+  const layer = rd.labelLayer;
+
+  if (rd.destroyed || layer == null) {
+    return;
+  }
+
+  if (facesTouchFont(faces, layer.atlas.fontFamily)) {
+    layer.reraster(true);
+    rd.requestRender();
+  }
+}
+
+/**
  * Walk the set for faces not seen before, remembering each; answer
  * whether any of them is loaded and named by the atlas font.
  *

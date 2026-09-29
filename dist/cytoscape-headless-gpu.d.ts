@@ -34,7 +34,29 @@ interface ImageEntry {
   /** longest side of the current raster (vector promotion compares demand to this) */
   rasterPx: number;
 }
+/**
+ * One entry lifecycle event, as the worker host carries it across the
+ * boundary (round 141): an entry created at an id, or the entry at an id
+ * freed.  Replayed in order by {@link ImageRegistry.adopt} /
+ * {@link ImageRegistry.drop}.
+ */
+type ImageLifecycleOp = {
+  op: 'create';
+  id: number;
+  url: string;
+  kind: number;
+  crossOrigin: string;
+} | {
+  op: 'free';
+  id: number;
+};
 declare class ImageRegistry {
+  /** the lifecycle journal while a worker host mirrors this registry
+   * (round 141), else null — nothing is recorded */
+  private journal;
+  /** journaled creates not yet taken, by id: a free of one of these
+   * cancels the create instead of journaling a free */
+  private journalCreates;
   private entries;
   private freeIds;
   private byKey;
@@ -83,6 +105,61 @@ declare class ImageRegistry {
    * @param id — an id from `acquire`
    */
   release(id: number): void;
+  /**
+   * Journal a free: an entry created and freed between two takes never
+   * crosses at all (its create is cancelled in place), anything older
+   * crosses as a free.
+   */
+  private journalFree;
+  /**
+   * Start or stop journaling entry lifecycle for a worker-host mirror
+   * (round 141).  Starting clears any old journal; stopping drops it.
+   * The journal's consumer is the registry's one lifecycle consumer on
+   * this thread, so taking it also clears the ready and freed queues
+   * (no renderer drains them here).
+   *
+   * @param on — journal from now on, or stop
+   */
+  setJournal(on: boolean): void;
+  /**
+   * The lifecycle ops since the last take (or since journaling started),
+   * in order; clears the journal and the ready / freed queues.
+   *
+   * @returns the ops, empty when nothing changed or journaling is off
+   */
+  takeJournal(): ImageLifecycleOp[];
+  /**
+   * Every live entry as a create op, in id order — the full transfer a
+   * mirror starts from.  Clears the journal (the snapshot subsumes it).
+   *
+   * @returns one create per live entry
+   */
+  snapshotOps(): ImageLifecycleOp[];
+  /**
+   * Mirror side (round 141): create the entry the canonical registry
+   * created, at its id, and kick its decode (or fail it straight away
+   * for a url that already failed here).  An entry already at that id
+   * is dropped first.  The mirror never allocates ids itself.
+   *
+   * @param op — the canonical side's create
+   */
+  adopt(op: {
+    id: number;
+    url: string;
+    kind: number;
+    crossOrigin: string;
+  }): void;
+  /**
+   * Mirror side (round 141): free the entry the canonical registry
+   * freed, whatever its count — queued for `takeFreed()` so the renderer
+   * reclaims its layer.  A decode in flight for it is dropped on landing,
+   * as for any freed entry.  No-op for an empty id.
+   *
+   * @param id — the freed id
+   */
+  drop(id: number): void;
+  /** Mirror side: drop every entry (a full transfer replaces the set). */
+  dropAll(): void;
   /**
    * The live entry for an id, or null if it was freed.  The entry is the
    * registry's own mutable object, not a copy: its `status`, `data`, and
@@ -1633,6 +1710,29 @@ interface CustomLayoutOptions extends LayoutBaseOptions {
   [key: string]: unknown;
 }
 type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | RadialLayoutOptions | PackLayoutOptions | ForceLayoutOptions | FlowLayoutOptions | CustomLayoutOptions;
+/**
+ * One font face for the worker-hosted renderer's labels (round 141).  A
+ * worker does not inherit the page's `@font-face` registrations, so the
+ * worker host registers the faces listed in `renderer.fonts` in its own
+ * worker, from their bytes — the family, the descriptors and the source
+ * the `FontFace` constructor takes, with a url fetched rather than
+ * passed through.
+ */
+interface WorkerFontFace {
+  /** the family name the sheet's `font-family` names */
+  family: string;
+  /** the face file's url (resolved against the document), or its bytes
+   * (woff2, woff, ttf or otf), which are copied to the worker */
+  source: string | ArrayBuffer | ArrayBufferView;
+  /** CSS font-style the face covers (default 'normal') */
+  style?: string;
+  /** CSS font-weight the face covers, or a range (default 'normal') */
+  weight?: string;
+  /** CSS font-stretch the face covers (default 'normal') */
+  stretch?: string;
+  /** the code points the face covers (default all) */
+  unicodeRange?: string;
+}
 /** Renderer tuning knobs (all LOD values in device px). */
 interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -1677,11 +1777,28 @@ interface RendererOptions {
    * stays main-side and synchronous; per-frame deltas cross as
    * transferable span messages.  Requires Worker + OffscreenCanvas +
    * WebGPU-in-worker support, and mounting rejects loudly without
-   * them — there is no silent same-thread fallback.  Pass-1
-   * deferrals, recorded in the round record: background images are
-   * not drawn, and tweens/the force layout take their CPU executors.
+   * them — there is no silent same-thread fallback.  Background
+   * images decode in the worker (round 141; SVG sources raster on the
+   * main thread, which has the `<img>` they need), the force layout's
+   * integrator runs there (round 129.2), and CPU tweens cross as
+   * ordinary deltas.  Labels use the faces listed in `fonts` — the
+   * page's `@font-face` rules do not reach a worker.  Verified end to
+   * end in Chromium; WebKit's worker font and image mechanics are
+   * verified (round 141), its worker-side WebGPU is not.
    */
   worker?: boolean;
+  /**
+   * The font faces the worker host registers for label text (round
+   * 141), each fetched and registered from its bytes in the worker.
+   * Labels draw as soon as the renderer is ready, in the fallback face
+   * for a family whose face is still loading, and re-raster when a
+   * face the sheet's `font-family` names lands — the same-thread
+   * renderer's web-font behaviour (round 75).  A face that fails to
+   * load emits one `error` event on the core and its family keeps the
+   * fallback.  Ignored without `worker: true`: the same-thread renderer
+   * uses the page's own faces.
+   */
+  fonts?: WorkerFontFace[];
 }
 /** Snapshot returned by `cy.renderer().stats()`. */
 interface RendererStats {
@@ -9928,4 +10045,4 @@ declare namespace cytoscape {
   export { GpuUnfitError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, type WorkerFontFace, cytoscape as default };

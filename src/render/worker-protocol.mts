@@ -143,6 +143,18 @@ export interface StoreBatch {
 }
 
 /**
+ * A worker font face (round 141): the app's `renderer.fonts` entry with
+ * its url resolved against the document, since the worker's own base
+ * is a blob: url.
+ */
+export interface WireFont {
+  family: string;
+  /** an absolute url, or the face's bytes (cloned, not transferred) */
+  source: string | ArrayBuffer | ArrayBufferView;
+  descriptors: Record<string, string>;
+}
+
+/**
  * A vector raster the worker asks of the main thread (round 141): SVG
  * decodes only through an `<img>`, which a worker does not have.  The
  * worker fetched the source; the blob crosses, the raster comes back
@@ -202,6 +214,8 @@ export type MainMessage =
       dpr: number;
       opts: RendererOptions;
       batch: StoreBatch;
+      /** the app's worker fonts (round 141), urls resolved */
+      fonts: WireFont[];
     }
   | { kind: 'batch'; batch: StoreBatch }
   | { kind: 'viewport'; viewport: WireViewport }
@@ -275,7 +289,9 @@ export type WorkerMessage =
   // the readback (transferred), or null when the run is gone
   | { kind: 'forcepositions'; id: number; positions: ArrayBuffer | null }
   // a vector raster the worker cannot do itself (round 141)
-  | { kind: 'raster'; request: WireRasterRequest };
+  | { kind: 'raster'; request: WireRasterRequest }
+  // the listed fonts settled (round 141): each family loaded or failed
+  | { kind: 'fonts'; loaded: number; failed: number };
 
 /** The four label streams, in the order batches drain them. */
 export const LABEL_STREAMS: readonly LabelStream[] = [

@@ -147,9 +147,12 @@ export class LabelLayer {
   /**
    * Rebuild every glyph run against freshly rasterized glyphs — for fonts
    * that finish loading after glyphs were cached from the fallback face.
+   *
+   * @param refont — re-resolve the font on a fresh description too
+   *   (the worker host's landed faces, round 141)
    */
-  reraster(): void {
-    this.atlas.reraster();
+  reraster(refont: boolean = false): void {
+    this.atlas.reraster(refont);
     this.shapeMemo.clear(); // metrics may change with the real face
     this.store.markAllLabelsDirty();
   }

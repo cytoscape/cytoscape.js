@@ -33,6 +33,7 @@ import type {
   RendererStats,
   ViewportCounts,
   WheelBehavior,
+  WorkerFontFace,
 } from '../../build/dts/index.js';
 
 // -- the factory --
@@ -253,6 +254,25 @@ void loadCancelled;
 cy.load(elements);
 // @ts-expect-error fit is a boolean
 cy.load([], { fit: 'once' });
+
+// -- the worker host's label fonts (round 141) --
+
+const listedFont: WorkerFontFace = {
+  family: 'Open Sans',
+  source: '/fonts/open-sans.woff2',
+  weight: '400 700',
+};
+
+cytoscape({
+  renderer: {
+    worker: true,
+    fonts: [listedFont, { family: 'Inline', source: new ArrayBuffer(8) }],
+  },
+});
+// @ts-expect-error a face needs its family name
+cytoscape({ renderer: { worker: true, fonts: [{ source: 'a.woff2' }] } });
+// @ts-expect-error a source is a url or the bytes, not a FontFace
+cytoscape({ renderer: { fonts: [{ family: 'A', source: 12 }] } });
 
 // -- queries: structured objects and predicates, never selector strings --
 

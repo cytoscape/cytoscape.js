@@ -11,6 +11,7 @@ import type { ForceInputs } from '../layout/force-host.mjs';
 import { createBrowserImageDecoder } from './image-decoder.mjs';
 import type { VectorRasterizer } from './image-decoder.mjs';
 import type { DecodedImage } from '../image-registry.mjs';
+import { registerWorkerFonts } from './worker-fonts.mjs';
 
 /*
 The worker-side entry (round 86.3): the real `Renderer` running against
@@ -172,6 +173,18 @@ export function runRenderWorker(
         engine.onDeviceLost = (message) =>
           post({ kind: 'devicelost', message });
 
+        // the app's label fonts (round 141): registered from their bytes
+        // in this worker's FontFaceSet, the labels re-rastering as each
+        // face the atlas names lands
+        if (msg.fonts.length > 0) {
+          void registerWorkerFonts(
+            msg.fonts,
+            (face) => engine?.fontFacesLanded([face]),
+            (message) => post({ kind: 'error', message }),
+          ).then(({ loaded, failed }) =>
+            post({ kind: 'fonts', loaded, failed }),
+          );
+        }
         engine.ready.then(
           () => post({ kind: 'ready' }),
           (err: Error) => post({ kind: 'initerror', message: err.message }),

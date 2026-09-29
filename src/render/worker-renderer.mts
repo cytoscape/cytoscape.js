@@ -25,6 +25,7 @@ import type {
 import { SELF_URL } from '../util/self-url.mjs';
 import { rasterVectorInPage } from './image-decoder.mjs';
 import type { DecodedImage } from '../image-registry.mjs';
+import { wireFonts } from './worker-fonts.mjs';
 import type { Core } from '../core.mjs';
 import type {
   ExportOptions,
@@ -71,6 +72,9 @@ What stays on this thread, and why:
   fetch and `createImageBitmap` run in the worker.  SVG sources are the
   exception: they need an `<img>`, so the worker sends the fetched blob
   back here and takes the raster (`rasterVectorInPage`) transferred.
+- **Nothing about fonts but the list** (round 141): the app's
+  `renderer.fonts` crosses in the init message, urls resolved against
+  the document, and the worker registers each face from its bytes.
 
 Per-batch traffic is `buildBatch`'s drain of the store's own delta —
 priced by the 86.1 gate at 0.035 ms/frame for the worst case at
@@ -289,6 +293,11 @@ export class WorkerRenderer implements ForceHostLike {
       reject: (err: Error) => void;
     }
   >();
+  /** resolves when the listed fonts have all landed or failed in the
+   * worker (round 141) — internal, for specs and diagnostics */
+  _fontsSettled: Promise<{ loaded: number; failed: number }>;
+  private fontsResolve: (r: { loaded: number; failed: number }) => void =
+    () => {};
   /** the worker acknowledged its device (the `ready` message) */
   private isReady = false;
   /** the force run open in the worker (129.2), or null */
@@ -305,6 +314,7 @@ export class WorkerRenderer implements ForceHostLike {
    * @param opts — renderer options (`worker` itself is ignored here)
    * @throws when OffscreenCanvas or Worker is unavailable, or the
    *   bundle URL could not be captured
+   * @throws TypeError when a `fonts` entry has no family or no source
    */
   constructor(
     cy: Core,
@@ -351,6 +361,17 @@ export class WorkerRenderer implements ForceHostLike {
     };
 
     const doc = container.ownerDocument as Document;
+    // checked before anything is created, so a bad list throws clean
+    const fonts = wireFonts(opts.fonts, doc.baseURI);
+
+    this._fontsSettled = new Promise((resolve) => {
+      this.fontsResolve = resolve;
+    });
+
+    if (fonts.length === 0) {
+      this.fontsResolve({ loaded: 0, failed: 0 });
+    }
+
     // fixed-px CSS rather than `100%`, as the same-thread renderer
     // (91.1): a worker frame is always at least a message late behind a
     // layout change, and a wrongly-*sized* canvas letterboxes where a
@@ -410,8 +431,9 @@ export class WorkerRenderer implements ForceHostLike {
         width,
         height,
         dpr: this.dpr,
-        opts: { ...opts, pixelRatio: this.dpr },
+        opts: { ...opts, fonts: undefined, pixelRatio: this.dpr },
         batch,
+        fonts,
       },
       [offscreen, ...collectTransfers(batch)],
     );
@@ -1024,6 +1046,11 @@ export class WorkerRenderer implements ForceHostLike {
         const r = msg.request;
 
         this.rasterForWorker(r.id, r.blob, r.targetPx, r.sdf);
+        break;
+      }
+
+      case 'fonts': {
+        this.fontsResolve({ loaded: msg.loaded, failed: msg.failed });
         break;
       }
     }

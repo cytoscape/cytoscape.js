@@ -133,7 +133,25 @@
         "worker": {
           "description": "Host the renderer in a worker via OffscreenCanvas.",
           "type": "boolean"
+        },
+        "fonts": {
+          "description": "The font faces the worker host registers for label text, fetched and registered from their bytes in the worker (a worker does not inherit the page's @font-face rules). Ignored without worker: true.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/workerFontFace" }
         }
+      }
+    },
+    "workerFontFace": {
+      "description": "One worker font face: the family the sheet names, the face's url (the TypeScript type also takes its bytes, which JSON cannot carry) and the FontFace descriptors it covers.",
+      "type": "object",
+      "required": ["family", "source"],
+      "properties": {
+        "family": { "type": "string" },
+        "source": { "type": "string" },
+        "style": { "type": "string" },
+        "weight": { "type": "string" },
+        "stretch": { "type": "string" },
+        "unicodeRange": { "type": "string" }
       }
     }
   }

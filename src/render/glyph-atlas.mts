@@ -190,6 +190,19 @@ export class GlyphAtlas {
    * font is settled; every reset clears it. */
   provisional = false;
 
+  /**
+   * Bumped by `reraster(true)` (round 141): the raster font list then
+   * ends in an inert, never-registered family unique to the epoch.
+   * Chromium's worker canvas keeps resolving a font description to the
+   * face it found the first time — the fallback, for a face registered
+   * after — through every later `ctx.font` of the same description on
+   * any canvas in that worker; a family list the worker has not resolved
+   * before escapes it (measured, Chromium 149; WebKit re-resolves
+   * anyway).  Glyphs never reach the inert family: the list ends in a
+   * generic that always answers first.
+   */
+  private fontEpoch = 0;
+
   private device: GPUDevice;
   private canvas: HTMLCanvasElement | OffscreenCanvas;
   private ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -332,8 +345,15 @@ export class GlyphAtlas {
    * Re-raster with the *same* family: clears the cache so glyphs that were
    * rasterized before a web font finished loading (and so cached from the
    * fallback font) rebuild against the now-loaded face.
+   *
+   * @param refont — also re-resolve the font on a fresh description
+   *   (the worker host's landed faces, round 141 — see `fontEpoch`)
    */
-  reraster(): void {
+  reraster(refont: boolean = false): void {
+    if (refont) {
+      this.fontEpoch++;
+    }
+
     this.reset();
   }
 
@@ -351,7 +371,10 @@ export class GlyphAtlas {
     // rather than trusting what construction set
     this.ctx.textBaseline = 'alphabetic';
     this.ctx.fillStyle = '#000';
-    this.ctx.font = `${this.fontStyle} ${this.fontWeight} ${SDF_FONT_SIZE * tier}px ${this.fontFamily}`;
+    const epoch =
+      this.fontEpoch > 0 ? `, "cy-font-epoch-${this.fontEpoch}"` : '';
+
+    this.ctx.font = `${this.fontStyle} ${this.fontWeight} ${SDF_FONT_SIZE * tier}px ${this.fontFamily}${epoch}`;
     this.cache.clear();
     this.penX = 0;
     this.penY = 0;

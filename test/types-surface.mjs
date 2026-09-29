@@ -92,6 +92,7 @@ const EXPECTED_EXPORTS = new Set([
   'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',
   'RendererOptions',
+  'WorkerFontFace', // round 141: one entry of renderer.fonts (the worker host)
   'StylePropValue',
   'StyleProps',
   'Stylesheet',

@@ -767,6 +767,17 @@ export class Renderer {
   }
 
   /**
+   * Font faces registered after this renderer started (the worker
+   * host's listed fonts, round 141): re-raster the labels when the atlas
+   * font names one of them.
+   *
+   * @param faces — the landed faces
+   */
+  fontFacesLanded(faces: readonly { family: string }[]): void {
+    fontsImpl.facesLanded(this, faces);
+  }
+
+  /**
    * Wake an idle force run (118.3): an infinite run's runtime reports
    * `idle()` once the field is at rest, the frame loop stops encoding
    * it and the clock stops with it, so a reheat — a drag, a moved

@@ -1145,4 +1145,283 @@ test.describe("the worker host's images and fonts (round 141)", () => {
       await destroyCy(page);
     });
   }
+
+  const LABEL_SCENE = {
+    elements: [
+      { data: { id: 'a', label: 'Worker fonts' }, position: { x: 0, y: -30 } },
+      {
+        data: { id: 'b', label: 'Hamburgefonstiv' },
+        position: { x: 0, y: 40 },
+      },
+    ],
+    style: {
+      nodes: {
+        width: 16,
+        height: 16,
+        'background-color': '#bbb',
+        label: 'data(label)',
+        'font-size': 22,
+        color: '#000',
+        'font-family': `'Probe Sans', serif`,
+      },
+    },
+    zoom: 1,
+    pan: { x: 200, y: 150 },
+  };
+
+  test("listed fonts reach worker-rastered labels: exactly the same-thread pixels with the page face, a late face re-rasters (Chromium's stale description escaped)", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    // the same-thread reference: the face registered on the page
+    await page.evaluate(async (url) => {
+      const face = new FontFace('Probe Sans', `url('${url}')`);
+
+      document.fonts.add(face);
+      await face.load();
+    }, OPEN_SANS);
+    await makeReadyCy(page, LABEL_SCENE);
+
+    const main = await settledExport(page);
+
+    await destroyCy(page);
+
+    // the worker host with no list: the fallback face (the control —
+    // proves the scene can tell the faces apart)
+    await makeReadyCy(page, { ...LABEL_SCENE, renderer: { worker: true } });
+
+    const fallback = await settledExport(page);
+
+    await destroyCy(page);
+
+    // a late face: the font answers only after the first labelled
+    // frames, so the atlas has resolved the description on the fallback
+    // before the face exists — the Chromium trap the atlas's font epoch
+    // escapes
+    let release;
+    const held = new Promise((resolve) => {
+      release = resolve;
+    });
+
+    await page.route('**/late-probe-sans.woff2', async (route) => {
+      await held;
+      await route.fulfill({
+        path: 'node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2',
+        contentType: 'font/woff2',
+      });
+    });
+    await makeReadyCy(page, {
+      ...LABEL_SCENE,
+      renderer: {
+        worker: true,
+        fonts: [{ family: 'Probe Sans', source: '../late-probe-sans.woff2' }],
+      },
+    });
+
+    const early = await settledExport(page);
+
+    release();
+
+    const settled = await page.evaluate(
+      async () => await window.cy._renderer._fontsSettled,
+    );
+
+    expect(settled).toEqual({ loaded: 1, failed: 0 });
+
+    const same = (png) =>
+      diffPngs(png, main, { threshold: 0 }).mismatched === 0;
+    const late = await settledExport(page, same);
+
+    await destroyCy(page);
+
+    // and the plain case: a listed face that lands before any label
+    await makeReadyCy(page, {
+      ...LABEL_SCENE,
+      renderer: {
+        worker: true,
+        fonts: [{ family: 'Probe Sans', source: OPEN_SANS }],
+      },
+    });
+    await page.evaluate(async () => await window.cy._renderer._fontsSettled);
+
+    const listed = await settledExport(page, same);
+
+    await destroyCy(page);
+
+    const vsMain = (png) => diffPngs(png, main, { threshold: 0 });
+
+    expect(
+      vsMain(fallback).mismatched,
+      'control: the fallback face differs from the listed one',
+    ).toBeGreaterThan(100);
+    expect(
+      vsMain(early).mismatched,
+      'the late face is not in yet',
+    ).toBeGreaterThan(100);
+
+    for (const [name, png] of [
+      ['listed', listed],
+      ['late', late],
+    ]) {
+      const { mismatched, diff } = vsMain(png);
+
+      if (mismatched !== 0) {
+        writeDiffArtifacts(
+          testInfo.outputPath(''),
+          `fonts-${name}`,
+          png,
+          main,
+          diff,
+        );
+      }
+
+      expect(mismatched, `${name} face vs the page face`).toBe(0);
+    }
+  });
+
+  test('a listed face that fails to load emits one error and keeps the fallback', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    const result = await page.evaluate(async () => {
+      const errors = [];
+      const cy = window.makeCy({
+        elements: [{ data: { id: 'a' } }],
+        style: { nodes: { label: 'x', 'font-family': 'Nowhere Sans' } },
+        renderer: {
+          worker: true,
+          fonts: [{ family: 'Nowhere Sans', source: 'no-such-font.woff2' }],
+        },
+      });
+
+      cy.on('error', (e, message) => errors.push(String(message)));
+      await cy.ready;
+
+      const settled = await cy._renderer._fontsSettled;
+
+      return { settled, errors };
+    });
+
+    expect(result.settled).toEqual({ loaded: 0, failed: 1 });
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toMatch(
+      /'Nowhere Sans' from .*no-such-font\.woff2.*HTTP 404/,
+    );
+    await destroyCy(page);
+  });
+
+  test('an entry with no family throws at mount, before a worker spawns', async ({
+    page,
+  }) => {
+    // the mount checks WebGPU before the renderer options
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    const message = await page.evaluate(() => {
+      try {
+        window.makeCy({
+          renderer: { worker: true, fonts: [{ source: 'a.woff2' }] },
+        });
+
+        return null;
+      } catch (err) {
+        return err.message;
+      }
+    });
+
+    expect(message).toMatch(/fonts\[0\] needs a family/);
+  });
+
+  test('the worker mechanics the host relies on, in this engine (no adapter needed)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    const workerSrc = `
+      const measure = (font) => {
+        const ctx = new OffscreenCanvas(300, 60).getContext('2d');
+        ctx.font = font;
+        return ctx.measureText('Hello World').width;
+      };
+      self.onmessage = async (e) => {
+        const out = {};
+        const desc = 'normal normal 32px "Mech Sans", sans-serif';
+        // resolved before the face exists: the atlas's situation when a
+        // listed face lands late
+        out.before = measure(desc);
+        const bytes = await (await fetch(e.data.font)).arrayBuffer();
+        const face = new FontFace('Mech Sans', bytes);
+        await face.load();
+        self.fonts.add(face);
+        out.sameDescription = measure(desc);
+        out.epochDescription = measure(desc + ', "cy-font-epoch-1"');
+        out.fresh = measure('normal normal 32px "Mech Sans", serif');
+        try {
+          const blob = await (await fetch(e.data.png)).blob();
+          const bitmap = await createImageBitmap(blob, { premultiplyAlpha: 'none' });
+          out.png = [bitmap.width, bitmap.height];
+        } catch (err) { out.png = String(err); }
+        try {
+          const svg = new Blob([e.data.svg], { type: 'image/svg+xml' });
+          await createImageBitmap(svg);
+          out.svg = 'decoded';
+        } catch (err) { out.svg = 'refused'; }
+        self.postMessage(out);
+      };`;
+
+    const result = await page.evaluate(
+      async ({ workerSrc, font, png }) => {
+        const url = new URL(font, location.href).href;
+        const worker = new Worker(
+          URL.createObjectURL(
+            new Blob([workerSrc], { type: 'text/javascript' }),
+          ),
+        );
+        const out = await new Promise((resolve, reject) => {
+          worker.onmessage = (e) => resolve(e.data);
+          worker.onerror = (e) => reject(new Error(e.message));
+          worker.postMessage({
+            font: url,
+            png,
+            svg: '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8"/></svg>',
+          });
+        });
+
+        worker.terminate();
+
+        // the page's own advance for the same face
+        const face = new FontFace('Mech Page', `url('${url}')`);
+
+        await face.load();
+        document.fonts.add(face);
+
+        const ctx = document.createElement('canvas').getContext('2d');
+
+        ctx.font = 'normal normal 32px "Mech Page", sans-serif';
+        out.page = ctx.measureText('Hello World').width;
+
+        return out;
+      },
+      { workerSrc, font: OPEN_SANS, png: QUAD_PNG },
+    );
+
+    testInfo.annotations.push({
+      type: 'worker mechanics',
+      description: JSON.stringify(result),
+    });
+
+    // a bytes-registered face reaches worker OffscreenCanvas text,
+    // advance for advance with the page's
+    expect(result.fresh).toBeCloseTo(result.page, 3);
+    // the epoch description re-resolves in every engine, whether or not
+    // this one kept the stale description (Chromium does; WebKit not)
+    expect(result.epochDescription).toBeCloseTo(result.page, 3);
+    expect(result.before).not.toBeCloseTo(result.page, 1);
+    // raster sources decode in a worker
+    expect(result.png).toEqual([16, 16]);
+  });
 });

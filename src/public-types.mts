@@ -937,6 +937,30 @@ export type LayoutOptions =
   | FlowLayoutOptions
   | CustomLayoutOptions;
 
+/**
+ * One font face for the worker-hosted renderer's labels (round 141).  A
+ * worker does not inherit the page's `@font-face` registrations, so the
+ * worker host registers the faces listed in `renderer.fonts` in its own
+ * worker, from their bytes — the family, the descriptors and the source
+ * the `FontFace` constructor takes, with a url fetched rather than
+ * passed through.
+ */
+export interface WorkerFontFace {
+  /** the family name the sheet's `font-family` names */
+  family: string;
+  /** the face file's url (resolved against the document), or its bytes
+   * (woff2, woff, ttf or otf), which are copied to the worker */
+  source: string | ArrayBuffer | ArrayBufferView;
+  /** CSS font-style the face covers (default 'normal') */
+  style?: string;
+  /** CSS font-weight the face covers, or a range (default 'normal') */
+  weight?: string;
+  /** CSS font-stretch the face covers (default 'normal') */
+  stretch?: string;
+  /** the code points the face covers (default all) */
+  unicodeRange?: string;
+}
+
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -981,11 +1005,28 @@ export interface RendererOptions {
    * stays main-side and synchronous; per-frame deltas cross as
    * transferable span messages.  Requires Worker + OffscreenCanvas +
    * WebGPU-in-worker support, and mounting rejects loudly without
-   * them — there is no silent same-thread fallback.  Pass-1
-   * deferrals, recorded in the round record: background images are
-   * not drawn, and tweens/the force layout take their CPU executors.
+   * them — there is no silent same-thread fallback.  Background
+   * images decode in the worker (round 141; SVG sources raster on the
+   * main thread, which has the `<img>` they need), the force layout's
+   * integrator runs there (round 129.2), and CPU tweens cross as
+   * ordinary deltas.  Labels use the faces listed in `fonts` — the
+   * page's `@font-face` rules do not reach a worker.  Verified end to
+   * end in Chromium; WebKit's worker font and image mechanics are
+   * verified (round 141), its worker-side WebGPU is not.
    */
   worker?: boolean;
+  /**
+   * The font faces the worker host registers for label text (round
+   * 141), each fetched and registered from its bytes in the worker.
+   * Labels draw as soon as the renderer is ready, in the fallback face
+   * for a family whose face is still loading, and re-raster when a
+   * face the sheet's `font-family` names lands — the same-thread
+   * renderer's web-font behaviour (round 75).  A face that fails to
+   * load emits one `error` event on the core and its family keeps the
+   * fallback.  Ignored without `worker: true`: the same-thread renderer
+   * uses the page's own faces.
+   */
+  fonts?: WorkerFontFace[];
 }
 
 /** Snapshot returned by `cy.renderer().stats()`. */

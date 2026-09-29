@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placeholder.invalid/cytoscape/schemas/layout-options.schema.json",
+  "$comment": "The $id base is a placeholder until round 46 (the documentation site); see element.schema.json.",
+  "title": "Cytoscape.js layout options",
+  "description": "The options of `cy.layout( options )`, `eles.layout( options )` and `cytoscape( { layout } )`: one branch per built-in layout, chosen by `name`, each carrying that layout's options and the shared plumbing. The runtime ignores keys it does not read, so every branch stays open — the library is the authority, and it does not refuse them. Options that are functions in JavaScript (`transform`, `ready`, a comparator) are named for completeness and left unconstrained; the serializable spellings (a `{ data }` sort or score mapping) are schematized. The extension form — `{ impl }`, a layout class passed directly — validates as an escape branch and is not schematized.",
+  "anyOf": [
+    { "$ref": "#/$defs/grid" },
+    { "$ref": "#/$defs/preset" },
+    { "$ref": "#/$defs/circle" },
+    { "$ref": "#/$defs/concentric" },
+    { "$ref": "#/$defs/breadthfirst" },
+    { "$ref": "#/$defs/random" },
+    { "$ref": "#/$defs/radial" },
+    { "$ref": "#/$defs/pack" },
+    { "$ref": "#/$defs/force" },
+    { "$ref": "#/$defs/flow" },
+    { "$ref": "#/$defs/extension" }
+  ],
+  "$defs": {
+    "base": {
+      "description": "The options every built-in takes (LayoutBaseOptions): scope, fit, spacing and animation.",
+      "type": "object",
+      "properties": {
+        "eles": {
+          "description": "The elements to lay out, set by `eles.layout()`; a collection, which JSON cannot carry."
+        },
+        "fit": {
+          "description": "Fit the viewport to the result (default true).",
+          "type": "boolean"
+        },
+        "padding": { "description": "The fit padding in px.", "type": "number" },
+        "boundingBox": { "$ref": "#/$defs/boundingBox" },
+        "nodeDimensionsIncludeLabels": {
+          "description": "Space nodes by their labels too (default false, v3's).",
+          "type": "boolean"
+        },
+        "spacingFactor": {
+          "description": "Scale the drawing about its centre.",
+          "type": "number"
+        },
+        "transform": {
+          "description": "Transform each computed position. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "animate": {
+          "description": "Tween the nodes into place.",
+          "type": "boolean"
+        },
+        "animationDuration": {
+          "description": "The tween length in ms.",
+          "type": "number"
+        },
+        "animationEasing": {
+          "description": "The tween easing.",
+          "$ref": "stylesheet.schema.json#/$defs/kinds/easing"
+        },
+        "animateFilter": {
+          "description": "Which nodes animate (the others jump). A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "ready": {
+          "description": "Called on layoutready. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "stop": {
+          "description": "Called on layoutstop. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "zoom": {
+          "description": "The zoom to set when `fit` is false.",
+          "type": "number"
+        },
+        "pan": {
+          "description": "The pan to set when `fit` is false.",
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "packComponents": {
+      "type": "object",
+      "properties": {
+        "packComponents": {
+          "description": "Lay each disconnected component out on its own and shelf-pack them, largest first (default false).",
+          "type": "boolean"
+        }
+      }
+    },
+    "packing": {
+      "description": "The component-packing options (ComponentPackingOptions, packComponents aside).",
+      "type": "object",
+      "properties": {
+        "componentSpacing": {
+          "description": "The gap between packed component boxes (default 40).",
+          "type": "number"
+        },
+        "componentGroup": {
+          "description": "Group the packed components by a key. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "componentOrder": {
+          "description": "Order the packed components. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "groupSpacing": {
+          "description": "The gap between the groups' packed boxes.",
+          "type": "number"
+        }
+      }
+    },
+    "boundingBox": {
+      "description": "A box: `x1`, `y1` and either `x2`/`y2` or `w`/`h`.",
+      "type": "object",
+      "required": ["x1", "y1"],
+      "properties": {
+        "x1": { "type": "number" },
+        "y1": { "type": "number" },
+        "x2": { "type": "number" },
+        "y2": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" }
+      },
+      "anyOf": [{ "required": ["x2", "y2"] }, { "required": ["w", "h"] }]
+    },
+    "position": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+    },
+    "sortMapping": {
+      "description": "A serializable sort (LayoutSortMapping): order by one data column, missing values last, ties by id. The comparator-function alternative is not JSON.",
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": { "type": "string" },
+        "order": { "enum": ["ascending", "descending"] }
+      }
+    },
+    "scoreMapping": {
+      "description": "A serializable score (LayoutScoreMapping): bare `{ data }` passes the column through; with `range` its extent is normalized through `scale`. The function alternative is not JSON.",
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": { "type": "string" },
+        "scale": { "enum": ["linear", "log", "sqrt"] },
+        "range": {
+          "type": "array",
+          "prefixItems": [{ "type": "number" }, { "type": "number" }],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "invert": { "type": "boolean" },
+        "default": { "type": "number" }
+      }
+    },
+    "roots": {
+      "description": "The roots: an array of node ids (a collection in JavaScript; never a selector string).",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        { "$ref": "#/$defs/packComponents" },
+        { "$ref": "#/$defs/packing" }
+      ],
+      "properties": {
+        "name": { "const": "grid" },
+        "avoidOverlap": { "type": "boolean" },
+        "avoidOverlapPadding": { "type": "number" },
+        "condense": { "type": "boolean" },
+        "rows": { "type": "number" },
+        "cols": { "type": "number" },
+        "position": {
+          "description": "A fixed { row, col } per node. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        },
+        "sort": { "$ref": "#/$defs/sortMapping" }
+      }
+    },
+    "preset": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "properties": {
+        "name": { "const": "preset" },
+        "positions": {
+          "description": "Node id → position (a function of a node in JavaScript). Absent nodes keep their position.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/position" }
+        }
+      }
+    },
+    "circle": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        { "$ref": "#/$defs/packComponents" },
+        { "$ref": "#/$defs/packing" }
+      ],
+      "properties": {
+        "name": { "const": "circle" },
+        "avoidOverlap": { "type": "boolean" },
+        "avoidOverlapPadding": { "type": "number" },
+        "condense": { "type": "boolean" },
+        "radius": { "type": "number" },
+        "startAngle": { "type": "number" },
+        "sweep": { "type": "number" },
+        "clockwise": { "type": "boolean" },
+        "counterclockwise": { "type": "boolean" },
+        "sort": { "$ref": "#/$defs/sortMapping" }
+      }
+    },
+    "concentric": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        { "$ref": "#/$defs/packComponents" },
+        { "$ref": "#/$defs/packing" }
+      ],
+      "properties": {
+        "name": { "const": "concentric" },
+        "startAngle": { "type": "number" },
+        "sweep": { "type": "number" },
+        "clockwise": { "type": "boolean" },
+        "counterclockwise": { "type": "boolean" },
+        "equidistant": { "type": "boolean" },
+        "minNodeSpacing": { "type": "number" },
+        "avoidOverlap": { "type": "boolean" },
+        "height": { "type": "number" },
+        "width": { "type": "number" },
+        "concentric": { "$ref": "#/$defs/scoreMapping" },
+        "levelWidth": {
+          "description": "The ring width in concentric values. A function in JavaScript; a JSON document cannot carry one, so the schema leaves the key unconstrained."
+        }
+      }
+    },
+    "breadthfirst": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        { "$ref": "#/$defs/packComponents" },
+        { "$ref": "#/$defs/packing" }
+      ],
+      "properties": {
+        "name": { "const": "breadthfirst" },
+        "directed": { "type": "boolean" },
+        "direction": { "enum": ["downward", "upward", "rightward", "leftward"] },
+        "circle": { "type": "boolean" },
+        "grid": { "type": "boolean" },
+        "avoidOverlap": { "type": "boolean" },
+        "avoidOverlapPadding": { "type": "number" },
+        "roots": { "$ref": "#/$defs/roots" },
+        "depthSort": { "$ref": "#/$defs/sortMapping" },
+        "maximal": { "type": "boolean" },
+        "acyclic": { "type": "boolean" }
+      }
+    },
+    "random": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "properties": {
+        "name": { "const": "random" },
+        "seed": { "type": "number" }
+      }
+    },
+    "radial": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        { "$ref": "#/$defs/packComponents" },
+        { "$ref": "#/$defs/packing" }
+      ],
+      "properties": {
+        "name": { "const": "radial" },
+        "roots": { "$ref": "#/$defs/roots" },
+        "startAngle": { "type": "number" },
+        "sweep": { "type": "number" },
+        "clockwise": { "type": "boolean" },
+        "levelSpacing": { "type": "number" },
+        "avoidOverlap": { "type": "boolean" },
+        "avoidOverlapPadding": { "type": "number" },
+        "condense": { "type": "boolean" },
+        "weight": { "enum": ["leaves", "subtree"] }
+      }
+    },
+    "pack": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [{ "$ref": "#/$defs/base" }, { "$ref": "#/$defs/packing" }],
+      "properties": { "name": { "const": "pack" } }
+    },
+    "force": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "properties": {
+        "name": { "const": "force" },
+        "edgeLength": {
+          "anyOf": [{ "type": "number" }, { "$ref": "#/$defs/scoreMapping" }]
+        },
+        "repulsion": { "type": "number" },
+        "stiffness": { "type": "number" },
+        "gravity": { "type": "number" },
+        "decay": { "type": "number" },
+        "iterations": { "type": "number" },
+        "threshold": { "type": "number" },
+        "seed": { "type": "number" },
+        "randomize": { "type": "boolean" },
+        "animate": { "type": "boolean" },
+        "animateLive": { "type": "boolean" },
+        "infinite": { "type": "boolean" },
+        "stepsPerFrame": { "type": "number" },
+        "executor": { "enum": ["auto", "cpu", "gpu", "workers"] },
+        "boundingBox": { "$ref": "#/$defs/boundingBox" },
+        "avoidOverlap": {
+          "anyOf": [
+            { "type": "boolean" },
+            { "enum": ["settle", "sim", "both"] }
+          ]
+        },
+        "avoidOverlapPadding": { "type": "number" },
+        "componentSpacing": { "type": "number" },
+        "init": { "enum": ["spectral", "scatter"] },
+        "nestingFactor": { "type": "number" },
+        "gravityCompound": { "type": "number" },
+        "alignment": {
+          "description": "Alignment constraints: `horizontal` groups share a y, `vertical` groups an x (arrays of node ids).",
+          "type": "object",
+          "properties": {
+            "horizontal": {
+              "type": "array",
+              "items": { "type": "array", "items": { "type": "string" } }
+            },
+            "vertical": {
+              "type": "array",
+              "items": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "relativePlacement": {
+          "description": "Relative-placement constraints: `left` at least `gap` px left of `right`, or `top` above `bottom`.",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["left", "right"],
+                "properties": {
+                  "left": { "type": "string" },
+                  "right": { "type": "string" },
+                  "gap": { "type": "number" }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["top", "bottom"],
+                "properties": {
+                  "top": { "type": "string" },
+                  "bottom": { "type": "string" },
+                  "gap": { "type": "number" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "required": ["name"],
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "properties": {
+        "name": { "const": "flow" },
+        "direction": { "enum": ["downward", "upward", "leftward", "rightward"] },
+        "nodeSep": { "type": "number" },
+        "rankSep": { "type": "number" },
+        "edgeSep": { "type": "number", "minimum": 0 },
+        "layering": { "enum": ["network-simplex", "longest-path", "auto"] },
+        "thoroughness": { "type": "number", "minimum": 1, "maximum": 10 },
+        "minLength": {
+          "anyOf": [{ "type": "number" }, { "$ref": "#/$defs/scoreMapping" }]
+        },
+        "edgeWeight": {
+          "anyOf": [{ "type": "number" }, { "$ref": "#/$defs/scoreMapping" }]
+        },
+        "acyclic": { "type": "boolean" },
+        "cycleRemoval": { "enum": ["greedy", "dfs"] },
+        "rankConstraints": {
+          "description": "Rank constraints as id lists: `min` pins to the first rank, `max` to the last, each `same` group to one rank.",
+          "type": "object",
+          "properties": {
+            "min": { "type": "array", "items": { "type": "string" } },
+            "max": { "type": "array", "items": { "type": "string" } },
+            "same": {
+              "type": "array",
+              "items": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "componentSpacing": { "type": "number" },
+        "avoidOverlap": { "type": "boolean" },
+        "avoidOverlapPadding": { "type": "number" }
+      }
+    },
+    "extension": {
+      "description": "The extension contract: a layout passed directly as `impl` (a class or object with `run( ctx )`) plus whatever options it reads. Not schematized — and not JSON, since `impl` is code.",
+      "type": "object",
+      "required": ["impl"]
+    }
+  }
+}

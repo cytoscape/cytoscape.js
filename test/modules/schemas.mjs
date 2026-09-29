@@ -1062,3 +1062,482 @@ describe('schemas: the stylesheet (79.2)', () => {
     });
   });
 });
+
+// -- layout options and the envelope (79.3) --
+
+const LAYOUT = byFile.get('layout-options.schema.json');
+const OPTIONS = byFile.get('cytoscape-options.schema.json');
+
+/** The built-in branches of the layout schema, keyed by name. */
+const layoutBranches = (schema) =>
+  Object.fromEntries(
+    Object.values(schema.$defs)
+      .filter((d) => d.properties?.name?.const != null)
+      .map((d) => [d.properties.name.const, d]),
+  );
+
+/** A branch's option names: its own plus those of every `allOf` it refs. */
+const branchMembers = (schema, branch) => {
+  const names = new Set(Object.keys(branch.properties ?? {}));
+
+  for (const { $ref } of branch.allOf ?? []) {
+    const def = schema.$defs[$ref.replace('#/$defs/', '')];
+
+    Object.keys(def.properties).forEach((k) => names.add(k));
+  }
+
+  return [...names].sort();
+};
+
+const LAYOUT_INTERFACES = {
+  grid: 'GridLayoutOptions',
+  preset: 'PresetLayoutOptions',
+  circle: 'CircleLayoutOptions',
+  concentric: 'ConcentricLayoutOptions',
+  breadthfirst: 'BreadthFirstLayoutOptions',
+  random: 'RandomLayoutOptions',
+  radial: 'RadialLayoutOptions',
+  pack: 'PackLayoutOptions',
+  force: 'ForceLayoutOptions',
+  flow: 'FlowLayoutOptions',
+};
+
+/**
+ * The literal values a declared member's type consists of — string and
+ * boolean literals — or null when the type is anything else too (a
+ * number, an object, a function).
+ */
+const declaredLiterals = (type, member) => {
+  const { checker } = declarations();
+  const symbol = checker.getPropertyOfType(declaredType(type), member);
+  const t = checker.getNonNullableType(checker.getTypeOfSymbol(symbol));
+  const parts = t.isUnion() ? t.types : [t];
+  const out = [];
+
+  for (const p of parts) {
+    if (p.isStringLiteral()) out.push(p.value);
+    else if (p.flags & ts.TypeFlags.BooleanLiteral) out.push(p.intrinsicName);
+    else return null;
+  }
+
+  return out.sort();
+};
+
+/** The literal values a property schema admits: enums, consts, booleans. */
+const schemaLiterals = (node) => {
+  const out = [];
+  const walk = (n) => {
+    if (n.enum) out.push(...n.enum.map(String));
+    if (n.const !== undefined) out.push(String(n.const));
+    if (n.type === 'boolean') out.push('false', 'true');
+    (n.anyOf ?? []).forEach(walk);
+  };
+
+  walk(node);
+
+  return out.sort();
+};
+
+/** Whether a layout runs to its end on a small graph. */
+const libraryRunsLayout = async (options) => {
+  const cy = cytoscape({
+    elements: [
+      { data: { id: 'a', w: 1 } },
+      { data: { id: 'b', w: 2 } },
+      { data: { id: 'c', w: 3 } },
+      { data: { id: 'ab', source: 'a', target: 'b', w: 1 } },
+      { data: { id: 'bc', source: 'b', target: 'c', w: 2 } },
+    ],
+  });
+
+  try {
+    const layout = cy.layout(options);
+    const done = layout.promise?.();
+
+    layout.run();
+    await done;
+
+    return true;
+  } catch {
+    return false;
+  } finally {
+    cy.destroy();
+  }
+};
+
+describe('schemas: layout options (79.3)', () => {
+  const branches = layoutBranches(LAYOUT);
+
+  it('has one branch per built-in, plus the extension escape', () => {
+    expect(Object.keys(branches).sort()).to.deep.equal(
+      Object.keys(LAYOUT_INTERFACES).sort(),
+    );
+    expect(LAYOUT.$defs.extension.required).to.deep.equal(['impl']);
+  });
+
+  it("names exactly the built-ins the library's own throw lists", () => {
+    let message = '';
+
+    try {
+      cytoscape({ elements: [] }).layout({ name: 'cose' });
+    } catch (e) {
+      message = e.message;
+    }
+
+    const listed = message
+      .slice(0, message.indexOf(' or an impl'))
+      .match(/'([a-z]+)'/g)
+      .map((s) => s.slice(1, -1))
+      .sort();
+
+    expect(listed.length).to.be.at.least(10);
+    expect(Object.keys(branches).sort()).to.deep.equal(listed);
+  });
+
+  it('every schema name constructs; a name outside it throws', () => {
+    const cy = cytoscape({ elements: [] });
+
+    try {
+      for (const name of Object.keys(branches)) {
+        expect(() => cy.layout({ name }), name).to.not.throw();
+      }
+
+      for (const name of ['cose', 'dagre', 'Grid', '']) {
+        expect(() => cy.layout({ name }), name).to.throw(/built-in name/);
+        expect(accepts('layout-options.schema.json', { name }), name).to.equal(
+          false,
+        );
+      }
+    } finally {
+      cy.destroy();
+    }
+  });
+
+  for (const [name, iface] of Object.entries(LAYOUT_INTERFACES)) {
+    it(`${name}: names exactly the members of ${iface}`, () => {
+      expect(branchMembers(LAYOUT, branches[name])).to.deep.equal(
+        declaredMembers(iface),
+      );
+    });
+  }
+
+  it('the shared definitions name their declarations', () => {
+    const { $defs } = LAYOUT;
+
+    expect(schemaMembers($defs.base)).to.deep.equal(
+      declaredMembers('LayoutBaseOptions'),
+    );
+    expect(
+      [
+        ...schemaMembers($defs.packing),
+        ...schemaMembers($defs.packComponents),
+      ].sort(),
+    ).to.deep.equal(declaredMembers('ComponentPackingOptions'));
+    expect(schemaMembers($defs.sortMapping)).to.deep.equal(
+      declaredMembers('LayoutSortMapping'),
+    );
+    expect(schemaMembers($defs.scoreMapping)).to.deep.equal(
+      declaredMembers('LayoutScoreMapping'),
+    );
+    expect(schemaMembers($defs.boundingBox)).to.deep.equal(
+      declaredMembers('BoundingBoxInput'),
+    );
+  });
+
+  it('every keyword option takes exactly its declared literals', () => {
+    let checked = 0;
+
+    for (const [name, iface] of Object.entries(LAYOUT_INTERFACES)) {
+      for (const [member, node] of Object.entries(branches[name].properties)) {
+        if (member === 'name') continue;
+
+        const declared = declaredLiterals(iface, member);
+
+        if (declared == null || declared.join() === 'false,true') continue;
+
+        expect(schemaLiterals(node), `${name}.${member}`).to.deep.equal(
+          declared,
+        );
+        checked++;
+      }
+    }
+
+    // direction x2, layering, cycleRemoval, weight, executor, init,
+    // force's avoidOverlap
+    expect(checked).to.be.at.least(8);
+  });
+
+  it('stays open because the runtime ignores unknown keys (the policy, probed)', async () => {
+    // if a layout ever starts refusing unknown keys, the schema tightens
+    // to match — the library is the authority — and this goes red first
+    for (const name of Object.keys(branches)) {
+      const options = { name, animate: false, notAnOption: 1 };
+
+      expect(await libraryRunsLayout(options), name).to.equal(true);
+      expect(accepts('layout-options.schema.json', options), name).to.equal(
+        true,
+      );
+    }
+  });
+
+  describe("accepts the harness's layout runs", () => {
+    const layoutConfig = loadDebugGlobal('layout-config');
+    const panel = loadDebugGlobal('layout-options');
+    const pageNames = Object.keys(layoutConfig.EDGE_STYLE).filter(
+      (n) => n !== 'spiral', // the extension example: its impl is code
+    );
+
+    it('has runs to check', () => {
+      expect(pageNames.length).to.be.at.least(11);
+    });
+
+    for (const name of pageNames) {
+      it(name, () => {
+        for (const ui of [
+          {},
+          { animate: true, avoidOverlap: true, pack: true, spacing: 1.5 },
+          { signKey: 'score', seed: '7', tidy: false },
+        ]) {
+          // JSON round trip: the document a stored layout config would be
+          const options = JSON.parse(
+            JSON.stringify(layoutConfig.layoutOptions(name, ui)),
+          );
+
+          expectValid(
+            'layout-options.schema.json',
+            options,
+            `${name} ${JSON.stringify(ui)}`,
+          );
+        }
+
+        const layoutName = layoutConfig.layoutOptions(name, {}).name;
+        const defaults = { name: layoutName };
+
+        for (const spec of panel.specsFor(layoutName)) {
+          if (spec.def !== undefined) defaults[spec.key] = spec.def;
+        }
+
+        expectValid(
+          'layout-options.schema.json',
+          defaults,
+          `${name}: the panel defaults`,
+        );
+      });
+    }
+  });
+
+  describe('agrees with the library where the library is strict', () => {
+    const rows = [
+      ['grid', { name: 'grid', rows: 2 }],
+      [
+        'preset with positions',
+        { name: 'preset', positions: { a: { x: 1, y: 2 } } },
+      ],
+      ['breadthfirst roots as ids', { name: 'breadthfirst', roots: ['a'] }],
+      [
+        'a sort mapping',
+        { name: 'circle', sort: { data: 'w', order: 'descending' } },
+      ],
+      [
+        'a score mapping',
+        {
+          name: 'force',
+          animate: false,
+          edgeLength: { data: 'w', range: [40, 200] },
+        },
+      ],
+      ['flow constraints', { name: 'flow', rankConstraints: { min: ['a'] } }],
+      ['no name and no impl', {}],
+      ['a v3 layout name', { name: 'cose' }],
+      ["force avoidOverlap 'nope'", { name: 'force', avoidOverlap: 'nope' }],
+      ["force executor 'nope'", { name: 'force', executor: 'nope' }],
+      ["force init 'nope'", { name: 'force', init: 'nope' }],
+      ['flow thoroughness 11', { name: 'flow', thoroughness: 11 }],
+      ['a negative flow edgeSep', { name: 'flow', edgeSep: -1 }],
+      ["flow direction 'sideways'", { name: 'flow', direction: 'sideways' }],
+      ["flow layering 'nope'", { name: 'flow', layering: 'nope' }],
+      [
+        "breadthfirst direction 'sideways'",
+        { name: 'breadthfirst', direction: 'sideways' },
+      ],
+      ['radial roots as a selector', { name: 'radial', roots: '#a' }],
+      ['a string random seed', { name: 'random', seed: 'x' }],
+      [
+        "a score mapping's unknown scale",
+        { name: 'concentric', concentric: { data: 'w', scale: 'nope' } },
+      ],
+      [
+        'an unknown easing',
+        { name: 'grid', animate: true, animationEasing: 'wobble' },
+      ],
+    ];
+
+    for (const [what, options] of rows) {
+      it(what, async () => {
+        const lib = await libraryRunsLayout(options);
+
+        expect(
+          accepts('layout-options.schema.json', options),
+          `${what}: the library ${lib ? 'runs' : 'refuses'} it`,
+        ).to.equal(lib);
+      });
+    }
+  });
+
+  describe('controls', () => {
+    it('an option deleted from a branch fails the declaration half', () => {
+      const mutated = structuredClone(LAYOUT);
+
+      delete mutated.$defs.flow.properties.nodeSep;
+
+      expect(
+        branchMembers(mutated, layoutBranches(mutated).flow),
+      ).to.not.include('nodeSep');
+      expect(
+        branchMembers(mutated, layoutBranches(mutated).flow),
+      ).to.not.deep.equal(declaredMembers('FlowLayoutOptions'));
+    });
+
+    it('a keyword dropped from an enum is caught', () => {
+      const node = structuredClone(LAYOUT.$defs.flow.properties.layering);
+
+      node.enum = node.enum.filter((v) => v !== 'auto');
+
+      expect(schemaLiterals(node)).to.not.deep.equal(
+        declaredLiterals('FlowLayoutOptions', 'layering'),
+      );
+    });
+  });
+});
+
+describe('schemas: the options envelope (79.3)', () => {
+  it('names exactly the members of CytoscapeOptions', () => {
+    expect(schemaMembers(OPTIONS)).to.deep.equal(
+      declaredMembers('CytoscapeOptions'),
+    );
+  });
+
+  it('names exactly the members of RendererOptions and CursorMap', () => {
+    expect(schemaMembers(OPTIONS.$defs.renderer)).to.deep.equal(
+      declaredMembers('RendererOptions'),
+    );
+    expect(schemaMembers(OPTIONS.$defs.cursorMap)).to.deep.equal(
+      declaredMembers('CursorMap'),
+    );
+  });
+
+  it('every keyword option takes exactly its declared literals', () => {
+    for (const member of ['selectionType', 'boxSelectionMode']) {
+      expect(schemaLiterals(OPTIONS.properties[member]), member).to.deep.equal(
+        declaredLiterals('CytoscapeOptions', member),
+      );
+    }
+  });
+
+  it('composes the element, stylesheet and layout schemas', () => {
+    expect(OPTIONS.properties.elements.$ref).to.equal('elements.schema.json');
+    expect(OPTIONS.properties.style.$ref).to.equal('stylesheet.schema.json');
+    expect(OPTIONS.properties.layout.$ref).to.equal(
+      'layout-options.schema.json',
+    );
+  });
+
+  it('stays open because the factory ignores unknown options (the policy, probed)', () => {
+    const cy = cytoscape({ elements: [], motionBlur: true });
+
+    cy.destroy();
+    expect(
+      accepts('cytoscape-options.schema.json', { motionBlur: true }),
+    ).to.equal(true);
+  });
+
+  it("accepts cy.json()'s whole export back", () => {
+    const styles = loadDebugGlobal('styles');
+    let checked = 0;
+
+    for (const { id, def, elements } of NETWORKS) {
+      if (elements.nodes.length + elements.edges.length > 20000) continue;
+
+      const cy = cytoscape({
+        elements,
+        style: styles.sheet('production', id, elements, def),
+        layout: { name: 'grid' },
+      });
+
+      try {
+        expectValid(
+          'cytoscape-options.schema.json',
+          cy.json(),
+          `${id}: cy.json()`,
+        );
+        checked++;
+      } finally {
+        cy.destroy();
+      }
+    }
+
+    expect(checked).to.be.at.least(10);
+  });
+
+  it('accepts a whole document a page would store', () => {
+    const [first] = NETWORKS;
+    const styles = loadDebugGlobal('styles');
+
+    expectValid(
+      'cytoscape-options.schema.json',
+      {
+        container: null,
+        elements: first.elements,
+        style: styles.sheet('default', first.id, first.elements, first.def),
+        layout: { name: 'force', seed: 1, avoidOverlap: 'settle' },
+        zoom: 1,
+        pan: { x: 0, y: 0 },
+        minZoom: 0.1,
+        maxZoom: 10,
+        boxSelectionMode: 'overlap',
+        selectionType: 'additive',
+        pointerCursors: { pan: 'move' },
+        pixelRatio: 'auto',
+        renderer: { labelFadePx: 6, renderScaleMin: 0.5, worker: false },
+      },
+      'a stored page document',
+    );
+  });
+
+  describe('agrees with the factory where it is strict', () => {
+    const rows = [
+      ['nothing', {}],
+      ['an element with a bad group', { elements: [{ group: 'foo' }] }],
+      [
+        'an unknown style property',
+        { style: { nodes: { 'no-such-prop': 1 } } },
+      ],
+      ['an unknown layout', { layout: { name: 'cose' } }],
+      [
+        'a valid whole',
+        {
+          elements: [{ data: { id: 'a' } }],
+          style: { nodes: { width: 20 } },
+          layout: { name: 'grid' },
+        },
+      ],
+    ];
+
+    for (const [what, options] of rows) {
+      it(what, () => {
+        let lib = true;
+
+        try {
+          cytoscape(options).destroy();
+        } catch {
+          lib = false;
+        }
+
+        expect(
+          accepts('cytoscape-options.schema.json', options),
+          `${what}: the factory ${lib ? 'accepts' : 'rejects'} it`,
+        ).to.equal(lib);
+      });
+    }
+  });
+});

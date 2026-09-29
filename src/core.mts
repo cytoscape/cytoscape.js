@@ -591,11 +591,13 @@ export class Core {
    * call `.run()` on it.
    *
    * Built-ins: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
-   * `random` and `force` (the GPU-capable spring–electric layout, round
-   * 18).  An external layout is passed **directly** rather than
-   * registered — v4 has no `cytoscape.use` and no string registry — by
-   * giving `impl`: a class or object implementing `{ run( ctx ), stop?() }`
-   * (see `layout/contract.mts` for the `LayoutContext` it receives).
+   * `random`, `radial`, `pack`, `force` (the GPU-capable spring–electric
+   * layout, round 18) and `flow` (the layered layout, round 112) — the
+   * set `schemas/layout-options.schema.json` describes.  An external
+   * layout is passed **directly** rather than registered — v4 has no
+   * `cytoscape.use` and no string registry — by giving `impl`: a class or
+   * object implementing `{ run( ctx ), stop?() }` (see
+   * `layout/contract.mts` for the `LayoutContext` it receives).
    *
    * Lifecycle events (`layoutstart`/`layoutready`/`layoutstop`) fire on
    * the core, once per run; layout instances are not emitters.

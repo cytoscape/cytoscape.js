@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://placeholder.invalid/cytoscape/schemas/cytoscape-options.schema.json",
+  "$comment": "The $id base is a placeholder until round 46 (the documentation site); see element.schema.json.",
+  "title": "Cytoscape.js options",
+  "description": "The options of the `cytoscape( options )` factory — the envelope the element, stylesheet and layout schemas compose into — and the shape `cy.json()` exports. Unknown options are ignored by the factory, deliberately (strictness lives in the TypeScript declaration's excess-property check), so the object stays open. `elements` is the definition form: the columnar bulk form and the binary wire form are not JSON documents (the columnar schema is held until 4.x), and `container` is a DOM element, which JSON cannot carry. The slim builds (`cytoscape/headless`, `cytoscape/headless-gpu`) take the same options minus the renderer and pointer knobs.",
+  "type": "object",
+  "properties": {
+    "container": {
+      "description": "Where to render (an HTMLElement); omitted or null, the instance is headless. JSON can carry only the null."
+    },
+    "elements": { "$ref": "elements.schema.json" },
+    "style": { "$ref": "stylesheet.schema.json" },
+    "layout": { "$ref": "layout-options.schema.json" },
+    "zoom": { "type": "number" },
+    "pan": { "$ref": "layout-options.schema.json#/$defs/position" },
+    "minZoom": { "type": "number" },
+    "maxZoom": { "type": "number" },
+    "autolock": {
+      "description": "Disable node dragging globally (default false).",
+      "type": "boolean"
+    },
+    "autoungrabify": {
+      "description": "Make every node ungrabbable (default false).",
+      "type": "boolean"
+    },
+    "autounselectify": {
+      "description": "Disable selection globally (default false).",
+      "type": "boolean"
+    },
+    "panningEnabled": {
+      "description": "Allow panning at all (default true).",
+      "type": "boolean"
+    },
+    "userPanningEnabled": {
+      "description": "Allow pointer panning (default true).",
+      "type": "boolean"
+    },
+    "zoomingEnabled": {
+      "description": "Allow zooming at all (default true).",
+      "type": "boolean"
+    },
+    "userZoomingEnabled": {
+      "description": "Allow wheel and pinch zooming (default true).",
+      "type": "boolean"
+    },
+    "boxSelectionEnabled": {
+      "description": "Allow box selection (default true).",
+      "type": "boolean"
+    },
+    "boxSelectionIncludesLabels": {
+      "description": "Box selection considers label boxes too (default false).",
+      "type": "boolean"
+    },
+    "boxSelectionMode": {
+      "description": "What the box counts as selected: 'contain' (default, v3's) or 'overlap'.",
+      "enum": ["contain", "overlap"]
+    },
+    "selectionType": {
+      "description": "'single' (a tap or box replaces the selection) or 'additive'.",
+      "enum": ["single", "additive"]
+    },
+    "multiClickDebounceTime": {
+      "description": "The dbltap/onetap window in ms (default 250).",
+      "type": "number"
+    },
+    "wheelSensitivity": {
+      "description": "The wheel-zoom rate multiplier (default 1).",
+      "type": "number"
+    },
+    "desktopTapThreshold": {
+      "description": "Px a mouse press may move and still tap (default 4).",
+      "type": "number"
+    },
+    "touchTapThreshold": {
+      "description": "Px a touch press may move and still tap (default 8).",
+      "type": "number"
+    },
+    "tapholdDuration": {
+      "description": "An unmoved press's taphold delay in ms (default 500).",
+      "type": "number"
+    },
+    "pointerCursors": {
+      "description": "Whether the canvas writes CSS cursors (default true), or per-state overrides ('' inherits).",
+      "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/cursorMap" }]
+    },
+    "headlessWidth": {
+      "description": "The rendered width a headless instance assumes.",
+      "type": "number"
+    },
+    "headlessHeight": {
+      "description": "The rendered height a headless instance assumes.",
+      "type": "number"
+    },
+    "pixelRatio": { "$ref": "#/$defs/pixelRatio" },
+    "renderer": { "$ref": "#/$defs/renderer" }
+  },
+  "$defs": {
+    "pixelRatio": {
+      "description": "A device pixel ratio override, or 'auto' (the window's).",
+      "anyOf": [{ "type": "number" }, { "const": "auto" }]
+    },
+    "cursorMap": {
+      "description": "A CSS cursor keyword per interaction state.",
+      "type": "object",
+      "properties": {
+        "idle": { "type": "string" },
+        "hoverElement": { "type": "string" },
+        "hoverNode": { "type": "string" },
+        "pan": { "type": "string" },
+        "grab": { "type": "string" },
+        "box": { "type": "string" }
+      }
+    },
+    "renderer": {
+      "description": "Renderer tuning (level-of-detail values in device px).",
+      "type": "object",
+      "properties": {
+        "edgeWidthFloor": { "type": "number" },
+        "nodeLodPx": { "type": "number" },
+        "hidePx": { "type": "number" },
+        "edgeDimming": { "type": "boolean" },
+        "labelFadePx": { "type": "number" },
+        "labelMinPx": { "type": "number" },
+        "imageMinPx": { "type": "number" },
+        "renderScaleMin": { "type": "number" },
+        "renderScaleMax": { "type": "number" },
+        "pixelRatio": { "$ref": "#/$defs/pixelRatio" },
+        "worker": {
+          "description": "Host the renderer in a worker via OffscreenCanvas.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

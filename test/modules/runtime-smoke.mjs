@@ -164,4 +164,20 @@ describe('the cross-runtime smoke (round 98.2)', function () {
     expect(out.stderr).to.contain('a.label');
     expect(out.stderr).to.contain('expected "alpha", got undefined');
   });
+
+  it('the embedded-engine census refuses to run with no engine (round 100)', function () {
+    // `test/runtimes/engines.mjs` is the release-time re-run of the support
+    // matrix's embedded-engine rows; the engines are not devDependencies,
+    // so the one property this tier can hold is that a run naming none
+    // fails rather than reading green
+    const out = spawnSync(
+      process.execPath,
+      [join(ROOT, 'test', 'runtimes', 'engines.mjs')],
+      { cwd: ROOT, encoding: 'utf8', timeout: 60_000 },
+    );
+
+    expect(out.status).to.equal(1);
+    expect(out.stderr).to.contain('at least one');
+    expect(out.stdout).to.not.contain('ok ');
+  });
 });

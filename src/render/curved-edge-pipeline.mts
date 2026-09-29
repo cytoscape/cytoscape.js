@@ -44,7 +44,9 @@ const FRAGMENT_COLUMNS: ColumnId[] = [
 export class CurvedEdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
-  private layerPipeline: GPURenderPipeline;
+  /** the layer strokes (round 13 A2), one per layer since round 88 */
+  private underlayPipeline: GPURenderPipeline;
+  private overlayPipeline: GPURenderPipeline;
   /** the paired casing-then-line draw (round 124.4) */
   private casedPipeline: GPURenderPipeline;
   private layerBindLayout: GPUBindGroupLayout;
@@ -252,22 +254,38 @@ export class CurvedEdgePipeline {
       primitive: { topology: 'triangle-list' },
     });
 
-    this.layerPipeline = device.createRenderPipeline({
-      label: 'cy-gpu:curved-edge-layer-pipeline',
-      layout: layerLayout,
-      vertex: { module, entryPoint: 'vsCurvedLayer' },
-      fragment: {
-        module,
-        entryPoint: 'fsCurvedLayer',
-        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
-      },
-      primitive: { topology: 'triangle-list' },
-      depthStencil: {
-        format: DEPTH_FORMAT,
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-      },
-    });
+    // the layer strokes (round 88.2): capsule steps that overlap at every
+    // joint, so the pass *writes* depth — each instance at its own depth
+    // (between EDGE_Z and the clear value, the overlay's band under the
+    // underlay's), and a fragment of the same edge fails 'less' where an
+    // earlier quad of it already drew: v3's stroke-once compositing,
+    // with separate edges still blending over each other
+    const layerPipeline = (label: string, entryPoint: string) =>
+      device.createRenderPipeline({
+        label,
+        layout: layerLayout,
+        vertex: { module, entryPoint },
+        fragment: {
+          module,
+          entryPoint: 'fsCurvedLayer',
+          targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+        },
+        primitive: { topology: 'triangle-list' },
+        depthStencil: {
+          format: DEPTH_FORMAT,
+          depthWriteEnabled: true,
+          depthCompare: 'less',
+        },
+      });
+
+    this.underlayPipeline = layerPipeline(
+      'cy-gpu:curved-edge-underlay-pipeline',
+      'vsCurvedUnderlay',
+    );
+    this.overlayPipeline = layerPipeline(
+      'cy-gpu:curved-edge-overlay-pipeline',
+      'vsCurvedOverlay',
+    );
 
     this.casedPipeline = device.createRenderPipeline({
       label: 'cy-gpu:curved-edge-cased-pipeline',
@@ -450,7 +468,9 @@ export class CurvedEdgePipeline {
   }
 
   /** The overlay/underlay stroke draw (round 13 A2), off the curved
-   * visible list — disabled instances collapse in the VS. */
+   * visible list — disabled instances collapse in the VS.  Each layer
+   * has its own pipeline (round 88): its own depth band, and its own
+   * span (88.3). */
   drawLayer(
     pass: GPURenderPassEncoder,
     device: GPUDevice,
@@ -458,16 +478,15 @@ export class CurvedEdgePipeline {
     mirror: ColumnMirror,
     instances: number,
     cull: CulledGroup,
-    layer:
-      | typeof COL.EDGE_OVERLAY
-      | typeof COL.EDGE_UNDERLAY
-      | typeof COL.EDGE_CASING,
+    layer: typeof COL.EDGE_OVERLAY | typeof COL.EDGE_UNDERLAY,
   ): void {
     if (instances === 0) {
       return;
     }
 
-    pass.setPipeline(this.layerPipeline);
+    pass.setPipeline(
+      layer === COL.EDGE_OVERLAY ? this.overlayPipeline : this.underlayPipeline,
+    );
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror, layer));
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.stripIndex, 'uint16');

@@ -743,15 +743,226 @@ fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
   return (in.instance + 1u) | 0x80000000u; // high bit marks edges
 }
 
-// Curved overlay/underlay strokes (round 13 A2): the curved strip
-// re-extruded at the layer's pre-derived stroke width, riding the
-// curved visible list; disabled instances collapse in the VS.
+// Curved overlay/underlay strokes (round 13 A2; rebuilt in round 88).
+//
+// v3 strokes a layer as one path stroked once, with round caps and
+// round joins, and Canvas composites a stroke atomically — so a
+// translucent layer never darkens where its own path folds.  The line's
+// strip (a quad per step, mitred) folds at any corner sharper than its
+// miter clamp or shorter than its half-width, and blended each fold
+// twice.  The layer strip is therefore built another way:
+//
+// - Each quad is its step's *capsule* bound: the segment extended by
+//   the half-width (+1 px of AA margin) along and across it, no miter.
+//   The fragment stage shades the distance to the polyline about the
+//   step (its own segment and two either side, from flat varyings), so
+//   the union is v3's stroke: round caps at the ends, round joins at
+//   every corner, whatever the angle.
+// - The quads overlap at every joint by construction, so the pass
+//   writes depth: each instance draws at its own depth (decreasing in
+//   draw order), a fragment of the *same* edge fails the 'less' test
+//   where an earlier one of its quads already drew, and a later edge
+//   still passes and blends over an earlier one — v3 composites
+//   separate edges separately too.  Zero-coverage fragments discard so
+//   the AA margin never claims a pixel.
+// - Every layer depth sits between EDGE_Z and the clear value, so the
+//   lines and heads drawn after the underlay pass over it, the node
+//   prepass still kills layer fragments under opaque bodies, and the
+//   overlay's band sits under the underlay's so it passes over it.
+//   LAYER_Z_SPAN instances fit each band at four depth units apiece
+//   (a fringe fragment takes the half step between — see the fragment
+//   stage); a visible list longer than that wraps, and two layer
+//   strokes that many instances apart lose their blend where they
+//   cross.
+const LAYER_Z_UNDERLAY: f32 = 0.999;
+const LAYER_Z_OVERLAY: f32 = 0.94;
+const LAYER_Z_STEP: f32 = 2.3841858e-7; // 2^-22: four depth24 units
+const LAYER_Z_FRINGE: f32 = 1.1920929e-7; // 2^-23: half a step
+const LAYER_Z_SPAN: u32 = 200000u;
+
+struct CurvedLayerOut {
+  @builtin(position) position: vec4f,
+  @location(0) px: vec2f, // this fragment, device px
+  // the polyline about this quad's step, device px: three distinct
+  // points either side of it, then the step's own two (q67)
+  @location(1) @interpolate(flat) q01: vec4f,
+  @location(2) @interpolate(flat) q23: vec4f,
+  @location(3) @interpolate(flat) q45: vec4f,
+  @location(4) @interpolate(flat) q67: vec4f,
+  @location(5) @interpolate(flat) halfWidth: f32,
+  @location(6) @interpolate(flat) instance: u32,
+  @location(7) @interpolate(flat) layerZ: f32,
+}
+
+// How far a layer quad reaches past the joint between steps din and
+// dout for its round join to be covered: reach x sin(turn / 2).  A
+// zero step on one side is a path end (the neighbourhood walk below
+// skips zero-length steps), and takes the whole reach: the cap.
+fn joinReach(din: vec2f, dout: vec2f, reach: f32) -> f32 {
+  let li = length(din);
+  let lo = length(dout);
+
+  if (li < 1e-6 || lo < 1e-6) { return reach; }
+
+  let c = dot(din / li, dout / lo);
+
+  return reach * sqrt(max((1.0 - c) * 0.5, 0.0));
+}
+
+// The subdivision point idx of either family, device px: the analytic
+// curve (bezier / loop / compound loop) or the evaluated route.
+fn layerPointAt(isBez: bool, g: CurveGeom, route: ptr<function, Route>, idx: u32) -> vec2f {
+  if (isBez) {
+    return modelToPx(frame, curvePoint(g, f32(idx) / CURVE_SEGS_F));
+  }
+
+  return modelToPx(frame, routeVertexW(route, idx));
+}
+
+fn curvedLayerAt(ii: u32, vi: u32, zBase: f32) -> CurvedLayerOut {
+  var out: CurvedLayerOut;
+  let slot = visible[ii];
+  let rec = edgeLayer[slot];
+
+  if ((rec.x >> 24u) == 0u) { // disabled: degenerate, clipped
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let halfW = f32(rec.y) / 256.0 * frame.zoomDpr * 0.5;
+  let seg = vi >> 2u;
+  let corner = quadCorner(vi & 3u);
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+  // Round 58: the layer stroke hugs the drawn line — the same draw trim
+  // the line's strip spans.  The node geometry comes from the fused
+  // nodeOuterGeom column, whose freed binding is what lets this stage
+  // reach widths at all.
+  let ga = nodeOuterGeom[ends.x];
+  let gb = nodeOuterGeom[ends.y];
+  let trim = arrowTrimOf(widths[slot]);
+  let isBez = params.w <= 2.0 || params.w == 16.0;
+  var g: CurveGeom;
+  var route: Route;
+
+  if (isBez) {
+    g = evalCurveGeom(
+      params,
+      nodePositions[ends.x], ga.xy, u32(ga.z),
+      nodePositions[ends.y], gb.xy, u32(gb.z),
+      trim
+    );
+  } else {
+    route = evalRouteW(
+      params,
+      nodePositions[ends.x], ga.xy, u32(ga.z),
+      nodePositions[ends.y], gb.xy, u32(gb.z),
+      trim
+    );
+    allocRouteQuadsW(&route); // round 93: the map feeds routeVertexW
+  }
+
+  let a = layerPointAt(isBez, g, &route, seg);
+  let b = layerPointAt(isBez, g, &route, seg + 1u);
+  let ab = b - a;
+  let l = length(ab);
+
+  // The neighbourhood the fragment stage measures against: three
+  // *distinct* points either side of this step (q[0..2] behind, q[5..7]
+  // ahead; the step itself is q[3] -> q[4]).  Three, not two: at a
+  // bend tighter than the band (a loop's inner side) the pixels on the
+  // inner fringe sit that many short steps from the nearest one.  A route can spend a
+  // run of quads on a zero-length piece (a taxi whose turn collapses, a
+  // radius-0 corner), and a neighbourhood of plain indices would then
+  // end at that point — the quads beside it would measure the stroke
+  // from its end and shade an arc of it too light.  None found: the
+  // path ends there, and q repeats the end point.
+  var q: array<vec2f, 8>;
+
+  q[3] = a;
+  q[4] = b;
+
+  var last = a;
+  var k = 2;
+
+  for (var i = i32(seg) - 1; i >= 0 && k >= 0; i = i - 1) {
+    let p = layerPointAt(isBez, g, &route, u32(i));
+
+    if (length(p - last) >= 1e-3) {
+      q[k] = p;
+      last = p;
+      k = k - 1;
+    }
+  }
+
+  for (; k >= 0; k = k - 1) { q[k] = last; }
+
+  last = b;
+  k = 5;
+
+  for (var i = seg + 2u; i <= CURVE_SEGS_U && k <= 7; i = i + 1u) {
+    let p = layerPointAt(isBez, g, &route, i);
+
+    if (length(p - last) >= 1e-3) {
+      q[k] = p;
+      last = p;
+      k = k + 1;
+    }
+  }
+
+  for (; k <= 7; k = k + 1) { q[k] = last; }
+
+  // A zero-length step draws nothing: its neighbours' joins, computed
+  // across it, cover its point.  Only a path that is nothing but a
+  // point (a degenerate edge the cull kept) draws its disc.
+  if (l < 1e-3 && (length(q[2] - a) >= 1e-3 || length(q[5] - b) >= 1e-3)) {
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  // this step's quad: a -> b, widened by the half-width plus the AA
+  // margin across, and reaching past each end only as far as the round
+  // join there needs — reach x sin(turn / 2), which is all of the reach
+  // at a path end or a reversal and nothing along a straight run.  A
+  // quad that reached its full capsule at every joint would cover
+  // pixels nearest a step outside its neighbourhood (short steps, wide
+  // bands), shade them too light, and — drawing first — keep them.
+  let dir = select(vec2f(1.0, 0.0), ab / max(l, 1e-6), l >= 1e-3);
+  let n = vec2f(-dir.y, dir.x);
+  let reach = halfW + 1.0;
+  let back = joinReach(q[3] - q[2], ab, reach);
+  let fwd = joinReach(ab, q[5] - q[4], reach);
+  let along = select(fwd, -back, corner.x < 0.0);
+  let px = mix(a, b, (corner.x + 1.0) * 0.5) + dir * along + n * (corner.y * reach);
+
+  out.layerZ = zBase - f32(ii % LAYER_Z_SPAN) * LAYER_Z_STEP;
+  out.position = vec4f(pxToClip(frame, px), out.layerZ, 1.0);
+  out.px = px;
+  out.q01 = vec4f(q[0], q[1]);
+  out.q23 = vec4f(q[2], q[3]);
+  out.q45 = vec4f(q[4], q[5]);
+  out.q67 = vec4f(q[6], q[7]);
+  out.halfWidth = halfW;
+  out.instance = slot;
+  return out;
+}
+
+@vertex
+fn vsCurvedUnderlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedLayerOut {
+  return curvedLayerAt(ii, vi, LAYER_Z_UNDERLAY);
+}
+
+@vertex
+fn vsCurvedOverlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedLayerOut {
+  return curvedLayerAt(ii, vi, LAYER_Z_OVERLAY);
+}
+
 // The curved vertex at one slot over the *fused* node geometry
 // (nodeOuterGeom in place of outerHalf + shape), extruded to widthPx:
-// the layer strokes and the paired casing draw (124.4) share it.
+// the paired casing draw (124.4) and its line instance share it.
 // withLen walks the polyline for the dash distance and the full
 // length, which only the line instance needs.
-fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool, capPx: f32) -> CurvedVSOut {
+fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool) -> CurvedVSOut {
   var out: CurvedVSOut;
   let seg = vi >> 2u;
   let corner = quadCorner(vi & 3u);
@@ -764,9 +975,6 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
   var miterScale = 1.0;
   var uLen = 0.0;
   var totLen = 0.0;
-  // the path's direction at this vertex, for a round cap's reach past
-  // the first and last vertex (round 88)
-  var endDir = vec2f(1.0, 0.0);
 
   // Round 58: the layer stroke hugs the drawn line — the same draw trim
   // the strip itself spans — where it used to ride the untrimmed path.
@@ -796,7 +1004,6 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
     if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
 
     n = vec2f(-tangent.y, tangent.x);
-    endDir = tangent;
 
     if (withLen) {
       var prev = g.s;
@@ -840,7 +1047,6 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
 
     n = m / max(length(m), 1e-6);
     miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
-    endDir = select(dirIn / lIn, dirOut / lOut, tIdx == 0u);
 
     if (withLen) {
       var prev = route.q[0u];
@@ -858,46 +1064,16 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
 
   let halfW = widthPx * 0.5;
   let s = corner.y * (halfW + pad + 1.0);
-  // a round cap (layers only, capPx > 0): the first and last vertex
-  // reach capPx past the path's end, and u/totalLen switch to device px
-  // so the fragment stage can shade the capsule about the span
-  var along = 0.0;
 
-  if (tIdx == 0u) { along = -capPx; }
-  if (tIdx == CURVE_SEGS_U) { along = capPx; }
-
-  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale + endDir * along), EDGE_Z, 1.0);
+  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
   out.alphaComp = alphaComp;
   out.instance = slot;
   out.u = uLen;
   out.totalLen = max(totLen, 1e-4);
-
-  if (capPx > 0.0) {
-    out.u = uLen * frame.zoomDpr + along;
-    out.totalLen = totLen * frame.zoomDpr;
-  }
-
   out.casing = 0u;
   return out;
-}
-
-@vertex
-fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
-  let slot = visible[ii];
-  let rec = edgeLayer[slot];
-
-  if ((rec.x >> 24u) == 0u) {
-    var out: CurvedVSOut;
-
-    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
-    return out;
-  }
-
-  let widthPx = f32(rec.y) / 256.0 * frame.zoomDpr;
-
-  return curvedVertexFused(slot, vi, widthPx, 1.0, 0.0, true, widthPx * 0.5 + 1.0);
 }
 
 // The paired draw on the curved stream (124.4): even instances the
@@ -918,7 +1094,7 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
       return out;
     }
 
-    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false, 0.0);
+    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
 
     out.casing = 1u;
     return out;
@@ -927,18 +1103,60 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
   let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(widths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
 
-  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true, 0.0);
+  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true);
+}
+
+// distance from p to the segment a -> b (a point when a == b)
+fn segDistW(p: vec2f, a: vec2f, b: vec2f) -> f32 {
+  let ab = b - a;
+  let h = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-8), 0.0, 1.0);
+
+  return length(p - a - ab * h);
+}
+
+struct LayerFragOut {
+  @location(0) color: vec4f,
+  @builtin(frag_depth) depth: f32,
 }
 
 @fragment
-fn fsCurvedLayer(in: CurvedVSOut) -> @location(0) vec4f {
+fn fsCurvedLayer(in: CurvedLayerOut) -> LayerFragOut {
   let c = unpack4x8unorm(edgeLayer[in.instance].x);
-  // capsule distance about the span (round 88): u and totalLen are
-  // device px here, u negative on the source cap
-  let past = max(max(-in.u, in.u - in.totalLen), 0.0);
-  let d = length(vec2f(past, in.v));
+  // the distance to the polyline about this step: every quad that
+  // reaches a pixel computes (nearly) the same value, so whichever of
+  // an edge's quads draws it first draws what the stroke would
+  let p = in.px;
+  let d = min(
+    min(
+      min(segDistW(p, in.q01.xy, in.q01.zw), segDistW(p, in.q01.zw, in.q23.xy)),
+      min(segDistW(p, in.q23.xy, in.q23.zw), segDistW(p, in.q23.zw, in.q45.xy))
+    ),
+    min(
+      min(segDistW(p, in.q45.xy, in.q45.zw), segDistW(p, in.q45.zw, in.q67.xy)),
+      segDistW(p, in.q67.xy, in.q67.zw)
+    )
+  );
   let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, d));
 
-  return vec4f(c.rgb * alpha, alpha); // premultiplied
+  // the AA margin must not claim a pixel for this edge (it writes depth)
+  if (alpha <= 0.0) { discard; }
+
+  var out: LayerFragOut;
+
+  out.color = vec4f(c.rgb * alpha, alpha); // premultiplied
+  // The depth rides a flat varying, so every fragment of one instance
+  // carries bit-identical depth whatever the rasterizer interpolates.
+  // A fringe fragment (partial coverage) sits half a step deeper: it
+  // cannot block a fully covered fragment of its own edge, which then
+  // blends over it once, but still blocks another fringe fragment.
+  // Within a step's neighbourhood every quad agrees on the coverage and
+  // this changes nothing; it matters where the path comes back near
+  // itself from outside the neighbourhood (a loop's two ends, a route
+  // crossing itself) — there the earlier leg's fringe would otherwise
+  // keep a light seam across the later leg's body.
+  let full = d <= in.halfWidth - 0.75;
+
+  out.depth = in.layerZ + select(LAYER_Z_FRINGE, 0.0, full);
+  return out;
 }
 `;

@@ -1915,3 +1915,20 @@ directions".*
     throw spec for each.  **First measurement**: none needed — two
     reproductions and the guard's placement (the one shared partition
     step).
+81. **A translucent line (and casing) on a sharp route still folds**
+    (logged 2026-09-29 by round 88).  Round 88.2 rebuilt the curved and
+    route *layer* strips as capsule steps with per-edge depth, so an
+    overlay or underlay composites once with round joins, as v3's
+    stroke-once path does.  The line's own strip and the paired casing
+    draw keep the mitred quad-per-step strip: past the miter clamp, or
+    where a step is shorter than the half-width, adjacent quads overlap
+    and a translucent line blends the fold twice, and the outer corner
+    is a miter spike where v3 (lineJoin 'round') rounds it.  Measured on
+    round 88's tree: black 0.5-opacity width-8 zigzag segments at zoom
+    3 read **0.660%** against v3 (spikes and folds together).  The call:
+    carry the layer mechanism to the line and casing (the line's pass
+    would then write depth too — the early-z bands need re-deriving, and
+    dashes ride a longitudinal coordinate the capsule steps do not
+    carry), or record it as a deviation.  **First measurement**: split
+    the 0.660% into spikes and folds (an opaque line isolates the
+    spikes).

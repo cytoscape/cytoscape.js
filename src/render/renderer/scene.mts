@@ -91,6 +91,11 @@ export function drawScene(
     }
   }
 
+  // The curved layer passes *write* depth (round 88.2 — each edge at
+  // its own depth, so an edge's overlapping quads blend once): the
+  // underlay's band sits above EDGE_Z, so the lines and heads below
+  // still pass over it, and every band sits above NODE_Z, so the node
+  // tiers after them do too.  test/modules/edge-layer-depth.mjs pins it.
   if (store.edgeUnderlayCount() > 0) {
     rd.edgePipeline?.drawLayer(
       pass,

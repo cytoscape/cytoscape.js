@@ -997,7 +997,35 @@ and the fragment stage shades the capsule about the span.  Self
 edges are rounded too — v3 butt-caps a self edge only on its no-paths
 fallback, which its path cache makes the rare case, and v4 does not
 copy that exception; a straight-triangle layer keeps its taper and
-flat base.  `overlay-shape`/`-corner-radius` stay node-only.  Two more things about that stroke, both found by
+flat base.  **Joins are round and blend once, as v3's** (round 88.2):
+v3 strokes a layer as one path stroked once, and Canvas composites a
+stroke atomically, so a translucent layer never darkens where its own
+path folds — v4's curved and route layer strips were a quad per step,
+mitred, and blended every fold twice (visibly at taxi and segments
+corners).  The layer strip is now built of *capsule steps*: each quad
+bounds its step widened by the half-width and reaching past each end
+only as far as that joint's round join needs (half-width ×
+sin(turn / 2) — the whole of it at a path end, none along a straight
+run), and the fragment stage shades the distance to the polyline about
+the step (three distinct points either side), which is v3's stroke —
+round caps, round joins at any angle.  The quads overlap at every
+joint, so the pass writes depth per instance (see Early-z below): a
+fragment of the same edge fails where an earlier quad of it drew, a
+later edge still blends over an earlier one.  Measured on round 88's
+close-up scenes (SwiftShader): a black translucent overlay on
+zigzag segments and taxi reads 2.566% against v3 before the round,
+0.392% with equal-depth on the old mitred strip, 3.459% with the
+capsule steps and no depth write, and **0.010%** with both.  Two
+residuals, recorded: where a path comes back near itself from outside
+a step's neighbourhood (a self-loop's two ends, a route crossing
+itself) the fringe of the earlier leg can blend under the later leg's
+body once more (a fringe fragment sits half a depth step deeper so it
+never blocks the body, which would leave a light seam instead); and
+more than 200,000 visible curved edges wrap each layer's depth band,
+so two layer strokes that far apart in the list lose their blend
+where they cross.  The line and the casing keep their mitred strips —
+a translucent *line* on a sharp route still folds (PLAN.md item 81).
+`overlay-shape`/`-corner-radius` stay node-only.  Two more things about that stroke, both found by
 round 58's parity scenes: since round 58 it stops where the drawn
 line does (the draw trim; it used to run node centre to node centre
 on the straight stream), and its **width formula diverges from v3's**
@@ -6724,6 +6752,11 @@ fragment premium is **unmeasurable at scene level** on real hardware
   mechanism that could carry more ranks and batches if ever needed
   (z-index itself is dropped by decided design — see above); content
   ranked above merely loses the occlusion benefit, never correctness.
+  One pass besides the prepass **writes** depth: the curved edge layer
+  strokes (round 88.2), each instance at its own depth so an edge's
+  overlapping quads blend once — the underlay's band above EDGE_Z, the
+  overlay's under it, both above NODE_Z, which
+  `test/modules/edge-layer-depth.mjs` pins.
 
   The round-14 compound split took the batch route
   instead of a rank: parent bodies draw in their own pre-edge stream and

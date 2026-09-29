@@ -3761,6 +3761,8 @@ test.describe('v3-vs-v4 render parity', () => {
     bends: 0.0003,
     labels: 0.004,
     layerCaps: 0.002,
+    layerJoins: 0.001,
+    layerHairpins: 0.002,
   };
 
   let deviceErrors = [];
@@ -7390,6 +7392,118 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.layerCaps },
+    );
+  });
+
+  test('parity close-up: a translucent layer blends once at a corner (round 88)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Measured 2026-09-29 (SwiftShader), the candidates side by side:
+    //
+    //     pre-88 (butt caps, mitred strip)            2.566%
+    //     88.1 round caps, mitred strip                1.223%
+    //     equal-depth on the mitred strip              0.392%
+    //     capsule steps, no depth write                3.459%
+    //     capsule steps + equal-depth (landed)         0.012%
+    //
+    // The miter spikes are what equal-depth alone leaves, and every
+    // joint's overlap is what the capsule steps alone double — so the
+    // call went to both.  The bound fails 88.1 by 12x and the
+    // equal-depth-only candidate by 3.9x.
+    //
+    // The overlay is *black* at 0.5: pixelmatch's 0.2 threshold cannot
+    // see a translucent stroke blended twice in most colours — 0.5 ->
+    // 0.75 alpha of #8e44ad over white is a YIQ delta of 768 against the
+    // threshold's 1409, and this scene's first draft (in that purple)
+    // read the geometry-only candidate's doubled joints as a *pass*.
+    // Black at 0.5 is 2054.
+    //
+    // Canvas composites a stroked path atomically, so v3's translucent
+    // overlay never darkens itself where its own path folds; v4's route
+    // strip is a quad per step and blended each one.  The difference is
+    // per *corner*, so each edge bends several times, acute enough that
+    // the band's inner side folds; and taxi's right angles ride the same
+    // route walk.  Overlay only: the underlay would sit under the same
+    // corners and double every measurement.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -50, y: -30 } },
+      { data: { id: 'b' }, position: { x: 50, y: -30 } },
+      { data: { id: 'c' }, position: { x: -50, y: 22 } },
+      { data: { id: 'd' }, position: { x: 50, y: 22 } },
+      { data: { id: 'f' }, position: { x: -30, y: 36 } },
+      { data: { id: 'g' }, position: { x: 38, y: 12 } },
+      { data: { id: 'e1', kind: 'segments', source: 'a', target: 'b' } },
+      { data: { id: 'e2', kind: 'segments', source: 'c', target: 'd' } },
+      { data: { id: 'e3', kind: 'taxi', source: 'f', target: 'g' } },
+    ];
+    const { v3Style, v4Style } = layerSheets(
+      LAYER_NODE,
+      {
+        width: 2,
+        'line-color': '#e67e22',
+        'segment-distances': '14 -14 14 -14',
+        'segment-weights': '0.2 0.4 0.6 0.8',
+        'taxi-direction': 'vertical',
+        'taxi-turn': '40%',
+      },
+      { overlay: { color: '#000000', opacity: 0.5, padding: 5 } },
+    );
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-layer-joins',
+      elements,
+      v3Style,
+      v4Style,
+      { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.layerJoins },
+    );
+  });
+
+  test('parity close-up: a translucent layer at near-hairpin corners (round 88)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Measured 2026-09-29 (SwiftShader): pre-88 3.101%, 88.1 2.596%,
+    // equal-depth on the mitred strip 0.894%, capsule steps with no depth
+    // write 2.149%, capsule steps + equal-depth (landed) **0.071%** — the
+    // residual is the *line's* own miter spikes, not the layer.  The
+    // bound fails the equal-depth-only candidate by 4.5x.
+    //
+    // The same observable at the angle that breaks a miter: legs 8 model
+    // px apart on a 40 px rise turn ~165 degrees, past the strip's miter
+    // clamp, so the join cannot be exact and the fold is the whole band
+    // width.  Four such corners per edge, two edges.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -20, y: -22 } },
+      { data: { id: 'b' }, position: { x: 20, y: -22 } },
+      { data: { id: 'c' }, position: { x: -20, y: 26 } },
+      { data: { id: 'd' }, position: { x: 20, y: 26 } },
+      { data: { id: 'e1', kind: 'segments', source: 'a', target: 'b' } },
+      { data: { id: 'e2', kind: 'segments', source: 'c', target: 'd' } },
+    ];
+    const { v3Style, v4Style } = layerSheets(
+      LAYER_NODE,
+      {
+        width: 1.5,
+        'line-color': '#e67e22',
+        'segment-distances': '14 -14 14 -14',
+        'segment-weights': '0.2 0.4 0.6 0.8',
+      },
+      { overlay: { color: '#000000', opacity: 0.5, padding: 3 } },
+    );
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-layer-hairpins',
+      elements,
+      v3Style,
+      v4Style,
+      { zoom: 3.5, minInk: 4000, bound: CLOSE_UP_BOUND.layerHairpins },
     );
   });
 

@@ -913,6 +913,7 @@ export function writeLabel(
     bgShape: computed.textBgShape,
     bgBorderColor: fold(computed.textBorderColor, computed.textBorderOpacity),
     bgBorderWidth: computed.textBorderWidth,
+    bgBorderStyle: computed.textBorderStyle,
     // the wrap family (16.2)
     wrap: computed.textWrap,
     maxWidth: computed.textMaxWidth,

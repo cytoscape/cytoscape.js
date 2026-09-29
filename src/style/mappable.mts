@@ -640,6 +640,15 @@ export const MAPPABLE: Record<string, MappableChannel> = {
     },
     default: () => NODE_DEFAULTS.textBorderOpacity,
   },
+  [PROP.TEXT_BORDER_STYLE]: {
+    kind: 'enum',
+    groups: [GROUP_NODES, GROUP_EDGES],
+    parseEnum: (v) => STROKE_STYLES[String(v)] ?? null,
+    set: (c, v) => {
+      c.textBorderStyle = v as number;
+    },
+    default: () => NODE_DEFAULTS.textBorderStyle,
+  },
   // C2 gradient enums (stop lists stay constants-only)
   [PROP.BACKGROUND_FILL]: {
     kind: 'enum',

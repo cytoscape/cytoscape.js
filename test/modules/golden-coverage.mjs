@@ -47,14 +47,17 @@ moves any pixels — is later, by the eleventh sitting's call.
 */
 
 /** The pinned counts; change them only with the capture that moves them. */
-// round 76: mid-*-arrow-width arrive (+2 universe, both no-static —
-// mid heads are always filled — and +2 inert on nodes)
+// round 76: mid-*-arrow-width (+2, no-static — mid heads are always
+// filled — and +2 inert on nodes) and text-border-style (+2) arrive;
+// the label-border-styles golden sets all four, and with them the
+// edge label box (text-border-width/-opacity, text-background-shape,
+// text-margin-y) and text-background-shape's round-rectangle on edges
 const PINNED = {
-  universe: 214,
-  unexercised: 77,
-  paintable: 56,
-  noStatic: 21,
-  keywordGaps: 67,
+  universe: 216,
+  unexercised: 71,
+  paintable: 52,
+  noStatic: 19,
+  keywordGaps: 66,
   inert: 47,
 };
 

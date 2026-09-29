@@ -171,6 +171,9 @@ export const applyProp = (
     case PROP.TEXT_BORDER_OPACITY:
       computed.textBorderOpacity = parseZeroOne(prop, value);
       break;
+    case PROP.TEXT_BORDER_STYLE:
+      computed.textBorderStyle = parseStrokeStyle(prop, value);
+      break;
     case PROP.BORDER_WIDTH:
       computed.borderWidth = parseNumber(prop, value);
       break;

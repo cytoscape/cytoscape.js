@@ -593,8 +593,12 @@ interface LabelEntry {
   bgShape: number;
   /** packed text-border RGBA (text-border-opacity folded; a=0 = none) — B6 */
   bgBorderColor: number;
-  /** text-border-width, model px (draws inward from the padded box) — B6 */
+  /** text-border-width, model px — B6; since round 76.3 the band
+   * straddles the padded box's edge, as v3's stroke does */
   bgBorderWidth: number;
+  /** text-border-style (round 76.3): a STROKE_* id — 0 solid, 1
+   * dashed, 2 dotted, 3 double */
+  bgBorderStyle: number;
   /** text-halign base X offset from the node center, model px (round
    * 13 D3: -w/2 left, 0 center, +w/2 right; always 0 for edges) */
   anchorX: number;

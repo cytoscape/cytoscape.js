@@ -200,6 +200,7 @@ export const PROP = {
   TEXT_BACKGROUND_SHAPE: 'text-background-shape',
   TEXT_BORDER_COLOR: 'text-border-color',
   TEXT_BORDER_OPACITY: 'text-border-opacity',
+  TEXT_BORDER_STYLE: 'text-border-style',
   TEXT_BORDER_WIDTH: 'text-border-width',
   TEXT_EVENTS: 'text-events',
   TEXT_HALIGN: 'text-halign',

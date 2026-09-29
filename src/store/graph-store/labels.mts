@@ -86,6 +86,7 @@ export function setLabel(
       prev.bgShape === entry.bgShape &&
       prev.bgBorderColor === entry.bgBorderColor &&
       prev.bgBorderWidth === entry.bgBorderWidth &&
+      prev.bgBorderStyle === entry.bgBorderStyle &&
       prev.minZoomedFontSize === entry.minZoomedFontSize &&
       prev.anchorX === entry.anchorX &&
       prev.halignShift === entry.halignShift &&

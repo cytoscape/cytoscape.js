@@ -284,6 +284,7 @@ const entry = (fontSize) => ({
   bgShape: 0,
   bgBorderColor: 0,
   bgBorderWidth: 0,
+  bgBorderStyle: 0,
   anchorX: 0,
   halignShift: 0,
   valignShift: 0,
@@ -460,5 +461,60 @@ describe('the label layer records what the declutter pass reads (round 104)', ()
 
     expect(layer.declutter.count()).to.equal(1);
     expect(layer.takeNodeLabelsTouched()).to.be.true;
+  });
+});
+
+// Round 76.3: the label box's solid quad carries text-border-style in
+// its free uv1.y, and grows by half the border width on every side —
+// the band straddles the padded box, as v3's stroke does, so the quad
+// must reach its outer half.  An invisible border (alpha 0) must not
+// grow it: the FS insets the box under the same condition.
+describe('the label box quad carries the border (round 76.3)', () => {
+  const boxed = (over) => ({
+    ...entry(14),
+    bgColor: 0xff00ffff,
+    bgPadding: 3,
+    bgBorderColor: 0xff0000ff,
+    bgBorderWidth: 4,
+    ...over,
+  });
+  const solidQuad = (e) => {
+    const layer = new LabelLayer(makeDevice(), makeStore(new Map([[0, e]])));
+
+    layer.process();
+
+    const words = layer.glyphs['words'];
+    const f32 = new Float32Array(words.buffer);
+
+    // the background quad precedes its glyphs in the run
+    expect(f32[6]).to.be.below(0);
+
+    return { x: f32[2], y: f32[3], w: f32[4], h: f32[5], style: f32[9] };
+  };
+
+  beforeEach(() => {
+    globalThis.OffscreenCanvas = FakeOffscreenCanvas;
+  });
+
+  afterEach(() => {
+    delete globalThis.OffscreenCanvas;
+  });
+
+  it('writes the style id into uv1.y', () => {
+    for (const style of [0, 1, 2, 3]) {
+      expect(solidQuad(boxed({ bgBorderStyle: style })).style).to.equal(style);
+    }
+  });
+
+  it('grows by half the width per side, only when the border draws', () => {
+    const drawn = solidQuad(boxed({}));
+    const hidden = solidQuad(boxed({ bgBorderColor: 0x000000ff }));
+    const none = solidQuad(boxed({ bgBorderWidth: 0 }));
+
+    expect(hidden).to.deep.equal(none);
+    expect(drawn.x).to.equal(none.x - 2);
+    expect(drawn.y).to.equal(none.y - 2);
+    expect(drawn.w).to.equal(none.w + 4);
+    expect(drawn.h).to.equal(none.h + 4);
   });
 });

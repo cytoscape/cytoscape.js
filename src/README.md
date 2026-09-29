@@ -7342,9 +7342,10 @@ v3 behaviour to match and the keyword reads back but adds no stripe.
 
 **`border-cap` / `border-join` drop** (the sitting's third sub-call):
 dash ends are perpendicular cuts by construction.  Rows are in the migration guide.
-`text-border-style` stays out — the label-box border is a different
-pipeline and nothing here makes it free (the docs-first call the plan
-reserved).
+`text-border-style` stayed out here — the label-box border is a
+different pipeline and nothing here made it free (the docs-first call
+the plan reserved); round 76.3 built it in the label shader (see the
+labels section).
 
 **Verification.**  Five live parity scenes at zoom 2 (the round-56
 close-up lesson: at zoom 1 the AA fringe smears 2 px gaps and a solid
@@ -7766,11 +7767,51 @@ fragment premium is **unmeasurable at scene level** on real hardware
   Round 13 B6 added `text-transform` (applied at glyph-run build),
   `text-border-width`/`-color`/`-opacity` (a band inward from the
   padded background box) and `text-background-shape`
-  (rectangle | round-rectangle, v3's auto radius); `text-border-style`
-  stays out — round 38 (landed 2026-08-08) built the dash-a-boundary
-  styles for node borders and outlines and took the reserved docs-first
-  call the other way for the label box: it is a different pipeline, and
-  nothing the round built makes it free.  See the border-style section.
+  (rectangle | round-rectangle, v3's auto radius).
+
+  Round 76.3 (2026-09-29) added **`text-border-style`** (solid |
+  dashed | dotted | double, both label groups, mapper-capable), which
+  round 38 had left out.  The style id rides the solid quad's free
+  `uv1.y` (the glyph record did not grow), and `fsLabel`'s solid branch
+  lays v3's hardcoded patterns — dashed `[4, 2]`, dotted `[1, 1]`,
+  model px, as v3's transformed context sets them — along a closed-form
+  perimeter coordinate that follows v3's own stroke path: `rect` from
+  the top-left corner, `roundRect` from one radius along the top edge,
+  both clockwise (`labelBoxPerim`, the easy tier of round 38's — there
+  is no polygon case).  An off-segment shows the fill, as v3's
+  stroke-over-fill does.  `double` is matched as v3 draws it, per the
+  eleventh sitting: the stroke at width / 4 on the path and again
+  inset by width / 2 — two thin lines with the fill between, nothing
+  past the outer line.  No derivative is taken inside the branch (the
+  AA is analytic in device px), so no derivative hoisting was needed.
+
+  The round also **re-centred the band**: B6 drew the border inward
+  from the padded box, where v3 strokes the box's path so the band
+  straddles it.  The solid quad now grows by half the border width on
+  every side and the FS insets the box by the same half, under the
+  same condition (width > 0 and a visible colour); the label bounding
+  box is unchanged (it never counted the border, as it never counted
+  the outline).  The `label-boxes` golden moved by 1.27% of its pixels
+  for it — every one on the three bordered boxes.
+
+  Verified by a live close-up parity scene at zoom 3
+  (`parity-closeup-text-border-style`): the four styles on rectangle
+  boxes with the text inked in the fill colour, **0.384%** against v3,
+  **7.509%** with v4 drawing every box solid.  The residue is the four
+  corners, where canvas joins the dash ends through the corner and v4
+  splits the band on the diagonal (recorded).  The scene uses a label
+  whose width is integral, because v3 rounds a label's measured width
+  up (`calculateLabelDimensions`): with `'MM'` at 8 px v3's box was
+  0.67 model px wider and the dash phase on the right and bottom sides
+  drifted by half a dotted period.  That rounding, v3's 2 px
+  round-rectangle corner (v4 keeps its auto radius) and v3 stroking a
+  border with no background (v4 draws the box only when
+  `text-background-opacity` > 0) are the label box's recorded
+  deviations, in the migration guide.  The `label-border-styles`
+  golden covers every style on both box shapes and on edge labels.
+  No bench row: a dash-gated label-box fragment is a smaller frame
+  share than the hexagon-border pair that already measured
+  unmeasurable.
 
   `text-rotation` takes a **number of radians** on any label since
   round 27.7, alongside the `autorotate` keyword (edge labels only —

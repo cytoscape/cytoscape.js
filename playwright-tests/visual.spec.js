@@ -2484,6 +2484,105 @@ test.describe('WebGPU visual goldens', () => {
     );
   });
 
+  test('golden: label box border styles — nodes and edges (round 76.3)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    await useViewport(page, 440, 400);
+
+    // pre-load the fixed web font (the atlas caches lazily and forever)
+    await page.evaluate(async () => {
+      await document.fonts.load(`32px 'Open Sans'`);
+
+      if (!document.fonts.check(`32px 'Open Sans'`)) {
+        throw new Error('Open Sans did not load');
+      }
+    });
+
+    // text-border-style's four keywords on both box shapes (top two
+    // rows, nodes) and on edge labels (bottom row) — the edge stream
+    // shares the solid-quad path, so it gets its own cells.  Zoom 2 so
+    // dotted's 1 model px dashes are real pixels.  The edges also carry
+    // mid heads with mid-*-arrow-width (round 76.5), which draws
+    // nothing on a filled head: set here so the coverage record counts
+    // them, with the labels lifted so the heads are in the picture.
+    const styles = ['solid', 'dashed', 'dotted', 'double'];
+    const elements = [];
+
+    styles.forEach((st, i) => {
+      for (const [row, shape] of [
+        [0, 'rectangle'],
+        [1, 'round-rectangle'],
+      ]) {
+        elements.push({
+          data: { id: `${st}-${row}`, st, shape },
+          position: { x: i * 42 - 63, y: row * 34 - 60 },
+        });
+      }
+    });
+    elements.push(
+      { data: { id: 'l' }, position: { x: -70, y: 42 } },
+      { data: { id: 'r' }, position: { x: 70, y: 42 } },
+      { data: { id: 'l2' }, position: { x: -70, y: 70 } },
+      { data: { id: 'r2' }, position: { x: 70, y: 70 } },
+      { data: { id: 'e1', source: 'l', target: 'r', st: 'dashed' } },
+      { data: { id: 'e2', source: 'l2', target: 'r2', st: 'double' } },
+    );
+
+    const box = {
+      'text-background-color': '#f9e79f',
+      'text-background-opacity': 1,
+      'text-background-padding': 3,
+      'text-border-width': 2,
+      'text-border-color': '#1f618d',
+      'text-border-opacity': 1,
+      'text-border-style': { data: 'st' },
+      'font-size': 9,
+    };
+
+    await makeReadyCy(page, {
+      elements,
+      style: {
+        nodes: {
+          ...box,
+          // global (one atlas): set on nodes, the edge labels share it
+          'font-family': `'Open Sans', sans-serif`,
+          width: 6,
+          height: 6,
+          'background-color': '#7f8c8d',
+          label: { data: 'st' },
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'text-background-shape': { data: 'shape' },
+        },
+        edges: {
+          ...box,
+          width: 2,
+          'line-color': '#aab7b8',
+          label: { data: 'st' },
+          'text-background-shape': 'round-rectangle',
+          // lifted off the line so the mid heads show beneath
+          'text-margin-y': -12,
+          'mid-target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'tee',
+          'mid-target-arrow-width': 3,
+          'mid-source-arrow-width': 'match-line',
+        },
+      },
+      zoom: 2,
+      pan: { x: 220, y: 180 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'label-border-styles');
+    await checkGolden(
+      page,
+      'label-border-styles',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
+  });
+
   test('golden: arrow scalars — scale, hollow, stroke widths (round 13 B7)', async ({
     page,
   }, testInfo) => {
@@ -6339,6 +6438,73 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { minInk: 1500, bound: 0.02, zoom: 2 },
+    );
+  });
+
+  test('parity close-up: text-border-style on the label box (round 76.3)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3's four text-border-style keywords on rectangular label boxes,
+    // at zoom 3 (the round-38 lesson: at zoom 1 the AA fringe smears
+    // 1-2 px gaps and a solid border reads within a percent of a dashed
+    // one).  The text is inked in the box's own fill colour, so glyph
+    // rasterization — canvas vs SDF, different by design — cannot show,
+    // and the big padding makes the box, not the run, the scene.  What
+    // the diff sees is where the dashes fall along v3's stroke path
+    // (their lengths, their phase from the top-left corner), the band
+    // straddling the box edge, and double's two thin lines.
+    const styles = ['solid', 'dashed', 'dotted', 'double'];
+    const elements = styles.map((st, i) => ({
+      data: { id: st, st },
+      position: { x: (i % 2) * 66 - 33, y: Math.floor(i / 2) * 50 - 25 },
+    }));
+    const shared = {
+      width: 1,
+      height: 1,
+      'background-opacity': 0,
+      'border-width': 0,
+      // v3 ceils a label's measured width (calculateLabelDimensions);
+      // 'M' at 6 px measures 4.998 in v4, so both boxes agree to
+      // 0.002 model px and the dash phase is the dash math's alone
+      label: 'M',
+      'font-size': 6,
+      color: '#f1c40f',
+      'text-valign': 'center',
+      'text-halign': 'center',
+      'text-background-color': '#f1c40f',
+      'text-background-opacity': 1,
+      'text-background-padding': 14,
+      'text-border-width': 6,
+      'text-border-color': '#2c3e50',
+      'text-border-opacity': 1,
+    };
+    const v3Style = [
+      { selector: 'node', style: shared },
+      ...styles.map((st) => ({
+        selector: `node[st = '${st}']`,
+        style: { 'text-border-style': st },
+      })),
+    ];
+    const v4Style = {
+      nodes: {
+        ...shared,
+        'text-border-style': { data: 'st' },
+      },
+    };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-text-border-style',
+      elements,
+      v3Style,
+      v4Style,
+      // measured 2026-09-29: 0.384% — the residue is the four corners,
+      // where canvas joins the dash ends and v4 splits the band on the
+      // diagonal (recorded).  Control, every v4 box drawn solid: 7.509%.
+      { minInk: 2000, bound: 0.006, zoom: 3 },
     );
   });
 

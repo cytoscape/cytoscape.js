@@ -911,7 +911,7 @@ Category,Feature,Status,Comments,Reference
 "Style","text-background-shape","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","text-border-color","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","text-border-opacity","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
-"Style","text-border-style","Planned","Dashed label-box borders are scoped in round 76.3; current borders remain solid.","plan/rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md"
+"Style","text-border-style","Implemented","Round 76.3: solid, dashed, dotted and double on node and edge label boxes, mapper-capable; v3's hardcoded dash patterns along its stroke path, live parity 0.384% at zoom 3. Deviations: the box draws only with text-background-opacity > 0, and dash ends at the four corners split on the diagonal.","src/render/shaders/label.mts"
 "Style","text-border-width","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","text-events","Partial","Node labels only; the edges group rejects this property. Edge labels are not pickable.","src/style.mts"
 "Style","text-halign","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"

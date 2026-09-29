@@ -353,9 +353,9 @@ you can style on, you can query for. `:visible`, `:hidden`, `:transparent`,
 ## Style properties that moved
 
 v3 registers **291** property names (properties plus aliases). v4 accepts
-**163** of them — 7 only in the `core` group — and rejects **128**. Of the
+**164** of them — 7 only in the `core` group — and rejects **127**. Of the
 rejections, 96 are v3's numbered `pie-N-*` / `stripe-N-*` props, which became
-one `chart` family. The remaining 32 are the table below.
+one `chart` family. The remaining 31 are the table below.
 
 *(Measured against both libraries, not transcribed. A rejected property name
 throws at `cy.style()` with "The style property 'x' is unsupported"; v4 never
@@ -380,7 +380,6 @@ ignores one silently.)*
 | `bounds-expansion` | **dropped.** Bounds are computed correctly instead |
 | `outside-texture-bg-color/-opacity` | **dropped** with `textureOnViewport` |
 | `mid-source-arrow-fill`, `mid-target-arrow-fill` | **dropped.** Mid arrows are always filled |
-| `text-border-style` | **not yet ported** — see [Not ported](#not-ported); `border-style` and `outline-style` themselves work (round 38) |
 | `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction; `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
 
 Also renamed or re-scoped without being rejected:
@@ -473,6 +472,7 @@ app trips on after everything else works.
 | Colour animation | per-channel sRGB | **OKLab**, matching colour mappers |
 | Edge `overlay-padding` / `underlay-padding` | the band is `2 × padding` wide — a padding under half the line width draws a halo narrower than the line, i.e. hidden | **`width + 2 × padding`**, the edge's own extent plus the padding, as the node overlay reads it — so the halo always shows.  A deliberate deviation (PLAN.md item 27, kept at the eleventh design sitting); to match a v3 sheet's band, set v4's padding to v3's minus half the edge width.  The ends, corners and reach are v3's since round 88: round caps, round joins that blend once, and an overlay that reaches over a hollow head |
 | `border-style: double` under an edge | erases to the page (destination-out) | the stripe shows whatever the scene drew beneath the node — an edge passing under the border shows through the gap where v3 punches to the background |
+| Label box (`text-background-*`, `text-border-*`) | the border strokes even with `text-background-opacity: 0`; a `round-rectangle` box has a 2 px corner; the box's width is the text's measured width rounded up | the box draws only when **`text-background-opacity` > 0** (give a border-only box an opaque-enough background, or match the page colour); the round box keeps v4's auto radius (min(w, h) / 4, at most 8 px); the width is not rounded, so a box can be up to 1 px narrower.  The border's placement, its dash patterns and `double` are v3's (round 76.3) |
 | `spring()` easing | `spring( tension, friction )` | **`spring( bounce )`** — one number; 0 is critically damped |
 | Custom easing functions | accepted | **throw.** A closure cannot cross to the GPU; `cubic-bezier()` and `linear()` cover any drawable curve |
 | Label bounding boxes | opt-in | **`boundingBox()` includes labels by default**; opt out with `{ includeLabels: false }` |
@@ -784,9 +784,6 @@ Deliberately, with no replacement planned:
 
 Not yet built, and tracked:
 
-- **`text-border-style`** — the label box border does not dash;
-  `border-style` and `outline-style` landed in round 38 (every shape,
-  including v3's `double` erase and dash pattern/offset props).
 - Core/collection/renderer extension points — demand-gated.
 
 Decided against, not pending:

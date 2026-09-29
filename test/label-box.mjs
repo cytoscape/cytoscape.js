@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 
-// round 13 B6: text-transform, text-border-*, text-background-shape
+// round 13 B6: text-transform, text-border-*, text-background-shape;
+// round 76.3: text-border-style
 
 describe('gpu/label-box (round 13 B6)', function () {
   var cy;
@@ -86,7 +87,51 @@ describe('gpu/label-box (round 13 B6)', function () {
     expect(cy._store.labelAt(cy._store.lookup('b').slot).text).to.equal('hi');
   });
 
+  // round 76.3: v3's enum, stored on the label entry (so a mapped or
+  // bypassed value reads back what the box draws), on both groups
+  it('text-border-style parses, stores and reads back on nodes and edges', function () {
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a', k: 'dash' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', k: 'dot' }, position: { x: 100, y: 0 } },
+        { data: { id: 'e', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: {
+          label: 'x',
+          'text-border-style': {
+            case: [{ when: { data: 'k', eq: 'dash' }, then: 'dashed' }],
+            else: 'dotted',
+          },
+        },
+        edges: { label: 'y', 'text-border-style': 'double' },
+      },
+    });
+
+    var slot = (id) => cy._store.lookup(id).slot;
+
+    expect(cy.$id('a').style('text-border-style')).to.equal('dashed');
+    expect(cy.$id('b').style('text-border-style')).to.equal('dotted');
+    expect(cy.$id('e').style('text-border-style')).to.equal('double');
+    expect(cy._store.labelAt(slot('a')).bgBorderStyle).to.equal(1);
+    expect(cy._store.labelAt(slot('b')).bgBorderStyle).to.equal(2);
+    expect(cy._store.labelAt(slot('e'), 'edges').bgBorderStyle).to.equal(3);
+
+    cy.$id('a').style('text-border-style', 'solid');
+
+    expect(cy.$id('a').style('text-border-style')).to.equal('solid');
+    expect(cy._store.labelAt(slot('a')).bgBorderStyle).to.equal(0);
+
+    var plain = makeCy({ label: 'x' });
+
+    expect(plain.$id('n').style('text-border-style')).to.equal('solid');
+    plain.destroy();
+  });
+
   it('validates keywords', function () {
+    expect(() => makeCy({ 'text-border-style': 'groove' })).to.throw(
+      /text-border-style/,
+    );
     expect(() => makeCy({ 'text-transform': 'shouting' })).to.throw(
       /text-transform/,
     );

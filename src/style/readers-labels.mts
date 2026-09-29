@@ -7,6 +7,7 @@ import {
   JUSTIFICATION_NAMES,
   TEXT_TRANSFORM_NAMES,
   TEXT_BG_SHAPE_NAMES,
+  STROKE_STYLE_NAMES,
   HALIGN_NAMES,
   VALIGN_NAMES,
 } from './parse.mjs';
@@ -104,6 +105,20 @@ defineReader([PROP.TEXT_BORDER_WIDTH], (store, slot, ref, engine) => {
   return entry != null
     ? entry.bgBorderWidth
     : engine.defFor(ref).computed.textBorderWidth;
+});
+
+// round 76.3: from the entry, so a mapped or bypassed style reads
+// what the box draws (the bgShape precedent)
+defineReader([PROP.TEXT_BORDER_STYLE], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, ref.group);
+
+  return (
+    STROKE_STYLE_NAMES[
+      entry != null
+        ? entry.bgBorderStyle
+        : engine.defFor(ref).computed.textBorderStyle
+    ] ?? 'solid'
+  );
 });
 
 defineReader([PROP.MIN_ZOOMED_FONT_SIZE], (store, slot, ref, engine) => {

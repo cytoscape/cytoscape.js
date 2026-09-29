@@ -135,7 +135,7 @@ describe('feature inventory', () => {
     const find = (name) => rows.find((r) => r.Feature === name);
     expect(find('cy.json').Status).to.equal('Partial');
     expect(find('cy.json').Comments).to.include('import');
-    expect(find('text-border-style').Status).to.equal('Planned');
+    expect(find('mid-source-arrow-fill').Status).to.equal('Excluded');
     expect(find('cy.svg').Status).to.equal('Planned');
     expect(find('z-index').Status).to.equal('Excluded');
     expect(find('content').Comments).to.include('label');

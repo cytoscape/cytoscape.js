@@ -141,6 +141,9 @@ export interface NodeComputed {
   textBorderWidth: number;
   textBorderColor: RGBA;
   textBorderOpacity: number;
+  /** text-border-style (round 76.3): a STROKE_* id — solid, dashed,
+   * dotted, double (v3's enum and its hardcoded patterns) */
+  textBorderStyle: number;
   // ghost props (round 13 A1): the body duplicated at the offset
   ghost: boolean;
   ghostOffsetX: number;
@@ -392,6 +395,7 @@ export const NODE_DEFAULTS: NodeComputed = {
   textBorderWidth: 0,
   textBorderColor: [0, 0, 0, 255], // '#000', as v3
   textBorderOpacity: 0, // as v3: borders need opacity styled on
+  textBorderStyle: 0, // solid, as v3
   ghost: false,
   ghostOffsetX: 0,
   ghostOffsetY: 0,

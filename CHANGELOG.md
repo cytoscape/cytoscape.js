@@ -24,6 +24,14 @@ that compile and then behave differently.
 
 ### Added
 
+- **`text-border-style`** (round 76.3): v3's `solid | dashed | dotted |
+  double` on the label box, on node and edge labels, mapper-capable.
+  Dashes use v3's hardcoded patterns (`[4, 2]`, dotted `[1, 1]`, model
+  px) laid along v3's own stroke path from the box's top-left corner;
+  `double` is v3's two quarter-width lines.  The label box border now
+  straddles the padded box's edge as v3's stroke does (it was drawn
+  inward before).  Live parity at zoom 3: 0.384% against v3, 7.5% with
+  the style ignored.
 - **`mid-source-arrow-width` / `mid-target-arrow-width`** (round 76, PLAN.md
   item 21's width half).  v3's hollow-stroke width for the mid heads —
   a number, `'match-line'` or a percent of the edge width, constants-only
@@ -773,10 +781,6 @@ that compile and then behave differently.
 
 ### Not yet implemented
 
-- `text-border-style` (the label box border does not dash).
-  `border-style`/`outline-style` and `border-dash-pattern`/`-offset`
-  themselves work on every shape; `border-cap`/`border-join` are dropped
-  (dash ends are perpendicular cuts by construction).
 - Core, collection and renderer extension points.
 
 Decided against rather than pending: `cytoscape.warnings()` (errors throw

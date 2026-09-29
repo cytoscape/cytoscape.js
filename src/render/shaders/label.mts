@@ -1,5 +1,11 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
-import { COMMON, GLYPH_STRUCT, BOUNDARY_WGSL } from './common.mjs';
+import {
+  STROKE_SOLID,
+  STROKE_DASHED,
+  STROKE_DOTTED,
+  STROKE_DOUBLE,
+} from '../../contract.mjs';
+import { COMMON, DASH_WGSL, GLYPH_STRUCT, BOUNDARY_WGSL } from './common.mjs';
 import { CURVE_WGSL, ROUTE_WGSL } from './curve.mjs';
 import { ARROW_GAP_WGSL } from './sdf.mjs';
 
@@ -118,9 +124,50 @@ fn routeEndWalkW(r: ptr<function, Route>, fromSource: bool, dist: f32) -> vec4f 
 }
 `;
 
+// text-border-style (round 76.3): the label box's perimeter
+// coordinate, device px, along v3's own stroke path — context.rect
+// starts at the top-left corner and runs clockwise (top edge first);
+// its roundRect starts at (x + r, y), one radius along the top edge.
+// With r = 0 the corner branch is unreachable inside the box and the
+// nearest side decides, which is the rectangle; a band point projects
+// onto the side it is nearest, so corners split on the diagonal.
+const LABEL_PERIM_WGSL = wgsl`
+fn labelBoxPerim(p: vec2f, half: vec2f, r: f32) -> f32 {
+  let cx = half.x - r;
+  let cy = half.y - r;
+  let arc = 1.57079632679 * r;
+  let c2 = 2.0 * cx + arc;       // right side start
+  let c4 = c2 + 2.0 * cy + arc;  // bottom start
+  let c6 = c4 + 2.0 * cx + arc;  // left side start
+  let q = abs(p) - vec2f(cx, cy);
+
+  if (q.x > 0.0 && q.y > 0.0) { // a corner arc
+    let phi = atan2(q.y, q.x); // 0 on the side, pi/2 on the top/bottom
+    if (p.x >= 0.0 && p.y < 0.0) { return 2.0 * cx + (1.57079632679 - phi) * r; }
+    if (p.x >= 0.0) { return c2 + 2.0 * cy + phi * r; }
+    if (p.y >= 0.0) { return c4 + 2.0 * cx + (1.57079632679 - phi) * r; }
+    return c6 + 2.0 * cy + phi * r;
+  }
+
+  var vertical = q.x > 0.0;
+  if (q.x <= 0.0 && q.y <= 0.0) { // interior: the nearest side decides
+    vertical = (half.x - abs(p.x)) < (half.y - abs(p.y));
+  }
+
+  if (vertical) {
+    if (p.x >= 0.0) { return c2 + (clamp(p.y, -cy, cy) + cy); }
+    return c6 + (cy - clamp(p.y, -cy, cy));
+  }
+  if (p.y < 0.0) { return clamp(p.x, -cx, cx) + cx; }
+  return c4 + (cx - clamp(p.x, -cx, cx));
+}
+`;
+
 const labelShader = (edge: boolean): string => wgsl`
 ${COMMON}
 ${GLYPH_STRUCT}
+${DASH_WGSL}
+${LABEL_PERIM_WGSL}
 ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : ''}
 // Round 58: this stage passes the *accessor* trim (arrowGapTrimOf —
 // v3's plain gap/spacing, GraphStore.arrowTrimAt's twin) to the curve
@@ -165,6 +212,8 @@ struct LabelVSOut {
   @location(5) @interpolate(flat) solid: u32,
   @location(6) local: vec2f,                  // corner space [0,1]² (B6)
   @location(7) @interpolate(flat) quadPx: vec2f, // quad size, device px (B6)
+  // text-border-style on solid quads (76.3): a STROKE_* id
+  @location(8) @interpolate(flat) borderStyle: u32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -348,6 +397,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   out.solid = select(0u, select(1u, 2u, g.uv1.x == 1.0), g.uv0.x < 0.0);
   out.local = t;
   out.quadPx = g.size * frame.zoomDpr;
+  // text-border-style rides the solid quad's free uv1.y (76.3)
+  out.borderStyle = u32(max(g.uv1.y, 0.0));
   return out;
 }
 
@@ -368,12 +419,21 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
       return vec4f(0.0);
     }
 
-    let half = in.quadPx * 0.5;
+    // text-border (B6, re-centred in 76.3): v3 strokes the padded
+    // box's path, so the band straddles it, half outside.  The quad
+    // grew by half the width on every side to carry the outer half
+    // (in.outlineColor/Width double as the border for solid quads;
+    // the width is model px here, unlike the glyphs' SDF units)
+    let bw = in.outlineWidth * frame.zoomDpr;
+    let bordered = bw > 0.0 && in.outlineColor.a > 0.0;
+    let bh = select(0.0, bw * 0.5, bordered);
+    let half = in.quadPx * 0.5 - vec2f(bh); // the padded box, device px
     let p = (in.local - vec2f(0.5)) * in.quadPx;
     var sdq: f32;
+    var r = 0.0;
 
     if (in.solid == 2u) { // round-rectangle, v3's auto radius
-      let r = min(min(half.x, half.y) * 0.5, 8.0 * frame.zoomDpr);
+      r = min(min(half.x, half.y) * 0.5, 8.0 * frame.zoomDpr);
       let q = abs(p) - half + vec2f(r);
 
       sdq = min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - r;
@@ -385,17 +445,54 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
 
     var rgb = in.color.rgb;
     var colA = in.color.a;
-    // text-border (B6): a band drawn inward from the padded box
-    // (in.outlineColor/Width double as the border for solid quads;
-    // the width is model px here, unlike the glyphs' SDF units)
-    let bw = in.outlineWidth * frame.zoomDpr;
+    var edgeAt = 0.0; // coverage boundary: sdq <= edgeAt is inked
 
-    if (bw > 0.0 && in.outlineColor.a > 0.0 && sdq > -bw) {
-      rgb = in.outlineColor.rgb;
-      colA = in.outlineColor.a;
+    // v3's double reaches 5/8 of the width inside the path, past the
+    // band's inner half
+    let reach = select(bh, bw * 0.625 + 0.75, in.borderStyle == ${STROKE_DOUBLE}u);
+
+    if (bordered && sdq > -reach) {
+      if (in.borderStyle == ${STROKE_SOLID}u) {
+        rgb = in.outlineColor.rgb;
+        colA = in.outlineColor.a;
+        edgeAt = bh;
+      } else {
+        // 76.3: the fill layer (edge 0) and the border layer (edge
+        // bh), mixed premultiplied by the style's mask — an
+        // off-segment shows the fill, as v3's stroke-over-fill does
+        var m = 1.0;
+        var borderEdge = bh;
+
+        if (in.borderStyle == ${STROKE_DOUBLE}u) {
+          // v3's double: the stroke at width / 4 on the path, and
+          // again inset by width / 2 — two thin lines, the fill
+          // between them, nothing past the outer one (matched as v3
+          // draws it, per the eleventh sitting)
+          let e = bw * 0.125;
+          let outer = smoothstep(-e - 0.75, -e + 0.75, sdq); // [-e, e]
+          let inner = smoothstep(-5.0 * e - 0.75, -5.0 * e + 0.75, sdq) *
+            (1.0 - smoothstep(-3.0 * e - 0.75, -3.0 * e + 0.75, sdq)); // [-5e, -3e]
+
+          m = max(outer, inner);
+          borderEdge = e;
+        } else {
+          // v3's hardcoded patterns, MODEL px (the transformed
+          // context): dotted [1, 1], dashed [4, 2]
+          let pat = select(vec4f(4.0, 2.0, 4.0, 2.0), vec4f(1.0, 1.0, 1.0, 1.0), in.borderStyle == ${STROKE_DOTTED}u);
+          let u = labelBoxPerim(p, half, r) / frame.zoomDpr;
+
+          m = smoothstep(-0.75, 0.75, dashInsideSd(u, pat, 0.0) * frame.zoomDpr);
+        }
+
+        let aB = (1.0 - smoothstep(borderEdge - 0.75, borderEdge + 0.75, sdq)) * in.outlineColor.a;
+        let aF = (1.0 - smoothstep(-0.75, 0.75, sdq)) * in.color.a;
+        let aOut = mix(aF, aB, m) * in.fade;
+
+        return vec4f(mix(in.color.rgb * aF, in.outlineColor.rgb * aB, m) * in.fade, aOut);
+      }
     }
 
-    let a = (1.0 - smoothstep(-0.75, 0.75, sdq)) * colA * in.fade;
+    let a = (1.0 - smoothstep(edgeAt - 0.75, edgeAt + 0.75, sdq)) * colA * in.fade;
 
     return vec4f(rgb * a, a);
   }

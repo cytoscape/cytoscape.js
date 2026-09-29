@@ -408,6 +408,12 @@
             { "$ref": "#/$defs/mapper" }
           ]
         },
+        "text-border-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
         "text-border-width": {
           "anyOf": [
             { "$ref": "#/$defs/props/text-border-width" },
@@ -761,6 +767,9 @@
         },
         "textBorderOpacity": {
           "$ref": "#/$defs/nodeProps/properties/text-border-opacity"
+        },
+        "textBorderStyle": {
+          "$ref": "#/$defs/nodeProps/properties/text-border-style"
         },
         "textBorderWidth": {
           "$ref": "#/$defs/nodeProps/properties/text-border-width"
@@ -1245,6 +1254,12 @@
             { "$ref": "#/$defs/mapper" }
           ]
         },
+        "text-border-style": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/text-border-style" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
         "text-border-width": {
           "anyOf": [
             { "$ref": "#/$defs/props/text-border-width" },
@@ -1550,6 +1565,9 @@
         },
         "textBorderOpacity": {
           "$ref": "#/$defs/edges/properties/text-border-opacity"
+        },
+        "textBorderStyle": {
+          "$ref": "#/$defs/edges/properties/text-border-style"
         },
         "textBorderWidth": {
           "$ref": "#/$defs/edges/properties/text-border-width"
@@ -2923,6 +2941,10 @@
       "text-border-opacity": {
         "$ref": "#/$defs/kinds/zeroOne",
         "examples": [0]
+      },
+      "text-border-style": {
+        "$ref": "#/$defs/keywords/strokeStyle",
+        "examples": ["solid"]
       },
       "text-border-width": {
         "$ref": "#/$defs/kinds/nonNegative",

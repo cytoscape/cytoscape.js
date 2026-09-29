@@ -397,7 +397,14 @@ export class LabelLayer {
       const owner = (entry.rotate ? slot | GLYPH_ROTATE : slot) >>> 0;
 
       if (hasBg) {
-        const pad = entry.bgPadding;
+        // round 76.3: the border straddles the padded box as v3's
+        // stroke does, so the quad carries its outer half (the FS
+        // insets the box by the same half, under the same condition)
+        const pad =
+          entry.bgPadding +
+          (entry.bgBorderWidth > 0 && entry.bgBorderColor >>> 24 > 0
+            ? entry.bgBorderWidth / 2
+            : 0);
 
         u32[at] = owner;
         u32[at + 1] = entry.bgColor;
@@ -407,10 +414,11 @@ export class LabelLayer {
         f32[at + 5] = blockH * scale + 2 * pad;
         f32[at + 6] = -1; // u0 < 0: solid quad, no atlas sample
         f32[at + 7] = blockH * scale; // LOD height: the glyph block's
-        // uv1.x carries the background shape (B6: 1 = round-rectangle);
-        // the solid branch never samples the atlas, so the slot is free
+        // uv1.x carries the background shape (B6: 1 = round-rectangle)
+        // and uv1.y the border style (76.3: a STROKE_* id); the solid
+        // branch never samples the atlas, so both slots are free
         f32[at + 8] = entry.bgShape;
-        f32[at + 9] = -1;
+        f32[at + 9] = entry.bgBorderStyle;
         // the outline fields double as the text-border for solid quads
         // (B6): packed border color + width in *model px* (the FS scales)
         u32[at + 10] = entry.bgBorderColor;

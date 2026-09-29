@@ -1,0 +1,123 @@
+{
+  "golden": "label-border-styles",
+  "elements": {
+    "nodes": 12,
+    "parents": 0,
+    "edges": 2
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(127,140,141)"
+    ],
+    "font-family": [
+      "'Open Sans', sans-serif"
+    ],
+    "font-size": [
+      "9"
+    ],
+    "height": [
+      "6"
+    ],
+    "label": [
+      "dashed",
+      "dotted",
+      "double",
+      "solid"
+    ],
+    "text-background-color": [
+      "rgb(249,231,159)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "3"
+    ],
+    "text-background-shape": [
+      "round-rectangle"
+    ],
+    "text-border-color": [
+      "rgb(31,97,141)"
+    ],
+    "text-border-opacity": [
+      "1"
+    ],
+    "text-border-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "text-border-width": [
+      "2"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "6"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "font-size": [
+      "9"
+    ],
+    "label": [
+      "dashed",
+      "double"
+    ],
+    "line-color": [
+      "rgb(170,183,184)"
+    ],
+    "mid-source-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "mid-source-arrow-shape": [
+      "tee"
+    ],
+    "mid-source-arrow-width": [
+      "2"
+    ],
+    "mid-target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "mid-target-arrow-shape": [
+      "triangle"
+    ],
+    "mid-target-arrow-width": [
+      "3"
+    ],
+    "text-background-color": [
+      "rgb(249,231,159)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "3"
+    ],
+    "text-background-shape": [
+      "round-rectangle"
+    ],
+    "text-border-color": [
+      "rgb(31,97,141)"
+    ],
+    "text-border-opacity": [
+      "1"
+    ],
+    "text-border-style": [
+      "dashed",
+      "double"
+    ],
+    "text-border-width": [
+      "2"
+    ],
+    "text-margin-y": [
+      "-12"
+    ],
+    "width": [
+      "2"
+    ]
+  },
+  "core": {}
+}
